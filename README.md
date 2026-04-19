@@ -71,8 +71,13 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
 
 ## Notes
 
-- Before first `tauri dev` / `tauri build` you will need icons in `src-tauri/icons/`. Generate them with:
+- Before first `tauri dev` / `tauri build` you will need icons in `src-tauri/icons/`. Generate them from a square PNG (>= 1024x1024) — replace the path below with a real file:
   ```bash
-  pnpm tauri icon path/to/source-icon.png
+  pnpm tauri icon ./my-source-icon.png
+  ```
+  Quick placeholder with ImageMagick:
+  ```bash
+  magick -size 1024x1024 xc:"#4f46e5" /tmp/app-icon.png
+  pnpm tauri icon /tmp/app-icon.png
   ```
 - The Rust side exposes a sample `greet` command wired up in `app.vue` as an example of the JS ↔ Rust bridge.
