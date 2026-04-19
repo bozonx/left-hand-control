@@ -1,30 +1,22 @@
 <script setup lang="ts">
 const props = defineProps<{
-  modelValue: boolean
   keyLabel: string
   keyCode: string
   action: string
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   save: [action: string]
   clear: []
 }>()
 
-const open = computed({
-  get: () => props.modelValue,
-  set: (v: boolean) => emit('update:modelValue', v),
-})
+const open = defineModel<boolean>({ required: true })
 
 const draft = ref(props.action)
 
-watch(
-  () => props.modelValue,
-  (v) => {
-    if (v) draft.value = props.action
-  },
-)
+watch(open, (v) => {
+  if (v) draft.value = props.action
+})
 
 function save() {
   emit('save', draft.value.trim())

@@ -2,9 +2,9 @@
 const { loaded, saving, lastError, load } = useConfig()
 
 const tabItems = [
-  { label: 'Правила', slot: 'rules', icon: 'i-lucide-list-checks' },
-  { label: 'Keymap', slot: 'keymap', icon: 'i-lucide-keyboard' },
-  { label: 'Настройки', slot: 'settings', icon: 'i-lucide-settings' },
+  { value: 'rules', slot: 'rules', label: 'Правила', icon: 'i-lucide-list-checks' },
+  { value: 'keymap', slot: 'keymap', label: 'Keymap', icon: 'i-lucide-keyboard' },
+  { value: 'settings', slot: 'settings', label: 'Настройки', icon: 'i-lucide-settings' },
 ] as const
 
 const active = ref<string>('rules')
@@ -43,7 +43,6 @@ onMounted(() => {
       <UTabs
         v-model="active"
         :items="tabItems"
-        value-key="slot"
         class="w-full"
       >
         <template #rules>
