@@ -147,6 +147,9 @@ rules:
   # - key: AltRight
   #   layer: num
 
+  - key: LeftAlt
+    layer: win
+ 
 keymaps:
   # Базовый слой: обычно пустой; сюда можно сразу положить глобальные
   # переопределения (например, поменять левый Ctrl <-> CapsLock).
@@ -200,6 +203,10 @@ keymaps:
   #     KeyO: "9"
   #     Space: "0"
   #   extras: []
+  
+  win:
+    keys:
+      KeyF: sys:switchDesktop1
 
 macros:
   - id: up5Times
