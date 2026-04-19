@@ -295,7 +295,8 @@ macros:
   - id: rightSpace
     name: "Right + Space"
     steps:
-      - Right+Space
+      - Right
+      - Space
   
   - id: emptyLineBelow
     name: "Empty line below"
