@@ -7,12 +7,11 @@ const keyOptions = computed(() =>
   ALL_KEYS.map((k) => ({ label: `${k.label}  (${k.code})`, value: k.code })),
 )
 
-const layerOptions = computed(() => [
-  { label: '— none —', value: '' },
-  ...config.value.layers
+const layerOptions = computed(() =>
+  config.value.layers
     .filter((l) => l.id !== 'base')
     .map((l) => ({ label: l.name, value: l.id })),
-])
+)
 
 function addRule() {
   config.value.rules.push({
@@ -83,12 +82,22 @@ function confirmNewLayer(ruleId: string) {
           </UFormField>
 
           <UFormField label="Слой (hold)">
-            <div class="flex gap-2">
+            <div class="flex gap-1">
               <USelectMenu
                 v-model="rule.layerId"
                 :items="layerOptions"
                 value-key="value"
+                placeholder="— none —"
                 class="flex-1 min-w-0"
+              />
+              <UButton
+                v-if="rule.layerId"
+                icon="i-lucide-x"
+                variant="ghost"
+                color="neutral"
+                square
+                aria-label="Очистить слой"
+                @click="rule.layerId = ''"
               />
               <UButton
                 icon="i-lucide-plus"
