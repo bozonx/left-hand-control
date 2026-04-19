@@ -259,11 +259,13 @@ macros:
   - id: downEnd
     name: "Down + End"
     steps:
-      - Down+End
+      - Down
+      - End
   - id: upEnd
     name: "Up + End"
     steps:
-      - Up+End
+      - Up
+      - End
   - id: up5Times
     name: "Up 5 times"
     steps:
@@ -333,11 +335,13 @@ macros:
   - id: downHome
     name: "Down + Home"
     steps:
-      - Down+Home
+      - Down
+      - Home
   - id: upHome
     name: "Up + Home"
     steps:
-      - Up+Home
+      - Up
+      - Home
   - id: ctrlRight
     name: "Ctrl + Right"
     steps:
