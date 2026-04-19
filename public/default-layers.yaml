@@ -349,6 +349,7 @@ macros:
       - Down
       - Down
       - Down
+      - Down
   - id: toDesktop1
     name: "To Desktop 1"
     steps:
