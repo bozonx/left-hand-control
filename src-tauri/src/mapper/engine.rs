@@ -156,13 +156,22 @@ impl Engine {
             let p = self.pending.get_mut(&k).unwrap();
             p.decided_hold = true;
             if let Some(layer) = p.layer.clone() {
+                eprintln!("[mapper] hold-timeout -> layer+: {layer} (key={:?})", k);
                 self.push_layer(layer, out);
+            } else {
+                eprintln!("[mapper] hold-timeout (no layer) key={:?}", k);
             }
         }
     }
 
     /// Handle a raw key event from the grabbed device.
     pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
+        eprintln!(
+            "[mapper] in {} key={:?} active={:?}",
+            if down { "DOWN" } else { " UP " },
+            key,
+            self.active_layers
+        );
         if down {
             self.on_press(key, now, out);
         } else {
@@ -206,6 +215,14 @@ impl Engine {
 
         // Non-rule key: consult active layers (top → bottom), fall back to base.
         let mapped = self.lookup_mapping(key);
+        eprintln!(
+            "[mapper]   press {:?} -> {}",
+            key,
+            match &mapped {
+                Some(ks) => format!("remap mods={:?} key={:?}", ks.mods, ks.key),
+                None => "passthrough".into(),
+            }
+        );
         match mapped {
             Some(ks) => {
                 // Hold modifiers while the physical key is held.

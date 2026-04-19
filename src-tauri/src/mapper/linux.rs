@@ -6,7 +6,7 @@ use super::config::AppConfig;
 use super::engine::{Engine, Out};
 use super::KeyboardDevice;
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
-use evdev::{AttributeSet, Device, EventType, InputEvent, Key};
+use evdev::{AttributeSet, BusType, Device, EventType, InputEvent, InputId, Key};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -106,10 +106,27 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
     let virt = VirtualDeviceBuilder::new()
         .map_err(|e| format!("uinput builder (need /dev/uinput access?): {e}"))?
         .name(VIRTUAL_DEVICE_NAME)
+        .input_id(InputId::new(BusType::BUS_USB, 0x1d6b, 0x0104, 1))
         .with_keys(&all_keys)
         .map_err(|e| format!("uinput with_keys: {e}"))?
         .build()
         .map_err(|e| format!("uinput build: {e}"))?;
+
+    eprintln!(
+        "[mapper] started: device={} rules={} layers={}",
+        device_path,
+        cfg.rules.len(),
+        cfg.layer_keymaps.len()
+    );
+    for r in &cfg.rules {
+        eprintln!(
+            "[mapper]   rule key={} layer={:?} tap={:?} holdMs={:?}",
+            r.key, r.layer_id, r.tap_action, r.hold_timeout_ms
+        );
+    }
+    for (lid, km) in &cfg.layer_keymaps {
+        eprintln!("[mapper]   keymap[{lid}] keys={}", km.keys.len());
+    }
 
     let stop = Arc::new(AtomicBool::new(false));
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));

@@ -47,21 +47,34 @@ fn save_config(contents: String) -> Result<(), String> {
 
 #[tauri::command]
 fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
-    mapper::list_keyboards()
+    eprintln!("[cmd] list_keyboards");
+    let r = mapper::list_keyboards();
+    match &r {
+        Ok(v) => eprintln!("[cmd] list_keyboards -> {} devices", v.len()),
+        Err(e) => eprintln!("[cmd] list_keyboards ERR: {e}"),
+    }
+    r
 }
 
 #[tauri::command]
 fn start_mapper(device_path: String) -> Result<(), String> {
-    // Always load from disk so we pick up the latest saved config.
+    eprintln!("[cmd] start_mapper device={device_path}");
     let raw = load_config()?;
     if raw.is_empty() {
-        return Err("config.json not found — save settings first".into());
+        let msg = "config.json not found — save settings first".to_string();
+        eprintln!("[cmd] start_mapper ERR: {msg}");
+        return Err(msg);
     }
-    mapper::start(&device_path, &raw)
+    let r = mapper::start(&device_path, &raw);
+    if let Err(e) = &r {
+        eprintln!("[cmd] start_mapper ERR: {e}");
+    }
+    r
 }
 
 #[tauri::command]
 fn stop_mapper() -> Result<(), String> {
+    eprintln!("[cmd] stop_mapper");
     mapper::stop()
 }
 

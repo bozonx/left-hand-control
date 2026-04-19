@@ -120,13 +120,6 @@ export function useConfig(): ConfigState {
   let pendingFlushResolvers: Array<() => void> = []
 
   async function persistNow() {
-    if (USE_DEFAULTS_ONLY) {
-      // In defaults-only dev mode we intentionally never write to disk.
-      const resolvers = pendingFlushResolvers
-      pendingFlushResolvers = []
-      for (const r of resolvers) r()
-      return
-    }
     saving.value = true
     try {
       await writeRaw(JSON.stringify(config.value, null, 2))
@@ -170,10 +163,10 @@ export function useConfig(): ConfigState {
       if (USE_DEFAULTS_ONLY) {
         const seeded = await loadDefaultsYaml()
         config.value = seeded ?? createDefaultConfig()
-        configPath.value = '(dev: defaults-only, not persisted)'
+        configPath.value = await getConfigPath()
         lastError.value = null
         console.info(
-          '[LHC] VITE_LHC_USE_DEFAULTS=true — using public/default-layers.yaml, changes will NOT be saved',
+          '[LHC] VITE_LHC_USE_DEFAULTS=true — ignoring persisted config on load, seeding from public/default-layers.yaml (saves remain enabled)',
         )
         return
       }
