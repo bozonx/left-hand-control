@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   label: string
   action?: string
 }>()
@@ -7,6 +7,9 @@ defineProps<{
 defineEmits<{
   edit: []
 }>()
+
+const { displayAction } = useMacros()
+const actionLabel = computed(() => displayAction(props.action))
 </script>
 
 <template>
@@ -20,7 +23,7 @@ defineEmits<{
       class="text-[10px] leading-tight text-center min-h-[1.75em] break-words"
       :class="action ? 'text-(--ui-primary)' : 'text-(--ui-text-muted) italic'"
     >
-      {{ action || '—' }}
+      {{ actionLabel || '—' }}
     </div>
     <UButton
       icon="i-lucide-pencil"

@@ -245,7 +245,20 @@ fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String>
     if buf.is_empty() {
         return Ok(());
     }
+    // We emit in chunks: most Out variants go into a single atomic batch, but
+    // RunMacro needs to sleep between steps so we flush what we've got, run
+    // the macro with blocking sleeps, and continue with a fresh batch.
     let mut events: Vec<InputEvent> = Vec::with_capacity(buf.len() * 3);
+
+    fn flush_events(virt: &mut VirtualDevice, events: &mut Vec<InputEvent>) -> Result<(), String> {
+        if events.is_empty() {
+            return Ok(());
+        }
+        virt.emit(events).map_err(|e| format!("uinput emit: {e}"))?;
+        events.clear();
+        Ok(())
+    }
+
     for out in buf.drain(..) {
         match out {
             Out::KeyRaw { key, down } => {
@@ -271,8 +284,65 @@ fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String>
                     events.push(InputEvent::new(EventType::KEY, m.code(), 0));
                 }
             }
+            Out::RunMacro {
+                steps,
+                step_pause,
+                mod_delay,
+            } => {
+                // Emit whatever we've accumulated first so it doesn't get
+                // intermixed with the macro's timing.
+                flush_events(virt, &mut events)?;
+                run_macro(virt, &steps, step_pause, mod_delay)?;
+            }
         }
     }
-    virt.emit(&events).map_err(|e| format!("uinput emit: {e}"))?;
+    flush_events(virt, &mut events)?;
+    Ok(())
+}
+
+fn run_macro(
+    virt: &mut VirtualDevice,
+    steps: &[super::action::Keystroke],
+    step_pause: Duration,
+    mod_delay: Duration,
+) -> Result<(), String> {
+    for (i, ks) in steps.iter().enumerate() {
+        if i > 0 && !step_pause.is_zero() {
+            thread::sleep(step_pause);
+        }
+
+        // 1) press modifiers
+        if !ks.mods.is_empty() {
+            let mut ev = Vec::with_capacity(ks.mods.len());
+            for m in &ks.mods {
+                ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
+            }
+            virt.emit(&ev).map_err(|e| format!("uinput emit (macro mods-down): {e}"))?;
+            if !mod_delay.is_zero() {
+                thread::sleep(mod_delay);
+            }
+        }
+
+        // 2) press + release main key
+        let down_up = [
+            InputEvent::new(EventType::KEY, ks.key.code(), 1),
+            InputEvent::new(EventType::KEY, ks.key.code(), 0),
+        ];
+        virt.emit(&down_up)
+            .map_err(|e| format!("uinput emit (macro key): {e}"))?;
+
+        // 3) release modifiers
+        if !ks.mods.is_empty() {
+            if !mod_delay.is_zero() {
+                thread::sleep(mod_delay);
+            }
+            let mut ev = Vec::with_capacity(ks.mods.len());
+            for m in ks.mods.iter().rev() {
+                ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
+            }
+            virt.emit(&ev)
+                .map_err(|e| format!("uinput emit (macro mods-up): {e}"))?;
+        }
+    }
     Ok(())
 }

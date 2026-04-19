@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ALL_KEYS } from '~/utils/keys'
+import { macroActionRef } from '~/types/config'
 
 const props = defineProps<{
   placeholder?: string
@@ -8,6 +9,8 @@ const props = defineProps<{
 }>()
 
 const model = defineModel<string>({ default: '' })
+
+const { macros, displayAction } = useMacros()
 
 // Flat list of all known key codes + a few common action sugar strings.
 // `createItem` in UInputMenu lets the user type anything arbitrary and
@@ -39,17 +42,29 @@ const SUGGESTED_ACTIONS: string[] = [
 
 const items = computed(() => {
   const codes = ALL_KEYS.map((k) => k.code)
-  // Deduplicate while keeping suggestions first.
+  const macroItems = macros.value.map((m) => ({
+    label: `▶ ${m.name || m.id}`,
+    value: macroActionRef(m.id),
+  }))
+  // Deduplicate while keeping macros on top, then suggestions, then codes.
   const set = new Set<string>()
-  const result: string[] = []
+  const result: Array<{ label: string; value: string }> = []
+  for (const it of macroItems) {
+    if (!set.has(it.value)) {
+      set.add(it.value)
+      result.push(it)
+    }
+  }
   for (const v of [...SUGGESTED_ACTIONS, ...codes]) {
     if (!set.has(v)) {
       set.add(v)
-      result.push(v)
+      result.push({ label: v, value: v })
     }
   }
   return result
 })
+
+const displayLabel = computed(() => displayAction(model.value))
 </script>
 
 <template>
@@ -57,10 +72,16 @@ const items = computed(() => {
     <UInputMenu
       v-model="model"
       :items="items"
+      value-key="value"
       create-item
       :placeholder="placeholder ?? 'клавиша или действие'"
       class="flex-1 min-w-0"
     />
+    <span
+      v-if="displayLabel && displayLabel !== model"
+      class="text-[10px] text-(--ui-text-muted) italic truncate max-w-[8rem]"
+      :title="displayLabel"
+    >{{ displayLabel }}</span>
     <UButton
       v-if="allowEmpty && model"
       icon="i-lucide-x"

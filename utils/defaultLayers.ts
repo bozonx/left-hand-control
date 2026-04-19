@@ -4,6 +4,8 @@ import {
   type Layer,
   type LayerKeymap,
   type LayerRule,
+  type Macro,
+  type MacroStep,
   BASE_LAYER_ID,
   createDefaultConfig,
 } from '~/types/config'
@@ -13,6 +15,8 @@ import { randomId } from '~/utils/keys'
 interface DefaultsFile {
   settings?: {
     defaultHoldTimeoutMs?: number
+    defaultMacroStepPauseMs?: number
+    defaultMacroModifierDelayMs?: number
     launchOnStartup?: boolean
   }
   layers?: Array<{ id: string; name: string }>
@@ -29,6 +33,14 @@ interface DefaultsFile {
       extras?: Array<{ name: string; action: string }>
     }
   >
+  macros?: Array<{
+    id?: string
+    name?: string
+    stepPauseMs?: number | null
+    modifierDelayMs?: number | null
+    // Steps may be shorthand strings ("Ctrl+C") or objects.
+    steps?: Array<string | { keystroke?: string } | null | undefined>
+  }>
 }
 
 export async function loadDefaultsYaml(): Promise<AppConfig | null> {
@@ -58,6 +70,14 @@ function fromDefaultsFile(input: DefaultsFile): AppConfig {
   if (input.settings) {
     if (typeof input.settings.defaultHoldTimeoutMs === 'number') {
       cfg.settings.defaultHoldTimeoutMs = input.settings.defaultHoldTimeoutMs
+    }
+    if (typeof input.settings.defaultMacroStepPauseMs === 'number') {
+      cfg.settings.defaultMacroStepPauseMs =
+        input.settings.defaultMacroStepPauseMs
+    }
+    if (typeof input.settings.defaultMacroModifierDelayMs === 'number') {
+      cfg.settings.defaultMacroModifierDelayMs =
+        input.settings.defaultMacroModifierDelayMs
     }
     if (typeof input.settings.launchOnStartup === 'boolean') {
       cfg.settings.launchOnStartup = input.settings.launchOnStartup
@@ -95,6 +115,33 @@ function fromDefaultsFile(input: DefaultsFile): AppConfig {
         typeof r.holdMs === 'number' ? r.holdMs : undefined,
     }))
   cfg.rules = rules
+
+  const macros: Macro[] = (input.macros ?? [])
+    .filter((m) => m && Array.isArray(m.steps) && m.steps.length)
+    .map((m) => {
+      const steps: MacroStep[] = (m.steps ?? [])
+        .map((s) => {
+          if (typeof s === 'string') return { id: randomId(), keystroke: s }
+          if (s && typeof s === 'object' && typeof s.keystroke === 'string') {
+            return { id: randomId(), keystroke: s.keystroke }
+          }
+          return null
+        })
+        .filter((s): s is MacroStep => !!s && !!s.keystroke)
+      return {
+        id: m.id && m.id.trim() ? m.id : randomId(),
+        name: m.name ?? m.id ?? 'macro',
+        steps,
+        stepPauseMs:
+          typeof m.stepPauseMs === 'number' ? m.stepPauseMs : undefined,
+        modifierDelayMs:
+          typeof m.modifierDelayMs === 'number'
+            ? m.modifierDelayMs
+            : undefined,
+      }
+    })
+    .filter((m) => m.steps.length > 0)
+  cfg.macros = macros
 
   return cfg
 }

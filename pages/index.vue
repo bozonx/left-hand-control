@@ -5,6 +5,7 @@ const { layout } = useLayout()
 const tabItems = [
   { value: 'rules', slot: 'rules', label: 'Правила', icon: 'i-lucide-list-checks' },
   { value: 'keymap', slot: 'keymap', label: 'Keymap', icon: 'i-lucide-keyboard' },
+  { value: 'macros', slot: 'macros', label: 'Макросы', icon: 'i-lucide-zap' },
   { value: 'settings', slot: 'settings', label: 'Настройки', icon: 'i-lucide-settings' },
 ] as const
 
@@ -64,6 +65,11 @@ onMounted(() => {
         <template #keymap>
           <div class="mt-4">
             <KeymapTab v-if="loaded" />
+          </div>
+        </template>
+        <template #macros>
+          <div class="mt-4">
+            <MacrosTab v-if="loaded" />
           </div>
         </template>
         <template #settings>

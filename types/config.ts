@@ -37,10 +37,36 @@ export interface LayerKeymap {
   extras: ExtraKey[]
 }
 
+// One step of a macro. For now only simple keystrokes are supported
+// (single key or key with modifiers, e.g. "Ctrl+Shift+T", "Enter").
+// Reserved for future: { type: 'shell', command: '...' },
+//                      { type: 'system', name: '...' }.
+export interface MacroStep {
+  id: string
+  // Keystroke string, same syntax as tap actions / keymap values.
+  keystroke: string
+}
+
+export interface Macro {
+  id: string
+  name: string
+  steps: MacroStep[]
+  // Pause between steps, ms. Falls back to settings.defaultMacroStepPauseMs.
+  stepPauseMs?: number
+  // Delay after pressing modifiers (Shift/Ctrl/...) before pressing the
+  // main key of a chord, ms. Falls back to settings.defaultMacroModifierDelayMs.
+  modifierDelayMs?: number
+}
+
 export interface AppSettings {
   launchOnStartup: boolean
   // Default hold timeout used when a rule does not specify one.
   defaultHoldTimeoutMs: number
+  // Default pause between macro steps, ms.
+  defaultMacroStepPauseMs: number
+  // Default delay between pressing modifiers and the main key within one
+  // macro chord, ms.
+  defaultMacroModifierDelayMs: number
   // /dev/input/eventX path of the keyboard to intercept. Empty/undefined
   // means the mapper cannot start until the user picks one in Settings.
   inputDevicePath?: string
@@ -53,7 +79,23 @@ export interface AppConfig {
   // Per-layer keymap keyed by Layer.id. A "base" layer with id "base" is
   // always present.
   layerKeymaps: Record<string, LayerKeymap>
+  // User-defined macros, referenced from actions as "macro:<id>".
+  macros: Macro[]
   settings: AppSettings
+}
+
+// Prefix used to mark an action string as a macro reference.
+export const MACRO_ACTION_PREFIX = 'macro:'
+
+export function macroActionRef(id: string): string {
+  return `${MACRO_ACTION_PREFIX}${id}`
+}
+
+export function parseMacroRef(action: string): string | null {
+  if (!action) return null
+  return action.startsWith(MACRO_ACTION_PREFIX)
+    ? action.slice(MACRO_ACTION_PREFIX.length)
+    : null
 }
 
 export const BASE_LAYER_ID = 'base'
@@ -66,9 +108,12 @@ export function createDefaultConfig(): AppConfig {
     layerKeymaps: {
       [BASE_LAYER_ID]: { keys: {}, extras: [] },
     },
+    macros: [],
     settings: {
       launchOnStartup: false,
       defaultHoldTimeoutMs: 200,
+      defaultMacroStepPauseMs: 20,
+      defaultMacroModifierDelayMs: 5,
       inputDevicePath: '',
     },
   }

@@ -23,13 +23,27 @@ use super::action::{parse_action, Keystroke};
 use super::config::AppConfig;
 use super::keys::code_to_key;
 use evdev::Key;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
+
+/// Resolved action: either a single chord or a macro (pre-parsed).
+#[derive(Clone)]
+enum ActionDef {
+    Stroke(Keystroke),
+    Macro(MacroDef),
+}
+
+#[derive(Clone)]
+struct MacroDef {
+    steps: Vec<Keystroke>,
+    step_pause: Duration,
+    mod_delay: Duration,
+}
 
 pub struct Engine {
     rules: HashMap<Key, RuleEntry>,
-    /// layer_id -> (physical_key -> parsed keystroke)
-    layer_maps: HashMap<String, HashMap<Key, Keystroke>>,
+    /// layer_id -> (physical_key -> resolved action)
+    layer_maps: HashMap<String, HashMap<Key, ActionDef>>,
     default_hold: Duration,
 
     /// Stack of currently active layers (top = highest priority).
@@ -42,13 +56,17 @@ pub struct Engine {
     /// we emitted for them, so key-up releases the right virtual keys.
     emitted: HashMap<Key, Keystroke>,
 
+    /// Physical keys whose press triggered a one-shot macro. Release just
+    /// clears the entry (no virtual key release needed).
+    macro_consumed: HashSet<Key>,
+
     /// Currently "held down" virtual modifiers (refcounted).
     mod_refs: HashMap<Key, u32>,
 }
 
 struct RuleEntry {
     layer: Option<String>,
-    tap: Option<Keystroke>,
+    tap: Option<ActionDef>,
     hold: Duration,
 }
 
@@ -56,7 +74,7 @@ struct Pending {
     deadline: Instant,
     decided_hold: bool,
     layer: Option<String>,
-    tap: Option<Keystroke>,
+    tap: Option<ActionDef>,
 }
 
 /// Outgoing action the engine asks the I/O layer to perform.
@@ -69,11 +87,90 @@ pub enum Out {
     PressMods(Vec<Key>),
     /// Release modifiers.
     ReleaseMods(Vec<Key>),
+    /// Run a macro: sequence of chords with inter-step pauses and an
+    /// intra-chord delay between modifiers and the main key.
+    RunMacro {
+        steps: Vec<Keystroke>,
+        step_pause: Duration,
+        mod_delay: Duration,
+    },
 }
 
 impl Engine {
     pub fn new(cfg: &AppConfig) -> Self {
         let default_hold = Duration::from_millis(cfg.settings.default_hold_timeout_ms.max(1));
+        let default_step_pause =
+            Duration::from_millis(cfg.settings.default_macro_step_pause_ms);
+        let default_mod_delay =
+            Duration::from_millis(cfg.settings.default_macro_modifier_delay_ms);
+
+        // Build the macro table first so tap / keymap actions can reference
+        // macros by id.
+        let mut macros: HashMap<String, MacroDef> = HashMap::new();
+        for m in &cfg.macros {
+            if m.id.is_empty() {
+                eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
+                continue;
+            }
+            let mut steps: Vec<Keystroke> = Vec::with_capacity(m.steps.len());
+            for (idx, s) in m.steps.iter().enumerate() {
+                let raw = s.keystroke.trim();
+                if raw.is_empty() {
+                    continue;
+                }
+                match parse_action(raw) {
+                    Some(ks) => steps.push(ks),
+                    None => eprintln!(
+                        "[mapper] macro {} step #{}: unknown keystroke {:?}",
+                        m.id,
+                        idx + 1,
+                        raw
+                    ),
+                }
+            }
+            if steps.is_empty() {
+                eprintln!("[mapper] macro {} has no usable steps — skipped", m.id);
+                continue;
+            }
+            let step_pause = m
+                .step_pause_ms
+                .map(Duration::from_millis)
+                .unwrap_or(default_step_pause);
+            let mod_delay = m
+                .modifier_delay_ms
+                .map(Duration::from_millis)
+                .unwrap_or(default_mod_delay);
+            macros.insert(
+                m.id.clone(),
+                MacroDef {
+                    steps,
+                    step_pause,
+                    mod_delay,
+                },
+            );
+        }
+
+        let resolve = |action: &str, where_: &str| -> Option<ActionDef> {
+            let trimmed = action.trim();
+            if trimmed.is_empty() {
+                return None;
+            }
+            if let Some(rest) = trimmed.strip_prefix("macro:") {
+                let id = rest.trim();
+                if let Some(md) = macros.get(id) {
+                    return Some(ActionDef::Macro(md.clone()));
+                }
+                eprintln!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
+                return None;
+            }
+            match parse_action(trimmed) {
+                Some(ks) => Some(ActionDef::Stroke(ks)),
+                None => {
+                    eprintln!("[mapper] unknown action {:?} ({})", trimmed, where_);
+                    None
+                }
+            }
+        };
 
         let mut rules = HashMap::new();
         for r in &cfg.rules {
@@ -84,14 +181,7 @@ impl Engine {
             let tap = if r.tap_action.is_empty() {
                 None
             } else {
-                let k = parse_action(&r.tap_action);
-                if k.is_none() {
-                    eprintln!(
-                        "[mapper] unknown tap action: {:?} for {}",
-                        r.tap_action, r.key
-                    );
-                }
-                k
+                resolve(&r.tap_action, &format!("tap for {}", r.key))
             };
             let layer = if r.layer_id.is_empty() {
                 None
@@ -105,7 +195,7 @@ impl Engine {
             rules.insert(key, RuleEntry { layer, tap, hold });
         }
 
-        let mut layer_maps: HashMap<String, HashMap<Key, Keystroke>> = HashMap::new();
+        let mut layer_maps: HashMap<String, HashMap<Key, ActionDef>> = HashMap::new();
         for (layer_id, km) in &cfg.layer_keymaps {
             let mut m = HashMap::new();
             for (code, action) in &km.keys {
@@ -113,13 +203,10 @@ impl Engine {
                     eprintln!("[mapper] unknown key code in keymap {layer_id}: {code}");
                     continue;
                 };
-                let Some(ks) = parse_action(action) else {
-                    eprintln!(
-                        "[mapper] unknown action in keymap {layer_id}.{code}: {action:?}"
-                    );
+                let Some(def) = resolve(action, &format!("keymap {layer_id}.{code}")) else {
                     continue;
                 };
-                m.insert(key, ks);
+                m.insert(key, def);
             }
             layer_maps.insert(layer_id.clone(), m);
         }
@@ -131,6 +218,7 @@ impl Engine {
             active_layers: Vec::new(),
             pending: HashMap::new(),
             emitted: HashMap::new(),
+            macro_consumed: HashSet::new(),
             mod_refs: HashMap::new(),
         }
     }
@@ -215,16 +303,12 @@ impl Engine {
 
         // Non-rule key: consult active layers (top → bottom), fall back to base.
         let mapped = self.lookup_mapping(key);
-        eprintln!(
-            "[mapper]   press {:?} -> {}",
-            key,
-            match &mapped {
-                Some(ks) => format!("remap mods={:?} key={:?}", ks.mods, ks.key),
-                None => "passthrough".into(),
-            }
-        );
         match mapped {
-            Some(ks) => {
+            Some(ActionDef::Stroke(ks)) => {
+                eprintln!(
+                    "[mapper]   press {:?} -> remap mods={:?} key={:?}",
+                    key, ks.mods, ks.key
+                );
                 // Hold modifiers while the physical key is held.
                 if !ks.mods.is_empty() {
                     out.push(Out::PressMods(ks.mods.clone()));
@@ -238,7 +322,21 @@ impl Engine {
                 });
                 self.emitted.insert(key, ks);
             }
+            Some(ActionDef::Macro(md)) => {
+                eprintln!(
+                    "[mapper]   press {:?} -> run macro ({} steps)",
+                    key,
+                    md.steps.len()
+                );
+                out.push(Out::RunMacro {
+                    steps: md.steps,
+                    step_pause: md.step_pause,
+                    mod_delay: md.mod_delay,
+                });
+                self.macro_consumed.insert(key);
+            }
             None => {
+                eprintln!("[mapper]   press {:?} -> passthrough", key);
                 out.push(Out::KeyRaw { key, down: true });
                 self.emitted.insert(
                     key,
@@ -260,10 +358,21 @@ impl Engine {
                 }
             } else {
                 // Release before timeout → emit tap action.
-                if let Some(ks) = p.tap {
-                    out.push(Out::Stroke(ks));
+                match p.tap {
+                    Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke(ks)),
+                    Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
+                        steps: md.steps,
+                        step_pause: md.step_pause,
+                        mod_delay: md.mod_delay,
+                    }),
+                    None => {}
                 }
             }
+            return;
+        }
+
+        if self.macro_consumed.remove(&key) {
+            // Macro was fired on press — nothing to release.
             return;
         }
 
@@ -295,11 +404,11 @@ impl Engine {
         }
     }
 
-    fn lookup_mapping(&self, key: Key) -> Option<Keystroke> {
+    fn lookup_mapping(&self, key: Key) -> Option<ActionDef> {
         for l in self.active_layers.iter().rev() {
             if let Some(m) = self.layer_maps.get(l) {
-                if let Some(ks) = m.get(&key) {
-                    return Some(ks.clone());
+                if let Some(def) = m.get(&key) {
+                    return Some(def.clone());
                 }
             }
         }
@@ -338,6 +447,7 @@ impl Engine {
         }
         self.active_layers.clear();
         self.pending.clear();
+        self.macro_consumed.clear();
     }
 
     #[allow(dead_code)]

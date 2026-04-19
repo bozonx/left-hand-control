@@ -78,6 +78,7 @@ function normalize(raw: unknown): AppConfig {
       r.layerKeymaps && typeof r.layerKeymaps === 'object'
         ? r.layerKeymaps
         : base.layerKeymaps,
+    macros: Array.isArray(r.macros) ? r.macros : [],
     settings: { ...base.settings, ...(r.settings ?? {}) },
   }
   if (!cfg.layers.some((l) => l.id === BASE_LAYER_ID)) {
