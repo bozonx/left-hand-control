@@ -1,5 +1,24 @@
 <script setup lang="ts">
-const { config, configPath } = useConfig()
+import { loadDefaultsYaml } from '~/utils/defaultLayers'
+
+const { config, configPath, flush } = useConfig()
+
+const resetting = ref(false)
+const resetConfirmOpen = ref(false)
+
+async function resetToDefaults() {
+  resetting.value = true
+  try {
+    const defaults = await loadDefaultsYaml()
+    if (defaults) {
+      config.value = defaults
+      await flush()
+    }
+  } finally {
+    resetting.value = false
+    resetConfirmOpen.value = false
+  }
+}
 </script>
 
 <template>
@@ -51,5 +70,55 @@ const { config, configPath } = useConfig()
         </p>
       </div>
     </UCard>
+
+    <UCard>
+      <template #header>
+        <h2 class="font-semibold">Дефолтные слои</h2>
+      </template>
+      <div class="space-y-3">
+        <p class="text-sm text-(--ui-text-muted)">
+          Перезаписать текущий конфиг шаблоном из
+          <code>public/default-layers.yaml</code>. Текущие правила, слои и
+          раскладки будут потеряны.
+        </p>
+        <UButton
+          color="warning"
+          variant="outline"
+          icon="i-lucide-rotate-ccw"
+          :loading="resetting"
+          @click="resetConfirmOpen = true"
+        >
+          Сбросить к дефолтам
+        </UButton>
+      </div>
+    </UCard>
+
+    <UModal v-model:open="resetConfirmOpen" title="Сбросить к дефолтам?">
+      <template #body>
+        <p class="text-sm">
+          Текущие настройки будут заменены содержимым
+          <code>default-layers.yaml</code> и сохранены в
+          <code>config.json</code>. Действие необратимо.
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="resetConfirmOpen = false"
+          >
+            Отмена
+          </UButton>
+          <UButton
+            color="warning"
+            :loading="resetting"
+            @click="resetToDefaults"
+          >
+            Сбросить
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

@@ -37,15 +37,15 @@ function clear() {
           Код клавиши: <code>{{ keyCode }}</code>
         </div>
         <UFormField label="Действие">
-          <UInput
+          <ActionPicker
             v-model="draft"
-            placeholder="например: Ctrl+C, BrowserBack, send:Hello"
-            autofocus
-            @keydown.enter="save"
+            allow-empty
+            placeholder="например: Ctrl+C, BrowserBack"
           />
         </UFormField>
         <p class="text-xs text-(--ui-text-muted)">
-          Свободная строка. Формат интерпретируется маппером в рантайме.
+          Выберите клавишу из списка или введите произвольную строку и
+          нажмите Enter — она будет использована как есть.
         </p>
       </div>
     </template>

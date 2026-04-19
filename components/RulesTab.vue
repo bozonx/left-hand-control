@@ -125,8 +125,9 @@ function confirmNewLayer(ruleId: string) {
             label="Tap action"
             help="Действие на одиночное нажатие"
           >
-            <UInput
+            <ActionPicker
               v-model="rule.tapAction"
+              allow-empty
               placeholder="например: Escape"
             />
           </UFormField>
