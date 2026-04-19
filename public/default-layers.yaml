@@ -233,11 +233,8 @@ keymaps:
   win:
     keys:
       KeyF: sys:switchDesktop1
-    keys:
       KeyD: sys:switchDesktop2
-    keys:
       KeyS: sys:switchDesktop3
-    keys:
       KeyA: sys:switchDesktop4
 
 macros:
