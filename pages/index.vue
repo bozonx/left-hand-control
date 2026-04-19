@@ -39,7 +39,7 @@ onMounted(() => {
       </div>
     </header>
 
-    <main class="flex-1 p-6 max-w-6xl w-full mx-auto">
+    <main class="flex-1 p-6 w-full">
       <UTabs
         v-model="active"
         :items="tabItems"

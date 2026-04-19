@@ -11,7 +11,7 @@ defineEmits<{
 
 <template>
   <div
-    class="w-20 rounded-md border border-(--ui-border) bg-(--ui-bg) px-2 py-1.5 flex flex-col items-stretch gap-1 shadow-sm"
+    class="flex-1 basis-20 min-w-[4rem] max-w-[7rem] rounded-md border border-(--ui-border) bg-(--ui-bg) px-2 py-1.5 flex flex-col items-stretch gap-1 shadow-sm"
   >
     <div class="text-sm font-semibold text-center leading-none">
       {{ label }}
