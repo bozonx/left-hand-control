@@ -20,6 +20,15 @@ async function getTauri(): Promise<TauriCore | null> {
 
 const BROWSER_STORAGE_KEY = 'lhc:config'
 
+// Dev-only: when VITE_LHC_USE_DEFAULTS is truthy, skip the persisted user
+// config entirely on startup and seed the app from `public/default-layers.yaml`.
+// Changes made in the UI are kept in memory only (not saved to disk).
+const USE_DEFAULTS_ONLY =
+  import.meta.env.DEV &&
+  ['1', 'true', 'yes', 'on'].includes(
+    String(import.meta.env.VITE_LHC_USE_DEFAULTS ?? '').toLowerCase(),
+  )
+
 async function readRaw(): Promise<string> {
   const tauri = await getTauri()
   if (tauri) {
@@ -111,6 +120,13 @@ export function useConfig(): ConfigState {
   let pendingFlushResolvers: Array<() => void> = []
 
   async function persistNow() {
+    if (USE_DEFAULTS_ONLY) {
+      // In defaults-only dev mode we intentionally never write to disk.
+      const resolvers = pendingFlushResolvers
+      pendingFlushResolvers = []
+      for (const r of resolvers) r()
+      return
+    }
     saving.value = true
     try {
       await writeRaw(JSON.stringify(config.value, null, 2))
@@ -151,6 +167,16 @@ export function useConfig(): ConfigState {
   async function load() {
     let freshlyInitialized = false
     try {
+      if (USE_DEFAULTS_ONLY) {
+        const seeded = await loadDefaultsYaml()
+        config.value = seeded ?? createDefaultConfig()
+        configPath.value = '(dev: defaults-only, not persisted)'
+        lastError.value = null
+        console.info(
+          '[LHC] VITE_LHC_USE_DEFAULTS=true — using public/default-layers.yaml, changes will NOT be saved',
+        )
+        return
+      }
       const raw = await readRaw()
       if (raw) {
         try {

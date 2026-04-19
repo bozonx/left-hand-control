@@ -70,10 +70,16 @@ settings:
 layers:
   - id: nav
     name: Navigation
+  - id: sel
+    name: Selection
   - id: sym
     name: Symbols
-  - id: num
-    name: Numpad
+  - id: fkeys
+    name: F keys
+  - id: win
+    name: Windows
+  - id: space
+    name: Space
 
 rules:
   # CapsLock: коротко — Escape, удержание — слой навигации.
@@ -82,14 +88,14 @@ rules:
     tap: Escape
     holdMs: 180
 
-  # Пробел: коротко — обычный Space, удержание — слой символов.
-  - key: Space
-    layer: sym
-    tap: Space
+  # # Пробел: коротко — обычный Space, удержание — слой символов.
+  # - key: Space
+  #   layer: sym
+  #   tap: Space
 
-  # Правый Alt — только слой Numpad, без tap action.
-  - key: AltRight
-    layer: num
+  # # Правый Alt — только слой Numpad, без tap action.
+  # - key: AltRight
+  #   layer: num
 
 keymaps:
   # Базовый слой: обычно пустой; сюда можно сразу положить глобальные
@@ -116,31 +122,31 @@ keymaps:
       - name: Mouse5
         action: BrowserForward
 
-  sym:
-    keys:
-      KeyA: "!"
-      KeyS: "@"
-      KeyD: "#"
-      KeyF: "$"
-      KeyG: "%"
-      KeyH: "^"
-      KeyJ: "&"
-      KeyK: "*"
-      KeyL: "|"
-      KeyQ: "~"
-      KeyW: "`"
-    extras: []
+  # sym:
+  #   keys:
+  #     KeyA: "!"
+  #     KeyS: "@"
+  #     KeyD: "#"
+  #     KeyF: "$"
+  #     KeyG: "%"
+  #     KeyH: "^"
+  #     KeyJ: "&"
+  #     KeyK: "*"
+  #     KeyL: "|"
+  #     KeyQ: "~"
+  #     KeyW: "`"
+  #   extras: []
 
-  num:
-    keys:
-      KeyM: "1"
-      Comma: "2"
-      Period: "3"
-      KeyJ: "4"
-      KeyK: "5"
-      KeyL: "6"
-      KeyU: "7"
-      KeyI: "8"
-      KeyO: "9"
-      Space: "0"
-    extras: []
+  # sel:
+  #   keys:
+  #     KeyM: "1"
+  #     Comma: "2"
+  #     Period: "3"
+  #     KeyJ: "4"
+  #     KeyK: "5"
+  #     KeyL: "6"
+  #     KeyU: "7"
+  #     KeyI: "8"
+  #     KeyO: "9"
+  #     Space: "0"
+  #   extras: []
