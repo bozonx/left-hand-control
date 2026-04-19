@@ -7,6 +7,7 @@ use tauri::{
     Manager, WindowEvent,
 };
 
+mod layout;
 mod mapper;
 
 fn config_dir() -> Result<PathBuf, String> {
@@ -83,6 +84,11 @@ fn mapper_status() -> mapper::MapperStatus {
     mapper::status()
 }
 
+#[tauri::command]
+fn get_current_layout() -> Result<Option<layout::LayoutInfo>, String> {
+    layout::current()
+}
+
 // --- Tray --------------------------------------------------------------------
 
 fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -150,6 +156,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             build_tray(&app.handle())?;
+            layout::start_watcher(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -167,6 +174,7 @@ pub fn run() {
             start_mapper,
             stop_mapper,
             mapper_status,
+            get_current_layout,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

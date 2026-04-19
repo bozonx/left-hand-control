@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { loaded, saving, lastError, load } = useConfig()
+const { layout } = useLayout()
 
 const tabItems = [
   { value: 'rules', slot: 'rules', label: 'Правила', icon: 'i-lucide-list-checks' },
@@ -22,6 +23,16 @@ onMounted(() => {
       <div class="flex items-center gap-3">
         <h1 class="text-lg font-semibold">Left Hand Control</h1>
         <UBadge color="primary" variant="subtle">Linux key-mapper</UBadge>
+        <UBadge
+          v-if="layout"
+          color="neutral"
+          variant="outline"
+          :title="layout.long"
+          class="font-mono uppercase"
+        >
+          <UIcon name="i-lucide-languages" class="mr-1" />
+          {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
+        </UBadge>
       </div>
       <div class="text-xs text-(--ui-text-muted) flex items-center gap-3">
         <span v-if="!loaded">загрузка…</span>
