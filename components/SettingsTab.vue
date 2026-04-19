@@ -2,6 +2,7 @@
 import { loadDefaultsYaml } from '~/utils/defaultLayers'
 
 const { config, configPath, flush } = useConfig()
+const mapper = useMapper()
 
 const resetting = ref(false)
 const resetConfirmOpen = ref(false)
@@ -19,10 +20,106 @@ async function resetToDefaults() {
     resetConfirmOpen.value = false
   }
 }
+
+const deviceOptions = computed(() =>
+  mapper.devices.value.map((d) => ({
+    label: `${d.name}  —  ${d.path}`,
+    value: d.path,
+  })),
+)
+
+const selectedDevice = computed<string>({
+  get: () => config.value.settings.inputDevicePath ?? '',
+  set: (v: string) => {
+    config.value.settings.inputDevicePath = v
+  },
+})
+
+async function toggleMapper() {
+  // Persist current config first so Rust reads the freshest rules from disk.
+  await flush()
+  if (mapper.status.value.running) {
+    await mapper.stop()
+  } else {
+    if (!selectedDevice.value) return
+    await mapper.start(selectedDevice.value)
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([mapper.refreshDevices(), mapper.refreshStatus()])
+})
 </script>
 
 <template>
   <div class="space-y-4">
+    <UCard>
+      <template #header>
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="font-semibold">Key-mapper</h2>
+          <UBadge
+            :color="mapper.status.value.running ? 'success' : 'neutral'"
+            variant="subtle"
+          >
+            {{ mapper.status.value.running ? 'активен' : 'остановлен' }}
+          </UBadge>
+        </div>
+      </template>
+      <div class="space-y-4">
+        <UFormField
+          label="Клавиатура"
+          help="Выберите физическое устройство, события которого нужно перехватывать."
+        >
+          <div class="flex gap-2 items-center">
+            <USelectMenu
+              v-model="selectedDevice"
+              :items="deviceOptions"
+              value-key="value"
+              placeholder="Не выбрано"
+              class="flex-1"
+              :disabled="mapper.status.value.running"
+            />
+            <UButton
+              variant="ghost"
+              icon="i-lucide-refresh-cw"
+              aria-label="Обновить список"
+              :disabled="mapper.status.value.running"
+              @click="mapper.refreshDevices()"
+            />
+          </div>
+        </UFormField>
+
+        <div class="flex items-center gap-2">
+          <UButton
+            :color="mapper.status.value.running ? 'error' : 'primary'"
+            :icon="
+              mapper.status.value.running
+                ? 'i-lucide-square'
+                : 'i-lucide-play'
+            "
+            :loading="mapper.busy.value"
+            :disabled="!mapper.status.value.running && !selectedDevice"
+            @click="toggleMapper"
+          >
+            {{ mapper.status.value.running ? 'Остановить' : 'Запустить' }}
+          </UButton>
+          <span
+            v-if="mapper.error.value"
+            class="text-sm text-(--ui-error) break-all"
+          >
+            {{ mapper.error.value }}
+          </span>
+        </div>
+
+        <p class="text-xs text-(--ui-text-muted)">
+          Маппер читает события напрямую с <code>/dev/input/eventX</code>
+          и эмитит через <code>uinput</code>. Нужен доступ к этим
+          устройствам — см. README (группа <code>input</code> и udev-правило
+          для <code>/dev/uinput</code>).
+        </p>
+      </div>
+    </UCard>
+
     <UCard>
       <template #header>
         <h2 class="font-semibold">Общие</h2>

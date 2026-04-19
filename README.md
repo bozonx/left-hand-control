@@ -81,3 +81,27 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
   pnpm tauri icon /tmp/app-icon.png
   ```
 - The Rust side exposes a sample `greet` command wired up in `app.vue` as an example of the JS ↔ Rust bridge.
+
+## Key-mapper (Linux only)
+
+The mapper reads events from a grabbed `/dev/input/eventX` device and emits remapped events via a `uinput` virtual keyboard. It runs inside the app process: start it from **Settings → Key-mapper**. Closing the window minimizes to tray — the mapper keeps running. Use the tray menu (`Выход`) to fully quit.
+
+### Permissions setup (one-time)
+
+1. Add yourself to the `input` group so you can read `/dev/input/event*`:
+   ```bash
+   sudo usermod -aG input "$USER"
+   ```
+   Log out and back in for it to take effect.
+
+2. Allow access to `/dev/uinput` for the `input` group via udev:
+   ```bash
+   echo 'KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"' \
+     | sudo tee /etc/udev/rules.d/99-uinput.rules
+   sudo udevadm control --reload-rules
+   sudo modprobe uinput
+   ```
+
+3. Restart the app. Pick your keyboard in **Settings → Key-mapper → Клавиатура** and press **Запустить**.
+
+If the start button returns a permissions error, verify that the user is in `input` (`id -nG | tr ' ' '\n' | grep input`) and that `ls -l /dev/uinput` shows group `input` with `rw`.

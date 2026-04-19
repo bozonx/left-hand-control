@@ -41,6 +41,9 @@ export interface AppSettings {
   launchOnStartup: boolean
   // Default hold timeout used when a rule does not specify one.
   defaultHoldTimeoutMs: number
+  // /dev/input/eventX path of the keyboard to intercept. Empty/undefined
+  // means the mapper cannot start until the user picks one in Settings.
+  inputDevicePath?: string
 }
 
 export interface AppConfig {
@@ -66,6 +69,7 @@ export function createDefaultConfig(): AppConfig {
     settings: {
       launchOnStartup: false,
       defaultHoldTimeoutMs: 200,
+      inputDevicePath: '',
     },
   }
 }
