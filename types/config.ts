@@ -98,6 +98,22 @@ export function parseMacroRef(action: string): string | null {
     : null
 }
 
+// Prefix used to mark an action string as a system-function reference.
+// System functions have a cross-platform id (e.g. "switchDesktop1") that
+// is mapped to a concrete OS/DE-specific command by the Rust side.
+export const SYSTEM_ACTION_PREFIX = 'sys:'
+
+export function systemActionRef(id: string): string {
+  return `${SYSTEM_ACTION_PREFIX}${id}`
+}
+
+export function parseSystemRef(action: string): string | null {
+  if (!action) return null
+  return action.startsWith(SYSTEM_ACTION_PREFIX)
+    ? action.slice(SYSTEM_ACTION_PREFIX.length)
+    : null
+}
+
 export const BASE_LAYER_ID = 'base'
 
 export function createDefaultConfig(): AppConfig {

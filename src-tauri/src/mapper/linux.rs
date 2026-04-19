@@ -2,8 +2,10 @@
 
 #![cfg(target_os = "linux")]
 
+use super::action::MacroStepItem;
 use super::config::AppConfig;
 use super::engine::{Engine, Out};
+use super::system::SysCommand;
 use super::KeyboardDevice;
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
 use evdev::{AttributeSet, BusType, Device, EventType, InputEvent, InputId, Key};
@@ -294,22 +296,54 @@ fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String>
                 flush_events(virt, &mut events)?;
                 run_macro(virt, &steps, step_pause, mod_delay)?;
             }
+            Out::RunSystem(cmd) => {
+                flush_events(virt, &mut events)?;
+                spawn_system(&cmd);
+            }
         }
     }
     flush_events(virt, &mut events)?;
     Ok(())
 }
 
+fn spawn_system(cmd: &SysCommand) {
+    let mut c = std::process::Command::new(&cmd.program);
+    c.args(&cmd.args);
+    // Detach stdio so the child doesn't inherit our FDs in weird ways.
+    c.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    match c.spawn() {
+        Ok(_child) => {
+            eprintln!("[mapper] spawned system: {} {:?}", cmd.program, cmd.args);
+        }
+        Err(e) => {
+            eprintln!(
+                "[mapper] spawn system {:?} failed: {}",
+                cmd.program, e
+            );
+        }
+    }
+}
+
 fn run_macro(
     virt: &mut VirtualDevice,
-    steps: &[super::action::Keystroke],
+    steps: &[MacroStepItem],
     step_pause: Duration,
     mod_delay: Duration,
 ) -> Result<(), String> {
-    for (i, ks) in steps.iter().enumerate() {
+    for (i, step) in steps.iter().enumerate() {
         if i > 0 && !step_pause.is_zero() {
             thread::sleep(step_pause);
         }
+
+        let ks = match step {
+            MacroStepItem::Stroke(ks) => ks,
+            MacroStepItem::System(cmd) => {
+                spawn_system(cmd);
+                continue;
+            }
+        };
 
         // 1) press modifiers
         if !ks.mods.is_empty() {

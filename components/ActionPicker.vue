@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ALL_KEYS } from '~/utils/keys'
-import { macroActionRef } from '~/types/config'
+import { SYSTEM_ACTIONS } from '~/utils/systemActions'
+import { macroActionRef, systemActionRef } from '~/types/config'
 
 const props = defineProps<{
   placeholder?: string
@@ -46,10 +47,15 @@ const items = computed(() => {
     label: `▶ ${m.name || m.id}`,
     value: macroActionRef(m.id),
   }))
-  // Deduplicate while keeping macros on top, then suggestions, then codes.
+  const sysItems = SYSTEM_ACTIONS.map((a) => ({
+    label: `⚙ ${a.name}`,
+    value: systemActionRef(a.id),
+  }))
+  // Deduplicate while keeping macros on top, then system fns, then
+  // suggestions, then codes.
   const set = new Set<string>()
   const result: Array<{ label: string; value: string }> = []
-  for (const it of macroItems) {
+  for (const it of [...macroItems, ...sysItems]) {
     if (!set.has(it.value)) {
       set.add(it.value)
       result.push(it)

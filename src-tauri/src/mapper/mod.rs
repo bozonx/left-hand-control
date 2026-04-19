@@ -16,6 +16,8 @@ mod engine;
 mod keys;
 #[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "linux")]
+mod system;
 
 use serde::Serialize;
 use std::sync::Mutex;

@@ -19,23 +19,25 @@
 
 #![cfg(target_os = "linux")]
 
-use super::action::{parse_action, Keystroke};
+use super::action::{parse_action, Keystroke, MacroStepItem};
 use super::config::AppConfig;
 use super::keys::code_to_key;
+use super::system::{self, SysCommand};
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
-/// Resolved action: either a single chord or a macro (pre-parsed).
+/// Resolved action: single chord, macro, or system function.
 #[derive(Clone)]
 enum ActionDef {
     Stroke(Keystroke),
     Macro(MacroDef),
+    System(SysCommand),
 }
 
 #[derive(Clone)]
 struct MacroDef {
-    steps: Vec<Keystroke>,
+    steps: Vec<MacroStepItem>,
     step_pause: Duration,
     mod_delay: Duration,
 }
@@ -87,13 +89,15 @@ pub enum Out {
     PressMods(Vec<Key>),
     /// Release modifiers.
     ReleaseMods(Vec<Key>),
-    /// Run a macro: sequence of chords with inter-step pauses and an
-    /// intra-chord delay between modifiers and the main key.
+    /// Run a macro: sequence of keystrokes / system calls with inter-step
+    /// pauses and an intra-chord delay between modifiers and the main key.
     RunMacro {
-        steps: Vec<Keystroke>,
+        steps: Vec<MacroStepItem>,
         step_pause: Duration,
         mod_delay: Duration,
     },
+    /// Spawn a system command (fire-and-forget).
+    RunSystem(SysCommand),
 }
 
 impl Engine {
@@ -112,14 +116,26 @@ impl Engine {
                 eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
                 continue;
             }
-            let mut steps: Vec<Keystroke> = Vec::with_capacity(m.steps.len());
+            let mut steps: Vec<MacroStepItem> = Vec::with_capacity(m.steps.len());
             for (idx, s) in m.steps.iter().enumerate() {
                 let raw = s.keystroke.trim();
                 if raw.is_empty() {
                     continue;
                 }
+                if let Some(rest) = raw.strip_prefix("sys:") {
+                    match system::resolve(rest.trim()) {
+                        Some(cmd) => steps.push(MacroStepItem::System(cmd)),
+                        None => eprintln!(
+                            "[mapper] macro {} step #{}: system fn {:?} not available",
+                            m.id,
+                            idx + 1,
+                            rest.trim()
+                        ),
+                    }
+                    continue;
+                }
                 match parse_action(raw) {
-                    Some(ks) => steps.push(ks),
+                    Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
                     None => eprintln!(
                         "[mapper] macro {} step #{}: unknown keystroke {:?}",
                         m.id,
@@ -162,6 +178,19 @@ impl Engine {
                 }
                 eprintln!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
                 return None;
+            }
+            if let Some(rest) = trimmed.strip_prefix("sys:") {
+                let name = rest.trim();
+                match system::resolve(name) {
+                    Some(cmd) => return Some(ActionDef::System(cmd)),
+                    None => {
+                        eprintln!(
+                            "[mapper] system fn {:?} not available on this OS/DE ({})",
+                            name, where_
+                        );
+                        return None;
+                    }
+                }
             }
             match parse_action(trimmed) {
                 Some(ks) => Some(ActionDef::Stroke(ks)),
@@ -335,6 +364,14 @@ impl Engine {
                 });
                 self.macro_consumed.insert(key);
             }
+            Some(ActionDef::System(cmd)) => {
+                eprintln!(
+                    "[mapper]   press {:?} -> run system {} {:?}",
+                    key, cmd.program, cmd.args
+                );
+                out.push(Out::RunSystem(cmd));
+                self.macro_consumed.insert(key);
+            }
             None => {
                 eprintln!("[mapper]   press {:?} -> passthrough", key);
                 out.push(Out::KeyRaw { key, down: true });
@@ -365,6 +402,7 @@ impl Engine {
                         step_pause: md.step_pause,
                         mod_delay: md.mod_delay,
                     }),
+                    Some(ActionDef::System(cmd)) => out.push(Out::RunSystem(cmd)),
                     None => {}
                 }
             }

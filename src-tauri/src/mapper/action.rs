@@ -4,6 +4,7 @@
 #![cfg(target_os = "linux")]
 
 use super::keys::{char_to_key, code_to_key};
+use super::system::SysCommand;
 use evdev::Key;
 
 /// A keystroke = optional modifiers + one main key.
@@ -11,6 +12,14 @@ use evdev::Key;
 pub struct Keystroke {
     pub mods: Vec<Key>,
     pub key: Key,
+}
+
+/// A single step of a macro. Macros may mix raw keystrokes with
+/// system-function invocations (e.g. `sys:switchDesktop1`).
+#[derive(Clone, Debug)]
+pub enum MacroStepItem {
+    Stroke(Keystroke),
+    System(SysCommand),
 }
 
 /// Parse an action like:
