@@ -1,0 +1,146 @@
+# Left Hand Control — стартовая конфигурация слоёв.
+#
+# Этот файл читается при первом запуске приложения, когда ещё нет
+# ~/.config/LeftHandControl/config.json. После первого запуска вся
+# правда живёт в config.json (app пишет его автосейвом), и этот YAML
+# больше не читается — он служит только шаблоном «из коробки».
+#
+# Чтобы снова применить изменения из этого файла — удалите
+# ~/.config/LeftHandControl/config.json и перезапустите приложение.
+#
+# -----------------------------------------------------------------------------
+# СТРУКТУРА
+# -----------------------------------------------------------------------------
+#
+# settings:
+#   defaultHoldTimeoutMs:  int, мс — сколько нужно держать клавишу, чтобы
+#                          она считалась «hold» (активировала слой), а не
+#                          «tap» (одиночное нажатие → tap action).
+#   launchOnStartup:       bool — автозапуск вместе с системой
+#                          (пока не реализован, значение сохраняется).
+#
+# layers:
+#   Список пользовательских слоёв. Базовый слой "base" всегда существует
+#   и добавляется автоматически, описывать его здесь не нужно.
+#   - id:   уникальный идентификатор (латиница, без пробелов).
+#     name: человекочитаемое имя, которое будет показано в UI.
+#
+# rules:
+#   Правила для модификаторов-слоёв: на какую клавишу навесить активацию
+#   слоя и/или действие одиночного нажатия.
+#   - key:    код физической клавиши (см. список ниже).
+#     layer:  id слоя, активируемого при удержании. Опционально.
+#             Пусто / null = слой не активируется (только tap).
+#     tap:    действие при коротком нажатии. Опционально.
+#     holdMs: индивидуальный таймаут удержания в мс. Опционально.
+#             Если не указан, используется settings.defaultHoldTimeoutMs.
+#
+# keymaps:
+#   Карта «id_слоя -> раскладка». Для слоя "base" описывает базовые
+#   переопределения; для кастомных слоёв — что делают клавиши, пока слой
+#   активен.
+#     keys:    { <код клавиши>: <действие> }  — маппинг основных клавиш.
+#     extras:  массив дополнительных биндов (кнопки мыши, медиа-клавиши,
+#              произвольные имена).
+#       - name:   отображаемое имя
+#         action: действие
+#
+# -----------------------------------------------------------------------------
+# КОДЫ КЛАВИШ
+# -----------------------------------------------------------------------------
+# Буквы:      KeyA, KeyB, ..., KeyZ
+# Цифры:      Digit0..Digit9
+# F-ряд:      F1..F12
+# Навигация:  Escape, Tab, CapsLock, Enter, Backspace, Space
+# Знаки:      Backquote ` , Minus - , Equal = , BracketLeft [ ,
+#             BracketRight ] , Backslash \ , Semicolon ; , Quote ' ,
+#             Comma , , Period . , Slash /
+# Модификаторы: ShiftLeft, ShiftRight, ControlLeft, ControlRight,
+#               AltLeft, AltRight, MetaLeft, MetaRight, ContextMenu
+#
+# Действия (поле tap / значения в keys / extras.action) — свободные
+# строки. Формат интерпретируется маппером в рантайме, например:
+#   "Escape", "Left", "Ctrl+C", "BrowserBack", "send:Hello"
+# =============================================================================
+
+settings:
+  defaultHoldTimeoutMs: 200
+  launchOnStartup: false
+
+layers:
+  - id: nav
+    name: Navigation
+  - id: sym
+    name: Symbols
+  - id: num
+    name: Numpad
+
+rules:
+  # CapsLock: коротко — Escape, удержание — слой навигации.
+  - key: CapsLock
+    layer: nav
+    tap: Escape
+    holdMs: 180
+
+  # Пробел: коротко — обычный Space, удержание — слой символов.
+  - key: Space
+    layer: sym
+    tap: Space
+
+  # Правый Alt — только слой Numpad, без tap action.
+  - key: AltRight
+    layer: num
+
+keymaps:
+  # Базовый слой: обычно пустой; сюда можно сразу положить глобальные
+  # переопределения (например, поменять левый Ctrl <-> CapsLock).
+  base:
+    keys: {}
+    extras: []
+
+  nav:
+    keys:
+      KeyH: Left
+      KeyJ: Down
+      KeyK: Up
+      KeyL: Right
+      KeyU: PageUp
+      KeyO: PageDown
+      KeyY: Home
+      KeyP: End
+      KeyI: Backspace
+      KeyN: Delete
+    extras:
+      - name: Mouse4
+        action: BrowserBack
+      - name: Mouse5
+        action: BrowserForward
+
+  sym:
+    keys:
+      KeyA: "!"
+      KeyS: "@"
+      KeyD: "#"
+      KeyF: "$"
+      KeyG: "%"
+      KeyH: "^"
+      KeyJ: "&"
+      KeyK: "*"
+      KeyL: "|"
+      KeyQ: "~"
+      KeyW: "`"
+    extras: []
+
+  num:
+    keys:
+      KeyM: "1"
+      Comma: "2"
+      Period: "3"
+      KeyJ: "4"
+      KeyK: "5"
+      KeyL: "6"
+      KeyU: "7"
+      KeyI: "8"
+      KeyO: "9"
+      Space: "0"
+    extras: []

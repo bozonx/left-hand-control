@@ -3,6 +3,7 @@ import {
   BASE_LAYER_ID,
   createDefaultConfig,
 } from '~/types/config'
+import { loadDefaultsYaml } from '~/utils/defaultLayers'
 
 type TauriCore = typeof import('@tauri-apps/api/core')
 
@@ -148,6 +149,7 @@ export function useConfig(): ConfigState {
   }
 
   async function load() {
+    let freshlyInitialized = false
     try {
       const raw = await readRaw()
       if (raw) {
@@ -157,7 +159,10 @@ export function useConfig(): ConfigState {
           config.value = createDefaultConfig()
         }
       } else {
-        config.value = createDefaultConfig()
+        // No saved config yet — seed from bundled YAML defaults.
+        const seeded = await loadDefaultsYaml()
+        config.value = seeded ?? createDefaultConfig()
+        freshlyInitialized = true
       }
       configPath.value = await getConfigPath()
       lastError.value = null
@@ -166,6 +171,12 @@ export function useConfig(): ConfigState {
       config.value = createDefaultConfig()
     } finally {
       loaded.value = true
+    }
+    // Persist seeded defaults immediately so subsequent launches don't
+    // re-read the YAML and overwrite any user edits made before the first
+    // auto-save would have fired.
+    if (freshlyInitialized) {
+      await persistNow()
     }
   }
 
