@@ -116,7 +116,7 @@
 #   sys:windowMaximizeVertical / sys:windowMaximizeHorizontal
 #     — развернуть активное окно по вертикали / горизонтали через KWin.
 #   sys:screenshot
-#     — сделать скриншот области через Spectacle.
+#     — сделать скриншот области через `spectacle -r`.
 #   sys:screenOff
 #     — выключить экран через PowerDevil.
 #

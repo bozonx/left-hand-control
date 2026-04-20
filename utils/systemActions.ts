@@ -104,7 +104,7 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
   {
     id: 'screenshot',
     nameKey: 'systemActions.screenshot',
-    hint: 'KDE: org.kde.kglobalaccel /component/org.kde.spectacle.desktop invokeShortcut "Rectangular Region"',
+    hint: 'KDE: spectacle -r',
     platforms: ['linux-kde'],
   },
   {

@@ -79,7 +79,7 @@ pub fn resolve(name: &str) -> Option<SysAction> {
 // --- KDE Plasma -------------------------------------------------------------
 
 mod kde {
-    use super::{DbusArg, DbusCall, SysAction};
+    use super::{DbusArg, DbusCall, SysAction, SysCommand};
 
     fn invoke_shortcut(component: &str, shortcut: &str) -> SysAction {
         SysAction::Dbus(DbusCall {
@@ -143,7 +143,10 @@ mod kde {
                 return Some(invoke_shortcut("kwin", "Window Maximize Horizontal"));
             }
             "screenshot" => {
-                return Some(invoke_shortcut("org.kde.spectacle.desktop", "Rectangular Region"));
+                return Some(SysAction::Spawn(SysCommand {
+                    program: "spectacle".into(),
+                    args: vec!["-r".into()],
+                }));
             }
             "screenOff" => {
                 return Some(invoke_shortcut("org_kde_powerdevil", "Turn Off Screen"));
@@ -197,6 +200,15 @@ mod tests {
         };
         assert_eq!(call.path, "/component/kwin");
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Maximize Vertical"));
+    }
+
+    #[test]
+    fn screenshot_resolves_to_spectacle_spawn() {
+        let Some(SysAction::Spawn(cmd)) = resolve("screenshot") else {
+            panic!("screenshot did not resolve to a spawned command");
+        };
+        assert_eq!(cmd.program, "spectacle");
+        assert_eq!(cmd.args, vec!["-r"]);
     }
 }
 
