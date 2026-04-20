@@ -205,7 +205,7 @@ rules:
     layer: sym
 
   # CtrlRight: удержание — слой F-клавиш, тап — ",".
-  - key: CtrlRight
+  - key: ControlRight
     tap: ","
     layer: fkeys
 
