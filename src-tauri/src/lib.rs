@@ -9,6 +9,7 @@ use tauri::{
 
 mod layout;
 mod mapper;
+mod platform;
 
 fn config_dir() -> Result<PathBuf, String> {
     let home = std::env::var("HOME").map_err(|e| format!("HOME not set: {e}"))?;
@@ -182,6 +183,11 @@ fn get_current_layout() -> Result<Option<layout::LayoutInfo>, String> {
     layout::current()
 }
 
+#[tauri::command]
+fn get_platform_info() -> platform::PlatformInfo {
+    platform::info()
+}
+
 // --- Tray --------------------------------------------------------------------
 
 fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -273,6 +279,7 @@ pub fn run() {
             stop_mapper,
             mapper_status,
             get_current_layout,
+            get_platform_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

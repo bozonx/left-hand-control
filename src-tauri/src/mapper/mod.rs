@@ -67,7 +67,27 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
 
 #[cfg(not(target_os = "linux"))]
 pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
-    Err("Only Linux is supported".to_string())
+    Err(unsupported_os_msg("listing keyboards"))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn unsupported_os_msg(op: &str) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        format!(
+            "{op}: Windows backend not implemented yet (planned: LowLevelKeyboardProc + SendInput)"
+        )
+    }
+    #[cfg(target_os = "macos")]
+    {
+        format!(
+            "{op}: macOS backend not implemented yet (planned: CGEventTap + CGEventPost, requires Accessibility permission)"
+        )
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        format!("{op}: this operating system is not supported")
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -90,7 +110,7 @@ pub fn start(device_path: &str, config_json: &str) -> Result<(), String> {
 
 #[cfg(not(target_os = "linux"))]
 pub fn start(_device_path: &str, _config_json: &str) -> Result<(), String> {
-    Err("Only Linux is supported".to_string())
+    Err(unsupported_os_msg("starting mapper"))
 }
 
 pub fn stop() -> Result<(), String> {
@@ -108,7 +128,7 @@ pub fn stop() -> Result<(), String> {
     }
     #[cfg(not(target_os = "linux"))]
     {
-        Err("Only Linux is supported".to_string())
+        Err(unsupported_os_msg("stopping mapper"))
     }
 }
 

@@ -76,6 +76,83 @@ First-time prerequisites on the host (not auto-installed):
 - Linux system libs: `webkit2gtk-4.1`, `gtk3`, `libappindicator-gtk3`, `librsvg`, `libsoup3`, `openssl`, `xdotool`, `pkgconf`, `base-devel` (Manjaro/Arch names; see README for Debian/Ubuntu).
 - Icons generated into `src-tauri/icons/` — otherwise `cargo` fails with "failed to open icon ... 32x32.png".
 
+## Cross-platform architecture (Rust side)
+
+Native code under `src-tauri/src/` is split into three concerns:
+
+- **`platform/`** — OS detection + Linux session detection (DE, session type,
+  IPC sockets). Exposes `platform::info()` (Tauri command `get_platform_info`)
+  and `platform::linux::detect()` returning a `Session { desktop, session_type,
+  … }`. Other modules dispatch on this, never on raw env vars.
+- **`mapper/`** — key interception + remapping engine. On Linux uses
+  `evdev` (read) + `uinput` (write) which is **DE-agnostic** — works on KDE,
+  GNOME, Sway, Hyprland, Xfce, anything, and on both X11 and Wayland. The
+  only per-DE piece is `mapper/system.rs` ("system functions" like
+  `switchDesktopN`), which dispatches through `platform::linux::detect()`
+  to per-DE sub-modules (`kde`, `gnome`, `sway`, `x11_generic`).
+  Literal-character injection uses the **xdg-desktop-portal `RemoteDesktop`**
+  backend (`mapper/portal.rs`) — one implementation, works on KDE / GNOME /
+  Sway-wlroots (needs `xdg-desktop-portal` + a matching backend package
+  installed).
+- **`layout/`** — keyboard-layout detection + watcher. Dispatcher in
+  `layout/mod.rs` picks `linux_kde` / `linux_gnome` / `linux_sway` /
+  `linux_x11` based on `platform::linux::detect().desktop`, and `windows`
+  / `macos` by `#[cfg]`.
+
+### Current coverage
+
+| Concern              | Linux/KDE | Linux/GNOME | Linux/Sway | Linux/X11 generic | Windows | macOS |
+| -------------------- | --------- | ----------- | ---------- | ----------------- | ------- | ----- |
+| Key interception     | ✅ evdev+uinput | ✅ | ✅ | ✅ | ❌ stub | ❌ stub |
+| Literal injection    | ✅ portal | ✅ portal | ✅ portal | ⚠ portal if present | ❌ stub | ❌ stub |
+| Layout detection     | ✅ DBus `org.kde.keyboard` | 🚧 skeleton | 🚧 skeleton | 🚧 skeleton | ❌ stub | ❌ stub |
+| System actions (`switchDesktopN`) | ✅ `qdbus org.kde.KWin` | 🚧 skeleton | 🚧 skeleton | 🚧 skeleton | ❌ stub | ❌ stub |
+
+- 🚧 Skeleton = module exists, returns `Ok(None)` / `None` with `TODO` comments
+  describing the planned implementation. Safe to compile, safe to ship.
+- ❌ Stub = functions return a clear OS-specific "not implemented yet" error.
+
+### When adding a new Linux DE backend
+
+1. Add a variant to `platform::linux::Desktop` and the matching string
+   match in `classify_desktop()`.
+2. Create `layout/linux_<de>.rs` with `pub fn current() -> Result<Option<LayoutInfo>, String>`
+   and `pub fn start_watcher(app: AppHandle)`.
+3. Wire it into the `match` inside `layout/mod.rs::current()` and
+   `start_watcher()`.
+4. Add a per-DE sub-module inside `mapper/system.rs` (`mod <de>`) with
+   `pub fn resolve(name: &str) -> Option<SysCommand>` and wire it into
+   the dispatcher.
+
+### When adding Windows or macOS key interception
+
+- Replace the `#[cfg(not(target_os = "linux"))]` stubs in `mapper/mod.rs`
+  with a real module (`mapper/windows.rs` / `mapper/macos.rs`) exposing
+  `list_keyboards()`, `spawn()`, and a `Handle` type mirroring
+  `mapper::linux`. The engine in `mapper/engine.rs` currently uses
+  `evdev::Key`; plan to introduce a generic `Key` abstraction before or
+  alongside the Windows/macOS work.
+- Windows: `windows` crate — `SetWindowsHookExW(WH_KEYBOARD_LL, …)` for
+  capture, `SendInput` for emit, `GetKeyboardLayoutName` for layout.
+- macOS: `core-graphics` / `core-foundation` — `CGEventTapCreate` +
+  run-loop for capture (**requires Accessibility permission** — must be
+  documented in the installer), `CGEventPost` for emit,
+  `TISCopyCurrentKeyboardInputSource` for layout.
+
+### Linux runtime requirements (per feature)
+
+- **Key interception**: user must have read access to `/dev/input/event*`
+  (typically via the `input` group) and rw access to `/dev/uinput` (a
+  udev rule dropping `0660 input` on `/dev/uinput` is the usual fix).
+  No X11/Wayland-specific requirements here.
+- **Literal injection via portal**: `xdg-desktop-portal` service running,
+  plus the DE-specific backend package:
+  `xdg-desktop-portal-kde` on KDE, `xdg-desktop-portal-gnome` on GNOME,
+  `xdg-desktop-portal-wlr` on Sway / wlroots.
+- **KDE layout + system actions**: `qdbus` (ships with qt5-tools or
+  qt6-tools) and `gdbus` (ships with glib2). Both are standard on any
+  working Plasma install.
+
 ## JS ↔ Rust bridge
 
 Define Rust commands in `src-tauri/src/lib.rs`:
