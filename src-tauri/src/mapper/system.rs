@@ -130,6 +130,15 @@ mod kde {
             }
         }
         match name {
+            "walkThroughWindowsAlternative" => {
+                return Some(invoke_shortcut("kwin", "Walk Through Windows Alternative"));
+            }
+            "walkThroughWindowsCurrentApp" => {
+                return Some(invoke_shortcut(
+                    "kwin",
+                    "Walk Through Windows of Current Application",
+                ));
+            }
             "volumeDown" => return Some(invoke_shortcut("kmix", "decrease_volume")),
             "volumeUp" => return Some(invoke_shortcut("kmix", "increase_volume")),
             "muteAudio" => return Some(invoke_shortcut("kmix", "mute")),
@@ -202,6 +211,24 @@ mod tests {
 
     #[test]
     fn volume_and_window_actions_resolve_via_kglobalaccel() {
+        let Some(SysAction::Dbus(call)) = resolve("walkThroughWindowsAlternative") else {
+            panic!("walkThroughWindowsAlternative did not resolve to a DBus action");
+        };
+        assert_eq!(call.path, "/component/kwin");
+        assert!(matches!(
+            call.args.as_slice(),
+            [DbusArg::Str(s)] if s == "Walk Through Windows Alternative"
+        ));
+
+        let Some(SysAction::Dbus(call)) = resolve("walkThroughWindowsCurrentApp") else {
+            panic!("walkThroughWindowsCurrentApp did not resolve to a DBus action");
+        };
+        assert_eq!(call.path, "/component/kwin");
+        assert!(matches!(
+            call.args.as_slice(),
+            [DbusArg::Str(s)] if s == "Walk Through Windows of Current Application"
+        ));
+
         let Some(SysAction::Dbus(call)) = resolve("volumeUp") else {
             panic!("volumeUp did not resolve to a DBus action");
         };

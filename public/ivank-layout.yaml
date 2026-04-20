@@ -108,6 +108,10 @@
 #   sys:taskEntry1 .. sys:taskEntry10
 #     — активировать N-ю запись панели задач Plasma
 #       (аналог Meta+1 .. Meta+0; зависит от текущего порядка в task manager).
+#   sys:walkThroughWindowsAlternative
+#     — альтернативное переключение между окнами через KWin.
+#   sys:walkThroughWindowsCurrentApp
+#     — переключение между окнами текущего приложения через KWin.
 #   sys:showClipboardHistory
 #     — показать историю буфера обмена Klipper
 #       (qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu).
@@ -423,6 +427,8 @@ keymaps:
   win:
     keys:
       Tab: Tab
+      CapsLock: sys:walkThroughWindowsAlternative
+      ShiftLeft: sys:walkThroughWindowsCurrentApp
 
       Digit1: sys:taskEntry1
       Digit2: sys:taskEntry2
@@ -477,6 +483,9 @@ keymaps:
       Tab: sys:switchLayout1
       CapsLock: sys:switchLayout2
       ShiftLeft: sys:switchLayout3
+      ShiftRight: sys:switchLayout4
+      Enter: sys:switchLayout5
+      Backslash: sys:switchLayout6
     #extras: []
 
 # Макросы, используемые этой раскладкой, вынесены в системные (их

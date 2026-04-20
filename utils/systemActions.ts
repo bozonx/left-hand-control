@@ -59,6 +59,18 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     }
   }),
   {
+    id: 'walkThroughWindowsAlternative',
+    nameKey: 'systemActions.walkThroughWindowsAlternative',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Walk Through Windows Alternative"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'walkThroughWindowsCurrentApp',
+    nameKey: 'systemActions.walkThroughWindowsCurrentApp',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Walk Through Windows of Current Application"',
+    platforms: ['linux-kde'],
+  },
+  {
     id: 'showClipboardHistory',
     nameKey: 'systemActions.showClipboardHistory',
     hint: 'KDE: qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu',

@@ -282,6 +282,8 @@ export default {
     switchDesktop: 'Переключиться на рабочий стол {n}',
     switchLayout: 'Переключить раскладку на {n}',
     taskEntry: 'Активировать запись панели задач {n}',
+    walkThroughWindowsAlternative: 'Переключение между окнами: альтернативный режим',
+    walkThroughWindowsCurrentApp: 'Переключение между окнами текущего приложения',
     showClipboardHistory: 'Показать историю буфера обмена',
     volumeDown: 'Уменьшить громкость',
     volumeUp: 'Увеличить громкость',

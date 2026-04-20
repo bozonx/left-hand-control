@@ -280,6 +280,8 @@ export default {
     switchDesktop: 'Switch to desktop {n}',
     switchLayout: 'Switch to layout {n}',
     taskEntry: 'Activate task manager entry {n}',
+    walkThroughWindowsAlternative: 'Walk through windows: alternative',
+    walkThroughWindowsCurrentApp: 'Walk through windows of current application',
     showClipboardHistory: 'Show clipboard history',
     volumeDown: 'Decrease volume',
     volumeUp: 'Increase volume',
