@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import MapperCard from '~/components/features/settings/MapperCard.vue'
+import GeneralCard from '~/components/features/settings/GeneralCard.vue'
+import LayoutsLibraryCard from '~/components/features/settings/LayoutsLibraryCard.vue'
+import ConfigPathCard from '~/components/features/settings/ConfigPathCard.vue'
 import { BUILTIN_LAYOUT_ID } from '~/types/config'
 import {
   type LayoutLibraryEntry,
@@ -199,339 +203,36 @@ async function toggleMapper() {
 
 <template>
   <div class="space-y-4">
-    <UCard>
-      <template #header>
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="font-semibold">{{ $t('settings.mapperTitle') }}</h2>
-          <UBadge
-            :color="mapper.status.value.running ? 'success' : 'neutral'"
-            variant="subtle"
-          >
-            {{ mapper.status.value.running ? $t('common.active') : $t('common.stopped') }}
-          </UBadge>
-        </div>
-      </template>
-      <div class="space-y-4">
-        <UFormField
-          :label="$t('settings.keyboardLabel')"
-          :help="$t('settings.keyboardHelp')"
-        >
-          <div class="flex gap-2 items-center">
-            <USelectMenu
-              v-model="selectedDevice"
-              :items="deviceOptions"
-              value-key="value"
-              :placeholder="$t('settings.devicePh')"
-              class="flex-1"
-              :disabled="mapper.status.value.running"
-            />
-            <UButton
-              variant="ghost"
-              icon="i-lucide-refresh-cw"
-              :aria-label="$t('settings.refreshDevices')"
-              :disabled="mapper.status.value.running"
-              @click="mapper.refreshDevices()"
-            />
-          </div>
-        </UFormField>
+    <MapperCard
+      v-model:selected-device="selectedDevice"
+      :mapper="mapper"
+      :device-options="deviceOptions"
+      @toggle="toggleMapper"
+    />
 
-        <div class="flex items-center gap-2">
-          <UButton
-            :color="mapper.status.value.running ? 'error' : 'primary'"
-            :icon="
-              mapper.status.value.running
-                ? 'i-lucide-square'
-                : 'i-lucide-play'
-            "
-            :loading="mapper.busy.value"
-            :disabled="!mapper.status.value.running && !selectedDevice"
-            @click="toggleMapper"
-          >
-            {{ mapper.status.value.running ? $t('settings.stop') : $t('settings.start') }}
-          </UButton>
-          <span
-            v-if="mapper.error.value"
-            class="text-sm text-(--ui-error) break-all"
-          >
-            {{ mapper.error.value }}
-          </span>
-        </div>
+    <GeneralCard
+      :config="config"
+      v-model:theme-preference="theme.preference.value"
+      :resolved-theme="theme.resolved.value"
+      v-model:locale-preference="appLocale.preference.value"
+      :appearance-items="appearanceItems"
+      :locale-items="localeItems"
+    />
 
-        <p class="text-xs text-(--ui-text-muted)">
-          <i18n-t keypath="settings.mapperHint" tag="span">
-            <template #input><code>/dev/input/eventX</code></template>
-            <template #uinput><code>uinput</code></template>
-            <template #group><code>input</code></template>
-            <template #uinputDev><code>/dev/uinput</code></template>
-          </i18n-t>
-        </p>
-      </div>
-    </UCard>
+    <LayoutsLibraryCard
+      :entries="library.entries.value"
+      :current-layout-id="currentLayoutId"
+      :is-layout-dirty="isLayoutDirty"
+      :applying="applying"
+      :apply-error="applyError"
+      :layouts-dir="library.layoutsDir.value"
+      @save-current="openSaveModal"
+      @request-apply-entry="(entry) => requestApply({ kind: 'entry', entry, label: entry.name })"
+      @request-apply-empty="requestApply({ kind: 'empty', label: $t('settings.emptyLayoutName') })"
+      @request-delete="(entry) => deletePending = entry"
+    />
 
-    <UCard>
-      <template #header>
-        <h2 class="font-semibold">{{ $t('settings.generalTitle') }}</h2>
-      </template>
-      <div class="space-y-4">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <div class="font-medium">{{ $t('settings.appearance') }}</div>
-            <div class="text-xs text-(--ui-text-muted)">
-              <i18n-t keypath="settings.appearanceHint" tag="span">
-                <template #pref><code>prefers-color-scheme</code></template>
-                <template #mode>
-                  <span class="font-medium">
-                    {{
-                      theme.resolved.value === 'dark'
-                        ? $t('settings.appearanceDark')
-                        : $t('settings.appearanceLight')
-                    }}
-                  </span>
-                </template>
-              </i18n-t>
-            </div>
-          </div>
-          <URadioGroup
-            v-model="theme.preference.value"
-            :items="appearanceItems"
-            orientation="horizontal"
-            size="sm"
-          />
-        </div>
-
-        <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
-          <div>
-            <div class="font-medium">{{ $t('settings.language') }}</div>
-            <div class="text-xs text-(--ui-text-muted)">
-              {{ $t('settings.languageHint') }}
-            </div>
-          </div>
-          <USelectMenu
-            v-model="appLocale.preference.value"
-            :items="localeItems"
-            value-key="value"
-            class="min-w-[220px]"
-          />
-        </div>
-
-        <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
-          <div>
-            <div class="font-medium">{{ $t('settings.launchOnStartup') }}</div>
-            <div class="text-xs text-(--ui-text-muted)">
-              {{ $t('settings.launchOnStartupHint') }}
-            </div>
-          </div>
-          <USwitch
-            v-model="config.settings.launchOnStartup"
-            disabled
-          />
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <UFormField>
-            <template #label>
-              <FieldLabel
-                :label="$t('settings.holdTimeout')"
-                :hint="$t('settings.holdTimeoutHint')"
-              />
-            </template>
-            <UInput
-              v-model.number="config.settings.defaultHoldTimeoutMs"
-              type="number"
-              min="0"
-              class="w-40"
-            />
-          </UFormField>
-          <UFormField>
-            <template #label>
-              <FieldLabel
-                :label="$t('settings.doubleTapTimeout')"
-                :hint="$t('settings.doubleTapTimeoutHint')"
-              />
-            </template>
-            <UInput
-              v-model.number="config.settings.defaultDoubleTapTimeoutMs"
-              type="number"
-              min="0"
-              class="w-40"
-            />
-          </UFormField>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-(--ui-border)">
-          <UFormField>
-            <template #label>
-              <FieldLabel
-                :label="$t('settings.stepPauseLabel')"
-                :hint="$t('settings.stepPauseHint')"
-              />
-            </template>
-            <UInput
-              v-model.number="config.settings.defaultMacroStepPauseMs"
-              type="number"
-              min="0"
-              class="w-40"
-            />
-          </UFormField>
-          <UFormField>
-            <template #label>
-              <FieldLabel
-                :label="$t('settings.modDelayLabel')"
-                :hint="$t('settings.modDelayHint')"
-              />
-            </template>
-            <UInput
-              v-model.number="config.settings.defaultMacroModifierDelayMs"
-              type="number"
-              min="0"
-              class="w-40"
-            />
-          </UFormField>
-        </div>
-      </div>
-    </UCard>
-
-    <UCard>
-      <template #header>
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h2 class="font-semibold">{{ $t('settings.layoutsTitle') }}</h2>
-          <UButton
-            color="primary"
-            icon="i-lucide-save"
-            :disabled="!isLayoutDirty && !currentLayoutId"
-            @click="openSaveModal"
-          >
-            {{ $t('settings.saveCurrent') }}
-          </UButton>
-        </div>
-      </template>
-
-      <div class="space-y-3">
-        <div
-          v-if="isLayoutDirty"
-          class="flex items-start gap-2 p-3 rounded border border-(--ui-warning)/40 bg-(--ui-warning)/10 text-sm"
-        >
-          <UIcon
-            name="i-lucide-alert-triangle"
-            class="text-(--ui-warning) mt-0.5 shrink-0"
-          />
-          <div>
-            <div class="font-semibold">
-              {{ $t('settings.dirtyBadgeTitle') }}
-            </div>
-            <div class="text-(--ui-text-muted)">
-              {{ $t('settings.dirtyBadgeBody') }}
-            </div>
-          </div>
-        </div>
-
-        <p v-if="applyError" class="text-sm text-(--ui-error)">
-          {{ applyError }}
-        </p>
-
-        <ul class="divide-y divide-(--ui-border) border border-(--ui-border) rounded">
-          <li
-            v-for="entry in library.entries.value"
-            :key="entry.id"
-            class="flex items-center justify-between gap-3 p-3"
-          >
-            <div class="flex items-center gap-2 min-w-0">
-              <UIcon
-                :name="entry.builtin ? 'i-lucide-sparkles' : 'i-lucide-file'"
-                :class="entry.builtin ? 'text-(--ui-primary)' : ''"
-              />
-              <div class="min-w-0">
-                <div class="font-medium truncate flex items-center gap-2">
-                  {{ entry.name }}
-                  <UBadge
-                    v-if="currentLayoutId === entry.id"
-                    color="success"
-                    variant="subtle"
-                    size="sm"
-                  >
-                    {{ $t('settings.activeBadge') }}
-                  </UBadge>
-                  <UBadge
-                    v-if="entry.builtin"
-                    color="primary"
-                    variant="outline"
-                    size="sm"
-                  >
-                    {{ $t('settings.builtinBadge') }}
-                  </UBadge>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <UButton
-                variant="outline"
-                icon="i-lucide-rotate-ccw"
-                :loading="applying === entry.id"
-                :disabled="!!applying"
-                @click="
-                  requestApply({
-                    kind: 'entry',
-                    entry,
-                    label: entry.name,
-                  })
-                "
-              >
-                {{ $t('settings.applyBtn') }}
-              </UButton>
-              <UButton
-                v-if="!entry.builtin"
-                color="error"
-                variant="ghost"
-                icon="i-lucide-trash-2"
-                :aria-label="$t('settings.deleteAria')"
-                @click="deletePending = entry"
-              />
-            </div>
-          </li>
-        </ul>
-
-        <div class="flex items-center justify-between gap-3 pt-2 border-t border-(--ui-border)">
-          <div class="text-sm text-(--ui-text-muted)">
-            {{ $t('settings.resetHint') }}
-          </div>
-          <UButton
-            color="warning"
-            variant="outline"
-            icon="i-lucide-eraser"
-            :loading="applying === 'empty'"
-            :disabled="!!applying"
-            @click="
-              requestApply({
-                kind: 'empty',
-                label: $t('settings.emptyLayoutName'),
-              })
-            "
-          >
-            {{ $t('settings.resetBtn') }}
-          </UButton>
-        </div>
-
-        <p class="text-xs text-(--ui-text-muted)">
-          {{ $t('settings.userLayoutsDir') }}
-          <code class="break-all">{{ library.layoutsDir.value || '…' }}</code>
-        </p>
-      </div>
-    </UCard>
-
-    <UCard>
-      <template #header>
-        <h2 class="font-semibold">{{ $t('settings.configTitle') }}</h2>
-      </template>
-      <div class="text-sm">
-        <div class="text-(--ui-text-muted) mb-1">{{ $t('settings.configPath') }}</div>
-        <code class="block p-2 rounded bg-(--ui-bg-muted) break-all">
-          {{ configPath || '…' }}
-        </code>
-        <p class="text-xs text-(--ui-text-muted) mt-2">
-          {{ $t('settings.configHint') }}
-        </p>
-      </div>
-    </UCard>
+    <ConfigPathCard :config-path="configPath" />
 
     <!-- Apply confirmation -->
     <UModal

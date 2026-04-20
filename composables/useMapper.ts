@@ -1,19 +1,6 @@
 // Thin composable around the Rust mapper commands.
 // In the plain browser (pnpm dev without Tauri) everything becomes a no-op.
 
-type TauriCore = typeof import('@tauri-apps/api/core')
-
-let tauriCache: TauriCore | null | undefined
-async function getTauri(): Promise<TauriCore | null> {
-  if (tauriCache !== undefined) return tauriCache
-  try {
-    tauriCache = await import('@tauri-apps/api/core')
-  } catch {
-    tauriCache = null
-  }
-  return tauriCache
-}
-
 export interface KeyboardDevice {
   path: string
   name: string
@@ -25,7 +12,7 @@ export interface MapperStatus {
   last_error: string | null
 }
 
-interface MapperState {
+export interface MapperState {
   devices: Ref<KeyboardDevice[]>
   status: Ref<MapperStatus>
   busy: Ref<boolean>
@@ -48,7 +35,7 @@ export function useMapper(): MapperState {
   const error = ref<string | null>(null)
 
   async function refreshDevices() {
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     if (!tauri) return
     try {
       devices.value = await tauri.invoke<KeyboardDevice[]>('list_keyboards')
@@ -59,7 +46,7 @@ export function useMapper(): MapperState {
   }
 
   async function refreshStatus() {
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     if (!tauri) return
     try {
       status.value = await tauri.invoke<MapperStatus>('mapper_status')
@@ -69,7 +56,7 @@ export function useMapper(): MapperState {
   }
 
   async function start(devicePath: string) {
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     if (!tauri) {
       const { t } = useI18n()
       error.value = t('mapper.desktopOnly')
@@ -92,7 +79,7 @@ export function useMapper(): MapperState {
   }
 
   async function stop() {
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     if (!tauri) return
     busy.value = true
     try {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import MacroEditorCard from '~/components/features/macros/MacroEditorCard.vue'
+import SystemMacrosCard from '~/components/features/macros/SystemMacrosCard.vue'
 import { type Macro } from '~/types/config'
 import { randomId } from '~/utils/keys'
 import { SYSTEM_MACROS, systemMacroById, type SystemMacro } from '~/utils/systemMacros'
@@ -37,10 +39,6 @@ function cloneSystemMacro(sys: SystemMacro) {
     stepPauseMs: undefined,
     modifierDelayMs: undefined,
   })
-}
-
-function stepsPreview(sys: SystemMacro): string {
-  return sys.steps.map((s) => s.keystroke).join(' → ')
 }
 
 const systemOpen = ref(false)
@@ -190,278 +188,28 @@ const usage = computed(() => {
           {{ $t('macros.empty') }}
         </div>
 
-        <div
+        <MacroEditorCard
           v-for="(macro, macroIdx) in config.macros"
-          :key="macroIdx"
-          class="rounded-md border border-(--ui-border) bg-(--ui-bg-muted) p-4 space-y-4"
-        >
-          <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
-            <UFormField>
-              <template #label>
-                <FieldLabel
-                  :label="$t('macros.nameLabel')"
-                  :hint="$t('macros.nameHint')"
-                />
-              </template>
-              <UInput
-                v-model="macro.name"
-                :placeholder="$t('macros.namePh')"
-                class="w-full"
-              />
-            </UFormField>
-            <UFormField :error="idError(macro) ?? undefined">
-              <template #label>
-                <FieldLabel
-                  :label="$t('macros.idLabel')"
-                  :hint="$t('macros.idHint')"
-                />
-              </template>
-              <UInput
-                v-model="macro.id"
-                :color="idError(macro) ? 'error' : undefined"
-                :highlight="!!idError(macro)"
-                class="w-full font-mono"
-                :placeholder="$t('macros.idPh')"
-              />
-            </UFormField>
-            <div class="flex items-end">
-              <UButton
-                icon="i-lucide-trash-2"
-                color="error"
-                variant="ghost"
-                square
-                :aria-label="$t('macros.deleteMacro')"
-                @click="askRemove(macro.id)"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <UFormField>
-              <template #label>
-                <FieldLabel
-                  :label="$t('macros.stepPauseLabel')"
-                  :hint="$t('macros.stepPauseHint')"
-                />
-              </template>
-              <OverridableNumberField
-                v-model="macro.stepPauseMs"
-                :default-value="config.settings.defaultMacroStepPauseMs"
-                :suffix="$t('common.ms')"
-              />
-            </UFormField>
-            <UFormField>
-              <template #label>
-                <FieldLabel
-                  :label="$t('macros.modDelayLabel')"
-                  :hint="$t('macros.modDelayHint')"
-                />
-              </template>
-              <OverridableNumberField
-                v-model="macro.modifierDelayMs"
-                :default-value="config.settings.defaultMacroModifierDelayMs"
-                :suffix="$t('common.ms')"
-              />
-            </UFormField>
-          </div>
-
-          <div
-            v-if="usage[macro.id] && usage[macro.id].length"
-            class="flex flex-wrap gap-1 text-xs"
-          >
-            <span class="text-(--ui-text-muted)">{{ $t('macros.usedIn') }}</span>
-            <UBadge
-              v-for="(u, idx) in usage[macro.id]"
-              :key="idx"
-              color="neutral"
-              variant="subtle"
-              class="font-mono"
-            >
-              {{ u }}
-            </UBadge>
-          </div>
-
-          <div class="border-t border-(--ui-border) pt-3">
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-sm font-medium">{{ $t('macros.steps') }}</div>
-              <UButton
-                size="xs"
-                icon="i-lucide-plus"
-                variant="outline"
-                @click="addStep(macro)"
-              >
-                {{ $t('macros.addStep') }}
-              </UButton>
-            </div>
-
-            <div
-              v-if="macro.steps.length === 0"
-              class="text-sm text-(--ui-text-muted) italic"
-            >
-              {{ $t('macros.stepsEmpty') }}
-            </div>
-
-            <div v-else class="space-y-1.5">
-              <div
-                v-for="(step, idx) in macro.steps"
-                :key="step.id"
-                class="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-2 items-center"
-              >
-                <div
-                  class="text-xs text-(--ui-text-muted) font-mono text-right"
-                >
-                  #{{ idx + 1 }}
-                </div>
-                <ActionPickerModal
-                  v-model="step.keystroke"
-                  :placeholder="$t('macros.stepPh')"
-                />
-                <UButton
-                  icon="i-lucide-chevron-up"
-                  size="xs"
-                  variant="ghost"
-                  color="neutral"
-                  square
-                  :disabled="idx === 0"
-                  :aria-label="$t('macros.moveUp')"
-                  @click="moveStep(macro, idx, -1)"
-                />
-                <UButton
-                  icon="i-lucide-chevron-down"
-                  size="xs"
-                  variant="ghost"
-                  color="neutral"
-                  square
-                  :disabled="idx === macro.steps.length - 1"
-                  :aria-label="$t('macros.moveDown')"
-                  @click="moveStep(macro, idx, 1)"
-                />
-                <UButton
-                  icon="i-lucide-trash-2"
-                  size="xs"
-                  variant="ghost"
-                  color="error"
-                  square
-                  :aria-label="$t('macros.deleteStep')"
-                  @click="removeStep(macro, step.id)"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="text-xs text-(--ui-text-muted)">
-            <i18n-t keypath="macros.assignHint" tag="span">
-              <template #ref>
-                <code class="font-mono">macro:{{ macro.id }}</code>
-              </template>
-            </i18n-t>
-          </div>
-        </div>
+          :key="`${macro.id}:${macroIdx}`"
+          :macro="macro"
+          :id-error="idError(macro) ?? undefined"
+          :usage="usage[macro.id] ?? []"
+          :default-step-pause-ms="config.settings.defaultMacroStepPauseMs"
+          :default-modifier-delay-ms="config.settings.defaultMacroModifierDelayMs"
+          @remove="askRemove"
+          @add-step="addStep"
+          @move-step="moveStep"
+          @remove-step="removeStep"
+        />
       </div>
     </UCard>
 
-    <UCard>
-      <template #header>
-        <button
-          type="button"
-          class="flex items-center justify-between gap-3 w-full text-left"
-          :aria-expanded="systemOpen"
-          @click="systemOpen = !systemOpen"
-        >
-          <div>
-            <h2 class="font-semibold flex items-center gap-2">
-              <UIcon
-                :name="
-                  systemOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'
-                "
-                class="text-(--ui-text-muted)"
-              />
-              {{ $t('macros.systemTitle') }}
-              <UBadge color="neutral" variant="subtle" size="sm">
-                {{ SYSTEM_MACROS.length }}
-              </UBadge>
-            </h2>
-            <p class="text-xs text-(--ui-text-muted) mt-1">
-              {{ $t('macros.systemSub') }}
-            </p>
-          </div>
-        </button>
-      </template>
-
-      <div v-show="systemOpen">
-        <div
-          v-if="SYSTEM_MACROS.length === 0"
-          class="text-sm text-(--ui-text-muted)"
-        >
-          {{ $t('macros.systemEmpty') }}
-        </div>
-
-        <div v-else class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr
-                class="text-left text-xs text-(--ui-text-muted) border-b border-(--ui-border)"
-              >
-                <th class="py-2 pr-3 font-medium">{{ $t('macros.colId') }}</th>
-                <th class="py-2 pr-3 font-medium">{{ $t('macros.colName') }}</th>
-                <th class="py-2 pr-3 font-medium">{{ $t('macros.colSteps') }}</th>
-                <th class="py-2 pr-3 font-medium w-px"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="sys in SYSTEM_MACROS"
-                :key="sys.id"
-                class="border-b border-(--ui-border) last:border-b-0 align-top"
-              >
-                <td class="py-2 pr-3 font-mono text-xs whitespace-nowrap">
-                  {{ sys.id }}
-                </td>
-                <td class="py-2 pr-3">
-                  <div>{{ sys.name }}</div>
-                  <div
-                    v-if="sys.description"
-                    class="text-xs text-(--ui-text-muted) mt-0.5"
-                  >
-                    {{ sys.description }}
-                  </div>
-                </td>
-                <td class="py-2 pr-3">
-                  <code class="text-xs font-mono text-(--ui-text-muted)">
-                    {{ stepsPreview(sys) }}
-                  </code>
-                  <div
-                    v-if="usage[sys.id] && usage[sys.id].length"
-                    class="flex flex-wrap gap-1 mt-1"
-                  >
-                    <UBadge
-                      v-for="(u, idx) in usage[sys.id]"
-                      :key="idx"
-                      color="neutral"
-                      variant="subtle"
-                      size="sm"
-                      class="font-mono"
-                    >
-                      {{ u }}
-                    </UBadge>
-                  </div>
-                </td>
-                <td class="py-2 pr-3 whitespace-nowrap">
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    icon="i-lucide-copy-plus"
-                    @click="cloneSystemMacro(sys)"
-                  >
-                    {{ $t('macros.cloneBtn') }}
-                  </UButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </UCard>
+    <SystemMacrosCard
+      v-model:system-open="systemOpen"
+      :usage="usage"
+      :system-macros="SYSTEM_MACROS"
+      @clone="cloneSystemMacro"
+    />
 
     <UModal v-model:open="confirmOpen" :title="$t('macros.confirmDeleteTitle')">
       <template #body>

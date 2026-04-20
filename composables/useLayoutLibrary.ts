@@ -10,19 +10,6 @@ import {
   serializeLayoutYaml,
 } from '~/utils/layoutPresets'
 
-type TauriCore = typeof import('@tauri-apps/api/core')
-
-let tauriCache: TauriCore | null | undefined
-async function getTauri(): Promise<TauriCore | null> {
-  if (tauriCache !== undefined) return tauriCache
-  try {
-    tauriCache = await import('@tauri-apps/api/core')
-  } catch {
-    tauriCache = null
-  }
-  return tauriCache
-}
-
 const BROWSER_LAYOUTS_KEY = 'lhc:layouts'
 
 function browserLayouts(): Record<string, string> {
@@ -84,7 +71,7 @@ export function useLayoutLibrary(): LayoutLibraryState {
   const layoutsDir = ref('')
 
   async function refresh() {
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     let userNames: string[] = []
     if (tauri) {
       try {
@@ -117,7 +104,7 @@ export function useLayoutLibrary(): LayoutLibraryState {
     }
     if (!isUserLayoutId(id)) return null
     const name = userLayoutNameFromId(id)
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     let yaml = ''
     if (tauri) {
       try {
@@ -139,7 +126,7 @@ export function useLayoutLibrary(): LayoutLibraryState {
   ): Promise<string> {
     const toSave: LayoutPreset = { ...preset, name }
     const yaml = serializeLayoutYaml(toSave)
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     let savedName = name
     if (tauri) {
       savedName = await tauri.invoke<string>('save_user_layout', {
@@ -156,7 +143,7 @@ export function useLayoutLibrary(): LayoutLibraryState {
   }
 
   async function deleteUserPreset(name: string) {
-    const tauri = await getTauri()
+    const tauri = await useTauri()
     if (tauri) {
       await tauri.invoke('delete_user_layout', { name })
     } else {
