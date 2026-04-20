@@ -312,9 +312,9 @@ keymaps:
       KeyR: "("
       KeyT: "|"
       KeyY: "^"
-      KeyU: Key7
-      KeyI: Key8
-      KeyO: Key9
+      KeyU: "7"
+      KeyI: "8"
+      KeyO: "9"
       KeyP: "="
       BracketLeft: "≠"
       #BracketRight
@@ -326,9 +326,9 @@ keymaps:
       KeyF: "?"
       KeyG: "&"
       KeyH: "*"
-      KeyJ: Key4
-      KeyK: Key5
-      KeyL: Key6
+      KeyJ: "4"
+      KeyK: "5"
+      KeyL: "6"
       Semicolon: "+"
       Quote: "%"
 
@@ -337,10 +337,10 @@ keymaps:
       KeyC: "'"
       KeyV: '"'
       KeyB: "/"
-      KeyN: Key0
-      KeyM: Key1
-      Comma: Key2
-      Period: Key3
+      KeyN: "0"
+      KeyM: "1"
+      Comma: "2"
+      Period: "3"
       Slash: "@"
 
   fkeys:
