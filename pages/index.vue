@@ -3,8 +3,8 @@ const { loaded, saving, lastError, load } = useConfig()
 const { layout } = useLayout()
 
 const tabItems = [
-  { value: 'rules', slot: 'rules', label: 'Правила', icon: 'i-lucide-list-checks' },
-  { value: 'keymap', slot: 'keymap', label: 'Keymap', icon: 'i-lucide-keyboard' },
+  { value: 'rules', slot: 'rules', label: 'Слои', icon: 'i-lucide-layers' },
+  { value: 'keymap', slot: 'keymap', label: 'Раскладка', icon: 'i-lucide-keyboard' },
   { value: 'macros', slot: 'macros', label: 'Макросы', icon: 'i-lucide-zap' },
   { value: 'settings', slot: 'settings', label: 'Настройки', icon: 'i-lucide-settings' },
 ] as const

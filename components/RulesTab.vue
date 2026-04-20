@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { ALL_KEYS, keyLabel, randomId } from '~/utils/keys'
+import { randomId } from '~/utils/keys'
 
 const { config } = useConfig()
-
-const keyOptions = computed(() =>
-  ALL_KEYS.map((k) => ({ label: `${k.label}  (${k.code})`, value: k.code })),
-)
 
 const layerOptions = computed(() =>
   config.value.layers
@@ -27,24 +23,36 @@ function removeRule(id: string) {
   config.value.rules = config.value.rules.filter((r) => r.id !== id)
 }
 
-// --- New-layer inline creation -------------------------------------------
-const newLayerOpen = ref<Record<string, boolean>>({})
-const newLayerName = ref<Record<string, string>>({})
+// --- New-layer modal -----------------------------------------------------
+const newLayerOpen = ref(false)
+const newLayerName = ref('')
+const newLayerDescription = ref('')
+const newLayerForRuleId = ref<string | null>(null)
 
 function openNewLayer(ruleId: string) {
-  newLayerOpen.value[ruleId] = true
-  newLayerName.value[ruleId] = ''
+  newLayerForRuleId.value = ruleId
+  newLayerName.value = ''
+  newLayerDescription.value = ''
+  newLayerOpen.value = true
 }
 
-function confirmNewLayer(ruleId: string) {
-  const name = (newLayerName.value[ruleId] ?? '').trim()
+function confirmNewLayer() {
+  const name = newLayerName.value.trim()
   if (!name) return
   const id = randomId()
-  config.value.layers.push({ id, name })
+  config.value.layers.push({
+    id,
+    name,
+    description: newLayerDescription.value.trim() || undefined,
+  })
   config.value.layerKeymaps[id] = { keys: {}, extras: [] }
-  const rule = config.value.rules.find((r) => r.id === ruleId)
-  if (rule) rule.layerId = id
-  newLayerOpen.value[ruleId] = false
+  if (newLayerForRuleId.value) {
+    const rule = config.value.rules.find(
+      (r) => r.id === newLayerForRuleId.value,
+    )
+    if (rule) rule.layerId = id
+  }
+  newLayerOpen.value = false
 }
 </script>
 
@@ -53,7 +61,14 @@ function confirmNewLayer(ruleId: string) {
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
-          <h2 class="font-semibold">Назначение слоёв клавишам</h2>
+          <div>
+            <h2 class="font-semibold">Слои и их триггеры</h2>
+            <p class="text-xs text-(--ui-text-muted) mt-1">
+              На каждой строке — правило: какая физическая клавиша активирует
+              слой при удержании и какое действие срабатывает на короткое
+              нажатие.
+            </p>
+          </div>
           <UButton icon="i-lucide-plus" size="sm" @click="addRule">
             Добавить правило
           </UButton>
@@ -69,19 +84,29 @@ function confirmNewLayer(ruleId: string) {
         <div
           v-for="rule in config.rules"
           :key="rule.id"
-          class="grid grid-cols-[1fr_1fr_1fr_140px_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
+          class="grid grid-cols-[1fr_1fr_1fr_auto_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
         >
-          <UFormField label="Клавиша">
-            <USelectMenu
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Клавиша"
+                hint="Физическая клавиша, которая будет активировать слой при удержании или выполнять tap-действие при коротком нажатии."
+              />
+            </template>
+            <ActionPickerModal
               v-model="rule.key"
-              :items="keyOptions"
-              value-key="value"
+              key-only
               placeholder="выберите клавишу"
-              class="w-full"
             />
           </UFormField>
 
-          <UFormField label="Слой (hold)">
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Слой (hold)"
+                hint="Слой, который активируется пока клавиша удерживается. Пусто — клавиша работает только как tap."
+              />
+            </template>
             <div class="flex gap-1">
               <USelectMenu
                 v-model="rule.layerId"
@@ -108,48 +133,33 @@ function confirmNewLayer(ruleId: string) {
                 @click="openNewLayer(rule.id)"
               />
             </div>
-            <div
-              v-if="newLayerOpen[rule.id]"
-              class="mt-2 flex gap-2"
-            >
-              <UInput
-                v-model="newLayerName[rule.id]"
-                placeholder="Имя нового слоя"
-                class="flex-1"
-                @keydown.enter="confirmNewLayer(rule.id)"
-              />
-              <UButton size="sm" @click="confirmNewLayer(rule.id)">OK</UButton>
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                @click="newLayerOpen[rule.id] = false"
-              >
-                ✕
-              </UButton>
-            </div>
           </UFormField>
 
-          <UFormField
-            label="Tap action"
-            help="Действие на одиночное нажатие"
-          >
-            <ActionPicker
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Tap action"
+                hint="Действие при коротком нажатии клавиши (отпущена до истечения hold-таймаута)."
+              />
+            </template>
+            <ActionPickerModal
               v-model="rule.tapAction"
               allow-empty
-              placeholder="например: Escape"
+              placeholder="нет действия"
             />
           </UFormField>
 
-          <UFormField
-            label="Hold ms"
-            :help="`def ${config.settings.defaultHoldTimeoutMs}`"
-          >
-            <UInput
-              v-model.number="rule.holdTimeoutMs"
-              type="number"
-              min="0"
-              placeholder="—"
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Hold ms"
+                hint="Индивидуальный таймаут удержания для этого правила. По умолчанию используется значение из настроек."
+              />
+            </template>
+            <OverridableNumberField
+              v-model="rule.holdTimeoutMs"
+              :default-value="config.settings.defaultHoldTimeoutMs"
+              suffix="мс"
             />
           </UFormField>
 
@@ -159,7 +169,7 @@ function confirmNewLayer(ruleId: string) {
               color="error"
               variant="ghost"
               square
-              :aria-label="`Удалить правило ${keyLabel(rule.key)}`"
+              aria-label="Удалить правило"
               @click="removeRule(rule.id)"
             />
           </div>
@@ -167,25 +177,46 @@ function confirmNewLayer(ruleId: string) {
       </div>
     </UCard>
 
-    <UCard>
-      <template #header>
-        <h2 class="font-semibold">
-          Определение одиночного нажатия vs удержания слоя
-        </h2>
+    <UModal v-model:open="newLayerOpen" title="Новый слой">
+      <template #body>
+        <div class="space-y-3">
+          <UFormField label="Имя слоя">
+            <UInput
+              v-model="newLayerName"
+              autofocus
+              placeholder="Например: Навигация"
+              class="w-full"
+              @keydown.enter="confirmNewLayer"
+            />
+          </UFormField>
+          <UFormField label="Описание (необязательно)">
+            <UTextarea
+              v-model="newLayerDescription"
+              placeholder="Коротко: для чего нужен этот слой"
+              class="w-full"
+              :rows="2"
+            />
+          </UFormField>
+        </div>
       </template>
-      <p class="text-sm text-(--ui-text-muted) mb-3">
-        Время ожидания отпускания клавиши. Если клавиша отпущена до истечения
-        таймаута — срабатывает <code>tap action</code>. Если удерживается
-        дольше — активируется назначенный слой.
-      </p>
-      <UFormField label="Таймаут по умолчанию, мс">
-        <UInput
-          v-model.number="config.settings.defaultHoldTimeoutMs"
-          type="number"
-          min="0"
-          class="w-40"
-        />
-      </UFormField>
-    </UCard>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="newLayerOpen = false"
+          >
+            Отмена
+          </UButton>
+          <UButton
+            icon="i-lucide-check"
+            :disabled="!newLayerName.trim()"
+            @click="confirmNewLayer"
+          >
+            Создать
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

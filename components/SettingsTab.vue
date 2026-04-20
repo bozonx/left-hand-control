@@ -139,17 +139,53 @@ onMounted(async () => {
           />
         </div>
 
-        <UFormField
-          label="Hold timeout по умолчанию, мс"
-          help="Используется правилами, где не задано собственное значение."
-        >
-          <UInput
-            v-model.number="config.settings.defaultHoldTimeoutMs"
-            type="number"
-            min="0"
-            class="w-40"
-          />
-        </UFormField>
+        <div>
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Hold timeout по умолчанию, мс"
+                hint="Определение одиночного нажатия vs удержания слоя. Если клавиша отпущена до истечения — срабатывает tap action, если удерживается дольше — активируется слой. Используется правилами, где не задано собственное значение."
+              />
+            </template>
+            <UInput
+              v-model.number="config.settings.defaultHoldTimeoutMs"
+              type="number"
+              min="0"
+              class="w-40"
+            />
+          </UFormField>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-(--ui-border)">
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Пауза между шагами макроса, мс"
+                hint="Глобальное значение по умолчанию. Используется, когда шаг макроса не задаёт собственное."
+              />
+            </template>
+            <UInput
+              v-model.number="config.settings.defaultMacroStepPauseMs"
+              type="number"
+              min="0"
+              class="w-40"
+            />
+          </UFormField>
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Задержка модификатора, мс"
+                hint="Глобальное значение: сколько ждать между нажатием модификатора (Shift/Ctrl/...) и основной клавиши внутри одного шага."
+              />
+            </template>
+            <UInput
+              v-model.number="config.settings.defaultMacroModifierDelayMs"
+              type="number"
+              min="0"
+              class="w-40"
+            />
+          </UFormField>
+        </div>
       </div>
     </UCard>
 

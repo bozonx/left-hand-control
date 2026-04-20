@@ -19,6 +19,10 @@ const layerItems = computed(() =>
   config.value.layers.map((l) => ({ label: l.name, value: l.id })),
 )
 
+const currentLayer = computed(() =>
+  config.value.layers.find((l) => l.id === selectedLayerId.value),
+)
+
 const currentKeymap = computed(() => {
   const id = selectedLayerId.value
   if (!config.value.layerKeymaps[id]) {
@@ -66,15 +70,20 @@ function removeExtra(id: string) {
 
 // --- Layer management ----------------------------------------------------
 const renameOpen = ref(false)
-const renameDraft = ref('')
+const renameDraftName = ref('')
+const renameDraftDescription = ref('')
 function openRename() {
-  const l = config.value.layers.find((l) => l.id === selectedLayerId.value)
-  renameDraft.value = l?.name ?? ''
+  const l = currentLayer.value
+  renameDraftName.value = l?.name ?? ''
+  renameDraftDescription.value = l?.description ?? ''
   renameOpen.value = true
 }
 function confirmRename() {
-  const l = config.value.layers.find((l) => l.id === selectedLayerId.value)
-  if (l) l.name = renameDraft.value.trim() || l.name
+  const l = currentLayer.value
+  if (l) {
+    l.name = renameDraftName.value.trim() || l.name
+    l.description = renameDraftDescription.value.trim() || undefined
+  }
   renameOpen.value = false
 }
 
@@ -91,15 +100,21 @@ function deleteLayer() {
 
 const newLayerOpen = ref(false)
 const newLayerName = ref('')
+const newLayerDescription = ref('')
 function openNewLayer() {
   newLayerName.value = ''
+  newLayerDescription.value = ''
   newLayerOpen.value = true
 }
 function confirmNewLayer() {
   const name = newLayerName.value.trim()
   if (!name) return
   const id = randomId()
-  config.value.layers.push({ id, name })
+  config.value.layers.push({
+    id,
+    name,
+    description: newLayerDescription.value.trim() || undefined,
+  })
   config.value.layerKeymaps[id] = { keys: {}, extras: [] }
   selectedLayerId.value = id
   newLayerOpen.value = false
@@ -109,7 +124,7 @@ function confirmNewLayer() {
 <template>
   <div class="space-y-4">
     <UCard>
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-end gap-3">
         <UFormField label="Слой" class="flex-1 min-w-[220px]">
           <USelectMenu
             v-model="selectedLayerId"
@@ -118,7 +133,7 @@ function confirmNewLayer() {
             class="w-full"
           />
         </UFormField>
-        <div class="flex gap-2 pt-6">
+        <div class="flex gap-2">
           <UButton icon="i-lucide-plus" size="sm" @click="openNewLayer">
             Новый слой
           </UButton>
@@ -130,7 +145,7 @@ function confirmNewLayer() {
             :disabled="selectedLayerId === 'base'"
             @click="openRename"
           >
-            Переименовать
+            Редактировать
           </UButton>
           <UButton
             icon="i-lucide-trash-2"
@@ -143,6 +158,13 @@ function confirmNewLayer() {
             Удалить
           </UButton>
         </div>
+      </div>
+      <div
+        v-if="currentLayer?.description"
+        class="mt-3 text-sm text-(--ui-text-muted) p-3 rounded-md bg-(--ui-bg-muted) border border-(--ui-border)"
+      >
+        <UIcon name="i-lucide-info" class="w-3.5 h-3.5 mr-1 align-middle" />
+        {{ currentLayer.description }}
       </div>
     </UCard>
 
@@ -203,7 +225,13 @@ function confirmNewLayer() {
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
-          <h2 class="font-semibold">Дополнительные клавиши</h2>
+          <div>
+            <h2 class="font-semibold">Дополнительные клавиши</h2>
+            <p class="text-xs text-(--ui-text-muted) mt-1">
+              Кнопки мыши, медиа-клавиши или любые другие триггеры, которых
+              нет на основной раскладке.
+            </p>
+          </div>
           <UButton icon="i-lucide-plus" size="sm" @click="addExtra">
             Добавить
           </UButton>
@@ -213,25 +241,50 @@ function confirmNewLayer() {
         v-if="currentKeymap.extras.length === 0"
         class="text-sm text-(--ui-text-muted)"
       >
-        Здесь можно добавить произвольные клавиши / бинды (медиа-клавиши,
-        кнопки мыши и т.д.) для этого слоя.
+        Ещё нет дополнительных клавиш для этого слоя.
       </div>
       <div v-else class="space-y-2">
         <div
           v-for="ex in currentKeymap.extras"
           :key="ex.id"
-          class="grid grid-cols-[1fr_1fr_auto] gap-3 items-center p-2 rounded-md bg-(--ui-bg-muted)"
+          class="grid grid-cols-[1fr_1fr_auto] gap-3 items-start p-2 rounded-md bg-(--ui-bg-muted)"
         >
-          <UInput v-model="ex.name" placeholder="Название клавиши" />
-          <UInput v-model="ex.action" placeholder="Действие" />
-          <UButton
-            icon="i-lucide-trash-2"
-            color="error"
-            variant="ghost"
-            square
-            aria-label="Удалить"
-            @click="removeExtra(ex.id)"
-          />
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Клавиша"
+                hint="Клавиша-триггер: кнопка мыши, медиа-клавиша или любая другая клавиша из полного списка."
+              />
+            </template>
+            <ActionPickerModal
+              v-model="ex.name"
+              key-only
+              placeholder="выберите клавишу"
+            />
+          </UFormField>
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                label="Действие"
+                hint="Что делает эта клавиша пока активен слой."
+              />
+            </template>
+            <ActionPickerModal
+              v-model="ex.action"
+              allow-empty
+              placeholder="нет действия"
+            />
+          </UFormField>
+          <div class="pt-6">
+            <UButton
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="ghost"
+              square
+              aria-label="Удалить"
+              @click="removeExtra(ex.id)"
+            />
+          </div>
         </div>
       </div>
     </UCard>
@@ -247,40 +300,70 @@ function confirmNewLayer() {
 
     <UModal v-model:open="newLayerOpen" title="Новый слой">
       <template #body>
-        <UFormField label="Имя слоя">
-          <UInput
-            v-model="newLayerName"
-            autofocus
-            @keydown.enter="confirmNewLayer"
-          />
-        </UFormField>
+        <div class="space-y-3">
+          <UFormField label="Имя слоя">
+            <UInput
+              v-model="newLayerName"
+              autofocus
+              placeholder="Например: Навигация"
+              class="w-full"
+              @keydown.enter="confirmNewLayer"
+            />
+          </UFormField>
+          <UFormField label="Описание (необязательно)">
+            <UTextarea
+              v-model="newLayerDescription"
+              placeholder="Коротко: для чего нужен этот слой"
+              class="w-full"
+              :rows="2"
+            />
+          </UFormField>
+        </div>
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
           <UButton variant="ghost" color="neutral" @click="newLayerOpen = false">
             Отмена
           </UButton>
-          <UButton @click="confirmNewLayer">Создать</UButton>
+          <UButton
+            icon="i-lucide-check"
+            :disabled="!newLayerName.trim()"
+            @click="confirmNewLayer"
+          >
+            Создать
+          </UButton>
         </div>
       </template>
     </UModal>
 
-    <UModal v-model:open="renameOpen" title="Переименовать слой">
+    <UModal v-model:open="renameOpen" title="Редактирование слоя">
       <template #body>
-        <UFormField label="Имя слоя">
-          <UInput
-            v-model="renameDraft"
-            autofocus
-            @keydown.enter="confirmRename"
-          />
-        </UFormField>
+        <div class="space-y-3">
+          <UFormField label="Имя слоя">
+            <UInput
+              v-model="renameDraftName"
+              autofocus
+              class="w-full"
+              @keydown.enter="confirmRename"
+            />
+          </UFormField>
+          <UFormField label="Описание (необязательно)">
+            <UTextarea
+              v-model="renameDraftDescription"
+              class="w-full"
+              :rows="2"
+            />
+          </UFormField>
+        </div>
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
           <UButton variant="ghost" color="neutral" @click="renameOpen = false">
             Отмена
           </UButton>
-          <UButton @click="confirmRename">Сохранить</UButton>
+          <UButton icon="i-lucide-check" @click="confirmRename">
+            Сохранить
+          </UButton>
         </div>
       </template>
     </UModal>

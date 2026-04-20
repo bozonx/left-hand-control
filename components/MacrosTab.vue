@@ -5,8 +5,6 @@ import { randomId } from '~/utils/keys'
 const { config } = useConfig()
 
 function newMacroId(): string {
-  // Short + unique-within-list id. Users can rename via name but id is stable
-  // so references `macro:<id>` don't break.
   let id: string
   do {
     id = randomId()
@@ -46,8 +44,22 @@ function moveStep(macro: Macro, index: number, delta: number) {
   macro.steps = steps
 }
 
-// Usage detection: find where each macro is referenced (rules / keymaps /
-// extras). Purely informational — rendered as a small badge.
+// --- Deletion confirmation -----------------------------------------------
+const confirmOpen = ref(false)
+const pendingDeleteId = ref<string | null>(null)
+
+function askRemove(id: string) {
+  pendingDeleteId.value = id
+  confirmOpen.value = true
+}
+
+function confirmRemove() {
+  if (pendingDeleteId.value) removeMacro(pendingDeleteId.value)
+  pendingDeleteId.value = null
+  confirmOpen.value = false
+}
+
+// --- Usage ---------------------------------------------------------------
 const usage = computed(() => {
   const byMacro: Record<string, string[]> = {}
   const note = (id: string, where: string) => {
@@ -84,11 +96,10 @@ const usage = computed(() => {
           <div>
             <h2 class="font-semibold">Пользовательские макросы</h2>
             <p class="text-xs text-(--ui-text-muted) mt-1">
-              Макрос — последовательность шагов, каждый шаг это одно сочетание
-              клавиш. Шаги выполняются по очереди: предыдущее сочетание
-              полностью отпускается, выдерживается пауза, затем нажимается
-              следующее. В будущем сюда можно будет добавить вызов консольной
-              команды или системного действия.
+              Последовательность шагов. Каждый шаг — одно сочетание клавиш
+              или системное действие. Шаги выполняются по очереди: предыдущее
+              сочетание полностью отпускается, выдерживается пауза, затем
+              нажимается следующее.
             </p>
           </div>
           <UButton icon="i-lucide-plus" size="sm" @click="addMacro">
@@ -109,51 +120,74 @@ const usage = computed(() => {
         <div
           v-for="macro in config.macros"
           :key="macro.id"
-          class="rounded-md border border-(--ui-border) bg-(--ui-bg-muted) p-3 space-y-3"
+          class="rounded-md border border-(--ui-border) bg-(--ui-bg-muted) p-4 space-y-4"
         >
-          <div class="flex flex-wrap items-end gap-3">
-            <UFormField label="Имя" class="flex-1 min-w-[200px]">
-              <UInput v-model="macro.name" placeholder="Название макроса" />
+          <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
+            <UFormField>
+              <template #label>
+                <FieldLabel
+                  label="Имя"
+                  hint="Человекочитаемое имя макроса, показывается в списках выбора."
+                />
+              </template>
+              <UInput
+                v-model="macro.name"
+                placeholder="Название макроса"
+                class="w-full"
+              />
             </UFormField>
-            <UFormField label="ID (для macro:<id>)">
+            <UFormField>
+              <template #label>
+                <FieldLabel
+                  label="ID"
+                  hint="Уникальный идентификатор для ссылки вида macro:<id>. Изменяйте только если не используете этот макрос."
+                />
+              </template>
               <UInput
                 v-model="macro.id"
-                class="w-40 font-mono"
+                class="w-full font-mono"
                 placeholder="id"
               />
             </UFormField>
-            <UFormField
-              label="Пауза между шагами, мс"
-              :help="`def ${config.settings.defaultMacroStepPauseMs}`"
-            >
-              <UInput
-                v-model.number="macro.stepPauseMs"
-                type="number"
-                min="0"
-                class="w-28"
-                placeholder="—"
+            <div class="flex items-end">
+              <UButton
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                square
+                aria-label="Удалить макрос"
+                @click="askRemove(macro.id)"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <UFormField>
+              <template #label>
+                <FieldLabel
+                  label="Пауза между шагами"
+                  hint="Индивидуальная пауза между шагами этого макроса. По умолчанию — значение из настроек."
+                />
+              </template>
+              <OverridableNumberField
+                v-model="macro.stepPauseMs"
+                :default-value="config.settings.defaultMacroStepPauseMs"
+                suffix="мс"
               />
             </UFormField>
-            <UFormField
-              label="Задержка модификатора, мс"
-              :help="`def ${config.settings.defaultMacroModifierDelayMs}`"
-            >
-              <UInput
-                v-model.number="macro.modifierDelayMs"
-                type="number"
-                min="0"
-                class="w-28"
-                placeholder="—"
+            <UFormField>
+              <template #label>
+                <FieldLabel
+                  label="Задержка модификатора"
+                  hint="Время между нажатием модификатора и основной клавиши внутри одного шага. По умолчанию — значение из настроек."
+                />
+              </template>
+              <OverridableNumberField
+                v-model="macro.modifierDelayMs"
+                :default-value="config.settings.defaultMacroModifierDelayMs"
+                suffix="мс"
               />
             </UFormField>
-            <UButton
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              square
-              aria-label="Удалить макрос"
-              @click="removeMacro(macro.id)"
-            />
           </div>
 
           <div
@@ -172,7 +206,7 @@ const usage = computed(() => {
             </UBadge>
           </div>
 
-          <div>
+          <div class="border-t border-(--ui-border) pt-3">
             <div class="flex items-center justify-between mb-2">
               <div class="text-sm font-medium">Шаги</div>
               <UButton
@@ -189,24 +223,23 @@ const usage = computed(() => {
               v-if="macro.steps.length === 0"
               class="text-sm text-(--ui-text-muted) italic"
             >
-              Пока нет шагов. Каждый шаг — сочетание клавиш
-              (<code>Ctrl+C</code>, <code>Shift+End</code>, <code>Enter</code>).
+              Пока нет шагов. Каждый шаг — сочетание клавиш или действие.
             </div>
 
             <div v-else class="space-y-1.5">
               <div
                 v-for="(step, idx) in macro.steps"
                 :key="step.id"
-                class="grid grid-cols-[2.5rem_1fr_auto_auto_auto] gap-2 items-center"
+                class="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-2 items-center"
               >
                 <div
                   class="text-xs text-(--ui-text-muted) font-mono text-right"
                 >
                   #{{ idx + 1 }}
                 </div>
-                <ActionPicker
+                <ActionPickerModal
                   v-model="step.keystroke"
-                  placeholder="Ctrl+C"
+                  placeholder="Ctrl+C или выберите действие"
                 />
                 <UButton
                   icon="i-lucide-chevron-up"
@@ -244,40 +277,29 @@ const usage = computed(() => {
           <div class="text-xs text-(--ui-text-muted)">
             Чтобы назначить макрос на клавишу, выберите действие
             <code class="font-mono">macro:{{ macro.id }}</code>
-            во вкладках «Правила» или «Keymap».
+            во вкладках «Слои» или «Раскладка».
           </div>
         </div>
       </div>
     </UCard>
 
-    <UCard>
-      <template #header>
-        <h2 class="font-semibold">Глобальные задержки макросов</h2>
+    <UModal v-model:open="confirmOpen" title="Удалить макрос?">
+      <template #body>
+        <p class="text-sm">
+          Макрос будет удалён. Ссылки <code>macro:{{ pendingDeleteId }}</code>
+          перестанут работать.
+        </p>
       </template>
-      <div class="flex flex-wrap gap-6">
-        <UFormField
-          label="Пауза между шагами, мс"
-          help="Используется, когда шаг макроса не задаёт свою паузу."
-        >
-          <UInput
-            v-model.number="config.settings.defaultMacroStepPauseMs"
-            type="number"
-            min="0"
-            class="w-40"
-          />
-        </UFormField>
-        <UFormField
-          label="Задержка модификатора, мс"
-          help="Время между нажатием модификатора и основной клавиши внутри одного шага."
-        >
-          <UInput
-            v-model.number="config.settings.defaultMacroModifierDelayMs"
-            type="number"
-            min="0"
-            class="w-40"
-          />
-        </UFormField>
-      </div>
-    </UCard>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton variant="ghost" color="neutral" @click="confirmOpen = false">
+            Отмена
+          </UButton>
+          <UButton color="error" icon="i-lucide-trash-2" @click="confirmRemove">
+            Удалить
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

@@ -19,7 +19,7 @@ interface DefaultsFile {
     defaultMacroModifierDelayMs?: number
     launchOnStartup?: boolean
   }
-  layers?: Array<{ id: string; name: string }>
+  layers?: Array<{ id: string; name: string; description?: string }>
   rules?: Array<{
     key: string
     layer?: string | null
@@ -84,9 +84,13 @@ function fromDefaultsFile(input: DefaultsFile): AppConfig {
     }
   }
 
-  const extraLayers: Layer[] = (input.layers ?? []).filter(
-    (l) => l && l.id && l.id !== BASE_LAYER_ID,
-  )
+  const extraLayers: Layer[] = (input.layers ?? [])
+    .filter((l) => l && l.id && l.id !== BASE_LAYER_ID)
+    .map((l) => ({
+      id: l.id,
+      name: l.name,
+      description: l.description?.trim() || undefined,
+    }))
   cfg.layers = [{ id: BASE_LAYER_ID, name: 'Base' }, ...extraLayers]
 
   for (const layer of cfg.layers) {

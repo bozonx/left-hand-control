@@ -4,6 +4,7 @@
 export interface Layer {
   id: string
   name: string
+  description?: string
 }
 
 // A rule that binds a physical key to either a layer (on hold) and/or a

@@ -30,23 +30,17 @@ function clear() {
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="`Редактирование: ${keyLabel}`">
+  <UModal
+    v-model:open="open"
+    :title="`Редактирование: ${keyLabel}`"
+    :ui="{ content: 'max-w-3xl' }"
+  >
     <template #body>
       <div class="space-y-3">
         <div class="text-sm text-(--ui-text-muted)">
           Код клавиши: <code>{{ keyCode }}</code>
         </div>
-        <UFormField label="Действие">
-          <ActionPicker
-            v-model="draft"
-            allow-empty
-            placeholder="например: Ctrl+C, BrowserBack"
-          />
-        </UFormField>
-        <p class="text-xs text-(--ui-text-muted)">
-          Выберите клавишу из списка или введите произвольную строку и
-          нажмите Enter — она будет использована как есть.
-        </p>
+        <ActionPickerBody v-model="draft" />
       </div>
     </template>
     <template #footer>
