@@ -23,7 +23,9 @@ interface LayoutYaml {
     key?: string
     layer?: string | null
     tap?: string | null
+    dtap?: string | null
     holdMs?: number | null
+    dtapMs?: number | null
     id?: string
   }>
   keymaps?: Record<
@@ -65,8 +67,11 @@ function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
       key: r.key,
       layerId: r.layer ?? '',
       tapAction: r.tap ?? '',
+      doubleTapAction: r.dtap ?? '',
       holdTimeoutMs:
         typeof r.holdMs === 'number' && r.holdMs >= 0 ? r.holdMs : undefined,
+      doubleTapTimeoutMs:
+        typeof r.dtapMs === 'number' && r.dtapMs >= 0 ? r.dtapMs : undefined,
     })
   }
 
@@ -158,8 +163,12 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       key: r.key,
       ...(r.layerId ? { layer: r.layerId } : {}),
       ...(r.tapAction ? { tap: r.tapAction } : {}),
+      ...(r.doubleTapAction ? { dtap: r.doubleTapAction } : {}),
       ...(typeof r.holdTimeoutMs === 'number'
         ? { holdMs: r.holdTimeoutMs }
+        : {}),
+      ...(typeof r.doubleTapTimeoutMs === 'number'
+        ? { dtapMs: r.doubleTapTimeoutMs }
         : {}),
     })),
     keymaps: Object.fromEntries(

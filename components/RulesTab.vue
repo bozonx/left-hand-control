@@ -15,7 +15,9 @@ function addRule() {
     key: '',
     layerId: '',
     tapAction: '',
+    doubleTapAction: '',
     holdTimeoutMs: undefined,
+    doubleTapTimeoutMs: undefined,
   })
 }
 
@@ -81,7 +83,7 @@ function confirmNewLayer() {
         <div
           v-for="rule in config.rules"
           :key="rule.id"
-          class="grid grid-cols-[1fr_1fr_1fr_auto_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
+          class="grid grid-cols-[1fr_1fr_1fr_1fr_auto_auto_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
         >
           <UFormField>
             <template #label>
@@ -149,6 +151,20 @@ function confirmNewLayer() {
           <UFormField>
             <template #label>
               <FieldLabel
+                :label="$t('rules.doubleTapLabel')"
+                :hint="$t('rules.doubleTapHint')"
+              />
+            </template>
+            <ActionPickerModal
+              v-model="rule.doubleTapAction"
+              allow-empty
+              :placeholder="$t('rules.doubleTapPh')"
+            />
+          </UFormField>
+
+          <UFormField>
+            <template #label>
+              <FieldLabel
                 :label="$t('rules.holdLabel')"
                 :hint="$t('rules.holdHint')"
               />
@@ -156,6 +172,20 @@ function confirmNewLayer() {
             <OverridableNumberField
               v-model="rule.holdTimeoutMs"
               :default-value="config.settings.defaultHoldTimeoutMs"
+              :suffix="$t('common.ms')"
+            />
+          </UFormField>
+
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.doubleTapWindowLabel')"
+                :hint="$t('rules.doubleTapWindowHint')"
+              />
+            </template>
+            <OverridableNumberField
+              v-model="rule.doubleTapTimeoutMs"
+              :default-value="config.settings.defaultDoubleTapTimeoutMs"
               :suffix="$t('common.ms')"
             />
           </UFormField>

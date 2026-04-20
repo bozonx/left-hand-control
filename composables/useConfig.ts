@@ -70,7 +70,12 @@ function normalize(raw: unknown): AppConfig {
       Array.isArray(r.layers) && r.layers.length
         ? r.layers
         : base.layers,
-    rules: Array.isArray(r.rules) ? r.rules : [],
+    rules: Array.isArray(r.rules)
+      ? r.rules.map((rule) => ({
+          doubleTapAction: '',
+          ...rule,
+        }))
+      : [],
     layerKeymaps:
       r.layerKeymaps && typeof r.layerKeymaps === 'object'
         ? r.layerKeymaps

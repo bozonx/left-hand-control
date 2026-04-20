@@ -8,7 +8,7 @@ export interface Layer {
 }
 
 // A rule that binds a physical key to either a layer (on hold) and/or a
-// single-tap action.
+// single-tap / double-tap action.
 export interface LayerRule {
   id: string
   // Physical key on which the rule triggers (e.g. "CapsLock", "Space").
@@ -17,10 +17,19 @@ export interface LayerRule {
   layerId: string
   // Action fired on single tap. Empty string = no tap action.
   tapAction: string
+  // Action fired on double tap (second key-down within the double-tap
+  // window after a short press). Empty string = no double-tap action.
+  // Note: when set, a single tap is delayed by `doubleTapTimeoutMs` to
+  // disambiguate it from the first press of a double-tap.
+  doubleTapAction: string
   // Milliseconds the key must be held down before switching from "tap"
   // interpretation to "hold / layer". If omitted, falls back to
   // settings.defaultHoldTimeoutMs.
   holdTimeoutMs?: number
+  // Milliseconds between first release and second key-down within which
+  // a double tap is recognised. If omitted, falls back to
+  // settings.defaultDoubleTapTimeoutMs.
+  doubleTapTimeoutMs?: number
 }
 
 export interface ExtraKey {
@@ -73,6 +82,9 @@ export interface AppSettings {
   locale: LocalePreference
   // Default hold timeout used when a rule does not specify one.
   defaultHoldTimeoutMs: number
+  // Default double-tap window (ms between first release and second
+  // key-down) used when a rule does not specify one.
+  defaultDoubleTapTimeoutMs: number
   // Default pause between macro steps, ms.
   defaultMacroStepPauseMs: number
   // Default delay between pressing modifiers and the main key within one
@@ -162,6 +174,7 @@ export function createDefaultConfig(): AppConfig {
       appearance: 'system',
       locale: 'auto',
       defaultHoldTimeoutMs: 200,
+      defaultDoubleTapTimeoutMs: 200,
       defaultMacroStepPauseMs: 20,
       defaultMacroModifierDelayMs: 5,
       inputDevicePath: '',

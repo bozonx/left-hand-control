@@ -57,6 +57,10 @@ pub struct Rule {
     pub tap_action: String,
     #[serde(default)]
     pub hold_timeout_ms: Option<u64>,
+    #[serde(default)]
+    pub double_tap_action: String,
+    #[serde(default)]
+    pub double_tap_timeout_ms: Option<u64>,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -74,6 +78,8 @@ pub struct Settings {
     pub default_macro_step_pause_ms: u64,
     #[serde(default = "default_mod_delay")]
     pub default_macro_modifier_delay_ms: u64,
+    #[serde(default = "default_double_tap")]
+    pub default_double_tap_timeout_ms: u64,
     #[allow(dead_code)]
     #[serde(default)]
     pub input_device_path: Option<String>,
@@ -85,6 +91,7 @@ impl Default for Settings {
             default_hold_timeout_ms: default_hold(),
             default_macro_step_pause_ms: default_step_pause(),
             default_macro_modifier_delay_ms: default_mod_delay(),
+            default_double_tap_timeout_ms: default_double_tap(),
             input_device_path: None,
         }
     }
@@ -100,4 +107,8 @@ fn default_step_pause() -> u64 {
 
 fn default_mod_delay() -> u64 {
     5
+}
+
+fn default_double_tap() -> u64 {
+    200
 }

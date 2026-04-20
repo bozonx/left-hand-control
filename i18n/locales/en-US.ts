@@ -72,11 +72,18 @@ export default {
     createLayer: 'Create layer',
     tapLabel: 'Tap action',
     tapHint:
-      'Action performed on a short key press (released before the hold timeout elapses).',
+      'Action performed on a short key press (released before the hold timeout elapses). Note: when a double-tap action is set, a single tap is delayed by the double-tap window to disambiguate it from the first press of a double tap.',
     tapPh: 'no action',
+    doubleTapLabel: 'Double-tap action',
+    doubleTapHint:
+      'Action performed when the key is pressed twice in quick succession (second key-down within the double-tap window after a short first press). Fires on the second press; no need to release the key first.',
+    doubleTapPh: 'no action',
     holdLabel: 'Hold ms',
     holdHint:
       'Individual hold timeout for this rule. Defaults to the value from Settings.',
+    doubleTapWindowLabel: 'Double-tap ms',
+    doubleTapWindowHint:
+      'Max time between first release and second key-down to recognise a double tap. Defaults to the value from Settings.',
     deleteRule: 'Delete rule',
     newLayerTitle: 'New layer',
     layerName: 'Layer name',
@@ -191,6 +198,9 @@ export default {
     holdTimeout: 'Default hold timeout, ms',
     holdTimeoutHint:
       'Decides single tap vs. layer hold. If the key is released before the timeout — the tap action fires; if held longer — the layer activates. Used by rules that do not define their own value.',
+    doubleTapTimeout: 'Default double-tap window, ms',
+    doubleTapTimeoutHint:
+      'Max time between first release and second key-down to recognise a double tap. When a rule has a double-tap action, its single tap is delayed by this value to disambiguate. Used by rules that do not define their own value.',
     stepPauseLabel: 'Default macro step pause, ms',
     stepPauseHint:
       'Global default. Used when a macro step does not set its own.',

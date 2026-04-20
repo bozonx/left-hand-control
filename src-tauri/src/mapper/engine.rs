@@ -1,15 +1,30 @@
-// Tap/hold + layer state machine.
+// Tap/hold/double-tap + layer state machine.
 //
-// Design (MVP, simple timeout-based):
-//   * Every rule binds a physical key to (layer?, tap_action?, hold_ms?).
-//   * On press of a "rule key":
-//       - if rule has layer      → pending (wait for release or timeout)
-//       - if rule has only tap   → pending (wait for release; tap on release)
-//       - if rule has only layer → activate immediately (fastest UX)
-//   * On timeout while still held → activate layer (if any), mark decided=hold.
-//   * On release:
-//       - before timeout & not yet decided → emit tap action (if any)
-//       - after timeout → deactivate layer (if it was activated)
+// Per-rule fields (see `RuleEntry`): layer?, tap?, double_tap?, hold,
+// double_tap_window.
+//
+// Phases of a rule key's pending state (see `Phase`):
+//   * WaitingDecision — key was pressed, we don't yet know if it is a
+//     tap or a hold. Transitions:
+//       - release before deadline, no double_tap configured → fire tap.
+//       - release before deadline, double_tap configured  → enter
+//         WaitingSecond (delay the tap by double_tap_window to give the
+//         user a chance to re-press for the double-tap action).
+//       - deadline expires while still held                → push layer,
+//         transition to HoldActive.
+//   * HoldActive — layer is pushed. On release: pop layer.
+//   * WaitingSecond — key already released after a short press, waiting
+//     for a possible second press within `double_tap_window`.
+//       - same rule key pressed again → fire double_tap immediately,
+//         mark the physical key as consumed (the matching release
+//         becomes a no-op), exit the phase.
+//       - deadline expires                                  → fire tap.
+//       - any other physical key gets pressed               → flush the
+//         pending tap (commit it immediately) and continue handling the
+//         new key. Gives predictable "rolling keys" UX.
+//
+// Fast path: a rule with only a layer (no tap, no double_tap) skips
+// WaitingDecision and pushes the layer on the initial key-down.
 //
 // Non-rule keys:
 //   * On press: look up action for this key in the topmost active layer
@@ -51,6 +66,7 @@ pub struct Engine {
     /// layer_id -> (physical_key -> resolved action)
     layer_maps: HashMap<String, HashMap<Key, ActionDef>>,
     default_hold: Duration,
+    default_double_tap: Duration,
 
     /// Stack of currently active layers (top = highest priority).
     active_layers: Vec<String>,
@@ -73,14 +89,25 @@ pub struct Engine {
 struct RuleEntry {
     layer: Option<String>,
     tap: Option<ActionDef>,
+    double_tap: Option<ActionDef>,
     hold: Duration,
+    double_tap_window: Duration,
+}
+
+enum Phase {
+    /// Waiting to decide between tap and hold (key is still down).
+    WaitingDecision { deadline: Instant },
+    /// Hold has been committed — layer (if any) is active.
+    HoldActive,
+    /// Short press finished; waiting for a possible second press.
+    WaitingSecond { deadline: Instant },
 }
 
 struct Pending {
-    deadline: Instant,
-    decided_hold: bool,
+    phase: Phase,
     layer: Option<String>,
     tap: Option<ActionDef>,
+    double_tap: Option<ActionDef>,
 }
 
 /// Outgoing action the engine asks the I/O layer to perform.
@@ -110,6 +137,8 @@ pub enum Out {
 impl Engine {
     pub fn new(cfg: &AppConfig) -> Self {
         let default_hold = Duration::from_millis(cfg.settings.default_hold_timeout_ms.max(1));
+        let default_double_tap =
+            Duration::from_millis(cfg.settings.default_double_tap_timeout_ms.max(1));
         let default_step_pause =
             Duration::from_millis(cfg.settings.default_macro_step_pause_ms);
         let default_mod_delay =
@@ -255,6 +284,14 @@ impl Engine {
             } else {
                 resolve(&r.tap_action, &format!("tap for {}", r.key))
             };
+            let double_tap = if r.double_tap_action.is_empty() {
+                None
+            } else {
+                resolve(
+                    &r.double_tap_action,
+                    &format!("double-tap for {}", r.key),
+                )
+            };
             let layer = if r.layer_id.is_empty() {
                 None
             } else {
@@ -264,7 +301,20 @@ impl Engine {
                 .hold_timeout_ms
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_hold);
-            rules.insert(key, RuleEntry { layer, tap, hold });
+            let double_tap_window = r
+                .double_tap_timeout_ms
+                .map(|ms| Duration::from_millis(ms.max(1)))
+                .unwrap_or(default_double_tap);
+            rules.insert(
+                key,
+                RuleEntry {
+                    layer,
+                    tap,
+                    double_tap,
+                    hold,
+                    double_tap_window,
+                },
+            );
         }
 
         let mut layer_maps: HashMap<String, HashMap<Key, ActionDef>> = HashMap::new();
@@ -287,6 +337,7 @@ impl Engine {
             rules,
             layer_maps,
             default_hold,
+            default_double_tap,
             active_layers: Vec::new(),
             pending: HashMap::new(),
             emitted: HashMap::new(),
@@ -295,32 +346,56 @@ impl Engine {
         }
     }
 
-    /// Time until the nearest pending-hold deadline, or None.
+    /// Time until the nearest pending deadline (hold-decision or
+    /// waiting-for-second-press), or None.
     pub fn next_deadline(&self, now: Instant) -> Option<Duration> {
         self.pending
             .values()
-            .filter(|p| !p.decided_hold)
-            .map(|p| p.deadline.saturating_duration_since(now))
+            .filter_map(|p| match p.phase {
+                Phase::WaitingDecision { deadline }
+                | Phase::WaitingSecond { deadline } => {
+                    Some(deadline.saturating_duration_since(now))
+                }
+                Phase::HoldActive => None,
+            })
             .min()
     }
 
-    /// Tick pending state machines. Emits layer activations for expired holds.
+    /// Tick pending state machines. Emits layer activations for expired
+    /// holds and fires delayed taps whose double-tap window elapsed.
     pub fn tick(&mut self, now: Instant, out: &mut Vec<Out>) {
-        let expired: Vec<Key> = self
-            .pending
-            .iter()
-            .filter(|(_, p)| !p.decided_hold && p.deadline <= now)
-            .map(|(k, _)| *k)
-            .collect();
-        for k in expired {
-            let p = self.pending.get_mut(&k).unwrap();
-            p.decided_hold = true;
-            if let Some(layer) = p.layer.clone() {
+        // Collect keys to process so we don't borrow `self.pending`
+        // mutably while mutating `self` through helpers.
+        let mut expired_hold: Vec<Key> = Vec::new();
+        let mut expired_second: Vec<Key> = Vec::new();
+        for (k, p) in &self.pending {
+            match p.phase {
+                Phase::WaitingDecision { deadline } if deadline <= now => {
+                    expired_hold.push(*k);
+                }
+                Phase::WaitingSecond { deadline } if deadline <= now => {
+                    expired_second.push(*k);
+                }
+                _ => {}
+            }
+        }
+        for k in expired_hold {
+            let layer = {
+                let p = self.pending.get_mut(&k).unwrap();
+                p.phase = Phase::HoldActive;
+                p.layer.clone()
+            };
+            if let Some(layer) = layer {
                 eprintln!("[mapper] hold-timeout -> layer+: {layer} (key={:?})", k);
                 self.push_layer(layer, out);
             } else {
                 eprintln!("[mapper] hold-timeout (no layer) key={:?}", k);
             }
+        }
+        for k in expired_second {
+            let p = self.pending.remove(&k).unwrap();
+            eprintln!("[mapper] dtap-window expired -> tap (key={:?})", k);
+            fire_action(p.tap.as_ref(), out);
         }
     }
 
@@ -340,38 +415,60 @@ impl Engine {
     }
 
     fn on_press(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
+        // Second press of a rule key that is currently waiting for a
+        // double-tap → fire it immediately.
+        if matches!(
+            self.pending.get(&key).map(|p| &p.phase),
+            Some(Phase::WaitingSecond { .. })
+        ) {
+            let p = self.pending.remove(&key).unwrap();
+            eprintln!("[mapper] double-tap fired (key={:?})", key);
+            fire_action(p.double_tap.as_ref(), out);
+            // The matching release must not emit anything (the action
+            // was fire-and-forget, like a macro).
+            self.macro_consumed.insert(key);
+            return;
+        }
+
         if let Some(rule) = self.rules.get(&key) {
             let layer = rule.layer.clone();
             let tap = rule.tap.clone();
+            let double_tap = rule.double_tap.clone();
             let hold = rule.hold;
             // Fast path: layer-only rule → activate immediately, no tap wait.
-            if layer.is_some() && tap.is_none() {
+            if layer.is_some() && tap.is_none() && double_tap.is_none() {
                 if let Some(l) = layer.clone() {
                     self.push_layer(l, out);
                 }
                 self.pending.insert(
                     key,
                     Pending {
-                        deadline: now,
-                        decided_hold: true,
+                        phase: Phase::HoldActive,
                         layer,
                         tap: None,
+                        double_tap: None,
                     },
                 );
                 return;
             }
-            // Tap-hold or tap-only: wait for release or timeout.
+            // Tap-hold / tap-only / double-tap: wait for release or timeout.
             self.pending.insert(
                 key,
                 Pending {
-                    deadline: now + hold,
-                    decided_hold: false,
+                    phase: Phase::WaitingDecision {
+                        deadline: now + hold,
+                    },
                     layer,
                     tap,
+                    double_tap,
                 },
             );
             return;
         }
+
+        // Any non-rule key-down must commit any currently deferred taps so
+        // the emitted events stay in the natural press order.
+        self.flush_waiting_second(out);
 
         // Non-rule key: consult active layers (top → bottom), fall back to base.
         let mapped = self.lookup_mapping(key);
@@ -422,25 +519,39 @@ impl Engine {
         }
     }
 
-    fn on_release(&mut self, key: Key, _now: Instant, out: &mut Vec<Out>) {
-        if let Some(p) = self.pending.remove(&key) {
-            if p.decided_hold {
-                // Hold was active — deactivate layer if we activated one.
-                if let Some(l) = p.layer {
-                    self.pop_layer(&l, out);
+    fn on_release(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
+        if let Some(p) = self.pending.get(&key) {
+            match p.phase {
+                Phase::HoldActive => {
+                    let layer = p.layer.clone();
+                    self.pending.remove(&key);
+                    if let Some(l) = layer {
+                        self.pop_layer(&l, out);
+                    }
                 }
-            } else {
-                // Release before timeout → emit tap action.
-                match p.tap {
-                    Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke(ks)),
-                    Some(ActionDef::Literal(ch)) => out.push(Out::Literal(ch)),
-                    Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
-                        steps: md.steps,
-                        step_pause: md.step_pause,
-                        mod_delay: md.mod_delay,
-                    }),
-                    Some(ActionDef::System(action)) => out.push(Out::RunSystem(action)),
-                    None => {}
+                Phase::WaitingDecision { .. } => {
+                    // Short press. If double-tap is configured, delay the
+                    // tap by double_tap_window to see if a second press
+                    // follows; otherwise fire tap immediately.
+                    let has_dtap = p.double_tap.is_some();
+                    let rule_window = self
+                        .rules
+                        .get(&key)
+                        .map(|r| r.double_tap_window)
+                        .unwrap_or(self.default_double_tap);
+                    if has_dtap {
+                        let p = self.pending.get_mut(&key).unwrap();
+                        p.phase = Phase::WaitingSecond {
+                            deadline: now + rule_window,
+                        };
+                    } else {
+                        let p = self.pending.remove(&key).unwrap();
+                        fire_action(p.tap.as_ref(), out);
+                    }
+                }
+                Phase::WaitingSecond { .. } => {
+                    // Shouldn't happen (we already released once), but
+                    // treat as no-op to stay safe.
                 }
             }
             return;
@@ -520,6 +631,23 @@ impl Engine {
         }
     }
 
+    /// Fire all pending taps whose double-tap window is still open — used
+    /// when another key is pressed, so the deferred tap is committed
+    /// before the new key's action. Preserves ordering.
+    fn flush_waiting_second(&mut self, out: &mut Vec<Out>) {
+        let keys: Vec<Key> = self
+            .pending
+            .iter()
+            .filter(|(_, p)| matches!(p.phase, Phase::WaitingSecond { .. }))
+            .map(|(k, _)| *k)
+            .collect();
+        for k in keys {
+            let p = self.pending.remove(&k).unwrap();
+            eprintln!("[mapper] dtap-window flushed -> tap (key={:?})", k);
+            fire_action(p.tap.as_ref(), out);
+        }
+    }
+
     /// Generic shutdown helper — release everything that is currently held.
     pub fn shutdown(&mut self, out: &mut Vec<Out>) {
         for (_, ks) in self.emitted.drain() {
@@ -545,5 +673,21 @@ impl Engine {
     #[allow(dead_code)]
     pub fn default_hold(&self) -> Duration {
         self.default_hold
+    }
+}
+
+/// Emit a resolved action as the appropriate `Out` event. Shared by the
+/// tap / double-tap / deferred-tap paths.
+fn fire_action(action: Option<&ActionDef>, out: &mut Vec<Out>) {
+    match action {
+        Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke(ks.clone())),
+        Some(ActionDef::Literal(ch)) => out.push(Out::Literal(*ch)),
+        Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
+            steps: md.steps.clone(),
+            step_pause: md.step_pause,
+            mod_delay: md.mod_delay,
+        }),
+        Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
+        None => {}
     }
 }

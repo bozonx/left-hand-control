@@ -327,7 +327,7 @@ async function toggleMapper() {
           />
         </div>
 
-        <div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <UFormField>
             <template #label>
               <FieldLabel
@@ -337,6 +337,20 @@ async function toggleMapper() {
             </template>
             <UInput
               v-model.number="config.settings.defaultHoldTimeoutMs"
+              type="number"
+              min="0"
+              class="w-40"
+            />
+          </UFormField>
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('settings.doubleTapTimeout')"
+                :hint="$t('settings.doubleTapTimeoutHint')"
+              />
+            </template>
+            <UInput
+              v-model.number="config.settings.defaultDoubleTapTimeoutMs"
               type="number"
               min="0"
               class="w-40"
