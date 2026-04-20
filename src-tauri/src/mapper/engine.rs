@@ -502,74 +502,80 @@ impl Engine {
         // emitted events stay in natural press order.
         self.flush_waiting_second(out);
 
-        if let Some(rule) = self.rules.get(&key).cloned() {
-            // Fast path: no tap action, no double-tap → commit hold
-            // immediately without the decision wait.
-            if matches!(rule.tap, TapMode::Swallow) && rule.double_tap.is_none() {
+        if self.active_layers.is_empty() {
+            if let Some(rule) = self.rules.get(&key).cloned() {
+                // Fast path: no tap action, no double-tap → commit hold
+                // immediately without the decision wait.
+                if matches!(rule.tap, TapMode::Swallow) && rule.double_tap.is_none() {
+                    self.pending.insert(
+                        key,
+                        Pending {
+                            phase: Phase::HoldActive,
+                        },
+                    );
+                    self.commit_hold_with(&rule, key, out);
+                    return;
+                }
+                // Otherwise wait to decide between tap and hold.
                 self.pending.insert(
                     key,
                     Pending {
-                        phase: Phase::HoldActive,
+                        phase: Phase::WaitingDecision {
+                            deadline: now + rule.hold_timeout,
+                        },
                     },
                 );
-                self.commit_hold_with(&rule, key, out);
                 return;
             }
-            // Otherwise wait to decide between tap and hold.
-            self.pending.insert(
-                key,
-                Pending {
-                    phase: Phase::WaitingDecision {
-                        deadline: now + rule.hold_timeout,
-                    },
-                },
-            );
-            return;
         }
 
-        // Non-rule key: consult active layers (top → bottom), fall back to base.
-        let mapped = self.lookup_mapping(key);
-        match mapped {
-            Some(ActionDef::Stroke(ks)) => {
-                eprintln!(
-                    "[mapper]   press {:?} -> remap mods={:?} key={:?}",
-                    key, ks.mods, ks.key
-                );
-                self.emit_stroke_press(key, ks, out);
-            }
-            Some(ActionDef::Literal(text)) => {
-                eprintln!("[mapper]   press {:?} -> literal {:?}", key, text);
-                out.push(Out::Literal(text));
-                self.macro_consumed.insert(key);
-            }
-            Some(ActionDef::Macro(md)) => {
-                eprintln!(
-                    "[mapper]   press {:?} -> run macro ({} steps)",
-                    key,
-                    md.steps.len()
-                );
-                out.push(Out::RunMacro {
-                    steps: md.steps,
-                    step_pause: md.step_pause,
-                    mod_delay: md.mod_delay,
-                });
-                self.macro_consumed.insert(key);
-            }
-            Some(ActionDef::System(action)) => {
-                eprintln!("[mapper]   press {:?} -> run system {:?}", key, action);
-                out.push(Out::RunSystem(action));
-                self.macro_consumed.insert(key);
-            }
-            None => {
-                eprintln!("[mapper]   press {:?} -> passthrough", key);
-                out.push(Out::KeyRaw { key, down: true });
-                self.emitted.insert(
-                    key,
-                    Keystroke {
-                        mods: vec![],
+        // When at least one layer is active, rule keys must behave like
+        // normal keys inside that layer. Only the active-layer keymaps
+        // (and the base keymap fallback) participate in resolution.
+        {
+            let mapped = self.lookup_mapping(key);
+            match mapped {
+                Some(ActionDef::Stroke(ks)) => {
+                    eprintln!(
+                        "[mapper]   press {:?} -> remap mods={:?} key={:?}",
+                        key, ks.mods, ks.key
+                    );
+                    self.emit_stroke_press(key, ks, out);
+                }
+                Some(ActionDef::Literal(text)) => {
+                    eprintln!("[mapper]   press {:?} -> literal {:?}", key, text);
+                    out.push(Out::Literal(text));
+                    self.macro_consumed.insert(key);
+                }
+                Some(ActionDef::Macro(md)) => {
+                    eprintln!(
+                        "[mapper]   press {:?} -> run macro ({} steps)",
                         key,
-                    },
-                );
+                        md.steps.len()
+                    );
+                    out.push(Out::RunMacro {
+                        steps: md.steps,
+                        step_pause: md.step_pause,
+                        mod_delay: md.mod_delay,
+                    });
+                    self.macro_consumed.insert(key);
+                }
+                Some(ActionDef::System(action)) => {
+                    eprintln!("[mapper]   press {:?} -> run system {:?}", key, action);
+                    out.push(Out::RunSystem(action));
+                    self.macro_consumed.insert(key);
+                }
+                None => {
+                    eprintln!("[mapper]   press {:?} -> passthrough", key);
+                    out.push(Out::KeyRaw { key, down: true });
+                    self.emitted.insert(
+                        key,
+                        Keystroke {
+                            mods: vec![],
+                            key,
+                        },
+                    );
+                }
             }
         }
     }
@@ -915,6 +921,61 @@ mod tests {
             out.as_slice(),
             [Out::ChordPress { ks, .. }]
                 if ks.mods == vec![Key::KEY_LEFTCTRL] && ks.key == Key::KEY_Z
+        ));
+    }
+
+    #[test]
+    fn active_layer_bypasses_rule_for_same_key() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            id: "r_space".into(),
+            key: "Space".into(),
+            layer_id: "space".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        cfg.rules.push(Rule {
+            id: "r_tab".into(),
+            key: "Tab".into(),
+            layer_id: "sel".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+
+        let mut space = LayerKeymap {
+            keys: HashMap::new(),
+        };
+        space.keys.insert("Tab".into(), "Escape".into());
+        cfg.layer_keymaps.insert("space".into(), space);
+        cfg.layer_keymaps.insert(
+            "base".into(),
+            LayerKeymap {
+                keys: HashMap::new(),
+            },
+        );
+
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.handle(
+            Key::KEY_TAB,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+
+        assert!(matches!(
+            out.as_slice(),
+            [Out::ChordPress { ks, .. }]
+                if ks.mods.is_empty() && ks.key == Key::KEY_ESC
         ));
     }
 }
