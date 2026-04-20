@@ -23,6 +23,13 @@ const {
 } = useConfig()
 const library = useLayoutLibrary()
 const mapper = useMapper()
+const theme = useAppTheme()
+
+const appearanceItems = [
+  { label: 'Как в системе', value: 'system' },
+  { label: 'Светлая', value: 'light' },
+  { label: 'Тёмная', value: 'dark' },
+] as const
 
 // --- Layout library ---------------------------------------------------------
 
@@ -246,6 +253,27 @@ async function toggleMapper() {
       </template>
       <div class="space-y-4">
         <div class="flex items-center justify-between gap-4">
+          <div>
+            <div class="font-medium">Оформление</div>
+            <div class="text-xs text-(--ui-text-muted)">
+              Режим «Как в системе» следует настройке
+              <code>prefers-color-scheme</code> ОС и переключается автоматически.
+              Сейчас активна
+              <span class="font-medium">
+                {{ theme.resolved.value === 'dark' ? 'тёмная' : 'светлая' }}
+              </span>
+              тема.
+            </div>
+          </div>
+          <URadioGroup
+            v-model="theme.preference.value"
+            :items="appearanceItems"
+            orientation="horizontal"
+            size="sm"
+          />
+        </div>
+
+        <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
           <div>
             <div class="font-medium">Запускать вместе с системой</div>
             <div class="text-xs text-(--ui-text-muted)">

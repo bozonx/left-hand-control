@@ -10,6 +10,17 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  // Nuxt UI v3 bundles @nuxtjs/color-mode — configure it explicitly so the
+  // default follows the OS and the class flips the Tailwind `dark:` variant.
+  // `preference` is authoritative; our `useAppTheme()` composable overwrites
+  // it from the persisted `settings.appearance` on boot.
+  colorMode: {
+    preference: 'system',
+    fallback: 'light',
+    classSuffix: '',
+    storageKey: 'lhc-color-mode',
+  },
+
   // Ensure static output for Tauri bundling
   nitro: {
     preset: 'static',

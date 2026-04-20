@@ -1,2 +1,72 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* ----------------------------------------------------------------------------
+ * Desktop look & feel.
+ *
+ * Nuxt UI v3 exposes design tokens as CSS variables prefixed with `--ui-*`
+ * (bg / bg-elevated / border / text / text-muted / primary / ...). They flip
+ * automatically when the `html.dark` class toggles, driven by
+ * @nuxtjs/color-mode. We only override density / typography here — colours
+ * stay on the default theme configured in `app.config.ts`.
+ * -------------------------------------------------------------------------- */
+
+:root {
+  /* Tighter base for a native-app feel. */
+  font-size: 14px;
+  --app-header-height: 44px;
+}
+
+html,
+body,
+#__nuxt {
+  height: 100%;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    'Inter',
+    'Roboto',
+    'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Prevent accidental text selection on chrome / toolbars like native apps. */
+  user-select: none;
+}
+
+/* Still allow selection inside actual editable content. */
+input,
+textarea,
+[contenteditable='true'],
+pre,
+code,
+.select-text {
+  user-select: text;
+}
+
+/* A subtle custom scrollbar that matches the theme in both modes. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border-accented) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--ui-border-accented);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-text-muted);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}

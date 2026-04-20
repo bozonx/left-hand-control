@@ -59,8 +59,12 @@ export interface Macro {
   modifierDelayMs?: number
 }
 
+export type AppearancePreference = 'system' | 'light' | 'dark'
+
 export interface AppSettings {
   launchOnStartup: boolean
+  // Visual theme preference. 'system' follows prefers-color-scheme.
+  appearance: AppearancePreference
   // Default hold timeout used when a rule does not specify one.
   defaultHoldTimeoutMs: number
   // Default pause between macro steps, ms.
@@ -149,6 +153,7 @@ export function createDefaultConfig(): AppConfig {
     macros: [],
     settings: {
       launchOnStartup: false,
+      appearance: 'system',
       defaultHoldTimeoutMs: 200,
       defaultMacroStepPauseMs: 20,
       defaultMacroModifierDelayMs: 5,

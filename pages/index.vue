@@ -16,6 +16,7 @@ const {
   load,
 } = useConfig()
 const { layout } = useLayout()
+const theme = useAppTheme()
 
 const tabItems = [
   { value: 'rules', slot: 'rules', label: 'Слои', icon: 'i-lucide-layers' },
@@ -44,7 +45,7 @@ onMounted(() => {
 
   <div v-else class="min-h-screen flex flex-col">
     <header
-      class="flex items-center justify-between px-6 py-3 border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-4 flex-wrap"
+      class="flex items-center justify-between px-4 py-2 border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 flex-wrap"
     >
       <div class="flex items-center gap-3 flex-wrap">
         <h1 class="text-lg font-semibold">Left Hand Control</h1>
@@ -97,10 +98,31 @@ onMounted(() => {
         <span v-if="lastError" class="text-(--ui-error)">
           {{ lastError }}
         </span>
+        <UButton
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          :icon="
+            theme.resolved.value === 'dark'
+              ? 'i-lucide-moon'
+              : 'i-lucide-sun'
+          "
+          :aria-label="
+            theme.resolved.value === 'dark'
+              ? 'Переключить на светлую тему'
+              : 'Переключить на тёмную тему'
+          "
+          :title="
+            theme.resolved.value === 'dark'
+              ? 'Переключить на светлую тему'
+              : 'Переключить на тёмную тему'
+          "
+          @click="theme.toggle()"
+        />
       </div>
     </header>
 
-    <main class="flex-1 p-6 w-full">
+    <main class="flex-1 p-4 w-full">
       <UTabs
         v-model="active"
         :items="tabItems"

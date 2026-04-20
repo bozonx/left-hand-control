@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { type Macro } from '~/types/config'
 import { randomId } from '~/utils/keys'
-import { SYSTEM_MACROS, type SystemMacro } from '~/utils/systemMacros'
+import { SYSTEM_MACROS, systemMacroById, type SystemMacro } from '~/utils/systemMacros'
 
 const { config } = useConfig()
+
+// Regex for a well-formed macro id: letters, digits, underscore and dash,
+// 1..64 chars. Keeps `macro:<id>` references unambiguous.
+const ID_RE = /^[A-Za-z0-9_-]{1,64}$/
 
 function newMacroId(base?: string): string {
   if (base && !config.value.macros.some((m) => m.id === base)) return base
@@ -85,6 +89,45 @@ function confirmRemove() {
   confirmOpen.value = false
 }
 
+// --- Id validation -------------------------------------------------------
+// Count how many user macros currently use each id — anything > 1 is a
+// duplicate and must be flagged. Computed once per config change.
+const idCounts = computed<Record<string, number>>(() => {
+  const counts: Record<string, number> = {}
+  for (const m of config.value.macros) {
+    counts[m.id] = (counts[m.id] ?? 0) + 1
+  }
+  return counts
+})
+
+function idError(macro: Macro): string | null {
+  const raw = macro.id ?? ''
+  if (raw.trim() === '') return 'ID не может быть пустым.'
+  if (!ID_RE.test(raw)) {
+    return 'Только латиница, цифры, «_» и «-», до 64 символов.'
+  }
+  if ((idCounts.value[raw] ?? 0) > 1) {
+    return 'Такой ID уже используется другим пользовательским макросом.'
+  }
+  return null
+}
+
+function idHint(macro: Macro): string | null {
+  if (idError(macro)) return null
+  const sys = systemMacroById(macro.id)
+  if (sys) {
+    return `Этот ID совпадает с системным макросом «${sys.name}» — пользовательский макрос полностью его перекрывает.`
+  }
+  return null
+}
+
+// Disable "Новый макрос" / "Создать на основе" while the user has an
+// unresolved id conflict — otherwise a new auto-id may land on top of a
+// duplicate the user hasn't fixed yet.
+const hasIdErrors = computed(() =>
+  config.value.macros.some((m) => idError(m) !== null),
+)
+
 // --- Usage ---------------------------------------------------------------
 const usage = computed(() => {
   const byMacro: Record<string, string[]> = {}
@@ -128,7 +171,17 @@ const usage = computed(() => {
               нажимается следующее.
             </p>
           </div>
-          <UButton icon="i-lucide-plus" size="sm" @click="addMacro">
+          <UButton
+            icon="i-lucide-plus"
+            size="sm"
+            :disabled="hasIdErrors"
+            :title="
+              hasIdErrors
+                ? 'Сначала исправьте ошибки в существующих ID'
+                : undefined
+            "
+            @click="addMacro"
+          >
             Новый макрос
           </UButton>
         </div>
@@ -144,8 +197,8 @@ const usage = computed(() => {
         </div>
 
         <div
-          v-for="macro in config.macros"
-          :key="macro.id"
+          v-for="(macro, macroIdx) in config.macros"
+          :key="macroIdx"
           class="rounded-md border border-(--ui-border) bg-(--ui-bg-muted) p-4 space-y-4"
         >
           <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
@@ -162,7 +215,7 @@ const usage = computed(() => {
                 class="w-full"
               />
             </UFormField>
-            <UFormField>
+            <UFormField :error="idError(macro) ?? undefined">
               <template #label>
                 <FieldLabel
                   label="ID"
@@ -174,6 +227,12 @@ const usage = computed(() => {
                 class="w-full font-mono"
                 placeholder="id"
               />
+              <p
+                v-if="idHint(macro)"
+                class="text-xs text-(--ui-text-muted) mt-1"
+              >
+                {{ idHint(macro) }}
+              </p>
             </UFormField>
             <div class="flex items-end">
               <UButton
