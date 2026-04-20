@@ -17,7 +17,8 @@ const {
   applying,
   applyError,
   pendingApply,
-  requestApply,
+  requestApplyEntry,
+  requestApplyEmpty,
   cancelApply,
   confirmApply,
   saveModalOpen,
@@ -26,9 +27,11 @@ const {
   saveError,
   openSaveModal,
   performSave,
+  closeSaveModal,
   deletePending,
   deleteBusy,
   confirmDelete,
+  clearDeletePending,
   deviceOptions,
   selectedDevice,
   toggleMapper,
@@ -62,8 +65,8 @@ const { t } = useI18n()
       :apply-error="applyError"
       :layouts-dir="library.layoutsDir.value"
       @save-current="openSaveModal"
-      @request-apply-entry="(entry) => requestApply({ kind: 'entry', entry, label: entry.name })"
-      @request-apply-empty="requestApply({ kind: 'empty', label: $t('settings.emptyLayoutName') })"
+      @request-apply-entry="requestApplyEntry"
+      @request-apply-empty="requestApplyEmpty"
       @request-delete="(entry) => deletePending = entry"
     />
 
@@ -151,7 +154,7 @@ const { t } = useI18n()
           <UButton
             variant="ghost"
             color="neutral"
-            @click="saveModalOpen = false"
+            @click="closeSaveModal"
           >
             {{ $t('common.cancel') }}
           </UButton>
@@ -172,7 +175,7 @@ const { t } = useI18n()
     <UModal
       :open="!!deletePending"
       :title="$t('settings.deleteTitle', { name: deletePending?.name ?? '' })"
-      @update:open="(v) => !v && (deletePending = null)"
+      @update:open="(v) => !v && clearDeletePending()"
     >
       <template #body>
         <p class="text-sm">
@@ -184,7 +187,7 @@ const { t } = useI18n()
           <UButton
             variant="ghost"
             color="neutral"
-            @click="deletePending = null"
+            @click="clearDeletePending"
           >
             {{ $t('common.cancel') }}
           </UButton>

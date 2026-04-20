@@ -1,61 +1,17 @@
 <script setup lang="ts">
 import RuleRow from '~/components/features/rules/RuleRow.vue'
 import LayerEditorModal from '~/components/shared/LayerEditorModal.vue'
-import { randomId } from '~/utils/keys'
-
-const { config } = useConfig()
-const { createLayer } = useLayers()
-
-const layerOptions = computed(() =>
-  config.value.layers
-    .filter((l) => l.id !== 'base')
-    .map((l) => ({ label: l.name, value: l.id })),
-)
-
-function addRule() {
-  config.value.rules.push({
-    id: randomId(),
-    key: '',
-    layerId: '',
-    tapAction: '',
-    holdAction: '',
-    doubleTapAction: '',
-    holdTimeoutMs: undefined,
-    doubleTapTimeoutMs: undefined,
-  })
-}
-
-function removeRule(id: string) {
-  config.value.rules = config.value.rules.filter((r) => r.id !== id)
-}
-
-// --- New-layer modal -----------------------------------------------------
-const newLayerOpen = ref(false)
-const newLayerName = ref('')
-const newLayerDescription = ref('')
-const newLayerForRuleId = ref<string | null>(null)
-
-function openNewLayer(ruleId: string) {
-  newLayerForRuleId.value = ruleId
-  newLayerName.value = ''
-  newLayerDescription.value = ''
-  newLayerOpen.value = true
-}
-
-function confirmNewLayer() {
-  const id = createLayer({
-    name: newLayerName.value,
-    description: newLayerDescription.value,
-  })
-  if (!id) return
-  if (newLayerForRuleId.value) {
-    const rule = config.value.rules.find(
-      (r) => r.id === newLayerForRuleId.value,
-    )
-    if (rule) rule.layerId = id
-  }
-  newLayerOpen.value = false
-}
+const {
+  config,
+  layerOptions,
+  addRule,
+  removeRule,
+  newLayerOpen,
+  newLayerName,
+  newLayerDescription,
+  openNewLayer,
+  confirmNewLayer,
+} = useRulesEditor()
 </script>
 
 <template>

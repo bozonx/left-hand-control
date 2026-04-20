@@ -7,6 +7,7 @@ const ID_RE = /^[A-Za-z0-9_-]{1,64}$/
 export function useMacroEditor() {
   const { config } = useConfig()
   const { t } = useI18n()
+  const macroUiKeys = new WeakMap<Macro, string>()
 
   function newMacroId(base?: string): string {
     if (base && !config.value.macros.some((macro) => macro.id === base)) return base
@@ -64,6 +65,15 @@ export function useMacroEditor() {
     const [item] = steps.splice(index, 1) as [MacroStep]
     steps.splice(next, 0, item)
     macro.steps = steps
+  }
+
+  function uiKeyOf(macro: Macro) {
+    let key = macroUiKeys.get(macro)
+    if (!key) {
+      key = randomId()
+      macroUiKeys.set(macro, key)
+    }
+    return key
   }
 
   const idCounts = computed<Record<string, number>>(() => {
@@ -126,6 +136,7 @@ export function useMacroEditor() {
     addStep,
     removeStep,
     moveStep,
+    uiKeyOf,
     idError,
     hasIdErrors,
     usage,

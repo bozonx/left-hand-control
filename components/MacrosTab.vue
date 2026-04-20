@@ -11,6 +11,7 @@ const {
   addStep,
   removeStep,
   moveStep,
+  uiKeyOf,
   idError,
   hasIdErrors,
   usage,
@@ -70,8 +71,8 @@ function confirmRemove() {
         </div>
 
         <MacroEditorCard
-          v-for="(macro, macroIdx) in config.macros"
-          :key="`${macro.id}:${macroIdx}`"
+          v-for="macro in config.macros"
+          :key="uiKeyOf(macro)"
           :macro="macro"
           :id-error="idError(macro) ?? undefined"
           :usage="usage[macro.id] ?? []"

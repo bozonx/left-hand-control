@@ -85,6 +85,21 @@ export function useSettingsScreen() {
     pendingApply.value = target
   }
 
+  function requestApplyEntry(entry: LayoutLibraryEntry) {
+    requestApply({
+      kind: 'entry',
+      entry,
+      label: entry.name,
+    })
+  }
+
+  function requestApplyEmpty() {
+    requestApply({
+      kind: 'empty',
+      label: t('settings.emptyLayoutName'),
+    })
+  }
+
   function cancelApply() {
     pendingApply.value = null
   }
@@ -145,6 +160,10 @@ export function useSettingsScreen() {
     }
   }
 
+  function closeSaveModal() {
+    saveModalOpen.value = false
+  }
+
   async function confirmDelete() {
     const entry = deletePending.value
     if (!entry || entry.builtin) return
@@ -159,6 +178,10 @@ export function useSettingsScreen() {
     } finally {
       deleteBusy.value = false
     }
+  }
+
+  function clearDeletePending() {
+    deletePending.value = null
   }
 
   async function toggleMapper() {
@@ -194,6 +217,8 @@ export function useSettingsScreen() {
     applyError,
     pendingApply,
     requestApply,
+    requestApplyEntry,
+    requestApplyEmpty,
     cancelApply,
     confirmApply,
     saveModalOpen,
@@ -202,9 +227,11 @@ export function useSettingsScreen() {
     saveError,
     openSaveModal,
     performSave,
+    closeSaveModal,
     deletePending,
     deleteBusy,
     confirmDelete,
+    clearDeletePending,
     deviceOptions,
     selectedDevice,
     toggleMapper,
