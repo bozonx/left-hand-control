@@ -104,7 +104,7 @@ mod kde {
                         path: "/Layouts".into(),
                         interface: Some("org.kde.KeyboardLayouts".into()),
                         method: "setLayout".into(),
-                        args: vec![DbusArg::U32(n)],
+                        args: vec![DbusArg::U32(n - 1)],
                     }));
                 }
             }
@@ -119,6 +119,25 @@ mod kde {
             }));
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{resolve, DbusArg, SysAction};
+
+    #[test]
+    fn switch_layout_uses_zero_based_kde_index() {
+        let Some(SysAction::Dbus(call)) = resolve("switchLayout1") else {
+            panic!("switchLayout1 did not resolve to a DBus action");
+        };
+        assert_eq!(call.method, "setLayout");
+        assert!(matches!(call.args.as_slice(), [DbusArg::U32(0)]));
+
+        let Some(SysAction::Dbus(call)) = resolve("switchLayout3") else {
+            panic!("switchLayout3 did not resolve to a DBus action");
+        };
+        assert!(matches!(call.args.as_slice(), [DbusArg::U32(2)]));
     }
 }
 
