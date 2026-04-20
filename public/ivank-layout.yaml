@@ -207,6 +207,56 @@ keymaps:
       - name: Mouse5
         action: BrowserForward
 
+
+  # sel-replace-line-with-buffer (cmd-button "xdotool key Home shift+End ctrl+v")
+
+  # sel-replace-to-end-with-buffer (cmd-button "xdotool key shift+End ctrl+v")
+  # sel-copy-line (cmd-button "xdotool key Home Shift+End ctrl+c Home")
+  # sel-select-whole-line (cmd-button "xdotool key Home Shift+End")
+  # sel-replace-to-start-with-buffer (cmd-button "xdotool key shift+Home ctrl+v")
+
+  # sel-5line–down (cmd-button "xdotool key shift+Down shift+Down shift+Down shift+Down shift+Down shift+End")
+
+  sel:
+    keys:
+      KeyQ: macro:ctrlKeyZ
+      KeyW: macro:cutToStart
+      KeyE: macro:cutToEnd
+      KeyR: macro:cutLineContent
+      KeyT: macro:cutAndRemoveLine
+      KeyY: macro:shiftHome
+      #KeyU:
+      #KeyI:
+      KeyO: macro:shiftEnd
+      KeyP: macro:select5LinesUp
+      #BracketLeft
+      #BracketRight
+      #Backslash
+
+      KeyA: macro:ctrlSlash
+      KeyS: macro:copyToStart
+      KeyD: macro:copyToEnd
+      KeyF: PageDown
+      KeyG: macro:ctrlEnd
+      KeyH: Left
+      KeyJ: Down
+      KeyK: Up
+      KeyL: Right
+      Semicolon: macro:rightSpace
+      #Quote:
+
+      KeyZ: macro:emptyLineBelow
+      KeyX: macro:cutWordRightCenter
+      KeyC: macro:copyWordAfterCenter
+      KeyV: macro:pasteAtLineAbove
+      KeyB: macro:replaceWordWidthBuffer
+      KeyN: macro:ctrlLeft
+      KeyM: macro:downHome
+      Comma: macro:upHome
+      Period: macro:ctrlRight
+      Slash: macro:down5Times
+    extras: []
+  
   sym:
     keys:
       KeyA: "!"
@@ -221,20 +271,6 @@ keymaps:
       KeyQ: "~"
       KeyW: "`"
 
-  # sel:
-  #   keys:
-  #     KeyM: "1"
-  #     Comma: "2"
-  #     Period: "3"
-  #     KeyJ: "4"
-  #     KeyK: "5"
-  #     KeyL: "6"
-  #     KeyU: "7"
-  #     KeyI: "8"
-  #     KeyO: "9"
-  #     Space: "0"
-  #   extras: []
-  
   win:
     keys:
       KeyF: sys:switchDesktop1

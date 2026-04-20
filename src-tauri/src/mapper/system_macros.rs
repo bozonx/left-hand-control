@@ -13,6 +13,7 @@ pub struct SysMacro {
 }
 
 pub const SYSTEM_MACROS: &[SysMacro] = &[
+    // nav layer
     SysMacro { id: "moveLineDown", steps: &["Home", "Enter", "Up"] },
     SysMacro { id: "ctrlBackspace", steps: &["Ctrl+Backspace"] },
     SysMacro { id: "ctrlDelete", steps: &["Ctrl+Delete"] },
@@ -53,4 +54,18 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
         steps: &["Down", "Down", "Down", "Down", "Down"],
     },
     SysMacro { id: "toDesktop1", steps: &["sys:switchDesktop1"] },
+
+    // select layer
+    SysMacro { id: "ctrlKeyZ", steps: &["Ctrl+Z"] },
+    SysMacro { id: "cutToStart", steps: &["Shift+Home", "Ctrl+X"] },
+    SysMacro { id: "cutToEnd", steps: &["Shift+End", "Ctrl+X"] },
+    SysMacro { id: "cutLineContent", steps: &["Home", "Shift+End", "Ctrl+X"] },
+    SysMacro { id: "cutAndRemoveLine", steps: &["Home", "Shift+End", "Ctrl+X", "Delete"] },
+    SysMacro { id: "shiftHome", steps: &["Shift+Home"] },
+    SysMacro { id: "shiftEnd", steps: &["Shift+End"] },
+    SysMacro { id: "select5LinesUp", steps: &["Shift+Up", "Shift+Up", "Shift+Up", "Shift+Up", "Shift+Up"] },
+
+    SysMacro { id: "ctrlSlash", steps: &["Ctrl+Slash"] },
+    SysMacro { id: "copyToStart", steps: &["Shift+Home", "Ctrl+C", "Home"] },
+    SysMacro { id: "copyToEnd", steps: &["Shift+End", "Ctrl+C", "End"] },
 ];
