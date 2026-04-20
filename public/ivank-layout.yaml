@@ -175,22 +175,24 @@ rules:
   - key: Tab
     layer: sel
 
-  # CapsLock: коротко — Escape, удержание — слой навигации.
-  # (`tap: Escape` здесь важно: без него native CapsLock будет
-  # переключать системный CapsLock — обычно не то, что нужно.)
+  # CapsLock: коротко — Ctrl+V (вставка), удержание — слой навигации.
   - key: CapsLock
-    tap: Escape
+    tap: Ctrl+V
     layer: nav
     holdMs: 180
 
-  # ShiftLeft: удержание — native Shift (модификатор), тап — пока
-  # проглатываем (замените на нужное действие, когда надумаете).
+  # ShiftLeft: удержание — native Shift (модификатор), тап — Ctrl+C.
   - key: ShiftLeft
-    tap: ~
+    tap: Ctrl+C
 
   # ShiftRight: удержание — native Shift, тап — символ "_".
   - key: ShiftRight
     tap: "_"
+
+  # AltLeft: удержание — слой оконного менеджера, тап — Enter.
+  - key: AltLeft
+    tap: Enter
+    layer: win
 
   # MetaLeft: удержание — как ControlLeft, тап — Escape.
   - key: MetaLeft
@@ -207,10 +209,9 @@ rules:
     tap: ","
     layer: fkeys
 
-  # # Пробел: коротко — обычный Space, удержание — слой символов.
-  # - key: Space
-  #   layer: sym
-  #   tap: Space
+  # Пробел: удержание — слой space, короткое нажатие — native Space.
+  - key: Space
+    layer: space
 
 keymaps:
   # Базовый слой: обычно пустой; сюда можно сразу положить глобальные
