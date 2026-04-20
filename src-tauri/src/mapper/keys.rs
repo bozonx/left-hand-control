@@ -29,6 +29,10 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "F4" => Key::KEY_F4, "F5" => Key::KEY_F5, "F6" => Key::KEY_F6,
         "F7" => Key::KEY_F7, "F8" => Key::KEY_F8, "F9" => Key::KEY_F9,
         "F10" => Key::KEY_F10, "F11" => Key::KEY_F11, "F12" => Key::KEY_F12,
+        "F13" => Key::KEY_F13, "F14" => Key::KEY_F14, "F15" => Key::KEY_F15,
+        "F16" => Key::KEY_F16, "F17" => Key::KEY_F17, "F18" => Key::KEY_F18,
+        "F19" => Key::KEY_F19, "F20" => Key::KEY_F20, "F21" => Key::KEY_F21,
+        "F22" => Key::KEY_F22, "F23" => Key::KEY_F23, "F24" => Key::KEY_F24,
 
         // Navigation / editing
         "Escape" | "Esc" => Key::KEY_ESC,

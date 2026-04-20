@@ -204,7 +204,7 @@ keymaps:
   sym:
     keys:
       KeyA: "!"
-      KeyS: "@"
+      KeyS: F24
       KeyD: "#"
       KeyF: "$"
       KeyG: "%"
