@@ -23,6 +23,7 @@ use super::action::{literal_char, parse_action, Keystroke, MacroStepItem};
 use super::config::AppConfig;
 use super::keys::code_to_key;
 use super::system::{self, SysCommand};
+use super::system_macros::SYSTEM_MACROS;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
@@ -115,16 +116,17 @@ impl Engine {
             Duration::from_millis(cfg.settings.default_macro_modifier_delay_ms);
 
         // Build the macro table first so tap / keymap actions can reference
-        // macros by id.
+        // macros by id. System macros are seeded first; user macros with the
+        // same id override them.
         let mut macros: HashMap<String, MacroDef> = HashMap::new();
-        for m in &cfg.macros {
-            if m.id.is_empty() {
-                eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
-                continue;
-            }
-            let mut steps: Vec<MacroStepItem> = Vec::with_capacity(m.steps.len());
-            for (idx, s) in m.steps.iter().enumerate() {
-                let raw = s.keystroke.trim();
+
+        fn build_steps<'a>(
+            id: &str,
+            keystrokes: impl Iterator<Item = &'a str>,
+        ) -> Vec<MacroStepItem> {
+            let mut steps: Vec<MacroStepItem> = Vec::new();
+            for (idx, raw) in keystrokes.enumerate() {
+                let raw = raw.trim();
                 if raw.is_empty() {
                     continue;
                 }
@@ -133,7 +135,7 @@ impl Engine {
                         Some(cmd) => steps.push(MacroStepItem::System(cmd)),
                         None => eprintln!(
                             "[mapper] macro {} step #{}: system fn {:?} not available",
-                            m.id,
+                            id,
                             idx + 1,
                             rest.trim()
                         ),
@@ -148,12 +150,40 @@ impl Engine {
                     Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
                     None => eprintln!(
                         "[mapper] macro {} step #{}: unknown keystroke {:?}",
-                        m.id,
+                        id,
                         idx + 1,
                         raw
                     ),
                 }
             }
+            steps
+        }
+
+        for sys in SYSTEM_MACROS {
+            let steps = build_steps(sys.id, sys.steps.iter().copied());
+            if steps.is_empty() {
+                eprintln!(
+                    "[mapper] system macro {} has no usable steps — skipped",
+                    sys.id
+                );
+                continue;
+            }
+            macros.insert(
+                sys.id.to_string(),
+                MacroDef {
+                    steps,
+                    step_pause: default_step_pause,
+                    mod_delay: default_mod_delay,
+                },
+            );
+        }
+
+        for m in &cfg.macros {
+            if m.id.is_empty() {
+                eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
+                continue;
+            }
+            let steps = build_steps(&m.id, m.steps.iter().map(|s| s.keystroke.as_str()));
             if steps.is_empty() {
                 eprintln!("[mapper] macro {} has no usable steps — skipped", m.id);
                 continue;

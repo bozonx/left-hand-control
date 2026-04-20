@@ -242,130 +242,16 @@ keymaps:
       KeyS: sys:switchDesktop3
       KeyA: sys:switchDesktop4
 
-macros:
-  - id: moveLineDown
-    name: "Move line down"
-    steps:
-      - Home
-      - Enter
-      - Up
-  - id: ctrlBackspace
-    name: "Ctrl + Backspace"
-    steps:
-      - Ctrl+Backspace
-  - id: ctrlDelete
-    name: "Ctrl + Delete"
-    steps:
-      - Ctrl+Delete
-  - id: ctrlHome
-    name: "Ctrl + Home"
-    steps:
-      - Ctrl+Home
-  - id: downEnd
-    name: "Down + End"
-    steps:
-      - Down
-      - End
-  - id: upEnd
-    name: "Up + End"
-    steps:
-      - Up
-      - End
-  - id: up5Times
-    name: "Up 5 times"
-    steps:
-      - Up
-      - Up
-      - Up
-      - Up
-      - Up
-  
-  - id: duplicateLine
-    name: "Duplicate line"
-    steps:
-      - End
-      - Shift+Home
-      - Ctrl+C
-      - End
-      - Enter
-      - Ctrl+V
-  - id: ctrlD
-    name: "Ctrl + d"
-    steps:
-      - Ctrl+KeyD
-  - id: ctrlEnd
-    name: "Ctrl + End"
-    steps:
-      - Ctrl+End
-  - id: rightSpace
-    name: "Right + Space"
-    steps:
-      - Right
-      - Space
-  
-  - id: emptyLineBelow
-    name: "Empty line below"
-    steps:
-      - End
-      - Enter
-  - id: cutWordRightCenter
-    name: "Cut word right from center"
-    steps:
-      - Ctrl+Right
-      - Ctrl+Shift+Left
-      - Ctrl+X
-  - id: copyWordAfterCenter
-    name: "Copy word right from center"
-    steps:
-      - Ctrl+Right
-      - Ctrl+Shift+Left
-      - Ctrl+C
-      - Left
-  - id: pasteAtLineAbove
-    name: "Paste at line above"
-    steps:
-      - Home
-      - Enter
-      - UP
-      - Ctrl+V
-  - id: replaceWordWidthBuffer
-    name: "Replace word width buffer"
-    steps:
-      - Ctrl+Right
-      - Ctrl+Shift+Left
-      - Ctrl+C
-  - id: ctrlLeft
-    name: "Ctrl + Left"
-    steps:
-      - Ctrl+Left
-  - id: downHome
-    name: "Down + Home"
-    steps:
-      - Down
-      - Home
-  - id: upHome
-    name: "Up + Home"
-    steps:
-      - Up
-      - Home
-  - id: ctrlRight
-    name: "Ctrl + Right"
-    steps:
-      - Ctrl+Right
-  - id: down5Times
-    name: "Down 5 times"
-    steps:
-      - Down
-      - Down
-      - Down
-      - Down
-      - Down
-  - id: toDesktop1
-    name: "To Desktop 1"
-    steps:
-      - sys:switchDesktop1
-
-# Пример макросов (раскомментируйте и подставьте как tap / в keys.<Key>):
+# Макросы, используемые этой раскладкой, вынесены в системные (их
+# определяет приложение и они доступны из любой раскладки без объявления
+# здесь). Каталог системных макросов — `utils/systemMacros.ts` (и
+# зеркальный `src-tauri/src/mapper/system_macros.rs`).
+#
+# Если раскладке нужен свой, специфичный для неё макрос — его можно
+# описать ниже в блоке `macros:`. Пользовательский макрос с тем же id
+# что и системный полностью перекрывает системный.
+#
+# Пример (раскомментируйте и подставьте как tap / в keys.<Key>):
 #
 # macros:
 #   - id: copyLine
@@ -382,3 +268,5 @@ macros:
 #     name: "Save All"
 #     steps:
 #       - Ctrl+Shift+S
+
+macros: []

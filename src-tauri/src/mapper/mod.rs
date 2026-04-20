@@ -20,6 +20,8 @@ mod linux;
 mod portal;
 #[cfg(target_os = "linux")]
 mod system;
+#[cfg(target_os = "linux")]
+mod system_macros;
 
 use serde::Serialize;
 use std::sync::Mutex;

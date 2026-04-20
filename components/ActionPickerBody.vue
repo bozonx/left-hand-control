@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { macroActionRef, systemActionRef } from '~/types/config'
 import { SYSTEM_ACTIONS } from '~/utils/systemActions'
+import { SYSTEM_MACROS } from '~/utils/systemMacros'
 import {
   STATIC_CATEGORIES,
   type ActionItem,
@@ -15,28 +16,43 @@ const draft = defineModel<string>({ default: '' })
 
 const { macros } = useMacros()
 
-const dynamicCategories = computed<StaticCategory[]>(() => [
-  {
-    id: 'macros',
-    label: 'Макросы',
-    icon: 'i-lucide-zap',
-    items: macros.value.map((m) => ({
-      label: m.name || m.id,
-      value: macroActionRef(m.id),
-      hint: m.id,
-    })),
-  },
-  {
-    id: 'system',
-    label: 'Системные',
-    icon: 'i-lucide-settings-2',
-    items: SYSTEM_ACTIONS.map((a) => ({
-      label: a.name,
-      value: systemActionRef(a.id),
-      hint: a.id,
-    })),
-  },
-])
+const dynamicCategories = computed<StaticCategory[]>(() => {
+  // User macros shadow system macros with the same id — hide duplicates
+  // from the system list to avoid confusion.
+  const userIds = new Set(macros.value.map((m) => m.id))
+  return [
+    {
+      id: 'macros',
+      label: 'Макросы',
+      icon: 'i-lucide-zap',
+      items: macros.value.map((m) => ({
+        label: m.name || m.id,
+        value: macroActionRef(m.id),
+        hint: m.id,
+      })),
+    },
+    {
+      id: 'system-macros',
+      label: 'Системные макросы',
+      icon: 'i-lucide-cpu',
+      items: SYSTEM_MACROS.filter((m) => !userIds.has(m.id)).map((m) => ({
+        label: m.name,
+        value: macroActionRef(m.id),
+        hint: m.id,
+      })),
+    },
+    {
+      id: 'system',
+      label: 'Системные',
+      icon: 'i-lucide-settings-2',
+      items: SYSTEM_ACTIONS.map((a) => ({
+        label: a.name,
+        value: systemActionRef(a.id),
+        hint: a.id,
+      })),
+    },
+  ]
+})
 
 const allCategories = computed<StaticCategory[]>(() =>
   props.keyOnly

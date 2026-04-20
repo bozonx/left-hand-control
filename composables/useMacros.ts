@@ -5,9 +5,12 @@ import {
   parseSystemRef,
 } from '~/types/config'
 import { systemActionById } from '~/utils/systemActions'
+import { systemMacroById } from '~/utils/systemMacros'
 
-// Helpers around the user's macro list. Kept stateless — everything derives
-// from the single `config.macros` source of truth in useConfig().
+// Helpers around macro references. `macro:<id>` resolves against the user's
+// `config.macros` first and falls back to the built-in system macros
+// catalog (see `utils/systemMacros.ts`). User macros with the same id as
+// a system macro override it.
 
 export function useMacros() {
   const { config } = useConfig()
@@ -21,7 +24,7 @@ export function useMacros() {
   })
 
   function macroNameById(id: string): string | undefined {
-    return byId.value[id]?.name
+    return byId.value[id]?.name ?? systemMacroById(id)?.name
   }
 
   function displayAction(action: string | undefined | null): string {

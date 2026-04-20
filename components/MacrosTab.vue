@@ -1,16 +1,42 @@
 <script setup lang="ts">
 import { type Macro } from '~/types/config'
 import { randomId } from '~/utils/keys'
+import { SYSTEM_MACROS, type SystemMacro } from '~/utils/systemMacros'
 
 const { config } = useConfig()
 
-function newMacroId(): string {
+function newMacroId(base?: string): string {
+  if (base && !config.value.macros.some((m) => m.id === base)) return base
+  if (base) {
+    // Try base, base2, base3 ... before falling back to random.
+    for (let i = 2; i < 1000; i++) {
+      const candidate = `${base}${i}`
+      if (!config.value.macros.some((m) => m.id === candidate)) return candidate
+    }
+  }
   let id: string
   do {
     id = randomId()
   } while (config.value.macros.some((m) => m.id === id))
   return id
 }
+
+function cloneSystemMacro(sys: SystemMacro) {
+  if (!Array.isArray(config.value.macros)) config.value.macros = []
+  config.value.macros.push({
+    id: newMacroId(sys.id),
+    name: sys.name,
+    steps: sys.steps.map((s) => ({ id: randomId(), keystroke: s.keystroke })),
+    stepPauseMs: undefined,
+    modifierDelayMs: undefined,
+  })
+}
+
+function stepsPreview(sys: SystemMacro): string {
+  return sys.steps.map((s) => s.keystroke).join(' → ')
+}
+
+const systemOpen = ref(false)
 
 function addMacro() {
   if (!Array.isArray(config.value.macros)) config.value.macros = []
@@ -279,6 +305,121 @@ const usage = computed(() => {
             <code class="font-mono">macro:{{ macro.id }}</code>
             во вкладках «Слои» или «Раскладка».
           </div>
+        </div>
+      </div>
+    </UCard>
+
+    <UCard>
+      <template #header>
+        <button
+          type="button"
+          class="flex items-center justify-between gap-3 w-full text-left"
+          :aria-expanded="systemOpen"
+          @click="systemOpen = !systemOpen"
+        >
+          <div>
+            <h2 class="font-semibold flex items-center gap-2">
+              <UIcon
+                :name="
+                  systemOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'
+                "
+                class="text-(--ui-text-muted)"
+              />
+              Системные макросы
+              <UBadge color="neutral" variant="subtle" size="sm">
+                {{ SYSTEM_MACROS.length }}
+              </UBadge>
+            </h2>
+            <p class="text-xs text-(--ui-text-muted) mt-1">
+              Встроенные макросы, которые нельзя изменить. Чтобы настроить
+              такой макрос под себя, создайте на его основе пользовательский.
+            </p>
+          </div>
+        </button>
+      </template>
+
+      <div v-show="systemOpen">
+        <div
+          v-if="SYSTEM_MACROS.length === 0"
+          class="text-sm text-(--ui-text-muted)"
+        >
+          Нет системных макросов.
+        </div>
+
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr
+                class="text-left text-xs text-(--ui-text-muted) border-b border-(--ui-border)"
+              >
+                <th class="py-2 pr-3 font-medium">ID</th>
+                <th class="py-2 pr-3 font-medium">Имя</th>
+                <th class="py-2 pr-3 font-medium">Шаги</th>
+                <th class="py-2 pr-3 font-medium w-px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="sys in SYSTEM_MACROS"
+                :key="sys.id"
+                class="border-b border-(--ui-border) last:border-b-0 align-top"
+              >
+                <td class="py-2 pr-3 font-mono text-xs whitespace-nowrap">
+                  {{ sys.id }}
+                </td>
+                <td class="py-2 pr-3">
+                  <div>{{ sys.name }}</div>
+                  <div
+                    v-if="sys.description"
+                    class="text-xs text-(--ui-text-muted) mt-0.5"
+                  >
+                    {{ sys.description }}
+                  </div>
+                </td>
+                <td class="py-2 pr-3">
+                  <code class="text-xs font-mono text-(--ui-text-muted)">
+                    {{ stepsPreview(sys) }}
+                  </code>
+                  <div
+                    v-if="usage[sys.id] && usage[sys.id].length"
+                    class="flex flex-wrap gap-1 mt-1"
+                  >
+                    <UBadge
+                      v-for="(u, idx) in usage[sys.id]"
+                      :key="idx"
+                      color="neutral"
+                      variant="subtle"
+                      size="sm"
+                      class="font-mono"
+                    >
+                      {{ u }}
+                    </UBadge>
+                  </div>
+                </td>
+                <td class="py-2 pr-3 whitespace-nowrap">
+                  <UBadge
+                    v-if="config.macros.some((m) => m.id === sys.id)"
+                    color="warning"
+                    variant="subtle"
+                    size="sm"
+                    class="mr-2"
+                    title="Пользовательский макрос с таким же id перекрывает системный"
+                  >
+                    Переопределён
+                  </UBadge>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    icon="i-lucide-copy-plus"
+                    :disabled="config.macros.some((m) => m.id === sys.id)"
+                    @click="cloneSystemMacro(sys)"
+                  >
+                    Создать на основе
+                  </UButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </UCard>
