@@ -141,21 +141,33 @@ rules:
   # CapsLock: коротко — Escape, удержание — слой навигации.
   - key: CapsLock
     layer: nav
-    tap: Escape
+    #tap: Escape
     holdMs: 180
+
+  - key: Tab
+    layer: sel
+    #tap: Tab
+
+  - key: ShiftLeft
+    #tap: Tab
+
+  - key: CtrlLeft
+    tap: Escape
+  
+  - key: AltLeft
+    layer: win
+ 
+  - key: AltRight
+    layer: sym
+
+  - key: CtrlRight
+    layer: fkeys
 
   # # Пробел: коротко — обычный Space, удержание — слой символов.
   # - key: Space
   #   layer: sym
   #   tap: Space
 
-  # Правый Alt — только слой Symbols, без tap action.
-  - key: AltRight
-    layer: sym
-
-  - key: AltLeft
-    layer: win
- 
 keymaps:
   # Базовый слой: обычно пустой; сюда можно сразу положить глобальные
   # переопределения (например, поменять левый Ctrl <-> CapsLock).
@@ -249,17 +261,81 @@ keymaps:
   
   sym:
     keys:
-      KeyA: "!"
-      KeyS: F24
-      KeyD: "#"
-      KeyF: "$"
-      KeyG: "%"
-      KeyH: "^"
-      KeyJ: "&"
-      KeyK: "*"
-      KeyL: "|"
-      KeyQ: "~"
-      KeyW: "`"
+      KeyQ: "<"
+      KeyW: "{"
+      KeyE: "["
+      KeyR: "("
+      KeyT: "|"
+      KeyY: "^"
+      KeyU: Key7
+      KeyI: Key8
+      KeyO: Key9
+      KeyP: "="
+      BracketLeft: "≠"
+      #BracketRight
+      #Backslash
+
+      KeyA: "$"
+      KeyS: "#"
+      KeyD: "!"
+      KeyF: "?"
+      KeyG: "&"
+      KeyH: "*"
+      KeyJ: Key4
+      KeyK: Key5
+      KeyL: Key6
+      Semicolon: "+"
+      Quote: "%"
+
+      KeyZ: ":"
+      KeyX: "`"
+      KeyC: "'"
+      KeyV: "\""
+      KeyB: "/"
+      KeyN: Key0
+      KeyM: Key1
+      Comma: Key2
+      Period: Key3
+      Slash: "@"
+
+  fkeys:
+    keys:
+      KeyQ: ">"
+      KeyW: "}"
+      KeyE: "]"
+      KeyR: ")"
+      #KeyT: ""
+      #KeyY: 
+      KeyU: KeyF7
+      KeyI: KeyF8
+      KeyO: KeyF9
+      KeyP: KeyF12
+      #BracketLeft: ""
+      #BracketRight
+      #Backslash
+
+      KeyA: "€"
+      KeyS: "№"
+      #KeyD: ""
+      #KeyF: ""
+      #KeyG: ""
+      #KeyH: ""
+      KeyJ: KeyF4
+      KeyK: KeyF5
+      KeyL: KeyF6
+      Semicolon: KeyF11
+      #Quote: ""
+
+      KeyZ: ";"
+      KeyX: "~"
+      #KeyC: ""
+      #KeyV: ""
+      KeyB: "\\"
+      #KeyN: 
+      KeyM: KeyF1
+      Comma: KeyF2
+      Period: KeyF3
+      Slash: KeyF10
 
   win:
     keys:
