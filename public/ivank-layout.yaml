@@ -431,9 +431,11 @@ keymaps:
       #Slash:
 
   space:
-    #keys:
-    extras: []
-
+    keys:
+      Tab: sys:switchLayout1
+      CapsLock: sys:switchLayout2
+      ShiftLeft: sys:switchLayout3
+    #extras: []
 
 # Макросы, используемые этой раскладкой, вынесены в системные (их
 # определяет приложение и они доступны из любой раскладки без объявления
