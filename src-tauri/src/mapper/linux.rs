@@ -484,33 +484,44 @@ fn call_dbus(call: &DbusCall) {
         return;
     };
 
-    let mut b = StructureBuilder::new();
-    for a in &call.args {
-        b = match a {
-            DbusArg::U32(v) => b.add_field(*v),
-            DbusArg::I32(v) => b.add_field(*v),
-            DbusArg::Bool(v) => b.add_field(*v),
-            DbusArg::Str(s) => b.add_field(s.clone()),
-        };
-    }
-    let body = match b.build() {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!(
-                "[mapper] dbus {}.{}: failed to build body: {}",
-                call.destination, call.method, e
-            );
-            return;
+    let result = if call.args.is_empty() {
+        conn.call_method(
+            Some(call.destination.as_str()),
+            call.path.as_str(),
+            call.interface.as_deref(),
+            call.method.as_str(),
+            &(),
+        )
+    } else {
+        let mut b = StructureBuilder::new();
+        for a in &call.args {
+            b = match a {
+                DbusArg::U32(v) => b.add_field(*v),
+                DbusArg::I32(v) => b.add_field(*v),
+                DbusArg::Bool(v) => b.add_field(*v),
+                DbusArg::Str(s) => b.add_field(s.clone()),
+            };
         }
+        let body = match b.build() {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!(
+                    "[mapper] dbus {}.{}: failed to build body: {}",
+                    call.destination, call.method, e
+                );
+                return;
+            }
+        };
+        conn.call_method(
+            Some(call.destination.as_str()),
+            call.path.as_str(),
+            call.interface.as_deref(),
+            call.method.as_str(),
+            &body,
+        )
     };
 
-    match conn.call_method(
-        Some(call.destination.as_str()),
-        call.path.as_str(),
-        call.interface.as_deref(),
-        call.method.as_str(),
-        &body,
-    ) {
+    match result {
         Ok(_) => {
             eprintln!(
                 "[mapper] dbus {} {} {}.{}",

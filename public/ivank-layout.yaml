@@ -417,7 +417,7 @@ keymaps:
       #KeyP:
       #BracketLeft:
       #BracketRight
-      #Backslash: sys:screenOff
+      Backslash: sys:screenOff
 
       KeyA: sys:switchDesktop4
       KeyS: sys:switchDesktop3
