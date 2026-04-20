@@ -80,7 +80,9 @@ pub fn detect() -> Session {
     let xdg = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
     let session = std::env::var("DESKTOP_SESSION").unwrap_or_default();
     let sess_type = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
-    let wayland = std::env::var("WAYLAND_DISPLAY").ok().filter(|s| !s.is_empty());
+    let wayland = std::env::var("WAYLAND_DISPLAY")
+        .ok()
+        .filter(|s| !s.is_empty());
     let x11 = std::env::var("DISPLAY").ok().filter(|s| !s.is_empty());
     let sway_sock = std::env::var("SWAYSOCK").ok().filter(|s| !s.is_empty());
 

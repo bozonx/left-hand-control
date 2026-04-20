@@ -77,7 +77,11 @@ pub fn parse_action(action: &str) -> Option<Keystroke> {
     if trimmed.chars().count() == 1 {
         let c = trimmed.chars().next().unwrap();
         if let Some((shift, key)) = char_to_key(c) {
-            let mods = if shift { vec![Key::KEY_LEFTSHIFT] } else { vec![] };
+            let mods = if shift {
+                vec![Key::KEY_LEFTSHIFT]
+            } else {
+                vec![]
+            };
             return Some(Keystroke { mods, key });
         }
     }

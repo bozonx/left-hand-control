@@ -171,10 +171,8 @@ impl Engine {
         let default_hold = Duration::from_millis(cfg.settings.default_hold_timeout_ms.max(1));
         let default_double_tap =
             Duration::from_millis(cfg.settings.default_double_tap_timeout_ms.max(1));
-        let default_step_pause =
-            Duration::from_millis(cfg.settings.default_macro_step_pause_ms);
-        let default_mod_delay =
-            Duration::from_millis(cfg.settings.default_macro_modifier_delay_ms);
+        let default_step_pause = Duration::from_millis(cfg.settings.default_macro_step_pause_ms);
+        let default_mod_delay = Duration::from_millis(cfg.settings.default_macro_modifier_delay_ms);
 
         // Build the macro table first so tap / keymap actions can reference
         // macros by id. System macros are seeded first; user macros with the
@@ -419,8 +417,7 @@ impl Engine {
         self.pending
             .values()
             .filter_map(|p| match p.phase {
-                Phase::WaitingDecision { deadline }
-                | Phase::WaitingSecond { deadline } => {
+                Phase::WaitingDecision { deadline } | Phase::WaitingSecond { deadline } => {
                     Some(deadline.saturating_duration_since(now))
                 }
                 Phase::HoldActive => None,
@@ -565,13 +562,7 @@ impl Engine {
                 None => {
                     eprintln!("[mapper]   press {:?} -> passthrough", key);
                     out.push(Out::KeyRaw { key, down: true });
-                    self.emitted.insert(
-                        key,
-                        Keystroke {
-                            mods: vec![],
-                            key,
-                        },
-                    );
+                    self.emitted.insert(key, Keystroke { mods: vec![], key });
                 }
             }
         }
@@ -589,7 +580,10 @@ impl Engine {
                     // tap by double_tap_window to see if a second press
                     // follows; otherwise fire tap immediately.
                     let rule_opt = self.rules.get(&key).cloned();
-                    let has_dtap = rule_opt.as_ref().and_then(|r| r.double_tap.as_ref()).is_some();
+                    let has_dtap = rule_opt
+                        .as_ref()
+                        .and_then(|r| r.double_tap.as_ref())
+                        .is_some();
                     let rule_window = rule_opt
                         .as_ref()
                         .map(|r| r.double_tap_window)
@@ -741,13 +735,7 @@ impl Engine {
         match &rule.hold {
             HoldMode::Native => {
                 out.push(Out::KeyRaw { key, down: true });
-                self.emitted.insert(
-                    key,
-                    Keystroke {
-                        mods: vec![],
-                        key,
-                    },
-                );
+                self.emitted.insert(key, Keystroke { mods: vec![], key });
             }
             HoldMode::Swallow => {
                 // Nothing — physical key is eaten.
@@ -760,7 +748,9 @@ impl Engine {
 
     /// Undo whatever `commit_hold_with` did for this rule key.
     fn release_hold(&mut self, key: Key, out: &mut Vec<Out>) {
-        let Some(rule) = self.rules.get(&key).cloned() else { return };
+        let Some(rule) = self.rules.get(&key).cloned() else {
+            return;
+        };
         match &rule.hold {
             HoldMode::Native | HoldMode::Keystroke(_) => {
                 self.release_emitted(key, out);
@@ -778,10 +768,7 @@ impl Engine {
             TapMode::Native => {
                 // Short native press+release of the physical key.
                 out.push(Out::Stroke {
-                    ks: Keystroke {
-                        mods: vec![],
-                        key,
-                    },
+                    ks: Keystroke { mods: vec![], key },
                     mod_delay: self.default_mod_delay,
                 });
             }
@@ -907,12 +894,7 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::KEY_TAB, true, now, &mut out);
-        engine.handle(
-            Key::KEY_Q,
-            true,
-            now + Duration::from_millis(10),
-            &mut out,
-        );
+        engine.handle(Key::KEY_Q, true, now + Duration::from_millis(10), &mut out);
 
         assert!(matches!(
             out.as_slice(),

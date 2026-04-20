@@ -1,8 +1,13 @@
 //! Platform + session detection layer.
 //!
-//! The app has three OS backends — `linux`, `windows`, `macos`. Inside
-//! the Linux backend we further dispatch to per-desktop implementations
-//! (KDE, GNOME, Sway, generic X11) for APIs that are DE-specific:
+//! The long-term shape has three OS backends — `linux`, `windows`, `macos`.
+//! In the current product we intentionally support only Linux, with KDE as
+//! the only fully implemented desktop integration. The other OS/DE modules
+//! stay in place as compile-safe stubs so the call sites remain explicit.
+//!
+//! Inside the Linux backend we further dispatch to per-desktop
+//! implementations (KDE, GNOME, Sway, generic X11) for APIs that are
+//! DE-specific:
 //!
 //!   * `layout::current()` / `layout::start_watcher()`   — which DBus / CLI tool
 //!                                                         tells us the active
@@ -15,9 +20,9 @@
 //! The low-level key-event interception (evdev + uinput) is DE-agnostic,
 //! so it lives directly in `mapper::linux` without further branching.
 //!
-//! Windows / macOS bindings are currently stubs — the module structure is
-//! in place so the call sites compile and return a clear, actionable
-//! error instead of panicking.
+//! Windows / macOS bindings are intentionally stubs for now — the module
+//! structure is in place so the call sites compile and return a clear,
+//! actionable error instead of panicking.
 
 #[cfg(target_os = "linux")]
 pub mod linux;
@@ -54,13 +59,21 @@ pub struct Capabilities {
 
 pub fn os_kind() -> &'static str {
     #[cfg(target_os = "linux")]
-    { "linux" }
+    {
+        "linux"
+    }
     #[cfg(target_os = "windows")]
-    { "windows" }
+    {
+        "windows"
+    }
     #[cfg(target_os = "macos")]
-    { "macos" }
+    {
+        "macos"
+    }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
-    { "unknown" }
+    {
+        "unknown"
+    }
 }
 
 pub fn info() -> PlatformInfo {

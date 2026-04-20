@@ -1,6 +1,10 @@
 // Current keyboard layout detection.
 //
-// Cross-platform facade. Backends:
+// Current product support is Linux/KDE. The facade keeps the other backends
+// visible as explicit stubs/skeletons so unsupported platforms and desktop
+// environments fail predictably instead of silently diverging.
+//
+// Backends:
 //   * Linux + KDE Plasma     — DBus `org.kde.keyboard`            (implemented)
 //   * Linux + GNOME          — GSettings `input-sources`           (skeleton)
 //   * Linux + Sway / wlroots — `swaymsg -t get_inputs`             (skeleton)
@@ -19,19 +23,19 @@
 use serde::Serialize;
 
 #[cfg(target_os = "linux")]
-mod linux_kde;
-#[cfg(target_os = "linux")]
 mod linux_gnome;
+#[cfg(target_os = "linux")]
+mod linux_kde;
 #[cfg(target_os = "linux")]
 mod linux_sway;
 #[cfg(target_os = "linux")]
 mod linux_x11;
-#[cfg(target_os = "windows")]
-mod windows;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "windows")]
+mod windows;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct LayoutInfo {
     /// Short code, e.g. "us", "ru".
     pub short: String,

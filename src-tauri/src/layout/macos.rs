@@ -1,4 +1,5 @@
-//! macOS keyboard-layout backend — STUB.
+//! macOS keyboard-layout backend — intentional STUB while the shipped
+//! product supports Linux/KDE only.
 //!
 //! Planned implementation (when enabled):
 //!   * `TISCopyCurrentKeyboardInputSource()` from Carbon/TextInputServices

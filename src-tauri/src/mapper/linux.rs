@@ -35,11 +35,24 @@ impl Handle {
     }
 
     pub fn is_alive(&self) -> bool {
-        self.join.as_ref().map(|j| !j.is_finished()).unwrap_or(false)
+        self.join
+            .as_ref()
+            .map(|j| !j.is_finished())
+            .unwrap_or(false)
     }
 
     pub fn last_error(&self) -> Option<String> {
         self.error.lock().ok().and_then(|g| g.clone())
+    }
+
+    pub fn reap_if_finished(&mut self) -> bool {
+        if self.is_alive() {
+            return false;
+        }
+        if let Some(j) = self.join.take() {
+            let _ = j.join();
+        }
+        true
     }
 }
 
@@ -59,14 +72,13 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
     paths.sort();
 
     for path in paths {
-        let Ok(dev) = Device::open(&path) else { continue };
+        let Ok(dev) = Device::open(&path) else {
+            continue;
+        };
         if !is_keyboard(&dev) {
             continue;
         }
-        let name = dev
-            .name()
-            .unwrap_or("(unknown)")
-            .to_string();
+        let name = dev.name().unwrap_or("(unknown)").to_string();
         if name == VIRTUAL_DEVICE_NAME {
             continue;
         }
@@ -85,35 +97,21 @@ fn is_keyboard(dev: &Device) -> bool {
     // Heuristic: considered a keyboard if it reports several letter keys
     // plus space and enter. Excludes mice, power buttons, sleep keys, etc.
     let required = [
-        Key::KEY_A, Key::KEY_S, Key::KEY_D, Key::KEY_F,
-        Key::KEY_SPACE, Key::KEY_ENTER,
+        Key::KEY_A,
+        Key::KEY_S,
+        Key::KEY_D,
+        Key::KEY_F,
+        Key::KEY_SPACE,
+        Key::KEY_ENTER,
     ];
     required.iter().all(|k| keys.contains(*k))
 }
 
 pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
-    // Pre-open the physical device to validate before spawning the thread.
-    let mut device =
-        Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
-    device
-        .grab()
-        .map_err(|e| format!("grab {device_path} (need perms? add user to input group): {e}"))?;
-
-    // Virtual device: advertise every key we might emit.
-    let mut all_keys = AttributeSet::<Key>::new();
-    // Add the typical keyboard range — KEY_ESC (1) .. KEY_MICMUTE (248) covers
-    // everything we map. Going wider is cheap; uinput doesn't care.
-    for code in 1u16..=248 {
-        all_keys.insert(Key::new(code));
-    }
-    let virt = VirtualDeviceBuilder::new()
-        .map_err(|e| format!("uinput builder (need /dev/uinput access?): {e}"))?
-        .name(VIRTUAL_DEVICE_NAME)
-        .input_id(InputId::new(BusType::BUS_USB, 0x1d6b, 0x0104, 1))
-        .with_keys(&all_keys)
-        .map_err(|e| format!("uinput with_keys: {e}"))?
-        .build()
-        .map_err(|e| format!("uinput build: {e}"))?;
+    // Validate the path up front but do not grab here: startup may still
+    // need portal permission, and grabbing before the worker loop is alive
+    // can temporarily "steal" the user's keyboard.
+    let _ = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
 
     eprintln!(
         "[mapper] started: device={} rules={} layers={}",
@@ -155,7 +153,7 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run_loop(device, virt, cfg, stop_thread, portal) {
+            if let Err(e) = run(device_path, cfg, stop_thread, portal) {
                 eprintln!("[mapper] run_loop error: {e}");
                 if let Ok(mut slot) = err_thread.lock() {
                     *slot = Some(e);
@@ -169,6 +167,33 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
         join: Some(join),
         error,
     })
+}
+
+fn run(
+    device_path: String,
+    cfg: AppConfig,
+    stop: Arc<AtomicBool>,
+    portal: Option<Portal>,
+) -> Result<(), String> {
+    let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
+    device
+        .grab()
+        .map_err(|e| format!("grab {device_path} (need perms? add user to input group): {e}"))?;
+
+    let mut all_keys = AttributeSet::<Key>::new();
+    for code in 1u16..=248 {
+        all_keys.insert(Key::new(code));
+    }
+    let virt = VirtualDeviceBuilder::new()
+        .map_err(|e| format!("uinput builder (need /dev/uinput access?): {e}"))?
+        .name(VIRTUAL_DEVICE_NAME)
+        .input_id(InputId::new(BusType::BUS_USB, 0x1d6b, 0x0104, 1))
+        .with_keys(&all_keys)
+        .map_err(|e| format!("uinput with_keys: {e}"))?
+        .build()
+        .map_err(|e| format!("uinput build: {e}"))?;
+
+    run_loop(device, virt, cfg, stop, portal)
 }
 
 fn run_loop(
@@ -373,7 +398,11 @@ fn flush_out(
     for out in buf.drain(..) {
         match out {
             Out::KeyRaw { key, down } => {
-                events.push(InputEvent::new(EventType::KEY, key.code(), if down { 1 } else { 0 }));
+                events.push(InputEvent::new(
+                    EventType::KEY,
+                    key.code(),
+                    if down { 1 } else { 0 },
+                ));
             }
             Out::Stroke { ks, mod_delay } => {
                 flush_events(virt, &mut events)?;
@@ -417,10 +446,7 @@ fn flush_out(
                 flush_events(virt, &mut events)?;
                 match portal {
                     Some(p) => p.type_text(&text),
-                    None => eprintln!(
-                        "[mapper] literal {:?} dropped (portal unavailable)",
-                        text
-                    ),
+                    None => eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text),
                 }
             }
         }
@@ -449,10 +475,7 @@ fn spawn_system(cmd: &SysCommand) {
             eprintln!("[mapper] spawned system: {} {:?}", cmd.program, cmd.args);
         }
         Err(e) => {
-            eprintln!(
-                "[mapper] spawn system {:?} failed: {}",
-                cmd.program, e
-            );
+            eprintln!("[mapper] spawn system {:?} failed: {}", cmd.program, e);
         }
     }
 }

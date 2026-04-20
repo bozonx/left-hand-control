@@ -1,4 +1,5 @@
-//! Generic X11 keyboard-layout backend — SKELETON.
+//! Generic X11 keyboard-layout backend — intentional SKELETON while the
+//! shipped product supports Linux/KDE only.
 //!
 //! Planned implementation:
 //!   * One-shot read: `setxkbmap -query` — text key/value output including

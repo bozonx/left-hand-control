@@ -12,14 +12,11 @@
 //                          whose control surface is a CLI tool
 //                          (swaymsg, wmctrl, …).
 //
-// Current coverage:
-//   * Linux + KDE   — DBus (`org.kde.KWin` → `setCurrentDesktop(i)`).
-//   * Linux + GNOME — skeleton (TODO: DBus `org.gnome.Shell.Eval` or
-//                     wmctrl fallback on X11 sessions).
-//   * Linux + Sway  — skeleton (TODO: spawn `swaymsg workspace number N`).
-//   * Linux + X11   — skeleton (TODO: spawn `wmctrl -s N`).
-//   * Windows / macOS — not applicable yet; the mapper module itself is
-//                       a stub there so this file is Linux-only.
+// Current product support:
+//   * Linux + KDE   — implemented.
+//   * Linux + GNOME / Sway / X11 generic — intentional skeletons for now.
+//   * Windows / macOS — intentional stubs; the mapper module itself is not
+//                       shipped there yet, so this file stays Linux-only.
 
 #![cfg(target_os = "linux")]
 
@@ -63,9 +60,14 @@ pub enum SysAction {
 /// action to run on this machine, or `None` if the function is not
 /// available under the current desktop environment.
 pub fn resolve(name: &str) -> Option<SysAction> {
+    use crate::platform::linux::detect;
+    resolve_for_desktop(name, &detect().desktop)
+}
+
+fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
     let name = name.trim();
-    use crate::platform::linux::{detect, Desktop};
-    match detect().desktop {
+    use crate::platform::linux::Desktop;
+    match desktop {
         Desktop::Kde => kde::resolve(name),
         Desktop::Gnome => gnome::resolve(name),
         Desktop::Sway => sway::resolve(name),
@@ -193,17 +195,20 @@ mod kde {
 
 #[cfg(test)]
 mod tests {
-    use super::{resolve, DbusArg, SysAction};
+    use super::{resolve_for_desktop, DbusArg, SysAction};
+    use crate::platform::linux::Desktop;
 
     #[test]
     fn switch_layout_uses_zero_based_kde_index() {
-        let Some(SysAction::Dbus(call)) = resolve("switchLayout1") else {
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("switchLayout1", &Desktop::Kde)
+        else {
             panic!("switchLayout1 did not resolve to a DBus action");
         };
         assert_eq!(call.method, "setLayout");
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(0)]));
 
-        let Some(SysAction::Dbus(call)) = resolve("switchLayout3") else {
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("switchLayout3", &Desktop::Kde)
+        else {
             panic!("switchLayout3 did not resolve to a DBus action");
         };
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(2)]));
@@ -211,7 +216,9 @@ mod tests {
 
     #[test]
     fn volume_and_window_actions_resolve_via_kglobalaccel() {
-        let Some(SysAction::Dbus(call)) = resolve("walkThroughWindowsAlternative") else {
+        let Some(SysAction::Dbus(call)) =
+            resolve_for_desktop("walkThroughWindowsAlternative", &Desktop::Kde)
+        else {
             panic!("walkThroughWindowsAlternative did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/kwin");
@@ -220,7 +227,9 @@ mod tests {
             [DbusArg::Str(s)] if s == "Walk Through Windows Alternative"
         ));
 
-        let Some(SysAction::Dbus(call)) = resolve("walkThroughWindowsCurrentApp") else {
+        let Some(SysAction::Dbus(call)) =
+            resolve_for_desktop("walkThroughWindowsCurrentApp", &Desktop::Kde)
+        else {
             panic!("walkThroughWindowsCurrentApp did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/kwin");
@@ -229,41 +238,54 @@ mod tests {
             [DbusArg::Str(s)] if s == "Walk Through Windows of Current Application"
         ));
 
-        let Some(SysAction::Dbus(call)) = resolve("volumeUp") else {
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("volumeUp", &Desktop::Kde) else {
             panic!("volumeUp did not resolve to a DBus action");
         };
         assert_eq!(call.destination, "org.kde.kglobalaccel");
         assert_eq!(call.path, "/component/kmix");
-        assert_eq!(call.interface.as_deref(), Some("org.kde.kglobalaccel.Component"));
+        assert_eq!(
+            call.interface.as_deref(),
+            Some("org.kde.kglobalaccel.Component")
+        );
         assert_eq!(call.method, "invokeShortcut");
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "increase_volume"));
 
-        let Some(SysAction::Dbus(call)) = resolve("windowMaximizeVertical") else {
+        let Some(SysAction::Dbus(call)) =
+            resolve_for_desktop("windowMaximizeVertical", &Desktop::Kde)
+        else {
             panic!("windowMaximizeVertical did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/kwin");
-        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Maximize Vertical"));
+        assert!(
+            matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Maximize Vertical")
+        );
 
-        let Some(SysAction::Dbus(call)) = resolve("windowToNextDesktop") else {
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("windowToNextDesktop", &Desktop::Kde)
+        else {
             panic!("windowToNextDesktop did not resolve to a DBus action");
         };
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window to Next Desktop"));
 
-        let Some(SysAction::Dbus(call)) = resolve("windowKeepAbove") else {
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("windowKeepAbove", &Desktop::Kde)
+        else {
             panic!("windowKeepAbove did not resolve to a DBus action");
         };
-        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Above Other Windows"));
+        assert!(
+            matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Above Other Windows")
+        );
 
-        let Some(SysAction::Dbus(call)) = resolve("taskEntry3") else {
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("taskEntry3", &Desktop::Kde) else {
             panic!("taskEntry3 did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/plasmashell");
-        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "activate task manager entry 3"));
+        assert!(
+            matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "activate task manager entry 3")
+        );
     }
 
     #[test]
     fn screenshot_resolves_to_spectacle_spawn() {
-        let Some(SysAction::Spawn(cmd)) = resolve("screenshot") else {
+        let Some(SysAction::Spawn(cmd)) = resolve_for_desktop("screenshot", &Desktop::Kde) else {
             panic!("screenshot did not resolve to a spawned command");
         };
         assert_eq!(cmd.program, "spectacle");

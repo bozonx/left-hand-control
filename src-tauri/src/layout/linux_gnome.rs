@@ -1,4 +1,5 @@
-//! GNOME keyboard-layout backend — SKELETON.
+//! GNOME keyboard-layout backend — intentional SKELETON while the shipped
+//! product supports Linux/KDE only.
 //!
 //! Planned implementation:
 //!   * Query current / configured sources from GSettings:

@@ -143,9 +143,7 @@ fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
             if let Err(e) =
                 portal.call_method("NotifyKeyboardKeysym", &(session, &empty, ks, state))
             {
-                eprintln!(
-                    "[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}"
-                );
+                eprintln!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
                 return;
             }
         }

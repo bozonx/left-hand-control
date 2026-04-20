@@ -1,4 +1,5 @@
-//! Sway / wlroots keyboard-layout backend — SKELETON.
+//! Sway / wlroots keyboard-layout backend — intentional SKELETON while the
+//! shipped product supports Linux/KDE only.
 //!
 //! Planned implementation:
 //!   * `swaymsg -t get_inputs -r` returns JSON array with per-input

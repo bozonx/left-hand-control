@@ -1,4 +1,5 @@
-//! Windows keyboard-layout backend — STUB.
+//! Windows keyboard-layout backend — intentional STUB while the shipped
+//! product supports Linux/KDE only.
 //!
 //! Planned implementation (when enabled):
 //!   * `GetKeyboardLayout(GetWindowThreadProcessId(GetForegroundWindow(), …))`

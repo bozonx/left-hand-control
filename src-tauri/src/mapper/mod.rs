@@ -1,7 +1,8 @@
 // Left Hand Control — key-mapper core.
 //
-// Linux-only for now. Reads events from a grabbed evdev keyboard and emits
-// remapped events via a uinput virtual keyboard. Supports:
+// Linux-only for now. Windows/macOS remain explicit stubs until the project
+// grows a real non-Linux backend. Reads events from a grabbed evdev keyboard
+// and emits remapped events via a uinput virtual keyboard. Supports:
 //   * layer activation on hold (tap-hold)
 //   * single-tap action (also tap-hold with 0-layer)
 //   * per-layer keymap remap (1:1 key -> keystroke with modifiers)
@@ -97,6 +98,12 @@ pub fn start(device_path: &str, config_json: &str) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     let mut st = STATE.lock().unwrap();
+    if let Some(handle) = st.handle.as_mut() {
+        if handle.reap_if_finished() {
+            st.handle = None;
+            st.status.running = false;
+        }
+    }
     if st.handle.is_some() {
         return Err("mapper already running".into());
     }
@@ -135,19 +142,18 @@ pub fn stop() -> Result<(), String> {
 }
 
 pub fn status() -> MapperStatus {
-    let st = STATE.lock().unwrap();
+    let mut st = STATE.lock().unwrap();
     // Refresh live status from linux handle if present.
     #[cfg(target_os = "linux")]
-    if let Some(h) = &st.handle {
-        if let Some(err) = h.last_error() {
-            let mut s = st.status.clone();
-            s.last_error = Some(err);
-            return s;
+    if let Some(h) = st.handle.as_mut() {
+        let err = h.last_error();
+        let finished = h.reap_if_finished();
+        if let Some(err) = err {
+            st.status.last_error = Some(err);
         }
-        if !h.is_alive() {
-            let mut s = st.status.clone();
-            s.running = false;
-            return s;
+        if finished {
+            st.handle = None;
+            st.status.running = false;
         }
     }
     st.status.clone()
