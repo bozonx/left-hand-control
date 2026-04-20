@@ -19,6 +19,38 @@ fn config_path() -> Result<PathBuf, String> {
     Ok(config_dir()?.join("config.json"))
 }
 
+fn layouts_dir() -> Result<PathBuf, String> {
+    Ok(config_dir()?.join("layouts"))
+}
+
+// Keep layout names filesystem-safe: letters, digits, '-' '_' '.' and space.
+// Everything else is replaced with '_'. Also strips leading dots to avoid
+// hidden files and collapses empty names.
+fn sanitize_layout_name(name: &str) -> Result<String, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err("layout name is empty".into());
+    }
+    let mut out = String::with_capacity(trimmed.len());
+    for ch in trimmed.chars() {
+        if ch.is_alphanumeric() || matches!(ch, '-' | '_' | '.' | ' ') {
+            out.push(ch);
+        } else {
+            out.push('_');
+        }
+    }
+    let out = out.trim_start_matches('.').trim().to_string();
+    if out.is_empty() {
+        return Err("layout name has no valid characters".into());
+    }
+    Ok(out)
+}
+
+fn layout_path(name: &str) -> Result<PathBuf, String> {
+    let safe = sanitize_layout_name(name)?;
+    Ok(layouts_dir()?.join(format!("{safe}.yaml")))
+}
+
 #[tauri::command]
 fn get_config_path() -> Result<String, String> {
     Ok(config_path()?.to_string_lossy().to_string())
@@ -41,6 +73,67 @@ fn save_config(contents: String) -> Result<(), String> {
     let tmp = dir.join("config.json.tmp");
     fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
     fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+    Ok(())
+}
+
+// --- User layouts ------------------------------------------------------------
+
+#[tauri::command]
+fn get_layouts_dir() -> Result<String, String> {
+    Ok(layouts_dir()?.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn list_user_layouts() -> Result<Vec<String>, String> {
+    let dir = layouts_dir()?;
+    if !dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut out = Vec::new();
+    for entry in fs::read_dir(&dir).map_err(|e| format!("read_dir: {e}"))? {
+        let entry = entry.map_err(|e| format!("dir entry: {e}"))?;
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension().and_then(|s| s.to_str()) != Some("yaml") {
+            continue;
+        }
+        if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+            out.push(stem.to_string());
+        }
+    }
+    out.sort_unstable();
+    Ok(out)
+}
+
+#[tauri::command]
+fn load_user_layout(name: String) -> Result<String, String> {
+    let path = layout_path(&name)?;
+    if !path.exists() {
+        return Err(format!("layout '{name}' not found"));
+    }
+    fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
+}
+
+#[tauri::command]
+fn save_user_layout(name: String, contents: String) -> Result<String, String> {
+    let dir = layouts_dir()?;
+    fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
+    let safe = sanitize_layout_name(&name)?;
+    let path = dir.join(format!("{safe}.yaml"));
+    let tmp = dir.join(format!("{safe}.yaml.tmp"));
+    fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
+    fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+    Ok(safe)
+}
+
+#[tauri::command]
+fn delete_user_layout(name: String) -> Result<(), String> {
+    let path = layout_path(&name)?;
+    if path.exists() {
+        fs::remove_file(&path).map_err(|e| format!("remove_file: {e}"))?;
+    }
     Ok(())
 }
 
@@ -170,6 +263,11 @@ pub fn run() {
             get_config_path,
             load_config,
             save_config,
+            get_layouts_dir,
+            list_user_layouts,
+            load_user_layout,
+            save_user_layout,
+            delete_user_layout,
             list_keyboards,
             start_mapper,
             stop_mapper,

@@ -1,9 +1,15 @@
 import {
   type AppConfig,
+  type LayoutPreset,
   BASE_LAYER_ID,
+  BUILTIN_LAYOUT_ID,
   createDefaultConfig,
 } from '~/types/config'
-import { loadDefaultsYaml } from '~/utils/defaultLayers'
+import {
+  applyPresetToConfig,
+  layoutSnapshotOf,
+  loadBuiltinLayout,
+} from '~/utils/layoutPresets'
 
 type TauriCore = typeof import('@tauri-apps/api/core')
 
@@ -19,15 +25,6 @@ async function getTauri(): Promise<TauriCore | null> {
 }
 
 const BROWSER_STORAGE_KEY = 'lhc:config'
-
-// Dev-only: when VITE_LHC_USE_DEFAULTS is truthy, skip the persisted user
-// config entirely on startup and seed the app from `public/default-layers.yaml`.
-// Changes made in the UI are kept in memory only (not saved to disk).
-const USE_DEFAULTS_ONLY =
-  import.meta.env.DEV &&
-  ['1', 'true', 'yes', 'on'].includes(
-    String(import.meta.env.VITE_LHC_USE_DEFAULTS ?? '').toLowerCase(),
-  )
 
 async function readRaw(): Promise<string> {
   const tauri = await getTauri()
@@ -102,8 +99,26 @@ interface ConfigState {
   saving: Ref<boolean>
   lastError: Ref<string | null>
   configPath: Ref<string>
+  // True when we launched and found no persisted config — show the welcome
+  // screen so the user can pick a starting layout.
+  needsWelcome: Ref<boolean>
+  // Id of the currently applied layout preset (mirrors
+  // config.settings.currentLayoutId but always reactive).
+  currentLayoutId: Ref<string | undefined>
+  // True when the in-memory layout-subset differs from the snapshot taken
+  // the last time the user applied or saved a layout. If `currentLayoutId`
+  // is empty, any non-empty layout is considered "dirty" so that switching
+  // away prompts to save first.
+  isLayoutDirty: Ref<boolean>
   load: () => Promise<void>
   flush: () => Promise<void>
+  // Apply a layout preset to the current config (settings are preserved),
+  // persists, and marks the layout as clean under `layoutId` (undefined for
+  // an ad-hoc / empty layout).
+  applyPreset: (preset: LayoutPreset, layoutId: string | undefined) => Promise<void>
+  // Reset dirty-tracking to the current state (e.g. after saving the current
+  // config as a user layout).
+  markLayoutSavedAs: (layoutId: string) => Promise<void>
 }
 
 let singleton: ConfigState | null = null
@@ -116,6 +131,16 @@ export function useConfig(): ConfigState {
   const saving = ref(false)
   const lastError = ref<string | null>(null)
   const configPath = ref('')
+  const needsWelcome = ref(false)
+  const layoutSnapshot = ref<string>(layoutSnapshotOf(config.value))
+
+  const currentLayoutId = computed<string | undefined>(
+    () => config.value.settings.currentLayoutId || undefined,
+  )
+
+  const isLayoutDirty = computed<boolean>(
+    () => layoutSnapshotOf(config.value) !== layoutSnapshot.value,
+  )
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null
   let pendingFlushResolvers: Array<() => void> = []
@@ -137,6 +162,7 @@ export function useConfig(): ConfigState {
 
   function scheduleSave() {
     if (!loaded.value) return
+    if (needsWelcome.value) return // don't write config.json until user picks a layout
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       saveTimer = null
@@ -158,19 +184,64 @@ export function useConfig(): ConfigState {
     }
   }
 
+  async function applyPreset(
+    preset: LayoutPreset,
+    layoutId: string | undefined,
+  ) {
+    config.value = applyPresetToConfig(config.value, preset, layoutId)
+    layoutSnapshot.value = layoutSnapshotOf(config.value)
+    needsWelcome.value = false
+    await flush() // ensure the file exists even before the debounce fires
+    if (!saveTimer && !saving.value) {
+      await persistNow()
+    }
+  }
+
+  async function markLayoutSavedAs(layoutId: string) {
+    config.value.settings.currentLayoutId = layoutId
+    layoutSnapshot.value = layoutSnapshotOf(config.value)
+    await flush()
+  }
+
   async function load() {
-    let freshlyInitialized = false
+    // When VITE_LHC_FORCE_IVANK=true, ignore any persisted user layout on
+    // startup and seed state from the bundled Ivan K's preset. Saving still
+    // works normally: any edit in the UI will be written back to config.json,
+    // overwriting the user's layout on the next auto-save. Useful for
+    // iterating on the bundled preset; should NOT be enabled in production.
+    const forceIvank =
+      import.meta.env.VITE_LHC_FORCE_IVANK === 'true' ||
+      import.meta.env.VITE_LHC_FORCE_IVANK === '1'
+
     try {
-      if (USE_DEFAULTS_ONLY) {
-        const seeded = await loadDefaultsYaml()
-        config.value = seeded ?? createDefaultConfig()
+      if (forceIvank) {
+        const preset = await loadBuiltinLayout()
+        // Preserve settings from the existing config.json if any, so global
+        // options like inputDevicePath aren't clobbered.
+        const raw = await readRaw()
+        if (raw) {
+          try {
+            config.value = normalize(JSON.parse(raw))
+          } catch {
+            config.value = createDefaultConfig()
+          }
+        }
+        if (preset) {
+          config.value = applyPresetToConfig(
+            config.value,
+            preset,
+            BUILTIN_LAYOUT_ID,
+          )
+        }
+        layoutSnapshot.value = layoutSnapshotOf(config.value)
         configPath.value = await getConfigPath()
         lastError.value = null
         console.info(
-          '[LHC] VITE_LHC_USE_DEFAULTS=true — ignoring persisted config on load, seeding from public/default-layers.yaml (saves remain enabled)',
+          '[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout.',
         )
         return
       }
+
       const raw = await readRaw()
       if (raw) {
         try {
@@ -178,25 +249,20 @@ export function useConfig(): ConfigState {
         } catch {
           config.value = createDefaultConfig()
         }
+        layoutSnapshot.value = layoutSnapshotOf(config.value)
       } else {
-        // No saved config yet — seed from bundled YAML defaults.
-        const seeded = await loadDefaultsYaml()
-        config.value = seeded ?? createDefaultConfig()
-        freshlyInitialized = true
+        // First launch: no config yet. Show the welcome screen.
+        needsWelcome.value = true
+        layoutSnapshot.value = layoutSnapshotOf(config.value)
       }
       configPath.value = await getConfigPath()
       lastError.value = null
     } catch (e: unknown) {
       lastError.value = e instanceof Error ? e.message : String(e)
       config.value = createDefaultConfig()
+      layoutSnapshot.value = layoutSnapshotOf(config.value)
     } finally {
       loaded.value = true
-    }
-    // Persist seeded defaults immediately so subsequent launches don't
-    // re-read the YAML and overwrite any user edits made before the first
-    // auto-save would have fired.
-    if (freshlyInitialized) {
-      await persistNow()
     }
   }
 
@@ -215,8 +281,13 @@ export function useConfig(): ConfigState {
     saving,
     lastError,
     configPath,
+    needsWelcome,
+    currentLayoutId,
+    isLayoutDirty,
     load,
     flush,
+    applyPreset,
+    markLayoutSavedAs,
   }
   return singleton
 }

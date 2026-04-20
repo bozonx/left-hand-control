@@ -1,5 +1,20 @@
 <script setup lang="ts">
-const { loaded, saving, lastError, load } = useConfig()
+import { BUILTIN_LAYOUT_ID } from '~/types/config'
+import {
+  isUserLayoutId,
+  userLayoutNameFromId,
+} from '~/composables/useLayoutLibrary'
+import { BUILTIN_LAYOUT_META } from '~/utils/layoutPresets'
+
+const {
+  loaded,
+  saving,
+  lastError,
+  needsWelcome,
+  currentLayoutId,
+  isLayoutDirty,
+  load,
+} = useConfig()
 const { layout } = useLayout()
 
 const tabItems = [
@@ -11,19 +26,53 @@ const tabItems = [
 
 const active = ref<string>('rules')
 
+const currentLayoutLabel = computed<string>(() => {
+  const id = currentLayoutId.value
+  if (!id) return 'Пользовательская раскладка'
+  if (id === BUILTIN_LAYOUT_ID) return BUILTIN_LAYOUT_META.name
+  if (isUserLayoutId(id)) return userLayoutNameFromId(id)
+  return id
+})
+
 onMounted(() => {
   void load()
 })
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
+  <WelcomeScreen v-if="loaded && needsWelcome" />
+
+  <div v-else class="min-h-screen flex flex-col">
     <header
-      class="flex items-center justify-between px-6 py-3 border-b border-(--ui-border) bg-(--ui-bg-elevated)"
+      class="flex items-center justify-between px-6 py-3 border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-4 flex-wrap"
     >
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
         <h1 class="text-lg font-semibold">Left Hand Control</h1>
         <UBadge color="primary" variant="subtle">Linux key-mapper</UBadge>
+        <UBadge
+          v-if="loaded"
+          :color="isLayoutDirty ? 'warning' : 'neutral'"
+          :variant="isLayoutDirty ? 'solid' : 'outline'"
+          class="max-w-[22rem] truncate"
+          :title="
+            isLayoutDirty
+              ? 'В текущей раскладке есть несохранённые изменения. Сохраните её в Настройках → Раскладки, иначе они потеряются при переключении.'
+              : currentLayoutLabel
+          "
+        >
+          <UIcon
+            :name="
+              isLayoutDirty
+                ? 'i-lucide-alert-triangle'
+                : 'i-lucide-keyboard'
+            "
+            class="mr-1"
+          />
+          <span class="truncate">{{ currentLayoutLabel }}</span>
+          <span v-if="isLayoutDirty" class="ml-1 font-semibold">•
+            не сохранено
+          </span>
+        </UBadge>
         <UBadge
           v-if="layout"
           color="neutral"

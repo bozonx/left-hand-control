@@ -1,25 +1,149 @@
 <script setup lang="ts">
-import { loadDefaultsYaml } from '~/utils/defaultLayers'
+import { BUILTIN_LAYOUT_ID } from '~/types/config'
+import {
+  type LayoutLibraryEntry,
+  isUserLayoutId,
+  userLayoutId,
+  userLayoutNameFromId,
+} from '~/composables/useLayoutLibrary'
+import {
+  emptyLayoutPreset,
+  extractPresetFromConfig,
+  loadBuiltinLayout,
+} from '~/utils/layoutPresets'
 
-const { config, configPath, flush } = useConfig()
+const {
+  config,
+  configPath,
+  flush,
+  applyPreset,
+  markLayoutSavedAs,
+  currentLayoutId,
+  isLayoutDirty,
+} = useConfig()
+const library = useLayoutLibrary()
 const mapper = useMapper()
 
-const resetting = ref(false)
-const resetConfirmOpen = ref(false)
+// --- Layout library ---------------------------------------------------------
 
-async function resetToDefaults() {
-  resetting.value = true
+const applying = ref<string>('') // entry id being applied
+const applyError = ref<string | null>(null)
+
+// Confirmation state for switching layouts. `pendingApply` holds the target
+// we'll switch to after the user confirms.
+interface PendingApply {
+  kind: 'entry' | 'empty'
+  entry?: LayoutLibraryEntry
+  label: string
+}
+const pendingApply = ref<PendingApply | null>(null)
+
+function requestApply(target: PendingApply) {
+  applyError.value = null
+  pendingApply.value = target
+}
+
+async function confirmApply() {
+  const target = pendingApply.value
+  if (!target) return
+  const id = target.kind === 'empty' ? 'empty' : target.entry!.id
+  applying.value = id
   try {
-    const defaults = await loadDefaultsYaml()
-    if (defaults) {
-      config.value = defaults
-      await flush()
+    if (target.kind === 'empty') {
+      await applyPreset(emptyLayoutPreset(), undefined)
+    } else {
+      const entry = target.entry!
+      const preset =
+        entry.id === BUILTIN_LAYOUT_ID
+          ? await loadBuiltinLayout()
+          : await library.loadPreset(entry.id)
+      if (!preset) {
+        applyError.value = `Не удалось загрузить раскладку "${entry.name}"`
+        return
+      }
+      await applyPreset(preset, entry.id)
     }
+    pendingApply.value = null
+  } catch (e) {
+    applyError.value = e instanceof Error ? e.message : String(e)
   } finally {
-    resetting.value = false
-    resetConfirmOpen.value = false
+    applying.value = ''
   }
 }
+
+function cancelApply() {
+  pendingApply.value = null
+}
+
+// --- Save current as user layout -------------------------------------------
+
+const saveModalOpen = ref(false)
+const saveName = ref('')
+const saveBusy = ref(false)
+const saveError = ref<string | null>(null)
+
+function openSaveModal() {
+  saveError.value = null
+  // Pre-fill with the current layout name if it's a user one.
+  if (isUserLayoutId(currentLayoutId.value)) {
+    saveName.value = userLayoutNameFromId(currentLayoutId.value!)
+  } else {
+    saveName.value = ''
+  }
+  saveModalOpen.value = true
+}
+
+async function performSave() {
+  const name = saveName.value.trim()
+  if (!name) {
+    saveError.value = 'Введите имя раскладки.'
+    return
+  }
+  saveBusy.value = true
+  saveError.value = null
+  try {
+    const preset = extractPresetFromConfig(config.value, name)
+    const savedName = await library.saveUserPreset(name, preset)
+    await markLayoutSavedAs(userLayoutId(savedName))
+    saveModalOpen.value = false
+  } catch (e) {
+    saveError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    saveBusy.value = false
+  }
+}
+
+// --- Delete user layout -----------------------------------------------------
+
+const deletePending = ref<LayoutLibraryEntry | null>(null)
+const deleteBusy = ref(false)
+
+async function confirmDelete() {
+  const entry = deletePending.value
+  if (!entry || entry.builtin) return
+  deleteBusy.value = true
+  try {
+    await library.deleteUserPreset(userLayoutNameFromId(entry.id))
+    // If we just deleted the active layout, clear the link (but keep content).
+    if (currentLayoutId.value === entry.id) {
+      config.value.settings.currentLayoutId = undefined
+      await flush()
+    }
+    deletePending.value = null
+  } finally {
+    deleteBusy.value = false
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([
+    mapper.refreshDevices(),
+    mapper.refreshStatus(),
+    library.refresh(),
+  ])
+})
+
+// --- Mapper / devices -------------------------------------------------------
 
 const deviceOptions = computed(() =>
   mapper.devices.value.map((d) => ({
@@ -45,10 +169,6 @@ async function toggleMapper() {
     await mapper.start(selectedDevice.value)
   }
 }
-
-onMounted(async () => {
-  await Promise.all([mapper.refreshDevices(), mapper.refreshStatus()])
-})
 </script>
 
 <template>
@@ -191,6 +311,136 @@ onMounted(async () => {
 
     <UCard>
       <template #header>
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <h2 class="font-semibold">Раскладки</h2>
+          <UButton
+            color="primary"
+            icon="i-lucide-save"
+            :disabled="!isLayoutDirty && !currentLayoutId"
+            @click="openSaveModal"
+          >
+            Сохранить текущую…
+          </UButton>
+        </div>
+      </template>
+
+      <div class="space-y-3">
+        <div
+          v-if="isLayoutDirty"
+          class="flex items-start gap-2 p-3 rounded border border-(--ui-warning)/40 bg-(--ui-warning)/10 text-sm"
+        >
+          <UIcon
+            name="i-lucide-alert-triangle"
+            class="text-(--ui-warning) mt-0.5 shrink-0"
+          />
+          <div>
+            <div class="font-semibold">
+              В текущей раскладке есть несохранённые изменения.
+            </div>
+            <div class="text-(--ui-text-muted)">
+              Переключение на другую раскладку затрёт правила, слои,
+              раскладки и макросы. Сохраните текущую как пользовательскую,
+              чтобы не потерять.
+            </div>
+          </div>
+        </div>
+
+        <p v-if="applyError" class="text-sm text-(--ui-error)">
+          {{ applyError }}
+        </p>
+
+        <ul class="divide-y divide-(--ui-border) border border-(--ui-border) rounded">
+          <li
+            v-for="entry in library.entries.value"
+            :key="entry.id"
+            class="flex items-center justify-between gap-3 p-3"
+          >
+            <div class="flex items-center gap-2 min-w-0">
+              <UIcon
+                :name="entry.builtin ? 'i-lucide-sparkles' : 'i-lucide-file'"
+                :class="entry.builtin ? 'text-(--ui-primary)' : ''"
+              />
+              <div class="min-w-0">
+                <div class="font-medium truncate flex items-center gap-2">
+                  {{ entry.name }}
+                  <UBadge
+                    v-if="currentLayoutId === entry.id"
+                    color="success"
+                    variant="subtle"
+                    size="sm"
+                  >
+                    активна
+                  </UBadge>
+                  <UBadge
+                    v-if="entry.builtin"
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                  >
+                    встроенная
+                  </UBadge>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <UButton
+                variant="outline"
+                icon="i-lucide-rotate-ccw"
+                :loading="applying === entry.id"
+                :disabled="!!applying"
+                @click="
+                  requestApply({
+                    kind: 'entry',
+                    entry,
+                    label: entry.name,
+                  })
+                "
+              >
+                Применить
+              </UButton>
+              <UButton
+                v-if="!entry.builtin"
+                color="error"
+                variant="ghost"
+                icon="i-lucide-trash-2"
+                aria-label="Удалить"
+                @click="deletePending = entry"
+              />
+            </div>
+          </li>
+        </ul>
+
+        <div class="flex items-center justify-between gap-3 pt-2 border-t border-(--ui-border)">
+          <div class="text-sm text-(--ui-text-muted)">
+            Сбросить всё: обнулить слои, правила, раскладки и макросы.
+            Настройки приложения сохраняются.
+          </div>
+          <UButton
+            color="warning"
+            variant="outline"
+            icon="i-lucide-eraser"
+            :loading="applying === 'empty'"
+            :disabled="!!applying"
+            @click="
+              requestApply({
+                kind: 'empty',
+                label: 'Пустая раскладка',
+              })
+            "
+          >
+            Сбросить всё
+          </UButton>
+        </div>
+
+        <p class="text-xs text-(--ui-text-muted)">
+          Папка с пользовательскими раскладками:
+          <code class="break-all">{{ library.layoutsDir.value || '…' }}</code>
+        </p>
+      </div>
+    </UCard>
+
+    <UCard>
+      <template #header>
         <h2 class="font-semibold">Файл конфигурации</h2>
       </template>
       <div class="text-sm">
@@ -204,34 +454,112 @@ onMounted(async () => {
       </div>
     </UCard>
 
-    <UCard>
-      <template #header>
-        <h2 class="font-semibold">Дефолтные слои</h2>
+    <!-- Apply confirmation -->
+    <UModal
+      :open="!!pendingApply"
+      :title="`Переключиться на «${pendingApply?.label ?? ''}»?`"
+      @update:open="(v) => !v && cancelApply()"
+    >
+      <template #body>
+        <div class="space-y-3 text-sm">
+          <p>
+            Текущие слои, правила, раскладки клавиш и макросы будут заменены.
+            Настройки приложения сохраняются.
+          </p>
+          <div
+            v-if="isLayoutDirty"
+            class="flex items-start gap-2 p-3 rounded border border-(--ui-error)/40 bg-(--ui-error)/10"
+          >
+            <UIcon
+              name="i-lucide-alert-triangle"
+              class="text-(--ui-error) mt-0.5 shrink-0"
+            />
+            <div>
+              <div class="font-semibold">
+                Внимание: у текущей раскладки есть несохранённые изменения.
+              </div>
+              <div>
+                Если вы продолжите, они будут безвозвратно потеряны.
+                Вернитесь и нажмите <b>«Сохранить текущую…»</b>, чтобы
+                записать их в файл.
+              </div>
+            </div>
+          </div>
+        </div>
       </template>
-      <div class="space-y-3">
-        <p class="text-sm text-(--ui-text-muted)">
-          Перезаписать текущий конфиг шаблоном из
-          <code>public/default-layers.yaml</code>. Текущие правила, слои и
-          раскладки будут потеряны.
-        </p>
-        <UButton
-          color="warning"
-          variant="outline"
-          icon="i-lucide-rotate-ccw"
-          :loading="resetting"
-          @click="resetConfirmOpen = true"
-        >
-          Сбросить к дефолтам
-        </UButton>
-      </div>
-    </UCard>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton variant="ghost" color="neutral" @click="cancelApply">
+            Отмена
+          </UButton>
+          <UButton
+            :color="isLayoutDirty ? 'error' : 'primary'"
+            :loading="!!applying"
+            @click="confirmApply"
+          >
+            {{ isLayoutDirty ? 'Потерять изменения и переключить' : 'Переключить' }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
 
-    <UModal v-model:open="resetConfirmOpen" title="Сбросить к дефолтам?">
+    <!-- Save-as modal -->
+    <UModal
+      v-model:open="saveModalOpen"
+      title="Сохранить раскладку"
+    >
+      <template #body>
+        <div class="space-y-3">
+          <UFormField label="Имя раскладки">
+            <UInput
+              v-model="saveName"
+              placeholder="my-layout"
+              autofocus
+              @keyup.enter="performSave"
+            />
+          </UFormField>
+          <p class="text-xs text-(--ui-text-muted)">
+            Файл будет сохранён в
+            <code class="break-all">{{ library.layoutsDir.value }}/{{ saveName || '…' }}.yaml</code>.
+            Существующая раскладка с таким же именем будет перезаписана.
+          </p>
+          <p v-if="saveError" class="text-sm text-(--ui-error)">
+            {{ saveError }}
+          </p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="saveModalOpen = false"
+          >
+            Отмена
+          </UButton>
+          <UButton
+            color="primary"
+            icon="i-lucide-save"
+            :loading="saveBusy"
+            :disabled="!saveName.trim()"
+            @click="performSave"
+          >
+            Сохранить
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Delete confirmation -->
+    <UModal
+      :open="!!deletePending"
+      :title="`Удалить «${deletePending?.name ?? ''}»?`"
+      @update:open="(v) => !v && (deletePending = null)"
+    >
       <template #body>
         <p class="text-sm">
-          Текущие настройки будут заменены содержимым
-          <code>default-layers.yaml</code> и сохранены в
-          <code>config.json</code>. Действие необратимо.
+          Файл раскладки будет удалён с диска. Это действие необратимо.
+          Текущая активная раскладка от этого не меняется.
         </p>
       </template>
       <template #footer>
@@ -239,16 +567,16 @@ onMounted(async () => {
           <UButton
             variant="ghost"
             color="neutral"
-            @click="resetConfirmOpen = false"
+            @click="deletePending = null"
           >
             Отмена
           </UButton>
           <UButton
-            color="warning"
-            :loading="resetting"
-            @click="resetToDefaults"
+            color="error"
+            :loading="deleteBusy"
+            @click="confirmDelete"
           >
-            Сбросить
+            Удалить
           </UButton>
         </div>
       </template>

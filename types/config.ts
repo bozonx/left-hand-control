@@ -71,6 +71,22 @@ export interface AppSettings {
   // /dev/input/eventX path of the keyboard to intercept. Empty/undefined
   // means the mapper cannot start until the user picks one in Settings.
   inputDevicePath?: string
+  // Id of the currently applied layout preset: BUILTIN_LAYOUT_ID for the
+  // bundled "Ivan K's" preset, or "user:<name>" for a preset saved by the
+  // user. Empty/undefined means a custom / unnamed layout.
+  currentLayoutId?: string
+}
+
+// A layout preset: the subset of AppConfig that describes keyboard behaviour
+// (no global settings). Used for the bundled default and for user-saved YAML
+// layouts under <configDir>/layouts/.
+export interface LayoutPreset {
+  name: string
+  description?: string
+  layers: Layer[]
+  rules: LayerRule[]
+  layerKeymaps: Record<string, LayerKeymap>
+  macros: Macro[]
 }
 
 export interface AppConfig {
@@ -116,6 +132,11 @@ export function parseSystemRef(action: string): string | null {
 }
 
 export const BASE_LAYER_ID = 'base'
+
+// Id of the bundled "Ivan K's left hand control" layout preset.
+export const BUILTIN_LAYOUT_ID = 'builtin:ivank'
+// Prefix used to compose an id for a user-saved layout: `user:<name>`.
+export const USER_LAYOUT_PREFIX = 'user:'
 
 export function createDefaultConfig(): AppConfig {
   return {

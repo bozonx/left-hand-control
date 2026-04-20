@@ -92,7 +92,7 @@ pub fn code_to_key(code: &str) -> Option<Key> {
     })
 }
 
-// Single-character shortcuts (e.g. the symbols in default-layers.yaml).
+// Single-character shortcuts (e.g. the symbols in Ivan K's layout preset).
 // Returns (needs_shift, Key).
 pub fn char_to_key(ch: char) -> Option<(bool, Key)> {
     Some(match ch {
