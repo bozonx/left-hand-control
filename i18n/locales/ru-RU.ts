@@ -281,6 +281,8 @@ export default {
   },
   systemActions: {
     switchDesktop: 'Переключиться на рабочий стол {n}',
+    switchLayout: 'Переключить раскладку на {n}',
+    showClipboardHistory: 'Показать историю буфера обмена',
   },
   mapper: {
     desktopOnly: 'Маппер доступен только в desktop-сборке (pnpm tauri:dev).',

@@ -38,6 +38,10 @@ export default defineNuxtConfig({
     preset: 'static',
   },
 
+  experimental: {
+    appManifest: false,
+  },
+
   // Nuxt dev server configuration for Tauri
   devServer: {
     host: '127.0.0.1',

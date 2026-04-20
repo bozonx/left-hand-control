@@ -96,6 +96,28 @@ mod kde {
                 }
             }
         }
+        if let Some(rest) = name.strip_prefix("switchLayout") {
+            if let Ok(n) = rest.parse::<u32>() {
+                if (1..=10).contains(&n) {
+                    return Some(SysAction::Dbus(DbusCall {
+                        destination: "org.kde.keyboard".into(),
+                        path: "/Layouts".into(),
+                        interface: Some("org.kde.KeyboardLayouts".into()),
+                        method: "setLayout".into(),
+                        args: vec![DbusArg::U32(n)],
+                    }));
+                }
+            }
+        }
+        if name == "showClipboardHistory" {
+            return Some(SysAction::Dbus(DbusCall {
+                destination: "org.kde.plasmashell".into(),
+                path: "/klipper".into(),
+                interface: Some("org.kde.klipper.klipper".into()),
+                method: "showKlipperPopupMenu".into(),
+                args: vec![],
+            }));
+        }
         None
     }
 }

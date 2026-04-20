@@ -24,6 +24,7 @@ export interface SystemAction {
 // KDE supports up to 20 virtual desktops, but 10 is a comfortable list
 // length for the picker. Bump if needed.
 const KDE_DESKTOP_COUNT = 10
+const KDE_LAYOUT_COUNT = 10
 
 export const SYSTEM_ACTIONS: SystemAction[] = [
   ...Array.from({ length: KDE_DESKTOP_COUNT }, (_, i) => {
@@ -36,6 +37,22 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
       platforms: ['linux-kde'],
     }
   }),
+  ...Array.from({ length: KDE_LAYOUT_COUNT }, (_, i) => {
+    const n = i + 1
+    return {
+      id: `switchLayout${n}`,
+      nameKey: 'systemActions.switchLayout',
+      nameParams: { n },
+      hint: 'KDE: qdbus org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout ' + n,
+      platforms: ['linux-kde'],
+    }
+  }),
+  {
+    id: 'showClipboardHistory',
+    nameKey: 'systemActions.showClipboardHistory',
+    hint: 'KDE: qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu',
+    platforms: ['linux-kde'],
+  },
 ]
 
 const BY_ID: Record<string, SystemAction> = Object.fromEntries(

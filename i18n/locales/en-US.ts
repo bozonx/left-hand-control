@@ -279,6 +279,8 @@ export default {
   },
   systemActions: {
     switchDesktop: 'Switch to desktop {n}',
+    switchLayout: 'Switch to layout {n}',
+    showClipboardHistory: 'Show clipboard history',
   },
   mapper: {
     desktopOnly: 'The mapper is only available in the desktop build (pnpm tauri:dev).',

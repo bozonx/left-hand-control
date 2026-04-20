@@ -101,6 +101,12 @@
 #   sys:switchDesktop1 .. sys:switchDesktop10
 #     — переключение на виртуальный рабочий стол N
 #       (qdbus org.kde.KWin /KWin setCurrentDesktop N).
+#   sys:switchLayout1 .. sys:switchLayout10
+#     — переключение на раскладку клавиатуры N
+#       (qdbus org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout N).
+#   sys:showClipboardHistory
+#     — показать историю буфера обмена Klipper
+#       (qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu).
 #
 # Использовать можно и напрямую (как tap / значение в keys / extras),
 # и как шаг макроса.
@@ -306,7 +312,6 @@ keymaps:
       #Comma:
       Period: Shift+Ctrl+Right
       Slash: macro:select5LinesDown
-    extras: []
 
   sym:
     keys:
@@ -388,10 +393,47 @@ keymaps:
 
   win:
     keys:
-      KeyF: sys:switchDesktop1
-      KeyD: sys:switchDesktop2
-      KeyS: sys:switchDesktop3
+      #KeyQ:
+      #KeyW:
+      #KeyE:
+      #KeyR:
+      #KeyT:
+      #KeyY:
+      #KeyU:
+      #KeyI:
+      #KeyO:
+      #KeyP:
+      #BracketLeft:
+      #BracketRight
+      #Backslash
+
       KeyA: sys:switchDesktop4
+      KeyS: sys:switchDesktop3
+      KeyD: sys:switchDesktop2
+      KeyF: sys:switchDesktop1
+      #KeyG: sys:switchLayout1
+      #KeyH: sys:switchLayout2
+      #KeyJ:
+      #KeyK:
+      #KeyL:
+      #Semicolon:
+      #Quote:
+
+      #KeyZ:
+      #KeyX:
+      #KeyC:
+      KeyV: sys:showClipboardHistory
+      #KeyB:
+      #KeyN:
+      #KeyM:
+      #Comma:
+      #Period:
+      #Slash:
+
+  space:
+    #keys:
+    extras: []
+
 
 # Макросы, используемые этой раскладкой, вынесены в системные (их
 # определяет приложение и они доступны из любой раскладки без объявления
