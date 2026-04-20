@@ -7,6 +7,7 @@ import { randomId } from '~/utils/keys'
 import { BASE_LAYER_ID } from '~/types/config'
 
 const { config } = useConfig()
+const { ensureLayerKeymap, createLayer, renameLayer, deleteLayer: deleteLayerById } = useLayers()
 
 const selectedLayerId = ref<string>(BASE_LAYER_ID)
 
@@ -26,13 +27,6 @@ const layerItems = computed(() =>
 const currentLayer = computed(() =>
   config.value.layers.find((l) => l.id === selectedLayerId.value),
 )
-
-function ensureLayerKeymap(id: string) {
-  if (!config.value.layerKeymaps[id]) {
-    config.value.layerKeymaps[id] = { keys: {}, extras: [] }
-  }
-  return config.value.layerKeymaps[id]
-}
 
 const currentKeymap = computed(() => {
   const id = selectedLayerId.value
@@ -87,23 +81,17 @@ function openRename() {
   renameOpen.value = true
 }
 function confirmRename() {
-  const l = currentLayer.value
-  if (l) {
-    l.name = renameDraftName.value.trim() || l.name
-    l.description = renameDraftDescription.value.trim() || undefined
-  }
+  const layerId = currentLayer.value?.id
+  if (layerId) renameLayer(layerId, {
+    name: renameDraftName.value,
+    description: renameDraftDescription.value,
+  })
   renameOpen.value = false
 }
 
 function deleteLayer() {
-  if (selectedLayerId.value === BASE_LAYER_ID) return
   const id = selectedLayerId.value
-  config.value.layers = config.value.layers.filter((l) => l.id !== id)
-  delete config.value.layerKeymaps[id]
-  config.value.rules = config.value.rules.map((r) =>
-    r.layerId === id ? { ...r, layerId: '' } : r,
-  )
-  selectedLayerId.value = BASE_LAYER_ID
+  if (deleteLayerById(id)) selectedLayerId.value = BASE_LAYER_ID
 }
 
 const newLayerOpen = ref(false)
@@ -115,15 +103,11 @@ function openNewLayer() {
   newLayerOpen.value = true
 }
 function confirmNewLayer() {
-  const name = newLayerName.value.trim()
-  if (!name) return
-  const id = randomId()
-  config.value.layers.push({
-    id,
-    name,
-    description: newLayerDescription.value.trim() || undefined,
+  const id = createLayer({
+    name: newLayerName.value,
+    description: newLayerDescription.value,
   })
-  config.value.layerKeymaps[id] = { keys: {}, extras: [] }
+  if (!id) return
   selectedLayerId.value = id
   newLayerOpen.value = false
 }

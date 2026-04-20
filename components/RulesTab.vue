@@ -4,6 +4,7 @@ import LayerEditorModal from '~/components/shared/LayerEditorModal.vue'
 import { randomId } from '~/utils/keys'
 
 const { config } = useConfig()
+const { createLayer } = useLayers()
 
 const layerOptions = computed(() =>
   config.value.layers
@@ -42,15 +43,11 @@ function openNewLayer(ruleId: string) {
 }
 
 function confirmNewLayer() {
-  const name = newLayerName.value.trim()
-  if (!name) return
-  const id = randomId()
-  config.value.layers.push({
-    id,
-    name,
-    description: newLayerDescription.value.trim() || undefined,
+  const id = createLayer({
+    name: newLayerName.value,
+    description: newLayerDescription.value,
   })
-  config.value.layerKeymaps[id] = { keys: {}, extras: [] }
+  if (!id) return
   if (newLayerForRuleId.value) {
     const rule = config.value.rules.find(
       (r) => r.id === newLayerForRuleId.value,
