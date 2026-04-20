@@ -9,6 +9,15 @@ const props = defineProps<{
 const model = defineModel<number | undefined>({ default: undefined })
 
 const isOverridden = computed(() => model.value !== undefined)
+const draft = ref('')
+
+watch(
+  model,
+  (value) => {
+    draft.value = value === undefined ? '' : String(value)
+  },
+  { immediate: true },
+)
 
 function startEdit() {
   model.value = props.defaultValue
@@ -16,6 +25,15 @@ function startEdit() {
 
 function reset() {
   model.value = undefined
+}
+
+function updateDraft(value: string | number) {
+  const next = String(value)
+  draft.value = next
+  if (next.trim() === '') return
+  const parsed = Number(next)
+  if (!Number.isFinite(parsed)) return
+  model.value = Math.max(props.min ?? 0, Math.round(parsed))
 }
 </script>
 
@@ -37,10 +55,12 @@ function reset() {
     </template>
     <template v-else>
       <UInput
-        v-model.number="model"
+        :model-value="draft"
         type="number"
         :min="min ?? 0"
         :class="inputClass ?? 'w-28'"
+        @update:model-value="updateDraft"
+        @blur="draft.trim() === '' && reset()"
       />
       <span v-if="suffix" class="text-xs text-(--ui-text-muted)">{{ suffix }}</span>
       <UButton
