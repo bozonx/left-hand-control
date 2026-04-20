@@ -27,9 +27,11 @@ function newMacroId(base?: string): string {
 
 function cloneSystemMacro(sys: SystemMacro) {
   if (!Array.isArray(config.value.macros)) config.value.macros = []
+  // Never reuse `sys.id` — it belongs to the system catalog and an equal
+  // user id is rejected by validation. Start from `<sys.id>Copy`.
   config.value.macros.push({
-    id: newMacroId(sys.id),
-    name: sys.name,
+    id: newMacroId(`${sys.id}Copy`),
+    name: `${sys.name} (копия)`,
     steps: sys.steps.map((s) => ({ id: randomId(), keystroke: s.keystroke })),
     stepPauseMs: undefined,
     modifierDelayMs: undefined,
@@ -109,14 +111,8 @@ function idError(macro: Macro): string | null {
   if ((idCounts.value[raw] ?? 0) > 1) {
     return 'Такой ID уже используется другим пользовательским макросом.'
   }
-  return null
-}
-
-function idHint(macro: Macro): string | null {
-  if (idError(macro)) return null
-  const sys = systemMacroById(macro.id)
-  if (sys) {
-    return `Этот ID совпадает с системным макросом «${sys.name}» — пользовательский макрос полностью его перекрывает.`
+  if (systemMacroById(raw)) {
+    return `Такой ID уже занят системным макросом «${systemMacroById(raw)!.name}».`
   }
   return null
 }
@@ -224,15 +220,11 @@ const usage = computed(() => {
               </template>
               <UInput
                 v-model="macro.id"
+                :color="idError(macro) ? 'error' : undefined"
+                :highlight="!!idError(macro)"
                 class="w-full font-mono"
                 placeholder="id"
               />
-              <p
-                v-if="idHint(macro)"
-                class="text-xs text-(--ui-text-muted) mt-1"
-              >
-                {{ idHint(macro) }}
-              </p>
             </UFormField>
             <div class="flex items-end">
               <UButton
@@ -456,21 +448,10 @@ const usage = computed(() => {
                   </div>
                 </td>
                 <td class="py-2 pr-3 whitespace-nowrap">
-                  <UBadge
-                    v-if="config.macros.some((m) => m.id === sys.id)"
-                    color="warning"
-                    variant="subtle"
-                    size="sm"
-                    class="mr-2"
-                    title="Пользовательский макрос с таким же id перекрывает системный"
-                  >
-                    Переопределён
-                  </UBadge>
                   <UButton
                     size="xs"
                     variant="outline"
                     icon="i-lucide-copy-plus"
-                    :disabled="config.macros.some((m) => m.id === sys.id)"
                     @click="cloneSystemMacro(sys)"
                   >
                     Создать на основе
