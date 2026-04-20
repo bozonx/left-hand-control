@@ -406,7 +406,7 @@ keymaps:
   win:
     keys:
       #KeyQ:
-      #KeyW:
+      KeyW: Ctrl+A
       #KeyE:
       #KeyR:
       #KeyT:
@@ -431,16 +431,16 @@ keymaps:
       #Semicolon:
       #Quote:
 
-      #KeyZ:
-      #KeyX:
-      #KeyC:
+      KeyZ: sys:windowMaximizeVertical
+      KeyX: sys:windowMaximizeHorizontal
+      KeyC: sys:screenshot
       KeyV: sys:showClipboardHistory
-      #KeyB:
-      #KeyN:
-      #KeyM:
-      #Comma:
-      #Period:
-      #Slash:
+      KeyB: sys:brightnessDown
+      KeyN: sys:brightnessUp
+      KeyM: sys:volumeDown
+      Comma: sys:volumeUp
+      Period: sys:muteAudio
+      Slash: sys:screenOff
 
   space:
     keys:
