@@ -22,21 +22,30 @@ pub struct Keystroke {
 pub enum MacroStepItem {
     Stroke(Keystroke),
     System(SysAction),
-    Literal(char),
+    Literal(String),
 }
 
 /// Heuristic: if a raw action string is exactly one Unicode character, we
 /// treat it as a literal to be resolved later against the active XKB
 /// layout. Multi-character tokens (e.g. "Escape", "Ctrl+C") keep going
 /// through `parse_action` / `code_to_key`.
-pub fn literal_char(action: &str) -> Option<char> {
+pub fn literal_text(action: &str) -> Option<String> {
     let trimmed = action.trim();
     let mut it = trimmed.chars();
     let first = it.next()?;
-    if it.next().is_some() {
+    if it.next().is_none() {
+        return Some(first.to_string());
+    }
+    if trimmed.contains('+') {
         return None;
     }
-    Some(first)
+    if code_to_key(trimmed).is_some() {
+        return None;
+    }
+    if trimmed.is_ascii() {
+        return None;
+    }
+    Some(trimmed.to_string())
 }
 
 /// Parse an action like:

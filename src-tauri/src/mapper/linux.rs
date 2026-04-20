@@ -410,15 +410,16 @@ fn flush_out(
                 flush_events(virt, &mut events)?;
                 run_sys_action(&action);
             }
-            Out::Literal(ch) => {
+            Out::Literal(text) => {
                 // Flush anything queued through uinput before handing the
                 // character off to the portal backend, so the order of
                 // emitted events matches the order engine produced them.
                 flush_events(virt, &mut events)?;
                 match portal {
-                    Some(p) => p.type_char(ch),
+                    Some(p) => p.type_text(&text),
                     None => eprintln!(
-                        "[mapper] literal {ch:?} dropped (portal unavailable)"
+                        "[mapper] literal {:?} dropped (portal unavailable)",
+                        text
                     ),
                 }
             }
@@ -546,15 +547,16 @@ fn run_macro(
                 run_sys_action(action);
                 continue;
             }
-            MacroStepItem::Literal(ch) => {
+            MacroStepItem::Literal(text) => {
                 // Literals go through the portal backend so they produce
                 // the right character regardless of the system layout.
                 // No modifiers and no mod_delay — fire the character and
                 // move on to the next macro step.
                 match portal {
-                    Some(p) => p.type_char(*ch),
+                    Some(p) => p.type_text(text),
                     None => eprintln!(
-                        "[mapper] macro step literal {ch:?} dropped (portal unavailable)"
+                        "[mapper] macro step literal {:?} dropped (portal unavailable)",
+                        text
                     ),
                 }
                 continue;

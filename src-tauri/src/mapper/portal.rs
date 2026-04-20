@@ -58,7 +58,7 @@ pub struct Portal {
 }
 
 enum Cmd {
-    Type(char),
+    Type(String),
     Shutdown,
 }
 
@@ -90,8 +90,8 @@ impl Portal {
 
     /// Fire-and-forget: queue a character for the portal thread to inject.
     /// Sending to a dead channel is silently ignored (shutdown path).
-    pub fn type_char(&self, ch: char) {
-        let _ = self.tx.send(Cmd::Type(ch));
+    pub fn type_text(&self, text: &str) {
+        let _ = self.tx.send(Cmd::Type(text.to_string()));
     }
 }
 
@@ -128,26 +128,26 @@ fn run_thread(init_tx: Sender<Result<(), String>>, cmd_rx: mpsc::Receiver<Cmd>) 
     while let Ok(cmd) = cmd_rx.recv() {
         match cmd {
             Cmd::Shutdown => break,
-            Cmd::Type(ch) => inject_char(&portal, &session_handle, ch),
+            Cmd::Type(text) => inject_text(&portal, &session_handle, &text),
         }
     }
 
     close_session(&conn, &session_handle);
 }
 
-fn inject_char(portal: &Proxy, session: &OwnedObjectPath, ch: char) {
-    let ks = keysym_for(ch);
-    let empty: HashMap<String, Value> = HashMap::new();
-    // Press + release back-to-back. The portal serialises these on the
-    // compositor side, so there is no need for a sleep between them.
-    for state in [STATE_PRESSED, STATE_RELEASED] {
-        if let Err(e) =
-            portal.call_method("NotifyKeyboardKeysym", &(session, &empty, ks, state))
-        {
-            eprintln!(
-                "[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}"
-            );
-            return;
+fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
+    for ch in text.chars() {
+        let ks = keysym_for(ch);
+        let empty: HashMap<String, Value> = HashMap::new();
+        for state in [STATE_PRESSED, STATE_RELEASED] {
+            if let Err(e) =
+                portal.call_method("NotifyKeyboardKeysym", &(session, &empty, ks, state))
+            {
+                eprintln!(
+                    "[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}"
+                );
+                return;
+            }
         }
     }
 }
@@ -316,4 +316,3 @@ fn keysym_for(ch: char) -> i32 {
         (0x0100_0000 | code) as i32
     }
 }
-

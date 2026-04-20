@@ -44,7 +44,7 @@
 
 #![cfg(target_os = "linux")]
 
-use super::action::{literal_char, parse_action, Keystroke, MacroStepItem};
+use super::action::{literal_text, parse_action, Keystroke, MacroStepItem};
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system::{self, SysAction};
@@ -60,7 +60,7 @@ enum ActionDef {
     Stroke(Keystroke),
     Macro(MacroDef),
     System(SysAction),
-    Literal(char),
+    Literal(String),
 }
 
 #[derive(Clone)]
@@ -163,7 +163,7 @@ pub enum Out {
     RunSystem(SysAction),
     /// Type a single Unicode character via the Wayland virtual-keyboard
     /// backend. Fire-and-forget on key press; no release event is needed.
-    Literal(char),
+    Literal(String),
 }
 
 impl Engine {
@@ -203,8 +203,8 @@ impl Engine {
                     }
                     continue;
                 }
-                if let Some(ch) = literal_char(raw) {
-                    steps.push(MacroStepItem::Literal(ch));
+                if let Some(text) = literal_text(raw) {
+                    steps.push(MacroStepItem::Literal(text));
                     continue;
                 }
                 match parse_action(raw) {
@@ -293,8 +293,8 @@ impl Engine {
                     }
                 }
             }
-            if let Some(ch) = literal_char(trimmed) {
-                return Some(ActionDef::Literal(ch));
+            if let Some(text) = literal_text(trimmed) {
+                return Some(ActionDef::Literal(text));
             }
             match parse_action(trimmed) {
                 Some(ks) => Some(ActionDef::Stroke(ks)),
@@ -537,9 +537,9 @@ impl Engine {
                 );
                 self.emit_stroke_press(key, ks, out);
             }
-            Some(ActionDef::Literal(ch)) => {
-                eprintln!("[mapper]   press {:?} -> literal {:?}", key, ch);
-                out.push(Out::Literal(ch));
+            Some(ActionDef::Literal(text)) => {
+                eprintln!("[mapper]   press {:?} -> literal {:?}", key, text);
+                out.push(Out::Literal(text));
                 self.macro_consumed.insert(key);
             }
             Some(ActionDef::Macro(md)) => {
@@ -845,7 +845,7 @@ fn fire_action(action: Option<&ActionDef>, mod_delay: Duration, out: &mut Vec<Ou
             ks: ks.clone(),
             mod_delay,
         }),
-        Some(ActionDef::Literal(ch)) => out.push(Out::Literal(*ch)),
+        Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
         Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
             steps: md.steps.clone(),
             step_pause: md.step_pause,
