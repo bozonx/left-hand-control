@@ -185,19 +185,19 @@ rules:
   - key: ShiftLeft
     tap: Ctrl+C
 
-  # ShiftRight: удержание — native Shift, тап — символ "_".
-  - key: ShiftRight
-    tap: "_"
+  # MetaLeft: удержание — как ControlLeft, тап — Escape.
+  - key: MetaLeft
+    tap: Escape
+    hold: ControlLeft
 
   # AltLeft: удержание — слой оконного менеджера, тап — Enter.
   - key: AltLeft
     tap: Enter
     layer: win
 
-  # MetaLeft: удержание — как ControlLeft, тап — Escape.
-  - key: MetaLeft
-    tap: Escape
-    hold: ControlLeft
+  # Пробел: удержание — слой space, короткое нажатие — native Space.
+  - key: Space
+    layer: space
 
   # AltRight: удержание — слой символов, тап — ".".
   - key: AltRight
@@ -209,9 +209,9 @@ rules:
     tap: ","
     layer: fkeys
 
-  # Пробел: удержание — слой space, короткое нажатие — native Space.
-  - key: Space
-    layer: space
+  # ShiftRight: удержание — native Shift, тап — символ "_".
+  - key: ShiftRight
+    tap: "-"
 
 keymaps:
   # Базовый слой: обычно пустой; сюда можно сразу положить глобальные
