@@ -11,6 +11,7 @@ import {
   extractPresetFromConfig,
   loadBuiltinLayout,
 } from '~/utils/layoutPresets'
+import { localeDisplayName } from '~/i18n'
 
 const {
   config,
@@ -24,12 +25,30 @@ const {
 const library = useLayoutLibrary()
 const mapper = useMapper()
 const theme = useAppTheme()
+const appLocale = useAppLocale()
+const { t } = useI18n()
 
-const appearanceItems = [
-  { label: 'Как в системе', value: 'system' },
-  { label: 'Светлая', value: 'light' },
-  { label: 'Тёмная', value: 'dark' },
-] as const
+const appearanceItems = computed(() => [
+  { label: t('settings.appearanceItems.system'), value: 'system' },
+  { label: t('settings.appearanceItems.light'), value: 'light' },
+  { label: t('settings.appearanceItems.dark'), value: 'dark' },
+])
+
+// Locale picker options. The first row is the "Auto" (follow-OS) choice;
+// the remaining rows list each supported locale by its own native name.
+const localeItems = computed(() => {
+  const resolvedName = localeDisplayName(appLocale.systemLocale.value)
+  return [
+    {
+      label: t('settings.languageAutoResolved', { resolved: resolvedName }),
+      value: 'auto' as const,
+    },
+    ...appLocale.available.map((loc) => ({
+      label: localeDisplayName(loc),
+      value: loc,
+    })),
+  ]
+})
 
 // --- Layout library ---------------------------------------------------------
 
@@ -57,7 +76,7 @@ async function confirmApply() {
   applying.value = id
   try {
     if (target.kind === 'empty') {
-      await applyPreset(emptyLayoutPreset(), undefined)
+      await applyPreset(emptyLayoutPreset(t('settings.emptyLayoutName')), undefined)
     } else {
       const entry = target.entry!
       const preset =
@@ -65,7 +84,7 @@ async function confirmApply() {
           ? await loadBuiltinLayout()
           : await library.loadPreset(entry.id)
       if (!preset) {
-        applyError.value = `Не удалось загрузить раскладку "${entry.name}"`
+        applyError.value = t('settings.loadFailed', { name: entry.name })
         return
       }
       await applyPreset(preset, entry.id)
@@ -103,7 +122,7 @@ function openSaveModal() {
 async function performSave() {
   const name = saveName.value.trim()
   if (!name) {
-    saveError.value = 'Введите имя раскладки.'
+    saveError.value = t('settings.saveErrorEmpty')
     return
   }
   saveBusy.value = true
@@ -183,33 +202,33 @@ async function toggleMapper() {
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-3">
-          <h2 class="font-semibold">Key-mapper</h2>
+          <h2 class="font-semibold">{{ $t('settings.mapperTitle') }}</h2>
           <UBadge
             :color="mapper.status.value.running ? 'success' : 'neutral'"
             variant="subtle"
           >
-            {{ mapper.status.value.running ? 'активен' : 'остановлен' }}
+            {{ mapper.status.value.running ? $t('common.active') : $t('common.stopped') }}
           </UBadge>
         </div>
       </template>
       <div class="space-y-4">
         <UFormField
-          label="Клавиатура"
-          help="Выберите физическое устройство, события которого нужно перехватывать."
+          :label="$t('settings.keyboardLabel')"
+          :help="$t('settings.keyboardHelp')"
         >
           <div class="flex gap-2 items-center">
             <USelectMenu
               v-model="selectedDevice"
               :items="deviceOptions"
               value-key="value"
-              placeholder="Не выбрано"
+              :placeholder="$t('settings.devicePh')"
               class="flex-1"
               :disabled="mapper.status.value.running"
             />
             <UButton
               variant="ghost"
               icon="i-lucide-refresh-cw"
-              aria-label="Обновить список"
+              :aria-label="$t('settings.refreshDevices')"
               :disabled="mapper.status.value.running"
               @click="mapper.refreshDevices()"
             />
@@ -228,7 +247,7 @@ async function toggleMapper() {
             :disabled="!mapper.status.value.running && !selectedDevice"
             @click="toggleMapper"
           >
-            {{ mapper.status.value.running ? 'Остановить' : 'Запустить' }}
+            {{ mapper.status.value.running ? $t('settings.stop') : $t('settings.start') }}
           </UButton>
           <span
             v-if="mapper.error.value"
@@ -239,30 +258,37 @@ async function toggleMapper() {
         </div>
 
         <p class="text-xs text-(--ui-text-muted)">
-          Маппер читает события напрямую с <code>/dev/input/eventX</code>
-          и эмитит через <code>uinput</code>. Нужен доступ к этим
-          устройствам — см. README (группа <code>input</code> и udev-правило
-          для <code>/dev/uinput</code>).
+          <i18n-t keypath="settings.mapperHint" tag="span">
+            <template #input><code>/dev/input/eventX</code></template>
+            <template #uinput><code>uinput</code></template>
+            <template #group><code>input</code></template>
+            <template #uinputDev><code>/dev/uinput</code></template>
+          </i18n-t>
         </p>
       </div>
     </UCard>
 
     <UCard>
       <template #header>
-        <h2 class="font-semibold">Общие</h2>
+        <h2 class="font-semibold">{{ $t('settings.generalTitle') }}</h2>
       </template>
       <div class="space-y-4">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <div class="font-medium">Оформление</div>
+            <div class="font-medium">{{ $t('settings.appearance') }}</div>
             <div class="text-xs text-(--ui-text-muted)">
-              Режим «Как в системе» следует настройке
-              <code>prefers-color-scheme</code> ОС и переключается автоматически.
-              Сейчас активна
-              <span class="font-medium">
-                {{ theme.resolved.value === 'dark' ? 'тёмная' : 'светлая' }}
-              </span>
-              тема.
+              <i18n-t keypath="settings.appearanceHint" tag="span">
+                <template #pref><code>prefers-color-scheme</code></template>
+                <template #mode>
+                  <span class="font-medium">
+                    {{
+                      theme.resolved.value === 'dark'
+                        ? $t('settings.appearanceDark')
+                        : $t('settings.appearanceLight')
+                    }}
+                  </span>
+                </template>
+              </i18n-t>
             </div>
           </div>
           <URadioGroup
@@ -275,10 +301,24 @@ async function toggleMapper() {
 
         <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
           <div>
-            <div class="font-medium">Запускать вместе с системой</div>
+            <div class="font-medium">{{ $t('settings.language') }}</div>
             <div class="text-xs text-(--ui-text-muted)">
-              Пока не реализовано — переключатель сохраняется в конфиг, но не
-              регистрирует autostart.
+              {{ $t('settings.languageHint') }}
+            </div>
+          </div>
+          <USelectMenu
+            v-model="appLocale.preference.value"
+            :items="localeItems"
+            value-key="value"
+            class="min-w-[220px]"
+          />
+        </div>
+
+        <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
+          <div>
+            <div class="font-medium">{{ $t('settings.launchOnStartup') }}</div>
+            <div class="text-xs text-(--ui-text-muted)">
+              {{ $t('settings.launchOnStartupHint') }}
             </div>
           </div>
           <USwitch
@@ -291,8 +331,8 @@ async function toggleMapper() {
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Hold timeout по умолчанию, мс"
-                hint="Определение одиночного нажатия vs удержания слоя. Если клавиша отпущена до истечения — срабатывает tap action, если удерживается дольше — активируется слой. Используется правилами, где не задано собственное значение."
+                :label="$t('settings.holdTimeout')"
+                :hint="$t('settings.holdTimeoutHint')"
               />
             </template>
             <UInput
@@ -308,8 +348,8 @@ async function toggleMapper() {
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Пауза между шагами макроса, мс"
-                hint="Глобальное значение по умолчанию. Используется, когда шаг макроса не задаёт собственное."
+                :label="$t('settings.stepPauseLabel')"
+                :hint="$t('settings.stepPauseHint')"
               />
             </template>
             <UInput
@@ -322,8 +362,8 @@ async function toggleMapper() {
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Задержка модификатора, мс"
-                hint="Глобальное значение: сколько ждать между нажатием модификатора (Shift/Ctrl/...) и основной клавиши внутри одного шага."
+                :label="$t('settings.modDelayLabel')"
+                :hint="$t('settings.modDelayHint')"
               />
             </template>
             <UInput
@@ -340,14 +380,14 @@ async function toggleMapper() {
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h2 class="font-semibold">Раскладки</h2>
+          <h2 class="font-semibold">{{ $t('settings.layoutsTitle') }}</h2>
           <UButton
             color="primary"
             icon="i-lucide-save"
             :disabled="!isLayoutDirty && !currentLayoutId"
             @click="openSaveModal"
           >
-            Сохранить текущую…
+            {{ $t('settings.saveCurrent') }}
           </UButton>
         </div>
       </template>
@@ -363,12 +403,10 @@ async function toggleMapper() {
           />
           <div>
             <div class="font-semibold">
-              В текущей раскладке есть несохранённые изменения.
+              {{ $t('settings.dirtyBadgeTitle') }}
             </div>
             <div class="text-(--ui-text-muted)">
-              Переключение на другую раскладку затрёт правила, слои,
-              раскладки и макросы. Сохраните текущую как пользовательскую,
-              чтобы не потерять.
+              {{ $t('settings.dirtyBadgeBody') }}
             </div>
           </div>
         </div>
@@ -397,7 +435,7 @@ async function toggleMapper() {
                     variant="subtle"
                     size="sm"
                   >
-                    активна
+                    {{ $t('settings.activeBadge') }}
                   </UBadge>
                   <UBadge
                     v-if="entry.builtin"
@@ -405,7 +443,7 @@ async function toggleMapper() {
                     variant="outline"
                     size="sm"
                   >
-                    встроенная
+                    {{ $t('settings.builtinBadge') }}
                   </UBadge>
                 </div>
               </div>
@@ -424,14 +462,14 @@ async function toggleMapper() {
                   })
                 "
               >
-                Применить
+                {{ $t('settings.applyBtn') }}
               </UButton>
               <UButton
                 v-if="!entry.builtin"
                 color="error"
                 variant="ghost"
                 icon="i-lucide-trash-2"
-                aria-label="Удалить"
+                :aria-label="$t('settings.deleteAria')"
                 @click="deletePending = entry"
               />
             </div>
@@ -440,8 +478,7 @@ async function toggleMapper() {
 
         <div class="flex items-center justify-between gap-3 pt-2 border-t border-(--ui-border)">
           <div class="text-sm text-(--ui-text-muted)">
-            Сбросить всё: обнулить слои, правила, раскладки и макросы.
-            Настройки приложения сохраняются.
+            {{ $t('settings.resetHint') }}
           </div>
           <UButton
             color="warning"
@@ -452,16 +489,16 @@ async function toggleMapper() {
             @click="
               requestApply({
                 kind: 'empty',
-                label: 'Пустая раскладка',
+                label: $t('settings.emptyLayoutName'),
               })
             "
           >
-            Сбросить всё
+            {{ $t('settings.resetBtn') }}
           </UButton>
         </div>
 
         <p class="text-xs text-(--ui-text-muted)">
-          Папка с пользовательскими раскладками:
+          {{ $t('settings.userLayoutsDir') }}
           <code class="break-all">{{ library.layoutsDir.value || '…' }}</code>
         </p>
       </div>
@@ -469,15 +506,15 @@ async function toggleMapper() {
 
     <UCard>
       <template #header>
-        <h2 class="font-semibold">Файл конфигурации</h2>
+        <h2 class="font-semibold">{{ $t('settings.configTitle') }}</h2>
       </template>
       <div class="text-sm">
-        <div class="text-(--ui-text-muted) mb-1">Путь:</div>
+        <div class="text-(--ui-text-muted) mb-1">{{ $t('settings.configPath') }}</div>
         <code class="block p-2 rounded bg-(--ui-bg-muted) break-all">
           {{ configPath || '…' }}
         </code>
         <p class="text-xs text-(--ui-text-muted) mt-2">
-          Все изменения сохраняются автоматически.
+          {{ $t('settings.configHint') }}
         </p>
       </div>
     </UCard>
@@ -485,14 +522,13 @@ async function toggleMapper() {
     <!-- Apply confirmation -->
     <UModal
       :open="!!pendingApply"
-      :title="`Переключиться на «${pendingApply?.label ?? ''}»?`"
+      :title="$t('settings.confirmApplyTitle', { label: pendingApply?.label ?? '' })"
       @update:open="(v) => !v && cancelApply()"
     >
       <template #body>
         <div class="space-y-3 text-sm">
           <p>
-            Текущие слои, правила, раскладки клавиш и макросы будут заменены.
-            Настройки приложения сохраняются.
+            {{ $t('settings.confirmApplyBody') }}
           </p>
           <div
             v-if="isLayoutDirty"
@@ -504,12 +540,14 @@ async function toggleMapper() {
             />
             <div>
               <div class="font-semibold">
-                Внимание: у текущей раскладки есть несохранённые изменения.
+                {{ $t('settings.dirtyWarnTitle') }}
               </div>
               <div>
-                Если вы продолжите, они будут безвозвратно потеряны.
-                Вернитесь и нажмите <b>«Сохранить текущую…»</b>, чтобы
-                записать их в файл.
+                <i18n-t keypath="settings.dirtyWarnBody" tag="span">
+                  <template #btn>
+                    <b>«{{ $t('settings.saveCurrent') }}»</b>
+                  </template>
+                </i18n-t>
               </div>
             </div>
           </div>
@@ -518,14 +556,14 @@ async function toggleMapper() {
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
           <UButton variant="ghost" color="neutral" @click="cancelApply">
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
           <UButton
             :color="isLayoutDirty ? 'error' : 'primary'"
             :loading="!!applying"
             @click="confirmApply"
           >
-            {{ isLayoutDirty ? 'Потерять изменения и переключить' : 'Переключить' }}
+            {{ isLayoutDirty ? $t('settings.loseAndSwitch') : $t('settings.switch') }}
           </UButton>
         </div>
       </template>
@@ -534,22 +572,24 @@ async function toggleMapper() {
     <!-- Save-as modal -->
     <UModal
       v-model:open="saveModalOpen"
-      title="Сохранить раскладку"
+      :title="$t('settings.saveModalTitle')"
     >
       <template #body>
         <div class="space-y-3">
-          <UFormField label="Имя раскладки">
+          <UFormField :label="$t('settings.nameLabel')">
             <UInput
               v-model="saveName"
-              placeholder="my-layout"
+              :placeholder="$t('settings.namePh')"
               autofocus
               @keyup.enter="performSave"
             />
           </UFormField>
           <p class="text-xs text-(--ui-text-muted)">
-            Файл будет сохранён в
-            <code class="break-all">{{ library.layoutsDir.value }}/{{ saveName || '…' }}.yaml</code>.
-            Существующая раскладка с таким же именем будет перезаписана.
+            <i18n-t keypath="settings.saveHint" tag="span">
+              <template #path>
+                <code class="break-all">{{ library.layoutsDir.value }}/{{ saveName || '…' }}.yaml</code>
+              </template>
+            </i18n-t>
           </p>
           <p v-if="saveError" class="text-sm text-(--ui-error)">
             {{ saveError }}
@@ -563,7 +603,7 @@ async function toggleMapper() {
             color="neutral"
             @click="saveModalOpen = false"
           >
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
           <UButton
             color="primary"
@@ -572,7 +612,7 @@ async function toggleMapper() {
             :disabled="!saveName.trim()"
             @click="performSave"
           >
-            Сохранить
+            {{ $t('common.save') }}
           </UButton>
         </div>
       </template>
@@ -581,13 +621,12 @@ async function toggleMapper() {
     <!-- Delete confirmation -->
     <UModal
       :open="!!deletePending"
-      :title="`Удалить «${deletePending?.name ?? ''}»?`"
+      :title="$t('settings.deleteTitle', { name: deletePending?.name ?? '' })"
       @update:open="(v) => !v && (deletePending = null)"
     >
       <template #body>
         <p class="text-sm">
-          Файл раскладки будет удалён с диска. Это действие необратимо.
-          Текущая активная раскладка от этого не меняется.
+          {{ $t('settings.deleteBody') }}
         </p>
       </template>
       <template #footer>
@@ -597,14 +636,14 @@ async function toggleMapper() {
             color="neutral"
             @click="deletePending = null"
           >
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
           <UButton
             color="error"
             :loading="deleteBusy"
             @click="confirmDelete"
           >
-            Удалить
+            {{ $t('common.delete') }}
           </UButton>
         </div>
       </template>

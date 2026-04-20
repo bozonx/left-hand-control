@@ -61,10 +61,16 @@ export interface Macro {
 
 export type AppearancePreference = 'system' | 'light' | 'dark'
 
+// UI locale preference. 'auto' picks a language close to the OS one,
+// falling back to English.
+export type LocalePreference = 'auto' | 'en-US' | 'ru-RU'
+
 export interface AppSettings {
   launchOnStartup: boolean
   // Visual theme preference. 'system' follows prefers-color-scheme.
   appearance: AppearancePreference
+  // UI language preference. 'auto' follows the OS language.
+  locale: LocalePreference
   // Default hold timeout used when a rule does not specify one.
   defaultHoldTimeoutMs: number
   // Default pause between macro steps, ms.
@@ -154,6 +160,7 @@ export function createDefaultConfig(): AppConfig {
     settings: {
       launchOnStartup: false,
       appearance: 'system',
+      locale: 'auto',
       defaultHoldTimeoutMs: 200,
       defaultMacroStepPauseMs: 20,
       defaultMacroModifierDelayMs: 5,

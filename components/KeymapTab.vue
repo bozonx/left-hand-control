@@ -125,7 +125,7 @@ function confirmNewLayer() {
   <div class="space-y-4">
     <UCard>
       <div class="flex flex-wrap items-end gap-3">
-        <UFormField label="Слой" class="flex-1 min-w-[220px]">
+        <UFormField :label="$t('keymap.layerLabel')" class="flex-1 min-w-[220px]">
           <USelectMenu
             v-model="selectedLayerId"
             :items="layerItems"
@@ -135,7 +135,7 @@ function confirmNewLayer() {
         </UFormField>
         <div class="flex gap-2">
           <UButton icon="i-lucide-plus" size="sm" @click="openNewLayer">
-            Новый слой
+            {{ $t('keymap.newLayer') }}
           </UButton>
           <UButton
             icon="i-lucide-pencil"
@@ -145,7 +145,7 @@ function confirmNewLayer() {
             :disabled="selectedLayerId === 'base'"
             @click="openRename"
           >
-            Редактировать
+            {{ $t('keymap.edit') }}
           </UButton>
           <UButton
             icon="i-lucide-trash-2"
@@ -155,7 +155,7 @@ function confirmNewLayer() {
             :disabled="selectedLayerId === 'base'"
             @click="deleteLayer"
           >
-            Удалить
+            {{ $t('keymap.delete') }}
           </UButton>
         </div>
       </div>
@@ -171,14 +171,14 @@ function confirmNewLayer() {
     <!-- Row 1 : keyboard grid -->
     <UCard>
       <template #header>
-        <h2 class="font-semibold">Клавиатура</h2>
+        <h2 class="font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
       </template>
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <section>
           <div
             class="text-xs uppercase tracking-wide text-(--ui-text-muted) mb-2"
           >
-            Левая рука
+            {{ $t('keymap.leftHand') }}
           </div>
           <div class="space-y-1.5">
             <div
@@ -200,7 +200,7 @@ function confirmNewLayer() {
           <div
             class="text-xs uppercase tracking-wide text-(--ui-text-muted) mb-2"
           >
-            Правая рука
+            {{ $t('keymap.rightHand') }}
           </div>
           <div class="space-y-1.5">
             <div
@@ -226,14 +226,13 @@ function confirmNewLayer() {
       <template #header>
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="font-semibold">Дополнительные клавиши</h2>
+            <h2 class="font-semibold">{{ $t('keymap.extrasTitle') }}</h2>
             <p class="text-xs text-(--ui-text-muted) mt-1">
-              Кнопки мыши, медиа-клавиши или любые другие триггеры, которых
-              нет на основной раскладке.
+              {{ $t('keymap.extrasSub') }}
             </p>
           </div>
           <UButton icon="i-lucide-plus" size="sm" @click="addExtra">
-            Добавить
+            {{ $t('keymap.addExtra') }}
           </UButton>
         </div>
       </template>
@@ -241,7 +240,7 @@ function confirmNewLayer() {
         v-if="currentKeymap.extras.length === 0"
         class="text-sm text-(--ui-text-muted)"
       >
-        Ещё нет дополнительных клавиш для этого слоя.
+        {{ $t('keymap.extrasEmpty') }}
       </div>
       <div v-else class="space-y-2">
         <div
@@ -252,27 +251,27 @@ function confirmNewLayer() {
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Клавиша"
-                hint="Клавиша-триггер: кнопка мыши, медиа-клавиша или любая другая клавиша из полного списка."
+                :label="$t('keymap.extraKeyLabel')"
+                :hint="$t('keymap.extraKeyHint')"
               />
             </template>
             <ActionPickerModal
               v-model="ex.name"
               key-only
-              placeholder="выберите клавишу"
+              :placeholder="$t('rules.keyPh')"
             />
           </UFormField>
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Действие"
-                hint="Что делает эта клавиша пока активен слой."
+                :label="$t('keymap.extraActionLabel')"
+                :hint="$t('keymap.extraActionHint')"
               />
             </template>
             <ActionPickerModal
               v-model="ex.action"
               allow-empty
-              placeholder="нет действия"
+              :placeholder="$t('rules.tapPh')"
             />
           </UFormField>
           <div class="pt-6">
@@ -281,7 +280,7 @@ function confirmNewLayer() {
               color="error"
               variant="ghost"
               square
-              aria-label="Удалить"
+              :aria-label="$t('keymap.deleteExtra')"
               @click="removeExtra(ex.id)"
             />
           </div>
@@ -298,22 +297,22 @@ function confirmNewLayer() {
       @clear="clearEdit"
     />
 
-    <UModal v-model:open="newLayerOpen" title="Новый слой">
+    <UModal v-model:open="newLayerOpen" :title="$t('rules.newLayerTitle')">
       <template #body>
         <div class="space-y-3">
-          <UFormField label="Имя слоя">
+          <UFormField :label="$t('rules.layerName')">
             <UInput
               v-model="newLayerName"
               autofocus
-              placeholder="Например: Навигация"
+              :placeholder="$t('rules.layerNamePh')"
               class="w-full"
               @keydown.enter="confirmNewLayer"
             />
           </UFormField>
-          <UFormField label="Описание (необязательно)">
+          <UFormField :label="$t('rules.layerDesc')">
             <UTextarea
               v-model="newLayerDescription"
-              placeholder="Коротко: для чего нужен этот слой"
+              :placeholder="$t('rules.layerDescPh')"
               class="w-full"
               :rows="2"
             />
@@ -323,23 +322,23 @@ function confirmNewLayer() {
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
           <UButton variant="ghost" color="neutral" @click="newLayerOpen = false">
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
           <UButton
             icon="i-lucide-check"
             :disabled="!newLayerName.trim()"
             @click="confirmNewLayer"
           >
-            Создать
+            {{ $t('common.create') }}
           </UButton>
         </div>
       </template>
     </UModal>
 
-    <UModal v-model:open="renameOpen" title="Редактирование слоя">
+    <UModal v-model:open="renameOpen" :title="$t('keymap.editLayerTitle')">
       <template #body>
         <div class="space-y-3">
-          <UFormField label="Имя слоя">
+          <UFormField :label="$t('rules.layerName')">
             <UInput
               v-model="renameDraftName"
               autofocus
@@ -347,7 +346,7 @@ function confirmNewLayer() {
               @keydown.enter="confirmRename"
             />
           </UFormField>
-          <UFormField label="Описание (необязательно)">
+          <UFormField :label="$t('rules.layerDesc')">
             <UTextarea
               v-model="renameDraftDescription"
               class="w-full"
@@ -359,10 +358,10 @@ function confirmNewLayer() {
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
           <UButton variant="ghost" color="neutral" @click="renameOpen = false">
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
           <UButton icon="i-lucide-check" @click="confirmRename">
-            Сохранить
+            {{ $t('common.save') }}
           </UButton>
         </div>
       </template>

@@ -10,7 +10,8 @@ export interface ActionItem {
 
 export interface StaticCategory {
   id: string
-  label: string
+  // i18n key under `categories.<...>` — resolved by the UI at render time.
+  labelKey: string
   icon: string
   items: ActionItem[]
 }
@@ -22,7 +23,7 @@ function k(values: string[]): ActionItem[] {
 export const STATIC_CATEGORIES: StaticCategory[] = [
   {
     id: 'special',
-    label: 'Специальные',
+    labelKey: 'categories.special',
     icon: 'i-lucide-square-asterisk',
     items: k([
       'Escape',
@@ -41,13 +42,13 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'nav',
-    label: 'Навигация',
+    labelKey: 'categories.nav',
     icon: 'i-lucide-navigation',
     items: k(['Left', 'Right', 'Up', 'Down', 'Home', 'End', 'PageUp', 'PageDown']),
   },
   {
     id: 'letters',
-    label: 'Буквы',
+    labelKey: 'categories.letters',
     icon: 'i-lucide-case-sensitive',
     items: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
       .split('')
@@ -55,7 +56,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'digits',
-    label: 'Цифры',
+    labelKey: 'categories.digits',
     icon: 'i-lucide-hash',
     items: '0123456789'
       .split('')
@@ -63,7 +64,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'fkeys',
-    label: 'F-клавиши',
+    labelKey: 'categories.fkeys',
     icon: 'i-lucide-chevron-up-square',
     items: Array.from({ length: 24 }, (_, i) => {
       const n = `F${i + 1}`
@@ -72,7 +73,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'symbols',
-    label: 'Символы',
+    labelKey: 'categories.symbols',
     icon: 'i-lucide-at-sign',
     items: [
       { label: '`', value: 'Backquote' },
@@ -90,7 +91,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'modifiers',
-    label: 'Модификаторы',
+    labelKey: 'categories.modifiers',
     icon: 'i-lucide-keyboard',
     items: k([
       'ShiftLeft',
@@ -105,7 +106,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'media',
-    label: 'Медиа',
+    labelKey: 'categories.media',
     icon: 'i-lucide-volume-2',
     items: k([
       'VolumeUp',
@@ -119,7 +120,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'browser',
-    label: 'Браузер',
+    labelKey: 'categories.browser',
     icon: 'i-lucide-globe',
     items: k([
       'BrowserBack',
@@ -133,7 +134,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   },
   {
     id: 'mouse',
-    label: 'Мышь',
+    labelKey: 'categories.mouse',
     icon: 'i-lucide-mouse-pointer',
     items: k([
       'MouseLeft',

@@ -6,7 +6,7 @@ use super::action::MacroStepItem;
 use super::config::AppConfig;
 use super::engine::{Engine, Out};
 use super::portal::Portal;
-use super::system::SysCommand;
+use super::system::{DbusArg, DbusCall, SysAction, SysCommand};
 use super::KeyboardDevice;
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
 use evdev::{AttributeSet, BusType, Device, EventType, InputEvent, InputId, Key};
@@ -320,9 +320,9 @@ fn flush_out(
                 flush_events(virt, &mut events)?;
                 run_macro(virt, portal, &steps, step_pause, mod_delay)?;
             }
-            Out::RunSystem(cmd) => {
+            Out::RunSystem(action) => {
                 flush_events(virt, &mut events)?;
-                spawn_system(&cmd);
+                run_sys_action(&action);
             }
             Out::Literal(ch) => {
                 // Flush anything queued through uinput before handing the
@@ -340,6 +340,14 @@ fn flush_out(
     }
     flush_events(virt, &mut events)?;
     Ok(())
+}
+
+/// Dispatch a resolved system action on the current OS/DE.
+fn run_sys_action(action: &SysAction) {
+    match action {
+        SysAction::Spawn(cmd) => spawn_system(cmd),
+        SysAction::Dbus(call) => call_dbus(call),
+    }
 }
 
 fn spawn_system(cmd: &SysCommand) {
@@ -362,6 +370,78 @@ fn spawn_system(cmd: &SysCommand) {
     }
 }
 
+/// Lazily-initialised, process-wide session-bus connection. We keep it
+/// alive so each `switchDesktopN` is a single roundtrip instead of a
+/// `fork+exec` of a helper binary like `qdbus`.
+fn session_bus() -> Option<&'static zbus::blocking::Connection> {
+    use std::sync::OnceLock;
+    static CONN: OnceLock<Option<zbus::blocking::Connection>> = OnceLock::new();
+    CONN.get_or_init(|| match zbus::blocking::Connection::session() {
+        Ok(c) => Some(c),
+        Err(e) => {
+            eprintln!("[mapper] dbus session bus unavailable: {e}");
+            None
+        }
+    })
+    .as_ref()
+}
+
+fn call_dbus(call: &DbusCall) {
+    use zbus::zvariant::StructureBuilder;
+
+    let Some(conn) = session_bus() else {
+        eprintln!(
+            "[mapper] dbus {}.{} skipped (no session bus)",
+            call.destination, call.method
+        );
+        return;
+    };
+
+    let mut b = StructureBuilder::new();
+    for a in &call.args {
+        b = match a {
+            DbusArg::U32(v) => b.add_field(*v),
+            DbusArg::I32(v) => b.add_field(*v),
+            DbusArg::Bool(v) => b.add_field(*v),
+            DbusArg::Str(s) => b.add_field(s.clone()),
+        };
+    }
+    let body = match b.build() {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!(
+                "[mapper] dbus {}.{}: failed to build body: {}",
+                call.destination, call.method, e
+            );
+            return;
+        }
+    };
+
+    match conn.call_method(
+        Some(call.destination.as_str()),
+        call.path.as_str(),
+        call.interface.as_deref(),
+        call.method.as_str(),
+        &body,
+    ) {
+        Ok(_) => {
+            eprintln!(
+                "[mapper] dbus {} {} {}.{}",
+                call.destination,
+                call.path,
+                call.interface.as_deref().unwrap_or(""),
+                call.method,
+            );
+        }
+        Err(e) => {
+            eprintln!(
+                "[mapper] dbus {}.{} failed: {}",
+                call.destination, call.method, e
+            );
+        }
+    }
+}
+
 fn run_macro(
     virt: &mut VirtualDevice,
     portal: Option<&Portal>,
@@ -376,8 +456,8 @@ fn run_macro(
 
         let ks = match step {
             MacroStepItem::Stroke(ks) => ks,
-            MacroStepItem::System(cmd) => {
-                spawn_system(cmd);
+            MacroStepItem::System(action) => {
+                run_sys_action(action);
                 continue;
             }
             MacroStepItem::Literal(ch) => {

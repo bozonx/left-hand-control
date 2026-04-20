@@ -4,6 +4,7 @@ import { randomId } from '~/utils/keys'
 import { SYSTEM_MACROS, systemMacroById, type SystemMacro } from '~/utils/systemMacros'
 
 const { config } = useConfig()
+const { t } = useI18n()
 
 // Regex for a well-formed macro id: letters, digits, underscore and dash,
 // 1..64 chars. Keeps `macro:<id>` references unambiguous.
@@ -31,7 +32,7 @@ function cloneSystemMacro(sys: SystemMacro) {
   // user id is rejected by validation. Start from `<sys.id>Copy`.
   config.value.macros.push({
     id: newMacroId(`${sys.id}Copy`),
-    name: `${sys.name} (копия)`,
+    name: `${sys.name} ${t('macros.copySuffix')}`,
     steps: sys.steps.map((s) => ({ id: randomId(), keystroke: s.keystroke })),
     stepPauseMs: undefined,
     modifierDelayMs: undefined,
@@ -48,7 +49,7 @@ function addMacro() {
   if (!Array.isArray(config.value.macros)) config.value.macros = []
   config.value.macros.push({
     id: newMacroId(),
-    name: 'Новый макрос',
+    name: t('macros.defaultName'),
     steps: [],
     stepPauseMs: undefined,
     modifierDelayMs: undefined,
@@ -104,15 +105,16 @@ const idCounts = computed<Record<string, number>>(() => {
 
 function idError(macro: Macro): string | null {
   const raw = macro.id ?? ''
-  if (raw.trim() === '') return 'ID не может быть пустым.'
+  if (raw.trim() === '') return t('macros.idErrors.empty')
   if (!ID_RE.test(raw)) {
-    return 'Только латиница, цифры, «_» и «-», до 64 символов.'
+    return t('macros.idErrors.format')
   }
   if ((idCounts.value[raw] ?? 0) > 1) {
-    return 'Такой ID уже используется другим пользовательским макросом.'
+    return t('macros.idErrors.dupUser')
   }
-  if (systemMacroById(raw)) {
-    return `Такой ID уже занят системным макросом «${systemMacroById(raw)!.name}».`
+  const sys = systemMacroById(raw)
+  if (sys) {
+    return t('macros.idErrors.dupSystem', { name: sys.name })
   }
   return null
 }
@@ -159,12 +161,9 @@ const usage = computed(() => {
       <template #header>
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h2 class="font-semibold">Пользовательские макросы</h2>
+            <h2 class="font-semibold">{{ $t('macros.title') }}</h2>
             <p class="text-xs text-(--ui-text-muted) mt-1">
-              Последовательность шагов. Каждый шаг — одно сочетание клавиш
-              или системное действие. Шаги выполняются по очереди: предыдущее
-              сочетание полностью отпускается, выдерживается пауза, затем
-              нажимается следующее.
+              {{ $t('macros.subtitle') }}
             </p>
           </div>
           <UButton
@@ -173,12 +172,12 @@ const usage = computed(() => {
             :disabled="hasIdErrors"
             :title="
               hasIdErrors
-                ? 'Сначала исправьте ошибки в существующих ID'
+                ? $t('macros.addDisabled')
                 : undefined
             "
             @click="addMacro"
           >
-            Новый макрос
+            {{ $t('macros.addBtn') }}
           </UButton>
         </div>
       </template>
@@ -188,8 +187,7 @@ const usage = computed(() => {
           v-if="config.macros.length === 0"
           class="text-sm text-(--ui-text-muted)"
         >
-          Нет ни одного макроса. Нажмите «Новый макрос», чтобы создать
-          первый.
+          {{ $t('macros.empty') }}
         </div>
 
         <div
@@ -201,21 +199,21 @@ const usage = computed(() => {
             <UFormField>
               <template #label>
                 <FieldLabel
-                  label="Имя"
-                  hint="Человекочитаемое имя макроса, показывается в списках выбора."
+                  :label="$t('macros.nameLabel')"
+                  :hint="$t('macros.nameHint')"
                 />
               </template>
               <UInput
                 v-model="macro.name"
-                placeholder="Название макроса"
+                :placeholder="$t('macros.namePh')"
                 class="w-full"
               />
             </UFormField>
             <UFormField :error="idError(macro) ?? undefined">
               <template #label>
                 <FieldLabel
-                  label="ID"
-                  hint="Уникальный идентификатор для ссылки вида macro:<id>. Изменяйте только если не используете этот макрос."
+                  :label="$t('macros.idLabel')"
+                  :hint="$t('macros.idHint')"
                 />
               </template>
               <UInput
@@ -223,7 +221,7 @@ const usage = computed(() => {
                 :color="idError(macro) ? 'error' : undefined"
                 :highlight="!!idError(macro)"
                 class="w-full font-mono"
-                placeholder="id"
+                :placeholder="$t('macros.idPh')"
               />
             </UFormField>
             <div class="flex items-end">
@@ -232,7 +230,7 @@ const usage = computed(() => {
                 color="error"
                 variant="ghost"
                 square
-                aria-label="Удалить макрос"
+                :aria-label="$t('macros.deleteMacro')"
                 @click="askRemove(macro.id)"
               />
             </div>
@@ -242,27 +240,27 @@ const usage = computed(() => {
             <UFormField>
               <template #label>
                 <FieldLabel
-                  label="Пауза между шагами"
-                  hint="Индивидуальная пауза между шагами этого макроса. По умолчанию — значение из настроек."
+                  :label="$t('macros.stepPauseLabel')"
+                  :hint="$t('macros.stepPauseHint')"
                 />
               </template>
               <OverridableNumberField
                 v-model="macro.stepPauseMs"
                 :default-value="config.settings.defaultMacroStepPauseMs"
-                suffix="мс"
+                :suffix="$t('common.ms')"
               />
             </UFormField>
             <UFormField>
               <template #label>
                 <FieldLabel
-                  label="Задержка модификатора"
-                  hint="Время между нажатием модификатора и основной клавиши внутри одного шага. По умолчанию — значение из настроек."
+                  :label="$t('macros.modDelayLabel')"
+                  :hint="$t('macros.modDelayHint')"
                 />
               </template>
               <OverridableNumberField
                 v-model="macro.modifierDelayMs"
                 :default-value="config.settings.defaultMacroModifierDelayMs"
-                suffix="мс"
+                :suffix="$t('common.ms')"
               />
             </UFormField>
           </div>
@@ -271,7 +269,7 @@ const usage = computed(() => {
             v-if="usage[macro.id] && usage[macro.id].length"
             class="flex flex-wrap gap-1 text-xs"
           >
-            <span class="text-(--ui-text-muted)">Используется в:</span>
+            <span class="text-(--ui-text-muted)">{{ $t('macros.usedIn') }}</span>
             <UBadge
               v-for="(u, idx) in usage[macro.id]"
               :key="idx"
@@ -285,14 +283,14 @@ const usage = computed(() => {
 
           <div class="border-t border-(--ui-border) pt-3">
             <div class="flex items-center justify-between mb-2">
-              <div class="text-sm font-medium">Шаги</div>
+              <div class="text-sm font-medium">{{ $t('macros.steps') }}</div>
               <UButton
                 size="xs"
                 icon="i-lucide-plus"
                 variant="outline"
                 @click="addStep(macro)"
               >
-                Добавить шаг
+                {{ $t('macros.addStep') }}
               </UButton>
             </div>
 
@@ -300,7 +298,7 @@ const usage = computed(() => {
               v-if="macro.steps.length === 0"
               class="text-sm text-(--ui-text-muted) italic"
             >
-              Пока нет шагов. Каждый шаг — сочетание клавиш или действие.
+              {{ $t('macros.stepsEmpty') }}
             </div>
 
             <div v-else class="space-y-1.5">
@@ -316,7 +314,7 @@ const usage = computed(() => {
                 </div>
                 <ActionPickerModal
                   v-model="step.keystroke"
-                  placeholder="Ctrl+C или выберите действие"
+                  :placeholder="$t('macros.stepPh')"
                 />
                 <UButton
                   icon="i-lucide-chevron-up"
@@ -325,7 +323,7 @@ const usage = computed(() => {
                   color="neutral"
                   square
                   :disabled="idx === 0"
-                  aria-label="Вверх"
+                  :aria-label="$t('macros.moveUp')"
                   @click="moveStep(macro, idx, -1)"
                 />
                 <UButton
@@ -335,7 +333,7 @@ const usage = computed(() => {
                   color="neutral"
                   square
                   :disabled="idx === macro.steps.length - 1"
-                  aria-label="Вниз"
+                  :aria-label="$t('macros.moveDown')"
                   @click="moveStep(macro, idx, 1)"
                 />
                 <UButton
@@ -344,7 +342,7 @@ const usage = computed(() => {
                   variant="ghost"
                   color="error"
                   square
-                  aria-label="Удалить шаг"
+                  :aria-label="$t('macros.deleteStep')"
                   @click="removeStep(macro, step.id)"
                 />
               </div>
@@ -352,9 +350,11 @@ const usage = computed(() => {
           </div>
 
           <div class="text-xs text-(--ui-text-muted)">
-            Чтобы назначить макрос на клавишу, выберите действие
-            <code class="font-mono">macro:{{ macro.id }}</code>
-            во вкладках «Слои» или «Раскладка».
+            <i18n-t keypath="macros.assignHint" tag="span">
+              <template #ref>
+                <code class="font-mono">macro:{{ macro.id }}</code>
+              </template>
+            </i18n-t>
           </div>
         </div>
       </div>
@@ -376,14 +376,13 @@ const usage = computed(() => {
                 "
                 class="text-(--ui-text-muted)"
               />
-              Системные макросы
+              {{ $t('macros.systemTitle') }}
               <UBadge color="neutral" variant="subtle" size="sm">
                 {{ SYSTEM_MACROS.length }}
               </UBadge>
             </h2>
             <p class="text-xs text-(--ui-text-muted) mt-1">
-              Встроенные макросы, которые нельзя изменить. Чтобы настроить
-              такой макрос под себя, создайте на его основе пользовательский.
+              {{ $t('macros.systemSub') }}
             </p>
           </div>
         </button>
@@ -394,7 +393,7 @@ const usage = computed(() => {
           v-if="SYSTEM_MACROS.length === 0"
           class="text-sm text-(--ui-text-muted)"
         >
-          Нет системных макросов.
+          {{ $t('macros.systemEmpty') }}
         </div>
 
         <div v-else class="overflow-x-auto">
@@ -403,9 +402,9 @@ const usage = computed(() => {
               <tr
                 class="text-left text-xs text-(--ui-text-muted) border-b border-(--ui-border)"
               >
-                <th class="py-2 pr-3 font-medium">ID</th>
-                <th class="py-2 pr-3 font-medium">Имя</th>
-                <th class="py-2 pr-3 font-medium">Шаги</th>
+                <th class="py-2 pr-3 font-medium">{{ $t('macros.colId') }}</th>
+                <th class="py-2 pr-3 font-medium">{{ $t('macros.colName') }}</th>
+                <th class="py-2 pr-3 font-medium">{{ $t('macros.colSteps') }}</th>
                 <th class="py-2 pr-3 font-medium w-px"></th>
               </tr>
             </thead>
@@ -454,7 +453,7 @@ const usage = computed(() => {
                     icon="i-lucide-copy-plus"
                     @click="cloneSystemMacro(sys)"
                   >
-                    Создать на основе
+                    {{ $t('macros.cloneBtn') }}
                   </UButton>
                 </td>
               </tr>
@@ -464,20 +463,23 @@ const usage = computed(() => {
       </div>
     </UCard>
 
-    <UModal v-model:open="confirmOpen" title="Удалить макрос?">
+    <UModal v-model:open="confirmOpen" :title="$t('macros.confirmDeleteTitle')">
       <template #body>
         <p class="text-sm">
-          Макрос будет удалён. Ссылки <code>macro:{{ pendingDeleteId }}</code>
-          перестанут работать.
+          <i18n-t keypath="macros.confirmDeleteBody" tag="span">
+            <template #ref>
+              <code>macro:{{ pendingDeleteId }}</code>
+            </template>
+          </i18n-t>
         </p>
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
           <UButton variant="ghost" color="neutral" @click="confirmOpen = false">
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
           <UButton color="error" icon="i-lucide-trash-2" @click="confirmRemove">
-            Удалить
+            {{ $t('common.delete') }}
           </UButton>
         </div>
       </template>

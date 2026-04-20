@@ -17,19 +17,20 @@ const {
 } = useConfig()
 const { layout } = useLayout()
 const theme = useAppTheme()
+const { t } = useI18n()
 
-const tabItems = [
-  { value: 'rules', slot: 'rules', label: 'Слои', icon: 'i-lucide-layers' },
-  { value: 'keymap', slot: 'keymap', label: 'Раскладка', icon: 'i-lucide-keyboard' },
-  { value: 'macros', slot: 'macros', label: 'Макросы', icon: 'i-lucide-zap' },
-  { value: 'settings', slot: 'settings', label: 'Настройки', icon: 'i-lucide-settings' },
-] as const
+const tabItems = computed(() => [
+  { value: 'rules', slot: 'rules', label: t('tabs.rules'), icon: 'i-lucide-layers' },
+  { value: 'keymap', slot: 'keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
+  { value: 'macros', slot: 'macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
+  { value: 'settings', slot: 'settings', label: t('tabs.settings'), icon: 'i-lucide-settings' },
+])
 
 const active = ref<string>('rules')
 
 const currentLayoutLabel = computed<string>(() => {
   const id = currentLayoutId.value
-  if (!id) return 'Пользовательская раскладка'
+  if (!id) return t('app.customLayout')
   if (id === BUILTIN_LAYOUT_ID) return BUILTIN_LAYOUT_META.name
   if (isUserLayoutId(id)) return userLayoutNameFromId(id)
   return id
@@ -48,8 +49,8 @@ onMounted(() => {
       class="flex items-center justify-between px-4 py-2 border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 flex-wrap"
     >
       <div class="flex items-center gap-3 flex-wrap">
-        <h1 class="text-lg font-semibold">Left Hand Control</h1>
-        <UBadge color="primary" variant="subtle">Linux key-mapper</UBadge>
+        <h1 class="text-lg font-semibold">{{ $t('app.title') }}</h1>
+        <UBadge color="primary" variant="subtle">{{ $t('app.badge') }}</UBadge>
         <UBadge
           v-if="loaded"
           :color="isLayoutDirty ? 'warning' : 'neutral'"
@@ -57,7 +58,7 @@ onMounted(() => {
           class="max-w-[22rem] truncate"
           :title="
             isLayoutDirty
-              ? 'В текущей раскладке есть несохранённые изменения. Сохраните её в Настройках → Раскладки, иначе они потеряются при переключении.'
+              ? $t('app.dirtyTooltip')
               : currentLayoutLabel
           "
         >
@@ -70,8 +71,8 @@ onMounted(() => {
             class="mr-1"
           />
           <span class="truncate">{{ currentLayoutLabel }}</span>
-          <span v-if="isLayoutDirty" class="ml-1 font-semibold">•
-            не сохранено
+          <span v-if="isLayoutDirty" class="ml-1 font-semibold">
+            {{ $t('app.notSavedBadge') }}
           </span>
         </UBadge>
         <UBadge
@@ -86,14 +87,14 @@ onMounted(() => {
         </UBadge>
       </div>
       <div class="text-xs text-(--ui-text-muted) flex items-center gap-3">
-        <span v-if="!loaded">загрузка…</span>
+        <span v-if="!loaded">{{ $t('app.loading') }}</span>
         <span v-else-if="saving" class="flex items-center gap-1">
           <UIcon name="i-lucide-loader-2" class="animate-spin" />
-          сохранение
+          {{ $t('app.saving') }}
         </span>
         <span v-else class="flex items-center gap-1 text-(--ui-success)">
           <UIcon name="i-lucide-check" />
-          сохранено
+          {{ $t('app.saved') }}
         </span>
         <span v-if="lastError" class="text-(--ui-error)">
           {{ lastError }}
@@ -109,13 +110,13 @@ onMounted(() => {
           "
           :aria-label="
             theme.resolved.value === 'dark'
-              ? 'Переключить на светлую тему'
-              : 'Переключить на тёмную тему'
+              ? $t('app.switchToLight')
+              : $t('app.switchToDark')
           "
           :title="
             theme.resolved.value === 'dark'
-              ? 'Переключить на светлую тему'
-              : 'Переключить на тёмную тему'
+              ? $t('app.switchToLight')
+              : $t('app.switchToDark')
           "
           @click="theme.toggle()"
         />

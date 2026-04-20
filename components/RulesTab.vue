@@ -62,22 +62,19 @@ function confirmNewLayer() {
       <template #header>
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="font-semibold">Слои и их триггеры</h2>
+            <h2 class="font-semibold">{{ $t('rules.title') }}</h2>
             <p class="text-xs text-(--ui-text-muted) mt-1">
-              На каждой строке — правило: какая физическая клавиша активирует
-              слой при удержании и какое действие срабатывает на короткое
-              нажатие.
+              {{ $t('rules.subtitle') }}
             </p>
           </div>
           <UButton icon="i-lucide-plus" size="sm" @click="addRule">
-            Добавить правило
+            {{ $t('rules.addBtn') }}
           </UButton>
         </div>
       </template>
 
       <div v-if="config.rules.length === 0" class="text-sm text-(--ui-text-muted)">
-        Пока нет правил. Нажмите «Добавить правило», чтобы назначить слой на
-        клавишу или определить действие одиночного нажатия.
+        {{ $t('rules.empty') }}
       </div>
 
       <div v-else class="space-y-3">
@@ -89,22 +86,22 @@ function confirmNewLayer() {
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Клавиша"
-                hint="Физическая клавиша, которая будет активировать слой при удержании или выполнять tap-действие при коротком нажатии."
+                :label="$t('rules.keyLabel')"
+                :hint="$t('rules.keyHint')"
               />
             </template>
             <ActionPickerModal
               v-model="rule.key"
               key-only
-              placeholder="выберите клавишу"
+              :placeholder="$t('rules.keyPh')"
             />
           </UFormField>
 
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Слой (hold)"
-                hint="Слой, который активируется пока клавиша удерживается. Пусто — клавиша работает только как tap."
+                :label="$t('rules.layerLabel')"
+                :hint="$t('rules.layerHint')"
               />
             </template>
             <div class="flex gap-1">
@@ -112,7 +109,7 @@ function confirmNewLayer() {
                 v-model="rule.layerId"
                 :items="layerOptions"
                 value-key="value"
-                placeholder="— none —"
+                :placeholder="$t('common.none')"
                 class="flex-1 min-w-0"
               />
               <UButton
@@ -121,7 +118,7 @@ function confirmNewLayer() {
                 variant="ghost"
                 color="neutral"
                 square
-                aria-label="Очистить слой"
+                :aria-label="$t('rules.clearLayer')"
                 @click="rule.layerId = ''"
               />
               <UButton
@@ -129,7 +126,7 @@ function confirmNewLayer() {
                 variant="outline"
                 color="neutral"
                 square
-                aria-label="Создать слой"
+                :aria-label="$t('rules.createLayer')"
                 @click="openNewLayer(rule.id)"
               />
             </div>
@@ -138,28 +135,28 @@ function confirmNewLayer() {
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Tap action"
-                hint="Действие при коротком нажатии клавиши (отпущена до истечения hold-таймаута)."
+                :label="$t('rules.tapLabel')"
+                :hint="$t('rules.tapHint')"
               />
             </template>
             <ActionPickerModal
               v-model="rule.tapAction"
               allow-empty
-              placeholder="нет действия"
+              :placeholder="$t('rules.tapPh')"
             />
           </UFormField>
 
           <UFormField>
             <template #label>
               <FieldLabel
-                label="Hold ms"
-                hint="Индивидуальный таймаут удержания для этого правила. По умолчанию используется значение из настроек."
+                :label="$t('rules.holdLabel')"
+                :hint="$t('rules.holdHint')"
               />
             </template>
             <OverridableNumberField
               v-model="rule.holdTimeoutMs"
               :default-value="config.settings.defaultHoldTimeoutMs"
-              suffix="мс"
+              :suffix="$t('common.ms')"
             />
           </UFormField>
 
@@ -169,7 +166,7 @@ function confirmNewLayer() {
               color="error"
               variant="ghost"
               square
-              aria-label="Удалить правило"
+              :aria-label="$t('rules.deleteRule')"
               @click="removeRule(rule.id)"
             />
           </div>
@@ -177,22 +174,22 @@ function confirmNewLayer() {
       </div>
     </UCard>
 
-    <UModal v-model:open="newLayerOpen" title="Новый слой">
+    <UModal v-model:open="newLayerOpen" :title="$t('rules.newLayerTitle')">
       <template #body>
         <div class="space-y-3">
-          <UFormField label="Имя слоя">
+          <UFormField :label="$t('rules.layerName')">
             <UInput
               v-model="newLayerName"
               autofocus
-              placeholder="Например: Навигация"
+              :placeholder="$t('rules.layerNamePh')"
               class="w-full"
               @keydown.enter="confirmNewLayer"
             />
           </UFormField>
-          <UFormField label="Описание (необязательно)">
+          <UFormField :label="$t('rules.layerDesc')">
             <UTextarea
               v-model="newLayerDescription"
-              placeholder="Коротко: для чего нужен этот слой"
+              :placeholder="$t('rules.layerDescPh')"
               class="w-full"
               :rows="2"
             />
@@ -206,14 +203,14 @@ function confirmNewLayer() {
             color="neutral"
             @click="newLayerOpen = false"
           >
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
           <UButton
             icon="i-lucide-check"
             :disabled="!newLayerName.trim()"
             @click="confirmNewLayer"
           >
-            Создать
+            {{ $t('common.create') }}
           </UButton>
         </div>
       </template>

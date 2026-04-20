@@ -1,3 +1,4 @@
+import { useI18n } from 'vue-i18n'
 import {
   type Macro,
   MACRO_ACTION_PREFIX,
@@ -14,6 +15,7 @@ import { systemMacroById } from '~/utils/systemMacros'
 
 export function useMacros() {
   const { config } = useConfig()
+  const { t } = useI18n()
 
   const macros = computed<Macro[]>(() => config.value.macros ?? [])
 
@@ -27,6 +29,12 @@ export function useMacros() {
     return byId.value[id]?.name ?? systemMacroById(id)?.name
   }
 
+  function systemActionName(id: string): string | undefined {
+    const found = systemActionById(id)
+    if (!found) return undefined
+    return t(found.nameKey, found.nameParams ?? {})
+  }
+
   function displayAction(action: string | undefined | null): string {
     if (!action) return ''
     const macroRef = parseMacroRef(action)
@@ -36,8 +44,8 @@ export function useMacros() {
     }
     const sysRef = parseSystemRef(action)
     if (sysRef) {
-      const found = systemActionById(sysRef)
-      return found ? `⚙ ${found.name}` : action
+      const name = systemActionName(sysRef)
+      return name ? `⚙ ${name}` : action
     }
     return action
   }

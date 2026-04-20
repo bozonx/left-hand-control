@@ -31,7 +31,7 @@ const actionLabel = computed(() => displayAction(props.action))
       variant="ghost"
       color="neutral"
       block
-      :aria-label="`Редактировать ${label}`"
+      :aria-label="$t('keymap.editKeyAria', { label })"
       @click="$emit('edit')"
     />
   </div>

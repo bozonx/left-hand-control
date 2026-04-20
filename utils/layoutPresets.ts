@@ -186,7 +186,7 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
   return yaml.dump(doc, { lineWidth: 100, noRefs: true })
 }
 
-export function emptyLayoutPreset(name = 'Пустая раскладка'): LayoutPreset {
+export function emptyLayoutPreset(name = 'Empty layout'): LayoutPreset {
   return {
     name,
     layers: [{ id: BASE_LAYER_ID, name: 'Base' }],

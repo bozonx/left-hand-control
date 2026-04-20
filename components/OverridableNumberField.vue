@@ -31,7 +31,7 @@ function reset() {
         variant="ghost"
         color="neutral"
         square
-        aria-label="Переопределить"
+        :aria-label="$t('common.override')"
         @click="startEdit"
       />
     </template>
@@ -49,7 +49,7 @@ function reset() {
         variant="ghost"
         color="neutral"
         square
-        aria-label="Сбросить к значению по умолчанию"
+        :aria-label="$t('common.reset')"
         @click="reset"
       />
     </template>

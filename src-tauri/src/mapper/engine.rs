@@ -22,7 +22,7 @@
 use super::action::{literal_char, parse_action, Keystroke, MacroStepItem};
 use super::config::AppConfig;
 use super::keys::code_to_key;
-use super::system::{self, SysCommand};
+use super::system::{self, SysAction};
 use super::system_macros::SYSTEM_MACROS;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
@@ -35,7 +35,7 @@ use std::time::{Duration, Instant};
 enum ActionDef {
     Stroke(Keystroke),
     Macro(MacroDef),
-    System(SysCommand),
+    System(SysAction),
     Literal(char),
 }
 
@@ -100,8 +100,8 @@ pub enum Out {
         step_pause: Duration,
         mod_delay: Duration,
     },
-    /// Spawn a system command (fire-and-forget).
-    RunSystem(SysCommand),
+    /// Execute a system function (DBus call or fire-and-forget spawn).
+    RunSystem(SysAction),
     /// Type a single Unicode character via the Wayland virtual-keyboard
     /// backend. Fire-and-forget on key press; no release event is needed.
     Literal(char),
@@ -403,12 +403,9 @@ impl Engine {
                 });
                 self.macro_consumed.insert(key);
             }
-            Some(ActionDef::System(cmd)) => {
-                eprintln!(
-                    "[mapper]   press {:?} -> run system {} {:?}",
-                    key, cmd.program, cmd.args
-                );
-                out.push(Out::RunSystem(cmd));
+            Some(ActionDef::System(action)) => {
+                eprintln!("[mapper]   press {:?} -> run system {:?}", key, action);
+                out.push(Out::RunSystem(action));
                 self.macro_consumed.insert(key);
             }
             None => {
@@ -442,7 +439,7 @@ impl Engine {
                         step_pause: md.step_pause,
                         mod_delay: md.mod_delay,
                     }),
-                    Some(ActionDef::System(cmd)) => out.push(Out::RunSystem(cmd)),
+                    Some(ActionDef::System(action)) => out.push(Out::RunSystem(action)),
                     None => {}
                 }
             }

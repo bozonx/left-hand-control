@@ -8,6 +8,18 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/ui'],
 
+  // Auto-import `useI18n` from vue-i18n so components / composables can
+  // call it without a manual `import` line. The plugin in `plugins/i18n.ts`
+  // is what actually registers the vue-i18n instance with the Vue app.
+  imports: {
+    presets: [
+      {
+        from: 'vue-i18n',
+        imports: ['useI18n'],
+      },
+    ],
+  },
+
   css: ['~/assets/css/main.css'],
 
   // Nuxt UI v3 bundles @nuxtjs/color-mode — configure it explicitly so the

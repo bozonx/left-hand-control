@@ -32,13 +32,17 @@ function clear() {
 <template>
   <UModal
     v-model:open="open"
-    :title="`Редактирование: ${keyLabel}`"
+    :title="$t('keymap.editTitle', { label: keyLabel })"
     :ui="{ content: 'max-w-3xl' }"
   >
     <template #body>
       <div class="space-y-3">
         <div class="text-sm text-(--ui-text-muted)">
-          Код клавиши: <code>{{ keyCode }}</code>
+          <i18n-t keypath="keymap.keyCode" tag="span">
+            <template #code>
+              <code>{{ keyCode }}</code>
+            </template>
+          </i18n-t>
         </div>
         <ActionPickerBody v-model="draft" />
       </div>
@@ -52,13 +56,13 @@ function clear() {
           icon="i-lucide-trash-2"
           @click="clear"
         >
-          Очистить
+          {{ $t('common.clear') }}
         </UButton>
         <div class="flex gap-2 ml-auto">
           <UButton color="neutral" variant="ghost" @click="open = false">
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
-          <UButton icon="i-lucide-check" @click="save">Сохранить</UButton>
+          <UButton icon="i-lucide-check" @click="save">{{ $t('common.save') }}</UButton>
         </div>
       </div>
     </template>

@@ -10,9 +10,12 @@
 export interface SystemAction {
   // Stable cross-platform identifier used in config as `sys:<id>`.
   id: string
-  // Human-readable name (RU) for the dropdown.
-  name: string
-  // Short implementation hint shown as a secondary label.
+  // i18n key used to render the human-readable name. May contain named
+  // parameters (see `nameParams`).
+  nameKey: string
+  nameParams?: Record<string, string | number>
+  // Short implementation hint shown as a secondary label (not localized —
+  // it is a verbatim shell command).
   hint?: string
   // Platforms where this function is currently wired up in the mapper.
   platforms: string[]
@@ -27,7 +30,8 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     const n = i + 1
     return {
       id: `switchDesktop${n}`,
-      name: `Переключиться на рабочий стол ${n}`,
+      nameKey: 'systemActions.switchDesktop',
+      nameParams: { n },
       hint: 'KDE: qdbus org.kde.KWin /KWin setCurrentDesktop ' + n,
       platforms: ['linux-kde'],
     }

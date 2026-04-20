@@ -15,6 +15,7 @@ const props = defineProps<{
 const draft = defineModel<string>({ default: '' })
 
 const { macros } = useMacros()
+const { t } = useI18n()
 
 const dynamicCategories = computed<StaticCategory[]>(() => {
   // User macros shadow system macros with the same id — hide duplicates
@@ -23,7 +24,7 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
   return [
     {
       id: 'macros',
-      label: 'Макросы',
+      labelKey: 'categories.macros',
       icon: 'i-lucide-zap',
       items: macros.value.map((m) => ({
         label: m.name || m.id,
@@ -33,7 +34,7 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
     },
     {
       id: 'system-macros',
-      label: 'Системные макросы',
+      labelKey: 'categories.systemMacros',
       icon: 'i-lucide-cpu',
       items: SYSTEM_MACROS.filter((m) => !userIds.has(m.id)).map((m) => ({
         label: m.name,
@@ -43,10 +44,10 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
     },
     {
       id: 'system',
-      label: 'Системные',
+      labelKey: 'categories.system',
       icon: 'i-lucide-settings-2',
       items: SYSTEM_ACTIONS.map((a) => ({
-        label: a.name,
+        label: t(a.nameKey, a.nameParams ?? {}),
         value: systemActionRef(a.id),
         hint: a.id,
       })),
@@ -80,10 +81,10 @@ function pick(item: ActionItem) {
 
 <template>
   <div class="space-y-4">
-    <UFormField label="Текущее значение">
+    <UFormField :label="$t('picker.currentValue')">
       <UInput
         v-model="draft"
-        placeholder="Например: Ctrl+C, Escape, macro:copyLine"
+        :placeholder="$t('picker.valuePh')"
         class="w-full font-mono"
       />
     </UFormField>
@@ -98,7 +99,7 @@ function pick(item: ActionItem) {
         :variant="activeCategory === cat.id ? 'soft' : 'ghost'"
         @click="activeCategory = cat.id"
       >
-        {{ cat.label }}
+        {{ $t(cat.labelKey) }}
         <UBadge
           v-if="cat.items.length"
           size="sm"
@@ -115,7 +116,7 @@ function pick(item: ActionItem) {
       v-if="categoryItems.length === 0"
       class="text-sm text-(--ui-text-muted) italic px-1 py-6 text-center"
     >
-      В этой категории пока нет элементов.
+      {{ $t('picker.emptyCategory') }}
     </div>
     <div
       v-else

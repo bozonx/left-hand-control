@@ -3,6 +3,7 @@ import { BUILTIN_LAYOUT_ID } from '~/types/config'
 import { emptyLayoutPreset, loadBuiltinLayout } from '~/utils/layoutPresets'
 
 const { applyPreset } = useConfig()
+const { t } = useI18n()
 
 const busy = ref<'' | 'ivank' | 'empty'>('')
 const error = ref<string | null>(null)
@@ -13,7 +14,7 @@ async function pickIvanK() {
   try {
     const preset = await loadBuiltinLayout()
     if (!preset) {
-      error.value = 'Не удалось загрузить встроенную раскладку.'
+      error.value = t('welcome.loadError')
       return
     }
     await applyPreset(preset, BUILTIN_LAYOUT_ID)
@@ -28,7 +29,7 @@ async function pickEmpty() {
   busy.value = 'empty'
   error.value = null
   try {
-    await applyPreset(emptyLayoutPreset(), undefined)
+    await applyPreset(emptyLayoutPreset(t('settings.emptyLayoutName')), undefined)
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -41,10 +42,9 @@ async function pickEmpty() {
   <div class="min-h-screen flex items-center justify-center p-6 bg-(--ui-bg)">
     <div class="max-w-3xl w-full space-y-6">
       <div class="text-center space-y-2">
-        <h1 class="text-3xl font-bold">Left Hand Control</h1>
+        <h1 class="text-3xl font-bold">{{ $t('app.title') }}</h1>
         <p class="text-(--ui-text-muted)">
-          Добро пожаловать! Выберите стартовую раскладку — её можно будет
-          поменять в любой момент в настройках.
+          {{ $t('welcome.intro') }}
         </p>
       </div>
 
@@ -53,16 +53,14 @@ async function pickEmpty() {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-sparkles" class="text-(--ui-primary)" />
-              <h2 class="font-semibold">Ivan K's left hand control</h2>
+              <h2 class="font-semibold">{{ $t('welcome.ivankTitle') }}</h2>
               <UBadge color="primary" variant="subtle" size="sm">
-                рекомендуется
+                {{ $t('welcome.recommended') }}
               </UBadge>
             </div>
           </template>
           <p class="text-sm text-(--ui-text-muted) flex-1">
-            Готовая авторская раскладка: CapsLock — слой навигации,
-            правый Alt — слой символов, левый Alt — оконный менеджер.
-            Включает набор макросов для IDE.
+            {{ $t('welcome.ivankDesc') }}
           </p>
           <template #footer>
             <UButton
@@ -73,7 +71,7 @@ async function pickEmpty() {
               :disabled="!!busy"
               @click="pickIvanK"
             >
-              Использовать эту раскладку
+              {{ $t('welcome.useThis') }}
             </UButton>
           </template>
         </UCard>
@@ -82,12 +80,11 @@ async function pickEmpty() {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-file-plus" />
-              <h2 class="font-semibold">Пустая раскладка</h2>
+              <h2 class="font-semibold">{{ $t('welcome.emptyTitle') }}</h2>
             </div>
           </template>
           <p class="text-sm text-(--ui-text-muted) flex-1">
-            Начать с чистого листа: только базовый слой, без правил и
-            макросов. Подходит, если вы хотите собрать раскладку с нуля.
+            {{ $t('welcome.emptyDesc') }}
           </p>
           <template #footer>
             <UButton
@@ -99,7 +96,7 @@ async function pickEmpty() {
               :disabled="!!busy"
               @click="pickEmpty"
             >
-              Начать с пустой
+              {{ $t('welcome.emptyBtn') }}
             </UButton>
           </template>
         </UCard>
@@ -110,8 +107,11 @@ async function pickEmpty() {
       </p>
 
       <p class="text-xs text-(--ui-text-muted) text-center">
-        Выбранную раскладку всегда можно заменить в разделе
-        <b>Настройки → Раскладки</b>.
+        <i18n-t keypath="welcome.footnote" tag="span">
+          <template #path>
+            <b>{{ $t('welcome.footnotePath') }}</b>
+          </template>
+        </i18n-t>
       </p>
     </div>
   </div>

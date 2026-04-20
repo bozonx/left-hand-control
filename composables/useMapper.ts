@@ -70,7 +70,8 @@ export function useMapper(): MapperState {
   async function start(devicePath: string) {
     const tauri = await getTauri()
     if (!tauri) {
-      error.value = 'Маппер доступен только в desktop-сборке (pnpm tauri:dev).'
+      const { t } = useI18n()
+      error.value = t('mapper.desktopOnly')
       return
     }
     busy.value = true

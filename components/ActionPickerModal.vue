@@ -46,7 +46,7 @@ function clear() {
         {{ displayLabel }}
       </span>
       <span v-else class="text-(--ui-text-muted) truncate">
-        {{ placeholder ?? 'Выбрать действие' }}
+        {{ placeholder ?? $t('picker.chooseAction') }}
       </span>
     </button>
     <UButton
@@ -56,14 +56,14 @@ function clear() {
       color="neutral"
       variant="ghost"
       square
-      aria-label="Очистить"
+      :aria-label="$t('picker.clearAria')"
       @click="model = ''"
     />
   </div>
 
   <UModal
     v-model:open="open"
-    :title="title ?? (keyOnly ? 'Выбор клавиши' : 'Выбор действия')"
+    :title="title ?? (keyOnly ? $t('picker.titleKey') : $t('picker.titleAction'))"
     :ui="{ content: 'max-w-3xl' }"
   >
     <template #body>
@@ -78,13 +78,13 @@ function clear() {
           icon="i-lucide-trash-2"
           @click="clear"
         >
-          Очистить
+          {{ $t('common.clear') }}
         </UButton>
         <div class="flex gap-2 ml-auto">
           <UButton color="neutral" variant="ghost" @click="open = false">
-            Отмена
+            {{ $t('common.cancel') }}
           </UButton>
-          <UButton icon="i-lucide-check" @click="apply">Применить</UButton>
+          <UButton icon="i-lucide-check" @click="apply">{{ $t('common.apply') }}</UButton>
         </div>
       </div>
     </template>
