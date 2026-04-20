@@ -80,6 +80,11 @@ export const SYSTEM_MACROS: SystemMacro[] = [
     name: "Down 5 times",
     steps: s("Down", "Down", "Down", "Down", "Down"),
   },
+  {
+    id: "pasteAtLineBottom",
+    name: "Paste at line bottom",
+    steps: s("End", "Enter", "Ctrl+V"),
+  },
 ];
 
 const BY_ID: Record<string, SystemMacro> = Object.fromEntries(

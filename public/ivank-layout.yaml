@@ -254,6 +254,10 @@ keymaps:
 
   nav:
     keys:
+      AltLeft: macro:pasteAtLineBottom
+      MetaLeft: Ctrl+X
+      Space: Delete
+
       KeyQ: macro:moveLineDown
       KeyW: Ctrl+Backspace
       KeyE: Ctrl+Delete
@@ -298,6 +302,9 @@ keymaps:
 
   sel:
     keys:
+      AltLeft: Ctrl+Enter
+      Space: Backspace
+
       KeyQ: Ctrl+Z
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
