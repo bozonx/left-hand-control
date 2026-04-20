@@ -22,14 +22,14 @@
 use super::action::{literal_char, parse_action, Keystroke, MacroStepItem};
 use super::config::AppConfig;
 use super::keys::code_to_key;
-use super::symbols::{resolve_literal, SymbolResolver};
 use super::system::{self, SysCommand};
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
 /// Resolved action: single chord, macro, system function, or a
-/// layout-dependent character literal resolved at press time.
+/// literal character delivered through the Wayland virtual-keyboard
+/// backend (layout-independent, see `mapper::vkbd`).
 #[derive(Clone)]
 enum ActionDef {
     Stroke(Keystroke),
@@ -101,6 +101,9 @@ pub enum Out {
     },
     /// Spawn a system command (fire-and-forget).
     RunSystem(SysCommand),
+    /// Type a single Unicode character via the Wayland virtual-keyboard
+    /// backend. Fire-and-forget on key press; no release event is needed.
+    Literal(char),
 }
 
 impl Engine {
@@ -292,14 +295,7 @@ impl Engine {
     }
 
     /// Handle a raw key event from the grabbed device.
-    pub fn handle(
-        &mut self,
-        key: Key,
-        down: bool,
-        now: Instant,
-        resolver: Option<&mut SymbolResolver>,
-        out: &mut Vec<Out>,
-    ) {
+    pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
         eprintln!(
             "[mapper] in {} key={:?} active={:?}",
             if down { "DOWN" } else { " UP " },
@@ -307,19 +303,13 @@ impl Engine {
             self.active_layers
         );
         if down {
-            self.on_press(key, now, resolver, out);
+            self.on_press(key, now, out);
         } else {
-            self.on_release(key, now, resolver, out);
+            self.on_release(key, now, out);
         }
     }
 
-    fn on_press(
-        &mut self,
-        key: Key,
-        now: Instant,
-        mut resolver: Option<&mut SymbolResolver>,
-        out: &mut Vec<Out>,
-    ) {
+    fn on_press(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
         if let Some(rule) = self.rules.get(&key) {
             let layer = rule.layer.clone();
             let tap = rule.tap.clone();
@@ -364,23 +354,11 @@ impl Engine {
                 self.emit_stroke_press(key, ks, out);
             }
             Some(ActionDef::Literal(ch)) => {
-                match resolve_literal(resolver.as_deref_mut(), ch) {
-                    Some(ks) => {
-                        eprintln!(
-                            "[mapper]   press {:?} -> literal {:?} mods={:?} key={:?}",
-                            key, ch, ks.mods, ks.key
-                        );
-                        self.emit_stroke_press(key, ks, out);
-                    }
-                    None => {
-                        eprintln!(
-                            "[mapper]   press {:?} -> literal {:?} unresolved, ignored",
-                            key, ch
-                        );
-                        // Nothing emitted; remember so release is a no-op.
-                        self.macro_consumed.insert(key);
-                    }
-                }
+                eprintln!("[mapper]   press {:?} -> literal {:?}", key, ch);
+                out.push(Out::Literal(ch));
+                // Literal output is fire-and-forget, like macros — release
+                // event for the physical key must not emit anything.
+                self.macro_consumed.insert(key);
             }
             Some(ActionDef::Macro(md)) => {
                 eprintln!(
@@ -417,13 +395,7 @@ impl Engine {
         }
     }
 
-    fn on_release(
-        &mut self,
-        key: Key,
-        _now: Instant,
-        mut resolver: Option<&mut SymbolResolver>,
-        out: &mut Vec<Out>,
-    ) {
+    fn on_release(&mut self, key: Key, _now: Instant, out: &mut Vec<Out>) {
         if let Some(p) = self.pending.remove(&key) {
             if p.decided_hold {
                 // Hold was active — deactivate layer if we activated one.
@@ -434,16 +406,7 @@ impl Engine {
                 // Release before timeout → emit tap action.
                 match p.tap {
                     Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke(ks)),
-                    Some(ActionDef::Literal(ch)) => {
-                        if let Some(ks) = resolve_literal(resolver.as_deref_mut(), ch) {
-                            out.push(Out::Stroke(ks));
-                        } else {
-                            eprintln!(
-                                "[mapper]   tap literal {:?} unresolved, ignored",
-                                ch
-                            );
-                        }
-                    }
+                    Some(ActionDef::Literal(ch)) => out.push(Out::Literal(ch)),
                     Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
                         steps: md.steps,
                         step_pause: md.step_pause,
