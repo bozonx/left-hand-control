@@ -417,7 +417,7 @@ keymaps:
       #KeyP:
       #BracketLeft:
       #BracketRight
-      #Backslash
+      #Backslash: sys:screenOff
 
       KeyA: sys:switchDesktop4
       KeyS: sys:switchDesktop3
@@ -435,12 +435,12 @@ keymaps:
       KeyX: sys:windowMaximizeHorizontal
       KeyC: sys:screenshot
       KeyV: sys:showClipboardHistory
-      KeyB: sys:brightnessDown
-      KeyN: sys:brightnessUp
-      KeyM: sys:volumeDown
-      Comma: sys:volumeUp
-      Period: sys:muteAudio
-      Slash: sys:screenOff
+      KeyB: sys:windowClose
+      KeyN: sys:brightnessDown
+      KeyM: sys:brightnessUp
+      Comma: sys:volumeDown
+      Period: sys:volumeUp
+      Slash: sys:muteAudio
 
   space:
     keys:
