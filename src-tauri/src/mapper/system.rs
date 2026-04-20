@@ -119,6 +119,16 @@ mod kde {
                 }
             }
         }
+        if let Some(rest) = name.strip_prefix("taskEntry") {
+            if let Ok(n) = rest.parse::<u32>() {
+                if (1..=10).contains(&n) {
+                    return Some(invoke_shortcut(
+                        "plasmashell",
+                        &format!("activate task manager entry {n}"),
+                    ));
+                }
+            }
+        }
         match name {
             "volumeDown" => return Some(invoke_shortcut("kmix", "decrease_volume")),
             "volumeUp" => return Some(invoke_shortcut("kmix", "increase_volume")),
@@ -216,6 +226,12 @@ mod tests {
             panic!("windowKeepAbove did not resolve to a DBus action");
         };
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Above Other Windows"));
+
+        let Some(SysAction::Dbus(call)) = resolve("taskEntry3") else {
+            panic!("taskEntry3 did not resolve to a DBus action");
+        };
+        assert_eq!(call.path, "/component/plasmashell");
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "activate task manager entry 3"));
     }
 
     #[test]

@@ -104,6 +104,9 @@
 #   sys:switchLayout1 .. sys:switchLayout10
 #     — переключение на раскладку клавиатуры N
 #       (qdbus org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout N-1).
+#   sys:taskEntry1 .. sys:taskEntry10
+#     — активировать N-ю запись панели задач Plasma
+#       (аналог Meta+1 .. Meta+0; зависит от текущего порядка в task manager).
 #   sys:showClipboardHistory
 #     — показать историю буфера обмена Klipper
 #       (qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu).
@@ -409,6 +412,17 @@ keymaps:
 
   win:
     keys:
+      Digit1: sys:taskEntry1
+      Digit2: sys:taskEntry2
+      Digit3: sys:taskEntry3
+      Digit4: sys:taskEntry4
+      Digit5: sys:taskEntry5
+      Digit6: sys:taskEntry6
+      Digit7: sys:taskEntry7
+      Digit8: sys:taskEntry8
+      Digit9: sys:taskEntry9
+      Digit0: sys:taskEntry10
+
       #KeyQ:
       KeyW: Ctrl+A
       #KeyE:

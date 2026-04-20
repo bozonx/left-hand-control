@@ -25,6 +25,7 @@ export interface SystemAction {
 // length for the picker. Bump if needed.
 const KDE_DESKTOP_COUNT = 10
 const KDE_LAYOUT_COUNT = 10
+const KDE_TASK_ENTRY_COUNT = 10
 
 export const SYSTEM_ACTIONS: SystemAction[] = [
   ...Array.from({ length: KDE_DESKTOP_COUNT }, (_, i) => {
@@ -44,6 +45,16 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
       nameKey: 'systemActions.switchLayout',
       nameParams: { n },
       hint: 'KDE: qdbus org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout ' + n,
+      platforms: ['linux-kde'],
+    }
+  }),
+  ...Array.from({ length: KDE_TASK_ENTRY_COUNT }, (_, i) => {
+    const n = i + 1
+    return {
+      id: `taskEntry${n}`,
+      nameKey: 'systemActions.taskEntry',
+      nameParams: { n },
+      hint: 'KDE: org.kde.kglobalaccel /component/plasmashell invokeShortcut "activate task manager entry ' + n + '"',
       platforms: ['linux-kde'],
     }
   }),

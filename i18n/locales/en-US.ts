@@ -280,6 +280,7 @@ export default {
   systemActions: {
     switchDesktop: 'Switch to desktop {n}',
     switchLayout: 'Switch to layout {n}',
+    taskEntry: 'Activate task manager entry {n}',
     showClipboardHistory: 'Show clipboard history',
     volumeDown: 'Decrease volume',
     volumeUp: 'Increase volume',

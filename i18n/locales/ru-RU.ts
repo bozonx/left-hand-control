@@ -282,6 +282,7 @@ export default {
   systemActions: {
     switchDesktop: 'Переключиться на рабочий стол {n}',
     switchLayout: 'Переключить раскладку на {n}',
+    taskEntry: 'Активировать запись панели задач {n}',
     showClipboardHistory: 'Показать историю буфера обмена',
     volumeDown: 'Уменьшить громкость',
     volumeUp: 'Увеличить громкость',
