@@ -185,6 +185,10 @@ rules:
   - key: ShiftLeft
     tap: Ctrl+C
 
+  # ControlLeft: удержание — как системный AltLeft, короткое нажатие — native Ctrl.
+  - key: ControlLeft
+    hold: AltLeft
+
   # MetaLeft: удержание — как ControlLeft, тап — Escape.
   - key: MetaLeft
     tap: Escape
