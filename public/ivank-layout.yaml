@@ -427,7 +427,7 @@ keymaps:
   win:
     keys:
       Tab: Tab
-      CapsLock: sys:walkThroughWindowsAlternative
+      Capslock: sys:walkThroughWindowsAlternative
       ShiftLeft: sys:walkThroughWindowsCurrentApp
 
       Digit1: sys:taskEntry1

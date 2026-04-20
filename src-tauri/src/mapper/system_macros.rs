@@ -46,6 +46,10 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
         id: "down5Times",
         steps: &["Down", "Down", "Down", "Down", "Down"],
     },
+    SysMacro {
+        id: "pasteAtLineBottom",
+        steps: &["End", "Enter", "Ctrl+V"],
+    },
 
     // select layer
     SysMacro { id: "cutToStart", steps: &["Shift+Home", "Ctrl+X"] },
