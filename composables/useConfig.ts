@@ -256,6 +256,17 @@ export function useConfig(): ConfigState {
       if (raw) {
         try {
           config.value = normalize(JSON.parse(raw))
+          if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
+            const preset = await loadBuiltinLayout()
+            if (preset) {
+              config.value = applyPresetToConfig(
+                config.value,
+                preset,
+                BUILTIN_LAYOUT_ID,
+              )
+              await writeRaw(JSON.stringify(config.value, null, 2))
+            }
+          }
         } catch {
           config.value = createDefaultConfig()
         }
