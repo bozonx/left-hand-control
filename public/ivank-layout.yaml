@@ -355,36 +355,36 @@ keymaps:
       KeyR: ")"
       #KeyT: ""
       #KeyY:
-      KeyU: KeyF7
-      KeyI: KeyF8
-      KeyO: KeyF9
-      KeyP: KeyF12
-      #BracketLeft: ""
+      KeyU: F7
+      KeyI: F8
+      KeyO: F9
+      KeyP: F12
+      BracketLeft: "ℹ️"
       #BracketRight
       #Backslash
 
       KeyA: "€"
       KeyS: "№"
-      #KeyD: ""
-      #KeyF: ""
-      #KeyG: ""
+      KeyD: "‼️"
+      KeyF: ❓"
+      KeyG: "❌"
       #KeyH: ""
-      KeyJ: KeyF4
-      KeyK: KeyF5
-      KeyL: KeyF6
-      Semicolon: KeyF11
-      #Quote: ""
+      KeyJ: F4
+      KeyK: F5
+      KeyL: F6
+      Semicolon: F11
+      Quote: "☝️"
 
       KeyZ: ";"
       KeyX: "~"
-      #KeyC: ""
-      #KeyV: ""
+      KeyC: "⏩"
+      KeyV: "✅"
       KeyB: "\\"
       #KeyN:
-      KeyM: KeyF1
-      Comma: KeyF2
-      Period: KeyF3
-      Slash: KeyF10
+      KeyM: F1
+      Comma: F2
+      Period: F3
+      Slash: F10
 
   win:
     keys:
