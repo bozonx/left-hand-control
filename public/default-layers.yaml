@@ -143,9 +143,9 @@ rules:
   #   layer: sym
   #   tap: Space
 
-  # # Правый Alt — только слой Numpad, без tap action.
-  # - key: AltRight
-  #   layer: num
+  # Правый Alt — только слой Symbols, без tap action.
+  - key: AltRight
+    layer: sym
 
   - key: AltLeft
     layer: win
