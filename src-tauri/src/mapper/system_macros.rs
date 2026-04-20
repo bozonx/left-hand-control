@@ -68,4 +68,18 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     SysMacro { id: "ctrlSlash", steps: &["Ctrl+Slash"] },
     SysMacro { id: "copyToStart", steps: &["Shift+Home", "Ctrl+C", "Home"] },
     SysMacro { id: "copyToEnd", steps: &["Shift+End", "Ctrl+C", "End"] },
+    SysMacro { id: "copyLine", steps: &["Home", "Shift+End", "Ctrl+C", "Home"] },
+    SysMacro { id: "shiftLeft", steps: &["Shift+Left"] },
+    SysMacro { id: "shiftRight", steps: &["Shift+Right"] },
+    SysMacro { id: "shiftUp", steps: &["Shift+Up"] },
+    SysMacro { id: "shiftDown", steps: &["Shift+Down"] },
+    SysMacro { id: "selectWholeLine", steps: &["Home", "Shift+End"] },
+
+    SysMacro { id: "replaceToStartWithBuffer", steps: &["Shift+Home", "Ctrl+V"] },
+    SysMacro { id: "replaceToEndWithBuffer", steps: &["Shift+End", "Ctrl+V"] },
+    SysMacro { id: "replaceLineWidthBuffer", steps: &["Home", "Shift+End", "Ctrl+V"] },
+    SysMacro { id: "shiftCtrlLeft", steps: &["Shift+Ctrl+Left"] },
+    SysMacro { id: "shiftCtrlRight", steps: &["Shift+Ctrl+Right"] },
+    SysMacro { id: "select5LinesDown", steps: &["Shift+Down", "Shift+Down", "Shift+Down", "Shift+Down", "Shift+Down"] },
+    
 ];

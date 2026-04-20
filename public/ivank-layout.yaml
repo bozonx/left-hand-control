@@ -207,16 +207,6 @@ keymaps:
       - name: Mouse5
         action: BrowserForward
 
-
-  # sel-replace-line-with-buffer (cmd-button "xdotool key Home shift+End ctrl+v")
-
-  # sel-replace-to-end-with-buffer (cmd-button "xdotool key shift+End ctrl+v")
-  # sel-copy-line (cmd-button "xdotool key Home Shift+End ctrl+c Home")
-  # sel-select-whole-line (cmd-button "xdotool key Home Shift+End")
-  # sel-replace-to-start-with-buffer (cmd-button "xdotool key shift+Home ctrl+v")
-
-  # sel-5line–down (cmd-button "xdotool key shift+Down shift+Down shift+Down shift+Down shift+Down shift+End")
-
   sel:
     keys:
       KeyQ: macro:ctrlKeyZ
@@ -236,25 +226,25 @@ keymaps:
       KeyA: macro:ctrlSlash
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
-      KeyF: PageDown
-      KeyG: macro:ctrlEnd
-      KeyH: Left
-      KeyJ: Down
-      KeyK: Up
-      KeyL: Right
-      Semicolon: macro:rightSpace
+      KeyF: macro:copyLine
+      #KeyG: 
+      KeyH: macro:shiftLeft
+      KeyJ: macro:shiftDown
+      KeyK: macro:shiftUp
+      KeyL: macro:shiftRight
+      Semicolon: macro:selectWholeLine
       #Quote:
 
-      KeyZ: macro:emptyLineBelow
-      KeyX: macro:cutWordRightCenter
-      KeyC: macro:copyWordAfterCenter
-      KeyV: macro:pasteAtLineAbove
-      KeyB: macro:replaceWordWidthBuffer
-      KeyN: macro:ctrlLeft
-      KeyM: macro:downHome
-      Comma: macro:upHome
-      Period: macro:ctrlRight
-      Slash: macro:down5Times
+      #KeyZ: 
+      KeyX: macro:replaceToStartWithBuffer
+      KeyC: macro:replaceToEndWithBuffer
+      #KeyV: 
+      KeyB: macro:replaceLineWidthBuffer
+      KeyN: macro:shiftCtrlLeft
+      #KeyM: 
+      #Comma: 
+      Period: macro:shiftCtrlRight
+      Slash: macro:select5LinesDown
     extras: []
   
   sym:
