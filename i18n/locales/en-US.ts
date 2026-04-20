@@ -67,13 +67,21 @@ export default {
     keyPh: 'pick a key',
     layerLabel: 'Layer (hold)',
     layerHint:
-      'Layer that activates while the key is held. Empty — the key only behaves as a tap.',
+      'Layer that activates while the key is held. Empty — hold is controlled by the "Hold action" field instead.',
     clearLayer: 'Clear layer',
     createLayer: 'Create layer',
     tapLabel: 'Tap action',
     tapHint:
       'Action performed on a short key press (released before the hold timeout elapses). Note: when a double-tap action is set, a single tap is delayed by the double-tap window to disambiguate it from the first press of a double tap.',
     tapPh: 'no action',
+    holdActionLabel: 'Hold action',
+    holdActionHint:
+      'What happens while the key is held. "Native" = the physical key itself acts as held (e.g. ShiftLeft stays a Shift modifier). "None" = swallowed, nothing happens. "Action" lets you hold a different keystroke instead (e.g. MetaLeft can behave like a held ControlLeft). Ignored when a Layer is selected — layer takes priority.',
+    holdActionPh: 'pick a keystroke',
+    holdActionDisabledByLayer: 'Hold is controlled by the selected layer.',
+    modeNative: 'Native',
+    modeNone: 'None (swallow)',
+    modeAction: 'Action',
     doubleTapLabel: 'Double-tap action',
     doubleTapHint:
       'Action performed when the key is pressed twice in quick succession (second key-down within the double-tap window after a short first press). Fires on the second press; no need to release the key first.',

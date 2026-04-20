@@ -73,6 +73,11 @@ function normalize(raw: unknown): AppConfig {
     rules: Array.isArray(r.rules)
       ? r.rules.map((rule) => ({
           doubleTapAction: '',
+          // Default tap/hold to '' (native) for configs that predate the
+          // three-state tap/hold fields. `null` (swallow) and non-empty
+          // string action are preserved as-is.
+          tapAction: '',
+          holdAction: '',
           ...rule,
         }))
       : [],

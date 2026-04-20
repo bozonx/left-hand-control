@@ -123,8 +123,8 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
     );
     for r in &cfg.rules {
         eprintln!(
-            "[mapper]   rule key={} layer={:?} tap={:?} holdMs={:?}",
-            r.key, r.layer_id, r.tap_action, r.hold_timeout_ms
+            "[mapper]   rule key={} layer={:?} tap={:?} hold={:?} holdMs={:?}",
+            r.key, r.layer_id, r.tap_action, r.hold_action, r.hold_timeout_ms
         );
     }
     for (lid, km) in &cfg.layer_keymaps {

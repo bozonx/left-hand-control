@@ -3,8 +3,43 @@
 
 #![cfg(target_os = "linux")]
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
+
+/// Three-state spec for a rule's tap / hold behaviour.
+///   * Native  — act like the physical key itself on that event.
+///   * Swallow — nothing happens.
+///   * Action  — user-defined action string (for tap: any action;
+///     for hold: a keystroke like "ControlLeft" or "Ctrl+Shift" that
+///     is held down while the physical key is held).
+///
+/// Deserialization rules (from JSON — the only format Rust reads):
+///   missing field      => Native  (via `#[serde(default)]`)
+///   null               => Swallow
+///   ""                 => Native
+///   non-empty string   => Action(s)
+#[derive(Debug, Clone, Default)]
+pub enum ActionSpec {
+    #[default]
+    Native,
+    Swallow,
+    Action(String),
+}
+
+impl<'de> Deserialize<'de> for ActionSpec {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Option<String>: null => None, "" => Some(""), "X" => Some("X").
+        let v: Option<String> = Option::<String>::deserialize(deserializer)?;
+        Ok(match v {
+            None => ActionSpec::Swallow,
+            Some(s) if s.is_empty() => ActionSpec::Native,
+            Some(s) => ActionSpec::Action(s),
+        })
+    }
+}
 
 #[derive(Debug, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -54,7 +89,9 @@ pub struct Rule {
     #[serde(default)]
     pub layer_id: String,
     #[serde(default)]
-    pub tap_action: String,
+    pub tap_action: ActionSpec,
+    #[serde(default)]
+    pub hold_action: ActionSpec,
     #[serde(default)]
     pub hold_timeout_ms: Option<u64>,
     #[serde(default)]

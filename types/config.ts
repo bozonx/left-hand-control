@@ -9,14 +9,29 @@ export interface Layer {
 
 // A rule that binds a physical key to either a layer (on hold) and/or a
 // single-tap / double-tap action.
+//
+// Three-state semantics for tap / hold ("not specified" vs "explicit none"):
+//   undefined / empty string => **native** passthrough (act like the
+//     physical key itself on that event).
+//   null                      => **swallow** — nothing happens.
+//   non-empty string          => **action** — user-defined action (for
+//     `tapAction`: any action string; for `holdAction`: a keystroke
+//     string like "ControlLeft" or "Ctrl+Shift" which is held down
+//     while the physical key is held).
+//
+// `layerId` and `holdAction` are mutually exclusive; if both are set,
+// `layerId` wins and `holdAction` is ignored.
 export interface LayerRule {
   id: string
   // Physical key on which the rule triggers (e.g. "CapsLock", "Space").
   key: string
   // Layer activated while the key is held. Empty string = no layer.
   layerId: string
-  // Action fired on single tap. Empty string = no tap action.
-  tapAction: string
+  // Action fired on single tap. See three-state semantics above.
+  tapAction: string | null
+  // Keystroke held down while the physical key is held. See three-state
+  // semantics above. Ignored when `layerId` is set.
+  holdAction: string | null
   // Action fired on double tap (second key-down within the double-tap
   // window after a short press). Empty string = no double-tap action.
   // Note: when set, a single tap is delayed by `doubleTapTimeoutMs` to

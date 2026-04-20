@@ -22,7 +22,12 @@ interface LayoutYaml {
   rules?: Array<{
     key?: string
     layer?: string | null
+    // tap / hold follow a three-state convention:
+    //   field absent                          -> native passthrough
+    //   field present but null / ~            -> explicit swallow
+    //   field present with a non-empty string -> action / keystroke
     tap?: string | null
+    hold?: string | null
     dtap?: string | null
     holdMs?: number | null
     dtapMs?: number | null
@@ -62,11 +67,18 @@ function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
   const rules: LayerRule[] = []
   for (const r of doc.rules ?? []) {
     if (!r?.key) continue
+    // Three-state tap/hold: absent => '' (native), explicit null => null
+    // (swallow), string => action.
+    const tapAction: string | null =
+      !('tap' in r) ? '' : r.tap === null ? null : String(r.tap)
+    const holdAction: string | null =
+      !('hold' in r) ? '' : r.hold === null ? null : String(r.hold)
     rules.push({
       id: r.id ?? genId('r_'),
       key: r.key,
       layerId: r.layer ?? '',
-      tapAction: r.tap ?? '',
+      tapAction,
+      holdAction,
       doubleTapAction: r.dtap ?? '',
       holdTimeoutMs:
         typeof r.holdMs === 'number' && r.holdMs >= 0 ? r.holdMs : undefined,
@@ -162,7 +174,10 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
     rules: preset.rules.map((r) => ({
       key: r.key,
       ...(r.layerId ? { layer: r.layerId } : {}),
-      ...(r.tapAction ? { tap: r.tapAction } : {}),
+      // tap/hold: '' => native (omit field); null => explicit swallow
+      // (emit `null`); non-empty string => action / keystroke.
+      ...(r.tapAction === '' ? {} : { tap: r.tapAction }),
+      ...(r.holdAction === '' ? {} : { hold: r.holdAction }),
       ...(r.doubleTapAction ? { dtap: r.doubleTapAction } : {}),
       ...(typeof r.holdTimeoutMs === 'number'
         ? { holdMs: r.holdTimeoutMs }

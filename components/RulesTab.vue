@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { randomId } from '~/utils/keys'
+import type { LayerRule } from '~/types/config'
 
 const { config } = useConfig()
 
@@ -9,12 +10,37 @@ const layerOptions = computed(() =>
     .map((l) => ({ label: l.name, value: l.id })),
 )
 
+// Three-state mode for tap / hold fields:
+//   '' (empty string) => native passthrough
+//   null              => explicit swallow
+//   non-empty string  => user-defined action / keystroke
+type ModeKind = 'native' | 'none' | 'action'
+
+function modeOf(value: string | null | undefined): ModeKind {
+  if (value === null) return 'none'
+  if (value && value.length) return 'action'
+  return 'native'
+}
+
+function setMode(
+  rule: LayerRule,
+  field: 'tapAction' | 'holdAction',
+  m: ModeKind,
+) {
+  rule[field] = m === 'native' ? '' : m === 'none' ? null : rule[field] || ''
+}
+
+function actionValue(v: string | null): string {
+  return typeof v === 'string' ? v : ''
+}
+
 function addRule() {
   config.value.rules.push({
     id: randomId(),
     key: '',
     layerId: '',
     tapAction: '',
+    holdAction: '',
     doubleTapAction: '',
     holdTimeoutMs: undefined,
     doubleTapTimeoutMs: undefined,
@@ -83,7 +109,7 @@ function confirmNewLayer() {
         <div
           v-for="rule in config.rules"
           :key="rule.id"
-          class="grid grid-cols-[1fr_1fr_1fr_1fr_auto_auto_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
+          class="grid grid-cols-[1fr_1fr_1.2fr_1.2fr_1fr_auto_auto_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
         >
           <UFormField>
             <template #label>
@@ -141,11 +167,63 @@ function confirmNewLayer() {
                 :hint="$t('rules.tapHint')"
               />
             </template>
-            <ActionPickerModal
-              v-model="rule.tapAction"
-              allow-empty
-              :placeholder="$t('rules.tapPh')"
-            />
+            <div class="space-y-1.5">
+              <USelectMenu
+                :model-value="modeOf(rule.tapAction)"
+                :items="[
+                  { label: $t('rules.modeNative'), value: 'native' },
+                  { label: $t('rules.modeNone'), value: 'none' },
+                  { label: $t('rules.modeAction'), value: 'action' },
+                ]"
+                value-key="value"
+                class="w-full"
+                @update:model-value="(m: ModeKind) => setMode(rule, 'tapAction', m)"
+              />
+              <ActionPickerModal
+                v-if="modeOf(rule.tapAction) === 'action'"
+                :model-value="actionValue(rule.tapAction)"
+                allow-empty
+                :placeholder="$t('rules.tapPh')"
+                @update:model-value="(v: string) => rule.tapAction = v"
+              />
+            </div>
+          </UFormField>
+
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.holdActionLabel')"
+                :hint="$t('rules.holdActionHint')"
+              />
+            </template>
+            <div class="space-y-1.5">
+              <USelectMenu
+                :model-value="modeOf(rule.holdAction)"
+                :items="[
+                  { label: $t('rules.modeNative'), value: 'native' },
+                  { label: $t('rules.modeNone'), value: 'none' },
+                  { label: $t('rules.modeAction'), value: 'action' },
+                ]"
+                value-key="value"
+                :disabled="!!rule.layerId"
+                class="w-full"
+                @update:model-value="(m: ModeKind) => setMode(rule, 'holdAction', m)"
+              />
+              <ActionPickerModal
+                v-if="!rule.layerId && modeOf(rule.holdAction) === 'action'"
+                :model-value="actionValue(rule.holdAction)"
+                key-only
+                allow-empty
+                :placeholder="$t('rules.holdActionPh')"
+                @update:model-value="(v: string) => rule.holdAction = v"
+              />
+              <p
+                v-if="rule.layerId"
+                class="text-[11px] text-(--ui-text-muted)"
+              >
+                {{ $t('rules.holdActionDisabledByLayer') }}
+              </p>
+            </div>
           </UFormField>
 
           <UFormField>
