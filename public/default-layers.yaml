@@ -201,20 +201,19 @@ keymaps:
       - name: Mouse5
         action: BrowserForward
 
-  # sym:
-  #   keys:
-  #     KeyA: "!"
-  #     KeyS: "@"
-  #     KeyD: "#"
-  #     KeyF: "$"
-  #     KeyG: "%"
-  #     KeyH: "^"
-  #     KeyJ: "&"
-  #     KeyK: "*"
-  #     KeyL: "|"
-  #     KeyQ: "~"
-  #     KeyW: "`"
-  #   extras: []
+  sym:
+    keys:
+      KeyA: "!"
+      KeyS: "@"
+      KeyD: "#"
+      KeyF: "$"
+      KeyG: "%"
+      KeyH: "^"
+      KeyJ: "&"
+      KeyK: "*"
+      KeyL: "|"
+      KeyQ: "~"
+      KeyW: "`"
 
   # sel:
   #   keys:

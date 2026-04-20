@@ -15,7 +15,11 @@ mod engine;
 #[cfg(target_os = "linux")]
 mod keys;
 #[cfg(target_os = "linux")]
+mod layout;
+#[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "linux")]
+mod symbols;
 #[cfg(target_os = "linux")]
 mod system;
 

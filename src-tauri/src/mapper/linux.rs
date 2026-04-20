@@ -5,6 +5,8 @@
 use super::action::MacroStepItem;
 use super::config::AppConfig;
 use super::engine::{Engine, Out};
+use super::layout::{self, LayoutInfo};
+use super::symbols::{resolve_literal, SymbolResolver};
 use super::system::SysCommand;
 use super::KeyboardDevice;
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
@@ -12,6 +14,7 @@ use evdev::{AttributeSet, BusType, Device, EventType, InputEvent, InputId, Key};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -135,10 +138,24 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
     let stop_thread = stop.clone();
     let err_thread = error.clone();
 
+    // Detect the current KDE layout and start watching for changes so
+    // literal-character actions can be re-resolved when the user switches
+    // keyboard layout (e.g. US ↔ RU).
+    let initial_layout = layout::current();
+    eprintln!(
+        "[mapper] initial layout: {} variant={} model={} options={:?}",
+        initial_layout.layout,
+        initial_layout.variant,
+        initial_layout.model,
+        initial_layout.options
+    );
+    let (layout_tx, layout_rx) = mpsc::channel::<LayoutInfo>();
+    layout::spawn_watcher(initial_layout.clone(), layout_tx, stop.clone());
+
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run_loop(device, virt, cfg, stop_thread) {
+            if let Err(e) = run_loop(device, virt, cfg, stop_thread, initial_layout, layout_rx) {
                 eprintln!("[mapper] run_loop error: {e}");
                 if let Ok(mut slot) = err_thread.lock() {
                     *slot = Some(e);
@@ -159,6 +176,8 @@ fn run_loop(
     mut virt: VirtualDevice,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
+    initial_layout: LayoutInfo,
+    layout_rx: Receiver<LayoutInfo>,
 ) -> Result<(), String> {
     use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
 
@@ -178,6 +197,18 @@ fn run_loop(
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
 
+    // Build the initial SymbolResolver from the detected layout. Keep it
+    // local to this thread — xkbcommon types are !Send so this is the
+    // only place they live. If compilation fails we just keep `None`
+    // and callers fall back to the hardcoded US symbol table.
+    let mut resolver: Option<SymbolResolver> = match SymbolResolver::new(initial_layout) {
+        Ok(r) => Some(r),
+        Err(e) => {
+            eprintln!("[mapper] symbol resolver unavailable: {e}");
+            None
+        }
+    };
+
     // Keep the BorrowedFd alive for the whole loop.
     let borrowed = unsafe { BorrowedFd::borrow_raw(fd) };
 
@@ -185,6 +216,28 @@ fn run_loop(
     const MAX_WAIT: Duration = Duration::from_millis(100);
 
     while !stop.load(Ordering::SeqCst) {
+        // Drain any pending layout updates; rebuild the resolver for the
+        // latest one so subsequent symbol resolutions use the new keymap.
+        loop {
+            match layout_rx.try_recv() {
+                Ok(info) => match SymbolResolver::new(info) {
+                    Ok(r) => {
+                        eprintln!(
+                            "[mapper] symbol resolver reloaded for layout {}({})",
+                            r.info().layout,
+                            r.info().variant
+                        );
+                        resolver = Some(r);
+                    }
+                    Err(e) => {
+                        eprintln!("[mapper] symbol resolver reload failed: {e}");
+                    }
+                },
+                Err(TryRecvError::Empty) => break,
+                Err(TryRecvError::Disconnected) => break,
+            }
+        }
+
         let now = Instant::now();
         let wait = engine
             .next_deadline(now)
@@ -224,7 +277,13 @@ fn run_loop(
                             continue;
                         }
                         let key = Key::new(ev.code());
-                        engine.handle(key, value == 1, Instant::now(), &mut out_buf);
+                        engine.handle(
+                            key,
+                            value == 1,
+                            Instant::now(),
+                            resolver.as_mut(),
+                            &mut out_buf,
+                        );
                     }
                 }
                 Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
@@ -233,17 +292,21 @@ fn run_loop(
         }
 
         engine.tick(Instant::now(), &mut out_buf);
-        flush_out(&mut virt, &mut out_buf)?;
+        flush_out(&mut virt, &mut out_buf, resolver.as_mut())?;
     }
 
     // Graceful shutdown: release anything still held.
     engine.shutdown(&mut out_buf);
-    flush_out(&mut virt, &mut out_buf)?;
+    flush_out(&mut virt, &mut out_buf, resolver.as_mut())?;
     // Device is dropped here, which releases the grab automatically.
     Ok(())
 }
 
-fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String> {
+fn flush_out(
+    virt: &mut VirtualDevice,
+    buf: &mut Vec<Out>,
+    mut resolver: Option<&mut SymbolResolver>,
+) -> Result<(), String> {
     if buf.is_empty() {
         return Ok(());
     }
@@ -294,7 +357,7 @@ fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String>
                 // Emit whatever we've accumulated first so it doesn't get
                 // intermixed with the macro's timing.
                 flush_events(virt, &mut events)?;
-                run_macro(virt, &steps, step_pause, mod_delay)?;
+                run_macro(virt, &steps, step_pause, mod_delay, resolver.as_deref_mut())?;
             }
             Out::RunSystem(cmd) => {
                 flush_events(virt, &mut events)?;
@@ -331,17 +394,35 @@ fn run_macro(
     steps: &[MacroStepItem],
     step_pause: Duration,
     mod_delay: Duration,
+    mut resolver: Option<&mut SymbolResolver>,
 ) -> Result<(), String> {
     for (i, step) in steps.iter().enumerate() {
         if i > 0 && !step_pause.is_zero() {
             thread::sleep(step_pause);
         }
 
+        // Temporary storage so a resolved literal can live for the match arm below.
+        let literal_ks;
         let ks = match step {
             MacroStepItem::Stroke(ks) => ks,
             MacroStepItem::System(cmd) => {
                 spawn_system(cmd);
                 continue;
+            }
+            MacroStepItem::Literal(ch) => {
+                match resolve_literal(resolver.as_deref_mut(), *ch) {
+                    Some(resolved) => {
+                        literal_ks = resolved;
+                        &literal_ks
+                    }
+                    None => {
+                        eprintln!(
+                            "[mapper] macro step literal {:?} not resolvable in current layout",
+                            ch
+                        );
+                        continue;
+                    }
+                }
             }
         };
 

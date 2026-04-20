@@ -19,20 +19,23 @@
 
 #![cfg(target_os = "linux")]
 
-use super::action::{parse_action, Keystroke, MacroStepItem};
+use super::action::{literal_char, parse_action, Keystroke, MacroStepItem};
 use super::config::AppConfig;
 use super::keys::code_to_key;
+use super::symbols::{resolve_literal, SymbolResolver};
 use super::system::{self, SysCommand};
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
-/// Resolved action: single chord, macro, or system function.
+/// Resolved action: single chord, macro, system function, or a
+/// layout-dependent character literal resolved at press time.
 #[derive(Clone)]
 enum ActionDef {
     Stroke(Keystroke),
     Macro(MacroDef),
     System(SysCommand),
+    Literal(char),
 }
 
 #[derive(Clone)]
@@ -134,6 +137,10 @@ impl Engine {
                     }
                     continue;
                 }
+                if let Some(ch) = literal_char(raw) {
+                    steps.push(MacroStepItem::Literal(ch));
+                    continue;
+                }
                 match parse_action(raw) {
                     Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
                     None => eprintln!(
@@ -191,6 +198,9 @@ impl Engine {
                         return None;
                     }
                 }
+            }
+            if let Some(ch) = literal_char(trimmed) {
+                return Some(ActionDef::Literal(ch));
             }
             match parse_action(trimmed) {
                 Some(ks) => Some(ActionDef::Stroke(ks)),
@@ -282,7 +292,14 @@ impl Engine {
     }
 
     /// Handle a raw key event from the grabbed device.
-    pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
+    pub fn handle(
+        &mut self,
+        key: Key,
+        down: bool,
+        now: Instant,
+        resolver: Option<&mut SymbolResolver>,
+        out: &mut Vec<Out>,
+    ) {
         eprintln!(
             "[mapper] in {} key={:?} active={:?}",
             if down { "DOWN" } else { " UP " },
@@ -290,13 +307,19 @@ impl Engine {
             self.active_layers
         );
         if down {
-            self.on_press(key, now, out);
+            self.on_press(key, now, resolver, out);
         } else {
-            self.on_release(key, now, out);
+            self.on_release(key, now, resolver, out);
         }
     }
 
-    fn on_press(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
+    fn on_press(
+        &mut self,
+        key: Key,
+        now: Instant,
+        mut resolver: Option<&mut SymbolResolver>,
+        out: &mut Vec<Out>,
+    ) {
         if let Some(rule) = self.rules.get(&key) {
             let layer = rule.layer.clone();
             let tap = rule.tap.clone();
@@ -338,18 +361,26 @@ impl Engine {
                     "[mapper]   press {:?} -> remap mods={:?} key={:?}",
                     key, ks.mods, ks.key
                 );
-                // Hold modifiers while the physical key is held.
-                if !ks.mods.is_empty() {
-                    out.push(Out::PressMods(ks.mods.clone()));
-                    for m in &ks.mods {
-                        *self.mod_refs.entry(*m).or_insert(0) += 1;
+                self.emit_stroke_press(key, ks, out);
+            }
+            Some(ActionDef::Literal(ch)) => {
+                match resolve_literal(resolver.as_deref_mut(), ch) {
+                    Some(ks) => {
+                        eprintln!(
+                            "[mapper]   press {:?} -> literal {:?} mods={:?} key={:?}",
+                            key, ch, ks.mods, ks.key
+                        );
+                        self.emit_stroke_press(key, ks, out);
+                    }
+                    None => {
+                        eprintln!(
+                            "[mapper]   press {:?} -> literal {:?} unresolved, ignored",
+                            key, ch
+                        );
+                        // Nothing emitted; remember so release is a no-op.
+                        self.macro_consumed.insert(key);
                     }
                 }
-                out.push(Out::KeyRaw {
-                    key: ks.key,
-                    down: true,
-                });
-                self.emitted.insert(key, ks);
             }
             Some(ActionDef::Macro(md)) => {
                 eprintln!(
@@ -386,7 +417,13 @@ impl Engine {
         }
     }
 
-    fn on_release(&mut self, key: Key, _now: Instant, out: &mut Vec<Out>) {
+    fn on_release(
+        &mut self,
+        key: Key,
+        _now: Instant,
+        mut resolver: Option<&mut SymbolResolver>,
+        out: &mut Vec<Out>,
+    ) {
         if let Some(p) = self.pending.remove(&key) {
             if p.decided_hold {
                 // Hold was active — deactivate layer if we activated one.
@@ -397,6 +434,16 @@ impl Engine {
                 // Release before timeout → emit tap action.
                 match p.tap {
                     Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke(ks)),
+                    Some(ActionDef::Literal(ch)) => {
+                        if let Some(ks) = resolve_literal(resolver.as_deref_mut(), ch) {
+                            out.push(Out::Stroke(ks));
+                        } else {
+                            eprintln!(
+                                "[mapper]   tap literal {:?} unresolved, ignored",
+                                ch
+                            );
+                        }
+                    }
                     Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
                         steps: md.steps,
                         step_pause: md.step_pause,
@@ -440,6 +487,23 @@ impl Engine {
             // Unknown / orphan release — pass through as release to avoid stuck keys.
             out.push(Out::KeyRaw { key, down: false });
         }
+    }
+
+    /// Press a resolved keystroke and remember it so the matching
+    /// release event (on physical key up) can emit the correct virtual
+    /// key-up + mod-release.
+    fn emit_stroke_press(&mut self, physical: Key, ks: Keystroke, out: &mut Vec<Out>) {
+        if !ks.mods.is_empty() {
+            out.push(Out::PressMods(ks.mods.clone()));
+            for m in &ks.mods {
+                *self.mod_refs.entry(*m).or_insert(0) += 1;
+            }
+        }
+        out.push(Out::KeyRaw {
+            key: ks.key,
+            down: true,
+        });
+        self.emitted.insert(physical, ks);
     }
 
     fn lookup_mapping(&self, key: Key) -> Option<ActionDef> {

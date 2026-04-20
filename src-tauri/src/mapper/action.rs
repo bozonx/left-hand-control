@@ -15,11 +15,28 @@ pub struct Keystroke {
 }
 
 /// A single step of a macro. Macros may mix raw keystrokes with
-/// system-function invocations (e.g. `sys:switchDesktop1`).
+/// system-function invocations (e.g. `sys:switchDesktop1`) and layout-aware
+/// character literals (resolved at execution time against the current XKB
+/// layout, so they behave correctly on non-US keyboards).
 #[derive(Clone, Debug)]
 pub enum MacroStepItem {
     Stroke(Keystroke),
     System(SysCommand),
+    Literal(char),
+}
+
+/// Heuristic: if a raw action string is exactly one Unicode character, we
+/// treat it as a literal to be resolved later against the active XKB
+/// layout. Multi-character tokens (e.g. "Escape", "Ctrl+C") keep going
+/// through `parse_action` / `code_to_key`.
+pub fn literal_char(action: &str) -> Option<char> {
+    let trimmed = action.trim();
+    let mut it = trimmed.chars();
+    let first = it.next()?;
+    if it.next().is_some() {
+        return None;
+    }
+    Some(first)
 }
 
 /// Parse an action like:
