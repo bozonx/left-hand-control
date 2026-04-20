@@ -67,7 +67,7 @@ export default {
     keyPh: 'pick a key',
     layerLabel: 'Layer (hold)',
     layerHint:
-      'Layer that activates while the key is held. Empty — hold is controlled by the "Hold action" field instead.',
+      'Layer that activates while the key is held. It can be combined with "Hold action", for example to activate a layer and hold Alt at the same time.',
     clearLayer: 'Clear layer',
     createLayer: 'Create layer',
     tapLabel: 'Tap action',
@@ -76,9 +76,8 @@ export default {
     tapPh: 'no action',
     holdActionLabel: 'Hold action',
     holdActionHint:
-      'What happens while the key is held. "Native" = the physical key itself acts as held (e.g. ShiftLeft stays a Shift modifier). "None" = swallowed, nothing happens. "Action" lets you hold a different keystroke instead (e.g. MetaLeft can behave like a held ControlLeft). Ignored when a Layer is selected — layer takes priority.',
+      'What happens while the key is held. "Native" = the physical key itself acts as held (e.g. ShiftLeft stays a Shift modifier). "None" = swallowed, nothing happens. "Action" lets you hold a different keystroke instead (e.g. MetaLeft can behave like a held ControlLeft). It can be combined with a Layer so the rule both activates the layer and holds the selected key.',
     holdActionPh: 'pick a keystroke',
-    holdActionDisabledByLayer: 'Hold is controlled by the selected layer.',
     modeNative: 'Native',
     modeNone: 'None (swallow)',
     modeAction: 'Action',

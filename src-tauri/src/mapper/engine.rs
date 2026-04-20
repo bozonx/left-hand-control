@@ -81,7 +81,6 @@ enum TapMode {
 enum HoldMode {
     Native,
     Swallow,
-    Layer(String),
     Keystroke(Keystroke),
 }
 
@@ -116,6 +115,7 @@ pub struct Engine {
 #[derive(Clone)]
 struct RuleEntry {
     tap: TapMode,
+    layer_id: Option<String>,
     hold: HoldMode,
     double_tap: Option<ActionDef>,
     hold_timeout: Duration,
@@ -321,30 +321,25 @@ impl Engine {
                 },
             };
 
-            // Hold: layer takes precedence over hold_action if both are set.
-            let hold = if !r.layer_id.is_empty() {
-                if !matches!(r.hold_action, ActionSpec::Native) {
-                    eprintln!(
-                        "[mapper] rule {:?}: both `layer` and `hold` set — using layer, ignoring hold",
-                        r.key
-                    );
-                }
-                HoldMode::Layer(r.layer_id.clone())
+            let layer_id = if r.layer_id.is_empty() {
+                None
             } else {
-                match &r.hold_action {
-                    ActionSpec::Native => HoldMode::Native,
-                    ActionSpec::Swallow => HoldMode::Swallow,
-                    ActionSpec::Action(s) => match parse_action(s) {
-                        Some(ks) => HoldMode::Keystroke(ks),
-                        None => {
-                            eprintln!(
-                                "[mapper] rule {:?}: unknown hold keystroke {:?} — falling back to native hold",
-                                r.key, s
-                            );
-                            HoldMode::Native
-                        }
-                    },
-                }
+                Some(r.layer_id.clone())
+            };
+            let hold = match &r.hold_action {
+                ActionSpec::Native if layer_id.is_some() => HoldMode::Swallow,
+                ActionSpec::Native => HoldMode::Native,
+                ActionSpec::Swallow => HoldMode::Swallow,
+                ActionSpec::Action(s) => match parse_action(s) {
+                    Some(ks) => HoldMode::Keystroke(ks),
+                    None => {
+                        eprintln!(
+                            "[mapper] rule {:?}: unknown hold keystroke {:?} — falling back to native hold",
+                            r.key, s
+                        );
+                        HoldMode::Native
+                    }
+                },
             };
 
             let double_tap = match &r.double_tap_action.as_str() {
@@ -354,7 +349,8 @@ impl Engine {
 
             // Fully transparent rule — skip registration so the key passes
             // straight through the kernel → uinput grab.
-            if matches!(tap, TapMode::Native)
+            if layer_id.is_none()
+                && matches!(tap, TapMode::Native)
                 && matches!(hold, HoldMode::Native)
                 && double_tap.is_none()
             {
@@ -378,6 +374,7 @@ impl Engine {
                 key,
                 RuleEntry {
                     tap,
+                    layer_id,
                     hold,
                     double_tap,
                     hold_timeout,
@@ -737,6 +734,10 @@ impl Engine {
     }
 
     fn commit_hold_with(&mut self, rule: &RuleEntry, key: Key, out: &mut Vec<Out>) {
+        if let Some(id) = &rule.layer_id {
+            eprintln!("[mapper] layer+ {id} (key={:?})", key);
+            self.push_layer(id.clone());
+        }
         match &rule.hold {
             HoldMode::Native => {
                 out.push(Out::KeyRaw { key, down: true });
@@ -749,11 +750,7 @@ impl Engine {
                 );
             }
             HoldMode::Swallow => {
-                // Nothing — physical key is eaten; layer stack unchanged.
-            }
-            HoldMode::Layer(id) => {
-                eprintln!("[mapper] layer+ {id} (key={:?})", key);
-                self.push_layer(id.clone());
+                // Nothing — physical key is eaten.
             }
             HoldMode::Keystroke(ks) => {
                 self.emit_stroke_press(key, ks.clone(), out);
@@ -769,10 +766,10 @@ impl Engine {
                 self.release_emitted(key, out);
             }
             HoldMode::Swallow => {}
-            HoldMode::Layer(id) => {
-                eprintln!("[mapper] layer- {id} (key={:?})", key);
-                self.pop_layer(id);
-            }
+        }
+        if let Some(id) = &rule.layer_id {
+            eprintln!("[mapper] layer- {id} (key={:?})", key);
+            self.pop_layer(id);
         }
     }
 
@@ -965,6 +962,101 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.handle(
+            Key::KEY_TAB,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+
+        assert!(matches!(
+            out.as_slice(),
+            [Out::ChordPress { ks, .. }]
+                if ks.mods.is_empty() && ks.key == Key::KEY_ESC
+        ));
+    }
+
+    #[test]
+    fn hold_can_activate_layer_and_modifier_together() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            id: "r_alt".into(),
+            key: "AltLeft".into(),
+            layer_id: "win".into(),
+            tap_action: ActionSpec::Action("Enter".into()),
+            hold_action: ActionSpec::Action("AltLeft".into()),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+
+        let mut win = LayerKeymap {
+            keys: HashMap::new(),
+        };
+        win.keys.insert("Tab".into(), "Tab".into());
+        cfg.layer_keymaps.insert("win".into(), win);
+        cfg.layer_keymaps.insert(
+            "base".into(),
+            LayerKeymap {
+                keys: HashMap::new(),
+            },
+        );
+
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
+        engine.handle(
+            Key::KEY_TAB,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::ChordPress { ks: alt, .. },
+                Out::ChordPress { ks: tab, .. },
+            ] if alt.mods.is_empty()
+                && alt.key == Key::KEY_LEFTALT
+                && tab.mods.is_empty()
+                && tab.key == Key::KEY_TAB
+        ));
+    }
+
+    #[test]
+    fn layer_only_rule_is_not_treated_as_passthrough() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            id: "r_alt".into(),
+            key: "AltLeft".into(),
+            layer_id: "win".into(),
+            tap_action: ActionSpec::Action("Enter".into()),
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+
+        let mut win = LayerKeymap {
+            keys: HashMap::new(),
+        };
+        win.keys.insert("Tab".into(), "Escape".into());
+        cfg.layer_keymaps.insert("win".into(), win);
+        cfg.layer_keymaps.insert(
+            "base".into(),
+            LayerKeymap {
+                keys: HashMap::new(),
+            },
+        );
+
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
         engine.handle(
             Key::KEY_TAB,
             true,

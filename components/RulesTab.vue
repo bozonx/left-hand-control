@@ -205,24 +205,17 @@ function confirmNewLayer() {
                   { label: $t('rules.modeAction'), value: 'action' },
                 ]"
                 value-key="value"
-                :disabled="!!rule.layerId"
                 class="w-full"
                 @update:model-value="(m: ModeKind) => setMode(rule, 'holdAction', m)"
               />
               <ActionPickerModal
-                v-if="!rule.layerId && modeOf(rule.holdAction) === 'action'"
+                v-if="modeOf(rule.holdAction) === 'action'"
                 :model-value="actionValue(rule.holdAction)"
                 key-only
                 allow-empty
                 :placeholder="$t('rules.holdActionPh')"
                 @update:model-value="(v: string) => rule.holdAction = v"
               />
-              <p
-                v-if="rule.layerId"
-                class="text-[11px] text-(--ui-text-muted)"
-              >
-                {{ $t('rules.holdActionDisabledByLayer') }}
-              </p>
             </div>
           </UFormField>
 
