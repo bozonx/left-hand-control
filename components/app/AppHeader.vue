@@ -8,8 +8,6 @@ import { BUILTIN_LAYOUT_META } from '~/utils/layoutPresets'
 
 const {
   loaded,
-  saving,
-  lastError,
   currentLayoutId,
   isLayoutDirty,
 } = useConfig()
@@ -70,17 +68,6 @@ const currentLayoutLabel = computed<string>(() => {
     </div>
     <div class="text-xs text-(--ui-text-muted) flex items-center gap-3">
       <span v-if="!loaded">{{ $t('app.loading') }}</span>
-      <span v-else-if="saving" class="flex items-center gap-1">
-        <UIcon name="i-lucide-loader-2" class="animate-spin" />
-        {{ $t('app.saving') }}
-      </span>
-      <span v-else class="flex items-center gap-1 text-(--ui-success)">
-        <UIcon name="i-lucide-check" />
-        {{ $t('app.saved') }}
-      </span>
-      <span v-if="lastError" class="text-(--ui-error)">
-        {{ lastError }}
-      </span>
       <UButton
         size="xs"
         color="neutral"

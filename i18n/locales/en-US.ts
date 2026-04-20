@@ -6,6 +6,7 @@ export default {
     loading: 'loading…',
     saving: 'saving',
     saved: 'saved',
+    saveFailedTitle: 'Failed to save changes',
     notSavedBadge: '• unsaved',
     dirtyTooltip:
       'The current layout has unsaved changes. Save it under Settings → Layouts, otherwise they will be lost when switching.',

@@ -185,13 +185,17 @@ export function useSettingsScreen() {
   }
 
   async function toggleMapper() {
-    await flush()
-    if (mapper.status.value.running) {
-      await mapper.stop()
-      return
+    try {
+      await flush()
+      if (mapper.status.value.running) {
+        await mapper.stop()
+        return
+      }
+      if (!selectedDevice.value) return
+      await mapper.start(selectedDevice.value)
+    } catch (error) {
+      mapper.error.value = error instanceof Error ? error.message : String(error)
     }
-    if (!selectedDevice.value) return
-    await mapper.start(selectedDevice.value)
   }
 
   onMounted(async () => {

@@ -123,6 +123,8 @@ let singleton: ConfigState | null = null
 export function useConfig(): ConfigState {
   if (singleton) return singleton
 
+  const toast = useToast()
+  const { t } = useI18n()
   const config = ref<AppConfig>(createDefaultConfig())
   const loaded = ref(false)
   const saving = ref(false)
@@ -141,14 +143,36 @@ export function useConfig(): ConfigState {
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null
   let pendingFlushResolvers: Array<() => void> = []
+  let lastNotifiedSaveError: string | null = null
+
+  function saveErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error)
+  }
+
+  function notifySaveError(message: string) {
+    if (!message || message === lastNotifiedSaveError) return
+    lastNotifiedSaveError = message
+    toast.add({
+      title: t('app.saveFailedTitle'),
+      description: message,
+      color: 'error',
+      icon: 'i-lucide-circle-alert',
+      close: true,
+      duration: 0,
+    })
+  }
 
   async function persistNow() {
     saving.value = true
     try {
       await writeRaw(JSON.stringify(config.value, null, 2))
       lastError.value = null
+      lastNotifiedSaveError = null
     } catch (e: unknown) {
-      lastError.value = e instanceof Error ? e.message : String(e)
+      const message = saveErrorMessage(e)
+      lastError.value = message
+      notifySaveError(message)
+      throw e
     } finally {
       saving.value = false
       const resolvers = pendingFlushResolvers
@@ -163,7 +187,7 @@ export function useConfig(): ConfigState {
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       saveTimer = null
-      void persistNow()
+      void persistNow().catch(() => {})
     }, 300)
   }
 
