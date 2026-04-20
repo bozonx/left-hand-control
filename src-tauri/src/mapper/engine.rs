@@ -91,6 +91,7 @@ pub struct Engine {
     layer_maps: HashMap<String, HashMap<Key, ActionDef>>,
     default_hold: Duration,
     default_double_tap: Duration,
+    default_mod_delay: Duration,
 
     /// Stack of currently active layers (top = highest priority).
     active_layers: Vec<String>,
@@ -140,9 +141,15 @@ pub enum Out {
     /// Press or release a single key (no modifiers).
     KeyRaw { key: Key, down: bool },
     /// Press/release a keystroke (mods + key), emitted atomically.
-    Stroke(Keystroke),
-    /// Press modifiers (without the main key) — used to hold mods for remapped keys.
-    PressMods(Vec<Key>),
+    Stroke { ks: Keystroke, mod_delay: Duration },
+    /// Press a keystroke but keep the main key held until physical key-up.
+    ChordPress { ks: Keystroke, mod_delay: Duration },
+    /// Release a previously held keystroke.
+    ChordRelease {
+        key: Key,
+        mods: Vec<Key>,
+        mod_delay: Duration,
+    },
     /// Release modifiers.
     ReleaseMods(Vec<Key>),
     /// Run a macro: sequence of keystrokes / system calls with inter-step
@@ -400,6 +407,7 @@ impl Engine {
             layer_maps,
             default_hold,
             default_double_tap,
+            default_mod_delay,
             active_layers: Vec::new(),
             pending: HashMap::new(),
             emitted: HashMap::new(),
@@ -478,7 +486,7 @@ impl Engine {
             self.pending.remove(&key);
             eprintln!("[mapper] double-tap fired (key={:?})", key);
             let dtap = self.rules.get(&key).and_then(|r| r.double_tap.clone());
-            fire_action(dtap.as_ref(), out);
+            fire_action(dtap.as_ref(), self.default_mod_delay, out);
             // The matching release must not emit anything (fire-and-forget).
             self.macro_consumed.insert(key);
             return;
@@ -608,12 +616,8 @@ impl Engine {
             return;
         }
 
-        if let Some(ks) = self.emitted.remove(&key) {
-            out.push(Out::KeyRaw {
-                key: ks.key,
-                down: false,
-            });
-            self.release_mods(&ks.mods, out);
+        if self.emitted.contains_key(&key) {
+            self.release_emitted(key, out);
         } else {
             // Unknown / orphan release — pass through as release to avoid stuck keys.
             out.push(Out::KeyRaw { key, down: false });
@@ -625,35 +629,49 @@ impl Engine {
     /// key-up + mod-release.
     fn emit_stroke_press(&mut self, physical: Key, ks: Keystroke, out: &mut Vec<Out>) {
         if !ks.mods.is_empty() {
-            out.push(Out::PressMods(ks.mods.clone()));
             for m in &ks.mods {
                 *self.mod_refs.entry(*m).or_insert(0) += 1;
             }
         }
-        out.push(Out::KeyRaw {
-            key: ks.key,
-            down: true,
+        out.push(Out::ChordPress {
+            ks: ks.clone(),
+            mod_delay: self.default_mod_delay,
         });
         self.emitted.insert(physical, ks);
     }
 
-    fn release_mods(&mut self, mods: &[Key], out: &mut Vec<Out>) {
-        if mods.is_empty() {
+    fn release_emitted(&mut self, physical: Key, out: &mut Vec<Out>) {
+        let Some(ks) = self.emitted.remove(&physical) else {
             return;
+        };
+        let mods = self.take_releaseable_mods(&ks.mods);
+        if ks.mods.is_empty() {
+            out.push(Out::KeyRaw {
+                key: ks.key,
+                down: false,
+            });
+            return;
+        }
+        out.push(Out::ChordRelease {
+            key: ks.key,
+            mods,
+            mod_delay: self.default_mod_delay,
+        });
+    }
+
+    fn take_releaseable_mods(&mut self, mods: &[Key]) -> Vec<Key> {
+        if mods.is_empty() {
+            return Vec::new();
         }
         for m in mods {
             if let Some(r) = self.mod_refs.get_mut(m) {
                 *r = r.saturating_sub(1);
             }
         }
-        let to_release: Vec<Key> = mods
-            .iter()
+        mods.iter()
             .copied()
             .filter(|m| self.mod_refs.get(m).copied().unwrap_or(0) == 0)
-            .collect();
-        if !to_release.is_empty() {
-            out.push(Out::ReleaseMods(to_release));
-        }
+            .collect()
     }
 
     fn lookup_mapping(&self, key: Key) -> Option<ActionDef> {
@@ -742,14 +760,7 @@ impl Engine {
         let Some(rule) = self.rules.get(&key).cloned() else { return };
         match &rule.hold {
             HoldMode::Native | HoldMode::Keystroke(_) => {
-                if let Some(ks) = self.emitted.remove(&key) {
-                    out.push(Out::KeyRaw {
-                        key: ks.key,
-                        down: false,
-                    });
-                    let mods = ks.mods.clone();
-                    self.release_mods(&mods, out);
-                }
+                self.release_emitted(key, out);
             }
             HoldMode::Swallow => {}
             HoldMode::Layer(id) => {
@@ -763,14 +774,17 @@ impl Engine {
         match tap {
             TapMode::Native => {
                 // Short native press+release of the physical key.
-                out.push(Out::Stroke(Keystroke {
-                    mods: vec![],
-                    key,
-                }));
+                out.push(Out::Stroke {
+                    ks: Keystroke {
+                        mods: vec![],
+                        key,
+                    },
+                    mod_delay: self.default_mod_delay,
+                });
             }
             TapMode::Swallow => {}
             TapMode::Action(a) => {
-                fire_action(Some(a), out);
+                fire_action(Some(a), self.default_mod_delay, out);
             }
         }
     }
@@ -825,9 +839,12 @@ impl Engine {
 
 /// Emit a resolved action as the appropriate `Out` event. Shared by the
 /// tap / double-tap / deferred-tap paths.
-fn fire_action(action: Option<&ActionDef>, out: &mut Vec<Out>) {
+fn fire_action(action: Option<&ActionDef>, mod_delay: Duration, out: &mut Vec<Out>) {
     match action {
-        Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke(ks.clone())),
+        Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke {
+            ks: ks.clone(),
+            mod_delay,
+        }),
         Some(ActionDef::Literal(ch)) => out.push(Out::Literal(*ch)),
         Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
             steps: md.steps.clone(),
@@ -836,5 +853,68 @@ fn fire_action(action: Option<&ActionDef>, out: &mut Vec<Out>) {
         }),
         Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
         None => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mapper::config::{AppConfig, LayerKeymap, Rule, Settings};
+    use evdev::Key;
+    use std::collections::HashMap;
+    use std::time::{Duration, Instant};
+
+    fn empty_cfg() -> AppConfig {
+        AppConfig {
+            rules: Vec::new(),
+            layer_keymaps: HashMap::new(),
+            macros: Vec::new(),
+            settings: Settings::default(),
+        }
+    }
+
+    #[test]
+    fn sel_layer_q_emits_ctrl_z() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            id: "r_tab".into(),
+            key: "Tab".into(),
+            layer_id: "sel".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+
+        let mut sel = LayerKeymap {
+            keys: HashMap::new(),
+        };
+        sel.keys.insert("KeyQ".into(), "Ctrl+Z".into());
+        cfg.layer_keymaps.insert("sel".into(), sel);
+        cfg.layer_keymaps.insert(
+            "base".into(),
+            LayerKeymap {
+                keys: HashMap::new(),
+            },
+        );
+
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_TAB, true, now, &mut out);
+        engine.handle(
+            Key::KEY_Q,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+
+        assert!(matches!(
+            out.as_slice(),
+            [Out::ChordPress { ks, .. }]
+                if ks.mods == vec![Key::KEY_LEFTCTRL] && ks.key == Key::KEY_Z
+        ));
     }
 }

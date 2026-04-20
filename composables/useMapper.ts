@@ -41,6 +41,7 @@ let singleton: MapperState | null = null
 export function useMapper(): MapperState {
   if (singleton) return singleton
 
+  const { config, flush } = useConfig()
   const devices = ref<KeyboardDevice[]>([])
   const status = ref<MapperStatus>({ running: false, device_path: null, last_error: null })
   const busy = ref(false)
@@ -76,7 +77,11 @@ export function useMapper(): MapperState {
     }
     busy.value = true
     try {
-      await tauri.invoke('start_mapper', { devicePath })
+      await flush()
+      await tauri.invoke('start_mapper', {
+        devicePath,
+        configJson: JSON.stringify(config.value),
+      })
       error.value = null
       await refreshStatus()
     } catch (e: unknown) {

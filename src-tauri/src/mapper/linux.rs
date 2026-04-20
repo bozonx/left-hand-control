@@ -263,6 +263,91 @@ fn run_loop(
     Ok(())
 }
 
+fn emit_stroke_tap(
+    virt: &mut VirtualDevice,
+    ks: &super::action::Keystroke,
+    mod_delay: Duration,
+) -> Result<(), String> {
+    if !ks.mods.is_empty() {
+        let mut ev = Vec::with_capacity(ks.mods.len());
+        for m in &ks.mods {
+            ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
+        }
+        virt.emit(&ev)
+            .map_err(|e| format!("uinput emit (stroke mods-down): {e}"))?;
+        if !mod_delay.is_zero() {
+            thread::sleep(mod_delay);
+        }
+    }
+
+    let down_up = [
+        InputEvent::new(EventType::KEY, ks.key.code(), 1),
+        InputEvent::new(EventType::KEY, ks.key.code(), 0),
+    ];
+    virt.emit(&down_up)
+        .map_err(|e| format!("uinput emit (stroke key): {e}"))?;
+
+    if !ks.mods.is_empty() {
+        if !mod_delay.is_zero() {
+            thread::sleep(mod_delay);
+        }
+        let mut ev = Vec::with_capacity(ks.mods.len());
+        for m in ks.mods.iter().rev() {
+            ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
+        }
+        virt.emit(&ev)
+            .map_err(|e| format!("uinput emit (stroke mods-up): {e}"))?;
+    }
+
+    Ok(())
+}
+
+fn emit_chord_press(
+    virt: &mut VirtualDevice,
+    ks: &super::action::Keystroke,
+    mod_delay: Duration,
+) -> Result<(), String> {
+    if !ks.mods.is_empty() {
+        let mut ev = Vec::with_capacity(ks.mods.len());
+        for m in &ks.mods {
+            ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
+        }
+        virt.emit(&ev)
+            .map_err(|e| format!("uinput emit (chord mods-down): {e}"))?;
+        if !mod_delay.is_zero() {
+            thread::sleep(mod_delay);
+        }
+    }
+    let down = [InputEvent::new(EventType::KEY, ks.key.code(), 1)];
+    virt.emit(&down)
+        .map_err(|e| format!("uinput emit (chord key-down): {e}"))?;
+    Ok(())
+}
+
+fn emit_chord_release(
+    virt: &mut VirtualDevice,
+    key: Key,
+    mods: &[Key],
+    mod_delay: Duration,
+) -> Result<(), String> {
+    let up = [InputEvent::new(EventType::KEY, key.code(), 0)];
+    virt.emit(&up)
+        .map_err(|e| format!("uinput emit (chord key-up): {e}"))?;
+
+    if !mods.is_empty() {
+        if !mod_delay.is_zero() {
+            thread::sleep(mod_delay);
+        }
+        let mut ev = Vec::with_capacity(mods.len());
+        for m in mods.iter().rev() {
+            ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
+        }
+        virt.emit(&ev)
+            .map_err(|e| format!("uinput emit (chord mods-up): {e}"))?;
+    }
+    Ok(())
+}
+
 fn flush_out(
     virt: &mut VirtualDevice,
     portal: Option<&Portal>,
@@ -290,20 +375,21 @@ fn flush_out(
             Out::KeyRaw { key, down } => {
                 events.push(InputEvent::new(EventType::KEY, key.code(), if down { 1 } else { 0 }));
             }
-            Out::Stroke(ks) => {
-                for m in &ks.mods {
-                    events.push(InputEvent::new(EventType::KEY, m.code(), 1));
-                }
-                events.push(InputEvent::new(EventType::KEY, ks.key.code(), 1));
-                events.push(InputEvent::new(EventType::KEY, ks.key.code(), 0));
-                for m in ks.mods.iter().rev() {
-                    events.push(InputEvent::new(EventType::KEY, m.code(), 0));
-                }
+            Out::Stroke { ks, mod_delay } => {
+                flush_events(virt, &mut events)?;
+                emit_stroke_tap(virt, &ks, mod_delay)?;
             }
-            Out::PressMods(mods) => {
-                for m in mods {
-                    events.push(InputEvent::new(EventType::KEY, m.code(), 1));
-                }
+            Out::ChordPress { ks, mod_delay } => {
+                flush_events(virt, &mut events)?;
+                emit_chord_press(virt, &ks, mod_delay)?;
+            }
+            Out::ChordRelease {
+                key,
+                mods,
+                mod_delay,
+            } => {
+                flush_events(virt, &mut events)?;
+                emit_chord_release(virt, key, &mods, mod_delay)?;
             }
             Out::ReleaseMods(mods) => {
                 for m in mods {
@@ -475,38 +561,7 @@ fn run_macro(
             }
         };
 
-        // 1) press modifiers
-        if !ks.mods.is_empty() {
-            let mut ev = Vec::with_capacity(ks.mods.len());
-            for m in &ks.mods {
-                ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
-            }
-            virt.emit(&ev).map_err(|e| format!("uinput emit (macro mods-down): {e}"))?;
-            if !mod_delay.is_zero() {
-                thread::sleep(mod_delay);
-            }
-        }
-
-        // 2) press + release main key
-        let down_up = [
-            InputEvent::new(EventType::KEY, ks.key.code(), 1),
-            InputEvent::new(EventType::KEY, ks.key.code(), 0),
-        ];
-        virt.emit(&down_up)
-            .map_err(|e| format!("uinput emit (macro key): {e}"))?;
-
-        // 3) release modifiers
-        if !ks.mods.is_empty() {
-            if !mod_delay.is_zero() {
-                thread::sleep(mod_delay);
-            }
-            let mut ev = Vec::with_capacity(ks.mods.len());
-            for m in ks.mods.iter().rev() {
-                ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
-            }
-            virt.emit(&ev)
-                .map_err(|e| format!("uinput emit (macro mods-up): {e}"))?;
-        }
+        emit_stroke_tap(virt, ks, mod_delay)?;
     }
     Ok(())
 }

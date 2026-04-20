@@ -5,6 +5,38 @@
 
 use evdev::Key;
 
+fn alpha_key(ch: char) -> Option<Key> {
+    Some(match ch.to_ascii_uppercase() {
+        'A' => Key::KEY_A,
+        'B' => Key::KEY_B,
+        'C' => Key::KEY_C,
+        'D' => Key::KEY_D,
+        'E' => Key::KEY_E,
+        'F' => Key::KEY_F,
+        'G' => Key::KEY_G,
+        'H' => Key::KEY_H,
+        'I' => Key::KEY_I,
+        'J' => Key::KEY_J,
+        'K' => Key::KEY_K,
+        'L' => Key::KEY_L,
+        'M' => Key::KEY_M,
+        'N' => Key::KEY_N,
+        'O' => Key::KEY_O,
+        'P' => Key::KEY_P,
+        'Q' => Key::KEY_Q,
+        'R' => Key::KEY_R,
+        'S' => Key::KEY_S,
+        'T' => Key::KEY_T,
+        'U' => Key::KEY_U,
+        'V' => Key::KEY_V,
+        'W' => Key::KEY_W,
+        'X' => Key::KEY_X,
+        'Y' => Key::KEY_Y,
+        'Z' => Key::KEY_Z,
+        _ => return None,
+    })
+}
+
 pub fn code_to_key(code: &str) -> Option<Key> {
     Some(match code {
         // Letters
@@ -139,17 +171,8 @@ pub fn char_to_key(ch: char) -> Option<(bool, Key)> {
             '6' => Key::KEY_6, '7' => Key::KEY_7, '8' => Key::KEY_8,
             '9' => Key::KEY_9, _ => unreachable!(),
         }),
-        c if c.is_ascii_lowercase() => {
-            // Map a..z to KEY_A..KEY_Z via numeric code offset.
-            let base = Key::KEY_A.code();
-            let key = Key::new(base + (c as u16 - b'a' as u16));
-            (false, key)
-        }
-        c if c.is_ascii_uppercase() => {
-            let base = Key::KEY_A.code();
-            let key = Key::new(base + (c as u16 - b'A' as u16));
-            (true, key)
-        }
+        c if c.is_ascii_lowercase() => (false, alpha_key(c)?),
+        c if c.is_ascii_uppercase() => (true, alpha_key(c)?),
 
         _ => return None,
     })

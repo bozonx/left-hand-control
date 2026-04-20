@@ -152,9 +152,12 @@ fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
 }
 
 #[tauri::command]
-fn start_mapper(device_path: String) -> Result<(), String> {
+fn start_mapper(device_path: String, config_json: Option<String>) -> Result<(), String> {
     eprintln!("[cmd] start_mapper device={device_path}");
-    let raw = load_config()?;
+    let raw = match config_json {
+        Some(s) if !s.trim().is_empty() => s,
+        _ => load_config()?,
+    };
     if raw.is_empty() {
         let msg = "config.json not found — save settings first".to_string();
         eprintln!("[cmd] start_mapper ERR: {msg}");

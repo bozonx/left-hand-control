@@ -96,7 +96,11 @@ fn parse_single(token: &str) -> Option<Key> {
     }
     // Fallback: treat single char.
     if token.chars().count() == 1 {
-        let (_, k) = char_to_key(token.chars().next().unwrap())?;
+        let ch = token.chars().next().unwrap();
+        if ch.is_ascii_alphabetic() {
+            return code_to_key(&format!("Key{}", ch.to_ascii_uppercase()));
+        }
+        let (_, k) = char_to_key(ch)?;
         return Some(k);
     }
     None
