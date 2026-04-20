@@ -289,6 +289,8 @@ export default {
     brightnessDown: 'Уменьшить яркость экрана',
     brightnessUp: 'Увеличить яркость экрана',
     windowClose: 'Закрыть активное окно',
+    windowToNextDesktop: 'Переместить окно на следующий рабочий стол',
+    windowKeepAbove: 'Сделать окно поверх остальных',
     windowMaximizeVertical: 'Развернуть окно по вертикали',
     windowMaximizeHorizontal: 'Развернуть окно по горизонтали',
     screenshot: 'Скриншот области',

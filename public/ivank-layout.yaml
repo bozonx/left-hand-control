@@ -113,6 +113,10 @@
 #     — управление яркостью экрана через PowerDevil.
 #   sys:windowClose
 #     — закрыть активное окно через KWin.
+#   sys:windowToNextDesktop
+#     — переместить активное окно на следующий рабочий стол через KWin.
+#   sys:windowKeepAbove
+#     — переключить режим "поверх остальных" для активного окна через KWin.
 #   sys:windowMaximizeVertical / sys:windowMaximizeHorizontal
 #     — развернуть активное окно по вертикали / горизонтали через KWin.
 #   sys:screenshot
@@ -409,7 +413,7 @@ keymaps:
       KeyW: Ctrl+A
       #KeyE:
       #KeyR:
-      #KeyT:
+      KeyT: sys:windowKeepAbove
       #KeyY:
       #KeyU:
       #KeyI:
@@ -423,7 +427,7 @@ keymaps:
       KeyS: sys:switchDesktop3
       KeyD: sys:switchDesktop2
       KeyF: sys:switchDesktop1
-      #KeyG: sys:switchLayout1
+      KeyG: sys:windowToNextDesktop
       #KeyH: sys:switchLayout2
       #KeyJ:
       #KeyK:

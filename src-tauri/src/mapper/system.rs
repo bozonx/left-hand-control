@@ -136,6 +136,12 @@ mod kde {
                 ));
             }
             "windowClose" => return Some(invoke_shortcut("kwin", "Window Close")),
+            "windowToNextDesktop" => {
+                return Some(invoke_shortcut("kwin", "Window to Next Desktop"));
+            }
+            "windowKeepAbove" => {
+                return Some(invoke_shortcut("kwin", "Window Above Other Windows"));
+            }
             "windowMaximizeVertical" => {
                 return Some(invoke_shortcut("kwin", "Window Maximize Vertical"));
             }
@@ -200,6 +206,16 @@ mod tests {
         };
         assert_eq!(call.path, "/component/kwin");
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Maximize Vertical"));
+
+        let Some(SysAction::Dbus(call)) = resolve("windowToNextDesktop") else {
+            panic!("windowToNextDesktop did not resolve to a DBus action");
+        };
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window to Next Desktop"));
+
+        let Some(SysAction::Dbus(call)) = resolve("windowKeepAbove") else {
+            panic!("windowKeepAbove did not resolve to a DBus action");
+        };
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Above Other Windows"));
     }
 
     #[test]

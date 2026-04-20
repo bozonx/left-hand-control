@@ -287,6 +287,8 @@ export default {
     brightnessDown: 'Decrease screen brightness',
     brightnessUp: 'Increase screen brightness',
     windowClose: 'Close active window',
+    windowToNextDesktop: 'Move window to next desktop',
+    windowKeepAbove: 'Keep window above others',
     windowMaximizeVertical: 'Maximize window vertically',
     windowMaximizeHorizontal: 'Maximize window horizontally',
     screenshot: 'Take area screenshot',

@@ -90,6 +90,18 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     platforms: ['linux-kde'],
   },
   {
+    id: 'windowToNextDesktop',
+    nameKey: 'systemActions.windowToNextDesktop',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window to Next Desktop"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'windowKeepAbove',
+    nameKey: 'systemActions.windowKeepAbove',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window Above Other Windows"',
+    platforms: ['linux-kde'],
+  },
+  {
     id: 'windowMaximizeVertical',
     nameKey: 'systemActions.windowMaximizeVertical',
     hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window Maximize Vertical"',
