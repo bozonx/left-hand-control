@@ -7,6 +7,7 @@ defineProps<{
   isLayoutDirty: boolean
   applying: string
   applyError?: string | null
+  libraryError?: string | null
   layoutsDir: string
 }>()
 
@@ -55,6 +56,10 @@ defineEmits<{
 
       <p v-if="applyError" class="text-sm text-(--ui-error)">
         {{ applyError }}
+      </p>
+
+      <p v-if="libraryError" class="text-sm text-(--ui-error)">
+        {{ libraryError }}
       </p>
 
       <ul class="divide-y divide-(--ui-border) border border-(--ui-border) rounded">

@@ -46,8 +46,10 @@ export function useMacroEditor() {
     })
   }
 
-  function removeMacro(id: string) {
-    config.value.macros = config.value.macros.filter((macro) => macro.id !== id)
+  function removeMacro(uiKey: string) {
+    config.value.macros = config.value.macros.filter(
+      (macro) => uiKeyOf(macro) !== uiKey,
+    )
   }
 
   function addStep(macro: Macro) {

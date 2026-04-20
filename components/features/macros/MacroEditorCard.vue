@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import type { Macro } from '~/types/config'
 
-defineProps<{
+const props = defineProps<{
   macro: Macro
   idError?: string
   usage: string[]
   defaultStepPauseMs: number
   defaultModifierDelayMs: number
+  uiKey: string
 }>()
 
 defineEmits<{
-  remove: [id: string]
+  remove: [payload: { uiKey: string, id: string }]
   addStep: [macro: Macro]
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
@@ -55,7 +56,7 @@ defineEmits<{
           variant="ghost"
           square
           :aria-label="$t('macros.deleteMacro')"
-          @click="$emit('remove', macro.id)"
+          @click="$emit('remove', { uiKey: props.uiKey, id: macro.id })"
         />
       </div>
     </div>

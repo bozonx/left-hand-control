@@ -7,6 +7,7 @@ export default {
     saving: 'saving',
     saved: 'saved',
     saveFailedTitle: 'Failed to save changes',
+    loadFailedBody: 'The app could not be initialized. Check the error below and try loading the config again.',
     notSavedBadge: '• unsaved',
     dirtyTooltip:
       'The current layout has unsaved changes. Save it under Settings → Layouts, otherwise they will be lost when switching.',
@@ -24,6 +25,7 @@ export default {
     edit: 'Edit',
     confirm: 'Confirm',
     refresh: 'Refresh',
+    retry: 'Retry',
     add: 'Add',
     close: 'Close',
     reset: 'Reset to default',

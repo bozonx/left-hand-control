@@ -24,6 +24,7 @@ export interface MapperState {
 }
 
 let singleton: MapperState | null = null
+let statusPollTimer: ReturnType<typeof setInterval> | null = null
 
 export function useMapper(): MapperState {
   if (singleton) return singleton
@@ -50,6 +51,7 @@ export function useMapper(): MapperState {
     if (!tauri) return
     try {
       status.value = await tauri.invoke<MapperStatus>('mapper_status')
+      error.value = status.value.last_error
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : String(e)
     }
@@ -84,13 +86,18 @@ export function useMapper(): MapperState {
     busy.value = true
     try {
       await tauri.invoke('stop_mapper')
-      error.value = null
       await refreshStatus()
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : String(e)
     } finally {
       busy.value = false
     }
+  }
+
+  if (!statusPollTimer) {
+    statusPollTimer = setInterval(() => {
+      void refreshStatus()
+    }, 2000)
   }
 
   singleton = {

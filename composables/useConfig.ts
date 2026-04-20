@@ -90,11 +90,21 @@ function normalize(raw: unknown): AppConfig {
   return cfg
 }
 
+function parsePersistedConfig(raw: string): AppConfig {
+  try {
+    return normalize(JSON.parse(raw))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`config.json is invalid: ${message}`)
+  }
+}
+
 interface ConfigState {
   config: Ref<AppConfig>
   loaded: Ref<boolean>
   saving: Ref<boolean>
   lastError: Ref<string | null>
+  loadError: Ref<string | null>
   configPath: Ref<string>
   // True when we launched and found no persisted config — show the welcome
   // screen so the user can pick a starting layout.
@@ -129,6 +139,7 @@ export function useConfig(): ConfigState {
   const loaded = ref(false)
   const saving = ref(false)
   const lastError = ref<string | null>(null)
+  const loadError = ref<string | null>(null)
   const configPath = ref('')
   const needsWelcome = ref(false)
   const layoutSnapshot = ref<string>(layoutSnapshotOf(config.value))
@@ -234,6 +245,9 @@ export function useConfig(): ConfigState {
       import.meta.env.VITE_LHC_FORCE_IVANK === 'true' ||
       import.meta.env.VITE_LHC_FORCE_IVANK === '1'
 
+    loaded.value = false
+    loadError.value = null
+
     try {
       if (forceIvank) {
         const preset = await loadBuiltinLayout()
@@ -241,11 +255,7 @@ export function useConfig(): ConfigState {
         // options like inputDevicePath aren't clobbered.
         const raw = await readRaw()
         if (raw) {
-          try {
-            config.value = normalize(JSON.parse(raw))
-          } catch {
-            config.value = createDefaultConfig()
-          }
+          config.value = parsePersistedConfig(raw)
         }
         if (preset) {
           config.value = applyPresetToConfig(
@@ -256,7 +266,7 @@ export function useConfig(): ConfigState {
         }
         layoutSnapshot.value = layoutSnapshotOf(config.value)
         configPath.value = await getConfigPath()
-        lastError.value = null
+        loadError.value = null
         console.info(
           '[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout.',
         )
@@ -265,21 +275,17 @@ export function useConfig(): ConfigState {
 
       const raw = await readRaw()
       if (raw) {
-        try {
-          config.value = normalize(JSON.parse(raw))
-          if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
-            const preset = await loadBuiltinLayout()
-            if (preset) {
-              config.value = applyPresetToConfig(
-                config.value,
-                preset,
-                BUILTIN_LAYOUT_ID,
-              )
-              await writeRaw(JSON.stringify(config.value, null, 2))
-            }
+        config.value = parsePersistedConfig(raw)
+        if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
+          const preset = await loadBuiltinLayout()
+          if (preset) {
+            config.value = applyPresetToConfig(
+              config.value,
+              preset,
+              BUILTIN_LAYOUT_ID,
+            )
+            await writeRaw(JSON.stringify(config.value, null, 2))
           }
-        } catch {
-          config.value = createDefaultConfig()
         }
         layoutSnapshot.value = layoutSnapshotOf(config.value)
       } else {
@@ -288,9 +294,9 @@ export function useConfig(): ConfigState {
         layoutSnapshot.value = layoutSnapshotOf(config.value)
       }
       configPath.value = await getConfigPath()
-      lastError.value = null
+      loadError.value = null
     } catch (e: unknown) {
-      lastError.value = e instanceof Error ? e.message : String(e)
+      loadError.value = e instanceof Error ? e.message : String(e)
       config.value = createDefaultConfig()
       layoutSnapshot.value = layoutSnapshotOf(config.value)
     } finally {
@@ -312,6 +318,7 @@ export function useConfig(): ConfigState {
     loaded,
     saving,
     lastError,
+    loadError,
     configPath,
     needsWelcome,
     currentLayoutId,

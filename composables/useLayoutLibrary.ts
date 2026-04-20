@@ -50,6 +50,7 @@ export interface LayoutLibraryEntry {
 interface LayoutLibraryState {
   entries: Ref<LayoutLibraryEntry[]>
   layoutsDir: Ref<string>
+  error: Ref<string | null>
   refresh: () => Promise<void>
   loadPreset: (id: string) => Promise<LayoutPreset | null>
   saveUserPreset: (name: string, preset: LayoutPreset) => Promise<string>
@@ -69,6 +70,7 @@ export function useLayoutLibrary(): LayoutLibraryState {
     },
   ])
   const layoutsDir = ref('')
+  const error = ref<string | null>(null)
 
   async function refresh() {
     const tauri = await useTauri()
@@ -77,12 +79,14 @@ export function useLayoutLibrary(): LayoutLibraryState {
       try {
         userNames = await tauri.invoke<string[]>('list_user_layouts')
         layoutsDir.value = await tauri.invoke<string>('get_layouts_dir')
+        error.value = null
       } catch (e) {
-        console.error('[LHC] list_user_layouts failed:', e)
+        error.value = e instanceof Error ? e.message : String(e)
       }
     } else {
       userNames = Object.keys(browserLayouts()).sort()
       layoutsDir.value = '(browser: localStorage)'
+      error.value = null
     }
     entries.value = [
       {
@@ -109,8 +113,9 @@ export function useLayoutLibrary(): LayoutLibraryState {
     if (tauri) {
       try {
         yaml = await tauri.invoke<string>('load_user_layout', { name })
+        error.value = null
       } catch (e) {
-        console.error('[LHC] load_user_layout failed:', e)
+        error.value = e instanceof Error ? e.message : String(e)
         return null
       }
     } else {
@@ -157,6 +162,7 @@ export function useLayoutLibrary(): LayoutLibraryState {
   singleton = {
     entries,
     layoutsDir,
+    error,
     refresh,
     loadPreset,
     saveUserPreset,

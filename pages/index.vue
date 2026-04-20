@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import AppShell from '~/components/app/AppShell.vue'
+import LoadingScreen from '~/components/LoadingScreen.vue'
 
 const {
   loaded,
+  loadError,
   needsWelcome,
   load,
 } = useConfig()
@@ -10,9 +12,18 @@ const {
 onMounted(() => {
   void load()
 })
+
+function retryLoad() {
+  void load()
+}
 </script>
 
 <template>
-  <WelcomeScreen v-if="loaded && needsWelcome" />
+  <LoadingScreen
+    v-if="!loaded || loadError"
+    :error="loadError"
+    @retry="retryLoad"
+  />
+  <WelcomeScreen v-else-if="needsWelcome" />
   <AppShell v-else />
 </template>

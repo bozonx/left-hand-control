@@ -175,6 +175,8 @@ export function useSettingsScreen() {
         await flush()
       }
       deletePending.value = null
+    } catch (error) {
+      applyError.value = error instanceof Error ? error.message : String(error)
     } finally {
       deleteBusy.value = false
     }

@@ -14,6 +14,22 @@ const props = defineProps<{
 
 const themePreference = defineModel<AppearancePreference>('themePreference', { required: true })
 const localePreference = defineModel<LocalePreference>('localePreference', { required: true })
+
+// Placeholder only: the flag is persisted in config, but real OS autostart
+// registration is not implemented yet.
+
+function setNonNegativeInt(
+  key:
+    | 'defaultHoldTimeoutMs'
+    | 'defaultDoubleTapTimeoutMs'
+    | 'defaultMacroStepPauseMs'
+    | 'defaultMacroModifierDelayMs',
+  value: string | number,
+) {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(parsed)) return
+  props.config.settings[key] = Math.max(0, Math.round(parsed))
+}
 </script>
 
 <template>
@@ -85,10 +101,11 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
             />
           </template>
           <UInput
-            v-model.number="props.config.settings.defaultHoldTimeoutMs"
+            :model-value="String(props.config.settings.defaultHoldTimeoutMs)"
             type="number"
             min="0"
             class="w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultHoldTimeoutMs', value)"
           />
         </UFormField>
         <UFormField>
@@ -99,10 +116,11 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
             />
           </template>
           <UInput
-            v-model.number="props.config.settings.defaultDoubleTapTimeoutMs"
+            :model-value="String(props.config.settings.defaultDoubleTapTimeoutMs)"
             type="number"
             min="0"
             class="w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultDoubleTapTimeoutMs', value)"
           />
         </UFormField>
       </div>
@@ -116,10 +134,11 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
             />
           </template>
           <UInput
-            v-model.number="props.config.settings.defaultMacroStepPauseMs"
+            :model-value="String(props.config.settings.defaultMacroStepPauseMs)"
             type="number"
             min="0"
             class="w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultMacroStepPauseMs', value)"
           />
         </UFormField>
         <UFormField>
@@ -130,10 +149,11 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
             />
           </template>
           <UInput
-            v-model.number="props.config.settings.defaultMacroModifierDelayMs"
+            :model-value="String(props.config.settings.defaultMacroModifierDelayMs)"
             type="number"
             min="0"
             class="w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultMacroModifierDelayMs', value)"
           />
         </UFormField>
       </div>

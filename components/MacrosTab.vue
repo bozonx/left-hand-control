@@ -21,17 +21,26 @@ const systemOpen = ref(false)
 
 // --- Deletion confirmation -----------------------------------------------
 const confirmOpen = ref(false)
-const pendingDeleteId = ref<string | null>(null)
+const pendingDeleteKey = ref<string | null>(null)
+const pendingDeleteLabel = ref<string | null>(null)
 
-function askRemove(id: string) {
-  pendingDeleteId.value = id
+function askRemove(payload: { uiKey: string, id: string }) {
+  pendingDeleteKey.value = payload.uiKey
+  pendingDeleteLabel.value = payload.id
   confirmOpen.value = true
 }
 
 function confirmRemove() {
-  if (pendingDeleteId.value) removeMacro(pendingDeleteId.value)
-  pendingDeleteId.value = null
+  if (pendingDeleteKey.value) removeMacro(pendingDeleteKey.value)
+  pendingDeleteKey.value = null
+  pendingDeleteLabel.value = null
   confirmOpen.value = false
+}
+
+function cancelRemove() {
+  confirmOpen.value = false
+  pendingDeleteKey.value = null
+  pendingDeleteLabel.value = null
 }
 </script>
 
@@ -73,6 +82,7 @@ function confirmRemove() {
         <MacroEditorCard
           v-for="macro in config.macros"
           :key="uiKeyOf(macro)"
+          :ui-key="uiKeyOf(macro)"
           :macro="macro"
           :id-error="idError(macro) ?? undefined"
           :usage="usage[macro.id] ?? []"
@@ -98,14 +108,14 @@ function confirmRemove() {
         <p class="text-sm">
           <i18n-t keypath="macros.confirmDeleteBody" tag="span">
             <template #ref>
-              <code>macro:{{ pendingDeleteId }}</code>
+              <code>macro:{{ pendingDeleteLabel }}</code>
             </template>
           </i18n-t>
         </p>
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton variant="ghost" color="neutral" @click="confirmOpen = false">
+          <UButton variant="ghost" color="neutral" @click="cancelRemove">
             {{ $t('common.cancel') }}
           </UButton>
           <UButton color="error" icon="i-lucide-trash-2" @click="confirmRemove">

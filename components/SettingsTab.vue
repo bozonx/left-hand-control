@@ -63,6 +63,7 @@ const { t } = useI18n()
       :is-layout-dirty="isLayoutDirty"
       :applying="applying"
       :apply-error="applyError"
+      :library-error="library.error.value"
       :layouts-dir="library.layoutsDir.value"
       @save-current="openSaveModal"
       @request-apply-entry="requestApplyEntry"
