@@ -14,78 +14,78 @@
 // silently fail at runtime (or vice-versa).
 
 export interface SystemMacroStep {
-  keystroke: string
+  keystroke: string;
 }
 
 export interface SystemMacro {
   // Stable identifier used in actions as `macro:<id>`. Same namespace as
   // user macros — user macros with the same id override the system one.
-  id: string
+  id: string;
   // Human-readable name.
-  name: string
+  name: string;
   // Short description shown as a secondary label in the UI.
-  description?: string
+  description?: string;
   // Ordered list of keystroke steps.
-  steps: SystemMacroStep[]
+  steps: SystemMacroStep[];
 }
 
 function s(...keystrokes: string[]): SystemMacroStep[] {
-  return keystrokes.map((k) => ({ keystroke: k }))
+  return keystrokes.map((k) => ({ keystroke: k }));
 }
 
 export const SYSTEM_MACROS: SystemMacro[] = [
-  { id: 'moveLineDown', name: 'Move line down', steps: s('Home', 'Enter', 'Up') },
-  { id: 'ctrlBackspace', name: 'Ctrl + Backspace', steps: s('Ctrl+Backspace') },
-  { id: 'ctrlDelete', name: 'Ctrl + Delete', steps: s('Ctrl+Delete') },
-  { id: 'ctrlHome', name: 'Ctrl + Home', steps: s('Ctrl+Home') },
-  { id: 'downEnd', name: 'Down + End', steps: s('Down', 'End') },
-  { id: 'upEnd', name: 'Up + End', steps: s('Up', 'End') },
-  { id: 'up5Times', name: 'Up 5 times', steps: s('Up', 'Up', 'Up', 'Up', 'Up') },
   {
-    id: 'duplicateLine',
-    name: 'Duplicate line',
-    steps: s('End', 'Shift+Home', 'Ctrl+C', 'End', 'Enter', 'Ctrl+V'),
+    id: "moveLineDown",
+    name: "Move line down",
+    steps: s("Home", "Enter", "Up"),
   },
-  { id: 'ctrlD', name: 'Ctrl + d', steps: s('Ctrl+KeyD') },
-  { id: 'ctrlEnd', name: 'Ctrl + End', steps: s('Ctrl+End') },
-  { id: 'rightSpace', name: 'Right + Space', steps: s('Right', 'Space') },
-  { id: 'emptyLineBelow', name: 'Empty line below', steps: s('End', 'Enter') },
+  { id: "downEnd", name: "Down + End", steps: s("Down", "End") },
+  { id: "upEnd", name: "Up + End", steps: s("Up", "End") },
   {
-    id: 'cutWordRightCenter',
-    name: 'Cut word right from center',
-    steps: s('Ctrl+Right', 'Ctrl+Shift+Left', 'Ctrl+X'),
+    id: "up5Times",
+    name: "Up 5 times",
+    steps: s("Up", "Up", "Up", "Up", "Up"),
   },
   {
-    id: 'copyWordAfterCenter',
-    name: 'Copy word right from center',
-    steps: s('Ctrl+Right', 'Ctrl+Shift+Left', 'Ctrl+C', 'Left'),
+    id: "duplicateLine",
+    name: "Duplicate line",
+    steps: s("End", "Shift+Home", "Ctrl+C", "End", "Enter", "Ctrl+V"),
+  },
+  { id: "rightSpace", name: "Right + Space", steps: s("Right", "Space") },
+  { id: "emptyLineBelow", name: "Empty line below", steps: s("End", "Enter") },
+  {
+    id: "cutWordRightCenter",
+    name: "Cut word right from center",
+    steps: s("Ctrl+Right", "Ctrl+Shift+Left", "Ctrl+X"),
   },
   {
-    id: 'pasteAtLineAbove',
-    name: 'Paste at line above',
-    steps: s('Home', 'Enter', 'Up', 'Ctrl+V'),
+    id: "copyWordAfterCenter",
+    name: "Copy word right from center",
+    steps: s("Ctrl+Right", "Ctrl+Shift+Left", "Ctrl+C", "Left"),
   },
   {
-    id: 'replaceWordWidthBuffer',
-    name: 'Replace word with buffer',
-    steps: s('Ctrl+Right', 'Ctrl+Shift+Left', 'Ctrl+C'),
+    id: "pasteAtLineAbove",
+    name: "Paste at line above",
+    steps: s("Home", "Enter", "Up", "Ctrl+V"),
   },
-  { id: 'ctrlLeft', name: 'Ctrl + Left', steps: s('Ctrl+Left') },
-  { id: 'downHome', name: 'Down + Home', steps: s('Down', 'Home') },
-  { id: 'upHome', name: 'Up + Home', steps: s('Up', 'Home') },
-  { id: 'ctrlRight', name: 'Ctrl + Right', steps: s('Ctrl+Right') },
   {
-    id: 'down5Times',
-    name: 'Down 5 times',
-    steps: s('Down', 'Down', 'Down', 'Down', 'Down'),
+    id: "replaceWordWidthBuffer",
+    name: "Replace word with buffer",
+    steps: s("Ctrl+Right", "Ctrl+Shift+Left", "Ctrl+C"),
   },
-  { id: 'toDesktop1', name: 'To Desktop 1', steps: s('sys:switchDesktop1') },
-]
+  { id: "downHome", name: "Down + Home", steps: s("Down", "Home") },
+  { id: "upHome", name: "Up + Home", steps: s("Up", "Home") },
+  {
+    id: "down5Times",
+    name: "Down 5 times",
+    steps: s("Down", "Down", "Down", "Down", "Down"),
+  },
+];
 
 const BY_ID: Record<string, SystemMacro> = Object.fromEntries(
   SYSTEM_MACROS.map((m) => [m.id, m]),
-)
+);
 
 export function systemMacroById(id: string): SystemMacro | undefined {
-  return BY_ID[id]
+  return BY_ID[id];
 }

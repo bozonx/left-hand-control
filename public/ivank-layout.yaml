@@ -223,10 +223,10 @@ keymaps:
   nav:
     keys:
       KeyQ: macro:moveLineDown
-      KeyW: macro:ctrlBackspace
-      KeyE: macro:ctrlDelete
+      KeyW: Ctrl+Backspace
+      KeyE: Ctrl+Delete
       KeyR: PageUp
-      KeyT: macro:ctrlHome
+      KeyT: Ctrl+Home
       KeyY: Home
       KeyU: macro:downEnd
       KeyI: macro:upEnd
@@ -238,9 +238,9 @@ keymaps:
 
       #KeyA: null
       KeyS: macro:duplicateLine
-      KeyD: macro:ctrlD
+      KeyD: Ctrl+D
       KeyF: PageDown
-      KeyG: macro:ctrlEnd
+      KeyG: Ctrl+End
       KeyH: Left
       KeyJ: Down
       KeyK: Up
@@ -253,10 +253,10 @@ keymaps:
       KeyC: macro:copyWordAfterCenter
       KeyV: macro:pasteAtLineAbove
       KeyB: macro:replaceWordWidthBuffer
-      KeyN: macro:ctrlLeft
+      KeyN: Ctrl+Left
       KeyM: macro:downHome
       Comma: macro:upHome
-      Period: macro:ctrlRight
+      Period: Ctrl+Right
       Slash: macro:down5Times
     extras:
       - name: Mouse4
@@ -266,44 +266,44 @@ keymaps:
 
   sel:
     keys:
-      KeyQ: macro:ctrlKeyZ
+      KeyQ: Ctrl+Z
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
       KeyR: macro:cutLineContent
       KeyT: macro:cutAndRemoveLine
-      KeyY: macro:shiftHome
+      KeyY: Shift+Home
       #KeyU:
       #KeyI:
-      KeyO: macro:shiftEnd
+      KeyO: Shift+End
       KeyP: macro:select5LinesUp
       #BracketLeft
       #BracketRight
       #Backslash
 
-      KeyA: macro:ctrlSlash
+      KeyA: Ctrl+Slash
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
       KeyF: macro:copyLine
-      #KeyG: 
-      KeyH: macro:shiftLeft
-      KeyJ: macro:shiftDown
-      KeyK: macro:shiftUp
-      KeyL: macro:shiftRight
+      #KeyG:
+      KeyH: Shift+Left
+      KeyJ: Shift+Down
+      KeyK: Shift+Up
+      KeyL: Shift+Right
       Semicolon: macro:selectWholeLine
       #Quote:
 
-      #KeyZ: 
+      #KeyZ:
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
-      #KeyV: 
+      #KeyV:
       KeyB: macro:replaceLineWidthBuffer
-      KeyN: macro:shiftCtrlLeft
-      #KeyM: 
-      #Comma: 
-      Period: macro:shiftCtrlRight
+      KeyN: Shift+Ctrl+Left
+      #KeyM:
+      #Comma:
+      Period: Shift+Ctrl+Right
       Slash: macro:select5LinesDown
     extras: []
-  
+
   sym:
     keys:
       KeyQ: "<"
@@ -335,7 +335,7 @@ keymaps:
       KeyZ: ":"
       KeyX: "`"
       KeyC: "'"
-      KeyV: "\""
+      KeyV: '"'
       KeyB: "/"
       KeyN: Key0
       KeyM: Key1
@@ -350,7 +350,7 @@ keymaps:
       KeyE: "]"
       KeyR: ")"
       #KeyT: ""
-      #KeyY: 
+      #KeyY:
       KeyU: KeyF7
       KeyI: KeyF8
       KeyO: KeyF9
@@ -376,7 +376,7 @@ keymaps:
       #KeyC: ""
       #KeyV: ""
       KeyB: "\\"
-      #KeyN: 
+      #KeyN:
       KeyM: KeyF1
       Comma: KeyF2
       Period: KeyF3
