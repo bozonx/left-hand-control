@@ -46,22 +46,17 @@ impl Default for LayoutInfo {
 /// Detect the currently active layout. Never fails — returns a sensible
 /// default ("us", pc105) if detection does not work on this machine.
 pub fn current() -> LayoutInfo {
-    let cfg = read_kxkbrc();
-    let active = active_short_name().or_else(|| cfg.layouts.first().cloned());
+    let cfg = load_keyboard_config();
+    let token = active_layout_token();
+    let idx = resolve_active_index(token.as_deref(), &cfg.layouts);
 
-    let (layout, variant) = match active {
-        Some(short) => {
-            let variant = cfg
-                .layouts
-                .iter()
-                .position(|l| l == &short)
-                .and_then(|idx| cfg.variants.get(idx).cloned())
-                .unwrap_or_default();
-            (short, variant)
-        }
-        None => ("us".to_string(), String::new()),
-    };
-
+    let layout = cfg
+        .layouts
+        .get(idx)
+        .cloned()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "us".to_string());
+    let variant = cfg.variants.get(idx).cloned().unwrap_or_default();
     let model = if cfg.model.is_empty() {
         "pc105".to_string()
     } else {
@@ -79,6 +74,26 @@ pub fn current() -> LayoutInfo {
         model,
         options,
     }
+}
+
+/// Map whatever `getLayout()` returned (may be a short name like "us" OR
+/// a numeric index like "1" depending on the KDE version) to an index in
+/// the configured `layouts` list.
+fn resolve_active_index(token: Option<&str>, layouts: &[String]) -> usize {
+    let Some(token) = token else {
+        return 0;
+    };
+    // Numeric index path — recent Plasma versions hand back an integer.
+    if let Ok(idx) = token.parse::<usize>() {
+        if idx < layouts.len() {
+            return idx;
+        }
+    }
+    // Fall back to matching by short name.
+    if let Some(pos) = layouts.iter().position(|l| l == token) {
+        return pos;
+    }
+    0
 }
 
 /// Spawn a thread that polls the active layout and sends a new `LayoutInfo`
@@ -114,24 +129,37 @@ pub fn spawn_watcher(initial: LayoutInfo, tx: Sender<LayoutInfo>, stop: Arc<Atom
 // ---------------- internals ----------------
 
 #[derive(Default)]
-struct KxkbConfig {
+struct KeyboardConfig {
     layouts: Vec<String>,
     variants: Vec<String>,
     model: String,
     options: String,
 }
 
-fn read_kxkbrc() -> KxkbConfig {
+/// Load the list of configured layouts/variants/model/options, preferring
+/// KDE's `kxkbrc` and falling back to `setxkbmap -query` if kxkbrc is
+/// absent or does not contain a `LayoutList` (e.g. on a fresh Plasma 6
+/// install where keyboard settings still live in plasma-localerc or the
+/// user has never opened the keyboard KCM).
+fn load_keyboard_config() -> KeyboardConfig {
+    let cfg = read_kxkbrc();
+    if !cfg.layouts.is_empty() {
+        return cfg;
+    }
+    read_setxkbmap().unwrap_or_default()
+}
+
+fn read_kxkbrc() -> KeyboardConfig {
     let Some(home) = std::env::var_os("HOME") else {
-        return KxkbConfig::default();
+        return KeyboardConfig::default();
     };
     let path = PathBuf::from(home).join(".config").join("kxkbrc");
     let Ok(text) = fs::read_to_string(&path) else {
-        return KxkbConfig::default();
+        return KeyboardConfig::default();
     };
 
     let mut in_layout_section = false;
-    let mut cfg = KxkbConfig::default();
+    let mut cfg = KeyboardConfig::default();
     for raw in text.lines() {
         let line = raw.trim();
         if line.starts_with('[') && line.ends_with(']') {
@@ -147,12 +175,8 @@ fn read_kxkbrc() -> KxkbConfig {
         let key = key.trim();
         let val = val.trim();
         match key {
-            "LayoutList" => {
-                cfg.layouts = split_csv(val);
-            }
-            "VariantList" => {
-                cfg.variants = split_csv(val);
-            }
+            "LayoutList" => cfg.layouts = split_csv(val),
+            "VariantList" => cfg.variants = split_csv(val),
             "Model" => cfg.model = val.to_string(),
             "Options" => cfg.options = val.to_string(),
             _ => {}
@@ -161,13 +185,42 @@ fn read_kxkbrc() -> KxkbConfig {
     cfg
 }
 
+fn read_setxkbmap() -> Option<KeyboardConfig> {
+    let out = Command::new("setxkbmap").arg("-query").output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let text = String::from_utf8(out.stdout).ok()?;
+    let mut cfg = KeyboardConfig::default();
+    for line in text.lines() {
+        let Some((k, v)) = line.split_once(':') else {
+            continue;
+        };
+        let v = v.trim();
+        match k.trim() {
+            "layout" => cfg.layouts = split_csv(v),
+            "variant" => cfg.variants = split_csv(v),
+            "model" => cfg.model = v.to_string(),
+            "options" => cfg.options = v.to_string(),
+            _ => {}
+        }
+    }
+    if cfg.layouts.is_empty() {
+        None
+    } else {
+        Some(cfg)
+    }
+}
+
 fn split_csv(s: &str) -> Vec<String> {
     s.split(',').map(|p| p.trim().to_string()).collect()
 }
 
-/// Ask KDE's keyboard kded module for the active layout short name.
-/// Returns None if the call fails (e.g. running outside KDE Plasma).
-fn active_short_name() -> Option<String> {
+/// Ask KDE's keyboard kded module for the active layout. Depending on the
+/// Plasma version this is either a short name ("us", "ru") or a numeric
+/// index into the configured layout list; callers must handle both. Returns
+/// None if the call fails (running outside KDE Plasma, qdbus missing, ...).
+fn active_layout_token() -> Option<String> {
     if !is_kde() {
         return None;
     }
