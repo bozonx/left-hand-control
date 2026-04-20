@@ -103,10 +103,22 @@
 #       (qdbus org.kde.KWin /KWin setCurrentDesktop N).
 #   sys:switchLayout1 .. sys:switchLayout10
 #     — переключение на раскладку клавиатуры N
-#       (qdbus org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout N).
+#       (qdbus org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout N-1).
 #   sys:showClipboardHistory
 #     — показать историю буфера обмена Klipper
 #       (qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu).
+#   sys:volumeDown / sys:volumeUp / sys:muteAudio
+#     — управление громкостью через глобальные действия Plasma.
+#   sys:brightnessDown / sys:brightnessUp
+#     — управление яркостью экрана через PowerDevil.
+#   sys:windowClose
+#     — закрыть активное окно через KWin.
+#   sys:windowMaximizeVertical / sys:windowMaximizeHorizontal
+#     — развернуть активное окно по вертикали / горизонтали через KWin.
+#   sys:screenshot
+#     — сделать скриншот области через Spectacle.
+#   sys:screenOff
+#     — выключить экран через PowerDevil.
 #
 # Использовать можно и напрямую (как tap / значение в keys / extras),
 # и как шаг макроса.

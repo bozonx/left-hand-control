@@ -53,6 +53,66 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     hint: 'KDE: qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu',
     platforms: ['linux-kde'],
   },
+  {
+    id: 'volumeDown',
+    nameKey: 'systemActions.volumeDown',
+    hint: 'KDE: org.kde.kglobalaccel /component/kmix invokeShortcut decrease_volume',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'volumeUp',
+    nameKey: 'systemActions.volumeUp',
+    hint: 'KDE: org.kde.kglobalaccel /component/kmix invokeShortcut increase_volume',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'muteAudio',
+    nameKey: 'systemActions.muteAudio',
+    hint: 'KDE: org.kde.kglobalaccel /component/kmix invokeShortcut mute',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'brightnessDown',
+    nameKey: 'systemActions.brightnessDown',
+    hint: 'KDE: org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut "Decrease Screen Brightness"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'brightnessUp',
+    nameKey: 'systemActions.brightnessUp',
+    hint: 'KDE: org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut "Increase Screen Brightness"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'windowClose',
+    nameKey: 'systemActions.windowClose',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window Close"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'windowMaximizeVertical',
+    nameKey: 'systemActions.windowMaximizeVertical',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window Maximize Vertical"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'windowMaximizeHorizontal',
+    nameKey: 'systemActions.windowMaximizeHorizontal',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window Maximize Horizontal"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'screenshot',
+    nameKey: 'systemActions.screenshot',
+    hint: 'KDE: org.kde.kglobalaccel /component/org.kde.spectacle.desktop invokeShortcut "Rectangular Region"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'screenOff',
+    nameKey: 'systemActions.screenOff',
+    hint: 'KDE: org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut "Turn Off Screen"',
+    platforms: ['linux-kde'],
+  },
 ]
 
 const BY_ID: Record<string, SystemAction> = Object.fromEntries(

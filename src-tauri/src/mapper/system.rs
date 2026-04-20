@@ -81,6 +81,16 @@ pub fn resolve(name: &str) -> Option<SysAction> {
 mod kde {
     use super::{DbusArg, DbusCall, SysAction};
 
+    fn invoke_shortcut(component: &str, shortcut: &str) -> SysAction {
+        SysAction::Dbus(DbusCall {
+            destination: "org.kde.kglobalaccel".into(),
+            path: format!("/component/{component}"),
+            interface: Some("org.kde.kglobalaccel.Component".into()),
+            method: "invokeShortcut".into(),
+            args: vec![DbusArg::Str(shortcut.into())],
+        })
+    }
+
     pub fn resolve(name: &str) -> Option<SysAction> {
         if let Some(rest) = name.strip_prefix("switchDesktop") {
             if let Ok(n) = rest.parse::<u32>() {
@@ -108,6 +118,37 @@ mod kde {
                     }));
                 }
             }
+        }
+        match name {
+            "volumeDown" => return Some(invoke_shortcut("kmix", "decrease_volume")),
+            "volumeUp" => return Some(invoke_shortcut("kmix", "increase_volume")),
+            "muteAudio" => return Some(invoke_shortcut("kmix", "mute")),
+            "brightnessDown" => {
+                return Some(invoke_shortcut(
+                    "org_kde_powerdevil",
+                    "Decrease Screen Brightness",
+                ));
+            }
+            "brightnessUp" => {
+                return Some(invoke_shortcut(
+                    "org_kde_powerdevil",
+                    "Increase Screen Brightness",
+                ));
+            }
+            "windowClose" => return Some(invoke_shortcut("kwin", "Window Close")),
+            "windowMaximizeVertical" => {
+                return Some(invoke_shortcut("kwin", "Window Maximize Vertical"));
+            }
+            "windowMaximizeHorizontal" => {
+                return Some(invoke_shortcut("kwin", "Window Maximize Horizontal"));
+            }
+            "screenshot" => {
+                return Some(invoke_shortcut("org.kde.spectacle.desktop", "Rectangular Region"));
+            }
+            "screenOff" => {
+                return Some(invoke_shortcut("org_kde_powerdevil", "Turn Off Screen"));
+            }
+            _ => {}
         }
         if name == "showClipboardHistory" {
             return Some(SysAction::Dbus(DbusCall {
@@ -138,6 +179,24 @@ mod tests {
             panic!("switchLayout3 did not resolve to a DBus action");
         };
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(2)]));
+    }
+
+    #[test]
+    fn volume_and_window_actions_resolve_via_kglobalaccel() {
+        let Some(SysAction::Dbus(call)) = resolve("volumeUp") else {
+            panic!("volumeUp did not resolve to a DBus action");
+        };
+        assert_eq!(call.destination, "org.kde.kglobalaccel");
+        assert_eq!(call.path, "/component/kmix");
+        assert_eq!(call.interface.as_deref(), Some("org.kde.kglobalaccel.Component"));
+        assert_eq!(call.method, "invokeShortcut");
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "increase_volume"));
+
+        let Some(SysAction::Dbus(call)) = resolve("windowMaximizeVertical") else {
+            panic!("windowMaximizeVertical did not resolve to a DBus action");
+        };
+        assert_eq!(call.path, "/component/kwin");
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Maximize Vertical"));
     }
 }
 
