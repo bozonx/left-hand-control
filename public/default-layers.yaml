@@ -214,7 +214,7 @@ keymaps:
       KeyL: "|"
       KeyQ: "~"
       KeyW: "`"
-
+!
   # sel:
   #   keys:
   #     KeyM: "1"

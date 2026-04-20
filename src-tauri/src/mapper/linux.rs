@@ -5,8 +5,8 @@
 use super::action::MacroStepItem;
 use super::config::AppConfig;
 use super::engine::{Engine, Out};
+use super::portal::Portal;
 use super::system::SysCommand;
-use super::vkbd::Vkbd;
 use super::KeyboardDevice;
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
 use evdev::{AttributeSet, BusType, Device, EventType, InputEvent, InputId, Key};
@@ -136,18 +136,18 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
     let stop_thread = stop.clone();
     let err_thread = error.clone();
 
-    // Start the Wayland virtual-keyboard backend used for typing
-    // character literals independently of the system layout. Failure here
-    // is non-fatal: the mapper still handles key remaps, layers, macros
-    // and system actions — it just logs a warning and refuses to emit
-    // literals (instead of emitting layout-dependent garbage).
-    let vkbd = match Vkbd::try_start() {
-        Ok(v) => {
-            eprintln!("[mapper] wayland vkbd backend online");
-            Some(v)
+    // Bring up the RemoteDesktop portal backend. This triggers the
+    // cross-DE permission dialog (KDE / GNOME / Sway via xdg-desktop-portal)
+    // and blocks until the user either approves or dismisses it. Failure
+    // here is non-fatal: key remaps / macros / system actions continue to
+    // work; we just log and drop literal-character events.
+    let portal = match Portal::try_start() {
+        Ok(p) => {
+            eprintln!("[mapper] portal backend online");
+            Some(p)
         }
         Err(e) => {
-            eprintln!("[mapper] wayland vkbd backend unavailable: {e}");
+            eprintln!("[mapper] portal backend unavailable: {e}");
             None
         }
     };
@@ -155,7 +155,7 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run_loop(device, virt, cfg, stop_thread, vkbd) {
+            if let Err(e) = run_loop(device, virt, cfg, stop_thread, portal) {
                 eprintln!("[mapper] run_loop error: {e}");
                 if let Ok(mut slot) = err_thread.lock() {
                     *slot = Some(e);
@@ -176,7 +176,7 @@ fn run_loop(
     mut virt: VirtualDevice,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
-    vkbd: Option<Vkbd>,
+    portal: Option<Portal>,
 ) -> Result<(), String> {
     use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
 
@@ -251,22 +251,21 @@ fn run_loop(
         }
 
         engine.tick(Instant::now(), &mut out_buf);
-        flush_out(&mut virt, vkbd.as_ref(), &mut out_buf)?;
+        flush_out(&mut virt, portal.as_ref(), &mut out_buf)?;
     }
 
     // Graceful shutdown: release anything still held.
     engine.shutdown(&mut out_buf);
-    flush_out(&mut virt, vkbd.as_ref(), &mut out_buf)?;
+    flush_out(&mut virt, portal.as_ref(), &mut out_buf)?;
     // Device is dropped here, which releases the grab automatically.
-    // `vkbd` dropping joins the Wayland thread and destroys the virtual
-    // keyboard cleanly.
-    drop(vkbd);
+    // Dropping `portal` joins the portal thread and closes the session.
+    drop(portal);
     Ok(())
 }
 
 fn flush_out(
     virt: &mut VirtualDevice,
-    vkbd: Option<&Vkbd>,
+    portal: Option<&Portal>,
     buf: &mut Vec<Out>,
 ) -> Result<(), String> {
     if buf.is_empty() {
@@ -319,7 +318,7 @@ fn flush_out(
                 // Emit whatever we've accumulated first so it doesn't get
                 // intermixed with the macro's timing.
                 flush_events(virt, &mut events)?;
-                run_macro(virt, vkbd, &steps, step_pause, mod_delay)?;
+                run_macro(virt, portal, &steps, step_pause, mod_delay)?;
             }
             Out::RunSystem(cmd) => {
                 flush_events(virt, &mut events)?;
@@ -327,19 +326,13 @@ fn flush_out(
             }
             Out::Literal(ch) => {
                 // Flush anything queued through uinput before handing the
-                // character off to the Wayland vkbd backend, so the order
-                // of emitted events matches the order engine produced them.
+                // character off to the portal backend, so the order of
+                // emitted events matches the order engine produced them.
                 flush_events(virt, &mut events)?;
-                match vkbd {
-                    Some(v) => {
-                        if !v.type_char(ch) {
-                            eprintln!(
-                                "[mapper] literal {ch:?} not in US symbol table, ignored"
-                            );
-                        }
-                    }
+                match portal {
+                    Some(p) => p.type_char(ch),
                     None => eprintln!(
-                        "[mapper] literal {ch:?} dropped (vkbd backend unavailable)"
+                        "[mapper] literal {ch:?} dropped (portal unavailable)"
                     ),
                 }
             }
@@ -371,7 +364,7 @@ fn spawn_system(cmd: &SysCommand) {
 
 fn run_macro(
     virt: &mut VirtualDevice,
-    vkbd: Option<&Vkbd>,
+    portal: Option<&Portal>,
     steps: &[MacroStepItem],
     step_pause: Duration,
     mod_delay: Duration,
@@ -388,20 +381,15 @@ fn run_macro(
                 continue;
             }
             MacroStepItem::Literal(ch) => {
-                // Literals go through the Wayland virtual keyboard so they
-                // produce the right character regardless of the active
-                // system layout. No modifiers, no mod_delay; we just fire
-                // the character and move on to the next macro step.
-                if let Some(v) = vkbd {
-                    if !v.type_char(*ch) {
-                        eprintln!(
-                            "[mapper] macro step literal {ch:?} not in US symbol table"
-                        );
-                    }
-                } else {
-                    eprintln!(
-                        "[mapper] macro step literal {ch:?} dropped (vkbd unavailable)"
-                    );
+                // Literals go through the portal backend so they produce
+                // the right character regardless of the system layout.
+                // No modifiers and no mod_delay — fire the character and
+                // move on to the next macro step.
+                match portal {
+                    Some(p) => p.type_char(*ch),
+                    None => eprintln!(
+                        "[mapper] macro step literal {ch:?} dropped (portal unavailable)"
+                    ),
                 }
                 continue;
             }
