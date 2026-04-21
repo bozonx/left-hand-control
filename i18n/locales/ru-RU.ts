@@ -216,8 +216,14 @@ export default {
     platformTitle: 'Диагностика платформы',
     platformHint:
       'Показывает отдельно поддержку backend и текущую доступность в рантайме, чтобы UI не путал «реализовано» с «можно использовать прямо сейчас».',
-    platformOs: 'ОС',
-    platformSession: 'Сессия',
+    platformBackend: 'Backend',
+    platformBackendHint: 'Что текущая ОС и backend архитектурно умеют поддерживать.',
+    platformRuntime: 'Рантайм',
+    platformCapability: 'Возможность',
+    platformSupportedColumn: 'Поддержка',
+    platformAvailableColumn: 'Доступно сейчас',
+    platformLegend:
+      'Поддержка = реализовано для этого backend. Доступно сейчас = текущая runtime-проверка прошла в этом окружении.',
     platformUnavailable: 'Диагностика платформы доступна только в desktop-сборке.',
     supportedYes: 'поддерживается',
     supportedNo: 'не поддерживается',

@@ -214,8 +214,14 @@ export default {
     platformTitle: 'Platform diagnostics',
     platformHint:
       'Shows backend support separately from runtime availability, so the UI does not confuse "implemented" with "usable right now".',
-    platformOs: 'OS',
-    platformSession: 'Session',
+    platformBackend: 'Backend',
+    platformBackendHint: 'What the current OS/backend is designed to support.',
+    platformRuntime: 'Runtime',
+    platformCapability: 'Capability',
+    platformSupportedColumn: 'Supported',
+    platformAvailableColumn: 'Available now',
+    platformLegend:
+      'Supported = implemented for this backend. Available now = passed the current runtime probe in this environment.',
     platformUnavailable: 'Platform diagnostics are available only in the desktop build.',
     supportedYes: 'supported',
     supportedNo: 'not supported',

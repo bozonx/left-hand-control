@@ -72,15 +72,18 @@ function availabilityColor(status: CapabilityStatus) {
         <div class="grid gap-3 md:grid-cols-2">
           <div class="rounded-lg border border-(--ui-border) p-3">
             <div class="text-xs uppercase tracking-wide text-(--ui-text-muted)">
-              {{ $t('settings.platformOs') }}
+              {{ $t('settings.platformBackend') }}
             </div>
             <div class="mt-1 font-medium">
               {{ platform.info.value.os }}
             </div>
+            <div class="mt-1 text-xs text-(--ui-text-muted)">
+              {{ $t('settings.platformBackendHint') }}
+            </div>
           </div>
           <div v-if="platform.info.value.linux" class="rounded-lg border border-(--ui-border) p-3">
             <div class="text-xs uppercase tracking-wide text-(--ui-text-muted)">
-              {{ $t('settings.platformSession') }}
+              {{ $t('settings.platformRuntime') }}
             </div>
             <div class="mt-1 font-medium">
               {{ platform.info.value.linux.desktop }} / {{ platform.info.value.linux.session_type }}
@@ -91,28 +94,38 @@ function availabilityColor(status: CapabilityStatus) {
           </div>
         </div>
 
-        <div class="space-y-3">
+        <div class="rounded-lg border border-(--ui-border) p-3">
+          <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 text-xs uppercase tracking-wide text-(--ui-text-muted)">
+            <div>{{ $t('settings.platformCapability') }}</div>
+            <div class="text-right">{{ $t('settings.platformSupportedColumn') }}</div>
+            <div class="text-right">{{ $t('settings.platformAvailableColumn') }}</div>
+          </div>
+
           <div
             v-for="item in capabilityItems"
             :key="item.key"
-            class="rounded-lg border border-(--ui-border) p-3"
+            class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-t border-(--ui-border) py-3 first:mt-3"
           >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="font-medium">{{ $t(item.label) }}</div>
-                <div v-if="item.status.detail" class="mt-1 text-xs text-(--ui-text-muted)">
-                  {{ item.status.detail }}
-                </div>
-              </div>
-              <div class="flex shrink-0 gap-2">
-                <UBadge :color="supportColor(item.status)" variant="subtle">
-                  {{ $t(item.status.supported ? 'settings.supportedYes' : 'settings.supportedNo') }}
-                </UBadge>
-                <UBadge :color="availabilityColor(item.status)" variant="subtle">
-                  {{ $t(item.status.available ? 'settings.availableNow' : 'settings.unavailableNow') }}
-                </UBadge>
+            <div>
+              <div class="font-medium">{{ $t(item.label) }}</div>
+              <div v-if="item.status.detail" class="mt-1 text-xs text-(--ui-text-muted)">
+                {{ item.status.detail }}
               </div>
             </div>
+            <div class="flex justify-end">
+              <UBadge :color="supportColor(item.status)" variant="subtle">
+                {{ $t(item.status.supported ? 'settings.supportedYes' : 'settings.supportedNo') }}
+              </UBadge>
+            </div>
+            <div class="flex justify-end">
+              <UBadge :color="availabilityColor(item.status)" variant="subtle">
+                {{ $t(item.status.available ? 'settings.availableNow' : 'settings.unavailableNow') }}
+              </UBadge>
+            </div>
+          </div>
+
+          <div class="border-t border-(--ui-border) pt-3 text-xs text-(--ui-text-muted)">
+            {{ $t('settings.platformLegend') }}
           </div>
         </div>
       </template>
