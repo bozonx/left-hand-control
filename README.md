@@ -66,7 +66,7 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
     ├── capabilities/default.json
     └── src/
         ├── main.rs
-        └── lib.rs        # exposes the `greet` command
+        └── lib.rs        # run() + Tauri command handlers
 ```
 
 ## Notes
@@ -80,7 +80,7 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
   magick -size 1024x1024 xc:"#4f46e5" /tmp/app-icon.png
   pnpm tauri icon /tmp/app-icon.png
   ```
-- The Rust side exposes a sample `greet` command wired up in `app.vue` as an example of the JS ↔ Rust bridge.
+- Rust commands are registered in `src-tauri/src/lib.rs` and invoked from the frontend with `@tauri-apps/api/core`. When running `pnpm dev` in a plain browser, guard Tauri imports/calls so they do not crash outside the native shell.
 
 ## Key-mapper (Linux only)
 

@@ -11,17 +11,78 @@ mod layout;
 mod mapper;
 mod platform;
 
-fn config_dir() -> Result<PathBuf, String> {
-    let home = std::env::var("HOME").map_err(|e| format!("HOME not set: {e}"))?;
-    Ok(PathBuf::from(home).join(".config").join("LeftHandControl"))
+fn config_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_config_dir()
+        .map_err(|e| format!("resolve app_config_dir: {e}"))
 }
 
-fn config_path() -> Result<PathBuf, String> {
-    Ok(config_dir()?.join("config.json"))
+fn config_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    Ok(config_dir(app)?.join("config.json"))
 }
 
-fn layouts_dir() -> Result<PathBuf, String> {
-    Ok(config_dir()?.join("layouts"))
+fn data_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map_err(|e| format!("resolve app_data_dir: {e}"))
+}
+
+fn layouts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    Ok(data_dir(app)?.join("layouts"))
+}
+
+#[cfg(target_os = "linux")]
+fn legacy_config_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| home.join(".config").join("LeftHandControl"))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn legacy_config_dir() -> Option<PathBuf> {
+    None
+}
+
+fn migrate_file_if_missing(from: &PathBuf, to: &PathBuf) -> Result<(), String> {
+    if to.exists() || !from.exists() {
+        return Ok(());
+    }
+    if let Some(parent) = to.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("create_dir_all: {e}"))?;
+    }
+    fs::copy(from, to).map_err(|e| format!("copy {} -> {}: {e}", from.display(), to.display()))?;
+    Ok(())
+}
+
+fn migrate_layouts_if_missing(from_dir: &PathBuf, to_dir: &PathBuf) -> Result<(), String> {
+    if !from_dir.exists() {
+        return Ok(());
+    }
+    fs::create_dir_all(to_dir).map_err(|e| format!("create_dir_all: {e}"))?;
+    for entry in fs::read_dir(from_dir).map_err(|e| format!("read_dir: {e}"))? {
+        let entry = entry.map_err(|e| format!("dir entry: {e}"))?;
+        let from = entry.path();
+        if !from.is_file() {
+            continue;
+        }
+        let to = to_dir.join(entry.file_name());
+        migrate_file_if_missing(&from, &to)?;
+    }
+    Ok(())
+}
+
+fn ensure_app_storage(app: &tauri::AppHandle) -> Result<(), String> {
+    let config_dir = config_dir(app)?;
+    let data_dir = data_dir(app)?;
+    fs::create_dir_all(&config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
+    fs::create_dir_all(&data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
+
+    if let Some(legacy_dir) = legacy_config_dir() {
+        migrate_file_if_missing(&legacy_dir.join("config.json"), &config_dir.join("config.json"))?;
+        migrate_layouts_if_missing(&legacy_dir.join("layouts"), &data_dir.join("layouts"))?;
+    }
+
+    Ok(())
 }
 
 // Keep layout names filesystem-safe: letters, digits, '-' '_' '.' and space.
@@ -47,19 +108,21 @@ fn sanitize_layout_name(name: &str) -> Result<String, String> {
     Ok(out)
 }
 
-fn layout_path(name: &str) -> Result<PathBuf, String> {
+fn layout_path(app: &tauri::AppHandle, name: &str) -> Result<PathBuf, String> {
     let safe = sanitize_layout_name(name)?;
-    Ok(layouts_dir()?.join(format!("{safe}.yaml")))
+    Ok(layouts_dir(app)?.join(format!("{safe}.yaml")))
 }
 
 #[tauri::command]
-fn get_config_path() -> Result<String, String> {
-    Ok(config_path()?.to_string_lossy().to_string())
+fn get_config_path(app: tauri::AppHandle) -> Result<String, String> {
+    ensure_app_storage(&app)?;
+    Ok(config_path(&app)?.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-fn load_config() -> Result<String, String> {
-    let path = config_path()?;
+fn load_config(app: tauri::AppHandle) -> Result<String, String> {
+    ensure_app_storage(&app)?;
+    let path = config_path(&app)?;
     if !path.exists() {
         return Ok(String::new());
     }
@@ -67,8 +130,9 @@ fn load_config() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn save_config(contents: String) -> Result<(), String> {
-    let dir = config_dir()?;
+fn save_config(app: tauri::AppHandle, contents: String) -> Result<(), String> {
+    ensure_app_storage(&app)?;
+    let dir = config_dir(&app)?;
     fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
     let path = dir.join("config.json");
     let tmp = dir.join("config.json.tmp");
@@ -80,13 +144,15 @@ fn save_config(contents: String) -> Result<(), String> {
 // --- User layouts ------------------------------------------------------------
 
 #[tauri::command]
-fn get_layouts_dir() -> Result<String, String> {
-    Ok(layouts_dir()?.to_string_lossy().to_string())
+fn get_layouts_dir(app: tauri::AppHandle) -> Result<String, String> {
+    ensure_app_storage(&app)?;
+    Ok(layouts_dir(&app)?.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-fn list_user_layouts() -> Result<Vec<String>, String> {
-    let dir = layouts_dir()?;
+fn list_user_layouts(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    ensure_app_storage(&app)?;
+    let dir = layouts_dir(&app)?;
     if !dir.exists() {
         return Ok(Vec::new());
     }
@@ -109,8 +175,9 @@ fn list_user_layouts() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-fn load_user_layout(name: String) -> Result<String, String> {
-    let path = layout_path(&name)?;
+fn load_user_layout(app: tauri::AppHandle, name: String) -> Result<String, String> {
+    ensure_app_storage(&app)?;
+    let path = layout_path(&app, &name)?;
     if !path.exists() {
         return Err(format!("layout '{name}' not found"));
     }
@@ -118,8 +185,9 @@ fn load_user_layout(name: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn save_user_layout(name: String, contents: String) -> Result<String, String> {
-    let dir = layouts_dir()?;
+fn save_user_layout(app: tauri::AppHandle, name: String, contents: String) -> Result<String, String> {
+    ensure_app_storage(&app)?;
+    let dir = layouts_dir(&app)?;
     fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
     let safe = sanitize_layout_name(&name)?;
     let path = dir.join(format!("{safe}.yaml"));
@@ -130,8 +198,9 @@ fn save_user_layout(name: String, contents: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn delete_user_layout(name: String) -> Result<(), String> {
-    let path = layout_path(&name)?;
+fn delete_user_layout(app: tauri::AppHandle, name: String) -> Result<(), String> {
+    ensure_app_storage(&app)?;
+    let path = layout_path(&app, &name)?;
     if path.exists() {
         fs::remove_file(&path).map_err(|e| format!("remove_file: {e}"))?;
     }
@@ -152,11 +221,15 @@ fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
 }
 
 #[tauri::command]
-fn start_mapper(device_path: String, config_json: Option<String>) -> Result<(), String> {
+fn start_mapper(
+    app: tauri::AppHandle,
+    device_path: String,
+    config_json: Option<String>,
+) -> Result<(), String> {
     eprintln!("[cmd] start_mapper device={device_path}");
     let raw = match config_json {
         Some(s) if !s.trim().is_empty() => s,
-        _ => load_config()?,
+        _ => load_config(app)?,
     };
     if raw.is_empty() {
         let msg = "config.json not found — save settings first".to_string();

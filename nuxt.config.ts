@@ -44,7 +44,7 @@ export default defineNuxtConfig({
 
   // Nuxt dev server configuration for Tauri
   devServer: {
-    host: '127.0.0.1',
+    host: 'localhost',
     port: 3000,
   },
 
@@ -56,7 +56,7 @@ export default defineNuxtConfig({
       strictPort: true,
       hmr: {
         protocol: 'ws',
-        host: '127.0.0.1',
+        host: 'localhost',
         port: 3001,
       },
     },
