@@ -104,6 +104,7 @@ macros:
       ],
       rules: [
         {
+          id: 'rule-1',
           key: 'CapsLock',
           layerId: 'edit',
           tapAction: '',
@@ -139,7 +140,17 @@ macros:
       name: 'Editing',
       description: 'editing helpers',
       layers: original.layers,
-      rules: original.rules,
+      rules: [
+        {
+          key: 'CapsLock',
+          layerId: 'edit',
+          tapAction: '',
+          holdAction: null,
+          doubleTapAction: 'Enter',
+          holdTimeoutMs: 210,
+          doubleTapTimeoutMs: undefined,
+        },
+      ],
       layerKeymaps: {
         base: { keys: {}, extras: [] },
         edit: {

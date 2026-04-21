@@ -21,6 +21,57 @@ use std::time::{Duration, Instant};
 const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
+trait EventSink {
+    fn emit(&mut self, events: &[InputEvent]) -> Result<(), String>;
+}
+
+trait SideEffects {
+    fn sleep(&mut self, duration: Duration);
+    fn type_text(&mut self, text: &str);
+    fn run_system(&mut self, action: &SysAction);
+}
+
+struct VirtualEventSink<'a> {
+    virt: &'a mut VirtualDevice,
+}
+
+impl EventSink for VirtualEventSink<'_> {
+    fn emit(&mut self, events: &[InputEvent]) -> Result<(), String> {
+        self.virt
+            .emit(events)
+            .map_err(|e| format!("uinput emit: {e}"))
+    }
+}
+
+struct RuntimeSideEffects<'a> {
+    portal: &'a Arc<Mutex<Option<Portal>>>,
+}
+
+impl SideEffects for RuntimeSideEffects<'_> {
+    fn sleep(&mut self, duration: Duration) {
+        if !duration.is_zero() {
+            thread::sleep(duration);
+        }
+    }
+
+    fn type_text(&mut self, text: &str) {
+        match self.portal.lock() {
+            Ok(slot) => match slot.as_ref() {
+                Some(p) => p.type_text(text),
+                None => eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text),
+            },
+            Err(_) => eprintln!(
+                "[mapper] literal {:?} dropped (portal state poisoned)",
+                text
+            ),
+        }
+    }
+
+    fn run_system(&mut self, action: &SysAction) {
+        run_sys_action(action);
+    }
+}
+
 /// Handle to a running mapper thread.
 pub struct Handle {
     stop: Arc<AtomicBool>,
@@ -302,8 +353,9 @@ fn run_loop(
     Ok(())
 }
 
-fn emit_stroke_tap(
-    virt: &mut VirtualDevice,
+fn emit_stroke_tap<S: EventSink, E: SideEffects>(
+    sink: &mut S,
+    effects: &mut E,
     ks: &super::action::Keystroke,
     mod_delay: Duration,
 ) -> Result<(), String> {
@@ -312,37 +364,31 @@ fn emit_stroke_tap(
         for m in &ks.mods {
             ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
         }
-        virt.emit(&ev)
-            .map_err(|e| format!("uinput emit (stroke mods-down): {e}"))?;
-        if !mod_delay.is_zero() {
-            thread::sleep(mod_delay);
-        }
+        sink.emit(&ev)?;
+        effects.sleep(mod_delay);
     }
 
     let down_up = [
         InputEvent::new(EventType::KEY, ks.key.code(), 1),
         InputEvent::new(EventType::KEY, ks.key.code(), 0),
     ];
-    virt.emit(&down_up)
-        .map_err(|e| format!("uinput emit (stroke key): {e}"))?;
+    sink.emit(&down_up)?;
 
     if !ks.mods.is_empty() {
-        if !mod_delay.is_zero() {
-            thread::sleep(mod_delay);
-        }
+        effects.sleep(mod_delay);
         let mut ev = Vec::with_capacity(ks.mods.len());
         for m in ks.mods.iter().rev() {
             ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
         }
-        virt.emit(&ev)
-            .map_err(|e| format!("uinput emit (stroke mods-up): {e}"))?;
+        sink.emit(&ev)?;
     }
 
     Ok(())
 }
 
-fn emit_chord_press(
-    virt: &mut VirtualDevice,
+fn emit_chord_press<S: EventSink, E: SideEffects>(
+    sink: &mut S,
+    effects: &mut E,
     ks: &super::action::Keystroke,
     mod_delay: Duration,
 ) -> Result<(), String> {
@@ -351,38 +397,31 @@ fn emit_chord_press(
         for m in &ks.mods {
             ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
         }
-        virt.emit(&ev)
-            .map_err(|e| format!("uinput emit (chord mods-down): {e}"))?;
-        if !mod_delay.is_zero() {
-            thread::sleep(mod_delay);
-        }
+        sink.emit(&ev)?;
+        effects.sleep(mod_delay);
     }
     let down = [InputEvent::new(EventType::KEY, ks.key.code(), 1)];
-    virt.emit(&down)
-        .map_err(|e| format!("uinput emit (chord key-down): {e}"))?;
+    sink.emit(&down)?;
     Ok(())
 }
 
-fn emit_chord_release(
-    virt: &mut VirtualDevice,
+fn emit_chord_release<S: EventSink, E: SideEffects>(
+    sink: &mut S,
+    effects: &mut E,
     key: Key,
     mods: &[Key],
     mod_delay: Duration,
 ) -> Result<(), String> {
     let up = [InputEvent::new(EventType::KEY, key.code(), 0)];
-    virt.emit(&up)
-        .map_err(|e| format!("uinput emit (chord key-up): {e}"))?;
+    sink.emit(&up)?;
 
     if !mods.is_empty() {
-        if !mod_delay.is_zero() {
-            thread::sleep(mod_delay);
-        }
+        effects.sleep(mod_delay);
         let mut ev = Vec::with_capacity(mods.len());
         for m in mods.iter().rev() {
             ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
         }
-        virt.emit(&ev)
-            .map_err(|e| format!("uinput emit (chord mods-up): {e}"))?;
+        sink.emit(&ev)?;
     }
     Ok(())
 }
@@ -390,6 +429,16 @@ fn emit_chord_release(
 fn flush_out(
     virt: &mut VirtualDevice,
     portal: &Arc<Mutex<Option<Portal>>>,
+    buf: &mut Vec<Out>,
+) -> Result<(), String> {
+    let mut sink = VirtualEventSink { virt };
+    let mut effects = RuntimeSideEffects { portal };
+    flush_out_with(&mut sink, &mut effects, buf)
+}
+
+fn flush_out_with<S: EventSink, E: SideEffects>(
+    sink: &mut S,
+    effects: &mut E,
     buf: &mut Vec<Out>,
 ) -> Result<(), String> {
     if buf.is_empty() {
@@ -400,11 +449,14 @@ fn flush_out(
     // the macro with blocking sleeps, and continue with a fresh batch.
     let mut events: Vec<InputEvent> = Vec::with_capacity(buf.len() * 3);
 
-    fn flush_events(virt: &mut VirtualDevice, events: &mut Vec<InputEvent>) -> Result<(), String> {
+    fn flush_events<S: EventSink>(
+        sink: &mut S,
+        events: &mut Vec<InputEvent>,
+    ) -> Result<(), String> {
         if events.is_empty() {
             return Ok(());
         }
-        virt.emit(events).map_err(|e| format!("uinput emit: {e}"))?;
+        sink.emit(events)?;
         events.clear();
         Ok(())
     }
@@ -419,20 +471,20 @@ fn flush_out(
                 ));
             }
             Out::Stroke { ks, mod_delay } => {
-                flush_events(virt, &mut events)?;
-                emit_stroke_tap(virt, &ks, mod_delay)?;
+                flush_events(sink, &mut events)?;
+                emit_stroke_tap(sink, effects, &ks, mod_delay)?;
             }
             Out::ChordPress { ks, mod_delay } => {
-                flush_events(virt, &mut events)?;
-                emit_chord_press(virt, &ks, mod_delay)?;
+                flush_events(sink, &mut events)?;
+                emit_chord_press(sink, effects, &ks, mod_delay)?;
             }
             Out::ChordRelease {
                 key,
                 mods,
                 mod_delay,
             } => {
-                flush_events(virt, &mut events)?;
-                emit_chord_release(virt, key, &mods, mod_delay)?;
+                flush_events(sink, &mut events)?;
+                emit_chord_release(sink, effects, key, &mods, mod_delay)?;
             }
             Out::ReleaseMods(mods) => {
                 for m in mods {
@@ -446,31 +498,20 @@ fn flush_out(
             } => {
                 // Emit whatever we've accumulated first so it doesn't get
                 // intermixed with the macro's timing.
-                flush_events(virt, &mut events)?;
-                run_macro(virt, portal, &steps, step_pause, mod_delay)?;
+                flush_events(sink, &mut events)?;
+                run_macro(sink, effects, &steps, step_pause, mod_delay)?;
             }
             Out::RunSystem(action) => {
-                flush_events(virt, &mut events)?;
-                run_sys_action(&action);
+                flush_events(sink, &mut events)?;
+                effects.run_system(&action);
             }
             Out::Literal(text) => {
-                flush_events(virt, &mut events)?;
-                match portal.lock() {
-                    Ok(slot) => match slot.as_ref() {
-                        Some(p) => p.type_text(&text),
-                        None => {
-                            eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text)
-                        }
-                    },
-                    Err(_) => eprintln!(
-                        "[mapper] literal {:?} dropped (portal state poisoned)",
-                        text
-                    ),
-                }
+                flush_events(sink, &mut events)?;
+                effects.type_text(&text);
             }
         }
     }
-    flush_events(virt, &mut events)?;
+    flush_events(sink, &mut events)?;
     Ok(())
 }
 
@@ -582,43 +623,211 @@ fn call_dbus(call: &DbusCall) {
     }
 }
 
-fn run_macro(
-    virt: &mut VirtualDevice,
-    portal: &Arc<Mutex<Option<Portal>>>,
+fn run_macro<S: EventSink, E: SideEffects>(
+    sink: &mut S,
+    effects: &mut E,
     steps: &[MacroStepItem],
     step_pause: Duration,
     mod_delay: Duration,
 ) -> Result<(), String> {
     for (i, step) in steps.iter().enumerate() {
         if i > 0 && !step_pause.is_zero() {
-            thread::sleep(step_pause);
+            effects.sleep(step_pause);
         }
 
         let ks = match step {
             MacroStepItem::Stroke(ks) => ks,
             MacroStepItem::System(action) => {
-                run_sys_action(action);
+                effects.run_system(action);
                 continue;
             }
             MacroStepItem::Literal(text) => {
-                match portal.lock() {
-                    Ok(slot) => match slot.as_ref() {
-                        Some(p) => p.type_text(text),
-                        None => eprintln!(
-                            "[mapper] macro step literal {:?} dropped (portal unavailable)",
-                            text
-                        ),
-                    },
-                    Err(_) => eprintln!(
-                        "[mapper] macro step literal {:?} dropped (portal state poisoned)",
-                        text
-                    ),
-                }
+                effects.type_text(text);
                 continue;
             }
         };
 
-        emit_stroke_tap(virt, ks, mod_delay)?;
+        emit_stroke_tap(sink, effects, ks, mod_delay)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{flush_out_with, EventSink, SideEffects};
+    use crate::mapper::action::{Keystroke, MacroStepItem};
+    use crate::mapper::engine::Out;
+    use crate::mapper::system::{DbusArg, DbusCall, SysAction, SysCommand};
+    use evdev::{EventType, InputEvent, Key};
+    use std::time::Duration;
+
+    #[derive(Default)]
+    struct FakeSink {
+        batches: Vec<Vec<(u16, i32)>>,
+    }
+
+    impl EventSink for FakeSink {
+        fn emit(&mut self, events: &[InputEvent]) -> Result<(), String> {
+            self.batches.push(
+                events
+                    .iter()
+                    .map(|ev| {
+                        assert_eq!(ev.event_type(), EventType::KEY);
+                        (ev.code(), ev.value())
+                    })
+                    .collect(),
+            );
+            Ok(())
+        }
+    }
+
+    #[derive(Default)]
+    struct FakeEffects {
+        sleeps: Vec<Duration>,
+        texts: Vec<String>,
+        systems: Vec<String>,
+    }
+
+    impl SideEffects for FakeEffects {
+        fn sleep(&mut self, duration: Duration) {
+            if !duration.is_zero() {
+                self.sleeps.push(duration);
+            }
+        }
+
+        fn type_text(&mut self, text: &str) {
+            self.texts.push(text.to_string());
+        }
+
+        fn run_system(&mut self, action: &SysAction) {
+            let label = match action {
+                SysAction::Spawn(SysCommand { program, args }) => {
+                    format!("spawn:{program}:{args:?}")
+                }
+                SysAction::Dbus(DbusCall {
+                    destination,
+                    method,
+                    args,
+                    ..
+                }) => format!("dbus:{destination}:{method}:{}", args.len()),
+            };
+            self.systems.push(label);
+        }
+    }
+
+    fn key_events(batch: &[(u16, i32)]) -> Vec<(u16, i32)> {
+        batch.to_vec()
+    }
+
+    #[test]
+    fn flush_out_routes_key_batches_macros_literals_and_systems() {
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        let mut buf = vec![
+            Out::KeyRaw {
+                key: Key::KEY_A,
+                down: true,
+            },
+            Out::ReleaseMods(vec![Key::KEY_LEFTSHIFT]),
+            Out::RunMacro {
+                steps: vec![
+                    MacroStepItem::Stroke(Keystroke {
+                        mods: vec![Key::KEY_LEFTCTRL],
+                        key: Key::KEY_C,
+                    }),
+                    MacroStepItem::Literal("x".into()),
+                    MacroStepItem::System(SysAction::Spawn(SysCommand {
+                        program: "spectacle".into(),
+                        args: vec!["-r".into()],
+                    })),
+                ],
+                step_pause: Duration::from_millis(5),
+                mod_delay: Duration::from_millis(2),
+            },
+            Out::Literal("tail".into()),
+            Out::RunSystem(SysAction::Dbus(DbusCall {
+                destination: "org.test".into(),
+                path: "/org/test".into(),
+                interface: Some("org.test.Interface".into()),
+                method: "Fire".into(),
+                args: vec![DbusArg::Bool(true)],
+            })),
+        ];
+
+        flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
+
+        assert!(buf.is_empty());
+        assert_eq!(sink.batches.len(), 4);
+        assert_eq!(
+            key_events(&sink.batches[0]),
+            vec![(Key::KEY_A.code(), 1), (Key::KEY_LEFTSHIFT.code(), 0)]
+        );
+        assert_eq!(
+            key_events(&sink.batches[1]),
+            vec![(Key::KEY_LEFTCTRL.code(), 1)]
+        );
+        assert_eq!(
+            key_events(&sink.batches[2]),
+            vec![(Key::KEY_C.code(), 1), (Key::KEY_C.code(), 0)]
+        );
+        assert_eq!(
+            key_events(&sink.batches[3]),
+            vec![(Key::KEY_LEFTCTRL.code(), 0)]
+        );
+        assert_eq!(
+            effects.sleeps,
+            vec![
+                Duration::from_millis(2),
+                Duration::from_millis(2),
+                Duration::from_millis(5),
+                Duration::from_millis(5),
+            ]
+        );
+        assert_eq!(effects.texts, vec!["x".to_string(), "tail".to_string()]);
+        assert_eq!(
+            effects.systems,
+            vec![
+                "spawn:spectacle:[\"-r\"]".to_string(),
+                "dbus:org.test:Fire:1".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn flush_out_preserves_chord_press_and_release_order() {
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        let mut buf = vec![
+            Out::ChordPress {
+                ks: Keystroke {
+                    mods: vec![Key::KEY_LEFTALT],
+                    key: Key::KEY_TAB,
+                },
+                mod_delay: Duration::from_millis(3),
+            },
+            Out::ChordRelease {
+                key: Key::KEY_TAB,
+                mods: vec![Key::KEY_LEFTALT],
+                mod_delay: Duration::from_millis(3),
+            },
+        ];
+
+        flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
+
+        assert_eq!(sink.batches.len(), 4);
+        assert_eq!(
+            key_events(&sink.batches[0]),
+            vec![(Key::KEY_LEFTALT.code(), 1)]
+        );
+        assert_eq!(key_events(&sink.batches[1]), vec![(Key::KEY_TAB.code(), 1)]);
+        assert_eq!(key_events(&sink.batches[2]), vec![(Key::KEY_TAB.code(), 0)]);
+        assert_eq!(
+            key_events(&sink.batches[3]),
+            vec![(Key::KEY_LEFTALT.code(), 0)]
+        );
+        assert_eq!(
+            effects.sleeps,
+            vec![Duration::from_millis(3), Duration::from_millis(3)]
+        );
+    }
 }
