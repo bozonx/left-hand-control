@@ -36,7 +36,7 @@ function actionValue(value: string | null): string {
 
 <template>
   <div
-    class="grid grid-cols-[1fr_1fr_1.2fr_1.2fr_1fr_auto_auto_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
+    class="grid grid-cols-2 2xl:grid-cols-[minmax(8rem,0.9fr)_minmax(8rem,0.9fr)_minmax(10rem,1.15fr)_minmax(10rem,1.15fr)_minmax(9rem,1fr)_auto_auto_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
   >
     <UFormField>
       <template #label>
@@ -188,10 +188,10 @@ function actionValue(value: string | null): string {
       />
     </UFormField>
 
-    <div class="pt-6">
-      <UButton
-        icon="i-lucide-trash-2"
-        color="error"
+      <div class="pt-6 col-span-2 2xl:col-span-1">
+        <UButton
+          icon="i-lucide-trash-2"
+          color="error"
         variant="ghost"
         square
         :aria-label="$t('rules.deleteRule')"

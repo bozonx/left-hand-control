@@ -81,7 +81,16 @@ function setNonNegativeInt(
 
       <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
         <div>
-          <div class="font-medium">{{ $t('settings.launchOnStartup') }}</div>
+          <div class="font-medium flex items-center gap-2">
+            {{ $t('settings.launchOnStartup') }}
+            <UBadge
+              color="neutral"
+              variant="outline"
+              size="sm"
+            >
+              {{ $t('settings.stubBadge') }}
+            </UBadge>
+          </div>
           <div class="text-xs text-(--ui-text-muted)">
             {{ $t('settings.launchOnStartupHint') }}
           </div>
@@ -92,7 +101,7 @@ function setNonNegativeInt(
         />
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-2 gap-4">
         <UFormField>
           <template #label>
             <FieldLabel
@@ -125,7 +134,7 @@ function setNonNegativeInt(
         </UFormField>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-(--ui-border)">
+      <div class="grid grid-cols-2 gap-4 pt-2 border-t border-(--ui-border)">
         <UFormField>
           <template #label>
             <FieldLabel

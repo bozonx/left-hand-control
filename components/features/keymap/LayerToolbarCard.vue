@@ -25,7 +25,7 @@ defineEmits<{
           @update:model-value="(value: string) => $emit('update:selectedLayerId', value)"
         />
       </UFormField>
-      <div class="flex gap-2">
+      <div class="flex gap-2 app-chrome">
         <UButton icon="i-lucide-plus" size="sm" @click="$emit('create')">
           {{ $t('keymap.newLayer') }}
         </UButton>

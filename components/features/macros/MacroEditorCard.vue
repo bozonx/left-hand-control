@@ -126,11 +126,11 @@ defineEmits<{
         {{ $t('macros.stepsEmpty') }}
       </div>
 
-      <div v-else class="space-y-1.5">
+      <div v-else class="space-y-2">
         <div
           v-for="(step, idx) in macro.steps"
           :key="step.id"
-          class="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-2 items-center"
+          class="grid grid-cols-[2rem_minmax(16rem,1fr)_auto_auto_auto] gap-2 items-center"
         >
           <div class="text-xs text-(--ui-text-muted) font-mono text-right">
             #{{ idx + 1 }}

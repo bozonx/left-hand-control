@@ -36,7 +36,7 @@ defineEmits<{
       <div
         v-for="extra in extras"
         :key="extra.id"
-        class="grid grid-cols-[1fr_1fr_auto] gap-3 items-start p-2 rounded-md bg-(--ui-bg-muted)"
+        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md bg-(--ui-bg-muted)"
       >
         <UFormField>
           <template #label>

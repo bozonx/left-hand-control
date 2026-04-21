@@ -22,6 +22,9 @@ const {
   renameDraftDescription,
   openRename,
   confirmRename,
+  deleteConfirmOpen,
+  requestDeleteSelectedLayer,
+  cancelDeleteSelectedLayer,
   deleteSelectedLayer,
   newLayerOpen,
   newLayerName,
@@ -39,7 +42,7 @@ const {
       :current-layer-description="currentLayer?.description"
       @create="openNewLayer"
       @rename="openRename"
-      @delete="deleteSelectedLayer"
+      @delete="requestDeleteSelectedLayer"
     />
 
     <KeyboardGridCard
@@ -81,5 +84,34 @@ const {
       :confirm-label="$t('common.save')"
       @confirm="confirmRename"
     />
+
+    <UModal
+      v-model:open="deleteConfirmOpen"
+      :title="$t('keymap.deleteLayerTitle', { name: currentLayer?.name ?? '' })"
+    >
+      <template #body>
+        <p class="text-sm">
+          {{ $t('keymap.deleteLayerBody') }}
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="cancelDeleteSelectedLayer"
+          >
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            icon="i-lucide-trash-2"
+            @click="deleteSelectedLayer"
+          >
+            {{ $t('common.delete') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

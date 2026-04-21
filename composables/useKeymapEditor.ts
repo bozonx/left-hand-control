@@ -69,6 +69,7 @@ export function useKeymapEditor() {
   const renameOpen = ref(false)
   const renameDraftName = ref('')
   const renameDraftDescription = ref('')
+  const deleteConfirmOpen = ref(false)
 
   function openRename() {
     const layer = currentLayer.value
@@ -91,7 +92,17 @@ export function useKeymapEditor() {
   function deleteSelectedLayer() {
     if (deleteLayer(selectedLayerId.value)) {
       selectedLayerId.value = BASE_LAYER_ID
+      deleteConfirmOpen.value = false
     }
+  }
+
+  function requestDeleteSelectedLayer() {
+    if (selectedLayerId.value === BASE_LAYER_ID) return
+    deleteConfirmOpen.value = true
+  }
+
+  function cancelDeleteSelectedLayer() {
+    deleteConfirmOpen.value = false
   }
 
   const newLayerOpen = ref(false)
@@ -134,6 +145,9 @@ export function useKeymapEditor() {
     renameDraftDescription,
     openRename,
     confirmRename,
+    deleteConfirmOpen,
+    requestDeleteSelectedLayer,
+    cancelDeleteSelectedLayer,
     deleteSelectedLayer,
     newLayerOpen,
     newLayerName,

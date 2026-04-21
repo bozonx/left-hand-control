@@ -28,6 +28,8 @@ export default {
     retry: 'Повторить',
     add: 'Добавить',
     close: 'Закрыть',
+    copy: 'Копировать',
+    copied: 'Скопировано',
     reset: 'Сбросить к значению по умолчанию',
     override: 'Переопределить',
     ms: 'мс',
@@ -121,6 +123,9 @@ export default {
     extraActionLabel: 'Действие',
     extraActionHint: 'Что делает эта клавиша пока активен слой.',
     deleteExtra: 'Удалить',
+    deleteLayerTitle: 'Удалить слой «{name}»',
+    deleteLayerBody:
+      'Это удалит сам слой, его keymap и очистит ссылки на него из правил слоёв.',
     editLayerTitle: 'Редактирование слоя',
     editTitle: 'Редактирование: {label}',
     keyCode: 'Код клавиши: {code}',
@@ -207,6 +212,7 @@ export default {
     launchOnStartup: 'Запускать вместе с системой',
     launchOnStartupHint:
       'Пока не реализовано — переключатель сохраняется в конфиг, но не регистрирует autostart.',
+    stubBadge: 'Заглушка',
     holdTimeout: 'Hold timeout по умолчанию, мс',
     holdTimeoutHint:
       'Определение одиночного нажатия vs удержания слоя. Если клавиша отпущена до истечения — срабатывает tap action, если удерживается дольше — активируется слой. Используется правилами, где не задано собственное значение.',

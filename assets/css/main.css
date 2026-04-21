@@ -36,16 +36,22 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Prevent accidental text selection on chrome / toolbars like native apps. */
+}
+
+/* Prevent accidental selection only in chrome-like controls, not content. */
+button,
+[role='button'],
+.app-chrome {
   user-select: none;
 }
 
-/* Still allow selection inside actual editable content. */
+/* Still allow selection inside actual editable or copyable content. */
 input,
 textarea,
 [contenteditable='true'],
 pre,
 code,
+.copyable,
 .select-text {
   user-select: text;
 }

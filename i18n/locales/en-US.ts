@@ -28,6 +28,8 @@ export default {
     retry: 'Retry',
     add: 'Add',
     close: 'Close',
+    copy: 'Copy',
+    copied: 'Copied',
     reset: 'Reset to default',
     override: 'Override',
     ms: 'ms',
@@ -120,6 +122,9 @@ export default {
     extraActionLabel: 'Action',
     extraActionHint: 'What this key does while the layer is active.',
     deleteExtra: 'Delete',
+    deleteLayerTitle: 'Delete layer “{name}”',
+    deleteLayerBody:
+      'This removes the layer, its keymap, and clears references to it from layer rules.',
     editLayerTitle: 'Edit layer',
     editTitle: 'Edit: {label}',
     keyCode: 'Key code: {code}',
@@ -205,6 +210,7 @@ export default {
     launchOnStartup: 'Launch on startup',
     launchOnStartupHint:
       'Not yet implemented — the switch is saved in config but does not register autostart.',
+    stubBadge: 'Stub',
     holdTimeout: 'Default hold timeout, ms',
     holdTimeoutHint:
       'Decides single tap vs. layer hold. If the key is released before the timeout — the tap action fires; if held longer — the layer activates. Used by rules that do not define their own value.',
