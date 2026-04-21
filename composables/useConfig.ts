@@ -59,13 +59,13 @@ function normalize(raw: unknown): AppConfig {
         : base.layers,
     rules: Array.isArray(r.rules)
       ? r.rules.map((rule) => ({
-          doubleTapAction: '',
           // Default tap/hold to '' (native) for configs that predate the
           // three-state tap/hold fields. `null` (swallow) and non-empty
           // string action are preserved as-is.
-          tapAction: '',
-          holdAction: '',
           ...rule,
+          doubleTapAction: rule.doubleTapAction ?? '',
+          tapAction: rule.tapAction ?? '',
+          holdAction: rule.holdAction ?? '',
         }))
       : [],
     layerKeymaps:
