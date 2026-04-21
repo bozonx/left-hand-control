@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV === 'development' },
 
   // Tauri is a desktop runtime, no need for SSR
   ssr: false,
@@ -60,7 +60,8 @@ export default defineNuxtConfig({
         port: 3001,
       },
     },
-    // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`
-    envPrefix: ['VITE_', 'TAURI_'],
+    // Keep the client env surface narrow: only explicit frontend-facing
+    // variables should reach `import.meta.env`.
+    envPrefix: ['VITE_'],
   },
 })
