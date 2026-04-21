@@ -1,18 +1,19 @@
 <script setup lang="ts">
 const props = defineProps<{
   configPath: string
+  layoutsDir: string
 }>()
 
 const toast = useToast()
 const { t } = useI18n()
 
-async function copyPath() {
-  if (!props.configPath) return
+async function copyPath(path: string) {
+  if (!path) return
   try {
-    await navigator.clipboard.writeText(props.configPath)
+    await navigator.clipboard.writeText(path)
     toast.add({
       title: t('common.copied'),
-      description: props.configPath,
+      description: path,
       icon: 'i-lucide-copy-check',
       close: true,
     })
@@ -31,25 +32,45 @@ async function copyPath() {
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="font-semibold">{{ $t('settings.configTitle') }}</h2>
-        <UButton
-          size="sm"
-          color="neutral"
-          variant="outline"
-          icon="i-lucide-copy"
-          :disabled="!configPath"
-          @click="copyPath"
-        >
-          {{ $t('common.copy') }}
-        </UButton>
-      </div>
+      <h2 class="font-semibold">{{ $t('settings.configTitle') }}</h2>
     </template>
-    <div class="text-sm">
-      <div class="text-(--ui-text-muted) mb-1">{{ $t('settings.configPath') }}</div>
-      <code class="block p-2 rounded bg-(--ui-bg-muted) break-all copyable">
-        {{ configPath || '…' }}
-      </code>
+    <div class="text-sm space-y-4">
+      <div>
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <div class="text-(--ui-text-muted)">{{ $t('settings.configPath') }}</div>
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="outline"
+            icon="i-lucide-copy"
+            :disabled="!configPath"
+            @click="copyPath(configPath)"
+          >
+            {{ $t('common.copy') }}
+          </UButton>
+        </div>
+        <code class="block p-2 rounded bg-(--ui-bg-muted) break-all copyable">
+          {{ configPath || '…' }}
+        </code>
+      </div>
+      <div>
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <div class="text-(--ui-text-muted)">{{ $t('settings.layoutsPath') }}</div>
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="outline"
+            icon="i-lucide-copy"
+            :disabled="!layoutsDir"
+            @click="copyPath(layoutsDir)"
+          >
+            {{ $t('common.copy') }}
+          </UButton>
+        </div>
+        <code class="block p-2 rounded bg-(--ui-bg-muted) break-all copyable">
+          {{ layoutsDir || '…' }}
+        </code>
+      </div>
       <p class="text-xs text-(--ui-text-muted) mt-2">
         {{ $t('settings.configHint') }}
       </p>

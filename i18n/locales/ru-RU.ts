@@ -241,7 +241,8 @@ export default {
     emptyLayoutName: 'Пустая раскладка',
     userLayoutsDir: 'Папка с пользовательскими раскладками:',
     configTitle: 'Файл конфигурации',
-    configPath: 'Путь:',
+    configPath: 'Путь к config.json:',
+    layoutsPath: 'Папка пользовательских раскладок:',
     configHint: 'Все изменения сохраняются автоматически.',
     confirmApplyTitle: 'Переключиться на «{label}»?',
     confirmApplyBody:

@@ -71,7 +71,10 @@ const { t } = useI18n()
       @request-delete="(entry) => deletePending = entry"
     />
 
-    <ConfigPathCard :config-path="configPath" />
+    <ConfigPathCard
+      :config-path="configPath"
+      :layouts-dir="library.layoutsDir.value"
+    />
 
     <!-- Apply confirmation -->
     <UModal

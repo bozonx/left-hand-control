@@ -82,6 +82,22 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
   ```
 - Rust commands are registered in `src-tauri/src/lib.rs` and invoked from the frontend with `@tauri-apps/api/core`. When running `pnpm dev` in a plain browser, guard Tauri imports/calls so they do not crash outside the native shell.
 
+## Where configs are stored
+
+The app uses Tauri's platform-specific app directories based on the bundle identifier `dev.bozonx.left-hand-control`.
+
+- Linux:
+  - config: `~/.config/dev.bozonx.left-hand-control/config.json`
+  - user layouts: `~/.local/share/dev.bozonx.left-hand-control/layouts/`
+- macOS:
+  - config: `~/Library/Application Support/dev.bozonx.left-hand-control/config.json`
+  - user layouts: `~/Library/Application Support/dev.bozonx.left-hand-control/layouts/`
+- Windows:
+  - config: `%APPDATA%\dev.bozonx.left-hand-control\config.json`
+  - user layouts: `%APPDATA%\dev.bozonx.left-hand-control\layouts\`
+
+On Linux, if `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is set, the app uses those directories instead of `~/.config` and `~/.local/share`.
+
 ## Key-mapper (Linux only)
 
 The mapper reads events from a grabbed `/dev/input/eventX` device and emits remapped events via a `uinput` virtual keyboard. It runs inside the app process: start it from **Settings → Key-mapper**. Closing the window minimizes to tray — the mapper keeps running. Use the tray menu (`Выход`) to fully quit.

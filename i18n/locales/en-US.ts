@@ -239,7 +239,8 @@ export default {
     emptyLayoutName: 'Empty layout',
     userLayoutsDir: 'User layouts folder:',
     configTitle: 'Configuration file',
-    configPath: 'Path:',
+    configPath: 'config.json path:',
+    layoutsPath: 'User layouts folder:',
     configHint: 'All changes are saved automatically.',
     confirmApplyTitle: 'Switch to "{label}"?',
     confirmApplyBody:
