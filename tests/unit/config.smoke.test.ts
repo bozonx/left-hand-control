@@ -8,6 +8,7 @@ import {
   parseSystemRef,
   systemActionRef,
 } from '~/types/config'
+import { normalizeConfig, parsePersistedConfig } from '~/composables/useConfig'
 
 describe('config helpers', () => {
   it('creates the expected default config shape', () => {
@@ -29,5 +30,43 @@ describe('config helpers', () => {
     )
     expect(parseMacroRef('Enter')).toBeNull()
     expect(parseSystemRef('')).toBeNull()
+  })
+
+  it('normalizes partial persisted config into a complete shape', () => {
+    const config = normalizeConfig({
+      layers: [{ id: 'nav', name: 'Navigation' }],
+      rules: [
+        {
+          id: 'rule-1',
+          key: 'Space',
+          layerId: 'nav',
+          tapAction: undefined,
+          holdAction: undefined,
+        },
+      ],
+      layerKeymaps: {
+        nav: {
+          keys: null,
+        },
+      },
+      settings: {
+        appearance: 'dark',
+      },
+    })
+
+    expect(config.layers.map((layer) => layer.id)).toEqual([BASE_LAYER_ID, 'nav'])
+    expect(config.layerKeymaps[BASE_LAYER_ID]).toEqual({ keys: {}, extras: [] })
+    expect(config.layerKeymaps.nav).toEqual({ keys: {}, extras: [] })
+    expect(config.rules[0]).toMatchObject({
+      tapAction: '',
+      holdAction: '',
+      doubleTapAction: '',
+    })
+    expect(config.settings.appearance).toBe('dark')
+    expect(config.settings.locale).toBe('auto')
+  })
+
+  it('throws a readable error for invalid persisted json', () => {
+    expect(() => parsePersistedConfig('{')).toThrow(/config\.json is invalid/i)
   })
 })

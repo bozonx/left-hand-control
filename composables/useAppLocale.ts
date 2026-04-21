@@ -31,6 +31,10 @@ interface AppLocaleApi {
 
 let singleton: AppLocaleApi | null = null
 
+export function resetAppLocaleStateForTests() {
+  singleton = null
+}
+
 export function useAppLocale(): AppLocaleApi {
   if (singleton) return singleton
 

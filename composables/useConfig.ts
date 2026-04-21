@@ -47,7 +47,7 @@ export async function getConfigPath(): Promise<string> {
 
 // Merge a (possibly partial / old-version) persisted config with defaults so
 // the UI always sees a complete shape.
-function normalize(raw: unknown): AppConfig {
+export function normalizeConfig(raw: unknown): AppConfig {
   const base = createDefaultConfig()
   if (!raw || typeof raw !== 'object') return base
   const r = raw as Partial<AppConfig>
@@ -90,9 +90,9 @@ function normalize(raw: unknown): AppConfig {
   return cfg
 }
 
-function parsePersistedConfig(raw: string): AppConfig {
+export function parsePersistedConfig(raw: string): AppConfig {
   try {
-    return normalize(JSON.parse(raw))
+    return normalizeConfig(JSON.parse(raw))
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`config.json is invalid: ${message}`)
@@ -129,6 +129,10 @@ interface ConfigState {
 }
 
 let singleton: ConfigState | null = null
+
+export function resetConfigStateForTests() {
+  singleton = null
+}
 
 export function useConfig(): ConfigState {
   if (singleton) return singleton

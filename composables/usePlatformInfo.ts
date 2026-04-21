@@ -9,6 +9,10 @@ export interface PlatformInfoState {
 
 let singleton: PlatformInfoState | null = null
 
+export function resetPlatformInfoStateForTests() {
+  singleton = null
+}
+
 export function usePlatformInfo(): PlatformInfoState {
   if (singleton) return singleton
 

@@ -59,6 +59,10 @@ interface LayoutLibraryState {
 
 let singleton: LayoutLibraryState | null = null
 
+export function resetLayoutLibraryStateForTests() {
+  singleton = null
+}
+
 export function useLayoutLibrary(): LayoutLibraryState {
   if (singleton) return singleton
 

@@ -1,0 +1,170 @@
+import { defineComponent, ref } from 'vue'
+
+import { mockComponent, mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import SettingsTab from '~/components/SettingsTab.vue'
+import { createDefaultConfig } from '~/types/config'
+
+const {
+  useSettingsScreenMock,
+  requestApplyEntryMock,
+  requestApplyEmptyMock,
+  openSaveModalMock,
+  confirmApplyMock,
+  cancelApplyMock,
+  performSaveMock,
+  closeSaveModalMock,
+  confirmDeleteMock,
+  clearDeletePendingMock,
+  toggleMapperMock,
+} = vi.hoisted(() => ({
+  useSettingsScreenMock: vi.fn(),
+  requestApplyEntryMock: vi.fn(),
+  requestApplyEmptyMock: vi.fn(),
+  openSaveModalMock: vi.fn(),
+  confirmApplyMock: vi.fn(),
+  cancelApplyMock: vi.fn(),
+  performSaveMock: vi.fn(),
+  closeSaveModalMock: vi.fn(),
+  confirmDeleteMock: vi.fn(),
+  clearDeletePendingMock: vi.fn(),
+  toggleMapperMock: vi.fn(),
+}))
+
+mockNuxtImport('useSettingsScreen', () => useSettingsScreenMock)
+
+mockComponent('~/components/features/settings/MapperCard.vue', () =>
+  defineComponent({
+    emits: ['toggle'],
+    template: '<button data-test="mapper-card" @click="$emit(\'toggle\')">mapper</button>',
+  }),
+)
+
+mockComponent('~/components/features/settings/GeneralCard.vue', () =>
+  defineComponent({
+    template: '<div data-test="general-card">general</div>',
+  }),
+)
+
+mockComponent('~/components/features/settings/PlatformCard.vue', () =>
+  defineComponent({
+    template: '<div data-test="platform-card">platform</div>',
+  }),
+)
+
+mockComponent('~/components/features/settings/ConfigPathCard.vue', () =>
+  defineComponent({
+    template: '<div data-test="config-card">config</div>',
+  }),
+)
+
+mockComponent('~/components/features/settings/LayoutsLibraryCard.vue', () =>
+  defineComponent({
+    emits: ['saveCurrent', 'requestApplyEntry', 'requestApplyEmpty', 'requestDelete'],
+    template: `
+      <div data-test="library-card">
+        <button data-test="save-current" @click="$emit('saveCurrent')">save</button>
+        <button data-test="apply-entry" @click="$emit('requestApplyEntry', { id: 'user:test', name: 'Test', builtin: false })">apply</button>
+        <button data-test="apply-empty" @click="$emit('requestApplyEmpty')">empty</button>
+        <button data-test="request-delete" @click="$emit('requestDelete', { id: 'user:test', name: 'Test', builtin: false })">delete</button>
+      </div>
+    `,
+  }),
+)
+
+describe('SettingsTab', () => {
+  beforeEach(() => {
+    useSettingsScreenMock.mockReset()
+    requestApplyEntryMock.mockReset()
+    requestApplyEmptyMock.mockReset()
+    openSaveModalMock.mockReset()
+    confirmApplyMock.mockReset()
+    cancelApplyMock.mockReset()
+    performSaveMock.mockReset()
+    closeSaveModalMock.mockReset()
+    confirmDeleteMock.mockReset()
+    clearDeletePendingMock.mockReset()
+    toggleMapperMock.mockReset()
+
+    useSettingsScreenMock.mockReturnValue({
+      config: ref(createDefaultConfig()),
+      configPath: ref('/tmp/config.json'),
+      currentLayoutId: ref('user:test'),
+      isLayoutDirty: ref(true),
+      library: {
+        entries: ref([{ id: 'user:test', name: 'Test', builtin: false }]),
+        error: ref(null),
+        layoutsDir: ref('/tmp/layouts'),
+      },
+      mapper: {
+        status: ref({ running: false, device_path: null, last_error: null }),
+        devices: ref([]),
+        busy: ref(false),
+        error: ref(null),
+      },
+      platform: {
+        info: ref(null),
+        busy: ref(false),
+        error: ref(null),
+      },
+      theme: {
+        preference: ref('system'),
+        resolved: ref('light'),
+      },
+      appLocale: {
+        preference: ref('auto'),
+        available: ['en-US', 'ru-RU'],
+      },
+      appearanceItems: ref([]),
+      localeItems: ref([]),
+      applying: ref(''),
+      applyError: ref(null),
+      pendingApply: ref(null),
+      requestApplyEntry: requestApplyEntryMock,
+      requestApplyEmpty: requestApplyEmptyMock,
+      cancelApply: cancelApplyMock,
+      confirmApply: confirmApplyMock,
+      saveModalOpen: ref(false),
+      saveName: ref(''),
+      saveBusy: ref(false),
+      saveError: ref(null),
+      openSaveModal: openSaveModalMock,
+      performSave: performSaveMock,
+      closeSaveModal: closeSaveModalMock,
+      deletePending: ref(null),
+      deleteBusy: ref(false),
+      confirmDelete: confirmDeleteMock,
+      clearDeletePending: clearDeletePendingMock,
+      deviceOptions: ref([]),
+      selectedDevice: ref(''),
+      toggleMapper: toggleMapperMock,
+    })
+  })
+
+  it('wires card events into the settings-screen actions', async () => {
+    const wrapper = await mountSuspended(SettingsTab)
+
+    await wrapper.get('[data-test="mapper-card"]').trigger('click')
+    await wrapper.get('[data-test="save-current"]').trigger('click')
+    await wrapper.get('[data-test="apply-entry"]').trigger('click')
+    await wrapper.get('[data-test="apply-empty"]').trigger('click')
+    await wrapper.get('[data-test="request-delete"]').trigger('click')
+
+    expect(toggleMapperMock).toHaveBeenCalledTimes(1)
+    expect(openSaveModalMock).toHaveBeenCalledTimes(1)
+    expect(requestApplyEntryMock).toHaveBeenCalledWith({
+      id: 'user:test',
+      name: 'Test',
+      builtin: false,
+    })
+    expect(requestApplyEmptyMock).toHaveBeenCalledTimes(1)
+
+    const state = useSettingsScreenMock.mock.results[0]?.value
+    expect(state.deletePending.value).toEqual({
+      id: 'user:test',
+      name: 'Test',
+      builtin: false,
+    })
+  })
+})

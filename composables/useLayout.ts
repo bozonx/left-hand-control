@@ -49,3 +49,14 @@ export function useLayout() {
     error: computed(() => _error.value),
   }
 }
+
+export async function resetLayoutStateForTests() {
+  _inited = false
+  _layout.value = null
+  _error.value = null
+  const unlisten = _unlisten
+  _unlisten = null
+  if (unlisten) {
+    await unlisten()
+  }
+}

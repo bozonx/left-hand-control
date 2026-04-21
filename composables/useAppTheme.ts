@@ -18,6 +18,10 @@ interface AppThemeApi {
 
 let singleton: AppThemeApi | null = null
 
+export function resetAppThemeStateForTests() {
+  singleton = null
+}
+
 export function useAppTheme(): AppThemeApi {
   if (singleton) return singleton
 

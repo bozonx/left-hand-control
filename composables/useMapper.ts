@@ -27,6 +27,12 @@ let singleton: MapperState | null = null
 let statusPollTimer: ReturnType<typeof setInterval> | null = null
 let consumerCount = 0
 
+export function resetMapperStateForTests() {
+  stopStatusPolling()
+  consumerCount = 0
+  singleton = null
+}
+
 function startStatusPolling(refreshStatus: () => Promise<void>) {
   if (statusPollTimer) return
   statusPollTimer = setInterval(() => {
