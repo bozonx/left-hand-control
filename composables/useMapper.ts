@@ -25,9 +25,35 @@ export interface MapperState {
 
 let singleton: MapperState | null = null
 let statusPollTimer: ReturnType<typeof setInterval> | null = null
+let consumerCount = 0
+
+function startStatusPolling(refreshStatus: () => Promise<void>) {
+  if (statusPollTimer) return
+  statusPollTimer = setInterval(() => {
+    void refreshStatus()
+  }, 2000)
+}
+
+function stopStatusPolling() {
+  if (!statusPollTimer) return
+  clearInterval(statusPollTimer)
+  statusPollTimer = null
+}
+
+function registerConsumer(refreshStatus: () => Promise<void>) {
+  startStatusPolling(refreshStatus)
+  consumerCount += 1
+  onScopeDispose(() => {
+    consumerCount = Math.max(0, consumerCount - 1)
+    if (consumerCount === 0) stopStatusPolling()
+  })
+}
 
 export function useMapper(): MapperState {
-  if (singleton) return singleton
+  if (singleton) {
+    registerConsumer(singleton.refreshStatus)
+    return singleton
+  }
 
   const { config, flush } = useConfig()
   const devices = ref<KeyboardDevice[]>([])
@@ -94,11 +120,7 @@ export function useMapper(): MapperState {
     }
   }
 
-  if (!statusPollTimer) {
-    statusPollTimer = setInterval(() => {
-      void refreshStatus()
-    }, 2000)
-  }
+  registerConsumer(refreshStatus)
 
   singleton = {
     devices,

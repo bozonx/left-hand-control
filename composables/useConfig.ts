@@ -153,7 +153,10 @@ export function useConfig(): ConfigState {
   )
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null
-  let pendingFlushResolvers: Array<() => void> = []
+  let pendingFlushWaiters: Array<{
+    resolve: () => void
+    reject: (error: unknown) => void
+  }> = []
   let lastNotifiedSaveError: string | null = null
 
   function saveErrorMessage(error: unknown): string {
@@ -179,16 +182,19 @@ export function useConfig(): ConfigState {
       await writeRaw(JSON.stringify(config.value, null, 2))
       lastError.value = null
       lastNotifiedSaveError = null
+      const waiters = pendingFlushWaiters
+      pendingFlushWaiters = []
+      for (const waiter of waiters) waiter.resolve()
     } catch (e: unknown) {
       const message = saveErrorMessage(e)
       lastError.value = message
       notifySaveError(message)
+      const waiters = pendingFlushWaiters
+      pendingFlushWaiters = []
+      for (const waiter of waiters) waiter.reject(e)
       throw e
     } finally {
       saving.value = false
-      const resolvers = pendingFlushResolvers
-      pendingFlushResolvers = []
-      for (const r of resolvers) r()
     }
   }
 
@@ -210,8 +216,8 @@ export function useConfig(): ConfigState {
       return
     }
     if (saving.value) {
-      await new Promise<void>((resolve) => {
-        pendingFlushResolvers.push(resolve)
+      await new Promise<void>((resolve, reject) => {
+        pendingFlushWaiters.push({ resolve, reject })
       })
     }
   }
@@ -247,6 +253,7 @@ export function useConfig(): ConfigState {
 
     loaded.value = false
     loadError.value = null
+    needsWelcome.value = false
 
     try {
       if (forceIvank) {
@@ -276,6 +283,7 @@ export function useConfig(): ConfigState {
       const raw = await readRaw()
       if (raw) {
         config.value = parsePersistedConfig(raw)
+        needsWelcome.value = false
         if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
           const preset = await loadBuiltinLayout()
           if (preset) {
@@ -298,6 +306,7 @@ export function useConfig(): ConfigState {
     } catch (e: unknown) {
       loadError.value = e instanceof Error ? e.message : String(e)
       config.value = createDefaultConfig()
+      needsWelcome.value = false
       layoutSnapshot.value = layoutSnapshotOf(config.value)
     } finally {
       loaded.value = true

@@ -108,28 +108,28 @@ export function useMacroEditor() {
       if (!byMacro[id]) byMacro[id] = []
       byMacro[id].push(where)
     }
+    const noteIfMacro = (action: string | null | undefined, where: string) => {
+      if (action?.startsWith(prefix)) {
+        note(action.slice(prefix.length), where)
+      }
+    }
     const prefix = 'macro:'
     for (const rule of config.value.rules) {
-      if (rule.tapAction?.startsWith(prefix)) {
-        note(rule.tapAction.slice(prefix.length), `rule ${rule.key || '?'} (tap)`)
-      }
+      const ruleLabel = rule.key || '?'
+      noteIfMacro(rule.tapAction, `rule ${ruleLabel} (tap)`)
+      noteIfMacro(rule.holdAction, `rule ${ruleLabel} (hold)`)
+      noteIfMacro(rule.doubleTapAction, `rule ${ruleLabel} (double-tap)`)
     }
     for (const [layerId, keymap] of Object.entries(config.value.layerKeymaps)) {
       for (const [code, action] of Object.entries(keymap.keys ?? {})) {
-        if (action?.startsWith(prefix)) note(action.slice(prefix.length), `${layerId}.${code}`)
+        noteIfMacro(action, `${layerId}.${code}`)
       }
       for (const extra of keymap.extras ?? []) {
-        if (extra.action?.startsWith(prefix)) {
-          note(actionId(extra.action, prefix), `${layerId}.${extra.name || 'extra'}`)
-        }
+        noteIfMacro(extra.action, `${layerId}.${extra.name || 'extra'}`)
       }
     }
     return byMacro
   })
-
-  function actionId(action: string, prefix: string) {
-    return action.slice(prefix.length)
-  }
 
   return {
     addMacro,
