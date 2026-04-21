@@ -43,6 +43,18 @@ This starts the Nuxt dev server on `http://localhost:3000` and launches the Taur
 pnpm dev
 ```
 
+## Run UI tests
+
+```bash
+pnpm test
+```
+
+Available commands:
+
+- `pnpm test:unit` — fast unit tests for TS helpers/composables without the Nuxt runtime
+- `pnpm test:components` — component tests for `.vue` files in the Nuxt test environment
+- `pnpm test:unit:watch` / `pnpm test:components:watch` — watch mode during UI work
+
 ## Build a production desktop bundle
 
 ```bash

@@ -27,7 +27,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Sender};
 use std::thread::{self, JoinHandle};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
@@ -46,12 +46,6 @@ const DEVICE_TYPE_KEYBOARD: u32 = 1;
 const STATE_RELEASED: u32 = 0;
 const STATE_PRESSED: u32 = 1;
 
-/// How long we wait for the portal handshake (dominated by the user
-/// interacting with the permission dialog).
-const INIT_TIMEOUT: Duration = Duration::from_secs(120);
-
-// --- Public handle ------------------------------------------------------
-
 pub struct Portal {
     tx: Sender<Cmd>,
     join: Option<JoinHandle<()>>,
@@ -63,33 +57,21 @@ enum Cmd {
 }
 
 impl Portal {
-    /// Start the background DBus thread and complete the portal
-    /// handshake (including the user-visible permission dialog) before
-    /// returning. Call this once at mapper startup.
     pub fn try_start() -> Result<Self, String> {
-        let (init_tx, init_rx) = mpsc::channel::<Result<(), String>>();
         let (cmd_tx, cmd_rx) = mpsc::channel::<Cmd>();
+        let (conn, session_handle) = init_portal()?;
 
         let join = thread::Builder::new()
             .name("lhc-portal".into())
-            .spawn(move || run_thread(init_tx, cmd_rx))
+            .spawn(move || run_thread(conn, session_handle, cmd_rx))
             .map_err(|e| format!("spawn portal thread: {e}"))?;
 
-        match init_rx.recv_timeout(INIT_TIMEOUT) {
-            Ok(Ok(())) => Ok(Self {
-                tx: cmd_tx,
-                join: Some(join),
-            }),
-            Ok(Err(e)) => {
-                let _ = join.join();
-                Err(e)
-            }
-            Err(_) => Err("portal: init timed out (user did not approve in time?)".into()),
-        }
+        Ok(Self {
+            tx: cmd_tx,
+            join: Some(join),
+        })
     }
 
-    /// Fire-and-forget: queue a character for the portal thread to inject.
-    /// Sending to a dead channel is silently ignored (shutdown path).
     pub fn type_text(&self, text: &str) {
         let _ = self.tx.send(Cmd::Type(text.to_string()));
     }
@@ -104,18 +86,7 @@ impl Drop for Portal {
     }
 }
 
-// --- Worker thread ------------------------------------------------------
-
-fn run_thread(init_tx: Sender<Result<(), String>>, cmd_rx: mpsc::Receiver<Cmd>) {
-    let (conn, session_handle) = match init_portal() {
-        Ok(v) => v,
-        Err(e) => {
-            let _ = init_tx.send(Err(e));
-            return;
-        }
-    };
-    let _ = init_tx.send(Ok(()));
-
+fn run_thread(conn: Connection, session_handle: OwnedObjectPath, cmd_rx: mpsc::Receiver<Cmd>) {
     let portal = match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
         Ok(p) => p,
         Err(e) => {

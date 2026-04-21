@@ -3,12 +3,12 @@
 //!
 //! Planned implementation:
 //!   * Query current / configured sources from GSettings:
-//!       gsettings get org.gnome.desktop.input-sources current
-//!       gsettings get org.gnome.desktop.input-sources sources
+//!     gsettings get org.gnome.desktop.input-sources current
+//!     gsettings get org.gnome.desktop.input-sources sources
 //!     The `sources` value is `a(ss)`: list of (type, id) where type is
 //!     "xkb" | "ibus" and id is e.g. "us", "ru", or "xkb:ru::rus".
 //!   * Watch for changes via:
-//!       gsettings monitor org.gnome.desktop.input-sources current
+//!     gsettings monitor org.gnome.desktop.input-sources current
 //!     (blocking subprocess, one line per change).
 //!   * Optionally fall back to DBus `org.gnome.Shell` when available.
 

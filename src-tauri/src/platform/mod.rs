@@ -10,12 +10,9 @@
 //! DE-specific:
 //!
 //!   * `layout::current()` / `layout::start_watcher()`   — which DBus / CLI tool
-//!                                                         tells us the active
-//!                                                         keyboard layout.
+//!     tells us the active keyboard layout.
 //!   * `mapper::system::resolve()`                       — how to implement
-//!                                                         "system functions"
-//!                                                         (virtual-desktop
-//!                                                         switching, etc.)
+//!     "system functions" (virtual-desktop switching, etc.)
 //!
 //! The low-level key-event interception (evdev + uinput) is DE-agnostic,
 //! so it lives directly in `mapper::linux` without further branching.

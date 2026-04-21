@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
+    Manager, RunEvent, WindowEvent,
 };
 
 mod layout;
@@ -334,9 +334,9 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .setup(|app| {
-            build_tray(&app.handle())?;
+            build_tray(app.handle())?;
             layout::start_watcher(app.handle().clone());
             Ok(())
         })
@@ -363,6 +363,13 @@ pub fn run() {
             get_current_layout,
             get_platform_info,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|_, event| {
+        if let RunEvent::Exit = event {
+            let _ = mapper::stop();
+            layout::stop_watcher();
+        }
+    });
 }

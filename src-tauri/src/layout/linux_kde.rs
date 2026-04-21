@@ -12,6 +12,8 @@ use zbus::blocking::{Connection, Proxy};
 
 use super::LayoutInfo;
 
+type LayoutList = Vec<(String, String, String)>;
+
 const SERVICE: &str = "org.kde.keyboard";
 const OBJECT: &str = "/Layouts";
 const IFACE: &str = "org.kde.KeyboardLayouts";
@@ -22,13 +24,17 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
 }
 
 pub fn start_watcher(app: AppHandle) {
-    thread::spawn(move || {
+    let _ = thread::Builder::new()
+        .name("layout-kde-watcher".into())
+        .spawn(move || {
         let mut last = None;
-        loop {
+        while !super::watcher_stop_requested() {
             match current() {
                 Ok(Some(info)) => {
                     if last.as_ref() != Some(&info) {
-                        let _ = app.emit("layout-changed", info.clone());
+                        if let Err(e) = app.emit("layout-changed", info.clone()) {
+                            eprintln!("[layout/kde] emit error: {e}");
+                        }
                         last = Some(info);
                     }
                 }
@@ -79,7 +85,7 @@ fn call_index(proxy: &Proxy<'_>) -> Result<Option<u32>, String> {
     Ok(Some(idx))
 }
 
-fn call_list(proxy: &Proxy<'_>) -> Result<Option<Vec<(String, String, String)>>, String> {
+fn call_list(proxy: &Proxy<'_>) -> Result<Option<LayoutList>, String> {
     let msg = match proxy.call_method("getLayoutsList", &()) {
         Ok(msg) => msg,
         Err(zbus::Error::MethodError(name, _, _))

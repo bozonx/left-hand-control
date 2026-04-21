@@ -25,7 +25,7 @@ mod system;
 mod system_macros;
 
 use serde::Serialize;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct KeyboardDevice {
@@ -63,6 +63,10 @@ impl MapperState {
     }
 }
 
+fn lock_state() -> MutexGuard<'static, MapperState> {
+    STATE.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 #[cfg(target_os = "linux")]
 pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
     linux::list_keyboards()
@@ -97,7 +101,7 @@ fn unsupported_os_msg(op: &str) -> String {
 pub fn start(device_path: &str, config_json: &str) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
-    let mut st = STATE.lock().unwrap();
+    let mut st = lock_state();
     if let Some(handle) = st.handle.as_mut() {
         if handle.reap_if_finished() {
             st.handle = None;
@@ -125,11 +129,11 @@ pub fn start(_device_path: &str, _config_json: &str) -> Result<(), String> {
 pub fn stop() -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
-        let mut st = STATE.lock().unwrap();
+        let mut st = lock_state();
         if let Some(handle) = st.handle.take() {
             drop(st); // release lock before joining
             handle.stop();
-            let mut st = STATE.lock().unwrap();
+            let mut st = lock_state();
             st.status.running = false;
             return Ok(());
         }
@@ -142,7 +146,7 @@ pub fn stop() -> Result<(), String> {
 }
 
 pub fn status() -> MapperStatus {
-    let mut st = STATE.lock().unwrap();
+    let mut st = lock_state();
     // Refresh live status from linux handle if present.
     #[cfg(target_os = "linux")]
     if let Some(h) = st.handle.as_mut() {

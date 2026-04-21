@@ -13,11 +13,13 @@ use evdev::{AttributeSet, BusType, Device, EventType, InputEvent, InputId, Key};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
 const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
+const START_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Handle to a running mapper thread.
 pub struct Handle {
@@ -108,52 +110,37 @@ fn is_keyboard(dev: &Device) -> bool {
 }
 
 pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
-    // Validate the path up front but do not grab here: startup may still
-    // need portal permission, and grabbing before the worker loop is alive
-    // can temporarily "steal" the user's keyboard.
-    let _ = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
-
-    eprintln!(
-        "[mapper] started: device={} rules={} layers={}",
-        device_path,
-        cfg.rules.len(),
-        cfg.layer_keymaps.len()
-    );
-    for r in &cfg.rules {
+    #[cfg(debug_assertions)]
+    {
         eprintln!(
-            "[mapper]   rule key={} layer={:?} tap={:?} hold={:?} holdMs={:?}",
-            r.key, r.layer_id, r.tap_action, r.hold_action, r.hold_timeout_ms
+            "[mapper] started: device={} rules={} layers={}",
+            device_path,
+            cfg.rules.len(),
+            cfg.layer_keymaps.len()
         );
+        for r in &cfg.rules {
+            eprintln!(
+                "[mapper]   rule key={} layer={:?} tap={:?} hold={:?} holdMs={:?}",
+                r.key, r.layer_id, r.tap_action, r.hold_action, r.hold_timeout_ms
+            );
+        }
+        for (lid, km) in &cfg.layer_keymaps {
+            eprintln!("[mapper]   keymap[{lid}] keys={}", km.keys.len());
+        }
     }
-    for (lid, km) in &cfg.layer_keymaps {
-        eprintln!("[mapper]   keymap[{lid}] keys={}", km.keys.len());
-    }
+
+    let _ = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
 
     let stop = Arc::new(AtomicBool::new(false));
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let stop_thread = stop.clone();
     let err_thread = error.clone();
-
-    // Bring up the RemoteDesktop portal backend. This triggers the
-    // cross-DE permission dialog (KDE / GNOME / Sway via xdg-desktop-portal)
-    // and blocks until the user either approves or dismisses it. Failure
-    // here is non-fatal: key remaps / macros / system actions continue to
-    // work; we just log and drop literal-character events.
-    let portal = match Portal::try_start() {
-        Ok(p) => {
-            eprintln!("[mapper] portal backend online");
-            Some(p)
-        }
-        Err(e) => {
-            eprintln!("[mapper] portal backend unavailable: {e}");
-            None
-        }
-    };
+    let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
 
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run(device_path, cfg, stop_thread, portal) {
+            if let Err(e) = run(device_path, cfg, stop_thread, ready_tx) {
                 eprintln!("[mapper] run_loop error: {e}");
                 if let Ok(mut slot) = err_thread.lock() {
                     *slot = Some(e);
@@ -161,6 +148,23 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
             }
         })
         .map_err(|e| format!("spawn thread: {e}"))?;
+
+    match ready_rx.recv_timeout(START_TIMEOUT) {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => {
+            let _ = join.join();
+            return Err(e);
+        }
+        Err(mpsc::RecvTimeoutError::Timeout) => {
+            stop.store(true, Ordering::SeqCst);
+            let _ = join.join();
+            return Err("mapper start timed out".into());
+        }
+        Err(mpsc::RecvTimeoutError::Disconnected) => {
+            let _ = join.join();
+            return Err("mapper worker exited before reporting readiness".into());
+        }
+    }
 
     Ok(Handle {
         stop,
@@ -173,7 +177,7 @@ fn run(
     device_path: String,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
-    portal: Option<Portal>,
+    ready_tx: mpsc::Sender<Result<(), String>>,
 ) -> Result<(), String> {
     let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
     device
@@ -193,7 +197,8 @@ fn run(
         .build()
         .map_err(|e| format!("uinput build: {e}"))?;
 
-    run_loop(device, virt, cfg, stop, portal)
+    let _ = ready_tx.send(Ok(()));
+    run_loop(device, virt, cfg, stop)
 }
 
 fn run_loop(
@@ -201,7 +206,6 @@ fn run_loop(
     mut virt: VirtualDevice,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
-    portal: Option<Portal>,
 ) -> Result<(), String> {
     use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
 
@@ -220,6 +224,20 @@ fn run_loop(
 
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
+    let portal: Arc<Mutex<Option<Portal>>> = Arc::new(Mutex::new(None));
+    let portal_init_slot = portal.clone();
+
+    let _ = thread::Builder::new()
+        .name("lhc-portal-init".into())
+        .spawn(move || match Portal::try_start() {
+            Ok(p) => {
+                eprintln!("[mapper] portal backend online");
+                if let Ok(mut slot) = portal_init_slot.lock() {
+                    *slot = Some(p);
+                }
+            }
+            Err(e) => eprintln!("[mapper] portal backend unavailable: {e}"),
+        });
 
     // Keep the BorrowedFd alive for the whole loop.
     let borrowed = unsafe { BorrowedFd::borrow_raw(fd) };
@@ -276,15 +294,11 @@ fn run_loop(
         }
 
         engine.tick(Instant::now(), &mut out_buf);
-        flush_out(&mut virt, portal.as_ref(), &mut out_buf)?;
+        flush_out(&mut virt, &portal, &mut out_buf)?;
     }
 
-    // Graceful shutdown: release anything still held.
     engine.shutdown(&mut out_buf);
-    flush_out(&mut virt, portal.as_ref(), &mut out_buf)?;
-    // Device is dropped here, which releases the grab automatically.
-    // Dropping `portal` joins the portal thread and closes the session.
-    drop(portal);
+    flush_out(&mut virt, &portal, &mut out_buf)?;
     Ok(())
 }
 
@@ -375,7 +389,7 @@ fn emit_chord_release(
 
 fn flush_out(
     virt: &mut VirtualDevice,
-    portal: Option<&Portal>,
+    portal: &Arc<Mutex<Option<Portal>>>,
     buf: &mut Vec<Out>,
 ) -> Result<(), String> {
     if buf.is_empty() {
@@ -440,13 +454,13 @@ fn flush_out(
                 run_sys_action(&action);
             }
             Out::Literal(text) => {
-                // Flush anything queued through uinput before handing the
-                // character off to the portal backend, so the order of
-                // emitted events matches the order engine produced them.
                 flush_events(virt, &mut events)?;
-                match portal {
-                    Some(p) => p.type_text(&text),
-                    None => eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text),
+                match portal.lock() {
+                    Ok(slot) => match slot.as_ref() {
+                        Some(p) => p.type_text(&text),
+                        None => eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text),
+                    },
+                    Err(_) => eprintln!("[mapper] literal {:?} dropped (portal state poisoned)", text),
                 }
             }
         }
@@ -565,7 +579,7 @@ fn call_dbus(call: &DbusCall) {
 
 fn run_macro(
     virt: &mut VirtualDevice,
-    portal: Option<&Portal>,
+    portal: &Arc<Mutex<Option<Portal>>>,
     steps: &[MacroStepItem],
     step_pause: Duration,
     mod_delay: Duration,
@@ -582,14 +596,16 @@ fn run_macro(
                 continue;
             }
             MacroStepItem::Literal(text) => {
-                // Literals go through the portal backend so they produce
-                // the right character regardless of the system layout.
-                // No modifiers and no mod_delay — fire the character and
-                // move on to the next macro step.
-                match portal {
-                    Some(p) => p.type_text(text),
-                    None => eprintln!(
-                        "[mapper] macro step literal {:?} dropped (portal unavailable)",
+                match portal.lock() {
+                    Ok(slot) => match slot.as_ref() {
+                        Some(p) => p.type_text(text),
+                        None => eprintln!(
+                            "[mapper] macro step literal {:?} dropped (portal unavailable)",
+                            text
+                        ),
+                    },
+                    Err(_) => eprintln!(
+                        "[mapper] macro step literal {:?} dropped (portal state poisoned)",
                         text
                     ),
                 }

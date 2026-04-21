@@ -21,6 +21,7 @@
 //   * event   `layout-changed`       -> LayoutInfo
 
 use serde::Serialize;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(target_os = "linux")]
 mod linux_gnome;
@@ -47,6 +48,16 @@ pub struct LayoutInfo {
     pub index: u32,
     /// Which backend produced this info.
     pub backend: &'static str,
+}
+
+static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
+
+pub fn stop_watcher() {
+    WATCHER_STOP.store(true, Ordering::SeqCst);
+}
+
+fn watcher_stop_requested() -> bool {
+    WATCHER_STOP.load(Ordering::SeqCst)
 }
 
 pub fn current() -> Result<Option<LayoutInfo>, String> {
@@ -80,6 +91,7 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
 /// Start a background watcher that emits `layout-changed` events.
 /// Safe to call once at app startup. No-op if no backend is available.
 pub fn start_watcher(app: tauri::AppHandle) {
+    WATCHER_STOP.store(false, Ordering::SeqCst);
     #[cfg(target_os = "linux")]
     {
         use crate::platform::linux::{detect, Desktop};
