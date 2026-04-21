@@ -31,6 +31,12 @@ trait SideEffects {
     fn run_system(&mut self, action: &SysAction);
 }
 
+trait LoopDriver {
+    fn now(&mut self) -> Instant;
+    fn wait(&mut self, timeout: Duration) -> Result<bool, String>;
+    fn fetch_key_events(&mut self) -> Result<Vec<(Key, bool)>, String>;
+}
+
 struct VirtualEventSink<'a> {
     virt: &'a mut VirtualDevice,
 }
@@ -69,6 +75,73 @@ impl SideEffects for RuntimeSideEffects<'_> {
 
     fn run_system(&mut self, action: &SysAction) {
         run_sys_action(action);
+    }
+}
+
+struct DeviceLoopDriver {
+    device: Device,
+}
+
+impl DeviceLoopDriver {
+    fn new(device: Device) -> Result<Self, String> {
+        let fd = device.as_raw_fd();
+        unsafe {
+            let flags = libc::fcntl(fd, libc::F_GETFL);
+            if flags < 0 {
+                return Err("fcntl F_GETFL failed".into());
+            }
+            if libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) < 0 {
+                return Err("fcntl F_SETFL O_NONBLOCK failed".into());
+            }
+        }
+        Ok(Self { device })
+    }
+}
+
+impl LoopDriver for DeviceLoopDriver {
+    fn now(&mut self) -> Instant {
+        Instant::now()
+    }
+
+    fn wait(&mut self, timeout: Duration) -> Result<bool, String> {
+        use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
+
+        let timeout_ms: u16 = timeout
+            .as_millis()
+            .min(u16::MAX as u128)
+            .try_into()
+            .unwrap_or(u16::MAX);
+        let borrowed = unsafe { BorrowedFd::borrow_raw(self.device.as_raw_fd()) };
+        let mut pfds = [PollFd::new(borrowed, PollFlags::POLLIN)];
+        match poll(&mut pfds, PollTimeout::from(timeout_ms)) {
+            Ok(_) => Ok(pfds[0]
+                .revents()
+                .map(|r| r.contains(PollFlags::POLLIN))
+                .unwrap_or(false)),
+            Err(nix::errno::Errno::EINTR) => Ok(false),
+            Err(e) => Err(format!("poll: {e}")),
+        }
+    }
+
+    fn fetch_key_events(&mut self) -> Result<Vec<(Key, bool)>, String> {
+        match self.device.fetch_events() {
+            Ok(iter) => {
+                let mut out = Vec::new();
+                for ev in iter {
+                    if ev.event_type() != EventType::KEY {
+                        continue;
+                    }
+                    let value = ev.value();
+                    if value == 2 {
+                        continue;
+                    }
+                    out.push((Key::new(ev.code()), value == 1));
+                }
+                Ok(out)
+            }
+            Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => Ok(Vec::new()),
+            Err(e) => Err(format!("fetch_events: {e}")),
+        }
     }
 }
 
@@ -249,30 +322,16 @@ fn run(
         .map_err(|e| format!("uinput build: {e}"))?;
 
     let _ = ready_tx.send(Ok(()));
-    run_loop(device, virt, cfg, stop)
+    let driver = DeviceLoopDriver::new(device)?;
+    run_loop(driver, virt, cfg, stop)
 }
 
-fn run_loop(
-    mut device: Device,
+fn run_loop<D: LoopDriver>(
+    mut driver: D,
     mut virt: VirtualDevice,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
 ) -> Result<(), String> {
-    use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
-
-    // Set O_NONBLOCK so fetch_events() returns EAGAIN when the kernel
-    // buffer is empty instead of blocking.
-    let fd = device.as_raw_fd();
-    unsafe {
-        let flags = libc::fcntl(fd, libc::F_GETFL);
-        if flags < 0 {
-            return Err("fcntl F_GETFL failed".into());
-        }
-        if libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) < 0 {
-            return Err("fcntl F_SETFL O_NONBLOCK failed".into());
-        }
-    }
-
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
     let portal: Arc<Mutex<Option<Portal>>> = Arc::new(Mutex::new(None));
@@ -290,66 +349,50 @@ fn run_loop(
             Err(e) => eprintln!("[mapper] portal backend unavailable: {e}"),
         });
 
-    // Keep the BorrowedFd alive for the whole loop.
-    let borrowed = unsafe { BorrowedFd::borrow_raw(fd) };
-
-    // Max sleep so we can notice `stop` being set promptly even without a deadline.
-    const MAX_WAIT: Duration = Duration::from_millis(100);
-
     while !stop.load(Ordering::SeqCst) {
-        let now = Instant::now();
-        let wait = engine
-            .next_deadline(now)
-            .map(|d| d.min(MAX_WAIT))
-            .unwrap_or(MAX_WAIT);
-
-        let timeout_ms: u16 = wait
-            .as_millis()
-            .min(u16::MAX as u128)
-            .try_into()
-            .unwrap_or(u16::MAX);
-        let mut pfds = [PollFd::new(borrowed, PollFlags::POLLIN)];
-        match poll(&mut pfds, PollTimeout::from(timeout_ms)) {
-            Ok(_) => {}
-            Err(nix::errno::Errno::EINTR) => continue,
-            Err(e) => return Err(format!("poll: {e}")),
-        }
-
-        let ready = pfds[0]
-            .revents()
-            .map(|r| r.contains(PollFlags::POLLIN))
-            .unwrap_or(false);
-
-        if ready {
-            match device.fetch_events() {
-                Ok(iter) => {
-                    for ev in iter {
-                        if ev.event_type() != EventType::KEY {
-                            continue;
-                        }
-                        // value: 0 = up, 1 = down, 2 = repeat
-                        let value = ev.value();
-                        if value == 2 {
-                            // Drop auto-repeats from the physical device; uinput
-                            // consumers can generate their own repeats from our
-                            // down events. Simpler + avoids double-firing.
-                            continue;
-                        }
-                        let key = Key::new(ev.code());
-                        engine.handle(key, value == 1, Instant::now(), &mut out_buf);
-                    }
-                }
-                Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
-                Err(e) => return Err(format!("fetch_events: {e}")),
-            }
-        }
-
-        engine.tick(Instant::now(), &mut out_buf);
-        flush_out(&mut virt, &portal, &mut out_buf)?;
+        process_iteration(&mut driver, &mut engine, &mut virt, &portal, &mut out_buf)?;
     }
 
     engine.shutdown(&mut out_buf);
     flush_out(&mut virt, &portal, &mut out_buf)?;
+    Ok(())
+}
+
+fn process_iteration<D: LoopDriver>(
+    driver: &mut D,
+    engine: &mut Engine,
+    virt: &mut VirtualDevice,
+    portal: &Arc<Mutex<Option<Portal>>>,
+    out_buf: &mut Vec<Out>,
+) -> Result<(), String> {
+    let mut sink = VirtualEventSink { virt };
+    let mut effects = RuntimeSideEffects { portal };
+    process_iteration_with(driver, engine, &mut sink, &mut effects, out_buf)
+}
+
+fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects>(
+    driver: &mut D,
+    engine: &mut Engine,
+    sink: &mut S,
+    effects: &mut E,
+    out_buf: &mut Vec<Out>,
+) -> Result<(), String> {
+    const MAX_WAIT: Duration = Duration::from_millis(100);
+
+    let now = driver.now();
+    let wait = engine
+        .next_deadline(now)
+        .map(|d| d.min(MAX_WAIT))
+        .unwrap_or(MAX_WAIT);
+
+    if driver.wait(wait)? {
+        for (key, down) in driver.fetch_key_events()? {
+            engine.handle(key, down, driver.now(), out_buf);
+        }
+    }
+
+    engine.tick(driver.now(), out_buf);
+    flush_out_with(sink, effects, out_buf)?;
     Ok(())
 }
 
@@ -654,12 +697,15 @@ fn run_macro<S: EventSink, E: SideEffects>(
 
 #[cfg(test)]
 mod tests {
-    use super::{flush_out_with, EventSink, SideEffects};
+    use super::{flush_out_with, process_iteration_with, EventSink, LoopDriver, SideEffects};
     use crate::mapper::action::{Keystroke, MacroStepItem};
-    use crate::mapper::engine::Out;
+    use crate::mapper::config::{ActionSpec, AppConfig, LayerKeymap, Rule, Settings};
+    use crate::mapper::engine::{Engine, Out};
     use crate::mapper::system::{DbusArg, DbusCall, SysAction, SysCommand};
     use evdev::{EventType, InputEvent, Key};
+    use std::collections::{HashMap, VecDeque};
     use std::time::Duration;
+    use std::time::Instant;
 
     #[derive(Default)]
     struct FakeSink {
@@ -717,6 +763,52 @@ mod tests {
 
     fn key_events(batch: &[(u16, i32)]) -> Vec<(u16, i32)> {
         batch.to_vec()
+    }
+
+    struct FakeDriver {
+        now_values: VecDeque<Instant>,
+        waits: VecDeque<Result<bool, String>>,
+        fetches: VecDeque<Result<Vec<(Key, bool)>, String>>,
+        seen_waits: Vec<Duration>,
+    }
+
+    impl FakeDriver {
+        fn new(
+            now_values: Vec<Instant>,
+            waits: Vec<Result<bool, String>>,
+            fetches: Vec<Result<Vec<(Key, bool)>, String>>,
+        ) -> Self {
+            Self {
+                now_values: now_values.into(),
+                waits: waits.into(),
+                fetches: fetches.into(),
+                seen_waits: Vec::new(),
+            }
+        }
+    }
+
+    impl LoopDriver for FakeDriver {
+        fn now(&mut self) -> Instant {
+            self.now_values.pop_front().expect("now value")
+        }
+
+        fn wait(&mut self, timeout: Duration) -> Result<bool, String> {
+            self.seen_waits.push(timeout);
+            self.waits.pop_front().expect("wait result")
+        }
+
+        fn fetch_key_events(&mut self) -> Result<Vec<(Key, bool)>, String> {
+            self.fetches.pop_front().expect("fetch result")
+        }
+    }
+
+    fn empty_cfg() -> AppConfig {
+        AppConfig {
+            rules: Vec::new(),
+            layer_keymaps: HashMap::new(),
+            macros: Vec::new(),
+            settings: Settings::default(),
+        }
     }
 
     #[test]
@@ -828,6 +920,88 @@ mod tests {
         assert_eq!(
             effects.sleeps,
             vec![Duration::from_millis(3), Duration::from_millis(3)]
+        );
+    }
+
+    #[test]
+    fn process_iteration_filters_repeats_at_driver_boundary_and_flushes_press_release() {
+        let start = Instant::now();
+        let mut driver = FakeDriver::new(
+            vec![start, start, start, start],
+            vec![Ok(true)],
+            vec![Ok(vec![(Key::KEY_A, true), (Key::KEY_A, false)])],
+        );
+        let mut engine = Engine::new(&empty_cfg());
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        let mut out_buf = Vec::new();
+
+        process_iteration_with(
+            &mut driver,
+            &mut engine,
+            &mut sink,
+            &mut effects,
+            &mut out_buf,
+        )
+        .expect("iteration");
+
+        assert_eq!(driver.seen_waits, vec![Duration::from_millis(100)]);
+        assert_eq!(sink.batches.len(), 1);
+        assert_eq!(
+            key_events(&sink.batches[0]),
+            vec![(Key::KEY_A.code(), 1), (Key::KEY_A.code(), 0)]
+        );
+        assert!(effects.texts.is_empty());
+        assert!(out_buf.is_empty());
+    }
+
+    #[test]
+    fn process_iteration_uses_tick_to_commit_hold_without_input_ready() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            id: "r_alt".into(),
+            key: "AltLeft".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("Escape".into()),
+            hold_action: ActionSpec::Action("ControlLeft".into()),
+            hold_timeout_ms: Some(10),
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        cfg.layer_keymaps.insert(
+            "base".into(),
+            LayerKeymap {
+                keys: HashMap::new(),
+            },
+        );
+
+        let mut engine = Engine::new(&cfg);
+        let mut pending = Vec::new();
+        let start = Instant::now();
+        engine.handle(Key::KEY_LEFTALT, true, start, &mut pending);
+
+        let mut driver = FakeDriver::new(
+            vec![start, start + Duration::from_millis(20)],
+            vec![Ok(false)],
+            Vec::new(),
+        );
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+
+        process_iteration_with(
+            &mut driver,
+            &mut engine,
+            &mut sink,
+            &mut effects,
+            &mut pending,
+        )
+        .expect("iteration");
+
+        assert_eq!(driver.seen_waits, vec![Duration::from_millis(10)]);
+        assert_eq!(sink.batches.len(), 1);
+        assert_eq!(
+            key_events(&sink.batches[0]),
+            vec![(Key::KEY_LEFTCTRL.code(), 1)]
         );
     }
 }
