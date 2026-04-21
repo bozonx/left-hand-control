@@ -27,6 +27,8 @@ pub mod linux;
 #[cfg(target_os = "linux")]
 use std::fs::{self, OpenOptions};
 #[cfg(target_os = "linux")]
+use std::path::Path;
+#[cfg(target_os = "linux")]
 use zbus::blocking::{Connection, Proxy};
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -92,33 +94,7 @@ pub fn info() -> PlatformInfo {
         let s = linux::detect();
         let key_interception = probe_linux_key_interception();
         let literal_injection = probe_linux_literal_injection();
-        let caps = Capabilities {
-            key_interception,
-            literal_injection,
-            layout_detection: CapabilityStatus {
-                supported: matches!(s.desktop, linux::Desktop::Kde),
-                available: matches!(s.desktop, linux::Desktop::Kde),
-                detail: None,
-            },
-            system_actions: CapabilityStatus {
-                supported: matches!(s.desktop, linux::Desktop::Kde),
-                available: matches!(s.desktop, linux::Desktop::Kde),
-                detail: None,
-            },
-        };
-        PlatformInfo {
-            os: os_kind(),
-            linux: Some(LinuxInfo {
-                desktop: s.desktop.label(),
-                session_type: s.session_type.label(),
-                xdg_current_desktop: s.xdg_current_desktop.clone(),
-                desktop_session: s.desktop_session.clone(),
-                has_wayland: s.wayland_display.is_some(),
-                has_x11: s.x11_display.is_some(),
-                has_sway_ipc: s.sway_sock.is_some(),
-            }),
-            capabilities: caps,
-        }
+        build_linux_platform_info(s, key_interception, literal_injection)
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -153,7 +129,47 @@ pub fn info() -> PlatformInfo {
 
 #[cfg(target_os = "linux")]
 fn probe_linux_key_interception() -> CapabilityStatus {
-    let event_result = fs::read_dir("/dev/input")
+    probe_linux_key_interception_paths(Path::new("/dev/input"), Path::new("/dev/uinput"))
+}
+
+#[cfg(target_os = "linux")]
+fn build_linux_platform_info(
+    s: linux::Session,
+    key_interception: CapabilityStatus,
+    literal_injection: CapabilityStatus,
+) -> PlatformInfo {
+    let caps = Capabilities {
+        key_interception,
+        literal_injection,
+        layout_detection: CapabilityStatus {
+            supported: matches!(s.desktop, linux::Desktop::Kde),
+            available: matches!(s.desktop, linux::Desktop::Kde),
+            detail: None,
+        },
+        system_actions: CapabilityStatus {
+            supported: matches!(s.desktop, linux::Desktop::Kde),
+            available: matches!(s.desktop, linux::Desktop::Kde),
+            detail: None,
+        },
+    };
+    PlatformInfo {
+        os: os_kind(),
+        linux: Some(LinuxInfo {
+            desktop: s.desktop.label(),
+            session_type: s.session_type.label(),
+            xdg_current_desktop: s.xdg_current_desktop.clone(),
+            desktop_session: s.desktop_session.clone(),
+            has_wayland: s.wayland_display.is_some(),
+            has_x11: s.x11_display.is_some(),
+            has_sway_ipc: s.sway_sock.is_some(),
+        }),
+        capabilities: caps,
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn probe_linux_key_interception_paths(input_dir: &Path, uinput_path: &Path) -> CapabilityStatus {
+    let event_result = fs::read_dir(input_dir)
         .map_err(|e| format!("cannot read /dev/input: {e}"))
         .and_then(|dir| {
             let mut event_paths = dir
@@ -185,7 +201,7 @@ fn probe_linux_key_interception() -> CapabilityStatus {
     let uinput_result = OpenOptions::new()
         .read(true)
         .write(true)
-        .open("/dev/uinput")
+        .open(uinput_path)
         .map(|_| ())
         .map_err(|e| format!("cannot open /dev/uinput read-write: {e}"));
 
@@ -215,15 +231,34 @@ fn probe_linux_key_interception() -> CapabilityStatus {
 
 #[cfg(target_os = "linux")]
 fn probe_linux_literal_injection() -> CapabilityStatus {
+    probe_linux_literal_injection_with(
+        || Connection::session().map_err(|e| e.to_string()),
+        |conn| {
+            Proxy::new(
+                conn,
+                "org.freedesktop.portal.Desktop",
+                "/org/freedesktop/portal/desktop",
+                "org.freedesktop.portal.RemoteDesktop",
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+        },
+    )
+}
+
+#[cfg(target_os = "linux")]
+fn probe_linux_literal_injection_with<Connect, BuildProxy, Conn>(
+    connect_session: Connect,
+    build_proxy: BuildProxy,
+) -> CapabilityStatus
+where
+    Connect: FnOnce() -> Result<Conn, String>,
+    BuildProxy: FnOnce(&Conn) -> Result<(), String>,
+{
     let detail_suffix = "successful text injection still requires a RemoteDesktop portal handshake and user approval";
-    match Connection::session() {
-        Ok(conn) => match Proxy::new(
-            &conn,
-            "org.freedesktop.portal.Desktop",
-            "/org/freedesktop/portal/desktop",
-            "org.freedesktop.portal.RemoteDesktop",
-        ) {
-            Ok(_) => CapabilityStatus {
+    match connect_session() {
+        Ok(conn) => match build_proxy(&conn) {
+            Ok(()) => CapabilityStatus {
                 supported: true,
                 available: true,
                 detail: Some(detail_suffix.into()),
@@ -241,5 +276,103 @@ fn probe_linux_literal_injection() -> CapabilityStatus {
                 "cannot connect to session bus: {e}; {detail_suffix}"
             )),
         },
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod tests {
+    use super::{
+        build_linux_platform_info, probe_linux_key_interception_paths,
+        probe_linux_literal_injection_with,
+    };
+    use crate::platform::linux::{Desktop, Session, SessionType};
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    struct TempDir {
+        path: PathBuf,
+    }
+
+    impl TempDir {
+        fn new(prefix: &str) -> Self {
+            let nanos = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "lhc-platform-{prefix}-{}-{nanos}",
+                std::process::id()
+            ));
+            fs::create_dir_all(&path).expect("create temp dir");
+            Self { path }
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.path);
+        }
+    }
+
+    #[test]
+    fn key_interception_probe_reports_missing_devices() {
+        let temp = TempDir::new("probe-empty");
+        let status = probe_linux_key_interception_paths(&temp.path, &temp.path.join("uinput"));
+        assert!(status.supported);
+        assert!(!status.available);
+        assert!(status
+            .detail
+            .as_deref()
+            .unwrap_or_default()
+            .contains("no /dev/input/event* devices found"));
+    }
+
+    #[test]
+    fn literal_injection_probe_can_be_tested_without_dbus() {
+        let status = probe_linux_literal_injection_with(
+            || Ok::<_, String>("session"),
+            |_| Err::<(), _>("missing portal".into()),
+        );
+        assert!(status.supported);
+        assert!(!status.available);
+        assert!(status
+            .detail
+            .as_deref()
+            .unwrap_or_default()
+            .contains("portal backend unavailable"));
+    }
+
+    #[test]
+    fn linux_platform_info_builder_preserves_session_details() {
+        let info = build_linux_platform_info(
+            Session {
+                desktop: Desktop::Kde,
+                session_type: SessionType::Wayland,
+                xdg_current_desktop: "KDE".into(),
+                desktop_session: "plasma".into(),
+                wayland_display: Some("wayland-0".into()),
+                x11_display: None,
+                sway_sock: None,
+            },
+            super::CapabilityStatus {
+                supported: true,
+                available: true,
+                detail: None,
+            },
+            super::CapabilityStatus {
+                supported: true,
+                available: false,
+                detail: Some("portal".into()),
+            },
+        );
+
+        let linux = info.linux.expect("linux info");
+        assert_eq!(linux.desktop, "KDE Plasma");
+        assert_eq!(linux.session_type, "wayland");
+        assert!(linux.has_wayland);
+        assert!(!linux.has_x11);
+        assert!(info.capabilities.layout_detection.available);
+        assert!(!info.capabilities.literal_injection.available);
     }
 }

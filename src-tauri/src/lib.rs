@@ -1,4 +1,3 @@
-use std::fs;
 use std::path::PathBuf;
 
 use tauri::{
@@ -10,26 +9,7 @@ use tauri::{
 mod layout;
 mod mapper;
 mod platform;
-
-fn config_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    app.path()
-        .app_config_dir()
-        .map_err(|e| format!("resolve app_config_dir: {e}"))
-}
-
-fn config_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    Ok(config_dir(app)?.join("config.json"))
-}
-
-fn data_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    app.path()
-        .app_data_dir()
-        .map_err(|e| format!("resolve app_data_dir: {e}"))
-}
-
-fn layouts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    Ok(data_dir(app)?.join("layouts"))
-}
+mod storage;
 
 #[cfg(target_os = "linux")]
 fn legacy_config_dir() -> Option<PathBuf> {
@@ -43,148 +23,56 @@ fn legacy_config_dir() -> Option<PathBuf> {
     None
 }
 
-fn migrate_file_if_missing(from: &PathBuf, to: &PathBuf) -> Result<(), String> {
-    if to.exists() || !from.exists() {
-        return Ok(());
-    }
-    if let Some(parent) = to.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("create_dir_all: {e}"))?;
-    }
-    fs::copy(from, to).map_err(|e| format!("copy {} -> {}: {e}", from.display(), to.display()))?;
-    Ok(())
-}
-
-fn migrate_layouts_if_missing(from_dir: &PathBuf, to_dir: &PathBuf) -> Result<(), String> {
-    if !from_dir.exists() {
-        return Ok(());
-    }
-    fs::create_dir_all(to_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-    for entry in fs::read_dir(from_dir).map_err(|e| format!("read_dir: {e}"))? {
-        let entry = entry.map_err(|e| format!("dir entry: {e}"))?;
-        let from = entry.path();
-        if !from.is_file() {
-            continue;
-        }
-        let to = to_dir.join(entry.file_name());
-        migrate_file_if_missing(&from, &to)?;
-    }
-    Ok(())
-}
-
-fn ensure_app_storage(app: &tauri::AppHandle) -> Result<(), String> {
-    let config_dir = config_dir(app)?;
-    let data_dir = data_dir(app)?;
-    fs::create_dir_all(&config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-    fs::create_dir_all(&data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-
-    if let Some(legacy_dir) = legacy_config_dir() {
-        migrate_file_if_missing(
-            &legacy_dir.join("config.json"),
-            &config_dir.join("config.json"),
-        )?;
-        migrate_layouts_if_missing(&legacy_dir.join("layouts"), &data_dir.join("layouts"))?;
-    }
-
-    Ok(())
-}
-
-// Keep layout names filesystem-safe: letters, digits, '-' '_' '.' and space.
-// Everything else is replaced with '_'. Also strips leading dots to avoid
-// hidden files and collapses empty names.
-fn sanitize_layout_name(name: &str) -> Result<String, String> {
-    let trimmed = name.trim();
-    if trimmed.is_empty() {
-        return Err("layout name is empty".into());
-    }
-    let mut out = String::with_capacity(trimmed.len());
-    for ch in trimmed.chars() {
-        if ch.is_alphanumeric() || matches!(ch, '-' | '_' | '.' | ' ') {
-            out.push(ch);
-        } else {
-            out.push('_');
-        }
-    }
-    let out = out.trim_start_matches('.').trim().to_string();
-    if out.is_empty() {
-        return Err("layout name has no valid characters".into());
-    }
-    Ok(out)
-}
-
-fn layout_path(app: &tauri::AppHandle, name: &str) -> Result<PathBuf, String> {
-    let safe = sanitize_layout_name(name)?;
-    Ok(layouts_dir(app)?.join(format!("{safe}.yaml")))
+fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("resolve app_config_dir: {e}"))?;
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("resolve app_data_dir: {e}"))?;
+    Ok(storage::StoragePaths::new(
+        config_dir,
+        data_dir,
+        legacy_config_dir(),
+    ))
 }
 
 #[tauri::command]
 fn get_config_path(app: tauri::AppHandle) -> Result<String, String> {
-    ensure_app_storage(&app)?;
-    Ok(config_path(&app)?.to_string_lossy().to_string())
+    let storage = app_storage(&app)?;
+    storage.ensure()?;
+    Ok(storage.config_path().to_string_lossy().to_string())
 }
 
 #[tauri::command]
 fn load_config(app: tauri::AppHandle) -> Result<String, String> {
-    ensure_app_storage(&app)?;
-    let path = config_path(&app)?;
-    if !path.exists() {
-        return Ok(String::new());
-    }
-    fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
+    app_storage(&app)?.load_config()
 }
 
 #[tauri::command]
 fn save_config(app: tauri::AppHandle, contents: String) -> Result<(), String> {
-    ensure_app_storage(&app)?;
-    let dir = config_dir(&app)?;
-    fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
-    let path = dir.join("config.json");
-    let tmp = dir.join("config.json.tmp");
-    fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
-    fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
-    Ok(())
+    app_storage(&app)?.save_config(&contents)
 }
 
 // --- User layouts ------------------------------------------------------------
 
 #[tauri::command]
 fn get_layouts_dir(app: tauri::AppHandle) -> Result<String, String> {
-    ensure_app_storage(&app)?;
-    Ok(layouts_dir(&app)?.to_string_lossy().to_string())
+    let storage = app_storage(&app)?;
+    storage.ensure()?;
+    Ok(storage.layouts_dir().to_string_lossy().to_string())
 }
 
 #[tauri::command]
 fn list_user_layouts(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    ensure_app_storage(&app)?;
-    let dir = layouts_dir(&app)?;
-    if !dir.exists() {
-        return Ok(Vec::new());
-    }
-    let mut out = Vec::new();
-    for entry in fs::read_dir(&dir).map_err(|e| format!("read_dir: {e}"))? {
-        let entry = entry.map_err(|e| format!("dir entry: {e}"))?;
-        let p = entry.path();
-        if !p.is_file() {
-            continue;
-        }
-        if p.extension().and_then(|s| s.to_str()) != Some("yaml") {
-            continue;
-        }
-        if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
-            out.push(stem.to_string());
-        }
-    }
-    out.sort_unstable();
-    Ok(out)
+    app_storage(&app)?.list_user_layouts()
 }
 
 #[tauri::command]
 fn load_user_layout(app: tauri::AppHandle, name: String) -> Result<String, String> {
-    ensure_app_storage(&app)?;
-    let path = layout_path(&app, &name)?;
-    if !path.exists() {
-        return Err(format!("layout '{name}' not found"));
-    }
-    fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
+    app_storage(&app)?.load_user_layout(&name)
 }
 
 #[tauri::command]
@@ -193,25 +81,12 @@ fn save_user_layout(
     name: String,
     contents: String,
 ) -> Result<String, String> {
-    ensure_app_storage(&app)?;
-    let dir = layouts_dir(&app)?;
-    fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
-    let safe = sanitize_layout_name(&name)?;
-    let path = dir.join(format!("{safe}.yaml"));
-    let tmp = dir.join(format!("{safe}.yaml.tmp"));
-    fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
-    fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
-    Ok(safe)
+    app_storage(&app)?.save_user_layout(&name, &contents)
 }
 
 #[tauri::command]
 fn delete_user_layout(app: tauri::AppHandle, name: String) -> Result<(), String> {
-    ensure_app_storage(&app)?;
-    let path = layout_path(&app, &name)?;
-    if path.exists() {
-        fs::remove_file(&path).map_err(|e| format!("remove_file: {e}"))?;
-    }
-    Ok(())
+    app_storage(&app)?.delete_user_layout(&name)
 }
 
 // --- Mapper commands ---------------------------------------------------------

@@ -27,23 +27,23 @@ pub fn start_watcher(app: AppHandle) {
     let _ = thread::Builder::new()
         .name("layout-kde-watcher".into())
         .spawn(move || {
-        let mut last = None;
-        while !super::watcher_stop_requested() {
-            match current() {
-                Ok(Some(info)) => {
-                    if last.as_ref() != Some(&info) {
-                        if let Err(e) = app.emit("layout-changed", info.clone()) {
-                            eprintln!("[layout/kde] emit error: {e}");
+            let mut last = None;
+            while !super::watcher_stop_requested() {
+                match current() {
+                    Ok(Some(info)) => {
+                        if last.as_ref() != Some(&info) {
+                            if let Err(e) = app.emit("layout-changed", info.clone()) {
+                                eprintln!("[layout/kde] emit error: {e}");
+                            }
+                            last = Some(info);
                         }
-                        last = Some(info);
                     }
+                    Ok(None) => {}
+                    Err(e) => eprintln!("[layout/kde] poll error: {e}"),
                 }
-                Ok(None) => {}
-                Err(e) => eprintln!("[layout/kde] poll error: {e}"),
+                thread::sleep(Duration::from_secs(1));
             }
-            thread::sleep(Duration::from_secs(1));
-        }
-    });
+        });
 }
 
 fn current_with_conn(conn: &Connection) -> Result<Option<LayoutInfo>, String> {

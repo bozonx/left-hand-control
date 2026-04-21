@@ -458,9 +458,14 @@ fn flush_out(
                 match portal.lock() {
                     Ok(slot) => match slot.as_ref() {
                         Some(p) => p.type_text(&text),
-                        None => eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text),
+                        None => {
+                            eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text)
+                        }
                     },
-                    Err(_) => eprintln!("[mapper] literal {:?} dropped (portal state poisoned)", text),
+                    Err(_) => eprintln!(
+                        "[mapper] literal {:?} dropped (portal state poisoned)",
+                        text
+                    ),
                 }
             }
         }
