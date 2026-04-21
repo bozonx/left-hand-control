@@ -11,6 +11,7 @@ import {
   loadBuiltinLayout,
 } from '~/utils/layoutPresets'
 import { localeDisplayName } from '~/i18n'
+import { usePlatformInfo } from '~/composables/usePlatformInfo'
 
 interface PendingApply {
   kind: 'entry' | 'empty'
@@ -30,6 +31,7 @@ export function useSettingsScreen() {
   } = useConfig()
   const library = useLayoutLibrary()
   const mapper = useMapper()
+  const platform = usePlatformInfo()
   const theme = useAppTheme()
   const appLocale = useAppLocale()
   const { t } = useI18n()
@@ -204,6 +206,7 @@ export function useSettingsScreen() {
     await Promise.all([
       mapper.refreshDevices(),
       mapper.refreshStatus(),
+      platform.refresh(),
       library.refresh(),
     ])
   })
@@ -215,6 +218,7 @@ export function useSettingsScreen() {
     isLayoutDirty,
     library,
     mapper,
+    platform,
     theme,
     appLocale,
     appearanceItems,

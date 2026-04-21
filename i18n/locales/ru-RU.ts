@@ -213,6 +213,22 @@ export default {
     launchOnStartupHint:
       'Пока не реализовано — переключатель сохраняется в конфиг, но не регистрирует autostart.',
     stubBadge: 'Заглушка',
+    platformTitle: 'Диагностика платформы',
+    platformHint:
+      'Показывает отдельно поддержку backend и текущую доступность в рантайме, чтобы UI не путал «реализовано» с «можно использовать прямо сейчас».',
+    platformOs: 'ОС',
+    platformSession: 'Сессия',
+    platformUnavailable: 'Диагностика платформы доступна только в desktop-сборке.',
+    supportedYes: 'поддерживается',
+    supportedNo: 'не поддерживается',
+    availableNow: 'доступно сейчас',
+    unavailableNow: 'недоступно сейчас',
+    platformCapabilities: {
+      keyInterception: 'Перехват клавиатуры',
+      literalInjection: 'Ввод литералов',
+      layoutDetection: 'Определение раскладки',
+      systemActions: 'Системные действия',
+    },
     holdTimeout: 'Hold timeout по умолчанию, мс',
     holdTimeoutHint:
       'Определение одиночного нажатия vs удержания слоя. Если клавиша отпущена до истечения — срабатывает tap action, если удерживается дольше — активируется слой. Используется правилами, где не задано собственное значение.',

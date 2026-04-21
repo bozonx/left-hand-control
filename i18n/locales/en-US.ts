@@ -211,6 +211,22 @@ export default {
     launchOnStartupHint:
       'Not yet implemented — the switch is saved in config but does not register autostart.',
     stubBadge: 'Stub',
+    platformTitle: 'Platform diagnostics',
+    platformHint:
+      'Shows backend support separately from runtime availability, so the UI does not confuse "implemented" with "usable right now".',
+    platformOs: 'OS',
+    platformSession: 'Session',
+    platformUnavailable: 'Platform diagnostics are available only in the desktop build.',
+    supportedYes: 'supported',
+    supportedNo: 'not supported',
+    availableNow: 'available now',
+    unavailableNow: 'unavailable now',
+    platformCapabilities: {
+      keyInterception: 'Key interception',
+      literalInjection: 'Literal injection',
+      layoutDetection: 'Layout detection',
+      systemActions: 'System actions',
+    },
     holdTimeout: 'Default hold timeout, ms',
     holdTimeoutHint:
       'Decides single tap vs. layer hold. If the key is released before the timeout — the tap action fires; if held longer — the layer activates. Used by rules that do not define their own value.',

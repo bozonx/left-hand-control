@@ -27,6 +27,11 @@
 #[cfg(target_os = "linux")]
 pub mod linux;
 
+#[cfg(target_os = "linux")]
+use std::fs::{self, OpenOptions};
+#[cfg(target_os = "linux")]
+use zbus::blocking::{Connection, Proxy};
+
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PlatformInfo {
     /// "linux", "windows", "macos", or "unknown".
@@ -51,10 +56,18 @@ pub struct LinuxInfo {
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Capabilities {
-    pub key_interception: bool,
-    pub literal_injection: bool,
-    pub layout_detection: bool,
-    pub system_actions: bool,
+    pub key_interception: CapabilityStatus,
+    pub literal_injection: CapabilityStatus,
+    pub layout_detection: CapabilityStatus,
+    pub system_actions: CapabilityStatus,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CapabilityStatus {
+    pub supported: bool,
+    pub available: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
 }
 
 pub fn os_kind() -> &'static str {
@@ -80,16 +93,21 @@ pub fn info() -> PlatformInfo {
     #[cfg(target_os = "linux")]
     {
         let s = linux::detect();
+        let key_interception = probe_linux_key_interception();
+        let literal_injection = probe_linux_literal_injection();
         let caps = Capabilities {
-            // evdev + uinput works on any Linux with the right perms.
-            key_interception: true,
-            // xdg-desktop-portal RemoteDesktop — available on KDE / GNOME / Sway
-            // when the user-side portal pieces are installed.
-            literal_injection: true,
-            // Layout detection: only KDE has a real backend right now.
-            layout_detection: matches!(s.desktop, linux::Desktop::Kde),
-            // System actions (switchDesktopN, …): only KDE right now.
-            system_actions: matches!(s.desktop, linux::Desktop::Kde),
+            key_interception,
+            literal_injection,
+            layout_detection: CapabilityStatus {
+                supported: matches!(s.desktop, linux::Desktop::Kde),
+                available: matches!(s.desktop, linux::Desktop::Kde),
+                detail: None,
+            },
+            system_actions: CapabilityStatus {
+                supported: matches!(s.desktop, linux::Desktop::Kde),
+                available: matches!(s.desktop, linux::Desktop::Kde),
+                detail: None,
+            },
         };
         PlatformInfo {
             os: os_kind(),
@@ -111,11 +129,120 @@ pub fn info() -> PlatformInfo {
             os: os_kind(),
             linux: None,
             capabilities: Capabilities {
-                key_interception: false,
-                literal_injection: false,
-                layout_detection: false,
-                system_actions: false,
+                key_interception: CapabilityStatus {
+                    supported: false,
+                    available: false,
+                    detail: None,
+                },
+                literal_injection: CapabilityStatus {
+                    supported: false,
+                    available: false,
+                    detail: None,
+                },
+                layout_detection: CapabilityStatus {
+                    supported: false,
+                    available: false,
+                    detail: None,
+                },
+                system_actions: CapabilityStatus {
+                    supported: false,
+                    available: false,
+                    detail: None,
+                },
             },
         }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn probe_linux_key_interception() -> CapabilityStatus {
+    let event_result = fs::read_dir("/dev/input")
+        .map_err(|e| format!("cannot read /dev/input: {e}"))
+        .and_then(|dir| {
+            let mut event_paths = dir
+                .filter_map(|entry| entry.ok())
+                .map(|entry| entry.path())
+                .filter(|path| {
+                    path.file_name()
+                        .and_then(|name| name.to_str())
+                        .map(|name| name.starts_with("event"))
+                        .unwrap_or(false)
+                })
+                .collect::<Vec<_>>();
+            event_paths.sort();
+
+            if event_paths.is_empty() {
+                return Err("no /dev/input/event* devices found".into());
+            }
+
+            if event_paths
+                .iter()
+                .any(|path| OpenOptions::new().read(true).open(path).is_ok())
+            {
+                Ok(())
+            } else {
+                Err("cannot open any /dev/input/event* device for reading".into())
+            }
+        });
+
+    let uinput_result = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/uinput")
+        .map(|_| ())
+        .map_err(|e| format!("cannot open /dev/uinput read-write: {e}"));
+
+    match (event_result, uinput_result) {
+        (Ok(()), Ok(())) => CapabilityStatus {
+            supported: true,
+            available: true,
+            detail: None,
+        },
+        (Err(event_err), Ok(())) => CapabilityStatus {
+            supported: true,
+            available: false,
+            detail: Some(event_err),
+        },
+        (Ok(()), Err(uinput_err)) => CapabilityStatus {
+            supported: true,
+            available: false,
+            detail: Some(uinput_err),
+        },
+        (Err(event_err), Err(uinput_err)) => CapabilityStatus {
+            supported: true,
+            available: false,
+            detail: Some(format!("{event_err}; {uinput_err}")),
+        },
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn probe_linux_literal_injection() -> CapabilityStatus {
+    let detail_suffix = "successful text injection still requires a RemoteDesktop portal handshake and user approval";
+    match Connection::session() {
+        Ok(conn) => match Proxy::new(
+            &conn,
+            "org.freedesktop.portal.Desktop",
+            "/org/freedesktop/portal/desktop",
+            "org.freedesktop.portal.RemoteDesktop",
+        ) {
+            Ok(_) => CapabilityStatus {
+                supported: true,
+                available: true,
+                detail: Some(detail_suffix.into()),
+            },
+            Err(e) => CapabilityStatus {
+                supported: true,
+                available: false,
+                detail: Some(format!("portal backend unavailable: {e}; {detail_suffix}")),
+            },
+        },
+        Err(e) => CapabilityStatus {
+            supported: true,
+            available: false,
+            detail: Some(format!(
+                "cannot connect to session bus: {e}; {detail_suffix}"
+            )),
+        },
     }
 }

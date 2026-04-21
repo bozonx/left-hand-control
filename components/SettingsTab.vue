@@ -3,6 +3,7 @@ import MapperCard from '~/components/features/settings/MapperCard.vue'
 import GeneralCard from '~/components/features/settings/GeneralCard.vue'
 import LayoutsLibraryCard from '~/components/features/settings/LayoutsLibraryCard.vue'
 import ConfigPathCard from '~/components/features/settings/ConfigPathCard.vue'
+import PlatformCard from '~/components/features/settings/PlatformCard.vue'
 const {
   config,
   configPath,
@@ -10,6 +11,7 @@ const {
   isLayoutDirty,
   library,
   mapper,
+  platform,
   theme,
   appLocale,
   appearanceItems,
@@ -56,6 +58,8 @@ const { t } = useI18n()
       :appearance-items="appearanceItems"
       :locale-items="localeItems"
     />
+
+    <PlatformCard :platform="platform" />
 
     <LayoutsLibraryCard
       :entries="library.entries.value"

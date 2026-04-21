@@ -78,7 +78,10 @@ fn ensure_app_storage(app: &tauri::AppHandle) -> Result<(), String> {
     fs::create_dir_all(&data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
 
     if let Some(legacy_dir) = legacy_config_dir() {
-        migrate_file_if_missing(&legacy_dir.join("config.json"), &config_dir.join("config.json"))?;
+        migrate_file_if_missing(
+            &legacy_dir.join("config.json"),
+            &config_dir.join("config.json"),
+        )?;
         migrate_layouts_if_missing(&legacy_dir.join("layouts"), &data_dir.join("layouts"))?;
     }
 
@@ -185,7 +188,11 @@ fn load_user_layout(app: tauri::AppHandle, name: String) -> Result<String, Strin
 }
 
 #[tauri::command]
-fn save_user_layout(app: tauri::AppHandle, name: String, contents: String) -> Result<String, String> {
+fn save_user_layout(
+    app: tauri::AppHandle,
+    name: String,
+    contents: String,
+) -> Result<String, String> {
     ensure_app_storage(&app)?;
     let dir = layouts_dir(&app)?;
     fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
