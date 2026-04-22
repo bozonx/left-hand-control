@@ -4,5 +4,10 @@ export default defineAppConfig({
       primary: 'sky',
       neutral: 'zinc',
     },
+    formField: {
+      slots: {
+        label: 'text-(--ui-text-muted)'
+      }
+    }
   },
 })
