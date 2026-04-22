@@ -39,6 +39,8 @@ pnpm tauri:dev
 
 This starts the Nuxt dev server on the port specified in `.env` (default `http://localhost:3000`) and launches the Tauri window pointing at it.
 
+Development mode is supported on Linux only. The current `pnpm dev` / `pnpm tauri:dev` scripts are not intended to work on Windows.
+
 ## Run the web UI only (browser)
 
 ```bash

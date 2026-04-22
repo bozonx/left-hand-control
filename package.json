@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "set -a; . ./.env; set +a; nuxt dev",
+    "dev": "dotenv -e .env -- nuxt dev",
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "nuxt prepare",
     "tauri": "tauri",
-    "tauri:dev": "set -a; . ./.env; set +a; tauri dev --config \"{\\\"build\\\":{\\\"devUrl\\\":\\\"http://localhost:${PORT:-3000}\\\"},\\\"app\\\":{\\\"security\\\":{\\\"csp\\\":\\\"default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://localhost:${PORT:-3000} ws://localhost:${PORT:-3000} https://api.iconify.design; img-src 'self' asset: http://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self' asset: http://asset.localhost data:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'\\\"}}}\"",
+    "tauri:dev": "dotenv -e .env -- sh -c 'tauri dev --config \"{\\\"build\\\":{\\\"devUrl\\\":\\\"http://localhost:${PORT:-3000}\\\"},\\\"app\\\":{\\\"security\\\":{\\\"csp\\\":\\\"default-src '\\''self'\\'' ipc: http://ipc.localhost; connect-src '\\''self'\\'' ipc: http://ipc.localhost http://localhost:${PORT:-3000} ws://localhost:${PORT:-3000} https://api.iconify.design; img-src '\\''self'\\'' asset: http://asset.localhost blob: data:; style-src '\\''self'\\'' '\\''unsafe-inline'\\''; font-src '\\''self'\\'' asset: http://asset.localhost data:; script-src '\\''self'\\'' '\\''unsafe-inline'\\'' '\\''wasm-unsafe-eval'\\''\\\"}}}\"'",
     "tauri:build": "cross-env NO_STRIP=true tauri build"
   },
   "dependencies": {
@@ -36,6 +36,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.6.0",
     "@vue/test-utils": "^2.4.6",
+    "dotenv-cli": "^8.0.0",
     "cross-env": "^10.1.0",
     "happy-dom": "^20.9.0",
     "typescript": "^6.0.3",
