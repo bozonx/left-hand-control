@@ -19,6 +19,11 @@ Currently, only **Linux** is supported.
   sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev \
     libssl-dev libayatana-appindicator3-dev librsvg2-dev
   ```
+- Linux-only system packages (Arch/Manjaro example):
+  ```bash
+  sudo pacman -S webkit2gtk-4.1 base-devel curl wget file libxdo \
+    openssl libappindicator-gtk3 librsvg fuse2
+  ```
 
 ## Install
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Left Hand Control",
+  "productName": "left-hand-control",
   "version": "0.1.0",
   "identifier": "dev.bozonx.left-hand-control",
   "build": {
@@ -35,6 +35,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "shortDescription": "Keyboard layout mapper for professionals",
+    "longDescription": "Desktop application that proposes ergonomic layouts biased toward left-hand control for professionals.",
+    "category": "Utility",
+    "license": "MIT",
     "linux": {
       "deb": {
         "depends": [

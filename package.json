@@ -17,7 +17,7 @@
     "postinstall": "nuxt prepare",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "cross-env NO_STRIP=true tauri build"
   },
   "dependencies": {
     "@nuxt/ui": "^3.0.0",
@@ -30,12 +30,13 @@
     "vue-router": "^4.4.0"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.0",
     "@nuxt/test-utils": "^4.0.2",
     "@tauri-apps/cli": "^2.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.6.0",
     "@vue/test-utils": "^2.4.6",
-    "@iconify-json/lucide": "^1.2.0",
+    "cross-env": "^10.1.0",
     "happy-dom": "^20.9.0",
     "typescript": "^5.6.0",
     "vitest": "^4.1.4"
