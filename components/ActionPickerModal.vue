@@ -75,6 +75,14 @@ function apply() {
   modalOpen.value = false
 }
 
+function pickAndApply(value: string) {
+  draft.value = value
+  if (props.requireValue && !value.trim()) return
+  model.value = value.trim()
+  closeReason.value = 'apply'
+  modalOpen.value = false
+}
+
 function clear() {
   draft.value = ''
   model.value = ''
@@ -119,7 +127,11 @@ function cancel() {
     :ui="{ content: 'max-w-3xl' }"
   >
     <template #body>
-      <ActionPickerBody v-model="draft" :key-only="keyOnly" />
+      <ActionPickerBody
+        v-model="draft"
+        :key-only="keyOnly"
+        @pick="pickAndApply"
+      />
     </template>
     <template #footer>
       <div class="flex justify-between w-full gap-2">

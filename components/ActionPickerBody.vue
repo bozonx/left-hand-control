@@ -12,6 +12,10 @@ const props = defineProps<{
   keyOnly?: boolean
 }>()
 
+const emit = defineEmits<{
+  pick: [value: string]
+}>()
+
 const draft = defineModel<string>({ default: '' })
 
 const { macros } = useMacros()
@@ -74,19 +78,40 @@ const categoryItems = computed(() => {
   return cat?.items ?? []
 })
 
+const showPhysicalKeyHint = computed(() =>
+  ['letters', 'symbols'].includes(activeCategory.value),
+)
+
+const showChordHint = computed(() => props.keyOnly)
+
+const listGridClass = computed(() =>
+  ['macros', 'system-macros', 'system'].includes(activeCategory.value)
+    ? 'grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-80 overflow-y-auto pr-1'
+    : 'grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-80 overflow-y-auto pr-1',
+)
+
 function pick(item: ActionItem) {
   draft.value = item.value
+  emit('pick', item.value)
 }
 </script>
 
 <template>
   <div class="space-y-4">
     <UFormField :label="$t('picker.currentValue')">
-      <UInput
-        v-model="draft"
-        :placeholder="$t('picker.valuePh')"
-        class="w-full font-mono"
-      />
+      <div class="space-y-2">
+        <UInput
+          v-model="draft"
+          :placeholder="$t('picker.valuePh')"
+          class="w-full font-mono"
+        />
+        <p
+          v-if="showChordHint"
+          class="text-xs text-(--ui-text-muted)"
+        >
+          {{ $t('picker.chordHint') }}
+        </p>
+      </div>
     </UFormField>
 
     <div class="flex flex-wrap gap-1.5 border-b border-(--ui-border) pb-2">
@@ -120,7 +145,7 @@ function pick(item: ActionItem) {
     </div>
     <div
       v-else
-      class="grid grid-cols-4 gap-1.5 max-h-80 overflow-y-auto pr-1"
+      :class="listGridClass"
     >
       <button
         v-for="item in categoryItems"
@@ -141,5 +166,12 @@ function pick(item: ActionItem) {
         </div>
       </button>
     </div>
+
+    <p
+      v-if="showPhysicalKeyHint"
+      class="text-xs text-(--ui-text-muted)"
+    >
+      {{ $t('picker.physicalKeyHint') }}
+    </p>
   </div>
 </template>

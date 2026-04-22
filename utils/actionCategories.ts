@@ -41,10 +41,19 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
     ]),
   },
   {
-    id: 'nav',
-    labelKey: 'categories.nav',
-    icon: 'i-lucide-navigation',
-    items: k(['Left', 'Right', 'Up', 'Down', 'Home', 'End', 'PageUp', 'PageDown']),
+    id: 'modifiers',
+    labelKey: 'categories.modifiers',
+    icon: 'i-lucide-keyboard',
+    items: k([
+      'ShiftLeft',
+      'ShiftRight',
+      'ControlLeft',
+      'ControlRight',
+      'AltLeft',
+      'AltRight',
+      'MetaLeft',
+      'MetaRight',
+    ]),
   },
   {
     id: 'letters',
@@ -72,6 +81,12 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
     }),
   },
   {
+    id: 'nav',
+    labelKey: 'categories.nav',
+    icon: 'i-lucide-navigation',
+    items: k(['Left', 'Right', 'Up', 'Down', 'Home', 'End', 'PageUp', 'PageDown']),
+  },
+  {
     id: 'symbols',
     labelKey: 'categories.symbols',
     icon: 'i-lucide-at-sign',
@@ -88,21 +103,6 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
       { label: '.', value: 'Period' },
       { label: '/', value: 'Slash' },
     ],
-  },
-  {
-    id: 'modifiers',
-    labelKey: 'categories.modifiers',
-    icon: 'i-lucide-keyboard',
-    items: k([
-      'ShiftLeft',
-      'ShiftRight',
-      'ControlLeft',
-      'ControlRight',
-      'AltLeft',
-      'AltRight',
-      'MetaLeft',
-      'MetaRight',
-    ]),
   },
   {
     id: 'media',

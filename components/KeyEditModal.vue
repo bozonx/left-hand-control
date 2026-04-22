@@ -29,6 +29,12 @@ function clear() {
   emit('clear')
   open.value = false
 }
+
+function pickAndSave(value: string) {
+  draft.value = value
+  emit('save', value.trim())
+  open.value = false
+}
 </script>
 
 <template>
@@ -46,7 +52,7 @@ function clear() {
             </template>
           </i18n-t>
         </div>
-        <ActionPickerBody v-model="draft" />
+        <ActionPickerBody v-model="draft" @pick="pickAndSave" />
       </div>
     </template>
     <template #footer>

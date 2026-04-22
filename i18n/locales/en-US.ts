@@ -296,6 +296,10 @@ export default {
     titleKey: 'Pick key',
     emptyCategory: 'This category is empty.',
     clearAria: 'Clear',
+    physicalKeyHint:
+      'Letters and symbols here mean the physical key code on a standard English layout, not the character from the user\'s current layout.',
+    chordHint:
+      'If you need a trigger chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.',
   },
   categories: {
     special: 'Special',
