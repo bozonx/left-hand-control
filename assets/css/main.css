@@ -41,8 +41,34 @@ body {
     'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: auto;
   line-height: 1.5;
+  /* Improves Inter font rendering and sharpness */
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-optical-sizing: auto;
+}
+
+/* ----------------------------------------------------------------------------
+ * Crisp Rendering Fixes
+ * ----------------------------------------------------------------------------
+ * Transforms (used in Modals, Popovers, Tooltips) can cause sub-pixel blurriness
+ * on some Linux WebViews (WebKit2GTK). These properties force the browser
+ * to treat the element as a separate layer and snap to pixels.
+ * -------------------------------------------------------------------------- */
+[role='dialog'],
+[role='popover'],
+[role='tooltip'] {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Prevent subpixel positioning blur during/after transitions */
+  will-change: transform, opacity;
+}
+
+/* Specific fix for Nuxt UI Modals to ensure they don't land on subpixels */
+.modal-content,
+[class*='-modal-content'] {
+  transform: translateZ(0);
 }
 
 /* Prevent accidental selection only in chrome-like controls. */
