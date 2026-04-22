@@ -40,7 +40,7 @@ function setNonNegativeInt(
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-4">
         <div>
-          <div class="text-[0.8125rem] font-medium text-(--ui-text-muted)">{{ $t('settings.appearance') }}</div>
+          <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('settings.appearance') }}</div>
           <div class="text-xs text-(--ui-text-muted)">
             <i18n-t keypath="settings.appearanceHint" tag="span">
               <template #pref><code>prefers-color-scheme</code></template>
@@ -66,7 +66,7 @@ function setNonNegativeInt(
 
       <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
         <div>
-          <div class="text-[0.8125rem] font-medium text-(--ui-text-muted)">{{ $t('settings.language') }}</div>
+          <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('settings.language') }}</div>
           <div class="text-xs text-(--ui-text-muted)">
             {{ $t('settings.languageHint') }}
           </div>
@@ -81,7 +81,7 @@ function setNonNegativeInt(
 
       <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
         <div>
-          <div class="text-[0.8125rem] font-medium text-(--ui-text-muted) flex items-center gap-2">
+          <div class="text-xs font-medium text-(--ui-text-muted) flex items-center gap-2">
             {{ $t('settings.launchOnStartup') }}
             <UBadge
               color="neutral"

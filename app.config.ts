@@ -6,7 +6,7 @@ export default defineAppConfig({
     },
     formField: {
       slots: {
-        label: 'text-(--ui-text-muted)'
+        label: 'text-xs text-(--ui-text-muted)'
       }
     },
     modal: {

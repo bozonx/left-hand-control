@@ -97,7 +97,7 @@ defineEmits<{
 
     <div class="border-t border-(--ui-border) pt-3">
       <div class="flex items-center justify-between mb-2">
-        <div class="text-sm font-medium text-(--ui-text-muted)">{{ $t('macros.steps') }}</div>
+        <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('macros.steps') }}</div>
         <UButton
           size="xs"
           icon="i-lucide-plus"

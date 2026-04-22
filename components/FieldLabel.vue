@@ -11,7 +11,7 @@ defineProps<{
 <template>
   <span class="inline-flex items-center gap-1.5">
     <span class="inline-flex items-center gap-1">
-      <span class="text-(--ui-text-muted)">{{ label }}</span>
+      <span class="text-xs text-(--ui-text-muted)">{{ label }}</span>
       <span v-if="required" class="text-(--ui-primary)">*</span>
     </span>
     <AppTooltip v-if="hint" :text="hint" align="start">
