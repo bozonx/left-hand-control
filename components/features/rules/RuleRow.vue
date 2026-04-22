@@ -12,6 +12,8 @@ defineProps<{
 
 defineEmits<{
   remove: [id: string]
+  moveUp: [id: string]
+  moveDown: [id: string]
   createLayer: [ruleId: string]
 }>()
 
@@ -177,13 +179,33 @@ function actionValue(value: string | null): string {
 
     <!-- Right Column: Meta & Timing -->
     <div class="w-52 flex flex-col gap-4">
-      <div class="flex justify-end">
+      <div class="flex items-center justify-between">
+        <div class="flex gap-1">
+          <UButton
+            icon="i-lucide-arrow-up"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            square
+            @click="$emit('moveUp', rule.id)"
+          />
+          <UButton
+            icon="i-lucide-arrow-down"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            square
+            @click="$emit('moveDown', rule.id)"
+          />
+        </div>
+
         <UButton
           icon="i-lucide-trash-2"
-          color="error"
+          color="neutral"
           variant="ghost"
-          :label="$t('common.delete')"
           size="sm"
+          square
+          :aria-label="$t('rules.deleteRule')"
           @click="$emit('remove', rule.id)"
         />
       </div>

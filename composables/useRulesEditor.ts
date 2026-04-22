@@ -32,6 +32,15 @@ export function useRulesEditor() {
     config.value.rules = config.value.rules.filter((rule) => rule.id !== id)
   }
 
+  function moveRule(id: string, direction: 'up' | 'down') {
+    const index = config.value.rules.findIndex((r) => r.id === id)
+    if (index === -1) return
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= config.value.rules.length) return
+    const [rule] = config.value.rules.splice(index, 1)
+    config.value.rules.splice(newIndex, 0, rule)
+  }
+
   function openNewLayer(ruleId: string) {
     newLayerForRuleId.value = ruleId
     newLayerName.value = ''
@@ -59,6 +68,7 @@ export function useRulesEditor() {
     layerOptions,
     addRule,
     removeRule,
+    moveRule,
     newLayerOpen,
     newLayerName,
     newLayerDescription,

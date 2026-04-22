@@ -44,6 +44,8 @@ const {
           :default-hold-timeout-ms="config.settings.defaultHoldTimeoutMs"
           :default-double-tap-timeout-ms="config.settings.defaultDoubleTapTimeoutMs"
           @remove="removeRule"
+          @move-up="moveRule($event, 'up')"
+          @move-down="moveRule($event, 'down')"
           @create-layer="openNewLayer"
         />
       </div>
