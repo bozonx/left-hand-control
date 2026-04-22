@@ -41,8 +41,8 @@ export default {
     asInSystem: 'Use system',
   },
   tabs: {
-    rules: 'Layers',
-    keymap: 'Keymap',
+    rules: 'Rules',
+    keymap: 'Layout',
     macros: 'Macros',
     settings: 'Settings',
   },
@@ -62,15 +62,15 @@ export default {
     loadError: 'Failed to load the built-in layout.',
   },
   rules: {
-    title: 'Layers and their triggers',
+    title: 'Rules and triggers',
     subtitle:
-      'One rule per row: which physical key activates the layer on hold and which action fires on a short tap.',
+      'Configure the logic: how physical keys activate layers or trigger actions.',
     addBtn: 'Add rule',
     empty:
-      'No rules yet. Click "Add rule" to bind a layer to a key or define a single-tap action.',
-    keyLabel: 'Key',
+      'No rules yet. Click "Add rule" to define how a physical key should behave.',
+    keyLabel: 'Trigger key',
     keyHint:
-      'Physical key that will activate the layer on hold or trigger the tap action on a short press.',
+      'Physical key that triggers this rule on press or hold.',
     keyPh: 'pick a key',
     layerLabel: 'Layer (hold)',
     layerHint:
