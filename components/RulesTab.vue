@@ -4,21 +4,32 @@ import LayerEditorModal from '~/components/shared/LayerEditorModal.vue'
 const {
   config,
   layerOptions,
+  newestRuleId,
   addRule,
   removeRule,
+  moveRule,
   newLayerOpen,
   newLayerName,
   newLayerDescription,
   openNewLayer,
   confirmNewLayer,
+  markRuleConfigured,
 } = useRulesEditor()
+
+defineProps<{
+  showBackToTop?: boolean
+}>()
+
+defineEmits<{
+  backToTop: []
+}>()
 </script>
 
 <template>
   <div class="space-y-4">
     <UCard>
       <template #header>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold">{{ $t('rules.title') }}</h2>
             <p class="text-xs text-(--ui-text-muted) mt-0.5">
@@ -45,12 +56,26 @@ const {
           :default-double-tap-timeout-ms="config.settings.defaultDoubleTapTimeoutMs"
           :is-first="index === 0"
           :is-last="index === config.rules.length - 1"
+          :is-new="rule.id === newestRuleId"
           @remove="removeRule"
           @move-up="moveRule($event, 'up')"
           @move-down="moveRule($event, 'down')"
           @create-layer="openNewLayer"
+          @key-selected="markRuleConfigured"
         />
       </div>
+
+      <template #footer>
+        <div class="flex items-center justify-end gap-3">
+          <ULink
+            v-if="showBackToTop"
+            class="text-xs text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors cursor-pointer"
+            @click="$emit('backToTop')"
+          >
+            {{ $t('common.backToTop') }}
+          </ULink>
+        </div>
+      </template>
     </UCard>
 
     <LayerEditorModal

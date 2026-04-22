@@ -14,9 +14,10 @@ export function useRulesEditor() {
   const newLayerName = ref('')
   const newLayerDescription = ref('')
   const newLayerForRuleId = ref<string | null>(null)
+  const newestRuleId = ref<string | null>(null)
 
   function addRule() {
-    config.value.rules.push({
+    const rule = {
       id: randomId(),
       key: '',
       layerId: '',
@@ -25,7 +26,9 @@ export function useRulesEditor() {
       doubleTapAction: '',
       holdTimeoutMs: undefined,
       doubleTapTimeoutMs: undefined,
-    })
+    }
+    config.value.rules.unshift(rule)
+    newestRuleId.value = rule.id
   }
 
   function removeRule(id: string) {
@@ -38,6 +41,7 @@ export function useRulesEditor() {
     const newIndex = direction === 'up' ? index - 1 : index + 1
     if (newIndex < 0 || newIndex >= config.value.rules.length) return
     const [rule] = config.value.rules.splice(index, 1)
+    if (!rule) return
     config.value.rules.splice(newIndex, 0, rule)
   }
 
@@ -63,9 +67,16 @@ export function useRulesEditor() {
     newLayerOpen.value = false
   }
 
+  function markRuleConfigured(id: string) {
+    if (newestRuleId.value === id) {
+      newestRuleId.value = null
+    }
+  }
+
   return {
     config,
     layerOptions,
+    newestRuleId,
     addRule,
     removeRule,
     moveRule,
@@ -74,5 +85,6 @@ export function useRulesEditor() {
     newLayerDescription,
     openNewLayer,
     confirmNewLayer,
+    markRuleConfigured,
   }
 }

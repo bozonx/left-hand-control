@@ -100,7 +100,7 @@ describe('editor composables', () => {
     expect(vm.layerOptions).toEqual([])
 
     vm.addRule()
-    const ruleId = state.config.value.rules[0]?.id
+    const firstRuleId = state.config.value.rules[0]?.id
 
     expect(state.config.value.rules[0]).toMatchObject({
       key: '',
@@ -111,8 +111,19 @@ describe('editor composables', () => {
       holdTimeoutMs: undefined,
       doubleTapTimeoutMs: undefined,
     })
+    expect(vm.newestRuleId).toBe(firstRuleId)
 
-    vm.openNewLayer(ruleId!)
+    vm.addRule()
+    const secondRuleId = state.config.value.rules[0]?.id
+    expect(secondRuleId).toBeTruthy()
+    expect(secondRuleId).not.toBe(firstRuleId)
+    expect(state.config.value.rules[1]?.id).toBe(firstRuleId)
+
+    vm.moveRule(firstRuleId!, 'up')
+    expect(state.config.value.rules[0]?.id).toBe(firstRuleId)
+    expect(state.config.value.rules[1]?.id).toBe(secondRuleId)
+
+    vm.openNewLayer(firstRuleId!)
     vm.newLayerName = 'Symbols'
     vm.newLayerDescription = 'punctuation'
     vm.confirmNewLayer()
@@ -126,7 +137,8 @@ describe('editor composables', () => {
       value: createdLayer?.id,
     })
 
-    vm.removeRule(ruleId!)
+    vm.removeRule(firstRuleId!)
+    vm.removeRule(secondRuleId!)
     expect(state.config.value.rules).toEqual([])
   })
 

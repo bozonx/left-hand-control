@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
+
 const props = defineProps<{
   allowEmpty?: boolean
   placeholder?: string
   keyOnly?: boolean
   title?: string
+  clearLabel?: string
 }>()
 
 const model = defineModel<string>({ default: '' })
@@ -26,6 +29,7 @@ function apply() {
 }
 
 function clear() {
+  draft.value = ''
   model.value = ''
   open.value = false
 }
@@ -51,14 +55,16 @@ function clear() {
     </button>
     <UButton
       v-if="allowEmpty && model"
-      icon="i-lucide-x"
+      :icon="props.clearLabel ? undefined : 'i-lucide-x'"
       size="xs"
       color="neutral"
       variant="ghost"
-      square
+      :square="!props.clearLabel"
       :aria-label="$t('picker.clearAria')"
       @click="model = ''"
-    />
+    >
+      <template v-if="props.clearLabel">{{ props.clearLabel }}</template>
+    </UButton>
   </div>
 
   <UModal
@@ -72,13 +78,13 @@ function clear() {
     <template #footer>
       <div class="flex justify-between w-full gap-2">
         <UButton
-          v-if="allowEmpty && model"
+          v-if="allowEmpty && (model || draft)"
           color="error"
           variant="ghost"
           icon="i-lucide-trash-2"
           @click="clear"
         >
-          {{ $t('common.clear') }}
+          {{ props.clearLabel ?? $t('common.clear') }}
         </UButton>
         <div class="flex gap-2 ml-auto">
           <UButton color="neutral" variant="ghost" @click="open = false">
