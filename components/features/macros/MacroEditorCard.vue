@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Macro } from '~/types/config'
+import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 
 const props = defineProps<{
   macro: Macro
@@ -61,33 +62,21 @@ defineEmits<{
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-      <UFormField>
-        <template #label>
-          <FieldLabel
-            :label="$t('macros.stepPauseLabel')"
-            :hint="$t('macros.stepPauseHint')"
-          />
-        </template>
-        <OverridableNumberField
-          v-model="macro.stepPauseMs"
-          :default-value="defaultStepPauseMs"
-          :suffix="$t('common.ms')"
-        />
-      </UFormField>
-      <UFormField>
-        <template #label>
-          <FieldLabel
-            :label="$t('macros.modDelayLabel')"
-            :hint="$t('macros.modDelayHint')"
-          />
-        </template>
-        <OverridableNumberField
-          v-model="macro.modifierDelayMs"
-          :default-value="defaultModifierDelayMs"
-          :suffix="$t('common.ms')"
-        />
-      </UFormField>
+    <div class="grid grid-cols-2 gap-x-6 gap-y-1">
+      <SettingTimeoutField
+        v-model="macro.stepPauseMs"
+        :label="$t('macros.stepPauseLabel')"
+        :hint="$t('macros.stepPauseHint')"
+        :default-value="defaultStepPauseMs"
+        :suffix="$t('common.ms')"
+      />
+      <SettingTimeoutField
+        v-model="macro.modifierDelayMs"
+        :label="$t('macros.modDelayLabel')"
+        :hint="$t('macros.modDelayHint')"
+        :default-value="defaultModifierDelayMs"
+        :suffix="$t('common.ms')"
+      />
     </div>
 
     <div

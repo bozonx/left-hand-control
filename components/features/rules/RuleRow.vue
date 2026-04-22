@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LayerRule } from '~/types/config'
+import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
 import RuleActionField from '~/components/features/rules/RuleActionField.vue'
 
@@ -156,34 +157,22 @@ defineEmits<{
         />
       </div>
 
-      <div class="flex flex-col gap-4">
-        <UFormField>
-          <template #label>
-            <FieldLabel
-              :label="$t('rules.holdLabel')"
-              :hint="$t('rules.holdHint')"
-            />
-          </template>
-          <OverridableNumberField
-            v-model="rule.holdTimeoutMs"
-            :default-value="defaultHoldTimeoutMs"
-            :suffix="$t('common.ms')"
-          />
-        </UFormField>
+      <div class="flex flex-col gap-1 mt-1">
+        <SettingTimeoutField
+          v-model="rule.holdTimeoutMs"
+          :label="$t('rules.holdLabel')"
+          :hint="$t('rules.holdHint')"
+          :default-value="defaultHoldTimeoutMs"
+          :suffix="$t('common.ms')"
+        />
 
-        <UFormField>
-          <template #label>
-            <FieldLabel
-              :label="$t('rules.doubleTapWindowLabel')"
-              :hint="$t('rules.doubleTapWindowHint')"
-            />
-          </template>
-          <OverridableNumberField
-            v-model="rule.doubleTapTimeoutMs"
-            :default-value="defaultDoubleTapTimeoutMs"
-            :suffix="$t('common.ms')"
-          />
-        </UFormField>
+        <SettingTimeoutField
+          v-model="rule.doubleTapTimeoutMs"
+          :label="$t('rules.doubleTapWindowLabel')"
+          :hint="$t('rules.doubleTapWindowHint')"
+          :default-value="defaultDoubleTapTimeoutMs"
+          :suffix="$t('common.ms')"
+        />
       </div>
     </div>
   </div>
