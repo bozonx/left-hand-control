@@ -45,7 +45,7 @@ export default defineNuxtConfig({
   // Nuxt dev server configuration for Tauri
   devServer: {
     host: 'localhost',
-    port: 3000,
+    port: parseInt(process.env.PORT || '3000'),
   },
 
   vite: {
@@ -57,7 +57,7 @@ export default defineNuxtConfig({
       hmr: {
         protocol: 'ws',
         host: 'localhost',
-        port: 3001,
+        port: parseInt(process.env.HMR_PORT || '3001'),
       },
     },
     // Keep the client env surface narrow: only explicit frontend-facing
