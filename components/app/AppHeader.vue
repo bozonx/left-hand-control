@@ -39,7 +39,7 @@ const currentLayoutLabel = computed<string>(() => {
           <UIcon
             :name="
               isLayoutDirty
-                ? 'i-lucide-alert-triangle'
+                ? 'i-lucide-triangle-alert'
                 : 'i-lucide-keyboard'
             "
             class="mr-1 shrink-0"

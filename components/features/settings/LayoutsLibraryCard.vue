@@ -41,7 +41,7 @@ defineEmits<{
         class="flex items-start gap-2 p-3 rounded border border-(--ui-warning)/40 bg-(--ui-warning)/10 text-sm"
       >
         <UIcon
-          name="i-lucide-alert-triangle"
+          name="i-lucide-triangle-alert"
           class="text-(--ui-warning) mt-0.5 shrink-0"
         />
         <div>

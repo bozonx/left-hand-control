@@ -96,7 +96,7 @@ const { t } = useI18n()
             class="flex items-start gap-2 p-3 rounded border border-(--ui-error)/40 bg-(--ui-error)/10"
           >
             <UIcon
-              name="i-lucide-alert-triangle"
+              name="i-lucide-triangle-alert"
               class="text-(--ui-error) mt-0.5 shrink-0"
             />
             <div>

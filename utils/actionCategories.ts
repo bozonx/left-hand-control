@@ -65,7 +65,7 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
   {
     id: 'fkeys',
     labelKey: 'categories.fkeys',
-    icon: 'i-lucide-chevron-up-square',
+    icon: 'i-lucide-square-chevron-up',
     items: Array.from({ length: 24 }, (_, i) => {
       const n = `F${i + 1}`
       return { label: n, value: n }
