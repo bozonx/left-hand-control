@@ -23,7 +23,7 @@ defineEmits<{
   <UCard>
     <template #header>
       <div class="flex items-center justify-between gap-3 flex-wrap">
-        <h2 class="font-semibold">{{ $t('settings.layoutsTitle') }}</h2>
+        <h2 class="text-sm font-semibold">{{ $t('settings.layoutsTitle') }}</h2>
         <UButton
           color="primary"
           icon="i-lucide-save"

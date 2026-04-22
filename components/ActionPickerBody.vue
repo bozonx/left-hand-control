@@ -120,7 +120,7 @@ function pick(item: ActionItem) {
     </div>
     <div
       v-else
-      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 max-h-80 overflow-y-auto pr-1"
+      class="grid grid-cols-4 gap-1.5 max-h-80 overflow-y-auto pr-1"
     >
       <button
         v-for="item in categoryItems"

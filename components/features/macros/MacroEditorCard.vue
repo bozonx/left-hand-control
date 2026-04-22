@@ -20,7 +20,7 @@ defineEmits<{
 
 <template>
   <div class="rounded-md border border-(--ui-border) bg-(--ui-bg-muted) p-4 space-y-4">
-    <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
+    <div class="grid grid-cols-[1fr_1fr_auto] gap-3">
       <UFormField>
         <template #label>
           <FieldLabel
@@ -61,7 +61,7 @@ defineEmits<{
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div class="grid grid-cols-2 gap-3">
       <UFormField>
         <template #label>
           <FieldLabel

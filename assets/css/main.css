@@ -2,19 +2,25 @@
 @import "@nuxt/ui";
 
 /* ----------------------------------------------------------------------------
- * Desktop look & feel.
+ * Desktop look & feel — professional tool, not a marketing landing.
  *
- * Nuxt UI v3 exposes design tokens as CSS variables prefixed with `--ui-*`
- * (bg / bg-elevated / border / text / text-muted / primary / ...). They flip
- * automatically when the `html.dark` class toggles, driven by
- * @nuxtjs/color-mode. We only override density / typography here — colours
- * stay on the default theme configured in `app.config.ts`.
+ * Nuxt UI v3 uses `--ui-*` design tokens (bg / bg-elevated / border / text /
+ * text-muted / primary / ...) that flip with the `html.dark` class.
+ * Neutral palette is `zinc` (app.config.ts) — avoids the blue tint of `slate`.
+ *
+ * Below: density, typography, dark-mode surface overrides, shared helpers.
  * -------------------------------------------------------------------------- */
 
 :root {
-  /* Tighter base for a native-app feel. */
   font-size: 14px;
   --app-header-height: 44px;
+}
+
+/* Explicit dark-mode surface overrides — keep backgrounds warm-neutral, not blue.
+   Nuxt UI zinc token values are already correct; this guards against any
+   accidental bleed from the primary color into bg tokens. */
+.dark {
+  color-scheme: dark;
 }
 
 html,
@@ -27,25 +33,26 @@ body,
 
 body {
   font-family:
+    'Inter',
     system-ui,
     -apple-system,
     'Segoe UI',
-    'Inter',
     'Roboto',
     'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  line-height: 1.5;
 }
 
-/* Prevent accidental selection only in chrome-like controls, not content. */
+/* Prevent accidental selection only in chrome-like controls. */
 button,
 [role='button'],
 .app-chrome {
   user-select: none;
 }
 
-/* Still allow selection inside actual editable or copyable content. */
+/* Allow selection inside editable or copyable content. */
 input,
 textarea,
 [contenteditable='true'],
@@ -56,14 +63,14 @@ code,
   user-select: text;
 }
 
-/* A subtle custom scrollbar that matches the theme in both modes. */
+/* Thin, theme-matching scrollbar. */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--ui-border-accented) transparent;
 }
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 *::-webkit-scrollbar-thumb {
   background: var(--ui-border-accented);

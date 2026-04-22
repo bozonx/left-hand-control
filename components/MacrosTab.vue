@@ -50,8 +50,8 @@ function cancelRemove() {
       <template #header>
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h2 class="font-semibold">{{ $t('macros.title') }}</h2>
-            <p class="text-xs text-(--ui-text-muted) mt-1">
+            <h2 class="text-sm font-semibold">{{ $t('macros.title') }}</h2>
+            <p class="text-xs text-(--ui-text-muted) mt-0.5">
               {{ $t('macros.subtitle') }}
             </p>
           </div>

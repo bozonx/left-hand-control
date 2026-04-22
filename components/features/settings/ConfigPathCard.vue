@@ -32,7 +32,7 @@ async function copyPath(path: string) {
 <template>
   <UCard>
     <template #header>
-      <h2 class="font-semibold">{{ $t('settings.configTitle') }}</h2>
+      <h2 class="text-sm font-semibold">{{ $t('settings.configTitle') }}</h2>
     </template>
     <div class="text-sm space-y-4">
       <div>

@@ -48,8 +48,8 @@ function availabilityColor(status: CapabilityStatus) {
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div>
-          <h2 class="font-semibold">{{ $t('settings.platformTitle') }}</h2>
-          <p class="text-xs text-(--ui-text-muted)">
+          <h2 class="text-sm font-semibold">{{ $t('settings.platformTitle') }}</h2>
+          <p class="text-xs text-(--ui-text-muted) mt-0.5">
             {{ $t('settings.platformHint') }}
           </p>
         </div>

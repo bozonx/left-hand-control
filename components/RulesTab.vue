@@ -15,13 +15,13 @@ const {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4">
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="font-semibold">{{ $t('rules.title') }}</h2>
-            <p class="text-xs text-(--ui-text-muted) mt-1">
+            <h2 class="text-sm font-semibold">{{ $t('rules.title') }}</h2>
+            <p class="text-xs text-(--ui-text-muted) mt-0.5">
               {{ $t('rules.subtitle') }}
             </p>
           </div>
@@ -35,7 +35,7 @@ const {
         {{ $t('rules.empty') }}
       </div>
 
-      <div v-else class="space-y-3">
+      <div v-else class="space-y-2">
         <RuleRow
           v-for="rule in config.rules"
           :key="rule.id"

@@ -39,27 +39,27 @@ async function pickEmpty() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-6 bg-(--ui-bg)">
-    <div class="max-w-3xl w-full space-y-6">
-      <div class="text-center space-y-2">
-        <h1 class="text-3xl font-bold">{{ $t('app.title') }}</h1>
-        <p class="text-(--ui-text-muted)">
+  <div class="h-screen flex items-center justify-center p-8 bg-(--ui-bg)">
+    <div class="max-w-2xl w-full space-y-6">
+      <div class="text-center space-y-1.5">
+        <h1 class="text-2xl font-bold">{{ $t('app.title') }}</h1>
+        <p class="text-sm text-(--ui-text-muted)">
           {{ $t('welcome.intro') }}
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-2 gap-3">
         <UCard class="flex flex-col">
           <template #header>
             <div class="flex items-center gap-2">
-              <UIcon name="i-lucide-sparkles" class="text-(--ui-primary)" />
-              <h2 class="font-semibold">{{ $t('welcome.ivankTitle') }}</h2>
+              <UIcon name="i-lucide-sparkles" class="text-(--ui-primary) shrink-0" />
+              <h2 class="text-sm font-semibold">{{ $t('welcome.ivankTitle') }}</h2>
               <UBadge color="primary" variant="subtle" size="sm">
                 {{ $t('welcome.recommended') }}
               </UBadge>
             </div>
           </template>
-          <p class="text-sm text-(--ui-text-muted) flex-1">
+          <p class="text-xs text-(--ui-text-muted) flex-1">
             {{ $t('welcome.ivankDesc') }}
           </p>
           <template #footer>
@@ -79,11 +79,11 @@ async function pickEmpty() {
         <UCard class="flex flex-col">
           <template #header>
             <div class="flex items-center gap-2">
-              <UIcon name="i-lucide-file-plus" />
-              <h2 class="font-semibold">{{ $t('welcome.emptyTitle') }}</h2>
+              <UIcon name="i-lucide-file-plus" class="shrink-0" />
+              <h2 class="text-sm font-semibold">{{ $t('welcome.emptyTitle') }}</h2>
             </div>
           </template>
-          <p class="text-sm text-(--ui-text-muted) flex-1">
+          <p class="text-xs text-(--ui-text-muted) flex-1">
             {{ $t('welcome.emptyDesc') }}
           </p>
           <template #footer>

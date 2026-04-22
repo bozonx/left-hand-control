@@ -35,12 +35,12 @@ function setNonNegativeInt(
 <template>
   <UCard>
     <template #header>
-      <h2 class="font-semibold">{{ $t('settings.generalTitle') }}</h2>
+      <h2 class="text-sm font-semibold">{{ $t('settings.generalTitle') }}</h2>
     </template>
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-4">
         <div>
-          <div class="font-medium">{{ $t('settings.appearance') }}</div>
+          <div class="text-[0.8125rem] font-medium">{{ $t('settings.appearance') }}</div>
           <div class="text-xs text-(--ui-text-muted)">
             <i18n-t keypath="settings.appearanceHint" tag="span">
               <template #pref><code>prefers-color-scheme</code></template>
@@ -66,7 +66,7 @@ function setNonNegativeInt(
 
       <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
         <div>
-          <div class="font-medium">{{ $t('settings.language') }}</div>
+          <div class="text-[0.8125rem] font-medium">{{ $t('settings.language') }}</div>
           <div class="text-xs text-(--ui-text-muted)">
             {{ $t('settings.languageHint') }}
           </div>
@@ -81,7 +81,7 @@ function setNonNegativeInt(
 
       <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
         <div>
-          <div class="font-medium flex items-center gap-2">
+          <div class="text-[0.8125rem] font-medium flex items-center gap-2">
             {{ $t('settings.launchOnStartup') }}
             <UBadge
               color="neutral"

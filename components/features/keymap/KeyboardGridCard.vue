@@ -14,7 +14,7 @@ defineEmits<{
 <template>
   <UCard>
     <template #header>
-      <h2 class="font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
+      <h2 class="text-sm font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
     </template>
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <section>

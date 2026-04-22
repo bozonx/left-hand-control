@@ -25,15 +25,16 @@ const currentLayoutLabel = computed<string>(() => {
 
 <template>
   <header
-    class="flex items-center justify-between px-4 py-2 border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 flex-wrap"
+    class="flex items-center justify-between px-4 h-[var(--app-header-height)] border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 shrink-0 app-chrome"
   >
-    <div class="flex items-center gap-3 flex-wrap">
-      <h1 class="text-lg font-semibold">{{ $t('app.title') }}</h1>
+    <div class="flex items-center gap-2.5 min-w-0">
+      <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
       <UBadge
         v-if="loaded"
         :color="isLayoutDirty ? 'warning' : 'neutral'"
         :variant="isLayoutDirty ? 'solid' : 'outline'"
         class="max-w-[22rem] truncate"
+        size="sm"
         :title="
           isLayoutDirty
             ? $t('app.dirtyTooltip')
@@ -46,9 +47,9 @@ const currentLayoutLabel = computed<string>(() => {
               ? 'i-lucide-alert-triangle'
               : 'i-lucide-keyboard'
           "
-          class="mr-1"
+          class="mr-1 shrink-0"
         />
-        <span class="mr-1 opacity-70">{{ $t('app.presetLabel') }}</span>
+        <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.presetLabel') }}</span>
         <span class="truncate">{{ currentLayoutLabel }}</span>
         <span v-if="isLayoutDirty" class="ml-1 font-semibold">
           {{ $t('app.notSavedBadge') }}
@@ -58,15 +59,16 @@ const currentLayoutLabel = computed<string>(() => {
         v-if="layout"
         color="neutral"
         variant="outline"
+        size="sm"
         :title="layout.long"
         class="font-mono uppercase"
       >
-        <UIcon name="i-lucide-languages" class="mr-1" />
-        <span class="mr-1 opacity-70">{{ $t('app.layoutLanguageLabel') }}</span>
+        <UIcon name="i-lucide-languages" class="mr-1 shrink-0" />
+        <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.layoutLanguageLabel') }}</span>
         {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
       </UBadge>
     </div>
-    <div class="text-xs text-(--ui-text-muted) flex items-center gap-3">
+    <div class="text-xs text-(--ui-text-muted) flex items-center gap-3 shrink-0">
       <span v-if="!loaded">{{ $t('app.loading') }}</span>
     </div>
   </header>

@@ -17,7 +17,7 @@ defineEmits<{
   <UCard>
     <template #header>
       <div class="flex items-center justify-between gap-3">
-        <h2 class="font-semibold">{{ $t('settings.mapperTitle') }}</h2>
+        <h2 class="text-sm font-semibold">{{ $t('settings.mapperTitle') }}</h2>
         <UBadge
           :color="mapper.status.value.running ? 'success' : 'neutral'"
           variant="subtle"

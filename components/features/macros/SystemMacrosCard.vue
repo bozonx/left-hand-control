@@ -27,7 +27,7 @@ function stepsPreview(sys: SystemMacro): string {
         @click="$emit('update:systemOpen', !systemOpen)"
       >
         <div>
-          <h2 class="font-semibold flex items-center gap-2">
+          <h2 class="text-sm font-semibold flex items-center gap-2">
             <UIcon
               :name="systemOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
               class="text-(--ui-text-muted)"
@@ -37,7 +37,7 @@ function stepsPreview(sys: SystemMacro): string {
               {{ systemMacros.length }}
             </UBadge>
           </h2>
-          <p class="text-xs text-(--ui-text-muted) mt-1">
+          <p class="text-xs text-(--ui-text-muted) mt-0.5">
             {{ $t('macros.systemSub') }}
           </p>
         </div>
