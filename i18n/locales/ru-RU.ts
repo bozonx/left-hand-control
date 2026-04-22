@@ -88,6 +88,7 @@ export default {
       'Что происходит, пока клавиша удерживается. «Native» — сама физическая клавиша удерживается (например, ShiftLeft остаётся Shift-модификатором). «None» — проглатываем, ничего не происходит. «Action» — удерживаем другую комбинацию вместо физической (например, MetaLeft ведёт себя как удерживаемый ControlLeft). Можно комбинировать со слоем, тогда одновременно активируется слой и удерживается выбранная клавиша.',
     holdActionPh: 'выберите клавишу',
     modeNative: 'Native',
+    modeNativeDefault: 'Native (default)',
     modeNone: 'None (swallow)',
     modeAction: 'Action',
     doubleTapLabel: 'Double-tap action',

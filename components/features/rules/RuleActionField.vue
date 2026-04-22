@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
 
 type ModeKind = 'native' | 'none' | 'action'
@@ -10,63 +11,112 @@ const props = defineProps<{
 
 const model = defineModel<string | null>({ default: '' })
 const { t } = useI18n()
+const { displayAction } = useMacros()
 
-const mode = ref<ModeKind>('native')
+const pickerOpen = ref(false)
+const pickerValue = ref('')
+const pendingMode = ref<ModeKind | null>(null)
 
 const modeItems = computed(() => [
-  { label: t('rules.modeNative'), value: 'native' },
+  { label: t('rules.modeNativeDefault'), value: 'native' },
   { label: t('rules.modeNone'), value: 'none' },
   { label: t('rules.modeAction'), value: 'action' },
 ])
 
-watch(
-  model,
-  (value) => {
-    if (value === null) {
-      mode.value = 'none'
-      return
-    }
-    if (value) {
-      mode.value = 'action'
-      return
-    }
-    if (mode.value !== 'action') mode.value = 'native'
-  },
-  { immediate: true },
-)
-
-watch(mode, (value) => {
-  if (value === 'native') {
-    model.value = ''
-    return
-  }
-  if (value === 'none') {
-    model.value = null
-    return
-  }
-  if (model.value === null) model.value = ''
+const currentMode = computed<ModeKind>(() => {
+  if (model.value === null) return 'none'
+  if (model.value) return 'action'
+  return 'native'
 })
 
-function updateAction(value: string) {
-  model.value = value
+const selectMode = computed<ModeKind>({
+  get: () => pendingMode.value ?? currentMode.value,
+  set: (value) => {
+    if (value === 'action') {
+      pendingMode.value = 'action'
+      pickerValue.value = typeof model.value === 'string' ? model.value : ''
+      pickerOpen.value = true
+      return
+    }
+
+    pendingMode.value = null
+    pickerOpen.value = false
+    model.value = value === 'none' ? null : ''
+  },
+})
+
+const actionLabel = computed(() => displayAction(model.value) || model.value || '')
+
+function resetToDefault() {
+  pendingMode.value = null
+  pickerOpen.value = false
+  pickerValue.value = ''
+  model.value = ''
+}
+
+function editAction() {
+  pendingMode.value = 'action'
+  pickerValue.value = typeof model.value === 'string' ? model.value : ''
+  pickerOpen.value = true
+}
+
+function applyAction(value: string) {
+  const next = value.trim()
+  pendingMode.value = null
+  pickerOpen.value = false
+  if (!next) return
+  model.value = next
+}
+
+function cancelAction() {
+  pendingMode.value = null
+  pickerOpen.value = false
+  pickerValue.value = typeof model.value === 'string' ? model.value : ''
 }
 </script>
 
 <template>
   <div class="space-y-1.5">
+    <div v-if="currentMode === 'action'" class="flex items-center gap-1">
+      <button
+        type="button"
+        class="flex-1 min-w-0 h-8 px-2.5 flex items-center gap-2 rounded-md border border-(--ui-border) bg-(--ui-bg) hover:bg-(--ui-bg-elevated) text-left text-sm transition-colors"
+        @click="editAction"
+      >
+        <UIcon
+          name="i-lucide-square-mouse-pointer"
+          class="shrink-0 w-4 h-4 text-(--ui-text-muted)"
+        />
+        <span class="truncate">{{ actionLabel }}</span>
+      </button>
+      <AppTooltip :text="$t('common.reset')">
+        <UButton
+          icon="i-lucide-rotate-ccw"
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          square
+          :aria-label="$t('common.reset')"
+          @click="resetToDefault"
+        />
+      </AppTooltip>
+    </div>
     <ResettableSelectMenu
-      v-model="mode"
+      v-else
+      v-model="selectMode"
       :items="modeItems"
       value-key="value"
       :reset-value="'native'"
     />
     <ActionPickerModal
-      v-if="mode === 'action'"
-      :model-value="typeof model === 'string' ? model : ''"
+      v-model="pickerValue"
+      v-model:open="pickerOpen"
+      hide-trigger
+      :require-value="true"
       :key-only="props.keyOnly"
-      allow-empty
       :placeholder="placeholder"
-      @update:model-value="updateAction"
+      @apply="applyAction"
+      @cancel="cancelAction"
     />
   </div>
 </template>

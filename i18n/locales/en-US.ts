@@ -87,6 +87,7 @@ export default {
       'What happens while the key is held. "Native" = the physical key itself acts as held (e.g. ShiftLeft stays a Shift modifier). "None" = swallowed, nothing happens. "Action" lets you hold a different keystroke instead (e.g. MetaLeft can behave like a held ControlLeft). It can be combined with a Layer so the rule both activates the layer and holds the selected key.',
     holdActionPh: 'pick a keystroke',
     modeNative: 'Native',
+    modeNativeDefault: 'Native (default)',
     modeNone: 'None (swallow)',
     modeAction: 'Action',
     doubleTapLabel: 'Double-tap action',
