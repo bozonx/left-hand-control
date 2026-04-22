@@ -8,6 +8,11 @@ export default defineAppConfig({
       slots: {
         label: 'text-(--ui-text-muted)'
       }
+    },
+    modal: {
+      slots: {
+        overlay: 'fixed inset-0 bg-(--ui-bg)/80 transition-opacity'
+      }
     }
   },
 })

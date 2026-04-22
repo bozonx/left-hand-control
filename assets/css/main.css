@@ -12,7 +12,9 @@
  * -------------------------------------------------------------------------- */
 
 :root {
-  font-size: 14px;
+  /* Set root to 16px to make rem calculations (0.875rem, 0.75rem, etc.) 
+     result in integer pixels, which is essential for text sharpness. */
+  font-size: 16px;
   --app-header-height: 44px;
 }
 
@@ -32,6 +34,9 @@ body,
 }
 
 body {
+  /* Use 0.875rem (14px) as the base size to keep the intended UI density 
+     while ensuring sharpness. */
+  font-size: 0.875rem;
   font-family:
     'Inter',
     system-ui,
@@ -63,12 +68,24 @@ body {
   backface-visibility: hidden;
   /* Prevent subpixel positioning blur during/after transitions */
   will-change: transform, opacity;
+  /* Force sharper contrast in Webkit (Tauri Linux) */
+  -webkit-font-smoothing: antialiased;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* Specific fix for Nuxt UI Modals to ensure they don't land on subpixels */
 .modal-content,
-[class*='-modal-content'] {
+[class*='-modal-content'],
+[role='dialog'] > div {
   transform: translateZ(0);
+  /* Force integer pixel alignment where possible */
+  -webkit-transform: translateZ(0);
+}
+
+/* Fix for blurry text in scrollable areas within modals (like ActionPicker) */
+[role='dialog'] .overflow-y-auto {
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Prevent accidental selection only in chrome-like controls. */
