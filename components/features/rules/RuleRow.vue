@@ -35,168 +35,180 @@ function actionValue(value: string | null): string {
 </script>
 
 <template>
-  <div
-    class="grid grid-cols-2 2xl:grid-cols-[minmax(8rem,0.9fr)_minmax(8rem,0.9fr)_minmax(10rem,1.15fr)_minmax(10rem,1.15fr)_minmax(9rem,1fr)_auto_auto_auto] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted)"
-  >
-    <UFormField>
-      <template #label>
-        <FieldLabel
-          :label="$t('rules.keyLabel')"
-          :hint="$t('rules.keyHint')"
-        />
-      </template>
-      <ActionPickerModal
-        v-model="rule.key"
-        key-only
-        :placeholder="$t('rules.keyPh')"
-      />
-    </UFormField>
+  <div class="relative p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted)">
+    <UButton
+      icon="i-lucide-trash-2"
+      color="error"
+      variant="ghost"
+      square
+      class="absolute top-2 right-2"
+      :aria-label="$t('rules.deleteRule')"
+      @click="$emit('remove', rule.id)"
+    />
 
-    <UFormField>
-      <template #label>
-        <FieldLabel
-          :label="$t('rules.layerLabel')"
-          :hint="$t('rules.layerHint')"
-        />
-      </template>
-      <div class="flex gap-1">
-        <USelectMenu
-          v-model="rule.layerId"
-          :items="layerOptions"
-          value-key="value"
-          :placeholder="$t('common.none')"
-          class="flex-1 min-w-0"
-        />
-        <UButton
-          v-if="rule.layerId"
-          icon="i-lucide-x"
-          variant="ghost"
-          color="neutral"
-          square
-          :aria-label="$t('rules.clearLayer')"
-          @click="rule.layerId = ''"
-        />
-        <UButton
-          icon="i-lucide-plus"
-          variant="outline"
-          color="neutral"
-          square
-          :aria-label="$t('rules.createLayer')"
-          @click="$emit('createLayer', rule.id)"
-        />
+    <div class="flex flex-col gap-4">
+      <!-- Top Row: Key and Layer -->
+      <div class="grid grid-cols-2 gap-3 pr-8">
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('rules.keyLabel')"
+              :hint="$t('rules.keyHint')"
+            />
+          </template>
+          <ActionPickerModal
+            v-model="rule.key"
+            key-only
+            :placeholder="$t('rules.keyPh')"
+          />
+        </UFormField>
+
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('rules.layerLabel')"
+              :hint="$t('rules.layerHint')"
+            />
+          </template>
+          <div class="flex gap-1">
+            <USelectMenu
+              v-model="rule.layerId"
+              :items="layerOptions"
+              value-key="value"
+              :placeholder="$t('common.none')"
+              class="flex-1 min-w-0"
+            />
+            <UButton
+              v-if="rule.layerId"
+              icon="i-lucide-x"
+              variant="ghost"
+              color="neutral"
+              square
+              :aria-label="$t('rules.clearLayer')"
+              @click="rule.layerId = ''"
+            />
+            <UButton
+              icon="i-lucide-plus"
+              variant="outline"
+              color="neutral"
+              square
+              :aria-label="$t('rules.createLayer')"
+              @click="$emit('createLayer', rule.id)"
+            />
+          </div>
+        </UFormField>
       </div>
-    </UFormField>
 
-    <UFormField>
-      <template #label>
-        <FieldLabel
-          :label="$t('rules.tapLabel')"
-          :hint="$t('rules.tapHint')"
-        />
-      </template>
-      <div class="space-y-1.5">
-        <USelectMenu
-          :model-value="modeOf(rule.tapAction)"
-          :items="[
-            { label: $t('rules.modeNative'), value: 'native' },
-            { label: $t('rules.modeNone'), value: 'none' },
-            { label: $t('rules.modeAction'), value: 'action' },
-          ]"
-          value-key="value"
-          class="w-full"
-          @update:model-value="(mode: ModeKind) => setMode(rule, 'tapAction', mode)"
-        />
-        <ActionPickerModal
-          v-if="modeOf(rule.tapAction) === 'action'"
-          :model-value="actionValue(rule.tapAction)"
-          allow-empty
-          :placeholder="$t('rules.tapPh')"
-          @update:model-value="(value: string) => rule.tapAction = value"
-        />
+      <div class="h-px bg-(--ui-border) w-full"></div>
+
+      <!-- Bottom Row: Actions -->
+      <div class="grid grid-cols-3 gap-4">
+        <!-- Tap -->
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('rules.tapLabel')"
+              :hint="$t('rules.tapHint')"
+            />
+          </template>
+          <div class="space-y-1.5">
+            <USelectMenu
+              :model-value="modeOf(rule.tapAction)"
+              :items="[
+                { label: $t('rules.modeNative'), value: 'native' },
+                { label: $t('rules.modeNone'), value: 'none' },
+                { label: $t('rules.modeAction'), value: 'action' },
+              ]"
+              value-key="value"
+              class="w-full"
+              @update:model-value="(mode: ModeKind) => setMode(rule, 'tapAction', mode)"
+            />
+            <ActionPickerModal
+              v-if="modeOf(rule.tapAction) === 'action'"
+              :model-value="actionValue(rule.tapAction)"
+              allow-empty
+              :placeholder="$t('rules.tapPh')"
+              @update:model-value="(value: string) => rule.tapAction = value"
+            />
+          </div>
+        </UFormField>
+
+        <!-- Hold -->
+        <div class="space-y-3">
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.holdActionLabel')"
+                :hint="$t('rules.holdActionHint')"
+              />
+            </template>
+            <div class="space-y-1.5">
+              <USelectMenu
+                :model-value="modeOf(rule.holdAction)"
+                :items="[
+                  { label: $t('rules.modeNative'), value: 'native' },
+                  { label: $t('rules.modeNone'), value: 'none' },
+                  { label: $t('rules.modeAction'), value: 'action' },
+                ]"
+                value-key="value"
+                class="w-full"
+                @update:model-value="(mode: ModeKind) => setMode(rule, 'holdAction', mode)"
+              />
+              <ActionPickerModal
+                v-if="modeOf(rule.holdAction) === 'action'"
+                :model-value="actionValue(rule.holdAction)"
+                key-only
+                allow-empty
+                :placeholder="$t('rules.holdActionPh')"
+                @update:model-value="(value: string) => rule.holdAction = value"
+              />
+            </div>
+          </UFormField>
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.holdLabel')"
+                :hint="$t('rules.holdHint')"
+              />
+            </template>
+            <OverridableNumberField
+              v-model="rule.holdTimeoutMs"
+              :default-value="defaultHoldTimeoutMs"
+              :suffix="$t('common.ms')"
+            />
+          </UFormField>
+        </div>
+
+        <!-- Double Tap -->
+        <div class="space-y-3">
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.doubleTapLabel')"
+                :hint="$t('rules.doubleTapHint')"
+              />
+            </template>
+            <ActionPickerModal
+              v-model="rule.doubleTapAction"
+              allow-empty
+              :placeholder="$t('rules.doubleTapPh')"
+            />
+          </UFormField>
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.doubleTapWindowLabel')"
+                :hint="$t('rules.doubleTapWindowHint')"
+              />
+            </template>
+            <OverridableNumberField
+              v-model="rule.doubleTapTimeoutMs"
+              :default-value="defaultDoubleTapTimeoutMs"
+              :suffix="$t('common.ms')"
+            />
+          </UFormField>
+        </div>
       </div>
-    </UFormField>
-
-    <UFormField>
-      <template #label>
-        <FieldLabel
-          :label="$t('rules.holdActionLabel')"
-          :hint="$t('rules.holdActionHint')"
-        />
-      </template>
-      <div class="space-y-1.5">
-        <USelectMenu
-          :model-value="modeOf(rule.holdAction)"
-          :items="[
-            { label: $t('rules.modeNative'), value: 'native' },
-            { label: $t('rules.modeNone'), value: 'none' },
-            { label: $t('rules.modeAction'), value: 'action' },
-          ]"
-          value-key="value"
-          class="w-full"
-          @update:model-value="(mode: ModeKind) => setMode(rule, 'holdAction', mode)"
-        />
-        <ActionPickerModal
-          v-if="modeOf(rule.holdAction) === 'action'"
-          :model-value="actionValue(rule.holdAction)"
-          key-only
-          allow-empty
-          :placeholder="$t('rules.holdActionPh')"
-          @update:model-value="(value: string) => rule.holdAction = value"
-        />
-      </div>
-    </UFormField>
-
-    <UFormField>
-      <template #label>
-        <FieldLabel
-          :label="$t('rules.doubleTapLabel')"
-          :hint="$t('rules.doubleTapHint')"
-        />
-      </template>
-      <ActionPickerModal
-        v-model="rule.doubleTapAction"
-        allow-empty
-        :placeholder="$t('rules.doubleTapPh')"
-      />
-    </UFormField>
-
-    <UFormField>
-      <template #label>
-        <FieldLabel
-          :label="$t('rules.holdLabel')"
-          :hint="$t('rules.holdHint')"
-        />
-      </template>
-      <OverridableNumberField
-        v-model="rule.holdTimeoutMs"
-        :default-value="defaultHoldTimeoutMs"
-        :suffix="$t('common.ms')"
-      />
-    </UFormField>
-
-    <UFormField>
-      <template #label>
-        <FieldLabel
-          :label="$t('rules.doubleTapWindowLabel')"
-          :hint="$t('rules.doubleTapWindowHint')"
-        />
-      </template>
-      <OverridableNumberField
-        v-model="rule.doubleTapTimeoutMs"
-        :default-value="defaultDoubleTapTimeoutMs"
-        :suffix="$t('common.ms')"
-      />
-    </UFormField>
-
-    <div class="pt-6 col-span-2 2xl:col-span-1">
-      <UButton
-        icon="i-lucide-trash-2"
-        color="error"
-        variant="ghost"
-        square
-        :aria-label="$t('rules.deleteRule')"
-        @click="$emit('remove', rule.id)"
-      />
     </div>
   </div>
 </template>
