@@ -6,6 +6,10 @@ import {
 } from '~/composables/useLayoutLibrary'
 import { BUILTIN_LAYOUT_META } from '~/utils/layoutPresets'
 
+const badgeTooltipUi = {
+  content: 'h-auto max-w-72 py-2',
+}
+
 const {
   loaded,
   currentLayoutId,
@@ -29,7 +33,7 @@ const currentLayoutLabel = computed<string>(() => {
   >
     <div class="flex items-center gap-2.5 min-w-0">
       <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
-      <UTooltip v-if="loaded">
+      <UTooltip v-if="loaded" :ui="badgeTooltipUi">
         <UBadge
           :color="isLayoutDirty ? 'warning' : 'neutral'"
           :variant="isLayoutDirty ? 'solid' : 'outline'"
@@ -51,12 +55,12 @@ const currentLayoutLabel = computed<string>(() => {
           </span>
         </UBadge>
         <template #content>
-          <div class="max-w-72 whitespace-pre-wrap p-1 text-center">
+          <div class="whitespace-pre-wrap text-center">
             {{ isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel }}
           </div>
         </template>
       </UTooltip>
-      <UTooltip v-if="layout">
+      <UTooltip v-if="layout" :ui="badgeTooltipUi">
         <UBadge
           color="neutral"
           variant="outline"
@@ -68,7 +72,7 @@ const currentLayoutLabel = computed<string>(() => {
           {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
         </UBadge>
         <template #content>
-          <div class="max-w-72 whitespace-pre-wrap p-1 text-center">
+          <div class="whitespace-pre-wrap text-center">
             {{ layout.long }}
           </div>
         </template>

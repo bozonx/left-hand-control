@@ -3,6 +3,10 @@ import MacroEditorCard from '~/components/features/macros/MacroEditorCard.vue'
 import SystemMacrosCard from '~/components/features/macros/SystemMacrosCard.vue'
 import { SYSTEM_MACROS } from '~/utils/systemMacros'
 
+const disabledTooltipUi = {
+  content: 'h-auto max-w-72 py-2',
+}
+
 const { config } = useConfig()
 const {
   addMacro,
@@ -55,7 +59,7 @@ function cancelRemove() {
               {{ $t('macros.subtitle') }}
             </p>
           </div>
-          <UTooltip :disabled="!hasIdErrors">
+          <UTooltip :disabled="!hasIdErrors" :ui="disabledTooltipUi">
             <UButton
               icon="i-lucide-plus"
               size="sm"
@@ -65,7 +69,7 @@ function cancelRemove() {
               {{ $t('macros.addBtn') }}
             </UButton>
             <template #content>
-              <div class="max-w-72 whitespace-pre-wrap p-1 text-center">{{ $t('macros.addDisabled') }}</div>
+              <div class="whitespace-pre-wrap text-center">{{ $t('macros.addDisabled') }}</div>
             </template>
           </UTooltip>
         </div>
