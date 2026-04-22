@@ -39,6 +39,7 @@ export default {
     stopped: 'stopped',
     none: '— none —',
     asInSystem: 'Use system',
+    backToTop: 'back to top',
   },
   tabs: {
     rules: 'Rules',

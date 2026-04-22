@@ -39,6 +39,7 @@ export default {
     stopped: 'остановлен',
     none: '— нет —',
     asInSystem: 'Как в системе',
+    backToTop: 'вернуться наверх',
   },
   tabs: {
     rules: 'Правила',
@@ -311,6 +312,7 @@ export default {
     macros: 'Макросы',
     systemMacros: 'Системные макросы',
     system: 'Системные',
+    backToTop: 'Наверх',
   },
   systemActions: {
     switchDesktop: 'Переключиться на рабочий стол {n}',
