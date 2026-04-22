@@ -49,6 +49,7 @@ function updateDraft(value: string | number) {
         variant="ghost"
         color="neutral"
         square
+        class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         :aria-label="$t('common.override')"
         @click="startEdit"
       />

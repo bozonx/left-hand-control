@@ -39,7 +39,7 @@ function actionValue(value: string | null): string {
 </script>
 
 <template>
-  <div class="relative p-4 rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 flex gap-6">
+  <div class="relative p-4 rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 flex gap-6 group transition-all duration-300 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/5">
     <!-- Left Column: Main Parameters (flex-1) -->
     <div class="flex-1 flex flex-col gap-5">
       <!-- Top Row: Key and Layer -->
@@ -87,6 +87,7 @@ function actionValue(value: string | null): string {
               variant="outline"
               color="neutral"
               square
+              class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               :aria-label="$t('rules.createLayer')"
               @click="$emit('createLayer', rule.id)"
             />
@@ -182,7 +183,7 @@ function actionValue(value: string | null): string {
     <!-- Right Column: Meta & Timing -->
     <div class="w-52 flex flex-col gap-4">
       <div class="flex items-center justify-between">
-        <div class="flex gap-1">
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <UButton
             icon="i-lucide-arrow-up"
             variant="ghost"
@@ -209,6 +210,7 @@ function actionValue(value: string | null): string {
           variant="ghost"
           size="sm"
           square
+          class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           :aria-label="$t('rules.deleteRule')"
           @click="$emit('remove', rule.id)"
         />
