@@ -8,6 +8,8 @@ defineProps<{
   layerOptions: Array<{ label: string, value: string }>
   defaultHoldTimeoutMs: number
   defaultDoubleTapTimeoutMs: number
+  isFirst?: boolean
+  isLast?: boolean
 }>()
 
 defineEmits<{
@@ -187,6 +189,7 @@ function actionValue(value: string | null): string {
             color="neutral"
             size="sm"
             square
+            :disabled="isFirst"
             @click="$emit('moveUp', rule.id)"
           />
           <UButton
@@ -195,6 +198,7 @@ function actionValue(value: string | null): string {
             color="neutral"
             size="sm"
             square
+            :disabled="isLast"
             @click="$emit('moveDown', rule.id)"
           />
         </div>

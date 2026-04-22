@@ -37,12 +37,14 @@ const {
 
       <div v-else class="space-y-2">
         <RuleRow
-          v-for="rule in config.rules"
+          v-for="(rule, index) in config.rules"
           :key="rule.id"
           :rule="rule"
           :layer-options="layerOptions"
           :default-hold-timeout-ms="config.settings.defaultHoldTimeoutMs"
           :default-double-tap-timeout-ms="config.settings.defaultDoubleTapTimeoutMs"
+          :is-first="index === 0"
+          :is-last="index === config.rules.length - 1"
           @remove="removeRule"
           @move-up="moveRule($event, 'up')"
           @move-down="moveRule($event, 'down')"
