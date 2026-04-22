@@ -51,6 +51,7 @@ export default defineNuxtConfig({
   devServer: {
     host: 'localhost',
     port: parseInt(process.env.PORT || '3000'),
+    strictPort: true,
   },
 
   vite: {
@@ -59,11 +60,6 @@ export default defineNuxtConfig({
     // Tauri expects a fixed port, fail if that port is not available
     server: {
       strictPort: true,
-      hmr: {
-        protocol: 'ws',
-        host: 'localhost',
-        port: parseInt(process.env.HMR_PORT || '3001'),
-      },
     },
     // Keep the client env surface narrow: only explicit frontend-facing
     // variables should reach `import.meta.env`.

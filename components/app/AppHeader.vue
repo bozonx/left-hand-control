@@ -29,44 +29,50 @@ const currentLayoutLabel = computed<string>(() => {
   >
     <div class="flex items-center gap-2.5 min-w-0">
       <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
-      <UBadge
-        v-if="loaded"
-        :color="isLayoutDirty ? 'warning' : 'neutral'"
-        :variant="isLayoutDirty ? 'solid' : 'outline'"
-        class="max-w-[22rem] truncate"
-        size="sm"
-        :title="
-          isLayoutDirty
-            ? $t('app.dirtyTooltip')
-            : currentLayoutLabel
-        "
-      >
-        <UIcon
-          :name="
-            isLayoutDirty
-              ? 'i-lucide-alert-triangle'
-              : 'i-lucide-keyboard'
-          "
-          class="mr-1 shrink-0"
-        />
-        <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.presetLabel') }}</span>
-        <span class="truncate">{{ currentLayoutLabel }}</span>
-        <span v-if="isLayoutDirty" class="ml-1 font-semibold">
-          {{ $t('app.notSavedBadge') }}
-        </span>
-      </UBadge>
-      <UBadge
-        v-if="layout"
-        color="neutral"
-        variant="outline"
-        size="sm"
-        :title="layout.long"
-        class="font-mono uppercase"
-      >
-        <UIcon name="i-lucide-languages" class="mr-1 shrink-0" />
-        <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.layoutLanguageLabel') }}</span>
-        {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
-      </UBadge>
+      <UTooltip v-if="loaded">
+        <UBadge
+          :color="isLayoutDirty ? 'warning' : 'neutral'"
+          :variant="isLayoutDirty ? 'solid' : 'outline'"
+          class="max-w-[22rem] truncate"
+          size="sm"
+        >
+          <UIcon
+            :name="
+              isLayoutDirty
+                ? 'i-lucide-alert-triangle'
+                : 'i-lucide-keyboard'
+            "
+            class="mr-1 shrink-0"
+          />
+          <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.presetLabel') }}</span>
+          <span class="truncate">{{ currentLayoutLabel }}</span>
+          <span v-if="isLayoutDirty" class="ml-1 font-semibold">
+            {{ $t('app.notSavedBadge') }}
+          </span>
+        </UBadge>
+        <template #content>
+          <div class="max-w-72 whitespace-pre-wrap p-1 text-center">
+            {{ isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel }}
+          </div>
+        </template>
+      </UTooltip>
+      <UTooltip v-if="layout">
+        <UBadge
+          color="neutral"
+          variant="outline"
+          size="sm"
+          class="font-mono uppercase"
+        >
+          <UIcon name="i-lucide-languages" class="mr-1 shrink-0" />
+          <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.layoutLanguageLabel') }}</span>
+          {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
+        </UBadge>
+        <template #content>
+          <div class="max-w-72 whitespace-pre-wrap p-1 text-center">
+            {{ layout.long }}
+          </div>
+        </template>
+      </UTooltip>
     </div>
     <div class="text-xs text-(--ui-text-muted) flex items-center gap-3 shrink-0">
       <span v-if="!loaded">{{ $t('app.loading') }}</span>

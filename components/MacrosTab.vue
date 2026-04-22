@@ -55,19 +55,19 @@ function cancelRemove() {
               {{ $t('macros.subtitle') }}
             </p>
           </div>
-          <UButton
-            icon="i-lucide-plus"
-            size="sm"
-            :disabled="hasIdErrors"
-            :title="
-              hasIdErrors
-                ? $t('macros.addDisabled')
-                : undefined
-            "
-            @click="addMacro"
-          >
-            {{ $t('macros.addBtn') }}
-          </UButton>
+          <UTooltip :disabled="!hasIdErrors">
+            <UButton
+              icon="i-lucide-plus"
+              size="sm"
+              :disabled="hasIdErrors"
+              @click="addMacro"
+            >
+              {{ $t('macros.addBtn') }}
+            </UButton>
+            <template #content>
+              <div class="max-w-72 whitespace-pre-wrap p-1 text-center">{{ $t('macros.addDisabled') }}</div>
+            </template>
+          </UTooltip>
         </div>
       </template>
 

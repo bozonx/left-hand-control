@@ -42,9 +42,12 @@ function clear() {
         :name="model ? 'i-lucide-square-mouse-pointer' : 'i-lucide-plus'"
         class="shrink-0 w-4 h-4 text-(--ui-text-muted)"
       />
-      <span v-if="displayLabel" class="truncate" :title="model">
-        {{ displayLabel }}
-      </span>
+      <UTooltip v-if="displayLabel" class="truncate min-w-0">
+        <span>{{ displayLabel }}</span>
+        <template #content>
+          <div class="max-w-72 whitespace-pre-wrap p-1 text-center">{{ model }}</div>
+        </template>
+      </UTooltip>
       <span v-else class="text-(--ui-text-muted) truncate">
         {{ placeholder ?? $t('picker.chooseAction') }}
       </span>
