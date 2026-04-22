@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import FieldResetButton from '~/components/shared/FieldResetButton.vue'
+
 const props = defineProps<{
   keyLabel: string
   keyCode: string
@@ -49,15 +51,11 @@ function clear() {
     </template>
     <template #footer>
       <div class="flex justify-between w-full">
-        <UButton
+        <FieldResetButton
           v-if="action"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-trash-2"
+          :label="$t('common.clear')"
           @click="clear"
-        >
-          {{ $t('common.clear') }}
-        </UButton>
+        />
         <div class="flex gap-2 ml-auto">
           <UButton color="neutral" variant="ghost" @click="open = false">
             {{ $t('common.cancel') }}

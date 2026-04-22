@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import FieldLabel from '~/components/FieldLabel.vue'
+import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 
 const props = withDefaults(defineProps<{
   label: string
@@ -73,13 +74,9 @@ function onBlur() {
           >
             {{ displayValue }}<span v-if="suffix" class="ml-0.5 text-[10px] font-sans opacity-60 uppercase">{{ suffix }}</span>
           </span>
-          <UButton
+          <FieldResetButton
             v-if="isOverridden"
-            icon="i-lucide-rotate-ccw"
-            size="xs"
-            variant="ghost"
-            color="neutral"
-            square
+            :label="$t('common.reset')"
             @click.stop="reset"
           />
           <UIcon

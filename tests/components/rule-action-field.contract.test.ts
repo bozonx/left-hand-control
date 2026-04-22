@@ -53,14 +53,15 @@ const ActionPickerModalStub = defineComponent({
   `,
 })
 
-const AppTooltipStub = defineComponent({
+const FieldResetButtonStub = defineComponent({
   props: {
-    text: {
+    label: {
       type: String,
       default: '',
     },
   },
-  template: '<div data-testid="tooltip-stub"><slot /></div>',
+  emits: ['click'],
+  template: '<button type="button" data-testid="field-reset" :aria-label="label" @click="$emit(\'click\')">reset</button>',
 })
 
 describe('RuleActionField', () => {
@@ -84,7 +85,7 @@ describe('RuleActionField', () => {
     const wrapper = await mountSuspended(Harness, {
       global: {
         stubs: {
-          AppTooltip: AppTooltipStub,
+          FieldResetButton: FieldResetButtonStub,
           ResettableSelectMenu: ResettableSelectMenuStub,
           ActionPickerModal: ActionPickerModalStub,
         },
@@ -113,7 +114,7 @@ describe('RuleActionField', () => {
     const wrapper = await mountSuspended(Harness, {
       global: {
         stubs: {
-          AppTooltip: AppTooltipStub,
+          FieldResetButton: FieldResetButtonStub,
           ResettableSelectMenu: ResettableSelectMenuStub,
           ActionPickerModal: ActionPickerModalStub,
         },

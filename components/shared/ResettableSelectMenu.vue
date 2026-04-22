@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import FieldResetButton from '~/components/shared/FieldResetButton.vue'
+
 const props = withDefaults(defineProps<{
   items: Array<Record<string, any>>
   modelValue?: string | number | null
@@ -41,13 +43,9 @@ function updateValue(value: string | number | null | undefined) {
       class="flex-1 min-w-0"
       @update:model-value="updateValue"
     />
-    <UButton
+    <FieldResetButton
       v-if="props.clearable && !isReset"
-      icon="i-lucide-rotate-ccw"
-      variant="ghost"
-      color="neutral"
-      square
-      :aria-label="props.resetAriaLabel || $t('common.reset')"
+      :label="props.resetAriaLabel || $t('common.reset')"
       @click="reset"
     />
   </div>

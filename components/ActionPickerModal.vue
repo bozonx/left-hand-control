@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
+import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 
 const props = defineProps<{
   allowEmpty?: boolean
@@ -105,18 +106,11 @@ function cancel() {
         {{ placeholder ?? $t('picker.chooseAction') }}
       </span>
     </button>
-    <UButton
+    <FieldResetButton
       v-if="allowEmpty && model"
-      :icon="props.clearLabel ? undefined : 'i-lucide-x'"
-      size="xs"
-      color="neutral"
-      variant="ghost"
-      :square="!props.clearLabel"
-      :aria-label="$t('picker.clearAria')"
+      :label="props.clearLabel ?? $t('common.clear')"
       @click="model = ''"
-    >
-      <template v-if="props.clearLabel">{{ props.clearLabel }}</template>
-    </UButton>
+    />
   </div>
 
   <UModal
@@ -129,15 +123,11 @@ function cancel() {
     </template>
     <template #footer>
       <div class="flex justify-between w-full gap-2">
-        <UButton
+        <FieldResetButton
           v-if="allowEmpty && (model || draft)"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-trash-2"
+          :label="props.clearLabel ?? $t('common.clear')"
           @click="clear"
-        >
-          {{ props.clearLabel ?? $t('common.clear') }}
-        </UButton>
+        />
         <div class="flex gap-2 ml-auto">
           <UButton color="neutral" variant="ghost" @click="cancel">
             {{ $t('common.cancel') }}

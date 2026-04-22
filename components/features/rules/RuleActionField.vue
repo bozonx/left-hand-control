@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppTooltip from '~/components/shared/AppTooltip.vue'
+import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
 
 type ModeKind = 'native' | 'none' | 'action'
@@ -89,17 +89,7 @@ function cancelAction() {
         />
         <span class="truncate">{{ actionLabel }}</span>
       </button>
-      <AppTooltip :text="$t('common.reset')">
-        <UButton
-          icon="i-lucide-rotate-ccw"
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          square
-          :aria-label="$t('common.reset')"
-          @click="resetToDefault"
-        />
-      </AppTooltip>
+      <FieldResetButton :label="$t('common.reset')" @click="resetToDefault" />
     </div>
     <ResettableSelectMenu
       v-else
