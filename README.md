@@ -1,8 +1,5 @@
-# left-hand-control
-
-Key mapper for desktops which suggests a smart layout for professionals, mostly using the left hand for control functions.
-
 Built as a desktop application on top of **Tauri 2**, **Nuxt 3**, **Nuxt UI v3**, **Vue 3** and **Tailwind CSS v4**.
+Currently, only **Linux** is supported.
 
 ## Stack
 
@@ -35,7 +32,7 @@ pnpm install
 pnpm tauri:dev
 ```
 
-This starts the Nuxt dev server on `http://localhost:3000` and launches the Tauri window pointing at it.
+This starts the Nuxt dev server on the port specified in `.env` (default `http://localhost:3010`) and launches the Tauri window pointing at it.
 
 ## Run the web UI only (browser)
 
@@ -98,17 +95,14 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
 
 The app uses Tauri's platform-specific app directories based on the bundle identifier `dev.bozonx.left-hand-control`.
 
-- Linux:
+- **Linux** (primary):
   - config: `~/.config/dev.bozonx.left-hand-control/config.json`
   - user layouts: `~/.local/share/dev.bozonx.left-hand-control/layouts/`
-- macOS:
-  - config: `~/Library/Application Support/dev.bozonx.left-hand-control/config.json`
-  - user layouts: `~/Library/Application Support/dev.bozonx.left-hand-control/layouts/`
-- Windows:
-  - config: `%APPDATA%\dev.bozonx.left-hand-control\config.json`
-  - user layouts: `%APPDATA%\dev.bozonx.left-hand-control\layouts\`
 
-On Linux, if `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is set, the app uses those directories instead of `~/.config` and `~/.local/share`.
+If `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is set, the app uses those directories instead of `~/.config` and `~/.local/share`.
+
+- **macOS / Windows** (future support):
+  - Standard Tauri app data directories.
 
 ## Key-mapper (Linux only)
 

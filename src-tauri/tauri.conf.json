@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://localhost:3000 ws://localhost:3001; img-src 'self' asset: http://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self' asset: http://asset.localhost data:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'"
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://localhost:3010 ws://localhost:3011; img-src 'self' asset: http://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self' asset: http://asset.localhost data:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'"
     }
   },
   "bundle": {
@@ -34,6 +34,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "deb": {
+        "depends": [
+          "webkit2gtk-4.1",
+          "gtk3",
+          "libappindicator3-1",
+          "librsvg2-2",
+          "libssl3",
+          "libxdo3"
+        ]
+      }
+    }
   }
 }
