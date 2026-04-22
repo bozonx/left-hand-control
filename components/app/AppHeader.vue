@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import { BUILTIN_LAYOUT_ID } from '~/types/config'
 import {
   isUserLayoutId,
@@ -109,4 +110,3 @@ const tabItems = computed(() => [
     </div>
   </header>
 </template>
-

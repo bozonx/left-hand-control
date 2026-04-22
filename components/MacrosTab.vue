@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import MacroEditorCard from '~/components/features/macros/MacroEditorCard.vue'
 import SystemMacrosCard from '~/components/features/macros/SystemMacrosCard.vue'
 import { SYSTEM_MACROS } from '~/utils/systemMacros'

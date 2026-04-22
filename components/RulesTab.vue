@@ -66,7 +66,10 @@ defineEmits<{
       </div>
 
       <template #footer>
-        <div class="flex items-center justify-end gap-3">
+        <div class="flex items-center justify-between gap-3">
+          <UButton icon="i-lucide-plus" size="sm" @click="addRule">
+            {{ $t('rules.addBtn') }}
+          </UButton>
           <ULink
             v-if="showBackToTop"
             class="text-xs text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors cursor-pointer"
