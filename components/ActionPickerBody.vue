@@ -79,7 +79,7 @@ const categoryItems = computed(() => {
 })
 
 const showPhysicalKeyHint = computed(() =>
-  ['letters', 'symbols'].includes(activeCategory.value),
+  ['lettersSymbols'].includes(activeCategory.value),
 )
 
 const showChordHint = computed(() => props.keyOnly)
