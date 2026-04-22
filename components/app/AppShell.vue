@@ -11,7 +11,7 @@ const { t } = useI18n()
 const active = ref<string>('rules')
 
 const tabItems = computed(() => [
-  { value: 'rules', label: t('tabs.rules'), icon: 'i-lucide-layers' },
+  { value: 'rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { value: 'keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { value: 'macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
   { value: 'settings', label: t('tabs.settings'), icon: 'i-lucide-settings' },
