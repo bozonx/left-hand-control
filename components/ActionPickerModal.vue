@@ -1,8 +1,4 @@
 <script setup lang="ts">
-const valueTooltipUi = {
-  content: 'h-auto max-w-72 py-2',
-}
-
 const props = defineProps<{
   allowEmpty?: boolean
   placeholder?: string
@@ -46,12 +42,9 @@ function clear() {
         :name="model ? 'i-lucide-square-mouse-pointer' : 'i-lucide-plus'"
         class="shrink-0 w-4 h-4 text-(--ui-text-muted)"
       />
-      <UTooltip v-if="displayLabel" class="truncate min-w-0" :ui="valueTooltipUi">
+      <AppTooltip v-if="displayLabel" class="truncate min-w-0" :text="model">
         <span>{{ displayLabel }}</span>
-        <template #content>
-          <div class="whitespace-pre-wrap text-center">{{ model }}</div>
-        </template>
-      </UTooltip>
+      </AppTooltip>
       <span v-else class="text-(--ui-text-muted) truncate">
         {{ placeholder ?? $t('picker.chooseAction') }}
       </span>

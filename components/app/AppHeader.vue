@@ -6,10 +6,6 @@ import {
 } from '~/composables/useLayoutLibrary'
 import { BUILTIN_LAYOUT_META } from '~/utils/layoutPresets'
 
-const badgeTooltipUi = {
-  content: 'h-auto max-w-72 py-2',
-}
-
 const {
   loaded,
   currentLayoutId,
@@ -33,7 +29,10 @@ const currentLayoutLabel = computed<string>(() => {
   >
     <div class="flex items-center gap-2.5 min-w-0">
       <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
-      <UTooltip v-if="loaded" :ui="badgeTooltipUi">
+      <AppTooltip
+        v-if="loaded"
+        :text="isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel"
+      >
         <UBadge
           :color="isLayoutDirty ? 'warning' : 'neutral'"
           :variant="isLayoutDirty ? 'solid' : 'outline'"
@@ -54,13 +53,8 @@ const currentLayoutLabel = computed<string>(() => {
             {{ $t('app.notSavedBadge') }}
           </span>
         </UBadge>
-        <template #content>
-          <div class="whitespace-pre-wrap text-center">
-            {{ isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel }}
-          </div>
-        </template>
-      </UTooltip>
-      <UTooltip v-if="layout" :ui="badgeTooltipUi">
+      </AppTooltip>
+      <AppTooltip v-if="layout" :text="layout.long">
         <UBadge
           color="neutral"
           variant="outline"
@@ -71,12 +65,7 @@ const currentLayoutLabel = computed<string>(() => {
           <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.layoutLanguageLabel') }}</span>
           {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
         </UBadge>
-        <template #content>
-          <div class="whitespace-pre-wrap text-center">
-            {{ layout.long }}
-          </div>
-        </template>
-      </UTooltip>
+      </AppTooltip>
     </div>
     <div class="text-xs text-(--ui-text-muted) flex items-center gap-3 shrink-0">
       <span v-if="!loaded">{{ $t('app.loading') }}</span>
