@@ -7,6 +7,11 @@ export default defineNuxtConfig({
   ssr: false,
 
   modules: ['@nuxt/ui'],
+  icon: {
+    clientBundle: {
+      scan: true,
+    },
+  },
 
   // Auto-import `useI18n` from vue-i18n so components / composables can
   // call it without a manual `import` line. The plugin in `plugins/i18n.ts`
