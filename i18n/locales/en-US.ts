@@ -14,6 +14,8 @@ export default {
     customLayout: 'Custom layout',
     switchToLight: 'Switch to light theme',
     switchToDark: 'Switch to dark theme',
+    presetLabel: 'Preset:',
+    layoutLanguageLabel: 'Language:',
   },
   common: {
     cancel: 'Cancel',

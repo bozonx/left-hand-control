@@ -14,6 +14,8 @@ export default {
     customLayout: 'Пользовательская раскладка',
     switchToLight: 'Переключить на светлую тему',
     switchToDark: 'Переключить на тёмную тему',
+    presetLabel: 'Пресет:',
+    layoutLanguageLabel: 'Язык:',
   },
   common: {
     cancel: 'Отмена',
