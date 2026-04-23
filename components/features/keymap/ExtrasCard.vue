@@ -38,9 +38,35 @@ defineEmits<{
       <div
         v-for="(extra, index) in extras"
         :key="extra.id"
-        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted)"
+        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted)"
       >
-        <div class="col-span-2 flex justify-end gap-1 -mb-1">
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('keymap.extraKeyLabel')"
+              :hint="$t('keymap.extraKeyHint')"
+            />
+          </template>
+          <ActionPickerModal
+            v-model="extra.name"
+            key-only
+            :placeholder="$t('rules.keyPh')"
+          />
+        </UFormField>
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('keymap.extraActionLabel')"
+              :hint="$t('keymap.extraActionHint')"
+            />
+          </template>
+          <ActionPickerModal
+            v-model="extra.action"
+            allow-empty
+            :placeholder="$t('rules.tapPh')"
+          />
+        </UFormField>
+        <div class="flex items-start gap-1 pt-6">
           <UButton
             icon="i-lucide-arrow-up"
             variant="ghost"
@@ -71,32 +97,6 @@ defineEmits<{
             @click="$emit('remove', extra.id)"
           />
         </div>
-        <UFormField>
-          <template #label>
-            <FieldLabel
-              :label="$t('keymap.extraKeyLabel')"
-              :hint="$t('keymap.extraKeyHint')"
-            />
-          </template>
-          <ActionPickerModal
-            v-model="extra.name"
-            key-only
-            :placeholder="$t('rules.keyPh')"
-          />
-        </UFormField>
-        <UFormField>
-          <template #label>
-            <FieldLabel
-              :label="$t('keymap.extraActionLabel')"
-              :hint="$t('keymap.extraActionHint')"
-            />
-          </template>
-          <ActionPickerModal
-            v-model="extra.action"
-            allow-empty
-            :placeholder="$t('rules.tapPh')"
-          />
-        </UFormField>
       </div>
     </div>
   </UCard>
