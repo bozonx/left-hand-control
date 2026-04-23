@@ -52,6 +52,16 @@ export function useMacroEditor() {
     )
   }
 
+  function moveMacro(uiKey: string, delta: number) {
+    const index = config.value.macros.findIndex((macro) => uiKeyOf(macro) === uiKey)
+    const next = index + delta
+    if (index < 0 || next < 0 || next >= config.value.macros.length) return
+    const macros = config.value.macros.slice()
+    const [item] = macros.splice(index, 1) as [Macro]
+    macros.splice(next, 0, item)
+    config.value.macros = macros
+  }
+
   function addStep(macro: Macro) {
     macro.steps.push({ id: randomId(), keystroke: '' })
   }
@@ -135,6 +145,7 @@ export function useMacroEditor() {
     addMacro,
     cloneSystemMacro,
     removeMacro,
+    moveMacro,
     addStep,
     removeStep,
     moveStep,

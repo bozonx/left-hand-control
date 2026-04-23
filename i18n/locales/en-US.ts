@@ -151,7 +151,7 @@ export default {
     namePh: 'Macro name',
     idLabel: 'ID',
     idHint:
-      'Unique identifier for references like macro:<id>. Only change if no key uses this macro.',
+      'Unique identifier for references like macro:<id>. To bind the macro to a key, pick this action on the "Layers" or "Keymap" tab. Only change the ID if no key uses this macro.',
     idPh: 'id',
     idErrors: {
       empty: 'ID cannot be empty.',

@@ -9,6 +9,7 @@ const {
   addMacro,
   cloneSystemMacro,
   removeMacro,
+  moveMacro,
   addStep,
   removeStep,
   moveStep,
@@ -78,15 +79,19 @@ function cancelRemove() {
         </div>
 
         <MacroEditorCard
-          v-for="macro in config.macros"
+          v-for="(macro, index) in config.macros"
           :key="uiKeyOf(macro)"
           :ui-key="uiKeyOf(macro)"
           :macro="macro"
+          :is-first="index === 0"
+          :is-last="index === config.macros.length - 1"
           :id-error="idError(macro) ?? undefined"
           :usage="usage[macro.id] ?? []"
           :default-step-pause-ms="config.settings.defaultMacroStepPauseMs"
           :default-modifier-delay-ms="config.settings.defaultMacroModifierDelayMs"
           @remove="askRemove"
+          @move-up="moveMacro($event, -1)"
+          @move-down="moveMacro($event, 1)"
           @add-step="addStep"
           @move-step="moveStep"
           @remove-step="removeStep"
