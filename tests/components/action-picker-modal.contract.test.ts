@@ -11,26 +11,6 @@ const { useMacrosMock } = vi.hoisted(() => ({
 
 mockNuxtImport('useMacros', () => useMacrosMock)
 
-const UModalStub = defineComponent({
-  props: {
-    open: {
-      type: Boolean,
-      default: false,
-    },
-    title: {
-      type: String,
-      default: '',
-    },
-  },
-  emits: ['update:open'],
-  template: `
-    <div data-testid="modal-root" :data-open="open ? 'yes' : 'no'">
-      <slot name="body" />
-      <slot name="footer" />
-    </div>
-  `,
-})
-
 const ActionPickerBodyStub = defineComponent({
   props: {
     modelValue: {
@@ -49,6 +29,7 @@ const ActionPickerBodyStub = defineComponent({
 
 describe('ActionPickerModal', () => {
   beforeEach(() => {
+    document.body.innerHTML = ''
     useMacrosMock.mockReset()
     useMacrosMock.mockReturnValue({
       displayAction: (value: string | null | undefined) => value ?? '',
@@ -68,7 +49,6 @@ describe('ActionPickerModal', () => {
     const wrapper = await mountSuspended(Harness, {
       global: {
         stubs: {
-          UModal: UModalStub,
           ActionPickerBody: ActionPickerBodyStub,
           AppTooltip: defineComponent({
             template: '<div><slot /></div>',
@@ -77,11 +57,11 @@ describe('ActionPickerModal', () => {
       },
     })
 
-    expect(wrapper.get('[data-testid="modal-root"]').attributes('data-open')).toBe('no')
+    expect(document.querySelector('[data-testid="action-picker-view"]')).toBeNull()
 
     await wrapper.get('button[type="button"]').trigger('click')
 
-    expect(wrapper.get('[data-testid="modal-root"]').attributes('data-open')).toBe('yes')
+    expect(document.querySelector('[data-testid="action-picker-view"]')).not.toBeNull()
   })
 
   it('applies and closes immediately when an item is picked from the list', async () => {
@@ -97,7 +77,6 @@ describe('ActionPickerModal', () => {
     const wrapper = await mountSuspended(Harness, {
       global: {
         stubs: {
-          UModal: UModalStub,
           ActionPickerBody: ActionPickerBodyStub,
           AppTooltip: defineComponent({
             template: '<div><slot /></div>',
@@ -107,9 +86,11 @@ describe('ActionPickerModal', () => {
     })
 
     await wrapper.get('button[type="button"]').trigger('click')
-    await wrapper.get('[data-testid="picker-item"]').trigger('click')
+    const pickerItem = document.querySelector('[data-testid="picker-item"]') as HTMLButtonElement
+    pickerItem.click()
+    await wrapper.vm.$nextTick()
 
     expect((wrapper.vm as any).value).toBe('KeyA')
-    expect(wrapper.get('[data-testid="modal-root"]').attributes('data-open')).toBe('no')
+    expect(document.querySelector('[data-testid="action-picker-view"]')).toBeNull()
   })
 })

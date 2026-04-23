@@ -58,33 +58,15 @@ body {
  * Crisp Rendering Fixes
  * ----------------------------------------------------------------------------
  * Transforms (used in Modals, Popovers, Tooltips) can cause sub-pixel blurriness
- * on some Linux WebViews (WebKit2GTK). These properties force the browser
- * to treat the element as a separate layer and snap to pixels.
+ * on some Linux WebViews (WebKit2GTK), so action pickers avoid transformed
+ * modal surfaces and only keep lightweight smoothing for tooltip chrome.
  * -------------------------------------------------------------------------- */
-[role='dialog'],
-[role='popover'],
 [role='tooltip'] {
-  transform: translateZ(0);
   backface-visibility: hidden;
-  /* Prevent subpixel positioning blur during/after transitions */
-  will-change: transform, opacity;
-  /* Force sharper contrast in Webkit (Tauri Linux) */
   -webkit-font-smoothing: antialiased;
-  image-rendering: -webkit-optimize-contrast;
 }
 
-/* Specific fix for Nuxt UI Modals to ensure they don't land on subpixels */
-.modal-content,
-[class*='-modal-content'],
-[role='dialog'] > div {
-  transform: translateZ(0);
-  /* Force integer pixel alignment where possible */
-  -webkit-transform: translateZ(0);
-}
-
-/* Fix for blurry text in scrollable areas within modals (like ActionPicker) */
 [role='dialog'] .overflow-y-auto {
-  transform: translateZ(0);
   -webkit-overflow-scrolling: touch;
 }
 

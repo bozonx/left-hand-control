@@ -47,11 +47,18 @@ const modalOpen = computed({
   },
 })
 const applyDisabled = computed(() => props.requireValue && !draft.value.trim())
+const { t } = useI18n()
+const pickerTitle = computed(() =>
+  props.title ?? (props.keyOnly ? t('picker.titleKey') : t('picker.titleAction')),
+)
+
+const pickerRef = ref<HTMLElement | null>(null)
 
 watch(modalOpen, (isOpen, wasOpen) => {
   if (isOpen && !wasOpen) {
     draft.value = model.value
     closeReason.value = null
+    nextTick(() => pickerRef.value?.focus())
     return
   }
 
@@ -123,26 +130,38 @@ function cancel() {
     />
   </div>
 
-  <UModal
-    v-model:open="modalOpen"
-    :title="title ?? (keyOnly ? $t('picker.titleKey') : $t('picker.titleAction'))"
-    :ui="{ content: 'max-w-3xl' }"
-  >
-    <template #body>
-      <ActionPickerBody
-        v-model="draft"
-        :key-only="keyOnly"
-        @pick="pickAndApply"
-      />
-    </template>
-    <template #footer>
-      <div class="flex justify-between w-full gap-2">
-        <FieldResetButton
-          v-if="allowEmpty && (model || draft)"
-          :label="props.clearLabel ?? $t('common.clear')"
-          @click="clear"
-        />
-        <div class="flex gap-2 ml-auto">
+  <Teleport to="body">
+    <div
+      v-if="modalOpen"
+      ref="pickerRef"
+      class="fixed inset-0 z-50 flex flex-col bg-(--ui-bg) text-(--ui-text) outline-none"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="pickerTitle"
+      tabindex="-1"
+      data-testid="action-picker-view"
+      @keydown.esc="cancel"
+    >
+      <header class="shrink-0 border-b border-(--ui-border) bg-(--ui-bg-elevated)/80 px-4 py-3">
+        <div class="mx-auto flex w-full max-w-7xl items-center gap-3">
+          <UButton
+            icon="i-lucide-arrow-left"
+            color="neutral"
+            variant="ghost"
+            :aria-label="$t('common.cancel')"
+            @click="cancel"
+          />
+          <div class="min-w-0 flex-1">
+            <h2 class="truncate text-base font-semibold">{{ pickerTitle }}</h2>
+            <p class="truncate text-xs text-(--ui-text-muted)">
+              {{ draft || $t('picker.valuePh') }}
+            </p>
+          </div>
+          <FieldResetButton
+            v-if="allowEmpty && (model || draft)"
+            :label="props.clearLabel ?? $t('common.clear')"
+            @click="clear"
+          />
           <UButton color="neutral" variant="ghost" @click="cancel">
             {{ $t('common.cancel') }}
           </UButton>
@@ -150,7 +169,18 @@ function cancel() {
             {{ $t('common.apply') }}
           </UButton>
         </div>
-      </div>
-    </template>
-  </UModal>
+      </header>
+
+      <main class="min-h-0 flex-1 overflow-hidden px-4 py-4">
+        <div class="mx-auto flex h-full w-full max-w-7xl flex-col">
+          <ActionPickerBody
+            v-model="draft"
+            :key-only="keyOnly"
+            spacious
+            @pick="pickAndApply"
+          />
+        </div>
+      </main>
+    </div>
+  </Teleport>
 </template>

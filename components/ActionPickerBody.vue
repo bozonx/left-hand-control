@@ -10,6 +10,7 @@ import {
 
 const props = defineProps<{
   keyOnly?: boolean
+  spacious?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -86,8 +87,14 @@ const showChordHint = computed(() => props.keyOnly)
 
 const listGridClass = computed(() =>
   ['macros', 'system-macros', 'system'].includes(activeCategory.value)
-    ? 'grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-80 overflow-y-auto pr-1'
-    : 'grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-80 overflow-y-auto pr-1',
+    ? [
+        'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5 overflow-y-auto pr-1',
+        props.spacious ? 'min-h-0 flex-1 content-start' : 'max-h-80',
+      ].join(' ')
+    : [
+        'grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-1.5 overflow-y-auto pr-1',
+        props.spacious ? 'min-h-0 flex-1 content-start' : 'max-h-80',
+      ].join(' '),
 )
 
 function pick(item: ActionItem) {
@@ -97,7 +104,7 @@ function pick(item: ActionItem) {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div :class="props.spacious ? 'min-h-0 flex flex-1 flex-col gap-4' : 'space-y-4'">
     <UFormField :label="$t('picker.currentValue')">
       <div class="space-y-2">
         <UInput
