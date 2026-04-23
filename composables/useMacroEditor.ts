@@ -26,26 +26,28 @@ export function useMacroEditor() {
 
   function addMacro() {
     if (!Array.isArray(config.value.macros)) config.value.macros = []
-    const macro = {
+    const macro: Macro = {
       id: newMacroId(),
       name: t('macros.defaultName'),
       steps: [],
       stepPauseMs: undefined,
       modifierDelayMs: undefined,
     }
-    config.value.macros.push(macro)
+    config.value.macros.unshift(macro)
     return macro
   }
 
   function cloneSystemMacro(sys: SystemMacro) {
     if (!Array.isArray(config.value.macros)) config.value.macros = []
-    config.value.macros.push({
+    const macro: Macro = {
       id: newMacroId(`${sys.id}Copy`),
       name: `${sys.name} ${t('macros.copySuffix')}`,
       steps: sys.steps.map((step) => ({ id: randomId(), keystroke: step.keystroke })),
       stepPauseMs: undefined,
       modifierDelayMs: undefined,
-    })
+    }
+    config.value.macros.unshift(macro)
+    return macro
   }
 
   function removeMacro(uiKey: string) {

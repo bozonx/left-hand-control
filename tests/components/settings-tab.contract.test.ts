@@ -59,20 +59,6 @@ mockComponent('~/components/features/settings/ConfigPathCard.vue', () =>
   }),
 )
 
-mockComponent('~/components/features/settings/LayoutsLibraryCard.vue', () =>
-  defineComponent({
-    emits: ['saveCurrent', 'requestApplyEntry', 'requestApplyEmpty', 'requestDelete'],
-    template: `
-      <div data-test="library-card">
-        <button data-test="save-current" @click="$emit('saveCurrent')">save</button>
-        <button data-test="apply-entry" @click="$emit('requestApplyEntry', { id: 'user:test', name: 'Test', builtin: false })">apply</button>
-        <button data-test="apply-empty" @click="$emit('requestApplyEmpty')">empty</button>
-        <button data-test="request-delete" @click="$emit('requestDelete', { id: 'user:test', name: 'Test', builtin: false })">delete</button>
-      </div>
-    `,
-  }),
-)
-
 describe('SettingsTab', () => {
   beforeEach(() => {
     useSettingsScreenMock.mockReset()
@@ -142,29 +128,13 @@ describe('SettingsTab', () => {
     })
   })
 
-  it('wires card events into the settings-screen actions', async () => {
+  it('wires settings cards into the settings-screen actions', async () => {
     const wrapper = await mountSuspended(SettingsTab)
 
     await wrapper.get('[data-test="mapper-card"]').trigger('click')
-    await wrapper.get('[data-test="save-current"]').trigger('click')
-    await wrapper.get('[data-test="apply-entry"]').trigger('click')
-    await wrapper.get('[data-test="apply-empty"]').trigger('click')
-    await wrapper.get('[data-test="request-delete"]').trigger('click')
 
     expect(toggleMapperMock).toHaveBeenCalledTimes(1)
-    expect(openSaveModalMock).toHaveBeenCalledTimes(1)
-    expect(requestApplyEntryMock).toHaveBeenCalledWith({
-      id: 'user:test',
-      name: 'Test',
-      builtin: false,
-    })
-    expect(requestApplyEmptyMock).toHaveBeenCalledTimes(1)
-
-    const state = useSettingsScreenMock.mock.results[0]?.value
-    expect(state.deletePending.value).toEqual({
-      id: 'user:test',
-      name: 'Test',
-      builtin: false,
-    })
+    expect(wrapper.find('[data-test="config-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="library-card"]').exists()).toBe(false)
   })
 })

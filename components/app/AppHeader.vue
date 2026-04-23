@@ -17,9 +17,12 @@ const emit = defineEmits<{
 
 const {
   loaded,
+  config,
+  flush,
   currentLayoutId,
   isLayoutDirty,
 } = useConfig()
+const mapper = useMapper()
 const { layout } = useLayout()
 const { t } = useI18n()
 
@@ -32,11 +35,32 @@ const currentLayoutLabel = computed<string>(() => {
 })
 
 const tabItems = computed(() => [
+  { value: 'layouts', label: t('tabs.layouts'), icon: 'i-lucide-folder-kanban' },
   { value: 'rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { value: 'keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { value: 'macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
   { value: 'settings', label: t('tabs.settings'), icon: 'i-lucide-settings' },
 ])
+
+const selectedDevice = computed(() => config.value.settings.inputDevicePath ?? '')
+
+async function toggleMapper() {
+  try {
+    await flush()
+    if (mapper.status.value.running) {
+      await mapper.stop()
+      return
+    }
+    if (!selectedDevice.value) return
+    await mapper.start(selectedDevice.value)
+  } catch (error) {
+    mapper.error.value = error instanceof Error ? error.message : String(error)
+  }
+}
+
+onMounted(() => {
+  void mapper.refreshStatus()
+})
 </script>
 
 <template>
@@ -66,6 +90,19 @@ const tabItems = computed(() => [
 
     <div class="flex items-center gap-3 shrink-0">
       <template v-if="loaded">
+        <UButton
+          :color="mapper.status.value.running ? 'error' : 'primary'"
+          :variant="mapper.status.value.running ? 'soft' : 'solid'"
+          :icon="mapper.status.value.running ? 'i-lucide-square' : 'i-lucide-play'"
+          size="sm"
+          class="whitespace-nowrap"
+          :loading="mapper.busy.value"
+          :disabled="!mapper.status.value.running && !selectedDevice"
+          @click="toggleMapper"
+        >
+          {{ mapper.status.value.running ? $t('settings.stop') : $t('settings.start') }}
+        </UButton>
+
         <AppTooltip
           :text="isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel"
         >

@@ -124,6 +124,7 @@ watch(
             </div>
             <ActionPickerModal
               v-model="step.keystroke"
+              :excluded-macro-id="macro.id"
               :placeholder="$t('macros.stepPh')"
             />
             <UButton

@@ -5,7 +5,6 @@ import LoadingScreen from '~/components/LoadingScreen.vue'
 const {
   loaded,
   loadError,
-  needsWelcome,
   load,
 } = useConfig()
 
@@ -24,6 +23,5 @@ function retryLoad() {
     :error="loadError"
     @retry="retryLoad"
   />
-  <WelcomeScreen v-else-if="needsWelcome" />
   <AppShell v-else />
 </template>

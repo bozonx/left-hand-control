@@ -76,7 +76,7 @@ describe('useMacroEditor', () => {
 
     const sysMacro = systemMacroById('duplicateLine')!
     vm.cloneSystemMacro(sysMacro)
-    const cloned = state.config.value.macros[1]!
+    const cloned = state.config.value.macros[0]!
     expect(cloned.id).toBe('duplicateLineCopy')
     expect(cloned.name).toBe('Duplicate line (copy)')
     expect(cloned.steps.map((step) => step.keystroke)).toEqual(

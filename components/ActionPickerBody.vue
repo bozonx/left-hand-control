@@ -11,6 +11,7 @@ import {
 const props = defineProps<{
   keyOnly?: boolean
   spacious?: boolean
+  excludedMacroId?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,13 +26,14 @@ const { t } = useI18n()
 const dynamicCategories = computed<StaticCategory[]>(() => {
   // User macros shadow system macros with the same id — hide duplicates
   // from the system list to avoid confusion.
-  const userIds = new Set(macros.value.map((m) => m.id))
+  const userMacros = macros.value.filter((m) => m.id !== props.excludedMacroId)
+  const userIds = new Set(userMacros.map((m) => m.id))
   return [
     {
       id: 'macros',
       labelKey: 'categories.macros',
       icon: 'i-lucide-zap',
-      items: macros.value.map((m) => ({
+      items: userMacros.map((m) => ({
         label: m.name || m.id,
         value: macroActionRef(m.id),
         hint: m.id,
@@ -41,7 +43,9 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
       id: 'system-macros',
       labelKey: 'categories.systemMacros',
       icon: 'i-lucide-cpu',
-      items: SYSTEM_MACROS.filter((m) => !userIds.has(m.id)).map((m) => ({
+      items: SYSTEM_MACROS.filter((m) => (
+        !userIds.has(m.id) && m.id !== props.excludedMacroId
+      )).map((m) => ({
         label: m.name,
         value: macroActionRef(m.id),
         hint: m.id,

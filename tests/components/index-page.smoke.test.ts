@@ -24,12 +24,6 @@ mockComponent('~/components/LoadingScreen.vue', () =>
   }),
 )
 
-mockComponent('~/components/WelcomeScreen.vue', () =>
-  defineComponent({
-    template: '<div data-test="welcome-screen">Welcome screen</div>',
-  }),
-)
-
 mockComponent('~/components/app/AppShell.vue', () =>
   defineComponent({
     template: '<div data-test="app-shell">App shell</div>',
@@ -56,7 +50,7 @@ describe('IndexPage', () => {
     expect(wrapper.find('[data-test="loading-screen"]').exists()).toBe(true)
   })
 
-  it('shows the welcome screen when config requires onboarding', async () => {
+  it('shows the app shell when config requires onboarding', async () => {
     useConfigMock.mockReturnValue({
       loaded: ref(true),
       loadError: ref(null),
@@ -66,7 +60,6 @@ describe('IndexPage', () => {
 
     const wrapper = await mountSuspended(IndexPage)
 
-    expect(wrapper.find('[data-test="welcome-screen"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="app-shell"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="app-shell"]').exists()).toBe(true)
   })
 })

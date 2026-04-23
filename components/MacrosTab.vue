@@ -2,7 +2,7 @@
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import MacroEditorCard from '~/components/features/macros/MacroEditorCard.vue'
 import SystemMacrosCard from '~/components/features/macros/SystemMacrosCard.vue'
-import { SYSTEM_MACROS } from '~/utils/systemMacros'
+import { SYSTEM_MACROS, type SystemMacro } from '~/utils/systemMacros'
 
 const { config } = useConfig()
 const {
@@ -19,12 +19,24 @@ const {
   usage,
 } = useMacroEditor()
 
+const emit = defineEmits<{
+  backToTop: []
+}>()
+
 const systemOpen = ref(false)
 const focusMacroKey = ref<string | null>(null)
 
 async function createMacro() {
   const macro = addMacro()
   focusMacroKey.value = uiKeyOf(macro)
+  await nextTick()
+  focusMacroKey.value = null
+}
+
+async function createFromSystemMacro(sys: SystemMacro) {
+  const macro = cloneSystemMacro(sys)
+  focusMacroKey.value = uiKeyOf(macro)
+  emit('backToTop')
   await nextTick()
   focusMacroKey.value = null
 }
@@ -69,6 +81,7 @@ function cancelRemove() {
             <UButton
               icon="i-lucide-plus"
               size="sm"
+              class="whitespace-nowrap"
               :disabled="hasIdErrors"
               @click="createMacro"
             >
@@ -112,7 +125,7 @@ function cancelRemove() {
       v-model:system-open="systemOpen"
       :usage="usage"
       :system-macros="SYSTEM_MACROS"
-      @clone="cloneSystemMacro"
+      @clone="createFromSystemMacro"
     />
 
     <UModal v-model:open="confirmOpen" :title="$t('macros.confirmDeleteTitle')">

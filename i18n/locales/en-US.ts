@@ -10,7 +10,7 @@ export default {
     loadFailedBody: 'The app could not be initialized. Check the error below and try loading the config again.',
     notSavedBadge: '• unsaved',
     dirtyTooltip:
-      'The current layout has unsaved changes. Save it under Settings → Layouts, otherwise they will be lost when switching.',
+      'The current layout has unsaved changes. Save it under My layouts, otherwise they will be lost when switching.',
     customLayout: 'Custom layout',
     switchToLight: 'Switch to light theme',
     switchToDark: 'Switch to dark theme',
@@ -42,6 +42,7 @@ export default {
     backToTop: 'back to top',
   },
   tabs: {
+    layouts: 'My layouts',
     rules: 'Rules',
     keymap: 'Layout',
     macros: 'Macros',

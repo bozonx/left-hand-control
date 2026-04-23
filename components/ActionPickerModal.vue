@@ -12,6 +12,7 @@ const props = defineProps<{
   hideTrigger?: boolean
   requireValue?: boolean
   invalid?: boolean
+  excludedMacroId?: string
 }>()
 
 const emit = defineEmits<{
@@ -176,6 +177,7 @@ function cancel() {
           <ActionPickerBody
             v-model="draft"
             :key-only="keyOnly"
+            :excluded-macro-id="excludedMacroId"
             spacious
             @pick="pickAndApply"
           />

@@ -38,7 +38,7 @@ defineEmits<{
       <div
         v-for="(extra, index) in extras"
         :key="extra.id"
-        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted)"
+        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted) transition-all duration-200 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-elevated) hover:shadow-md"
       >
         <UFormField>
           <template #label>
