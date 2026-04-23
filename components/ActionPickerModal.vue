@@ -11,6 +11,7 @@ const props = defineProps<{
   open?: boolean
   hideTrigger?: boolean
   requireValue?: boolean
+  invalid?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -101,6 +102,7 @@ function cancel() {
     <button
       type="button"
       class="flex-1 min-w-0 h-8 px-2.5 flex items-center gap-2 rounded-md border border-(--ui-border) bg-(--ui-bg) hover:bg-(--ui-bg-elevated) text-left text-sm transition-colors"
+      :class="props.invalid ? 'border-(--ui-error) ring-1 ring-(--ui-error)' : ''"
       @click="openModal"
     >
       <UIcon

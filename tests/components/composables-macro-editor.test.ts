@@ -34,8 +34,8 @@ describe('useMacroEditor', () => {
       holdAction: '',
       doubleTapAction: '',
     })
-    state.config.value.layerKeymaps.base.keys.KeyH = macroActionRef('dup')
-    state.config.value.layerKeymaps.base.extras.push({
+    state.config.value.layerKeymaps.base!.keys.KeyH = macroActionRef('dup')
+    state.config.value.layerKeymaps.base!.extras.push({
       id: 'extra-1',
       name: 'Mouse4',
       action: macroActionRef('dup'),

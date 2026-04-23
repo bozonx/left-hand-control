@@ -68,7 +68,7 @@ function stepsPreview(sys: SystemMacro): string {
             <tr
               v-for="sys in systemMacros"
               :key="sys.id"
-              class="border-b border-(--ui-border) last:border-b-0 align-top"
+              class="group border-b border-(--ui-border) last:border-b-0 align-top transition-colors hover:bg-(--ui-bg-muted)"
             >
               <td class="py-2 pr-3 font-mono text-xs whitespace-nowrap">
                 {{ sys.id }}
@@ -107,6 +107,7 @@ function stepsPreview(sys: SystemMacro): string {
                   size="xs"
                   variant="outline"
                   icon="i-lucide-copy-plus"
+                  class="opacity-0 group-hover:opacity-100 transition-opacity"
                   @click="$emit('clone', sys)"
                 >
                   {{ $t('macros.cloneBtn') }}

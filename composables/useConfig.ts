@@ -82,7 +82,7 @@ export function normalizeConfig(raw: unknown): AppConfig {
     if (!cfg.layerKeymaps[layer.id]) {
       cfg.layerKeymaps[layer.id] = { keys: {}, extras: [] }
     } else {
-      const km = cfg.layerKeymaps[layer.id]
+      const km = cfg.layerKeymaps[layer.id]!
       if (!km.keys || typeof km.keys !== 'object') km.keys = {}
       if (!Array.isArray(km.extras)) km.extras = []
     }

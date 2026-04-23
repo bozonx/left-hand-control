@@ -101,6 +101,10 @@ export default {
     doubleTapWindowHint:
       'Max time between first release and second key-down to recognise a double tap. Defaults to the value from Settings.',
     deleteRule: 'Delete rule',
+    keyRequired: 'Pick a trigger key.',
+    confirmDeleteTitle: 'Delete rule?',
+    confirmDeleteBody:
+      'This rule already has a trigger key. Delete it permanently?',
     newLayerTitle: 'New layer',
     layerName: 'Layer name',
     layerNamePh: 'For example: Navigation',
@@ -169,7 +173,7 @@ export default {
     steps: 'Steps',
     addStep: 'Add step',
     stepsEmpty: 'No steps yet. Each step — one chord or action.',
-    stepPh: 'Ctrl+C or pick an action',
+    stepPh: 'Pick an action',
     moveUp: 'Up',
     moveDown: 'Down',
     deleteStep: 'Delete step',

@@ -15,7 +15,7 @@ const actionLabel = computed(() => displayAction(props.action))
 <template>
   <button
     type="button"
-    class="flex-1 basis-20 min-w-[4rem] max-w-[7rem] rounded-md border border-(--ui-border) bg-(--ui-bg) px-2 py-1.5 flex flex-col items-stretch gap-0.5 text-left transition-colors hover:border-(--ui-border-accented) cursor-pointer"
+    class="min-w-0 rounded-md border border-(--ui-border) bg-(--ui-bg) px-2 py-1.5 flex flex-col items-stretch gap-0.5 text-left transition-colors hover:border-(--ui-border-accented) cursor-pointer"
     :aria-label="$t('keymap.editKeyAria', { label })"
     @click="$emit('edit')"
   >

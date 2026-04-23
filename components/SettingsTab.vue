@@ -42,7 +42,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="mx-auto w-full max-w-5xl space-y-4">
     <MapperCard
       v-model:selected-device="selectedDevice"
       :mapper="mapper"

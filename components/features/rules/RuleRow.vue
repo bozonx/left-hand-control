@@ -12,6 +12,7 @@ defineProps<{
   isFirst?: boolean
   isLast?: boolean
   isNew?: boolean
+  keyError?: string
 }>()
 
 defineEmits<{
@@ -25,25 +26,25 @@ defineEmits<{
 
 <template>
   <div
-    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 hover:shadow-lg"
+    class="relative p-4 rounded-xl border flex gap-6 group group/rule transition-all duration-300 hover:shadow-lg"
     :class="isNew
       ? 'border-sky-500/60 bg-sky-500/8 ring-1 ring-sky-500/20 hover:bg-sky-500/12 hover:border-sky-500/70 hover:shadow-sky-500/10'
       : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'"
   >
     <div class="flex-1 flex flex-col gap-5">
       <div class="grid grid-cols-2 gap-4">
-        <UFormField>
+        <UFormField :error="keyError">
           <template #label>
             <FieldLabel
               :label="$t('rules.keyLabel')"
               :hint="$t('rules.keyHint')"
-              hint-visible-on="group-hover"
-              required
+              hint-visible-on="group-hover-rule"
             />
           </template>
           <ActionPickerModal
             :model-value="rule.key"
             key-only
+            :invalid="!!keyError"
             :placeholder="$t('rules.keyPh')"
             @update:model-value="(value: string) => { rule.key = value; if (value) $emit('keySelected', rule.id) }"
           />
@@ -51,29 +52,27 @@ defineEmits<{
 
         <UFormField>
           <template #label>
-            <FieldLabel
-              :label="$t('rules.layerLabel')"
-              :hint="$t('rules.layerHint')"
-              hint-visible-on="group-hover"
-            />
-          </template>
-          <div class="space-y-1.5">
-            <ResettableSelectMenu
-              v-model="rule.layerId"
-              :items="layerOptions"
-              value-key="value"
-              :placeholder="$t('common.none')"
-              :reset-aria-label="$t('rules.clearLayer')"
-            />
-            <div class="flex justify-end min-h-4">
+            <span class="inline-flex items-center gap-2">
+              <FieldLabel
+                :label="$t('rules.layerLabel')"
+                :hint="$t('rules.layerHint')"
+                hint-visible-on="group-hover-rule"
+              />
               <ULink
-                class="text-xs text-(--ui-text-muted) opacity-0 group-hover:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
+                class="text-xs text-(--ui-text-muted) opacity-0 group-hover/rule:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
                 @click="$emit('createLayer', rule.id)"
               >
                 {{ $t('rules.createLayer') }}
               </ULink>
-            </div>
-          </div>
+            </span>
+          </template>
+          <ResettableSelectMenu
+            v-model="rule.layerId"
+            :items="layerOptions"
+            value-key="value"
+            :placeholder="$t('common.none')"
+            :reset-aria-label="$t('rules.clearLayer')"
+          />
         </UFormField>
       </div>
 
@@ -85,7 +84,7 @@ defineEmits<{
             <FieldLabel
               :label="$t('rules.tapLabel')"
               :hint="$t('rules.tapHint')"
-              hint-visible-on="group-hover"
+              hint-visible-on="group-hover-rule"
             />
           </template>
           <RuleActionField v-model="rule.tapAction" :placeholder="$t('rules.tapPh')" />
@@ -96,7 +95,7 @@ defineEmits<{
             <FieldLabel
               :label="$t('rules.doubleTapLabel')"
               :hint="$t('rules.doubleTapHint')"
-              hint-visible-on="group-hover"
+              hint-visible-on="group-hover-rule"
             />
           </template>
           <ActionPickerModal
@@ -112,7 +111,7 @@ defineEmits<{
             <FieldLabel
               :label="$t('rules.holdActionLabel')"
               :hint="$t('rules.holdActionHint')"
-              hint-visible-on="group-hover"
+              hint-visible-on="group-hover-rule"
             />
           </template>
           <RuleActionField
@@ -168,6 +167,7 @@ defineEmits<{
           :hint="$t('rules.holdHint')"
           :default-value="defaultHoldTimeoutMs"
           :suffix="$t('common.ms')"
+          hint-visible-on="group-hover-rule"
         />
 
         <SettingTimeoutField
@@ -176,6 +176,7 @@ defineEmits<{
           :hint="$t('rules.doubleTapWindowHint')"
           :default-value="defaultDoubleTapTimeoutMs"
           :suffix="$t('common.ms')"
+          hint-visible-on="group-hover-rule"
         />
       </div>
     </div>

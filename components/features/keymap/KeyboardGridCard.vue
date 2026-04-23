@@ -27,7 +27,7 @@ defineEmits<{
           <div
             v-for="(kbRow, i) in LEFT_HAND_ROWS"
             :key="`l-${i}`"
-            class="flex flex-wrap gap-1.5"
+            class="grid grid-cols-7 gap-1.5"
           >
             <KeyCap
               v-for="keyDef in kbRow"
@@ -49,7 +49,7 @@ defineEmits<{
           <div
             v-for="(kbRow, i) in RIGHT_HAND_ROWS"
             :key="`r-${i}`"
-            class="flex flex-wrap gap-1.5"
+            class="grid grid-cols-8 gap-1.5"
           >
             <KeyCap
               v-for="keyDef in kbRow"

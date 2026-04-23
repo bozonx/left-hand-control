@@ -8,9 +8,11 @@ const props = withDefaults(defineProps<{
   defaultValue: number
   suffix?: string
   min?: number
+  hintVisibleOn?: 'always' | 'group-hover' | 'group-hover-rule'
 }>(), {
   suffix: '',
-  min: 0
+  min: 0,
+  hintVisibleOn: 'always',
 })
 
 const model = defineModel<number | undefined>()
@@ -63,7 +65,7 @@ function onBlur() {
     class="group flex items-center justify-between py-1.5 px-2 -mx-2 rounded-lg transition-all duration-200 hover:bg-(--ui-bg-muted) cursor-pointer select-none"
     @click="startEdit"
   >
-    <FieldLabel :label="label" :hint="hint" />
+    <FieldLabel :label="label" :hint="hint" :hint-visible-on="hintVisibleOn" />
 
     <div class="flex items-center gap-2 overflow-hidden">
       <template v-if="!isEditing">

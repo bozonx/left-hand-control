@@ -47,8 +47,8 @@ function stopDescriptionEditing() {
 
 <template>
   <UCard>
-    <div class="flex flex-wrap items-end gap-3">
-      <UFormField :label="$t('keymap.layerLabel')" class="flex-1 min-w-[220px]">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+      <UFormField :label="$t('keymap.layerLabel')" class="min-w-0">
         <div class="flex items-center gap-2">
           <USelectMenu
             :model-value="selectedLayerId"
@@ -66,21 +66,21 @@ function stopDescriptionEditing() {
             :disabled="selectedLayerId === 'base'"
             @click="emit('rename')"
           />
+          <UButton
+            icon="i-lucide-trash-2"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            square
+            :aria-label="$t('keymap.delete')"
+            :disabled="selectedLayerId === 'base'"
+            @click="$emit('delete')"
+          />
         </div>
       </UFormField>
-      <div class="flex gap-2 app-chrome">
+      <div class="flex justify-end app-chrome">
         <UButton icon="i-lucide-plus" size="sm" @click="$emit('create')">
           {{ $t('keymap.newLayer') }}
-        </UButton>
-        <UButton
-          icon="i-lucide-trash-2"
-          size="sm"
-          color="error"
-          variant="outline"
-          :disabled="selectedLayerId === 'base'"
-          @click="$emit('delete')"
-        >
-          {{ $t('keymap.delete') }}
         </UButton>
       </div>
     </div>

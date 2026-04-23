@@ -27,6 +27,30 @@ function addRuleFromFooter() {
   addRule()
   emit('backToTop')
 }
+
+const deleteConfirmOpen = ref(false)
+const pendingDeleteRuleId = ref<string | null>(null)
+
+function requestRemoveRule(id: string) {
+  const rule = config.value.rules.find((item) => item.id === id)
+  if (!rule?.key) {
+    removeRule(id)
+    return
+  }
+  pendingDeleteRuleId.value = id
+  deleteConfirmOpen.value = true
+}
+
+function confirmRemoveRule() {
+  if (pendingDeleteRuleId.value) removeRule(pendingDeleteRuleId.value)
+  pendingDeleteRuleId.value = null
+  deleteConfirmOpen.value = false
+}
+
+function cancelRemoveRule() {
+  pendingDeleteRuleId.value = null
+  deleteConfirmOpen.value = false
+}
 </script>
 
 <template>
@@ -61,7 +85,8 @@ function addRuleFromFooter() {
           :is-first="index === 0"
           :is-last="index === config.rules.length - 1"
           :is-new="rule.id === newestRuleId"
-          @remove="removeRule"
+          :key-error="rule.id === newestRuleId && !rule.key ? $t('rules.keyRequired') : undefined"
+          @remove="requestRemoveRule"
           @move-up="moveRule($event, 'up')"
           @move-down="moveRule($event, 'down')"
           @create-layer="openNewLayer"
@@ -93,5 +118,23 @@ function addRuleFromFooter() {
       :name-placeholder="$t('rules.layerNamePh')"
       @confirm="confirmNewLayer"
     />
+
+    <UModal v-model:open="deleteConfirmOpen" :title="$t('rules.confirmDeleteTitle')">
+      <template #body>
+        <p class="text-sm">
+          {{ $t('rules.confirmDeleteBody') }}
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton variant="ghost" color="neutral" @click="cancelRemoveRule">
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton color="error" icon="i-lucide-trash-2" @click="confirmRemoveRule">
+            {{ $t('common.delete') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

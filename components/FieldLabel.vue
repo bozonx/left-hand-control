@@ -5,7 +5,7 @@ defineProps<{
   label: string
   hint?: string
   required?: boolean
-  hintVisibleOn?: 'always' | 'group-hover'
+  hintVisibleOn?: 'always' | 'group-hover' | 'group-hover-rule'
 }>()
 </script>
 
@@ -18,7 +18,10 @@ defineProps<{
     <AppTooltip v-if="hint" :text="hint" align="start" toggle-on-click>
       <span
         class="inline-flex items-center justify-center cursor-help text-(--ui-text-muted) transition-opacity duration-200"
-        :class="hintVisibleOn === 'group-hover' ? 'opacity-0 group-hover:opacity-100' : ''"
+        :class="{
+          'opacity-0 group-hover:opacity-100': hintVisibleOn === 'group-hover',
+          'opacity-0 group-hover/rule:opacity-100': hintVisibleOn === 'group-hover-rule',
+        }"
       >
         <UIcon name="i-lucide-info" class="w-3.5 h-3.5" />
       </span>

@@ -62,7 +62,6 @@ defineEmits<{
           </template>
           <ActionPickerModal
             v-model="extra.action"
-            allow-empty
             :placeholder="$t('rules.tapPh')"
           />
         </UFormField>

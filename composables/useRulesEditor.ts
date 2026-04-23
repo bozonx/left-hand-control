@@ -5,10 +5,14 @@ export function useRulesEditor() {
   const { createLayer } = useLayers()
 
   const layerOptions = computed(() =>
-    config.value.layers
-      .filter((layer) => layer.id !== 'base')
-      .map((layer) => ({ label: layer.name, value: layer.id })),
+    [
+      { label: t('common.none'), value: '' },
+      ...config.value.layers
+        .filter((layer) => layer.id !== 'base')
+        .map((layer) => ({ label: layer.name, value: layer.id })),
+    ],
   )
+  const { t } = useI18n()
 
   const newLayerOpen = ref(false)
   const newLayerName = ref('')

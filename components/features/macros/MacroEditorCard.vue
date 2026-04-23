@@ -11,6 +11,7 @@ const props = defineProps<{
   uiKey: string
   isFirst?: boolean
   isLast?: boolean
+  autofocusName?: boolean
 }>()
 
 defineEmits<{
@@ -21,6 +22,19 @@ defineEmits<{
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
 }>()
+
+const nameInput = useTemplateRef('nameInput')
+
+watch(
+  () => props.autofocusName,
+  async (value) => {
+    if (!value) return
+    await nextTick()
+    nameInput.value?.inputRef?.focus()
+    nameInput.value?.inputRef?.select()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -55,6 +69,7 @@ defineEmits<{
             />
           </template>
           <UInput
+            ref="nameInput"
             v-model="macro.name"
             :placeholder="$t('macros.namePh')"
             class="w-full"

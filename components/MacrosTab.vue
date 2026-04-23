@@ -20,6 +20,14 @@ const {
 } = useMacroEditor()
 
 const systemOpen = ref(false)
+const focusMacroKey = ref<string | null>(null)
+
+async function createMacro() {
+  const macro = addMacro()
+  focusMacroKey.value = uiKeyOf(macro)
+  await nextTick()
+  focusMacroKey.value = null
+}
 
 // --- Deletion confirmation -----------------------------------------------
 const confirmOpen = ref(false)
@@ -62,7 +70,7 @@ function cancelRemove() {
               icon="i-lucide-plus"
               size="sm"
               :disabled="hasIdErrors"
-              @click="addMacro"
+              @click="createMacro"
             >
               {{ $t('macros.addBtn') }}
             </UButton>
@@ -85,6 +93,7 @@ function cancelRemove() {
           :macro="macro"
           :is-first="index === 0"
           :is-last="index === config.macros.length - 1"
+          :autofocus-name="uiKeyOf(macro) === focusMacroKey"
           :id-error="idError(macro) ?? undefined"
           :usage="usage[macro.id] ?? []"
           :default-step-pause-ms="config.settings.defaultMacroStepPauseMs"

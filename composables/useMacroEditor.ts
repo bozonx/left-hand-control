@@ -26,13 +26,15 @@ export function useMacroEditor() {
 
   function addMacro() {
     if (!Array.isArray(config.value.macros)) config.value.macros = []
-    config.value.macros.push({
+    const macro = {
       id: newMacroId(),
       name: t('macros.defaultName'),
       steps: [],
       stepPauseMs: undefined,
       modifierDelayMs: undefined,
-    })
+    }
+    config.value.macros.push(macro)
+    return macro
   }
 
   function cloneSystemMacro(sys: SystemMacro) {
