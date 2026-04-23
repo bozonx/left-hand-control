@@ -3,16 +3,16 @@ import { randomId } from '~/utils/keys'
 export function useRulesEditor() {
   const { config } = useConfig()
   const { createLayer } = useLayers()
+  const { t } = useI18n()
 
   const layerOptions = computed(() =>
     [
-      { label: t('common.none'), value: '' },
+      { label: t('common.none'), value: '__none__' },
       ...config.value.layers
         .filter((layer) => layer.id !== 'base')
         .map((layer) => ({ label: layer.name, value: layer.id })),
     ],
   )
-  const { t } = useI18n()
 
   const newLayerOpen = ref(false)
   const newLayerName = ref('')

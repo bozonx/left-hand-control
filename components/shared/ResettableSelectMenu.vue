@@ -10,6 +10,8 @@ const props = withDefaults(defineProps<{
   resetAriaLabel?: string
   clearable?: boolean
   searchable?: boolean
+  emptyItemValue?: string | number | null
+  emptyModelValue?: string | number | null
 }>(), {
   modelValue: undefined,
   placeholder: '',
@@ -18,6 +20,8 @@ const props = withDefaults(defineProps<{
   resetAriaLabel: '',
   clearable: true,
   searchable: true,
+  emptyItemValue: undefined,
+  emptyModelValue: undefined,
 })
 
 const emit = defineEmits<{
@@ -25,20 +29,30 @@ const emit = defineEmits<{
 }>()
 
 const isReset = computed(() => props.modelValue === props.resetValue)
+const selectValue = computed(() =>
+  props.modelValue === props.emptyModelValue && props.emptyItemValue !== undefined
+    ? props.emptyItemValue
+    : props.modelValue,
+)
 
 function reset() {
   emit('update:modelValue', props.resetValue)
 }
 
 function updateValue(value: string | number | null | undefined) {
-  emit('update:modelValue', value)
+  emit(
+    'update:modelValue',
+    props.emptyItemValue !== undefined && value === props.emptyItemValue
+      ? props.emptyModelValue
+      : value,
+  )
 }
 </script>
 
 <template>
   <div class="flex items-center gap-1">
     <USelectMenu
-      :model-value="props.modelValue"
+      :model-value="selectValue"
       :items="props.items"
       :value-key="props.valueKey"
       :placeholder="props.placeholder"

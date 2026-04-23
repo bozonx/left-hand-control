@@ -72,6 +72,8 @@ defineEmits<{
             value-key="value"
             :placeholder="$t('common.none')"
             :reset-aria-label="$t('rules.clearLayer')"
+            empty-item-value="__none__"
+            empty-model-value=""
           />
         </UFormField>
       </div>

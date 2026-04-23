@@ -97,7 +97,7 @@ describe('editor composables', () => {
     const wrapper = await mountSuspended(Harness)
     const vm = wrapper.vm as any
 
-    expect(vm.layerOptions).toEqual([{ label: '— none —', value: '' }])
+    expect(vm.layerOptions).toEqual([{ label: '— none —', value: '__none__' }])
 
     vm.addRule()
     const firstRuleId = state.config.value.rules[0]?.id
