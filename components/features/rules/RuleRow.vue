@@ -71,6 +71,7 @@ defineEmits<{
             :items="layerOptions"
             value-key="value"
             :placeholder="$t('common.none')"
+            reset-value=""
             :reset-aria-label="$t('rules.clearLayer')"
             empty-item-value="__none__"
             empty-model-value=""

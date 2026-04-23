@@ -29,11 +29,6 @@ const emit = defineEmits<{
 }>()
 
 const isReset = computed(() => props.modelValue === props.resetValue)
-const selectValue = computed(() =>
-  props.modelValue === props.emptyModelValue && props.emptyItemValue !== undefined
-    ? props.emptyItemValue
-    : props.modelValue,
-)
 
 function reset() {
   emit('update:modelValue', props.resetValue)
@@ -52,7 +47,7 @@ function updateValue(value: string | number | null | undefined) {
 <template>
   <div class="flex items-center gap-1">
     <USelectMenu
-      :model-value="selectValue"
+      :model-value="props.modelValue"
       :items="props.items"
       :value-key="props.valueKey"
       :placeholder="props.placeholder"
