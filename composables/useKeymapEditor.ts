@@ -53,11 +53,21 @@ export function useKeymapEditor() {
   }
 
   function addExtra() {
-    currentKeymap.value.extras.push({
+    currentKeymap.value.extras.unshift({
       id: randomId(),
       name: '',
       action: '',
     })
+  }
+
+  function moveExtra(id: string, direction: 'up' | 'down') {
+    const index = currentKeymap.value.extras.findIndex((extra) => extra.id === id)
+    if (index === -1) return
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= currentKeymap.value.extras.length) return
+    const [extra] = currentKeymap.value.extras.splice(index, 1)
+    if (!extra) return
+    currentKeymap.value.extras.splice(newIndex, 0, extra)
   }
 
   function removeExtra(id: string) {
@@ -68,13 +78,11 @@ export function useKeymapEditor() {
 
   const renameOpen = ref(false)
   const renameDraftName = ref('')
-  const renameDraftDescription = ref('')
   const deleteConfirmOpen = ref(false)
 
   function openRename() {
     const layer = currentLayer.value
     renameDraftName.value = layer?.name ?? ''
-    renameDraftDescription.value = layer?.description ?? ''
     renameOpen.value = true
   }
 
@@ -83,10 +91,19 @@ export function useKeymapEditor() {
     if (layerId) {
       renameLayer(layerId, {
         name: renameDraftName.value,
-        description: renameDraftDescription.value,
+        description: currentLayer.value?.description,
       })
     }
     renameOpen.value = false
+  }
+
+  function updateCurrentLayerDescription(description: string) {
+    const layer = currentLayer.value
+    if (!layer) return false
+    return renameLayer(layer.id, {
+      name: layer.name,
+      description,
+    })
   }
 
   function deleteSelectedLayer() {
@@ -107,18 +124,15 @@ export function useKeymapEditor() {
 
   const newLayerOpen = ref(false)
   const newLayerName = ref('')
-  const newLayerDescription = ref('')
 
   function openNewLayer() {
     newLayerName.value = ''
-    newLayerDescription.value = ''
     newLayerOpen.value = true
   }
 
   function confirmNewLayer() {
     const id = createLayer({
       name: newLayerName.value,
-      description: newLayerDescription.value,
     })
     if (!id) return
     selectedLayerId.value = id
@@ -139,19 +153,19 @@ export function useKeymapEditor() {
     saveEdit,
     clearEdit,
     addExtra,
+    moveExtra,
     removeExtra,
     renameOpen,
     renameDraftName,
-    renameDraftDescription,
     openRename,
     confirmRename,
+    updateCurrentLayerDescription,
     deleteConfirmOpen,
     requestDeleteSelectedLayer,
     cancelDeleteSelectedLayer,
     deleteSelectedLayer,
     newLayerOpen,
     newLayerName,
-    newLayerDescription,
     openNewLayer,
     confirmNewLayer,
   }

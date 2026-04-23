@@ -13,8 +13,11 @@ const actionLabel = computed(() => displayAction(props.action))
 </script>
 
 <template>
-  <div
-    class="flex-1 basis-20 min-w-[4rem] max-w-[7rem] rounded-md border border-(--ui-border) bg-(--ui-bg) px-2 py-1.5 flex flex-col items-stretch gap-0.5 transition-colors hover:border-(--ui-border-accented)"
+  <button
+    type="button"
+    class="flex-1 basis-20 min-w-[4rem] max-w-[7rem] rounded-md border border-(--ui-border) bg-(--ui-bg) px-2 py-1.5 flex flex-col items-stretch gap-0.5 text-left transition-colors hover:border-(--ui-border-accented) cursor-pointer"
+    :aria-label="$t('keymap.editKeyAria', { label })"
+    @click="$emit('edit')"
   >
     <div class="text-[0.8125rem] font-semibold text-center leading-tight">
       {{ label }}
@@ -25,14 +28,5 @@ const actionLabel = computed(() => displayAction(props.action))
     >
       {{ actionLabel || '—' }}
     </div>
-    <UButton
-      icon="i-lucide-pencil"
-      size="xs"
-      variant="ghost"
-      color="neutral"
-      block
-      :aria-label="$t('keymap.editKeyAria', { label })"
-      @click="$emit('edit')"
-    />
-  </div>
+  </button>
 </template>

@@ -7,6 +7,8 @@ defineProps<{
 
 defineEmits<{
   add: []
+  moveUp: [id: string]
+  moveDown: [id: string]
   remove: [id: string]
 }>()
 </script>
@@ -34,10 +36,41 @@ defineEmits<{
     </div>
     <div v-else class="space-y-2">
       <div
-        v-for="extra in extras"
+        v-for="(extra, index) in extras"
         :key="extra.id"
-        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted)"
+        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted)"
       >
+        <div class="col-span-2 flex justify-end gap-1 -mb-1">
+          <UButton
+            icon="i-lucide-arrow-up"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            square
+            :disabled="index === 0"
+            :aria-label="$t('keymap.moveExtraUp')"
+            @click="$emit('moveUp', extra.id)"
+          />
+          <UButton
+            icon="i-lucide-arrow-down"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            square
+            :disabled="index === extras.length - 1"
+            :aria-label="$t('keymap.moveExtraDown')"
+            @click="$emit('moveDown', extra.id)"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="sm"
+            square
+            :aria-label="$t('keymap.deleteExtra')"
+            @click="$emit('remove', extra.id)"
+          />
+        </div>
         <UFormField>
           <template #label>
             <FieldLabel
@@ -64,16 +97,6 @@ defineEmits<{
             :placeholder="$t('rules.tapPh')"
           />
         </UFormField>
-        <div class="pt-6">
-          <UButton
-            icon="i-lucide-trash-2"
-            color="error"
-            variant="ghost"
-            square
-            :aria-label="$t('keymap.deleteExtra')"
-            @click="$emit('remove', extra.id)"
-          />
-        </div>
       </div>
     </div>
   </UCard>

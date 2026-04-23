@@ -16,19 +16,19 @@ const {
   saveEdit,
   clearEdit,
   addExtra,
+  moveExtra,
   removeExtra,
   renameOpen,
   renameDraftName,
-  renameDraftDescription,
   openRename,
   confirmRename,
+  updateCurrentLayerDescription,
   deleteConfirmOpen,
   requestDeleteSelectedLayer,
   cancelDeleteSelectedLayer,
   deleteSelectedLayer,
   newLayerOpen,
   newLayerName,
-  newLayerDescription,
   openNewLayer,
   confirmNewLayer,
 } = useKeymapEditor()
@@ -39,9 +39,11 @@ const {
     <LayerToolbarCard
       v-model:selected-layer-id="selectedLayerId"
       :layer-items="layerItems"
+      :current-layer-name="currentLayer?.name"
       :current-layer-description="currentLayer?.description"
       @create="openNewLayer"
       @rename="openRename"
+      @update-description="updateCurrentLayerDescription"
       @delete="requestDeleteSelectedLayer"
     />
 
@@ -53,6 +55,8 @@ const {
     <ExtrasCard
       :extras="currentKeymap.extras"
       @add="addExtra"
+      @move-up="(id) => moveExtra(id, 'up')"
+      @move-down="(id) => moveExtra(id, 'down')"
       @remove="removeExtra"
     />
 
@@ -68,18 +72,15 @@ const {
     <LayerEditorModal
       v-model="newLayerOpen"
       v-model:name="newLayerName"
-      v-model:description="newLayerDescription"
       :title="$t('rules.newLayerTitle')"
       :confirm-label="$t('common.create')"
       :name-placeholder="$t('rules.layerNamePh')"
-      :description-placeholder="$t('rules.layerDescPh')"
       @confirm="confirmNewLayer"
     />
 
     <LayerEditorModal
       v-model="renameOpen"
       v-model:name="renameDraftName"
-      v-model:description="renameDraftDescription"
       :title="$t('keymap.editLayerTitle')"
       :confirm-label="$t('common.save')"
       @confirm="confirmRename"

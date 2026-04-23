@@ -10,7 +10,6 @@ const {
   moveRule,
   newLayerOpen,
   newLayerName,
-  newLayerDescription,
   openNewLayer,
   confirmNewLayer,
   markRuleConfigured,
@@ -89,11 +88,9 @@ function addRuleFromFooter() {
     <LayerEditorModal
       v-model="newLayerOpen"
       v-model:name="newLayerName"
-      v-model:description="newLayerDescription"
       :title="$t('rules.newLayerTitle')"
       :confirm-label="$t('common.create')"
       :name-placeholder="$t('rules.layerNamePh')"
-      :description-placeholder="$t('rules.layerDescPh')"
       @confirm="confirmNewLayer"
     />
   </div>

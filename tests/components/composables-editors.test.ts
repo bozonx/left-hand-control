@@ -125,7 +125,6 @@ describe('editor composables', () => {
 
     vm.openNewLayer(firstRuleId!)
     vm.newLayerName = 'Symbols'
-    vm.newLayerDescription = 'punctuation'
     vm.confirmNewLayer()
 
     const createdLayer = state.config.value.layers.find((layer) => layer.name === 'Symbols')
@@ -184,16 +183,35 @@ describe('editor composables', () => {
       name: '',
       action: '',
     })
+    state.config.value.layerKeymaps.nav?.extras.push({
+      id: 'extra-2',
+      name: 'Mouse5',
+      action: 'BrowserForward',
+    })
+    vm.moveExtra('extra-2', 'up')
+    expect(state.config.value.layerKeymaps.nav?.extras.map((extra: any) => extra.id)).toEqual([
+      'extra-2',
+      extraId,
+    ])
+    vm.moveExtra('extra-2', 'down')
+    expect(state.config.value.layerKeymaps.nav?.extras.map((extra: any) => extra.id)).toEqual([
+      extraId,
+      'extra-2',
+    ])
     vm.removeExtra(extraId!)
-    expect(state.config.value.layerKeymaps.nav?.extras).toEqual([])
+    expect(state.config.value.layerKeymaps.nav?.extras).toEqual([
+      {
+        id: 'extra-2',
+        name: 'Mouse5',
+        action: 'BrowserForward',
+      },
+    ])
 
     vm.openRename()
     vm.renameDraftName = 'Nav'
-    vm.renameDraftDescription = 'movement'
     vm.confirmRename()
     expect(state.config.value.layers.find((layer) => layer.id === 'nav')).toMatchObject({
       name: 'Nav',
-      description: 'movement',
     })
 
     vm.requestDeleteSelectedLayer()
@@ -207,7 +225,6 @@ describe('editor composables', () => {
 
     vm.openNewLayer()
     vm.newLayerName = 'Symbols'
-    vm.newLayerDescription = 'chars'
     vm.confirmNewLayer()
 
     const createdLayer = state.config.value.layers.find((layer) => layer.name === 'Symbols')

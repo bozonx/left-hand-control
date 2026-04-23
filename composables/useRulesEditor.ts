@@ -12,7 +12,6 @@ export function useRulesEditor() {
 
   const newLayerOpen = ref(false)
   const newLayerName = ref('')
-  const newLayerDescription = ref('')
   const newLayerForRuleId = ref<string | null>(null)
   const newestRuleId = ref<string | null>(null)
 
@@ -48,14 +47,12 @@ export function useRulesEditor() {
   function openNewLayer(ruleId: string) {
     newLayerForRuleId.value = ruleId
     newLayerName.value = ''
-    newLayerDescription.value = ''
     newLayerOpen.value = true
   }
 
   function confirmNewLayer() {
     const id = createLayer({
       name: newLayerName.value,
-      description: newLayerDescription.value,
     })
     if (!id) return
     if (newLayerForRuleId.value) {
@@ -82,7 +79,6 @@ export function useRulesEditor() {
     moveRule,
     newLayerOpen,
     newLayerName,
-    newLayerDescription,
     openNewLayer,
     confirmNewLayer,
     markRuleConfigured,
