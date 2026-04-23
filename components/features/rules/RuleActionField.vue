@@ -97,6 +97,7 @@ function cancelAction() {
       :items="modeItems"
       value-key="value"
       :reset-value="'native'"
+      :searchable="false"
     />
     <ActionPickerModal
       v-model="pickerValue"

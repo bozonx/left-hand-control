@@ -16,13 +16,18 @@ const {
   markRuleConfigured,
 } = useRulesEditor()
 
-defineProps<{
+const props = defineProps<{
   showBackToTop?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   backToTop: []
 }>()
+
+function addRuleFromFooter() {
+  addRule()
+  emit('backToTop')
+}
 </script>
 
 <template>
@@ -67,13 +72,13 @@ defineEmits<{
 
       <template #footer>
         <div class="flex items-center justify-between gap-3">
-          <UButton icon="i-lucide-plus" size="sm" @click="addRule">
+          <UButton icon="i-lucide-plus" size="sm" @click="addRuleFromFooter">
             {{ $t('rules.addBtn') }}
           </UButton>
           <ULink
             v-if="showBackToTop"
             class="text-xs text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors cursor-pointer"
-            @click="$emit('backToTop')"
+            @click="emit('backToTop')"
           >
             {{ $t('common.backToTop') }}
           </ULink>

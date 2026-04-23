@@ -24,7 +24,8 @@ defineEmits<{
       :disabled="props.disabled"
       :aria-label="props.label"
       v-bind="$attrs"
-      @click="$emit('click')"
+      @mousedown.stop
+      @click.stop="$emit('click')"
     />
   </AppTooltip>
 </template>

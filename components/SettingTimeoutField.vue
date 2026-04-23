@@ -74,11 +74,12 @@ function onBlur() {
           >
             {{ displayValue }}<span v-if="suffix" class="ml-0.5 text-[10px] font-sans opacity-60 uppercase">{{ suffix }}</span>
           </span>
-          <FieldResetButton
-            v-if="isOverridden"
-            :label="$t('common.reset')"
-            @click.stop="reset"
-          />
+          <div v-if="isOverridden" @mousedown.stop @click.stop>
+            <FieldResetButton
+              :label="$t('common.reset')"
+              @click="reset"
+            />
+          </div>
           <UIcon
             v-else
             name="i-lucide-pencil"

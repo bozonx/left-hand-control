@@ -37,6 +37,7 @@ defineEmits<{
             <FieldLabel
               :label="$t('rules.keyLabel')"
               :hint="$t('rules.keyHint')"
+              hint-visible-on="group-hover"
               required
             />
           </template>
@@ -53,25 +54,25 @@ defineEmits<{
             <FieldLabel
               :label="$t('rules.layerLabel')"
               :hint="$t('rules.layerHint')"
+              hint-visible-on="group-hover"
             />
           </template>
-          <div class="flex gap-1">
+          <div class="space-y-1.5">
             <ResettableSelectMenu
               v-model="rule.layerId"
               :items="layerOptions"
               value-key="value"
               :placeholder="$t('common.none')"
-              :aria-label="$t('rules.clearLayer')"
+              :reset-aria-label="$t('rules.clearLayer')"
             />
-            <UButton
-              icon="i-lucide-plus"
-              variant="outline"
-              color="neutral"
-              square
-              class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              :aria-label="$t('rules.createLayer')"
-              @click="$emit('createLayer', rule.id)"
-            />
+            <div class="flex justify-end min-h-4">
+              <ULink
+                class="text-xs text-(--ui-text-muted) opacity-0 group-hover:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
+                @click="$emit('createLayer', rule.id)"
+              >
+                {{ $t('rules.createLayer') }}
+              </ULink>
+            </div>
           </div>
         </UFormField>
       </div>
@@ -84,6 +85,7 @@ defineEmits<{
             <FieldLabel
               :label="$t('rules.tapLabel')"
               :hint="$t('rules.tapHint')"
+              hint-visible-on="group-hover"
             />
           </template>
           <RuleActionField v-model="rule.tapAction" :placeholder="$t('rules.tapPh')" />
@@ -92,22 +94,9 @@ defineEmits<{
         <UFormField>
           <template #label>
             <FieldLabel
-              :label="$t('rules.holdActionLabel')"
-              :hint="$t('rules.holdActionHint')"
-            />
-          </template>
-          <RuleActionField
-            v-model="rule.holdAction"
-            key-only
-            :placeholder="$t('rules.holdActionPh')"
-          />
-        </UFormField>
-
-        <UFormField>
-          <template #label>
-            <FieldLabel
               :label="$t('rules.doubleTapLabel')"
               :hint="$t('rules.doubleTapHint')"
+              hint-visible-on="group-hover"
             />
           </template>
           <ActionPickerModal
@@ -115,6 +104,21 @@ defineEmits<{
             allow-empty
             :placeholder="$t('rules.doubleTapPh')"
             :clear-label="$t('common.clear')"
+          />
+        </UFormField>
+
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('rules.holdActionLabel')"
+              :hint="$t('rules.holdActionHint')"
+              hint-visible-on="group-hover"
+            />
+          </template>
+          <RuleActionField
+            v-model="rule.holdAction"
+            key-only
+            :placeholder="$t('rules.holdActionPh')"
           />
         </UFormField>
       </div>

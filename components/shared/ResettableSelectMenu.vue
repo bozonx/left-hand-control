@@ -9,6 +9,7 @@ const props = withDefaults(defineProps<{
   resetValue?: string | number | null
   resetAriaLabel?: string
   clearable?: boolean
+  searchable?: boolean
 }>(), {
   modelValue: undefined,
   placeholder: '',
@@ -16,6 +17,7 @@ const props = withDefaults(defineProps<{
   resetValue: undefined,
   resetAriaLabel: '',
   clearable: true,
+  searchable: true,
 })
 
 const emit = defineEmits<{
@@ -40,6 +42,7 @@ function updateValue(value: string | number | null | undefined) {
       :items="props.items"
       :value-key="props.valueKey"
       :placeholder="props.placeholder"
+      :search-input="props.searchable"
       class="flex-1 min-w-0"
       @update:model-value="updateValue"
     />
