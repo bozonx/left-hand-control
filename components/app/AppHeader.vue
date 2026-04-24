@@ -95,17 +95,22 @@ watch(
       <UButton
         color="neutral"
         variant="ghost"
-        class="shrink-0 -ml-2 px-2.5"
-        :class="isActive('/') ? 'text-primary' : 'text-(--ui-text-highlighted)'"
+        class="group shrink-0 -ml-2 px-2.5 transition-all duration-200"
+        :class="isActive('/') ? 'text-primary bg-(--ui-primary)/8' : 'text-(--ui-text-highlighted)'"
         @click="openTab('/')"
       >
         <div class="flex items-center gap-2.5">
           <UIcon
             name="i-lucide-keyboard"
-            class="w-5 h-5"
-            :class="isActive('/') ? 'text-primary' : 'text-(--ui-text-muted)'"
+            class="w-5 h-5 transition-colors duration-200"
+            :class="isActive('/') ? 'text-primary' : 'text-(--ui-text-muted) group-hover:text-primary'"
           />
-          <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
+          <h1
+            class="text-[0.9375rem] font-semibold whitespace-nowrap transition-colors duration-200"
+            :class="isActive('/') ? 'text-primary' : 'group-hover:text-primary'"
+          >
+            {{ $t('app.title') }}
+          </h1>
         </div>
       </UButton>
 
