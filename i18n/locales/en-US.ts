@@ -352,6 +352,7 @@ export default {
     applyBtn: "Apply",
     saveCurrent: "Save",
     saveAs: "Save As",
+    newLayoutBtn: "New",
     deleteAria: "Delete",
     dirtyBadgeTitle: "The current layout has unsaved changes.",
     dirtyBadgeBody:

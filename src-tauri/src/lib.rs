@@ -1,9 +1,10 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, RunEvent, WindowEvent,
+    Manager, RunEvent, WebviewWindow, WindowEvent,
 };
-use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+use tauri_plugin_window_state::{AppHandleExt, WindowExt, StateFlags};
+use std::time::Duration;
 
 mod layout;
 mod mapper;
@@ -155,6 +156,32 @@ fn get_platform_info() -> platform::PlatformInfo {
 
 // --- Tray --------------------------------------------------------------------
 
+fn window_geometry_state_flags() -> StateFlags {
+    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED | StateFlags::FULLSCREEN
+}
+
+fn restore_window_geometry(window: &WebviewWindow) {
+    let _ = window.restore_state(window_geometry_state_flags());
+}
+
+fn schedule_window_geometry_restore(window: WebviewWindow) {
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(150));
+        let window_for_restore = window.clone();
+        let _ = window.run_on_main_thread(move || {
+            restore_window_geometry(&window_for_restore);
+        });
+    });
+}
+
+fn show_main_window(window: &WebviewWindow) {
+    restore_window_geometry(window);
+    let _ = window.show();
+    let _ = window.unminimize();
+    restore_window_geometry(window);
+    let _ = window.set_focus();
+}
+
 fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show", "Показать окно", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Выход", true, None::<&str>)?;
@@ -173,9 +200,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => {
                 if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.show();
-                    let _ = w.unminimize();
-                    let _ = w.set_focus();
+                    show_main_window(&w);
                 }
             }
             "quit" => {
@@ -196,9 +221,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                     if w.is_visible().unwrap_or(false) {
                         let _ = w.hide();
                     } else {
-                        let _ = w.show();
-                        let _ = w.unminimize();
-                        let _ = w.set_focus();
+                        show_main_window(&w);
                     }
                 }
             }
@@ -214,6 +237,9 @@ pub fn run() {
         .setup(|app| {
             build_tray(app.handle())?;
             layout::start_watcher(app.handle().clone());
+            if let Some(window) = app.get_webview_window("main") {
+                schedule_window_geometry_restore(window);
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

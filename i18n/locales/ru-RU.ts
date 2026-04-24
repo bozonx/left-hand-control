@@ -357,6 +357,7 @@ export default {
     applyBtn: "Применить",
     saveCurrent: "Сохранить",
     saveAs: "Сохранить как",
+    newLayoutBtn: "Новая",
     deleteAria: "Удалить",
     dirtyBadgeTitle: "В текущей раскладке есть несохранённые изменения.",
     dirtyBadgeBody:
