@@ -1,6 +1,8 @@
 // Thin composable around the Rust mapper commands.
 // In the plain browser (pnpm dev without Tauri) everything becomes a no-op.
 
+import { layoutSnapshotOf } from '~/utils/layoutPresets'
+
 export interface KeyboardDevice {
   path: string
   name: string
@@ -26,9 +28,14 @@ export interface MapperState {
 let singleton: MapperState | null = null
 let statusPollTimer: ReturnType<typeof setInterval> | null = null
 let consumerCount = 0
+let reloadTimer: ReturnType<typeof setTimeout> | null = null
 
 export function resetMapperStateForTests() {
   stopStatusPolling()
+  if (reloadTimer) {
+    clearTimeout(reloadTimer)
+    reloadTimer = null
+  }
   consumerCount = 0
   singleton = null
 }
@@ -66,6 +73,15 @@ export function useMapper(): MapperState {
   const status = ref<MapperStatus>({ running: false, device_path: null, last_error: null })
   const busy = ref(false)
   const error = ref<string | null>(null)
+  const runtimeSnapshot = () => JSON.stringify({
+    layout: layoutSnapshotOf(config.value),
+    defaultHoldTimeoutMs: config.value.settings.defaultHoldTimeoutMs,
+    defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
+    defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
+    defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
+  })
+  let reloadPending = false
+  let lastRuntimeSnapshot = runtimeSnapshot()
 
   async function refreshDevices() {
     const tauri = await useTauri()
@@ -89,14 +105,13 @@ export function useMapper(): MapperState {
     }
   }
 
-  async function start(devicePath: string) {
+  async function invokeStart(devicePath: string) {
     const tauri = await useTauri()
     if (!tauri) {
       const { t } = useI18n()
       error.value = t('mapper.desktopOnly')
       return
     }
-    busy.value = true
     try {
       await flush()
       await tauri.invoke('start_mapper', {
@@ -107,26 +122,76 @@ export function useMapper(): MapperState {
       await refreshStatus()
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function start(devicePath: string) {
+    busy.value = true
+    try {
+      await invokeStart(devicePath)
     } finally {
       busy.value = false
     }
   }
 
-  async function stop() {
+  async function invokeStop() {
     const tauri = await useTauri()
     if (!tauri) return
-    busy.value = true
     try {
       await tauri.invoke('stop_mapper')
       await refreshStatus()
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function stop() {
+    busy.value = true
+    try {
+      await invokeStop()
     } finally {
       busy.value = false
     }
   }
 
+  function scheduleReload() {
+    if (reloadTimer) clearTimeout(reloadTimer)
+    reloadTimer = setTimeout(() => {
+      reloadTimer = null
+      void reloadRunningMapper()
+    }, 150)
+  }
+
+  async function reloadRunningMapper() {
+    const devicePath = status.value.device_path ?? config.value.settings.inputDevicePath ?? ''
+    if (!status.value.running || !devicePath) return
+    if (busy.value) {
+      reloadPending = true
+      return
+    }
+
+    busy.value = true
+    try {
+      await invokeStop()
+      await invokeStart(devicePath)
+    } finally {
+      busy.value = false
+      if (reloadPending) {
+        reloadPending = false
+        scheduleReload()
+      }
+    }
+  }
+
   registerConsumer(refreshStatus)
+
+  watch(() => config.value, () => {
+    const nextRuntimeSnapshot = runtimeSnapshot()
+    if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
+    lastRuntimeSnapshot = nextRuntimeSnapshot
+    if (!status.value.running) return
+    scheduleReload()
+  }, { deep: true })
 
   singleton = {
     devices,
