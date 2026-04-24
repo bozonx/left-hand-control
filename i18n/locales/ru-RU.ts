@@ -206,6 +206,8 @@ export default {
     editTitle: "Редактирование: {label}",
     keyCode: "Код клавиши: {code}",
     editKeyAria: "Редактировать {label}",
+    swallowAction: "Игнорировать в этом слое",
+    swallowLabel: "Игнор",
   },
   macros: {
     title: "Пользовательские макросы",

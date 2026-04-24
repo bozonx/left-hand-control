@@ -19,8 +19,6 @@ export interface Layer {
 //     string like "ControlLeft" or "Ctrl+Shift" which is held down
 //     while the physical key is held).
 //
-// `layerId` and `holdAction` are mutually exclusive; if both are set,
-// `layerId` wins and `holdAction` is ignored.
 export interface LayerRule {
   id: string
   // Physical key on which the rule triggers (e.g. "CapsLock", "Space").
@@ -30,7 +28,8 @@ export interface LayerRule {
   // Action fired on single tap. See three-state semantics above.
   tapAction: string | null
   // Keystroke held down while the physical key is held. See three-state
-  // semantics above. Ignored when `layerId` is set.
+  // semantics above. May be combined with `layerId`, so one key can both
+  // activate a layer and hold a modifier.
   holdAction: string | null
   // Action fired on double tap (second key-down within the double-tap
   // window after a short press). Empty string = no double-tap action.
@@ -56,8 +55,9 @@ export interface ExtraKey {
 }
 
 export interface LayerKeymap {
-  // key code -> action string
-  keys: Record<string, string>
+  // key code -> action string, or null for explicit swallow inside the layer.
+  // Missing entry means transparent passthrough to the base layout.
+  keys: Record<string, string | null>
   // Extra user-defined key bindings (e.g. mouse buttons, media keys, ...).
   extras: ExtraKey[]
 }

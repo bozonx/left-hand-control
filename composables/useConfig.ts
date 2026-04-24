@@ -96,7 +96,15 @@ export function normalizeConfig(raw: unknown): AppConfig {
       cfg.layerKeymaps[layer.id] = { keys: {}, extras: [] }
     } else {
       const km = cfg.layerKeymaps[layer.id]!
-      if (!km.keys || typeof km.keys !== 'object') km.keys = {}
+      if (!km.keys || typeof km.keys !== 'object') {
+        km.keys = {}
+      } else {
+        km.keys = Object.fromEntries(
+          Object.entries(km.keys)
+            .filter(([code, value]) => !!code && (typeof value === 'string' || value === null))
+            .map(([code, value]) => [code, value === '' ? null : value]),
+        )
+      }
       if (!Array.isArray(km.extras)) km.extras = []
     }
   }

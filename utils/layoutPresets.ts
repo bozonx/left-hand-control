@@ -69,9 +69,12 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       description: l.description,
     });
 
-    const keys: Record<string, string> = {};
+    const keys: Record<string, string | null> = {};
     for (const [k, v] of Object.entries(l.keys ?? {})) {
-      if (v == null || v === "") continue;
+      if (v == null || v === "") {
+        keys[k] = null;
+        continue;
+      }
       keys[k] = String(v);
     }
     const extras: ExtraKey[] = [];

@@ -62,6 +62,7 @@ enum ActionDef {
     System(SysAction),
     Command(SysCommand),
     Literal(String),
+    Swallow,
 }
 
 #[derive(Clone)]
@@ -448,7 +449,11 @@ impl Engine {
                     eprintln!("[mapper] unknown key code in keymap {layer_id}: {code}");
                     continue;
                 };
-                let Some(def) = resolve(action, &format!("keymap {layer_id}.{code}")) else {
+                let Some(def) = action
+                    .as_deref()
+                    .map(|s| resolve(s, &format!("keymap {layer_id}.{code}")))
+                    .unwrap_or(Some(ActionDef::Swallow))
+                else {
                     continue;
                 };
                 m.insert(key, def);
@@ -621,6 +626,10 @@ impl Engine {
                 Some(ActionDef::Command(command)) => {
                     eprintln!("[mapper]   press {:?} -> run command {:?}", key, command);
                     out.push(Out::RunCommand(command));
+                    self.macro_consumed.insert(key);
+                }
+                Some(ActionDef::Swallow) => {
+                    eprintln!("[mapper]   press {:?} -> swallow", key);
                     self.macro_consumed.insert(key);
                 }
                 None => {
@@ -905,6 +914,7 @@ fn fire_action(action: Option<&ActionDef>, mod_delay: Duration, out: &mut Vec<Ou
         }),
         Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
         Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
+        Some(ActionDef::Swallow) => {}
         None => {}
     }
 }
@@ -944,7 +954,7 @@ mod tests {
         let mut sel = LayerKeymap {
             keys: HashMap::new(),
         };
-        sel.keys.insert("KeyQ".into(), "Ctrl+Z".into());
+        sel.keys.insert("KeyQ".into(), Some("Ctrl+Z".into()));
         cfg.layer_keymaps.insert("sel".into(), sel);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -987,7 +997,7 @@ mod tests {
         let mut space = LayerKeymap {
             keys: HashMap::new(),
         };
-        space.keys.insert("Tab".into(), "Escape".into());
+        space.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("space".into(), space);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -1009,6 +1019,77 @@ mod tests {
     }
 
     #[test]
+    fn unmapped_key_in_active_layer_passthroughs() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            id: "r_space".into(),
+            key: "Space".into(),
+            layer_id: "space".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        cfg.layer_keymaps.insert(
+            "space".into(),
+            LayerKeymap {
+                keys: HashMap::new(),
+            },
+        );
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_A, false, now + Duration::from_millis(11), &mut out);
+
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::KeyRaw {
+                    key: Key::KEY_A,
+                    down: true
+                },
+                Out::KeyRaw {
+                    key: Key::KEY_A,
+                    down: false
+                }
+            ]
+        ));
+    }
+
+    #[test]
+    fn explicit_null_in_layer_keymap_swallows_key() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            id: "r_space".into(),
+            key: "Space".into(),
+            layer_id: "space".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut space = LayerKeymap {
+            keys: HashMap::new(),
+        };
+        space.keys.insert("KeyA".into(), None);
+        cfg.layer_keymaps.insert("space".into(), space);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_A, false, now + Duration::from_millis(11), &mut out);
+
+        assert!(out.is_empty());
+    }
+
+    #[test]
     fn hold_can_activate_layer_and_modifier_together() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
@@ -1025,7 +1106,7 @@ mod tests {
         let mut win = LayerKeymap {
             keys: HashMap::new(),
         };
-        win.keys.insert("Tab".into(), "Tab".into());
+        win.keys.insert("Tab".into(), Some("Tab".into()));
         cfg.layer_keymaps.insert("win".into(), win);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -1068,7 +1149,7 @@ mod tests {
         let mut win = LayerKeymap {
             keys: HashMap::new(),
         };
-        win.keys.insert("Tab".into(), "Escape".into());
+        win.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("win".into(), win);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();

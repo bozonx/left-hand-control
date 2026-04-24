@@ -38,6 +38,9 @@ describe('ActionPickerModal', () => {
     useMacrosMock.mockReset()
     useMacrosMock.mockReturnValue({
       displayAction: (value: string | null | undefined) => value ?? '',
+      getActionInfo: (value: string | null | undefined) => ({
+        label: value ?? '',
+      }),
     })
   })
 

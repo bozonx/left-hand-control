@@ -16,6 +16,7 @@ const {
   openEdit,
   saveEdit,
   clearEdit,
+  swallowEdit,
   addExtra,
   moveExtra,
   removeExtra,
@@ -85,6 +86,7 @@ const {
       :action="editAction"
       @save="saveEdit"
       @clear="clearEdit"
+      @swallow="swallowEdit"
     />
 
     <LayerEditorModal

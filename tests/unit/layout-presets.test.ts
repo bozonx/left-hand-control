@@ -22,6 +22,7 @@ layers:
     name: Nav
     keys:
       KeyH: ArrowLeft
+      KeyJ: ~
       KeyL: ArrowRight
     extras:
       - name: Mouse4
@@ -66,6 +67,7 @@ macros:
         nav: {
           keys: {
             KeyH: "ArrowLeft",
+            KeyJ: null,
             KeyL: "ArrowRight",
           },
           extras: [
@@ -115,7 +117,7 @@ macros:
       ],
       layerKeymaps: {
         edit: {
-          keys: { KeyH: "ArrowLeft" },
+          keys: { KeyH: "ArrowLeft", KeyJ: null },
           extras: [{ id: "extra-1", name: "Mouse4", action: "BrowserBack" }],
         },
       },
@@ -160,7 +162,7 @@ macros:
       ],
       layerKeymaps: {
         edit: {
-          keys: { KeyH: "ArrowLeft" },
+          keys: { KeyH: "ArrowLeft", KeyJ: null },
           extras: [{ name: "Mouse4", action: "BrowserBack" }],
         },
       },

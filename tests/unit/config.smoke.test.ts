@@ -65,6 +65,28 @@ describe('config helpers', () => {
     expect(config.settings.locale).toBe('auto')
   })
 
+  it('preserves explicit null layer mappings as swallow', () => {
+    const config = normalizeConfig({
+      layers: [{ id: 'nav', name: 'Navigation' }],
+      layerKeymaps: {
+        nav: {
+          keys: {
+            KeyH: null,
+            KeyJ: 'ArrowDown',
+            KeyK: '',
+          },
+          extras: [],
+        },
+      },
+    })
+
+    expect(config.layerKeymaps.nav?.keys).toEqual({
+      KeyH: null,
+      KeyJ: 'ArrowDown',
+      KeyK: null,
+    })
+  })
+
   it('throws a readable error for invalid persisted json', () => {
     expect(() => parsePersistedConfig('{')).toThrow(/config\.json is invalid/i)
   })

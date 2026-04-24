@@ -62,12 +62,12 @@ export function useKeymapEditor() {
   const editOpen = ref(false)
   const editKeyCode = ref('')
   const editKeyLabel = ref('')
-  const editAction = ref('')
+  const editAction = ref<string | null | undefined>('')
 
   function openEdit(code: string, label: string) {
     editKeyCode.value = code
     editKeyLabel.value = label
-    editAction.value = currentKeymap.value.keys[code] ?? ''
+    editAction.value = currentKeymap.value.keys[code]
     editOpen.value = true
   }
 
@@ -80,6 +80,11 @@ export function useKeymapEditor() {
   function clearEdit() {
     if (!currentLayer.value) return
     delete currentKeymap.value.keys[editKeyCode.value]
+  }
+
+  function swallowEdit() {
+    if (!currentLayer.value) return
+    currentKeymap.value.keys[editKeyCode.value] = null
   }
 
   function addExtra() {
@@ -186,6 +191,7 @@ export function useKeymapEditor() {
     openEdit,
     saveEdit,
     clearEdit,
+    swallowEdit,
     addExtra,
     moveExtra,
     removeExtra,

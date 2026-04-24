@@ -116,7 +116,7 @@ pub struct Rule {
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct LayerKeymap {
     #[serde(default)]
-    pub keys: HashMap<String, String>,
+    pub keys: HashMap<String, Option<String>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

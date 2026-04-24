@@ -205,6 +205,8 @@ export default {
     editTitle: "Edit: {label}",
     keyCode: "Key code: {code}",
     editKeyAria: "Edit {label}",
+    swallowAction: "Ignore in this layer",
+    swallowLabel: "Ignore",
   },
   macros: {
     title: "User macros",

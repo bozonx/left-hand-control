@@ -4,22 +4,23 @@ import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 const props = defineProps<{
   keyLabel: string
   keyCode: string
-  action: string
+  action?: string | null
 }>()
 
 const emit = defineEmits<{
   save: [action: string]
   clear: []
+  swallow: []
 }>()
 
 const open = defineModel<boolean>({ required: true })
 
-const draft = ref(props.action)
+const draft = ref(typeof props.action === 'string' ? props.action : '')
 const pickerRef = ref<HTMLElement | null>(null)
 
 watch(open, (v) => {
   if (v) {
-    draft.value = props.action
+    draft.value = typeof props.action === 'string' ? props.action : ''
     nextTick(() => pickerRef.value?.focus())
   }
 })
@@ -31,6 +32,11 @@ function save() {
 
 function clear() {
   emit('clear')
+  open.value = false
+}
+
+function swallow() {
+  emit('swallow')
   open.value = false
 }
 
@@ -76,10 +82,13 @@ function pickAndSave(value: string) {
             </div>
           </div>
           <FieldResetButton
-            v-if="action"
+            v-if="action !== undefined"
             :label="$t('common.clear')"
             @click="clear"
           />
+          <UButton color="neutral" variant="ghost" @click="swallow">
+            {{ $t('keymap.swallowAction') }}
+          </UButton>
           <UButton color="neutral" variant="ghost" @click="open = false">
             {{ $t('common.cancel') }}
           </UButton>
