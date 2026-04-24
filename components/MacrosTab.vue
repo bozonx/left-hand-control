@@ -29,16 +29,16 @@ const focusMacroKey = ref<string | null>(null)
 async function createMacro() {
   const macro = addMacro()
   focusMacroKey.value = uiKeyOf(macro)
-  await nextTick()
-  focusMacroKey.value = null
 }
 
 async function createFromSystemMacro(sys: SystemMacro) {
   const macro = cloneSystemMacro(sys)
   focusMacroKey.value = uiKeyOf(macro)
   emit('backToTop')
-  await nextTick()
-  focusMacroKey.value = null
+}
+
+function clearFocusMacroKey(uiKey: string) {
+  if (focusMacroKey.value === uiKey) focusMacroKey.value = null
 }
 
 // --- Deletion confirmation -----------------------------------------------
@@ -117,6 +117,7 @@ function cancelRemove() {
           @add-step="addStep"
           @move-step="moveStep"
           @remove-step="removeStep"
+          @name-focused="clearFocusMacroKey"
         />
       </div>
     </UCard>

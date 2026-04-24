@@ -34,10 +34,13 @@ async function copyPath(path: string) {
     <template #header>
       <h2 class="text-sm font-semibold">{{ $t('settings.configTitle') }}</h2>
     </template>
-    <div class="text-sm space-y-4">
-      <div>
-        <div class="mb-2 flex items-center justify-between gap-3">
-          <div class="text-(--ui-text-muted)">{{ $t('settings.configPath') }}</div>
+    <div class="grid gap-3 text-sm">
+      <div class="grid gap-2 md:grid-cols-[13rem_minmax(0,1fr)] md:items-center">
+        <div class="text-(--ui-text-muted)">{{ $t('settings.configPath') }}</div>
+        <div class="flex min-w-0 items-center gap-2">
+          <code class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable">
+            {{ configPath || '…' }}
+          </code>
           <UButton
             size="xs"
             color="neutral"
@@ -45,17 +48,16 @@ async function copyPath(path: string) {
             icon="i-lucide-copy"
             :disabled="!configPath"
             @click="copyPath(configPath)"
-          >
-            {{ $t('common.copy') }}
-          </UButton>
+          />
         </div>
-        <code class="block p-2 rounded bg-(--ui-bg-muted) break-all copyable">
-          {{ configPath || '…' }}
-        </code>
       </div>
-      <div>
-        <div class="mb-2 flex items-center justify-between gap-3">
-          <div class="text-(--ui-text-muted)">{{ $t('settings.layoutsPath') }}</div>
+
+      <div class="grid gap-2 md:grid-cols-[13rem_minmax(0,1fr)] md:items-center">
+        <div class="text-(--ui-text-muted)">{{ $t('settings.layoutsPath') }}</div>
+        <div class="flex min-w-0 items-center gap-2">
+          <code class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable">
+            {{ layoutsDir || '…' }}
+          </code>
           <UButton
             size="xs"
             color="neutral"
@@ -63,17 +65,9 @@ async function copyPath(path: string) {
             icon="i-lucide-copy"
             :disabled="!layoutsDir"
             @click="copyPath(layoutsDir)"
-          >
-            {{ $t('common.copy') }}
-          </UButton>
+          />
         </div>
-        <code class="block p-2 rounded bg-(--ui-bg-muted) break-all copyable">
-          {{ layoutsDir || '…' }}
-        </code>
       </div>
-      <p class="text-xs text-(--ui-text-muted) mt-2">
-        {{ $t('settings.configHint') }}
-      </p>
     </div>
   </UCard>
 </template>

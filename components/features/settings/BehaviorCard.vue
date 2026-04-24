@@ -1,0 +1,98 @@
+<script setup lang="ts">
+import type { AppConfig } from '~/types/config'
+
+const props = defineProps<{
+  config: AppConfig
+}>()
+
+function setNonNegativeInt(
+  key:
+    | 'defaultHoldTimeoutMs'
+    | 'defaultDoubleTapTimeoutMs'
+    | 'defaultMacroStepPauseMs'
+    | 'defaultMacroModifierDelayMs',
+  value: string | number,
+) {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(parsed)) return
+  props.config.settings[key] = Math.max(0, Math.round(parsed))
+}
+</script>
+
+<template>
+  <UCard>
+    <template #header>
+      <h2 class="text-sm font-semibold">{{ $t('settings.behaviorTitle') }}</h2>
+    </template>
+
+    <div class="space-y-4">
+      <div class="grid gap-4 md:grid-cols-2">
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('settings.holdTimeout')"
+              :hint="$t('settings.holdTimeoutHint')"
+            />
+          </template>
+          <UInput
+            :model-value="String(props.config.settings.defaultHoldTimeoutMs)"
+            type="number"
+            min="0"
+            class="w-full md:w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultHoldTimeoutMs', value)"
+          />
+        </UFormField>
+
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('settings.doubleTapTimeout')"
+              :hint="$t('settings.doubleTapTimeoutHint')"
+            />
+          </template>
+          <UInput
+            :model-value="String(props.config.settings.defaultDoubleTapTimeoutMs)"
+            type="number"
+            min="0"
+            class="w-full md:w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultDoubleTapTimeoutMs', value)"
+          />
+        </UFormField>
+      </div>
+
+      <div class="grid gap-4 pt-2 border-t border-(--ui-border) md:grid-cols-2">
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('settings.stepPauseLabel')"
+              :hint="$t('settings.stepPauseHint')"
+            />
+          </template>
+          <UInput
+            :model-value="String(props.config.settings.defaultMacroStepPauseMs)"
+            type="number"
+            min="0"
+            class="w-full md:w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultMacroStepPauseMs', value)"
+          />
+        </UFormField>
+
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('settings.modDelayLabel')"
+              :hint="$t('settings.modDelayHint')"
+            />
+          </template>
+          <UInput
+            :model-value="String(props.config.settings.defaultMacroModifierDelayMs)"
+            type="number"
+            min="0"
+            class="w-full md:w-40"
+            @update:model-value="(value) => setNonNegativeInt('defaultMacroModifierDelayMs', value)"
+          />
+        </UFormField>
+      </div>
+    </div>
+  </UCard>
+</template>

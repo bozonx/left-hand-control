@@ -47,6 +47,12 @@ mockComponent('~/components/features/settings/GeneralCard.vue', () =>
   }),
 )
 
+mockComponent('~/components/features/settings/BehaviorCard.vue', () =>
+  defineComponent({
+    template: '<div data-test="behavior-card">behavior</div>',
+  }),
+)
+
 mockComponent('~/components/features/settings/PlatformCard.vue', () =>
   defineComponent({
     template: '<div data-test="platform-card">platform</div>',

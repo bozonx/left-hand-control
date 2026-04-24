@@ -44,7 +44,7 @@ export default {
   tabs: {
     layouts: 'My layouts',
     rules: 'Rules',
-    keymap: 'Layout',
+    keymap: 'Layers',
     macros: 'Macros',
     settings: 'Settings',
   },
@@ -156,8 +156,9 @@ export default {
     namePh: 'Macro name',
     idLabel: 'ID',
     idHint:
-      'Unique identifier for references like macro:<id>. To bind the macro to a key, pick this action on the "Layers" or "Keymap" tab. Only change the ID if no key uses this macro.',
+      'Unique identifier for references like macro:<id>. To bind the macro to a key, pick this action on the "Layers" or "Rules" tab. Only change the ID if no key uses this macro.',
     idPh: 'id',
+    copyId: 'Copy ID',
     idErrors: {
       empty: 'ID cannot be empty.',
       format: 'Only Latin letters, digits, "_" and "-", up to 64 chars.',
@@ -180,7 +181,7 @@ export default {
     deleteStep: 'Delete step',
     deleteMacro: 'Delete macro',
     assignHint:
-      'To bind the macro to a key, pick the action {ref} on the "Layers" or "Keymap" tab.',
+      'To bind the macro to a key, pick the action {ref} on the "Layers" or "Rules" tab.',
     copySuffix: '(copy)',
     systemTitle: 'System macros',
     systemSub:
@@ -205,6 +206,7 @@ export default {
     mapperHint:
       'The mapper reads events directly from {input} and emits via {uinput}. You need access to those devices — see README (group {group} and a udev rule for {uinputDev}).',
     generalTitle: 'General',
+    behaviorTitle: 'Global behavior defaults',
     appearance: 'Appearance',
     appearanceHint:
       '"Use system" mode follows the OS {pref} and switches automatically. Currently the {mode} theme is active.',
@@ -272,11 +274,10 @@ export default {
       'Reset everything: clear layers, rules, keymap and macros. App settings are preserved.',
     resetBtn: 'Reset all',
     emptyLayoutName: 'Empty layout',
-    userLayoutsDir: 'User layouts folder:',
+    userLayoutsDir: 'Your layouts:',
     configTitle: 'Configuration file',
-    configPath: 'config.json path:',
-    layoutsPath: 'User layouts folder:',
-    configHint: 'All changes are saved automatically.',
+    configPath: 'config.json',
+    layoutsPath: 'Your layouts',
     confirmApplyTitle: 'Switch to "{label}"?',
     confirmApplyBody:
       'The current layers, rules, keymap and macros will be replaced. App settings are preserved.',

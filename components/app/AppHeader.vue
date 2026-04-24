@@ -39,7 +39,7 @@ const tabItems = computed(() => [
   { value: 'rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { value: 'keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { value: 'macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
-  { value: 'settings', label: t('tabs.settings'), icon: 'i-lucide-settings' },
+  { value: 'settings', label: t('tabs.settings'), icon: 'i-lucide-settings', iconOnly: true },
 ])
 
 const selectedDevice = computed(() => config.value.settings.inputDevicePath ?? '')
@@ -67,24 +67,28 @@ onMounted(() => {
   <header
     class="flex items-center justify-between px-4 h-[var(--app-header-height)] border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 shrink-0 app-chrome"
   >
-    <div class="flex items-center gap-8 min-w-0">
+    <div class="flex items-center gap-4 min-w-0 flex-1">
       <div class="flex items-center gap-2.5 shrink-0">
         <UIcon name="i-lucide-keyboard" class="w-5 h-5 text-primary" />
         <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
       </div>
 
-      <div class="flex items-center gap-1 bg-(--ui-bg) border border-(--ui-border) rounded-lg p-1">
-        <UButton
-          v-for="item in tabItems"
-          :key="item.value"
-          :color="activeTab === item.value ? 'primary' : 'neutral'"
-          :variant="activeTab === item.value ? 'soft' : 'ghost'"
-          :icon="item.icon"
-          size="sm"
-          @click="emit('update:activeTab', item.value)"
-        >
-          {{ item.label }}
-        </UButton>
+      <div class="min-w-0 flex-1 overflow-x-auto">
+        <div class="inline-flex min-w-max items-center gap-1 bg-(--ui-bg) border border-(--ui-border) rounded-lg p-1">
+          <UButton
+            v-for="item in tabItems"
+            :key="item.value"
+            :color="activeTab === item.value ? 'primary' : 'neutral'"
+            :variant="activeTab === item.value ? 'soft' : 'ghost'"
+            :icon="item.icon"
+            :square="item.iconOnly"
+            :aria-label="item.label"
+            size="sm"
+            @click="emit('update:activeTab', item.value)"
+          >
+            <span v-if="!item.iconOnly">{{ item.label }}</span>
+          </UButton>
+        </div>
       </div>
     </div>
 

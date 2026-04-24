@@ -14,16 +14,40 @@ const props = defineProps<{
   autofocusName?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
   addStep: [macro: Macro]
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
+  nameFocused: [uiKey: string]
 }>()
 
 const nameInput = useTemplateRef('nameInput')
+const toast = useToast()
+const { t } = useI18n()
+
+async function copyMacroId() {
+  if (!props.macro.id) return
+  try {
+    await navigator.clipboard.writeText(props.macro.id)
+    toast.add({
+      title: t('common.copied'),
+      description: props.macro.id,
+      icon: 'i-lucide-copy-check',
+      close: true,
+    })
+  } catch (error) {
+    toast.add({
+      title: t('common.copy'),
+      description: error instanceof Error ? error.message : String(error),
+      color: 'error',
+      icon: 'i-lucide-circle-alert',
+      close: true,
+    })
+  }
+}
 
 watch(
   () => props.autofocusName,
@@ -32,6 +56,7 @@ watch(
     await nextTick()
     nameInput.value?.inputRef?.focus()
     nameInput.value?.inputRef?.select()
+    emit('nameFocused', props.uiKey)
   },
   { immediate: true },
 )
@@ -51,13 +76,25 @@ watch(
               hint-visible-on="group-hover"
             />
           </template>
-          <UInput
-            v-model="macro.id"
-            :color="idError ? 'error' : undefined"
-            :highlight="!!idError"
-            class="w-full font-mono"
-            :placeholder="$t('macros.idPh')"
-          />
+          <div class="flex items-center gap-2">
+            <UInput
+              v-model="macro.id"
+              :color="idError ? 'error' : undefined"
+              :highlight="!!idError"
+              class="w-full font-mono"
+              :placeholder="$t('macros.idPh')"
+            />
+            <UButton
+              icon="i-lucide-copy"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              class="shrink-0 opacity-70 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+              :aria-label="$t('macros.copyId')"
+              :disabled="!macro.id"
+              @click="copyMacroId"
+            />
+          </div>
         </UFormField>
 
         <UFormField>

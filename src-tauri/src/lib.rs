@@ -150,9 +150,8 @@ fn get_platform_info() -> platform::PlatformInfo {
 
 fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show", "Показать окно", true, None::<&str>)?;
-    let hide = MenuItem::with_id(app, "hide", "Скрыть окно", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Выход", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &hide, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &quit])?;
 
     let icon = app
         .default_window_icon()
@@ -170,11 +169,6 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                     let _ = w.show();
                     let _ = w.unminimize();
                     let _ = w.set_focus();
-                }
-            }
-            "hide" => {
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.hide();
                 }
             }
             "quit" => {
