@@ -60,8 +60,9 @@ const emit = defineEmits<{
             class="grid grid-cols-6 gap-1.5"
           >
             <KeyCap
-              v-for="keyDef in kbRow"
+              v-for="(keyDef, j) in kbRow"
               :key="keyDef.code"
+              :class="{ 'col-start-3': i === LEFT_HAND_ROWS.length - 1 && j === 0 }"
               :label="keyLabel(keyDef.code, props.keyLabelMode)"
               :action="currentKeymap.keys[keyDef.code]"
               @edit="emit('edit', keyDef.code, keyLabel(keyDef.code, props.keyLabelMode))"
