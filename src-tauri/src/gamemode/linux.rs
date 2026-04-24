@@ -1,6 +1,9 @@
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::platform::linux::SessionType;
+
+pub static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 
 pub fn is_gamemoded_active() -> bool {
     Command::new("gamemoded")
@@ -17,8 +20,158 @@ pub fn is_fullscreen_active() -> bool {
     let session = crate::platform::linux::detect();
     match session.session_type {
         SessionType::X11 => is_x11_fullscreen_active(),
-        SessionType::Wayland | SessionType::Tty | SessionType::Unknown => false,
+        SessionType::Wayland => is_wayland_fullscreen_active(),
+        SessionType::Tty | SessionType::Unknown => false,
     }
+}
+
+fn is_wayland_fullscreen_active() -> bool {
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default().to_lowercase();
+    let session = std::env::var("XDG_SESSION_DESKTOP").unwrap_or_default().to_lowercase();
+
+    if desktop.contains("kde") || session.contains("kde") {
+        return is_kde_wayland_fullscreen_active();
+    } else if desktop.contains("hyprland") || session.contains("hyprland") {
+        return is_hyprland_fullscreen_active();
+    } else if desktop.contains("gnome") || session.contains("gnome") {
+        return is_gnome_wayland_fullscreen_active();
+    }
+
+    false
+}
+
+fn is_kde_wayland_fullscreen_active() -> bool {
+    let output = Command::new("kdotool")
+        .arg("getactivewindow")
+        .output();
+
+    let Ok(output) = output else {
+        if !KDOTOOL_WARN_ONCE.swap(true, Ordering::SeqCst) {
+            eprintln!("[gamemode] Для определения полноэкранного режима в KDE Wayland требуется 'kdotool'. Пожалуйста, установите его (например: paru -S kdotool).");
+        }
+        return false;
+    };
+
+    if !output.status.success() {
+        return false;
+    }
+
+    let window_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if window_id.is_empty() {
+        return false;
+    }
+
+    let geom_output = Command::new("kdotool")
+        .args(["getwindowgeometry", &window_id])
+        .output()
+        .ok();
+
+    let Some(geom_output) = geom_output else {
+        return false;
+    };
+
+    let Some((window_x, window_y, window_width, window_height)) =
+        parse_kdotool_geometry(&String::from_utf8_lossy(&geom_output.stdout))
+    else {
+        return false;
+    };
+
+    let Some((display_width, display_height)) = kde_display_geometry() else {
+        return false;
+    };
+
+    window_x == 0
+        && window_y == 0
+        && window_width >= display_width
+        && window_height >= display_height
+}
+
+fn is_hyprland_fullscreen_active() -> bool {
+    let output = Command::new("hyprctl")
+        .args(["activewindow", "-j"])
+        .output();
+
+    let Ok(output) = output else {
+        return false;
+    };
+    if !output.status.success() {
+        return false;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    stdout.contains("\"fullscreen\": true") || stdout.contains("\"fullscreen\": 1") || stdout.contains("\"fullscreen\": 2")
+}
+
+fn is_gnome_wayland_fullscreen_active() -> bool {
+    // GNOME DBus APIs for getting active window geometry or fullscreen status
+    // are locked down without an extension. We return false for now.
+    false
+}
+
+fn parse_kdotool_geometry(stdout: &str) -> Option<(i32, i32, i32, i32)> {
+    let mut x = 0;
+    let mut y = 0;
+    let mut w = 0;
+    let mut h = 0;
+    let mut has_pos = false;
+    let mut has_geom = false;
+
+    for line in stdout.lines() {
+        let line = line.trim();
+        if line.starts_with("Position:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                let coords: Vec<&str> = parts[1].split(',').collect();
+                if coords.len() == 2 {
+                    x = coords[0].parse().unwrap_or(0);
+                    y = coords[1].parse().unwrap_or(0);
+                    has_pos = true;
+                }
+            }
+        } else if line.starts_with("Geometry:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                let dims: Vec<&str> = parts[1].split('x').collect();
+                if dims.len() == 2 {
+                    w = dims[0].parse().unwrap_or(0);
+                    h = dims[1].parse().unwrap_or(0);
+                    has_geom = true;
+                }
+            }
+        }
+    }
+
+    if has_pos && has_geom && w > 0 && h > 0 {
+        Some((x, y, w, h))
+    } else {
+        None
+    }
+}
+
+fn kde_display_geometry() -> Option<(i32, i32)> {
+    let output = Command::new("kscreen-doctor")
+        .arg("-o")
+        .output()
+        .ok()?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for line in stdout.lines() {
+        let line = line.trim();
+        if line.starts_with("Geometry:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 3 {
+                let dims: Vec<&str> = parts[2].split('x').collect();
+                if dims.len() == 2 {
+                    let w: i32 = dims[0].parse().unwrap_or(0);
+                    let h: i32 = dims[1].parse().unwrap_or(0);
+                    if w > 0 && h > 0 {
+                        return Some((w, h));
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 fn is_x11_fullscreen_active() -> bool {

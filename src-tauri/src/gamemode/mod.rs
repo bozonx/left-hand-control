@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
+use std::process::Command;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::mapper::config::GameModeSettings;
@@ -40,6 +41,13 @@ fn watcher_stop_requested() -> bool {
     WATCHER_STOP.load(Ordering::SeqCst)
 }
 
+fn get_current_time() -> String {
+    let output = Command::new("date").arg("+%Y-%m-%d %H:%M:%S").output().ok();
+    output
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_else(|| "unknown time".to_string())
+}
+
 pub fn start_watcher(app: AppHandle) {
     WATCHER_STOP.store(false, Ordering::SeqCst);
     
@@ -52,6 +60,15 @@ pub fn start_watcher(app: AppHandle) {
                 let status = check_gamemode(&app);
                 
                 if status.active != last_active {
+                    let time_str = get_current_time();
+                    let trigger = status.method.as_deref().unwrap_or("none");
+                    println!(
+                        "[gamemode debug] [{}] State changed: {} (Trigger: {})",
+                        time_str,
+                        if status.active { "ACTIVE" } else { "INACTIVE" },
+                        trigger
+                    );
+
                     if let Err(e) = app.emit("game-mode-changed", status.clone()) {
                         eprintln!("[gamemode] emit error: {e}");
                     }

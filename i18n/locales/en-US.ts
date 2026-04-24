@@ -427,10 +427,10 @@ export default {
     gameModeUseGamemoded: "Use gamemoded",
     gameModeUseGamemodedHint: "Recommended for Linux (Steam, Lutris).",
     gameModeUseFullscreen: "Fullscreen Detection",
-    gameModeUseFullscreenHint: "Consider game running if the active X11 window is fullscreen.",
+    gameModeUseFullscreenHint: "Consider game running if the active window is fullscreen.",
     gameModeActive: "Game Mode active",
     gameModeInactive: "Game Mode",
-    gameModeInfo: "Linux game mode detection currently supports gamemoded and fullscreen X11 windows.",
+    gameModeInfo: "Linux game mode detection currently supports gamemoded and fullscreen windows (X11/Wayland).",
   },
   picker: {
     currentValue: "Current value",

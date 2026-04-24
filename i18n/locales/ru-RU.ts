@@ -432,10 +432,10 @@ export default {
     gameModeUseGamemoded: "Использовать gamemoded",
     gameModeUseGamemodedHint: "Рекомендуется для Linux (Steam, Lutris).",
     gameModeUseFullscreen: "Детекция Fullscreen",
-    gameModeUseFullscreenHint: "Считать игру запущенной, если активное X11-окно открыто в полноэкранном режиме.",
+    gameModeUseFullscreenHint: "Считать игру запущенной, если активное окно открыто в полноэкранном режиме.",
     gameModeActive: "Игровой режим активен",
     gameModeInactive: "Игровой режим",
-    gameModeInfo: "Сейчас для Linux поддерживаются gamemoded и определение полноэкранного X11-окна.",
+    gameModeInfo: "Сейчас для Linux поддерживаются gamemoded и определение полноэкранного окна (X11/Wayland).",
   },
   picker: {
     currentValue: "Текущее значение",
