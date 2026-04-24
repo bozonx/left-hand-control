@@ -3,6 +3,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, WindowEvent,
 };
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 mod layout;
 mod mapper;
@@ -178,6 +179,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 }
             }
             "quit" => {
+                let _ = app.save_window_state(StateFlags::all());
                 // Best-effort stop of the mapper so we always ungrab the device.
                 let _ = mapper::stop();
                 app.exit(0);
@@ -210,17 +212,15 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
-            #[cfg(desktop)]
-            app.handle()
-                .plugin(tauri_plugin_window_state::Builder::default().build())?;
-
             build_tray(app.handle())?;
             layout::start_watcher(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.app_handle().save_window_state(StateFlags::all());
                 // Hide the window instead of exiting — the mapper stays alive.
                 let _ = window.hide();
                 api.prevent_close();
@@ -249,8 +249,10 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|_, event| {
+    app.run(|app_handle, event| {
         if let RunEvent::Exit = event {
+            // Best effort final save for paths that bypass the close handler.
+            let _ = app_handle.save_window_state(StateFlags::all());
             let _ = mapper::stop();
             layout::stop_watcher();
         }
