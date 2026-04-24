@@ -4,7 +4,10 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createDefaultConfig } from '~/types/config'
-import { useSettingsScreen } from '~/composables/useSettingsScreen'
+import {
+  resetSettingsScreenStateForTests,
+  useSettingsScreen,
+} from '~/composables/useSettingsScreen'
 
 const {
   useConfigMock,
@@ -71,6 +74,7 @@ function mountHarness() {
 
 describe('useSettingsScreen', () => {
   beforeEach(() => {
+    resetSettingsScreenStateForTests()
     useConfigMock.mockReset()
     useLayoutLibraryMock.mockReset()
     useMapperMock.mockReset()

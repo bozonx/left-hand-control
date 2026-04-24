@@ -40,7 +40,7 @@ defineEmits<{
                         :disabled="!!applying"
                         @click="$emit('createFromEmpty')"
                     >
-                        {{ $t("settings.newLayoutBtn") }}
+                        {{ $t("settings.newEmptyLayoutBtn") }}
                     </UButton>
                     <UButton
                         color="neutral"
@@ -173,7 +173,10 @@ defineEmits<{
                             variant="outline"
                             icon="i-lucide-folder-open"
                             :loading="applying === entry.id"
-                            :disabled="!!applying"
+                            :disabled="
+                                !!applying ||
+                                (currentLayoutId === entry.id && !isLayoutDirty)
+                            "
                             @click="$emit('requestApplyEntry', entry)"
                         >
                             {{ $t("settings.loadBtn") }}

@@ -99,6 +99,7 @@ const {
         <UFormField :label="$t('settings.nameLabel')">
           <UInput
             v-model="saveName"
+            class="w-full"
             :placeholder="$t('settings.namePh')"
             autofocus
             @keyup.enter="performSave(false)"
@@ -142,6 +143,7 @@ const {
         <UFormField :label="$t('settings.nameLabel')">
           <UInput
             v-model="editName"
+            class="w-full"
             :placeholder="$t('settings.namePh')"
             autofocus
             @keyup.enter="performEdit(false)"
@@ -150,6 +152,7 @@ const {
         <UFormField :label="$t('settings.descriptionLabel')">
           <UTextarea
             v-model="editDescription"
+            class="w-full"
             :placeholder="$t('settings.descriptionPh')"
             :rows="4"
           />

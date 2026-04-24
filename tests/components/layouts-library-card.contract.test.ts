@@ -47,4 +47,27 @@ describe("LayoutsLibraryCard", () => {
     expect(wrapper.emitted("requestEdit")).toEqual([[entries[0]]]);
     expect(wrapper.emitted("requestDelete")).toEqual([[entries[0]]]);
   });
+
+  it("disables loading for the already saved current layout", async () => {
+    const entries = [{ id: "user:nav", name: "Nav", description: "Navigation" }];
+
+    const wrapper = await mountSuspended(LayoutsLibraryCard, {
+      props: {
+        entries,
+        currentLayoutId: "user:nav",
+        currentLayoutDescription: "Navigation",
+        isLayoutDirty: false,
+        applying: "",
+        applyError: null,
+        libraryError: null,
+        layoutsDir: "/tmp/layouts",
+      },
+    });
+
+    const loadButton = wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Load"));
+
+    expect(loadButton?.attributes("disabled")).toBeDefined();
+  });
 });

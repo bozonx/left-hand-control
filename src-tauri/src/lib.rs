@@ -166,6 +166,12 @@ fn get_platform_info() -> platform::PlatformInfo {
     platform::info()
 }
 
+#[tauri::command]
+fn quit_application(app: tauri::AppHandle) {
+    let _ = mapper::stop();
+    app.exit(0);
+}
+
 // --- Tray --------------------------------------------------------------------
 
 fn window_geometry_state_flags() -> StateFlags {
@@ -282,6 +288,7 @@ pub fn run() {
             mapper_status,
             get_current_layout,
             get_platform_info,
+            quit_application,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

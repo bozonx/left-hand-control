@@ -25,7 +25,6 @@ const tabItems = computed(() => [
   { key: 'keymap', to: '/keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { key: 'macros', to: '/macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
   { key: 'commands', to: '/commands', label: t('tabs.commands'), icon: 'i-lucide-terminal' },
-  { key: 'settings', to: '/settings', label: t('tabs.settings'), icon: 'i-lucide-settings', iconOnly: true },
 ])
 
 const currentLayoutLabel = computed<string>(() => {
@@ -36,6 +35,9 @@ const currentLayoutLabel = computed<string>(() => {
 })
 
 const selectedDevice = computed(() => config.value.settings.inputDevicePath ?? '')
+const windowTitle = computed(() => `${t('app.title')} - ${currentLayoutLabel.value}`)
+const saveLabel = computed(() => (isLayoutDirty.value ? t('common.save') : t('app.saved')))
+const saveIcon = computed(() => (isLayoutDirty.value ? 'i-lucide-save' : 'i-lucide-check'))
 
 function isActive(path: string) {
   if (path === '/layouts' && route.path === '/') return true
@@ -61,9 +63,30 @@ async function toggleMapper() {
   }
 }
 
+async function syncWindowTitle(title: string) {
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+    await getCurrentWindow().setTitle(title)
+  } catch {}
+}
+
+async function quitApplication() {
+  const tauri = await useTauri()
+  if (!tauri) return
+  await tauri.invoke('quit_application')
+}
+
 onMounted(() => {
   void mapper.refreshStatus()
 })
+
+watch(
+  windowTitle,
+  (title) => {
+    void syncWindowTitle(title)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -113,37 +136,18 @@ onMounted(() => {
         <AppTooltip
           :text="isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel"
         >
-          <div class="flex items-center gap-1.5">
-            <UBadge
-              :color="isLayoutDirty ? 'warning' : 'neutral'"
-              :variant="isLayoutDirty ? 'solid' : 'outline'"
-              class="max-w-[18rem] truncate"
-              size="sm"
-            >
-              <UIcon
-                :name="
-                  isLayoutDirty
-                    ? 'i-lucide-triangle-alert'
-                    : 'i-lucide-keyboard'
-                "
-                class="mr-1 shrink-0"
-              />
-              <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.presetLabel') }}</span>
-              <span class="truncate">{{ currentLayoutLabel }}</span>
-              <span v-if="isLayoutDirty" class="ml-1 font-semibold">
-                {{ $t('app.notSavedBadge') }}
-              </span>
-            </UBadge>
-
+          <div class="flex items-center gap-2">
             <UButton
-              v-if="isLayoutDirty"
-              icon="i-lucide-save"
+              :icon="saveIcon"
               size="sm"
-              color="primary"
-              variant="solid"
+              :color="isLayoutDirty ? 'primary' : 'neutral'"
+              :variant="isLayoutDirty ? 'solid' : 'outline'"
               :loading="saveBusy"
+              :disabled="!isLayoutDirty"
               @click="openSaveModal"
-            />
+            >
+              {{ saveLabel }}
+            </UButton>
           </div>
         </AppTooltip>
 
@@ -159,6 +163,24 @@ onMounted(() => {
             {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
           </UBadge>
         </AppTooltip>
+
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-settings"
+          size="sm"
+          :aria-label="$t('tabs.settings')"
+          @click="openTab('/settings')"
+        />
+
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-log-out"
+          size="sm"
+          :aria-label="$t('app.quit')"
+          @click="quitApplication"
+        />
       </template>
       <div v-else class="text-xs text-(--ui-text-muted)">
         {{ $t('app.loading') }}

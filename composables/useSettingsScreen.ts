@@ -27,6 +27,10 @@ type OverwriteAction = "saveAs" | "rename";
 
 let singleton: ReturnType<typeof useSettingsScreen> | null = null;
 
+export function resetSettingsScreenStateForTests() {
+  singleton = null;
+}
+
 export function useSettingsScreen() {
   if (singleton) return singleton;
 
@@ -478,4 +482,3 @@ export function useSettingsScreen() {
   };
   return singleton;
 }
-

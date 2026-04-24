@@ -5,7 +5,7 @@ export default {
     badge: "Linux key-mapper",
     loading: "загрузка…",
     saving: "сохранение",
-    saved: "сохранено",
+    saved: "Сохранено",
     saveFailedTitle: "Не удалось сохранить изменения",
     loadFailedBody:
       "Не удалось инициализировать приложение. Проверьте ошибку ниже и попробуйте загрузить конфиг ещё раз.",
@@ -15,6 +15,7 @@ export default {
     customLayout: "Пользовательская раскладка",
     switchToLight: "Переключить на светлую тему",
     switchToDark: "Переключить на тёмную тему",
+    quit: "Выйти из приложения",
     presetLabel: "Пресет:",
     layoutLanguageLabel: "Язык:",
   },
@@ -361,13 +362,14 @@ export default {
     saveCurrent: "Сохранить",
     saveAs: "Сохранить как",
     newLayoutBtn: "Новая",
+    newEmptyLayoutBtn: "Новая пустая",
     newFromIvanKBtn: "Новая на основе раскладки Ivan K",
     deleteAria: "Удалить",
     editLayoutAria: "Редактировать раскладку {name}",
     dirtyBadgeTitle: "В текущей раскладке есть несохранённые изменения.",
     dirtyBadgeBody:
       "Переключение на другую раскладку затрёт правила, слои, раскладки и макросы. Сохраните текущую как пользовательскую, чтобы не потерять.",
-    resetUnsavedBtn: "Сбросить",
+    resetUnsavedBtn: "Сбросить изменения",
     resetUnsavedTitle: "Сбросить несохранённые изменения?",
     resetUnsavedBody:
       "Несохранённые правки будут отброшены, а текущая раскладка заново загружена из файла.",
