@@ -118,6 +118,7 @@ export default {
     keyViewLabel: 'Key labels',
     keyViewLabels: 'US layout',
     keyViewCodes: 'Key codes',
+    keyViewNumeric: 'Numeric codes',
     newLayer: 'New layer',
     edit: 'Edit',
     addDescription: 'Add description',

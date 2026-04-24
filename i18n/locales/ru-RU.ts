@@ -119,6 +119,7 @@ export default {
     keyViewLabel: 'Подписи клавиш',
     keyViewLabels: 'Английская раскладка',
     keyViewCodes: 'Коды клавиш',
+    keyViewNumeric: 'Цифровые коды',
     newLayer: 'Новый слой',
     edit: 'Редактировать',
     addDescription: 'Добавить описание',

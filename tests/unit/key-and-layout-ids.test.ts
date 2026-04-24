@@ -23,6 +23,8 @@ describe('key helpers', () => {
     expect(keyLabel('CapsLock')).toBe('Caps')
     expect(keyLabel('ControlRight')).toBe('Ctrl')
     expect(keyLabel('ControlRight', 'code')).toBe('ControlRight')
+    expect(keyLabel('ControlRight', 'numeric')).toBe('97')
+    expect(keyLabel('UnknownKey', 'numeric')).toBe('UnknownKey')
     expect(keyLabel('UnknownKey')).toBe('UnknownKey')
   })
 

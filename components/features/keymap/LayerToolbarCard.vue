@@ -101,6 +101,14 @@ function stopDescriptionEditing() {
             >
               {{ $t('keymap.keyViewCodes') }}
             </UButton>
+            <UButton
+              size="sm"
+              color="neutral"
+              :variant="keyLabelMode === 'numeric' ? 'soft' : 'ghost'"
+              @click="emit('update:keyLabelMode', 'numeric')"
+            >
+              {{ $t('keymap.keyViewNumeric') }}
+            </UButton>
           </div>
         </UFormField>
         <UButton icon="i-lucide-plus" size="sm" @click="$emit('create')">
