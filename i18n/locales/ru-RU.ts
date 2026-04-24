@@ -277,8 +277,8 @@ export default {
     resetBtn: 'Сбросить всё',
     emptyLayoutName: 'Пустая раскладка',
     userLayoutsDir: 'Ваши раскладки:',
-    configTitle: 'Файл конфигурации',
-    configPath: 'config.json',
+    configTitle: 'Файлы настроек',
+    settingsDirPath: 'Папка настроек',
     layoutsPath: 'Ваши раскладки',
     confirmApplyTitle: 'Переключиться на «{label}»?',
     confirmApplyBody:

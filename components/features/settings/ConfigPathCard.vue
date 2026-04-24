@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  configPath: string
+  settingsDir: string
   layoutsDir: string
 }>()
 
@@ -36,18 +36,18 @@ async function copyPath(path: string) {
     </template>
     <div class="grid gap-3 text-sm">
       <div class="grid gap-2 md:grid-cols-[13rem_minmax(0,1fr)] md:items-center">
-        <div class="text-(--ui-text-muted)">{{ $t('settings.configPath') }}</div>
+        <div class="text-(--ui-text-muted)">{{ $t('settings.settingsDirPath') }}</div>
         <div class="flex min-w-0 items-center gap-2">
           <code class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable">
-            {{ configPath || '…' }}
+            {{ settingsDir || '…' }}
           </code>
           <UButton
             size="xs"
             color="neutral"
             variant="outline"
             icon="i-lucide-copy"
-            :disabled="!configPath"
-            @click="copyPath(configPath)"
+            :disabled="!settingsDir"
+            @click="copyPath(settingsDir)"
           />
         </div>
       </div>

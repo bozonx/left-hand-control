@@ -99,7 +99,7 @@ describe('useSettingsScreen', () => {
 
     useConfigMock.mockReturnValue({
       config,
-      configPath: ref('/tmp/config.json'),
+      settingsDir: ref('/tmp/settings'),
       flush,
       applyPreset: vi.fn(),
       markLayoutSavedAs: vi.fn(),
@@ -185,7 +185,7 @@ describe('useSettingsScreen', () => {
 
     useConfigMock.mockReturnValue({
       config,
-      configPath: ref('/tmp/config.json'),
+      settingsDir: ref('/tmp/settings'),
       flush,
       applyPreset,
       markLayoutSavedAs,
@@ -291,7 +291,7 @@ describe('useSettingsScreen', () => {
 
     useConfigMock.mockReturnValue({
       config,
-      configPath: ref('/tmp/config.json'),
+      settingsDir: ref('/tmp/settings'),
       flush,
       applyPreset: vi.fn(),
       markLayoutSavedAs: vi.fn(),

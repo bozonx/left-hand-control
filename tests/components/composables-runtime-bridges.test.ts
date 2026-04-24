@@ -46,11 +46,11 @@ describe('runtime bridge composables', () => {
 
   it('useMacros resolves names and display labels for user macros, system macros and system actions', async () => {
     const config = ref(createDefaultConfig())
-    config.value.macros.push({
+    config.value.macros = [{
       id: 'duplicateLine',
       name: 'User duplicate',
       steps: [],
-    })
+    }]
 
     useConfigMock.mockReturnValue({
       config,

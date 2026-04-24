@@ -81,7 +81,7 @@ describe('SettingsTab', () => {
 
     useSettingsScreenMock.mockReturnValue({
       config: ref(createDefaultConfig()),
-      configPath: ref('/tmp/config.json'),
+      settingsDir: ref('/tmp/settings'),
       currentLayoutId: ref('user:test'),
       isLayoutDirty: ref(true),
       library: {

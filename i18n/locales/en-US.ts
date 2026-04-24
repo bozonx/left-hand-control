@@ -275,8 +275,8 @@ export default {
     resetBtn: 'Reset all',
     emptyLayoutName: 'Empty layout',
     userLayoutsDir: 'Your layouts:',
-    configTitle: 'Configuration file',
-    configPath: 'config.json',
+    configTitle: 'Settings files',
+    settingsDirPath: 'Settings directory',
     layoutsPath: 'Your layouts',
     confirmApplyTitle: 'Switch to "{label}"?',
     confirmApplyBody:

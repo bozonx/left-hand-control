@@ -6,7 +6,7 @@ import ConfigPathCard from '~/components/features/settings/ConfigPathCard.vue'
 import PlatformCard from '~/components/features/settings/PlatformCard.vue'
 const {
   config,
-  configPath,
+  settingsDir,
   library,
   mapper,
   platform,
@@ -43,7 +43,7 @@ const {
     <PlatformCard :platform="platform" />
 
     <ConfigPathCard
-      :config-path="configPath"
+      :settings-dir="settingsDir"
       :layouts-dir="library.layoutsDir.value"
     />
   </div>

@@ -18,8 +18,16 @@ impl StoragePaths {
         self.config_dir.join("config.json")
     }
 
+    pub fn settings_dir(&self) -> PathBuf {
+        self.config_dir.clone()
+    }
+
     pub fn ui_state_path(&self) -> PathBuf {
         self.config_dir.join("ui-state.json")
+    }
+
+    pub fn current_layout_path(&self) -> PathBuf {
+        self.data_dir.join("current-layout.yaml")
     }
 
     pub fn layouts_dir(&self) -> PathBuf {
@@ -66,6 +74,25 @@ impl StoragePaths {
         fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let path = self.ui_state_path();
         let tmp = self.config_dir.join("ui-state.json.tmp");
+        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
+        fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+        Ok(())
+    }
+
+    pub fn load_current_layout(&self) -> Result<String, String> {
+        self.ensure()?;
+        let path = self.current_layout_path();
+        if !path.exists() {
+            return Ok(String::new());
+        }
+        fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
+    }
+
+    pub fn save_current_layout(&self, contents: &str) -> Result<(), String> {
+        self.ensure()?;
+        fs::create_dir_all(&self.data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
+        let path = self.current_layout_path();
+        let tmp = self.data_dir.join("current-layout.yaml.tmp");
         fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
         fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
         Ok(())
@@ -207,6 +234,21 @@ mod tests {
         assert_eq!(
             storage.load_ui_state().expect("load ui state"),
             "{\"activeTab\":\"keymap\"}"
+        );
+    }
+
+    #[test]
+    fn save_and_load_current_layout_roundtrip() {
+        let temp = TempDir::new("storage-current-layout");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+
+        storage
+            .save_current_layout("name: Current")
+            .expect("save current layout");
+
+        assert_eq!(
+            storage.load_current_layout().expect("load current layout"),
+            "name: Current"
         );
     }
 

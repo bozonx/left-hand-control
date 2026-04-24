@@ -138,6 +138,11 @@ export interface AppConfig {
   settings: AppSettings
 }
 
+export interface PersistedConfig {
+  version: 1
+  settings: AppSettings
+}
+
 // Prefix used to mark an action string as a macro reference.
 export const MACRO_ACTION_PREFIX = 'macro:'
 
@@ -194,5 +199,13 @@ export function createDefaultConfig(): AppConfig {
       defaultMacroModifierDelayMs: 5,
       inputDevicePath: '',
     },
+  }
+}
+
+export function createDefaultPersistedConfig(): PersistedConfig {
+  const { settings, version } = createDefaultConfig()
+  return {
+    version,
+    settings,
   }
 }

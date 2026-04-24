@@ -22,10 +22,10 @@ fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> 
 }
 
 #[tauri::command]
-fn get_config_path(app: tauri::AppHandle) -> Result<String, String> {
+fn get_settings_dir(app: tauri::AppHandle) -> Result<String, String> {
     let storage = app_storage(&app)?;
     storage.ensure()?;
-    Ok(storage.config_path().to_string_lossy().to_string())
+    Ok(storage.settings_dir().to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -36,6 +36,16 @@ fn load_config(app: tauri::AppHandle) -> Result<String, String> {
 #[tauri::command]
 fn save_config(app: tauri::AppHandle, contents: String) -> Result<(), String> {
     app_storage(&app)?.save_config(&contents)
+}
+
+#[tauri::command]
+fn load_current_layout(app: tauri::AppHandle) -> Result<String, String> {
+    app_storage(&app)?.load_current_layout()
+}
+
+#[tauri::command]
+fn save_current_layout(app: tauri::AppHandle, contents: String) -> Result<(), String> {
+    app_storage(&app)?.save_current_layout(&contents)
 }
 
 #[tauri::command]
@@ -96,14 +106,18 @@ fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
 
 #[tauri::command]
 fn start_mapper(
-    app: tauri::AppHandle,
+    _app: tauri::AppHandle,
     device_path: String,
     config_json: Option<String>,
 ) -> Result<(), String> {
     eprintln!("[cmd] start_mapper device={device_path}");
     let raw = match config_json {
         Some(s) if !s.trim().is_empty() => s,
-        _ => load_config(app)?,
+        _ => {
+            let msg = "configJson is required to start mapper".to_string();
+            eprintln!("[cmd] start_mapper ERR: {msg}");
+            return Err(msg);
+        }
     };
     if raw.is_empty() {
         let msg = "config.json not found — save settings first".to_string();
@@ -213,9 +227,11 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            get_config_path,
+            get_settings_dir,
             load_config,
             save_config,
+            load_current_layout,
+            save_current_layout,
             load_ui_state,
             save_ui_state,
             get_layouts_dir,

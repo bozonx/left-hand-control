@@ -22,7 +22,7 @@ interface PendingApply {
 export function useSettingsScreen() {
   const {
     config,
-    configPath,
+    settingsDir,
     flush,
     applyPreset,
     markLayoutSavedAs,
@@ -213,7 +213,7 @@ export function useSettingsScreen() {
 
   return {
     config,
-    configPath,
+    settingsDir,
     currentLayoutId,
     isLayoutDirty,
     library,

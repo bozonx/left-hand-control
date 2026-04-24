@@ -105,12 +105,14 @@ The app uses Tauri's platform-specific app directories based on the bundle ident
 - **Linux** (primary):
   - config: `~/.config/dev.bozonx.left-hand-control/config.json`
   - UI state: `~/.config/dev.bozonx.left-hand-control/ui-state.json`
+  - current working layout: `~/.local/share/dev.bozonx.left-hand-control/current-layout.yaml`
   - user layouts: `~/.local/share/dev.bozonx.left-hand-control/layouts/`
 
 If `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is set, the app uses those directories instead of `~/.config` and `~/.local/share`.
 
-- `config.json` stores domain state: selected layout id, mapper settings, layers, rules, keymap and macros.
+- `config.json` stores app settings and the currently selected layout id.
 - `ui-state.json` stores UI-only state: active tab and the last selected keymap layer.
+- `current-layout.yaml` stores the current editable layout, including macros.
 
 - **macOS / Windows** (future support):
   - Standard Tauri app data directories.

@@ -1,33 +1,50 @@
 import {
   type AppConfig,
   type LayoutPreset,
+  type PersistedConfig,
   BASE_LAYER_ID,
   BUILTIN_LAYOUT_ID,
   createDefaultConfig,
+  createDefaultPersistedConfig,
 } from '~/types/config'
 import {
   applyPresetToConfig,
+  extractPresetFromConfig,
   layoutSnapshotOf,
   loadBuiltinLayout,
+  parseLayoutYaml,
+  serializeLayoutYaml,
 } from '~/utils/layoutPresets'
 
-async function readRaw(): Promise<string> {
+async function readConfigRaw(): Promise<string> {
   const tauri = await useTauri()
   if (!tauri) return ''
   return await tauri.invoke<string>('load_config')
 }
 
-async function writeRaw(contents: string): Promise<void> {
+async function writeConfigRaw(contents: string): Promise<void> {
   const tauri = await useTauri()
   if (!tauri) return
   await tauri.invoke('save_config', { contents })
 }
 
-export async function getConfigPath(): Promise<string> {
+async function readCurrentLayoutRaw(): Promise<string> {
+  const tauri = await useTauri()
+  if (!tauri) return ''
+  return await tauri.invoke<string>('load_current_layout')
+}
+
+async function writeCurrentLayoutRaw(contents: string): Promise<void> {
+  const tauri = await useTauri()
+  if (!tauri) return
+  await tauri.invoke('save_current_layout', { contents })
+}
+
+export async function getSettingsDir(): Promise<string> {
   const tauri = await useTauri()
   if (!tauri) return ''
   try {
-    return await tauri.invoke<string>('get_config_path')
+    return await tauri.invoke<string>('get_settings_dir')
   } catch {
     return ''
   }
@@ -47,9 +64,6 @@ export function normalizeConfig(raw: unknown): AppConfig {
         : base.layers,
     rules: Array.isArray(r.rules)
       ? r.rules.map((rule) => ({
-          // Default tap/hold to '' (native) for configs that predate the
-          // three-state tap/hold fields. `null` (swallow) and non-empty
-          // string action are preserved as-is.
           ...rule,
           doubleTapAction: rule.doubleTapAction ?? '',
           tapAction: rule.tapAction ?? '',
@@ -87,32 +101,63 @@ export function parsePersistedConfig(raw: string): AppConfig {
   }
 }
 
+function normalizePersistedConfig(raw: unknown): PersistedConfig {
+  const base = createDefaultPersistedConfig()
+  if (!raw || typeof raw !== 'object') return base
+  const value = raw as Partial<PersistedConfig>
+  return {
+    version: 1,
+    settings: { ...base.settings, ...(value.settings ?? {}) },
+  }
+}
+
+function parsePersistedSettings(raw: string): PersistedConfig {
+  try {
+    return normalizePersistedConfig(JSON.parse(raw))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`config.json is invalid: ${message}`)
+  }
+}
+
+function serializePersistedSettings(config: AppConfig): string {
+  const persisted: PersistedConfig = {
+    version: 1,
+    settings: config.settings,
+  }
+  return JSON.stringify(persisted, null, 2)
+}
+
+function parseCurrentLayout(raw: string): LayoutPreset | null {
+  return parseLayoutYaml(raw, 'Current layout')
+}
+
+function serializeCurrentLayout(config: AppConfig): string {
+  return serializeLayoutYaml(extractPresetFromConfig(config, 'Current layout'))
+}
+
+function legacyPresetFromPersistedConfig(raw: string): LayoutPreset | null {
+  try {
+    const parsed = parsePersistedConfig(raw)
+    return extractPresetFromConfig(parsed, 'Current layout')
+  } catch {
+    return null
+  }
+}
+
 interface ConfigState {
   config: Ref<AppConfig>
   loaded: Ref<boolean>
   saving: Ref<boolean>
   lastError: Ref<string | null>
   loadError: Ref<string | null>
-  configPath: Ref<string>
-  // True when we launched and found no persisted config — show the welcome
-  // screen so the user can pick a starting layout.
+  settingsDir: Ref<string>
   needsWelcome: Ref<boolean>
-  // Id of the currently applied layout preset (mirrors
-  // config.settings.currentLayoutId but always reactive).
   currentLayoutId: Ref<string | undefined>
-  // True when the in-memory layout-subset differs from the snapshot taken
-  // the last time the user applied or saved a layout. If `currentLayoutId`
-  // is empty, any non-empty layout is considered "dirty" so that switching
-  // away prompts to save first.
   isLayoutDirty: Ref<boolean>
   load: () => Promise<void>
   flush: () => Promise<void>
-  // Apply a layout preset to the current config (settings are preserved),
-  // persists, and marks the layout as clean under `layoutId` (undefined for
-  // an ad-hoc / empty layout).
   applyPreset: (preset: LayoutPreset, layoutId: string | undefined) => Promise<void>
-  // Reset dirty-tracking to the current state (e.g. after saving the current
-  // config as a user layout).
   markLayoutSavedAs: (layoutId: string) => Promise<void>
 }
 
@@ -132,7 +177,7 @@ export function useConfig(): ConfigState {
   const saving = ref(false)
   const lastError = ref<string | null>(null)
   const loadError = ref<string | null>(null)
-  const configPath = ref('')
+  const settingsDir = ref('')
   const needsWelcome = ref(false)
   const layoutSnapshot = ref<string>(layoutSnapshotOf(config.value))
 
@@ -171,7 +216,10 @@ export function useConfig(): ConfigState {
   async function persistNow() {
     saving.value = true
     try {
-      await writeRaw(JSON.stringify(config.value, null, 2))
+      await Promise.all([
+        writeConfigRaw(serializePersistedSettings(config.value)),
+        writeCurrentLayoutRaw(serializeCurrentLayout(config.value)),
+      ])
       lastError.value = null
       lastNotifiedSaveError = null
       const waiters = pendingFlushWaiters
@@ -192,7 +240,7 @@ export function useConfig(): ConfigState {
 
   function scheduleSave() {
     if (!loaded.value) return
-    if (needsWelcome.value) return // don't write config.json until user picks a layout
+    if (needsWelcome.value) return
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       saveTimer = null
@@ -221,7 +269,7 @@ export function useConfig(): ConfigState {
     config.value = applyPresetToConfig(config.value, preset, layoutId)
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     needsWelcome.value = false
-    await flush() // ensure the file exists even before the debounce fires
+    await flush()
     if (!saveTimer && !saving.value) {
       await persistNow()
     }
@@ -234,11 +282,6 @@ export function useConfig(): ConfigState {
   }
 
   async function load() {
-    // When VITE_LHC_FORCE_IVANK=true, ignore any persisted user layout on
-    // startup and seed state from the bundled Ivan K's preset. Saving still
-    // works normally: any edit in the UI will be written back to config.json,
-    // overwriting the user's layout on the next auto-save. Useful for
-    // iterating on the bundled preset; should NOT be enabled in production.
     const forceIvank =
       import.meta.env.VITE_LHC_FORCE_IVANK === 'true' ||
       import.meta.env.VITE_LHC_FORCE_IVANK === '1'
@@ -248,23 +291,24 @@ export function useConfig(): ConfigState {
     needsWelcome.value = false
 
     try {
+      config.value = createDefaultConfig()
+
+      const [rawConfig, rawCurrentLayout] = await Promise.all([
+        readConfigRaw(),
+        readCurrentLayoutRaw(),
+      ])
+
+      if (rawConfig) {
+        config.value.settings = parsePersistedSettings(rawConfig).settings
+      }
+
       if (forceIvank) {
         const preset = await loadBuiltinLayout()
-        // Preserve settings from the existing config.json if any, so global
-        // options like inputDevicePath aren't clobbered.
-        const raw = await readRaw()
-        if (raw) {
-          config.value = parsePersistedConfig(raw)
-        }
         if (preset) {
-          config.value = applyPresetToConfig(
-            config.value,
-            preset,
-            BUILTIN_LAYOUT_ID,
-          )
+          config.value = applyPresetToConfig(config.value, preset, BUILTIN_LAYOUT_ID)
         }
         layoutSnapshot.value = layoutSnapshotOf(config.value)
-        configPath.value = await getConfigPath()
+        settingsDir.value = await getSettingsDir()
         loadError.value = null
         console.info(
           '[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout.',
@@ -272,11 +316,18 @@ export function useConfig(): ConfigState {
         return
       }
 
-      const raw = await readRaw()
-      if (raw) {
-        config.value = parsePersistedConfig(raw)
+      if (rawConfig) {
         needsWelcome.value = false
-        if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
+        const persistedLayout =
+          parseCurrentLayout(rawCurrentLayout) ?? legacyPresetFromPersistedConfig(rawConfig)
+
+        if (persistedLayout) {
+          config.value = applyPresetToConfig(
+            config.value,
+            persistedLayout,
+            config.value.settings.currentLayoutId,
+          )
+        } else if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
           const preset = await loadBuiltinLayout()
           if (preset) {
             config.value = applyPresetToConfig(
@@ -284,16 +335,15 @@ export function useConfig(): ConfigState {
               preset,
               BUILTIN_LAYOUT_ID,
             )
-            await writeRaw(JSON.stringify(config.value, null, 2))
           }
         }
         layoutSnapshot.value = layoutSnapshotOf(config.value)
       } else {
-        // First launch: no config yet. Show the welcome screen.
         needsWelcome.value = true
         layoutSnapshot.value = layoutSnapshotOf(config.value)
       }
-      configPath.value = await getConfigPath()
+
+      settingsDir.value = await getSettingsDir()
       loadError.value = null
     } catch (e: unknown) {
       loadError.value = e instanceof Error ? e.message : String(e)
@@ -305,7 +355,6 @@ export function useConfig(): ConfigState {
     }
   }
 
-  // Auto-save: any deep change to `config` while loaded schedules a save.
   watch(
     config,
     () => {
@@ -320,7 +369,7 @@ export function useConfig(): ConfigState {
     saving,
     lastError,
     loadError,
-    configPath,
+    settingsDir,
     needsWelcome,
     currentLayoutId,
     isLayoutDirty,
