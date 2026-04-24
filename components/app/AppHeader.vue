@@ -20,7 +20,6 @@ const { layout } = useLayout()
 const { t } = useI18n()
 
 const tabItems = computed(() => [
-  { key: 'home', to: '/', label: t('tabs.home'), icon: 'i-lucide-house' },
   { key: 'rules', to: '/rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { key: 'keymap', to: '/keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { key: 'macros', to: '/macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
@@ -97,10 +96,15 @@ watch(
         color="neutral"
         variant="ghost"
         class="shrink-0 -ml-2 px-2.5"
+        :class="isActive('/') ? 'text-primary' : 'text-(--ui-text-highlighted)'"
         @click="openTab('/')"
       >
         <div class="flex items-center gap-2.5">
-          <UIcon name="i-lucide-keyboard" class="w-5 h-5 text-primary" />
+          <UIcon
+            name="i-lucide-keyboard"
+            class="w-5 h-5"
+            :class="isActive('/') ? 'text-primary' : 'text-(--ui-text-muted)'"
+          />
           <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
         </div>
       </UButton>
@@ -116,9 +120,9 @@ watch(
             :square="item.iconOnly"
             :aria-label="item.label"
             size="sm"
-            class="px-3 text-(--ui-text-muted) hover:text-(--ui-text-highlighted)"
+            class="px-3 text-(--ui-text-muted) hover:text-primary"
             :class="isActive(item.to)
-              ? 'text-(--ui-text-highlighted) shadow-none ring-1 ring-inset ring-(--ui-border) bg-(--ui-bg-elevated)/70'
+              ? 'text-primary shadow-none ring-1 ring-inset ring-(--ui-primary)/25 bg-(--ui-primary)/8'
               : 'bg-transparent shadow-none'"
             @click="openTab(item.to)"
           >

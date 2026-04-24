@@ -58,7 +58,7 @@ const {
       </p>
     </div>
 
-    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,1fr)]">
+    <div class="space-y-4">
       <LayoutsLibraryCard
         :entries="library.entries.value"
         :current-layout-id="currentLayoutId"
