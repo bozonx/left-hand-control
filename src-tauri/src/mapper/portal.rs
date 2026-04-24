@@ -32,6 +32,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
 
+#[link(name = "xkbcommon")]
+unsafe extern "C" {
+    fn xkb_utf32_to_keysym(ucs: u32) -> u32;
+}
+
 // --- Portal DBus identifiers --------------------------------------------
 
 const PORTAL_DEST: &str = "org.freedesktop.portal.Desktop";
@@ -278,10 +283,5 @@ fn make_request_path(sender_escaped: &str, handle_token: &str) -> String {
 /// Map a character to its XKB keysym value. ASCII + Latin-1 are identity,
 /// everything else uses the XKB direct-unicode encoding.
 fn keysym_for(ch: char) -> i32 {
-    let code = ch as u32;
-    if code < 0x100 {
-        code as i32
-    } else {
-        (0x0100_0000 | code) as i32
-    }
+    unsafe { xkb_utf32_to_keysym(ch as u32) as i32 }
 }
