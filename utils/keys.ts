@@ -24,7 +24,6 @@ export const LEFT_HAND_ROWS: KeyDef[][] = [
     ['F3', 'F3'],
     ['F4', 'F4'],
     ['F5', 'F5'],
-    ['F6', 'F6'],
   ]),
   row([
     ['Backquote', '`'],
@@ -33,7 +32,6 @@ export const LEFT_HAND_ROWS: KeyDef[][] = [
     ['Digit3', '3'],
     ['Digit4', '4'],
     ['Digit5', '5'],
-    ['Digit6', '6'],
   ]),
   row([
     ['Tab', 'Tab'],
@@ -69,6 +67,7 @@ export const LEFT_HAND_ROWS: KeyDef[][] = [
 
 export const RIGHT_HAND_ROWS: KeyDef[][] = [
   row([
+    ['F6', 'F6'],
     ['F7', 'F7'],
     ['F8', 'F8'],
     ['F9', 'F9'],
@@ -77,6 +76,7 @@ export const RIGHT_HAND_ROWS: KeyDef[][] = [
     ['F12', 'F12'],
   ]),
   row([
+    ['Digit6', '6'],
     ['Digit7', '7'],
     ['Digit8', '8'],
     ['Digit9', '9'],
