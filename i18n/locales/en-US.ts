@@ -115,6 +115,9 @@ export default {
   },
   keymap: {
     layerLabel: 'Layer',
+    keyViewLabel: 'Key labels',
+    keyViewLabels: 'US layout',
+    keyViewCodes: 'Key codes',
     newLayer: 'New layer',
     edit: 'Edit',
     addDescription: 'Add description',

@@ -22,6 +22,7 @@ describe('key helpers', () => {
   it('resolves known key labels and falls back to the code', () => {
     expect(keyLabel('CapsLock')).toBe('Caps')
     expect(keyLabel('ControlRight')).toBe('Ctrl')
+    expect(keyLabel('ControlRight', 'code')).toBe('ControlRight')
     expect(keyLabel('UnknownKey')).toBe('UnknownKey')
   })
 

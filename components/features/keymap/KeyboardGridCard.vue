@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { LEFT_HAND_ROWS, RIGHT_HAND_ROWS } from '~/utils/keys'
+import { LEFT_HAND_ROWS, RIGHT_HAND_ROWS, keyLabel, type KeyLabelMode } from '~/utils/keys'
 import type { LayerKeymap } from '~/types/config'
 
-defineProps<{
+const props = defineProps<{
   currentKeymap: LayerKeymap
+  keyLabelMode: KeyLabelMode
 }>()
 
 defineEmits<{
@@ -32,9 +33,9 @@ defineEmits<{
             <KeyCap
               v-for="keyDef in kbRow"
               :key="keyDef.code"
-              :label="keyDef.label"
+              :label="keyLabel(keyDef.code, props.keyLabelMode)"
               :action="currentKeymap.keys[keyDef.code]"
-              @edit="$emit('edit', keyDef.code, keyDef.label)"
+              @edit="$emit('edit', keyDef.code, keyLabel(keyDef.code, props.keyLabelMode))"
             />
           </div>
         </div>
@@ -54,9 +55,9 @@ defineEmits<{
             <KeyCap
               v-for="keyDef in kbRow"
               :key="keyDef.code"
-              :label="keyDef.label"
+              :label="keyLabel(keyDef.code, props.keyLabelMode)"
               :action="currentKeymap.keys[keyDef.code]"
-              @edit="$emit('edit', keyDef.code, keyDef.label)"
+              @edit="$emit('edit', keyDef.code, keyLabel(keyDef.code, props.keyLabelMode))"
             />
           </div>
         </div>

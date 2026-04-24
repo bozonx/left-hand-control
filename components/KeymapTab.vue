@@ -3,6 +3,9 @@ import LayerToolbarCard from '~/components/features/keymap/LayerToolbarCard.vue'
 import KeyboardGridCard from '~/components/features/keymap/KeyboardGridCard.vue'
 import ExtrasCard from '~/components/features/keymap/ExtrasCard.vue'
 import LayerEditorModal from '~/components/shared/LayerEditorModal.vue'
+import { keyLabel, type KeyLabelMode } from '~/utils/keys'
+
+const keyLabelMode = ref<KeyLabelMode>('label')
 const {
   selectedLayerId,
   layerItems,
@@ -38,6 +41,7 @@ const {
   <div class="space-y-4">
     <LayerToolbarCard
       v-model:selected-layer-id="selectedLayerId"
+      v-model:key-label-mode="keyLabelMode"
       :layer-items="layerItems"
       :current-layer-name="currentLayer?.name"
       :current-layer-description="currentLayer?.description"
@@ -50,6 +54,7 @@ const {
     <template v-if="currentLayer">
       <KeyboardGridCard
         :current-keymap="currentKeymap"
+        :key-label-mode="keyLabelMode"
         @edit="openEdit"
       />
 
@@ -78,7 +83,7 @@ const {
     <KeyEditModal
       v-model="editOpen"
       :key-code="editKeyCode"
-      :key-label="editKeyLabel"
+      :key-label="keyLabel(editKeyCode, keyLabelMode)"
       :action="editAction"
       @save="saveEdit"
       @clear="clearEdit"

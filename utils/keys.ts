@@ -12,6 +12,8 @@ export interface KeyDef {
   label: string
 }
 
+export type KeyLabelMode = 'label' | 'code'
+
 function row(codes: Array<[string, string]>): KeyDef[] {
   return codes.map(([code, label]) => ({ code, label }))
 }
@@ -125,7 +127,8 @@ export const ALL_KEYS: KeyDef[] = [
   ...RIGHT_HAND_ROWS.flat(),
 ]
 
-export function keyLabel(code: string): string {
+export function keyLabel(code: string, mode: KeyLabelMode = 'label'): string {
+  if (mode === 'code') return code
   return ALL_KEYS.find((k) => k.code === code)?.label ?? code
 }
 
