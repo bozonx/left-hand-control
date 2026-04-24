@@ -193,6 +193,19 @@ export function parseCommandRef(action: string): string | null {
     : null
 }
 
+export const TEXT_ACTION_PREFIX = 'text:'
+
+export function textActionRef(text: string): string {
+  return `${TEXT_ACTION_PREFIX}${text}`
+}
+
+export function parseTextAction(action: string): string | null {
+  if (!action) return null
+  return action.startsWith(TEXT_ACTION_PREFIX)
+    ? action.slice(TEXT_ACTION_PREFIX.length)
+    : null
+}
+
 // Prefix used to compose an id for a user-saved layout: `user:<name>`.
 export const USER_LAYOUT_PREFIX = 'user:'
 

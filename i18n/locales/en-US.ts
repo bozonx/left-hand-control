@@ -425,13 +425,18 @@ export default {
   },
   picker: {
     currentValue: "Current value",
-    valuePh: "E.g.: Ctrl+C, Escape, macro:copyLine, cmd:toggleMusic",
+    valuePh: "E.g.: Ctrl+C, Escape, KeyA, macro:copyLine, cmd:toggleMusic, text:TODO: ",
+    textPh: "Type the text to insert. Example: TODO: ",
     chooseAction: "Choose action",
     chooseKey: "Pick key",
     titleAction: "Pick action",
     titleKey: "Pick key",
     emptyCategory: "This category is empty.",
     clearAria: "Clear",
+    textHint:
+      "Text actions are stored as text:<your text>. Use this for characters and strings, not for physical key remaps.",
+    textTabBody:
+      "This action inserts text as-is. Good for symbols like €, snippets like TODO: , and other printable strings.",
     physicalKeyHint:
       "Letters and symbols here mean the physical key code on a standard English layout, not the character from the user's current layout.",
     chordHint:
@@ -448,6 +453,7 @@ export default {
     macros: "Macros",
     systemMacros: "System macros",
     system: "System",
+    text: "Text",
   },
   systemActions: {
     switchDesktop: "Switch to desktop {n}",

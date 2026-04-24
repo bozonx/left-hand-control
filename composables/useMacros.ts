@@ -5,6 +5,7 @@ import {
   parseCommandRef,
   parseMacroRef,
   parseSystemRef,
+  parseTextAction,
 } from '~/types/config'
 import { systemActionById } from '~/utils/systemActions'
 import { systemMacroById } from '~/utils/systemMacros'
@@ -54,6 +55,10 @@ export function useMacros() {
       const name = systemActionName(sysRef)
       return name ? `⚙ ${name}` : action
     }
+    const textAction = parseTextAction(action)
+    if (textAction !== null) {
+      return `T "${textAction}"`
+    }
     return action
   }
 
@@ -81,6 +86,14 @@ export function useMacros() {
       return {
         label: systemActionName(sysRef) ?? action,
         icon: 'i-lucide-settings-2',
+      }
+    }
+
+    const textAction = parseTextAction(action)
+    if (textAction !== null) {
+      return {
+        label: textAction,
+        icon: 'i-lucide-text-cursor-input',
       }
     }
 

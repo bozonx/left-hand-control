@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { commandActionRef, macroActionRef, systemActionRef } from '~/types/config'
+import { commandActionRef, macroActionRef, parseTextAction, systemActionRef, textActionRef } from '~/types/config'
 import { SYSTEM_ACTIONS } from '~/utils/systemActions'
 import { SYSTEM_MACROS } from '~/utils/systemMacros'
 import {
@@ -97,7 +97,10 @@ const allCategories = computed<StaticCategory[]>(() =>
 const activeCategory = ref<string>(allCategories.value[0]?.id ?? 'special')
 
 watchEffect(() => {
-  if (!allCategories.value.some((c) => c.id === activeCategory.value)) {
+  if (
+    activeCategory.value !== 'text'
+    && !allCategories.value.some((c) => c.id === activeCategory.value)
+  ) {
     activeCategory.value = allCategories.value[0]?.id ?? 'special'
   }
 })
@@ -112,6 +115,13 @@ const showPhysicalKeyHint = computed(() =>
 )
 
 const showChordHint = computed(() => props.keyOnly)
+const isTextCategory = computed(() => activeCategory.value === 'text')
+const textDraft = computed({
+  get: () => parseTextAction(draft.value) ?? '',
+  set: (value: string) => {
+    draft.value = textActionRef(value)
+  },
+})
 
 const listGridClass = computed(() =>
   ['commands', 'macros', 'system-macros', 'system'].includes(activeCategory.value)
@@ -136,8 +146,16 @@ function pick(item: ActionItem) {
     <UFormField :label="$t('picker.currentValue')">
       <div class="space-y-2">
         <UInput
+          v-if="!isTextCategory"
           v-model="draft"
           :placeholder="$t('picker.valuePh')"
+          class="w-full font-mono"
+        />
+        <UTextarea
+          v-else
+          v-model="textDraft"
+          :rows="5"
+          :placeholder="$t('picker.textPh')"
           class="w-full font-mono"
         />
         <p
@@ -146,10 +164,26 @@ function pick(item: ActionItem) {
         >
           {{ $t('picker.chordHint') }}
         </p>
+        <p
+          v-if="isTextCategory"
+          class="text-xs text-(--ui-text-muted)"
+        >
+          {{ $t('picker.textHint') }}
+        </p>
       </div>
     </UFormField>
 
     <div class="flex flex-wrap gap-1.5 border-b border-(--ui-border) pb-2">
+      <UButton
+        v-if="!props.keyOnly"
+        icon="i-lucide-text-cursor-input"
+        size="xs"
+        :color="activeCategory === 'text' ? 'primary' : 'neutral'"
+        :variant="activeCategory === 'text' ? 'soft' : 'ghost'"
+        @click="activeCategory = 'text'"
+      >
+        {{ $t('categories.text') }}
+      </UButton>
       <UButton
         v-for="cat in allCategories"
         :key="cat.id"
@@ -173,7 +207,18 @@ function pick(item: ActionItem) {
     </div>
 
     <div
-      v-if="categoryItems.length === 0"
+      v-if="isTextCategory"
+      class="rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated)/40 p-4"
+    >
+      <div class="space-y-3">
+        <p class="text-sm text-(--ui-text-muted)">{{ $t('picker.textTabBody') }}</p>
+        <div class="rounded-md border border-(--ui-border) bg-(--ui-bg) px-3 py-2 font-mono text-sm">
+          {{ draft || textActionRef('') }}
+        </div>
+      </div>
+    </div>
+    <div
+      v-else-if="categoryItems.length === 0"
       class="text-sm text-(--ui-text-muted) italic px-1 py-6 text-center"
     >
       {{ $t('picker.emptyCategory') }}

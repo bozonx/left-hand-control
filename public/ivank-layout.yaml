@@ -67,65 +67,65 @@ layers:
       Slash: macro:select5LinesDown
   - id: sym
     keys:
-      KeyQ: <
-      KeyW: '{'
-      KeyE: '['
-      KeyR: (
-      KeyT: '|'
-      KeyY: ^
+      KeyQ: "text:<"
+      KeyW: "text:{"
+      KeyE: "text:["
+      KeyR: "text:("
+      KeyT: "text:|"
+      KeyY: "text:^"
       KeyU: '7'
       KeyI: '8'
       KeyO: '9'
-      KeyP: '='
-      BracketLeft: ≠
-      KeyA: $
-      KeyS: '#'
-      KeyD: '!'
-      KeyF: '?'
-      KeyG: '&'
-      KeyH: '*'
+      KeyP: "text:="
+      BracketLeft: "text:≠"
+      KeyA: "text:$"
+      KeyS: "text:#"
+      KeyD: "text:!"
+      KeyF: "text:?"
+      KeyG: "text:&"
+      KeyH: "text:*"
       KeyJ: '4'
       KeyK: '5'
       KeyL: '6'
-      Semicolon: +
-      Quote: '%'
-      KeyZ: ':'
-      KeyX: '`'
-      KeyC: ''''
-      KeyV: '"'
-      KeyB: /
+      Semicolon: "text:+"
+      Quote: "text:%"
+      KeyZ: "text::"
+      KeyX: "text:`"
+      KeyC: "text:'"
+      KeyV: 'text:"'
+      KeyB: "text:/"
       KeyN: '0'
       KeyM: '1'
       Comma: '2'
       Period: '3'
-      Slash: '@'
-      ShiftRight: _
+      Slash: "text:@"
+      ShiftRight: "text:_"
   - id: fkeys
     keys:
-      KeyQ: '>'
-      KeyW: '}'
-      KeyE: ']'
-      KeyR: )
+      KeyQ: "text:>"
+      KeyW: "text:}"
+      KeyE: "text:]"
+      KeyR: "text:)"
       KeyU: F7
       KeyI: F8
       KeyO: F9
       KeyP: F12
-      BracketLeft: ℹ️
-      KeyA: €
-      KeyS: №
-      KeyD: ‼️
-      KeyF: ❓
-      KeyG: ❌
+      BracketLeft: "text:ℹ️"
+      KeyA: "text:€"
+      KeyS: "text:№"
+      KeyD: "text:‼️"
+      KeyF: "text:❓"
+      KeyG: "text:❌"
       KeyJ: F4
       KeyK: F5
       KeyL: F6
       Semicolon: F11
-      Quote: ☝️
-      KeyZ: ;
-      KeyX: '~'
-      KeyC: ⏩
-      KeyV: ✅
-      KeyB: \
+      Quote: "text:☝️"
+      KeyZ: "text:;"
+      KeyX: "text:~"
+      KeyC: "text:⏩"
+      KeyV: "text:✅"
+      KeyB: "text:\\"
       KeyM: F1
       Comma: F2
       Period: F3
@@ -192,11 +192,11 @@ rules:
   - key: Space
     layer: space
   - key: AltRight
-    tap: .
+    tap: "text:."
     layer: sym
   - key: ControlRight
-    tap: ','
+    tap: "text:,"
     layer: fkeys
   - key: ShiftRight
-    tap: '-'
+    tap: "text:-"
 macros: []

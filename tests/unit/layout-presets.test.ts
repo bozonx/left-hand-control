@@ -99,6 +99,50 @@ macros:
     });
   });
 
+  it("preserves explicit text actions in layers, rules and macros", () => {
+    const preset = parseLayoutYaml(`
+layers:
+  - id: sym
+    keys:
+      KeyA: "text:€"
+rules:
+  - key: AltRight
+    tap: "text:."
+macros:
+  - id: snippet
+    steps:
+      - "text:TODO: "
+`);
+
+    expect(preset).not.toBeNull();
+    expect(preset).toMatchObject({
+      layerKeymaps: {
+        sym: {
+          keys: {
+            KeyA: "text:€",
+          },
+        },
+      },
+      rules: [
+        {
+          key: "AltRight",
+          tapAction: "text:.",
+        },
+      ],
+      macros: [
+        {
+          id: "snippet",
+          steps: [{ keystroke: "text:TODO: " }],
+        },
+      ],
+    });
+
+    const yaml = serializeLayoutYaml(preset!);
+    expect(yaml).toContain('KeyA: text:€');
+    expect(yaml).toContain('tap: text:.');
+    expect(yaml).toContain("- 'text:TODO: '");
+  });
+
   it("serializes and parses a preset without losing semantic values", () => {
     const original = {
       description: "editing helpers",

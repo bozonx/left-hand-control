@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
+import { parseTextAction } from '~/types/config'
 
 const props = defineProps<{
   allowEmpty?: boolean
@@ -78,7 +79,8 @@ function openModal() {
 }
 
 function apply() {
-  const next = (draft.value ?? '').trim()
+  const raw = draft.value ?? ''
+  const next = parseTextAction(raw) !== null ? raw : raw.trim()
   if (props.requireValue && !next) return
   model.value = next
   closeReason.value = 'apply'
@@ -87,8 +89,9 @@ function apply() {
 
 function pickAndApply(value: string) {
   draft.value = value
-  if (props.requireValue && !value.trim()) return
-  model.value = value.trim()
+  const next = parseTextAction(value) !== null ? value : value.trim()
+  if (props.requireValue && !next) return
+  model.value = next
   closeReason.value = 'apply'
   modalOpen.value = false
 }

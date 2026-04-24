@@ -44,7 +44,7 @@
 
 #![cfg(target_os = "linux")]
 
-use super::action::{literal_text, parse_action, Keystroke, MacroStepItem};
+use super::action::{explicit_text, literal_text, parse_action, Keystroke, MacroStepItem};
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system::{self, SysAction, SysCommand};
@@ -249,7 +249,7 @@ impl Engine {
                     }
                     continue;
                 }
-                if let Some(text) = literal_text(raw) {
+                if let Some(text) = explicit_text(raw).or_else(|| literal_text(raw)) {
                     steps.push(MacroStepItem::Literal(text));
                     continue;
                 }
@@ -351,7 +351,7 @@ impl Engine {
                     }
                 }
             }
-            if let Some(text) = literal_text(trimmed) {
+            if let Some(text) = explicit_text(trimmed).or_else(|| literal_text(trimmed)) {
                 return Some(ActionDef::Literal(text));
             }
             match parse_action(trimmed) {

@@ -430,13 +430,18 @@ export default {
   },
   picker: {
     currentValue: "Текущее значение",
-    valuePh: "Например: Ctrl+C, Escape, macro:copyLine, cmd:toggleMusic",
+    valuePh: "Например: Ctrl+C, Escape, KeyA, macro:copyLine, cmd:toggleMusic, text:TODO: ",
+    textPh: "Введите текст для вставки. Например: TODO: ",
     chooseAction: "Выбрать действие",
     chooseKey: "Выбрать клавишу",
     titleAction: "Выбор действия",
     titleKey: "Выбор клавиши",
     emptyCategory: "В этой категории пока нет элементов.",
     clearAria: "Очистить",
+    textHint:
+      "Текстовые действия сохраняются как text:<ваш текст>. Используйте их для символов и строк, а не для ремапа физических клавиш.",
+    textTabBody:
+      "Это действие вставляет текст как есть. Подходит для символов вроде €, шаблонов вроде TODO:  и любых печатных строк.",
     physicalKeyHint:
       "Буквы и символы здесь означают код физической клавиши на стандартной английской раскладке, а не символ из текущей раскладки пользователя.",
     chordHint:
@@ -453,6 +458,7 @@ export default {
     macros: "Макросы",
     systemMacros: "Системные макросы",
     system: "Системные",
+    text: "Текст",
     backToTop: "Наверх",
   },
   systemActions: {

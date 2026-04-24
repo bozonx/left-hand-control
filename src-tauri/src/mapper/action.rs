@@ -26,6 +26,13 @@ pub enum MacroStepItem {
     Literal(String),
 }
 
+pub fn explicit_text(action: &str) -> Option<String> {
+    action
+        .trim()
+        .strip_prefix("text:")
+        .map(|text| text.to_string())
+}
+
 /// Heuristic: if a raw action string is exactly one Unicode character, we
 /// treat it as a literal to be resolved later against the active XKB
 /// layout. Multi-character tokens (e.g. "Escape", "Ctrl+C") keep going
