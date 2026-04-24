@@ -80,7 +80,7 @@ export default {
         sym: {
           name: 'Symbols',
           description:
-            'Symbols and punctuation that are inconvenient to type with the left hand on a regular layout (! @ # $ % ^ & * | ~ `).',
+            "Symbols and punctuation that are inconvenient to type with the left hand on a regular layout (! {'@'} # $ % ^ & * {'|'} ~ `).",
         },
         fkeys: {
           name: 'F keys',
