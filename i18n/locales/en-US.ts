@@ -151,7 +151,7 @@ export default {
     subtitle:
       'A sequence of steps. Each step — one key chord or system action. Steps run in order: the previous chord is fully released, the pause is honored, then the next is pressed.',
     addBtn: 'New macro',
-    addDisabled: 'Fix the existing ID errors first',
+    addDisabled: 'Fix the existing macro errors first',
     empty: 'No macros yet. Click "New macro" to create the first one.',
     defaultName: 'New macro',
     nameLabel: 'Name',
@@ -167,6 +167,9 @@ export default {
       format: 'Only Latin letters, digits, "_" and "-", up to 64 chars.',
       dupUser: 'This ID is already used by another user macro.',
       dupSystem: 'This ID is already taken by system macro "{name}".',
+    },
+    stepErrors: {
+      nestedMacro: 'Nested macro references are not supported in macro steps.',
     },
     stepPauseLabel: 'Pause between steps',
     stepPauseHint:

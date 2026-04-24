@@ -1,4 +1,4 @@
-import { type Macro, type MacroStep } from '~/types/config'
+import { parseMacroRef, type Macro, type MacroStep } from '~/types/config'
 import { randomId } from '~/utils/keys'
 import { systemMacroById, type SystemMacro } from '~/utils/systemMacros'
 
@@ -116,6 +116,21 @@ export function useMacroEditor() {
     config.value.macros.some((macro) => idError(macro) !== null),
   )
 
+  function stepError(step: MacroStep): string | null {
+    const raw = step.keystroke?.trim() ?? ''
+    if (!raw) return null
+    if (parseMacroRef(raw)) return t('macros.stepErrors.nestedMacro')
+    return null
+  }
+
+  const hasStepErrors = computed(() =>
+    config.value.macros.some((macro) =>
+      macro.steps.some((step) => stepError(step) !== null),
+    ),
+  )
+
+  const hasErrors = computed(() => hasIdErrors.value || hasStepErrors.value)
+
   const usage = computed(() => {
     const byMacro: Record<string, string[]> = {}
     const note = (id: string, where: string) => {
@@ -156,6 +171,9 @@ export function useMacroEditor() {
     uiKeyOf,
     idError,
     hasIdErrors,
+    stepError,
+    hasStepErrors,
+    hasErrors,
     usage,
   }
 }

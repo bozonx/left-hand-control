@@ -201,6 +201,15 @@ impl Engine {
                     }
                     continue;
                 }
+                if let Some(rest) = raw.strip_prefix("macro:") {
+                    eprintln!(
+                        "[mapper] macro {} step #{}: nested macro ref {:?} is not supported",
+                        id,
+                        idx + 1,
+                        rest.trim()
+                    );
+                    continue;
+                }
                 if let Some(text) = literal_text(raw) {
                     steps.push(MacroStepItem::Literal(text));
                     continue;

@@ -17,11 +17,16 @@ const ActionPickerBodyStub = defineComponent({
       type: String,
       default: '',
     },
+    allowMacros: {
+      type: Boolean,
+      default: true,
+    },
   },
   emits: ['update:modelValue', 'pick'],
   template: `
     <div data-testid="picker-body">
       {{ modelValue }}
+      <span data-testid="allow-macros">{{ allowMacros }}</span>
       <button type="button" data-testid="picker-item" @click="$emit('pick', 'KeyA')">pick</button>
     </div>
   `,
@@ -92,5 +97,31 @@ describe('ActionPickerModal', () => {
 
     expect((wrapper.vm as any).value).toBe('KeyA')
     expect(document.querySelector('[data-testid="action-picker-view"]')).toBeNull()
+  })
+
+  it('forwards allowMacros to the picker body', async () => {
+    const Harness = defineComponent({
+      components: { ActionPickerModal },
+      setup() {
+        const value = ref('')
+        return { value }
+      },
+      template: '<ActionPickerModal v-model="value" :allow-macros="false" placeholder="pick action" />',
+    })
+
+    const wrapper = await mountSuspended(Harness, {
+      global: {
+        stubs: {
+          ActionPickerBody: ActionPickerBodyStub,
+          AppTooltip: defineComponent({
+            template: '<div><slot /></div>',
+          }),
+        },
+      },
+    })
+
+    await wrapper.get('button[type="button"]').trigger('click')
+
+    expect(document.querySelector('[data-testid="allow-macros"]')?.textContent).toBe('false')
   })
 })

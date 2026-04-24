@@ -62,10 +62,13 @@ describe('useMacroEditor', () => {
     firstMacro.id = 'dup'
     expect(vm.idError(firstMacro)).toBeNull()
     expect(vm.hasIdErrors).toBe(false)
+    expect(vm.hasStepErrors).toBe(false)
+    expect(vm.hasErrors).toBe(false)
 
     vm.addStep(firstMacro)
     const stepId = firstMacro.steps[0]!.id
     firstMacro.steps[0]!.keystroke = 'Ctrl+C'
+    expect(vm.stepError(firstMacro.steps[0])).toBeNull()
     vm.addStep(firstMacro)
     firstMacro.steps[1]!.keystroke = 'Ctrl+V'
     vm.moveStep(firstMacro, 1, -1)
@@ -98,6 +101,13 @@ describe('useMacroEditor', () => {
     expect(vm.idError(duplicate)).toBe(
       'This ID is already taken by system macro "Duplicate line".',
     )
+
+    firstMacro.steps[0]!.keystroke = macroActionRef('other')
+    expect(vm.stepError(firstMacro.steps[0])).toBe(
+      'Nested macro references are not supported in macro steps.',
+    )
+    expect(vm.hasStepErrors).toBe(true)
+    expect(vm.hasErrors).toBe(true)
 
     const usage = vm.usage
     expect(usage.dup).toEqual([

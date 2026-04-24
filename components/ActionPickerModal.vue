@@ -6,6 +6,7 @@ const props = defineProps<{
   allowEmpty?: boolean
   placeholder?: string
   keyOnly?: boolean
+  allowMacros?: boolean
   title?: string
   clearLabel?: string
   open?: boolean
@@ -177,6 +178,7 @@ function cancel() {
           <ActionPickerBody
             v-model="draft"
             :key-only="keyOnly"
+            :allow-macros="allowMacros"
             :excluded-macro-id="excludedMacroId"
             spacious
             @pick="pickAndApply"

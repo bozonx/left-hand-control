@@ -15,7 +15,8 @@ const {
   moveStep,
   uiKeyOf,
   idError,
-  hasIdErrors,
+  hasErrors,
+  stepError,
   usage,
 } = useMacroEditor()
 
@@ -93,12 +94,12 @@ function cancelRemove() {
               {{ $t('macros.subtitle') }}
             </p>
           </div>
-          <AppTooltip :disabled="!hasIdErrors" :text="$t('macros.addDisabled')">
+          <AppTooltip :disabled="!hasErrors" :text="$t('macros.addDisabled')">
             <UButton
               icon="i-lucide-plus"
               size="sm"
               class="whitespace-nowrap"
-              :disabled="hasIdErrors"
+              :disabled="hasErrors"
               @click="createMacro"
             >
               {{ $t('macros.addBtn') }}
@@ -124,6 +125,7 @@ function cancelRemove() {
           :is-last="index === config.macros.length - 1"
           :name-input-id="macroNameInputId(uiKeyOf(macro))"
           :id-error="idError(macro) ?? undefined"
+          :step-error="stepError"
           :usage="usage[macro.id] ?? []"
           :default-step-pause-ms="config.settings.defaultMacroStepPauseMs"
           :default-modifier-delay-ms="config.settings.defaultMacroModifierDelayMs"

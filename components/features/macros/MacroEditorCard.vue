@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Macro } from '~/types/config'
+import type { Macro, MacroStep } from '~/types/config'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 
 const props = defineProps<{
@@ -10,6 +10,7 @@ const props = defineProps<{
   defaultModifierDelayMs: number
   uiKey: string
   nameInputId: string
+  stepError?: (step: MacroStep) => string | null
   isFirst?: boolean
   isLast?: boolean
 }>()
@@ -145,11 +146,15 @@ async function copyMacroId() {
             <div class="text-xs text-(--ui-text-muted) font-mono text-right">
               #{{ idx + 1 }}
             </div>
-            <ActionPickerModal
-              v-model="step.keystroke"
-              :excluded-macro-id="macro.id"
-              :placeholder="$t('macros.stepPh')"
-            />
+            <UFormField :error="stepError?.(step) ?? undefined">
+              <ActionPickerModal
+                v-model="step.keystroke"
+                :allow-macros="false"
+                :excluded-macro-id="macro.id"
+                :placeholder="$t('macros.stepPh')"
+                :invalid="!!stepError?.(step)"
+              />
+            </UFormField>
             <UButton
               icon="i-lucide-chevron-up"
               size="xs"

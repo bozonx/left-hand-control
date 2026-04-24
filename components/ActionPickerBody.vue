@@ -12,6 +12,7 @@ const props = defineProps<{
   keyOnly?: boolean
   spacious?: boolean
   excludedMacroId?: string
+  allowMacros?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,28 +30,34 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
   const userMacros = macros.value.filter((m) => m.id !== props.excludedMacroId)
   const userIds = new Set(userMacros.map((m) => m.id))
   return [
-    {
-      id: 'macros',
-      labelKey: 'categories.macros',
-      icon: 'i-lucide-zap',
-      items: userMacros.map((m) => ({
-        label: m.name || m.id,
-        value: macroActionRef(m.id),
-        hint: m.id,
-      })),
-    },
-    {
-      id: 'system-macros',
-      labelKey: 'categories.systemMacros',
-      icon: 'i-lucide-cpu',
-      items: SYSTEM_MACROS.filter((m) => (
-        !userIds.has(m.id) && m.id !== props.excludedMacroId
-      )).map((m) => ({
-        label: m.name,
-        value: macroActionRef(m.id),
-        hint: m.id,
-      })),
-    },
+    ...(
+      props.allowMacros === false
+        ? []
+        : [
+            {
+              id: 'macros',
+              labelKey: 'categories.macros',
+              icon: 'i-lucide-zap',
+              items: userMacros.map((m) => ({
+                label: m.name || m.id,
+                value: macroActionRef(m.id),
+                hint: m.id,
+              })),
+            },
+            {
+              id: 'system-macros',
+              labelKey: 'categories.systemMacros',
+              icon: 'i-lucide-cpu',
+              items: SYSTEM_MACROS.filter((m) => (
+                !userIds.has(m.id) && m.id !== props.excludedMacroId
+              )).map((m) => ({
+                label: m.name,
+                value: macroActionRef(m.id),
+                hint: m.id,
+              })),
+            },
+          ]
+    ),
     {
       id: 'system',
       labelKey: 'categories.system',
