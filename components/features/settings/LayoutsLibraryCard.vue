@@ -4,6 +4,7 @@ import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 defineProps<{
     entries: LayoutLibraryEntry[];
     currentLayoutId?: string;
+    currentLayoutDescription?: string;
     isLayoutDirty: boolean;
     applying: string;
     applyError?: string | null;
@@ -15,7 +16,10 @@ defineEmits<{
     saveCurrent: [];
     saveAs: [];
     requestApplyEntry: [entry: LayoutLibraryEntry];
-    requestApplyEmpty: [];
+    createFromEmpty: [];
+    createFromIvanK: [];
+    requestEdit: [entry: LayoutLibraryEntry];
+    requestReset: [];
     requestDelete: [entry: LayoutLibraryEntry];
 }>();
 </script>
@@ -32,11 +36,21 @@ defineEmits<{
                         color="neutral"
                         variant="outline"
                         icon="i-lucide-file-plus"
-                        :loading="applying === 'empty'"
+                        :loading="applying === 'create:empty'"
                         :disabled="!!applying"
-                        @click="$emit('requestApplyEmpty')"
+                        @click="$emit('createFromEmpty')"
                     >
                         {{ $t("settings.newLayoutBtn") }}
+                    </UButton>
+                    <UButton
+                        color="neutral"
+                        variant="outline"
+                        icon="i-lucide-copy-plus"
+                        :loading="applying === 'create:ivank'"
+                        :disabled="!!applying"
+                        @click="$emit('createFromIvanK')"
+                    >
+                        {{ $t("settings.newFromIvanKBtn") }}
                     </UButton>
                     <UButton
                         color="neutral"
@@ -47,14 +61,6 @@ defineEmits<{
                     >
                         {{ $t("settings.saveAs") }}
                     </UButton>
-                    <UButton
-                        color="primary"
-                        icon="i-lucide-save"
-                        :disabled="!isLayoutDirty && !currentLayoutId"
-                        @click="$emit('saveCurrent')"
-                    >
-                        {{ $t("settings.saveCurrent") }}
-                    </UButton>
                 </div>
             </div>
         </template>
@@ -62,19 +68,39 @@ defineEmits<{
         <div class="space-y-3">
             <div
                 v-if="isLayoutDirty"
-                class="flex items-start gap-2 p-3 rounded border border-(--ui-warning)/40 bg-(--ui-warning)/10 text-sm"
+                class="flex items-start justify-between gap-3 p-3 rounded border border-(--ui-warning)/40 bg-(--ui-warning)/10 text-sm"
             >
-                <UIcon
-                    name="i-lucide-triangle-alert"
-                    class="text-(--ui-warning) mt-0.5 shrink-0"
-                />
-                <div>
-                    <div class="font-semibold">
-                        {{ $t("settings.dirtyBadgeTitle") }}
+                <div class="flex items-start gap-2 min-w-0">
+                    <UIcon
+                        name="i-lucide-triangle-alert"
+                        class="text-(--ui-warning) mt-0.5 shrink-0"
+                    />
+                    <div class="min-w-0">
+                        <div class="font-semibold">
+                            {{ $t("settings.dirtyBadgeTitle") }}
+                        </div>
+                        <div class="text-(--ui-text-muted)">
+                            {{ $t("settings.dirtyBadgeBody") }}
+                        </div>
                     </div>
-                    <div class="text-(--ui-text-muted)">
-                        {{ $t("settings.dirtyBadgeBody") }}
-                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <UButton
+                        color="neutral"
+                        variant="outline"
+                        icon="i-lucide-rotate-ccw"
+                        @click="$emit('requestReset')"
+                    >
+                        {{ $t("settings.resetUnsavedBtn") }}
+                    </UButton>
+                    <UButton
+                        color="primary"
+                        icon="i-lucide-save"
+                        :disabled="!currentLayoutId"
+                        @click="$emit('saveCurrent')"
+                    >
+                        {{ $t("settings.saveCurrent") }}
+                    </UButton>
                 </div>
             </div>
 
@@ -94,15 +120,7 @@ defineEmits<{
                     :key="entry.id"
                     class="flex items-center justify-between gap-3 p-3 group hover:bg-(--ui-bg-elevated) transition-colors"
                 >
-                    <div class="flex items-center gap-2 min-w-0">
-                        <UIcon
-                            :name="
-                                entry.builtin
-                                    ? 'i-lucide-sparkles'
-                                    : 'i-lucide-file'
-                            "
-                            :class="entry.builtin ? 'text-(--ui-primary)' : ''"
-                        />
+                    <div class="min-w-0">
                         <div class="min-w-0">
                             <div
                                 class="font-medium truncate flex items-center gap-2"
@@ -130,14 +148,21 @@ defineEmits<{
                                 >
                                     {{ $t("settings.unsavedBadge") }}
                                 </UBadge>
-                                <UBadge
-                                    v-if="entry.builtin"
-                                    color="primary"
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    {{ $t("settings.builtinBadge") }}
-                                </UBadge>
+                            </div>
+                            <div
+                                v-if="
+                                    (currentLayoutId === entry.id
+                                        ? currentLayoutDescription
+                                        : entry.description) ||
+                                    false
+                                "
+                                class="text-sm text-(--ui-text-muted) line-clamp-2"
+                            >
+                                {{
+                                    currentLayoutId === entry.id
+                                        ? currentLayoutDescription
+                                        : entry.description
+                                }}
                             </div>
                         </div>
                     </div>
@@ -146,15 +171,21 @@ defineEmits<{
                     >
                         <UButton
                             variant="outline"
-                            icon="i-lucide-rotate-ccw"
+                            icon="i-lucide-folder-open"
                             :loading="applying === entry.id"
                             :disabled="!!applying"
                             @click="$emit('requestApplyEntry', entry)"
                         >
-                            {{ $t("settings.applyBtn") }}
+                            {{ $t("settings.loadBtn") }}
                         </UButton>
                         <UButton
-                            v-if="!entry.builtin"
+                            color="neutral"
+                            variant="ghost"
+                            icon="i-lucide-pencil"
+                            :aria-label="$t('settings.editLayoutAria', { name: entry.name })"
+                            @click="$emit('requestEdit', entry)"
+                        />
+                        <UButton
                             color="neutral"
                             variant="ghost"
                             icon="i-lucide-trash-2"

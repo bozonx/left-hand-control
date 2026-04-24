@@ -9,7 +9,6 @@ import {
   type LayoutPreset,
   type Macro,
   type MacroStep,
-  BUILTIN_LAYOUT_ID,
 } from "~/types/config";
 
 type TranslateFn = (key: string) => string;
@@ -18,7 +17,6 @@ type TranslateFn = (key: string) => string;
 // and user files under <configDir>/layouts/*.yaml). Settings live in
 // config.json, NOT in layout files.
 interface LayoutYaml {
-  name?: string;
   description?: string;
   layers?: Array<{
     id: string;
@@ -59,7 +57,7 @@ function genId(prefix: string): string {
   return `${prefix}${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
+function parsePreset(doc: LayoutYaml): LayoutPreset {
   const layers: Layer[] = [];
   const layerKeymaps: Record<string, LayerKeymap> = {};
 
@@ -154,7 +152,6 @@ function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
   }
 
   return {
-    name: doc.name?.trim() || fallbackName,
     description: doc.description?.trim() || undefined,
     layers,
     rules,
@@ -164,14 +161,11 @@ function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
   };
 }
 
-export function parseLayoutYaml(
-  text: string,
-  fallbackName = "Untitled",
-): LayoutPreset | null {
+export function parseLayoutYaml(text: string): LayoutPreset | null {
   try {
     const doc = yaml.load(text) as LayoutYaml | null;
     if (!doc || typeof doc !== "object") return null;
-    return parsePreset(doc, fallbackName);
+    return parsePreset(doc);
   } catch (e) {
     console.error("[LHC] parseLayoutYaml failed:", e);
     return null;
@@ -180,7 +174,6 @@ export function parseLayoutYaml(
 
 export function serializeLayoutYaml(preset: LayoutPreset): string {
   const doc: LayoutYaml = {
-    name: preset.name,
     description: preset.description,
     layers: preset.layers.map((l) => {
       const km = preset.layerKeymaps[l.id];
@@ -234,9 +227,8 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
   return yaml.dump(doc, { lineWidth: 100, noRefs: true });
 }
 
-export function emptyLayoutPreset(name = "Empty layout"): LayoutPreset {
+export function emptyLayoutPreset(): LayoutPreset {
   return {
-    name,
     layers: [],
     rules: [],
     layerKeymaps: {},
@@ -249,12 +241,9 @@ export function emptyLayoutPreset(name = "Empty layout"): LayoutPreset {
 // current layout as a user preset).
 export function extractPresetFromConfig(
   config: AppConfig,
-  name: string,
-  description?: string,
 ): LayoutPreset {
   return {
-    name,
-    description,
+    description: config.layoutDescription,
     layers: JSON.parse(JSON.stringify(config.layers)),
     rules: JSON.parse(JSON.stringify(config.rules)),
     layerKeymaps: JSON.parse(JSON.stringify(config.layerKeymaps)),
@@ -272,6 +261,7 @@ export function applyPresetToConfig(
 ): AppConfig {
   const next: AppConfig = {
     ...config,
+    layoutDescription: preset.description,
     layers: JSON.parse(JSON.stringify(preset.layers)),
     rules: JSON.parse(JSON.stringify(preset.rules)),
     layerKeymaps: JSON.parse(JSON.stringify(preset.layerKeymaps)),
@@ -290,6 +280,7 @@ export function applyPresetToConfig(
 // A stable string snapshot of the layout-subset, used for dirty-tracking.
 export function layoutSnapshotOf(config: AppConfig): string {
   return JSON.stringify({
+    layoutDescription: config.layoutDescription,
     layers: config.layers,
     rules: config.rules,
     layerKeymaps: config.layerKeymaps,
@@ -300,7 +291,6 @@ export function layoutSnapshotOf(config: AppConfig): string {
 
 // Built-in preset metadata.
 export const BUILTIN_LAYOUT_META = {
-  id: BUILTIN_LAYOUT_ID,
   asset: "/ivank-layout.yaml",
   i18nBase: "builtinLayouts.ivank",
   name: "Ivan K's left hand control",
@@ -332,7 +322,6 @@ export function localizeBuiltinLayoutPreset(
 ): LayoutPreset {
   return {
     ...preset,
-    name: builtinLayoutName(t),
     description: i18nOrFallback(
       t,
       `${BUILTIN_LAYOUT_META.i18nBase}.description`,
@@ -362,7 +351,7 @@ export async function loadBuiltinLayout(
     const res = await fetch(BUILTIN_LAYOUT_META.asset, { cache: "no-cache" });
     if (!res.ok) return null;
     const text = await res.text();
-    const preset = parseLayoutYaml(text, BUILTIN_LAYOUT_META.name);
+    const preset = parseLayoutYaml(text);
     return preset ? localizeBuiltinLayoutPreset(preset, t) : null;
   } catch (e) {
     console.error("[LHC] loadBuiltinLayout failed:", e);

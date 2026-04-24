@@ -131,16 +131,55 @@ impl StoragePaths {
         fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
     }
 
-    pub fn save_user_layout(&self, name: &str, contents: &str) -> Result<String, String> {
+    pub fn save_user_layout(
+        &self,
+        name: &str,
+        contents: &str,
+        overwrite: bool,
+    ) -> Result<String, String> {
         self.ensure()?;
         let dir = self.layouts_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
-        let safe = sanitize_layout_name(name)?;
+        let safe = validate_layout_name(name)?;
         let path = dir.join(format!("{safe}.yaml"));
+        if path.exists() && !overwrite {
+            return Err(format!("layout '{safe}' already exists"));
+        }
         let tmp = dir.join(format!("{safe}.yaml.tmp"));
         fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
         fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
         Ok(safe)
+    }
+
+    pub fn rename_user_layout(
+        &self,
+        old_name: &str,
+        new_name: &str,
+        contents: &str,
+        overwrite: bool,
+    ) -> Result<String, String> {
+        self.ensure()?;
+        let old_path = self.layout_path(old_name)?;
+        if !old_path.exists() {
+            return Err(format!("layout '{old_name}' not found"));
+        }
+        let new_safe = validate_layout_name(new_name)?;
+        let dir = self.layouts_dir();
+        fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
+        let new_path = dir.join(format!("{new_safe}.yaml"));
+        if new_path.exists() && old_path != new_path && !overwrite {
+            return Err(format!("layout '{new_safe}' already exists"));
+        }
+        let tmp = dir.join(format!("{new_safe}.yaml.tmp"));
+        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
+        if new_path.exists() && old_path != new_path {
+            fs::remove_file(&new_path).map_err(|e| format!("remove_file: {e}"))?;
+        }
+        fs::rename(&tmp, &new_path).map_err(|e| format!("rename: {e}"))?;
+        if old_path != new_path && old_path.exists() {
+            fs::remove_file(&old_path).map_err(|e| format!("remove_file: {e}"))?;
+        }
+        Ok(new_safe)
     }
 
     pub fn delete_user_layout(&self, name: &str) -> Result<(), String> {
@@ -153,34 +192,34 @@ impl StoragePaths {
     }
 
     pub fn layout_path(&self, name: &str) -> Result<PathBuf, String> {
-        let safe = sanitize_layout_name(name)?;
+        let safe = validate_layout_name(name)?;
         Ok(self.layouts_dir().join(format!("{safe}.yaml")))
     }
 }
 
-pub fn sanitize_layout_name(name: &str) -> Result<String, String> {
+pub fn validate_layout_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
         return Err("layout name is empty".into());
     }
-    let mut out = String::with_capacity(trimmed.len());
     for ch in trimmed.chars() {
-        if ch.is_alphanumeric() || matches!(ch, '-' | '_' | '.' | ' ') {
-            out.push(ch);
-        } else {
-            out.push('_');
+        if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|')
+        {
+            return Err("layout name contains invalid filename characters".into());
         }
     }
-    let out = out.trim_start_matches('.').trim().to_string();
-    if out.is_empty() {
-        return Err("layout name has no valid characters".into());
+    if trimmed == "." || trimmed == ".." {
+        return Err("layout name is reserved".into());
     }
-    Ok(out)
+    if trimmed.starts_with('.') {
+        return Err("layout name cannot start with '.'".into());
+    }
+    Ok(trimmed.to_string())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{sanitize_layout_name, StoragePaths};
+    use super::{validate_layout_name, StoragePaths};
     use std::fs;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -213,13 +252,11 @@ mod tests {
     }
 
     #[test]
-    fn sanitize_layout_name_normalizes_and_rejects_empty_names() {
-        assert_eq!(
-            sanitize_layout_name(" ../left*hand?control "),
-            Ok("_left_hand_control".into())
-        );
-        assert!(sanitize_layout_name("   ").is_err());
-        assert!(sanitize_layout_name("...").is_err());
+    fn validate_layout_name_rejects_invalid_names() {
+        assert_eq!(validate_layout_name(" Left hand "), Ok("Left hand".into()));
+        assert!(validate_layout_name("   ").is_err());
+        assert!(validate_layout_name("...").is_err());
+        assert!(validate_layout_name("left/hand").is_err());
     }
 
     #[test]
@@ -258,18 +295,45 @@ mod tests {
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
         let saved = storage
-            .save_user_layout("  .my/layout  ", "name: test")
+            .save_user_layout("My layout", "description: test", false)
             .expect("save layout");
-        assert_eq!(saved, "my_layout");
+        assert_eq!(saved, "My layout");
         assert_eq!(
             storage.list_user_layouts().expect("list layouts"),
-            vec!["my_layout".to_string()]
+            vec!["My layout".to_string()]
         );
         assert_eq!(
             storage
-                .load_user_layout("  .my/layout  ")
+                .load_user_layout("My layout")
                 .expect("load layout"),
-            "name: test"
+            "description: test"
         );
+    }
+
+    #[test]
+    fn rename_layout_overwrites_when_requested() {
+        let temp = TempDir::new("storage-layouts-rename");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+
+        storage
+            .save_user_layout("Old", "description: one", false)
+            .expect("save old");
+        storage
+            .save_user_layout("New", "description: two", false)
+            .expect("save new");
+
+        assert!(storage
+            .rename_user_layout("Old", "New", "description: updated", false)
+            .is_err());
+
+        let renamed = storage
+            .rename_user_layout("Old", "New", "description: updated", true)
+            .expect("rename");
+        assert_eq!(renamed, "New");
+        assert_eq!(
+            storage.load_user_layout("New").expect("load new"),
+            "description: updated"
+        );
+        assert!(storage.load_user_layout("Old").is_err());
     }
 }

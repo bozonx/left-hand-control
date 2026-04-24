@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { BUILTIN_LAYOUT_ID } from '~/types/config'
 import { emptyLayoutPreset, loadBuiltinLayout } from '~/utils/layoutPresets'
+import { userLayoutId, useLayoutLibrary } from '~/composables/useLayoutLibrary'
 
-const { applyPreset } = useConfig()
+const { replaceCurrentLayoutSnapshot } = useConfig()
+const library = useLayoutLibrary()
 const { t } = useI18n()
 
 const busy = ref<'' | 'ivank' | 'empty'>('')
@@ -17,7 +18,12 @@ async function pickIvanK() {
       error.value = t('welcome.loadError')
       return
     }
-    await applyPreset(preset, BUILTIN_LAYOUT_ID)
+    const savedName = await library.saveUserPreset(
+      t('welcome.defaultIvanKFileName'),
+      preset,
+      true,
+    )
+    await replaceCurrentLayoutSnapshot(preset, userLayoutId(savedName))
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -29,7 +35,13 @@ async function pickEmpty() {
   busy.value = 'empty'
   error.value = null
   try {
-    await applyPreset(emptyLayoutPreset(t('settings.emptyLayoutName')), undefined)
+    const preset = emptyLayoutPreset()
+    const savedName = await library.saveUserPreset(
+      t('welcome.defaultEmptyFileName'),
+      preset,
+      true,
+    )
+    await replaceCurrentLayoutSnapshot(preset, userLayoutId(savedName))
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {

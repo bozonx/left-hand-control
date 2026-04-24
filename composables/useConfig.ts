@@ -2,7 +2,6 @@ import {
   type AppConfig,
   type LayoutPreset,
   type PersistedConfig,
-  BUILTIN_LAYOUT_ID,
   createDefaultConfig,
   createDefaultPersistedConfig,
 } from '~/types/config'
@@ -14,6 +13,7 @@ import {
   parseLayoutYaml,
   serializeLayoutYaml,
 } from '~/utils/layoutPresets'
+import { userLayoutId } from '~/composables/useLayoutLibrary'
 
 async function readConfigRaw(): Promise<string> {
   const tauri = await useTauri()
@@ -37,6 +37,20 @@ async function writeCurrentLayoutRaw(contents: string): Promise<void> {
   const tauri = await useTauri()
   if (!tauri) return
   await tauri.invoke('save_current_layout', { contents })
+}
+
+async function writeUserLayoutRaw(
+  name: string,
+  contents: string,
+  overwrite = true,
+): Promise<string> {
+  const tauri = await useTauri()
+  if (!tauri) return name
+  return await tauri.invoke<string>('save_user_layout', {
+    name,
+    contents,
+    overwrite,
+  })
 }
 
 export async function getSettingsDir(): Promise<string> {
@@ -126,20 +140,24 @@ function serializePersistedSettings(config: AppConfig): string {
 }
 
 function parseCurrentLayout(raw: string): LayoutPreset | null {
-  return parseLayoutYaml(raw, 'Current layout')
+  return parseLayoutYaml(raw)
 }
 
 function serializeCurrentLayout(config: AppConfig): string {
-  return serializeLayoutYaml(extractPresetFromConfig(config, 'Current layout'))
+  return serializeLayoutYaml(extractPresetFromConfig(config))
 }
 
 function legacyPresetFromPersistedConfig(raw: string): LayoutPreset | null {
   try {
     const parsed = parsePersistedConfig(raw)
-    return extractPresetFromConfig(parsed, 'Current layout')
+    return extractPresetFromConfig(parsed)
   } catch {
     return null
   }
+}
+
+function clonePreset(preset: LayoutPreset): LayoutPreset {
+  return JSON.parse(JSON.stringify(preset))
 }
 
 interface ConfigState {
@@ -156,6 +174,8 @@ interface ConfigState {
   flush: () => Promise<void>
   applyPreset: (preset: LayoutPreset, layoutId: string | undefined) => Promise<void>
   markLayoutSavedAs: (layoutId: string) => Promise<void>
+  replaceCurrentLayoutSnapshot: (preset: LayoutPreset, layoutId: string) => Promise<void>
+  resetCurrentLayout: () => Promise<void>
 }
 
 let singleton: ConfigState | null = null
@@ -177,6 +197,7 @@ export function useConfig(): ConfigState {
   const settingsDir = ref('')
   const needsWelcome = ref(false)
   const layoutSnapshot = ref<string>(layoutSnapshotOf(config.value))
+  const savedLayoutPreset = ref<LayoutPreset>(extractPresetFromConfig(config.value))
 
   const currentLayoutId = computed<string | undefined>(
     () => config.value.settings.currentLayoutId || undefined,
@@ -264,6 +285,7 @@ export function useConfig(): ConfigState {
     layoutId: string | undefined,
   ) {
     config.value = applyPresetToConfig(config.value, preset, layoutId)
+    savedLayoutPreset.value = clonePreset(preset)
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     needsWelcome.value = false
     await flush()
@@ -274,8 +296,36 @@ export function useConfig(): ConfigState {
 
   async function markLayoutSavedAs(layoutId: string) {
     config.value.settings.currentLayoutId = layoutId
+    savedLayoutPreset.value = extractPresetFromConfig(config.value)
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     await flush()
+  }
+
+  async function replaceCurrentLayoutSnapshot(
+    preset: LayoutPreset,
+    layoutId: string,
+  ) {
+    config.value = applyPresetToConfig(config.value, preset, layoutId)
+    savedLayoutPreset.value = clonePreset(preset)
+    layoutSnapshot.value = layoutSnapshotOf(config.value)
+    needsWelcome.value = false
+    await flush()
+    if (!saveTimer && !saving.value) {
+      await persistNow()
+    }
+  }
+
+  async function resetCurrentLayout() {
+    config.value = applyPresetToConfig(
+      config.value,
+      clonePreset(savedLayoutPreset.value),
+      currentLayoutId.value,
+    )
+    layoutSnapshot.value = layoutSnapshotOf(config.value)
+    await flush()
+    if (!saveTimer && !saving.value) {
+      await persistNow()
+    }
   }
 
   async function load() {
@@ -302,7 +352,17 @@ export function useConfig(): ConfigState {
       if (forceIvank) {
         const preset = await loadBuiltinLayout(t)
         if (preset) {
-          config.value = applyPresetToConfig(config.value, preset, BUILTIN_LAYOUT_ID)
+          const savedName = await writeUserLayoutRaw(
+            t('welcome.defaultIvanKFileName'),
+            serializeLayoutYaml(preset),
+            true,
+          )
+          config.value = applyPresetToConfig(
+            config.value,
+            preset,
+            userLayoutId(savedName),
+          )
+          savedLayoutPreset.value = clonePreset(preset)
         }
         layoutSnapshot.value = layoutSnapshotOf(config.value)
         settingsDir.value = await getSettingsDir()
@@ -324,19 +384,12 @@ export function useConfig(): ConfigState {
             persistedLayout,
             config.value.settings.currentLayoutId,
           )
-        } else if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
-          const preset = await loadBuiltinLayout(t)
-          if (preset) {
-            config.value = applyPresetToConfig(
-              config.value,
-              preset,
-              BUILTIN_LAYOUT_ID,
-            )
-          }
         }
+        savedLayoutPreset.value = extractPresetFromConfig(config.value)
         layoutSnapshot.value = layoutSnapshotOf(config.value)
       } else {
         needsWelcome.value = true
+        savedLayoutPreset.value = extractPresetFromConfig(config.value)
         layoutSnapshot.value = layoutSnapshotOf(config.value)
       }
 
@@ -346,6 +399,7 @@ export function useConfig(): ConfigState {
       loadError.value = e instanceof Error ? e.message : String(e)
       config.value = createDefaultConfig()
       needsWelcome.value = false
+      savedLayoutPreset.value = extractPresetFromConfig(config.value)
       layoutSnapshot.value = layoutSnapshotOf(config.value)
     } finally {
       loaded.value = true
@@ -374,6 +428,8 @@ export function useConfig(): ConfigState {
     flush,
     applyPreset,
     markLayoutSavedAs,
+    replaceCurrentLayoutSnapshot,
+    resetCurrentLayout,
   }
   return singleton
 }

@@ -46,13 +46,27 @@ function t(key: string, params?: Record<string, unknown>) {
   if (key === 'settings.languageAutoResolved') {
     return `Auto (system -> ${params?.resolved})`
   }
-  if (key === 'settings.emptyLayoutName') return 'Empty layout'
   if (key === 'settings.loadFailed') return `Failed to load ${params?.name}`
   if (key === 'settings.saveErrorEmpty') return 'Please enter a name.'
+  if (key === 'settings.saveErrorInvalidName') return 'Invalid name.'
+  if (key === 'welcome.defaultEmptyFileName') return 'My new layout'
+  if (key === 'welcome.defaultIvanKFileName') return 'Ivan K layout'
+  if (key === 'welcome.loadError') return 'Failed to load built-in layout.'
   if (key === 'settings.appearanceItems.system') return 'Use system'
   if (key === 'settings.appearanceItems.light') return 'Light'
   if (key === 'settings.appearanceItems.dark') return 'Dark'
   return key
+}
+
+function mountHarness() {
+  const Harness = defineComponent({
+    setup() {
+      return useSettingsScreen()
+    },
+    template: '<div />',
+  })
+
+  return mountSuspended(Harness)
 }
 
 describe('useSettingsScreen', () => {
@@ -70,7 +84,6 @@ describe('useSettingsScreen', () => {
     const config = ref(createDefaultConfig())
     config.value.settings.inputDevicePath = '/dev/input/event1'
 
-    const flush = vi.fn()
     const library = {
       entries: ref([]),
       error: ref(null),
@@ -78,7 +91,9 @@ describe('useSettingsScreen', () => {
       refresh: vi.fn(),
       loadPreset: vi.fn(),
       saveUserPreset: vi.fn(),
+      renameUserPreset: vi.fn(),
       deleteUserPreset: vi.fn(),
+      layoutExists: vi.fn().mockReturnValue(false),
     }
     const mapper = {
       devices: ref([{ name: 'Keyboard', path: '/dev/input/event1' }]),
@@ -100,9 +115,11 @@ describe('useSettingsScreen', () => {
     useConfigMock.mockReturnValue({
       config,
       settingsDir: ref('/tmp/settings'),
-      flush,
+      flush: vi.fn(),
       applyPreset: vi.fn(),
       markLayoutSavedAs: vi.fn(),
+      replaceCurrentLayoutSnapshot: vi.fn(),
+      resetCurrentLayout: vi.fn(),
       currentLayoutId: ref(undefined),
       isLayoutDirty: ref(false),
     })
@@ -120,14 +137,7 @@ describe('useSettingsScreen', () => {
     })
     useI18nMock.mockReturnValue({ t })
 
-    const Harness = defineComponent({
-      setup() {
-        return useSettingsScreen()
-      },
-      template: '<div />',
-    })
-
-    const wrapper = await mountSuspended(Harness)
+    const wrapper = await mountHarness()
     const vm = wrapper.vm as any
 
     expect(mapper.refreshDevices).toHaveBeenCalledTimes(1)
@@ -152,25 +162,29 @@ describe('useSettingsScreen', () => {
     ])
   })
 
-  it('applies layouts, saves current layout, deletes active layout and toggles mapper', async () => {
+  it('loads files, creates templates, saves and deletes layouts', async () => {
     const { emptyLayoutPreset, extractPresetFromConfig, loadBuiltinLayout } =
       await import('~/utils/layoutPresets')
 
     const config = ref(createDefaultConfig())
     config.value.settings.currentLayoutId = 'user:old'
     config.value.settings.inputDevicePath = '/dev/input/event1'
+    config.value.layoutDescription = 'Current description'
 
     const applyPreset = vi.fn()
     const markLayoutSavedAs = vi.fn()
+    const replaceCurrentLayoutSnapshot = vi.fn()
     const flush = vi.fn()
     const library = {
-      entries: ref([]),
+      entries: ref([{ id: 'user:old', name: 'old', description: 'Saved' }]),
       error: ref(null),
       layoutsDir: ref('/tmp/layouts'),
       refresh: vi.fn(),
-      loadPreset: vi.fn().mockResolvedValue({ name: 'Nav' }),
+      loadPreset: vi.fn().mockResolvedValue({ description: 'Nav' }),
       saveUserPreset: vi.fn().mockResolvedValue('renamed'),
+      renameUserPreset: vi.fn().mockResolvedValue('renamed'),
       deleteUserPreset: vi.fn(),
+      layoutExists: vi.fn().mockReturnValue(false),
     }
     const mapper = {
       devices: ref([{ name: 'Keyboard', path: '/dev/input/event1' }]),
@@ -189,6 +203,8 @@ describe('useSettingsScreen', () => {
       flush,
       applyPreset,
       markLayoutSavedAs,
+      replaceCurrentLayoutSnapshot,
+      resetCurrentLayout: vi.fn(),
       currentLayoutId: ref('user:old'),
       isLayoutDirty: ref(true),
     })
@@ -211,52 +227,51 @@ describe('useSettingsScreen', () => {
     })
     useI18nMock.mockReturnValue({ t })
 
-    vi.mocked(emptyLayoutPreset).mockReturnValue({ name: 'Empty layout' } as any)
-    vi.mocked(extractPresetFromConfig).mockReturnValue({ name: 'Current' } as any)
-    vi.mocked(loadBuiltinLayout).mockResolvedValue({ name: 'Built-in' } as any)
+    vi.mocked(emptyLayoutPreset).mockReturnValue({} as any)
+    vi.mocked(extractPresetFromConfig).mockReturnValue({ description: 'Current' } as any)
+    vi.mocked(loadBuiltinLayout).mockResolvedValue({ description: 'Built-in' } as any)
 
-    const Harness = defineComponent({
-      setup() {
-        return useSettingsScreen()
-      },
-      template: '<div />',
-    })
-
-    const wrapper = await mountSuspended(Harness)
+    const wrapper = await mountHarness()
     const vm = wrapper.vm as any
 
-    vm.requestApplyEntry({ id: 'builtin:ivank', name: 'Built-in', builtin: true })
-    await vm.confirmApply()
-    expect(loadBuiltinLayout).toHaveBeenCalledTimes(1)
-    expect(applyPreset).toHaveBeenCalledWith({ name: 'Built-in' }, 'builtin:ivank')
-
-    vm.requestApplyEntry({ id: 'user:nav', name: 'Nav', builtin: false })
+    vm.requestApplyEntry({ id: 'user:nav', name: 'Nav' })
     await vm.confirmApply()
     expect(library.loadPreset).toHaveBeenCalledWith('user:nav')
-    expect(applyPreset).toHaveBeenCalledWith({ name: 'Nav' }, 'user:nav')
+    expect(applyPreset).toHaveBeenCalledWith({ description: 'Nav' }, 'user:nav')
 
-    vm.requestApplyEmpty()
-    await vm.confirmApply()
-    expect(emptyLayoutPreset).toHaveBeenCalledWith('Empty layout')
-    expect(applyPreset).toHaveBeenCalledWith({ name: 'Empty layout' }, undefined)
+    await vm.createFromEmpty()
+    expect(emptyLayoutPreset).toHaveBeenCalledTimes(1)
+    expect(library.saveUserPreset).toHaveBeenCalledWith('My new layout', {}, false)
+    expect(replaceCurrentLayoutSnapshot).toHaveBeenCalledWith({}, 'user:renamed')
+
+    await vm.createFromIvanK()
+    expect(loadBuiltinLayout).toHaveBeenCalledTimes(1)
+    expect(library.saveUserPreset).toHaveBeenCalledWith(
+      'Ivan K layout',
+      { description: 'Built-in' },
+      false,
+    )
 
     vm.openSaveModal()
     expect(vm.saveName).toBe('old')
     vm.saveName = '  My Layout  '
     await vm.performSave()
-    expect(extractPresetFromConfig).toHaveBeenCalledWith(config.value, 'My Layout')
-    expect(library.saveUserPreset).toHaveBeenCalledWith('My Layout', { name: 'Current' })
+    expect(extractPresetFromConfig).toHaveBeenCalledWith(config.value)
+    expect(library.saveUserPreset).toHaveBeenCalledWith(
+      'My Layout',
+      { description: 'Current' },
+      true,
+    )
     expect(markLayoutSavedAs).toHaveBeenCalledWith('user:renamed')
     expect(vm.saveModalOpen).toBe(false)
 
-    vm.deletePending = { id: 'user:old', name: 'Old', builtin: false }
+    vm.deletePending = { id: 'user:old', name: 'Old' }
     await vm.confirmDelete()
     expect(library.deleteUserPreset).toHaveBeenCalledWith('old')
     expect(config.value.settings.currentLayoutId).toBeUndefined()
     expect(flush).toHaveBeenCalled()
 
     await vm.toggleMapper()
-    expect(flush).toHaveBeenCalled()
     expect(mapper.start).toHaveBeenCalledWith('/dev/input/event1')
 
     mapper.status.value.running = true
@@ -264,11 +279,8 @@ describe('useSettingsScreen', () => {
     expect(mapper.stop).toHaveBeenCalledTimes(1)
   })
 
-  it('surfaces apply/save errors and respects guard clauses', async () => {
-    const { loadBuiltinLayout } = await import('~/utils/layoutPresets')
-
+  it('surfaces apply/save validation errors and respects mapper guard clauses', async () => {
     const config = ref(createDefaultConfig())
-    const flush = vi.fn()
     const library = {
       entries: ref([]),
       error: ref(null),
@@ -276,7 +288,9 @@ describe('useSettingsScreen', () => {
       refresh: vi.fn(),
       loadPreset: vi.fn().mockResolvedValue(null),
       saveUserPreset: vi.fn(),
+      renameUserPreset: vi.fn(),
       deleteUserPreset: vi.fn(),
+      layoutExists: vi.fn().mockReturnValue(false),
     }
     const mapper = {
       devices: ref([]),
@@ -292,9 +306,11 @@ describe('useSettingsScreen', () => {
     useConfigMock.mockReturnValue({
       config,
       settingsDir: ref('/tmp/settings'),
-      flush,
+      flush: vi.fn(),
       applyPreset: vi.fn(),
       markLayoutSavedAs: vi.fn(),
+      replaceCurrentLayoutSnapshot: vi.fn(),
+      resetCurrentLayout: vi.fn(),
       currentLayoutId: ref(undefined),
       isLayoutDirty: ref(false),
     })
@@ -317,19 +333,10 @@ describe('useSettingsScreen', () => {
     })
     useI18nMock.mockReturnValue({ t })
 
-    vi.mocked(loadBuiltinLayout).mockResolvedValue(null)
-
-    const Harness = defineComponent({
-      setup() {
-        return useSettingsScreen()
-      },
-      template: '<div />',
-    })
-
-    const wrapper = await mountSuspended(Harness)
+    const wrapper = await mountHarness()
     const vm = wrapper.vm as any
 
-    vm.requestApplyEntry({ id: 'user:missing', name: 'Missing', builtin: false })
+    vm.requestApplyEntry({ id: 'user:missing', name: 'Missing' })
     await vm.confirmApply()
     expect(vm.applyError).toBe('Failed to load Missing')
 
@@ -337,9 +344,9 @@ describe('useSettingsScreen', () => {
     await vm.performSave()
     expect(vm.saveError).toBe('Please enter a name.')
 
-    vm.deletePending = { id: 'builtin:ivank', name: 'Built-in', builtin: true }
-    await vm.confirmDelete()
-    expect(library.deleteUserPreset).not.toHaveBeenCalled()
+    vm.saveName = 'bad/name'
+    await vm.performSave()
+    expect(vm.saveError).toBe('Invalid name.')
 
     await vm.toggleMapper()
     expect(mapper.start).not.toHaveBeenCalled()

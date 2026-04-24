@@ -62,6 +62,8 @@ export default {
     footnote: "You can always change the chosen layout under {path}.",
     footnotePath: "Settings → Layouts",
     loadError: "Failed to load the built-in layout.",
+    defaultEmptyFileName: "My new layout",
+    defaultIvanKFileName: "Ivan K layout",
   },
   builtinLayouts: {
     ivank: {
@@ -349,16 +351,21 @@ export default {
     layoutsTitle: "Layouts",
     loadFailed: 'Failed to load layout "{name}"',
     activeBadge: "active",
-    builtinBadge: "built-in",
     unsavedBadge: "unsaved",
-    applyBtn: "Apply",
+    loadBtn: "Load",
     saveCurrent: "Save",
     saveAs: "Save As",
     newLayoutBtn: "New",
+    newFromIvanKBtn: "New from Ivan K",
     deleteAria: "Delete",
+    editLayoutAria: "Edit layout {name}",
     dirtyBadgeTitle: "The current layout has unsaved changes.",
     dirtyBadgeBody:
       "Switching to another layout will replace the rules, layers, keymap and macros. Save the current as a user layout to keep it.",
+    resetUnsavedBtn: "Reset changes",
+    resetUnsavedTitle: "Reset unsaved changes?",
+    resetUnsavedBody:
+      "Unsaved edits will be discarded and the current layout will be restored from disk.",
     resetHint:
       "Reset everything: clear layers, rules, keymap and macros. App settings are preserved.",
     resetBtn: "Reset all",
@@ -376,11 +383,19 @@ export default {
     loseAndSwitch: "Lose changes and switch",
     switch: "Switch",
     saveModalTitle: "Save layout",
+    editLayoutTitle: "Edit layout",
     nameLabel: "Layout name",
     namePh: "my-layout",
+    descriptionLabel: "Description",
+    descriptionPh: "Shortly: what this layout is for",
     saveHint:
       "The file will be saved as {path}. An existing layout with the same name will be overwritten.",
     saveErrorEmpty: "Enter a layout name.",
+    saveErrorInvalidName:
+      'The file name contains unsupported characters. Do not use \\ / : * ? " < > | and do not start the name with a dot.',
+    overwriteTitle: 'Overwrite "{name}"?',
+    overwriteBody:
+      "A layout file with this name already exists. The existing file will be replaced.",
     deleteTitle: 'Delete "{name}"?',
     deleteBody:
       "The layout file will be deleted from disk. This cannot be undone. The currently active layout does not change.",

@@ -84,8 +84,20 @@ fn save_user_layout(
     app: tauri::AppHandle,
     name: String,
     contents: String,
+    overwrite: bool,
 ) -> Result<String, String> {
-    app_storage(&app)?.save_user_layout(&name, &contents)
+    app_storage(&app)?.save_user_layout(&name, &contents, overwrite)
+}
+
+#[tauri::command]
+fn rename_user_layout(
+    app: tauri::AppHandle,
+    old_name: String,
+    new_name: String,
+    contents: String,
+    overwrite: bool,
+) -> Result<String, String> {
+    app_storage(&app)?.rename_user_layout(&old_name, &new_name, &contents, overwrite)
 }
 
 #[tauri::command]
@@ -262,6 +274,7 @@ pub fn run() {
             list_user_layouts,
             load_user_layout,
             save_user_layout,
+            rename_user_layout,
             delete_user_layout,
             list_keyboards,
             start_mapper,

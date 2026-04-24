@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import AppHeader from '~/components/app/AppHeader.vue'
+import WelcomeScreen from '~/components/WelcomeScreen.vue'
 
-const { loaded, loadError } = useConfig()
+const { loaded, loadError, needsWelcome } = useConfig()
 
 const route = useRoute()
 const isFullWidth = computed(() => route.meta.fullWidth === true)
@@ -25,7 +26,9 @@ provide('app-shell-scroll', {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col overflow-hidden relative">
+  <WelcomeScreen v-if="loaded && !loadError && needsWelcome" />
+
+  <div v-else class="h-screen flex flex-col overflow-hidden relative">
     <AppHeader />
 
     <main ref="mainRef" class="flex-1 overflow-y-auto p-4" @scroll="onScroll">

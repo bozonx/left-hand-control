@@ -14,8 +14,7 @@ import {
 
 describe("layout preset helpers", () => {
   it("parses yaml into normalized preset data", () => {
-    const preset = parseLayoutYaml(
-      `
+    const preset = parseLayoutYaml(`
 name: Navigation
 description: "  Primary nav layer  "
 layers:
@@ -46,13 +45,10 @@ macros:
       - keystroke: Ctrl+V
         id: step-2
     stepPauseMs: 30
-`,
-      "Fallback",
-    );
+`);
 
     expect(preset).not.toBeNull();
     expect(preset).toMatchObject({
-      name: "Navigation",
       description: "Primary nav layer",
       layers: [{ id: "nav", name: "Nav" }],
       rules: [
@@ -103,7 +99,6 @@ macros:
 
   it("serializes and parses a preset without losing semantic values", () => {
     const original = {
-      name: "Editing",
       description: "editing helpers",
       layers: [{ id: "edit", name: "Edit", description: "editing layer" }],
       rules: [
@@ -146,11 +141,10 @@ macros:
     };
 
     const yaml = serializeLayoutYaml(original);
-    const reparsed = parseLayoutYaml(yaml, "Fallback");
+    const reparsed = parseLayoutYaml(yaml);
 
     expect(reparsed).not.toBeNull();
     expect(reparsed).toMatchObject({
-      name: "Editing",
       description: "editing helpers",
       layers: original.layers,
       rules: [
@@ -217,7 +211,7 @@ macros:
     });
     config.settings.appearance = "dark";
 
-    const preset = extractPresetFromConfig(config, "Current");
+    const preset = extractPresetFromConfig(config);
     const next = applyPresetToConfig(
       createDefaultConfig(),
       preset,
@@ -255,7 +249,6 @@ macros:
 
     expect(layoutSnapshotOf(config)).not.toBe(initial);
     expect(emptyLayoutPreset()).toEqual({
-      name: "Empty layout",
       layers: [],
       rules: [],
       layerKeymaps: {},
@@ -265,14 +258,13 @@ macros:
   });
 
   it("returns null for invalid or non-object yaml", () => {
-    expect(parseLayoutYaml("not: [valid", "Fallback")).toBeNull();
-    expect(parseLayoutYaml("hello", "Fallback")).toBeNull();
+    expect(parseLayoutYaml("not: [valid")).toBeNull();
+    expect(parseLayoutYaml("hello")).toBeNull();
   });
 
   it("localizes the built-in preset from i18n without changing the user yaml format", () => {
     const preset = localizeBuiltinLayoutPreset(
       {
-        name: "Fallback built-in",
         description: "Fallback description",
         layers: [
           { id: "nav", name: "nav" },
@@ -293,7 +285,6 @@ macros:
     );
 
     expect(preset).toMatchObject({
-      name: "Localized built-in",
       description: "Localized description",
       layers: [
         { id: "nav", name: "Navigation", description: "Localized nav" },

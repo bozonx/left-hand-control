@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
-import { BUILTIN_LAYOUT_ID } from '~/types/config'
 import {
   isUserLayoutId,
   userLayoutNameFromId,
 } from '~/composables/useLayoutLibrary'
-import { builtinLayoutName } from '~/utils/layoutPresets'
 
 const route = useRoute()
 
@@ -32,7 +30,6 @@ const tabItems = computed(() => [
 const currentLayoutLabel = computed<string>(() => {
   const id = currentLayoutId.value
   if (!id) return t('app.customLayout')
-  if (id === BUILTIN_LAYOUT_ID) return builtinLayoutName(t)
   if (isUserLayoutId(id)) return userLayoutNameFromId(id)
   return id
 })
