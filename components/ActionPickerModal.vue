@@ -25,14 +25,14 @@ const emit = defineEmits<{
 
 const model = defineModel<string>({ default: '' })
 
-const { displayAction } = useMacros()
+const { getActionInfo } = useMacros()
 const instance = getCurrentInstance()
 
 const uncontrolledOpen = ref(false)
 const draft = ref('')
 const closeReason = ref<'apply' | 'clear' | 'cancel' | null>(null)
 
-const displayLabel = computed(() => displayAction(model.value) || model.value)
+const actionInfo = computed(() => getActionInfo(model.value))
 const isControlled = computed(() => {
   const vnodeProps = instance?.vnode.props ?? {}
   return Object.prototype.hasOwnProperty.call(vnodeProps, 'open')
@@ -115,11 +115,11 @@ function cancel() {
       @click="openModal"
     >
       <UIcon
-        :name="model ? 'i-lucide-square-mouse-pointer' : 'i-lucide-plus'"
+        :name="actionInfo.icon || (model ? 'i-lucide-square-mouse-pointer' : 'i-lucide-plus')"
         class="shrink-0 w-4 h-4 text-(--ui-text-muted)"
       />
-      <AppTooltip v-if="displayLabel" class="truncate min-w-0" :text="model">
-        <span>{{ displayLabel }}</span>
+      <AppTooltip v-if="actionInfo.label" class="truncate min-w-0" :text="model">
+        <span>{{ actionInfo.label }}</span>
       </AppTooltip>
       <span v-else class="text-(--ui-text-muted) truncate">
         {{ placeholder ?? $t('picker.chooseAction') }}

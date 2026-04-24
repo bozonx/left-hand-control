@@ -57,11 +57,42 @@ export function useMacros() {
     return action
   }
 
+  function getActionInfo(action: string | undefined | null): { label: string, icon?: string } {
+    if (!action) return { label: '' }
+
+    const macroRef = parseMacroRef(action)
+    if (macroRef) {
+      return {
+        label: macroNameById(macroRef) ?? action,
+        icon: 'i-lucide-zap',
+      }
+    }
+
+    const cmdRef = parseCommandRef(action)
+    if (cmdRef) {
+      return {
+        label: commandNameById(cmdRef) ?? action,
+        icon: 'i-lucide-terminal',
+      }
+    }
+
+    const sysRef = parseSystemRef(action)
+    if (sysRef) {
+      return {
+        label: systemActionName(sysRef) ?? action,
+        icon: 'i-lucide-settings-2',
+      }
+    }
+
+    return { label: action }
+  }
+
   return {
     macros,
     byId,
     macroNameById,
     displayAction,
+    getActionInfo,
     MACRO_ACTION_PREFIX,
   }
 }

@@ -14,7 +14,7 @@ defineEmits<{
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="title">
+  <UModal v-model:open="open" :title="title" :ui="{ body: 'overflow-y-hidden' }">
     <template #body>
       <UFormField :label="$t('rules.layerName')">
         <UInput

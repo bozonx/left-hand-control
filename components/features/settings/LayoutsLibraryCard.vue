@@ -31,6 +31,16 @@ defineEmits<{
                     <UButton
                         color="neutral"
                         variant="outline"
+                        icon="i-lucide-file-plus"
+                        :loading="applying === 'empty'"
+                        :disabled="!!applying"
+                        @click="$emit('requestApplyEmpty')"
+                    >
+                        {{ $t("settings.newLayoutBtn") }}
+                    </UButton>
+                    <UButton
+                        color="neutral"
+                        variant="outline"
                         icon="i-lucide-copy"
                         :disabled="!currentLayoutId"
                         @click="$emit('saveAs')"
@@ -154,24 +164,6 @@ defineEmits<{
                     </div>
                 </li>
             </ul>
-
-            <div
-                class="flex items-center justify-between gap-3 pt-2 border-t border-(--ui-border)"
-            >
-                <div class="text-sm text-(--ui-text-muted)">
-                    {{ $t("settings.resetHint") }}
-                </div>
-                <UButton
-                    color="warning"
-                    variant="outline"
-                    icon="i-lucide-eraser"
-                    :loading="applying === 'empty'"
-                    :disabled="!!applying"
-                    @click="$emit('requestApplyEmpty')"
-                >
-                    {{ $t("settings.resetBtn") }}
-                </UButton>
-            </div>
         </div>
     </UCard>
 </template>

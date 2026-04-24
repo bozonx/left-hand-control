@@ -183,6 +183,8 @@ export default {
     emptyBody:
       "Создайте дополнительный слой, чтобы задать его раскладку и использовать через правила удержания.",
     editLayerTitle: "Редактирование слоя",
+    renameLayerTitle: "Переименование слоя",
+    renameLayerAria: "Переименовать слой {name}",
     editLayerAria: "Редактировать слой {name}",
     editTitle: "Редактирование: {label}",
     keyCode: "Код клавиши: {code}",

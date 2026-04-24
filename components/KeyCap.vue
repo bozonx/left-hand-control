@@ -8,8 +8,8 @@ defineEmits<{
   edit: []
 }>()
 
-const { displayAction } = useMacros()
-const actionLabel = computed(() => displayAction(props.action))
+const { getActionInfo } = useMacros()
+const actionInfo = computed(() => getActionInfo(props.action))
 </script>
 
 <template>
@@ -23,10 +23,11 @@ const actionLabel = computed(() => displayAction(props.action))
       {{ label }}
     </div>
     <div
-      class="text-[10px] leading-tight text-center min-h-[1.5em] break-words"
+      class="text-[10px] leading-tight text-center min-h-[1.5em] break-words flex items-center justify-center gap-1"
       :class="action ? 'text-(--ui-primary) font-medium' : 'text-(--ui-text-muted) italic'"
     >
-      {{ actionLabel || '—' }}
+      <UIcon v-if="actionInfo.icon" :name="actionInfo.icon" class="w-3 h-3 shrink-0" />
+      <span class="truncate">{{ actionInfo.label || '—' }}</span>
     </div>
   </button>
 </template>

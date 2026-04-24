@@ -11,7 +11,7 @@ const props = defineProps<{
 
 const model = defineModel<string | null>({ default: '' })
 const { t } = useI18n()
-const { displayAction } = useMacros()
+const { getActionInfo } = useMacros()
 
 const pickerOpen = ref(false)
 const pickerValue = ref('')
@@ -45,7 +45,7 @@ const selectMode = computed<ModeKind>({
   },
 })
 
-const actionLabel = computed(() => displayAction(model.value) || model.value || '')
+const actionInfo = computed(() => getActionInfo(model.value))
 
 function resetToDefault() {
   pendingMode.value = null
@@ -84,10 +84,10 @@ function cancelAction() {
         @click="editAction"
       >
         <UIcon
-          name="i-lucide-square-mouse-pointer"
+          :name="actionInfo.icon || 'i-lucide-square-mouse-pointer'"
           class="shrink-0 w-4 h-4 text-(--ui-text-muted)"
         />
-        <span class="truncate">{{ actionLabel }}</span>
+        <span class="truncate">{{ actionInfo.label || model }}</span>
       </button>
       <FieldResetButton :label="$t('common.reset')" @click="resetToDefault" />
     </div>

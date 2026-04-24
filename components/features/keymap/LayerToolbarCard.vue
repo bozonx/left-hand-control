@@ -62,7 +62,7 @@ function stopDescriptionEditing() {
             size="sm"
             color="neutral"
             variant="ghost"
-            :aria-label="$t('keymap.editLayerAria', { name: currentLayerName ?? '' })"
+            :aria-label="$t('keymap.renameLayerAria', { name: currentLayerName ?? '' })"
             :disabled="!selectedLayerId"
             @click="emit('rename')"
           />

@@ -99,7 +99,7 @@ const {
     <LayerEditorModal
       v-model="renameOpen"
       v-model:name="renameDraftName"
-      :title="$t('keymap.editLayerTitle')"
+      :title="$t('keymap.renameLayerTitle')"
       :confirm-label="$t('common.save')"
       @confirm="confirmRename"
     />

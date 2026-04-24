@@ -182,6 +182,8 @@ export default {
     emptyBody:
       "Create an extra layer to define its keymap and activate it from hold rules.",
     editLayerTitle: "Edit layer",
+    renameLayerTitle: "Rename layer",
+    renameLayerAria: "Rename layer {name}",
     editLayerAria: "Edit layer {name}",
     editTitle: "Edit: {label}",
     keyCode: "Key code: {code}",
