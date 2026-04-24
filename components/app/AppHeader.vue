@@ -17,6 +17,7 @@ const {
 const { saveCurrentLayout, saveBusy } = useSettingsScreen()
 const mapper = useMapper()
 const { layout } = useLayout()
+const gameMode = useGameMode()
 const { t } = useI18n()
 
 const tabItems = computed(() => [
@@ -180,6 +181,17 @@ watch(
             <UIcon name="i-lucide-languages" class="mr-1 shrink-0" />
             <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.layoutLanguageLabel') }}</span>
             {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
+          </UBadge>
+        </AppTooltip>
+
+        <AppTooltip :text="gameMode.status.value.active ? $t('settings.gameModeActive') : $t('settings.gameModeInactive')">
+          <UBadge
+            :color="gameMode.status.value.active ? 'error' : 'neutral'"
+            :variant="gameMode.status.value.active ? 'solid' : 'outline'"
+            size="sm"
+          >
+            <UIcon name="i-lucide-gamepad-2" class="mr-1 h-3.5 w-3.5" />
+            GAME
           </UBadge>
         </AppTooltip>
 

@@ -6,6 +6,9 @@ use tauri::{
 use tauri_plugin_window_state::{AppHandleExt, WindowExt, StateFlags};
 use std::time::Duration;
 
+use crate::gamemode::get_gamemode_status;
+
+mod gamemode;
 mod layout;
 mod mapper;
 mod platform;
@@ -255,6 +258,7 @@ pub fn run() {
         .setup(|app| {
             build_tray(app.handle())?;
             layout::start_watcher(app.handle().clone());
+            gamemode::start_watcher(app.handle().clone());
             if let Some(window) = app.get_webview_window("main") {
                 schedule_window_geometry_restore(window);
             }
@@ -287,6 +291,7 @@ pub fn run() {
             stop_mapper,
             mapper_status,
             get_current_layout,
+            get_gamemode_status,
             get_platform_info,
             quit_application,
         ])
@@ -296,6 +301,7 @@ pub fn run() {
     app.run(|_app_handle, event| {
         if let RunEvent::Exit = event {
             let _ = mapper::stop();
+            gamemode::stop_watcher();
             layout::stop_watcher();
         }
     });

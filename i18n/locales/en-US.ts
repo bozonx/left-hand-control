@@ -422,6 +422,15 @@ export default {
       "The mapper does not try to reinterpret already assembled shortcuts. It sends the system the final result: a single key or a shortcut such as Ctrl+KeyZ, Ctrl+KeyC, or Shift+Tab.",
     outputPrincipleBody2:
       "Because of that, the target app usually receives exactly the shortcut you configured in the layout. If an action is set to Ctrl+KeyZ, the system will see Ctrl+KeyZ even if the physical Z key is remapped to something else inside the layout.",
+    gameModeTitle: "Game Mode",
+    gameModeSubtitle: "Automatically detect running games to manage layouts.",
+    gameModeUseGamemoded: "Use gamemoded",
+    gameModeUseGamemodedHint: "Recommended for Linux (Steam, Lutris).",
+    gameModeUseFullscreen: "Fullscreen Detection",
+    gameModeUseFullscreenHint: "Consider game running if the active X11 window is fullscreen.",
+    gameModeActive: "Game Mode active",
+    gameModeInactive: "Game Mode",
+    gameModeInfo: "Linux game mode detection currently supports gamemoded and fullscreen X11 windows.",
   },
   picker: {
     currentValue: "Current value",

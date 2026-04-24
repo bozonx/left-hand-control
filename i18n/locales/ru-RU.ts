@@ -427,6 +427,15 @@ export default {
       "Маппер не пытается повторно интерпретировать уже собранные сочетания. Он отправляет системе готовый результат: отдельную клавишу или комбинацию вроде Ctrl+KeyZ, Ctrl+KeyC, Shift+Tab.",
     outputPrincipleBody2:
       "Поэтому приложение обычно получает именно то сочетание, которое вы задали в раскладке. Если действие настроено как Ctrl+KeyZ, система увидит Ctrl+KeyZ, даже если физическая клавиша Z внутри раскладки переназначена на что-то другое.",
+    gameModeTitle: "Игровой режим",
+    gameModeSubtitle: "Автоматическое определение запущенных игр для управления раскладкой.",
+    gameModeUseGamemoded: "Использовать gamemoded",
+    gameModeUseGamemodedHint: "Рекомендуется для Linux (Steam, Lutris).",
+    gameModeUseFullscreen: "Детекция Fullscreen",
+    gameModeUseFullscreenHint: "Считать игру запущенной, если активное X11-окно открыто в полноэкранном режиме.",
+    gameModeActive: "Игровой режим активен",
+    gameModeInactive: "Игровой режим",
+    gameModeInfo: "Сейчас для Linux поддерживаются gamemoded и определение полноэкранного X11-окна.",
   },
   picker: {
     currentValue: "Текущее значение",

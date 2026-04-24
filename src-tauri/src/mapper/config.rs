@@ -134,6 +134,31 @@ pub struct Settings {
     #[allow(dead_code)]
     #[serde(default)]
     pub input_device_path: Option<String>,
+    #[allow(dead_code)]
+    #[serde(default)]
+    pub game_mode: GameModeSettings,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GameModeSettings {
+    #[serde(default = "default_true")]
+    pub use_gamemoded: bool,
+    #[serde(default)]
+    pub use_fullscreen: bool,
+}
+
+impl Default for GameModeSettings {
+    fn default() -> Self {
+        Self {
+            use_gamemoded: true,
+            use_fullscreen: false,
+        }
+    }
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for Settings {
@@ -144,6 +169,7 @@ impl Default for Settings {
             default_macro_modifier_delay_ms: default_mod_delay(),
             default_double_tap_timeout_ms: default_double_tap(),
             input_device_path: None,
+            game_mode: GameModeSettings::default(),
         }
     }
 }

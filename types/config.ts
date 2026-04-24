@@ -117,6 +117,10 @@ export interface AppSettings {
   // Id of the currently applied user layout file: `user:<name>`.
   // Empty/undefined means a custom / unnamed layout.
   currentLayoutId?: string
+  gameMode: {
+    useGamemoded: boolean
+    useFullscreen: boolean
+  }
 }
 
 // A layout preset: the subset of AppConfig that describes keyboard behaviour
@@ -226,6 +230,10 @@ export function createDefaultConfig(): AppConfig {
       defaultMacroStepPauseMs: 20,
       defaultMacroModifierDelayMs: 5,
       inputDevicePath: '',
+      gameMode: {
+        useGamemoded: true,
+        useFullscreen: false,
+      },
     },
   }
 }
