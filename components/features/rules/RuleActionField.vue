@@ -7,6 +7,7 @@ type ModeKind = 'native' | 'none' | 'action'
 const props = defineProps<{
   placeholder: string
   keyOnly?: boolean
+  modeKind?: 'tap' | 'hold'
 }>()
 
 const model = defineModel<string | null>({ default: '' })
@@ -17,11 +18,21 @@ const pickerOpen = ref(false)
 const pickerValue = ref('')
 const pendingMode = ref<ModeKind | null>(null)
 
-const modeItems = computed(() => [
-  { label: t('rules.modeNativeDefault'), value: 'native' },
-  { label: t('rules.modeNone'), value: 'none' },
-  { label: t('rules.modeAction'), value: 'action' },
-])
+const modeItems = computed(() => {
+  if (props.modeKind === 'hold') {
+    return [
+      { label: t('rules.holdModeNativeDefault'), value: 'native' },
+      { label: t('rules.holdModeNone'), value: 'none' },
+      { label: t('rules.holdModeAction'), value: 'action' },
+    ]
+  }
+
+  return [
+    { label: t('rules.modeNativeDefault'), value: 'native' },
+    { label: t('rules.modeNone'), value: 'none' },
+    { label: t('rules.modeAction'), value: 'action' },
+  ]
+})
 
 const currentMode = computed<ModeKind>(() => {
   if (model.value === null) return 'none'

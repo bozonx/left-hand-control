@@ -126,12 +126,15 @@ export default {
     tapPh: "no action",
     holdActionLabel: "Hold action",
     holdActionHint:
-      'What happens while the key is held. "Native" = the physical key itself acts as held (e.g. ShiftLeft stays a Shift modifier). "None" = swallowed, nothing happens. "Action" lets you hold a different keystroke instead (e.g. MetaLeft can behave like a held ControlLeft). It can be combined with a Layer so the rule both activates the layer and holds the selected key.',
+      'What happens while the key is held. "Use physical key" keeps the trigger key held as itself. "Do nothing" suppresses the trigger key on hold. "Hold another key" keeps a different key or shortcut held instead. It can be combined with a Layer so the rule both activates the layer and holds the selected key.',
     holdActionPh: "pick a keystroke",
     modeNative: "Native",
     modeNativeDefault: "Native (default)",
     modeNone: "None (swallow)",
     modeAction: "Action",
+    holdModeNativeDefault: "Use physical key",
+    holdModeNone: "Do nothing",
+    holdModeAction: "Hold another key",
     doubleTapLabel: "Double-tap action",
     doubleTapHint:
       "Action performed when the key is pressed twice in quick succession (second key-down within the double-tap window after a short first press). Fires on the second press; no need to release the key first.",

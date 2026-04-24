@@ -120,6 +120,7 @@ defineEmits<{
           <RuleActionField
             v-model="rule.holdAction"
             key-only
+            mode-kind="hold"
             :placeholder="$t('rules.holdActionPh')"
           />
         </UFormField>
