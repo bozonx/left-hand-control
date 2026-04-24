@@ -9,22 +9,20 @@ const props = defineProps<{
   defaultStepPauseMs: number
   defaultModifierDelayMs: number
   uiKey: string
+  nameInputId: string
   isFirst?: boolean
   isLast?: boolean
-  autofocusName?: boolean
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
   addStep: [macro: Macro]
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
-  nameFocused: [uiKey: string]
 }>()
 
-const nameInput = useTemplateRef('nameInput')
 const toast = useToast()
 const { t } = useI18n()
 
@@ -48,19 +46,6 @@ async function copyMacroId() {
     })
   }
 }
-
-watch(
-  () => props.autofocusName,
-  async (value) => {
-    if (!value) return
-    await nextTick()
-    const input = nameInput.value?.$el?.querySelector('input')
-    input?.focus()
-    input?.select()
-    emit('nameFocused', props.uiKey)
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
@@ -107,7 +92,7 @@ watch(
             />
           </template>
           <UInput
-            ref="nameInput"
+            :id="nameInputId"
             v-model="macro.name"
             :placeholder="$t('macros.namePh')"
             class="w-full"

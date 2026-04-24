@@ -26,19 +26,35 @@ const emit = defineEmits<{
 const systemOpen = ref(false)
 const focusMacroKey = ref<string | null>(null)
 
+function macroNameInputId(uiKey: string) {
+  return `macro-name-${uiKey}`
+}
+
+async function focusMacroName(uiKey: string) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await nextTick()
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    const input = document.getElementById(macroNameInputId(uiKey)) as HTMLInputElement | null
+    if (!input) continue
+    input.focus()
+    input.select()
+    if (document.activeElement === input) return
+  }
+}
+
 async function createMacro() {
   const macro = addMacro()
-  focusMacroKey.value = uiKeyOf(macro)
+  const uiKey = uiKeyOf(macro)
+  focusMacroKey.value = uiKey
+  await focusMacroName(uiKey)
 }
 
 async function createFromSystemMacro(sys: SystemMacro) {
   const macro = cloneSystemMacro(sys)
-  focusMacroKey.value = uiKeyOf(macro)
+  const uiKey = uiKeyOf(macro)
+  focusMacroKey.value = uiKey
   emit('backToTop')
-}
-
-function clearFocusMacroKey(uiKey: string) {
-  if (focusMacroKey.value === uiKey) focusMacroKey.value = null
+  await focusMacroName(uiKey)
 }
 
 // --- Deletion confirmation -----------------------------------------------
@@ -106,7 +122,7 @@ function cancelRemove() {
           :macro="macro"
           :is-first="index === 0"
           :is-last="index === config.macros.length - 1"
-          :autofocus-name="uiKeyOf(macro) === focusMacroKey"
+          :name-input-id="macroNameInputId(uiKeyOf(macro))"
           :id-error="idError(macro) ?? undefined"
           :usage="usage[macro.id] ?? []"
           :default-step-pause-ms="config.settings.defaultMacroStepPauseMs"
@@ -117,7 +133,6 @@ function cancelRemove() {
           @add-step="addStep"
           @move-step="moveStep"
           @remove-step="removeStep"
-          @name-focused="clearFocusMacroKey"
         />
       </div>
     </UCard>
