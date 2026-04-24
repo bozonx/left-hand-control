@@ -25,7 +25,11 @@ interface SaveDraft {
 
 type OverwriteAction = "saveAs" | "rename";
 
+let singleton: ReturnType<typeof useSettingsScreen> | null = null;
+
 export function useSettingsScreen() {
+  if (singleton) return singleton;
+
   const {
     config,
     settingsDir,
@@ -417,7 +421,7 @@ export function useSettingsScreen() {
     ]);
   });
 
-  return {
+  singleton = {
     config,
     settingsDir,
     currentLayoutId,
@@ -472,4 +476,6 @@ export function useSettingsScreen() {
     selectedDevice,
     toggleMapper,
   };
+  return singleton;
 }
+

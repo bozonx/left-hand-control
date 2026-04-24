@@ -14,6 +14,7 @@ const {
   currentLayoutId,
   isLayoutDirty,
 } = useConfig()
+const { openSaveModal, saveBusy } = useSettingsScreen()
 const mapper = useMapper()
 const { layout } = useLayout()
 const { t } = useI18n()
@@ -112,26 +113,38 @@ onMounted(() => {
         <AppTooltip
           :text="isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel"
         >
-          <UBadge
-            :color="isLayoutDirty ? 'warning' : 'neutral'"
-            :variant="isLayoutDirty ? 'solid' : 'outline'"
-            class="max-w-[18rem] truncate"
-            size="sm"
-          >
-            <UIcon
-              :name="
-                isLayoutDirty
-                  ? 'i-lucide-triangle-alert'
-                  : 'i-lucide-keyboard'
-              "
-              class="mr-1 shrink-0"
+          <div class="flex items-center gap-1.5">
+            <UBadge
+              :color="isLayoutDirty ? 'warning' : 'neutral'"
+              :variant="isLayoutDirty ? 'solid' : 'outline'"
+              class="max-w-[18rem] truncate"
+              size="sm"
+            >
+              <UIcon
+                :name="
+                  isLayoutDirty
+                    ? 'i-lucide-triangle-alert'
+                    : 'i-lucide-keyboard'
+                "
+                class="mr-1 shrink-0"
+              />
+              <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.presetLabel') }}</span>
+              <span class="truncate">{{ currentLayoutLabel }}</span>
+              <span v-if="isLayoutDirty" class="ml-1 font-semibold">
+                {{ $t('app.notSavedBadge') }}
+              </span>
+            </UBadge>
+
+            <UButton
+              v-if="isLayoutDirty"
+              icon="i-lucide-save"
+              size="sm"
+              color="primary"
+              variant="solid"
+              :loading="saveBusy"
+              @click="openSaveModal"
             />
-            <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.presetLabel') }}</span>
-            <span class="truncate">{{ currentLayoutLabel }}</span>
-            <span v-if="isLayoutDirty" class="ml-1 font-semibold">
-              {{ $t('app.notSavedBadge') }}
-            </span>
-          </UBadge>
+          </div>
         </AppTooltip>
 
         <AppTooltip v-if="layout" :text="layout.long">

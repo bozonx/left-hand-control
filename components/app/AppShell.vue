@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppHeader from '~/components/app/AppHeader.vue'
 import WelcomeScreen from '~/components/WelcomeScreen.vue'
+import LayoutModals from '~/components/features/settings/LayoutModals.vue'
 
 const { loaded, loadError, needsWelcome } = useConfig()
 
@@ -30,6 +31,7 @@ provide('app-shell-scroll', {
 
   <div v-else class="h-screen flex flex-col overflow-hidden relative">
     <AppHeader />
+    <LayoutModals />
 
     <main ref="mainRef" class="flex-1 overflow-y-auto p-4" @scroll="onScroll">
       <div
