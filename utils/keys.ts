@@ -89,6 +89,7 @@ const KEY_NUMERIC_CODES: Record<string, number> = {
   MetaLeft: 125,
   MetaRight: 126,
   ContextMenu: 127,
+  PrintScreen: 99,
 }
 
 function row(codes: Array<[string, string]>): KeyDef[] {
@@ -153,6 +154,7 @@ export const RIGHT_HAND_ROWS: KeyDef[][] = [
     ['F10', 'F10'],
     ['F11', 'F11'],
     ['F12', 'F12'],
+    ['PrintScreen', 'PrtSc'],
   ]),
   row([
     ['Digit6', '6'],

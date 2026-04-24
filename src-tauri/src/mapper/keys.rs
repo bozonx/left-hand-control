@@ -122,6 +122,7 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "ArrowRight" | "Right" => Key::KEY_RIGHT,
         "ArrowUp" | "Up" => Key::KEY_UP,
         "ArrowDown" | "Down" => Key::KEY_DOWN,
+        "PrintScreen" => Key::KEY_SYSRQ,
 
         // Punctuation
         "Backquote" => Key::KEY_GRAVE,
