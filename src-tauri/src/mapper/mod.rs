@@ -310,6 +310,7 @@ mod tests {
             rules: Vec::new(),
             layer_keymaps: Default::default(),
             macros: Vec::new(),
+            commands: Vec::new(),
             settings: Settings::default(),
         }
     }

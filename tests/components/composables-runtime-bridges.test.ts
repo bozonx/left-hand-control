@@ -3,7 +3,7 @@ import { defineComponent, ref, nextTick, type Ref } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createDefaultConfig, macroActionRef, systemActionRef } from '~/types/config'
+import { commandActionRef, createDefaultConfig, macroActionRef, systemActionRef } from '~/types/config'
 import { useAppLocale } from '~/composables/useAppLocale'
 import { useAppTheme } from '~/composables/useAppTheme'
 import { useMacros } from '~/composables/useMacros'
@@ -44,12 +44,17 @@ describe('runtime bridge composables', () => {
     useColorModeMock.mockReset()
   })
 
-  it('useMacros resolves names and display labels for user macros, system macros and system actions', async () => {
+  it('useMacros resolves names and display labels for macros, commands and system actions', async () => {
     const config = ref(createDefaultConfig())
     config.value.macros = [{
       id: 'duplicateLine',
       name: 'User duplicate',
       steps: [],
+    }]
+    config.value.commands = [{
+      id: 'toggleMusic',
+      name: 'Toggle music',
+      linux: 'playerctl play-pause',
     }]
 
     useConfigMock.mockReturnValue({
@@ -72,6 +77,7 @@ describe('runtime bridge composables', () => {
     expect(api!.macroNameById('moveLineDown')).toBe('Move line down')
     expect(api!.displayAction(macroActionRef('duplicateLine'))).toBe('▶ User duplicate')
     expect(api!.displayAction(macroActionRef('moveLineDown'))).toBe('▶ Move line down')
+    expect(api!.displayAction(commandActionRef('toggleMusic'))).toBe('> Toggle music')
     expect(api!.displayAction(systemActionRef('switchDesktop2'))).toBe('⚙ Switch desktop 2')
     expect(api!.displayAction('Enter')).toBe('Enter')
     expect(api!.displayAction('')).toBe('')

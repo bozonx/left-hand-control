@@ -1,6 +1,7 @@
 import yaml from 'js-yaml'
 import {
   type AppConfig,
+  type Command,
   type ExtraKey,
   type Layer,
   type LayerKeymap,
@@ -45,6 +46,11 @@ interface LayoutYaml {
     steps?: Array<string | { id?: string; keystroke?: string }>
     stepPauseMs?: number | null
     modifierDelayMs?: number | null
+  }>
+  commands?: Array<{
+    id?: string
+    name?: string
+    linux?: string
   }>
 }
 
@@ -135,6 +141,16 @@ function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
     })
   }
 
+  const commands: Command[] = []
+  for (const c of doc.commands ?? []) {
+    if (!c?.id) continue
+    commands.push({
+      id: c.id,
+      name: c.name ?? c.id,
+      linux: c.linux?.trim() ?? '',
+    })
+  }
+
   return {
     name: doc.name?.trim() || fallbackName,
     description: doc.description?.trim() || undefined,
@@ -142,6 +158,7 @@ function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
     rules,
     layerKeymaps,
     macros,
+    commands,
   }
 }
 
@@ -203,6 +220,11 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
         : {}),
       steps: m.steps.map((s) => s.keystroke),
     })),
+    commands: preset.commands.map((c) => ({
+      id: c.id,
+      name: c.name,
+      linux: c.linux,
+    })),
   }
   return yaml.dump(doc, { lineWidth: 100, noRefs: true })
 }
@@ -214,6 +236,7 @@ export function emptyLayoutPreset(name = 'Empty layout'): LayoutPreset {
     rules: [],
     layerKeymaps: {},
     macros: [],
+    commands: [],
   }
 }
 
@@ -231,6 +254,7 @@ export function extractPresetFromConfig(
     rules: JSON.parse(JSON.stringify(config.rules)),
     layerKeymaps: JSON.parse(JSON.stringify(config.layerKeymaps)),
     macros: JSON.parse(JSON.stringify(config.macros)),
+    commands: JSON.parse(JSON.stringify(config.commands)),
   }
 }
 
@@ -247,6 +271,7 @@ export function applyPresetToConfig(
     rules: JSON.parse(JSON.stringify(preset.rules)),
     layerKeymaps: JSON.parse(JSON.stringify(preset.layerKeymaps)),
     macros: JSON.parse(JSON.stringify(preset.macros)),
+    commands: JSON.parse(JSON.stringify(preset.commands)),
     settings: { ...config.settings, currentLayoutId: layoutId },
   }
   for (const layer of next.layers) {
@@ -264,6 +289,7 @@ export function layoutSnapshotOf(config: AppConfig): string {
     rules: config.rules,
     layerKeymaps: config.layerKeymaps,
     macros: config.macros,
+    commands: config.commands,
   })
 }
 

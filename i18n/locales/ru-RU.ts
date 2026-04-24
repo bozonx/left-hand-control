@@ -46,6 +46,7 @@ export default {
     rules: 'Правила',
     keymap: 'Слои',
     macros: 'Макросы',
+    commands: 'Команды',
     settings: 'Настройки',
   },
   welcome: {
@@ -202,6 +203,42 @@ export default {
     confirmDeleteBody:
       'Макрос будет удалён. Ссылки {ref} перестанут работать.',
   },
+  commands: {
+    title: 'Команды',
+    subtitle:
+      'Переиспользуемые shell-команды текущей раскладки. На Linux они запускаются через `sh -lc`.',
+    addBtn: 'Новая команда',
+    addDisabled: 'Сначала исправьте ошибки в существующих командах',
+    empty: 'Пока нет ни одной команды. Нажмите «Новая команда», чтобы создать первую.',
+    defaultName: 'Новая команда',
+    nameLabel: 'Имя',
+    nameHint: 'Человекочитаемое имя, показывается в списках выбора.',
+    namePh: 'Название команды',
+    idLabel: 'ID',
+    idHint:
+      'Уникальный идентификатор для ссылки вида cmd:<id>. Чтобы назначить команду на клавишу, выберите это действие во вкладках «Слои» или «Правила».',
+    idPh: 'id',
+    copyId: 'Скопировать ID',
+    linuxLabel: 'Команда Linux',
+    linuxHint:
+      'Shell-команда для запуска на Linux. Передаётся в `sh -lc` как есть.',
+    linuxPh: 'playerctl play-pause',
+    usedIn: 'Используется в:',
+    moveUp: 'Вверх',
+    moveDown: 'Вниз',
+    deleteCommand: 'Удалить команду',
+    idErrors: {
+      empty: 'ID не может быть пустым.',
+      format: 'Только латиница, цифры, «_» и «-», до 64 символов.',
+      dupUser: 'Такой ID уже используется другой командой.',
+    },
+    linuxErrors: {
+      empty: 'Команда Linux не может быть пустой.',
+    },
+    confirmDeleteTitle: 'Удалить команду?',
+    confirmDeleteBody:
+      'Команда будет удалена. Ссылки {ref} перестанут работать.',
+  },
   settings: {
     mapperTitle: 'Key-mapper',
     keyboardLabel: 'Клавиатура',
@@ -307,7 +344,7 @@ export default {
   },
   picker: {
     currentValue: 'Текущее значение',
-    valuePh: 'Например: Ctrl+C, Escape, macro:copyLine',
+    valuePh: 'Например: Ctrl+C, Escape, macro:copyLine, cmd:toggleMusic',
     chooseAction: 'Выбрать действие',
     chooseKey: 'Выбрать клавишу',
     titleAction: 'Выбор действия',
@@ -326,6 +363,7 @@ export default {
     media: 'Медиа',
     mouse: 'Мышь',
     other: 'Остальное',
+    commands: 'Команды',
     macros: 'Макросы',
     systemMacros: 'Системные макросы',
     system: 'Системные',

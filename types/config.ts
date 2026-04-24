@@ -83,6 +83,12 @@ export interface Macro {
   modifierDelayMs?: number
 }
 
+export interface Command {
+  id: string
+  name: string
+  linux: string
+}
+
 export type AppearancePreference = 'system' | 'light' | 'dark'
 
 // UI locale preference. 'auto' picks a language close to the OS one,
@@ -124,6 +130,7 @@ export interface LayoutPreset {
   rules: LayerRule[]
   layerKeymaps: Record<string, LayerKeymap>
   macros: Macro[]
+  commands: Command[]
 }
 
 export interface AppConfig {
@@ -134,6 +141,8 @@ export interface AppConfig {
   layerKeymaps: Record<string, LayerKeymap>
   // User-defined macros, referenced from actions as "macro:<id>".
   macros: Macro[]
+  // User-defined shell commands, referenced from actions as "cmd:<id>".
+  commands: Command[]
   settings: AppSettings
 }
 
@@ -172,6 +181,19 @@ export function parseSystemRef(action: string): string | null {
     : null
 }
 
+export const COMMAND_ACTION_PREFIX = 'cmd:'
+
+export function commandActionRef(id: string): string {
+  return `${COMMAND_ACTION_PREFIX}${id}`
+}
+
+export function parseCommandRef(action: string): string | null {
+  if (!action) return null
+  return action.startsWith(COMMAND_ACTION_PREFIX)
+    ? action.slice(COMMAND_ACTION_PREFIX.length)
+    : null
+}
+
 // Id of the bundled "Ivan K's left hand control" layout preset.
 export const BUILTIN_LAYOUT_ID = 'builtin:ivank'
 // Prefix used to compose an id for a user-saved layout: `user:<name>`.
@@ -184,6 +206,7 @@ export function createDefaultConfig(): AppConfig {
     rules: [],
     layerKeymaps: {},
     macros: [],
+    commands: [],
     settings: {
       launchOnStartup: false,
       appearance: 'system',

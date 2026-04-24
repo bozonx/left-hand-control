@@ -36,6 +36,10 @@ keymaps:
     extras:
       - name: Mouse4
         action: BrowserBack
+commands:
+  - id: terminal
+    name: Terminal
+    linux: kitty
 macros:
   - id: duplicateLine
     steps:
@@ -88,6 +92,13 @@ macros:
           ],
         },
       ],
+      commands: [
+        {
+          id: 'terminal',
+          name: 'Terminal',
+          linux: 'kitty',
+        },
+      ],
     })
   })
 
@@ -123,6 +134,13 @@ macros:
           steps: [{ id: 's1', keystroke: 'Home' }, { id: 's2', keystroke: 'Shift+End' }],
           stepPauseMs: 10,
           modifierDelayMs: 5,
+        },
+      ],
+      commands: [
+        {
+          id: 'terminal',
+          name: 'Terminal',
+          linux: 'kitty',
         },
       ],
     }
@@ -161,6 +179,13 @@ macros:
           modifierDelayMs: 5,
         },
       ],
+      commands: [
+        {
+          id: 'terminal',
+          name: 'Terminal',
+          linux: 'kitty',
+        },
+      ],
     })
     expect(reparsed?.rules[0]?.id).toMatch(/^r_[a-z0-9]{8}$/)
   })
@@ -185,6 +210,11 @@ macros:
       name: 'Duplicate line',
       steps: [{ id: 'step-1', keystroke: 'Ctrl+C' }],
     })
+    config.commands.push({
+      id: 'terminal',
+      name: 'Terminal',
+      linux: 'kitty',
+    })
     config.settings.appearance = 'dark'
 
     const preset = extractPresetFromConfig(config, 'Current')
@@ -196,11 +226,14 @@ macros:
     expect(next.rules).toEqual(config.rules)
     expect(next.layerKeymaps).toEqual(config.layerKeymaps)
     expect(next.macros).toEqual(config.macros)
+    expect(next.commands).toEqual(config.commands)
 
     preset.layers[0]!.name = 'Changed later'
     preset.layerKeymaps.nav!.keys.KeyH = 'Changed'
+    preset.commands[0]!.linux = 'changed'
     expect(next.layers[0]!.name).toBe('Navigation')
     expect(next.layerKeymaps.nav!.keys.KeyH).toBe('ArrowLeft')
+    expect(next.commands[0]!.linux).toBe('kitty')
   })
 
   it('creates stable layout snapshots and empty presets without implicit layers', () => {
@@ -223,6 +256,7 @@ macros:
       rules: [],
       layerKeymaps: {},
       macros: [],
+      commands: [],
     })
   })
 

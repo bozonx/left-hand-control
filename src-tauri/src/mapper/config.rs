@@ -51,7 +51,20 @@ pub struct AppConfig {
     #[serde(default)]
     pub macros: Vec<Macro>,
     #[serde(default)]
+    pub commands: Vec<Command>,
+    #[serde(default)]
     pub settings: Settings,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Command {
+    pub id: String,
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub name: String,
+    #[serde(default)]
+    pub linux: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

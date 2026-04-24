@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  commandActionRef,
   createDefaultConfig,
   macroActionRef,
+  parseCommandRef,
   parseMacroRef,
   parseSystemRef,
   systemActionRef,
@@ -21,10 +23,12 @@ describe('config helpers', () => {
 
   it('round-trips action references', () => {
     expect(parseMacroRef(macroActionRef('duplicateLine'))).toBe('duplicateLine')
+    expect(parseCommandRef(commandActionRef('toggleMusic'))).toBe('toggleMusic')
     expect(parseSystemRef(systemActionRef('switchDesktop1'))).toBe(
       'switchDesktop1',
     )
     expect(parseMacroRef('Enter')).toBeNull()
+    expect(parseCommandRef('Enter')).toBeNull()
     expect(parseSystemRef('')).toBeNull()
   })
 

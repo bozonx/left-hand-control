@@ -74,6 +74,7 @@ export function normalizeConfig(raw: unknown): AppConfig {
         ? r.layerKeymaps
         : base.layerKeymaps,
     macros: Array.isArray(r.macros) ? r.macros : [],
+    commands: Array.isArray(r.commands) ? r.commands : [],
     settings: { ...base.settings, ...(r.settings ?? {}) },
   }
   for (const layer of cfg.layers) {

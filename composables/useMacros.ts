@@ -2,6 +2,7 @@ import { useI18n } from 'vue-i18n'
 import {
   type Macro,
   MACRO_ACTION_PREFIX,
+  parseCommandRef,
   parseMacroRef,
   parseSystemRef,
 } from '~/types/config'
@@ -16,6 +17,7 @@ import { systemMacroById } from '~/utils/systemMacros'
 export function useMacros() {
   const { config } = useConfig()
   const { t } = useI18n()
+  const { commandNameById } = useCommands()
 
   const macros = computed<Macro[]>(() => config.value.macros ?? [])
 
@@ -41,6 +43,11 @@ export function useMacros() {
     if (macroRef) {
       const name = macroNameById(macroRef)
       return name ? `▶ ${name}` : action
+    }
+    const cmdRef = parseCommandRef(action)
+    if (cmdRef) {
+      const name = commandNameById(cmdRef)
+      return name ? `> ${name}` : action
     }
     const sysRef = parseSystemRef(action)
     if (sysRef) {

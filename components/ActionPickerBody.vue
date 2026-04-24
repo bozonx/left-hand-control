@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { macroActionRef, systemActionRef } from '~/types/config'
+import { commandActionRef, macroActionRef, systemActionRef } from '~/types/config'
 import { SYSTEM_ACTIONS } from '~/utils/systemActions'
 import { SYSTEM_MACROS } from '~/utils/systemMacros'
 import {
@@ -22,6 +22,7 @@ const emit = defineEmits<{
 const draft = defineModel<string>({ default: '' })
 
 const { macros } = useMacros()
+const { commands } = useCommands()
 const { t } = useI18n()
 
 const dynamicCategories = computed<StaticCategory[]>(() => {
@@ -30,6 +31,22 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
   const userMacros = macros.value.filter((m) => m.id !== props.excludedMacroId)
   const userIds = new Set(userMacros.map((m) => m.id))
   return [
+    ...(
+      commands.value.length === 0
+        ? []
+        : [
+            {
+              id: 'commands',
+              labelKey: 'categories.commands',
+              icon: 'i-lucide-terminal',
+              items: commands.value.map((command) => ({
+                label: command.name || command.id,
+                value: commandActionRef(command.id),
+                hint: command.id,
+              })),
+            },
+          ]
+    ),
     ...(
       props.allowMacros === false
         ? []
@@ -97,7 +114,7 @@ const showPhysicalKeyHint = computed(() =>
 const showChordHint = computed(() => props.keyOnly)
 
 const listGridClass = computed(() =>
-  ['macros', 'system-macros', 'system'].includes(activeCategory.value)
+  ['commands', 'macros', 'system-macros', 'system'].includes(activeCategory.value)
     ? [
         'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5 overflow-y-auto pr-1',
         props.spacious ? 'min-h-0 flex-1 content-start' : 'max-h-80',

@@ -4,7 +4,7 @@
 #![cfg(target_os = "linux")]
 
 use super::keys::{char_to_key, code_to_key};
-use super::system::SysAction;
+use super::system::{SysAction, SysCommand};
 use evdev::Key;
 
 /// A keystroke = optional modifiers + one main key.
@@ -22,6 +22,7 @@ pub struct Keystroke {
 pub enum MacroStepItem {
     Stroke(Keystroke),
     System(SysAction),
+    Command(SysCommand),
     Literal(String),
 }
 

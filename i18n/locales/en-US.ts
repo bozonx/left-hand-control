@@ -46,6 +46,7 @@ export default {
     rules: 'Rules',
     keymap: 'Layers',
     macros: 'Macros',
+    commands: 'Commands',
     settings: 'Settings',
   },
   welcome: {
@@ -201,6 +202,42 @@ export default {
     confirmDeleteBody:
       'The macro will be deleted. References {ref} will stop working.',
   },
+  commands: {
+    title: 'Commands',
+    subtitle:
+      'Reusable shell commands for the current layout. On Linux they run through `sh -lc`.',
+    addBtn: 'New command',
+    addDisabled: 'Fix the existing command errors first',
+    empty: 'No commands yet. Click "New command" to create the first one.',
+    defaultName: 'New command',
+    nameLabel: 'Name',
+    nameHint: 'Human-readable name shown in picker lists.',
+    namePh: 'Command name',
+    idLabel: 'ID',
+    idHint:
+      'Unique identifier for references like cmd:<id>. To bind the command to a key, pick this action on the "Layers" or "Rules" tab.',
+    idPh: 'id',
+    copyId: 'Copy ID',
+    linuxLabel: 'Linux command',
+    linuxHint:
+      'Shell command to run on Linux. It is passed to `sh -lc` as-is.',
+    linuxPh: 'playerctl play-pause',
+    usedIn: 'Used in:',
+    moveUp: 'Up',
+    moveDown: 'Down',
+    deleteCommand: 'Delete command',
+    idErrors: {
+      empty: 'ID cannot be empty.',
+      format: 'Only Latin letters, digits, "_" and "-", up to 64 chars.',
+      dupUser: 'This ID is already used by another command.',
+    },
+    linuxErrors: {
+      empty: 'Linux command cannot be empty.',
+    },
+    confirmDeleteTitle: 'Delete command?',
+    confirmDeleteBody:
+      'The command will be deleted. References {ref} will stop working.',
+  },
   settings: {
     mapperTitle: 'Key-mapper',
     keyboardLabel: 'Keyboard',
@@ -305,7 +342,7 @@ export default {
   },
   picker: {
     currentValue: 'Current value',
-    valuePh: 'E.g.: Ctrl+C, Escape, macro:copyLine',
+    valuePh: 'E.g.: Ctrl+C, Escape, macro:copyLine, cmd:toggleMusic',
     chooseAction: 'Choose action',
     chooseKey: 'Pick key',
     titleAction: 'Pick action',
@@ -324,6 +361,7 @@ export default {
     media: 'Media',
     mouse: 'Mouse',
     other: 'Other',
+    commands: 'Commands',
     macros: 'Macros',
     systemMacros: 'System macros',
     system: 'System',

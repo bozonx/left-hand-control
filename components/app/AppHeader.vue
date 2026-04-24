@@ -40,6 +40,7 @@ const tabItems = computed(() => [
   { value: 'rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { value: 'keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { value: 'macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
+  { value: 'commands', label: t('tabs.commands'), icon: 'i-lucide-terminal' },
   { value: 'settings', label: t('tabs.settings'), icon: 'i-lucide-settings', iconOnly: true },
 ])
 

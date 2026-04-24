@@ -1,4 +1,4 @@
-export const APP_TABS = ['layouts', 'rules', 'keymap', 'macros', 'settings'] as const
+export const APP_TABS = ['layouts', 'rules', 'keymap', 'macros', 'commands', 'settings'] as const
 
 export type AppTab = (typeof APP_TABS)[number]
 

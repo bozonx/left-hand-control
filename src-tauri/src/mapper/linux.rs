@@ -29,6 +29,7 @@ trait SideEffects {
     fn sleep(&mut self, duration: Duration);
     fn type_text(&mut self, text: &str);
     fn run_system(&mut self, action: &SysAction);
+    fn run_command(&mut self, command: &SysCommand);
 }
 
 trait LoopDriver {
@@ -75,6 +76,10 @@ impl SideEffects for RuntimeSideEffects<'_> {
 
     fn run_system(&mut self, action: &SysAction) {
         run_sys_action(action);
+    }
+
+    fn run_command(&mut self, command: &SysCommand) {
+        run_shell_command(command);
     }
 }
 
@@ -548,6 +553,10 @@ fn flush_out_with<S: EventSink, E: SideEffects>(
                 flush_events(sink, &mut events)?;
                 effects.run_system(&action);
             }
+            Out::RunCommand(command) => {
+                flush_events(sink, &mut events)?;
+                effects.run_command(&command);
+            }
             Out::Literal(text) => {
                 flush_events(sink, &mut events)?;
                 effects.type_text(&text);
@@ -564,6 +573,10 @@ fn run_sys_action(action: &SysAction) {
         SysAction::Spawn(cmd) => spawn_system(cmd),
         SysAction::Dbus(call) => call_dbus(call),
     }
+}
+
+fn run_shell_command(command: &SysCommand) {
+    spawn_system(command);
 }
 
 fn spawn_system(cmd: &SysCommand) {
@@ -684,6 +697,10 @@ fn run_macro<S: EventSink, E: SideEffects>(
                 effects.run_system(action);
                 continue;
             }
+            MacroStepItem::Command(command) => {
+                effects.run_command(command);
+                continue;
+            }
             MacroStepItem::Literal(text) => {
                 effects.type_text(text);
                 continue;
@@ -699,7 +716,7 @@ fn run_macro<S: EventSink, E: SideEffects>(
 mod tests {
     use super::{flush_out_with, process_iteration_with, EventSink, LoopDriver, SideEffects};
     use crate::mapper::action::{Keystroke, MacroStepItem};
-    use crate::mapper::config::{ActionSpec, AppConfig, LayerKeymap, Rule, Settings};
+    use crate::mapper::config::{ActionSpec, AppConfig, Rule, Settings};
     use crate::mapper::engine::{Engine, Out};
     use crate::mapper::system::{DbusArg, DbusCall, SysAction, SysCommand};
     use evdev::{EventType, InputEvent, Key};
@@ -732,6 +749,7 @@ mod tests {
         sleeps: Vec<Duration>,
         texts: Vec<String>,
         systems: Vec<String>,
+        commands: Vec<String>,
     }
 
     impl SideEffects for FakeEffects {
@@ -758,6 +776,11 @@ mod tests {
                 }) => format!("dbus:{destination}:{method}:{}", args.len()),
             };
             self.systems.push(label);
+        }
+
+        fn run_command(&mut self, command: &SysCommand) {
+            self.commands
+                .push(format!("cmd:{}:{:?}", command.program, command.args));
         }
     }
 
@@ -807,6 +830,7 @@ mod tests {
             rules: Vec::new(),
             layer_keymaps: HashMap::new(),
             macros: Vec::new(),
+            commands: Vec::new(),
             settings: Settings::default(),
         }
     }
@@ -832,6 +856,10 @@ mod tests {
                         program: "spectacle".into(),
                         args: vec!["-r".into()],
                     })),
+                    MacroStepItem::Command(SysCommand {
+                        program: "sh".into(),
+                        args: vec!["-lc".into(), "playerctl play-pause".into()],
+                    }),
                 ],
                 step_pause: Duration::from_millis(5),
                 mod_delay: Duration::from_millis(2),
@@ -844,6 +872,10 @@ mod tests {
                 method: "Fire".into(),
                 args: vec![DbusArg::Bool(true)],
             })),
+            Out::RunCommand(SysCommand {
+                program: "sh".into(),
+                args: vec!["-lc".into(), "notify-send done".into()],
+            }),
         ];
 
         flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
@@ -873,6 +905,7 @@ mod tests {
                 Duration::from_millis(2),
                 Duration::from_millis(5),
                 Duration::from_millis(5),
+                Duration::from_millis(5),
             ]
         );
         assert_eq!(effects.texts, vec!["x".to_string(), "tail".to_string()]);
@@ -881,6 +914,13 @@ mod tests {
             vec![
                 "spawn:spectacle:[\"-r\"]".to_string(),
                 "dbus:org.test:Fire:1".to_string()
+            ]
+        );
+        assert_eq!(
+            effects.commands,
+            vec![
+                "cmd:sh:[\"-lc\", \"playerctl play-pause\"]".to_string(),
+                "cmd:sh:[\"-lc\", \"notify-send done\"]".to_string(),
             ]
         );
     }

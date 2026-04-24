@@ -4,6 +4,7 @@ import LayoutsTab from '~/components/LayoutsTab.vue'
 import RulesTab from '~/components/RulesTab.vue'
 import KeymapTab from '~/components/KeymapTab.vue'
 import MacrosTab from '~/components/MacrosTab.vue'
+import CommandsTab from '~/components/CommandsTab.vue'
 import SettingsTab from '~/components/SettingsTab.vue'
 import { UI_CONSTANTS } from '~/utils/constants'
 import { APP_TABS, type AppTab } from '~/types/uiState'
@@ -60,6 +61,7 @@ watch(
         />
         <KeymapTab v-else-if="loaded && active === 'keymap'" />
         <MacrosTab v-else-if="loaded && active === 'macros'" @back-to-top="scrollToTop" />
+        <CommandsTab v-else-if="loaded && active === 'commands'" @back-to-top="scrollToTop" />
         <SettingsTab v-else-if="loaded && active === 'settings'" />
       </div>
     </main>

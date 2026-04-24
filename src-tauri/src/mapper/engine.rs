@@ -47,7 +47,7 @@
 use super::action::{literal_text, parse_action, Keystroke, MacroStepItem};
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
-use super::system::{self, SysAction};
+use super::system::{self, SysAction, SysCommand};
 use super::system_macros::SYSTEM_MACROS;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
@@ -60,6 +60,7 @@ enum ActionDef {
     Stroke(Keystroke),
     Macro(MacroDef),
     System(SysAction),
+    Command(SysCommand),
     Literal(String),
 }
 
@@ -161,6 +162,8 @@ pub enum Out {
     },
     /// Execute a system function (DBus call or fire-and-forget spawn).
     RunSystem(SysAction),
+    /// Execute a shell command defined by the current layout.
+    RunCommand(SysCommand),
     /// Type a single Unicode character via the Wayland virtual-keyboard
     /// backend. Fire-and-forget on key press; no release event is needed.
     Literal(String),
@@ -178,10 +181,32 @@ impl Engine {
         // macros by id. System macros are seeded first; user macros with the
         // same id override them.
         let mut macros: HashMap<String, MacroDef> = HashMap::new();
+        let mut commands: HashMap<String, SysCommand> = HashMap::new();
+
+        for c in &cfg.commands {
+            let id = c.id.trim();
+            let linux = c.linux.trim();
+            if id.is_empty() {
+                eprintln!("[mapper] skipping command with empty id: {:?}", c.name);
+                continue;
+            }
+            if linux.is_empty() {
+                eprintln!("[mapper] command {} has empty linux string — skipped", id);
+                continue;
+            }
+            commands.insert(
+                id.to_string(),
+                SysCommand {
+                    program: "sh".into(),
+                    args: vec!["-lc".into(), linux.to_string()],
+                },
+            );
+        }
 
         fn build_steps<'a>(
             id: &str,
             keystrokes: impl Iterator<Item = &'a str>,
+            commands: &HashMap<String, SysCommand>,
         ) -> Vec<MacroStepItem> {
             let mut steps: Vec<MacroStepItem> = Vec::new();
             for (idx, raw) in keystrokes.enumerate() {
@@ -210,6 +235,19 @@ impl Engine {
                     );
                     continue;
                 }
+                if let Some(rest) = raw.strip_prefix("cmd:") {
+                    let cmd_id = rest.trim();
+                    match commands.get(cmd_id) {
+                        Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
+                        None => eprintln!(
+                            "[mapper] macro {} step #{}: unknown command ref {:?}",
+                            id,
+                            idx + 1,
+                            cmd_id
+                        ),
+                    }
+                    continue;
+                }
                 if let Some(text) = literal_text(raw) {
                     steps.push(MacroStepItem::Literal(text));
                     continue;
@@ -228,7 +266,7 @@ impl Engine {
         }
 
         for sys in SYSTEM_MACROS {
-            let steps = build_steps(sys.id, sys.steps.iter().copied());
+            let steps = build_steps(sys.id, sys.steps.iter().copied(), &commands);
             if steps.is_empty() {
                 eprintln!(
                     "[mapper] system macro {} has no usable steps — skipped",
@@ -251,7 +289,11 @@ impl Engine {
                 eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
                 continue;
             }
-            let steps = build_steps(&m.id, m.steps.iter().map(|s| s.keystroke.as_str()));
+            let steps = build_steps(
+                &m.id,
+                m.steps.iter().map(|s| s.keystroke.as_str()),
+                &commands,
+            );
             if steps.is_empty() {
                 eprintln!("[mapper] macro {} has no usable steps — skipped", m.id);
                 continue;
@@ -285,6 +327,14 @@ impl Engine {
                     return Some(ActionDef::Macro(md.clone()));
                 }
                 eprintln!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
+                return None;
+            }
+            if let Some(rest) = trimmed.strip_prefix("cmd:") {
+                let id = rest.trim();
+                if let Some(cmd) = commands.get(id) {
+                    return Some(ActionDef::Command(cmd.clone()));
+                }
+                eprintln!("[mapper] unknown command ref {:?} ({})", trimmed, where_);
                 return None;
             }
             if let Some(rest) = trimmed.strip_prefix("sys:") {
@@ -568,6 +618,11 @@ impl Engine {
                     out.push(Out::RunSystem(action));
                     self.macro_consumed.insert(key);
                 }
+                Some(ActionDef::Command(command)) => {
+                    eprintln!("[mapper]   press {:?} -> run command {:?}", key, command);
+                    out.push(Out::RunCommand(command));
+                    self.macro_consumed.insert(key);
+                }
                 None => {
                     eprintln!("[mapper]   press {:?} -> passthrough", key);
                     out.push(Out::KeyRaw { key, down: true });
@@ -849,6 +904,7 @@ fn fire_action(action: Option<&ActionDef>, mod_delay: Duration, out: &mut Vec<Ou
             mod_delay: md.mod_delay,
         }),
         Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
+        Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
         None => {}
     }
 }
@@ -866,6 +922,7 @@ mod tests {
             rules: Vec::new(),
             layer_keymaps: HashMap::new(),
             macros: Vec::new(),
+            commands: Vec::new(),
             settings: Settings::default(),
         }
     }
