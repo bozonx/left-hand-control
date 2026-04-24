@@ -7,15 +7,44 @@ const props = defineProps<{
   keyLabelMode: KeyLabelMode
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   edit: [code: string, label: string]
+  'update:keyLabelMode': [value: KeyLabelMode]
 }>()
 </script>
 
 <template>
   <UCard>
     <template #header>
-      <h2 class="text-sm font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
+        <div class="flex items-center rounded-md border border-(--ui-border) bg-(--ui-bg)">
+          <UButton
+            size="sm"
+            color="neutral"
+            :variant="keyLabelMode === 'label' ? 'soft' : 'ghost'"
+            @click="emit('update:keyLabelMode', 'label')"
+          >
+            {{ $t('keymap.keyViewLabels') }}
+          </UButton>
+          <UButton
+            size="sm"
+            color="neutral"
+            :variant="keyLabelMode === 'code' ? 'soft' : 'ghost'"
+            @click="emit('update:keyLabelMode', 'code')"
+          >
+            {{ $t('keymap.keyViewCodes') }}
+          </UButton>
+          <UButton
+            size="sm"
+            color="neutral"
+            :variant="keyLabelMode === 'numeric' ? 'soft' : 'ghost'"
+            @click="emit('update:keyLabelMode', 'numeric')"
+          >
+            {{ $t('keymap.keyViewNumeric') }}
+          </UButton>
+        </div>
+      </div>
     </template>
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <section>
@@ -35,7 +64,7 @@ defineEmits<{
               :key="keyDef.code"
               :label="keyLabel(keyDef.code, props.keyLabelMode)"
               :action="currentKeymap.keys[keyDef.code]"
-              @edit="$emit('edit', keyDef.code, keyLabel(keyDef.code, props.keyLabelMode))"
+              @edit="emit('edit', keyDef.code, keyLabel(keyDef.code, props.keyLabelMode))"
             />
           </div>
         </div>
@@ -57,7 +86,7 @@ defineEmits<{
               :key="keyDef.code"
               :label="keyLabel(keyDef.code, props.keyLabelMode)"
               :action="currentKeymap.keys[keyDef.code]"
-              @edit="$emit('edit', keyDef.code, keyLabel(keyDef.code, props.keyLabelMode))"
+              @edit="emit('edit', keyDef.code, keyLabel(keyDef.code, props.keyLabelMode))"
             />
           </div>
         </div>

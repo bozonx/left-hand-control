@@ -1,5 +1,5 @@
 import type { LayerKeymap } from '~/types/config'
-import { randomId } from '~/utils/keys'
+import { randomId, type KeyLabelMode } from '~/utils/keys'
 
 const EMPTY_KEYMAP: LayerKeymap = {
   keys: {},
@@ -26,6 +26,13 @@ export function useKeymapEditor() {
     },
     set: (value) => {
       uiState.setSelectedLayerId(value)
+    },
+  })
+
+  const keyLabelMode = computed<KeyLabelMode>({
+    get: () => uiState.state.value.keyLabelMode,
+    set: (value) => {
+      uiState.setKeyLabelMode(value)
     },
   })
 
@@ -168,6 +175,7 @@ export function useKeymapEditor() {
   return {
     config,
     selectedLayerId,
+    keyLabelMode,
     layerItems,
     currentLayer,
     currentKeymap,

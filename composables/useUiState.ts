@@ -1,4 +1,5 @@
 import { createDefaultUiState, type UiState } from '~/types/uiState'
+import type { KeyLabelMode } from '~/utils/keys'
 
 function normalizeUiState(raw: unknown): UiState {
   const base = createDefaultUiState()
@@ -8,8 +9,15 @@ function normalizeUiState(raw: unknown): UiState {
     typeof value.selectedLayerId === 'string' && value.selectedLayerId.trim()
       ? value.selectedLayerId
       : base.selectedLayerId
+  const keyLabelMode =
+    value.keyLabelMode === 'label'
+    || value.keyLabelMode === 'code'
+    || value.keyLabelMode === 'numeric'
+      ? value.keyLabelMode
+      : base.keyLabelMode
   return {
     selectedLayerId,
+    keyLabelMode,
   }
 }
 
@@ -29,6 +37,7 @@ interface UiStateStore {
   load: () => Promise<void>
   flush: () => Promise<void>
   setSelectedLayerId: (value: string) => void
+  setKeyLabelMode: (value: KeyLabelMode) => void
 }
 
 let singleton: UiStateStore | null = null
@@ -127,6 +136,15 @@ export function useUiState(): UiStateStore {
     scheduleSave()
   }
 
+  function setKeyLabelMode(value: KeyLabelMode) {
+    if (state.value.keyLabelMode === value) return
+    state.value = {
+      ...state.value,
+      keyLabelMode: value,
+    }
+    scheduleSave()
+  }
+
   singleton = {
     state,
     loaded,
@@ -134,6 +152,7 @@ export function useUiState(): UiStateStore {
     load,
     flush,
     setSelectedLayerId,
+    setKeyLabelMode,
   }
   return singleton
 }

@@ -116,7 +116,6 @@ export default {
   },
   keymap: {
     layerLabel: 'Слой',
-    keyViewLabel: 'Подписи клавиш',
     keyViewLabels: 'Английская раскладка',
     keyViewCodes: 'Коды клавиш',
     keyViewNumeric: 'Цифровые коды',

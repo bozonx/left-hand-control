@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import type { KeyLabelMode } from '~/utils/keys'
-
 const props = defineProps<{
   selectedLayerId: string
-  keyLabelMode: KeyLabelMode
   layerItems: Array<{ label: string, value: string }>
   currentLayerName?: string
   currentLayerDescription?: string
@@ -11,7 +8,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedLayerId': [value: string]
-  'update:keyLabelMode': [value: KeyLabelMode]
   create: []
   rename: []
   'update-description': [value: string]
@@ -82,35 +78,7 @@ function stopDescriptionEditing() {
           />
         </div>
       </UFormField>
-      <div class="flex flex-wrap justify-end gap-2 app-chrome">
-        <UFormField :label="$t('keymap.keyViewLabel')">
-          <div class="flex items-center rounded-md border border-(--ui-border) bg-(--ui-bg)">
-            <UButton
-              size="sm"
-              color="neutral"
-              :variant="keyLabelMode === 'label' ? 'soft' : 'ghost'"
-              @click="emit('update:keyLabelMode', 'label')"
-            >
-              {{ $t('keymap.keyViewLabels') }}
-            </UButton>
-            <UButton
-              size="sm"
-              color="neutral"
-              :variant="keyLabelMode === 'code' ? 'soft' : 'ghost'"
-              @click="emit('update:keyLabelMode', 'code')"
-            >
-              {{ $t('keymap.keyViewCodes') }}
-            </UButton>
-            <UButton
-              size="sm"
-              color="neutral"
-              :variant="keyLabelMode === 'numeric' ? 'soft' : 'ghost'"
-              @click="emit('update:keyLabelMode', 'numeric')"
-            >
-              {{ $t('keymap.keyViewNumeric') }}
-            </UButton>
-          </div>
-        </UFormField>
+      <div class="flex justify-end app-chrome">
         <UButton icon="i-lucide-plus" size="sm" @click="$emit('create')">
           {{ $t('keymap.newLayer') }}
         </UButton>
