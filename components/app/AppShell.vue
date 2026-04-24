@@ -3,6 +3,9 @@ import AppHeader from '~/components/app/AppHeader.vue'
 
 const { loaded, loadError } = useConfig()
 
+const route = useRoute()
+const isFullWidth = computed(() => route.meta.fullWidth === true)
+
 const mainRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
 
@@ -26,7 +29,10 @@ provide('app-shell-scroll', {
     <AppHeader />
 
     <main ref="mainRef" class="flex-1 overflow-y-auto p-4" @scroll="onScroll">
-      <div class="mx-auto w-full max-w-7xl space-y-4">
+      <div
+        class="w-full space-y-4"
+        :class="isFullWidth ? '' : 'mx-auto max-w-7xl'"
+      >
         <UAlert
           v-if="loadError"
           color="error"

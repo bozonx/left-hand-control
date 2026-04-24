@@ -1,229 +1,9 @@
-# Ivan K's Left Hand Control — встроенная раскладка.
-#
-# Этот YAML описывает ПРЕСЕТ раскладки (layers + rules + keymaps + macros).
-# Глобальные настройки приложения (таймауты, автозапуск, устройство ввода)
-# в пресетах НЕ хранятся — они лежат в config.json и общие для всех
-# раскладок. Формат файла одинаков для встроенной раскладки и для
-# пользовательских файлов в <configDir>/layouts/*.yaml.
-#
-# -----------------------------------------------------------------------------
-# СТРУКТУРА
-# -----------------------------------------------------------------------------
-#
-# name:         человекочитаемое имя пресета (обязательно).
-# description:  описание пресета (опционально).
-#
-# layers:
-#   Список дополнительных слоёв, которые активируются правилами.
-#   - id:   уникальный идентификатор (латиница, без пробелов).
-#     name: человекочитаемое имя, которое будет показано в UI.
-#
-# rules:
-#   Правила для клавиш с двумя режимами (tap / hold) — слой, модификатор,
-#   переопределённое действие одиночного нажатия и т.п.
-#
-#   - key:    код физической клавиши (см. список ниже).
-#
-#     layer:  id слоя, активируемого при удержании. Опционально.
-#             Пусто / отсутствует = слой не активируется; режим удержания
-#             определяется полем `hold` (см. ниже).
-#
-#     tap:    что делает короткое нажатие. Три варианта:
-#               поле отсутствует  -> native: эмитим саму физическую клавишу
-#                                    (Tab->Tab, CapsLock->CapsLock и т.п.)
-#               tap: ~  (null)    -> swallow: ничего не происходит
-#               tap: <действие>   -> своё действие (строка, как в keymaps)
-#
-#     hold:   что делает удержание, пока клавиша зажата. Три варианта:
-#               поле отсутствует  -> native: физическая клавиша
-#                                    удерживается как есть (ShiftLeft
-#                                    остаётся Shift-модификатором и т.д.)
-#               hold: ~  (null)   -> swallow: удержание проглатывается
-#               hold: <keystroke> -> удерживаем указанную комбинацию,
-#                                    пока нажата физическая клавиша
-#                                    (например, hold: ControlLeft ->
-#                                    MetaLeft ведёт себя как Ctrl).
-#             Можно комбинировать с `layer`: тогда при удержании и слой
-#             активируется, и выбранная клавиша/комбинация удерживается.
-#
-#     holdMs: индивидуальный таймаут удержания в мс. Опционально.
-#             Если не указан, используется settings.defaultHoldTimeoutMs.
-#
-#     dtap / dtapMs: действие на двойное нажатие и окно распознавания
-#             в мс. Оба поля опциональны.
-#
-#   Если все три поля (`layer`, `tap`, `hold`) не заданы и нет `dtap`,
-#   правило полностью прозрачно и движком не регистрируется — клавиша
-#   проходит в систему без изменений.
-#
-#   Interrupt-on-other-key-press: если во время ожидания решения
-#   (hold-таймер ещё не истёк) пользователь нажимает другую клавишу,
-#   текущее правило сразу коммитится как hold. Это обязательное
-#   поведение — без него mod-tap (Shift+A, MetaLeft-hold=Ctrl+C и т.п.)
-#   был бы непригоден.
-#
-# keymaps:
-#   Карта «id_слоя -> раскладка»: что делают клавиши, пока слой активен.
-#     keys:    { <код клавиши>: <действие> }  — маппинг основных клавиш.
-#     extras:  массив дополнительных биндов (кнопки мыши, медиа-клавиши,
-#              произвольные имена).
-#       - name:   отображаемое имя
-#         action: действие
-#
-# -----------------------------------------------------------------------------
-# КОДЫ КЛАВИШ
-# -----------------------------------------------------------------------------
-# Буквы:      KeyA, KeyB, ..., KeyZ
-# Цифры:      Digit0..Digit9
-# F-ряд:      F1..F12
-# Навигация:  Escape, Tab, CapsLock, Enter, Backspace, Space
-# Знаки:      Backquote ` , Minus - , Equal = , BracketLeft [ ,
-#             BracketRight ] , Backslash \ , Semicolon ; , Quote ' ,
-#             Comma , , Period . , Slash /
-# Модификаторы: ShiftLeft, ShiftRight, ControlLeft, ControlRight,
-#               AltLeft, AltRight, MetaLeft, MetaRight, ContextMenu
-#
-# Действия (поле tap / значения в keys / extras.action) — свободные
-# строки. Формат интерпретируется маппером в рантайме, например:
-#   "Escape", "Left", "Ctrl+C", "BrowserBack", "macro:<id>",
-#   "sys:<имяФункции>" — системная функция (см. ниже).
-#
-# -----------------------------------------------------------------------------
-# СИСТЕМНЫЕ ФУНКЦИИ (sys:...)
-# -----------------------------------------------------------------------------
-# Кросс-платформенные действия с одинаковым именем, но разной реализацией
-# под каждую ОС / окружение. Если функция не поддерживается на текущей
-# машине — маппер логирует предупреждение и шаг пропускается.
-#
-# Поддерживается сейчас (Linux + KDE Plasma):
-#   sys:switchDesktop1 .. sys:switchDesktop10
-#     — переключение на виртуальный рабочий стол N
-#       (qdbus org.kde.KWin /KWin setCurrentDesktop N).
-#   sys:switchLayout1 .. sys:switchLayout10
-#     — переключение на раскладку клавиатуры N
-#       (qdbus org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout N-1).
-#   sys:taskEntry1 .. sys:taskEntry10
-#     — активировать N-ю запись панели задач Plasma
-#       (аналог Meta+1 .. Meta+0; зависит от текущего порядка в task manager).
-#   sys:walkThroughWindowsAlternative
-#     — альтернативное переключение между окнами через KWin.
-#   sys:walkThroughWindowsCurrentApp
-#     — переключение между окнами текущего приложения через KWin.
-#   sys:showClipboardHistory
-#     — показать историю буфера обмена Klipper
-#       (qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu).
-#   sys:volumeDown / sys:volumeUp / sys:muteAudio
-#     — управление громкостью через глобальные действия Plasma.
-#   sys:brightnessDown / sys:brightnessUp
-#     — управление яркостью экрана через PowerDevil.
-#   sys:windowClose
-#     — закрыть активное окно через KWin.
-#   sys:windowToNextDesktop
-#     — переместить активное окно на следующий рабочий стол через KWin.
-#   sys:windowKeepAbove
-#     — переключить режим "поверх остальных" для активного окна через KWin.
-#   sys:windowMaximizeVertical / sys:windowMaximizeHorizontal
-#     — развернуть активное окно по вертикали / горизонтали через KWin.
-#   sys:screenshot
-#     — сделать скриншот области через `spectacle -r`.
-#   sys:screenOff
-#     — выключить экран через PowerDevil.
-#
-# Использовать можно и напрямую (как tap / значение в keys / extras),
-# и как шаг макроса.
-#
-# -----------------------------------------------------------------------------
-# МАКРОСЫ
-# -----------------------------------------------------------------------------
-# macros:
-#   Пользовательские макросы: последовательность нажатий клавиш, которая
-#   выполняется целиком по триггеру. Каждый шаг — одно сочетание клавиш
-#   (как "Ctrl+Shift+T" или "Enter"); шаги выполняются друг за другом —
-#   предыдущее сочетание полностью отпускается, делается пауза и только
-#   потом нажимается следующее.
-#
-#   - id:               уникальный идентификатор макроса (на него ссылаются
-#                       действия вида "macro:<id>").
-#     name:             человекочитаемое имя, показывается в UI.
-#     stepPauseMs:      (опц.) пауза между шагами в мс; переопределяет
-#                       settings.defaultMacroStepPauseMs.
-#     modifierDelayMs:  (опц.) задержка в мс между нажатием модификатора
-#                       и основной клавиши внутри одного шага; переопределяет
-#                       settings.defaultMacroModifierDelayMs.
-#     steps:            массив шагов. Каждый шаг — строка с сочетанием
-#                       клавиш, например "Ctrl+C", "Escape", "Shift+End".
-#
-# Чтобы назначить макрос на клавишу — в tap / keys / extras.action укажите
-# строку "macro:<id>" (например, "macro:copyLine").
-#
-# В будущем макросы также смогут вызывать консольные команды и специальные
-# системные действия — пока не реализовано.
-# =============================================================================
-
 layers:
   - id: nav
-  - id: sel
-  - id: sym
-  - id: fkeys
-  - id: win
-  - id: space
-
-rules:
-  # Tab: короткое нажатие — native Tab, удержание — слой выделения.
-  - key: Tab
-    layer: sel
-
-  # CapsLock: коротко — Ctrl+V (вставка), удержание — слой навигации.
-  - key: CapsLock
-    tap: Ctrl+V
-    layer: nav
-    holdMs: 180
-
-  # ShiftLeft: удержание — native Shift (модификатор), тап — Ctrl+C.
-  - key: ShiftLeft
-    tap: Ctrl+C
-
-  # ControlLeft: удержание — как системный AltLeft, короткое нажатие — native Ctrl.
-  - key: ControlLeft
-    hold: AltLeft
-
-  # MetaLeft: удержание — как ControlLeft, тап — Escape.
-  - key: MetaLeft
-    tap: Escape
-    hold: ControlLeft
-
-  # AltLeft: удержание — слой оконного менеджера + удерживаемый AltLeft,
-  # тап — Enter. Это даёт нормальный Alt+Tab внутри слоя.
-  - key: AltLeft
-    tap: Enter
-    layer: win
-    hold: AltLeft
-
-  # Пробел: удержание — слой space, короткое нажатие — native Space.
-  - key: Space
-    layer: space
-
-  # AltRight: удержание — слой символов, тап — ".".
-  - key: AltRight
-    tap: "."
-    layer: sym
-
-  # CtrlRight: удержание — слой F-клавиш, тап — ",".
-  - key: ControlRight
-    tap: ","
-    layer: fkeys
-
-  # ShiftRight: удержание — native Shift, тап — символ "_".
-  - key: ShiftRight
-    tap: "-"
-
-keymaps:
-  nav:
     keys:
       AltLeft: macro:pasteAtLineBottom
       MetaLeft: Ctrl+X
       Space: Delete
-
       KeyQ: macro:moveLineDown
       KeyW: Ctrl+Backspace
       KeyE: Ctrl+Delete
@@ -234,11 +14,6 @@ keymaps:
       KeyI: macro:upEnd
       KeyO: End
       KeyP: macro:up5Times
-      #BracketLeft
-      #BracketRight
-      #Backslash
-
-      #KeyA: null
       KeyS: macro:duplicateLine
       KeyD: Ctrl+D
       KeyF: PageDown
@@ -248,8 +23,6 @@ keymaps:
       KeyK: Up
       KeyL: Right
       Semicolon: macro:rightSpace
-      #Quote:
-
       KeyZ: macro:emptyLineBelow
       KeyX: macro:cutWordRightCenter
       KeyC: macro:copyWordAfterCenter
@@ -265,135 +38,103 @@ keymaps:
         action: BrowserBack
       - name: Mouse5
         action: BrowserForward
-
-  sel:
+  - id: sel
     keys:
       AltLeft: Ctrl+Enter
       Space: Backspace
-
       KeyQ: Ctrl+Z
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
       KeyR: macro:cutLineContent
       KeyT: macro:cutAndRemoveLine
       KeyY: Shift+Home
-      #KeyU:
-      #KeyI:
       KeyO: Shift+End
       KeyP: macro:select5LinesUp
-      #BracketLeft
-      #BracketRight
-      #Backslash
-
       KeyA: Ctrl+Slash
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
       KeyF: macro:copyLine
-      #KeyG:
       KeyH: Shift+Left
       KeyJ: Shift+Down
       KeyK: Shift+Up
       KeyL: Shift+Right
       Semicolon: macro:selectWholeLine
-      #Quote:
-
-      #KeyZ:
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
-      #KeyV:
       KeyB: macro:replaceLineWidthBuffer
       KeyN: Shift+Ctrl+Left
-      #KeyM:
-      #Comma:
       Period: Shift+Ctrl+Right
       Slash: macro:select5LinesDown
-
-  sym:
+  - id: sym
     keys:
-      KeyQ: "<"
-      KeyW: "{"
-      KeyE: "["
-      KeyR: "("
-      KeyT: "|"
-      KeyY: "^"
-      KeyU: "7"
-      KeyI: "8"
-      KeyO: "9"
-      KeyP: "="
-      BracketLeft: "≠"
-      #BracketRight
-      #Backslash
-
-      KeyA: "$"
-      KeyS: "#"
-      KeyD: "!"
-      KeyF: "?"
-      KeyG: "&"
-      KeyH: "*"
-      KeyJ: "4"
-      KeyK: "5"
-      KeyL: "6"
-      Semicolon: "+"
-      Quote: "%"
-
-      KeyZ: ":"
-      KeyX: "`"
-      KeyC: "'"
+      KeyQ: <
+      KeyW: '{'
+      KeyE: '['
+      KeyR: (
+      KeyT: '|'
+      KeyY: ^
+      KeyU: '7'
+      KeyI: '8'
+      KeyO: '9'
+      KeyP: '='
+      BracketLeft: ≠
+      KeyA: $
+      KeyS: '#'
+      KeyD: '!'
+      KeyF: '?'
+      KeyG: '&'
+      KeyH: '*'
+      KeyJ: '4'
+      KeyK: '5'
+      KeyL: '6'
+      Semicolon: +
+      Quote: '%'
+      KeyZ: ':'
+      KeyX: '`'
+      KeyC: ''''
       KeyV: '"'
-      KeyB: "/"
-      KeyN: "0"
-      KeyM: "1"
-      Comma: "2"
-      Period: "3"
-      Slash: "@"
-
-      ShiftRight: "_"
-
-  fkeys:
+      KeyB: /
+      KeyN: '0'
+      KeyM: '1'
+      Comma: '2'
+      Period: '3'
+      Slash: '@'
+      ShiftRight: _
+  - id: fkeys
     keys:
-      KeyQ: ">"
-      KeyW: "}"
-      KeyE: "]"
-      KeyR: ")"
-      #KeyT: ""
-      #KeyY:
+      KeyQ: '>'
+      KeyW: '}'
+      KeyE: ']'
+      KeyR: )
       KeyU: F7
       KeyI: F8
       KeyO: F9
       KeyP: F12
-      BracketLeft: "ℹ️"
-      #BracketRight
-      #Backslash
-
-      KeyA: "€"
-      KeyS: "№"
-      KeyD: "‼️"
-      KeyF: "❓"
-      KeyG: "❌"
-      #KeyH: ""
+      BracketLeft: ℹ️
+      KeyA: €
+      KeyS: №
+      KeyD: ‼️
+      KeyF: ❓
+      KeyG: ❌
       KeyJ: F4
       KeyK: F5
       KeyL: F6
       Semicolon: F11
-      Quote: "☝️"
-
-      KeyZ: ";"
-      KeyX: "~"
-      KeyC: "⏩"
-      KeyV: "✅"
-      KeyB: "\\"
-      #KeyN:
+      Quote: ☝️
+      KeyZ: ;
+      KeyX: '~'
+      KeyC: ⏩
+      KeyV: ✅
+      KeyB: \
       KeyM: F1
       Comma: F2
       Period: F3
       Slash: F10
-
-  win:
+  - id: win
     keys:
       Tab: Tab
       CapsLock: sys:walkThroughWindowsAlternative
       ShiftLeft: sys:walkThroughWindowsCurrentApp
-
       Digit1: sys:taskEntry1
       Digit2: sys:taskEntry2
       Digit3: sys:taskEntry3
@@ -404,33 +145,14 @@ keymaps:
       Digit8: sys:taskEntry8
       Digit9: sys:taskEntry9
       Digit0: sys:taskEntry10
-
-      #KeyQ:
       KeyW: Ctrl+A
-      #KeyE:
-      #KeyR:
       KeyT: sys:windowKeepAbove
-      #KeyY:
-      #KeyU:
-      #KeyI:
-      #KeyO:
-      #KeyP:
-      #BracketLeft:
-      #BracketRight
       Backslash: sys:screenOff
-
       KeyA: sys:switchDesktop4
       KeyS: sys:switchDesktop3
       KeyD: sys:switchDesktop2
       KeyF: sys:switchDesktop1
       KeyG: sys:windowToNextDesktop
-      #KeyH: sys:switchLayout2
-      #KeyJ:
-      #KeyK:
-      #KeyL:
-      #Semicolon:
-      #Quote:
-
       KeyZ: sys:windowMaximizeVertical
       KeyX: sys:windowMaximizeHorizontal
       KeyC: sys:screenshot
@@ -441,8 +163,7 @@ keymaps:
       Comma: sys:volumeDown
       Period: sys:volumeUp
       Slash: sys:muteAudio
-
-  space:
+  - id: space
     keys:
       Tab: sys:switchLayout1
       CapsLock: sys:switchLayout2
@@ -450,33 +171,32 @@ keymaps:
       ShiftRight: sys:switchLayout4
       Enter: sys:switchLayout5
       Backslash: sys:switchLayout6
-    #extras: []
-
-# Макросы, используемые этой раскладкой, вынесены в системные (их
-# определяет приложение и они доступны из любой раскладки без объявления
-# здесь). Каталог системных макросов — `utils/systemMacros.ts` (и
-# зеркальный `src-tauri/src/mapper/system_macros.rs`).
-#
-# Если раскладке нужен свой, специфичный для неё макрос — его можно
-# описать ниже в блоке `macros:`. Пользовательский макрос с тем же id
-# что и системный полностью перекрывает системный.
-#
-# Пример (раскомментируйте и подставьте как tap / в keys.<Key>):
-#
-# macros:
-#   - id: copyLine
-#     name: "Скопировать строку"
-#     stepPauseMs: 25
-#     modifierDelayMs: 10
-#     steps:
-#       - Home
-#       - Shift+End
-#       - Ctrl+C
-#       - End
-#
-#   - id: saveAll
-#     name: "Save All"
-#     steps:
-#       - Ctrl+Shift+S
-
+rules:
+  - key: Tab
+    layer: sel
+  - key: CapsLock
+    tap: Ctrl+V
+    layer: nav
+    holdMs: 180
+  - key: ShiftLeft
+    tap: Ctrl+C
+  - key: ControlLeft
+    hold: AltLeft
+  - key: MetaLeft
+    tap: Escape
+    hold: ControlLeft
+  - key: AltLeft
+    tap: Enter
+    layer: win
+    hold: AltLeft
+  - key: Space
+    layer: space
+  - key: AltRight
+    tap: .
+    layer: sym
+  - key: ControlRight
+    tap: ','
+    layer: fkeys
+  - key: ShiftRight
+    tap: '-'
 macros: []

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from "vitest";
 
-import { createDefaultConfig } from '~/types/config'
+import { createDefaultConfig } from "~/types/config";
 import {
   applyPresetToConfig,
   builtinLayoutName,
@@ -10,10 +10,10 @@ import {
   localizeBuiltinLayoutPreset,
   parseLayoutYaml,
   serializeLayoutYaml,
-} from '~/utils/layoutPresets'
+} from "~/utils/layoutPresets";
 
-describe('layout preset helpers', () => {
-  it('parses yaml into normalized preset data', () => {
+describe("layout preset helpers", () => {
+  it("parses yaml into normalized preset data", () => {
     const preset = parseLayoutYaml(
       `
 name: Navigation
@@ -21,6 +21,12 @@ description: "  Primary nav layer  "
 layers:
   - id: nav
     name: Nav
+    keys:
+      KeyH: ArrowLeft
+      KeyL: ArrowRight
+    extras:
+      - name: Mouse4
+        action: BrowserBack
 rules:
   - key: CapsLock
     layer: nav
@@ -29,15 +35,6 @@ rules:
     dtap: Ctrl+Alt+T
     holdMs: 150
     dtapMs: 220
-keymaps:
-  nav:
-    keys:
-      KeyH: ArrowLeft
-      KeyL: ArrowRight
-      KeyX: null
-    extras:
-      - name: Mouse4
-        action: BrowserBack
 commands:
   - id: terminal
     name: Terminal
@@ -50,21 +47,21 @@ macros:
         id: step-2
     stepPauseMs: 30
 `,
-      'Fallback',
-    )
+      "Fallback",
+    );
 
-    expect(preset).not.toBeNull()
+    expect(preset).not.toBeNull();
     expect(preset).toMatchObject({
-      name: 'Navigation',
-      description: 'Primary nav layer',
-      layers: [{ id: 'nav', name: 'Nav' }],
+      name: "Navigation",
+      description: "Primary nav layer",
+      layers: [{ id: "nav", name: "Nav" }],
       rules: [
         {
-          key: 'CapsLock',
-          layerId: 'nav',
-          tapAction: 'Esc',
+          key: "CapsLock",
+          layerId: "nav",
+          tapAction: "Esc",
           holdAction: null,
-          doubleTapAction: 'Ctrl+Alt+T',
+          doubleTapAction: "Ctrl+Alt+T",
           holdTimeoutMs: 150,
           doubleTapTimeoutMs: 220,
         },
@@ -72,209 +69,214 @@ macros:
       layerKeymaps: {
         nav: {
           keys: {
-            KeyH: 'ArrowLeft',
-            KeyL: 'ArrowRight',
+            KeyH: "ArrowLeft",
+            KeyL: "ArrowRight",
           },
           extras: [
             {
-              name: 'Mouse4',
-              action: 'BrowserBack',
+              name: "Mouse4",
+              action: "BrowserBack",
             },
           ],
         },
       },
       macros: [
         {
-          id: 'duplicateLine',
-          name: 'duplicateLine',
+          id: "duplicateLine",
+          name: "duplicateLine",
           stepPauseMs: 30,
           steps: [
-            { keystroke: 'Ctrl+C' },
-            { id: 'step-2', keystroke: 'Ctrl+V' },
+            { keystroke: "Ctrl+C" },
+            { id: "step-2", keystroke: "Ctrl+V" },
           ],
         },
       ],
       commands: [
         {
-          id: 'terminal',
-          name: 'Terminal',
-          linux: 'kitty',
+          id: "terminal",
+          name: "Terminal",
+          linux: "kitty",
         },
       ],
-    })
-  })
+    });
+  });
 
-  it('serializes and parses a preset without losing semantic values', () => {
+  it("serializes and parses a preset without losing semantic values", () => {
     const original = {
-      name: 'Editing',
-      description: 'editing helpers',
-      layers: [
-        { id: 'edit', name: 'Edit', description: 'editing layer' },
-      ],
+      name: "Editing",
+      description: "editing helpers",
+      layers: [{ id: "edit", name: "Edit", description: "editing layer" }],
       rules: [
         {
-          id: 'rule-1',
-          key: 'CapsLock',
-          layerId: 'edit',
-          tapAction: '',
+          id: "rule-1",
+          key: "CapsLock",
+          layerId: "edit",
+          tapAction: "",
           holdAction: null,
-          doubleTapAction: 'Enter',
+          doubleTapAction: "Enter",
           holdTimeoutMs: 210,
           doubleTapTimeoutMs: undefined,
         },
       ],
       layerKeymaps: {
         edit: {
-          keys: { KeyH: 'ArrowLeft' },
-          extras: [{ id: 'extra-1', name: 'Mouse4', action: 'BrowserBack' }],
+          keys: { KeyH: "ArrowLeft" },
+          extras: [{ id: "extra-1", name: "Mouse4", action: "BrowserBack" }],
         },
       },
       macros: [
         {
-          id: 'copyLine',
-          name: 'Copy line',
-          steps: [{ id: 's1', keystroke: 'Home' }, { id: 's2', keystroke: 'Shift+End' }],
+          id: "copyLine",
+          name: "Copy line",
+          steps: [
+            { id: "s1", keystroke: "Home" },
+            { id: "s2", keystroke: "Shift+End" },
+          ],
           stepPauseMs: 10,
           modifierDelayMs: 5,
         },
       ],
       commands: [
         {
-          id: 'terminal',
-          name: 'Terminal',
-          linux: 'kitty',
+          id: "terminal",
+          name: "Terminal",
+          linux: "kitty",
         },
       ],
-    }
+    };
 
-    const yaml = serializeLayoutYaml(original)
-    const reparsed = parseLayoutYaml(yaml, 'Fallback')
+    const yaml = serializeLayoutYaml(original);
+    const reparsed = parseLayoutYaml(yaml, "Fallback");
 
-    expect(reparsed).not.toBeNull()
+    expect(reparsed).not.toBeNull();
     expect(reparsed).toMatchObject({
-      name: 'Editing',
-      description: 'editing helpers',
+      name: "Editing",
+      description: "editing helpers",
       layers: original.layers,
       rules: [
         {
-          key: 'CapsLock',
-          layerId: 'edit',
-          tapAction: '',
+          key: "CapsLock",
+          layerId: "edit",
+          tapAction: "",
           holdAction: null,
-          doubleTapAction: 'Enter',
+          doubleTapAction: "Enter",
           holdTimeoutMs: 210,
           doubleTapTimeoutMs: undefined,
         },
       ],
       layerKeymaps: {
         edit: {
-          keys: { KeyH: 'ArrowLeft' },
-          extras: [{ name: 'Mouse4', action: 'BrowserBack' }],
+          keys: { KeyH: "ArrowLeft" },
+          extras: [{ name: "Mouse4", action: "BrowserBack" }],
         },
       },
       macros: [
         {
-          id: 'copyLine',
-          name: 'Copy line',
-          steps: [{ keystroke: 'Home' }, { keystroke: 'Shift+End' }],
+          id: "copyLine",
+          name: "Copy line",
+          steps: [{ keystroke: "Home" }, { keystroke: "Shift+End" }],
           stepPauseMs: 10,
           modifierDelayMs: 5,
         },
       ],
       commands: [
         {
-          id: 'terminal',
-          name: 'Terminal',
-          linux: 'kitty',
+          id: "terminal",
+          name: "Terminal",
+          linux: "kitty",
         },
       ],
-    })
-    expect(reparsed?.rules[0]?.id).toMatch(/^r_[a-z0-9]{8}$/)
-  })
+    });
+    expect(reparsed?.rules[0]?.id).toMatch(/^r_[a-z0-9]{8}$/);
+  });
 
-  it('extracts and applies presets while preserving settings and cloning layout data', () => {
-    const config = createDefaultConfig()
-    config.layers.push({ id: 'nav', name: 'Navigation' })
+  it("extracts and applies presets while preserving settings and cloning layout data", () => {
+    const config = createDefaultConfig();
+    config.layers.push({ id: "nav", name: "Navigation" });
     config.rules.push({
-      id: 'rule-1',
-      key: 'CapsLock',
-      layerId: 'nav',
-      tapAction: '',
-      holdAction: '',
-      doubleTapAction: '',
-    })
+      id: "rule-1",
+      key: "CapsLock",
+      layerId: "nav",
+      tapAction: "",
+      holdAction: "",
+      doubleTapAction: "",
+    });
     config.layerKeymaps.nav = {
-      keys: { KeyH: 'ArrowLeft' },
-      extras: [{ id: 'extra-1', name: 'Mouse4', action: 'BrowserBack' }],
-    }
+      keys: { KeyH: "ArrowLeft" },
+      extras: [{ id: "extra-1", name: "Mouse4", action: "BrowserBack" }],
+    };
     config.macros.push({
-      id: 'duplicateLine',
-      name: 'Duplicate line',
-      steps: [{ id: 'step-1', keystroke: 'Ctrl+C' }],
-    })
+      id: "duplicateLine",
+      name: "Duplicate line",
+      steps: [{ id: "step-1", keystroke: "Ctrl+C" }],
+    });
     config.commands.push({
-      id: 'terminal',
-      name: 'Terminal',
-      linux: 'kitty',
-    })
-    config.settings.appearance = 'dark'
+      id: "terminal",
+      name: "Terminal",
+      linux: "kitty",
+    });
+    config.settings.appearance = "dark";
 
-    const preset = extractPresetFromConfig(config, 'Current')
-    const next = applyPresetToConfig(createDefaultConfig(), preset, 'user:current')
+    const preset = extractPresetFromConfig(config, "Current");
+    const next = applyPresetToConfig(
+      createDefaultConfig(),
+      preset,
+      "user:current",
+    );
 
-    expect(next.settings.appearance).toBe('system')
-    expect(next.settings.currentLayoutId).toBe('user:current')
-    expect(next.layers).toEqual(config.layers)
-    expect(next.rules).toEqual(config.rules)
-    expect(next.layerKeymaps).toEqual(config.layerKeymaps)
-    expect(next.macros).toEqual(config.macros)
-    expect(next.commands).toEqual(config.commands)
+    expect(next.settings.appearance).toBe("system");
+    expect(next.settings.currentLayoutId).toBe("user:current");
+    expect(next.layers).toEqual(config.layers);
+    expect(next.rules).toEqual(config.rules);
+    expect(next.layerKeymaps).toEqual(config.layerKeymaps);
+    expect(next.macros).toEqual(config.macros);
+    expect(next.commands).toEqual(config.commands);
 
-    preset.layers[0]!.name = 'Changed later'
-    preset.layerKeymaps.nav!.keys.KeyH = 'Changed'
-    preset.commands[0]!.linux = 'changed'
-    expect(next.layers[0]!.name).toBe('Navigation')
-    expect(next.layerKeymaps.nav!.keys.KeyH).toBe('ArrowLeft')
-    expect(next.commands[0]!.linux).toBe('kitty')
-  })
+    preset.layers[0]!.name = "Changed later";
+    preset.layerKeymaps.nav!.keys.KeyH = "Changed";
+    preset.commands[0]!.linux = "changed";
+    expect(next.layers[0]!.name).toBe("Navigation");
+    expect(next.layerKeymaps.nav!.keys.KeyH).toBe("ArrowLeft");
+    expect(next.commands[0]!.linux).toBe("kitty");
+  });
 
-  it('creates stable layout snapshots and empty presets without implicit layers', () => {
-    const config = createDefaultConfig()
-    const initial = layoutSnapshotOf(config)
+  it("creates stable layout snapshots and empty presets without implicit layers", () => {
+    const config = createDefaultConfig();
+    const initial = layoutSnapshotOf(config);
 
     config.rules.push({
-      id: 'rule-1',
-      key: 'CapsLock',
-      layerId: '',
-      tapAction: 'Esc',
-      holdAction: '',
-      doubleTapAction: '',
-    })
+      id: "rule-1",
+      key: "CapsLock",
+      layerId: "",
+      tapAction: "Esc",
+      holdAction: "",
+      doubleTapAction: "",
+    });
 
-    expect(layoutSnapshotOf(config)).not.toBe(initial)
+    expect(layoutSnapshotOf(config)).not.toBe(initial);
     expect(emptyLayoutPreset()).toEqual({
-      name: 'Empty layout',
+      name: "Empty layout",
       layers: [],
       rules: [],
       layerKeymaps: {},
       macros: [],
       commands: [],
-    })
-  })
+    });
+  });
 
-  it('returns null for invalid or non-object yaml', () => {
-    expect(parseLayoutYaml('not: [valid', 'Fallback')).toBeNull()
-    expect(parseLayoutYaml('hello', 'Fallback')).toBeNull()
-  })
+  it("returns null for invalid or non-object yaml", () => {
+    expect(parseLayoutYaml("not: [valid", "Fallback")).toBeNull();
+    expect(parseLayoutYaml("hello", "Fallback")).toBeNull();
+  });
 
-  it('localizes the built-in preset from i18n without changing the user yaml format', () => {
+  it("localizes the built-in preset from i18n without changing the user yaml format", () => {
     const preset = localizeBuiltinLayoutPreset(
       {
-        name: 'Fallback built-in',
-        description: 'Fallback description',
+        name: "Fallback built-in",
+        description: "Fallback description",
         layers: [
-          { id: 'nav', name: 'nav' },
-          { id: 'sel', name: 'sel', description: 'selection fallback' },
+          { id: "nav", name: "nav" },
+          { id: "sel", name: "sel", description: "selection fallback" },
         ],
         rules: [],
         layerKeymaps: {},
@@ -283,25 +285,25 @@ macros:
       },
       (key) =>
         ({
-          'builtinLayouts.ivank.name': 'Localized built-in',
-          'builtinLayouts.ivank.description': 'Localized description',
-          'builtinLayouts.ivank.layers.nav.name': 'Navigation',
-          'builtinLayouts.ivank.layers.nav.description': 'Localized nav',
+          "builtinLayouts.ivank.name": "Localized built-in",
+          "builtinLayouts.ivank.description": "Localized description",
+          "builtinLayouts.ivank.layers.nav.name": "Navigation",
+          "builtinLayouts.ivank.layers.nav.description": "Localized nav",
         })[key] ?? key,
-    )
+    );
 
     expect(preset).toMatchObject({
-      name: 'Localized built-in',
-      description: 'Localized description',
+      name: "Localized built-in",
+      description: "Localized description",
       layers: [
-        { id: 'nav', name: 'Navigation', description: 'Localized nav' },
-        { id: 'sel', name: 'sel', description: 'selection fallback' },
+        { id: "nav", name: "Navigation", description: "Localized nav" },
+        { id: "sel", name: "sel", description: "selection fallback" },
       ],
-    })
+    });
     expect(
       builtinLayoutName((key) =>
-        key === 'builtinLayouts.ivank.name' ? 'Localized built-in' : key,
+        key === "builtinLayouts.ivank.name" ? "Localized built-in" : key,
       ),
-    ).toBe('Localized built-in')
-  })
-})
+    ).toBe("Localized built-in");
+  });
+});

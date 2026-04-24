@@ -179,8 +179,6 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 }
             }
             "quit" => {
-                let _ = app.save_window_state(StateFlags::all());
-                // Best-effort stop of the mapper so we always ungrab the device.
                 let _ = mapper::stop();
                 app.exit(0);
             }
@@ -249,10 +247,8 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|app_handle, event| {
+    app.run(|_app_handle, event| {
         if let RunEvent::Exit = event {
-            // Best effort final save for paths that bypass the close handler.
-            let _ = app_handle.save_window_state(StateFlags::all());
             let _ = mapper::stop();
             layout::stop_watcher();
         }
