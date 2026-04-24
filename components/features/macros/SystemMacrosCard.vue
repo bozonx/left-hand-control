@@ -12,8 +12,32 @@ defineEmits<{
   clone: [macro: SystemMacro]
 }>()
 
+const toast = useToast()
+const { t } = useI18n()
+
 function stepsPreview(sys: SystemMacro): string {
   return sys.steps.map((step) => step.keystroke).join(' → ')
+}
+
+async function copyMacroId(id: string) {
+  if (!id) return
+  try {
+    await navigator.clipboard.writeText(id)
+    toast.add({
+      title: t('common.copied'),
+      description: id,
+      icon: 'i-lucide-copy-check',
+      close: true,
+    })
+  } catch (error) {
+    toast.add({
+      title: t('common.copy'),
+      description: error instanceof Error ? error.message : String(error),
+      color: 'error',
+      icon: 'i-lucide-circle-alert',
+      close: true,
+    })
+  }
 }
 </script>
 
@@ -71,7 +95,19 @@ function stepsPreview(sys: SystemMacro): string {
               class="group border-b border-(--ui-border) last:border-b-0 align-top transition-colors hover:bg-(--ui-bg-muted)"
             >
               <td class="py-2 pr-3 font-mono text-xs whitespace-nowrap">
-                {{ sys.id }}
+                <div class="flex items-center gap-1.5">
+                  <span>{{ sys.id }}</span>
+                  <UButton
+                    icon="i-lucide-copy"
+                    size="xs"
+                    variant="ghost"
+                    color="neutral"
+                    square
+                    class="opacity-70 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+                    :aria-label="$t('macros.copyId')"
+                    @click="copyMacroId(sys.id)"
+                  />
+                </div>
               </td>
               <td class="py-2 pr-3">
                 <div>{{ sys.name }}</div>

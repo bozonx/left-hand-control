@@ -54,8 +54,9 @@ watch(
   async (value) => {
     if (!value) return
     await nextTick()
-    nameInput.value?.inputRef?.focus()
-    nameInput.value?.inputRef?.select()
+    const input = nameInput.value?.$el?.querySelector('input')
+    input?.focus()
+    input?.select()
     emit('nameFocused', props.uiKey)
   },
   { immediate: true },
