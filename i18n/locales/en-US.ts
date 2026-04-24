@@ -404,6 +404,11 @@ export default {
     deleteTitle: 'Delete "{name}"?',
     deleteBody:
       "The layout file will be deleted from disk. This cannot be undone. The currently active layout does not change.",
+    outputPrincipleTitle: "How output works",
+    outputPrincipleBody1:
+      "The mapper does not try to reinterpret already assembled shortcuts. It sends the system the final result: a single key or a shortcut such as Ctrl+Z, Ctrl+C, or Shift+Tab.",
+    outputPrincipleBody2:
+      "Because of that, the target app usually receives exactly the shortcut you configured in the layout. If an action is set to Ctrl+Z, the system will see Ctrl+Z even if the physical Z key is remapped to something else inside the layout.",
   },
   picker: {
     currentValue: "Current value",
