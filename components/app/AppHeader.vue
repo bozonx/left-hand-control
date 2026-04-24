@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import { BUILTIN_LAYOUT_ID } from '~/types/config'
+import type { AppTab } from '~/types/uiState'
 import {
   isUserLayoutId,
   userLayoutNameFromId,
@@ -8,11 +9,11 @@ import {
 import { BUILTIN_LAYOUT_META } from '~/utils/layoutPresets'
 
 const props = defineProps<{
-  activeTab: string
+  activeTab: AppTab
 }>()
 
 const emit = defineEmits<{
-  'update:activeTab': [value: string]
+  'update:activeTab': [value: AppTab]
 }>()
 
 const {

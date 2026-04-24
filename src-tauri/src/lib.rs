@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -11,18 +9,6 @@ mod mapper;
 mod platform;
 mod storage;
 
-#[cfg(target_os = "linux")]
-fn legacy_config_dir() -> Option<PathBuf> {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .map(|home| home.join(".config").join("LeftHandControl"))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn legacy_config_dir() -> Option<PathBuf> {
-    None
-}
-
 fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
     let config_dir = app
         .path()
@@ -32,11 +18,7 @@ fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> 
         .path()
         .app_data_dir()
         .map_err(|e| format!("resolve app_data_dir: {e}"))?;
-    Ok(storage::StoragePaths::new(
-        config_dir,
-        data_dir,
-        legacy_config_dir(),
-    ))
+    Ok(storage::StoragePaths::new(config_dir, data_dir))
 }
 
 #[tauri::command]
@@ -54,6 +36,16 @@ fn load_config(app: tauri::AppHandle) -> Result<String, String> {
 #[tauri::command]
 fn save_config(app: tauri::AppHandle, contents: String) -> Result<(), String> {
     app_storage(&app)?.save_config(&contents)
+}
+
+#[tauri::command]
+fn load_ui_state(app: tauri::AppHandle) -> Result<String, String> {
+    app_storage(&app)?.load_ui_state()
+}
+
+#[tauri::command]
+fn save_ui_state(app: tauri::AppHandle, contents: String) -> Result<(), String> {
+    app_storage(&app)?.save_ui_state(&contents)
 }
 
 // --- User layouts ------------------------------------------------------------
@@ -205,6 +197,10 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
 pub fn run() {
     let app = tauri::Builder::default()
         .setup(|app| {
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_window_state::Builder::default().build())?;
+
             build_tray(app.handle())?;
             layout::start_watcher(app.handle().clone());
             Ok(())
@@ -220,6 +216,8 @@ pub fn run() {
             get_config_path,
             load_config,
             save_config,
+            load_ui_state,
+            save_ui_state,
             get_layouts_dir,
             list_user_layouts,
             load_user_layout,

@@ -11,33 +11,21 @@ import {
   loadBuiltinLayout,
 } from '~/utils/layoutPresets'
 
-const BROWSER_STORAGE_KEY = 'lhc:config'
-
 async function readRaw(): Promise<string> {
   const tauri = await useTauri()
-  if (tauri) {
-    return await tauri.invoke<string>('load_config')
-  }
-  if (typeof localStorage !== 'undefined') {
-    return localStorage.getItem(BROWSER_STORAGE_KEY) ?? ''
-  }
-  return ''
+  if (!tauri) return ''
+  return await tauri.invoke<string>('load_config')
 }
 
 async function writeRaw(contents: string): Promise<void> {
   const tauri = await useTauri()
-  if (tauri) {
-    await tauri.invoke('save_config', { contents })
-    return
-  }
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(BROWSER_STORAGE_KEY, contents)
-  }
+  if (!tauri) return
+  await tauri.invoke('save_config', { contents })
 }
 
 export async function getConfigPath(): Promise<string> {
   const tauri = await useTauri()
-  if (!tauri) return '(browser: localStorage)'
+  if (!tauri) return ''
   try {
     return await tauri.invoke<string>('get_config_path')
   } catch {

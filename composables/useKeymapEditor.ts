@@ -3,6 +3,7 @@ import { randomId } from '~/utils/keys'
 
 export function useKeymapEditor() {
   const { config } = useConfig()
+  const uiState = useUiState()
   const {
     ensureLayerKeymap,
     createLayer,
@@ -10,15 +11,21 @@ export function useKeymapEditor() {
     deleteLayer,
   } = useLayers()
 
-  const selectedLayerId = ref<string>(BASE_LAYER_ID)
+  const selectedLayerId = computed<string>({
+    get: () => uiState.state.value.selectedLayerId || BASE_LAYER_ID,
+    set: (value) => {
+      uiState.setSelectedLayerId(value)
+    },
+  })
 
   watch(
     () => config.value.layers.map((layer) => layer.id).join(','),
     () => {
       if (!config.value.layers.some((layer) => layer.id === selectedLayerId.value)) {
-        selectedLayerId.value = BASE_LAYER_ID
+        uiState.setSelectedLayerId(BASE_LAYER_ID)
       }
     },
+    { immediate: true },
   )
 
   const layerItems = computed(() =>

@@ -1,23 +1,25 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub struct StoragePaths {
     config_dir: PathBuf,
     data_dir: PathBuf,
-    legacy_dir: Option<PathBuf>,
 }
 
 impl StoragePaths {
-    pub fn new(config_dir: PathBuf, data_dir: PathBuf, legacy_dir: Option<PathBuf>) -> Self {
+    pub fn new(config_dir: PathBuf, data_dir: PathBuf) -> Self {
         Self {
             config_dir,
             data_dir,
-            legacy_dir,
         }
     }
 
     pub fn config_path(&self) -> PathBuf {
         self.config_dir.join("config.json")
+    }
+
+    pub fn ui_state_path(&self) -> PathBuf {
+        self.config_dir.join("ui-state.json")
     }
 
     pub fn layouts_dir(&self) -> PathBuf {
@@ -27,14 +29,6 @@ impl StoragePaths {
     pub fn ensure(&self) -> Result<(), String> {
         fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
         fs::create_dir_all(&self.data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-
-        if let Some(legacy_dir) = &self.legacy_dir {
-            migrate_file_if_missing(
-                &legacy_dir.join("config.json"),
-                &self.config_dir.join("config.json"),
-            )?;
-            migrate_layouts_if_missing(&legacy_dir.join("layouts"), &self.layouts_dir())?;
-        }
 
         Ok(())
     }
@@ -53,6 +47,25 @@ impl StoragePaths {
         fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let path = self.config_path();
         let tmp = self.config_dir.join("config.json.tmp");
+        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
+        fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+        Ok(())
+    }
+
+    pub fn load_ui_state(&self) -> Result<String, String> {
+        self.ensure()?;
+        let path = self.ui_state_path();
+        if !path.exists() {
+            return Ok(String::new());
+        }
+        fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
+    }
+
+    pub fn save_ui_state(&self, contents: &str) -> Result<(), String> {
+        self.ensure()?;
+        fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
+        let path = self.ui_state_path();
+        let tmp = self.config_dir.join("ui-state.json.tmp");
         fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
         fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
         Ok(())
@@ -138,34 +151,6 @@ pub fn sanitize_layout_name(name: &str) -> Result<String, String> {
     Ok(out)
 }
 
-fn migrate_file_if_missing(from: &Path, to: &Path) -> Result<(), String> {
-    if to.exists() || !from.exists() {
-        return Ok(());
-    }
-    if let Some(parent) = to.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("create_dir_all: {e}"))?;
-    }
-    fs::copy(from, to).map_err(|e| format!("copy {} -> {}: {e}", from.display(), to.display()))?;
-    Ok(())
-}
-
-fn migrate_layouts_if_missing(from_dir: &Path, to_dir: &Path) -> Result<(), String> {
-    if !from_dir.exists() {
-        return Ok(());
-    }
-    fs::create_dir_all(to_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-    for entry in fs::read_dir(from_dir).map_err(|e| format!("read_dir: {e}"))? {
-        let entry = entry.map_err(|e| format!("dir entry: {e}"))?;
-        let from = entry.path();
-        if !from.is_file() {
-            continue;
-        }
-        let to = to_dir.join(entry.file_name());
-        migrate_file_if_missing(&from, &to)?;
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::{sanitize_layout_name, StoragePaths};
@@ -211,33 +196,24 @@ mod tests {
     }
 
     #[test]
-    fn ensure_migrates_legacy_files_once() {
-        let temp = TempDir::new("storage-migrate");
-        let legacy = temp.path().join("legacy");
-        let config_dir = temp.path().join("config");
-        let data_dir = temp.path().join("data");
-        fs::create_dir_all(legacy.join("layouts")).expect("create legacy layouts");
-        fs::write(legacy.join("config.json"), b"{\"v\":1}").expect("write legacy config");
-        fs::write(legacy.join("layouts").join("vim.yaml"), b"name: vim")
-            .expect("write legacy layout");
+    fn save_and_load_ui_state_roundtrip() {
+        let temp = TempDir::new("storage-ui-state");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
-        let storage = StoragePaths::new(config_dir.clone(), data_dir.clone(), Some(legacy));
-        storage.ensure().expect("ensure storage");
+        storage
+            .save_ui_state("{\"activeTab\":\"keymap\"}")
+            .expect("save ui state");
 
         assert_eq!(
-            fs::read_to_string(config_dir.join("config.json")).expect("read config"),
-            "{\"v\":1}"
-        );
-        assert_eq!(
-            fs::read_to_string(data_dir.join("layouts").join("vim.yaml")).expect("read layout"),
-            "name: vim"
+            storage.load_ui_state().expect("load ui state"),
+            "{\"activeTab\":\"keymap\"}"
         );
     }
 
     #[test]
     fn save_and_list_layouts_use_sanitized_names() {
         let temp = TempDir::new("storage-layouts");
-        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"), None);
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
         let saved = storage
             .save_user_layout("  .my/layout  ", "name: test")

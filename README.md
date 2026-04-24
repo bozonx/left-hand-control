@@ -98,15 +98,19 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
   ```
 - Rust commands are registered in `src-tauri/src/lib.rs` and invoked from the frontend with `@tauri-apps/api/core`. When running `pnpm dev` in a plain browser, guard Tauri imports/calls so they do not crash outside the native shell.
 
-## Where configs are stored
+## Where app state is stored
 
 The app uses Tauri's platform-specific app directories based on the bundle identifier `dev.bozonx.left-hand-control`.
 
 - **Linux** (primary):
   - config: `~/.config/dev.bozonx.left-hand-control/config.json`
+  - UI state: `~/.config/dev.bozonx.left-hand-control/ui-state.json`
   - user layouts: `~/.local/share/dev.bozonx.left-hand-control/layouts/`
 
 If `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is set, the app uses those directories instead of `~/.config` and `~/.local/share`.
+
+- `config.json` stores domain state: selected layout id, mapper settings, layers, rules, keymap and macros.
+- `ui-state.json` stores UI-only state: active tab and the last selected keymap layer.
 
 - **macOS / Windows** (future support):
   - Standard Tauri app data directories.

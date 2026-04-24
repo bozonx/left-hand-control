@@ -6,9 +6,16 @@ import KeymapTab from '~/components/KeymapTab.vue'
 import MacrosTab from '~/components/MacrosTab.vue'
 import SettingsTab from '~/components/SettingsTab.vue'
 import { UI_CONSTANTS } from '~/utils/constants'
+import { APP_TABS, type AppTab } from '~/types/uiState'
 
 const { loaded } = useConfig()
-const active = ref<string>('layouts')
+const uiState = useUiState()
+const active = computed<AppTab>({
+  get: () => uiState.state.value.activeTab,
+  set: (value) => {
+    uiState.setActiveTab(value)
+  },
+})
 
 const mainRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
@@ -25,6 +32,18 @@ function scrollToTop() {
 watch(active, () => {
   onScroll()
 })
+
+watch(
+  loaded,
+  async (isLoaded) => {
+    if (!isLoaded) return
+    await uiState.load()
+    if (!APP_TABS.includes(uiState.state.value.activeTab)) {
+      uiState.setActiveTab('layouts')
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

@@ -7,6 +7,7 @@ import { resetLayoutStateForTests } from '~/composables/useLayout'
 import { resetLayoutLibraryStateForTests } from '~/composables/useLayoutLibrary'
 import { resetMapperStateForTests } from '~/composables/useMapper'
 import { resetPlatformInfoStateForTests } from '~/composables/usePlatformInfo'
+import { resetUiStateForTests } from '~/composables/useUiState'
 
 export async function resetUiSingletonsForTests() {
   resetAppLocaleStateForTests()
@@ -16,15 +17,13 @@ export async function resetUiSingletonsForTests() {
   resetLayoutLibraryStateForTests()
   resetMapperStateForTests()
   resetPlatformInfoStateForTests()
+  resetUiStateForTests()
 }
 
 afterEach(async () => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
-  if (typeof localStorage !== 'undefined') {
-    localStorage.clear()
-  }
   if (typeof document !== 'undefined') {
     document.documentElement.lang = 'en'
   }

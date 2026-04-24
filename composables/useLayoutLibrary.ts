@@ -10,22 +10,6 @@ import {
   serializeLayoutYaml,
 } from '~/utils/layoutPresets'
 
-const BROWSER_LAYOUTS_KEY = 'lhc:layouts'
-
-function browserLayouts(): Record<string, string> {
-  if (typeof localStorage === 'undefined') return {}
-  try {
-    return JSON.parse(localStorage.getItem(BROWSER_LAYOUTS_KEY) ?? '{}')
-  } catch {
-    return {}
-  }
-}
-
-function saveBrowserLayouts(data: Record<string, string>) {
-  if (typeof localStorage === 'undefined') return
-  localStorage.setItem(BROWSER_LAYOUTS_KEY, JSON.stringify(data))
-}
-
 export function userLayoutId(name: string): string {
   return `${USER_LAYOUT_PREFIX}${name}`
 }
@@ -78,19 +62,26 @@ export function useLayoutLibrary(): LayoutLibraryState {
 
   async function refresh() {
     const tauri = await useTauri()
-    let userNames: string[] = []
-    if (tauri) {
-      try {
-        userNames = await tauri.invoke<string[]>('list_user_layouts')
-        layoutsDir.value = await tauri.invoke<string>('get_layouts_dir')
-        error.value = null
-      } catch (e) {
-        error.value = e instanceof Error ? e.message : String(e)
-      }
-    } else {
-      userNames = Object.keys(browserLayouts()).sort()
-      layoutsDir.value = '(browser: localStorage)'
+    if (!tauri) {
+      entries.value = [
+        {
+          id: BUILTIN_LAYOUT_META.id,
+          name: BUILTIN_LAYOUT_META.name,
+          builtin: true,
+        },
+      ]
+      layoutsDir.value = ''
       error.value = null
+      return
+    }
+
+    let userNames: string[] = []
+    try {
+      userNames = await tauri.invoke<string[]>('list_user_layouts')
+      layoutsDir.value = await tauri.invoke<string>('get_layouts_dir')
+      error.value = null
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
     }
     entries.value = [
       {
@@ -113,17 +104,14 @@ export function useLayoutLibrary(): LayoutLibraryState {
     if (!isUserLayoutId(id)) return null
     const name = userLayoutNameFromId(id)
     const tauri = await useTauri()
+    if (!tauri) return null
     let yaml = ''
-    if (tauri) {
-      try {
-        yaml = await tauri.invoke<string>('load_user_layout', { name })
-        error.value = null
-      } catch (e) {
-        error.value = e instanceof Error ? e.message : String(e)
-        return null
-      }
-    } else {
-      yaml = browserLayouts()[name] ?? ''
+    try {
+      yaml = await tauri.invoke<string>('load_user_layout', { name })
+      error.value = null
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+      return null
     }
     if (!yaml) return null
     return parseLayoutYaml(yaml, name)
@@ -136,30 +124,20 @@ export function useLayoutLibrary(): LayoutLibraryState {
     const toSave: LayoutPreset = { ...preset, name }
     const yaml = serializeLayoutYaml(toSave)
     const tauri = await useTauri()
+    if (!tauri) return name
     let savedName = name
-    if (tauri) {
-      savedName = await tauri.invoke<string>('save_user_layout', {
-        name,
-        contents: yaml,
-      })
-    } else {
-      const all = browserLayouts()
-      all[name] = yaml
-      saveBrowserLayouts(all)
-    }
+    savedName = await tauri.invoke<string>('save_user_layout', {
+      name,
+      contents: yaml,
+    })
     await refresh()
     return savedName
   }
 
   async function deleteUserPreset(name: string) {
     const tauri = await useTauri()
-    if (tauri) {
-      await tauri.invoke('delete_user_layout', { name })
-    } else {
-      const all = browserLayouts()
-      delete all[name]
-      saveBrowserLayouts(all)
-    }
+    if (!tauri) return
+    await tauri.invoke('delete_user_layout', { name })
     await refresh()
   }
 
