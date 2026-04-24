@@ -432,6 +432,8 @@ export default {
     titleAction: "Pick action",
     titleKey: "Pick key",
     emptyCategory: "This category is empty.",
+    invalidValue:
+      "Use canonical action syntax only: KeyA, Digit1, ArrowLeft, Ctrl+KeyC, macro:<id>, cmd:<id>, sys:<id>, or text:<text>.",
     clearAria: "Clear",
     textHint:
       "Text actions are stored as text:<your text>. Use this for characters and strings, not for physical key remaps.",

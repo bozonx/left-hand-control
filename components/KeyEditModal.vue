@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
+import { parseTextAction } from '~/types/config'
+import { isCanonicalAction } from '~/utils/actionSyntax'
 
 const props = defineProps<{
   keyLabel: string
@@ -17,6 +19,11 @@ const open = defineModel<boolean>({ required: true })
 
 const draft = ref(typeof props.action === 'string' ? props.action : '')
 const pickerRef = ref<HTMLElement | null>(null)
+const normalizedDraft = computed(() => {
+  const raw = draft.value ?? ''
+  return parseTextAction(raw) !== null ? raw : raw.trim()
+})
+const draftInvalid = computed(() => !isCanonicalAction(normalizedDraft.value))
 
 watch(open, (v) => {
   if (v) {
@@ -26,7 +33,8 @@ watch(open, (v) => {
 })
 
 function save() {
-  emit('save', draft.value.trim())
+  if (!isCanonicalAction(normalizedDraft.value)) return
+  emit('save', normalizedDraft.value)
   open.value = false
 }
 
@@ -42,7 +50,9 @@ function swallow() {
 
 function pickAndSave(value: string) {
   draft.value = value
-  emit('save', value.trim())
+  const normalized = parseTextAction(value) !== null ? value : value.trim()
+  if (!isCanonicalAction(normalized)) return
+  emit('save', normalized)
   open.value = false
 }
 </script>
@@ -92,13 +102,21 @@ function pickAndSave(value: string) {
           <UButton color="neutral" variant="ghost" @click="open = false">
             {{ $t('common.cancel') }}
           </UButton>
-          <UButton icon="i-lucide-check" @click="save">{{ $t('common.save') }}</UButton>
+          <UButton icon="i-lucide-check" :disabled="draftInvalid" @click="save">
+            {{ $t('common.save') }}
+          </UButton>
         </div>
       </header>
 
       <main class="min-h-0 flex-1 overflow-hidden px-4 py-4">
         <div class="mx-auto flex h-full w-full max-w-7xl flex-col">
           <ActionPickerBody v-model="draft" spacious @pick="pickAndSave" />
+          <p
+            v-if="draftInvalid"
+            class="mt-3 text-sm text-(--ui-error)"
+          >
+            {{ $t('picker.invalidValue') }}
+          </p>
         </div>
       </main>
     </div>

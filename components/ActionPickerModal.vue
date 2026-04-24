@@ -2,6 +2,7 @@
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import { parseTextAction } from '~/types/config'
+import { isCanonicalAction } from '~/utils/actionSyntax'
 
 const props = defineProps<{
   allowEmpty?: boolean
@@ -49,7 +50,15 @@ const modalOpen = computed({
     uncontrolledOpen.value = value
   },
 })
-const applyDisabled = computed(() => props.requireValue && !draft.value.trim())
+const normalizedDraft = computed(() => {
+  const raw = draft.value ?? ''
+  return parseTextAction(raw) !== null ? raw : raw.trim()
+})
+const draftInvalid = computed(() => !isCanonicalAction(normalizedDraft.value))
+const applyDisabled = computed(() =>
+  (props.requireValue && !normalizedDraft.value)
+  || draftInvalid.value,
+)
 const { t } = useI18n()
 const pickerTitle = computed(() =>
   props.title ?? (props.keyOnly ? t('picker.titleKey') : t('picker.titleAction')),
@@ -79,9 +88,9 @@ function openModal() {
 }
 
 function apply() {
-  const raw = draft.value ?? ''
-  const next = parseTextAction(raw) !== null ? raw : raw.trim()
+  const next = normalizedDraft.value
   if (props.requireValue && !next) return
+  if (!isCanonicalAction(next)) return
   model.value = next
   closeReason.value = 'apply'
   modalOpen.value = false
@@ -91,6 +100,7 @@ function pickAndApply(value: string) {
   draft.value = value
   const next = parseTextAction(value) !== null ? value : value.trim()
   if (props.requireValue && !next) return
+  if (!isCanonicalAction(next)) return
   model.value = next
   closeReason.value = 'apply'
   modalOpen.value = false
@@ -186,6 +196,12 @@ function cancel() {
             spacious
             @pick="pickAndApply"
           />
+          <p
+            v-if="draftInvalid"
+            class="mt-3 text-sm text-(--ui-error)"
+          >
+            {{ $t('picker.invalidValue') }}
+          </p>
         </div>
       </main>
     </div>

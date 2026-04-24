@@ -437,6 +437,8 @@ export default {
     titleAction: "Выбор действия",
     titleKey: "Выбор клавиши",
     emptyCategory: "В этой категории пока нет элементов.",
+    invalidValue:
+      "Используйте только канонический синтаксис действий: KeyA, Digit1, ArrowLeft, Ctrl+KeyC, macro:<id>, cmd:<id>, sys:<id> или text:<текст>.",
     clearAria: "Очистить",
     textHint:
       "Текстовые действия сохраняются как text:<ваш текст>. Используйте их для символов и строк, а не для ремапа физических клавиш.",

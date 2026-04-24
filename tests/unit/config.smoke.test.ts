@@ -3,13 +3,16 @@ import { describe, expect, it } from 'vitest'
 import {
   commandActionRef,
   createDefaultConfig,
+  parseTextAction,
   macroActionRef,
   parseCommandRef,
   parseMacroRef,
   parseSystemRef,
   systemActionRef,
+  textActionRef,
 } from '~/types/config'
 import { normalizeConfig, parsePersistedConfig } from '~/composables/useConfig'
+import { isCanonicalAction } from '~/utils/actionSyntax'
 
 describe('config helpers', () => {
   it('creates the expected default config shape', () => {
@@ -27,9 +30,25 @@ describe('config helpers', () => {
     expect(parseSystemRef(systemActionRef('switchDesktop1'))).toBe(
       'switchDesktop1',
     )
+    expect(parseTextAction(textActionRef('TODO: '))).toBe('TODO: ')
     expect(parseMacroRef('Enter')).toBeNull()
     expect(parseCommandRef('Enter')).toBeNull()
     expect(parseSystemRef('')).toBeNull()
+  })
+
+  it('accepts canonical actions and rejects legacy forms', () => {
+    expect(isCanonicalAction('KeyA')).toBe(true)
+    expect(isCanonicalAction('Digit1')).toBe(true)
+    expect(isCanonicalAction('ArrowLeft')).toBe(true)
+    expect(isCanonicalAction('Ctrl+KeyC')).toBe(true)
+    expect(isCanonicalAction('Ctrl+Shift+ArrowLeft')).toBe(true)
+    expect(isCanonicalAction('text:TODO: ')).toBe(true)
+
+    expect(isCanonicalAction('Esc')).toBe(false)
+    expect(isCanonicalAction('Left')).toBe(false)
+    expect(isCanonicalAction('Ctrl+C')).toBe(false)
+    expect(isCanonicalAction('1')).toBe(false)
+    expect(isCanonicalAction('€')).toBe(false)
   })
 
   it('normalizes partial persisted config into a complete shape', () => {

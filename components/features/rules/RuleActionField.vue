@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
+import { parseTextAction } from '~/types/config'
+import { isCanonicalAction } from '~/utils/actionSyntax'
 
 type ModeKind = 'native' | 'none' | 'action'
 
@@ -72,10 +74,11 @@ function editAction() {
 }
 
 function applyAction(value: string) {
-  const next = value.trim()
+  const next = parseTextAction(value) !== null ? value : value.trim()
   pendingMode.value = null
   pickerOpen.value = false
   if (!next) return
+  if (!isCanonicalAction(next)) return
   model.value = next
 }
 
