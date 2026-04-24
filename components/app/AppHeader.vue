@@ -20,7 +20,7 @@ const { layout } = useLayout()
 const { t } = useI18n()
 
 const tabItems = computed(() => [
-  { key: 'layouts', to: '/layouts', label: t('tabs.layouts'), icon: 'i-lucide-folder-kanban' },
+  { key: 'home', to: '/', label: t('tabs.home'), icon: 'i-lucide-house' },
   { key: 'rules', to: '/rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { key: 'keymap', to: '/keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { key: 'macros', to: '/macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
@@ -40,7 +40,6 @@ const saveLabel = computed(() => (isLayoutDirty.value ? t('common.save') : t('ap
 const saveIcon = computed(() => (isLayoutDirty.value ? 'i-lucide-save' : 'i-lucide-check'))
 
 function isActive(path: string) {
-  if (path === '/layouts' && route.path === '/') return true
   return route.path === path
 }
 
@@ -94,22 +93,33 @@ watch(
     class="flex items-center justify-between px-4 h-[var(--app-header-height)] border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 shrink-0 app-chrome"
   >
     <div class="flex items-center gap-4 min-w-0 flex-1">
-      <div class="flex items-center gap-2.5 shrink-0">
-        <UIcon name="i-lucide-keyboard" class="w-5 h-5 text-primary" />
-        <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
-      </div>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        class="shrink-0 -ml-2 px-2.5"
+        @click="openTab('/')"
+      >
+        <div class="flex items-center gap-2.5">
+          <UIcon name="i-lucide-keyboard" class="w-5 h-5 text-primary" />
+          <h1 class="text-[0.9375rem] font-semibold whitespace-nowrap">{{ $t('app.title') }}</h1>
+        </div>
+      </UButton>
 
       <div class="min-w-0 flex-1 overflow-x-auto">
-        <div class="inline-flex min-w-max items-center gap-1 bg-(--ui-bg) border border-(--ui-border) rounded-lg p-1">
+        <div class="inline-flex min-w-max items-center gap-1.5">
           <UButton
             v-for="item in tabItems"
             :key="item.key"
             :color="isActive(item.to) ? 'primary' : 'neutral'"
-            :variant="isActive(item.to) ? 'soft' : 'ghost'"
+            variant="ghost"
             :icon="item.icon"
             :square="item.iconOnly"
             :aria-label="item.label"
             size="sm"
+            class="px-3 text-(--ui-text-muted) hover:text-(--ui-text-highlighted)"
+            :class="isActive(item.to)
+              ? 'text-(--ui-text-highlighted) shadow-none ring-1 ring-inset ring-(--ui-border) bg-(--ui-bg-elevated)/70'
+              : 'bg-transparent shadow-none'"
             @click="openTab(item.to)"
           >
             <span v-if="!item.iconOnly">{{ item.label }}</span>

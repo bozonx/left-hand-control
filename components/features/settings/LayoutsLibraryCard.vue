@@ -198,28 +198,6 @@ defineEmits<{
                     </div>
                 </li>
             </ul>
-
-            <div
-                class="rounded border border-(--ui-border) bg-(--ui-bg-muted)/40 p-3 text-sm"
-            >
-                <div class="flex items-start gap-2">
-                    <UIcon
-                        name="i-lucide-info"
-                        class="mt-0.5 shrink-0 text-(--ui-primary)"
-                    />
-                    <div class="space-y-1">
-                        <div class="font-medium">
-                            {{ $t("settings.outputPrincipleTitle") }}
-                        </div>
-                        <p class="text-(--ui-text-muted)">
-                            {{ $t("settings.outputPrincipleBody1") }}
-                        </p>
-                        <p class="text-(--ui-text-muted)">
-                            {{ $t("settings.outputPrincipleBody2") }}
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
     </UCard>
 </template>

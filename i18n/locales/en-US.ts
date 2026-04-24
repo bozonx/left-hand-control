@@ -44,12 +44,23 @@ export default {
     backToTop: "back to top",
   },
   tabs: {
+    home: "Home",
     layouts: "My layouts",
     rules: "Rules",
     keymap: "Layers",
     macros: "Macros",
     commands: "Commands",
     settings: "Settings",
+  },
+  home: {
+    title: "Home",
+    subtitle:
+      "Your layouts live here together with a short reference on how the app applies actions.",
+    infoTitle: "About layouts",
+    infoSubtitle: "A quick reference for working with them in the app.",
+    layoutsHintTitle: "Using the library",
+    layoutsHintBody:
+      "Create empty layouts or copies of the Ivan K base layout, switch between them, and save the current changes into a separate file.",
   },
   welcome: {
     intro:
