@@ -57,7 +57,7 @@ export default {
     useThis: 'Use this layout',
     emptyTitle: 'Empty layout',
     emptyDesc:
-      'Start from scratch: only the base layer, no rules or macros. Good if you want to build your own from zero.',
+      'Start from scratch: no layers, rules or macros. Good if you want to build your own stack of additional layers from zero.',
     emptyBtn: 'Start empty',
     footnote: 'You can always change the chosen layout under {path}.',
     footnotePath: 'Settings → Layouts',
@@ -137,6 +137,9 @@ export default {
     deleteLayerTitle: 'Delete layer “{name}”',
     deleteLayerBody:
       'This removes the layer, its keymap, and clears references to it from layer rules.',
+    emptyTitle: 'No layers yet',
+    emptyBody:
+      'Create an extra layer to define its keymap and activate it from hold rules.',
     editLayerTitle: 'Edit layer',
     editLayerAria: 'Edit layer {name}',
     editTitle: 'Edit: {label}',

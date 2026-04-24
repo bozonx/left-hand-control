@@ -968,13 +968,6 @@ mod tests {
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
-        cfg.layer_keymaps.insert(
-            "base".into(),
-            LayerKeymap {
-                keys: HashMap::new(),
-            },
-        );
-
         let mut engine = Engine::new(&cfg);
         let mut pending = Vec::new();
         let start = Instant::now();

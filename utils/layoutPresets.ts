@@ -8,7 +8,6 @@ import {
   type LayoutPreset,
   type Macro,
   type MacroStep,
-  BASE_LAYER_ID,
   BUILTIN_LAYOUT_ID,
 } from '~/types/config'
 
@@ -54,9 +53,9 @@ function genId(prefix: string): string {
 }
 
 function parsePreset(doc: LayoutYaml, fallbackName: string): LayoutPreset {
-  const layers: Layer[] = [{ id: BASE_LAYER_ID, name: 'Base' }]
+  const layers: Layer[] = []
   for (const l of doc.layers ?? []) {
-    if (!l?.id || l.id === BASE_LAYER_ID) continue
+    if (!l?.id) continue
     layers.push({
       id: l.id,
       name: l.name ?? l.id,
@@ -164,13 +163,11 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
   const doc: LayoutYaml = {
     name: preset.name,
     description: preset.description,
-    layers: preset.layers
-      .filter((l) => l.id !== BASE_LAYER_ID)
-      .map((l) => ({
-        id: l.id,
-        name: l.name,
-        ...(l.description ? { description: l.description } : {}),
-      })),
+    layers: preset.layers.map((l) => ({
+      id: l.id,
+      name: l.name,
+      ...(l.description ? { description: l.description } : {}),
+    })),
     rules: preset.rules.map((r) => ({
       key: r.key,
       ...(r.layerId ? { layer: r.layerId } : {}),
@@ -213,9 +210,9 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
 export function emptyLayoutPreset(name = 'Empty layout'): LayoutPreset {
   return {
     name,
-    layers: [{ id: BASE_LAYER_ID, name: 'Base' }],
+    layers: [],
     rules: [],
-    layerKeymaps: { [BASE_LAYER_ID]: { keys: {}, extras: [] } },
+    layerKeymaps: {},
     macros: [],
   }
 }
@@ -252,12 +249,10 @@ export function applyPresetToConfig(
     macros: JSON.parse(JSON.stringify(preset.macros)),
     settings: { ...config.settings, currentLayoutId: layoutId },
   }
-  // Ensure base layer always exists.
-  if (!next.layers.some((l) => l.id === BASE_LAYER_ID)) {
-    next.layers.unshift({ id: BASE_LAYER_ID, name: 'Base' })
-  }
-  if (!next.layerKeymaps[BASE_LAYER_ID]) {
-    next.layerKeymaps[BASE_LAYER_ID] = { keys: {}, extras: [] }
+  for (const layer of next.layers) {
+    if (!next.layerKeymaps[layer.id]) {
+      next.layerKeymaps[layer.id] = { keys: {}, extras: [] }
+    }
   }
   return next
 }

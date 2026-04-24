@@ -1,5 +1,10 @@
-import { BASE_LAYER_ID } from '~/types/config'
+import type { LayerKeymap } from '~/types/config'
 import { randomId } from '~/utils/keys'
+
+const EMPTY_KEYMAP: LayerKeymap = {
+  keys: {},
+  extras: [],
+}
 
 export function useKeymapEditor() {
   const { config } = useConfig()
@@ -12,7 +17,13 @@ export function useKeymapEditor() {
   } = useLayers()
 
   const selectedLayerId = computed<string>({
-    get: () => uiState.state.value.selectedLayerId || BASE_LAYER_ID,
+    get: () => {
+      const selected = uiState.state.value.selectedLayerId
+      if (selected && config.value.layers.some((layer) => layer.id === selected)) {
+        return selected
+      }
+      return config.value.layers[0]?.id ?? ''
+    },
     set: (value) => {
       uiState.setSelectedLayerId(value)
     },
@@ -22,7 +33,7 @@ export function useKeymapEditor() {
     () => config.value.layers.map((layer) => layer.id).join(','),
     () => {
       if (!config.value.layers.some((layer) => layer.id === selectedLayerId.value)) {
-        uiState.setSelectedLayerId(BASE_LAYER_ID)
+        uiState.setSelectedLayerId(config.value.layers[0]?.id ?? '')
       }
     },
     { immediate: true },
@@ -36,7 +47,10 @@ export function useKeymapEditor() {
     config.value.layers.find((layer) => layer.id === selectedLayerId.value),
   )
 
-  const currentKeymap = computed(() => ensureLayerKeymap(selectedLayerId.value))
+  const currentKeymap = computed(() => {
+    if (!currentLayer.value) return EMPTY_KEYMAP
+    return ensureLayerKeymap(selectedLayerId.value)
+  })
 
   const editOpen = ref(false)
   const editKeyCode = ref('')
@@ -51,15 +65,18 @@ export function useKeymapEditor() {
   }
 
   function saveEdit(action: string) {
+    if (!currentLayer.value) return
     if (action) currentKeymap.value.keys[editKeyCode.value] = action
     else delete currentKeymap.value.keys[editKeyCode.value]
   }
 
   function clearEdit() {
+    if (!currentLayer.value) return
     delete currentKeymap.value.keys[editKeyCode.value]
   }
 
   function addExtra() {
+    if (!currentLayer.value) return
     currentKeymap.value.extras.unshift({
       id: randomId(),
       name: '',
@@ -68,6 +85,7 @@ export function useKeymapEditor() {
   }
 
   function moveExtra(id: string, direction: 'up' | 'down') {
+    if (!currentLayer.value) return
     const index = currentKeymap.value.extras.findIndex((extra) => extra.id === id)
     if (index === -1) return
     const newIndex = direction === 'up' ? index - 1 : index + 1
@@ -78,6 +96,7 @@ export function useKeymapEditor() {
   }
 
   function removeExtra(id: string) {
+    if (!currentLayer.value) return
     currentKeymap.value.extras = currentKeymap.value.extras.filter(
       (extra) => extra.id !== id,
     )
@@ -115,13 +134,13 @@ export function useKeymapEditor() {
 
   function deleteSelectedLayer() {
     if (deleteLayer(selectedLayerId.value)) {
-      selectedLayerId.value = BASE_LAYER_ID
+      selectedLayerId.value = config.value.layers[0]?.id ?? ''
       deleteConfirmOpen.value = false
     }
   }
 
   function requestDeleteSelectedLayer() {
-    if (selectedLayerId.value === BASE_LAYER_ID) return
+    if (!currentLayer.value) return
     deleteConfirmOpen.value = true
   }
 

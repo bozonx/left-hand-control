@@ -63,7 +63,7 @@ function stopDescriptionEditing() {
             color="neutral"
             variant="ghost"
             :aria-label="$t('keymap.editLayerAria', { name: currentLayerName ?? '' })"
-            :disabled="selectedLayerId === 'base'"
+            :disabled="!selectedLayerId"
             @click="emit('rename')"
           />
           <UButton
@@ -73,7 +73,7 @@ function stopDescriptionEditing() {
             variant="ghost"
             square
             :aria-label="$t('keymap.delete')"
-            :disabled="selectedLayerId === 'base'"
+            :disabled="!selectedLayerId"
             @click="$emit('delete')"
           />
         </div>

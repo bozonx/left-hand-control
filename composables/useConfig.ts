@@ -2,7 +2,6 @@ import {
   type AppConfig,
   type LayoutPreset,
   type PersistedConfig,
-  BASE_LAYER_ID,
   BUILTIN_LAYOUT_ID,
   createDefaultConfig,
   createDefaultPersistedConfig,
@@ -76,9 +75,6 @@ export function normalizeConfig(raw: unknown): AppConfig {
         : base.layerKeymaps,
     macros: Array.isArray(r.macros) ? r.macros : [],
     settings: { ...base.settings, ...(r.settings ?? {}) },
-  }
-  if (!cfg.layers.some((l) => l.id === BASE_LAYER_ID)) {
-    cfg.layers.unshift({ id: BASE_LAYER_ID, name: 'Base' })
   }
   for (const layer of cfg.layers) {
     if (!cfg.layerKeymaps[layer.id]) {

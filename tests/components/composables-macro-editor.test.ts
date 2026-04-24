@@ -26,6 +26,8 @@ describe('useMacroEditor', () => {
 
   it('adds and clones macros, validates ids, tracks usage and edits steps', async () => {
     const state = makeConfigState()
+    state.config.value.layers.push({ id: 'nav', name: 'Navigation' })
+    state.config.value.layerKeymaps.nav = { keys: {}, extras: [] }
     state.config.value.rules.push({
       id: 'rule-1',
       key: 'CapsLock',
@@ -34,8 +36,8 @@ describe('useMacroEditor', () => {
       holdAction: '',
       doubleTapAction: '',
     })
-    state.config.value.layerKeymaps.base!.keys.KeyH = macroActionRef('dup')
-    state.config.value.layerKeymaps.base!.extras.push({
+    state.config.value.layerKeymaps.nav!.keys.KeyH = macroActionRef('dup')
+    state.config.value.layerKeymaps.nav!.extras.push({
       id: 'extra-1',
       name: 'Mouse4',
       action: macroActionRef('dup'),
@@ -100,8 +102,8 @@ describe('useMacroEditor', () => {
     const usage = vm.usage
     expect(usage.dup).toEqual([
       'rule CapsLock (tap)',
-      'base.KeyH',
-      'base.Mouse4',
+      'nav.KeyH',
+      'nav.Mouse4',
     ])
 
     vm.removeMacro(vm.uiKeyOf(firstMacro))

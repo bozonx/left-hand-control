@@ -130,8 +130,7 @@ export interface AppConfig {
   version: 1
   layers: Layer[]
   rules: LayerRule[]
-  // Per-layer keymap keyed by Layer.id. A "base" layer with id "base" is
-  // always present.
+  // Per-layer keymap keyed by Layer.id.
   layerKeymaps: Record<string, LayerKeymap>
   // User-defined macros, referenced from actions as "macro:<id>".
   macros: Macro[]
@@ -173,8 +172,6 @@ export function parseSystemRef(action: string): string | null {
     : null
 }
 
-export const BASE_LAYER_ID = 'base'
-
 // Id of the bundled "Ivan K's left hand control" layout preset.
 export const BUILTIN_LAYOUT_ID = 'builtin:ivank'
 // Prefix used to compose an id for a user-saved layout: `user:<name>`.
@@ -183,11 +180,9 @@ export const USER_LAYOUT_PREFIX = 'user:'
 export function createDefaultConfig(): AppConfig {
   return {
     version: 1,
-    layers: [{ id: BASE_LAYER_ID, name: 'Base' }],
+    layers: [],
     rules: [],
-    layerKeymaps: {
-      [BASE_LAYER_ID]: { keys: {}, extras: [] },
-    },
+    layerKeymaps: {},
     macros: [],
     settings: {
       launchOnStartup: false,

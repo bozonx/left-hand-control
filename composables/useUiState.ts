@@ -1,4 +1,3 @@
-import { BASE_LAYER_ID } from '~/types/config'
 import { APP_TABS, type AppTab, createDefaultUiState, type UiState } from '~/types/uiState'
 
 function normalizeUiState(raw: unknown): UiState {
@@ -133,7 +132,7 @@ export function useUiState(): UiStateStore {
   }
 
   function setSelectedLayerId(value: string) {
-    const next = value || BASE_LAYER_ID
+    const next = value || ''
     if (state.value.selectedLayerId === next) return
     state.value = {
       ...state.value,

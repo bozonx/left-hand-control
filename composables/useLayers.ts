@@ -1,4 +1,3 @@
-import { BASE_LAYER_ID } from '~/types/config'
 import { randomId } from '~/utils/keys'
 
 export function useLayers() {
@@ -42,7 +41,7 @@ export function useLayers() {
   }
 
   function deleteLayer(id: string) {
-    if (id === BASE_LAYER_ID) return false
+    if (!config.value.layers.some((layer) => layer.id === id)) return false
     config.value.layers = config.value.layers.filter((layer) => layer.id !== id)
     delete config.value.layerKeymaps[id]
     config.value.rules = config.value.rules.map((rule) =>

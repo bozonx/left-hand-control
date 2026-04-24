@@ -525,7 +525,7 @@ impl Engine {
 
         // When at least one layer is active, rule keys must behave like
         // normal keys inside that layer. Only the active-layer keymaps
-        // (and the base keymap fallback) participate in resolution.
+        // participate in resolution.
         {
             let mapped = self.lookup_mapping(key);
             match mapped {
@@ -679,9 +679,7 @@ impl Engine {
                 }
             }
         }
-        self.layer_maps
-            .get("base")
-            .and_then(|m| m.get(&key).cloned())
+        None
     }
 
     fn push_layer(&mut self, id: String) {
@@ -882,13 +880,6 @@ mod tests {
         };
         sel.keys.insert("KeyQ".into(), "Ctrl+Z".into());
         cfg.layer_keymaps.insert("sel".into(), sel);
-        cfg.layer_keymaps.insert(
-            "base".into(),
-            LayerKeymap {
-                keys: HashMap::new(),
-            },
-        );
-
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -932,13 +923,6 @@ mod tests {
         };
         space.keys.insert("Tab".into(), "Escape".into());
         cfg.layer_keymaps.insert("space".into(), space);
-        cfg.layer_keymaps.insert(
-            "base".into(),
-            LayerKeymap {
-                keys: HashMap::new(),
-            },
-        );
-
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -977,13 +961,6 @@ mod tests {
         };
         win.keys.insert("Tab".into(), "Tab".into());
         cfg.layer_keymaps.insert("win".into(), win);
-        cfg.layer_keymaps.insert(
-            "base".into(),
-            LayerKeymap {
-                keys: HashMap::new(),
-            },
-        );
-
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -1027,13 +1004,6 @@ mod tests {
         };
         win.keys.insert("Tab".into(), "Escape".into());
         cfg.layer_keymaps.insert("win".into(), win);
-        cfg.layer_keymaps.insert(
-            "base".into(),
-            LayerKeymap {
-                keys: HashMap::new(),
-            },
-        );
-
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();

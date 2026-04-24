@@ -27,6 +27,8 @@ describe('editor composables', () => {
 
   it('useLayers creates, renames and deletes layers while keeping config consistent', async () => {
     const state = makeConfigState()
+    state.config.value.layers.push({ id: 'nav', name: 'Navigation' })
+    state.config.value.layerKeymaps.nav = { keys: {}, extras: [] }
     state.config.value.rules.push({
       id: 'rule-1',
       key: 'CapsLock',
@@ -76,7 +78,6 @@ describe('editor composables', () => {
       description: 'arrows',
     })
 
-    expect(vm.deleteLayer('base')).toBe(false)
     expect(vm.deleteLayer('nav')).toBe(true)
     expect(state.config.value.layers.some((layer) => layer.id === 'nav')).toBe(false)
     expect(state.config.value.layerKeymaps.nav).toBeUndefined()
@@ -219,7 +220,7 @@ describe('editor composables', () => {
     vm.deleteSelectedLayer()
     await nextTick()
 
-    expect(vm.selectedLayerId).toBe('base')
+    expect(vm.selectedLayerId).toBe('')
     expect(state.config.value.layers.some((layer) => layer.id === 'nav')).toBe(false)
     expect(vm.deleteConfirmOpen).toBe(false)
 

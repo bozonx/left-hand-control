@@ -10,6 +10,6 @@ export interface UiState {
 export function createDefaultUiState(): UiState {
   return {
     activeTab: 'layouts',
-    selectedLayerId: 'base',
+    selectedLayerId: '',
   }
 }

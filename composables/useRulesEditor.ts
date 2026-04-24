@@ -8,9 +8,7 @@ export function useRulesEditor() {
   const layerOptions = computed(() =>
     [
       { label: t('common.none'), value: '__none__' },
-      ...config.value.layers
-        .filter((layer) => layer.id !== 'base')
-        .map((layer) => ({ label: layer.name, value: layer.id })),
+      ...config.value.layers.map((layer) => ({ label: layer.name, value: layer.id })),
     ],
   )
 

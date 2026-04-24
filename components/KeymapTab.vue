@@ -47,18 +47,33 @@ const {
       @delete="requestDeleteSelectedLayer"
     />
 
-    <KeyboardGridCard
-      :current-keymap="currentKeymap"
-      @edit="openEdit"
-    />
+    <template v-if="currentLayer">
+      <KeyboardGridCard
+        :current-keymap="currentKeymap"
+        @edit="openEdit"
+      />
 
-    <ExtrasCard
-      :extras="currentKeymap.extras"
-      @add="addExtra"
-      @move-up="(id) => moveExtra(id, 'up')"
-      @move-down="(id) => moveExtra(id, 'down')"
-      @remove="removeExtra"
-    />
+      <ExtrasCard
+        :extras="currentKeymap.extras"
+        @add="addExtra"
+        @move-up="(id) => moveExtra(id, 'up')"
+        @move-down="(id) => moveExtra(id, 'down')"
+        @remove="removeExtra"
+      />
+    </template>
+    <UCard v-else>
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="text-sm font-semibold">{{ $t('keymap.emptyTitle') }}</h2>
+          <p class="mt-1 text-sm text-(--ui-text-muted)">
+            {{ $t('keymap.emptyBody') }}
+          </p>
+        </div>
+        <UButton icon="i-lucide-plus" size="sm" @click="openNewLayer">
+          {{ $t('keymap.newLayer') }}
+        </UButton>
+      </div>
+    </UCard>
 
     <KeyEditModal
       v-model="editOpen"

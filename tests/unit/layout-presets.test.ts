@@ -51,10 +51,7 @@ macros:
     expect(preset).toMatchObject({
       name: 'Navigation',
       description: 'Primary nav layer',
-      layers: [
-        { id: 'base', name: 'Base' },
-        { id: 'nav', name: 'Nav' },
-      ],
+      layers: [{ id: 'nav', name: 'Nav' }],
       rules: [
         {
           key: 'CapsLock',
@@ -99,7 +96,6 @@ macros:
       name: 'Editing',
       description: 'editing helpers',
       layers: [
-        { id: 'base', name: 'Base' },
         { id: 'edit', name: 'Edit', description: 'editing layer' },
       ],
       rules: [
@@ -115,7 +111,6 @@ macros:
         },
       ],
       layerKeymaps: {
-        base: { keys: {}, extras: [] },
         edit: {
           keys: { KeyH: 'ArrowLeft' },
           extras: [{ id: 'extra-1', name: 'Mouse4', action: 'BrowserBack' }],
@@ -152,7 +147,6 @@ macros:
         },
       ],
       layerKeymaps: {
-        base: { keys: {}, extras: [] },
         edit: {
           keys: { KeyH: 'ArrowLeft' },
           extras: [{ name: 'Mouse4', action: 'BrowserBack' }],
@@ -203,13 +197,13 @@ macros:
     expect(next.layerKeymaps).toEqual(config.layerKeymaps)
     expect(next.macros).toEqual(config.macros)
 
-    preset.layers[1]!.name = 'Changed later'
+    preset.layers[0]!.name = 'Changed later'
     preset.layerKeymaps.nav!.keys.KeyH = 'Changed'
-    expect(next.layers[1]!.name).toBe('Navigation')
+    expect(next.layers[0]!.name).toBe('Navigation')
     expect(next.layerKeymaps.nav!.keys.KeyH).toBe('ArrowLeft')
   })
 
-  it('creates stable layout snapshots and empty presets with the base layer', () => {
+  it('creates stable layout snapshots and empty presets without implicit layers', () => {
     const config = createDefaultConfig()
     const initial = layoutSnapshotOf(config)
 
@@ -225,9 +219,9 @@ macros:
     expect(layoutSnapshotOf(config)).not.toBe(initial)
     expect(emptyLayoutPreset()).toEqual({
       name: 'Empty layout',
-      layers: [{ id: 'base', name: 'Base' }],
+      layers: [],
       rules: [],
-      layerKeymaps: { base: { keys: {}, extras: [] } },
+      layerKeymaps: {},
       macros: [],
     })
   })

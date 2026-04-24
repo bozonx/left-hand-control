@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  BASE_LAYER_ID,
   createDefaultConfig,
   macroActionRef,
   parseMacroRef,
@@ -15,11 +14,8 @@ describe('config helpers', () => {
     const config = createDefaultConfig()
 
     expect(config.version).toBe(1)
-    expect(config.layers).toEqual([{ id: BASE_LAYER_ID, name: 'Base' }])
-    expect(config.layerKeymaps[BASE_LAYER_ID]).toEqual({
-      keys: {},
-      extras: [],
-    })
+    expect(config.layers).toEqual([])
+    expect(config.layerKeymaps).toEqual({})
     expect(config.settings.appearance).toBe('system')
   })
 
@@ -54,8 +50,7 @@ describe('config helpers', () => {
       },
     })
 
-    expect(config.layers.map((layer) => layer.id)).toEqual([BASE_LAYER_ID, 'nav'])
-    expect(config.layerKeymaps[BASE_LAYER_ID]).toEqual({ keys: {}, extras: [] })
+    expect(config.layers.map((layer) => layer.id)).toEqual(['nav'])
     expect(config.layerKeymaps.nav).toEqual({ keys: {}, extras: [] })
     expect(config.rules[0]).toMatchObject({
       tapAction: '',
