@@ -419,13 +419,13 @@ export default {
       "The layout file will be deleted from disk. This cannot be undone. The currently active layout does not change.",
     outputPrincipleTitle: "How output works",
     outputPrincipleBody1:
-      "The mapper does not try to reinterpret already assembled shortcuts. It sends the system the final result: a single key or a shortcut such as Ctrl+Z, Ctrl+C, or Shift+Tab.",
+      "The mapper does not try to reinterpret already assembled shortcuts. It sends the system the final result: a single key or a shortcut such as Ctrl+KeyZ, Ctrl+KeyC, or Shift+Tab.",
     outputPrincipleBody2:
-      "Because of that, the target app usually receives exactly the shortcut you configured in the layout. If an action is set to Ctrl+Z, the system will see Ctrl+Z even if the physical Z key is remapped to something else inside the layout.",
+      "Because of that, the target app usually receives exactly the shortcut you configured in the layout. If an action is set to Ctrl+KeyZ, the system will see Ctrl+KeyZ even if the physical Z key is remapped to something else inside the layout.",
   },
   picker: {
     currentValue: "Current value",
-    valuePh: "E.g.: Ctrl+C, Escape, KeyA, macro:copyLine, cmd:toggleMusic, text:TODO: ",
+    valuePh: "E.g.: Ctrl+KeyC, Escape, KeyA, macro:copyLine, cmd:toggleMusic, text:TODO: ",
     textPh: "Type the text to insert. Example: TODO: ",
     chooseAction: "Choose action",
     chooseKey: "Pick key",

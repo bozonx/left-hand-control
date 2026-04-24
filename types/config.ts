@@ -16,8 +16,8 @@ export interface Layer {
 //   null                      => **swallow** — nothing happens.
 //   non-empty string          => **action** — user-defined action (for
 //     `tapAction`: any action string; for `holdAction`: a keystroke
-//     string like "ControlLeft" or "Ctrl+Shift" which is held down
-//     while the physical key is held).
+//     string like "ControlLeft" or "ControlLeft+ShiftLeft" which is held
+//     down while the physical key is held).
 //
 export interface LayerRule {
   id: string
@@ -63,7 +63,7 @@ export interface LayerKeymap {
 }
 
 // One step of a macro. For now only simple keystrokes are supported
-// (single key or key with modifiers, e.g. "Ctrl+Shift+T", "Enter").
+// (single key or key with modifiers, e.g. "Ctrl+Shift+KeyT", "Enter").
 // Reserved for future: { type: 'shell', command: '...' },
 //                      { type: 'system', name: '...' }.
 export interface MacroStep {

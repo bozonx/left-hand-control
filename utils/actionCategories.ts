@@ -1,6 +1,6 @@
 // Categories used by ActionPickerModal. Each category surfaces a subset of
 // the actions the mapper understands. Users can also type an arbitrary
-// string (e.g. chord "Ctrl+Shift+T") via the free-text input.
+// string (e.g. chord "Ctrl+Shift+KeyT") via the free-text input.
 
 export interface ActionItem {
   label: string
@@ -46,10 +46,10 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
       'AltRight',
       'MetaLeft',
       'MetaRight',
-      'Left',
-      'Right',
-      'Up',
-      'Down',
+      'ArrowLeft',
+      'ArrowRight',
+      'ArrowUp',
+      'ArrowDown',
       'Home',
       'End',
       'PageUp',

@@ -44,7 +44,7 @@
 
 #![cfg(target_os = "linux")]
 
-use super::action::{explicit_text, literal_text, parse_action, Keystroke, MacroStepItem};
+use super::action::{explicit_text, parse_action, Keystroke, MacroStepItem};
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system::{self, SysAction, SysCommand};
@@ -249,7 +249,7 @@ impl Engine {
                     }
                     continue;
                 }
-                if let Some(text) = explicit_text(raw).or_else(|| literal_text(raw)) {
+                if let Some(text) = explicit_text(raw) {
                     steps.push(MacroStepItem::Literal(text));
                     continue;
                 }
@@ -351,7 +351,7 @@ impl Engine {
                     }
                 }
             }
-            if let Some(text) = explicit_text(trimmed).or_else(|| literal_text(trimmed)) {
+            if let Some(text) = explicit_text(trimmed) {
                 return Some(ActionDef::Literal(text));
             }
             match parse_action(trimmed) {
@@ -552,7 +552,7 @@ impl Engine {
 
         // Interrupt-on-other-key-press: any pending rule still in
         // WaitingDecision must resolve as hold before we let this new
-        // event through. This is what makes Shift+A, MetaLeft(hold=Ctrl)+C
+        // event through. This is what makes Shift+KeyA, MetaLeft(hold=ControlLeft)+KeyC
         // and similar mod-tap patterns feel natural.
         self.commit_waiting_decisions(out);
 
@@ -938,7 +938,7 @@ mod tests {
     }
 
     #[test]
-    fn sel_layer_q_emits_ctrl_z() {
+    fn sel_layer_q_emits_ctrl_key_z() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
             id: "r_tab".into(),
@@ -954,7 +954,7 @@ mod tests {
         let mut sel = LayerKeymap {
             keys: HashMap::new(),
         };
-        sel.keys.insert("KeyQ".into(), Some("Ctrl+Z".into()));
+        sel.keys.insert("KeyQ".into(), Some("Ctrl+KeyZ".into()));
         cfg.layer_keymaps.insert("sel".into(), sel);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();

@@ -67,12 +67,12 @@ describe('useMacroEditor', () => {
 
     vm.addStep(firstMacro)
     const stepId = firstMacro.steps[0]!.id
-    firstMacro.steps[0]!.keystroke = 'Ctrl+C'
+    firstMacro.steps[0]!.keystroke = 'Ctrl+KeyC'
     expect(vm.stepError(firstMacro.steps[0])).toBeNull()
     vm.addStep(firstMacro)
-    firstMacro.steps[1]!.keystroke = 'Ctrl+V'
+    firstMacro.steps[1]!.keystroke = 'Ctrl+KeyV'
     vm.moveStep(firstMacro, 1, -1)
-    expect(firstMacro.steps.map((step) => step.keystroke)).toEqual(['Ctrl+V', 'Ctrl+C'])
+    expect(firstMacro.steps.map((step) => step.keystroke)).toEqual(['Ctrl+KeyV', 'Ctrl+KeyC'])
     vm.removeStep(firstMacro, stepId)
     expect(firstMacro.steps).toHaveLength(1)
 

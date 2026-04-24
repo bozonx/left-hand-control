@@ -5,38 +5,6 @@
 
 use evdev::Key;
 
-fn alpha_key(ch: char) -> Option<Key> {
-    Some(match ch.to_ascii_uppercase() {
-        'A' => Key::KEY_A,
-        'B' => Key::KEY_B,
-        'C' => Key::KEY_C,
-        'D' => Key::KEY_D,
-        'E' => Key::KEY_E,
-        'F' => Key::KEY_F,
-        'G' => Key::KEY_G,
-        'H' => Key::KEY_H,
-        'I' => Key::KEY_I,
-        'J' => Key::KEY_J,
-        'K' => Key::KEY_K,
-        'L' => Key::KEY_L,
-        'M' => Key::KEY_M,
-        'N' => Key::KEY_N,
-        'O' => Key::KEY_O,
-        'P' => Key::KEY_P,
-        'Q' => Key::KEY_Q,
-        'R' => Key::KEY_R,
-        'S' => Key::KEY_S,
-        'T' => Key::KEY_T,
-        'U' => Key::KEY_U,
-        'V' => Key::KEY_V,
-        'W' => Key::KEY_W,
-        'X' => Key::KEY_X,
-        'Y' => Key::KEY_Y,
-        'Z' => Key::KEY_Z,
-        _ => return None,
-    })
-}
-
 pub fn code_to_key(code: &str) -> Option<Key> {
     Some(match code {
         // Letters
@@ -106,22 +74,22 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "F24" => Key::KEY_F24,
 
         // Navigation / editing
-        "Escape" | "Esc" => Key::KEY_ESC,
+        "Escape" => Key::KEY_ESC,
         "Tab" => Key::KEY_TAB,
         "CapsLock" => Key::KEY_CAPSLOCK,
-        "Enter" | "Return" => Key::KEY_ENTER,
+        "Enter" => Key::KEY_ENTER,
         "Backspace" => Key::KEY_BACKSPACE,
         "Space" => Key::KEY_SPACE,
-        "Delete" | "Del" => Key::KEY_DELETE,
-        "Insert" | "Ins" => Key::KEY_INSERT,
+        "Delete" => Key::KEY_DELETE,
+        "Insert" => Key::KEY_INSERT,
         "Home" => Key::KEY_HOME,
         "End" => Key::KEY_END,
-        "PageUp" | "PgUp" => Key::KEY_PAGEUP,
-        "PageDown" | "PgDn" => Key::KEY_PAGEDOWN,
-        "ArrowLeft" | "Left" => Key::KEY_LEFT,
-        "ArrowRight" | "Right" => Key::KEY_RIGHT,
-        "ArrowUp" | "Up" => Key::KEY_UP,
-        "ArrowDown" | "Down" => Key::KEY_DOWN,
+        "PageUp" => Key::KEY_PAGEUP,
+        "PageDown" => Key::KEY_PAGEDOWN,
+        "ArrowLeft" => Key::KEY_LEFT,
+        "ArrowRight" => Key::KEY_RIGHT,
+        "ArrowUp" => Key::KEY_UP,
+        "ArrowDown" => Key::KEY_DOWN,
         "PrintScreen" => Key::KEY_SYSRQ,
 
         // Punctuation
@@ -138,15 +106,15 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "Slash" => Key::KEY_SLASH,
 
         // Modifiers
-        "ShiftLeft" | "Shift" => Key::KEY_LEFTSHIFT,
+        "ShiftLeft" => Key::KEY_LEFTSHIFT,
         "ShiftRight" => Key::KEY_RIGHTSHIFT,
-        "ControlLeft" | "Control" | "Ctrl" => Key::KEY_LEFTCTRL,
+        "ControlLeft" => Key::KEY_LEFTCTRL,
         "ControlRight" => Key::KEY_RIGHTCTRL,
-        "AltLeft" | "Alt" => Key::KEY_LEFTALT,
+        "AltLeft" => Key::KEY_LEFTALT,
         "AltRight" => Key::KEY_RIGHTALT,
-        "MetaLeft" | "Meta" | "Super" | "Win" => Key::KEY_LEFTMETA,
+        "MetaLeft" => Key::KEY_LEFTMETA,
         "MetaRight" => Key::KEY_RIGHTMETA,
-        "ContextMenu" | "Menu" => Key::KEY_COMPOSE,
+        "ContextMenu" => Key::KEY_COMPOSE,
 
         // Media / browser
         "BrowserBack" => Key::KEY_BACK,
@@ -155,74 +123,10 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "BrowserHome" => Key::KEY_HOMEPAGE,
         "VolumeUp" => Key::KEY_VOLUMEUP,
         "VolumeDown" => Key::KEY_VOLUMEDOWN,
-        "VolumeMute" | "Mute" => Key::KEY_MUTE,
-        "MediaPlayPause" | "PlayPause" => Key::KEY_PLAYPAUSE,
-        "MediaNext" | "Next" => Key::KEY_NEXTSONG,
-        "MediaPrev" | "Prev" | "Previous" => Key::KEY_PREVIOUSSONG,
-
-        _ => return None,
-    })
-}
-
-// Single-character shortcuts (e.g. the symbols in Ivan K's layout preset).
-// Returns (needs_shift, Key).
-pub fn char_to_key(ch: char) -> Option<(bool, Key)> {
-    Some(match ch {
-        // Unshifted
-        '`' => (false, Key::KEY_GRAVE),
-        '-' => (false, Key::KEY_MINUS),
-        '=' => (false, Key::KEY_EQUAL),
-        '[' => (false, Key::KEY_LEFTBRACE),
-        ']' => (false, Key::KEY_RIGHTBRACE),
-        '\\' => (false, Key::KEY_BACKSLASH),
-        ';' => (false, Key::KEY_SEMICOLON),
-        '\'' => (false, Key::KEY_APOSTROPHE),
-        ',' => (false, Key::KEY_COMMA),
-        '.' => (false, Key::KEY_DOT),
-        '/' => (false, Key::KEY_SLASH),
-        ' ' => (false, Key::KEY_SPACE),
-
-        // Shifted
-        '~' => (true, Key::KEY_GRAVE),
-        '!' => (true, Key::KEY_1),
-        '@' => (true, Key::KEY_2),
-        '#' => (true, Key::KEY_3),
-        '$' => (true, Key::KEY_4),
-        '%' => (true, Key::KEY_5),
-        '^' => (true, Key::KEY_6),
-        '&' => (true, Key::KEY_7),
-        '*' => (true, Key::KEY_8),
-        '(' => (true, Key::KEY_9),
-        ')' => (true, Key::KEY_0),
-        '_' => (true, Key::KEY_MINUS),
-        '+' => (true, Key::KEY_EQUAL),
-        '{' => (true, Key::KEY_LEFTBRACE),
-        '}' => (true, Key::KEY_RIGHTBRACE),
-        '|' => (true, Key::KEY_BACKSLASH),
-        ':' => (true, Key::KEY_SEMICOLON),
-        '"' => (true, Key::KEY_APOSTROPHE),
-        '<' => (true, Key::KEY_COMMA),
-        '>' => (true, Key::KEY_DOT),
-        '?' => (true, Key::KEY_SLASH),
-
-        c if c.is_ascii_digit() => (
-            false,
-            match c {
-                '0' => Key::KEY_0,
-                '1' => Key::KEY_1,
-                '2' => Key::KEY_2,
-                '3' => Key::KEY_3,
-                '4' => Key::KEY_4,
-                '5' => Key::KEY_5,
-                '6' => Key::KEY_6,
-                '7' => Key::KEY_7,
-                '8' => Key::KEY_8,
-                '9' => Key::KEY_9,
-                _ => unreachable!(),
-            },
-        ),
-        c if c.is_ascii_lowercase() => (false, alpha_key(c)?),
-        c if c.is_ascii_uppercase() => (true, alpha_key(c)?),
+        "VolumeMute" => Key::KEY_MUTE,
+        "MediaPlayPause" => Key::KEY_PLAYPAUSE,
+        "MediaNext" => Key::KEY_NEXTSONG,
+        "MediaPrev" => Key::KEY_PREVIOUSSONG,
 
         _ => return None,
     })

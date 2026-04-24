@@ -2,7 +2,7 @@ layers:
   - id: nav
     keys:
       AltLeft: macro:pasteAtLineBottom
-      MetaLeft: Ctrl+X
+      MetaLeft: Ctrl+KeyX
       Space: Delete
       KeyQ: macro:moveLineDown
       KeyW: Ctrl+Backspace
@@ -15,23 +15,23 @@ layers:
       KeyO: End
       KeyP: macro:up5Times
       KeyS: macro:duplicateLine
-      KeyD: Ctrl+D
+      KeyD: Ctrl+KeyD
       KeyF: PageDown
       KeyG: Ctrl+End
-      KeyH: Left
-      KeyJ: Down
-      KeyK: Up
-      KeyL: Right
+      KeyH: ArrowLeft
+      KeyJ: ArrowDown
+      KeyK: ArrowUp
+      KeyL: ArrowRight
       Semicolon: macro:rightSpace
       KeyZ: macro:emptyLineBelow
       KeyX: macro:cutWordRightCenter
       KeyC: macro:copyWordAfterCenter
       KeyV: macro:pasteAtLineAbove
       KeyB: macro:replaceWordWidthBuffer
-      KeyN: Ctrl+Left
+      KeyN: Ctrl+ArrowLeft
       KeyM: macro:downHome
       Comma: macro:upHome
-      Period: Ctrl+Right
+      Period: Ctrl+ArrowRight
       Slash: macro:down5Times
     extras:
       - name: Mouse4
@@ -42,7 +42,7 @@ layers:
     keys:
       AltLeft: Ctrl+Enter
       Space: Backspace
-      KeyQ: Ctrl+Z
+      KeyQ: Ctrl+KeyZ
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
       KeyR: macro:cutLineContent
@@ -54,16 +54,16 @@ layers:
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
       KeyF: macro:copyLine
-      KeyH: Shift+Left
-      KeyJ: Shift+Down
-      KeyK: Shift+Up
-      KeyL: Shift+Right
+      KeyH: Shift+ArrowLeft
+      KeyJ: Shift+ArrowDown
+      KeyK: Shift+ArrowUp
+      KeyL: Shift+ArrowRight
       Semicolon: macro:selectWholeLine
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
       KeyB: macro:replaceLineWidthBuffer
-      KeyN: Shift+Ctrl+Left
-      Period: Shift+Ctrl+Right
+      KeyN: Ctrl+Shift+ArrowLeft
+      Period: Ctrl+Shift+ArrowRight
       Slash: macro:select5LinesDown
   - id: sym
     keys:
@@ -73,9 +73,9 @@ layers:
       KeyR: "text:("
       KeyT: "text:|"
       KeyY: "text:^"
-      KeyU: '7'
-      KeyI: '8'
-      KeyO: '9'
+      KeyU: Digit7
+      KeyI: Digit8
+      KeyO: Digit9
       KeyP: "text:="
       BracketLeft: "text:≠"
       KeyA: "text:$"
@@ -84,9 +84,9 @@ layers:
       KeyF: "text:?"
       KeyG: "text:&"
       KeyH: "text:*"
-      KeyJ: '4'
-      KeyK: '5'
-      KeyL: '6'
+      KeyJ: Digit4
+      KeyK: Digit5
+      KeyL: Digit6
       Semicolon: "text:+"
       Quote: "text:%"
       KeyZ: "text::"
@@ -94,10 +94,10 @@ layers:
       KeyC: "text:'"
       KeyV: 'text:"'
       KeyB: "text:/"
-      KeyN: '0'
-      KeyM: '1'
-      Comma: '2'
-      Period: '3'
+      KeyN: Digit0
+      KeyM: Digit1
+      Comma: Digit2
+      Period: Digit3
       Slash: "text:@"
       ShiftRight: "text:_"
   - id: fkeys
@@ -145,7 +145,7 @@ layers:
       Digit8: sys:taskEntry8
       Digit9: sys:taskEntry9
       Digit0: sys:taskEntry10
-      KeyW: Ctrl+A
+      KeyW: Ctrl+KeyA
       KeyT: sys:windowKeepAbove
       Backslash: sys:screenOff
       KeyA: sys:switchDesktop4
@@ -175,11 +175,11 @@ rules:
   - key: Tab
     layer: sel
   - key: CapsLock
-    tap: Ctrl+V
+    tap: Ctrl+KeyV
     layer: nav
     holdMs: 180
   - key: ShiftLeft
-    tap: Ctrl+C
+    tap: Ctrl+KeyC
   - key: ControlLeft
     hold: AltLeft
   - key: MetaLeft

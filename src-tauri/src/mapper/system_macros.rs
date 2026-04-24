@@ -16,27 +16,27 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     // nav layer
     SysMacro {
         id: "moveLineDown",
-        steps: &["Home", "Enter", "Up"],
+        steps: &["Home", "Enter", "ArrowUp"],
     },
     SysMacro {
         id: "downEnd",
-        steps: &["Down", "End"],
+        steps: &["ArrowDown", "End"],
     },
     SysMacro {
         id: "upEnd",
-        steps: &["Up", "End"],
+        steps: &["ArrowUp", "End"],
     },
     SysMacro {
         id: "up5Times",
-        steps: &["Up", "Up", "Up", "Up", "Up"],
+        steps: &["ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"],
     },
     SysMacro {
         id: "duplicateLine",
-        steps: &["End", "Shift+Home", "Ctrl+C", "End", "Enter", "Ctrl+V"],
+        steps: &["End", "Shift+Home", "Ctrl+KeyC", "End", "Enter", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "rightSpace",
-        steps: &["Right", "Space"],
+        steps: &["ArrowRight", "Space"],
     },
     SysMacro {
         id: "emptyLineBelow",
@@ -44,68 +44,80 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "cutWordRightCenter",
-        steps: &["Ctrl+Right", "Ctrl+Shift+Left", "Ctrl+X"],
+        steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "copyWordAfterCenter",
-        steps: &["Ctrl+Right", "Ctrl+Shift+Left", "Ctrl+C", "Left"],
+        steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyC", "ArrowLeft"],
     },
     SysMacro {
         id: "pasteAtLineAbove",
-        steps: &["Home", "Enter", "Up", "Ctrl+V"],
+        steps: &["Home", "Enter", "ArrowUp", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "replaceWordWidthBuffer",
-        steps: &["Ctrl+Right", "Ctrl+Shift+Left", "Ctrl+C"],
+        steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyC"],
     },
     SysMacro {
         id: "downHome",
-        steps: &["Down", "Home"],
+        steps: &["ArrowDown", "Home"],
     },
     SysMacro {
         id: "upHome",
-        steps: &["Up", "Home"],
+        steps: &["ArrowUp", "Home"],
     },
     SysMacro {
         id: "down5Times",
-        steps: &["Down", "Down", "Down", "Down", "Down"],
+        steps: &[
+            "ArrowDown",
+            "ArrowDown",
+            "ArrowDown",
+            "ArrowDown",
+            "ArrowDown",
+        ],
     },
     SysMacro {
         id: "pasteAtLineBottom",
-        steps: &["End", "Enter", "Ctrl+V"],
+        steps: &["End", "Enter", "Ctrl+KeyV"],
     },
     // select layer
     SysMacro {
         id: "cutToStart",
-        steps: &["Shift+Home", "Ctrl+X"],
+        steps: &["Shift+Home", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "cutToEnd",
-        steps: &["Shift+End", "Ctrl+X"],
+        steps: &["Shift+End", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "cutLineContent",
-        steps: &["Home", "Shift+End", "Ctrl+X"],
+        steps: &["Home", "Shift+End", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "cutAndRemoveLine",
-        steps: &["Home", "Shift+End", "Ctrl+X", "Delete"],
+        steps: &["Home", "Shift+End", "Ctrl+KeyX", "Delete"],
     },
     SysMacro {
         id: "select5LinesUp",
-        steps: &["Shift+Up", "Shift+Up", "Shift+Up", "Shift+Up", "Shift+Up"],
+        steps: &[
+            "Shift+ArrowUp",
+            "Shift+ArrowUp",
+            "Shift+ArrowUp",
+            "Shift+ArrowUp",
+            "Shift+ArrowUp",
+        ],
     },
     SysMacro {
         id: "copyToStart",
-        steps: &["Shift+Home", "Ctrl+C", "Home"],
+        steps: &["Shift+Home", "Ctrl+KeyC", "Home"],
     },
     SysMacro {
         id: "copyToEnd",
-        steps: &["Shift+End", "Ctrl+C", "End"],
+        steps: &["Shift+End", "Ctrl+KeyC", "End"],
     },
     SysMacro {
         id: "copyLine",
-        steps: &["Home", "Shift+End", "Ctrl+C", "Home"],
+        steps: &["Home", "Shift+End", "Ctrl+KeyC", "Home"],
     },
     SysMacro {
         id: "selectWholeLine",
@@ -113,24 +125,24 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "replaceToStartWithBuffer",
-        steps: &["Shift+Home", "Ctrl+V"],
+        steps: &["Shift+Home", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "replaceToEndWithBuffer",
-        steps: &["Shift+End", "Ctrl+V"],
+        steps: &["Shift+End", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "replaceLineWidthBuffer",
-        steps: &["Home", "Shift+End", "Ctrl+V"],
+        steps: &["Home", "Shift+End", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "select5LinesDown",
         steps: &[
-            "Shift+Down",
-            "Shift+Down",
-            "Shift+Down",
-            "Shift+Down",
-            "Shift+Down",
+            "Shift+ArrowDown",
+            "Shift+ArrowDown",
+            "Shift+ArrowDown",
+            "Shift+ArrowDown",
+            "Shift+ArrowDown",
         ],
     },
 ];

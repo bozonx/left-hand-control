@@ -10,8 +10,9 @@ use std::collections::HashMap;
 ///   * Native  — act like the physical key itself on that event.
 ///   * Swallow — nothing happens.
 ///   * Action  — user-defined action string (for tap: any action;
-///     for hold: a keystroke like "ControlLeft" or "Ctrl+Shift" that
-///     is held down while the physical key is held).
+///     for hold: a keystroke like "ControlLeft" or
+///     "ControlLeft+ShiftLeft" that is held down while the physical key
+///     is held).
 ///
 /// Deserialization rules (from JSON — the only format Rust reads):
 ///   missing field      => Native  (via `#[serde(default)]`)

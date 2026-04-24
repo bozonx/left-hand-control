@@ -33,10 +33,10 @@ describe('system macro catalog', () => {
       steps: [
         { keystroke: 'End' },
         { keystroke: 'Shift+Home' },
-        { keystroke: 'Ctrl+C' },
+        { keystroke: 'Ctrl+KeyC' },
         { keystroke: 'End' },
         { keystroke: 'Enter' },
-        { keystroke: 'Ctrl+V' },
+        { keystroke: 'Ctrl+KeyV' },
       ],
     })
     expect(systemMacroById('missing')).toBeUndefined()

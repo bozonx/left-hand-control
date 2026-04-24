@@ -30,9 +30,9 @@ layers:
 rules:
   - key: CapsLock
     layer: nav
-    tap: Esc
+    tap: Escape
     hold: ~
-    dtap: Ctrl+Alt+T
+    dtap: Ctrl+Alt+KeyT
     holdMs: 150
     dtapMs: 220
 commands:
@@ -42,8 +42,8 @@ commands:
 macros:
   - id: duplicateLine
     steps:
-      - Ctrl+C
-      - keystroke: Ctrl+V
+      - Ctrl+KeyC
+      - keystroke: Ctrl+KeyV
         id: step-2
     stepPauseMs: 30
 `);
@@ -56,9 +56,9 @@ macros:
         {
           key: "CapsLock",
           layerId: "nav",
-          tapAction: "Esc",
+          tapAction: "Escape",
           holdAction: null,
-          doubleTapAction: "Ctrl+Alt+T",
+          doubleTapAction: "Ctrl+Alt+KeyT",
           holdTimeoutMs: 150,
           doubleTapTimeoutMs: 220,
         },
@@ -84,8 +84,8 @@ macros:
           name: "duplicateLine",
           stepPauseMs: 30,
           steps: [
-            { keystroke: "Ctrl+C" },
-            { id: "step-2", keystroke: "Ctrl+V" },
+            { keystroke: "Ctrl+KeyC" },
+            { id: "step-2", keystroke: "Ctrl+KeyV" },
           ],
         },
       ],
@@ -248,7 +248,7 @@ macros:
     config.macros.push({
       id: "duplicateLine",
       name: "Duplicate line",
-      steps: [{ id: "step-1", keystroke: "Ctrl+C" }],
+      steps: [{ id: "step-1", keystroke: "Ctrl+KeyC" }],
     });
     config.commands.push({
       id: "terminal",
@@ -288,7 +288,7 @@ macros:
       id: "rule-1",
       key: "CapsLock",
       layerId: "",
-      tapAction: "Esc",
+      tapAction: "Escape",
       holdAction: "",
       doubleTapAction: "",
     });
