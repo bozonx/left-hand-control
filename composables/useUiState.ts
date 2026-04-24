@@ -1,18 +1,14 @@
-import { APP_TABS, type AppTab, createDefaultUiState, type UiState } from '~/types/uiState'
+import { createDefaultUiState, type UiState } from '~/types/uiState'
 
 function normalizeUiState(raw: unknown): UiState {
   const base = createDefaultUiState()
   if (!raw || typeof raw !== 'object') return base
   const value = raw as Partial<UiState>
-  const activeTab = APP_TABS.includes(value.activeTab as AppTab)
-    ? (value.activeTab as AppTab)
-    : base.activeTab
   const selectedLayerId =
     typeof value.selectedLayerId === 'string' && value.selectedLayerId.trim()
       ? value.selectedLayerId
       : base.selectedLayerId
   return {
-    activeTab,
     selectedLayerId,
   }
 }
@@ -32,7 +28,6 @@ interface UiStateStore {
   loadError: Ref<string | null>
   load: () => Promise<void>
   flush: () => Promise<void>
-  setActiveTab: (value: AppTab) => void
   setSelectedLayerId: (value: string) => void
 }
 
@@ -122,15 +117,6 @@ export function useUiState(): UiStateStore {
     }
   }
 
-  function setActiveTab(value: AppTab) {
-    if (state.value.activeTab === value) return
-    state.value = {
-      ...state.value,
-      activeTab: value,
-    }
-    scheduleSave()
-  }
-
   function setSelectedLayerId(value: string) {
     const next = value || ''
     if (state.value.selectedLayerId === next) return
@@ -147,7 +133,6 @@ export function useUiState(): UiStateStore {
     loadError,
     load,
     flush,
-    setActiveTab,
     setSelectedLayerId,
   }
   return singleton

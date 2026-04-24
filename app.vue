@@ -1,12 +1,22 @@
 <script setup lang="ts">
-// Bind `settings.appearance` to Nuxt UI's colorMode as soon as the app
-// boots; the composable handles the 'system' case automatically.
+import AppShell from '~/components/app/AppShell.vue'
+
+const { loaded, load } = useConfig()
+
 useAppTheme()
 useAppLocale()
+
+onMounted(() => {
+  if (!loaded.value) {
+    void load()
+  }
+})
 </script>
 
 <template>
   <UApp>
-    <NuxtPage />
+    <AppShell>
+      <NuxtPage />
+    </AppShell>
   </UApp>
 </template>

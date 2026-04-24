@@ -228,12 +228,12 @@ mod tests {
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
         storage
-            .save_ui_state("{\"activeTab\":\"keymap\"}")
+            .save_ui_state("{\"selectedLayerId\":\"nav\"}")
             .expect("save ui state");
 
         assert_eq!(
             storage.load_ui_state().expect("load ui state"),
-            "{\"activeTab\":\"keymap\"}"
+            "{\"selectedLayerId\":\"nav\"}"
         );
     }
 

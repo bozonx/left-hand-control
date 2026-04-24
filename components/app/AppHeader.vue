@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import { BUILTIN_LAYOUT_ID } from '~/types/config'
-import type { AppTab } from '~/types/uiState'
 import {
   isUserLayoutId,
   userLayoutNameFromId,
 } from '~/composables/useLayoutLibrary'
 import { BUILTIN_LAYOUT_META } from '~/utils/layoutPresets'
 
-const props = defineProps<{
-  activeTab: AppTab
-}>()
-
-const emit = defineEmits<{
-  'update:activeTab': [value: AppTab]
-}>()
+const route = useRoute()
 
 const {
   loaded,
@@ -27,6 +20,15 @@ const mapper = useMapper()
 const { layout } = useLayout()
 const { t } = useI18n()
 
+const tabItems = computed(() => [
+  { key: 'layouts', to: '/layouts', label: t('tabs.layouts'), icon: 'i-lucide-folder-kanban' },
+  { key: 'rules', to: '/rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
+  { key: 'keymap', to: '/keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
+  { key: 'macros', to: '/macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
+  { key: 'commands', to: '/commands', label: t('tabs.commands'), icon: 'i-lucide-terminal' },
+  { key: 'settings', to: '/settings', label: t('tabs.settings'), icon: 'i-lucide-settings', iconOnly: true },
+])
+
 const currentLayoutLabel = computed<string>(() => {
   const id = currentLayoutId.value
   if (!id) return t('app.customLayout')
@@ -35,16 +37,17 @@ const currentLayoutLabel = computed<string>(() => {
   return id
 })
 
-const tabItems = computed(() => [
-  { value: 'layouts', label: t('tabs.layouts'), icon: 'i-lucide-folder-kanban' },
-  { value: 'rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
-  { value: 'keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
-  { value: 'macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
-  { value: 'commands', label: t('tabs.commands'), icon: 'i-lucide-terminal' },
-  { value: 'settings', label: t('tabs.settings'), icon: 'i-lucide-settings', iconOnly: true },
-])
-
 const selectedDevice = computed(() => config.value.settings.inputDevicePath ?? '')
+
+function isActive(path: string) {
+  if (path === '/layouts' && route.path === '/') return true
+  return route.path === path
+}
+
+async function openTab(path: string) {
+  if (isActive(path)) return
+  await navigateTo(path)
+}
 
 async function toggleMapper() {
   try {
@@ -79,14 +82,14 @@ onMounted(() => {
         <div class="inline-flex min-w-max items-center gap-1 bg-(--ui-bg) border border-(--ui-border) rounded-lg p-1">
           <UButton
             v-for="item in tabItems"
-            :key="item.value"
-            :color="activeTab === item.value ? 'primary' : 'neutral'"
-            :variant="activeTab === item.value ? 'soft' : 'ghost'"
+            :key="item.key"
+            :color="isActive(item.to) ? 'primary' : 'neutral'"
+            :variant="isActive(item.to) ? 'soft' : 'ghost'"
             :icon="item.icon"
             :square="item.iconOnly"
             :aria-label="item.label"
             size="sm"
-            @click="emit('update:activeTab', item.value)"
+            @click="openTab(item.to)"
           >
             <span v-if="!item.iconOnly">{{ item.label }}</span>
           </UButton>
