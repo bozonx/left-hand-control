@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { createDefaultConfig } from '~/types/config'
 import {
   applyPresetToConfig,
+  builtinLayoutName,
   emptyLayoutPreset,
   extractPresetFromConfig,
   layoutSnapshotOf,
+  localizeBuiltinLayoutPreset,
   parseLayoutYaml,
   serializeLayoutYaml,
 } from '~/utils/layoutPresets'
@@ -263,5 +265,43 @@ macros:
   it('returns null for invalid or non-object yaml', () => {
     expect(parseLayoutYaml('not: [valid', 'Fallback')).toBeNull()
     expect(parseLayoutYaml('hello', 'Fallback')).toBeNull()
+  })
+
+  it('localizes the built-in preset from i18n without changing the user yaml format', () => {
+    const preset = localizeBuiltinLayoutPreset(
+      {
+        name: 'Fallback built-in',
+        description: 'Fallback description',
+        layers: [
+          { id: 'nav', name: 'nav' },
+          { id: 'sel', name: 'sel', description: 'selection fallback' },
+        ],
+        rules: [],
+        layerKeymaps: {},
+        macros: [],
+        commands: [],
+      },
+      (key) =>
+        ({
+          'builtinLayouts.ivank.name': 'Localized built-in',
+          'builtinLayouts.ivank.description': 'Localized description',
+          'builtinLayouts.ivank.layers.nav.name': 'Navigation',
+          'builtinLayouts.ivank.layers.nav.description': 'Localized nav',
+        })[key] ?? key,
+    )
+
+    expect(preset).toMatchObject({
+      name: 'Localized built-in',
+      description: 'Localized description',
+      layers: [
+        { id: 'nav', name: 'Navigation', description: 'Localized nav' },
+        { id: 'sel', name: 'sel', description: 'selection fallback' },
+      ],
+    })
+    expect(
+      builtinLayoutName((key) =>
+        key === 'builtinLayouts.ivank.name' ? 'Localized built-in' : key,
+      ),
+    ).toBe('Localized built-in')
   })
 })

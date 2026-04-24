@@ -5,7 +5,7 @@ import {
   isUserLayoutId,
   userLayoutNameFromId,
 } from '~/composables/useLayoutLibrary'
-import { BUILTIN_LAYOUT_META } from '~/utils/layoutPresets'
+import { builtinLayoutName } from '~/utils/layoutPresets'
 
 const route = useRoute()
 
@@ -32,7 +32,7 @@ const tabItems = computed(() => [
 const currentLayoutLabel = computed<string>(() => {
   const id = currentLayoutId.value
   if (!id) return t('app.customLayout')
-  if (id === BUILTIN_LAYOUT_ID) return BUILTIN_LAYOUT_META.name
+  if (id === BUILTIN_LAYOUT_ID) return builtinLayoutName(t)
   if (isUserLayoutId(id)) return userLayoutNameFromId(id)
   return id
 })

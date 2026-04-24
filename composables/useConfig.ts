@@ -300,7 +300,7 @@ export function useConfig(): ConfigState {
       }
 
       if (forceIvank) {
-        const preset = await loadBuiltinLayout()
+        const preset = await loadBuiltinLayout(t)
         if (preset) {
           config.value = applyPresetToConfig(config.value, preset, BUILTIN_LAYOUT_ID)
         }
@@ -325,7 +325,7 @@ export function useConfig(): ConfigState {
             config.value.settings.currentLayoutId,
           )
         } else if (config.value.settings.currentLayoutId === BUILTIN_LAYOUT_ID) {
-          const preset = await loadBuiltinLayout()
+          const preset = await loadBuiltinLayout(t)
           if (preset) {
             config.value = applyPresetToConfig(
               config.value,

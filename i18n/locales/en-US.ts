@@ -51,10 +51,7 @@ export default {
   },
   welcome: {
     intro: 'Welcome! Pick a starting layout — you can change it anytime in Settings.',
-    ivankTitle: "Ivan K's left hand control",
     recommended: 'recommended',
-    ivankDesc:
-      "Pre-made author's layout: CapsLock — navigation layer, right Alt — symbols layer, left Alt — window manager. Includes a set of IDE macros.",
     useThis: 'Use this layout',
     emptyTitle: 'Empty layout',
     emptyDesc:
@@ -63,6 +60,45 @@ export default {
     footnote: 'You can always change the chosen layout under {path}.',
     footnotePath: 'Settings → Layouts',
     loadError: 'Failed to load the built-in layout.',
+  },
+  builtinLayouts: {
+    ivank: {
+      name: "Ivan K's left hand control",
+      description:
+        "Pre-made author's layout: CapsLock — navigation layer, right Alt — symbols layer, left Alt — window manager. Includes a set of IDE macros.",
+      layers: {
+        nav: {
+          name: 'Navigation',
+          description:
+            'Navigation through text and code: arrows, Home/End, PageUp/Down, and movement by words and lines. Activated while CapsLock is held.',
+        },
+        sel: {
+          name: 'Selection',
+          description:
+            'Text selection: by character, word, and line, including selection expansion. Usually used together with Shift-style modifiers.',
+        },
+        sym: {
+          name: 'Symbols',
+          description:
+            'Symbols and punctuation that are inconvenient to type with the left hand on a regular layout (! @ # $ % ^ & * | ~ `).',
+        },
+        fkeys: {
+          name: 'F keys',
+          description:
+            'Function-key layer for IDEs, debuggers, and system shortcuts.',
+        },
+        win: {
+          name: 'Windows',
+          description:
+            'Window manager and virtual desktops: desktop switching, moving windows, and tiling actions.',
+        },
+        space: {
+          name: 'Space',
+          description:
+            'Space-held layer for additional actions without moving hands away from the home row.',
+        },
+      },
+    },
   },
   rules: {
     title: 'Rules and triggers',

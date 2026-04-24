@@ -5,6 +5,7 @@ import {
 } from '~/types/config'
 import {
   BUILTIN_LAYOUT_META,
+  builtinLayoutName,
   loadBuiltinLayout,
   parseLayoutYaml,
   serializeLayoutYaml,
@@ -50,26 +51,40 @@ export function resetLayoutLibraryStateForTests() {
 export function useLayoutLibrary(): LayoutLibraryState {
   if (singleton) return singleton
 
-  const entries = ref<LayoutLibraryEntry[]>([
-    {
-      id: BUILTIN_LAYOUT_META.id,
-      name: BUILTIN_LAYOUT_META.name,
-      builtin: true,
-    },
-  ])
+  const { t, locale } = useI18n()
+  const userPresetNames = ref<string[]>([])
+  const entries = ref<LayoutLibraryEntry[]>([])
   const layoutsDir = ref('')
   const error = ref<string | null>(null)
+
+  function syncEntries() {
+    entries.value = [
+      {
+        id: BUILTIN_LAYOUT_META.id,
+        name: builtinLayoutName(t),
+        builtin: true,
+      },
+      ...userPresetNames.value.map((name) => ({
+        id: userLayoutId(name),
+        name,
+        builtin: false,
+      })),
+    ]
+  }
+
+  watch(
+    () => locale.value,
+    () => {
+      syncEntries()
+    },
+  )
+  syncEntries()
 
   async function refresh() {
     const tauri = await useTauri()
     if (!tauri) {
-      entries.value = [
-        {
-          id: BUILTIN_LAYOUT_META.id,
-          name: BUILTIN_LAYOUT_META.name,
-          builtin: true,
-        },
-      ]
+      userPresetNames.value = []
+      syncEntries()
       layoutsDir.value = ''
       error.value = null
       return
@@ -83,23 +98,13 @@ export function useLayoutLibrary(): LayoutLibraryState {
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     }
-    entries.value = [
-      {
-        id: BUILTIN_LAYOUT_META.id,
-        name: BUILTIN_LAYOUT_META.name,
-        builtin: true,
-      },
-      ...userNames.map((n) => ({
-        id: userLayoutId(n),
-        name: n,
-        builtin: false,
-      })),
-    ]
+    userPresetNames.value = userNames
+    syncEntries()
   }
 
   async function loadPreset(id: string): Promise<LayoutPreset | null> {
     if (id === BUILTIN_LAYOUT_ID) {
-      return await loadBuiltinLayout()
+      return await loadBuiltinLayout(t)
     }
     if (!isUserLayoutId(id)) return null
     const name = userLayoutNameFromId(id)

@@ -12,6 +12,8 @@ import {
   BUILTIN_LAYOUT_ID,
 } from '~/types/config'
 
+type TranslateFn = (key: string) => string
+
 // Raw YAML shape of a layout preset file (both the bundled one in /public
 // and user files under <configDir>/layouts/*.yaml). Settings live in
 // config.json, NOT in layout files.
@@ -296,15 +298,67 @@ export function layoutSnapshotOf(config: AppConfig): string {
 // Built-in preset metadata.
 export const BUILTIN_LAYOUT_META = {
   id: BUILTIN_LAYOUT_ID,
+  asset: '/ivank-layout.yaml',
+  i18nBase: 'builtinLayouts.ivank',
   name: "Ivan K's left hand control",
 } as const
 
-export async function loadBuiltinLayout(): Promise<LayoutPreset | null> {
+function i18nOrFallback(
+  t: TranslateFn,
+  key: string,
+  fallback?: string,
+): string | undefined {
+  const value = t(key)
+  if (value !== key) return value
+  return fallback
+}
+
+export function builtinLayoutName(t: TranslateFn): string {
+  return (
+    i18nOrFallback(
+      t,
+      `${BUILTIN_LAYOUT_META.i18nBase}.name`,
+      BUILTIN_LAYOUT_META.name,
+    ) ?? BUILTIN_LAYOUT_META.name
+  )
+}
+
+export function localizeBuiltinLayoutPreset(
+  preset: LayoutPreset,
+  t: TranslateFn,
+): LayoutPreset {
+  return {
+    ...preset,
+    name: builtinLayoutName(t),
+    description: i18nOrFallback(
+      t,
+      `${BUILTIN_LAYOUT_META.i18nBase}.description`,
+      preset.description,
+    ),
+    layers: preset.layers.map((layer) => ({
+      ...layer,
+      name:
+        i18nOrFallback(
+          t,
+          `${BUILTIN_LAYOUT_META.i18nBase}.layers.${layer.id}.name`,
+          layer.name,
+        ) ?? layer.name,
+      description: i18nOrFallback(
+        t,
+        `${BUILTIN_LAYOUT_META.i18nBase}.layers.${layer.id}.description`,
+        layer.description,
+      ),
+    })),
+  }
+}
+
+export async function loadBuiltinLayout(t: TranslateFn): Promise<LayoutPreset | null> {
   try {
-    const res = await fetch('/ivank-layout.yaml', { cache: 'no-cache' })
+    const res = await fetch(BUILTIN_LAYOUT_META.asset, { cache: 'no-cache' })
     if (!res.ok) return null
     const text = await res.text()
-    return parseLayoutYaml(text, BUILTIN_LAYOUT_META.name)
+    const preset = parseLayoutYaml(text, BUILTIN_LAYOUT_META.name)
+    return preset ? localizeBuiltinLayoutPreset(preset, t) : null
   } catch (e) {
     console.error('[LHC] loadBuiltinLayout failed:', e)
     return null

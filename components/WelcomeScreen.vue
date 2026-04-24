@@ -12,7 +12,7 @@ async function pickIvanK() {
   busy.value = 'ivank'
   error.value = null
   try {
-    const preset = await loadBuiltinLayout()
+    const preset = await loadBuiltinLayout(t)
     if (!preset) {
       error.value = t('welcome.loadError')
       return
@@ -53,14 +53,14 @@ async function pickEmpty() {
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-sparkles" class="text-(--ui-primary) shrink-0" />
-              <h2 class="text-sm font-semibold">{{ $t('welcome.ivankTitle') }}</h2>
+              <h2 class="text-sm font-semibold">{{ $t('builtinLayouts.ivank.name') }}</h2>
               <UBadge color="primary" variant="subtle" size="sm">
                 {{ $t('welcome.recommended') }}
               </UBadge>
             </div>
           </template>
           <p class="text-xs text-(--ui-text-muted) flex-1">
-            {{ $t('welcome.ivankDesc') }}
+            {{ $t('builtinLayouts.ivank.description') }}
           </p>
           <template #footer>
             <UButton

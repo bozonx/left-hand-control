@@ -118,7 +118,7 @@ export function useSettingsScreen() {
         const entry = target.entry!
         const preset =
           entry.id === BUILTIN_LAYOUT_ID
-            ? await loadBuiltinLayout()
+            ? await loadBuiltinLayout(t)
             : await library.loadPreset(entry.id)
         if (!preset) {
           applyError.value = t('settings.loadFailed', { name: entry.name })
