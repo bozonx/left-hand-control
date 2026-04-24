@@ -106,6 +106,7 @@ layers:
       KeyW: "text:}"
       KeyE: "text:]"
       KeyR: "text:)"
+      KeyT: "text:TODO: "
       KeyU: F7
       KeyI: F8
       KeyO: F9
