@@ -12,6 +12,7 @@ import {
   extractPresetFromConfig,
   loadBuiltinLayout,
 } from "~/utils/layoutPresets";
+import type { CapabilityStatus } from "~/types/platform";
 
 interface PendingApply {
   entry: LayoutLibraryEntry;
@@ -25,7 +26,18 @@ interface SaveDraft {
 
 type OverwriteAction = "saveAs" | "rename";
 
-let singleton: ReturnType<typeof useSettingsScreen> | null = null;
+type SettingsIssueScope = "global" | "mapper";
+type SettingsIssueSeverity = "error" | "warning";
+
+interface SettingsIssue {
+  id: string;
+  scope: SettingsIssueScope;
+  severity: SettingsIssueSeverity;
+  title: string;
+  description: string;
+}
+
+let singleton: any = null;
 
 export function resetSettingsScreenStateForTests() {
   singleton = null;
@@ -113,6 +125,128 @@ export function useSettingsScreen() {
   });
 
   const currentLayoutDescription = computed(() => config.value.layoutDescription ?? "");
+
+  function describeCapabilityIssue(
+    kind: "keyInterception" | "literalInjection" | "layoutDetection" | "systemActions",
+    status: CapabilityStatus,
+  ): SettingsIssue | null {
+    const desktop = platform.info.value?.linux?.desktop ?? platform.info.value?.os ?? "current platform";
+    const detail = status.detail?.trim();
+
+    if (kind === "keyInterception" && !status.available) {
+      return {
+        id: "mapper-key-interception",
+        scope: "mapper",
+        severity: "error",
+        title: t("settings.issues.mapperStartTitle"),
+        description: detail || t("settings.issues.mapperStartBody"),
+      };
+    }
+
+    if (kind === "literalInjection" && !status.available) {
+      return {
+        id: "mapper-literal-injection",
+        scope: "mapper",
+        severity: "warning",
+        title: t("settings.issues.literalInjectionTitle"),
+        description:
+          detail || t("settings.issues.literalInjectionBody"),
+      };
+    }
+
+    if (kind === "layoutDetection" && !status.supported) {
+      return {
+        id: "global-layout-detection-unsupported",
+        scope: "global",
+        severity: "warning",
+        title: t("settings.issues.layoutDetectionUnsupportedTitle"),
+        description: t("settings.issues.layoutDetectionUnsupportedBody", { desktop }),
+      };
+    }
+
+    if (kind === "layoutDetection" && !status.available) {
+      return {
+        id: "global-layout-detection-unavailable",
+        scope: "global",
+        severity: "warning",
+        title: t("settings.issues.layoutDetectionUnavailableTitle"),
+        description:
+          detail || t("settings.issues.layoutDetectionUnavailableBody", { desktop }),
+      };
+    }
+
+    if (kind === "systemActions" && !status.supported) {
+      return {
+        id: "global-system-actions-unsupported",
+        scope: "global",
+        severity: "warning",
+        title: t("settings.issues.systemActionsUnsupportedTitle"),
+        description: t("settings.issues.systemActionsUnsupportedBody", { desktop }),
+      };
+    }
+
+    if (kind === "systemActions" && !status.available) {
+      return {
+        id: "global-system-actions-unavailable",
+        scope: "global",
+        severity: "warning",
+        title: t("settings.issues.systemActionsUnavailableTitle"),
+        description:
+          detail || t("settings.issues.systemActionsUnavailableBody", { desktop }),
+      };
+    }
+
+    return null;
+  }
+
+  const settingsIssues = computed<SettingsIssue[]>(() => {
+    if (platform.error.value) {
+      return [
+        {
+          id: "platform-check-error",
+          scope: "global",
+          severity: "warning",
+          title: t("settings.issues.platformCheckTitle"),
+          description: platform.error.value,
+        },
+      ];
+    }
+
+    const capabilities = platform.info.value?.capabilities;
+    if (!capabilities) return [];
+
+    return [
+      describeCapabilityIssue("keyInterception", capabilities.key_interception),
+      describeCapabilityIssue("literalInjection", capabilities.literal_injection),
+      describeCapabilityIssue("layoutDetection", capabilities.layout_detection),
+      describeCapabilityIssue("systemActions", capabilities.system_actions),
+    ].filter((issue): issue is SettingsIssue => issue !== null);
+  });
+
+  const globalIssues = computed(() =>
+    settingsIssues.value.filter((issue) => issue.scope === "global"),
+  );
+
+  const mapperIssues = computed(() =>
+    settingsIssues.value.filter((issue) => issue.scope === "mapper"),
+  );
+
+  const hasErrorIssues = computed(() =>
+    settingsIssues.value.some((issue) => issue.severity === "error"),
+  );
+
+  const settingsBanner = computed(() => {
+    if (!settingsIssues.value.length) return null;
+
+    return {
+      color: hasErrorIssues.value ? "error" : "warning",
+      icon: hasErrorIssues.value ? "i-lucide-circle-alert" : "i-lucide-triangle-alert",
+      title: hasErrorIssues.value
+        ? t("settings.issues.bannerErrorTitle")
+        : t("settings.issues.bannerWarningTitle"),
+      issues: settingsIssues.value,
+    } as const;
+  });
 
   function nextAvailableName(baseName: string): string {
     let candidate = baseName;
@@ -443,6 +577,9 @@ export function useSettingsScreen() {
     library,
     mapper,
     platform,
+    settingsBanner,
+    globalIssues,
+    mapperIssues,
     theme,
     appLocale,
     appearanceItems,

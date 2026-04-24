@@ -53,12 +53,6 @@ mockComponent('~/components/features/settings/BehaviorCard.vue', () =>
   }),
 )
 
-mockComponent('~/components/features/settings/PlatformCard.vue', () =>
-  defineComponent({
-    template: '<div data-test="platform-card">platform</div>',
-  }),
-)
-
 mockComponent('~/components/features/settings/ConfigPathCard.vue', () =>
   defineComponent({
     template: '<div data-test="config-card">config</div>',
@@ -95,11 +89,9 @@ describe('SettingsTab', () => {
         busy: ref(false),
         error: ref(null),
       },
-      platform: {
-        info: ref(null),
-        busy: ref(false),
-        error: ref(null),
-      },
+      settingsBanner: ref(null),
+      globalIssues: ref([]),
+      mapperIssues: ref([]),
       theme: {
         preference: ref('system'),
         resolved: ref('light'),

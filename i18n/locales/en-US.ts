@@ -317,28 +317,28 @@ export default {
     launchOnStartupHint:
       "Not yet implemented — the switch is saved in config but does not register autostart.",
     stubBadge: "Stub",
-    platformTitle: "Platform diagnostics",
-    platformHint:
-      'Shows backend support separately from runtime availability, so the UI does not confuse "implemented" with "usable right now".',
-    platformBackend: "Backend",
-    platformBackendHint: "What the current OS/backend is designed to support.",
-    platformRuntime: "Runtime",
-    platformCapability: "Capability",
-    platformSupportedColumn: "Supported",
-    platformAvailableColumn: "Available now",
-    platformLegend:
-      "Supported = implemented for this backend. Available now = passed the current runtime probe in this environment.",
-    platformUnavailable:
-      "Platform diagnostics are available only in the desktop build.",
-    supportedYes: "supported",
-    supportedNo: "not supported",
-    availableNow: "available now",
-    unavailableNow: "unavailable now",
-    platformCapabilities: {
-      keyInterception: "Key interception",
-      literalInjection: "Literal injection",
-      layoutDetection: "Layout detection",
-      systemActions: "System actions",
+    issues: {
+      bannerErrorTitle: "Some features are blocked in this environment",
+      bannerWarningTitle: "Some features are limited in this environment",
+      platformCheckTitle: "Could not check platform requirements",
+      mapperStartTitle: "The mapper cannot start right now",
+      mapperStartBody:
+        "The app needs access to /dev/input/event* and /dev/uinput before key interception can run.",
+      literalInjectionTitle: "Literal text output may be unavailable",
+      literalInjectionBody:
+        "Text injection depends on xdg-desktop-portal RemoteDesktop and user approval.",
+      layoutDetectionUnsupportedTitle: "Automatic layout detection is not implemented here yet",
+      layoutDetectionUnsupportedBody:
+        "The current desktop/backend ({desktop}) does not have a layout-detection integration yet.",
+      layoutDetectionUnavailableTitle: "Automatic layout detection is unavailable right now",
+      layoutDetectionUnavailableBody:
+        "The current desktop/backend ({desktop}) should support layout detection, but the runtime check did not pass.",
+      systemActionsUnsupportedTitle: "Some system actions are not implemented here yet",
+      systemActionsUnsupportedBody:
+        "The current desktop/backend ({desktop}) does not have system-action integration yet.",
+      systemActionsUnavailableTitle: "Some system actions are unavailable right now",
+      systemActionsUnavailableBody:
+        "The current desktop/backend ({desktop}) should support system actions, but the runtime check did not pass.",
     },
     holdTimeout: "Default hold timeout, ms",
     holdTimeoutHint:

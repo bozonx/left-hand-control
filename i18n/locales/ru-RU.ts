@@ -321,29 +321,28 @@ export default {
     launchOnStartupHint:
       "Пока не реализовано — переключатель сохраняется в конфиг, но не регистрирует autostart.",
     stubBadge: "Заглушка",
-    platformTitle: "Диагностика платформы",
-    platformHint:
-      "Показывает отдельно поддержку backend и текущую доступность в рантайме, чтобы UI не путал «реализовано» с «можно использовать прямо сейчас».",
-    platformBackend: "Backend",
-    platformBackendHint:
-      "Что текущая ОС и backend архитектурно умеют поддерживать.",
-    platformRuntime: "Рантайм",
-    platformCapability: "Возможность",
-    platformSupportedColumn: "Поддержка",
-    platformAvailableColumn: "Доступно сейчас",
-    platformLegend:
-      "Поддержка = реализовано для этого backend. Доступно сейчас = текущая runtime-проверка прошла в этом окружении.",
-    platformUnavailable:
-      "Диагностика платформы доступна только в desktop-сборке.",
-    supportedYes: "поддерживается",
-    supportedNo: "не поддерживается",
-    availableNow: "доступно сейчас",
-    unavailableNow: "недоступно сейчас",
-    platformCapabilities: {
-      keyInterception: "Перехват клавиатуры",
-      literalInjection: "Ввод литералов",
-      layoutDetection: "Определение раскладки",
-      systemActions: "Системные действия",
+    issues: {
+      bannerErrorTitle: "Часть функций заблокирована в текущем окружении",
+      bannerWarningTitle: "Часть функций ограничена в текущем окружении",
+      platformCheckTitle: "Не удалось проверить требования платформы",
+      mapperStartTitle: "Маппер сейчас не сможет запуститься",
+      mapperStartBody:
+        "Для перехвата клавиатуры приложению нужен доступ к /dev/input/event* и /dev/uinput.",
+      literalInjectionTitle: "Ввод обычного текста может быть недоступен",
+      literalInjectionBody:
+        "Вставка текста зависит от xdg-desktop-portal RemoteDesktop и подтверждения пользователя.",
+      layoutDetectionUnsupportedTitle: "Автоопределение раскладки здесь пока не реализовано",
+      layoutDetectionUnsupportedBody:
+        "Для текущего desktop/backend ({desktop}) интеграция определения раскладки ещё не реализована.",
+      layoutDetectionUnavailableTitle: "Автоопределение раскладки сейчас недоступно",
+      layoutDetectionUnavailableBody:
+        "Для текущего desktop/backend ({desktop}) поддержка ожидается, но runtime-проверка не прошла.",
+      systemActionsUnsupportedTitle: "Часть системных действий здесь пока не реализована",
+      systemActionsUnsupportedBody:
+        "Для текущего desktop/backend ({desktop}) интеграция системных действий ещё не реализована.",
+      systemActionsUnavailableTitle: "Часть системных действий сейчас недоступна",
+      systemActionsUnavailableBody:
+        "Для текущего desktop/backend ({desktop}) поддержка ожидается, но runtime-проверка не прошла.",
     },
     holdTimeout: "Hold timeout по умолчанию, мс",
     holdTimeoutHint:

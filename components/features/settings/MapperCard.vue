@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import type { MapperState } from '~/composables/useMapper'
 
+interface SettingsIssue {
+  id: string
+  severity: 'error' | 'warning'
+  title: string
+  description: string
+}
+
 defineProps<{
   mapper: MapperState
   deviceOptions: Array<{ label: string, value: string }>
   selectedDevice: string
+  issues: SettingsIssue[]
 }>()
 
 defineEmits<{
@@ -27,6 +35,16 @@ defineEmits<{
       </div>
     </template>
     <div class="space-y-4">
+      <UAlert
+        v-for="issue in issues"
+        :key="issue.id"
+        :color="issue.severity"
+        variant="soft"
+        :icon="issue.severity === 'error' ? 'i-lucide-circle-alert' : 'i-lucide-triangle-alert'"
+        :title="issue.title"
+        :description="issue.description"
+      />
+
       <UFormField
         :label="$t('settings.keyboardLabel')"
         :help="$t('settings.keyboardHelp')"
