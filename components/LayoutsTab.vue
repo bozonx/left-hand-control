@@ -18,6 +18,7 @@ const {
   saveName,
   saveBusy,
   saveError,
+  saveCurrentLayout,
   openSaveModal,
   openSaveAsModal,
   performSave,
@@ -58,7 +59,7 @@ const {
       :apply-error="applyError"
       :library-error="library.error.value"
       :layouts-dir="library.layoutsDir.value"
-      @save-current="openSaveModal"
+      @save-current="saveCurrentLayout"
       @save-as="openSaveAsModal"
       @request-apply-entry="requestApplyEntry"
       @create-from-empty="createFromEmpty"
@@ -70,4 +71,3 @@ const {
 
   </div>
 </template>
-

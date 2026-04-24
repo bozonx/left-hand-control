@@ -14,7 +14,7 @@ const {
   currentLayoutId,
   isLayoutDirty,
 } = useConfig()
-const { openSaveModal, saveBusy } = useSettingsScreen()
+const { saveCurrentLayout, saveBusy } = useSettingsScreen()
 const mapper = useMapper()
 const { layout } = useLayout()
 const { t } = useI18n()
@@ -144,7 +144,7 @@ watch(
               :variant="isLayoutDirty ? 'solid' : 'outline'"
               :loading="saveBusy"
               :disabled="!isLayoutDirty"
-              @click="openSaveModal"
+              @click="saveCurrentLayout"
             >
               {{ saveLabel }}
             </UButton>
@@ -165,8 +165,8 @@ watch(
         </AppTooltip>
 
         <UButton
-          color="neutral"
-          variant="ghost"
+          :color="isActive('/settings') ? 'primary' : 'neutral'"
+          :variant="isActive('/settings') ? 'soft' : 'ghost'"
           icon="i-lucide-settings"
           size="sm"
           :aria-label="$t('tabs.settings')"

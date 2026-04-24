@@ -10,12 +10,12 @@ const {
   useSettingsScreenMock,
   requestApplyEntryMock,
   createFromEmptyMock,
-  openSaveModalMock,
+  saveCurrentLayoutMock,
 } = vi.hoisted(() => ({
   useSettingsScreenMock: vi.fn(),
   requestApplyEntryMock: vi.fn(),
   createFromEmptyMock: vi.fn(),
-  openSaveModalMock: vi.fn(),
+  saveCurrentLayoutMock: vi.fn(),
 }))
 
 mockNuxtImport('useSettingsScreen', () => useSettingsScreenMock)
@@ -39,7 +39,7 @@ describe('LayoutsTab', () => {
     useSettingsScreenMock.mockReset()
     requestApplyEntryMock.mockReset()
     createFromEmptyMock.mockReset()
-    openSaveModalMock.mockReset()
+    saveCurrentLayoutMock.mockReset()
 
     useSettingsScreenMock.mockReturnValue({
       config: ref(createDefaultConfig()),
@@ -63,7 +63,8 @@ describe('LayoutsTab', () => {
       saveName: ref(''),
       saveBusy: ref(false),
       saveError: ref(null),
-      openSaveModal: openSaveModalMock,
+      saveCurrentLayout: saveCurrentLayoutMock,
+      openSaveModal: vi.fn(),
       openSaveAsModal: vi.fn(),
       performSave: vi.fn(),
       closeSaveModal: vi.fn(),
@@ -100,7 +101,7 @@ describe('LayoutsTab', () => {
     await wrapper.get('[data-test="apply-empty"]').trigger('click')
     await wrapper.get('[data-test="request-delete"]').trigger('click')
 
-    expect(openSaveModalMock).toHaveBeenCalledTimes(1)
+    expect(saveCurrentLayoutMock).toHaveBeenCalledTimes(1)
     expect(requestApplyEntryMock).toHaveBeenCalledWith({
       id: 'user:test',
       name: 'Test',

@@ -227,6 +227,15 @@ export function useSettingsScreen() {
     saveModalOpen.value = true;
   }
 
+  async function saveCurrentLayout() {
+    if (isUserLayoutId(currentLayoutId.value)) {
+      saveName.value = userLayoutNameFromId(currentLayoutId.value!);
+      await performSave(true);
+      return;
+    }
+    openSaveModal();
+  }
+
   async function performSave(overwrite = true) {
     const name = validateNameOrSetError(saveName.value, "save");
     if (!name) return;
@@ -450,6 +459,7 @@ export function useSettingsScreen() {
     saveName,
     saveBusy,
     saveError,
+    saveCurrentLayout,
     openSaveModal,
     openSaveAsModal,
     performSave,

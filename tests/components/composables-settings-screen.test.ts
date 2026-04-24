@@ -269,6 +269,17 @@ describe('useSettingsScreen', () => {
     expect(markLayoutSavedAs).toHaveBeenCalledWith('user:renamed')
     expect(vm.saveModalOpen).toBe(false)
 
+    library.saveUserPreset.mockClear()
+    markLayoutSavedAs.mockClear()
+    vm.saveCurrentLayout()
+    await Promise.resolve()
+    expect(library.saveUserPreset).toHaveBeenCalledWith(
+      'old',
+      { description: 'Current' },
+      true,
+    )
+    expect(markLayoutSavedAs).toHaveBeenCalledWith('user:renamed')
+
     vm.deletePending = { id: 'user:old', name: 'Old' }
     await vm.confirmDelete()
     expect(library.deleteUserPreset).toHaveBeenCalledWith('old')
@@ -351,6 +362,9 @@ describe('useSettingsScreen', () => {
     vm.saveName = 'bad/name'
     await vm.performSave()
     expect(vm.saveError).toBe('Invalid name.')
+
+    vm.saveCurrentLayout()
+    expect(vm.saveModalOpen).toBe(true)
 
     await vm.toggleMapper()
     expect(mapper.start).not.toHaveBeenCalled()
