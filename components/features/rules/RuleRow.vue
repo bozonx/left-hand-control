@@ -7,6 +7,10 @@ import RuleActionField from '~/components/features/rules/RuleActionField.vue'
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import RuleConditionsModal from './RuleConditionsModal.vue'
 
+defineOptions({
+  inheritAttrs: false
+})
+
 defineProps<{
   rule: LayerRule
   layerOptions: Array<{ label: string, value: string }>
@@ -25,6 +29,8 @@ defineEmits<{
   createLayer: [ruleId: string]
   keySelected: [id: string]
 }>()
+
+const isConditionsOpen = ref(false)
 </script>
 
 <template>
@@ -220,7 +226,8 @@ defineEmits<{
         />
       </div>
     </div>
+    <RuleConditionsModal :rule="rule" v-model:open="isConditionsOpen" />
   </div>
-
-  <RuleConditionsModal :rule="rule" v-model:open="isConditionsOpen" />
+</template>
+l:open="isConditionsOpen" />
 </template>
