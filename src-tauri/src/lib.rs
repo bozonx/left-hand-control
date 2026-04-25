@@ -3,8 +3,6 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, WebviewWindow, WindowEvent,
 };
-use tauri_plugin_window_state::{AppHandleExt, StateFlags};
-
 use crate::gamemode::get_gamemode_status;
 
 mod gamemode;
@@ -12,6 +10,7 @@ mod layout;
 mod mapper;
 mod platform;
 mod storage;
+mod window_state;
 
 fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
     let config_dir = app
@@ -182,12 +181,8 @@ fn quit_application(app: tauri::AppHandle) {
 
 // --- Tray --------------------------------------------------------------------
 
-fn window_geometry_state_flags() -> StateFlags {
-    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED | StateFlags::FULLSCREEN
-}
-
 fn save_window_geometry(app: &tauri::AppHandle) {
-    let _ = app.save_window_state(window_geometry_state_flags());
+    window_state::save(app);
 }
 
 fn show_main_window(window: &WebviewWindow) {
@@ -249,11 +244,15 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
-        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
             build_tray(app.handle())?;
             layout::start_watcher(app.handle().clone());
             gamemode::start_watcher(app.handle().clone());
+            if let Some(window) = app.get_webview_window("main") {
+                window_state::restore(&window);
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

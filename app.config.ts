@@ -11,7 +11,8 @@ export default defineAppConfig({
     },
     modal: {
       slots: {
-        overlay: 'fixed inset-0 bg-(--ui-bg)/80 transition-opacity'
+        overlay: 'fixed inset-0 bg-(--ui-bg)/80 transition-opacity',
+        body: 'flex-auto'
       },
       variants: {
         transition: {
