@@ -3,8 +3,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, WebviewWindow, WindowEvent,
 };
-use tauri_plugin_window_state::{AppHandleExt, WindowExt, StateFlags};
-use std::time::Duration;
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 use crate::gamemode::get_gamemode_status;
 
@@ -176,6 +175,7 @@ fn get_platform_info() -> platform::PlatformInfo {
 
 #[tauri::command]
 fn quit_application(app: tauri::AppHandle) {
+    save_window_geometry(&app);
     let _ = mapper::stop();
     app.exit(0);
 }
@@ -186,25 +186,13 @@ fn window_geometry_state_flags() -> StateFlags {
     StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED | StateFlags::FULLSCREEN
 }
 
-fn restore_window_geometry(window: &WebviewWindow) {
-    let _ = window.restore_state(window_geometry_state_flags());
-}
-
-fn schedule_window_geometry_restore(window: WebviewWindow) {
-    std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(150));
-        let window_for_restore = window.clone();
-        let _ = window.run_on_main_thread(move || {
-            restore_window_geometry(&window_for_restore);
-        });
-    });
+fn save_window_geometry(app: &tauri::AppHandle) {
+    let _ = app.save_window_state(window_geometry_state_flags());
 }
 
 fn show_main_window(window: &WebviewWindow) {
-    restore_window_geometry(window);
     let _ = window.show();
     let _ = window.unminimize();
-    restore_window_geometry(window);
     let _ = window.set_focus();
 }
 
@@ -230,6 +218,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 }
             }
             "quit" => {
+                save_window_geometry(app);
                 let _ = mapper::stop();
                 app.exit(0);
             }
@@ -245,6 +234,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 let app = tray.app_handle();
                 if let Some(w) = app.get_webview_window("main") {
                     if w.is_visible().unwrap_or(false) {
+                        save_window_geometry(app);
                         let _ = w.hide();
                     } else {
                         show_main_window(&w);
@@ -264,14 +254,11 @@ pub fn run() {
             build_tray(app.handle())?;
             layout::start_watcher(app.handle().clone());
             gamemode::start_watcher(app.handle().clone());
-            if let Some(window) = app.get_webview_window("main") {
-                schedule_window_geometry_restore(window);
-            }
             Ok(())
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                let _ = window.app_handle().save_window_state(StateFlags::all());
+                save_window_geometry(window.app_handle());
                 // Hide the window instead of exiting — the mapper stays alive.
                 let _ = window.hide();
                 api.prevent_close();

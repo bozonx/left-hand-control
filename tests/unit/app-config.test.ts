@@ -22,9 +22,9 @@ describe('app modal config', () => {
     const all = flatten(modal)
     expect(all).not.toContain('scale-in')
     expect(all).not.toContain('scale-out')
-    expect(all).not.toMatch(/!bottom-0/)
-    expect(all).not.toMatch(/!top-0/)
-    expect(all).toContain('backface-hidden')
+    expect(all).toContain('![translate:none]')
+    expect(all).toContain('!h-fit')
+    expect(all).toContain('!m-auto')
   })
 
   it('keeps overlay popups free from scale-based content animations', async () => {
