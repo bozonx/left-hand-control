@@ -165,6 +165,11 @@ fn get_current_layout() -> Result<Option<layout::LayoutInfo>, String> {
 }
 
 #[tauri::command]
+fn get_system_layouts() -> Result<Vec<layout::LayoutInfo>, String> {
+    layout::available_layouts()
+}
+
+#[tauri::command]
 fn get_platform_info() -> platform::PlatformInfo {
     platform::info()
 }
@@ -291,6 +296,7 @@ pub fn run() {
             stop_mapper,
             mapper_status,
             get_current_layout,
+            get_system_layouts,
             get_gamemode_status,
             get_platform_info,
             quit_application,

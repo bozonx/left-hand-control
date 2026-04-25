@@ -18,9 +18,34 @@ const SERVICE: &str = "org.kde.keyboard";
 const OBJECT: &str = "/Layouts";
 const IFACE: &str = "org.kde.KeyboardLayouts";
 
+use std::sync::Mutex;
+
+static CACHED_LAYOUT: Mutex<Option<String>> = Mutex::new(None);
+
+pub fn cached_layout_short() -> Option<String> {
+    CACHED_LAYOUT.lock().ok().and_then(|g| g.clone())
+}
+
 pub fn current() -> Result<Option<LayoutInfo>, String> {
     let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
     current_with_conn(&conn)
+}
+
+pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
+    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
+        .map_err(|e| format!("create keyboard proxy: {e}"))?;
+    let list = match call_list(&proxy)? {
+        Some(v) => v,
+        None => return Ok(vec![]),
+    };
+    Ok(list.into_iter().enumerate().map(|(idx, entry)| LayoutInfo {
+        short: entry.0,
+        display: entry.1,
+        long: entry.2,
+        index: idx as u32,
+        backend: "linux-kde",
+    }).collect())
 }
 
 pub fn start_watcher(app: AppHandle) {
@@ -32,6 +57,9 @@ pub fn start_watcher(app: AppHandle) {
                 match current() {
                     Ok(Some(info)) => {
                         if last.as_ref() != Some(&info) {
+                            if let Ok(mut g) = CACHED_LAYOUT.lock() {
+                                *g = Some(info.short.clone());
+                            }
                             if let Err(e) = app.emit("layout-changed", info.clone()) {
                                 eprintln!("[layout/kde] emit error: {e}");
                             }

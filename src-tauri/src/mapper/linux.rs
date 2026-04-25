@@ -999,6 +999,9 @@ mod tests {
     fn process_iteration_uses_tick_to_commit_hold_without_input_ready() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: String::new(),

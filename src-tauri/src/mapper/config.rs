@@ -99,6 +99,12 @@ pub struct Rule {
     #[allow(dead_code)]
     #[serde(default)]
     pub id: String,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub condition_game_mode: Option<String>,
+    #[serde(default)]
+    pub condition_layouts: Option<Vec<String>>,
     pub key: String,
     #[serde(default)]
     pub layer_id: String,

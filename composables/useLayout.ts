@@ -12,6 +12,7 @@ export interface LayoutInfo {
 }
 
 const _layout = ref<LayoutInfo | null>(null)
+const _systemLayouts = ref<LayoutInfo[]>([])
 const _error = ref<string | null>(null)
 let _inited = false
 let _unlisten: (() => void) | null = null
@@ -25,6 +26,7 @@ async function init() {
 
     try {
       _layout.value = await core.invoke<LayoutInfo | null>('get_current_layout')
+      _systemLayouts.value = await core.invoke<LayoutInfo[]>('get_system_layouts')
     } catch (e) {
       _error.value = String(e)
     }
@@ -46,6 +48,7 @@ export function useLayout() {
   })
   return {
     layout: computed(() => _layout.value),
+    systemLayouts: computed(() => _systemLayouts.value),
     error: computed(() => _error.value),
   }
 }
@@ -53,6 +56,7 @@ export function useLayout() {
 export async function resetLayoutStateForTests() {
   _inited = false
   _layout.value = null
+  _systemLayouts.value = []
   _error.value = null
   const unlisten = _unlisten
   _unlisten = null

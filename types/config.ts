@@ -21,6 +21,14 @@ export interface Layer {
 //
 export interface LayerRule {
   id: string
+  // Determines if the rule is active. If false, it acts as native passthrough.
+  enabled?: boolean
+  // Condition required for the rule to trigger based on Game Mode.
+  conditionGameMode?: 'ignore' | 'on' | 'off'
+  // Condition required for the rule to trigger based on current keyboard layouts.
+  // Empty array means 'ignore' (matches any layout). If not empty, the current
+  // layout must be in this list.
+  conditionLayouts?: string[]
   // Physical key on which the rule triggers (e.g. "CapsLock", "Space").
   key: string
   // Layer activated while the key is held. Empty string = no layer.

@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { LayerRule } from '~/types/config'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
 import RuleActionField from '~/components/features/rules/RuleActionField.vue'
+import AppTooltip from '~/components/shared/AppTooltip.vue'
+import RuleConditionsModal from './RuleConditionsModal.vue'
 
 defineProps<{
   rule: LayerRule
@@ -27,12 +30,15 @@ defineEmits<{
 <template>
   <div
     class="relative p-4 rounded-xl border flex gap-6 group group/rule transition-all duration-300 hover:shadow-lg"
-    :class="isNew
-      ? 'border-sky-500/60 bg-sky-500/8 ring-1 ring-sky-500/20 hover:bg-sky-500/12 hover:border-sky-500/70 hover:shadow-sky-500/10'
-      : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'"
+    :class="[
+      rule.enabled === false ? 'opacity-50 grayscale-[30%]' : '',
+      isNew
+        ? 'border-sky-500/60 bg-sky-500/8 ring-1 ring-sky-500/20 hover:bg-sky-500/12 hover:border-sky-500/70 hover:shadow-sky-500/10'
+        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
+    ]"
   >
     <div class="flex-1 flex flex-col gap-5">
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-3 gap-4">
         <UFormField :error="keyError">
           <template #label>
             <FieldLabel
@@ -48,6 +54,25 @@ defineEmits<{
             :placeholder="$t('rules.keyPh')"
             @update:model-value="(value: string) => { rule.key = value; if (value) $emit('keySelected', rule.id) }"
           />
+        </UFormField>
+
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('rules.conditionsLabel')"
+              :hint="$t('rules.conditionsHint')"
+              hint-visible-on="group-hover-rule"
+            />
+          </template>
+          <UButton
+            color="neutral"
+            variant="soft"
+            class="w-full justify-between"
+            trailing-icon="i-lucide-chevron-down"
+            @click="isConditionsOpen = true"
+          >
+            <span class="truncate">{{ $t('rules.conditionsBtn') }}</span>
+          </UButton>
         </UFormField>
 
         <UFormField>
@@ -152,16 +177,27 @@ defineEmits<{
           />
         </div>
 
-        <UButton
-          icon="i-lucide-trash-2"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          square
-          class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          :aria-label="$t('rules.deleteRule')"
-          @click="$emit('remove', rule.id)"
-        />
+        <div class="flex gap-1 items-center">
+          <AppTooltip :text="rule.enabled === false ? $t('rules.enableRule') : $t('rules.disableRule')">
+            <USwitch
+              :model-value="rule.enabled !== false"
+              @update:model-value="(val: boolean) => rule.enabled = val"
+              size="sm"
+              class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            />
+          </AppTooltip>
+
+          <UButton
+            icon="i-lucide-trash-2"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            square
+            class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            :aria-label="$t('rules.deleteRule')"
+            @click="$emit('remove', rule.id)"
+          />
+        </div>
       </div>
 
       <div class="flex flex-col gap-1 mt-1">
@@ -185,4 +221,6 @@ defineEmits<{
       </div>
     </div>
   </div>
+
+  <RuleConditionsModal :rule="rule" v-model:open="isConditionsOpen" />
 </template>

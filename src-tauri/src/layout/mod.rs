@@ -88,6 +88,36 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
     }
 }
 
+pub fn cached_layout_short() -> Option<String> {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{detect, Desktop};
+        match detect().desktop {
+            Desktop::Kde => linux_kde::cached_layout_short(),
+            _ => None,
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        None
+    }
+}
+
+pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{detect, Desktop};
+        match detect().desktop {
+            Desktop::Kde => linux_kde::available_layouts(),
+            _ => Ok(vec![]),
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Ok(vec![])
+    }
+}
+
 /// Start a background watcher that emits `layout-changed` events.
 /// Safe to call once at app startup. No-op if no backend is available.
 pub fn start_watcher(app: tauri::AppHandle) {

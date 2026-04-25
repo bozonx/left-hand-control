@@ -32,6 +32,11 @@ struct PersistedConfig {
 }
 
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
+static CACHED_GAMEMODE_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+pub fn cached_status_active() -> bool {
+    CACHED_GAMEMODE_ACTIVE.load(Ordering::SeqCst)
+}
 
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
@@ -60,6 +65,7 @@ pub fn start_watcher(app: AppHandle) {
                 let status = check_gamemode(&app);
                 
                 if status.active != last_active {
+                    CACHED_GAMEMODE_ACTIVE.store(status.active, Ordering::SeqCst);
                     let time_str = get_current_time();
                     let trigger = status.method.as_deref().unwrap_or("none");
                     println!(

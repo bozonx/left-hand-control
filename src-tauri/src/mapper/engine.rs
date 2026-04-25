@@ -122,6 +122,8 @@ struct RuleEntry {
     double_tap: Option<ActionDef>,
     hold_timeout: Duration,
     double_tap_window: Duration,
+    condition_game_mode: Option<String>,
+    condition_layouts: Option<Vec<String>>,
 }
 
 enum Phase {
@@ -365,6 +367,10 @@ impl Engine {
 
         let mut rules = HashMap::new();
         for r in &cfg.rules {
+            if !r.enabled {
+                continue;
+            }
+
             let Some(key) = code_to_key(&r.key) else {
                 eprintln!("[mapper] unknown rule key: {}", r.key);
                 continue;
@@ -437,6 +443,8 @@ impl Engine {
                     double_tap,
                     hold_timeout,
                     double_tap_window,
+                    condition_game_mode: r.condition_game_mode.clone(),
+                    condition_layouts: r.condition_layouts.clone(),
                 },
             );
         }
@@ -521,6 +529,52 @@ impl Engine {
 
     /// Handle a raw key event from the grabbed device.
     pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
+        if down {
+            let is_active = if let Some(rule) = self.rules.get(&key) {
+                let has_gm_cond = rule.condition_game_mode.as_deref().is_some_and(|m| m != "ignore" && !m.is_empty());
+                let has_layout_cond = rule.condition_layouts.as_ref().is_some_and(|l| !l.is_empty());
+
+                if !has_gm_cond && !has_layout_cond {
+                    true
+                } else {
+                    let mut active = false;
+                    if has_gm_cond {
+                        let gm_active = crate::gamemode::cached_status_active();
+                        if match rule.condition_game_mode.as_deref() {
+                            Some("on") => gm_active,
+                            Some("off") => !gm_active,
+                            _ => false,
+                        } {
+                            active = true;
+                        }
+                    }
+                    if has_layout_cond {
+                        if let Some(current) = crate::layout::cached_layout_short() {
+                            if rule.condition_layouts.as_ref().unwrap().contains(&current) {
+                                active = true;
+                            }
+                        }
+                    }
+                    active
+                }
+            } else {
+                true
+            };
+
+            if !is_active {
+                out.push(Out::KeyRaw { key, down });
+                return;
+            }
+        } else {
+            if !self.pending.contains_key(&key)
+                && !self.emitted.contains_key(&key)
+                && !self.macro_consumed.contains(&key)
+            {
+                out.push(Out::KeyRaw { key, down });
+                return;
+            }
+        }
+
         eprintln!(
             "[mapper] in {} key={:?} active={:?}",
             if down { "DOWN" } else { " UP " },
@@ -941,6 +995,9 @@ mod tests {
     fn sel_layer_q_emits_ctrl_key_z() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_tab".into(),
             key: "Tab".into(),
             layer_id: "sel".into(),
@@ -974,6 +1031,9 @@ mod tests {
     fn active_layer_bypasses_rule_for_same_key() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
@@ -984,6 +1044,9 @@ mod tests {
             double_tap_timeout_ms: None,
         });
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_tab".into(),
             key: "Tab".into(),
             layer_id: "sel".into(),
@@ -1022,6 +1085,9 @@ mod tests {
     fn unmapped_key_in_active_layer_passthroughs() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
@@ -1064,6 +1130,9 @@ mod tests {
     fn explicit_null_in_layer_keymap_swallows_key() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
@@ -1093,6 +1162,9 @@ mod tests {
     fn hold_can_activate_layer_and_modifier_together() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: "win".into(),
@@ -1136,6 +1208,9 @@ mod tests {
     fn layer_only_rule_is_not_treated_as_passthrough() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
             id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: "win".into(),
