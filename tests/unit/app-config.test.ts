@@ -24,6 +24,7 @@ describe('app modal config', () => {
     expect(all).not.toContain('scale-out')
     expect(all).not.toMatch(/!bottom-0/)
     expect(all).not.toMatch(/!top-0/)
+    expect(all).toContain('backface-hidden')
   })
 
   it('keeps overlay popups free from scale-based content animations', async () => {

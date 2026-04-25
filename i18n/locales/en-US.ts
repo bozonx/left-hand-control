@@ -168,6 +168,7 @@ export default {
     layoutsLabel: "Language Layouts",
     layoutsHint: "Rule will only work if the current layout is one of the selected. Leave empty to ignore layout.",
     anyLayout: "Any layout",
+    noLayoutsDetected: "No layouts detected. Make sure the app is running in Tauri.",
     enableRule: "Enable rule",
     disableRule: "Disable rule",
     keyRequired: "Pick a trigger key.",

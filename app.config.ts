@@ -20,7 +20,16 @@ export default defineAppConfig({
             content: ''
           }
         }
-      }
+      },
+      compoundVariants: [
+        {
+          scrollable: false,
+          fullscreen: false,
+          class: {
+            content: 'backface-hidden'
+          }
+        }
+      ]
     },
     tooltip: {
       slots: {

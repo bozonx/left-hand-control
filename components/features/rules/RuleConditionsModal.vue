@@ -34,9 +34,7 @@ if (!props.rule.conditionLayouts) {
   props.rule.conditionLayouts = []
 }
 
-function handleLayoutToggle(val: string[]) {
-  props.rule.conditionLayouts = val
-}
+
 
 </script>
 
@@ -53,14 +51,27 @@ function handleLayoutToggle(val: string[]) {
         </UFormField>
 
         <UFormField :label="$t('rules.layoutsLabel')" :help="$t('rules.layoutsHint')">
-          <USelectMenu
-            v-model="rule.conditionLayouts"
-            :items="layoutOptions"
-            value-key="value"
-            multiple
-            :placeholder="$t('rules.anyLayout')"
-            @update:model-value="handleLayoutToggle"
-          />
+          <div class="flex flex-col gap-2 p-3 border rounded-lg border-(--ui-border) max-h-60 overflow-y-auto bg-(--ui-bg-muted)/30">
+            <template v-if="layoutOptions.length > 0">
+              <UCheckbox
+                v-for="option in layoutOptions"
+                :key="option.value"
+                :label="option.label"
+                :model-value="rule.conditionLayouts?.includes(option.value)"
+                @update:model-value="(checked: boolean) => {
+                  const current = rule.conditionLayouts || []
+                  if (checked) {
+                    rule.conditionLayouts = [...current, option.value]
+                  } else {
+                    rule.conditionLayouts = current.filter(v => v !== option.value)
+                  }
+                }"
+              />
+            </template>
+            <div v-else class="text-sm text-(--ui-text-muted) italic">
+              {{ $t('rules.noLayoutsDetected') }}
+            </div>
+          </div>
         </UFormField>
       </div>
     </template>
