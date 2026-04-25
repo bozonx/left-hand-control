@@ -20,16 +20,7 @@ export default defineAppConfig({
             content: ''
           }
         }
-      },
-      compoundVariants: [
-        {
-          scrollable: false,
-          fullscreen: false,
-          class: {
-            content: '!top-0 !right-0 !bottom-0 !left-0 !m-auto !translate-x-0 !translate-y-0 w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-4rem)] h-fit overflow-hidden'
-          }
-        }
-      ]
+      }
     },
     tooltip: {
       slots: {

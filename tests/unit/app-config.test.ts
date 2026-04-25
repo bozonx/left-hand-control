@@ -6,27 +6,24 @@ describe('app modal config', () => {
     vi.stubGlobal('defineAppConfig', <T>(config: T) => config)
   })
 
-  it('keeps modal content free from transform-based centering and scale animation', async () => {
+  it('keeps modal content free from scale animation so it can size to content height', async () => {
     const { default: appConfig } = await import('~/app.config')
     const modal = appConfig.ui.modal
 
     expect(modal.variants.transition.true.content).toBe('')
 
-    expect(modal.compoundVariants).toContainEqual({
-      scrollable: false,
-      fullscreen: false,
-      class: {
-        content: expect.stringContaining('!translate-x-0'),
-      },
-    })
-
-    expect(modal.compoundVariants).toContainEqual({
-      scrollable: false,
-      fullscreen: false,
-      class: {
-        content: expect.stringContaining('!translate-y-0'),
-      },
-    })
+    const flatten = (v: unknown): string => {
+      if (!v) return ''
+      if (typeof v === 'string') return v
+      if (Array.isArray(v)) return v.map(flatten).join(' ')
+      if (typeof v === 'object') return Object.values(v as Record<string, unknown>).map(flatten).join(' ')
+      return ''
+    }
+    const all = flatten(modal)
+    expect(all).not.toContain('scale-in')
+    expect(all).not.toContain('scale-out')
+    expect(all).not.toMatch(/!bottom-0/)
+    expect(all).not.toMatch(/!top-0/)
   })
 
   it('keeps overlay popups free from scale-based content animations', async () => {
