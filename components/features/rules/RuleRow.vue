@@ -229,5 +229,3 @@ const isConditionsOpen = ref(false)
     <RuleConditionsModal :rule="rule" v-model:open="isConditionsOpen" />
   </div>
 </template>
-l:open="isConditionsOpen" />
-</template>
