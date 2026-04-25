@@ -41,12 +41,8 @@ function handleLayoutToggle(val: string[]) {
 </script>
 
 <template>
-  <UModal v-model:open="isOpen">
-    <UCard class="flex flex-col gap-4">
-      <template #header>
-        <h3 class="text-lg font-medium">{{ $t('rules.conditionsLabel') }}</h3>
-      </template>
-
+  <UModal v-model:open="isOpen" :title="$t('rules.conditionsLabel')">
+    <template #body>
       <div class="flex flex-col gap-6">
         <UFormField :label="$t('rules.gameModeLabel')" :help="$t('rules.gameModeHint')">
           <USelectMenu
@@ -67,12 +63,12 @@ function handleLayoutToggle(val: string[]) {
           />
         </UFormField>
       </div>
+    </template>
 
-      <template #footer>
-        <div class="flex justify-end">
-          <UButton @click="isOpen = false">{{ $t('common.close') }}</UButton>
-        </div>
-      </template>
-    </UCard>
+    <template #footer>
+      <div class="flex justify-end w-full">
+        <UButton @click="isOpen = false">{{ $t('common.close') }}</UButton>
+      </div>
+    </template>
   </UModal>
 </template>
