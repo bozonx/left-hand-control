@@ -1,11 +1,14 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
 use tauri::{LogicalPosition, LogicalSize, Manager, WebviewWindow};
 
 #[cfg(target_os = "linux")]
 use crate::platform::linux::{self, SessionType};
+
+static LAST_STATE: OnceLock<Mutex<Option<WindowState>>> = OnceLock::new();
 
 #[derive(Default, Serialize, Deserialize, Clone, Copy)]
 pub struct WindowState {
@@ -39,38 +42,48 @@ fn state_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join("window-state.json"))
 }
 
+fn last_state() -> &'static Mutex<Option<WindowState>> {
+    LAST_STATE.get_or_init(|| Mutex::new(None))
+}
+
 pub fn load(app: &tauri::AppHandle) -> Option<WindowState> {
     let path = state_path(app).ok()?;
     let bytes = fs::read(&path).ok()?;
     serde_json::from_slice::<WindowState>(&bytes).ok()
 }
 
-pub fn save(app: &tauri::AppHandle) {
-    let Some(window) = app.get_webview_window("main") else {
-        return;
-    };
+fn write(app: &tauri::AppHandle, state: WindowState) {
+    let Ok(path) = state_path(app) else { return };
+    if let Ok(json) = serde_json::to_string(&state) {
+        let tmp = path.with_extension("json.tmp");
+        if fs::write(&tmp, json.as_bytes()).is_ok() {
+            let _ = fs::rename(&tmp, &path);
+        }
+    }
+}
+
+pub fn remember(window: &WebviewWindow) {
+    let app = window.app_handle();
     let scale = window.scale_factor().unwrap_or(1.0);
     let maximized = window.is_maximized().unwrap_or(false);
+    let prev = last_state()
+        .lock()
+        .ok()
+        .and_then(|state| *state)
+        .or_else(|| load(app))
+        .unwrap_or_default();
 
-    // While the window is maximized, outer_size reflects the screen, not the
-    // user's preferred natural size. Keep the previously saved natural size in
-    // that case so it survives a maximize → quit cycle.
     let (width, height) = if maximized {
-        let prev = load(app).unwrap_or_default();
         (prev.width, prev.height)
     } else {
-        match window.outer_size() {
-            Ok(s) => {
-                let l = s.to_logical::<f64>(scale);
-                (l.width, l.height)
-            }
-            Err(_) => return,
-        }
+        let s = window.inner_size().unwrap_or_default();
+        let l = s.to_logical::<f64>(scale);
+        (l.width, l.height)
     };
 
     if width < 1.0 || height < 1.0 {
         return;
-    }
+    };
 
     let (x, y) = if position_supported() && !maximized {
         match window.outer_position() {
@@ -81,9 +94,6 @@ pub fn save(app: &tauri::AppHandle) {
             Err(_) => (None, None),
         }
     } else {
-        // Preserve previously saved position across maximize cycles, and on
-        // Wayland avoid writing values that can never be restored anyway.
-        let prev = load(app).unwrap_or_default();
         (prev.x, prev.y)
     };
 
@@ -94,18 +104,33 @@ pub fn save(app: &tauri::AppHandle) {
         x,
         y,
     };
-    let Ok(path) = state_path(app) else { return };
-    if let Ok(json) = serde_json::to_string(&state) {
-        let tmp = path.with_extension("json.tmp");
-        if fs::write(&tmp, json.as_bytes()).is_ok() {
-            let _ = fs::rename(&tmp, &path);
+
+    if let Ok(mut last) = last_state().lock() {
+        *last = Some(state);
+    }
+}
+
+pub fn save(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        remember(&window);
+    }
+    if let Ok(last) = last_state().lock() {
+        if let Some(state) = *last {
+            write(app, state);
+            return;
         }
+    }
+    if let Some(state) = load(app) {
+        write(app, state);
     }
 }
 
 pub fn restore(window: &WebviewWindow) {
     let app = window.app_handle();
     let Some(state) = load(app) else { return };
+    if let Ok(mut last) = last_state().lock() {
+        *last = Some(state);
+    }
     if state.width >= 200.0 && state.height >= 200.0 {
         let _ = window.set_size(LogicalSize::new(state.width, state.height));
     }

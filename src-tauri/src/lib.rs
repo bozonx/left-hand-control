@@ -256,11 +256,19 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                save_window_geometry(window.app_handle());
-                // Hide the window instead of exiting — the mapper stays alive.
-                let _ = window.hide();
-                api.prevent_close();
+            match event {
+                WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
+                    if let Some(w) = window.app_handle().get_webview_window("main") {
+                        window_state::remember(&w);
+                    }
+                }
+                WindowEvent::CloseRequested { api, .. } => {
+                    save_window_geometry(window.app_handle());
+                    // Hide the window instead of exiting — the mapper stays alive.
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
