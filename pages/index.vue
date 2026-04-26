@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import LayoutsTab from '~/components/LayoutsTab.vue'
+await navigateTo('/settings', { replace: true })
 </script>
 
 <template>
-  <LayoutsTab />
+  <div />
 </template>
