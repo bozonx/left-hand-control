@@ -168,8 +168,12 @@ export default {
     deleteRule: "Удалить правило",
     conditionsLabel: "Условия",
     conditionsHint: "Условия срабатывания (игровой режим, раскладки)",
-    layoutConditionsTitle: "Условия раскладки",
+    manualActiveLabel: 'Активная Раскладка (Ручной)',
+    manualActiveHint: 'Нажмите активировать, чтобы использовать эту раскладку прямо сейчас.',
+    activateBtn: 'Активировать',
+    layoutConditionsTitle: 'Условия Раскладки',
     layoutConditionsSubtitle: "Условия авто-режима для текущей раскладки ({name})",
+    saveToConfigureAuto: 'Сохраните раскладку, чтобы настроить условия авто-режима.',
     autoIncludeLabel: "Участвовать в авто-режиме",
     autoIncludeHint:
       "Если раскладка в авто-режиме, позволить её выбирать по условиям.",

@@ -14,6 +14,8 @@ defineProps<{
     layoutMode: LayoutMode;
     autoIncludedIds: Set<string>;
     autoDefaultLayoutId?: string;
+    activeAutoLayoutId?: string;
+    manualActiveLayoutId?: string;
 }>();
 
 defineEmits<{
@@ -124,12 +126,14 @@ defineEmits<{
                 <li
                     v-for="(entry, index) in entries"
                     :key="entry.id"
-                    class="flex items-center justify-between gap-3 p-3 group hover:bg-(--ui-bg-elevated) transition-colors"
+                    class="flex items-center justify-between gap-3 p-3 group hover:bg-(--ui-bg-elevated) transition-colors cursor-pointer"
+                    @click="$emit('requestApplyEntry', entry)"
                 >
                     <div class="flex items-center gap-2 min-w-0">
                         <div
                             v-if="layoutMode === 'auto'"
                             class="flex flex-col gap-0.5 shrink-0"
+                            @click.stop
                         >
                             <UButton
                                 color="neutral"
@@ -158,15 +162,30 @@ defineEmits<{
                             >
                                 {{ entry.name }}
                                 <UBadge
-                                    v-if="
-                                        currentLayoutId === entry.id &&
-                                        !isLayoutDirty
-                                    "
+                                    v-if="layoutMode === 'auto' && activeAutoLayoutId === entry.id"
+                                    color="success"
+                                    variant="subtle"
+                                    size="sm"
+                                >
+                                    {{ $t("settings.activeBadge") }} (Auto)
+                                </UBadge>
+                                <UBadge
+                                    v-if="layoutMode === 'manual' && manualActiveLayoutId === entry.id"
                                     color="success"
                                     variant="subtle"
                                     size="sm"
                                 >
                                     {{ $t("settings.activeBadge") }}
+                                </UBadge>
+                                <UBadge
+                                    v-if="
+                                        currentLayoutId === entry.id
+                                    "
+                                    color="info"
+                                    variant="subtle"
+                                    size="sm"
+                                >
+                                    Editing
                                 </UBadge>
                                 <UBadge
                                     v-if="
@@ -190,7 +209,7 @@ defineEmits<{
                                 </UBadge>
                                 <UBadge
                                     v-else-if="autoIncludedIds.has(entry.id)"
-                                    color="info"
+                                    color="neutral"
                                     variant="subtle"
                                     size="sm"
                                     icon="i-lucide-zap"
@@ -205,7 +224,7 @@ defineEmits<{
                                         : entry.description) ||
                                     false
                                 "
-                                class="text-sm text-(--ui-text-muted) line-clamp-2"
+                                class="text-sm text-(--ui-text-muted) line-clamp-2 mt-0.5"
                             >
                                 {{
                                     currentLayoutId === entry.id
@@ -217,19 +236,8 @@ defineEmits<{
                     </div>
                     <div
                         class="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                        @click.stop
                     >
-                        <UButton
-                            variant="outline"
-                            icon="i-lucide-folder-open"
-                            :loading="applying === entry.id"
-                            :disabled="
-                                !!applying ||
-                                (currentLayoutId === entry.id && !isLayoutDirty)
-                            "
-                            @click="$emit('requestApplyEntry', entry)"
-                        >
-                            {{ $t("settings.loadBtn") }}
-                        </UButton>
                         <UButton
                             color="neutral"
                             variant="ghost"

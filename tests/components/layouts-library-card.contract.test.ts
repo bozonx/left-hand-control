@@ -20,20 +20,27 @@ describe("LayoutsLibraryCard", () => {
         applyError: null,
         libraryError: null,
         layoutsDir: "/tmp/layouts",
+        layoutMode: "manual",
+        autoIncludedIds: new Set(),
       },
     });
 
     const buttons = wrapper.findAll("button");
+    const listItems = wrapper.findAll("li");
 
     await buttons[0]?.trigger("click");
     await buttons[1]?.trigger("click");
     await buttons[2]?.trigger("click");
     await buttons[3]?.trigger("click");
     await buttons[4]?.trigger("click");
+    
+    // entries[0] Edit and Delete
     await buttons[5]?.trigger("click");
     await buttons[6]?.trigger("click");
-    await buttons[7]?.trigger("click");
-    await buttons[8]?.trigger("click");
+
+    // Click list items for Load (requestApplyEntry)
+    await listItems[0]?.trigger("click");
+    await listItems[1]?.trigger("click");
 
     expect(wrapper.emitted("createFromEmpty")).toHaveLength(1);
     expect(wrapper.emitted("createFromIvanK")).toHaveLength(1);
@@ -46,28 +53,5 @@ describe("LayoutsLibraryCard", () => {
     ]);
     expect(wrapper.emitted("requestEdit")).toEqual([[entries[0]]]);
     expect(wrapper.emitted("requestDelete")).toEqual([[entries[0]]]);
-  });
-
-  it("disables loading for the already saved current layout", async () => {
-    const entries = [{ id: "user:nav", name: "Nav", description: "Navigation" }];
-
-    const wrapper = await mountSuspended(LayoutsLibraryCard, {
-      props: {
-        entries,
-        currentLayoutId: "user:nav",
-        currentLayoutDescription: "Navigation",
-        isLayoutDirty: false,
-        applying: "",
-        applyError: null,
-        libraryError: null,
-        layoutsDir: "/tmp/layouts",
-      },
-    });
-
-    const loadButton = wrapper
-      .findAll("button")
-      .find((button) => button.text().includes("Load"));
-
-    expect(loadButton?.attributes("disabled")).toBeDefined();
   });
 });

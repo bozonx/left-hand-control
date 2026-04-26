@@ -20,6 +20,8 @@ const modalOpen = ref(false)
 const modalKind = ref<ConditionKind>('whitelist')
 
 const layoutId = computed(() => currentLayoutId.value)
+const layoutMode = computed(() => config.value.settings.layoutMode)
+const manualActiveLayoutId = computed(() => config.value.settings.manualActiveLayoutId)
 
 const layoutLabel = computed(() => {
   const id = layoutId.value
@@ -76,107 +78,129 @@ function toggleDefault(value: boolean) {
   if (!layoutId.value) return
   setAsDefault(value ? layoutId.value : undefined)
 }
+
+function setManualActive() {
+  config.value.settings.manualActiveLayoutId = layoutId.value
+}
 </script>
 
 <template>
-  <UCard v-if="layoutId">
+  <UCard>
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
           <h2 class="text-sm font-semibold">
-            {{ $t('rules.layoutConditionsTitle') }}
+            {{ layoutMode === 'auto' ? $t('rules.layoutConditionsTitle') : $t('rules.manualActiveLabel') }}
           </h2>
           <p class="text-xs text-(--ui-text-muted) mt-0.5">
-            {{ $t('rules.layoutConditionsSubtitle', { name: layoutLabel }) }}
+            {{ layoutMode === 'auto' ? (layoutId ? $t('rules.layoutConditionsSubtitle', { name: layoutLabel }) : $t('rules.saveToConfigureAuto')) : $t('rules.manualActiveHint') }}
           </p>
         </div>
+        <template v-if="layoutMode === 'manual'">
+          <UButton
+            v-if="manualActiveLayoutId !== layoutId"
+            color="primary"
+            size="sm"
+            @click="setManualActive"
+          >
+            {{ $t('rules.activateBtn') }}
+          </UButton>
+          <UBadge v-else color="success" variant="subtle" size="sm">
+            {{ $t('settings.activeBadge') }}
+          </UBadge>
+        </template>
       </div>
     </template>
 
-    <div class="space-y-3">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="min-w-0">
-          <div class="text-sm font-medium">
-            {{ $t('rules.autoIncludeLabel') }}
+    <div v-if="layoutMode === 'auto'" class="space-y-3">
+      <template v-if="layoutId">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="min-w-0">
+            <div class="text-sm font-medium">
+              {{ $t('rules.autoIncludeLabel') }}
+            </div>
+            <div class="text-xs text-(--ui-text-muted)">
+              {{ $t('rules.autoIncludeHint') }}
+            </div>
           </div>
-          <div class="text-xs text-(--ui-text-muted)">
-            {{ $t('rules.autoIncludeHint') }}
-          </div>
+          <UToggle
+            :model-value="includedInAuto"
+            :disabled="hasConditions || isDefault"
+            @update:model-value="(v: boolean) => toggleAuto(v === true)"
+          />
         </div>
-        <UToggle
-          :model-value="includedInAuto"
-          :disabled="hasConditions || isDefault"
-          @update:model-value="(v: boolean) => toggleAuto(v === true)"
-        />
+
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="min-w-0">
+            <div class="text-sm font-medium flex items-center gap-2">
+              {{ $t('rules.autoDefaultLabel') }}
+              <UBadge
+                v-if="isDefault"
+                color="primary"
+                variant="subtle"
+                size="sm"
+                icon="i-lucide-star"
+              >
+                {{ $t('settings.defaultBadge') }}
+              </UBadge>
+            </div>
+            <div class="text-xs text-(--ui-text-muted)">
+              {{ $t('rules.autoDefaultHint') }}
+            </div>
+          </div>
+          <UToggle
+            :model-value="isDefault"
+            :disabled="hasConditions"
+            @update:model-value="(v: boolean) => toggleDefault(v === true)"
+          />
+        </div>
+
+        <div
+          v-if="isDefault"
+          class="text-xs p-2 rounded border border-(--ui-info)/40 bg-(--ui-info)/10 text-(--ui-text-muted)"
+        >
+          {{ $t('rules.autoDefaultLockHint') }}
+        </div>
+
+        <UButton
+          block
+          color="neutral"
+          variant="outline"
+          :disabled="isDefault"
+          class="justify-between"
+          @click="openWhitelist"
+        >
+          <div class="flex items-center gap-2 min-w-0">
+            <UIcon name="i-lucide-list-checks" class="shrink-0" />
+            <span class="font-medium">{{ $t('settings.whitelist') }}</span>
+            <span class="text-(--ui-text-muted) truncate">
+              {{ whitelistSummary }}
+            </span>
+          </div>
+          <UIcon name="i-lucide-chevron-right" class="shrink-0" />
+        </UButton>
+
+        <UButton
+          block
+          color="neutral"
+          variant="outline"
+          :disabled="isDefault"
+          class="justify-between"
+          @click="openBlacklist"
+        >
+          <div class="flex items-center gap-2 min-w-0">
+            <UIcon name="i-lucide-list-x" class="shrink-0" />
+            <span class="font-medium">{{ $t('settings.blacklist') }}</span>
+            <span class="text-(--ui-text-muted) truncate">
+              {{ blacklistSummary }}
+            </span>
+          </div>
+          <UIcon name="i-lucide-chevron-right" class="shrink-0" />
+        </UButton>
+      </template>
+      <div v-else class="text-sm text-(--ui-text-muted)">
+        {{ $t('rules.saveToConfigureAuto') }}
       </div>
-
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="min-w-0">
-          <div class="text-sm font-medium flex items-center gap-2">
-            {{ $t('rules.autoDefaultLabel') }}
-            <UBadge
-              v-if="isDefault"
-              color="primary"
-              variant="subtle"
-              size="sm"
-              icon="i-lucide-star"
-            >
-              {{ $t('settings.defaultBadge') }}
-            </UBadge>
-          </div>
-          <div class="text-xs text-(--ui-text-muted)">
-            {{ $t('rules.autoDefaultHint') }}
-          </div>
-        </div>
-        <UToggle
-          :model-value="isDefault"
-          :disabled="hasConditions"
-          @update:model-value="(v: boolean) => toggleDefault(v === true)"
-        />
-      </div>
-
-      <div
-        v-if="isDefault"
-        class="text-xs p-2 rounded border border-(--ui-info)/40 bg-(--ui-info)/10 text-(--ui-text-muted)"
-      >
-        {{ $t('rules.autoDefaultLockHint') }}
-      </div>
-
-      <UButton
-        block
-        color="neutral"
-        variant="outline"
-        :disabled="isDefault"
-        class="justify-between"
-        @click="openWhitelist"
-      >
-        <div class="flex items-center gap-2 min-w-0">
-          <UIcon name="i-lucide-list-checks" class="shrink-0" />
-          <span class="font-medium">{{ $t('settings.whitelist') }}</span>
-          <span class="text-(--ui-text-muted) truncate">
-            {{ whitelistSummary }}
-          </span>
-        </div>
-        <UIcon name="i-lucide-chevron-right" class="shrink-0" />
-      </UButton>
-
-      <UButton
-        block
-        color="neutral"
-        variant="outline"
-        :disabled="isDefault"
-        class="justify-between"
-        @click="openBlacklist"
-      >
-        <div class="flex items-center gap-2 min-w-0">
-          <UIcon name="i-lucide-list-x" class="shrink-0" />
-          <span class="font-medium">{{ $t('settings.blacklist') }}</span>
-          <span class="text-(--ui-text-muted) truncate">
-            {{ blacklistSummary }}
-          </span>
-        </div>
-        <UIcon name="i-lucide-chevron-right" class="shrink-0" />
-      </UButton>
     </div>
 
     <LayoutConditionsModal

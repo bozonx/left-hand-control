@@ -282,6 +282,7 @@ export function createDefaultConfig(): AppConfig {
       defaultMacroModifierDelayMs: 5,
       inputDevicePath: '',
       layoutMode: 'manual',
+      manualActiveLayoutId: undefined,
       layoutOrder: [],
       layoutConditions: {},
       gameMode: {

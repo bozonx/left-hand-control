@@ -167,8 +167,12 @@ export default {
     deleteRule: "Delete rule",
     conditionsLabel: "Conditions",
     conditionsHint: "Conditions for the rule to trigger (Game Mode, Layouts)",
-    layoutConditionsTitle: "Layout conditions",
+    manualActiveLabel: 'Active Layout (Manual)',
+    manualActiveHint: 'Click activate to use this layout right now.',
+    activateBtn: 'Activate',
+    layoutConditionsTitle: 'Layout Conditions',
     layoutConditionsSubtitle: "Auto-mode conditions for the current layout ({name})",
+    saveToConfigureAuto: 'Save the layout to configure auto-mode conditions.',
     autoIncludeLabel: "Include in auto mode",
     autoIncludeHint:
       "When this layout is in auto mode, let it be chosen based on conditions.",

@@ -52,6 +52,9 @@ const {
   clearDeletePending,
 } = useSettingsScreen();
 
+const { activeAutoLayoutId } = useLayoutSwitcher()
+const manualActiveLayoutId = computed(() => config.value.settings.manualActiveLayoutId)
+
 const { t } = useI18n();
 
 const layoutMode = computed({
@@ -151,6 +154,8 @@ function moveLayout(entry: LayoutLibraryEntry, direction: "up" | "down") {
         :layout-mode="layoutMode"
         :auto-included-ids="autoIncludedIds"
         :auto-default-layout-id="autoDefaultLayoutId"
+        :active-auto-layout-id="activeAutoLayoutId"
+        :manual-active-layout-id="manualActiveLayoutId"
         @save-current="saveCurrentLayout"
         @save-as="openSaveAsModal"
         @request-apply-entry="requestApplyEntry"

@@ -1,7 +1,8 @@
 // Thin composable around the Rust mapper commands.
 // In the plain browser (pnpm dev without Tauri) everything becomes a no-op.
 
-import { layoutSnapshotOf } from '~/utils/layoutPresets'
+import { layoutSnapshotOf, emptyLayoutPreset, applyPresetToConfig } from '~/utils/layoutPresets'
+import type { AppConfig } from '~/types/config'
 
 export interface KeyboardDevice {
   path: string
@@ -69,19 +70,46 @@ export function useMapper(): MapperState {
   }
 
   const { config, flush } = useConfig()
+  const { activeAutoLayoutId } = useLayoutSwitcher()
+  const library = useLayoutLibrary()
   const devices = ref<KeyboardDevice[]>([])
   const status = ref<MapperStatus>({ running: false, device_path: null, last_error: null })
   const busy = ref(false)
   const error = ref<string | null>(null)
-  const runtimeSnapshot = () => JSON.stringify({
-    layout: layoutSnapshotOf(config.value),
-    defaultHoldTimeoutMs: config.value.settings.defaultHoldTimeoutMs,
-    defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
-    defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
-    defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
-  })
   let reloadPending = false
-  let lastRuntimeSnapshot = runtimeSnapshot()
+
+  async function computeActiveConfig(): Promise<AppConfig> {
+    const settings = config.value.settings
+    const activeId = settings.layoutMode === 'auto'
+      ? activeAutoLayoutId?.value
+      : settings.manualActiveLayoutId
+    
+    if (activeId === settings.currentLayoutId) {
+      return config.value
+    }
+    
+    let preset = emptyLayoutPreset()
+    if (activeId) {
+      const loaded = await library.loadPreset(activeId)
+      if (loaded) preset = loaded
+    }
+    return applyPresetToConfig(config.value, preset, activeId)
+  }
+
+  const runtimeSnapshot = async () => {
+    const cfg = await computeActiveConfig()
+    return JSON.stringify({
+      layout: layoutSnapshotOf(cfg),
+      defaultHoldTimeoutMs: cfg.settings.defaultHoldTimeoutMs,
+      defaultDoubleTapTimeoutMs: cfg.settings.defaultDoubleTapTimeoutMs,
+      defaultMacroStepPauseMs: cfg.settings.defaultMacroStepPauseMs,
+      defaultMacroModifierDelayMs: cfg.settings.defaultMacroModifierDelayMs,
+    })
+  }
+  let lastRuntimeSnapshot = ''
+  
+  // Initialize snapshot asynchronously
+  runtimeSnapshot().then(s => { lastRuntimeSnapshot = s })
 
   async function refreshDevices() {
     const tauri = await useTauri()
@@ -114,9 +142,10 @@ export function useMapper(): MapperState {
     }
     try {
       await flush()
+      const activeConfig = await computeActiveConfig()
       await tauri.invoke('start_mapper', {
         devicePath,
-        configJson: JSON.stringify(config.value),
+        configJson: JSON.stringify(activeConfig),
       })
       error.value = null
       await refreshStatus()
@@ -185,8 +214,12 @@ export function useMapper(): MapperState {
 
   registerConsumer(refreshStatus)
 
-  watch(() => config.value, () => {
-    const nextRuntimeSnapshot = runtimeSnapshot()
+  watch([
+    () => config.value,
+    () => config.value.settings.manualActiveLayoutId,
+    () => activeAutoLayoutId?.value
+  ], async () => {
+    const nextRuntimeSnapshot = await runtimeSnapshot()
     if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
     lastRuntimeSnapshot = nextRuntimeSnapshot
     if (!status.value.running) return
