@@ -295,14 +295,14 @@ function openBlacklist(entryId: string) {
                             </div>
                             <div v-if="layoutMode === 'auto'" class="flex items-center gap-3 mt-1 flex-wrap" @click.stop>
                                 <div class="flex items-center gap-1.5 cursor-pointer">
-                                    <UToggle
+                                    <USwitch
                                         :model-value="entryIsDefault(entry.id)"
                                         @update:model-value="entryToggleDefault(entry.id, $event === true)"
                                     />
                                     <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoDefaultLabel') }}</span>
                                 </div>
                                 <div class="flex items-center gap-1.5 cursor-pointer">
-                                    <UToggle
+                                    <USwitch
                                         :model-value="entryIsIncluded(entry.id)"
                                         :disabled="entryHasConditions(entry.id) || entryIsDefault(entry.id)"
                                         @update:model-value="entryToggleAuto(entry.id, $event === true)"
