@@ -347,6 +347,7 @@ export default {
     devicePh: "Не выбрано",
     refreshDevices: "Обновить список",
     start: "Запустить",
+    startDisabledTooltip: "Зайдите в Настройки и выберите клавиатуру, после чего можно запустить маппер.",
     stop: "Остановить",
     mapperHint:
       "Маппер читает события напрямую с {input} и эмитит через {uinput}. Нужен доступ к этим устройствам — см. README (группа {group} и udev-правило для {uinputDev}).",

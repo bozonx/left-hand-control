@@ -140,7 +140,6 @@ watch(
             :color="isActive(item.to) ? 'primary' : 'neutral'"
             variant="ghost"
             :icon="item.icon"
-            :square="item.iconOnly"
             :aria-label="item.label"
             size="sm"
             class="px-3 text-(--ui-text-muted) hover:text-primary"
@@ -149,7 +148,7 @@ watch(
               : 'bg-transparent shadow-none'"
             @click="openTab(item.to)"
           >
-            <span v-if="!item.iconOnly">{{ item.label }}</span>
+            <span>{{ item.label }}</span>
           </UButton>
         </div>
       </div>
@@ -157,18 +156,23 @@ watch(
 
     <div class="flex items-center gap-3 shrink-0">
       <template v-if="loaded">
-        <UButton
-          :color="mapper.status.value.running ? 'error' : 'primary'"
-          :variant="mapper.status.value.running ? 'soft' : 'solid'"
-          :icon="mapper.status.value.running ? 'i-lucide-square' : 'i-lucide-play'"
-          size="sm"
-          class="whitespace-nowrap"
-          :loading="mapper.busy.value"
-          :disabled="!mapper.status.value.running && !selectedDevice"
-          @click="toggleMapper"
+        <AppTooltip
+          :disabled="mapper.status.value.running || !!selectedDevice"
+          :text="$t('settings.startDisabledTooltip')"
         >
-          {{ mapper.status.value.running ? $t('settings.stop') : $t('settings.start') }}
-        </UButton>
+          <UButton
+            :color="mapper.status.value.running ? 'error' : 'primary'"
+            :variant="mapper.status.value.running ? 'soft' : 'solid'"
+            :icon="mapper.status.value.running ? 'i-lucide-square' : 'i-lucide-play'"
+            size="sm"
+            class="whitespace-nowrap"
+            :loading="mapper.busy.value"
+            :disabled="!mapper.status.value.running && !selectedDevice"
+            @click="toggleMapper"
+          >
+            {{ mapper.status.value.running ? $t('settings.stop') : $t('settings.start') }}
+          </UButton>
+        </AppTooltip>
 
         <AppTooltip
           :text="isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel"

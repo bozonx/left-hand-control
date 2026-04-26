@@ -343,6 +343,7 @@ export default {
     devicePh: "Not selected",
     refreshDevices: "Refresh list",
     start: "Start",
+    startDisabledTooltip: "Go to Settings and select a keyboard, then you can start the mapper.",
     stop: "Stop",
     mapperHint:
       "The mapper reads events directly from {input} and emits via {uinput}. You need access to those devices — see README (group {group} and a udev rule for {uinputDev}).",
