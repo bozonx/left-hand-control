@@ -109,20 +109,10 @@ code,
   border: 2px solid transparent;
 }
 
-/* Extra-thin scrollbar for tab overflow — fixed size, no hover expansion. */
-.thin-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--ui-border) transparent;
+/* Hide scrollbar for tab overflow to prevent layout shifts and overlaps. */
+.hide-scrollbar {
+  scrollbar-width: none;
 }
-.thin-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-.thin-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.thin-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--ui-border);
-  border-radius: 2px;
-  border: none;
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

@@ -144,7 +144,7 @@ watch(
 
       <div
         ref="tabsScrollRef"
-        class="min-w-0 flex-1 overflow-x-auto overflow-y-hidden thin-scrollbar"
+        class="min-w-0 flex-1 overflow-x-auto overflow-y-hidden hide-scrollbar"
         @wheel="onTabWheel"
       >
         <div class="inline-flex min-w-max items-center gap-1.5">
