@@ -156,8 +156,8 @@ layers:
       KeyG: sys:windowToNextDesktop
       KeyZ: sys:windowMaximizeVertical
       KeyX: sys:windowMaximizeHorizontal
-      # KeyC: sys:screenshot
-      KeyC: PrintScreen
+      KeyC: sys:screenshot
+      #KeyC: PrintScreen
       KeyV: sys:showClipboardHistory
       KeyB: sys:windowClose
       KeyN: sys:brightnessDown
