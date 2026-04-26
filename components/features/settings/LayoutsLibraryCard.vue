@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
+import type { LayoutMode } from "~/types/config";
 
 defineProps<{
     entries: LayoutLibraryEntry[];
@@ -10,6 +11,9 @@ defineProps<{
     applyError?: string | null;
     libraryError?: string | null;
     layoutsDir: string;
+    layoutMode: LayoutMode;
+    autoIncludedIds: Set<string>;
+    autoDefaultLayoutId?: string;
 }>();
 
 defineEmits<{
@@ -21,6 +25,8 @@ defineEmits<{
     requestEdit: [entry: LayoutLibraryEntry];
     requestReset: [];
     requestDelete: [entry: LayoutLibraryEntry];
+    moveUp: [entry: LayoutLibraryEntry];
+    moveDown: [entry: LayoutLibraryEntry];
 }>();
 </script>
 
@@ -116,14 +122,39 @@ defineEmits<{
                 class="divide-y divide-(--ui-border) border border-(--ui-border) rounded"
             >
                 <li
-                    v-for="entry in entries"
+                    v-for="(entry, index) in entries"
                     :key="entry.id"
                     class="flex items-center justify-between gap-3 p-3 group hover:bg-(--ui-bg-elevated) transition-colors"
                 >
-                    <div class="min-w-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <div
+                            v-if="layoutMode === 'auto'"
+                            class="flex flex-col gap-0.5 shrink-0"
+                        >
+                            <UButton
+                                color="neutral"
+                                variant="ghost"
+                                size="xs"
+                                :square="true"
+                                icon="i-lucide-chevron-up"
+                                :aria-label="$t('settings.moveLayoutUpAria', { name: entry.name })"
+                                :disabled="index === 0"
+                                @click="$emit('moveUp', entry)"
+                            />
+                            <UButton
+                                color="neutral"
+                                variant="ghost"
+                                size="xs"
+                                :square="true"
+                                icon="i-lucide-chevron-down"
+                                :aria-label="$t('settings.moveLayoutDownAria', { name: entry.name })"
+                                :disabled="index === entries.length - 1"
+                                @click="$emit('moveDown', entry)"
+                            />
+                        </div>
                         <div class="min-w-0">
                             <div
-                                class="font-medium truncate flex items-center gap-2"
+                                class="font-medium truncate flex items-center gap-2 flex-wrap"
                             >
                                 {{ entry.name }}
                                 <UBadge
@@ -147,6 +178,24 @@ defineEmits<{
                                     size="sm"
                                 >
                                     {{ $t("settings.unsavedBadge") }}
+                                </UBadge>
+                                <UBadge
+                                    v-if="autoDefaultLayoutId === entry.id"
+                                    color="primary"
+                                    variant="subtle"
+                                    size="sm"
+                                    icon="i-lucide-star"
+                                >
+                                    {{ $t("settings.defaultBadge") }}
+                                </UBadge>
+                                <UBadge
+                                    v-else-if="autoIncludedIds.has(entry.id)"
+                                    color="info"
+                                    variant="subtle"
+                                    size="sm"
+                                    icon="i-lucide-zap"
+                                >
+                                    {{ $t("settings.inAutoBadge") }}
                                 </UBadge>
                             </div>
                             <div

@@ -63,6 +63,52 @@ export async function getSettingsDir(): Promise<string> {
   }
 }
 
+// Merge an (optionally partial) AppSettings with defaults, sanitizing
+// shape of the new layout-mode fields.
+function normalizeSettings(
+  base: AppConfig['settings'],
+  raw: Partial<AppConfig['settings']> | undefined,
+): AppConfig['settings'] {
+  const merged = { ...base, ...(raw ?? {}) }
+  merged.layoutMode = merged.layoutMode === 'auto' ? 'auto' : 'manual'
+  merged.layoutOrder = Array.isArray(merged.layoutOrder)
+    ? merged.layoutOrder.filter((id): id is string => typeof id === 'string')
+    : []
+  if (!merged.layoutConditions || typeof merged.layoutConditions !== 'object') {
+    merged.layoutConditions = {}
+  } else {
+    const cleaned: AppConfig['settings']['layoutConditions'] = {}
+    for (const [id, value] of Object.entries(merged.layoutConditions)) {
+      if (!value || typeof value !== 'object') continue
+      const v = value as Partial<AppConfig['settings']['layoutConditions'][string]>
+      cleaned[id] = {
+        whitelist: normalizeConditionSet(v.whitelist),
+        blacklist: normalizeConditionSet(v.blacklist),
+        includedInAuto: !!v.includedInAuto,
+      }
+    }
+    merged.layoutConditions = cleaned
+  }
+  if (typeof merged.autoDefaultLayoutId !== 'string' || !merged.autoDefaultLayoutId) {
+    merged.autoDefaultLayoutId = undefined
+  }
+  return merged
+}
+
+function normalizeConditionSet(
+  raw: unknown,
+): { gameMode?: 'on' | 'off'; layouts: string[] } | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const v = raw as { gameMode?: unknown; layouts?: unknown }
+  const gameMode =
+    v.gameMode === 'on' || v.gameMode === 'off' ? v.gameMode : undefined
+  const layouts = Array.isArray(v.layouts)
+    ? v.layouts.filter((s): s is string => typeof s === 'string' && !!s)
+    : []
+  if (!gameMode && layouts.length === 0) return undefined
+  return { gameMode, layouts }
+}
+
 // Merge a (possibly partial / old-version) persisted config with defaults so
 // the UI always sees a complete shape.
 export function normalizeConfig(raw: unknown): AppConfig {
@@ -89,7 +135,7 @@ export function normalizeConfig(raw: unknown): AppConfig {
         : base.layerKeymaps,
     macros: Array.isArray(r.macros) ? r.macros : [],
     commands: Array.isArray(r.commands) ? r.commands : [],
-    settings: { ...base.settings, ...(r.settings ?? {}) },
+    settings: normalizeSettings(base.settings, r.settings),
   }
   for (const layer of cfg.layers) {
     if (!cfg.layerKeymaps[layer.id]) {
@@ -126,7 +172,7 @@ function normalizePersistedConfig(raw: unknown): PersistedConfig {
   const value = raw as Partial<PersistedConfig>
   return {
     version: 1,
-    settings: { ...base.settings, ...(value.settings ?? {}) },
+    settings: normalizeSettings(base.settings, value.settings),
   }
 }
 

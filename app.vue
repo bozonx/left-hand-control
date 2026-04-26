@@ -5,6 +5,7 @@ const { loaded, load } = useConfig()
 
 useAppTheme()
 useAppLocale()
+useLayoutSwitcher()
 
 onMounted(() => {
   if (!loaded.value) {

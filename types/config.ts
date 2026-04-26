@@ -103,6 +103,36 @@ export type AppearancePreference = 'system' | 'light' | 'dark'
 // falling back to English.
 export type LocalePreference = 'auto' | 'en-US' | 'ru-RU'
 
+// How the currently active layout is chosen.
+//   'manual' — user picks a layout and it stays active; its whitelist /
+//     blacklist still gate rule firing (a non-matching layout acts as
+//     native passthrough).
+//   'auto'   — the app picks the active layout from layouts included in
+//     auto mode, using `layoutOrder` as priority and evaluating each
+//     layout's whitelist / blacklist. If none matches, falls back to
+//     `autoDefaultLayoutId` or to native passthrough.
+export type LayoutMode = 'manual' | 'auto'
+
+// A single condition set used as a whitelist or blacklist for a layout.
+// Missing `gameMode` means "do not check"; empty `layouts` means
+// "do not check layouts". A condition set is considered "empty" (no-op)
+// when neither `gameMode` is set nor `layouts` contains items.
+export interface LayoutConditionSet {
+  gameMode?: 'on' | 'off'
+  layouts: string[]
+}
+
+export interface LayoutConditionRule {
+  // When set, the layout is only active while conditions match.
+  whitelist?: LayoutConditionSet
+  // When set and matches, the layout is blocked from activating (takes
+  // precedence over whitelist).
+  blacklist?: LayoutConditionSet
+  // Included in auto-mode picker. Flips to true automatically when the
+  // user adds the first whitelist / blacklist condition.
+  includedInAuto?: boolean
+}
+
 export interface AppSettings {
   launchOnStartup: boolean
   // Visual theme preference. 'system' follows prefers-color-scheme.
@@ -125,6 +155,19 @@ export interface AppSettings {
   // Id of the currently applied user layout file: `user:<name>`.
   // Empty/undefined means a custom / unnamed layout.
   currentLayoutId?: string
+  // How the current layout is picked. Default: 'manual'.
+  layoutMode: LayoutMode
+  // Priority order for auto mode — array of layout ids. Layouts absent
+  // from this array are placed at the end (preserving library order).
+  layoutOrder: string[]
+  // Per-layout whitelist / blacklist / auto-include settings, keyed by
+  // layout id (`user:<name>`). Stored here (not in the YAML) so layouts
+  // stay portable across machines.
+  layoutConditions: Record<string, LayoutConditionRule>
+  // Fallback layout used in auto mode when no other layout matches. Only
+  // one layout may be the default; the default layout cannot have
+  // whitelist/blacklist conditions.
+  autoDefaultLayoutId?: string
   gameMode: {
     useGamemoded: boolean
     useFullscreen: boolean
@@ -238,6 +281,9 @@ export function createDefaultConfig(): AppConfig {
       defaultMacroStepPauseMs: 20,
       defaultMacroModifierDelayMs: 5,
       inputDevicePath: '',
+      layoutMode: 'manual',
+      layoutOrder: [],
+      layoutConditions: {},
       gameMode: {
         useGamemoded: true,
         useFullscreen: false,

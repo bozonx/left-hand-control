@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import HomeInfoCard from "~/components/HomeInfoCard.vue";
 import LayoutsLibraryCard from "~/components/features/settings/LayoutsLibraryCard.vue";
+import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
+import { isLayoutInAuto, orderLayoutIds } from "~/utils/layoutAutoSwitch";
 
 const {
+  config,
   currentLayoutId,
   currentLayoutDescription,
   isLayoutDirty,
@@ -47,6 +51,61 @@ const {
   confirmDelete,
   clearDeletePending,
 } = useSettingsScreen();
+
+const { t } = useI18n();
+
+const layoutMode = computed({
+  get: () => config.value.settings.layoutMode,
+  set: (value: "manual" | "auto") => {
+    config.value.settings.layoutMode = value;
+  },
+});
+
+const modeOptions = computed(() => [
+  { label: t("home.modeManual"), value: "manual" as const },
+  { label: t("home.modeAuto"), value: "auto" as const },
+]);
+
+const orderedEntries = computed<LayoutLibraryEntry[]>(() => {
+  const entries: LayoutLibraryEntry[] = library.entries.value;
+  if (config.value.settings.layoutMode !== "auto") return entries;
+  const order = orderLayoutIds(
+    entries.map((e: LayoutLibraryEntry) => e.id),
+    config.value.settings.layoutOrder,
+  );
+  const byId = new Map(
+    entries.map((e: LayoutLibraryEntry) => [e.id, e] as const),
+  );
+  return order
+    .map((id) => byId.get(id))
+    .filter((e): e is LayoutLibraryEntry => !!e);
+});
+
+const autoIncludedIds = computed(() => {
+  const set = new Set<string>();
+  const map = config.value.settings.layoutConditions;
+  for (const id of Object.keys(map)) {
+    if (isLayoutInAuto(map[id])) set.add(id);
+  }
+  return set;
+});
+
+const autoDefaultLayoutId = computed(
+  () => config.value.settings.autoDefaultLayoutId,
+);
+
+function syncLayoutOrder(ids: string[]) {
+  config.value.settings.layoutOrder = ids;
+}
+
+function moveLayout(entry: LayoutLibraryEntry, direction: "up" | "down") {
+  const current = orderedEntries.value.map((e) => e.id);
+  const index = current.indexOf(entry.id);
+  const target = direction === "up" ? index - 1 : index + 1;
+  if (index < 0 || target < 0 || target >= current.length) return;
+  [current[index], current[target]] = [current[target]!, current[index]!];
+  syncLayoutOrder(current);
+}
 </script>
 
 <template>
@@ -58,9 +117,30 @@ const {
       </p>
     </div>
 
+    <UCard>
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          <h3 class="text-sm font-semibold">{{ $t("home.modeLabel") }}</h3>
+          <p class="text-xs text-(--ui-text-muted) mt-0.5">
+            {{
+              layoutMode === "auto"
+                ? $t("home.modeAutoHint")
+                : $t("home.modeManualHint")
+            }}
+          </p>
+        </div>
+        <URadioGroup
+          v-model="layoutMode"
+          :items="modeOptions"
+          orientation="horizontal"
+          value-key="value"
+        />
+      </div>
+    </UCard>
+
     <div class="space-y-4">
       <LayoutsLibraryCard
-        :entries="library.entries.value"
+        :entries="orderedEntries"
         :current-layout-id="currentLayoutId"
         :current-layout-description="currentLayoutDescription"
         :is-layout-dirty="isLayoutDirty"
@@ -68,6 +148,9 @@ const {
         :apply-error="applyError"
         :library-error="library.error.value"
         :layouts-dir="library.layoutsDir.value"
+        :layout-mode="layoutMode"
+        :auto-included-ids="autoIncludedIds"
+        :auto-default-layout-id="autoDefaultLayoutId"
         @save-current="saveCurrentLayout"
         @save-as="openSaveAsModal"
         @request-apply-entry="requestApplyEntry"
@@ -76,6 +159,8 @@ const {
         @request-edit="openEditModal"
         @request-reset="requestReset"
         @request-delete="(entry) => (deletePending = entry)"
+        @move-up="(entry) => moveLayout(entry, 'up')"
+        @move-down="(entry) => moveLayout(entry, 'down')"
       />
 
       <HomeInfoCard />

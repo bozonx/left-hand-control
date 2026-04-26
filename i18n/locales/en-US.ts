@@ -13,6 +13,7 @@ export default {
     dirtyTooltip:
       "The current layout has unsaved changes. Save it under My layouts, otherwise they will be lost when switching.",
     customLayout: "Custom layout",
+    noLayout: "No layout",
     switchToLight: "Switch to light theme",
     switchToDark: "Switch to dark theme",
     quit: "Quit application",
@@ -61,6 +62,13 @@ export default {
     layoutsHintTitle: "Using the library",
     layoutsHintBody:
       "Create empty layouts or copies of the Ivan K base layout, switch between them, and save the current changes into a separate file.",
+    modeLabel: "Layout mode",
+    modeManual: "Manual",
+    modeAuto: "Auto",
+    modeManualHint:
+      "You pick a layout manually; it stays active. Its whitelist/blacklist still filter rules.",
+    modeAutoHint:
+      "The app picks the active layout automatically from the priority list below. Only one layout is active at a time.",
   },
   welcome: {
     intro:
@@ -159,6 +167,17 @@ export default {
     deleteRule: "Delete rule",
     conditionsLabel: "Conditions",
     conditionsHint: "Conditions for the rule to trigger (Game Mode, Layouts)",
+    layoutConditionsTitle: "Layout conditions",
+    layoutConditionsSubtitle: "Auto-mode conditions for the current layout ({name})",
+    autoIncludeLabel: "Include in auto mode",
+    autoIncludeHint:
+      "When this layout is in auto mode, let it be chosen based on conditions.",
+    autoDefaultLabel: "Auto fallback",
+    autoDefaultHint:
+      "If no layout matches its whitelist in auto mode, always fall back to this one.",
+    autoDefaultLockHint:
+      "The default layout cannot have whitelist or blacklist conditions.",
+    conditionsNone: "— any —",
     conditionsBtn: "Conditions...",
     gameModeLabel: "Game Mode",
     gameModeHint: "Rule will only work if Game Mode is in the selected state",
@@ -392,6 +411,18 @@ export default {
     deleteAria: "Delete",
     editLayoutAria: "Edit layout {name}",
     dirtyBadgeTitle: "The current layout has unsaved changes.",
+    whitelist: "Whitelist",
+    whitelistTitle: "Whitelist conditions",
+    whitelistHint:
+      "The layout will only activate when all of these conditions are met.",
+    blacklist: "Blacklist",
+    blacklistTitle: "Blacklist conditions",
+    blacklistHint:
+      "The layout will never activate when any of these conditions are met.",
+    defaultBadge: "default",
+    inAutoBadge: "in auto",
+    moveLayoutUpAria: "Move {name} up",
+    moveLayoutDownAria: "Move {name} down",
     dirtyBadgeBody:
       "Switching to another layout will replace the rules, layers, keymap and macros. Save the current as a user layout to keep it.",
     resetUnsavedBtn: "Reset changes",

@@ -55,6 +55,8 @@ function cancelRemoveRule() {
 
 <template>
   <div class="space-y-4">
+    <LayoutConditionsCard />
+
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-3">

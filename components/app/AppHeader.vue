@@ -29,7 +29,13 @@ const tabItems = computed(() => [
 
 const currentLayoutLabel = computed<string>(() => {
   const id = currentLayoutId.value
-  if (!id) return t('app.customLayout')
+  if (!id) {
+    // In auto mode, an empty id means "no layout matched" rather than a
+    // custom unsaved layout.
+    return config.value.settings.layoutMode === 'auto'
+      ? t('app.noLayout')
+      : t('app.customLayout')
+  }
   if (isUserLayoutId(id)) return userLayoutNameFromId(id)
   return id
 })
@@ -92,28 +98,39 @@ watch(
   <header
     class="flex items-center justify-between px-4 h-[var(--app-header-height)] border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 shrink-0 app-chrome"
   >
-    <div class="flex items-center gap-4 min-w-0 flex-1">
+    <div class="flex items-center gap-2 min-w-0 flex-1">
       <UButton
         color="neutral"
         variant="ghost"
-        class="group shrink-0 -ml-2 px-2.5 transition-all duration-200"
-        :class="isActive('/') ? 'text-primary bg-(--ui-primary)/8' : 'text-(--ui-text-highlighted)'"
+        :square="true"
+        size="sm"
+        icon="i-lucide-keyboard"
+        :aria-label="$t('app.title')"
+        class="shrink-0 -ml-2 transition-all duration-200"
+        :class="isActive('/')
+          ? 'text-primary bg-(--ui-primary)/8'
+          : 'text-(--ui-text-muted) hover:text-primary'"
         @click="openTab('/')"
-      >
-        <div class="flex items-center gap-2.5">
-          <UIcon
-            name="i-lucide-keyboard"
-            class="w-5 h-5 transition-colors duration-200"
-            :class="isActive('/') ? 'text-primary' : 'text-(--ui-text-muted) group-hover:text-primary'"
-          />
-          <h1
-            class="text-[0.9375rem] font-semibold whitespace-nowrap transition-colors duration-200"
-            :class="isActive('/') ? 'text-primary' : 'group-hover:text-primary'"
-          >
-            {{ $t('app.title') }}
-          </h1>
-        </div>
-      </UButton>
+      />
+
+      <AppTooltip :text="currentLayoutLabel">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="shrink min-w-0 max-w-[14rem] transition-all duration-200"
+          :class="isActive('/')
+            ? 'text-primary bg-(--ui-primary)/8'
+            : 'text-(--ui-text-highlighted) hover:text-primary'"
+          @click="openTab('/')"
+        >
+          <span class="block truncate text-[0.9375rem] font-semibold">
+            {{ currentLayoutLabel }}
+          </span>
+        </UButton>
+      </AppTooltip>
+
+      <span class="shrink-0 w-1" aria-hidden="true" />
 
       <div class="min-w-0 flex-1 overflow-x-auto">
         <div class="inline-flex min-w-max items-center gap-1.5">
