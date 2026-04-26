@@ -90,7 +90,7 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "ArrowRight" => Key::KEY_RIGHT,
         "ArrowUp" => Key::KEY_UP,
         "ArrowDown" => Key::KEY_DOWN,
-        "PrintScreen" => Key::KEY_SYSRQ,
+        "PrintScreen" => Key::KEY_PRINT,
 
         // Punctuation
         "Backquote" => Key::KEY_GRAVE,

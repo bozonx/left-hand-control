@@ -89,7 +89,7 @@ const KEY_NUMERIC_CODES: Record<string, number> = {
   MetaLeft: 125,
   MetaRight: 126,
   ContextMenu: 127,
-  PrintScreen: 99,
+  PrintScreen: 210,
 }
 
 function row(codes: Array<[string, string]>): KeyDef[] {
