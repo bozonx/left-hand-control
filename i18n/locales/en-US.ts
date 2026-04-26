@@ -317,7 +317,7 @@ export default {
     idPh: "id",
     copyId: "Copy ID",
     linuxLabel: "Linux command",
-    linuxHint: "Shell command to run on Linux. It is passed to `sh -lc` as-is.",
+    linuxHint: "Shell command to run on Linux. It is passed to `sh -lc` as-is. To run a .sh file, use `sh /path/to/script.sh` or `. /path/to/script.sh`.",
     linuxPh: "playerctl play-pause",
     usedIn: "Used in:",
     moveUp: "Up",

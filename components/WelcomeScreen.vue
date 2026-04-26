@@ -24,6 +24,7 @@ async function pickIvanK() {
       true,
     )
     await replaceCurrentLayoutSnapshot(preset, userLayoutId(savedName))
+    await navigateTo('/settings')
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -42,6 +43,7 @@ async function pickEmpty() {
       true,
     )
     await replaceCurrentLayoutSnapshot(preset, userLayoutId(savedName))
+    await navigateTo('/settings')
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {

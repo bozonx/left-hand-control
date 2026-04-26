@@ -321,7 +321,7 @@ export default {
     copyId: "Скопировать ID",
     linuxLabel: "Команда Linux",
     linuxHint:
-      "Shell-команда для запуска на Linux. Передаётся в `sh -lc` как есть.",
+      "Shell-команда для запуска на Linux. Передаётся в `sh -lc` как есть. Чтобы выполнить файл .sh, используйте `sh /путь/к/скрипту.sh` или `. /путь/к/скрипту.sh`.",
     linuxPh: "playerctl play-pause",
     usedIn: "Используется в:",
     moveUp: "Вверх",
