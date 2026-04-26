@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import type { LayoutMode } from "~/types/config";
+import { useLayoutConditions } from "~/composables/useLayoutConditions";
 
-defineProps<{
+const props = defineProps<{
     entries: LayoutLibraryEntry[];
     currentLayoutId?: string;
     currentLayoutDescription?: string;
@@ -18,7 +19,7 @@ defineProps<{
     manualActiveLayoutId?: string;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     saveCurrent: [];
     saveAs: [];
     requestApplyEntry: [entry: LayoutLibraryEntry];
@@ -30,6 +31,34 @@ defineEmits<{
     moveUp: [entry: LayoutLibraryEntry];
     moveDown: [entry: LayoutLibraryEntry];
 }>();
+
+const { config } = useConfig();
+const { setIncludedInAuto, setAsDefault } = useLayoutConditions();
+
+function entryIsDefault(entryId: string) {
+    return props.autoDefaultLayoutId === entryId;
+}
+
+function entryHasConditions(entryId: string) {
+    const rule = config.value.settings.layoutConditions[entryId];
+    return !!(rule?.whitelist || rule?.blacklist);
+}
+
+function entryIsIncluded(entryId: string) {
+    return props.autoIncludedIds.has(entryId);
+}
+
+function entryToggleDefault(entryId: string, value: boolean) {
+    setAsDefault(value ? entryId : undefined);
+}
+
+function entryToggleAuto(entryId: string, value: boolean) {
+    setIncludedInAuto(entryId, value);
+}
+
+function entryActivateManual(entryId: string) {
+    config.value.settings.manualActiveLayoutId = entryId;
+}
 </script>
 
 <template>
@@ -198,24 +227,6 @@ defineEmits<{
                                 >
                                     {{ $t("settings.unsavedBadge") }}
                                 </UBadge>
-                                <UBadge
-                                    v-if="autoDefaultLayoutId === entry.id"
-                                    color="primary"
-                                    variant="subtle"
-                                    size="sm"
-                                    icon="i-lucide-star"
-                                >
-                                    {{ $t("settings.defaultBadge") }}
-                                </UBadge>
-                                <UBadge
-                                    v-else-if="autoIncludedIds.has(entry.id)"
-                                    color="neutral"
-                                    variant="subtle"
-                                    size="sm"
-                                    icon="i-lucide-zap"
-                                >
-                                    {{ $t("settings.inAutoBadge") }}
-                                </UBadge>
                             </div>
                             <div
                                 v-if="
@@ -231,6 +242,33 @@ defineEmits<{
                                         ? currentLayoutDescription
                                         : entry.description
                                 }}
+                            </div>
+                            <div v-if="layoutMode === 'auto'" class="flex items-center gap-3 mt-1 flex-wrap" @click.stop>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <UToggle
+                                        :model-value="entryIsDefault(entry.id)"
+                                        @update:model-value="entryToggleDefault(entry.id, $event === true)"
+                                    />
+                                    <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoDefaultLabel') }}</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <UToggle
+                                        :model-value="entryIsIncluded(entry.id)"
+                                        :disabled="entryHasConditions(entry.id) || entryIsDefault(entry.id)"
+                                        @update:model-value="entryToggleAuto(entry.id, $event === true)"
+                                    />
+                                    <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
+                                </label>
+                            </div>
+                            <div v-if="layoutMode === 'manual' && manualActiveLayoutId !== entry.id" class="mt-1" @click.stop>
+                                <UButton
+                                    size="xs"
+                                    color="primary"
+                                    variant="outline"
+                                    @click="entryActivateManual(entry.id)"
+                                >
+                                    {{ $t('rules.activateBtn') }}
+                                </UButton>
                             </div>
                         </div>
                     </div>

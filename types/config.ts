@@ -157,6 +157,8 @@ export interface AppSettings {
   currentLayoutId?: string
   // How the current layout is picked. Default: 'manual'.
   layoutMode: LayoutMode
+  // Id of the layout the user explicitly chose in manual mode.
+  manualActiveLayoutId?: string
   // Priority order for auto mode — array of layout ids. Layouts absent
   // from this array are placed at the end (preserving library order).
   layoutOrder: string[]
