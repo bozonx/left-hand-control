@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LayoutConditionsCard from '~/components/features/rules/LayoutConditionsCard.vue'
 import RuleRow from '~/components/features/rules/RuleRow.vue'
 import LayerEditorModal from '~/components/shared/LayerEditorModal.vue'
 const {
