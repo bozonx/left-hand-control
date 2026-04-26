@@ -6,6 +6,7 @@ import {
 } from '~/composables/useLayoutLibrary'
 
 const route = useRoute()
+const tabsScrollRef = ref<HTMLElement | null>(null)
 
 const {
   loaded,
@@ -47,6 +48,15 @@ const saveIcon = computed(() => (isLayoutDirty.value ? 'i-lucide-save' : 'i-luci
 
 function isActive(path: string) {
   return route.path === path
+}
+
+function onTabWheel(e: WheelEvent) {
+  if (!tabsScrollRef.value) return
+  const el = tabsScrollRef.value
+  if (e.deltaY !== 0 && el.scrollWidth > el.clientWidth) {
+    e.preventDefault()
+    el.scrollLeft += e.deltaY
+  }
 }
 
 async function openTab(path: string) {
@@ -132,7 +142,11 @@ watch(
 
       <span class="shrink-0 w-1" aria-hidden="true" />
 
-      <div class="min-w-0 flex-1 overflow-x-auto">
+      <div
+        ref="tabsScrollRef"
+        class="min-w-0 flex-1 overflow-x-auto overflow-y-hidden thin-scrollbar"
+        @wheel="onTabWheel"
+      >
         <div class="inline-flex min-w-max items-center gap-1.5">
           <UButton
             v-for="item in tabItems"
