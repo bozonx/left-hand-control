@@ -13,15 +13,7 @@ mod storage;
 mod window_state;
 
 fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
-    let config_dir = app
-        .path()
-        .app_config_dir()
-        .map_err(|e| format!("resolve app_config_dir: {e}"))?;
-    let data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("resolve app_data_dir: {e}"))?;
-    Ok(storage::StoragePaths::new(config_dir, data_dir))
+    storage::resolve_storage_paths(app)
 }
 
 #[tauri::command]

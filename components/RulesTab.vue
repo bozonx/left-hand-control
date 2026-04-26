@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import LayoutConditionsCard from '~/components/features/rules/LayoutConditionsCard.vue'
 import RuleRow from '~/components/features/rules/RuleRow.vue'
 import LayerEditorModal from '~/components/shared/LayerEditorModal.vue'
 const {
@@ -56,8 +55,6 @@ function cancelRemoveRule() {
 
 <template>
   <div class="space-y-4">
-    <LayoutConditionsCard />
-
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-3">

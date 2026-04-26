@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
+import { isUserLayoutId, userLayoutNameFromId } from "~/composables/useLayoutLibrary";
 import type { LayoutMode } from "~/types/config";
 import { useLayoutConditions } from "~/composables/useLayoutConditions";
+import type { ConditionKind } from "~/composables/useLayoutConditions";
+import type { LayoutConditionSet } from "~/types/config";
+import LayoutConditionsModal from "~/components/features/settings/LayoutConditionsModal.vue";
 
 const props = defineProps<{
     entries: LayoutLibraryEntry[];
@@ -33,7 +39,20 @@ const emit = defineEmits<{
 }>();
 
 const { config } = useConfig();
+const { t } = useI18n();
 const { setIncludedInAuto, setAsDefault } = useLayoutConditions();
+
+const modalOpen = ref(false);
+const modalKind = ref<ConditionKind>("whitelist");
+const modalLayoutId = ref<string | undefined>(undefined);
+
+const modalLayoutLabel = computed(() => {
+    const id = modalLayoutId.value;
+    if (!id) return "";
+    const entry = props.entries.find((e) => e.id === id);
+    if (entry) return entry.name;
+    return isUserLayoutId(id) ? userLayoutNameFromId(id) : id;
+});
 
 function entryIsDefault(entryId: string) {
     return props.autoDefaultLayoutId === entryId;
@@ -58,6 +77,37 @@ function entryToggleAuto(entryId: string, value: boolean) {
 
 function entryActivateManual(entryId: string) {
     config.value.settings.manualActiveLayoutId = entryId;
+}
+
+function summarize(set: LayoutConditionSet | undefined): string {
+    if (!set) return t("rules.conditionsNone");
+    const parts: string[] = [];
+    if (set.gameMode === "on") parts.push(t("rules.gameModeOn"));
+    else if (set.gameMode === "off") parts.push(t("rules.gameModeOff"));
+    if (set.layouts.length > 0) parts.push(set.layouts.join(", "));
+    return parts.length > 0 ? parts.join(" · ") : t("rules.conditionsNone");
+}
+
+function entryWhitelistSummary(entryId: string) {
+    return summarize(config.value.settings.layoutConditions[entryId]?.whitelist);
+}
+
+function entryBlacklistSummary(entryId: string) {
+    return summarize(config.value.settings.layoutConditions[entryId]?.blacklist);
+}
+
+function openWhitelist(entryId: string) {
+    if (entryIsDefault(entryId)) return;
+    modalLayoutId.value = entryId;
+    modalKind.value = "whitelist";
+    modalOpen.value = true;
+}
+
+function openBlacklist(entryId: string) {
+    if (entryIsDefault(entryId)) return;
+    modalLayoutId.value = entryId;
+    modalKind.value = "blacklist";
+    modalOpen.value = true;
 }
 </script>
 
@@ -244,21 +294,47 @@ function entryActivateManual(entryId: string) {
                                 }}
                             </div>
                             <div v-if="layoutMode === 'auto'" class="flex items-center gap-3 mt-1 flex-wrap" @click.stop>
-                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                <div class="flex items-center gap-1.5 cursor-pointer">
                                     <UToggle
                                         :model-value="entryIsDefault(entry.id)"
                                         @update:model-value="entryToggleDefault(entry.id, $event === true)"
                                     />
                                     <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoDefaultLabel') }}</span>
-                                </label>
-                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                </div>
+                                <div class="flex items-center gap-1.5 cursor-pointer">
                                     <UToggle
                                         :model-value="entryIsIncluded(entry.id)"
                                         :disabled="entryHasConditions(entry.id) || entryIsDefault(entry.id)"
                                         @update:model-value="entryToggleAuto(entry.id, $event === true)"
                                     />
                                     <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
-                                </label>
+                                </div>
+                            </div>
+                            <div v-if="layoutMode === 'auto'" class="flex items-center gap-2 mt-1 flex-wrap" @click.stop>
+                                <UButton
+                                    size="xs"
+                                    color="neutral"
+                                    variant="outline"
+                                    :disabled="entryIsDefault(entry.id)"
+                                    @click="openWhitelist(entry.id)"
+                                >
+                                    <div class="flex items-center gap-1 min-w-0">
+                                        <UIcon name="i-lucide-list-checks" class="shrink-0" />
+                                        <span class="truncate">{{ entryWhitelistSummary(entry.id) }}</span>
+                                    </div>
+                                </UButton>
+                                <UButton
+                                    size="xs"
+                                    color="neutral"
+                                    variant="outline"
+                                    :disabled="entryIsDefault(entry.id)"
+                                    @click="openBlacklist(entry.id)"
+                                >
+                                    <div class="flex items-center gap-1 min-w-0">
+                                        <UIcon name="i-lucide-list-x" class="shrink-0" />
+                                        <span class="truncate">{{ entryBlacklistSummary(entry.id) }}</span>
+                                    </div>
+                                </UButton>
                             </div>
                             <div v-if="layoutMode === 'manual' && manualActiveLayoutId !== entry.id" class="mt-1" @click.stop>
                                 <UButton
@@ -294,5 +370,13 @@ function entryActivateManual(entryId: string) {
                 </li>
             </ul>
         </div>
+
+        <LayoutConditionsModal
+            v-if="modalLayoutId"
+            v-model:open="modalOpen"
+            :layout-id="modalLayoutId"
+            :kind="modalKind"
+            :layout-label="modalLayoutLabel"
+        />
     </UCard>
 </template>

@@ -3,10 +3,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 use std::process::Command;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 
 use crate::mapper::config::GameModeSettings;
-use crate::storage::StoragePaths;
 
 #[cfg(target_os = "linux")]
 mod linux;
@@ -118,13 +117,9 @@ pub fn get_gamemode_status(app: AppHandle) -> Result<GameModeStatus, String> {
 }
 
 fn load_game_mode_settings(app: &AppHandle) -> GameModeSettings {
-    let Ok(config_dir) = app.path().app_config_dir() else {
+    let Ok(storage) = crate::storage::resolve_storage_paths(app) else {
         return GameModeSettings::default();
     };
-    let Ok(data_dir) = app.path().app_data_dir() else {
-        return GameModeSettings::default();
-    };
-    let storage = StoragePaths::new(config_dir, data_dir);
     let Ok(raw) = storage.load_config() else {
         return GameModeSettings::default();
     };
