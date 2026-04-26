@@ -183,4 +183,17 @@ describe('pickActiveLayout', () => {
     )
     expect(result).toBeNull()
   })
+
+  it('picks a layout that has no whitelist but has a non-blocking blacklist', () => {
+    const result = pickActiveLayout(
+      ['user:a'],
+      settings({
+        layoutConditions: {
+          'user:a': { blacklist: { gameMode: 'on', layouts: [] } },
+        },
+      }),
+      ctxOnRU,
+    )
+    expect(result).toBe('user:a')
+  })
 })

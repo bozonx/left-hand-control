@@ -87,9 +87,9 @@ export function pickActiveLayout(
     if (!isLayoutInAuto(rule)) continue
     if (evaluateLayoutGate(rule, ctx) === 'allow') {
       // For an "included" layout to match it must have at least one
-      // active whitelist condition, otherwise it would always win and
-      // make the priority list unusable.
-      if (rule?.whitelist && matchesConditionSet(rule.whitelist, ctx)) {
+      // active condition (whitelist or blacklist), otherwise it would
+      // always win unconditionally and make the priority list unusable.
+      if (rule?.whitelist || rule?.blacklist) {
         return id
       }
     }
