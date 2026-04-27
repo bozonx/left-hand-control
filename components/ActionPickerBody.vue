@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import InputWithClearButton from '~/components/shared/InputWithClearButton.vue'
 import { commandActionRef, macroActionRef, parseTextAction, systemActionRef, textActionRef } from '~/types/config'
 import { SYSTEM_ACTIONS } from '~/utils/systemActions'
 import { SYSTEM_MACROS } from '~/utils/systemMacros'
@@ -7,6 +8,30 @@ import {
   type ActionItem,
   type StaticCategory,
 } from '~/utils/actionCategories'
+
+interface TextPart {
+  text: string
+  match: boolean
+}
+
+function highlightParts(text: string, query: string): TextPart[] {
+  if (!query) return [{ text, match: false }]
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+  const parts: TextPart[] = []
+  let i = 0
+  while (i < text.length) {
+    const idx = lowerText.indexOf(lowerQuery, i)
+    if (idx === -1) {
+      parts.push({ text: text.slice(i), match: false })
+      break
+    }
+    if (idx > i) parts.push({ text: text.slice(i, idx), match: false })
+    parts.push({ text: text.slice(idx, idx + query.length), match: true })
+    i = idx + query.length
+  }
+  return parts
+}
 
 const props = withDefaults(defineProps<{
   keyOnly?: boolean
@@ -137,6 +162,50 @@ const listGridClass = computed(() =>
       ].join(' '),
 )
 
+const showSuggestions = ref(false)
+const inputFocused = ref(false)
+
+const filteredItems = computed(() => {
+  const query = draft.value.trim().toLowerCase()
+  if (!query) return []
+  const allItems: ActionItem[] = []
+  for (const cat of allCategories.value) {
+    for (const item of cat.items) {
+      const searchable = (item.hint || item.value).toLowerCase()
+      if (searchable.includes(query)) {
+        allItems.push(item)
+      }
+    }
+  }
+  return allItems
+})
+
+function onInputFocus() {
+  inputFocused.value = true
+  if (draft.value.trim()) showSuggestions.value = true
+}
+
+function onInputBlur() {
+  inputFocused.value = false
+  setTimeout(() => {
+    if (!inputFocused.value) showSuggestions.value = false
+  }, 120)
+}
+
+function onInputKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    showSuggestions.value = false
+  }
+}
+
+watch(draft, (val) => {
+  if (val.trim() && inputFocused.value) {
+    showSuggestions.value = true
+  } else if (!val.trim()) {
+    showSuggestions.value = false
+  }
+})
+
 function pick(item: ActionItem) {
   draft.value = item.value
   emit('pick', item.value)
@@ -147,12 +216,48 @@ function pick(item: ActionItem) {
   <div :class="props.spacious ? 'min-h-0 flex flex-1 flex-col gap-4' : 'space-y-4'">
     <UFormField :label="$t('picker.currentValue')">
       <div class="space-y-2">
-        <UInput
-          v-if="!isTextCategory"
-          v-model="draft"
-          :placeholder="$t('picker.valuePh')"
-          class="w-full font-mono"
-        />
+        <div v-if="!isTextCategory" class="relative">
+          <InputWithClearButton
+            v-model="draft"
+            :placeholder="$t('picker.valuePh')"
+            class="w-full font-mono"
+            @focus="onInputFocus"
+            @blur="onInputBlur"
+            @keydown="onInputKeydown"
+          />
+          <div
+            v-if="showSuggestions && filteredItems.length"
+            class="absolute z-20 left-0 right-0 top-full mt-1 max-h-80 overflow-y-auto rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) shadow-lg p-1 space-y-0.5"
+          >
+            <button
+              v-for="item in filteredItems"
+              :key="item.value"
+              type="button"
+              class="w-full text-left px-2.5 py-1.5 rounded-md border text-sm transition-colors hover:bg-(--ui-bg-elevated)"
+              :class="draft === item.value
+                ? 'border-(--ui-primary) bg-(--ui-primary)/10'
+                : 'border-(--ui-border) bg-(--ui-bg)'"
+              @mousedown.stop.prevent
+              @click="pick(item); showSuggestions = false"
+            >
+              <div class="truncate font-medium">
+                <template v-for="(part, pi) in highlightParts(item.label, draft.trim())" :key="`l-${pi}`">
+                  <mark v-if="part.match" class="bg-(--ui-primary)/20 text-(--ui-primary) rounded px-0.5">{{ part.text }}</mark>
+                  <template v-else>{{ part.text }}</template>
+                </template>
+              </div>
+              <div
+                v-if="item.hint && item.hint !== item.label"
+                class="truncate text-[11px] text-(--ui-text-muted) font-mono"
+              >
+                <template v-for="(part, pi) in highlightParts(item.hint, draft.trim())" :key="`h-${pi}`">
+                  <mark v-if="part.match" class="bg-(--ui-primary)/20 text-(--ui-primary) rounded px-0.5">{{ part.text }}</mark>
+                  <template v-else>{{ part.text }}</template>
+                </template>
+              </div>
+            </button>
+          </div>
+        </div>
         <UTextarea
           v-else
           v-model="textDraft"

@@ -1,0 +1,54 @@
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  modelValue?: string
+  placeholder?: string
+  disabled?: boolean
+}>(), {
+  modelValue: '',
+})
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  clear: []
+  focus: [event: FocusEvent]
+  blur: [event: FocusEvent]
+  keydown: [event: KeyboardEvent]
+}>()
+
+const model = computed({
+  get: () => props.modelValue,
+  set: (v: string) => emit('update:modelValue', v),
+})
+
+const hasValue = computed(() => props.modelValue.length > 0)
+
+function onClear() {
+  model.value = ''
+  emit('clear')
+}
+</script>
+
+<template>
+  <UInput
+    v-model="model"
+    :placeholder="props.placeholder"
+    :disabled="props.disabled"
+    class="w-full"
+    :ui="{ trailing: 'pe-1' }"
+    @focus="(e: FocusEvent) => $emit('focus', e)"
+    @blur="(e: FocusEvent) => $emit('blur', e)"
+    @keydown="(e: KeyboardEvent) => $emit('keydown', e)"
+  >
+    <template v-if="hasValue" #trailing>
+      <UButton
+        icon="i-lucide-x"
+        variant="link"
+        color="neutral"
+        size="sm"
+        :aria-label="$t('common.clear')"
+        @mousedown.stop.prevent
+        @click="onClear"
+      />
+    </template>
+  </UInput>
+</template>
