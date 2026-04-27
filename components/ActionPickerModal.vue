@@ -4,7 +4,7 @@ import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import { parseTextAction } from '~/types/config'
 import { isCanonicalAction } from '~/utils/actionSyntax'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   allowEmpty?: boolean
   placeholder?: string
   keyOnly?: boolean
@@ -16,7 +16,9 @@ const props = defineProps<{
   requireValue?: boolean
   invalid?: boolean
   excludedMacroId?: string
-}>()
+}>(), {
+  allowMacros: true,
+})
 
 const emit = defineEmits<{
   'update:open': [value: boolean]

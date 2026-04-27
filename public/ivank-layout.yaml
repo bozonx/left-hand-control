@@ -14,6 +14,7 @@ layers:
       KeyI: macro:upEnd
       KeyO: End
       KeyP: macro:up5Times
+      
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
       KeyF: PageDown
@@ -23,6 +24,7 @@ layers:
       KeyK: ArrowUp
       KeyL: ArrowRight
       Semicolon: macro:rightSpace
+
       KeyZ: macro:emptyLineBelow
       KeyX: macro:cutWordRightCenter
       KeyC: macro:copyWordAfterCenter
@@ -42,6 +44,7 @@ layers:
     keys:
       AltLeft: Ctrl+Enter
       Space: Backspace
+
       KeyQ: Ctrl+KeyZ
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
@@ -50,6 +53,7 @@ layers:
       KeyY: Shift+Home
       KeyO: Shift+End
       KeyP: macro:select5LinesUp
+
       KeyA: Ctrl+Slash
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
@@ -59,6 +63,7 @@ layers:
       KeyK: Shift+ArrowUp
       KeyL: Shift+ArrowRight
       Semicolon: macro:selectWholeLine
+      
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
       KeyB: macro:replaceLineWidthBuffer
@@ -182,6 +187,7 @@ rules:
     holdMs: 180
   - key: ShiftLeft
     tap: Ctrl+KeyC
+    doubleTap: Ctrl+KeyX
   - key: ControlLeft
     hold: AltLeft
   - key: MetaLeft

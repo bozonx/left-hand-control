@@ -8,12 +8,14 @@ import {
   type StaticCategory,
 } from '~/utils/actionCategories'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   keyOnly?: boolean
   spacious?: boolean
   excludedMacroId?: string
   allowMacros?: boolean
-}>()
+}>(), {
+  allowMacros: true,
+})
 
 const emit = defineEmits<{
   pick: [value: string]
