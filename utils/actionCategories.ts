@@ -140,8 +140,6 @@ export const STATIC_CATEGORIES: StaticCategory[] = [
       'Mouse4',
       'Mouse5',
       'Mouse6',
-      'WheelUp',
-      'WheelDown',
     ]),
   },
   {

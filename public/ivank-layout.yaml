@@ -161,6 +161,10 @@ layers:
       KeyD: sys:switchDesktop2
       KeyF: sys:switchDesktop1
       KeyG: sys:windowToNextDesktop
+      KeyH: sys:quickTileWindowLeft
+      KeyJ: sys:quickTileWindowTop
+      KeyK: sys:quickTileWindowBottom
+      KeyL: sys:quickTileWindowRight
 
       KeyZ: sys:windowMaximizeVertical
       KeyX: sys:windowMaximizeHorizontal
