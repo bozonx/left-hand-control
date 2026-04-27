@@ -187,7 +187,7 @@ rules:
     holdMs: 180
   - key: ShiftLeft
     tap: Ctrl+KeyC
-    doubleTap: Ctrl+KeyX
+    dtap: Ctrl+KeyX
   - key: ControlLeft
     hold: AltLeft
   - key: MetaLeft
