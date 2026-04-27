@@ -74,6 +74,9 @@ export interface LayerKeymap {
   // key code -> action string, or null for explicit swallow inside the layer.
   // Missing entry means transparent passthrough to the base layout.
   keys: Record<string, string | null>
+  // Specific keys in this layer that temporarily release the modifier that activated the layer.
+  // Useful for mapping chords (e.g. Ctrl+A) without the layer modifier interfering.
+  isolate?: string[]
   // Extra user-defined key bindings (e.g. mouse buttons, media keys, ...).
   extras: ExtraKey[]
 }

@@ -303,6 +303,26 @@ macros:
     });
   });
 
+  it("parses and serializes isolate on a layer", () => {
+    const preset = parseLayoutYaml(`
+layers:
+  - id: win
+    isolate:
+      - KeyW
+    keys:
+      KeyW: Ctrl+KeyA
+`);
+    expect(preset).not.toBeNull();
+    expect(preset!.layerKeymaps.win).toMatchObject({
+      keys: { KeyW: "Ctrl+KeyA" },
+      isolate: ["KeyW"],
+    });
+
+    const yaml = serializeLayoutYaml(preset!);
+    expect(yaml).toContain("isolate:");
+    expect(yaml).toContain("- KeyW");
+  });
+
   it("returns null for invalid or non-object yaml", () => {
     expect(parseLayoutYaml("not: [valid")).toBeNull();
     expect(parseLayoutYaml("hello")).toBeNull();

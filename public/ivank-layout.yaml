@@ -137,6 +137,9 @@ layers:
       Period: F3
       Slash: F10
   - id: win
+    isolate:
+      - KeyW
+      - KeyC
     keys:
       Tab: Tab
       CapsLock: sys:walkThroughWindowsAlternative

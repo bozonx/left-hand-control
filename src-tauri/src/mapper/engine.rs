@@ -112,6 +112,13 @@ pub struct Engine {
 
     /// Currently "held down" virtual modifiers (refcounted).
     mod_refs: HashMap<Key, u32>,
+
+    /// Per-layer list of physical keys that trigger the temporary release of holds.
+    layer_isolate_keys: HashMap<String, Vec<Key>>,
+    /// layer_id -> physical key that activated it
+    layer_triggers: HashMap<String, Key>,
+    /// Tracks isolated holds per physical key (to restore on key release)
+    isolated_holds: HashMap<Key, Vec<(Key, u32)>>,
 }
 
 #[derive(Clone)]
@@ -473,6 +480,19 @@ impl Engine {
             layer_maps.insert(layer_id.clone(), m);
         }
 
+        let mut layer_isolate_keys: HashMap<String, Vec<Key>> = HashMap::new();
+        for (layer_id, km) in &cfg.layer_keymaps {
+            let mut isolates = Vec::new();
+            for code in &km.isolate {
+                if let Some(k) = code_to_key(code) {
+                    isolates.push(k);
+                }
+            }
+            if !isolates.is_empty() {
+                layer_isolate_keys.insert(layer_id.clone(), isolates);
+            }
+        }
+
         Self {
             rules,
             layer_maps,
@@ -484,6 +504,9 @@ impl Engine {
             emitted: HashMap::new(),
             macro_consumed: HashSet::new(),
             mod_refs: HashMap::new(),
+            layer_isolate_keys,
+            layer_triggers: HashMap::new(),
+            isolated_holds: HashMap::new(),
         }
     }
 
@@ -626,44 +649,70 @@ impl Engine {
         {
             let mapped = self.lookup_mapping(key);
             match mapped {
-                Some(ActionDef::Stroke(ks)) => {
-                    eprintln!(
-                        "[mapper]   press {:?} -> remap mods={:?} key={:?}",
-                        key, ks.mods, ks.key
-                    );
-                    self.emit_stroke_press(key, ks, out);
-                }
-                Some(ActionDef::Literal(text)) => {
-                    eprintln!("[mapper]   press {:?} -> literal {:?}", key, text);
-                    out.push(Out::Literal(text));
-                    self.macro_consumed.insert(key);
-                }
-                Some(ActionDef::Macro(md)) => {
-                    eprintln!(
-                        "[mapper]   press {:?} -> run macro ({} steps)",
-                        key,
-                        md.steps.len()
-                    );
-                    out.push(Out::RunMacro {
-                        steps: md.steps,
-                        step_pause: md.step_pause,
-                        mod_delay: md.mod_delay,
-                    });
-                    self.macro_consumed.insert(key);
-                }
-                Some(ActionDef::System(action)) => {
-                    eprintln!("[mapper]   press {:?} -> run system {:?}", key, action);
-                    out.push(Out::RunSystem(action));
-                    self.macro_consumed.insert(key);
-                }
-                Some(ActionDef::Command(command)) => {
-                    eprintln!("[mapper]   press {:?} -> run command {:?}", key, command);
-                    out.push(Out::RunCommand(command));
-                    self.macro_consumed.insert(key);
-                }
-                Some(ActionDef::Swallow) => {
-                    eprintln!("[mapper]   press {:?} -> swallow", key);
-                    self.macro_consumed.insert(key);
+                Some((layer_id, def)) => {
+                    if let Some(isolate_keys) = self.layer_isolate_keys.get(&layer_id) {
+                        if isolate_keys.contains(&key) {
+                            if let Some(trigger_phys) = self.layer_triggers.get(&layer_id).copied() {
+                                if let Some(ks) = self.emitted.get(&trigger_phys).cloned() {
+                                    let mut suppressed = Vec::new();
+                                    for target_key in ks.mods.iter().chain(std::iter::once(&ks.key)) {
+                                        let old_count = self.mod_refs.get(target_key).copied().unwrap_or(0);
+                                        if let Some(count) = self.mod_refs.get_mut(target_key) {
+                                            *count = 0;
+                                        }
+                                        out.push(Out::KeyRaw { key: *target_key, down: false });
+                                        suppressed.push((*target_key, old_count));
+                                        eprintln!("[mapper] isolate+ {:?} suppress hold {:?}", key, target_key);
+                                    }
+                                    if !suppressed.is_empty() {
+                                        self.isolated_holds.insert(key, suppressed);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    match def {
+                        ActionDef::Stroke(ks) => {
+                            eprintln!(
+                                "[mapper]   press {:?} -> remap mods={:?} key={:?}",
+                                key, ks.mods, ks.key
+                            );
+                            self.emit_stroke_press(key, ks, out);
+                        }
+                        ActionDef::Literal(text) => {
+                            eprintln!("[mapper]   press {:?} -> literal {:?}", key, text);
+                            out.push(Out::Literal(text));
+                            self.macro_consumed.insert(key);
+                        }
+                        ActionDef::Macro(md) => {
+                            eprintln!(
+                                "[mapper]   press {:?} -> run macro ({} steps)",
+                                key,
+                                md.steps.len()
+                            );
+                            out.push(Out::RunMacro {
+                                steps: md.steps,
+                                step_pause: md.step_pause,
+                                mod_delay: md.mod_delay,
+                            });
+                            self.macro_consumed.insert(key);
+                        }
+                        ActionDef::System(action) => {
+                            eprintln!("[mapper]   press {:?} -> run system {:?}", key, action);
+                            out.push(Out::RunSystem(action));
+                            self.macro_consumed.insert(key);
+                        }
+                        ActionDef::Command(command) => {
+                            eprintln!("[mapper]   press {:?} -> run command {:?}", key, command);
+                            out.push(Out::RunCommand(command));
+                            self.macro_consumed.insert(key);
+                        }
+                        ActionDef::Swallow => {
+                            eprintln!("[mapper]   press {:?} -> swallow", key);
+                            self.macro_consumed.insert(key);
+                        }
+                    }
                 }
                 None => {
                     eprintln!("[mapper]   press {:?} -> passthrough", key);
@@ -675,6 +724,22 @@ impl Engine {
     }
 
     fn on_release(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
+        if let Some(suppressed) = self.isolated_holds.remove(&key) {
+            for (target_key, old_count) in suppressed {
+                let still_held = self.emitted.values().any(|ks| ks.key == target_key || ks.mods.contains(&target_key));
+                if still_held {
+                    eprintln!("[mapper] isolate- {:?} restore hold {:?}", key, target_key);
+                    if old_count > 0 {
+                        *self.mod_refs.entry(target_key).or_insert(0) = old_count;
+                    }
+                    out.push(Out::KeyRaw {
+                        key: target_key,
+                        down: true,
+                    });
+                }
+            }
+        }
+
         if let Some(pending) = self.pending.get(&key) {
             match pending.phase {
                 Phase::HoldActive => {
@@ -777,11 +842,11 @@ impl Engine {
             .collect()
     }
 
-    fn lookup_mapping(&self, key: Key) -> Option<ActionDef> {
+    fn lookup_mapping(&self, key: Key) -> Option<(String, ActionDef)> {
         for l in self.active_layers.iter().rev() {
             if let Some(m) = self.layer_maps.get(l) {
                 if let Some(def) = m.get(&key) {
-                    return Some(def.clone());
+                    return Some((l.clone(), def.clone()));
                 }
             }
         }
@@ -835,6 +900,7 @@ impl Engine {
         if let Some(id) = &rule.layer_id {
             eprintln!("[mapper] layer+ {id} (key={:?})", key);
             self.push_layer(id.clone());
+            self.layer_triggers.insert(id.clone(), key);
         }
         match &rule.hold {
             HoldMode::Native => {
@@ -855,15 +921,16 @@ impl Engine {
         let Some(rule) = self.rules.get(&key).cloned() else {
             return;
         };
+        if let Some(id) = &rule.layer_id {
+            eprintln!("[mapper] layer- {id} (key={:?})", key);
+            self.layer_triggers.remove(id);
+            self.pop_layer(id);
+        }
         match &rule.hold {
             HoldMode::Native | HoldMode::Keystroke(_) => {
                 self.release_emitted(key, out);
             }
             HoldMode::Swallow => {}
-        }
-        if let Some(id) = &rule.layer_id {
-            eprintln!("[mapper] layer- {id} (key={:?})", key);
-            self.pop_layer(id);
         }
     }
 
@@ -923,6 +990,8 @@ impl Engine {
         self.active_layers.clear();
         self.pending.clear();
         self.macro_consumed.clear();
+        self.layer_triggers.clear();
+        self.isolated_holds.clear();
     }
 
     #[allow(dead_code)]
@@ -1070,6 +1139,7 @@ mod tests {
 
         let mut sel = LayerKeymap {
             keys: HashMap::new(),
+            ..Default::default()
         };
         sel.keys.insert("KeyQ".into(), Some("Ctrl+KeyZ".into()));
         cfg.layer_keymaps.insert("sel".into(), sel);
@@ -1123,6 +1193,7 @@ mod tests {
 
         let mut space = LayerKeymap {
             keys: HashMap::new(),
+            ..Default::default()
         };
         space.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("space".into(), space);
@@ -1167,6 +1238,7 @@ mod tests {
             "space".into(),
             LayerKeymap {
                 keys: HashMap::new(),
+                ..Default::default()
             },
         );
         let mut engine = Engine::new(&cfg);
@@ -1212,6 +1284,7 @@ mod tests {
         });
         let mut space = LayerKeymap {
             keys: HashMap::new(),
+            ..Default::default()
         };
         space.keys.insert("KeyA".into(), None);
         cfg.layer_keymaps.insert("space".into(), space);
@@ -1247,6 +1320,7 @@ mod tests {
 
         let mut win = LayerKeymap {
             keys: HashMap::new(),
+            ..Default::default()
         };
         win.keys.insert("Tab".into(), Some("Tab".into()));
         cfg.layer_keymaps.insert("win".into(), win);
@@ -1295,6 +1369,7 @@ mod tests {
 
         let mut win = LayerKeymap {
             keys: HashMap::new(),
+            ..Default::default()
         };
         win.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("win".into(), win);
@@ -1392,5 +1467,74 @@ mod tests {
         crate::active_window::set_cached_for_test(None);
         let rule = rule_with_apps(None, None);
         assert!(rule_passes_apps(&rule));
+    }
+
+    #[test]
+    fn isolate_suppresses_and_restores_layer_trigger_modifier() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            id: "r_alt".into(),
+            key: "AltLeft".into(),
+            layer_id: "win".into(),
+            tap_action: ActionSpec::Action("Enter".into()),
+            hold_action: ActionSpec::Action("AltLeft".into()),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut win = LayerKeymap {
+            keys: HashMap::new(),
+            isolate: vec!["KeyW".into()],
+        };
+        win.keys.insert("KeyW".into(), Some("Ctrl+KeyA".into()));
+        cfg.layer_keymaps.insert("win".into(), win);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
+        engine.handle(
+            Key::KEY_W,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_W,
+            false,
+            now + Duration::from_millis(11),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTALT,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
+
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::ChordPress { ks: alt_hold, .. },
+                Out::KeyRaw { key: release_alt_1, down: false },
+                Out::ChordPress { ks: ctrl_a, .. },
+                Out::KeyRaw { key: restore_alt, down: true },
+                Out::ChordRelease { key: key_a, mods: ctrl_release, .. },
+                Out::KeyRaw { key: release_alt_2, down: false },
+            ] if alt_hold.mods.is_empty()
+                && alt_hold.key == Key::KEY_LEFTALT
+                && *release_alt_1 == Key::KEY_LEFTALT
+                && ctrl_a.mods.as_slice() == [Key::KEY_LEFTCTRL]
+                && ctrl_a.key == Key::KEY_A
+                && *restore_alt == Key::KEY_LEFTALT
+                && *key_a == Key::KEY_A
+                && ctrl_release.as_slice() == [Key::KEY_LEFTCTRL]
+                && *release_alt_2 == Key::KEY_LEFTALT
+        ));
     }
 }

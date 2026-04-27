@@ -23,6 +23,7 @@ interface LayoutYaml {
     name?: string;
     description?: string;
     keys?: Record<string, string | null>;
+    isolate?: string[];
     extras?: Array<{ id?: string; name?: string; action?: string }>;
   }>;
   rules?: Array<{
@@ -77,6 +78,9 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       }
       keys[k] = String(v);
     }
+    const isolate = Array.isArray(l.isolate)
+      ? l.isolate.filter((s): s is string => typeof s === "string")
+      : undefined;
     const extras: ExtraKey[] = [];
     for (const e of l.extras ?? []) {
       if (!e?.name || !e?.action) continue;
@@ -86,7 +90,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
         action: e.action,
       });
     }
-    layerKeymaps[l.id] = { keys, extras };
+    layerKeymaps[l.id] = { keys, isolate, extras };
   }
 
   const rules: LayerRule[] = [];
@@ -185,6 +189,9 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
         name: l.name,
         ...(l.description ? { description: l.description } : {}),
         ...(km && Object.keys(km.keys).length > 0 ? { keys: km.keys } : {}),
+        ...(km && km.isolate && km.isolate.length > 0
+          ? { isolate: km.isolate }
+          : {}),
         ...(km && km.extras.length > 0
           ? {
               extras: km.extras.map((e) => ({
