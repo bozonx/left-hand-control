@@ -85,6 +85,31 @@ export default {
     builtInLayoutBody:
       "Приложение уже загрузило раскладку Ivan K для левой руки. В ней CapsLock включает слой навигации, правый Alt — слой символов, левый Alt — оконный менеджер. Ничего настраивать не нужно — просто запустите маппер и попробуйте в редакторе.",
     fullDocsLabel: "Полная документация →",
+    howItWorksTitle: "Как это работает на вашей системе",
+    platformDetected: "Обнаружено: {platform}",
+    keyInterceptionLabel: "Переназначение клавиш",
+    keyInterceptionLinux:
+      "Приложение читает события клавиатуры напрямую с /dev/input/event* и переизлучает изменённые события через /dev/uinput. Работает на любом Linux-десктопе (KDE, GNOME, Sway, Xfce и др.) и на X11, и на Wayland. Нужен доступ к этим устройствам — обычно через группу 'input' и udev-правило для /dev/uinput.",
+    keyInterceptionStub: "На этой операционной системе пока не реализовано.",
+    textInjectionLabel: "Ввод текста",
+    textInjectionLinux:
+      "Символы вставляются через бэкенд xdg-desktop-portal RemoteDesktop. Требуется запущенный portal-сервис и соответствующий backend-пакет (xdg-desktop-portal-kde на KDE, -gnome на GNOME, -wlr на Sway/wlroots).",
+    textInjectionStub: "На этой операционной системе пока не реализовано.",
+    systemActionsLabel: "Системные действия",
+    systemActionsLinuxKde:
+      "Управление окнами, виртуальными рабочими столами и другие системные функции вызываются через qdbus к интерфейсам KDE Plasma (KWin и др.). Доступно на любом работающем Plasma.",
+    systemActionsLinuxOther:
+      "Системные действия пока не полностью интегрированы с {desktop}. Доступны базовые действия или они отсутствуют.",
+    systemActionsStub: "На этой операционной системе пока не реализовано.",
+    layoutDetectionLabel: "Определение раскладки",
+    layoutDetectionLinuxKde:
+      "Изменения раскладки клавиатуры отслеживаются через сервис D-Bus org.kde.keyboard.",
+    layoutDetectionLinuxOther:
+      "Автоматическое определение раскладки пока не интегрировано с {desktop}.",
+    layoutDetectionStub: "На этой операционной системе пока не реализовано.",
+    statusSupported: "Поддерживается",
+    statusAvailable: "Доступно",
+    statusUnavailable: "Недоступно",
   },
   welcome: {
     intro:

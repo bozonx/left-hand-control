@@ -85,6 +85,31 @@ export default {
     builtInLayoutBody:
       "The app already loaded Ivan K's left-hand layout. It adds a navigation layer on CapsLock, a symbols layer on Right Alt, and a window-manager layer on Left Alt. You don't have to configure anything — just start the mapper and try it in your editor.",
     fullDocsLabel: "Read the full documentation →",
+    howItWorksTitle: "How it works on your system",
+    platformDetected: "Detected: {platform}",
+    keyInterceptionLabel: "Key remapping",
+    keyInterceptionLinux:
+      "Reads keyboard events from /dev/input/event* and re-emits modified events through /dev/uinput. Works on any Linux desktop and both X11 and Wayland. You need access to those devices — usually via the 'input' group and a udev rule for /dev/uinput.",
+    keyInterceptionStub: "Not yet implemented on this operating system.",
+    textInjectionLabel: "Text input",
+    textInjectionLinux:
+      "Literal text is injected through the xdg-desktop-portal RemoteDesktop backend. Requires the portal service running and a matching backend package (xdg-desktop-portal-kde on KDE, -gnome on GNOME, -wlr on Sway/wlroots).",
+    textInjectionStub: "Not yet implemented on this operating system.",
+    systemActionsLabel: "System actions",
+    systemActionsLinuxKde:
+      "Window management, virtual desktops, and other system functions use qdbus to call KDE Plasma D-Bus interfaces (KWin, etc.). Standard on any working Plasma install.",
+    systemActionsLinuxOther:
+      "System actions are not yet fully integrated with {desktop}. Only basic or no actions are available.",
+    systemActionsStub: "Not yet implemented on this operating system.",
+    layoutDetectionLabel: "Layout detection",
+    layoutDetectionLinuxKde:
+      "Keyboard layout changes are monitored via the org.kde.keyboard D-Bus service.",
+    layoutDetectionLinuxOther:
+      "Automatic layout detection is not yet integrated with {desktop}.",
+    layoutDetectionStub: "Not yet implemented on this operating system.",
+    statusSupported: "Supported",
+    statusAvailable: "Available",
+    statusUnavailable: "Unavailable",
   },
   welcome: {
     intro:
