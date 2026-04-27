@@ -43,6 +43,11 @@ describe('config helpers', () => {
     expect(isCanonicalAction('Ctrl+KeyC')).toBe(true)
     expect(isCanonicalAction('Ctrl+Shift+ArrowLeft')).toBe(true)
     expect(isCanonicalAction('text:TODO: ')).toBe(true)
+    expect(isCanonicalAction('Calculator')).toBe(true)
+    expect(isCanonicalAction('MediaStop')).toBe(true)
+    expect(isCanonicalAction('Numpad5')).toBe(true)
+    expect(isCanonicalAction('MouseLeft')).toBe(true)
+    expect(isCanonicalAction('LaunchMail')).toBe(true)
 
     expect(isCanonicalAction('Esc')).toBe(false)
     expect(isCanonicalAction('Left')).toBe(false)

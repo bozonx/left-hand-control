@@ -160,6 +160,9 @@ mod kde {
             "windowToNextDesktop" => {
                 return Some(invoke_shortcut("kwin", "Window to Next Desktop"));
             }
+            "windowToPreviousDesktop" => {
+                return Some(invoke_shortcut("kwin", "Window to Previous Desktop"));
+            }
             "windowKeepAbove" => {
                 return Some(invoke_shortcut("kwin", "Window Above Other Windows"));
             }
@@ -177,6 +180,120 @@ mod kde {
             }
             "screenOff" => {
                 return Some(invoke_shortcut("org_kde_powerdevil", "Turn Off Screen"));
+            }
+            "launchKrunner" => {
+                return Some(invoke_shortcut("org_kde_krunner_desktop", "_launch"));
+            }
+            "launchSystemMonitor" => {
+                return Some(invoke_shortcut("org_kde_plasma_systemmonitor_desktop", "_launch"));
+            }
+            "manageActivities" => {
+                return Some(invoke_shortcut("plasmashell", "manage activities"));
+            }
+            "nextActivity" => {
+                return Some(invoke_shortcut("plasmashell", "next activity"));
+            }
+            "previousActivity" => {
+                return Some(invoke_shortcut("plasmashell", "previous activity"));
+            }
+            "muteMicrophone" => {
+                return Some(invoke_shortcut("kmix", "mic_mute"));
+            }
+            "showDisplayConfig" => {
+                return Some(invoke_shortcut("org_kde_kscreen_desktop", "ShowOSD"));
+            }
+            "enableTouchpad" => {
+                return Some(invoke_shortcut("org_kde_touchpadshortcuts_desktop", "EnableTouchpad"));
+            }
+            "disableTouchpad" => {
+                return Some(invoke_shortcut("org_kde_touchpadshortcuts_desktop", "DisableTouchpad"));
+            }
+            "toggleTouchpad" => {
+                return Some(invoke_shortcut("org_kde_touchpadshortcuts_desktop", "ToggleTouchpad"));
+            }
+            "lockSession" => {
+                return Some(invoke_shortcut("ksmserver", "Lock Session"));
+            }
+            "logout" => {
+                return Some(invoke_shortcut("ksmserver", "Log Out"));
+            }
+            "logoutWithoutConfirmation" => {
+                return Some(invoke_shortcut("ksmserver", "Log Out Without Confirmation"));
+            }
+            "increaseKeyboardBrightness" => {
+                return Some(invoke_shortcut(
+                    "org_kde_powerdevil",
+                    "Increase Keyboard Brightness",
+                ));
+            }
+            "decreaseKeyboardBrightness" => {
+                return Some(invoke_shortcut(
+                    "org_kde_powerdevil",
+                    "Decrease Keyboard Brightness",
+                ));
+            }
+            "toggleKeyboardBacklight" => {
+                return Some(invoke_shortcut("org_kde_powerdevil", "Toggle Keyboard Backlight"));
+            }
+            "activateApplicationLauncher" => {
+                return Some(invoke_shortcut("plasmashell", "activate application launcher"));
+            }
+            "showDesktop" => {
+                return Some(invoke_shortcut("kwin", "Show Desktop"));
+            }
+            "maximizeWindow" => {
+                return Some(invoke_shortcut("kwin", "Window Maximize"));
+            }
+            "minimizeWindow" => {
+                return Some(invoke_shortcut("kwin", "Window Minimize"));
+            }
+            "moveWindow" => {
+                return Some(invoke_shortcut("kwin", "Window Move"));
+            }
+            "windowToNextScreen" => {
+                return Some(invoke_shortcut("kwin", "Window to Next Screen"));
+            }
+            "windowToPreviousScreen" => {
+                return Some(invoke_shortcut("kwin", "Window to Previous Screen"));
+            }
+            "quickTileWindowTop" => {
+                return Some(invoke_shortcut("kwin", "Window Quick Tile Top"));
+            }
+            "quickTileWindowBottom" => {
+                return Some(invoke_shortcut("kwin", "Window Quick Tile Bottom"));
+            }
+            "quickTileWindowLeft" => {
+                return Some(invoke_shortcut("kwin", "Window Quick Tile Left"));
+            }
+            "quickTileWindowRight" => {
+                return Some(invoke_shortcut("kwin", "Window Quick Tile Right"));
+            }
+            "toggleNightColor" => {
+                return Some(invoke_shortcut("kwin", "Toggle Night Color"));
+            }
+            "toggleGridView" => {
+                return Some(invoke_shortcut("kwin", "Grid View"));
+            }
+            "toggleOverview" => {
+                return Some(invoke_shortcut("kwin", "Overview"));
+            }
+            "togglePresentWindowsAllDesktops" => {
+                return Some(invoke_shortcut("kwin", "ExposeAll"));
+            }
+            "togglePresentWindowsCurrentDesktop" => {
+                return Some(invoke_shortcut("kwin", "Expose"));
+            }
+            "windowMenu" => {
+                return Some(invoke_shortcut("kwin", "Window Operations Menu"));
+            }
+            "zoomIn" => {
+                return Some(invoke_shortcut("kwin", "view_zoom_in"));
+            }
+            "zoomOut" => {
+                return Some(invoke_shortcut("kwin", "view_zoom_out"));
+            }
+            "zoomActualSize" => {
+                return Some(invoke_shortcut("kwin", "view_actual_size"));
             }
             _ => {}
         }
