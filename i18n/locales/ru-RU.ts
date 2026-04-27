@@ -551,8 +551,6 @@ export default {
     previousActivity: "Предыдущая Activity",
     muteMicrophone: "Выключить микрофон",
     showDisplayConfig: "Показать конфигурацию дисплеев",
-    enableTouchpad: "Включить тачпад",
-    disableTouchpad: "Выключить тачпад",
     toggleTouchpad: "Переключить тачпад",
     lockSession: "Заблокировать сессию",
     logout: "Выйти из системы",

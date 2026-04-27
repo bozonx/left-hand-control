@@ -543,8 +543,6 @@ export default {
     previousActivity: "Previous activity",
     muteMicrophone: "Mute microphone",
     showDisplayConfig: "Show display configuration",
-    enableTouchpad: "Enable touchpad",
-    disableTouchpad: "Disable touchpad",
     toggleTouchpad: "Toggle touchpad",
     lockSession: "Lock session",
     logout: "Log out",

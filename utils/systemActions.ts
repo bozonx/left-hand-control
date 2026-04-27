@@ -197,18 +197,6 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     platforms: ['linux-kde'],
   },
   {
-    id: 'enableTouchpad',
-    nameKey: 'systemActions.enableTouchpad',
-    hint: 'KDE: org.kde.kglobalaccel /component/org_kde_touchpadshortcuts_desktop invokeShortcut EnableTouchpad',
-    platforms: ['linux-kde'],
-  },
-  {
-    id: 'disableTouchpad',
-    nameKey: 'systemActions.disableTouchpad',
-    hint: 'KDE: org.kde.kglobalaccel /component/org_kde_touchpadshortcuts_desktop invokeShortcut DisableTouchpad',
-    platforms: ['linux-kde'],
-  },
-  {
     id: 'toggleTouchpad',
     nameKey: 'systemActions.toggleTouchpad',
     hint: 'KDE: org.kde.kglobalaccel /component/org_kde_touchpadshortcuts_desktop invokeShortcut ToggleTouchpad',

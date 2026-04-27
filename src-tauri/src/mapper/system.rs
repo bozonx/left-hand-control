@@ -202,12 +202,6 @@ mod kde {
             "showDisplayConfig" => {
                 return Some(invoke_shortcut("org_kde_kscreen_desktop", "ShowOSD"));
             }
-            "enableTouchpad" => {
-                return Some(invoke_shortcut("org_kde_touchpadshortcuts_desktop", "EnableTouchpad"));
-            }
-            "disableTouchpad" => {
-                return Some(invoke_shortcut("org_kde_touchpadshortcuts_desktop", "DisableTouchpad"));
-            }
             "toggleTouchpad" => {
                 return Some(invoke_shortcut("org_kde_touchpadshortcuts_desktop", "ToggleTouchpad"));
             }
