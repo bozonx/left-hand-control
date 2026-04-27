@@ -49,6 +49,10 @@ impl StoragePaths {
         self.config_dir.clone()
     }
 
+    pub fn data_dir(&self) -> &PathBuf {
+        &self.data_dir
+    }
+
     pub fn ui_state_path(&self) -> PathBuf {
         self.config_dir.join("ui-state.json")
     }

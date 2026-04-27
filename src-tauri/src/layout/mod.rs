@@ -118,6 +118,28 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
     }
 }
 
+/// Switch the active OS keyboard layout to the given zero-based index.
+/// Currently implemented for KDE Plasma; other desktops/OSes return an
+/// explicit error so the frontend can disable the control.
+pub fn set(index: u32) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{detect, Desktop};
+        match detect().desktop {
+            Desktop::Kde => linux_kde::set_layout(index),
+            d => Err(format!(
+                "switching layout is not implemented for desktop '{}'",
+                d.label()
+            )),
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = index;
+        Err("switching layout is not implemented on this OS".to_string())
+    }
+}
+
 /// Start a background watcher that emits `layout-changed` events.
 /// Safe to call once at app startup. No-op if no backend is available.
 pub fn start_watcher(app: tauri::AppHandle) {

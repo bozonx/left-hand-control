@@ -160,6 +160,16 @@ fn get_system_layouts() -> Result<Vec<layout::LayoutInfo>, String> {
 }
 
 #[tauri::command]
+fn set_current_layout(index: u32) -> Result<(), String> {
+    eprintln!("[cmd] set_current_layout index={index}");
+    let r = layout::set(index);
+    if let Err(e) = &r {
+        eprintln!("[cmd] set_current_layout ERR: {e}");
+    }
+    r
+}
+
+#[tauri::command]
 fn get_platform_info() -> platform::PlatformInfo {
     platform::info()
 }
@@ -238,6 +248,10 @@ pub fn run() {
     let app = tauri::Builder::default()
         .setup(|app| {
             build_tray(app.handle())?;
+            if let Ok(storage) = app_storage(app.handle()) {
+                let _ = storage.ensure();
+                mapper::set_portal_token_dir(storage.data_dir().clone());
+            }
             layout::start_watcher(app.handle().clone());
             gamemode::start_watcher(app.handle().clone());
             if let Some(window) = app.get_webview_window("main") {
@@ -283,6 +297,7 @@ pub fn run() {
             mapper_status,
             get_current_layout,
             get_system_layouts,
+            set_current_layout,
             get_gamemode_status,
             get_platform_info,
             quit_application,

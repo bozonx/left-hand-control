@@ -5,7 +5,7 @@
 use super::action::MacroStepItem;
 use super::config::AppConfig;
 use super::engine::{Engine, Out};
-use super::portal::Portal;
+use super::portal;
 use super::system::{DbusArg, DbusCall, SysAction, SysCommand};
 use super::KeyboardDevice;
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
@@ -50,11 +50,9 @@ impl EventSink for VirtualEventSink<'_> {
     }
 }
 
-struct RuntimeSideEffects<'a> {
-    portal: &'a Arc<Mutex<Option<Portal>>>,
-}
+struct RuntimeSideEffects;
 
-impl SideEffects for RuntimeSideEffects<'_> {
+impl SideEffects for RuntimeSideEffects {
     fn sleep(&mut self, duration: Duration) {
         if !duration.is_zero() {
             thread::sleep(duration);
@@ -62,16 +60,7 @@ impl SideEffects for RuntimeSideEffects<'_> {
     }
 
     fn type_text(&mut self, text: &str) {
-        match self.portal.lock() {
-            Ok(slot) => match slot.as_ref() {
-                Some(p) => p.type_text(text),
-                None => eprintln!("[mapper] literal {:?} dropped (portal unavailable)", text),
-            },
-            Err(_) => eprintln!(
-                "[mapper] literal {:?} dropped (portal state poisoned)",
-                text
-            ),
-        }
+        portal::type_text(text);
     }
 
     fn run_system(&mut self, action: &SysAction) {
@@ -339,27 +328,13 @@ fn run_loop<D: LoopDriver>(
 ) -> Result<(), String> {
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
-    let portal: Arc<Mutex<Option<Portal>>> = Arc::new(Mutex::new(None));
-    let portal_init_slot = portal.clone();
-
-    let _ = thread::Builder::new()
-        .name("lhc-portal-init".into())
-        .spawn(move || match Portal::try_start() {
-            Ok(p) => {
-                eprintln!("[mapper] portal backend online");
-                if let Ok(mut slot) = portal_init_slot.lock() {
-                    *slot = Some(p);
-                }
-            }
-            Err(e) => eprintln!("[mapper] portal backend unavailable: {e}"),
-        });
 
     while !stop.load(Ordering::SeqCst) {
-        process_iteration(&mut driver, &mut engine, &mut virt, &portal, &mut out_buf)?;
+        process_iteration(&mut driver, &mut engine, &mut virt, &mut out_buf)?;
     }
 
     engine.shutdown(&mut out_buf);
-    flush_out(&mut virt, &portal, &mut out_buf)?;
+    flush_out(&mut virt, &mut out_buf)?;
     Ok(())
 }
 
@@ -367,11 +342,10 @@ fn process_iteration<D: LoopDriver>(
     driver: &mut D,
     engine: &mut Engine,
     virt: &mut VirtualDevice,
-    portal: &Arc<Mutex<Option<Portal>>>,
     out_buf: &mut Vec<Out>,
 ) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };
-    let mut effects = RuntimeSideEffects { portal };
+    let mut effects = RuntimeSideEffects;
     process_iteration_with(driver, engine, &mut sink, &mut effects, out_buf)
 }
 
@@ -474,13 +448,9 @@ fn emit_chord_release<S: EventSink, E: SideEffects>(
     Ok(())
 }
 
-fn flush_out(
-    virt: &mut VirtualDevice,
-    portal: &Arc<Mutex<Option<Portal>>>,
-    buf: &mut Vec<Out>,
-) -> Result<(), String> {
+fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };
-    let mut effects = RuntimeSideEffects { portal };
+    let mut effects = RuntimeSideEffects;
     flush_out_with(&mut sink, &mut effects, buf)
 }
 

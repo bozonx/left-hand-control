@@ -7,13 +7,24 @@
 // is the officially blessed, cross-compositor way to inject input:
 //
 //   1. `CreateSession()`        – async, via a `Request` object + `Response` signal.
-//   2. `SelectDevices(keyboard)`– declares what we plan to inject.
-//   3. `Start()`                – shows the permission dialog to the user.
+//   2. `SelectDevices(keyboard)`– declares what we plan to inject; this is
+//                                 also where we set `persist_mode = 2` and
+//                                 pass back any previously-saved
+//                                 `restore_token` so the user does not see
+//                                 the consent dialog again.
+//   3. `Start()`                – shows the permission dialog (only once
+//                                 per machine if persist mode + token work).
 //   4. `NotifyKeyboardKeysym()` – fires X keysyms, layout-independent.
 //
-// The user approves once per app session; after that we hold the session
-// open and keep firing keysyms with negligible latency (one DBus method
-// call round-trip each). On shutdown we close the session cleanly.
+// The session and its DBus connection are owned by a process-wide
+// singleton: it is created lazily on the first injection request and
+// lives until the process exits. This means the consent dialog is shown
+// once per *process*, not once per `start_mapper`/`stop_mapper` cycle —
+// which used to retrigger it on every config change.
+//
+// On top of that we read `restore_token` from the `Start` response and
+// persist it next to the user data, so subsequent app launches can
+// restore the permission silently.
 //
 // For ASCII characters the keysym equals the Unicode code point; for
 // anything outside Latin-1 we fall back to the XKB "direct unicode"
@@ -24,9 +35,11 @@
 #![cfg(target_os = "linux")]
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::{self, Sender};
-use std::thread::{self, JoinHandle};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{Mutex, OnceLock};
+use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use zbus::blocking::{Connection, Proxy};
@@ -48,50 +61,85 @@ const IFACE_SESSION: &str = "org.freedesktop.portal.Session";
 /// Keyboard capability bit in the RemoteDesktop "types" field.
 const DEVICE_TYPE_KEYBOARD: u32 = 1;
 
+/// `persist_mode` for SelectDevices: 2 = persist until explicitly revoked.
+const PERSIST_MODE_PERMANENT: u32 = 2;
+
 const STATE_RELEASED: u32 = 0;
 const STATE_PRESSED: u32 = 1;
 
-pub struct Portal {
-    tx: Sender<Cmd>,
-    join: Option<JoinHandle<()>>,
-}
+const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
+
+// --- Public API ---------------------------------------------------------
 
 enum Cmd {
     Type(String),
-    Shutdown,
 }
 
-impl Portal {
-    pub fn try_start() -> Result<Self, String> {
-        let (cmd_tx, cmd_rx) = mpsc::channel::<Cmd>();
-        let (conn, session_handle) = init_portal()?;
+/// Sender to the singleton portal worker thread. `None` after a failed
+/// init so subsequent calls fail fast without blocking.
+static PORTAL_TX: OnceLock<Option<Sender<Cmd>>> = OnceLock::new();
 
-        let join = thread::Builder::new()
-            .name("lhc-portal".into())
-            .spawn(move || run_thread(conn, session_handle, cmd_rx))
-            .map_err(|e| format!("spawn portal thread: {e}"))?;
+/// Path of the directory where we persist the restore token.
+static TOKEN_DIR: OnceLock<PathBuf> = OnceLock::new();
 
-        Ok(Self {
-            tx: cmd_tx,
-            join: Some(join),
-        })
-    }
+/// Register where the worker should read/write the restore token.
+/// Must be called once at app startup (before the first injection).
+/// Calling it again is a no-op.
+pub fn set_token_dir(dir: PathBuf) {
+    let _ = TOKEN_DIR.set(dir);
+}
 
-    pub fn type_text(&self, text: &str) {
-        let _ = self.tx.send(Cmd::Type(text.to_string()));
+/// Send a literal string to the active session. Lazily starts the
+/// singleton worker on first call. Non-blocking: returns immediately,
+/// the actual portal handshake (and its consent dialog) runs on a
+/// dedicated thread.
+pub fn type_text(text: &str) {
+    let tx = PORTAL_TX.get_or_init(start_singleton);
+    match tx {
+        Some(tx) => {
+            if tx.send(Cmd::Type(text.to_string())).is_err() {
+                eprintln!("[portal] literal {:?} dropped (worker gone)", text);
+            }
+        }
+        None => eprintln!("[portal] literal {:?} dropped (init failed)", text),
     }
 }
 
-impl Drop for Portal {
-    fn drop(&mut self) {
-        let _ = self.tx.send(Cmd::Shutdown);
-        if let Some(h) = self.join.take() {
-            let _ = h.join();
+fn start_singleton() -> Option<Sender<Cmd>> {
+    let (tx, rx) = mpsc::channel::<Cmd>();
+    let spawn_result = thread::Builder::new()
+        .name("lhc-portal".into())
+        .spawn(move || worker(rx));
+    match spawn_result {
+        Ok(_join) => Some(tx),
+        Err(e) => {
+            eprintln!("[portal] could not spawn worker thread: {e}");
+            None
         }
     }
 }
 
-fn run_thread(conn: Connection, session_handle: OwnedObjectPath, cmd_rx: mpsc::Receiver<Cmd>) {
+fn worker(rx: Receiver<Cmd>) {
+    let (conn, session_handle) = match init_portal() {
+        Ok(v) => {
+            eprintln!("[portal] backend online");
+            v
+        }
+        Err(e) => {
+            eprintln!("[portal] backend unavailable: {e}");
+            // Drain the channel so senders don't block on a full buffer.
+            // (mpsc::channel is unbounded, but we still want to log drops.)
+            for cmd in rx.iter() {
+                match cmd {
+                    Cmd::Type(text) => {
+                        eprintln!("[portal] literal {:?} dropped (no backend)", text)
+                    }
+                }
+            }
+            return;
+        }
+    };
+
     let portal = match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
         Ok(p) => p,
         Err(e) => {
@@ -101,9 +149,8 @@ fn run_thread(conn: Connection, session_handle: OwnedObjectPath, cmd_rx: mpsc::R
         }
     };
 
-    while let Ok(cmd) = cmd_rx.recv() {
+    while let Ok(cmd) = rx.recv() {
         match cmd {
-            Cmd::Shutdown => break,
             Cmd::Type(text) => inject_text(&portal, &session_handle, &text),
         }
     }
@@ -166,13 +213,25 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
     let session_handle = extract_session_handle(&results)?;
     eprintln!("[portal] session: {}", session_handle.as_str());
 
-    eprintln!("[portal] handshake: SelectDevices (keyboard)");
+    let saved_token = load_restore_token();
+    if saved_token.is_some() {
+        eprintln!("[portal] handshake: SelectDevices (with saved restore_token)");
+    } else {
+        eprintln!("[portal] handshake: SelectDevices (keyboard, persist_mode=2)");
+    }
     {
         let handle_token = gen_token("d");
         let request_path = make_request_path(&sender_escaped, &handle_token);
         let mut opts: HashMap<String, Value> = HashMap::new();
         opts.insert("handle_token".into(), Value::from(handle_token));
         opts.insert("types".into(), Value::from(DEVICE_TYPE_KEYBOARD));
+        opts.insert(
+            "persist_mode".into(),
+            Value::from(PERSIST_MODE_PERMANENT),
+        );
+        if let Some(tok) = &saved_token {
+            opts.insert("restore_token".into(), Value::from(tok.clone()));
+        }
         call_with_response(
             &conn,
             &portal,
@@ -182,19 +241,30 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
         )?;
     }
 
-    eprintln!("[portal] handshake: Start (user permission dialog)");
-    {
+    eprintln!("[portal] handshake: Start (consent dialog if no valid restore_token)");
+    let start_results = {
         let handle_token = gen_token("t");
         let request_path = make_request_path(&sender_escaped, &handle_token);
         let mut opts: HashMap<String, Value> = HashMap::new();
         opts.insert("handle_token".into(), Value::from(handle_token));
-        call_with_response(
+        let (_, results) = call_with_response(
             &conn,
             &portal,
             "Start",
             &(&session_handle, "", opts),
             &request_path,
         )?;
+        results
+    };
+
+    if let Some(token) = extract_restore_token(&start_results) {
+        if saved_token.as_deref() != Some(token.as_str()) {
+            persist_restore_token(&token);
+        }
+    } else if saved_token.is_some() {
+        // The portal dropped our token (revoked / invalidated).
+        eprintln!("[portal] no restore_token returned; clearing saved token");
+        clear_restore_token();
     }
 
     eprintln!("[portal] handshake: complete, ready to inject keysyms");
@@ -260,6 +330,76 @@ fn extract_session_handle(
         .try_into()
         .map_err(|e| format!("session_handle not a string: {e}"))?;
     OwnedObjectPath::try_from(s).map_err(|e| format!("session_handle invalid path: {e}"))
+}
+
+fn extract_restore_token(results: &HashMap<String, OwnedValue>) -> Option<String> {
+    let v = results.get("restore_token")?;
+    let cloned = v.try_clone().ok()?;
+    cloned.try_into().ok()
+}
+
+// --- Restore-token persistence -----------------------------------------
+
+fn restore_token_path() -> Option<PathBuf> {
+    TOKEN_DIR.get().map(|d| d.join(RESTORE_TOKEN_FILE))
+}
+
+/// In-memory cache so we don't hit the filesystem on every handshake
+/// (handshake is rare, but reads are cheap and this also gives us a sane
+/// fallback when the disk path was not registered yet).
+static TOKEN_CACHE: Mutex<Option<String>> = Mutex::new(None);
+
+fn load_restore_token() -> Option<String> {
+    if let Ok(guard) = TOKEN_CACHE.lock() {
+        if let Some(cached) = guard.clone() {
+            return Some(cached);
+        }
+    }
+    let path = restore_token_path()?;
+    let raw = std::fs::read_to_string(&path).ok()?;
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let token = trimmed.to_string();
+    if let Ok(mut guard) = TOKEN_CACHE.lock() {
+        *guard = Some(token.clone());
+    }
+    Some(token)
+}
+
+fn persist_restore_token(token: &str) {
+    if let Ok(mut guard) = TOKEN_CACHE.lock() {
+        *guard = Some(token.to_string());
+    }
+    let Some(path) = restore_token_path() else {
+        eprintln!("[portal] cannot persist restore_token (TOKEN_DIR not set)");
+        return;
+    };
+    if let Err(e) = write_token_atomic(&path, token) {
+        eprintln!("[portal] failed to persist restore_token: {e}");
+    } else {
+        eprintln!("[portal] restore_token saved to {}", path.display());
+    }
+}
+
+fn clear_restore_token() {
+    if let Ok(mut guard) = TOKEN_CACHE.lock() {
+        *guard = None;
+    }
+    if let Some(path) = restore_token_path() {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
+fn write_token_atomic(path: &Path, token: &str) -> std::io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let tmp = path.with_extension("token.tmp");
+    std::fs::write(&tmp, token.as_bytes())?;
+    std::fs::rename(&tmp, path)?;
+    Ok(())
 }
 
 // --- Helpers ------------------------------------------------------------

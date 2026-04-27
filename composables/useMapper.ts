@@ -106,10 +106,20 @@ export function useMapper(): MapperState {
       defaultMacroModifierDelayMs: cfg.settings.defaultMacroModifierDelayMs,
     })
   }
-  let lastRuntimeSnapshot = ''
-  
-  // Initialize snapshot asynchronously
-  runtimeSnapshot().then(s => { lastRuntimeSnapshot = s })
+  // Synchronous baseline using the freshly-loaded config — avoids the
+  // race where the first `watch` tick fires before the async
+  // initializer has set this, which used to look like a real change
+  // and trigger a spurious mapper reload.
+  let lastRuntimeSnapshot = JSON.stringify({
+    layout: layoutSnapshotOf(config.value),
+    defaultHoldTimeoutMs: config.value.settings.defaultHoldTimeoutMs,
+    defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
+    defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
+    defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
+  })
+  void runtimeSnapshot().then((s) => {
+    lastRuntimeSnapshot = s
+  })
 
   async function refreshDevices() {
     const tauri = await useTauri()

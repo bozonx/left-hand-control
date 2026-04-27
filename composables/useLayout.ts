@@ -40,6 +40,21 @@ async function init() {
   }
 }
 
+async function setLayout(index: number): Promise<void> {
+  try {
+    const core = await import('@tauri-apps/api/core')
+    await core.invoke('set_current_layout', { index })
+    // Refresh immediately; the watcher will also fire `layout-changed`,
+    // but going through a refresh here keeps the UI snappy if KDE
+    // batches its signal.
+    _layout.value = await core.invoke<LayoutInfo | null>('get_current_layout')
+    _error.value = null
+  } catch (e) {
+    _error.value = e instanceof Error ? e.message : String(e)
+    throw e
+  }
+}
+
 export function useLayout() {
   void init()
   onScopeDispose(() => {
@@ -50,6 +65,7 @@ export function useLayout() {
     layout: computed(() => _layout.value),
     systemLayouts: computed(() => _systemLayouts.value),
     error: computed(() => _error.value),
+    setLayout,
   }
 }
 

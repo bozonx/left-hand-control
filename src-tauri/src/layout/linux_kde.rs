@@ -3,6 +3,11 @@
 // Current product support is Linux/KDE, so this backend stays fully native:
 // it talks to DBus directly through `zbus`, which the project already ships
 // for the portal backend. Other desktops remain explicit skeletons for now.
+//
+// The watcher subscribes to `layoutChanged` (active index) and
+// `layoutListChanged` (configured layouts) signals on
+// `org.kde.KeyboardLayouts` instead of polling. Switching the active
+// layout goes through the same DBus interface (`setLayout(uint)`).
 
 use std::thread;
 use std::time::Duration;
@@ -39,49 +44,118 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
         Some(v) => v,
         None => return Ok(vec![]),
     };
-    Ok(list.into_iter().enumerate().map(|(idx, entry)| LayoutInfo {
-        short: entry.0,
-        display: entry.1,
-        long: entry.2,
-        index: idx as u32,
-        backend: "linux-kde",
-    }).collect())
+    Ok(list
+        .into_iter()
+        .enumerate()
+        .map(|(idx, entry)| LayoutInfo {
+            short: entry.0,
+            display: entry.1,
+            long: entry.2,
+            index: idx as u32,
+            backend: "linux-kde",
+        })
+        .collect())
+}
+
+/// Switch the active layout to the given zero-based index.
+///
+/// Backed by `org.kde.KeyboardLayouts.setLayout(uint) -> bool`. The
+/// boolean return is `false` when the index is out of range; we surface
+/// that as an error so the frontend can fall back to refreshing the
+/// list and retrying.
+pub fn set_layout(index: u32) -> Result<(), String> {
+    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
+        .map_err(|e| format!("create keyboard proxy: {e}"))?;
+    let msg = proxy
+        .call_method("setLayout", &(index,))
+        .map_err(|e| format!("setLayout({index}) failed: {e}"))?;
+    let ok: bool = msg
+        .body()
+        .deserialize()
+        .map_err(|e| format!("decode setLayout response: {e}"))?;
+    if !ok {
+        return Err(format!("setLayout({index}) rejected by KDE"));
+    }
+    Ok(())
 }
 
 pub fn start_watcher(app: AppHandle) {
     let _ = thread::Builder::new()
         .name("layout-kde-watcher".into())
-        .spawn(move || {
-            let mut last = None;
-            while !super::watcher_stop_requested() {
-                match current() {
-                    Ok(Some(info)) => {
-                        if last.as_ref() != Some(&info) {
-                            if let Ok(mut g) = CACHED_LAYOUT.lock() {
-                                *g = Some(info.short.clone());
-                            }
-                            if let Err(e) = app.emit("layout-changed", info.clone()) {
-                                eprintln!("[layout/kde] emit error: {e}");
-                            }
-                            last = Some(info);
-                        }
-                    }
-                    Ok(None) => {}
-                    Err(e) => eprintln!("[layout/kde] poll error: {e}"),
-                }
-                thread::sleep(Duration::from_secs(1));
+        .spawn(move || run_watcher(app));
+}
+
+fn run_watcher(app: AppHandle) {
+    while !super::watcher_stop_requested() {
+        match watch_once(&app) {
+            Ok(()) => return,
+            Err(e) => {
+                eprintln!("[layout/kde] watcher error: {e}; retrying in 2s");
+                thread::sleep(Duration::from_secs(2));
             }
-        });
+        }
+    }
+}
+
+fn watch_once(app: &AppHandle) -> Result<(), String> {
+    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
+        .map_err(|e| format!("create keyboard proxy: {e}"))?;
+
+    // Subscribe BEFORE the initial emit so we don't miss an update that
+    // arrives while we're querying state.
+    let mut layout_changed = proxy
+        .receive_signal("layoutChanged")
+        .map_err(|e| format!("subscribe layoutChanged: {e}"))?;
+
+    // Initial state.
+    emit_current(app, &proxy);
+
+    while !super::watcher_stop_requested() {
+        // `signals.next()` is a blocking iterator. It returns `None`
+        // only when the bus connection is closed, at which point we
+        // bubble up so the outer loop reconnects.
+        let Some(_msg) = layout_changed.next() else {
+            return Err("DBus signal stream closed".into());
+        };
+        emit_current(app, &proxy);
+    }
+    Ok(())
+}
+
+fn emit_current(app: &AppHandle, proxy: &Proxy<'_>) {
+    let info = match current_with_proxy(proxy) {
+        Ok(Some(info)) => info,
+        Ok(None) => return,
+        Err(e) => {
+            eprintln!("[layout/kde] poll error: {e}");
+            return;
+        }
+    };
+    if let Ok(mut g) = CACHED_LAYOUT.lock() {
+        if g.as_deref() == Some(info.short.as_str()) {
+            return;
+        }
+        *g = Some(info.short.clone());
+    }
+    if let Err(e) = app.emit("layout-changed", info) {
+        eprintln!("[layout/kde] emit error: {e}");
+    }
 }
 
 fn current_with_conn(conn: &Connection) -> Result<Option<LayoutInfo>, String> {
     let proxy = Proxy::new(conn, SERVICE, OBJECT, IFACE)
         .map_err(|e| format!("create keyboard proxy: {e}"))?;
-    let list = match call_list(&proxy)? {
+    current_with_proxy(&proxy)
+}
+
+fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<LayoutInfo>, String> {
+    let list = match call_list(proxy)? {
         Some(v) => v,
         None => return Ok(None),
     };
-    let idx = call_index(&proxy)?.unwrap_or(0);
+    let idx = call_index(proxy)?.unwrap_or(0);
     let entry = list
         .get(idx as usize)
         .or_else(|| list.first())

@@ -241,6 +241,17 @@ pub fn status() -> MapperStatus {
     lock_state().status()
 }
 
+/// Tell the portal singleton where to read/write the saved
+/// `restore_token`. Should be called once at app startup, before any
+/// literal-injection request.
+#[cfg(target_os = "linux")]
+pub fn set_portal_token_dir(dir: std::path::PathBuf) {
+    portal::set_token_dir(dir);
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn set_portal_token_dir(_dir: std::path::PathBuf) {}
+
 #[cfg(test)]
 mod tests {
     use super::{BackendHandle, KeyboardDevice, MapperBackend, MapperRuntime};
