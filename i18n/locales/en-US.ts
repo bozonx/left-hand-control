@@ -57,8 +57,8 @@ export default {
     title: "Home",
     subtitle:
       "Your layouts live here together with a short reference on how the app applies actions.",
-    infoTitle: "About layouts",
-    infoSubtitle: "A quick reference for working with them in the app.",
+    infoTitle: "Quick start",
+    infoSubtitle: "Everything you need to know to get started.",
     layoutsHintTitle: "Using the library",
     layoutsHintBody:
       "Create empty layouts or copies of the Ivan K base layout, switch between them, and save the current changes into a separate file.",
@@ -69,6 +69,22 @@ export default {
       "You pick a layout manually; it stays active. Its whitelist/blacklist still filter rules.",
     modeAutoHint:
       "The app picks the active layout automatically from the priority list below. Only one layout is active at a time.",
+    whatIsItTitle: "What does this app do?",
+    whatIsItBody:
+      "Left Hand Control intercepts your physical keyboard at the OS level and remaps keys in real time. You can turn rarely-used keys into powerful modifiers: hold CapsLock and the home row becomes arrow keys, navigation, or symbols.",
+    howToStartTitle: "How do I turn it on?",
+    howToStartBody:
+      "Open Settings → Key-mapper, select your keyboard, and press Start. The app needs access to /dev/input/event* (usually via the 'input' group) and /dev/uinput. See README for udev rules.",
+    layersExplainedTitle: "What are layers?",
+    layersExplainedBody:
+      "A layer is an alternate keymap that activates while you hold a specific key. For example, in the built-in layout holding CapsLock turns J/K/L/I into ArrowLeft/ArrowDown/ArrowRight/ArrowUp, U/O into Home/End, and so on. Release the key and you're back to normal typing.",
+    rulesExplainedTitle: "What are rules?",
+    rulesExplainedBody:
+      "Rules define what a physical key does. Each rule supports three behaviors: a short press (Tap), holding the key longer (Hold — usually activates a layer), and pressing twice quickly (Double-tap). You can also add conditions: active application, game mode, or keyboard layout language.",
+    builtInLayoutTitle: "Try the built-in layout",
+    builtInLayoutBody:
+      "The app already loaded Ivan K's left-hand layout. It adds a navigation layer on CapsLock, a symbols layer on Right Alt, and a window-manager layer on Left Alt. You don't have to configure anything — just start the mapper and try it in your editor.",
+    fullDocsLabel: "Read the full documentation →",
   },
   welcome: {
     intro:
@@ -254,6 +270,11 @@ export default {
     editKeyAria: "Edit {label}",
     swallowAction: "Ignore in this layer",
     swallowLabel: "Ignore",
+    clearLayerTitle: "Clear layer",
+    clearLayerBody:
+      "This will remove all key bindings and extra keys for this layer.",
+    layerCleared: "Layer cleared",
+    undoClear: "Undo",
   },
   macros: {
     title: "User macros",
