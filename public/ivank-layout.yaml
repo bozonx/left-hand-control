@@ -140,6 +140,10 @@ layers:
     isolate:
       - KeyW
       - KeyC
+      - KeyV
+      - Comma
+      - Period
+      - Slash
     keys:
       Tab: Tab
       CapsLock: sys:walkThroughWindowsAlternative
@@ -171,17 +175,21 @@ layers:
 
       KeyZ: sys:windowMaximizeVertical
       KeyX: sys:windowMaximizeHorizontal
-      KeyC: sys:screenshot
-      #KeyC: PrintScreen
-      # можно назначить на meta+v
-      KeyV: sys:showClipboardHistory
+      #KeyC: sys:screenshot
+      KeyC: PrintScreen
+      #KeyV: sys:showClipboardHistory
+      KeyV: Meta+KeyV
       # use alt+F4
-      KeyB: sys:windowClose
+      #KeyB: sys:windowClose
+      KeyB: F4
       KeyN: sys:brightnessDown
       KeyM: sys:brightnessUp
-      Comma: sys:volumeDown
-      Period: sys:volumeUp
-      Slash: sys:muteAudio
+      #Comma: sys:volumeDown
+      Comma: VolumeDown
+      Period: VolumeUp
+      #Period: sys:volumeUp
+      # Slash: sys:muteAudio
+      Slash: VolumeMute
   - id: space
     keys:
       Tab: sys:switchLayout1
