@@ -13,19 +13,37 @@ const props = defineProps<{
   stepError?: (step: MacroStep) => string | null
   isFirst?: boolean
   isLast?: boolean
+  focusName?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
   addStep: [macro: Macro]
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
+  nameFocused: [uiKey: string]
 }>()
 
 const toast = useToast()
 const { t } = useI18n()
+
+const nameInputRef = useTemplateRef<any>('nameInputRef')
+
+watch(
+  () => props.focusName,
+  async (value) => {
+    if (!value) return
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    const input = nameInputRef.value?.inputRef?.value as HTMLInputElement | undefined
+    if (!input) return
+    input.focus()
+    input.select()
+    emit('nameFocused', props.uiKey)
+  },
+  { immediate: true, flush: 'post' },
+)
 
 async function copyMacroId() {
   if (!props.macro.id) return
@@ -93,6 +111,7 @@ async function copyMacroId() {
             />
           </template>
           <UInput
+            ref="nameInputRef"
             :id="nameInputId"
             v-model="macro.name"
             :placeholder="$t('macros.namePh')"
