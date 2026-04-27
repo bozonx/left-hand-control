@@ -105,6 +105,10 @@ pub struct Rule {
     pub condition_game_mode: Option<String>,
     #[serde(default)]
     pub condition_layouts: Option<Vec<String>>,
+    #[serde(default)]
+    pub condition_apps_whitelist: Option<Vec<String>>,
+    #[serde(default)]
+    pub condition_apps_blacklist: Option<Vec<String>>,
     pub key: String,
     #[serde(default)]
     pub layer_id: String,

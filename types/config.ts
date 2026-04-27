@@ -29,6 +29,14 @@ export interface LayerRule {
   // Empty array means 'ignore' (matches any layout). If not empty, the current
   // layout must be in this list.
   conditionLayouts?: string[]
+  // Whitelist of substrings matched (case-insensitive, OR) against the
+  // currently focused window's title and app id. When non-empty, the rule
+  // is active only while the focused window matches at least one entry.
+  conditionAppsWhitelist?: string[]
+  // Blacklist of substrings matched (case-insensitive, OR) against the
+  // currently focused window's title and app id. When non-empty and any
+  // entry matches, the rule is blocked (takes precedence over whitelist).
+  conditionAppsBlacklist?: string[]
   // Physical key on which the rule triggers (e.g. "CapsLock", "Space").
   key: string
   // Layer activated while the key is held. Empty string = no layer.
@@ -120,6 +128,9 @@ export type LayoutMode = 'manual' | 'auto'
 export interface LayoutConditionSet {
   gameMode?: 'on' | 'off'
   layouts: string[]
+  // Substrings (case-insensitive, OR) matched against the currently focused
+  // window's title and app id. Empty array means "do not check apps".
+  apps?: string[]
 }
 
 export interface LayoutConditionRule {

@@ -26,12 +26,14 @@ const conditions = computed<ConditionsValue>({
     return {
       gameMode: (set.gameMode ?? 'ignore') as 'on' | 'off' | 'ignore',
       layouts: [...set.layouts],
+      apps: [...(set.apps ?? [])],
     }
   },
   set: (value: ConditionsValue) => {
     setConditionSet(props.layoutId, props.kind, {
       gameMode: value.gameMode === 'ignore' ? undefined : value.gameMode,
       layouts: value.layouts,
+      apps: value.apps && value.apps.length > 0 ? value.apps : undefined,
     })
   },
 })

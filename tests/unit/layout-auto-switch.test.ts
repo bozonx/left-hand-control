@@ -48,6 +48,42 @@ describe('matchesConditionSet', () => {
   it('matches when layouts list is empty regardless of current', () => {
     expect(matchesConditionSet({ layouts: [] }, ctxOnUS)).toBe(true)
   })
+
+  it('matches when apps substring is found in window title (case-insensitive)', () => {
+    expect(
+      matchesConditionSet(
+        { layouts: [], apps: ['firefox'] },
+        { ...ctxOnUS, activeWindowTitle: 'Mozilla Firefox', activeWindowAppId: 'navigator' },
+      ),
+    ).toBe(true)
+  })
+
+  it('matches when apps substring is found in app id', () => {
+    expect(
+      matchesConditionSet(
+        { layouts: [], apps: ['Steam'] },
+        { ...ctxOnUS, activeWindowTitle: 'Library', activeWindowAppId: 'steam' },
+      ),
+    ).toBe(true)
+  })
+
+  it('rejects when apps non-empty and active window unknown', () => {
+    expect(
+      matchesConditionSet(
+        { layouts: [], apps: ['firefox'] },
+        { ...ctxOnUS, activeWindowTitle: null, activeWindowAppId: null },
+      ),
+    ).toBe(false)
+  })
+
+  it('rejects when no apps substring matches', () => {
+    expect(
+      matchesConditionSet(
+        { layouts: [], apps: ['firefox', 'chrome'] },
+        { ...ctxOnUS, activeWindowTitle: 'KeePassXC', activeWindowAppId: 'keepassxc' },
+      ),
+    ).toBe(false)
+  })
 })
 
 describe('evaluateLayoutGate', () => {

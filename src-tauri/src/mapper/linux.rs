@@ -972,6 +972,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: String::new(),

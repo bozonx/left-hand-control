@@ -21,6 +21,7 @@ export function useLayoutSwitcher() {
   const library = useLayoutLibrary()
   const { layout: systemLayout } = useLayout()
   const gameMode = useGameMode()
+  const activeWindow = useActiveWindow()
 
   async function evaluate() {
     const settings = config.value.settings
@@ -33,12 +34,14 @@ export function useLayoutSwitcher() {
     const target = pickActiveLayout(availableIds, settings, {
       currentSystemLayout: systemLayout.value?.short ?? null,
       gameModeActive: !!gameMode.status.value.active,
+      activeWindowTitle: activeWindow.state.value?.title ?? null,
+      activeWindowAppId: activeWindow.state.value?.appId ?? null,
     })
 
     activeAutoLayoutId.value = target ?? undefined
   }
 
-  // React to mode flip / order / conditions / system layout / game mode.
+  // React to mode flip / order / conditions / system layout / game mode / window.
   watch(
     [
       () => config.value.settings.layoutMode,
@@ -48,6 +51,8 @@ export function useLayoutSwitcher() {
       () => library.entries.value.map((e) => e.id).join('|'),
       () => systemLayout.value?.short ?? null,
       () => gameMode.status.value.active,
+      () => activeWindow.state.value?.title ?? null,
+      () => activeWindow.state.value?.appId ?? null,
     ],
     () => {
       void evaluate()

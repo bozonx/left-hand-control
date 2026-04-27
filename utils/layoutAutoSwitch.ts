@@ -17,6 +17,11 @@ export interface AutoSwitchContext {
   currentSystemLayout: string | null
   // Whether Game Mode is currently active.
   gameModeActive: boolean
+  // Title of the currently focused window. `null` means detection is
+  // unavailable; app-based conditions then evaluate as "no match".
+  activeWindowTitle?: string | null
+  // Application id / WM_CLASS of the currently focused window.
+  activeWindowAppId?: string | null
 }
 
 // Returns true when a condition set matches the current context.
@@ -33,7 +38,25 @@ export function matchesConditionSet(
     if (!ctx.currentSystemLayout) return false
     if (!set.layouts.includes(ctx.currentSystemLayout)) return false
   }
+  if (set.apps && set.apps.length > 0) {
+    if (!matchesActiveWindow(set.apps, ctx)) return false
+  }
   return true
+}
+
+// Returns true when at least one substring (case-insensitive) is found
+// either in the active window title or in its app id.
+function matchesActiveWindow(
+  needles: string[],
+  ctx: AutoSwitchContext,
+): boolean {
+  const title = (ctx.activeWindowTitle ?? '').toLowerCase()
+  const appId = (ctx.activeWindowAppId ?? '').toLowerCase()
+  if (!title && !appId) return false
+  return needles
+    .map((n) => n.trim().toLowerCase())
+    .filter((n) => n.length > 0)
+    .some((n) => title.includes(n) || appId.includes(n))
 }
 
 // Decision for whether a layout's rules should currently fire.
@@ -132,5 +155,5 @@ export function isConditionSetEmpty(
   set: LayoutConditionSet | undefined,
 ): boolean {
   if (!set) return true
-  return !set.gameMode && set.layouts.length === 0
+  return !set.gameMode && set.layouts.length === 0 && (set.apps?.length ?? 0) === 0
 }

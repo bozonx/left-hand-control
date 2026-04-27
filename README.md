@@ -140,3 +140,18 @@ The mapper reads events from a grabbed `/dev/input/eventX` device and emits rema
 3. Restart the app. Pick your keyboard in **Settings → Key-mapper → Клавиатура** and press **Запустить**.
 
 If the start button returns a permissions error, verify that the user is in `input` (`id -nG | tr ' ' '\n' | grep input`) and that `ls -l /dev/uinput` shows group `input` with `rw`.
+
+### Activation conditions
+
+Per-rule triggers and per-layout whitelist/blacklist sets can be gated by:
+
+- **Game Mode** state (on / off / ignore).
+- **Current keyboard layout** — the rule / layout matches only when the system layout is in the allowed list.
+- **Active application** — substrings (case-insensitive, OR) matched against the focused window's title and app id (`WM_CLASS` on X11, `app_id` / `class` on Wayland). Empty list means "do not check".
+
+Active-window detection backends:
+
+- **X11** (any DE): `xdotool` + `xprop`.
+- **KDE Plasma (Wayland)**: `kdotool` (install: `paru -S kdotool`).
+- **Hyprland**: `hyprctl` (ships with Hyprland).
+- Other Wayland sessions (GNOME, Sway, …): not yet implemented — app-based conditions evaluate as "no match".

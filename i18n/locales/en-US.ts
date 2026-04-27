@@ -192,6 +192,16 @@ export default {
     layoutsHint: "Rule will only work if the current layout is one of the selected. Leave empty to ignore layout.",
     anyLayout: "Any layout",
     noLayoutsDetected: "No layouts detected. Make sure the app is running in Tauri.",
+    appsLabel: "Active application",
+    appsHint:
+      "Substrings (case-insensitive) matched against the focused window title or app id. Empty list means \"do not check\".",
+    appsPlaceholder: "e.g. firefox, Steam, .exe",
+    appsWhitelistLabel: "Allowed applications (whitelist)",
+    appsWhitelistHint:
+      "Rule fires only when the focused window matches at least one substring. Leave empty to ignore.",
+    appsBlacklistLabel: "Blocked applications (blacklist)",
+    appsBlacklistHint:
+      "Rule is blocked when the focused window matches at least one substring. Takes precedence over the whitelist.",
     enableRule: "Enable rule",
     disableRule: "Disable rule",
     keyRequired: "Pick a trigger key.",

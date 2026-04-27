@@ -5,6 +5,7 @@ use tauri::{
 };
 use crate::gamemode::get_gamemode_status;
 
+mod active_window;
 mod gamemode;
 mod layout;
 mod mapper;
@@ -254,6 +255,7 @@ pub fn run() {
             }
             layout::start_watcher(app.handle().clone());
             gamemode::start_watcher(app.handle().clone());
+            active_window::start_watcher(app.handle().clone());
             if let Some(window) = app.get_webview_window("main") {
                 window_state::restore(&window);
                 let _ = window.show();
@@ -300,6 +302,7 @@ pub fn run() {
             set_current_layout,
             get_gamemode_status,
             get_platform_info,
+            active_window::get_active_window,
             quit_application,
         ])
         .build(tauri::generate_context!())
@@ -310,6 +313,7 @@ pub fn run() {
             let _ = mapper::stop();
             gamemode::stop_watcher();
             layout::stop_watcher();
+            active_window::stop_watcher();
         }
     });
 }

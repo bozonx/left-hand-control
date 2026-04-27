@@ -124,6 +124,8 @@ struct RuleEntry {
     double_tap_window: Duration,
     condition_game_mode: Option<String>,
     condition_layouts: Option<Vec<String>>,
+    condition_apps_whitelist: Option<Vec<String>>,
+    condition_apps_blacklist: Option<Vec<String>>,
 }
 
 enum Phase {
@@ -445,6 +447,8 @@ impl Engine {
                     double_tap_window,
                     condition_game_mode: r.condition_game_mode.clone(),
                     condition_layouts: r.condition_layouts.clone(),
+                    condition_apps_whitelist: r.condition_apps_whitelist.clone(),
+                    condition_apps_blacklist: r.condition_apps_blacklist.clone(),
                 },
             );
         }
@@ -531,32 +535,7 @@ impl Engine {
     pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
         if down {
             let is_active = if let Some(rule) = self.rules.get(&key) {
-                let has_gm_cond = rule.condition_game_mode.as_deref().is_some_and(|m| m != "ignore" && !m.is_empty());
-                let has_layout_cond = rule.condition_layouts.as_ref().is_some_and(|l| !l.is_empty());
-
-                if !has_gm_cond && !has_layout_cond {
-                    true
-                } else {
-                    let mut active = false;
-                    if has_gm_cond {
-                        let gm_active = crate::gamemode::cached_status_active();
-                        if match rule.condition_game_mode.as_deref() {
-                            Some("on") => gm_active,
-                            Some("off") => !gm_active,
-                            _ => false,
-                        } {
-                            active = true;
-                        }
-                    }
-                    if has_layout_cond {
-                        if let Some(current) = crate::layout::cached_layout_short() {
-                            if rule.condition_layouts.as_ref().unwrap().contains(&current) {
-                                active = true;
-                            }
-                        }
-                    }
-                    active
-                }
+                rule_passes_apps(rule) && rule_passes_legacy(rule)
             } else {
                 true
             };
@@ -952,6 +931,85 @@ impl Engine {
     }
 }
 
+/// Returns true when a list of substrings matches the active window's
+/// title or app id (case-insensitive, OR).
+fn matches_active_window(needles: &[String], aw: &crate::active_window::ActiveWindow) -> bool {
+    let title = aw.title.to_lowercase();
+    let app_id = aw.app_id.to_lowercase();
+    needles
+        .iter()
+        .map(|n| n.trim().to_lowercase())
+        .filter(|n| !n.is_empty())
+        .any(|n| title.contains(&n) || app_id.contains(&n))
+}
+
+/// Evaluates the apps whitelist / blacklist for a rule.
+/// Blacklist takes precedence: a match blocks the rule. Whitelist, when
+/// non-empty, must match for the rule to fire.
+fn rule_passes_apps(rule: &RuleEntry) -> bool {
+    let bl = rule
+        .condition_apps_blacklist
+        .as_deref()
+        .filter(|l| !l.is_empty());
+    let wl = rule
+        .condition_apps_whitelist
+        .as_deref()
+        .filter(|l| !l.is_empty());
+    if bl.is_none() && wl.is_none() {
+        return true;
+    }
+    let aw = crate::active_window::cached_active_window();
+    if let Some(bl) = bl {
+        if let Some(aw) = &aw {
+            if matches_active_window(bl, aw) {
+                return false;
+            }
+        }
+    }
+    if let Some(wl) = wl {
+        match &aw {
+            Some(aw) if matches_active_window(wl, aw) => {}
+            _ => return false,
+        }
+    }
+    true
+}
+
+/// Existing OR-style game-mode + layout condition check.
+fn rule_passes_legacy(rule: &RuleEntry) -> bool {
+    let has_gm_cond = rule
+        .condition_game_mode
+        .as_deref()
+        .is_some_and(|m| m != "ignore" && !m.is_empty());
+    let has_layout_cond = rule
+        .condition_layouts
+        .as_ref()
+        .is_some_and(|l| !l.is_empty());
+
+    if !has_gm_cond && !has_layout_cond {
+        return true;
+    }
+    let mut active = false;
+    if has_gm_cond {
+        let gm_active = crate::gamemode::cached_status_active();
+        if match rule.condition_game_mode.as_deref() {
+            Some("on") => gm_active,
+            Some("off") => !gm_active,
+            _ => false,
+        } {
+            active = true;
+        }
+    }
+    if has_layout_cond {
+        if let Some(current) = crate::layout::cached_layout_short() {
+            if rule.condition_layouts.as_ref().unwrap().contains(&current) {
+                active = true;
+            }
+        }
+    }
+    active
+}
+
 /// Emit a resolved action as the appropriate `Out` event. Shared by the
 /// tap / double-tap / deferred-tap paths.
 fn fire_action(action: Option<&ActionDef>, mod_delay: Duration, out: &mut Vec<Out>) {
@@ -998,6 +1056,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_tab".into(),
             key: "Tab".into(),
             layer_id: "sel".into(),
@@ -1034,6 +1094,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
@@ -1047,6 +1109,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_tab".into(),
             key: "Tab".into(),
             layer_id: "sel".into(),
@@ -1088,6 +1152,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
@@ -1133,6 +1199,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
@@ -1165,6 +1233,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: "win".into(),
@@ -1211,6 +1281,8 @@ mod tests {
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
             id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: "win".into(),
@@ -1243,5 +1315,82 @@ mod tests {
             [Out::ChordPress { ks, .. }]
                 if ks.mods.is_empty() && ks.key == Key::KEY_ESC
         ));
+    }
+
+    // Serialise all tests that mutate the shared `active_window::CACHED`
+    // so they don't race when cargo runs the suite in parallel.
+    static APPS_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    fn rule_with_apps(
+        whitelist: Option<Vec<String>>,
+        blacklist: Option<Vec<String>>,
+    ) -> RuleEntry {
+        RuleEntry {
+            tap: TapMode::Native,
+            layer_id: None,
+            hold: HoldMode::Swallow,
+            double_tap: None,
+            hold_timeout: Duration::from_millis(200),
+            double_tap_window: Duration::from_millis(200),
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: whitelist,
+            condition_apps_blacklist: blacklist,
+        }
+    }
+
+    #[test]
+    fn apps_whitelist_blocks_when_no_active_window() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::active_window::set_cached_for_test(None);
+        let rule = rule_with_apps(Some(vec!["firefox".into()]), None);
+        assert!(!rule_passes_apps(&rule));
+    }
+
+    #[test]
+    fn apps_whitelist_passes_when_title_matches() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::active_window::set_cached_for_test(Some(crate::active_window::ActiveWindow {
+            title: "Mozilla Firefox".into(),
+            app_id: "navigator".into(),
+        }));
+        let rule = rule_with_apps(Some(vec!["firefox".into()]), None);
+        assert!(rule_passes_apps(&rule));
+        crate::active_window::set_cached_for_test(None);
+    }
+
+    #[test]
+    fn apps_whitelist_passes_when_app_id_matches_case_insensitive() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::active_window::set_cached_for_test(Some(crate::active_window::ActiveWindow {
+            title: "Library".into(),
+            app_id: "Steam".into(),
+        }));
+        let rule = rule_with_apps(Some(vec!["steam".into()]), None);
+        assert!(rule_passes_apps(&rule));
+        crate::active_window::set_cached_for_test(None);
+    }
+
+    #[test]
+    fn apps_blacklist_blocks_even_when_whitelist_passes() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::active_window::set_cached_for_test(Some(crate::active_window::ActiveWindow {
+            title: "Editor — secret".into(),
+            app_id: "editor".into(),
+        }));
+        let rule = rule_with_apps(
+            Some(vec!["editor".into()]),
+            Some(vec!["secret".into()]),
+        );
+        assert!(!rule_passes_apps(&rule));
+        crate::active_window::set_cached_for_test(None);
+    }
+
+    #[test]
+    fn apps_no_lists_always_passes() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::active_window::set_cached_for_test(None);
+        let rule = rule_with_apps(None, None);
+        assert!(rule_passes_apps(&rule));
     }
 }

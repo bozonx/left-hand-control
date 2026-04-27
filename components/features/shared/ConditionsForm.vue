@@ -2,19 +2,26 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLayout } from '~/composables/useLayout'
+import AppsListField from '~/components/features/shared/AppsListField.vue'
 
 // Canonical shape used by both per-rule conditions and layout
 // whitelist / blacklist conditions. `gameMode === 'ignore'` represents
 // "do not check Game Mode"; an empty `layouts` array represents
-// "do not check the system keyboard layout".
+// "do not check the system keyboard layout"; an empty `apps` array
+// represents "do not check the active window".
 export interface ConditionsValue {
   gameMode: 'ignore' | 'on' | 'off'
   layouts: string[]
+  apps?: string[]
 }
 
-const props = defineProps<{
-  modelValue: ConditionsValue
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: ConditionsValue
+    showApps?: boolean
+  }>(),
+  { showApps: true },
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: ConditionsValue]
@@ -39,6 +46,11 @@ const layoutOptions = computed(() =>
 const gameMode = computed({
   get: () => props.modelValue.gameMode,
   set: (value) => emit('update:modelValue', { ...props.modelValue, gameMode: value }),
+})
+
+const apps = computed<string[]>({
+  get: () => props.modelValue.apps ?? [],
+  set: (value) => emit('update:modelValue', { ...props.modelValue, apps: value }),
 })
 
 function toggleLayout(value: string, checked: boolean | 'indeterminate') {
@@ -74,5 +86,13 @@ function toggleLayout(value: string, checked: boolean | 'indeterminate') {
         </div>
       </div>
     </UFormField>
+
+    <AppsListField
+      v-if="showApps"
+      v-model="apps"
+      :label="$t('rules.appsLabel')"
+      :hint="$t('rules.appsHint')"
+      :placeholder="$t('rules.appsPlaceholder')"
+    />
   </div>
 </template>

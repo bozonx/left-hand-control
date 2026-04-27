@@ -47,6 +47,7 @@ export function useLayoutConditions() {
       rule?.[kind] ?? {
         gameMode: undefined,
         layouts: [],
+        apps: [],
       }
     )
   }
@@ -64,7 +65,14 @@ export function useLayoutConditions() {
     if (isConditionSetEmpty(value)) {
       delete rule[kind]
     } else {
-      rule[kind] = { gameMode: value.gameMode, layouts: [...value.layouts] }
+      const next: LayoutConditionSet = {
+        gameMode: value.gameMode,
+        layouts: [...value.layouts],
+      }
+      if (value.apps && value.apps.length > 0) {
+        next.apps = [...value.apps]
+      }
+      rule[kind] = next
       // Auto-enable participation when the user adds the first condition.
       rule.includedInAuto = true
     }
