@@ -175,7 +175,6 @@ layers:
 
       KeyZ: sys:windowMaximizeVertical
       KeyX: sys:windowMaximizeHorizontal
-      #KeyC: sys:screenshot
       KeyC: PrintScreen
       #KeyV: sys:showClipboardHistory
       KeyV: Meta+KeyV

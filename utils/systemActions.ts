@@ -143,12 +143,6 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     platforms: ['linux-kde'],
   },
   {
-    id: 'screenshot',
-    nameKey: 'systemActions.screenshot',
-    hint: 'KDE: spectacle -r',
-    platforms: ['linux-kde'],
-  },
-  {
     id: 'screenOff',
     nameKey: 'systemActions.screenOff',
     hint: 'KDE: org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut "Turn Off Screen"',

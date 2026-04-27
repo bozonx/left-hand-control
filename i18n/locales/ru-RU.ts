@@ -552,7 +552,6 @@ export default {
     windowKeepAbove: "Сделать окно поверх остальных",
     windowMaximizeVertical: "Развернуть окно по вертикали",
     windowMaximizeHorizontal: "Развернуть окно по горизонтали",
-    screenshot: "Скриншот области",
     screenOff: "Выключить экран",
     launchKrunner: "Запустить KRunner",
     launchSystemMonitor: "Запустить системный монитор",

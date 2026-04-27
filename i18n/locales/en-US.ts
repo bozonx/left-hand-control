@@ -544,7 +544,6 @@ export default {
     windowKeepAbove: "Keep window above others",
     windowMaximizeVertical: "Maximize window vertically",
     windowMaximizeHorizontal: "Maximize window horizontally",
-    screenshot: "Take area screenshot",
     screenOff: "Turn off screen",
     launchKrunner: "Launch KRunner",
     launchSystemMonitor: "Launch System Monitor",

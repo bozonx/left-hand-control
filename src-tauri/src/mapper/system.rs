@@ -81,7 +81,7 @@ fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) ->
 // --- KDE Plasma -------------------------------------------------------------
 
 mod kde {
-    use super::{DbusArg, DbusCall, SysAction, SysCommand};
+    use super::{DbusArg, DbusCall, SysAction};
 
     fn invoke_shortcut(component: &str, shortcut: &str) -> SysAction {
         SysAction::Dbus(DbusCall {
@@ -171,12 +171,6 @@ mod kde {
             }
             "windowMaximizeHorizontal" => {
                 return Some(invoke_shortcut("kwin", "Window Maximize Horizontal"));
-            }
-            "screenshot" => {
-                return Some(SysAction::Spawn(SysCommand {
-                    program: "spectacle".into(),
-                    args: vec!["-r".into()],
-                }));
             }
             "screenOff" => {
                 return Some(invoke_shortcut("org_kde_powerdevil", "Turn Off Screen"));
@@ -394,14 +388,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn screenshot_resolves_to_spectacle_spawn() {
-        let Some(SysAction::Spawn(cmd)) = resolve_for_desktop("screenshot", &Desktop::Kde) else {
-            panic!("screenshot did not resolve to a spawned command");
-        };
-        assert_eq!(cmd.program, "spectacle");
-        assert_eq!(cmd.args, vec!["-r"]);
-    }
 }
 
 // --- GNOME (Mutter / Shell) -------------------------------------------------
