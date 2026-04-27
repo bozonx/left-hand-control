@@ -10,6 +10,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: [code: string, label: string]
   'update:keyLabelMode': [value: KeyLabelMode]
+  clear: []
 }>()
 </script>
 
@@ -18,15 +19,25 @@ const emit = defineEmits<{
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
-        <div class="flex items-center rounded-md border border-(--ui-border) bg-(--ui-bg)">
+        <div class="flex items-center gap-2">
           <UButton
             size="sm"
             color="neutral"
-            :variant="keyLabelMode === 'label' ? 'soft' : 'ghost'"
-            @click="emit('update:keyLabelMode', 'label')"
+            variant="ghost"
+            icon="i-lucide-eraser"
+            @click="emit('clear')"
           >
-            {{ $t('keymap.keyViewLabels') }}
+            {{ $t('common.clear') }}
           </UButton>
+          <div class="flex items-center rounded-md border border-(--ui-border) bg-(--ui-bg)">
+            <UButton
+              size="sm"
+              color="neutral"
+              :variant="keyLabelMode === 'label' ? 'soft' : 'ghost'"
+              @click="emit('update:keyLabelMode', 'label')"
+            >
+              {{ $t('keymap.keyViewLabels') }}
+            </UButton>
           <UButton
             size="sm"
             color="neutral"
@@ -43,6 +54,7 @@ const emit = defineEmits<{
           >
             {{ $t('keymap.keyViewNumeric') }}
           </UButton>
+        </div>
         </div>
       </div>
     </template>

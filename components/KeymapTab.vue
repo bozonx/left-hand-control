@@ -29,6 +29,10 @@ const {
   requestDeleteSelectedLayer,
   cancelDeleteSelectedLayer,
   deleteSelectedLayer,
+  clearConfirmOpen,
+  requestClearSelectedLayer,
+  cancelClearSelectedLayer,
+  clearSelectedLayer,
   newLayerOpen,
   newLayerName,
   openNewLayer,
@@ -55,6 +59,7 @@ const {
         :key-label-mode="keyLabelMode"
         @update:key-label-mode="(value) => { keyLabelMode = value }"
         @edit="openEdit"
+        @clear="requestClearSelectedLayer"
       />
 
       <ExtrasCard
@@ -130,6 +135,35 @@ const {
             @click="deleteSelectedLayer"
           >
             {{ $t('common.delete') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="clearConfirmOpen"
+      :title="$t('keymap.clearLayerTitle')"
+    >
+      <template #body>
+        <p class="text-sm">
+          {{ $t('keymap.clearLayerBody') }}
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="cancelClearSelectedLayer"
+          >
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            icon="i-lucide-eraser"
+            @click="clearSelectedLayer"
+          >
+            {{ $t('common.clear') }}
           </UButton>
         </div>
       </template>

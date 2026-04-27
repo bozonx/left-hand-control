@@ -16,6 +16,9 @@ export function useKeymapEditor() {
     deleteLayer,
   } = useLayers()
 
+  const toast = useToast()
+  const { t } = useI18n()
+
   const selectedLayerId = computed<string>({
     get: () => {
       const selected = uiState.state.value.selectedLayerId
@@ -160,6 +163,50 @@ export function useKeymapEditor() {
     deleteConfirmOpen.value = false
   }
 
+  const clearConfirmOpen = ref(false)
+  const lastClearedBackup = ref<LayerKeymap | null>(null)
+
+  function requestClearSelectedLayer() {
+    if (!currentLayer.value) return
+    clearConfirmOpen.value = true
+  }
+
+  function cancelClearSelectedLayer() {
+    clearConfirmOpen.value = false
+  }
+
+  function clearSelectedLayer() {
+    if (!currentLayer.value) return
+    const keymap = currentKeymap.value
+    lastClearedBackup.value = {
+      keys: { ...keymap.keys },
+      extras: keymap.extras.map((e) => ({ ...e })),
+    }
+    keymap.keys = {}
+    keymap.extras = []
+    clearConfirmOpen.value = false
+    toast.add({
+      title: t('keymap.layerCleared'),
+      color: 'success',
+      icon: 'i-lucide-check',
+      actions: [
+        {
+          label: t('keymap.undoClear'),
+          onClick: undoClear,
+        },
+      ],
+    })
+  }
+
+  function undoClear() {
+    const backup = lastClearedBackup.value
+    if (!backup || !currentLayer.value) return
+    const keymap = currentKeymap.value
+    keymap.keys = backup.keys
+    keymap.extras = backup.extras
+    lastClearedBackup.value = null
+  }
+
   const newLayerOpen = ref(false)
   const newLayerName = ref('')
 
@@ -204,6 +251,10 @@ export function useKeymapEditor() {
     requestDeleteSelectedLayer,
     cancelDeleteSelectedLayer,
     deleteSelectedLayer,
+    clearConfirmOpen,
+    requestClearSelectedLayer,
+    cancelClearSelectedLayer,
+    clearSelectedLayer,
     newLayerOpen,
     newLayerName,
     openNewLayer,
