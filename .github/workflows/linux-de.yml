@@ -1,0 +1,141 @@
+name: Linux DE Matrix
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      distro:
+        description: 'Distro to test (empty = all)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - ubuntu-gnome
+          - ubuntu-kde
+          - fedora-gnome
+          - fedora-kde
+          - fedora-sway
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.distro || 'all' }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-gnome
+            image: ubuntu:24.04
+            de: gnome
+          - name: ubuntu-kde
+            image: ubuntu:24.04
+            de: kde
+          - name: fedora-gnome
+            image: fedora:41
+            de: gnome
+          - name: fedora-kde
+            image: fedora:41
+            de: kde
+          - name: fedora-sway
+            image: fedora:41
+            de: sway
+
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+
+    steps:
+      - name: Install system deps (Ubuntu)
+        if: startsWith(matrix.image, 'ubuntu')
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y curl wget git pkg-config build-essential libssl-dev
+          apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev librsvg2-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
+          # DE-specific
+          if [ "${{ matrix.de }}" = "kde" ]; then
+            apt-get install -y plasma-workspace qdbus-qt5 qdbus-qt6 xdotool
+          fi
+          if [ "${{ matrix.de }}" = "gnome" ]; then
+            apt-get install -y gnome-shell xdotool
+          fi
+          if [ "${{ matrix.de }}" = "sway" ]; then
+            apt-get install -y sway xdotool xdg-desktop-portal-wlr
+          fi
+
+      - name: Install system deps (Fedora)
+        if: startsWith(matrix.image, 'fedora')
+        run: |
+          dnf install -y curl wget git gcc pkgconfig openssl-devel
+          dnf install -y webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel librsvg2-devel libsoup3-devel javascriptcoregtk4.1-devel
+          # DE-specific
+          if [ "${{ matrix.de }}" = "kde" ]; then
+            dnf install -y plasma-workspace qdbus xdotool qt6-qttools
+          fi
+          if [ "${{ matrix.de }}" = "gnome" ]; then
+            dnf install -y gnome-shell xdotool xdg-desktop-portal-gnome
+          fi
+          if [ "${{ matrix.de }}" = "sway" ]; then
+            dnf install -y sway xdotool xdg-desktop-portal-wlr
+          fi
+
+      - name: Install Node + pnpm
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y nodejs || true
+          # Fedora path
+          if command -v dnf &>/dev/null; then
+            dnf install -y nodejs20
+          fi
+          npm install -g pnpm@9
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          . "$HOME/.cargo/env"
+          rustup default stable
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Node deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
+      - name: Run component tests
+        run: pnpm test:components
+
+      - name: Build frontend
+        run: pnpm generate
+
+      - name: Build Tauri
+        run: |
+          . "$HOME/.cargo/env"
+          cd src-tauri && cargo build --release
+        env:
+          NO_STRIP: true
+
+      - name: Upload build artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-build-logs
+          path: |
+            src-tauri/target/release/build/**/output
+            src-tauri/target/release/build/**/*.log
+            .output/logs/

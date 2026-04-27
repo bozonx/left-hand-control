@@ -16,5 +16,7 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/unit/**/*.test.ts'],
     setupFiles: ['tests/setup/unit.ts'],
+    reporters: process.env.CI ? ['default', 'junit'] : ['default'],
+    outputFile: process.env.CI ? { junit: './test-results/unit/junit.xml' } : undefined,
   },
 })
