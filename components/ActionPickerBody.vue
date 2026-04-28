@@ -163,7 +163,8 @@ const listGridClass = computed(() =>
 )
 
 const showSuggestions = ref(false)
-const inputFocused = ref(false)
+const inputRef = ref<InstanceType<typeof InputWithClearButton> | null>(null)
+const activeIndex = ref(-1)
 
 const filteredItems = computed(() => {
   const query = draft.value.trim().toLowerCase()
@@ -180,28 +181,77 @@ const filteredItems = computed(() => {
   return allItems
 })
 
-function onInputFocus() {
-  inputFocused.value = true
-  if (draft.value.trim()) showSuggestions.value = true
-}
+watch(filteredItems, (items) => {
+  if (activeIndex.value >= items.length) {
+    activeIndex.value = items.length > 0 ? items.length - 1 : -1
+  }
+})
 
-function onInputBlur() {
-  inputFocused.value = false
-  setTimeout(() => {
-    if (!inputFocused.value) showSuggestions.value = false
-  }, 120)
-}
-
-function onInputKeydown(event: KeyboardEvent) {
+function handleInputKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     showSuggestions.value = false
+    activeIndex.value = -1
+    return
+  }
+  if (event.key === 'ArrowDown' && filteredItems.value.length > 0) {
+    event.preventDefault()
+    showSuggestions.value = true
+    activeIndex.value = 0
   }
 }
 
+function handleSuggestionKeydown(event: KeyboardEvent, item: ActionItem, index: number) {
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    if (index < filteredItems.value.length - 1) {
+      activeIndex.value = index + 1
+    }
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    if (index > 0) {
+      activeIndex.value = index - 1
+    } else {
+      activeIndex.value = -1
+    }
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    pick(item)
+    showSuggestions.value = false
+    activeIndex.value = -1
+  } else if (event.key === 'Escape') {
+    showSuggestions.value = false
+    activeIndex.value = -1
+  }
+}
+
+function handleContainerFocusOut(event: FocusEvent) {
+  const container = event.currentTarget as HTMLElement
+  const related = event.relatedTarget as HTMLElement | null
+  if (!container.contains(related)) {
+    showSuggestions.value = false
+    activeIndex.value = -1
+  }
+}
+
+watch(activeIndex, (idx) => {
+  nextTick(() => {
+    if (idx < 0) {
+      inputRef.value?.focus()
+      return
+    }
+    const btn = document.querySelector(`[data-suggestion-index="${idx}"]`) as HTMLButtonElement | null
+    btn?.focus()
+  })
+})
+
+function onInputFocus() {
+  if (draft.value.trim()) showSuggestions.value = true
+}
+
 watch(draft, (val) => {
-  if (val.trim() && inputFocused.value) {
+  if (val.trim()) {
     showSuggestions.value = true
-  } else if (!val.trim()) {
+  } else {
     showSuggestions.value = false
   }
 })
@@ -216,29 +266,38 @@ function pick(item: ActionItem) {
   <div :class="props.spacious ? 'min-h-0 flex flex-1 flex-col gap-4' : 'space-y-4'">
     <UFormField :label="$t('picker.currentValue')">
       <div class="space-y-2">
-        <div v-if="!isTextCategory" class="relative">
+        <div
+          v-if="!isTextCategory"
+          class="relative"
+          @focusout="handleContainerFocusOut"
+        >
           <InputWithClearButton
+            ref="inputRef"
             v-model="draft"
             :placeholder="$t('picker.valuePh')"
             class="w-full font-mono"
             @focus="onInputFocus"
-            @blur="onInputBlur"
-            @keydown="onInputKeydown"
+            @keydown="handleInputKeydown"
           />
           <div
             v-if="showSuggestions && filteredItems.length"
             class="absolute z-20 left-0 right-0 top-full mt-1 max-h-80 overflow-y-auto rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) shadow-lg p-1 space-y-0.5"
           >
             <button
-              v-for="item in filteredItems"
+              v-for="(item, index) in filteredItems"
               :key="item.value"
               type="button"
-              class="w-full text-left px-2.5 py-1.5 rounded-md border text-sm transition-colors hover:bg-(--ui-bg-elevated)"
-              :class="draft === item.value
-                ? 'border-(--ui-primary) bg-(--ui-primary)/10'
-                : 'border-(--ui-border) bg-(--ui-bg)'"
+              :data-suggestion-index="index"
+              class="w-full text-left px-2.5 py-1.5 rounded-md border text-sm transition-colors hover:bg-(--ui-bg-elevated) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-primary) focus-visible:ring-offset-1 focus-visible:ring-offset-(--ui-bg-elevated)"
+              :class="[
+                draft === item.value
+                  ? 'border-(--ui-primary) bg-(--ui-primary)/10'
+                  : 'border-(--ui-border) bg-(--ui-bg)',
+                activeIndex === index ? 'ring-2 ring-(--ui-primary) ring-offset-1 ring-offset-(--ui-bg-elevated)' : '',
+              ]"
               @mousedown.stop.prevent
-              @click="pick(item); showSuggestions = false"
+              @click="pick(item); showSuggestions = false; activeIndex = -1"
+              @keydown="handleSuggestionKeydown($event, item, index)"
             >
               <div class="truncate font-medium">
                 <template v-for="(part, pi) in highlightParts(item.label, draft.trim())" :key="`l-${pi}`">

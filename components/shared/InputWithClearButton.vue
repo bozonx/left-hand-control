@@ -26,19 +26,29 @@ function onClear() {
   model.value = ''
   emit('clear')
 }
+
+const wrapperRef = ref<HTMLDivElement | null>(null)
+
+function focus() {
+  const input = wrapperRef.value?.querySelector('input')
+  input?.focus()
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
-  <UInput
-    v-model="model"
-    :placeholder="props.placeholder"
-    :disabled="props.disabled"
-    class="w-full"
-    :ui="{ trailing: 'pe-1' }"
-    @focus="(e: FocusEvent) => $emit('focus', e)"
-    @blur="(e: FocusEvent) => $emit('blur', e)"
-    @keydown="(e: KeyboardEvent) => $emit('keydown', e)"
-  >
+  <div ref="wrapperRef">
+    <UInput
+      v-model="model"
+      :placeholder="props.placeholder"
+      :disabled="props.disabled"
+      class="w-full"
+      :ui="{ trailing: 'pe-1' }"
+      @focus="(e: FocusEvent) => $emit('focus', e)"
+      @blur="(e: FocusEvent) => $emit('blur', e)"
+      @keydown="(e: KeyboardEvent) => $emit('keydown', e)"
+    >
     <template v-if="hasValue" #trailing>
       <UButton
         icon="i-lucide-x"
@@ -49,6 +59,7 @@ function onClear() {
         @mousedown.stop.prevent
         @click="onClear"
       />
-    </template>
-  </UInput>
+      </template>
+    </UInput>
+  </div>
 </template>
