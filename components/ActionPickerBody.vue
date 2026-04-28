@@ -198,12 +198,6 @@ function onDocumentKeydown(event: KeyboardEvent) {
 function onDocumentKeyup(event: KeyboardEvent) {
   if (!captureActive.value) return
   event.stopPropagation()
-  capturedKeys.value.delete(event.code)
-  if (capturedKeys.value.size === 0) {
-    captureActive.value = false
-  } else {
-    draft.value = buildChord(capturedKeys.value)
-  }
 }
 
 function toggleCapture() {
@@ -338,25 +332,27 @@ function pick(item: ActionItem) {
           class="relative"
           @focusout="handleContainerFocusOut"
         >
-          <InputWithClearButton
-            ref="inputRef"
-            v-model="draft"
-            :placeholder="$t('picker.valuePh')"
-            class="w-full font-mono"
-            @focus="onInputFocus"
-            @keydown="handleInputKeydown"
-          >
-            <template #extra-trailing>
-              <UButton
-                :icon="captureActive ? 'i-lucide-circle-stop' : 'i-lucide-keyboard'"
-                variant="link"
-                :color="captureActive ? 'error' : 'neutral'"
-                size="sm"
-                :aria-label="$t('picker.captureKeys')"
-                @click="toggleCapture"
-              />
-            </template>
-          </InputWithClearButton>
+          <div class="flex gap-2">
+            <InputWithClearButton
+              ref="inputRef"
+              v-model="draft"
+              :placeholder="$t('picker.valuePh')"
+              class="w-full font-mono"
+              @focus="onInputFocus"
+              @keydown="handleInputKeydown"
+            />
+            <UButton
+              :icon="captureActive ? 'i-lucide-circle-stop' : 'i-lucide-keyboard'"
+              :color="captureActive ? 'error' : 'neutral'"
+              :variant="captureActive ? 'solid' : 'subtle'"
+              size="sm"
+              class="shrink-0"
+              :aria-label="$t('picker.assignKey')"
+              @click="toggleCapture"
+            >
+              {{ captureActive ? $t('picker.listeningKeys') : $t('picker.assignKey') }}
+            </UButton>
+          </div>
           <div
             v-if="showSuggestions && filteredItems.length"
             class="absolute z-20 left-0 right-0 top-full mt-1 max-h-80 overflow-y-auto rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) shadow-lg p-1 space-y-0.5"

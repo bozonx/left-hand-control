@@ -557,6 +557,8 @@ export default {
     physicalKeyHint:
       "Letters and symbols here mean the physical key code on a standard English layout, not the character from the user's current layout.",
     captureKeys: "Listen for key press",
+    assignKey: "Assign",
+    listeningKeys: "Listening...",
     chordHint:
       "If you need a trigger chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.",
   },
