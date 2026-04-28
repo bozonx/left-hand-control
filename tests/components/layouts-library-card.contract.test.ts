@@ -21,7 +21,7 @@ describe("LayoutsLibraryCard", () => {
         libraryError: null,
         layoutsDir: "/tmp/layouts",
         layoutMode: "manual",
-        autoIncludedIds: new Set(),
+        autoIncludedIds: new Set<string>(),
       },
     });
 

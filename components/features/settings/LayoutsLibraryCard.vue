@@ -205,167 +205,166 @@ function openBlacklist(entryId: string) {
                 <li
                     v-for="(entry, index) in entries"
                     :key="entry.id"
-                    class="flex items-center justify-between gap-3 p-3 group hover:bg-(--ui-bg-elevated) transition-colors cursor-pointer"
+                    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 hover:shadow-lg"
+                    :class="[
+                        layoutMode === 'auto' && !entryIsIncluded(entry.id) && !entryIsDefault(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
+                        'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
+                    ]"
                     @click="$emit('requestApplyEntry', entry)"
                 >
-                    <div class="flex items-center gap-2 min-w-0">
-                        <div
-                            v-if="layoutMode === 'auto'"
-                            class="flex flex-col gap-0.5 shrink-0"
-                            @click.stop
-                        >
-                            <UButton
-                                color="neutral"
-                                variant="ghost"
-                                size="xs"
-                                :square="true"
-                                icon="i-lucide-chevron-up"
-                                :aria-label="$t('settings.moveLayoutUpAria', { name: entry.name })"
-                                :disabled="index === 0"
-                                @click="$emit('moveUp', entry)"
-                            />
-                            <UButton
-                                color="neutral"
-                                variant="ghost"
-                                size="xs"
-                                :square="true"
-                                icon="i-lucide-chevron-down"
-                                :aria-label="$t('settings.moveLayoutDownAria', { name: entry.name })"
-                                :disabled="index === entries.length - 1"
-                                @click="$emit('moveDown', entry)"
-                            />
-                        </div>
-                        <div class="min-w-0">
+                    <div class="flex-1 flex flex-col gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                             <div
-                                class="font-medium truncate flex items-center gap-2 flex-wrap"
+                                v-if="layoutMode === 'auto'"
+                                class="flex flex-col gap-0.5 shrink-0"
+                                @click.stop
                             >
-                                {{ entry.name }}
-                                <UBadge
-                                    v-if="layoutMode === 'auto' && activeAutoLayoutId === entry.id"
-                                    color="success"
-                                    variant="subtle"
-                                    size="sm"
-                                >
-                                    {{ $t("settings.activeBadge") }} (Auto)
-                                </UBadge>
-                                <UBadge
-                                    v-if="layoutMode === 'manual' && manualActiveLayoutId === entry.id"
-                                    color="success"
-                                    variant="subtle"
-                                    size="sm"
-                                >
-                                    {{ $t("settings.activeBadge") }}
-                                </UBadge>
-                                <UBadge
-                                    v-if="
-                                        currentLayoutId === entry.id
-                                    "
-                                    color="info"
-                                    variant="subtle"
-                                    size="sm"
-                                >
-                                    Editing
-                                </UBadge>
-                                <UBadge
-                                    v-if="
-                                        currentLayoutId === entry.id &&
-                                        isLayoutDirty
-                                    "
-                                    color="warning"
-                                    variant="subtle"
-                                    size="sm"
-                                >
-                                    {{ $t("settings.unsavedBadge") }}
-                                </UBadge>
-                            </div>
-                            <div
-                                v-if="
-                                    (currentLayoutId === entry.id
-                                        ? currentLayoutDescription
-                                        : entry.description) ||
-                                    false
-                                "
-                                class="text-sm text-(--ui-text-muted) line-clamp-2 mt-0.5"
-                            >
-                                {{
-                                    currentLayoutId === entry.id
-                                        ? currentLayoutDescription
-                                        : entry.description
-                                }}
-                            </div>
-                            <div v-if="layoutMode === 'auto'" class="flex items-center gap-3 mt-1 flex-wrap" @click.stop>
-                                <div class="flex items-center gap-1.5 cursor-pointer">
-                                    <USwitch
-                                        :model-value="entryIsDefault(entry.id)"
-                                        @update:model-value="entryToggleDefault(entry.id, $event === true)"
-                                    />
-                                    <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoDefaultLabel') }}</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 cursor-pointer">
-                                    <USwitch
-                                        :model-value="entryIsIncluded(entry.id)"
-                                        :disabled="entryHasConditions(entry.id) || entryIsDefault(entry.id)"
-                                        @update:model-value="entryToggleAuto(entry.id, $event === true)"
-                                    />
-                                    <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
-                                </div>
-                            </div>
-                            <div v-if="layoutMode === 'auto'" class="flex items-center gap-2 mt-1 flex-wrap" @click.stop>
                                 <UButton
-                                    size="xs"
                                     color="neutral"
-                                    variant="outline"
-                                    :disabled="entryIsDefault(entry.id)"
-                                    @click="openWhitelist(entry.id)"
-                                >
-                                    <div class="flex items-center gap-1 min-w-0">
-                                        <UIcon name="i-lucide-list-checks" class="shrink-0" />
-                                        <span class="truncate">{{ entryWhitelistSummary(entry.id) }}</span>
-                                    </div>
-                                </UButton>
-                                <UButton
+                                    variant="ghost"
                                     size="xs"
+                                    :square="true"
+                                    icon="i-lucide-chevron-up"
+                                    :aria-label="$t('settings.moveLayoutUpAria', { name: entry.name })"
+                                    :disabled="index === 0"
+                                    @click="$emit('moveUp', entry)"
+                                />
+                                <UButton
                                     color="neutral"
-                                    variant="outline"
-                                    :disabled="entryIsDefault(entry.id)"
-                                    @click="openBlacklist(entry.id)"
-                                >
-                                    <div class="flex items-center gap-1 min-w-0">
-                                        <UIcon name="i-lucide-list-x" class="shrink-0" />
-                                        <span class="truncate">{{ entryBlacklistSummary(entry.id) }}</span>
-                                    </div>
-                                </UButton>
-                            </div>
-                            <div v-if="layoutMode === 'manual' && manualActiveLayoutId !== entry.id" class="mt-1" @click.stop>
-                                <UButton
+                                    variant="ghost"
                                     size="xs"
-                                    color="primary"
-                                    variant="outline"
-                                    @click="entryActivateManual(entry.id)"
+                                    :square="true"
+                                    icon="i-lucide-chevron-down"
+                                    :aria-label="$t('settings.moveLayoutDownAria', { name: entry.name })"
+                                    :disabled="index === entries.length - 1"
+                                    @click="$emit('moveDown', entry)"
+                                />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="font-medium truncate flex items-center gap-2 flex-wrap">
+                                    {{ entry.name }}
+                                    <UBadge
+                                        v-if="layoutMode === 'auto' && activeAutoLayoutId === entry.id"
+                                        color="success"
+                                        variant="subtle"
+                                        size="sm"
+                                    >
+                                        {{ $t("settings.activeBadge") }} (Auto)
+                                    </UBadge>
+                                    <UBadge
+                                        v-if="layoutMode === 'manual' && manualActiveLayoutId === entry.id"
+                                        color="success"
+                                        variant="subtle"
+                                        size="sm"
+                                    >
+                                        {{ $t("settings.activeBadge") }}
+                                    </UBadge>
+                                    <UBadge
+                                        v-if="currentLayoutId === entry.id"
+                                        color="info"
+                                        variant="subtle"
+                                        size="sm"
+                                    >
+                                        Editing
+                                    </UBadge>
+                                    <UBadge
+                                        v-if="currentLayoutId === entry.id && isLayoutDirty"
+                                        color="warning"
+                                        variant="subtle"
+                                        size="sm"
+                                    >
+                                        {{ $t("settings.unsavedBadge") }}
+                                    </UBadge>
+                                </div>
+                                <div
+                                    v-if="(currentLayoutId === entry.id ? currentLayoutDescription : entry.description) || false"
+                                    class="text-sm text-(--ui-text-muted) line-clamp-2 mt-0.5"
                                 >
-                                    {{ $t('rules.activateBtn') }}
-                                </UButton>
+                                    {{ currentLayoutId === entry.id ? currentLayoutDescription : entry.description }}
+                                </div>
+                                <div v-if="layoutMode === 'auto'" class="flex items-center gap-2 mt-1 flex-wrap" @click.stop>
+                                    <UButton
+                                        size="xs"
+                                        color="neutral"
+                                        variant="outline"
+                                        :disabled="entryIsDefault(entry.id) || !entryIsIncluded(entry.id)"
+                                        @click="openBlacklist(entry.id)"
+                                    >
+                                        <div class="flex items-center gap-1 min-w-0">
+                                            <UIcon name="i-lucide-list-x" class="shrink-0" />
+                                            <span class="truncate">{{ entryBlacklistSummary(entry.id) }}</span>
+                                        </div>
+                                    </UButton>
+                                    <UButton
+                                        size="xs"
+                                        color="neutral"
+                                        variant="outline"
+                                        :disabled="entryIsDefault(entry.id) || !entryIsIncluded(entry.id)"
+                                        @click="openWhitelist(entry.id)"
+                                    >
+                                        <div class="flex items-center gap-1 min-w-0">
+                                            <UIcon name="i-lucide-list-checks" class="shrink-0" />
+                                            <span class="truncate">{{ entryWhitelistSummary(entry.id) }}</span>
+                                        </div>
+                                    </UButton>
+                                    <div class="flex items-center gap-1.5 cursor-pointer">
+                                        <USwitch
+                                            :model-value="entryIsDefault(entry.id)"
+                                            :disabled="!entryIsIncluded(entry.id)"
+                                            @update:model-value="entryToggleDefault(entry.id, $event === true)"
+                                        />
+                                        <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoDefaultLabel') }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div
-                        class="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
-                        @click.stop
-                    >
-                        <UButton
-                            color="neutral"
-                            variant="ghost"
-                            icon="i-lucide-pencil"
-                            :aria-label="$t('settings.editLayoutAria', { name: entry.name })"
-                            @click="$emit('requestEdit', entry)"
-                        />
-                        <UButton
-                            color="neutral"
-                            variant="ghost"
-                            icon="i-lucide-trash-2"
-                            :aria-label="$t('settings.deleteAria')"
-                            @click="$emit('requestDelete', entry)"
-                        />
+
+                    <div class="w-px bg-(--ui-border) self-stretch"></div>
+
+                    <div class="w-52 flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <UButton
+                                    icon="i-lucide-pencil"
+                                    variant="ghost"
+                                    color="neutral"
+                                    size="sm"
+                                    square
+                                    :aria-label="$t('settings.editLayoutAria', { name: entry.name })"
+                                    @click="$emit('requestEdit', entry)"
+                                />
+                                <UButton
+                                    icon="i-lucide-trash-2"
+                                    variant="ghost"
+                                    color="neutral"
+                                    size="sm"
+                                    square
+                                    :aria-label="$t('settings.deleteAria')"
+                                    @click="$emit('requestDelete', entry)"
+                                />
+                            </div>
+                        </div>
+                        <div v-if="layoutMode === 'manual' && manualActiveLayoutId !== entry.id" class="flex items-center justify-end" @click.stop>
+                            <UButton
+                                size="sm"
+                                color="primary"
+                                variant="outline"
+                                @click="entryActivateManual(entry.id)"
+                            >
+                                {{ $t('rules.activateBtn') }}
+                            </UButton>
+                        </div>
+                        <div v-if="layoutMode === 'auto'" class="flex items-center justify-end" @click.stop>
+                            <div class="flex items-center gap-1.5 cursor-pointer">
+                                <USwitch
+                                    :model-value="entryIsIncluded(entry.id)"
+                                    :disabled="entryHasConditions(entry.id) || entryIsDefault(entry.id)"
+                                    @update:model-value="entryToggleAuto(entry.id, $event === true)"
+                                />
+                                <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
+                            </div>
+                        </div>
                     </div>
                 </li>
             </ul>
