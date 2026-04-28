@@ -49,17 +49,21 @@ defineExpose({ focus })
       @blur="(e: FocusEvent) => $emit('blur', e)"
       @keydown="(e: KeyboardEvent) => $emit('keydown', e)"
     >
-    <template v-if="hasValue" #trailing>
-      <UButton
-        icon="i-lucide-x"
-        variant="link"
-        color="neutral"
-        size="sm"
-        :aria-label="$t('common.clear')"
-        @mousedown.stop.prevent
-        @click="onClear"
-      />
-      </template>
+    <template #trailing>
+      <div class="flex items-center gap-0.5">
+        <UButton
+          v-if="hasValue"
+          icon="i-lucide-x"
+          variant="link"
+          color="neutral"
+          size="sm"
+          :aria-label="$t('common.clear')"
+          @mousedown.stop.prevent
+          @click="onClear"
+        />
+        <slot name="extra-trailing" />
+      </div>
+    </template>
     </UInput>
   </div>
 </template>

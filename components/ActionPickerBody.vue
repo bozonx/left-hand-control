@@ -166,6 +166,68 @@ const showSuggestions = ref(false)
 const inputRef = ref<InstanceType<typeof InputWithClearButton> | null>(null)
 const activeIndex = ref(-1)
 
+const captureActive = ref(false)
+const capturedKeys = ref<Set<string>>(new Set())
+
+function buildChord(keys: Set<string>): string {
+  const mods: string[] = []
+  const main: string[] = []
+  for (const code of keys) {
+    if (code === 'ControlLeft' || code === 'ControlRight') mods.push('Ctrl')
+    else if (code === 'ShiftLeft' || code === 'ShiftRight') mods.push('Shift')
+    else if (code === 'AltLeft' || code === 'AltRight') mods.push('Alt')
+    else if (code === 'MetaLeft' || code === 'MetaRight') mods.push('Meta')
+    else main.push(code)
+  }
+  const uniqueMods = [...new Set(mods)]
+  return [...uniqueMods, ...main].join('+')
+}
+
+function onDocumentKeydown(event: KeyboardEvent) {
+  if (!captureActive.value) return
+  event.stopPropagation()
+  if (event.key === 'Escape') {
+    stopCapture()
+    return
+  }
+  event.preventDefault()
+  capturedKeys.value.add(event.code)
+  draft.value = buildChord(capturedKeys.value)
+}
+
+function onDocumentKeyup(event: KeyboardEvent) {
+  if (!captureActive.value) return
+  event.stopPropagation()
+  capturedKeys.value.delete(event.code)
+  if (capturedKeys.value.size === 0) {
+    captureActive.value = false
+  } else {
+    draft.value = buildChord(capturedKeys.value)
+  }
+}
+
+function toggleCapture() {
+  captureActive.value = !captureActive.value
+  if (captureActive.value) {
+    capturedKeys.value.clear()
+  }
+}
+
+function stopCapture() {
+  captureActive.value = false
+  capturedKeys.value.clear()
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onDocumentKeydown, true)
+  document.addEventListener('keyup', onDocumentKeyup, true)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onDocumentKeydown, true)
+  document.removeEventListener('keyup', onDocumentKeyup, true)
+})
+
 const filteredItems = computed(() => {
   const query = draft.value.trim().toLowerCase()
   if (!query) return []
@@ -188,6 +250,10 @@ watch(filteredItems, (items) => {
 })
 
 function handleInputKeydown(event: KeyboardEvent) {
+  if (captureActive.value) {
+    event.preventDefault()
+    return
+  }
   if (event.key === 'Escape') {
     showSuggestions.value = false
     activeIndex.value = -1
@@ -257,6 +323,7 @@ watch(draft, (val) => {
 })
 
 function pick(item: ActionItem) {
+  stopCapture()
   draft.value = item.value
   emit('pick', item.value)
 }
@@ -278,7 +345,18 @@ function pick(item: ActionItem) {
             class="w-full font-mono"
             @focus="onInputFocus"
             @keydown="handleInputKeydown"
-          />
+          >
+            <template #extra-trailing>
+              <UButton
+                :icon="captureActive ? 'i-lucide-circle-stop' : 'i-lucide-keyboard'"
+                variant="link"
+                :color="captureActive ? 'error' : 'neutral'"
+                size="sm"
+                :aria-label="$t('picker.captureKeys')"
+                @click="toggleCapture"
+              />
+            </template>
+          </InputWithClearButton>
           <div
             v-if="showSuggestions && filteredItems.length"
             class="absolute z-20 left-0 right-0 top-full mt-1 max-h-80 overflow-y-auto rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) shadow-lg p-1 space-y-0.5"

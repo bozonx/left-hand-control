@@ -556,6 +556,7 @@ export default {
       "This action inserts text as-is. Good for symbols like €, snippets like TODO: , and other printable strings.",
     physicalKeyHint:
       "Letters and symbols here mean the physical key code on a standard English layout, not the character from the user's current layout.",
+    captureKeys: "Listen for key press",
     chordHint:
       "If you need a trigger chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.",
   },
