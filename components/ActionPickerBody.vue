@@ -198,6 +198,10 @@ function onDocumentKeydown(event: KeyboardEvent) {
 function onDocumentKeyup(event: KeyboardEvent) {
   if (!captureActive.value) return
   event.stopPropagation()
+  capturedKeys.value.delete(event.code)
+  if (capturedKeys.value.size === 0) {
+    captureActive.value = false
+  }
 }
 
 function toggleCapture() {
