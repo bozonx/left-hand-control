@@ -65,9 +65,13 @@ function entryIsIncluded(entryId: string) {
     return props.autoIncludedIds.has(entryId);
 }
 
+function entryHasWhitelist(entryId: string) {
+    return !!config.value.settings.layoutConditions[entryId]?.whitelist;
+}
+
 function entryHasConditions(entryId: string) {
     const rule = config.value.settings.layoutConditions[entryId];
-    return !!(rule?.whitelist || rule?.blacklist);
+    return !!rule?.whitelist;
 }
 
 function entryToggleDefault(entryId: string, value: boolean) {
@@ -83,13 +87,13 @@ function entryIsEnabledInAuto(entryId: string) {
     if (rule?.disabledInAuto) return false;
     if (entryIsDefault(entryId)) return true;
     if (!rule) return false;
-    if (!rule.whitelist && !rule.blacklist) return false;
+    if (!rule.whitelist) return false;
     return true;
 }
 
 function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
     if (entryIsDefault(entryId)) return undefined;
-    if (!entryHasConditions(entryId)) return t("rules.autoIncludeDisabledHintNoConditions");
+    if (!entryHasWhitelist(entryId)) return t("rules.autoIncludeDisabledHintNoWhitelist");
     return undefined;
 }
 
@@ -315,17 +319,20 @@ function openBlacklist(entryId: string) {
                                 </div>
                                 <div v-if="layoutMode === 'auto'" class="flex items-center justify-between gap-2 mt-1" @click.stop>
                                     <div v-if="!entryIsDefault(entry.id)" class="flex items-center gap-2 flex-wrap">
-                                        <UButton
-                                            size="xs"
-                                            color="neutral"
-                                            variant="outline"
-                                            @click="openBlacklist(entry.id)"
-                                        >
-                                            <div class="flex items-center gap-1 min-w-0">
-                                                <UIcon name="i-lucide-list-x" class="shrink-0" />
-                                                <span class="truncate">{{ entryBlacklistSummary(entry.id) }}</span>
-                                            </div>
-                                        </UButton>
+                                        <AppTooltip :text="$t('rules.blacklistDisabledHint')" :disabled="entryHasWhitelist(entry.id)">
+                                            <UButton
+                                                size="xs"
+                                                color="neutral"
+                                                variant="outline"
+                                                :disabled="!entryHasWhitelist(entry.id)"
+                                                @click="openBlacklist(entry.id)"
+                                            >
+                                                <div class="flex items-center gap-1 min-w-0">
+                                                    <UIcon name="i-lucide-list-x" class="shrink-0" />
+                                                    <span class="truncate">{{ entryBlacklistSummary(entry.id) }}</span>
+                                                </div>
+                                            </UButton>
+                                        </AppTooltip>
                                         <UButton
                                             size="xs"
                                             color="neutral"

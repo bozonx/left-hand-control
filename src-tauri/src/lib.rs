@@ -301,6 +301,10 @@ pub fn run() {
                 let _ = window.set_skip_taskbar(false);
                 let _ = window.show();
                 let _ = window.set_focus();
+                #[cfg(target_os = "linux")]
+                {
+                    let _ = window.set_decorations(true);
+                }
             }
             Ok(())
         })

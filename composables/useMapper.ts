@@ -229,10 +229,14 @@ export function useMapper(): MapperState {
       return
     }
 
+    const nextRuntimeSnapshot = await runtimeSnapshot()
+    if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
+
     busy.value = true
     try {
       await invokeStop()
       await invokeStart(devicePath, mouseDevicePath)
+      lastRuntimeSnapshot = nextRuntimeSnapshot
     } finally {
       busy.value = false
       if (reloadPending) {
@@ -248,10 +252,7 @@ export function useMapper(): MapperState {
     () => config.value,
     () => config.value.settings.manualActiveLayoutId,
     () => activeAutoLayoutId?.value
-  ], async () => {
-    const nextRuntimeSnapshot = await runtimeSnapshot()
-    if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
-    lastRuntimeSnapshot = nextRuntimeSnapshot
+  ], () => {
     if (!status.value.running) return
     scheduleReload()
   }, { deep: true })

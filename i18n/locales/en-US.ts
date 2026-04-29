@@ -69,6 +69,8 @@ export default {
       "You pick a layout manually; it stays active. Its whitelist/blacklist still filter rules.",
     modeAutoHint:
       "The app picks the active layout automatically from the priority list below. Only one layout is active at a time.",
+    activeLayoutLabel: "Active layout",
+    activeLayoutNative: "Native (no layout active)",
     whatIsItTitle: "What does this app do?",
     whatIsItBody:
       "Left Hand Control intercepts your physical keyboard at the OS level and remaps keys in real time. You can turn rarely-used keys into powerful modifiers: hold CapsLock and the home row becomes arrow keys, navigation, or symbols.",
@@ -224,6 +226,9 @@ export default {
       "The default layout cannot have whitelist or blacklist conditions.",
     autoIncludeDisabledHintNoConditions:
       "Add conditions to participate in auto mode",
+    autoIncludeDisabledHintNoWhitelist:
+      "Add a whitelist to participate in auto mode",
+    blacklistDisabledHint: "Set a whitelist first to enable blacklist",
     whitelistPrefix: "If present",
     blacklistPrefix: "If not",
     conditionsNone: "— any —",

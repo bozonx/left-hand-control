@@ -477,6 +477,30 @@ export function useSettingsScreen() {
         overwrite,
       );
 
+      const oldId = entry.id;
+      const newId = userLayoutId(savedName);
+      if (oldId !== newId) {
+        const order = config.value.settings.layoutOrder;
+        const idx = order.indexOf(oldId);
+        if (idx !== -1) {
+          order[idx] = newId;
+        }
+        const conditions = config.value.settings.layoutConditions;
+        if (conditions[oldId]) {
+          conditions[newId] = conditions[oldId];
+          delete conditions[oldId];
+        }
+        if (config.value.settings.autoDefaultLayoutId === oldId) {
+          config.value.settings.autoDefaultLayoutId = newId;
+        }
+        if (config.value.settings.manualActiveLayoutId === oldId) {
+          config.value.settings.manualActiveLayoutId = newId;
+        }
+        if (config.value.settings.currentLayoutId === oldId) {
+          config.value.settings.currentLayoutId = newId;
+        }
+      }
+
       if (isCurrent) {
         config.value.layoutDescription = editDescription.value.trim() || undefined;
         await markLayoutSavedAs(userLayoutId(savedName));

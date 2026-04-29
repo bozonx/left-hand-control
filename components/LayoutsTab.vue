@@ -69,6 +69,15 @@ const modeOptions = computed(() => [
   { label: t("home.modeAuto"), value: "auto" as const },
 ]);
 
+const activeMapperLayoutLabel = computed(() => {
+  const activeId = layoutMode.value === "auto"
+    ? activeAutoLayoutId.value
+    : manualActiveLayoutId.value;
+  if (!activeId) return t("home.activeLayoutNative");
+  const entry = library.entries.value.find((e: LayoutLibraryEntry) => e.id === activeId);
+  return entry?.name ?? activeId;
+});
+
 const orderedEntries = computed<LayoutLibraryEntry[]>(() => {
   const entries: LayoutLibraryEntry[] = library.entries.value;
   if (config.value.settings.layoutMode !== "auto") return entries;
@@ -155,6 +164,14 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
           orientation="horizontal"
           value-key="value"
         />
+      </div>
+    </UCard>
+
+    <UCard v-if="activeMapperLayoutLabel" variant="subtle">
+      <div class="flex items-center gap-2 text-sm">
+        <UIcon name="i-lucide-layout-template" class="text-(--ui-text-muted)" />
+        <span class="text-(--ui-text-muted)">{{ $t("home.activeLayoutLabel") }}:</span>
+        <span class="font-semibold">{{ activeMapperLayoutLabel }}</span>
       </div>
     </UCard>
 

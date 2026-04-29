@@ -61,6 +61,10 @@ export function useLayoutConditions() {
       // Default layout cannot have conditions.
       return
     }
+    // Blacklist is only allowed when a whitelist already exists.
+    if (kind === 'blacklist' && !settings().layoutConditions[layoutId]?.whitelist) {
+      return
+    }
     const rule = ensureRule(layoutId)
     if (isConditionSetEmpty(value)) {
       delete rule[kind]

@@ -91,6 +91,12 @@ describe('evaluateLayoutGate', () => {
     expect(evaluateLayoutGate(undefined, ctxOnUS)).toBe('allow')
   })
 
+  it('blocks when rule has no whitelist', () => {
+    expect(
+      evaluateLayoutGate({ blacklist: { gameMode: 'on', layouts: [] } }, ctxOnUS),
+    ).toBe('block')
+  })
+
   it('blocks when blacklist matches even if whitelist also matches', () => {
     expect(
       evaluateLayoutGate(
@@ -126,8 +132,8 @@ describe('isLayoutInAuto', () => {
   it('true when whitelist defined', () => {
     expect(isLayoutInAuto({ whitelist: { layouts: ['us'] } })).toBe(true)
   })
-  it('true when blacklist defined', () => {
-    expect(isLayoutInAuto({ blacklist: { layouts: ['us'] } })).toBe(true)
+  it('false when only blacklist defined (whitelist required)', () => {
+    expect(isLayoutInAuto({ blacklist: { layouts: ['us'] } })).toBe(false)
   })
 })
 
@@ -251,7 +257,7 @@ describe('pickActiveLayout', () => {
     expect(result).toBeNull()
   })
 
-  it('picks a layout that has no whitelist but has a non-blocking blacklist', () => {
+  it('does not pick a layout that has only a blacklist (whitelist required)', () => {
     const result = pickActiveLayout(
       ['user:a'],
       settings({
@@ -261,6 +267,6 @@ describe('pickActiveLayout', () => {
       }),
       ctxOnRU,
     )
-    expect(result).toBe('user:a')
+    expect(result).toBeNull()
   })
 })
