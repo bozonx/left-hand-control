@@ -223,6 +223,10 @@ export default {
       "Если в авто-режиме ни одна раскладка не подходит по whitelist, всегда выбирать эту.",
     autoDefaultLockHint:
       "Для дефолтной раскладки нельзя задавать белый и чёрный списки.",
+    autoIncludeDisabledHintDefault:
+      "Дефолтная раскладка автоматически участвует в авто-режиме",
+    autoIncludeDisabledHintNoConditions:
+      "Добавьте условия, чтобы участвовать в авто-режиме",
     whitelistPrefix: "Если есть",
     blacklistPrefix: "Если не",
     conditionsNone: "— любое —",
@@ -232,6 +236,8 @@ export default {
     gameModeIgnore: "Неважно",
     gameModeOn: "Вкл",
     gameModeOff: "Выкл",
+    gameModeOnSummary: "игровой режим вкл",
+    gameModeOffSummary: "игровой режим выкл",
     layoutsLabel: "Раскладки языка",
     layoutsHint: "Правило будет работать только если текущая раскладка языка одна из выбранных. Оставьте пустым для любой.",
     anyLayout: "Любая раскладка",

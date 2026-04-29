@@ -8,6 +8,7 @@ import { useLayoutConditions } from "~/composables/useLayoutConditions";
 import type { ConditionKind } from "~/composables/useLayoutConditions";
 import type { LayoutConditionSet } from "~/types/config";
 import LayoutConditionsModal from "~/components/features/settings/LayoutConditionsModal.vue";
+import AppTooltip from "~/components/shared/AppTooltip.vue";
 
 const props = defineProps<{
     entries: LayoutLibraryEntry[];
@@ -82,6 +83,12 @@ function entryIsEnabledInAuto(entryId: string) {
     return !rule.disabledInAuto;
 }
 
+function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
+    if (entryIsDefault(entryId)) return t("rules.autoIncludeDisabledHintDefault");
+    if (!entryHasConditions(entryId)) return t("rules.autoIncludeDisabledHintNoConditions");
+    return undefined;
+}
+
 function entryActivateManual(entryId: string) {
     config.value.settings.manualActiveLayoutId = entryId;
 }
@@ -92,8 +99,8 @@ function summarize(kind: ConditionKind, set: LayoutConditionSet | undefined): st
         return prefix + "…";
     }
     const parts: string[] = [];
-    if (set.gameMode === "on") parts.push(t("rules.gameModeOn"));
-    else if (set.gameMode === "off") parts.push(t("rules.gameModeOff"));
+    if (set.gameMode === "on") parts.push(t("rules.gameModeOnSummary"));
+    else if (set.gameMode === "off") parts.push(t("rules.gameModeOffSummary"));
     if (set.layouts.length > 0) parts.push(...set.layouts);
     if (set.apps && set.apps.length > 0) parts.push(...set.apps);
     return prefix + " " + parts.join(", ");
@@ -293,32 +300,32 @@ function openBlacklist(entryId: string) {
                                 >
                                     {{ currentLayoutId === entry.id ? currentLayoutDescription : entry.description }}
                                 </div>
-                                <div v-if="layoutMode === 'auto'" class="flex items-center gap-2 mt-1 flex-wrap" @click.stop>
-                                    <UButton
-                                        size="xs"
-                                        color="neutral"
-                                        variant="outline"
-                                        :disabled="entryIsDefault(entry.id)"
-                                        @click="openBlacklist(entry.id)"
-                                    >
-                                        <div class="flex items-center gap-1 min-w-0">
-                                            <UIcon name="i-lucide-list-x" class="shrink-0" />
-                                            <span class="truncate">{{ entryBlacklistSummary(entry.id) }}</span>
-                                        </div>
-                                    </UButton>
-                                    <UButton
-                                        size="xs"
-                                        color="neutral"
-                                        variant="outline"
-                                        :disabled="entryIsDefault(entry.id)"
-                                        @click="openWhitelist(entry.id)"
-                                    >
-                                        <div class="flex items-center gap-1 min-w-0">
-                                            <UIcon name="i-lucide-list-checks" class="shrink-0" />
-                                            <span class="truncate">{{ entryWhitelistSummary(entry.id) }}</span>
-                                        </div>
-                                    </UButton>
-                                    <div class="flex items-center gap-1.5 cursor-pointer">
+                                <div v-if="layoutMode === 'auto'" class="flex items-center justify-between gap-2 mt-1" @click.stop>
+                                    <div v-if="!entryIsDefault(entry.id)" class="flex items-center gap-2 flex-wrap">
+                                        <UButton
+                                            size="xs"
+                                            color="neutral"
+                                            variant="outline"
+                                            @click="openBlacklist(entry.id)"
+                                        >
+                                            <div class="flex items-center gap-1 min-w-0">
+                                                <UIcon name="i-lucide-list-x" class="shrink-0" />
+                                                <span class="truncate">{{ entryBlacklistSummary(entry.id) }}</span>
+                                            </div>
+                                        </UButton>
+                                        <UButton
+                                            size="xs"
+                                            color="neutral"
+                                            variant="outline"
+                                            @click="openWhitelist(entry.id)"
+                                        >
+                                            <div class="flex items-center gap-1 min-w-0">
+                                                <UIcon name="i-lucide-list-checks" class="shrink-0" />
+                                                <span class="truncate">{{ entryWhitelistSummary(entry.id) }}</span>
+                                            </div>
+                                        </UButton>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 cursor-pointer shrink-0" @click="entryToggleDefault(entry.id, !entryIsDefault(entry.id))">
                                         <USwitch
                                             :model-value="entryIsDefault(entry.id)"
                                             @update:model-value="entryToggleDefault(entry.id, $event === true)"
@@ -365,15 +372,17 @@ function openBlacklist(entryId: string) {
                                 {{ $t('rules.activateBtn') }}
                             </UButton>
                         </div>
-                        <div v-if="layoutMode === 'auto'" class="flex items-center justify-end" @click.stop>
-                            <div class="flex items-center gap-1.5 cursor-pointer">
-                                <USwitch
-                                    :model-value="entryIsEnabledInAuto(entry.id)"
-                                    :disabled="entryIsDefault(entry.id) || !entryHasConditions(entry.id)"
-                                    @update:model-value="entryToggleAuto(entry.id, $event === true)"
-                                />
-                                <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
-                            </div>
+                        <div v-if="layoutMode === 'auto'" class="flex flex-col gap-2 items-end justify-end" @click.stop>
+                            <AppTooltip :text="entryAutoSwitchDisabledReason(entry.id)" :disabled="!entryAutoSwitchDisabledReason(entry.id)">
+                                <div class="flex items-center gap-1.5 cursor-pointer" @click="entryIsDefault(entry.id) || !entryHasConditions(entry.id) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))">
+                                    <USwitch
+                                        :model-value="entryIsEnabledInAuto(entry.id)"
+                                        :disabled="entryIsDefault(entry.id) || !entryHasConditions(entry.id)"
+                                        @update:model-value="entryToggleAuto(entry.id, $event === true)"
+                                    />
+                                    <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
+                                </div>
+                            </AppTooltip>
                         </div>
                     </div>
                 </li>
