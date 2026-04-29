@@ -64,10 +64,6 @@ function entryHasConditions(entryId: string) {
     return !!(rule?.whitelist || rule?.blacklist);
 }
 
-function entryIsIncluded(entryId: string) {
-    return props.autoIncludedIds.has(entryId);
-}
-
 function entryToggleDefault(entryId: string, value: boolean) {
     setAsDefault(value ? entryId : undefined);
 }
@@ -227,7 +223,7 @@ function openBlacklist(entryId: string) {
                     :key="entry.id"
                     class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 hover:shadow-lg"
                     :class="[
-                        layoutMode === 'auto' && !entryIsIncluded(entry.id) && !entryIsDefault(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
+                        layoutMode === 'auto' && !entryIsEnabledInAuto(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
                         'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
                     ]"
                     @click="layoutMode === 'manual' && $emit('requestApplyEntry', entry)"

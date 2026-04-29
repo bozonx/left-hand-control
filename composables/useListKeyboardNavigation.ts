@@ -31,14 +31,36 @@ export function useListKeyboardNavigation(options: ListKeyboardNavigationOptions
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
       if (!selectedId.value) return
       event.preventDefault()
+      event.stopPropagation()
       const delta = event.key === 'ArrowUp' ? -1 : 1
       options.move(selectedId.value, delta)
       return
     }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      selectedId.value = null
+      return
+    }
   }
 
-  onMounted(() => document.addEventListener('keydown', onKeydown))
-  onUnmounted(() => document.removeEventListener('keydown', onKeydown))
+  function onDocumentClick(event: MouseEvent) {
+    const container = containerRef.value
+    if (!container) return
+    const target = event.target as Node | null
+    if (!target || !container.contains(target)) {
+      selectedId.value = null
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('keydown', onKeydown)
+    document.addEventListener('click', onDocumentClick)
+  })
+  onUnmounted(() => {
+    document.removeEventListener('keydown', onKeydown)
+    document.removeEventListener('click', onDocumentClick)
+  })
 
   return {
     selectedId,

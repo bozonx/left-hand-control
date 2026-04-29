@@ -116,6 +116,16 @@ function moveLayout(entry: LayoutLibraryEntry, direction: "up" | "down") {
   [current[index], current[target]] = [current[target]!, current[index]!];
   syncLayoutOrder(current);
 }
+
+const layoutIds = computed(() => orderedEntries.value.map((e) => e.id));
+const { selectedId, select, containerRef } = useListKeyboardNavigation({
+  ids: layoutIds,
+  move: (id: string, delta: number) => {
+    const entry = orderedEntries.value.find((e) => e.id === id);
+    if (!entry) return;
+    moveLayout(entry, delta < 0 ? "up" : "down");
+  },
+});
 </script>
 
 <template>
