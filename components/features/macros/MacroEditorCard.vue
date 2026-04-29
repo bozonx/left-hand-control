@@ -28,6 +28,23 @@ const emit = defineEmits<{
   nameFocused: [uiKey: string]
 }>()
 
+const stepsContainerRef = useTemplateRef<HTMLElement>('stepsContainerRef')
+const stepIds = computed(() => props.macro.steps.map((s) => s.id))
+const { selectedId: selectedStepId } = useListKeyboardNavigation({
+  ids: stepIds,
+  move: (id, delta) => {
+    const idx = props.macro.steps.findIndex((s) => s.id === id)
+    if (idx < 0) return
+    emit('moveStep', props.macro, idx, delta)
+  },
+})
+
+function onCardClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return
+  emit('select')
+}
+
 const toast = useToast()
 const { t } = useI18n()
 
@@ -77,7 +94,7 @@ async function copyMacroId() {
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
         : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/5',
     ]"
-    @click="$emit('select')"
+    @click="onCardClick"
   >
     <div class="flex-1 flex flex-col gap-4 min-w-0">
       <div class="grid grid-cols-2 gap-3">
@@ -164,11 +181,17 @@ async function copyMacroId() {
           {{ $t('macros.stepsEmpty') }}
         </div>
 
-        <div v-else class="space-y-2">
+        <div v-else ref="stepsContainerRef" class="space-y-2">
           <div
             v-for="(step, idx) in macro.steps"
             :key="step.id"
-            class="grid grid-cols-[2rem_minmax(12rem,1fr)_auto_auto_auto] gap-2 items-center"
+            class="grid grid-cols-[2rem_minmax(12rem,1fr)_auto_auto_auto] gap-2 items-center p-1 rounded-md transition-all duration-200"
+            :class="[
+              selectedStepId === step.id
+                ? 'border border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
+                : 'border border-transparent',
+            ]"
+            @click="selectedStepId = step.id"
           >
             <div class="text-xs text-(--ui-text-muted) font-mono text-right">
               #{{ idx + 1 }}

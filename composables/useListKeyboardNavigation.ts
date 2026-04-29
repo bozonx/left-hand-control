@@ -14,13 +14,23 @@ export function useListKeyboardNavigation(options: ListKeyboardNavigationOptions
   function onKeydown(event: KeyboardEvent) {
     const container = containerRef.value
     if (!container) return
-    const target = event.target as Node | null
+    const target = event.target as HTMLElement | null
     if (!target || !container.contains(target)) return
 
+    // ignore when focus is inside interactive controls (inputs, pickers, etc.)
+    if (target.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) {
+      if (event.key === 'Escape' && selectedId.value) {
+        event.preventDefault()
+        selectedId.value = null
+      }
+      return
+    }
+
     if (event.key === 'Tab') {
+      if (!selectedId.value) return
       event.preventDefault()
       const ids = options.ids.value
-      const idx = selectedId.value ? ids.indexOf(selectedId.value) : -1
+      const idx = ids.indexOf(selectedId.value)
       let next = event.shiftKey ? idx - 1 : idx + 1
       if (next < 0) next = ids.length - 1
       if (next >= ids.length) next = 0
@@ -38,6 +48,7 @@ export function useListKeyboardNavigation(options: ListKeyboardNavigationOptions
     }
 
     if (event.key === 'Escape') {
+      if (!selectedId.value) return
       event.preventDefault()
       selectedId.value = null
       return

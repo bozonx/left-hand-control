@@ -6,13 +6,19 @@ defineProps<{
   selectedId?: string | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   add: []
   select: [id: string]
   moveUp: [id: string]
   moveDown: [id: string]
   remove: [id: string]
 }>()
+
+function onRowClick(event: MouseEvent, id: string) {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return
+  emit('select', id)
+}
 </script>
 
 <template>
@@ -46,7 +52,7 @@ defineEmits<{
             ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
             : 'border-(--ui-border) bg-(--ui-bg-muted) hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-elevated) hover:shadow-md',
         ]"
-        @click="$emit('select', extra.id)"
+        @click="onRowClick($event, extra.id)"
       >
         <UFormField>
           <template #label>

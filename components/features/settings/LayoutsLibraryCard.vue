@@ -97,7 +97,9 @@ function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
     return undefined;
 }
 
-function handleEntryClick(entry: LayoutLibraryEntry) {
+function handleEntryClick(event: MouseEvent, entry: LayoutLibraryEntry) {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return;
     emit("select", entry.id);
     if (props.layoutMode === "manual") {
         emit("requestApplyEntry", entry);
@@ -245,7 +247,7 @@ function openBlacklist(entryId: string) {
                             ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
                             : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
                     ]"
-                    @click="handleEntryClick(entry)"
+                    @click="handleEntryClick($event, entry)"
                 >
                     <div class="flex-1 flex flex-col gap-2">
                         <div class="flex items-center gap-2 min-w-0">

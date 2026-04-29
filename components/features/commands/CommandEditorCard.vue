@@ -13,12 +13,18 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   select: []
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
 }>()
+
+function onCardClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return
+  emit('select')
+}
 
 const toast = useToast()
 const { t } = useI18n()
@@ -53,7 +59,7 @@ async function copyCommandId() {
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
         : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:border-emerald-500/40 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-emerald-500/5',
     ]"
-    @click="$emit('select')"
+    @click="onCardClick"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="grid flex-1 grid-cols-2 gap-3 min-w-0">
