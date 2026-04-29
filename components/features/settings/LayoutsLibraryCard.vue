@@ -228,7 +228,7 @@ function openBlacklist(entryId: string) {
                         layoutMode === 'auto' && !entryIsIncluded(entry.id) && !entryIsDefault(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
                         'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
                     ]"
-                    @click="$emit('requestApplyEntry', entry)"
+                    @click="layoutMode === 'manual' && $emit('requestApplyEntry', entry)"
                 >
                     <div class="flex-1 flex flex-col gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -325,12 +325,12 @@ function openBlacklist(entryId: string) {
                                             </div>
                                         </UButton>
                                     </div>
-                                    <div class="flex items-center gap-1.5 cursor-pointer shrink-0" @click="entryToggleDefault(entry.id, !entryIsDefault(entry.id))">
+                                    <div class="flex items-center gap-1.5 cursor-pointer shrink-0">
                                         <USwitch
                                             :model-value="entryIsDefault(entry.id)"
                                             @update:model-value="entryToggleDefault(entry.id, $event === true)"
                                         />
-                                        <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoDefaultLabel') }}</span>
+                                        <span class="text-xs text-(--ui-text-muted) select-none" @click.stop="entryToggleDefault(entry.id, !entryIsDefault(entry.id))">{{ $t('rules.autoDefaultLabel') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -374,13 +374,16 @@ function openBlacklist(entryId: string) {
                         </div>
                         <div v-if="layoutMode === 'auto'" class="flex flex-col gap-2 items-end justify-end" @click.stop>
                             <AppTooltip :text="entryAutoSwitchDisabledReason(entry.id)" :disabled="!entryAutoSwitchDisabledReason(entry.id)">
-                                <div class="flex items-center gap-1.5 cursor-pointer" @click="entryIsDefault(entry.id) || !entryHasConditions(entry.id) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))">
+                                <div class="flex items-center gap-1.5 cursor-pointer">
                                     <USwitch
                                         :model-value="entryIsEnabledInAuto(entry.id)"
                                         :disabled="entryIsDefault(entry.id) || !entryHasConditions(entry.id)"
                                         @update:model-value="entryToggleAuto(entry.id, $event === true)"
                                     />
-                                    <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
+                                    <span
+                                        class="text-xs text-(--ui-text-muted) select-none"
+                                        @click.stop="entryIsDefault(entry.id) || !entryHasConditions(entry.id) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))"
+                                    >{{ $t('rules.autoIncludeLabel') }}</span>
                                 </div>
                             </AppTooltip>
                         </div>
