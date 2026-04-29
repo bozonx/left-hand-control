@@ -42,7 +42,6 @@ const currentLayoutLabel = computed<string>(() => {
 })
 
 const selectedDevice = computed(() => config.value.settings.inputDevicePath ?? '')
-const windowTitle = computed(() => `${t('app.title')} - ${currentLayoutLabel.value}`)
 const saveLabel = computed(() => (isLayoutDirty.value ? t('common.save') : t('app.saved')))
 const saveIcon = computed(() => (isLayoutDirty.value ? 'i-lucide-save' : 'i-lucide-check'))
 
@@ -78,63 +77,22 @@ async function toggleMapper() {
   }
 }
 
-async function syncWindowTitle(title: string) {
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window')
-    await getCurrentWindow().setTitle(title)
-  } catch {}
-}
-
 async function quitApplication() {
   const tauri = await useTauri()
   if (!tauri) return
   await tauri.invoke('quit_application')
 }
 
-async function hideMainWindow() {
-  const tauri = await useTauri()
-  if (!tauri) return
-  await tauri.invoke('hide_main_window_command')
-}
-
-async function toggleWindowMaximized() {
-  const tauri = await useTauri()
-  if (!tauri) return
-  await tauri.invoke('toggle_main_window_maximized_command')
-}
-
-async function onHeaderMouseDown(event: MouseEvent) {
-  const target = event.target instanceof HTMLElement ? event.target : null
-  if (!target) return
-  if (target.closest('button, a, input, textarea, select, [role="button"], [data-no-window-drag]')) {
-    return
-  }
-
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window')
-    await getCurrentWindow().startDragging()
-  } catch {}
-}
-
 onMounted(() => {
   void mapper.refreshStatus()
 })
-
-watch(
-  windowTitle,
-  (title) => {
-    void syncWindowTitle(title)
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
   <header
     class="flex items-center justify-between px-4 h-[var(--app-header-height)] border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 shrink-0 app-chrome"
-    @mousedown="onHeaderMouseDown"
   >
-    <div class="flex items-center gap-2 min-w-0 flex-1" data-no-window-drag>
+    <div class="flex items-center gap-2 min-w-0 flex-1">
       <UButton
         color="neutral"
         variant="ghost"
@@ -194,7 +152,7 @@ watch(
       </div>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0" data-no-window-drag>
+    <div class="flex items-center gap-3 shrink-0">
       <template v-if="loaded">
         <AppTooltip
           :disabled="mapper.status.value.running || !!selectedDevice"
@@ -273,36 +231,6 @@ watch(
           :aria-label="$t('app.quit')"
           @click="quitApplication"
         />
-
-        <div class="ml-1 flex items-center rounded-md border border-(--ui-border) bg-(--ui-bg-muted)/35">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            icon="i-lucide-minus"
-            size="sm"
-            square
-            :aria-label="$t('app.minimizeToTray')"
-            @click="hideMainWindow"
-          />
-          <UButton
-            color="neutral"
-            variant="ghost"
-            icon="i-lucide-square"
-            size="sm"
-            square
-            :aria-label="$t('app.maximizeWindow')"
-            @click="toggleWindowMaximized"
-          />
-          <UButton
-            color="neutral"
-            variant="ghost"
-            icon="i-lucide-x"
-            size="sm"
-            square
-            :aria-label="$t('app.closeToTray')"
-            @click="hideMainWindow"
-          />
-        </div>
       </template>
       <div v-else class="text-xs text-(--ui-text-muted)">
         {{ $t('app.loading') }}

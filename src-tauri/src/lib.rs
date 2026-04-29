@@ -311,12 +311,6 @@ pub fn run() {
                         window_state::remember(&w);
                     }
                 }
-                WindowEvent::CloseRequested { api, .. } => {
-                    if let Some(main_window) = window.app_handle().get_webview_window("main") {
-                        hide_main_window(&main_window);
-                    }
-                    api.prevent_close();
-                }
                 _ => {}
             }
         })
