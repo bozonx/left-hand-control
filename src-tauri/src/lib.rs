@@ -307,7 +307,9 @@ pub fn run() {
             match event {
                 WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
-                    hide_main_window(window);
+                    if let Some(w) = window.app_handle().get_webview_window("main") {
+                        hide_main_window(&w);
+                    }
                 }
                 WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
                     if let Some(w) = window.app_handle().get_webview_window("main") {
