@@ -561,7 +561,7 @@ fn flush_out_with<S: EventSink, E: SideEffects>(
                 // Mouse buttons are not grabbed, so they already reach the OS.
                 // Re-emitting them would create duplicates.
                 let code = key.code();
-                if (272..=279).contains(&code) {
+                if (272..=281).contains(&code) {
                     continue;
                 }
                 events.push(InputEvent::new(

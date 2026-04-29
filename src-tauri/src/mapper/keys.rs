@@ -158,9 +158,11 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "MouseLeft" => Key::BTN_LEFT,
         "MouseRight" => Key::BTN_RIGHT,
         "MouseMiddle" => Key::BTN_MIDDLE,
-        "Mouse4" => Key::BTN_SIDE,
-        "Mouse5" => Key::BTN_EXTRA,
-        "Mouse6" => Key::BTN_TASK,
+        "MouseSide" => Key::BTN_SIDE,
+        "MouseExtra" => Key::BTN_EXTRA,
+        "MouseForward" => Key::BTN_FORWARD,
+        "MouseBack" => Key::BTN_BACK,
+        "MouseTask" => Key::BTN_TASK,
 
         // Other keys
         "Fn" => Key::KEY_FN,

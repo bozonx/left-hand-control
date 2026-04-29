@@ -38,7 +38,7 @@ describe('useCommandEditor', () => {
     state.config.value.layerKeymaps.nav.keys.KeyH = commandActionRef('terminal')
     state.config.value.layerKeymaps.nav.extras.push({
       id: 'extra-1',
-      name: 'Mouse4',
+      name: 'MouseSide',
       action: commandActionRef('terminal'),
     })
     state.config.value.macros.push({
@@ -86,7 +86,7 @@ describe('useCommandEditor', () => {
     expect(usage.terminal).toEqual([
       'rule CapsLock (tap)',
       'nav.KeyH',
-      'nav.Mouse4',
+      'nav.MouseSide',
       'macro macro-1 (#1)',
     ])
 

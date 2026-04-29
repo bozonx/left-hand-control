@@ -39,7 +39,7 @@ describe('useMacroEditor', () => {
     state.config.value.layerKeymaps.nav!.keys.KeyH = macroActionRef('dup')
     state.config.value.layerKeymaps.nav!.extras.push({
       id: 'extra-1',
-      name: 'Mouse4',
+      name: 'MouseSide',
       action: macroActionRef('dup'),
     })
     useConfigMock.mockReturnValue(state)
@@ -113,7 +113,7 @@ describe('useMacroEditor', () => {
     expect(usage.dup).toEqual([
       'rule CapsLock (tap)',
       'nav.KeyH',
-      'nav.Mouse4',
+      'nav.MouseSide',
     ])
 
     vm.removeMacro(vm.uiKeyOf(firstMacro))
