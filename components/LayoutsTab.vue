@@ -159,31 +159,35 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
     </UCard>
 
     <div class="space-y-4">
-      <LayoutsLibraryCard
-        :entries="orderedEntries"
-        :current-layout-id="currentLayoutId"
-        :current-layout-description="currentLayoutDescription"
-        :is-layout-dirty="isLayoutDirty"
-        :applying="applying"
-        :apply-error="applyError"
-        :library-error="library.error.value"
-        :layouts-dir="library.layoutsDir.value"
-        :layout-mode="layoutMode"
-        :auto-included-ids="autoIncludedIds"
-        :auto-default-layout-id="autoDefaultLayoutId"
-        :active-auto-layout-id="activeAutoLayoutId"
-        :manual-active-layout-id="manualActiveLayoutId"
-        @save-current="saveCurrentLayout"
-        @save-as="openSaveAsModal"
-        @request-apply-entry="requestApplyEntry"
-        @create-from-empty="createFromEmpty"
-        @create-from-ivan-k="createFromIvanK"
-        @request-edit="openEditModal"
-        @request-reset="requestReset"
-        @request-delete="(entry) => (deletePending = entry)"
-        @move-up="(entry) => moveLayout(entry, 'up')"
-        @move-down="(entry) => moveLayout(entry, 'down')"
-      />
+      <div ref="containerRef">
+        <LayoutsLibraryCard
+          :entries="orderedEntries"
+          :current-layout-id="currentLayoutId"
+          :current-layout-description="currentLayoutDescription"
+          :is-layout-dirty="isLayoutDirty"
+          :applying="applying"
+          :apply-error="applyError"
+          :library-error="library.error.value"
+          :layouts-dir="library.layoutsDir.value"
+          :layout-mode="layoutMode"
+          :auto-included-ids="autoIncludedIds"
+          :auto-default-layout-id="autoDefaultLayoutId"
+          :active-auto-layout-id="activeAutoLayoutId"
+          :manual-active-layout-id="manualActiveLayoutId"
+          :selected-id="selectedId"
+          @select="select"
+          @save-current="saveCurrentLayout"
+          @save-as="openSaveAsModal"
+          @request-apply-entry="requestApplyEntry"
+          @create-from-empty="createFromEmpty"
+          @create-from-ivan-k="createFromIvanK"
+          @request-edit="openEditModal"
+          @request-reset="requestReset"
+          @request-delete="(entry) => (deletePending = entry)"
+          @move-up="(entry) => moveLayout(entry, 'up')"
+          @move-down="(entry) => moveLayout(entry, 'down')"
+        />
+      </div>
 
       <HomeInfoCard />
     </div>

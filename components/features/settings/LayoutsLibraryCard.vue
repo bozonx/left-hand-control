@@ -24,6 +24,7 @@ const props = defineProps<{
     autoDefaultLayoutId?: string;
     activeAutoLayoutId?: string;
     manualActiveLayoutId?: string;
+    selectedId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -37,6 +38,7 @@ const emit = defineEmits<{
     requestDelete: [entry: LayoutLibraryEntry];
     moveUp: [entry: LayoutLibraryEntry];
     moveDown: [entry: LayoutLibraryEntry];
+    select: [id: string];
 }>();
 
 const { config } = useConfig();
@@ -57,6 +59,10 @@ const modalLayoutLabel = computed(() => {
 
 function entryIsDefault(entryId: string) {
     return props.autoDefaultLayoutId === entryId;
+}
+
+function entryIsIncluded(entryId: string) {
+    return props.autoIncludedIds.has(entryId);
 }
 
 function entryHasConditions(entryId: string) {
@@ -85,6 +91,13 @@ function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
     if (entryIsDefault(entryId)) return undefined;
     if (!entryHasConditions(entryId)) return t("rules.autoIncludeDisabledHintNoConditions");
     return undefined;
+}
+
+function handleEntryClick(entry: LayoutLibraryEntry) {
+    emit("select", entry.id);
+    if (props.layoutMode === "manual") {
+        emit("requestApplyEntry", entry);
+    }
 }
 
 function entryActivateManual(entryId: string) {
@@ -221,12 +234,14 @@ function openBlacklist(entryId: string) {
                 <li
                     v-for="(entry, index) in entries"
                     :key="entry.id"
-                    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 hover:shadow-lg"
+                    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 hover:shadow-lg cursor-pointer"
                     :class="[
-                        layoutMode === 'auto' && !entryIsEnabledInAuto(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
-                        'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
+                        layoutMode === 'auto' && !entryIsIncluded(entry.id) && !entryIsDefault(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
+                        selectedId === entry.id
+                            ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
+                            : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
                     ]"
-                    @click="layoutMode === 'manual' && $emit('requestApplyEntry', entry)"
+                    @click="handleEntryClick(entry)"
                 >
                     <div class="flex-1 flex flex-col gap-2">
                         <div class="flex items-center gap-2 min-w-0">
