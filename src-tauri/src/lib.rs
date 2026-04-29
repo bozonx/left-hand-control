@@ -298,18 +298,17 @@ pub fn run() {
             active_window::start_watcher(app.handle().clone());
             if let Some(window) = app.get_webview_window("main") {
                 window_state::restore(&window);
-                let _ = window.set_skip_taskbar(false);
                 let _ = window.show();
                 let _ = window.set_focus();
-                #[cfg(target_os = "linux")]
-                {
-                    let _ = window.set_decorations(true);
-                }
             }
             Ok(())
         })
         .on_window_event(|window, event| {
             match event {
+                WindowEvent::CloseRequested { api, .. } => {
+                    api.prevent_close();
+                    hide_main_window(window);
+                }
                 WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
                     if let Some(w) = window.app_handle().get_webview_window("main") {
                         window_state::remember(&w);

@@ -91,6 +91,7 @@ onMounted(() => {
 <template>
   <header
     class="flex items-center justify-between px-4 h-[var(--app-header-height)] border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 shrink-0 app-chrome"
+    data-tauri-drag-region
   >
     <div class="flex items-center gap-2 min-w-0 flex-1">
       <UButton
