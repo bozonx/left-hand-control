@@ -90,6 +90,13 @@ const autoIncludedIds = computed(() => {
   for (const id of Object.keys(map)) {
     if (isLayoutInAuto(map[id])) set.add(id);
   }
+  const defaultId = config.value.settings.autoDefaultLayoutId;
+  if (defaultId) {
+    const defaultRule = map[defaultId];
+    if (!defaultRule || !defaultRule.disabledInAuto) {
+      set.add(defaultId);
+    }
+  }
   return set;
 });
 

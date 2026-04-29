@@ -38,6 +38,12 @@ const {
   openNewLayer,
   confirmNewLayer,
 } = useKeymapEditor()
+
+const extraIds = computed(() => currentKeymap.value?.extras.map((e) => e.id) ?? [])
+const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasContainerRef } = useListKeyboardNavigation({
+  ids: extraIds,
+  move: (id: string, delta: number) => moveExtra(id, delta < 0 ? 'up' : 'down'),
+})
 </script>
 
 <template>
@@ -62,13 +68,17 @@ const {
         @clear="requestClearSelectedLayer"
       />
 
-      <ExtrasCard
-        :extras="currentKeymap.extras"
-        @add="addExtra"
-        @move-up="(id) => moveExtra(id, 'up')"
-        @move-down="(id) => moveExtra(id, 'down')"
-        @remove="removeExtra"
-      />
+      <div ref="extrasContainerRef">
+        <ExtrasCard
+          :extras="currentKeymap.extras"
+          :selected-id="selectedExtraId"
+          @select="selectExtra"
+          @add="addExtra"
+          @move-up="(id) => moveExtra(id, 'up')"
+          @move-down="(id) => moveExtra(id, 'down')"
+          @remove="removeExtra"
+        />
+      </div>
     </template>
     <UCard v-else>
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

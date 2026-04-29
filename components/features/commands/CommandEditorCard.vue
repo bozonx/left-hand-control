@@ -10,9 +10,11 @@ const props = defineProps<{
   linuxError?: string
   isFirst?: boolean
   isLast?: boolean
+  selected?: boolean
 }>()
 
 defineEmits<{
+  select: []
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
@@ -45,7 +47,13 @@ async function copyCommandId() {
 
 <template>
   <div
-    class="relative rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 p-4 transition-all duration-300 hover:border-emerald-500/40 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-emerald-500/5"
+    class="relative rounded-xl border p-4 transition-all duration-300 cursor-pointer"
+    :class="[
+      selected
+        ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
+        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:border-emerald-500/40 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-emerald-500/5',
+    ]"
+    @click="$emit('select')"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="grid flex-1 grid-cols-2 gap-3 min-w-0">

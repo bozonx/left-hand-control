@@ -121,7 +121,10 @@ export function pickActiveLayout(
     settings.autoDefaultLayoutId &&
     availableIds.includes(settings.autoDefaultLayoutId)
   ) {
-    return settings.autoDefaultLayoutId
+    const defaultRule = settings.layoutConditions[settings.autoDefaultLayoutId]
+    if (!defaultRule || !defaultRule.disabledInAuto) {
+      return settings.autoDefaultLayoutId
+    }
   }
   return null
 }

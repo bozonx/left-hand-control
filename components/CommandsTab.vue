@@ -14,6 +14,12 @@ const {
   usage,
 } = useCommandEditor()
 
+const commandIds = computed(() => config.value.commands.map((c) => uiKeyOf(c)))
+const { selectedId, select, containerRef } = useListKeyboardNavigation({
+  ids: commandIds,
+  move: moveCommand,
+})
+
 const emit = defineEmits<{
   backToTop: []
 }>()
@@ -90,7 +96,7 @@ function cancelRemove() {
         </div>
       </template>
 
-      <div class="space-y-4">
+      <div ref="containerRef" class="space-y-4">
         <div
           v-if="config.commands.length === 0"
           class="text-sm text-(--ui-text-muted)"
@@ -109,6 +115,8 @@ function cancelRemove() {
           :linux-error="linuxError(command) ?? undefined"
           :is-first="index === 0"
           :is-last="index === config.commands.length - 1"
+          :selected="selectedId === uiKeyOf(command)"
+          @select="select(uiKeyOf(command))"
           @remove="askRemove"
           @move-up="moveCommand($event, -1)"
           @move-down="moveCommand($event, 1)"

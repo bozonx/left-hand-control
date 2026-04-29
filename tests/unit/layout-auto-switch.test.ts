@@ -222,6 +222,35 @@ describe('pickActiveLayout', () => {
     expect(result).toBeNull()
   })
 
+  it('falls back to default layout', () => {
+    const result = pickActiveLayout(
+      ['user:a', 'user:b'],
+      settings({
+        autoDefaultLayoutId: 'user:b',
+        layoutConditions: {
+          'user:a': { whitelist: { layouts: ['ru'] } },
+        },
+      }),
+      ctxOnUS,
+    )
+    expect(result).toBe('user:b')
+  })
+
+  it('does not fall back to default when it is disabled', () => {
+    const result = pickActiveLayout(
+      ['user:a', 'user:b'],
+      settings({
+        autoDefaultLayoutId: 'user:b',
+        layoutConditions: {
+          'user:a': { whitelist: { layouts: ['ru'] } },
+          'user:b': { disabledInAuto: true },
+        },
+      }),
+      ctxOnUS,
+    )
+    expect(result).toBeNull()
+  })
+
   it('picks a layout that has no whitelist but has a non-blocking blacklist', () => {
     const result = pickActiveLayout(
       ['user:a'],

@@ -14,9 +14,11 @@ const props = defineProps<{
   isFirst?: boolean
   isLast?: boolean
   focusName?: boolean
+  selected?: boolean
 }>()
 
 const emit = defineEmits<{
+  select: []
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
@@ -69,7 +71,13 @@ async function copyMacroId() {
 
 <template>
   <div
-    class="relative p-4 rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 flex gap-6 group transition-all duration-300 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/5"
+    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 cursor-pointer"
+    :class="[
+      selected
+        ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
+        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/5',
+    ]"
+    @click="$emit('select')"
   >
     <div class="flex-1 flex flex-col gap-4 min-w-0">
       <div class="grid grid-cols-2 gap-3">

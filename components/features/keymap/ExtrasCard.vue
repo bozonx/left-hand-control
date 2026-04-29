@@ -3,10 +3,12 @@ import type { ExtraKey } from '~/types/config'
 
 defineProps<{
   extras: ExtraKey[]
+  selectedId?: string | null
 }>()
 
 defineEmits<{
   add: []
+  select: [id: string]
   moveUp: [id: string]
   moveDown: [id: string]
   remove: [id: string]
@@ -38,7 +40,13 @@ defineEmits<{
       <div
         v-for="(extra, index) in extras"
         :key="extra.id"
-        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted) transition-all duration-200 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-elevated) hover:shadow-md"
+        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md border transition-all duration-200 cursor-pointer"
+        :class="[
+          selectedId === extra.id
+            ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
+            : 'border-(--ui-border) bg-(--ui-bg-muted) hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-elevated) hover:shadow-md',
+        ]"
+        @click="$emit('select', extra.id)"
       >
         <UFormField>
           <template #label>

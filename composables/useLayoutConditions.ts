@@ -78,8 +78,6 @@ export function useLayoutConditions() {
   }
 
   function setDisabledInAuto(layoutId: string, disabled: boolean) {
-    const rule = getRule(layoutId)
-    if (!rule?.whitelist && !rule?.blacklist) return
     const r = ensureRule(layoutId)
     if (disabled) {
       r.disabledInAuto = true

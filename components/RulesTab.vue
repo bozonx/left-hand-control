@@ -15,6 +15,12 @@ const {
   markRuleConfigured,
 } = useRulesEditor()
 
+const ruleIds = computed(() => config.value.rules.map((r) => r.id))
+const { selectedId, select, containerRef } = useListKeyboardNavigation({
+  ids: ruleIds,
+  move: (id: string, delta: number) => moveRule(id, delta < 0 ? 'up' : 'down'),
+})
+
 const props = defineProps<{
   showBackToTop?: boolean
 }>()
@@ -74,7 +80,7 @@ function cancelRemoveRule() {
         {{ $t('rules.empty') }}
       </div>
 
-      <div v-else class="space-y-2">
+      <div v-else ref="containerRef" class="space-y-2">
         <RuleRow
           v-for="(rule, index) in config.rules"
           :key="rule.id"
@@ -86,6 +92,8 @@ function cancelRemoveRule() {
           :is-last="index === config.rules.length - 1"
           :is-new="rule.id === newestRuleId"
           :key-error="rule.id === newestRuleId && !rule.key ? $t('rules.keyRequired') : undefined"
+          :selected="selectedId === rule.id"
+          @select="select(rule.id)"
           @remove="requestRemoveRule"
           @move-up="moveRule($event, 'up')"
           @move-down="moveRule($event, 'down')"

@@ -78,12 +78,15 @@ function entryToggleAuto(entryId: string, value: boolean) {
 
 function entryIsEnabledInAuto(entryId: string) {
     const rule = config.value.settings.layoutConditions[entryId];
+    if (rule?.disabledInAuto) return false;
+    if (entryIsDefault(entryId)) return true;
     if (!rule) return false;
     if (!rule.whitelist && !rule.blacklist) return false;
-    return !rule.disabledInAuto;
+    return true;
 }
 
 function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
+    if (entryIsDefault(entryId)) return undefined;
     if (!entryHasConditions(entryId)) return t("rules.autoIncludeDisabledHintNoConditions");
     return undefined;
 }
@@ -377,12 +380,12 @@ function openBlacklist(entryId: string) {
                                 <div class="flex items-center gap-1.5 cursor-pointer">
                                     <USwitch
                                         :model-value="entryIsEnabledInAuto(entry.id)"
-                                        :disabled="!entryHasConditions(entry.id)"
+                                        :disabled="!entryHasConditions(entry.id) && !entryIsDefault(entry.id)"
                                         @update:model-value="entryToggleAuto(entry.id, $event === true)"
                                     />
                                     <span
                                         class="text-xs text-(--ui-text-muted) select-none"
-                                        @click.stop="!entryHasConditions(entry.id) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))"
+                                        @click.stop="(!entryHasConditions(entry.id) && !entryIsDefault(entry.id)) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))"
                                     >{{ $t('rules.autoIncludeLabel') }}</span>
                                 </div>
                             </AppTooltip>

@@ -20,9 +20,11 @@ defineProps<{
   isLast?: boolean
   isNew?: boolean
   keyError?: string
+  selected?: boolean
 }>()
 
 defineEmits<{
+  select: []
   remove: [id: string]
   moveUp: [id: string]
   moveDown: [id: string]
@@ -35,13 +37,16 @@ const isConditionsOpen = ref(false)
 
 <template>
   <div
-    class="relative p-4 rounded-xl border flex gap-6 group group/rule transition-all duration-300 hover:shadow-lg"
+    class="relative p-4 rounded-xl border flex gap-6 group group/rule transition-all duration-300 hover:shadow-lg cursor-pointer"
     :class="[
       rule.enabled === false ? 'opacity-50 grayscale-[30%]' : '',
-      isNew
-        ? 'border-sky-500/60 bg-sky-500/8 ring-1 ring-sky-500/20 hover:bg-sky-500/12 hover:border-sky-500/70 hover:shadow-sky-500/10'
-        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
+      selected
+        ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
+        : isNew
+          ? 'border-sky-500/60 bg-sky-500/8 ring-1 ring-sky-500/20 hover:bg-sky-500/12 hover:border-sky-500/70 hover:shadow-sky-500/10'
+          : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
     ]"
+    @click="$emit('select')"
   >
     <div class="flex-1 flex flex-col gap-5">
       <div class="grid grid-cols-3 gap-4">
