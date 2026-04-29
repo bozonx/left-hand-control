@@ -12,11 +12,14 @@ defineProps<{
   mapper: MapperState
   deviceOptions: Array<{ label: string, value: string }>
   selectedDevice: string
+  mouseOptions: Array<{ label: string, value: string }>
+  selectedMouse: string
   issues: SettingsIssue[]
 }>()
 
 defineEmits<{
   'update:selectedDevice': [value: string]
+  'update:selectedMouse': [value: string]
   toggle: []
 }>()
 </script>
@@ -67,6 +70,21 @@ defineEmits<{
             @click="mapper.refreshDevices()"
           />
         </div>
+      </UFormField>
+
+      <UFormField
+        :label="$t('settings.mouseLabel')"
+        :help="$t('settings.mouseHelp')"
+      >
+        <USelectMenu
+          :model-value="selectedMouse"
+          :items="mouseOptions"
+          value-key="value"
+          :placeholder="$t('settings.mouseDevicePh')"
+          class="w-full"
+          :disabled="mapper.status.value.running"
+          @update:model-value="(value: string) => $emit('update:selectedMouse', value)"
+        />
       </UFormField>
 
       <div class="flex items-center gap-2">

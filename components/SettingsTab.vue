@@ -17,6 +17,8 @@ const {
   localeItems,
   deviceOptions,
   selectedDevice,
+  mouseOptions,
+  selectedMouse,
   toggleMapper,
 } = useSettingsScreen()
 </script>
@@ -45,8 +47,10 @@ const {
 
     <MapperCard
       v-model:selected-device="selectedDevice"
+      v-model:selected-mouse="selectedMouse"
       :mapper="mapper"
       :device-options="deviceOptions"
+      :mouse-options="mouseOptions"
       :issues="mapperIssues"
       @toggle="toggleMapper"
     />

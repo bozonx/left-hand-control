@@ -124,6 +124,20 @@ export function useSettingsScreen() {
     },
   });
 
+  const mouseOptions = computed(() =>
+    mapper.mice.value.map((device) => ({
+      label: `${device.name}  —  ${device.path}`,
+      value: device.path,
+    })),
+  );
+
+  const selectedMouse = computed<string>({
+    get: () => config.value.settings.inputMouseDevicePath ?? "",
+    set: (value: string) => {
+      config.value.settings.inputMouseDevicePath = value;
+    },
+  });
+
   const currentLayoutDescription = computed(() => config.value.layoutDescription ?? "");
 
   function describeCapabilityIssue(
@@ -552,7 +566,10 @@ export function useSettingsScreen() {
         return;
       }
       if (!selectedDevice.value) return;
-      await mapper.start(selectedDevice.value);
+      await mapper.start(
+        selectedDevice.value,
+        selectedMouse.value || undefined,
+      );
     } catch (error) {
       mapper.error.value =
         error instanceof Error ? error.message : String(error);
@@ -625,6 +642,8 @@ export function useSettingsScreen() {
     clearDeletePending,
     deviceOptions,
     selectedDevice,
+    mouseOptions,
+    selectedMouse,
     toggleMapper,
   };
   return singleton;

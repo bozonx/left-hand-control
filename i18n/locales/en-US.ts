@@ -397,6 +397,10 @@ export default {
     keyboardHelp:
       "Pick the physical device whose events should be intercepted.",
     devicePh: "Not selected",
+    mouseLabel: "Mouse (optional)",
+    mouseHelp:
+      "Select the mouse to watch modifier + click interactions. Movement is not affected.",
+    mouseDevicePh: "Not selected (no mouse support)",
     refreshDevices: "Refresh list",
     start: "Start",
     startDisabledTooltip: "Go to Settings and select a keyboard, then you can start the mapper.",

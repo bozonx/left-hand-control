@@ -166,6 +166,10 @@ export interface AppSettings {
   // /dev/input/eventX path of the keyboard to intercept. Empty/undefined
   // means the mapper cannot start until the user picks one in Settings.
   inputDevicePath?: string
+  // /dev/input/eventX path of the mouse to intercept (optional).
+  // When set, mouse button events are also watched so they correctly
+  // interact with modifier tap-hold rules.
+  inputMouseDevicePath?: string
   // Id of the currently applied user layout file: `user:<name>`.
   // Empty/undefined means a custom / unnamed layout.
   currentLayoutId?: string

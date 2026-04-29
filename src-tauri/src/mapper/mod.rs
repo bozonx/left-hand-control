@@ -37,6 +37,7 @@ pub struct KeyboardDevice {
 pub struct MapperStatus {
     pub running: bool,
     pub device_path: Option<String>,
+    pub mouse_device_path: Option<String>,
     pub last_error: Option<String>,
 }
 
@@ -51,9 +52,11 @@ trait BackendHandle: Send {
 
 trait MapperBackend: Send + Sync + 'static {
     fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String>;
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String>;
     fn spawn(
         &self,
         device_path: String,
+        mouse_path: Option<String>,
         cfg: config::AppConfig,
     ) -> Result<Box<dyn BackendHandle>, String>;
 }
@@ -72,6 +75,7 @@ impl<B> MapperRuntime<B> {
             status: MapperStatus {
                 running: false,
                 device_path: None,
+                mouse_device_path: None,
                 last_error: None,
             },
         }
@@ -83,7 +87,16 @@ impl<B: MapperBackend> MapperRuntime<B> {
         self.backend.list_keyboards()
     }
 
-    fn start(&mut self, device_path: &str, cfg: config::AppConfig) -> Result<(), String> {
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+        self.backend.list_mice()
+    }
+
+    fn start(
+        &mut self,
+        device_path: &str,
+        mouse_path: Option<&str>,
+        cfg: config::AppConfig,
+    ) -> Result<(), String> {
         if let Some(handle) = self.handle.as_mut() {
             if handle.reap_if_finished() {
                 self.handle = None;
@@ -93,11 +106,15 @@ impl<B: MapperBackend> MapperRuntime<B> {
         if self.handle.is_some() {
             return Err("mapper already running".into());
         }
-        let handle = self.backend.spawn(device_path.to_string(), cfg)?;
+        let mouse = mouse_path.map(|s| s.to_string());
+        let handle = self
+            .backend
+            .spawn(device_path.to_string(), mouse.clone(), cfg)?;
         self.handle = Some(handle);
         self.status = MapperStatus {
             running: true,
             device_path: Some(device_path.to_string()),
+            mouse_device_path: mouse,
             last_error: None,
         };
         Ok(())
@@ -159,12 +176,18 @@ impl MapperBackend for LinuxBackend {
         linux::list_keyboards()
     }
 
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+        linux::list_mice()
+    }
+
     fn spawn(
         &self,
         device_path: String,
+        mouse_path: Option<String>,
         cfg: config::AppConfig,
     ) -> Result<Box<dyn BackendHandle>, String> {
-        linux::spawn(device_path, cfg).map(|handle| Box::new(handle) as Box<dyn BackendHandle>)
+        linux::spawn(device_path, mouse_path, cfg)
+            .map(|handle| Box::new(handle) as Box<dyn BackendHandle>)
     }
 }
 
@@ -184,9 +207,14 @@ impl MapperBackend for UnsupportedBackend {
         Err(unsupported_os_msg("listing keyboards"))
     }
 
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+        Err(unsupported_os_msg("listing mice"))
+    }
+
     fn spawn(
         &self,
         _device_path: String,
+        _mouse_path: Option<String>,
         _cfg: config::AppConfig,
     ) -> Result<Box<dyn BackendHandle>, String> {
         Err(unsupported_os_msg("starting mapper"))
@@ -205,6 +233,10 @@ fn lock_state() -> MutexGuard<'static, MapperRuntime<OsBackend>> {
 
 pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
     lock_state().list_keyboards()
+}
+
+pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
+    lock_state().list_mice()
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -227,10 +259,14 @@ fn unsupported_os_msg(op: &str) -> String {
     }
 }
 
-pub fn start(device_path: &str, config_json: &str) -> Result<(), String> {
+pub fn start(
+    device_path: &str,
+    mouse_path: Option<&str>,
+    config_json: &str,
+) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
-    lock_state().start(device_path, cfg)
+    lock_state().start(device_path, mouse_path, cfg)
 }
 
 pub fn stop() -> Result<(), String> {

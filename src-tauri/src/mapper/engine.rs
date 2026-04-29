@@ -385,6 +385,19 @@ impl Engine {
                 continue;
             };
 
+            // Disallow left/right/middle mouse buttons as triggers —
+            // remapping them would make the system unusable.
+            if matches!(
+                key,
+                Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE
+            ) {
+                eprintln!(
+                    "[mapper] rule key {:?}: mouse buttons 1-3 cannot be used as triggers — skipped",
+                    r.key
+                );
+                continue;
+            }
+
             let tap = match &r.tap_action {
                 ActionSpec::Native => TapMode::Native,
                 ActionSpec::Swallow => TapMode::Swallow,

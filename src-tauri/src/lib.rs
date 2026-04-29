@@ -113,12 +113,24 @@ fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
 }
 
 #[tauri::command]
+fn list_mice() -> Result<Vec<mapper::KeyboardDevice>, String> {
+    eprintln!("[cmd] list_mice");
+    let r = mapper::list_mice();
+    match &r {
+        Ok(v) => eprintln!("[cmd] list_mice -> {} devices", v.len()),
+        Err(e) => eprintln!("[cmd] list_mice ERR: {e}"),
+    }
+    r
+}
+
+#[tauri::command]
 fn start_mapper(
     _app: tauri::AppHandle,
     device_path: String,
+    mouse_device_path: Option<String>,
     config_json: Option<String>,
 ) -> Result<(), String> {
-    eprintln!("[cmd] start_mapper device={device_path}");
+    eprintln!("[cmd] start_mapper device={device_path} mouse={mouse_device_path:?}");
     let raw = match config_json {
         Some(s) if !s.trim().is_empty() => s,
         _ => {
@@ -132,7 +144,8 @@ fn start_mapper(
         eprintln!("[cmd] start_mapper ERR: {msg}");
         return Err(msg);
     }
-    let r = mapper::start(&device_path, &raw);
+    let mouse = mouse_device_path.as_deref().filter(|s| !s.is_empty());
+    let r = mapper::start(&device_path, mouse, &raw);
     if let Err(e) = &r {
         eprintln!("[cmd] start_mapper ERR: {e}");
     }
@@ -294,6 +307,7 @@ pub fn run() {
             rename_user_layout,
             delete_user_layout,
             list_keyboards,
+            list_mice,
             start_mapper,
             stop_mapper,
             mapper_status,

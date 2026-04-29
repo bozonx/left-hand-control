@@ -72,27 +72,29 @@ impl SideEffects for RuntimeSideEffects {
     }
 }
 
-struct DeviceLoopDriver {
-    device: Device,
+struct MultiDeviceLoopDriver {
+    devices: Vec<Device>,
 }
 
-impl DeviceLoopDriver {
-    fn new(device: Device) -> Result<Self, String> {
-        let fd = device.as_raw_fd();
-        unsafe {
-            let flags = libc::fcntl(fd, libc::F_GETFL);
-            if flags < 0 {
-                return Err("fcntl F_GETFL failed".into());
-            }
-            if libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) < 0 {
-                return Err("fcntl F_SETFL O_NONBLOCK failed".into());
+impl MultiDeviceLoopDriver {
+    fn new(devices: Vec<Device>) -> Result<Self, String> {
+        for device in &devices {
+            let fd = device.as_raw_fd();
+            unsafe {
+                let flags = libc::fcntl(fd, libc::F_GETFL);
+                if flags < 0 {
+                    return Err("fcntl F_GETFL failed".into());
+                }
+                if libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) < 0 {
+                    return Err("fcntl F_SETFL O_NONBLOCK failed".into());
+                }
             }
         }
-        Ok(Self { device })
+        Ok(Self { devices })
     }
 }
 
-impl LoopDriver for DeviceLoopDriver {
+impl LoopDriver for MultiDeviceLoopDriver {
     fn now(&mut self) -> Instant {
         Instant::now()
     }
@@ -105,37 +107,44 @@ impl LoopDriver for DeviceLoopDriver {
             .min(u16::MAX as u128)
             .try_into()
             .unwrap_or(u16::MAX);
-        let borrowed = unsafe { BorrowedFd::borrow_raw(self.device.as_raw_fd()) };
-        let mut pfds = [PollFd::new(borrowed, PollFlags::POLLIN)];
+        let mut pfds: Vec<PollFd> = self
+            .devices
+            .iter()
+            .map(|d| {
+                let borrowed = unsafe { BorrowedFd::borrow_raw(d.as_raw_fd()) };
+                PollFd::new(borrowed, PollFlags::POLLIN)
+            })
+            .collect();
         match poll(&mut pfds, PollTimeout::from(timeout_ms)) {
-            Ok(_) => Ok(pfds[0]
-                .revents()
-                .map(|r| r.contains(PollFlags::POLLIN))
-                .unwrap_or(false)),
+            Ok(_) => Ok(pfds.iter().any(|p| {
+                p.revents().map(|r| r.contains(PollFlags::POLLIN)).unwrap_or(false)
+            })),
             Err(nix::errno::Errno::EINTR) => Ok(false),
             Err(e) => Err(format!("poll: {e}")),
         }
     }
 
     fn fetch_key_events(&mut self) -> Result<Vec<(Key, bool)>, String> {
-        match self.device.fetch_events() {
-            Ok(iter) => {
-                let mut out = Vec::new();
-                for ev in iter {
-                    if ev.event_type() != EventType::KEY {
-                        continue;
+        let mut out = Vec::new();
+        for device in &mut self.devices {
+            match device.fetch_events() {
+                Ok(iter) => {
+                    for ev in iter {
+                        if ev.event_type() != EventType::KEY {
+                            continue;
+                        }
+                        let value = ev.value();
+                        if value == 2 {
+                            continue;
+                        }
+                        out.push((Key::new(ev.code()), value == 1));
                     }
-                    let value = ev.value();
-                    if value == 2 {
-                        continue;
-                    }
-                    out.push((Key::new(ev.code()), value == 1));
                 }
-                Ok(out)
+                Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
+                Err(e) => return Err(format!("fetch_events: {e}")),
             }
-            Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => Ok(Vec::new()),
-            Err(e) => Err(format!("fetch_events: {e}")),
         }
+        Ok(out)
     }
 }
 
@@ -190,15 +199,19 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
         })
         .collect();
     paths.sort();
+    eprintln!("[mapper] list_keyboards: found {} event* paths", paths.len());
 
     for path in paths {
         let Ok(dev) = Device::open(&path) else {
+            eprintln!("[mapper]   {}: open failed", path.display());
             continue;
         };
-        if !is_keyboard(&dev) {
+        let name = dev.name().unwrap_or("(unknown)").to_string();
+        let is_kb = is_keyboard(&dev);
+        eprintln!("[mapper]   {}: name='{}' is_keyboard={}", path.display(), name, is_kb);
+        if !is_kb {
             continue;
         }
-        let name = dev.name().unwrap_or("(unknown)").to_string();
         if name == VIRTUAL_DEVICE_NAME {
             continue;
         }
@@ -207,6 +220,46 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
             name,
         });
     }
+    eprintln!("[mapper] list_keyboards -> {} keyboards", out.len());
+    Ok(out)
+}
+
+pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
+    let mut out = Vec::new();
+    let dir = std::fs::read_dir("/dev/input").map_err(|e| format!("read /dev/input: {e}"))?;
+    let mut paths: Vec<PathBuf> = dir
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| n.starts_with("event"))
+                .unwrap_or(false)
+        })
+        .collect();
+    paths.sort();
+    eprintln!("[mapper] list_mice: found {} event* paths", paths.len());
+
+    for path in paths {
+        let Ok(dev) = Device::open(&path) else {
+            eprintln!("[mapper]   {}: open failed", path.display());
+            continue;
+        };
+        let name = dev.name().unwrap_or("(unknown)").to_string();
+        let is_m = is_mouse(&dev);
+        eprintln!("[mapper]   {}: name='{}' is_mouse={}", path.display(), name, is_m);
+        if !is_m {
+            continue;
+        }
+        if name == VIRTUAL_DEVICE_NAME {
+            continue;
+        }
+        out.push(KeyboardDevice {
+            path: path.to_string_lossy().to_string(),
+            name,
+        });
+    }
+    eprintln!("[mapper] list_mice -> {} mice", out.len());
     Ok(out)
 }
 
@@ -227,12 +280,25 @@ fn is_keyboard(dev: &Device) -> bool {
     required.iter().all(|k| keys.contains(*k))
 }
 
-pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
+fn is_mouse(dev: &Device) -> bool {
+    let Some(keys) = dev.supported_keys() else {
+        return false;
+    };
+    // Heuristic: mouse has left/right buttons but NOT letter keys.
+    // We also skip devices that already pass the keyboard heuristic
+    // (combined keyboard+mouse combos should be grabbed as a keyboard).
+    keys.contains(Key::BTN_LEFT)
+        && keys.contains(Key::BTN_RIGHT)
+        && !is_keyboard(dev)
+}
+
+pub fn spawn(device_path: String, mouse_path: Option<String>, cfg: AppConfig) -> Result<Handle, String> {
     #[cfg(debug_assertions)]
     {
         eprintln!(
-            "[mapper] started: device={} rules={} layers={}",
+            "[mapper] started: device={} mouse={:?} rules={} layers={}",
             device_path,
+            mouse_path,
             cfg.rules.len(),
             cfg.layer_keymaps.len()
         );
@@ -258,7 +324,7 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run(device_path, cfg, stop_thread, ready_tx) {
+            if let Err(e) = run(device_path, mouse_path, cfg, stop_thread, ready_tx) {
                 eprintln!("[mapper] run_loop error: {e}");
                 if let Ok(mut slot) = err_thread.lock() {
                     *slot = Some(e);
@@ -293,6 +359,7 @@ pub fn spawn(device_path: String, cfg: AppConfig) -> Result<Handle, String> {
 
 fn run(
     device_path: String,
+    mouse_path: Option<String>,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
     ready_tx: mpsc::Sender<Result<(), String>>,
@@ -301,6 +368,15 @@ fn run(
     device
         .grab()
         .map_err(|e| format!("grab {device_path} (need perms? add user to input group): {e}"))?;
+
+    let mut devices = vec![device];
+    if let Some(ref mp) = mouse_path {
+        let mouse = Device::open(mp).map_err(|e| format!("open mouse {mp}: {e}"))?;
+        // Mouse is opened without grab: only KEY events are read to interact
+        // with modifier tap-hold decisions. REL/ABS (movement) stays
+        // untouched so the cursor continues to work.
+        devices.push(mouse);
+    }
 
     let mut all_keys = AttributeSet::<Key>::new();
     for code in 1u16..=248 {
@@ -316,7 +392,7 @@ fn run(
         .map_err(|e| format!("uinput build: {e}"))?;
 
     let _ = ready_tx.send(Ok(()));
-    let driver = DeviceLoopDriver::new(device)?;
+    let driver = MultiDeviceLoopDriver::new(devices)?;
     run_loop(driver, virt, cfg, stop)
 }
 
@@ -482,9 +558,15 @@ fn flush_out_with<S: EventSink, E: SideEffects>(
     for out in buf.drain(..) {
         match out {
             Out::KeyRaw { key, down } => {
+                // Mouse buttons are not grabbed, so they already reach the OS.
+                // Re-emitting them would create duplicates.
+                let code = key.code();
+                if (272..=279).contains(&code) {
+                    continue;
+                }
                 events.push(InputEvent::new(
                     EventType::KEY,
-                    key.code(),
+                    code,
                     if down { 1 } else { 0 },
                 ));
             }

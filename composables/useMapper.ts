@@ -12,17 +12,19 @@ export interface KeyboardDevice {
 export interface MapperStatus {
   running: boolean
   device_path: string | null
+  mouse_device_path: string | null
   last_error: string | null
 }
 
 export interface MapperState {
   devices: Ref<KeyboardDevice[]>
+  mice: Ref<KeyboardDevice[]>
   status: Ref<MapperStatus>
   busy: Ref<boolean>
   error: Ref<string | null>
   refreshDevices: () => Promise<void>
   refreshStatus: () => Promise<void>
-  start: (devicePath: string) => Promise<void>
+  start: (devicePath: string, mouseDevicePath?: string) => Promise<void>
   stop: () => Promise<void>
 }
 
@@ -73,7 +75,8 @@ export function useMapper(): MapperState {
   const { activeAutoLayoutId } = useLayoutSwitcher()
   const library = useLayoutLibrary()
   const devices = ref<KeyboardDevice[]>([])
-  const status = ref<MapperStatus>({ running: false, device_path: null, last_error: null })
+  const mice = ref<KeyboardDevice[]>([])
+  const status = ref<MapperStatus>({ running: false, device_path: null, mouse_device_path: null, last_error: null })
   const busy = ref(false)
   const error = ref<string | null>(null)
   let reloadPending = false
@@ -122,13 +125,29 @@ export function useMapper(): MapperState {
   })
 
   async function refreshDevices() {
+    error.value = null
+    devices.value = []
+    mice.value = []
+
     const tauri = await useTauri()
-    if (!tauri) return
+    const { t } = useI18n()
+    if (!tauri) {
+      error.value = t('mapper.desktopOnly')
+      return
+    }
+
     try {
       devices.value = await tauri.invoke<KeyboardDevice[]>('list_keyboards')
       error.value = null
-    } catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : String(e)
+    } catch (err: any) {
+      error.value = t('mapper.listFailed', { err: String(err) })
+      console.error('[useMapper] list_keyboards error:', err)
+    }
+
+    try {
+      mice.value = await tauri.invoke<KeyboardDevice[]>('list_mice')
+    } catch (err: any) {
+      console.error('[useMapper] list_mice error:', err)
     }
   }
 
@@ -143,7 +162,7 @@ export function useMapper(): MapperState {
     }
   }
 
-  async function invokeStart(devicePath: string) {
+  async function invokeStart(devicePath: string, mouseDevicePath?: string) {
     const tauri = await useTauri()
     if (!tauri) {
       const { t } = useI18n()
@@ -155,6 +174,7 @@ export function useMapper(): MapperState {
       const activeConfig = await computeActiveConfig()
       await tauri.invoke('start_mapper', {
         devicePath,
+        mouseDevicePath: mouseDevicePath || null,
         configJson: JSON.stringify(activeConfig),
       })
       error.value = null
@@ -164,10 +184,10 @@ export function useMapper(): MapperState {
     }
   }
 
-  async function start(devicePath: string) {
+  async function start(devicePath: string, mouseDevicePath?: string) {
     busy.value = true
     try {
-      await invokeStart(devicePath)
+      await invokeStart(devicePath, mouseDevicePath)
     } finally {
       busy.value = false
     }
@@ -203,6 +223,7 @@ export function useMapper(): MapperState {
 
   async function reloadRunningMapper() {
     const devicePath = status.value.device_path ?? config.value.settings.inputDevicePath ?? ''
+    const mouseDevicePath = status.value.mouse_device_path ?? config.value.settings.inputMouseDevicePath ?? ''
     if (!status.value.running || !devicePath) return
     if (busy.value) {
       reloadPending = true
@@ -212,7 +233,7 @@ export function useMapper(): MapperState {
     busy.value = true
     try {
       await invokeStop()
-      await invokeStart(devicePath)
+      await invokeStart(devicePath, mouseDevicePath)
     } finally {
       busy.value = false
       if (reloadPending) {
@@ -238,6 +259,7 @@ export function useMapper(): MapperState {
 
   singleton = {
     devices,
+    mice,
     status,
     busy,
     error,
