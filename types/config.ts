@@ -142,9 +142,10 @@ export interface LayoutConditionRule {
   // When set and matches, the layout is blocked from activating (takes
   // precedence over whitelist).
   blacklist?: LayoutConditionSet
-  // Included in auto-mode picker. Flips to true automatically when the
-  // user adds the first whitelist / blacklist condition.
-  includedInAuto?: boolean
+  // When true, a layout that has whitelist/blacklist conditions is
+  // temporarily excluded from the auto-mode picker without removing its
+  // conditions.
+  disabledInAuto?: boolean
 }
 
 export interface AppSettings {

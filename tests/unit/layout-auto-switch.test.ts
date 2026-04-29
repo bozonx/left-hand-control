@@ -120,11 +120,14 @@ describe('isLayoutInAuto', () => {
   it('false when no rule', () => {
     expect(isLayoutInAuto(undefined)).toBe(false)
   })
-  it('true when explicit flag', () => {
-    expect(isLayoutInAuto({ includedInAuto: true })).toBe(true)
+  it('false when disabled flag set', () => {
+    expect(isLayoutInAuto({ whitelist: { layouts: ['us'] }, disabledInAuto: true })).toBe(false)
   })
   it('true when whitelist defined', () => {
     expect(isLayoutInAuto({ whitelist: { layouts: ['us'] } })).toBe(true)
+  })
+  it('true when blacklist defined', () => {
+    expect(isLayoutInAuto({ blacklist: { layouts: ['us'] } })).toBe(true)
   })
 })
 
@@ -205,14 +208,13 @@ describe('pickActiveLayout', () => {
     expect(result).toBeNull()
   })
 
-  it('does not pick a layout that is included but has no whitelist match', () => {
-    // includedInAuto without conditions should not auto-win — only
-    // matching whitelist counts. This protects the priority semantics.
+  it('does not pick a layout that has no conditions', () => {
+    // A layout without whitelist/blacklist is not a candidate.
     const result = pickActiveLayout(
       ['user:a'],
       settings({
         layoutConditions: {
-          'user:a': { includedInAuto: true },
+          'user:a': {},
         },
       }),
       ctxOnRU,

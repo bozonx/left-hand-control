@@ -222,6 +222,8 @@ export default {
       "If no layout matches its whitelist in auto mode, always fall back to this one.",
     autoDefaultLockHint:
       "The default layout cannot have whitelist or blacklist conditions.",
+    whitelistPrefix: "If present",
+    blacklistPrefix: "If not",
     conditionsNone: "— any —",
     conditionsBtn: "Conditions...",
     gameModeLabel: "Game Mode",

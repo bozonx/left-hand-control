@@ -84,7 +84,7 @@ function normalizeSettings(
       cleaned[id] = {
         whitelist: normalizeConditionSet(v.whitelist),
         blacklist: normalizeConditionSet(v.blacklist),
-        includedInAuto: !!v.includedInAuto,
+        disabledInAuto: !!v.disabledInAuto,
       }
     }
     merged.layoutConditions = cleaned

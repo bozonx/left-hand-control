@@ -223,6 +223,8 @@ export default {
       "Если в авто-режиме ни одна раскладка не подходит по whitelist, всегда выбирать эту.",
     autoDefaultLockHint:
       "Для дефолтной раскладки нельзя задавать белый и чёрный списки.",
+    whitelistPrefix: "Если есть",
+    blacklistPrefix: "Если не",
     conditionsNone: "— любое —",
     conditionsBtn: "Условия...",
     gameModeLabel: "Игровой режим",

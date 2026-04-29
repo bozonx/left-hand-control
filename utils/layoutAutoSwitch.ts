@@ -80,12 +80,12 @@ export function evaluateLayoutGate(
   return 'allow'
 }
 
-// Returns true when an entry should be considered for auto-mode picking
-// (i.e. it has whitelist/blacklist conditions or the user explicitly
-// included it via the auto-toggle).
+// Returns true when an entry should be considered for auto-mode picking.
+// A layout is included only when it has at least one whitelist/blacklist
+// condition and is not explicitly disabled via the auto-toggle.
 export function isLayoutInAuto(rule: LayoutConditionRule | undefined): boolean {
   if (!rule) return false
-  if (rule.includedInAuto) return true
+  if (rule.disabledInAuto) return false
   if (rule.whitelist || rule.blacklist) return true
   return false
 }

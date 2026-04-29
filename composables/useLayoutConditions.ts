@@ -73,21 +73,20 @@ export function useLayoutConditions() {
         next.apps = [...value.apps]
       }
       rule[kind] = next
-      // Auto-enable participation when the user adds the first condition.
-      rule.includedInAuto = true
     }
     cleanupRule(layoutId, rule)
   }
 
-  function setIncludedInAuto(layoutId: string, included: boolean) {
-    if (!included) {
-      // Cannot opt out while conditions are still defined.
-      const rule = getRule(layoutId)
-      if (rule?.whitelist || rule?.blacklist) return
+  function setDisabledInAuto(layoutId: string, disabled: boolean) {
+    const rule = getRule(layoutId)
+    if (!rule?.whitelist && !rule?.blacklist) return
+    const r = ensureRule(layoutId)
+    if (disabled) {
+      r.disabledInAuto = true
+    } else {
+      delete r.disabledInAuto
     }
-    const rule = ensureRule(layoutId)
-    rule.includedInAuto = included
-    cleanupRule(layoutId, rule)
+    cleanupRule(layoutId, r)
   }
 
   function setAsDefault(layoutId: string | undefined) {
@@ -101,7 +100,7 @@ export function useLayoutConditions() {
     if (rule) {
       delete rule.whitelist
       delete rule.blacklist
-      // Default doesn't need the includedInAuto flag — it's a fallback,
+      // Default doesn't need the disabledInAuto flag — it's a fallback,
       // not a candidate. Drop the rule entirely if nothing remains.
       cleanupRule(layoutId, rule)
     }
@@ -109,7 +108,7 @@ export function useLayoutConditions() {
   }
 
   function cleanupRule(layoutId: string, rule: LayoutConditionRule) {
-    if (!rule.whitelist && !rule.blacklist && !rule.includedInAuto) {
+    if (!rule.whitelist && !rule.blacklist && !rule.disabledInAuto) {
       delete settings().layoutConditions[layoutId]
     }
   }
@@ -118,7 +117,7 @@ export function useLayoutConditions() {
     getRule,
     getConditionSet,
     setConditionSet,
-    setIncludedInAuto,
+    setDisabledInAuto,
     setAsDefault,
     isInAuto: (layoutId: string) => isLayoutInAuto(getRule(layoutId)),
   }

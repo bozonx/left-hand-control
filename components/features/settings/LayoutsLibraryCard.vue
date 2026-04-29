@@ -40,7 +40,7 @@ const emit = defineEmits<{
 
 const { config } = useConfig();
 const { t } = useI18n();
-const { setIncludedInAuto, setAsDefault } = useLayoutConditions();
+const { setDisabledInAuto, setAsDefault } = useLayoutConditions();
 
 const modalOpen = ref(false);
 const modalKind = ref<ConditionKind>("whitelist");
@@ -72,28 +72,39 @@ function entryToggleDefault(entryId: string, value: boolean) {
 }
 
 function entryToggleAuto(entryId: string, value: boolean) {
-    setIncludedInAuto(entryId, value);
+    setDisabledInAuto(entryId, !value);
+}
+
+function entryIsEnabledInAuto(entryId: string) {
+    const rule = config.value.settings.layoutConditions[entryId];
+    if (!rule) return false;
+    if (!rule.whitelist && !rule.blacklist) return false;
+    return !rule.disabledInAuto;
 }
 
 function entryActivateManual(entryId: string) {
     config.value.settings.manualActiveLayoutId = entryId;
 }
 
-function summarize(set: LayoutConditionSet | undefined): string {
-    if (!set) return t("rules.conditionsNone");
+function summarize(kind: ConditionKind, set: LayoutConditionSet | undefined): string {
+    const prefix = kind === "whitelist" ? t("rules.whitelistPrefix") : t("rules.blacklistPrefix");
+    if (!set || (!set.gameMode && set.layouts.length === 0 && (!set.apps || set.apps.length === 0))) {
+        return prefix + "…";
+    }
     const parts: string[] = [];
     if (set.gameMode === "on") parts.push(t("rules.gameModeOn"));
     else if (set.gameMode === "off") parts.push(t("rules.gameModeOff"));
-    if (set.layouts.length > 0) parts.push(set.layouts.join(", "));
-    return parts.length > 0 ? parts.join(" · ") : t("rules.conditionsNone");
+    if (set.layouts.length > 0) parts.push(...set.layouts);
+    if (set.apps && set.apps.length > 0) parts.push(...set.apps);
+    return prefix + " " + parts.join(", ");
 }
 
 function entryWhitelistSummary(entryId: string) {
-    return summarize(config.value.settings.layoutConditions[entryId]?.whitelist);
+    return summarize("whitelist", config.value.settings.layoutConditions[entryId]?.whitelist);
 }
 
 function entryBlacklistSummary(entryId: string) {
-    return summarize(config.value.settings.layoutConditions[entryId]?.blacklist);
+    return summarize("blacklist", config.value.settings.layoutConditions[entryId]?.blacklist);
 }
 
 function openWhitelist(entryId: string) {
@@ -287,7 +298,7 @@ function openBlacklist(entryId: string) {
                                         size="xs"
                                         color="neutral"
                                         variant="outline"
-                                        :disabled="entryIsDefault(entry.id) || !entryIsIncluded(entry.id)"
+                                        :disabled="entryIsDefault(entry.id)"
                                         @click="openBlacklist(entry.id)"
                                     >
                                         <div class="flex items-center gap-1 min-w-0">
@@ -299,7 +310,7 @@ function openBlacklist(entryId: string) {
                                         size="xs"
                                         color="neutral"
                                         variant="outline"
-                                        :disabled="entryIsDefault(entry.id) || !entryIsIncluded(entry.id)"
+                                        :disabled="entryIsDefault(entry.id)"
                                         @click="openWhitelist(entry.id)"
                                     >
                                         <div class="flex items-center gap-1 min-w-0">
@@ -310,7 +321,6 @@ function openBlacklist(entryId: string) {
                                     <div class="flex items-center gap-1.5 cursor-pointer">
                                         <USwitch
                                             :model-value="entryIsDefault(entry.id)"
-                                            :disabled="!entryIsIncluded(entry.id)"
                                             @update:model-value="entryToggleDefault(entry.id, $event === true)"
                                         />
                                         <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoDefaultLabel') }}</span>
@@ -323,7 +333,7 @@ function openBlacklist(entryId: string) {
                     <div class="w-px bg-(--ui-border) self-stretch"></div>
 
                     <div class="w-52 flex flex-col gap-2">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-end">
                             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <UButton
                                     icon="i-lucide-pencil"
@@ -358,8 +368,8 @@ function openBlacklist(entryId: string) {
                         <div v-if="layoutMode === 'auto'" class="flex items-center justify-end" @click.stop>
                             <div class="flex items-center gap-1.5 cursor-pointer">
                                 <USwitch
-                                    :model-value="entryIsIncluded(entry.id)"
-                                    :disabled="entryHasConditions(entry.id) || entryIsDefault(entry.id)"
+                                    :model-value="entryIsEnabledInAuto(entry.id)"
+                                    :disabled="entryIsDefault(entry.id) || !entryHasConditions(entry.id)"
                                     @update:model-value="entryToggleAuto(entry.id, $event === true)"
                                 />
                                 <span class="text-xs text-(--ui-text-muted) select-none">{{ $t('rules.autoIncludeLabel') }}</span>
