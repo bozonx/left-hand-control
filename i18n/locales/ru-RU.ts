@@ -223,8 +223,6 @@ export default {
       "Если в авто-режиме ни одна раскладка не подходит по whitelist, всегда выбирать эту.",
     autoDefaultLockHint:
       "Для дефолтной раскладки нельзя задавать белый и чёрный списки.",
-    autoIncludeDisabledHintDefault:
-      "Дефолтная раскладка автоматически участвует в авто-режиме",
     autoIncludeDisabledHintNoConditions:
       "Добавьте условия, чтобы участвовать в авто-режиме",
     whitelistPrefix: "Если есть",

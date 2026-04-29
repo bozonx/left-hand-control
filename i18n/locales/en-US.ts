@@ -222,8 +222,6 @@ export default {
       "If no layout matches its whitelist in auto mode, always fall back to this one.",
     autoDefaultLockHint:
       "The default layout cannot have whitelist or blacklist conditions.",
-    autoIncludeDisabledHintDefault:
-      "Default layout is automatically included in auto mode",
     autoIncludeDisabledHintNoConditions:
       "Add conditions to participate in auto mode",
     whitelistPrefix: "If present",

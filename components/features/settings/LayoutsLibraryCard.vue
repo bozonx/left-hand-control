@@ -84,7 +84,6 @@ function entryIsEnabledInAuto(entryId: string) {
 }
 
 function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
-    if (entryIsDefault(entryId)) return t("rules.autoIncludeDisabledHintDefault");
     if (!entryHasConditions(entryId)) return t("rules.autoIncludeDisabledHintNoConditions");
     return undefined;
 }
@@ -325,6 +324,7 @@ function openBlacklist(entryId: string) {
                                             </div>
                                         </UButton>
                                     </div>
+                                    <div v-else class="flex-1" />
                                     <div class="flex items-center gap-1.5 cursor-pointer shrink-0">
                                         <USwitch
                                             :model-value="entryIsDefault(entry.id)"
@@ -377,12 +377,12 @@ function openBlacklist(entryId: string) {
                                 <div class="flex items-center gap-1.5 cursor-pointer">
                                     <USwitch
                                         :model-value="entryIsEnabledInAuto(entry.id)"
-                                        :disabled="entryIsDefault(entry.id) || !entryHasConditions(entry.id)"
+                                        :disabled="!entryHasConditions(entry.id)"
                                         @update:model-value="entryToggleAuto(entry.id, $event === true)"
                                     />
                                     <span
                                         class="text-xs text-(--ui-text-muted) select-none"
-                                        @click.stop="entryIsDefault(entry.id) || !entryHasConditions(entry.id) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))"
+                                        @click.stop="!entryHasConditions(entry.id) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))"
                                     >{{ $t('rules.autoIncludeLabel') }}</span>
                                 </div>
                             </AppTooltip>
