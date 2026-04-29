@@ -201,10 +201,42 @@ fn save_window_geometry(app: &tauri::AppHandle) {
     window_state::save(app);
 }
 
+fn hide_main_window(window: &WebviewWindow) {
+    save_window_geometry(window.app_handle());
+    let _ = window.set_skip_taskbar(true);
+    let _ = window.hide();
+}
+
 fn show_main_window(window: &WebviewWindow) {
+    let _ = window.set_skip_taskbar(false);
     let _ = window.show();
     let _ = window.unminimize();
     let _ = window.set_focus();
+}
+
+#[tauri::command]
+fn show_main_window_command(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        show_main_window(&window);
+    }
+}
+
+#[tauri::command]
+fn hide_main_window_command(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        hide_main_window(&window);
+    }
+}
+
+#[tauri::command]
+fn toggle_main_window_maximized_command(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_maximized().unwrap_or(false) {
+            let _ = window.unmaximize();
+        } else {
+            let _ = window.maximize();
+        }
+    }
 }
 
 fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -244,12 +276,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
             {
                 let app = tray.app_handle();
                 if let Some(w) = app.get_webview_window("main") {
-                    if w.is_visible().unwrap_or(false) {
-                        save_window_geometry(app);
-                        let _ = w.hide();
-                    } else {
-                        show_main_window(&w);
-                    }
+                    show_main_window(&w);
                 }
             }
         })
@@ -271,6 +298,7 @@ pub fn run() {
             active_window::start_watcher(app.handle().clone());
             if let Some(window) = app.get_webview_window("main") {
                 window_state::restore(&window);
+                let _ = window.set_skip_taskbar(false);
                 let _ = window.show();
                 let _ = window.set_focus();
             }
@@ -284,9 +312,9 @@ pub fn run() {
                     }
                 }
                 WindowEvent::CloseRequested { api, .. } => {
-                    save_window_geometry(window.app_handle());
-                    // Hide the window instead of exiting — the mapper stays alive.
-                    let _ = window.hide();
+                    if let Some(main_window) = window.app_handle().get_webview_window("main") {
+                        hide_main_window(&main_window);
+                    }
                     api.prevent_close();
                 }
                 _ => {}
@@ -317,6 +345,9 @@ pub fn run() {
             get_gamemode_status,
             get_platform_info,
             active_window::get_active_window,
+            show_main_window_command,
+            hide_main_window_command,
+            toggle_main_window_maximized_command,
             quit_application,
         ])
         .build(tauri::generate_context!())
