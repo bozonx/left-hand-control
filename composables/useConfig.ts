@@ -71,6 +71,9 @@ function normalizeSettings(
 ): AppConfig['settings'] {
   const merged = { ...base, ...(raw ?? {}) }
   merged.layoutMode = merged.layoutMode === 'auto' ? 'auto' : 'manual'
+  if (typeof merged.manualActiveLayoutId !== 'string' || !merged.manualActiveLayoutId) {
+    merged.manualActiveLayoutId = undefined
+  }
   merged.layoutOrder = Array.isArray(merged.layoutOrder)
     ? merged.layoutOrder.filter((id): id is string => typeof id === 'string')
     : []
@@ -92,21 +95,36 @@ function normalizeSettings(
   if (typeof merged.autoDefaultLayoutId !== 'string' || !merged.autoDefaultLayoutId) {
     merged.autoDefaultLayoutId = undefined
   }
+  if (
+    merged.layoutMode === 'manual' &&
+    !merged.manualActiveLayoutId &&
+    typeof merged.currentLayoutId === 'string' &&
+    merged.currentLayoutId
+  ) {
+    merged.manualActiveLayoutId = merged.currentLayoutId
+  }
   return merged
 }
 
 function normalizeConditionSet(
   raw: unknown,
-): { gameMode?: 'on' | 'off'; layouts: string[] } | undefined {
+): { gameMode?: 'on' | 'off'; layouts: string[]; apps?: string[] } | undefined {
   if (!raw || typeof raw !== 'object') return undefined
-  const v = raw as { gameMode?: unknown; layouts?: unknown }
+  const v = raw as { gameMode?: unknown; layouts?: unknown; apps?: unknown }
   const gameMode =
     v.gameMode === 'on' || v.gameMode === 'off' ? v.gameMode : undefined
   const layouts = Array.isArray(v.layouts)
     ? v.layouts.filter((s): s is string => typeof s === 'string' && !!s)
     : []
-  if (!gameMode && layouts.length === 0) return undefined
-  return { gameMode, layouts }
+  const apps = Array.isArray(v.apps)
+    ? v.apps.filter((s): s is string => typeof s === 'string' && !!s.trim())
+    : []
+  if (!gameMode && layouts.length === 0 && apps.length === 0) return undefined
+  return {
+    gameMode,
+    layouts,
+    ...(apps.length > 0 ? { apps } : {}),
+  }
 }
 
 // Merge a (possibly partial / old-version) persisted config with defaults so
@@ -339,6 +357,9 @@ export function useConfig(): ConfigState {
     layoutId: string | undefined,
   ) {
     config.value = applyPresetToConfig(config.value, preset, layoutId)
+    if (config.value.settings.layoutMode === 'manual') {
+      config.value.settings.manualActiveLayoutId = layoutId
+    }
     savedLayoutPreset.value = clonePreset(preset)
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     needsWelcome.value = false
@@ -350,6 +371,9 @@ export function useConfig(): ConfigState {
 
   async function markLayoutSavedAs(layoutId: string) {
     config.value.settings.currentLayoutId = layoutId
+    if (config.value.settings.layoutMode === 'manual') {
+      config.value.settings.manualActiveLayoutId = layoutId
+    }
     savedLayoutPreset.value = extractPresetFromConfig(config.value)
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     await flush()
@@ -360,6 +384,8 @@ export function useConfig(): ConfigState {
     layoutId: string,
   ) {
     config.value = applyPresetToConfig(config.value, preset, layoutId)
+    config.value.settings.layoutMode = 'manual'
+    config.value.settings.manualActiveLayoutId = layoutId
     savedLayoutPreset.value = clonePreset(preset)
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     needsWelcome.value = false

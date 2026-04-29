@@ -24,16 +24,23 @@ async function init() {
     const core = await import('@tauri-apps/api/core')
     const event = await import('@tauri-apps/api/event')
 
-    try {
+    async function refreshLayouts() {
       _layout.value = await core.invoke<LayoutInfo | null>('get_current_layout')
       _systemLayouts.value = await core.invoke<LayoutInfo[]>('get_system_layouts')
+      _error.value = null
+    }
+
+    try {
+      await refreshLayouts()
     } catch (e) {
       _error.value = String(e)
     }
 
     _unlisten = await event.listen<LayoutInfo>('layout-changed', (ev) => {
       _layout.value = ev.payload
-      _error.value = null
+      void refreshLayouts().catch((e) => {
+        _error.value = e instanceof Error ? e.message : String(e)
+      })
     })
   } catch {
     // Not running inside Tauri — leave as null, no error.

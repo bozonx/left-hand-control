@@ -89,6 +89,35 @@ describe('config helpers', () => {
     expect(config.settings.locale).toBe('auto')
   })
 
+  it('preserves manual selection and full auto-condition state', () => {
+    const config = normalizeConfig({
+      settings: {
+        currentLayoutId: 'user:nav',
+        layoutMode: 'manual',
+        layoutConditions: {
+          'user:nav': {
+            whitelist: {
+              gameMode: 'off',
+              layouts: ['us'],
+              apps: ['code', 'kitty'],
+            },
+            disabledInAuto: true,
+          },
+        },
+      },
+    })
+
+    expect(config.settings.manualActiveLayoutId).toBe('user:nav')
+    expect(config.settings.layoutConditions['user:nav']).toEqual({
+      whitelist: {
+        gameMode: 'off',
+        layouts: ['us'],
+        apps: ['code', 'kitty'],
+      },
+      disabledInAuto: true,
+    })
+  })
+
   it('preserves explicit null layer mappings as swallow', () => {
     const config = normalizeConfig({
       layers: [{ id: 'nav', name: 'Navigation' }],

@@ -105,9 +105,9 @@ fn watch_once(app: &AppHandle) -> Result<(), String> {
 
     // Subscribe BEFORE the initial emit so we don't miss an update that
     // arrives while we're querying state.
-    let mut layout_changed = proxy
-        .receive_signal("layoutChanged")
-        .map_err(|e| format!("subscribe layoutChanged: {e}"))?;
+    let mut signals = proxy
+        .receive_all_signals()
+        .map_err(|e| format!("subscribe keyboard layout signals: {e}"))?;
 
     // Initial state.
     emit_current(app, &proxy);
@@ -116,9 +116,17 @@ fn watch_once(app: &AppHandle) -> Result<(), String> {
         // `signals.next()` is a blocking iterator. It returns `None`
         // only when the bus connection is closed, at which point we
         // bubble up so the outer loop reconnects.
-        let Some(_msg) = layout_changed.next() else {
+        let Some(msg) = signals.next() else {
             return Err("DBus signal stream closed".into());
         };
+        let header = msg.header();
+        let signal_name = header
+            .member()
+            .map(|name| name.as_str())
+            .unwrap_or_default();
+        if signal_name != "layoutChanged" && signal_name != "layoutListChanged" {
+            continue;
+        }
         emit_current(app, &proxy);
     }
     Ok(())

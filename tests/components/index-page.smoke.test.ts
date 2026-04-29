@@ -7,6 +7,6 @@ describe('IndexPage', () => {
   it('renders the layouts home content', async () => {
     const wrapper = await mountSuspended(IndexPage)
 
-    expect(wrapper.text()).toContain('Using the library')
+    expect(wrapper.text()).toContain('Quick start')
   })
 })

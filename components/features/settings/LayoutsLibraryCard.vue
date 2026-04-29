@@ -363,7 +363,7 @@ function openBlacklist(entryId: string) {
                                     size="sm"
                                     square
                                     :aria-label="$t('settings.editLayoutAria', { name: entry.name })"
-                                    @click="$emit('requestEdit', entry)"
+                                    @click.stop="$emit('requestEdit', entry)"
                                 />
                                 <UButton
                                     icon="i-lucide-trash-2"
@@ -372,7 +372,7 @@ function openBlacklist(entryId: string) {
                                     size="sm"
                                     square
                                     :aria-label="$t('settings.deleteAria')"
-                                    @click="$emit('requestDelete', entry)"
+                                    @click.stop="$emit('requestDelete', entry)"
                                 />
                             </div>
                         </div>
@@ -381,7 +381,7 @@ function openBlacklist(entryId: string) {
                                 size="sm"
                                 color="primary"
                                 variant="outline"
-                                @click="entryActivateManual(entry.id)"
+                                @click.stop="entryActivateManual(entry.id)"
                             >
                                 {{ $t('rules.activateBtn') }}
                             </UButton>

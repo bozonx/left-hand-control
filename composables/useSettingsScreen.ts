@@ -541,11 +541,20 @@ export function useSettingsScreen() {
     if (!entry) return;
     deleteBusy.value = true;
     try {
+      const { settings } = config.value;
       await library.deleteUserPreset(userLayoutNameFromId(entry.id));
-      if (currentLayoutId.value === entry.id) {
-        config.value.settings.currentLayoutId = undefined;
-        await flush();
+      if (settings.currentLayoutId === entry.id) {
+        settings.currentLayoutId = undefined;
       }
+      if (settings.manualActiveLayoutId === entry.id) {
+        settings.manualActiveLayoutId = undefined;
+      }
+      if (settings.autoDefaultLayoutId === entry.id) {
+        settings.autoDefaultLayoutId = undefined;
+      }
+      settings.layoutOrder = settings.layoutOrder.filter((id) => id !== entry.id);
+      delete settings.layoutConditions[entry.id];
+      await flush();
       deletePending.value = null;
     } catch (error) {
       applyError.value = error instanceof Error ? error.message : String(error);

@@ -287,7 +287,7 @@ describe('useSettingsScreen', () => {
     expect(flush).toHaveBeenCalled()
 
     await vm.toggleMapper()
-    expect(mapper.start).toHaveBeenCalledWith('/dev/input/event1')
+    expect(mapper.start).toHaveBeenCalledWith('/dev/input/event1', undefined)
 
     mapper.status.value.running = true
     await vm.toggleMapper()
