@@ -490,6 +490,22 @@ impl Engine {
                 };
                 m.insert(key, def);
             }
+            for extra in &km.extras {
+                let Some(key) = code_to_key(&extra.key) else {
+                    eprintln!(
+                        "[mapper] unknown extra key code in keymap {layer_id}: {}",
+                        extra.key
+                    );
+                    continue;
+                };
+                let Some(def) = resolve(
+                    &extra.action,
+                    &format!("keymap {layer_id}.extra({})", extra.key),
+                ) else {
+                    continue;
+                };
+                m.insert(key, def);
+            }
             layer_maps.insert(layer_id.clone(), m);
         }
 
@@ -1503,6 +1519,7 @@ mod tests {
         let mut win = LayerKeymap {
             keys: HashMap::new(),
             isolate: vec!["KeyW".into()],
+            ..Default::default()
         };
         win.keys.insert("KeyW".into(), Some("Ctrl+KeyA".into()));
         cfg.layer_keymaps.insert("win".into(), win);

@@ -94,7 +94,7 @@ export function useKeymapEditor() {
     if (!currentLayer.value) return
     currentKeymap.value.extras.unshift({
       id: randomId(),
-      name: '',
+      key: '',
       action: '',
     })
   }

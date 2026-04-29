@@ -48,7 +48,7 @@ defineEmits<{
             />
           </template>
           <ActionPickerModal
-            v-model="extra.name"
+            v-model="extra.key"
             key-only
             :placeholder="$t('rules.keyPh')"
           />

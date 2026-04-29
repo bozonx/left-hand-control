@@ -39,7 +39,7 @@ describe('useMacroEditor', () => {
     state.config.value.layerKeymaps.nav!.keys.KeyH = macroActionRef('dup')
     state.config.value.layerKeymaps.nav!.extras.push({
       id: 'extra-1',
-      name: 'MouseSide',
+      key: 'MouseSide',
       action: macroActionRef('dup'),
     })
     useConfigMock.mockReturnValue(state)

@@ -105,7 +105,7 @@ export function useCommandEditor() {
         noteIfCommand(action, `${layerId}.${code}`)
       }
       for (const extra of keymap.extras ?? []) {
-        noteIfCommand(extra.action, `${layerId}.${extra.name || 'extra'}`)
+        noteIfCommand(extra.action, `${layerId}.${extra.key || 'extra'}`)
       }
     }
     for (const macro of config.value.macros) {

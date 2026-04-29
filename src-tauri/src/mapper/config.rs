@@ -124,11 +124,23 @@ pub struct Rule {
     pub double_tap_timeout_ms: Option<u64>,
 }
 #[derive(Debug, Deserialize, Default, Clone)]
+pub struct ExtraKey {
+    #[allow(dead_code)]
+    #[serde(default)]
+    pub id: String,
+    #[serde(alias = "name")]
+    pub key: String,
+    pub action: String,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct LayerKeymap {
     #[serde(default)]
     pub keys: HashMap<String, Option<String>>,
     #[serde(default)]
     pub isolate: Vec<String>,
+    #[serde(default)]
+    pub extras: Vec<ExtraKey>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

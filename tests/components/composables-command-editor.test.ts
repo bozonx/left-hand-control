@@ -38,7 +38,7 @@ describe('useCommandEditor', () => {
     state.config.value.layerKeymaps.nav.keys.KeyH = commandActionRef('terminal')
     state.config.value.layerKeymaps.nav.extras.push({
       id: 'extra-1',
-      name: 'MouseSide',
+      key: 'MouseSide',
       action: commandActionRef('terminal'),
     })
     state.config.value.macros.push({

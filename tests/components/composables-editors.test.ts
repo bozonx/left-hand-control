@@ -181,12 +181,12 @@ describe('editor composables', () => {
     vm.addExtra()
     const extraId = state.config.value.layerKeymaps.nav?.extras[0]?.id
     expect(state.config.value.layerKeymaps.nav?.extras[0]).toMatchObject({
-      name: '',
+      key: '',
       action: '',
     })
     state.config.value.layerKeymaps.nav?.extras.push({
       id: 'extra-2',
-      name: 'MouseExtra',
+      key: 'MouseExtra',
       action: 'BrowserForward',
     })
     vm.moveExtra('extra-2', 'up')
@@ -203,7 +203,7 @@ describe('editor composables', () => {
     expect(state.config.value.layerKeymaps.nav?.extras).toEqual([
       {
         id: 'extra-2',
-        name: 'MouseExtra',
+        key: 'MouseExtra',
         action: 'BrowserForward',
       },
     ])

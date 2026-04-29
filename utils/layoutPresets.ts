@@ -24,7 +24,7 @@ interface LayoutYaml {
     description?: string;
     keys?: Record<string, string | null>;
     isolate?: string[];
-    extras?: Array<{ id?: string; name?: string; action?: string }>;
+    extras?: Array<{ id?: string; key?: string; name?: string; action?: string }>;
   }>;
   rules?: Array<{
     key?: string;
@@ -83,10 +83,11 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       : undefined;
     const extras: ExtraKey[] = [];
     for (const e of l.extras ?? []) {
-      if (!e?.name || !e?.action) continue;
+      const key = e?.key ?? e?.name;
+      if (!key || !e?.action) continue;
       extras.push({
         id: e.id ?? genId("x_"),
-        name: e.name,
+        key,
         action: e.action,
       });
     }
@@ -195,7 +196,7 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
         ...(km && km.extras.length > 0
           ? {
               extras: km.extras.map((e) => ({
-                name: e.name,
+                key: e.key,
                 action: e.action,
               })),
             }

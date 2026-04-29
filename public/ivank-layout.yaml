@@ -36,9 +36,9 @@ layers:
       Period: Ctrl+ArrowRight
       Slash: macro:down5Times
     extras:
-      - name: MouseSide
+      - key: MouseSide
         action: BrowserBack
-      - name: MouseExtra
+      - key: MouseExtra
         action: BrowserForward
   - id: sel
     keys:

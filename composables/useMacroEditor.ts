@@ -156,7 +156,7 @@ export function useMacroEditor() {
         noteIfMacro(action, `${layerId}.${code}`)
       }
       for (const extra of keymap.extras ?? []) {
-        noteIfMacro(extra.action, `${layerId}.${extra.name || 'extra'}`)
+        noteIfMacro(extra.action, `${layerId}.${extra.key || 'extra'}`)
       }
     }
     return byMacro

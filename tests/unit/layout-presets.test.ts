@@ -25,7 +25,7 @@ layers:
       KeyJ: ~
       KeyL: ArrowRight
     extras:
-      - name: MouseSide
+      - key: MouseSide
         action: BrowserBack
 rules:
   - key: CapsLock
@@ -72,7 +72,7 @@ macros:
           },
           extras: [
             {
-              name: "MouseSide",
+              key: "MouseSide",
               action: "BrowserBack",
             },
           ],
@@ -162,7 +162,7 @@ macros:
       layerKeymaps: {
         edit: {
           keys: { KeyH: "ArrowLeft", KeyJ: null },
-          extras: [{ id: "extra-1", name: "MouseSide", action: "BrowserBack" }],
+          extras: [{ id: "extra-1", key: "MouseSide", action: "BrowserBack" }],
         },
       },
       macros: [
@@ -207,7 +207,7 @@ macros:
       layerKeymaps: {
         edit: {
           keys: { KeyH: "ArrowLeft", KeyJ: null },
-          extras: [{ name: "MouseSide", action: "BrowserBack" }],
+          extras: [{ key: "MouseSide", action: "BrowserBack" }],
         },
       },
       macros: [
@@ -243,7 +243,7 @@ macros:
     });
     config.layerKeymaps.nav = {
       keys: { KeyH: "ArrowLeft" },
-      extras: [{ id: "extra-1", name: "MouseSide", action: "BrowserBack" }],
+      extras: [{ id: "extra-1", key: "MouseSide", action: "BrowserBack" }],
     };
     config.macros.push({
       id: "duplicateLine",
