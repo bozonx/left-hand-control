@@ -74,6 +74,7 @@ export function useMapper(): MapperState {
   const { config, flush } = useConfig()
   const { activeAutoLayoutId } = useLayoutSwitcher()
   const library = useLayoutLibrary()
+  const { t } = useI18n()
   const devices = ref<KeyboardDevice[]>([])
   const mice = ref<KeyboardDevice[]>([])
   const status = ref<MapperStatus>({ running: false, device_path: null, mouse_device_path: null, last_error: null })
@@ -130,7 +131,6 @@ export function useMapper(): MapperState {
     mice.value = []
 
     const tauri = await useTauri()
-    const { t } = useI18n()
     if (!tauri) {
       error.value = t('mapper.desktopOnly')
       return
@@ -165,7 +165,6 @@ export function useMapper(): MapperState {
   async function invokeStart(devicePath: string, mouseDevicePath?: string) {
     const tauri = await useTauri()
     if (!tauri) {
-      const { t } = useI18n()
       error.value = t('mapper.desktopOnly')
       return
     }
