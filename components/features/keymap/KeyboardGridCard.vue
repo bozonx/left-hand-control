@@ -38,28 +38,28 @@ const emit = defineEmits<{
             >
               {{ $t('keymap.keyViewLabels') }}
             </UButton>
-          <UButton
-            size="sm"
-            color="neutral"
-            :variant="keyLabelMode === 'code' ? 'soft' : 'ghost'"
-            @click="emit('update:keyLabelMode', 'code')"
-          >
-            {{ $t('keymap.keyViewCodes') }}
-          </UButton>
-          <UButton
-            size="sm"
-            color="neutral"
-            :variant="keyLabelMode === 'numeric' ? 'soft' : 'ghost'"
-            @click="emit('update:keyLabelMode', 'numeric')"
-          >
-            {{ $t('keymap.keyViewNumeric') }}
-          </UButton>
-        </div>
+            <UButton
+              size="sm"
+              color="neutral"
+              :variant="keyLabelMode === 'code' ? 'soft' : 'ghost'"
+              @click="emit('update:keyLabelMode', 'code')"
+            >
+              {{ $t('keymap.keyViewCodes') }}
+            </UButton>
+            <UButton
+              size="sm"
+              color="neutral"
+              :variant="keyLabelMode === 'numeric' ? 'soft' : 'ghost'"
+              @click="emit('update:keyLabelMode', 'numeric')"
+            >
+              {{ $t('keymap.keyViewNumeric') }}
+            </UButton>
+          </div>
         </div>
       </div>
     </template>
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <section>
+      <section :aria-label="$t('keymap.leftHand')">
         <div
           class="text-xs uppercase tracking-wide text-(--ui-text-muted) mb-2"
         >
@@ -82,7 +82,7 @@ const emit = defineEmits<{
           </div>
         </div>
       </section>
-      <section>
+      <section :aria-label="$t('keymap.rightHand')">
         <div
           class="text-xs uppercase tracking-wide text-(--ui-text-muted) mb-2"
         >

@@ -20,11 +20,14 @@ const {
   addExtra,
   moveExtra,
   removeExtra,
+  updateExtra,
   renameOpen,
   renameDraftName,
+  renameDraftDescription,
   openRename,
   confirmRename,
   updateCurrentLayerDescription,
+  affectedRulesCount,
   deleteConfirmOpen,
   requestDeleteSelectedLayer,
   cancelDeleteSelectedLayer,
@@ -35,8 +38,13 @@ const {
   clearSelectedLayer,
   newLayerOpen,
   newLayerName,
+  newLayerDescription,
   openNewLayer,
   confirmNewLayer,
+  cloneLayerOpen,
+  cloneDraftName,
+  openCloneLayer,
+  confirmCloneLayer,
 } = useKeymapEditor()
 
 const extraIds = computed(() => currentKeymap.value?.extras.map((e) => e.id) ?? [])
@@ -54,6 +62,7 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
       :current-layer-name="currentLayer?.name"
       :current-layer-description="currentLayer?.description"
       @create="openNewLayer"
+      @clone="openCloneLayer"
       @rename="openRename"
       @update-description="updateCurrentLayerDescription"
       @delete="requestDeleteSelectedLayer"
@@ -74,6 +83,7 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
           :selected-id="selectedExtraId"
           @select="selectExtra"
           @add="addExtra"
+          @update-extra="updateExtra"
           @move-up="(id) => moveExtra(id, 'up')"
           @move-down="(id) => moveExtra(id, 'down')"
           @remove="removeExtra"
@@ -107,6 +117,7 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
     <LayerEditorModal
       v-model="newLayerOpen"
       v-model:name="newLayerName"
+      v-model:description="newLayerDescription"
       :title="$t('rules.newLayerTitle')"
       :confirm-label="$t('common.create')"
       :name-placeholder="$t('rules.layerNamePh')"
@@ -116,9 +127,19 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
     <LayerEditorModal
       v-model="renameOpen"
       v-model:name="renameDraftName"
+      v-model:description="renameDraftDescription"
       :title="$t('keymap.renameLayerTitle')"
       :confirm-label="$t('common.save')"
       @confirm="confirmRename"
+    />
+
+    <LayerEditorModal
+      v-model="cloneLayerOpen"
+      v-model:name="cloneDraftName"
+      :title="$t('keymap.cloneLayerTitle')"
+      :confirm-label="$t('common.duplicate')"
+      :name-placeholder="$t('rules.layerNamePh')"
+      @confirm="confirmCloneLayer"
     />
 
     <UModal
@@ -128,6 +149,18 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
       <template #body>
         <p class="text-sm">
           {{ $t('keymap.deleteLayerBody') }}
+        </p>
+        <p
+          v-if="affectedRulesCount === 1"
+          class="mt-2 text-sm text-(--ui-warning)"
+        >
+          {{ $t('keymap.deleteLayerRulesHint_one') }}
+        </p>
+        <p
+          v-else-if="affectedRulesCount > 1"
+          class="mt-2 text-sm text-(--ui-warning)"
+        >
+          {{ $t('keymap.deleteLayerRulesHint_other', { count: affectedRulesCount }) }}
         </p>
       </template>
       <template #footer>

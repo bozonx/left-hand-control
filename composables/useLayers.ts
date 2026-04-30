@@ -40,6 +40,29 @@ export function useLayers() {
     return true
   }
 
+  function cloneLayer(id: string, newName: string) {
+    const source = config.value.layers.find((layer) => layer.id === id)
+    if (!source) return null
+    const name = newName.trim()
+    if (!name) return null
+    const newId = randomId()
+    config.value.layers.push({
+      id: newId,
+      name,
+      description: source.description,
+    })
+    const sourceKeymap = config.value.layerKeymaps[id]
+    if (sourceKeymap) {
+      config.value.layerKeymaps[newId] = {
+        keys: { ...sourceKeymap.keys },
+        extras: sourceKeymap.extras.map((e) => ({ ...e, id: randomId() })),
+      }
+    } else {
+      ensureLayerKeymap(newId)
+    }
+    return newId
+  }
+
   function deleteLayer(id: string) {
     if (!config.value.layers.some((layer) => layer.id === id)) return false
     config.value.layers = config.value.layers.filter((layer) => layer.id !== id)
@@ -54,6 +77,7 @@ export function useLayers() {
     ensureLayerKeymap,
     createLayer,
     renameLayer,
+    cloneLayer,
     deleteLayer,
   }
 }

@@ -22,6 +22,7 @@ const actionLabel = computed(() =>
     type="button"
     class="min-w-0 rounded-md border border-(--ui-border) bg-(--ui-bg) px-2 py-1.5 flex flex-col items-stretch gap-0.5 text-left transition-colors hover:border-(--ui-border-accented) cursor-pointer"
     :aria-label="$t('keymap.editKeyAria', { label })"
+    :title="actionLabel"
     @click="$emit('edit')"
   >
     <div class="text-[0.8125rem] font-semibold text-center leading-tight">

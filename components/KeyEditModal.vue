@@ -18,7 +18,7 @@ const emit = defineEmits<{
 const open = defineModel<boolean>({ required: true })
 
 const draft = ref(typeof props.action === 'string' ? props.action : '')
-const pickerRef = ref<HTMLElement | null>(null)
+const containerRef = ref<HTMLElement | null>(null)
 const normalizedDraft = computed(() => {
   const raw = draft.value ?? ''
   return parseTextAction(raw) !== null ? raw : raw.trim()
@@ -28,7 +28,7 @@ const draftInvalid = computed(() => !isCanonicalAction(normalizedDraft.value))
 watch(open, (v) => {
   if (v) {
     draft.value = typeof props.action === 'string' ? props.action : ''
-    nextTick(() => pickerRef.value?.focus())
+    nextTick(() => containerRef.value?.focus())
   }
 })
 
@@ -58,67 +58,60 @@ function pickAndSave(value: string) {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      ref="pickerRef"
-      class="fixed inset-0 z-50 flex flex-col bg-(--ui-bg) text-(--ui-text) outline-none"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="$t('keymap.editTitle', { label: keyLabel })"
-      tabindex="-1"
-      data-testid="key-edit-view"
-      @keydown.esc="open = false"
-    >
-      <header class="shrink-0 border-b border-(--ui-border) bg-(--ui-bg-elevated)/80 px-4 py-3">
-        <div class="mx-auto flex w-full max-w-7xl items-center gap-3">
-          <UButton
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="ghost"
-            :aria-label="$t('common.cancel')"
-            @click="open = false"
-          />
-          <div class="min-w-0 flex-1">
-            <h2 class="truncate text-base font-semibold">
-              {{ $t('keymap.editTitle', { label: keyLabel }) }}
-            </h2>
-            <div class="truncate text-xs text-(--ui-text-muted)">
-              <i18n-t keypath="keymap.keyCode" tag="span">
-                <template #code>
-                  <code>{{ keyCode }}</code>
-                </template>
-              </i18n-t>
-            </div>
+  <UModal v-model:open="open" fullscreen :ui="{ body: 'overflow-y-hidden' }">
+    <template #header>
+      <div class="mx-auto flex w-full max-w-7xl items-center gap-3">
+        <UButton
+          icon="i-lucide-arrow-left"
+          color="neutral"
+          variant="ghost"
+          :aria-label="$t('common.cancel')"
+          @click="open = false"
+        />
+        <div class="min-w-0 flex-1">
+          <h2 class="truncate text-base font-semibold">
+            {{ $t('keymap.editTitle', { label: keyLabel }) }}
+          </h2>
+          <div class="truncate text-xs text-(--ui-text-muted)">
+            <i18n-t keypath="keymap.keyCode" tag="span">
+              <template #code>
+                <code>{{ keyCode }}</code>
+              </template>
+            </i18n-t>
           </div>
-          <FieldResetButton
-            v-if="action !== undefined"
-            :label="$t('common.clear')"
-            @click="clear"
-          />
-          <UButton color="neutral" variant="ghost" @click="swallow">
-            {{ $t('keymap.swallowAction') }}
-          </UButton>
-          <UButton color="neutral" variant="ghost" @click="open = false">
-            {{ $t('common.cancel') }}
-          </UButton>
-          <UButton icon="i-lucide-check" :disabled="draftInvalid" @click="save">
-            {{ $t('common.save') }}
-          </UButton>
         </div>
-      </header>
+        <FieldResetButton
+          v-if="action !== undefined"
+          :label="$t('common.clear')"
+          @click="clear"
+        />
+        <UButton color="neutral" variant="ghost" @click="swallow">
+          {{ $t('keymap.swallowAction') }}
+        </UButton>
+        <UButton color="neutral" variant="ghost" @click="open = false">
+          {{ $t('common.cancel') }}
+        </UButton>
+        <UButton icon="i-lucide-check" :disabled="draftInvalid" @click="save">
+          {{ $t('common.save') }}
+        </UButton>
+      </div>
+    </template>
 
-      <main class="min-h-0 flex-1 overflow-hidden px-4 py-4">
-        <div class="mx-auto flex h-full w-full max-w-7xl flex-col">
-          <ActionPickerBody v-model="draft" spacious @pick="pickAndSave" />
-          <p
-            v-if="draftInvalid"
-            class="mt-3 text-sm text-(--ui-error)"
-          >
-            {{ $t('picker.invalidValue') }}
-          </p>
-        </div>
-      </main>
-    </div>
-  </Teleport>
+    <template #body>
+      <div
+        ref="containerRef"
+        tabindex="-1"
+        class="mx-auto flex h-full w-full max-w-7xl flex-col"
+        data-testid="key-edit-view"
+      >
+        <ActionPickerBody v-model="draft" spacious @pick="pickAndSave" />
+        <p
+          v-if="draftInvalid"
+          class="mt-3 text-sm text-(--ui-error)"
+        >
+          {{ $t('picker.invalidValue') }}
+        </p>
+      </div>
+    </template>
+  </UModal>
 </template>

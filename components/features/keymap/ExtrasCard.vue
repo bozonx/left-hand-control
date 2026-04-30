@@ -9,6 +9,7 @@ defineProps<{
 const emit = defineEmits<{
   add: []
   select: [id: string]
+  'update-extra': [id: string, field: 'key' | 'action', value: string]
   moveUp: [id: string]
   moveDown: [id: string]
   remove: [id: string]
@@ -62,9 +63,10 @@ function onRowClick(event: MouseEvent, id: string) {
             />
           </template>
           <ActionPickerModal
-            v-model="extra.key"
+            :model-value="extra.key"
             key-only
             :placeholder="$t('rules.keyPh')"
+            @update:model-value="(value: string) => emit('update-extra', extra.id, 'key', value)"
           />
         </UFormField>
         <UFormField>
@@ -75,8 +77,9 @@ function onRowClick(event: MouseEvent, id: string) {
             />
           </template>
           <ActionPickerModal
-            v-model="extra.action"
+            :model-value="extra.action"
             :placeholder="$t('rules.tapPh')"
+            @update:model-value="(value: string) => emit('update-extra', extra.id, 'action', value)"
           />
         </UFormField>
         <div class="flex items-start gap-1 pt-6">

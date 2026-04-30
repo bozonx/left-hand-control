@@ -13,6 +13,7 @@ export function useKeymapEditor() {
     ensureLayerKeymap,
     createLayer,
     renameLayer,
+    cloneLayer,
     deleteLayer,
   } = useLayers()
 
@@ -64,12 +65,10 @@ export function useKeymapEditor() {
 
   const editOpen = ref(false)
   const editKeyCode = ref('')
-  const editKeyLabel = ref('')
   const editAction = ref<string | null | undefined>('')
 
   function openEdit(code: string, label: string) {
     editKeyCode.value = code
-    editKeyLabel.value = label
     editAction.value = currentKeymap.value.keys[code]
     editOpen.value = true
   }
@@ -117,13 +116,27 @@ export function useKeymapEditor() {
     )
   }
 
+  function updateExtra(id: string, field: 'key' | 'action', value: string) {
+    if (!currentLayer.value) return
+    const extra = currentKeymap.value.extras.find((e) => e.id === id)
+    if (!extra) return
+    if (field === 'key') extra.key = value
+    else extra.action = value
+  }
+
   const renameOpen = ref(false)
   const renameDraftName = ref('')
+  const renameDraftDescription = ref('')
   const deleteConfirmOpen = ref(false)
+
+  const affectedRulesCount = computed(() =>
+    config.value.rules.filter((rule) => rule.layerId === selectedLayerId.value).length,
+  )
 
   function openRename() {
     const layer = currentLayer.value
     renameDraftName.value = layer?.name ?? ''
+    renameDraftDescription.value = layer?.description ?? ''
     renameOpen.value = true
   }
 
@@ -132,7 +145,7 @@ export function useKeymapEditor() {
     if (layerId) {
       renameLayer(layerId, {
         name: renameDraftName.value,
-        description: currentLayer.value?.description,
+        description: renameDraftDescription.value,
       })
     }
     renameOpen.value = false
@@ -209,19 +222,38 @@ export function useKeymapEditor() {
 
   const newLayerOpen = ref(false)
   const newLayerName = ref('')
+  const newLayerDescription = ref('')
 
   function openNewLayer() {
     newLayerName.value = ''
+    newLayerDescription.value = ''
     newLayerOpen.value = true
   }
 
   function confirmNewLayer() {
     const id = createLayer({
       name: newLayerName.value,
+      description: newLayerDescription.value,
     })
     if (!id) return
     selectedLayerId.value = id
     newLayerOpen.value = false
+  }
+
+  const cloneLayerOpen = ref(false)
+  const cloneDraftName = ref('')
+
+  function openCloneLayer() {
+    const layer = currentLayer.value
+    cloneDraftName.value = layer ? `${layer.name} copy` : ''
+    cloneLayerOpen.value = true
+  }
+
+  function confirmCloneLayer() {
+    const id = cloneLayer(selectedLayerId.value, cloneDraftName.value)
+    if (!id) return
+    selectedLayerId.value = id
+    cloneLayerOpen.value = false
   }
 
   return {
@@ -233,7 +265,7 @@ export function useKeymapEditor() {
     currentKeymap,
     editOpen,
     editKeyCode,
-    editKeyLabel,
+    editKeyLabel: computed(() => ''),
     editAction,
     openEdit,
     saveEdit,
@@ -242,11 +274,14 @@ export function useKeymapEditor() {
     addExtra,
     moveExtra,
     removeExtra,
+    updateExtra,
     renameOpen,
     renameDraftName,
+    renameDraftDescription,
     openRename,
     confirmRename,
     updateCurrentLayerDescription,
+    affectedRulesCount,
     deleteConfirmOpen,
     requestDeleteSelectedLayer,
     cancelDeleteSelectedLayer,
@@ -257,7 +292,12 @@ export function useKeymapEditor() {
     clearSelectedLayer,
     newLayerOpen,
     newLayerName,
+    newLayerDescription,
     openNewLayer,
     confirmNewLayer,
+    cloneLayerOpen,
+    cloneDraftName,
+    openCloneLayer,
+    confirmCloneLayer,
   }
 }

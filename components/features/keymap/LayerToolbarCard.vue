@@ -9,6 +9,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:selectedLayerId': [value: string]
   create: []
+  clone: []
   rename: []
   'update-description': [value: string]
   delete: []
@@ -67,6 +68,15 @@ function stopDescriptionEditing() {
             @click="emit('rename')"
           />
           <UButton
+            icon="i-lucide-copy"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            :aria-label="$t('keymap.cloneLayerAria', { name: currentLayerName ?? '' })"
+            :disabled="!selectedLayerId"
+            @click="emit('clone')"
+          />
+          <UButton
             icon="i-lucide-trash-2"
             size="sm"
             color="neutral"
@@ -103,8 +113,8 @@ function stopDescriptionEditing() {
         :rows="2"
         :placeholder="$t('rules.layerDescPh')"
         class="w-full"
-        @update:model-value="saveDescription"
         @blur="stopDescriptionEditing"
+        @keydown.enter.prevent="stopDescriptionEditing"
       />
       <button
         v-else

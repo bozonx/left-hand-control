@@ -34,6 +34,7 @@ export default {
     add: "Add",
     close: "Close",
     copy: "Copy",
+    duplicate: "Duplicate",
     copied: "Copied",
     reset: "Reset to default",
     override: "Override",
@@ -294,12 +295,18 @@ export default {
     deleteLayerTitle: "Delete layer “{name}”",
     deleteLayerBody:
       "This removes the layer, its keymap, and clears references to it from layer rules.",
+    deleteLayerRulesHint_one:
+      "One rule references this layer. It will be cleared.",
+    deleteLayerRulesHint_other:
+      "{count} rules reference this layer. They will be cleared.",
     emptyTitle: "No layers yet",
     emptyBody:
       "Create an extra layer to define its keymap and activate it from hold rules.",
     editLayerTitle: "Edit layer",
     renameLayerTitle: "Rename layer",
     renameLayerAria: "Rename layer {name}",
+    cloneLayerTitle: "Duplicate layer",
+    cloneLayerAria: "Duplicate layer {name}",
     editLayerAria: "Edit layer {name}",
     editTitle: "Edit: {label}",
     keyCode: "Key code: {code}",

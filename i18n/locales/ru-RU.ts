@@ -34,6 +34,7 @@ export default {
     add: "Добавить",
     close: "Закрыть",
     copy: "Копировать",
+    duplicate: "Дублировать",
     copied: "Скопировано",
     reset: "Сбросить к значению по умолчанию",
     override: "Переопределить",
@@ -295,12 +296,18 @@ export default {
     deleteLayerTitle: "Удалить слой «{name}»",
     deleteLayerBody:
       "Это удалит сам слой, его раскладку и очистит ссылки на него из правил.",
+    deleteLayerRulesHint_one:
+      "Одно правило ссылается на этот слой. Оно будет очищено.",
+    deleteLayerRulesHint_other:
+      "{count} правил ссылаются на этот слой. Они будут очищены.",
     emptyTitle: "Слоёв пока нет",
     emptyBody:
       "Создайте дополнительный слой, чтобы задать его раскладку и использовать через правила удержания.",
     editLayerTitle: "Редактирование слоя",
     renameLayerTitle: "Переименование слоя",
     renameLayerAria: "Переименовать слой {name}",
+    cloneLayerTitle: "Дублирование слоя",
+    cloneLayerAria: "Дублировать слой {name}",
     editLayerAria: "Редактировать слой {name}",
     editTitle: "Редактирование: {label}",
     keyCode: "Код клавиши: {code}",
