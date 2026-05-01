@@ -62,6 +62,7 @@ export function useSettingsScreen() {
   const platform = usePlatformInfo();
   const theme = useAppTheme();
   const appLocale = useAppLocale();
+  const toast = useToast();
   const { t } = useI18n();
 
   const appearanceItems = computed(() => [
@@ -310,6 +311,11 @@ export function useSettingsScreen() {
         return;
       }
       await applyPreset(preset, target.entry.id);
+      toast.add({
+        title: t('settings.layoutApplied', { name: target.entry.name }),
+        color: 'success',
+        icon: 'i-lucide-check',
+      });
       pendingApply.value = null;
     } catch (error) {
       applyError.value = error instanceof Error ? error.message : String(error);

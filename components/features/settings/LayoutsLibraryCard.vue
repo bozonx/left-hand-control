@@ -101,9 +101,7 @@ function handleEntryClick(event: MouseEvent, entry: LayoutLibraryEntry) {
     const target = event.target as HTMLElement | null;
     if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return;
     emit("select", entry.id);
-    if (props.layoutMode === "manual") {
-        emit("requestApplyEntry", entry);
-    }
+    emit("requestEdit", entry);
 }
 
 function entryActivateManual(entryId: string) {
@@ -226,13 +224,14 @@ function openBlacklist(entryId: string) {
                 </div>
             </div>
 
-            <p v-if="applyError" class="text-sm text-(--ui-error)">
-                {{ applyError }}
-            </p>
-
-            <p v-if="libraryError" class="text-sm text-(--ui-error)">
-                {{ libraryError }}
-            </p>
+            <div role="alert">
+                <p v-if="applyError" class="text-sm text-(--ui-error)">
+                    {{ applyError }}
+                </p>
+                <p v-if="libraryError" class="text-sm text-(--ui-error)">
+                    {{ libraryError }}
+                </p>
+            </div>
 
             <ul
                 class="divide-y divide-(--ui-border) border border-(--ui-border) rounded"
@@ -245,7 +244,7 @@ function openBlacklist(entryId: string) {
                         layoutMode === 'auto' && !entryIsIncluded(entry.id) && !entryIsDefault(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
                         selectedId === entry.id
                             ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
-                            : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
+                            : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
                     ]"
                     @click="handleEntryClick($event, entry)"
                 >
@@ -302,7 +301,7 @@ function openBlacklist(entryId: string) {
                                         variant="subtle"
                                         size="sm"
                                     >
-                                        Editing
+                                        {{ $t('settings.editingBadge') }}
                                     </UBadge>
                                     <UBadge
                                         v-if="currentLayoutId === entry.id && isLayoutDirty"
@@ -413,6 +412,11 @@ function openBlacklist(entryId: string) {
                     </div>
                 </li>
             </ul>
+
+            <div v-if="!entries.length" class="py-8 text-center text-sm text-(--ui-text-muted)">
+                <p class="font-medium text-(--ui-text-highlighted)">{{ $t('settings.emptyLayoutsTitle') }}</p>
+                <p class="mt-1">{{ $t('settings.emptyLayoutsBody') }}</p>
+            </div>
         </div>
 
         <LayoutConditionsModal

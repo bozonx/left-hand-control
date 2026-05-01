@@ -105,7 +105,7 @@ onMounted(() => {
         :class="isActive('/')
           ? 'text-primary bg-(--ui-primary)/8'
           : 'text-(--ui-text-muted) hover:text-primary'"
-        @click="openTab('/')"
+        to="/"
       />
 
       <AppTooltip :text="currentLayoutLabel">
@@ -117,9 +117,9 @@ onMounted(() => {
           :class="isActive('/')
             ? 'text-primary bg-(--ui-primary)/8'
             : 'text-(--ui-text-highlighted) hover:text-primary'"
-          @click="openTab('/')"
+          to="/"
         >
-          <span class="block truncate text-[0.9375rem] font-semibold">
+          <span class="block truncate text-sm font-semibold">
             {{ currentLayoutLabel }}
           </span>
         </UButton>
@@ -145,7 +145,7 @@ onMounted(() => {
             :class="isActive(item.to)
               ? 'text-primary shadow-none ring-1 ring-inset ring-(--ui-primary)/25 bg-(--ui-primary)/8'
               : 'bg-transparent shadow-none'"
-            @click="openTab(item.to)"
+            :to="item.to"
           >
             <span>{{ item.label }}</span>
           </UButton>
@@ -199,7 +199,7 @@ onMounted(() => {
             class="font-mono uppercase"
           >
             <UIcon name="i-lucide-languages" class="mr-1 shrink-0" />
-            <span class="text-[0.6875rem] opacity-60 mr-0.5">{{ $t('app.layoutLanguageLabel') }}</span>
+            <span class="text-xs opacity-60 mr-0.5">{{ $t('app.layoutLanguageLabel') }}</span>
             {{ layout.short }}{{ layout.display ? ` (${layout.display})` : '' }}
           </UBadge>
         </AppTooltip>
@@ -209,9 +209,10 @@ onMounted(() => {
             :color="gameMode.status.value.active ? 'error' : 'neutral'"
             :variant="gameMode.status.value.active ? 'solid' : 'outline'"
             size="sm"
+            :class="!gameMode.status.value.active ? 'opacity-50' : ''"
           >
             <UIcon name="i-lucide-gamepad-2" class="mr-1 h-3.5 w-3.5" />
-            GAME
+            {{ $t('app.gameModeLabel') }}
           </UBadge>
         </AppTooltip>
 

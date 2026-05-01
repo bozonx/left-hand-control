@@ -19,6 +19,7 @@ export default {
     quit: "Выйти из приложения",
     presetLabel: "Пресет:",
     layoutLanguageLabel: "Язык:",
+    gameModeLabel: "GAME",
   },
   common: {
     cancel: "Отмена",
@@ -491,9 +492,13 @@ export default {
     modDelayHint:
       "Глобальное значение: сколько ждать между нажатием модификатора (Shift/Ctrl/...) и основной клавиши внутри одного шага.",
     layoutsTitle: "Раскладки",
+    emptyLayoutsTitle: "Нет сохранённых раскладок",
+    emptyLayoutsBody: "Создайте первую раскладку с помощью кнопок выше.",
     loadFailed: "Не удалось загрузить раскладку «{name}»",
+    layoutApplied: "Раскладка «{name}» применена",
     activeBadge: "активна",
     unsavedBadge: "не сохранена",
+    editingBadge: "Редактируется",
     loadBtn: "Загрузить",
     saveCurrent: "Сохранить",
     saveAs: "Сохранить как",

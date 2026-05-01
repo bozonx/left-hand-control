@@ -138,7 +138,7 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-5xl space-y-4">
+  <div class="w-full space-y-4">
     <div class="space-y-1">
       <h2 class="text-lg font-semibold">{{ $t("home.title") }}</h2>
       <p class="text-sm text-(--ui-text-muted)">

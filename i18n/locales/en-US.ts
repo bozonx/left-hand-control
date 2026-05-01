@@ -19,6 +19,7 @@ export default {
     quit: "Quit application",
     presetLabel: "Preset:",
     layoutLanguageLabel: "Language:",
+    gameModeLabel: "GAME",
   },
   common: {
     cancel: "Cancel",
@@ -488,9 +489,13 @@ export default {
     modDelayHint:
       "Global value: how long to wait between pressing a modifier (Shift/Ctrl/...) and the main key within one step.",
     layoutsTitle: "Layouts",
+    emptyLayoutsTitle: "No saved layouts yet",
+    emptyLayoutsBody: "Create your first layout using the buttons above.",
     loadFailed: 'Failed to load layout "{name}"',
+    layoutApplied: 'Layout "{name}" applied',
     activeBadge: "active",
     unsavedBadge: "unsaved",
+    editingBadge: "Editing",
     loadBtn: "Load",
     saveCurrent: "Save",
     saveAs: "Save As",
