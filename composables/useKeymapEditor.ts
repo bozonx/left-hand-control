@@ -1,303 +1,56 @@
-import type { LayerKeymap } from '~/types/config'
-import { randomId, type KeyLabelMode } from '~/utils/keys'
-
-const EMPTY_KEYMAP: LayerKeymap = {
-  keys: {},
-  extras: [],
-}
+import { useKeymapLayerContext } from './useKeymapLayerContext'
+import { useKeymapKeyEdit } from './useKeymapKeyEdit'
+import { useKeymapExtras } from './useKeymapExtras'
+import { useKeymapLayerOps } from './useKeymapLayerOps'
 
 export function useKeymapEditor() {
-  const { config } = useConfig()
-  const uiState = useUiState()
-  const {
-    ensureLayerKeymap,
-    createLayer,
-    renameLayer,
-    cloneLayer,
-    deleteLayer,
-  } = useLayers()
-
-  const toast = useToast()
-  const { t } = useI18n()
-
-  const selectedLayerId = computed<string>({
-    get: () => {
-      const selected = uiState.state.value.selectedLayerId
-      if (selected && config.value.layers.some((layer) => layer.id === selected)) {
-        return selected
-      }
-      return config.value.layers[0]?.id ?? ''
-    },
-    set: (value) => {
-      uiState.setSelectedLayerId(value)
-    },
-  })
-
-  const keyLabelMode = computed<KeyLabelMode>({
-    get: () => uiState.state.value.keyLabelMode,
-    set: (value) => {
-      uiState.setKeyLabelMode(value)
-    },
-  })
-
-  watch(
-    () => config.value.layers.map((layer) => layer.id).join(','),
-    () => {
-      if (!config.value.layers.some((layer) => layer.id === selectedLayerId.value)) {
-        uiState.setSelectedLayerId(config.value.layers[0]?.id ?? '')
-      }
-    },
-    { immediate: true },
-  )
-
-  const layerItems = computed(() =>
-    config.value.layers.map((layer) => ({ label: layer.name, value: layer.id })),
-  )
-
-  const currentLayer = computed(() =>
-    config.value.layers.find((layer) => layer.id === selectedLayerId.value),
-  )
-
-  const currentKeymap = computed(() => {
-    if (!currentLayer.value) return EMPTY_KEYMAP
-    return ensureLayerKeymap(selectedLayerId.value)
-  })
-
-  const editOpen = ref(false)
-  const editKeyCode = ref('')
-  const editAction = ref<string | null | undefined>('')
-
-  function openEdit(code: string, label: string) {
-    editKeyCode.value = code
-    editAction.value = currentKeymap.value.keys[code]
-    editOpen.value = true
-  }
-
-  function saveEdit(action: string) {
-    if (!currentLayer.value) return
-    if (action) currentKeymap.value.keys[editKeyCode.value] = action
-    else delete currentKeymap.value.keys[editKeyCode.value]
-  }
-
-  function clearEdit() {
-    if (!currentLayer.value) return
-    delete currentKeymap.value.keys[editKeyCode.value]
-  }
-
-  function swallowEdit() {
-    if (!currentLayer.value) return
-    currentKeymap.value.keys[editKeyCode.value] = null
-  }
-
-  function addExtra() {
-    if (!currentLayer.value) return
-    currentKeymap.value.extras.unshift({
-      id: randomId(),
-      key: '',
-      action: '',
-    })
-  }
-
-  function moveExtra(id: string, direction: 'up' | 'down') {
-    if (!currentLayer.value) return
-    const index = currentKeymap.value.extras.findIndex((extra) => extra.id === id)
-    if (index === -1) return
-    const newIndex = direction === 'up' ? index - 1 : index + 1
-    if (newIndex < 0 || newIndex >= currentKeymap.value.extras.length) return
-    const [extra] = currentKeymap.value.extras.splice(index, 1)
-    if (!extra) return
-    currentKeymap.value.extras.splice(newIndex, 0, extra)
-  }
-
-  function removeExtra(id: string) {
-    if (!currentLayer.value) return
-    currentKeymap.value.extras = currentKeymap.value.extras.filter(
-      (extra) => extra.id !== id,
-    )
-  }
-
-  function updateExtra(id: string, field: 'key' | 'action', value: string) {
-    if (!currentLayer.value) return
-    const extra = currentKeymap.value.extras.find((e) => e.id === id)
-    if (!extra) return
-    if (field === 'key') extra.key = value
-    else extra.action = value
-  }
-
-  const renameOpen = ref(false)
-  const renameDraftName = ref('')
-  const renameDraftDescription = ref('')
-  const deleteConfirmOpen = ref(false)
-
-  const affectedRulesCount = computed(() =>
-    config.value.rules.filter((rule) => rule.layerId === selectedLayerId.value).length,
-  )
-
-  function openRename() {
-    const layer = currentLayer.value
-    renameDraftName.value = layer?.name ?? ''
-    renameDraftDescription.value = layer?.description ?? ''
-    renameOpen.value = true
-  }
-
-  function confirmRename() {
-    const layerId = currentLayer.value?.id
-    if (layerId) {
-      renameLayer(layerId, {
-        name: renameDraftName.value,
-        description: renameDraftDescription.value,
-      })
-    }
-    renameOpen.value = false
-  }
-
-  function updateCurrentLayerDescription(description: string) {
-    const layer = currentLayer.value
-    if (!layer) return false
-    return renameLayer(layer.id, {
-      name: layer.name,
-      description,
-    })
-  }
-
-  function deleteSelectedLayer() {
-    if (deleteLayer(selectedLayerId.value)) {
-      selectedLayerId.value = config.value.layers[0]?.id ?? ''
-      deleteConfirmOpen.value = false
-    }
-  }
-
-  function requestDeleteSelectedLayer() {
-    if (!currentLayer.value) return
-    deleteConfirmOpen.value = true
-  }
-
-  function cancelDeleteSelectedLayer() {
-    deleteConfirmOpen.value = false
-  }
-
-  const clearConfirmOpen = ref(false)
-  const lastClearedBackup = ref<LayerKeymap | null>(null)
-
-  function requestClearSelectedLayer() {
-    if (!currentLayer.value) return
-    clearConfirmOpen.value = true
-  }
-
-  function cancelClearSelectedLayer() {
-    clearConfirmOpen.value = false
-  }
-
-  function clearSelectedLayer() {
-    if (!currentLayer.value) return
-    const keymap = currentKeymap.value
-    lastClearedBackup.value = {
-      keys: { ...keymap.keys },
-      extras: keymap.extras.map((e) => ({ ...e })),
-    }
-    keymap.keys = {}
-    keymap.extras = []
-    clearConfirmOpen.value = false
-    toast.add({
-      title: t('keymap.layerCleared'),
-      color: 'success',
-      icon: 'i-lucide-check',
-      actions: [
-        {
-          label: t('keymap.undoClear'),
-          onClick: undoClear,
-        },
-      ],
-    })
-  }
-
-  function undoClear() {
-    const backup = lastClearedBackup.value
-    if (!backup || !currentLayer.value) return
-    const keymap = currentKeymap.value
-    keymap.keys = backup.keys
-    keymap.extras = backup.extras
-    lastClearedBackup.value = null
-  }
-
-  const newLayerOpen = ref(false)
-  const newLayerName = ref('')
-  const newLayerDescription = ref('')
-
-  function openNewLayer() {
-    newLayerName.value = ''
-    newLayerDescription.value = ''
-    newLayerOpen.value = true
-  }
-
-  function confirmNewLayer() {
-    const id = createLayer({
-      name: newLayerName.value,
-      description: newLayerDescription.value,
-    })
-    if (!id) return
-    selectedLayerId.value = id
-    newLayerOpen.value = false
-  }
-
-  const cloneLayerOpen = ref(false)
-  const cloneDraftName = ref('')
-
-  function openCloneLayer() {
-    const layer = currentLayer.value
-    cloneDraftName.value = layer ? `${layer.name} copy` : ''
-    cloneLayerOpen.value = true
-  }
-
-  function confirmCloneLayer() {
-    const id = cloneLayer(selectedLayerId.value, cloneDraftName.value)
-    if (!id) return
-    selectedLayerId.value = id
-    cloneLayerOpen.value = false
-  }
+  const layerCtx = useKeymapLayerContext()
+  const keyEdit = useKeymapKeyEdit(layerCtx.currentKeymap, layerCtx.currentLayer)
+  const extras = useKeymapExtras(layerCtx.currentKeymap, layerCtx.currentLayer)
+  const layerOps = useKeymapLayerOps(layerCtx.selectedLayerId, layerCtx.currentLayer, layerCtx.config)
 
   return {
-    config,
-    selectedLayerId,
-    keyLabelMode,
-    layerItems,
-    currentLayer,
-    currentKeymap,
-    editOpen,
-    editKeyCode,
+    config: layerCtx.config,
+    selectedLayerId: layerCtx.selectedLayerId,
+    keyLabelMode: layerCtx.keyLabelMode,
+    layerItems: layerCtx.layerItems,
+    currentLayer: layerCtx.currentLayer,
+    currentKeymap: layerCtx.currentKeymap,
+    editOpen: keyEdit.editOpen,
+    editKeyCode: keyEdit.editKeyCode,
     editKeyLabel: computed(() => ''),
-    editAction,
-    openEdit,
-    saveEdit,
-    clearEdit,
-    swallowEdit,
-    addExtra,
-    moveExtra,
-    removeExtra,
-    updateExtra,
-    renameOpen,
-    renameDraftName,
-    renameDraftDescription,
-    openRename,
-    confirmRename,
-    updateCurrentLayerDescription,
-    affectedRulesCount,
-    deleteConfirmOpen,
-    requestDeleteSelectedLayer,
-    cancelDeleteSelectedLayer,
-    deleteSelectedLayer,
-    clearConfirmOpen,
-    requestClearSelectedLayer,
-    cancelClearSelectedLayer,
-    clearSelectedLayer,
-    newLayerOpen,
-    newLayerName,
-    newLayerDescription,
-    openNewLayer,
-    confirmNewLayer,
-    cloneLayerOpen,
-    cloneDraftName,
-    openCloneLayer,
-    confirmCloneLayer,
+    editAction: keyEdit.editAction,
+    openEdit: keyEdit.openEdit,
+    saveEdit: keyEdit.saveEdit,
+    clearEdit: keyEdit.clearEdit,
+    swallowEdit: keyEdit.swallowEdit,
+    addExtra: extras.addExtra,
+    moveExtra: extras.moveExtra,
+    removeExtra: extras.removeExtra,
+    updateExtra: extras.updateExtra,
+    renameOpen: layerOps.renameOpen,
+    renameDraftName: layerOps.renameDraftName,
+    renameDraftDescription: layerOps.renameDraftDescription,
+    openRename: layerOps.openRename,
+    confirmRename: layerOps.confirmRename,
+    updateCurrentLayerDescription: layerOps.updateCurrentLayerDescription,
+    affectedRulesCount: layerOps.affectedRulesCount,
+    deleteConfirmOpen: layerOps.deleteConfirmOpen,
+    requestDeleteSelectedLayer: layerOps.requestDeleteSelectedLayer,
+    cancelDeleteSelectedLayer: layerOps.cancelDeleteSelectedLayer,
+    deleteSelectedLayer: layerOps.deleteSelectedLayer,
+    clearConfirmOpen: layerOps.clearConfirmOpen,
+    requestClearSelectedLayer: layerOps.requestClearSelectedLayer,
+    cancelClearSelectedLayer: layerOps.cancelClearSelectedLayer,
+    clearSelectedLayer: layerOps.clearSelectedLayer,
+    newLayerOpen: layerOps.newLayerOpen,
+    newLayerName: layerOps.newLayerName,
+    newLayerDescription: layerOps.newLayerDescription,
+    openNewLayer: layerOps.openNewLayer,
+    confirmNewLayer: layerOps.confirmNewLayer,
+    cloneLayerOpen: layerOps.cloneLayerOpen,
+    cloneDraftName: layerOps.cloneDraftName,
+    openCloneLayer: layerOps.openCloneLayer,
+    confirmCloneLayer: layerOps.confirmCloneLayer,
   }
 }
