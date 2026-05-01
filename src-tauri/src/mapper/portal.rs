@@ -47,6 +47,9 @@ use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
 
 #[link(name = "xkbcommon")]
 unsafe extern "C" {
+    // SAFETY: `xkb_utf32_to_keysym` is a pure function from `libxkbcommon`
+    // that maps a Unicode scalar value to an XKB keysym; it never dereferences
+    // a pointer argument and is safe to call from any thread.
     fn xkb_utf32_to_keysym(ucs: u32) -> u32;
 }
 

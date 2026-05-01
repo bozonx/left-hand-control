@@ -313,9 +313,11 @@ mod tests {
         }
     }
 
+    type HandleQueue = Arc<Mutex<VecDeque<Result<Box<dyn BackendHandle>, String>>>>;
+
     struct FakeBackend {
         devices: Vec<KeyboardDevice>,
-        next_handles: Arc<Mutex<VecDeque<Result<Box<dyn BackendHandle>, String>>>>,
+        next_handles: HandleQueue,
     }
 
     impl FakeBackend {

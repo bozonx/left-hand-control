@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import FieldLabel from '~/components/FieldLabel.vue'
+
 const props = defineProps<{
   useGamemoded: boolean
   useFullscreen: boolean
@@ -26,20 +28,26 @@ const emit = defineEmits<{
 
     <div class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
-        <UFormField
-          :label="$t('settings.gameModeUseGamemoded')"
-          :description="$t('settings.gameModeUseGamemodedHint')"
-        >
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('settings.gameModeUseGamemoded')"
+              :hint="$t('settings.gameModeUseGamemodedHint')"
+            />
+          </template>
           <UCheckbox
             :model-value="useGamemoded"
             @update:model-value="$emit('update:useGamemoded', $event as boolean)"
           />
         </UFormField>
 
-        <UFormField
-          :label="$t('settings.gameModeUseFullscreen')"
-          :description="$t('settings.gameModeUseFullscreenHint')"
-        >
+        <UFormField>
+          <template #label>
+            <FieldLabel
+              :label="$t('settings.gameModeUseFullscreen')"
+              :hint="$t('settings.gameModeUseFullscreenHint')"
+            />
+          </template>
           <UCheckbox
             :model-value="useFullscreen"
             @update:model-value="$emit('update:useFullscreen', $event as boolean)"

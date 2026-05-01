@@ -67,7 +67,7 @@ pub fn start_watcher(app: AppHandle) {
                     CACHED_GAMEMODE_ACTIVE.store(status.active, Ordering::SeqCst);
                     let time_str = get_current_time();
                     let trigger = status.method.as_deref().unwrap_or("none");
-                    println!(
+                    eprintln!(
                         "[gamemode debug] [{}] State changed: {} (Trigger: {})",
                         time_str,
                         if status.active { "ACTIVE" } else { "INACTIVE" },

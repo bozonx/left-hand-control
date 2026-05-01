@@ -80,6 +80,9 @@ impl MultiDeviceLoopDriver {
     fn new(devices: Vec<Device>) -> Result<Self, String> {
         for device in &devices {
             let fd = device.as_raw_fd();
+            // SAFETY: `fd` is a valid raw file descriptor obtained from an
+            // `evdev::Device` that is still alive; `fcntl` only queries and
+            // modifies the open-file description flags, never the device itself.
             unsafe {
                 let flags = libc::fcntl(fd, libc::F_GETFL);
                 if flags < 0 {
