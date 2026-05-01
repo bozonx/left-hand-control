@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ConditionsForm, {
   type ConditionsValue,
@@ -20,23 +20,30 @@ const isOpen = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 const { getConditionSet, setConditionSet } = useLayoutConditions()
 
-const conditions = computed<ConditionsValue>({
-  get: (): ConditionsValue => {
-    const set = getConditionSet(props.layoutId, props.kind)
-    return {
-      gameMode: (set.gameMode ?? 'ignore') as 'on' | 'off' | 'ignore',
-      layouts: [...set.layouts],
-      apps: [...(set.apps ?? [])],
-    }
-  },
-  set: (value: ConditionsValue) => {
-    setConditionSet(props.layoutId, props.kind, {
-      gameMode: value.gameMode === 'ignore' ? undefined : value.gameMode,
-      layouts: value.layouts,
-      apps: value.apps && value.apps.length > 0 ? value.apps : undefined,
-    })
-  },
+const draft = ref<ConditionsValue>({
+  gameMode: 'ignore',
+  layouts: [],
+  apps: [],
 })
+
+watch(isOpen, (open) => {
+  if (!open) return
+  const set = getConditionSet(props.layoutId, props.kind)
+  draft.value = {
+    gameMode: (set.gameMode ?? 'ignore') as 'on' | 'off' | 'ignore',
+    layouts: [...set.layouts],
+    apps: [...(set.apps ?? [])],
+  }
+})
+
+function apply() {
+  setConditionSet(props.layoutId, props.kind, {
+    gameMode: draft.value.gameMode === 'ignore' ? undefined : draft.value.gameMode,
+    layouts: draft.value.layouts,
+    apps: draft.value.apps && draft.value.apps.length > 0 ? draft.value.apps : undefined,
+  })
+  isOpen.value = false
+}
 
 const title = computed(() => {
   const base =
@@ -57,12 +64,15 @@ const title = computed(() => {
             : t('settings.blacklistHint')
         }}
       </p>
-      <ConditionsForm v-model="conditions" />
+      <ConditionsForm v-model="draft" />
     </template>
 
     <template #footer>
-      <div class="flex justify-end w-full">
-        <UButton @click="isOpen = false">{{ $t('common.close') }}</UButton>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton color="neutral" variant="ghost" @click="isOpen = false">
+          {{ $t('common.cancel') }}
+        </UButton>
+        <UButton @click="apply">{{ $t('common.apply') }}</UButton>
       </div>
     </template>
   </UModal>

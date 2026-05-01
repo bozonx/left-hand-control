@@ -165,6 +165,7 @@ const listGridClass = computed(() =>
 const showSuggestions = ref(false)
 const inputRef = ref<InstanceType<typeof InputWithClearButton> | null>(null)
 const activeIndex = ref(-1)
+const catBarRef = ref<HTMLElement | null>(null)
 
 const captureActive = ref(false)
 const capturedKeys = ref<Set<string>>(new Set())
@@ -224,6 +225,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onDocumentKeydown, true)
   document.removeEventListener('keyup', onDocumentKeyup, true)
+  if (focusoutTimer) clearTimeout(focusoutTimer)
 })
 
 const filteredItems = computed(() => {
@@ -277,6 +279,18 @@ function handleSuggestionKeydown(event: KeyboardEvent, item: ActionItem, index: 
     } else {
       activeIndex.value = -1
     }
+  } else if (event.key === 'PageDown') {
+    event.preventDefault()
+    activeIndex.value = Math.min(index + 5, filteredItems.value.length - 1)
+  } else if (event.key === 'PageUp') {
+    event.preventDefault()
+    activeIndex.value = Math.max(index - 5, 0)
+  } else if (event.key === 'Home') {
+    event.preventDefault()
+    activeIndex.value = 0
+  } else if (event.key === 'End') {
+    event.preventDefault()
+    activeIndex.value = filteredItems.value.length - 1
   } else if (event.key === 'Enter') {
     event.preventDefault()
     pick(item)
@@ -288,13 +302,17 @@ function handleSuggestionKeydown(event: KeyboardEvent, item: ActionItem, index: 
   }
 }
 
+let focusoutTimer: ReturnType<typeof setTimeout> | null = null
+
 function handleContainerFocusOut(event: FocusEvent) {
   const container = event.currentTarget as HTMLElement
-  const related = event.relatedTarget as HTMLElement | null
-  if (!container.contains(related)) {
-    showSuggestions.value = false
-    activeIndex.value = -1
-  }
+  if (focusoutTimer) clearTimeout(focusoutTimer)
+  focusoutTimer = setTimeout(() => {
+    if (!container.contains(document.activeElement)) {
+      showSuggestions.value = false
+      activeIndex.value = -1
+    }
+  }, 0)
 }
 
 watch(activeIndex, (idx) => {
@@ -305,6 +323,7 @@ watch(activeIndex, (idx) => {
     }
     const btn = document.querySelector(`[data-suggestion-index="${idx}"]`) as HTMLButtonElement | null
     btn?.focus()
+    btn?.scrollIntoView({ block: 'nearest' })
   })
 })
 
@@ -324,6 +343,29 @@ function pick(item: ActionItem) {
   stopCapture()
   draft.value = item.value
   emit('pick', item.value)
+}
+
+function handleCategoryKeydown(event: KeyboardEvent) {
+  if (!catBarRef.value) return
+  const buttons = Array.from(catBarRef.value.querySelectorAll<HTMLElement>('button'))
+  const idx = buttons.indexOf(event.currentTarget as HTMLElement)
+  if (idx === -1) return
+
+  let nextIdx = -1
+  if (event.key === 'ArrowLeft') {
+    nextIdx = idx - 1
+  } else if (event.key === 'ArrowRight') {
+    nextIdx = idx + 1
+  } else if (event.key === 'Home') {
+    nextIdx = 0
+  } else if (event.key === 'End') {
+    nextIdx = buttons.length - 1
+  }
+
+  if (nextIdx >= 0 && nextIdx < buttons.length) {
+    event.preventDefault()
+    buttons[nextIdx]?.focus()
+  }
 }
 </script>
 
@@ -358,9 +400,15 @@ function pick(item: ActionItem) {
             </UButton>
           </div>
           <div
-            v-if="showSuggestions && filteredItems.length"
+            v-if="showSuggestions"
             class="absolute z-20 left-0 right-0 top-full mt-1 max-h-80 overflow-y-auto rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) shadow-lg p-1 space-y-0.5"
           >
+            <div
+              v-if="!filteredItems.length"
+              class="px-2.5 py-2 text-sm text-(--ui-text-muted) italic text-center"
+            >
+              {{ $t('picker.noResults') }}
+            </div>
             <button
               v-for="(item, index) in filteredItems"
               :key="item.value"
@@ -394,6 +442,16 @@ function pick(item: ActionItem) {
               </div>
             </button>
           </div>
+          <div
+            v-if="captureActive"
+            class="absolute inset-0 z-30 flex items-center justify-center bg-(--ui-bg)/60 backdrop-blur-sm rounded-md"
+          >
+            <div class="text-center space-y-1">
+              <UIcon name="i-lucide-keyboard" class="w-6 h-6 mx-auto text-(--ui-primary)" />
+              <p class="text-sm font-medium">{{ $t('picker.listeningKeys') }}</p>
+              <p class="text-xs text-(--ui-text-muted)">{{ $t('picker.pressEscapeToStop') }}</p>
+            </div>
+          </div>
         </div>
         <UTextarea
           v-else
@@ -417,7 +475,7 @@ function pick(item: ActionItem) {
       </div>
     </UFormField>
 
-    <div class="flex flex-wrap gap-1.5 border-b border-(--ui-border) pb-2">
+    <div ref="catBarRef" class="flex flex-wrap gap-1.5 border-b border-(--ui-border) pb-2">
       <UButton
         v-if="!props.keyOnly"
         icon="i-lucide-text-cursor-input"
@@ -425,6 +483,7 @@ function pick(item: ActionItem) {
         :color="activeCategory === 'text' ? 'primary' : 'neutral'"
         :variant="activeCategory === 'text' ? 'soft' : 'ghost'"
         @click="activeCategory = 'text'"
+        @keydown="handleCategoryKeydown"
       >
         {{ $t('categories.text') }}
       </UButton>
@@ -436,6 +495,7 @@ function pick(item: ActionItem) {
         :color="activeCategory === cat.id ? 'primary' : 'neutral'"
         :variant="activeCategory === cat.id ? 'soft' : 'ghost'"
         @click="activeCategory = cat.id"
+        @keydown="handleCategoryKeydown"
       >
         {{ $t(cat.labelKey) }}
         <UBadge

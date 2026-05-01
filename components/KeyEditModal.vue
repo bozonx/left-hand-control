@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import { parseTextAction } from '~/types/config'
-import { isCanonicalAction } from '~/utils/actionSyntax'
+import { isCanonicalAction, normalizeActionValue } from '~/utils/actionSyntax'
 
 const props = defineProps<{
   keyLabel: string
@@ -33,8 +33,9 @@ watch(open, (v) => {
 })
 
 function save() {
-  if (!isCanonicalAction(normalizedDraft.value)) return
-  emit('save', normalizedDraft.value)
+  const next = normalizeActionValue(draft.value)
+  if (next === null) return
+  emit('save', next)
   open.value = false
 }
 
@@ -50,9 +51,9 @@ function swallow() {
 
 function pickAndSave(value: string) {
   draft.value = value
-  const normalized = parseTextAction(value) !== null ? value : value.trim()
-  if (!isCanonicalAction(normalized)) return
-  emit('save', normalized)
+  const next = normalizeActionValue(value)
+  if (next === null) return
+  emit('save', next)
   open.value = false
 }
 </script>

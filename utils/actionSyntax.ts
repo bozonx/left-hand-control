@@ -5,6 +5,16 @@ import {
   parseTextAction,
 } from '~/types/config'
 
+export function normalizeActionValue(
+  value: string,
+  requireValue?: boolean,
+): string | null {
+  const next = parseTextAction(value) !== null ? value : value.trim()
+  if (requireValue && !next) return null
+  if (!isCanonicalAction(next)) return null
+  return next
+}
+
 const KEY_TOKENS = new Set([
   'Escape',
   'Tab',

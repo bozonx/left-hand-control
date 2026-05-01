@@ -38,7 +38,7 @@ describe("LayoutsLibraryCard", () => {
     await buttons[5]?.trigger("click");
     await buttons[6]?.trigger("click");
 
-    // Click list items for Load (requestApplyEntry)
+    // Click list items opens edit modal (requestEdit)
     await listItems[0]?.trigger("click");
     await listItems[1]?.trigger("click");
 
@@ -47,11 +47,12 @@ describe("LayoutsLibraryCard", () => {
     expect(wrapper.emitted("saveAs")).toHaveLength(1);
     expect(wrapper.emitted("saveCurrent")).toHaveLength(1);
     expect(wrapper.emitted("requestReset")).toHaveLength(1);
-    expect(wrapper.emitted("requestApplyEntry")).toEqual([
+    expect(wrapper.emitted("requestApplyEntry")).toBeUndefined();
+    expect(wrapper.emitted("requestEdit")).toEqual([
+      [entries[0]],
       [entries[0]],
       [entries[1]],
     ]);
-    expect(wrapper.emitted("requestEdit")).toEqual([[entries[0]]]);
     expect(wrapper.emitted("requestDelete")).toEqual([[entries[0]]]);
   });
 });

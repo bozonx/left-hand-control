@@ -69,26 +69,40 @@ export function evaluateLayoutGate(
   ctx: AutoSwitchContext,
 ): LayoutGate {
   if (!rule) return 'allow'
-  // A layout must have a whitelist to participate in auto mode.
-  if (!rule.whitelist) return 'block'
-  // Blacklist takes precedence: if it matches, the layout is blocked.
-  if (rule.blacklist && matchesConditionSet(rule.blacklist, ctx)) {
-    return 'block'
+
+  // When a whitelist exists, it must match.
+  if (rule.whitelist) {
+    // Blacklist takes precedence: if it matches, the layout is blocked.
+    if (rule.blacklist && matchesConditionSet(rule.blacklist, ctx)) {
+      return 'block'
+    }
+    // Whitelist must match for the layout to be active.
+    if (!matchesConditionSet(rule.whitelist, ctx)) {
+      return 'block'
+    }
+    return 'allow'
   }
-  // Whitelist must match for the layout to be active.
-  if (!matchesConditionSet(rule.whitelist, ctx)) {
-    return 'block'
+
+  // When only a blacklist exists (no whitelist), block only if the
+  // blacklist matches — everything else is allowed.
+  if (rule.blacklist) {
+    if (matchesConditionSet(rule.blacklist, ctx)) {
+      return 'block'
+    }
+    return 'allow'
   }
+
   return 'allow'
 }
 
 // Returns true when an entry should be considered for auto-mode picking.
-// A layout is included only when it has a whitelist condition and is not
-// explicitly disabled via the auto-toggle. Blacklist alone is not enough.
+// A layout is included when it has a whitelist or blacklist condition and is
+// not explicitly disabled via the auto-toggle.
 export function isLayoutInAuto(rule: LayoutConditionRule | undefined): boolean {
   if (!rule) return false
   if (rule.disabledInAuto) return false
   if (rule.whitelist) return true
+  if (rule.blacklist) return true
   return false
 }
 

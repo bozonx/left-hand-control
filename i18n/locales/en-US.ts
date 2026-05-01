@@ -73,6 +73,8 @@ export default {
       "The app picks the active layout automatically from the priority list below. Only one layout is active at a time.",
     activeLayoutLabel: "Active layout",
     activeLayoutNative: "Native (no layout active)",
+    manualNoActiveTitle: "No active layout",
+    manualNoActiveBody: "Pick a layout manually so the mapper uses its rules.",
     whatIsItTitle: "What does this app do?",
     whatIsItBody:
       "Left Hand Control intercepts your physical keyboard at the OS level and remaps keys in real time. You can turn rarely-used keys into powerful modifiers: hold CapsLock and the home row becomes arrow keys, navigation, or symbols.",
@@ -512,7 +514,7 @@ export default {
     blacklist: "Blacklist",
     blacklistTitle: "Blacklist conditions",
     blacklistHint:
-      "The layout will never activate when any of these conditions are met.",
+      "The layout will never activate when any of these conditions are met. If only a blacklist is set (no whitelist), the layout is allowed everywhere except matching conditions.",
     defaultBadge: "default",
     inAutoBadge: "in auto",
     moveLayoutUpAria: "Move {name} up",
@@ -592,6 +594,8 @@ export default {
     captureKeys: "Listen for key press",
     assignKey: "Assign",
     listeningKeys: "Listening...",
+    pressEscapeToStop: "Press Escape to stop",
+    noResults: "No results",
     chordHint:
       "If you need a trigger chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.",
   },

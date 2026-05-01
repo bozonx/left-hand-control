@@ -2,7 +2,7 @@
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import { parseTextAction } from '~/types/config'
-import { isCanonicalAction } from '~/utils/actionSyntax'
+import { isCanonicalAction, normalizeActionValue } from '~/utils/actionSyntax'
 
 const props = withDefaults(defineProps<{
   allowEmpty?: boolean
@@ -87,9 +87,8 @@ function openModal() {
 }
 
 function apply() {
-  const next = normalizedDraft.value
-  if (props.requireValue && !next) return
-  if (!isCanonicalAction(next)) return
+  const next = normalizeActionValue(draft.value, props.requireValue)
+  if (next === null) return
   model.value = next
   closeReason.value = 'apply'
   modalOpen.value = false
@@ -97,9 +96,8 @@ function apply() {
 
 function pickAndApply(value: string) {
   draft.value = value
-  const next = parseTextAction(value) !== null ? value : value.trim()
-  if (props.requireValue && !next) return
-  if (!isCanonicalAction(next)) return
+  const next = normalizeActionValue(value, props.requireValue)
+  if (next === null) return
   model.value = next
   closeReason.value = 'apply'
   modalOpen.value = false
@@ -121,9 +119,10 @@ function cancel() {
 
 <template>
   <div v-if="!props.hideTrigger" class="flex items-center gap-1 w-full">
-    <button
-      type="button"
-      class="flex-1 min-w-0 h-8 px-2.5 flex items-center gap-2 rounded-md border border-(--ui-border) bg-(--ui-bg) hover:bg-(--ui-bg-elevated) text-left text-sm transition-colors"
+    <UButton
+      variant="outline"
+      color="neutral"
+      class="flex-1 min-w-0 h-8 px-2.5 justify-start"
       :class="props.invalid ? 'border-(--ui-error) ring-1 ring-(--ui-error)' : ''"
       @click="openModal"
     >
@@ -137,7 +136,7 @@ function cancel() {
       <span v-else class="text-(--ui-text-muted) truncate">
         {{ placeholder ?? $t('picker.chooseAction') }}
       </span>
-    </button>
+    </UButton>
     <FieldResetButton
       v-if="allowEmpty && model"
       :label="props.clearLabel ?? $t('common.clear')"

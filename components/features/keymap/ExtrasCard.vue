@@ -47,7 +47,7 @@ function onRowClick(event: MouseEvent, id: string) {
       <div
         v-for="(extra, index) in extras"
         :key="extra.id"
-        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-start p-3 rounded-md border transition-all duration-200 cursor-pointer"
+        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-center p-3 rounded-md border transition-all duration-200 cursor-pointer"
         :class="[
           selectedId === extra.id
             ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
@@ -82,7 +82,7 @@ function onRowClick(event: MouseEvent, id: string) {
             @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'action', value ?? '')"
           />
         </UFormField>
-        <div class="flex items-start gap-1 pt-6">
+        <div class="flex items-start gap-1">
           <UButton
             icon="i-lucide-arrow-up"
             variant="ghost"

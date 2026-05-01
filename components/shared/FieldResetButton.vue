@@ -23,7 +23,6 @@ defineEmits<{
       square
       :disabled="props.disabled"
       :aria-label="props.label"
-      v-bind="$attrs"
       @mousedown.stop
       @click.stop="$emit('click')"
     />

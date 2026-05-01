@@ -175,6 +175,20 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
       </div>
     </UCard>
 
+    <UCard
+      v-if="layoutMode === 'manual' && !manualActiveLayoutId"
+      color="warning"
+      variant="subtle"
+    >
+      <div class="flex items-start gap-2 text-sm">
+        <UIcon name="i-lucide-triangle-alert" class="shrink-0 mt-0.5" />
+        <div>
+          <p class="font-semibold">{{ $t("home.manualNoActiveTitle") }}</p>
+          <p class="text-(--ui-text-muted)">{{ $t("home.manualNoActiveBody") }}</p>
+        </div>
+      </div>
+    </UCard>
+
     <div class="space-y-4">
       <div ref="containerRef">
         <LayoutsLibraryCard

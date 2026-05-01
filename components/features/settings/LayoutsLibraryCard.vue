@@ -71,7 +71,7 @@ function entryHasWhitelist(entryId: string) {
 
 function entryHasConditions(entryId: string) {
     const rule = config.value.settings.layoutConditions[entryId];
-    return !!rule?.whitelist;
+    return !!(rule?.whitelist || rule?.blacklist);
 }
 
 function entryToggleDefault(entryId: string, value: boolean) {
@@ -87,13 +87,13 @@ function entryIsEnabledInAuto(entryId: string) {
     if (rule?.disabledInAuto) return false;
     if (entryIsDefault(entryId)) return true;
     if (!rule) return false;
-    if (!rule.whitelist) return false;
+    if (!rule.whitelist && !rule.blacklist) return false;
     return true;
 }
 
 function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
     if (entryIsDefault(entryId)) return undefined;
-    if (!entryHasWhitelist(entryId)) return t("rules.autoIncludeDisabledHintNoWhitelist");
+    if (!entryHasConditions(entryId)) return t("rules.autoIncludeDisabledHintNoConditions");
     return undefined;
 }
 
