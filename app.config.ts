@@ -49,7 +49,7 @@ export default defineAppConfig({
     },
     selectMenu: {
       slots: {
-        content: 'max-h-60 w-(--reka-select-trigger-width) bg-default shadow-lg rounded-md ring ring-default overflow-hidden pointer-events-auto flex flex-col origin-(--reka-combobox-content-transform-origin) w-(--reka-combobox-trigger-width)'
+        content: 'max-h-60 w-(--reka-select-trigger-width) bg-default shadow-lg rounded-md ring ring-default overflow-hidden pointer-events-auto flex flex-col origin-(--reka-combobox-content-transform-origin)'
       }
     },
     inputMenu: {

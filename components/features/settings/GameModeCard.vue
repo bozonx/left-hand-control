@@ -11,7 +11,7 @@ const props = defineProps<{
     <template #header>
       <div class="flex items-center gap-2">
         <UIcon name="i-lucide-gamepad-2" class="h-5 w-5 text-(--ui-primary)" />
-        <h3 class="text-lg font-semibold">{{ $t('settings.gameModeTitle') }}</h3>
+        <h2 class="text-sm font-semibold">{{ $t('settings.gameModeTitle') }}</h2>
       </div>
       <p class="mt-1 text-sm text-(--ui-text-muted)">
         {{ $t('settings.gameModeSubtitle') }}

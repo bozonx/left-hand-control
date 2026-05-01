@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "left-hand-control",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "dev.bozonx.left-hand-control",
   "build": {
     "beforeDevCommand": "pnpm dev",

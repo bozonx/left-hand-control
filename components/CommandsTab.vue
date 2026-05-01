@@ -20,10 +20,6 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
   move: moveCommand,
 })
 
-const emit = defineEmits<{
-  backToTop: []
-}>()
-
 const confirmOpen = ref(false)
 const pendingDeleteKey = ref<string | null>(null)
 const pendingDeleteLabel = ref<string | null>(null)
@@ -41,7 +37,6 @@ async function createCommand() {
   const command = addCommand()
   const uiKey = uiKeyOf(command)
   focusCommandKey.value = uiKey
-  emit('backToTop')
 }
 
 function askRemove(payload: { uiKey: string, id: string }) {

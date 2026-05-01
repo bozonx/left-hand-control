@@ -27,10 +27,6 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
   move: moveMacro,
 })
 
-const emit = defineEmits<{
-  backToTop: []
-}>()
-
 const systemOpen = ref(false)
 const focusMacroKey = ref<string | null>(null)
 
@@ -46,14 +42,12 @@ async function createMacro() {
   const macro = addMacro()
   const uiKey = uiKeyOf(macro)
   focusMacroKey.value = uiKey
-  emit('backToTop')
 }
 
 async function createFromSystemMacro(sys: SystemMacro) {
   const macro = cloneSystemMacro(sys)
   const uiKey = uiKeyOf(macro)
   focusMacroKey.value = uiKey
-  emit('backToTop')
 }
 
 // --- Deletion confirmation -----------------------------------------------

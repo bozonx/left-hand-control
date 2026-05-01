@@ -174,7 +174,8 @@ onMounted(() => {
         </AppTooltip>
 
         <AppTooltip
-          :text="isLayoutDirty ? $t('app.dirtyTooltip') : currentLayoutLabel"
+          :disabled="!isLayoutDirty"
+          :text="$t('app.dirtyTooltip')"
         >
           <div class="flex items-center gap-2">
             <UButton
