@@ -66,7 +66,7 @@ function onRowClick(event: MouseEvent, id: string) {
             :model-value="extra.key"
             key-only
             :placeholder="$t('rules.keyPh')"
-            @update:model-value="(value: string) => emit('update-extra', extra.id, 'key', value)"
+            @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'key', value ?? '')"
           />
         </UFormField>
         <UFormField>
@@ -79,7 +79,7 @@ function onRowClick(event: MouseEvent, id: string) {
           <ActionPickerModal
             :model-value="extra.action"
             :placeholder="$t('rules.tapPh')"
-            @update:model-value="(value: string) => emit('update-extra', extra.id, 'action', value)"
+            @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'action', value ?? '')"
           />
         </UFormField>
         <div class="flex items-start gap-1 pt-6">

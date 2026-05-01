@@ -76,8 +76,11 @@ function cancelRemoveRule() {
         </div>
       </template>
 
-      <div v-if="config.rules.length === 0" class="text-sm text-(--ui-text-muted)">
-        {{ $t('rules.empty') }}
+      <div v-if="config.rules.length === 0" class="py-8 text-center space-y-2">
+        <UIcon name="i-lucide-clipboard-list" class="w-8 h-8 text-(--ui-text-muted) mx-auto" />
+        <p class="text-sm text-(--ui-text-muted)">
+          {{ $t('rules.empty') }}
+        </p>
       </div>
 
       <div v-else ref="containerRef" class="space-y-2">

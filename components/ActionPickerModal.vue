@@ -27,7 +27,7 @@ const emit = defineEmits<{
   clear: []
 }>()
 
-const model = defineModel<string>({ default: '' })
+const model = defineModel<string | null>({ default: '' })
 
 const { getActionInfo } = useMacros()
 const instance = getCurrentInstance()
@@ -70,7 +70,7 @@ const pickerRef = ref<HTMLElement | null>(null)
 
 watch(modalOpen, (isOpen, wasOpen) => {
   if (isOpen && !wasOpen) {
-    draft.value = model.value
+    draft.value = model.value ?? ''
     closeReason.value = null
     nextTick(() => pickerRef.value?.focus())
     return
@@ -79,7 +79,7 @@ watch(modalOpen, (isOpen, wasOpen) => {
   if (!isOpen && wasOpen) {
     const reason = closeReason.value ?? 'cancel'
     if (reason === 'cancel') emit('cancel')
-    if (reason === 'apply') emit('apply', model.value)
+    if (reason === 'apply' && model.value) emit('apply', model.value)
     if (reason === 'clear') emit('clear')
     closeReason.value = null
   }
@@ -164,7 +164,7 @@ onBeforeUnmount(() => {
         :name="actionInfo.icon || (model ? 'i-lucide-square-mouse-pointer' : 'i-lucide-plus')"
         class="shrink-0 w-4 h-4 text-(--ui-text-muted)"
       />
-      <AppTooltip v-if="actionInfo.label" class="truncate min-w-0" :text="model">
+      <AppTooltip v-if="actionInfo.label" class="truncate min-w-0" :text="model ?? ''">
         <span>{{ actionInfo.label }}</span>
       </AppTooltip>
       <span v-else class="text-(--ui-text-muted) truncate">

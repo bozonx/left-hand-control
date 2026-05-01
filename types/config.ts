@@ -51,7 +51,7 @@ export interface LayerRule {
   // window after a short press). Empty string = no double-tap action.
   // Note: when set, a single tap is delayed by `doubleTapTimeoutMs` to
   // disambiguate it from the first press of a double-tap.
-  doubleTapAction: string
+  doubleTapAction: string | null
   // Milliseconds the key must be held down before switching from "tap"
   // interpretation to "hold / layer". If omitted, falls back to
   // settings.defaultHoldTimeoutMs.

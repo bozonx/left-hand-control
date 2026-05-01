@@ -69,7 +69,7 @@ const isConditionsOpen = ref(false)
             key-only
             :invalid="!!keyError"
             :placeholder="$t('rules.keyPh')"
-            @update:model-value="(value: string) => { rule.key = value; if (value) $emit('keySelected', rule.id) }"
+            @update:model-value="(value: string | null) => { rule.key = value ?? ''; if (value) $emit('keySelected', rule.id) }"
           />
         </UFormField>
 
@@ -90,6 +90,48 @@ const isConditionsOpen = ref(false)
           >
             <span class="truncate">{{ $t('rules.conditionsBtn') }}</span>
           </UButton>
+          <div
+            v-if="
+              (rule.conditionGameMode && rule.conditionGameMode !== 'ignore')
+                || rule.conditionLayouts?.length
+                || rule.conditionAppsWhitelist?.length
+                || rule.conditionAppsBlacklist?.length
+            "
+            class="flex flex-wrap gap-1 mt-1.5"
+          >
+            <UBadge
+              v-if="rule.conditionGameMode && rule.conditionGameMode !== 'ignore'"
+              size="xs"
+              variant="subtle"
+              color="primary"
+            >
+              {{ rule.conditionGameMode === 'on' ? $t('rules.gameModeOn') : $t('rules.gameModeOff') }}
+            </UBadge>
+            <UBadge
+              v-if="rule.conditionLayouts?.length"
+              size="xs"
+              variant="subtle"
+              color="neutral"
+            >
+              {{ rule.conditionLayouts.length }} {{ $t('rules.layoutsLabel') }}
+            </UBadge>
+            <UBadge
+              v-if="rule.conditionAppsWhitelist?.length"
+              size="xs"
+              variant="subtle"
+              color="success"
+            >
+              {{ rule.conditionAppsWhitelist.length }} whitelist
+            </UBadge>
+            <UBadge
+              v-if="rule.conditionAppsBlacklist?.length"
+              size="xs"
+              variant="subtle"
+              color="error"
+            >
+              {{ rule.conditionAppsBlacklist.length }} blacklist
+            </UBadge>
+          </div>
         </UFormField>
 
         <UFormField>
