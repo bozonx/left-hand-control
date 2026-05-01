@@ -5,55 +5,63 @@
 // `active-window-changed` event. In a plain browser environment (`pnpm
 // dev` without Tauri) this returns `null` values and never updates.
 
-import { onMounted, onUnmounted } from 'vue'
-
 export interface ActiveWindow {
   title: string
   appId: string
 }
 
+const _state = ref<ActiveWindow | null>(null)
+let _inited = false
+let _unlisten: (() => void) | null = null
+
+async function init() {
+  if (_inited) return
+  _inited = true
+  try {
+    const tauri = await useTauri()
+    if (!tauri) return
+    const res = await tauri.invoke<ActiveWindow | null>('get_active_window')
+    _state.value = res ?? null
+
+    const { listen } = await import('@tauri-apps/api/event')
+    _unlisten = await listen<ActiveWindow>('active-window-changed', (event) => {
+      const payload = event.payload
+      // Empty payload (no title and no appId) means "no detection".
+      if (!payload || (!payload.title && !payload.appId)) {
+        _state.value = null
+      } else {
+        _state.value = payload
+      }
+    })
+  } catch (e) {
+    console.error('Failed to init active window:', e)
+  }
+}
+
 export function useActiveWindow() {
-  const state = useState<ActiveWindow | null>('active-window', () => null)
-
-  async function refresh() {
-    try {
-      const tauri = await useTauri()
-      if (!tauri) return
-      const res = await tauri.invoke<ActiveWindow | null>('get_active_window')
-      state.value = res ?? null
-    } catch (e) {
-      console.error('Failed to get active window:', e)
-    }
-  }
-
-  let unlisten: (() => void) | null = null
-
-  onMounted(async () => {
-    await refresh()
-    try {
-      const tauri = await useTauri()
-      if (!tauri) return
-      const { listen } = await import('@tauri-apps/api/event')
-      unlisten = await listen<ActiveWindow>('active-window-changed', (event) => {
-        const payload = event.payload
-        // Empty payload (no title and no appId) means "no detection".
-        if (!payload || (!payload.title && !payload.appId)) {
-          state.value = null
-        } else {
-          state.value = payload
-        }
-      })
-    } catch (e) {
-      console.error('Failed to listen for active window events:', e)
-    }
+  void init()
+  onScopeDispose(() => {
+    _unlisten?.()
   })
-
-  onUnmounted(() => {
-    if (unlisten) unlisten()
-  })
-
   return {
-    state,
-    refresh,
+    state: readonly(_state),
+    refresh: async () => {
+      try {
+        const tauri = await useTauri()
+        if (!tauri) return
+        const res = await tauri.invoke<ActiveWindow | null>('get_active_window')
+        _state.value = res ?? null
+      } catch (e) {
+        console.error('Failed to get active window:', e)
+      }
+    },
   }
+}
+
+export async function resetActiveWindowStateForTests() {
+  _inited = false
+  _state.value = null
+  const unlisten = _unlisten
+  _unlisten = null
+  if (unlisten) await unlisten()
 }

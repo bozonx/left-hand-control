@@ -66,7 +66,7 @@ export function useLayout() {
   void init()
   onScopeDispose(() => {
     // Keep listener alive across component teardown — state is module-global.
-    void _unlisten
+    _unlisten?.()
   })
   return {
     layout: computed(() => _layout.value),

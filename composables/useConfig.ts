@@ -240,8 +240,8 @@ interface ConfigState {
   loadError: Ref<string | null>
   settingsDir: Ref<string>
   needsWelcome: Ref<boolean>
-  currentLayoutId: Ref<string | undefined>
-  isLayoutDirty: Ref<boolean>
+  currentLayoutId: ComputedRef<string | undefined>
+  isLayoutDirty: ComputedRef<boolean>
   load: () => Promise<void>
   flush: () => Promise<void>
   applyPreset: (preset: LayoutPreset, layoutId: string | undefined) => Promise<void>
@@ -251,6 +251,7 @@ interface ConfigState {
 }
 
 let singleton: ConfigState | null = null
+let loadGeneration = 0
 
 export function resetConfigStateForTests() {
   singleton = null
@@ -334,7 +335,7 @@ export function useConfig(): ConfigState {
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       saveTimer = null
-      void persistNow().catch(() => {})
+      void persistNow().catch((e) => console.error('Background persist failed:', e))
     }, 300)
   }
 
@@ -409,6 +410,7 @@ export function useConfig(): ConfigState {
   }
 
   async function load() {
+    const gen = ++loadGeneration
     const forceIvank =
       import.meta.env.VITE_LHC_FORCE_IVANK === 'true' ||
       import.meta.env.VITE_LHC_FORCE_IVANK === '1'
@@ -482,7 +484,9 @@ export function useConfig(): ConfigState {
       savedLayoutPreset.value = extractPresetFromConfig(config.value)
       layoutSnapshot.value = layoutSnapshotOf(config.value)
     } finally {
-      loaded.value = true
+      if (gen === loadGeneration) {
+        loaded.value = true
+      }
     }
   }
 

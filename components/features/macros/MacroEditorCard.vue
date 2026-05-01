@@ -47,7 +47,7 @@ function onCardClick(event: MouseEvent) {
 }
 
 const { copy: copyToClipboard } = useClipboardCopy()
-const nameInputRef = useTemplateRef<any>('nameInputRef')
+const nameInputRef = useTemplateRef<{ inputRef?: { value?: HTMLInputElement } }>('nameInputRef')
 
 const stepConfirmOpen = ref(false)
 const pendingStepId = ref<string | null>(null)
@@ -75,7 +75,7 @@ watch(
   async (value) => {
     if (!value) return
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
-    const input = nameInputRef.value?.inputRef?.value as HTMLInputElement | undefined
+    const input = nameInputRef.value?.inputRef?.value
     if (!input) return
     input.focus()
     input.select()

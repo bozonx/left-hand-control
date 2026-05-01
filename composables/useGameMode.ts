@@ -1,50 +1,54 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+const _status = ref<GameModeStatus>({ active: false, method: null })
+let _inited = false
+let _unlisten: (() => void) | null = null
 
 export interface GameModeStatus {
   active: boolean
   method: string | null
 }
 
+async function init() {
+  if (_inited) return
+  _inited = true
+  try {
+    const tauri = await useTauri()
+    if (!tauri) return
+    const res = await tauri.invoke<GameModeStatus>('get_gamemode_status')
+    _status.value = res
+
+    const { listen } = await import('@tauri-apps/api/event')
+    _unlisten = await listen<GameModeStatus>('game-mode-changed', (event) => {
+      _status.value = event.payload
+    })
+  } catch (e) {
+    console.error('Failed to init gamemode:', e)
+  }
+}
+
 export function useGameMode() {
-  const status = useState<GameModeStatus>('gamemode-status', () => ({
-    active: false,
-    method: null
-  }))
-
-  const refreshStatus = async () => {
-    try {
-      const tauri = await useTauri()
-      if (!tauri) return
-      const res = await tauri.invoke<GameModeStatus>('get_gamemode_status')
-      status.value = res
-    } catch (e) {
-      console.error('Failed to get gamemode status:', e)
-    }
-  }
-
-  let unlisten: (() => void) | null = null
-
-  onMounted(async () => {
-    await refreshStatus()
-    
-    try {
-      const tauri = await useTauri()
-      if (!tauri) return
-      const { listen } = await import('@tauri-apps/api/event')
-      unlisten = await listen<GameModeStatus>('game-mode-changed', (event) => {
-        status.value = event.payload
-      })
-    } catch (e) {
-      console.error('Failed to listen for gamemode events:', e)
-    }
+  void init()
+  onScopeDispose(() => {
+    _unlisten?.()
   })
-
-  onUnmounted(() => {
-    if (unlisten) unlisten()
-  })
-
   return {
-    status,
-    refreshStatus
+    status: readonly(_status),
+    refreshStatus: async () => {
+      try {
+        const tauri = await useTauri()
+        if (!tauri) return
+        const res = await tauri.invoke<GameModeStatus>('get_gamemode_status')
+        _status.value = res
+      } catch (e) {
+        console.error('Failed to get gamemode status:', e)
+      }
+    },
   }
+}
+
+export async function resetGameModeStateForTests() {
+  _inited = false
+  _status.value = { active: false, method: null }
+  const unlisten = _unlisten
+  _unlisten = null
+  if (unlisten) await unlisten()
 }

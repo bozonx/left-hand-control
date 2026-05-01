@@ -46,7 +46,7 @@ export function useLayoutSwitcher() {
     [
       () => config.value.settings.layoutMode,
       () => config.value.settings.layoutOrder,
-      () => config.value.settings.layoutConditions,
+      () => JSON.stringify(config.value.settings.layoutConditions),
       () => config.value.settings.autoDefaultLayoutId,
       () => library.entries.value.map((e) => e.id).join('|'),
       () => systemLayout.value?.short ?? null,
@@ -57,7 +57,7 @@ export function useLayoutSwitcher() {
     () => {
       void evaluate()
     },
-    { deep: true, immediate: true },
+    { immediate: true },
   )
 
   return { activeAutoLayoutId }

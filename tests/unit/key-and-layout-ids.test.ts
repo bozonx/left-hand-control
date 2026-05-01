@@ -34,6 +34,6 @@ describe('key helpers', () => {
     expect(uniqueCodes.size).toBe(ALL_KEYS.length)
 
     const id = randomId()
-    expect(id).toMatch(/^[a-z0-9]{8}$/)
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
   })
 })

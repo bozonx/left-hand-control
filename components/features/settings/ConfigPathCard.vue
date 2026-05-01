@@ -4,28 +4,11 @@ const props = defineProps<{
   layoutsDir: string
 }>()
 
-const toast = useToast()
-const { t } = useI18n()
+const { copy } = useClipboardCopy()
 
 async function copyPath(path: string) {
   if (!path) return
-  try {
-    await navigator.clipboard.writeText(path)
-    toast.add({
-      title: t('common.copied'),
-      description: path,
-      icon: 'i-lucide-copy-check',
-      close: true,
-    })
-  } catch (error) {
-    toast.add({
-      title: t('common.copy'),
-      description: error instanceof Error ? error.message : String(error),
-      color: 'error',
-      icon: 'i-lucide-circle-alert',
-      close: true,
-    })
-  }
+  await copy(path)
 }
 </script>
 
