@@ -11,6 +11,7 @@ const props = defineProps<{
   isFirst?: boolean
   isLast?: boolean
   selected?: boolean
+  focusName?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
+  nameFocused: [uiKey: string]
 }>()
 
 function onCardClick(event: MouseEvent) {
@@ -26,28 +28,26 @@ function onCardClick(event: MouseEvent) {
   emit('select')
 }
 
-const toast = useToast()
-const { t } = useI18n()
+const { copy: copyToClipboard } = useClipboardCopy()
+const nameInputRef = useTemplateRef<any>('nameInputRef')
+
+watch(
+  () => props.focusName,
+  async (value) => {
+    if (!value) return
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    const input = nameInputRef.value?.inputRef?.value as HTMLInputElement | undefined
+    if (!input) return
+    input.focus()
+    input.select()
+    emit('nameFocused', props.uiKey)
+  },
+  { immediate: true, flush: 'post' },
+)
 
 async function copyCommandId() {
   if (!props.command.id) return
-  try {
-    await navigator.clipboard.writeText(props.command.id)
-    toast.add({
-      title: t('common.copied'),
-      description: props.command.id,
-      icon: 'i-lucide-copy-check',
-      close: true,
-    })
-  } catch (error) {
-    toast.add({
-      title: t('common.copy'),
-      description: error instanceof Error ? error.message : String(error),
-      color: 'error',
-      icon: 'i-lucide-circle-alert',
-      close: true,
-    })
-  }
+  await copyToClipboard(props.command.id)
 }
 </script>
 
@@ -57,7 +57,7 @@ async function copyCommandId() {
     :class="[
       selected
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
-        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:border-emerald-500/40 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-emerald-500/5',
+        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-(--ui-primary)/5',
     ]"
     @click="onCardClick"
   >
@@ -98,6 +98,7 @@ async function copyCommandId() {
             />
           </template>
           <UInput
+            ref="nameInputRef"
             :id="nameInputId"
             v-model="command.name"
             :placeholder="$t('commands.namePh')"

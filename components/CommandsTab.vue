@@ -27,28 +27,21 @@ const emit = defineEmits<{
 const confirmOpen = ref(false)
 const pendingDeleteKey = ref<string | null>(null)
 const pendingDeleteLabel = ref<string | null>(null)
+const focusCommandKey = ref<string | null>(null)
 
 function commandNameInputId(uiKey: string) {
   return `command-name-${uiKey}`
 }
 
-async function focusCommandName(uiKey: string) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await nextTick()
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
-    const input = document.getElementById(commandNameInputId(uiKey)) as HTMLInputElement | null
-    if (!input) continue
-    input.focus()
-    input.select()
-    if (document.activeElement === input) return
-  }
+function clearFocusCommandKey(uiKey: string) {
+  if (focusCommandKey.value === uiKey) focusCommandKey.value = null
 }
 
 async function createCommand() {
   const command = addCommand()
   const uiKey = uiKeyOf(command)
+  focusCommandKey.value = uiKey
   emit('backToTop')
-  await focusCommandName(uiKey)
 }
 
 function askRemove(payload: { uiKey: string, id: string }) {
@@ -115,11 +108,13 @@ function cancelRemove() {
           :linux-error="linuxError(command) ?? undefined"
           :is-first="index === 0"
           :is-last="index === config.commands.length - 1"
+          :focus-name="uiKeyOf(command) === focusCommandKey"
           :selected="selectedId === uiKeyOf(command)"
           @select="select(uiKeyOf(command))"
           @remove="askRemove"
           @move-up="moveCommand($event, -1)"
           @move-down="moveCommand($event, 1)"
+          @name-focused="clearFocusCommandKey"
         />
       </div>
     </UCard>

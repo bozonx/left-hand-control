@@ -17,6 +17,7 @@ const {
   idError,
   hasErrors,
   stepError,
+  stepWarning,
   usage,
 } = useMacroEditor()
 
@@ -123,6 +124,7 @@ function cancelRemove() {
           :name-input-id="macroNameInputId(uiKeyOf(macro))"
           :id-error="idError(macro) ?? undefined"
           :step-error="stepError"
+          :step-warning="stepWarning"
           :usage="usage[macro.id] ?? []"
           :default-step-pause-ms="config.settings.defaultMacroStepPauseMs"
           :default-modifier-delay-ms="config.settings.defaultMacroModifierDelayMs"

@@ -119,6 +119,37 @@ function cancel() {
   closeReason.value = 'cancel'
   modalOpen.value = false
 }
+
+const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+
+function onDocumentTab(event: KeyboardEvent) {
+  if (event.key !== 'Tab' || !modalOpen.value || !pickerRef.value) return
+  const active = document.activeElement
+  if (!active || !pickerRef.value.contains(active)) return
+  const focusables = Array.from(pickerRef.value.querySelectorAll(FOCUSABLE_SELECTOR)) as HTMLElement[]
+  if (focusables.length === 0) return
+  const first = focusables[0]!
+  const last = focusables[focusables.length - 1]!
+  if (event.shiftKey && active === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+watch(modalOpen, (isOpen) => {
+  if (isOpen) {
+    document.addEventListener('keydown', onDocumentTab, true)
+  } else {
+    document.removeEventListener('keydown', onDocumentTab, true)
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onDocumentTab, true)
+})
 </script>
 
 <template>

@@ -12,8 +12,7 @@ defineEmits<{
   clone: [macro: SystemMacro]
 }>()
 
-const toast = useToast()
-const { t } = useI18n()
+const { copy: copyToClipboard } = useClipboardCopy()
 
 function stepsPreview(sys: SystemMacro): string {
   return sys.steps.map((step) => step.keystroke).join(' → ')
@@ -21,23 +20,7 @@ function stepsPreview(sys: SystemMacro): string {
 
 async function copyMacroId(id: string) {
   if (!id) return
-  try {
-    await navigator.clipboard.writeText(id)
-    toast.add({
-      title: t('common.copied'),
-      description: id,
-      icon: 'i-lucide-copy-check',
-      close: true,
-    })
-  } catch (error) {
-    toast.add({
-      title: t('common.copy'),
-      description: error instanceof Error ? error.message : String(error),
-      color: 'error',
-      icon: 'i-lucide-circle-alert',
-      close: true,
-    })
-  }
+  await copyToClipboard(id)
 }
 </script>
 
@@ -48,6 +31,8 @@ async function copyMacroId(id: string) {
         type="button"
         class="flex items-center justify-between gap-3 w-full text-left"
         :aria-expanded="systemOpen"
+        aria-controls="system-macros-content"
+        :aria-label="$t('macros.systemTitle')"
         @click="$emit('update:systemOpen', !systemOpen)"
       >
         <div>
@@ -68,7 +53,7 @@ async function copyMacroId(id: string) {
       </button>
     </template>
 
-    <div v-show="systemOpen">
+    <div id="system-macros-content" v-show="systemOpen">
       <div
         v-if="systemMacros.length === 0"
         class="text-sm text-(--ui-text-muted)"
@@ -123,7 +108,7 @@ async function copyMacroId(id: string) {
                   {{ stepsPreview(sys) }}
                 </code>
                 <div
-                  v-if="usage[sys.id] && usage[sys.id].length"
+                  v-if="usage[sys.id]?.length"
                   class="flex flex-wrap gap-1 mt-1"
                 >
                   <UBadge

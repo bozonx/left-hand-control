@@ -11,6 +11,7 @@ const props = defineProps<{
   uiKey: string
   nameInputId: string
   stepError?: (step: MacroStep) => string | null
+  stepWarning?: (step: MacroStep) => string | null
   isFirst?: boolean
   isLast?: boolean
   focusName?: boolean
@@ -45,10 +46,29 @@ function onCardClick(event: MouseEvent) {
   emit('select')
 }
 
-const toast = useToast()
-const { t } = useI18n()
-
+const { copy: copyToClipboard } = useClipboardCopy()
 const nameInputRef = useTemplateRef<any>('nameInputRef')
+
+const stepConfirmOpen = ref(false)
+const pendingStepId = ref<string | null>(null)
+
+function askRemoveStep(stepId: string) {
+  pendingStepId.value = stepId
+  stepConfirmOpen.value = true
+}
+
+function confirmRemoveStep() {
+  if (pendingStepId.value) {
+    emit('removeStep', props.macro, pendingStepId.value)
+  }
+  pendingStepId.value = null
+  stepConfirmOpen.value = false
+}
+
+function cancelRemoveStep() {
+  pendingStepId.value = null
+  stepConfirmOpen.value = false
+}
 
 watch(
   () => props.focusName,
@@ -66,23 +86,7 @@ watch(
 
 async function copyMacroId() {
   if (!props.macro.id) return
-  try {
-    await navigator.clipboard.writeText(props.macro.id)
-    toast.add({
-      title: t('common.copied'),
-      description: props.macro.id,
-      icon: 'i-lucide-copy-check',
-      close: true,
-    })
-  } catch (error) {
-    toast.add({
-      title: t('common.copy'),
-      description: error instanceof Error ? error.message : String(error),
-      color: 'error',
-      icon: 'i-lucide-circle-alert',
-      close: true,
-    })
-  }
+  await copyToClipboard(props.macro.id)
 }
 </script>
 
@@ -92,7 +96,7 @@ async function copyMacroId() {
     :class="[
       selected
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
-        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/5',
+        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-lg hover:shadow-(--ui-primary)/5',
     ]"
     @click="onCardClick"
   >
@@ -204,6 +208,12 @@ async function copyMacroId() {
                 :placeholder="$t('macros.stepPh')"
                 :invalid="!!stepError?.(step)"
               />
+              <p
+                v-if="stepWarning?.(step) && !stepError?.(step)"
+                class="text-xs text-(--ui-warning) mt-0.5"
+              >
+                {{ stepWarning(step) }}
+              </p>
             </UFormField>
             <UButton
               icon="i-lucide-chevron-up"
@@ -232,7 +242,7 @@ async function copyMacroId() {
               color="error"
               square
               :aria-label="$t('macros.deleteStep')"
-              @click="$emit('removeStep', macro, step.id)"
+              @click="askRemoveStep(step.id)"
             />
           </div>
         </div>
@@ -296,4 +306,20 @@ async function copyMacroId() {
       </div>
     </div>
   </div>
+
+  <UModal v-model:open="stepConfirmOpen" :title="$t('macros.confirmDeleteStepTitle')">
+    <template #body>
+      <p class="text-sm">{{ $t('macros.confirmDeleteStepBody') }}</p>
+    </template>
+    <template #footer>
+      <div class="flex gap-2 justify-end w-full">
+        <UButton variant="ghost" color="neutral" @click="cancelRemoveStep">
+          {{ $t('common.cancel') }}
+        </UButton>
+        <UButton color="error" icon="i-lucide-trash-2" @click="confirmRemoveStep">
+          {{ $t('common.delete') }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>

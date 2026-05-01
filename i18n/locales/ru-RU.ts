@@ -347,6 +347,9 @@ export default {
       nestedMacro:
         "Вложенные ссылки на макросы внутри шагов макроса не поддерживаются.",
     },
+    stepWarnings: {
+      empty: "Пустой шаг — выберите действие или удалите его.",
+    },
     stepPauseLabel: "Пауза между шагами",
     stepPauseHint:
       "Индивидуальная пауза между шагами этого макроса. По умолчанию — значение из настроек.",
@@ -375,6 +378,8 @@ export default {
     cloneBtn: "Создать на основе",
     confirmDeleteTitle: "Удалить макрос?",
     confirmDeleteBody: "Макрос будет удалён. Ссылки {ref} перестанут работать.",
+    confirmDeleteStepTitle: "Удалить шаг?",
+    confirmDeleteStepBody: "Этот шаг будет удалён из макроса.",
   },
   commands: {
     title: "Команды",

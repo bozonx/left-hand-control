@@ -125,6 +125,12 @@ export function useMacroEditor() {
     return null
   }
 
+  function stepWarning(step: MacroStep): string | null {
+    const raw = step.keystroke?.trim() ?? ''
+    if (!raw) return t('macros.stepWarnings.empty')
+    return null
+  }
+
   const hasStepErrors = computed(() =>
     config.value.macros.some((macro) =>
       macro.steps.some((step) => stepError(step) !== null),
@@ -174,6 +180,7 @@ export function useMacroEditor() {
     idError,
     hasIdErrors,
     stepError,
+    stepWarning,
     hasStepErrors,
     hasErrors,
     usage,

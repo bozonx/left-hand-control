@@ -344,6 +344,9 @@ export default {
     stepErrors: {
       nestedMacro: "Nested macro references are not supported in macro steps.",
     },
+    stepWarnings: {
+      empty: "Empty step — pick an action or remove it.",
+    },
     stepPauseLabel: "Pause between steps",
     stepPauseHint:
       "Per-macro pause between steps. Defaults to the Settings value.",
@@ -373,6 +376,9 @@ export default {
     confirmDeleteTitle: "Delete macro?",
     confirmDeleteBody:
       "The macro will be deleted. References {ref} will stop working.",
+    confirmDeleteStepTitle: "Delete step?",
+    confirmDeleteStepBody:
+      "This step will be removed from the macro.",
   },
   commands: {
     title: "Commands",

@@ -67,8 +67,10 @@ describe('useMacroEditor', () => {
 
     vm.addStep(firstMacro)
     const stepId = firstMacro.steps[0]!.id
+    expect(vm.stepWarning(firstMacro.steps[0])).toBe('Empty step — pick an action or remove it.')
     firstMacro.steps[0]!.keystroke = 'Ctrl+KeyC'
     expect(vm.stepError(firstMacro.steps[0])).toBeNull()
+    expect(vm.stepWarning(firstMacro.steps[0])).toBeNull()
     vm.addStep(firstMacro)
     firstMacro.steps[1]!.keystroke = 'Ctrl+KeyV'
     vm.moveStep(firstMacro, 1, -1)
