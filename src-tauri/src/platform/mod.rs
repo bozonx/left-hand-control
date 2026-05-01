@@ -94,7 +94,15 @@ pub fn info() -> PlatformInfo {
         let s = linux::detect();
         let key_interception = probe_linux_key_interception();
         let literal_injection = probe_linux_literal_injection();
-        build_linux_platform_info(s, key_interception, literal_injection)
+        let layout_detection = probe_linux_layout_detection(&s);
+        let system_actions = probe_linux_system_actions(&s);
+        build_linux_platform_info(
+            s,
+            key_interception,
+            literal_injection,
+            layout_detection,
+            system_actions,
+        )
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -137,20 +145,14 @@ fn build_linux_platform_info(
     s: linux::Session,
     key_interception: CapabilityStatus,
     literal_injection: CapabilityStatus,
+    layout_detection: CapabilityStatus,
+    system_actions: CapabilityStatus,
 ) -> PlatformInfo {
     let caps = Capabilities {
         key_interception,
         literal_injection,
-        layout_detection: CapabilityStatus {
-            supported: matches!(s.desktop, linux::Desktop::Kde),
-            available: matches!(s.desktop, linux::Desktop::Kde),
-            detail: None,
-        },
-        system_actions: CapabilityStatus {
-            supported: matches!(s.desktop, linux::Desktop::Kde),
-            available: matches!(s.desktop, linux::Desktop::Kde),
-            detail: None,
-        },
+        layout_detection,
+        system_actions,
     };
     PlatformInfo {
         os: os_kind(),
@@ -164,6 +166,112 @@ fn build_linux_platform_info(
             has_sway_ipc: s.sway_sock.is_some(),
         }),
         capabilities: caps,
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn unsupported_capability(detail: impl Into<String>) -> CapabilityStatus {
+    CapabilityStatus {
+        supported: false,
+        available: false,
+        detail: Some(detail.into()),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn unavailable_capability(detail: impl Into<String>) -> CapabilityStatus {
+    CapabilityStatus {
+        supported: true,
+        available: false,
+        detail: Some(detail.into()),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn available_capability() -> CapabilityStatus {
+    CapabilityStatus {
+        supported: true,
+        available: true,
+        detail: None,
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn probe_linux_layout_detection(s: &linux::Session) -> CapabilityStatus {
+    if !matches!(s.desktop, linux::Desktop::Kde) {
+        return unsupported_capability(format!(
+            "layout detection is not implemented for desktop '{}'",
+            s.desktop.label()
+        ));
+    }
+
+    match probe_kde_keyboard_layout_service() {
+        Ok(()) => available_capability(),
+        Err(e) => unavailable_capability(e),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn probe_kde_keyboard_layout_service() -> Result<(), String> {
+    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let proxy = Proxy::new(
+        &conn,
+        "org.kde.keyboard",
+        "/Layouts",
+        "org.kde.KeyboardLayouts",
+    )
+    .map_err(|e| format!("create KDE keyboard proxy: {e}"))?;
+    proxy
+        .call_method("getLayoutsList", &())
+        .map(|_| ())
+        .map_err(|e| format!("KDE keyboard layout service unavailable: {e}"))
+}
+
+#[cfg(target_os = "linux")]
+fn probe_linux_system_actions(s: &linux::Session) -> CapabilityStatus {
+    if !matches!(s.desktop, linux::Desktop::Kde) {
+        return unsupported_capability(format!(
+            "system actions are not implemented for desktop '{}'",
+            s.desktop.label()
+        ));
+    }
+
+    let required = ["org.kde.KWin", "org.kde.kglobalaccel"];
+    match probe_dbus_names_have_owner(&required) {
+        Ok(()) => available_capability(),
+        Err(e) => unavailable_capability(e),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn probe_dbus_names_have_owner(names: &[&str]) -> Result<(), String> {
+    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let dbus = Proxy::new(
+        &conn,
+        "org.freedesktop.DBus",
+        "/org/freedesktop/DBus",
+        "org.freedesktop.DBus",
+    )
+    .map_err(|e| format!("create DBus proxy: {e}"))?;
+
+    let mut missing = Vec::new();
+    for name in names {
+        let msg = dbus
+            .call_method("NameHasOwner", &(*name,))
+            .map_err(|e| format!("NameHasOwner({name}) failed: {e}"))?;
+        let has_owner: bool = msg
+            .body()
+            .deserialize()
+            .map_err(|e| format!("decode NameHasOwner({name}) response: {e}"))?;
+        if !has_owner {
+            missing.push(*name);
+        }
+    }
+
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("missing DBus service(s): {}", missing.join(", ")))
     }
 }
 
@@ -364,6 +472,16 @@ mod tests {
                 supported: true,
                 available: false,
                 detail: Some("portal".into()),
+            },
+            super::CapabilityStatus {
+                supported: true,
+                available: true,
+                detail: None,
+            },
+            super::CapabilityStatus {
+                supported: true,
+                available: true,
+                detail: None,
             },
         );
 

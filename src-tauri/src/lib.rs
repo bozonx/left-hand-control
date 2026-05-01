@@ -1,9 +1,9 @@
+use crate::gamemode::get_gamemode_status;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, WebviewWindow, WindowEvent,
 };
-use crate::gamemode::get_gamemode_status;
 
 mod active_window;
 mod gamemode;
@@ -303,21 +303,19 @@ pub fn run() {
             }
             Ok(())
         })
-        .on_window_event(|window, event| {
-            match event {
-                WindowEvent::CloseRequested { api, .. } => {
-                    api.prevent_close();
-                    if let Some(w) = window.app_handle().get_webview_window("main") {
-                        hide_main_window(&w);
-                    }
+        .on_window_event(|window, event| match event {
+            WindowEvent::CloseRequested { api, .. } => {
+                api.prevent_close();
+                if let Some(w) = window.app_handle().get_webview_window("main") {
+                    hide_main_window(&w);
                 }
-                WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
-                    if let Some(w) = window.app_handle().get_webview_window("main") {
-                        window_state::remember(&w);
-                    }
-                }
-                _ => {}
             }
+            WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
+                if let Some(w) = window.app_handle().get_webview_window("main") {
+                    window_state::remember(&w);
+                }
+            }
+            _ => {}
         })
         .invoke_handler(tauri::generate_handler![
             get_settings_dir,

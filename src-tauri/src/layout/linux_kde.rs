@@ -4,10 +4,9 @@
 // it talks to DBus directly through `zbus`, which the project already ships
 // for the portal backend. Other desktops remain explicit skeletons for now.
 //
-// The watcher subscribes to `layoutChanged` (active index) and
-// `layoutListChanged` (configured layouts) signals on
-// `org.kde.KeyboardLayouts` instead of polling. Switching the active
-// layout goes through the same DBus interface (`setLayout(uint)`).
+// The watcher polls the DBus interface at a short interval so it can stop
+// promptly during app shutdown. Switching the active layout goes through
+// the same DBus interface (`setLayout(uint)`).
 
 use std::thread;
 use std::time::Duration;
@@ -103,31 +102,9 @@ fn watch_once(app: &AppHandle) -> Result<(), String> {
     let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
         .map_err(|e| format!("create keyboard proxy: {e}"))?;
 
-    // Subscribe BEFORE the initial emit so we don't miss an update that
-    // arrives while we're querying state.
-    let mut signals = proxy
-        .receive_all_signals()
-        .map_err(|e| format!("subscribe keyboard layout signals: {e}"))?;
-
-    // Initial state.
-    emit_current(app, &proxy);
-
     while !super::watcher_stop_requested() {
-        // `signals.next()` is a blocking iterator. It returns `None`
-        // only when the bus connection is closed, at which point we
-        // bubble up so the outer loop reconnects.
-        let Some(msg) = signals.next() else {
-            return Err("DBus signal stream closed".into());
-        };
-        let header = msg.header();
-        let signal_name = header
-            .member()
-            .map(|name| name.as_str())
-            .unwrap_or_default();
-        if signal_name != "layoutChanged" && signal_name != "layoutListChanged" {
-            continue;
-        }
         emit_current(app, &proxy);
+        thread::sleep(Duration::from_millis(500));
     }
     Ok(())
 }

@@ -32,7 +32,14 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "duplicateLine",
-        steps: &["End", "Shift+Home", "Ctrl+KeyC", "End", "Enter", "Ctrl+KeyV"],
+        steps: &[
+            "End",
+            "Shift+Home",
+            "Ctrl+KeyC",
+            "End",
+            "Enter",
+            "Ctrl+KeyV",
+        ],
     },
     SysMacro {
         id: "rightSpace",
@@ -48,7 +55,12 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "copyWordAfterCenter",
-        steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyC", "ArrowLeft"],
+        steps: &[
+            "Ctrl+ArrowRight",
+            "Ctrl+Shift+ArrowLeft",
+            "Ctrl+KeyC",
+            "ArrowLeft",
+        ],
     },
     SysMacro {
         id: "pasteAtLineAbove",

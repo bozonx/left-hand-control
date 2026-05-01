@@ -20,3 +20,8 @@ node_modules
 
 # Tauri build artefacts
 src-tauri/target
+
+# Tauri application icons are generated assets, but they are committed so
+# clean checkouts and CI can build native bundles without regenerating them.
+!src-tauri/icons/
+!src-tauri/icons/**

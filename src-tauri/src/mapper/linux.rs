@@ -117,7 +117,9 @@ impl LoopDriver for MultiDeviceLoopDriver {
             .collect();
         match poll(&mut pfds, PollTimeout::from(timeout_ms)) {
             Ok(_) => Ok(pfds.iter().any(|p| {
-                p.revents().map(|r| r.contains(PollFlags::POLLIN)).unwrap_or(false)
+                p.revents()
+                    .map(|r| r.contains(PollFlags::POLLIN))
+                    .unwrap_or(false)
             })),
             Err(nix::errno::Errno::EINTR) => Ok(false),
             Err(e) => Err(format!("poll: {e}")),
@@ -199,7 +201,10 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
         })
         .collect();
     paths.sort();
-    eprintln!("[mapper] list_keyboards: found {} event* paths", paths.len());
+    eprintln!(
+        "[mapper] list_keyboards: found {} event* paths",
+        paths.len()
+    );
 
     for path in paths {
         let Ok(dev) = Device::open(&path) else {
@@ -208,7 +213,12 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
         };
         let name = dev.name().unwrap_or("(unknown)").to_string();
         let is_kb = is_keyboard(&dev);
-        eprintln!("[mapper]   {}: name='{}' is_keyboard={}", path.display(), name, is_kb);
+        eprintln!(
+            "[mapper]   {}: name='{}' is_keyboard={}",
+            path.display(),
+            name,
+            is_kb
+        );
         if !is_kb {
             continue;
         }
@@ -247,7 +257,12 @@ pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
         };
         let name = dev.name().unwrap_or("(unknown)").to_string();
         let is_m = is_mouse(&dev);
-        eprintln!("[mapper]   {}: name='{}' is_mouse={}", path.display(), name, is_m);
+        eprintln!(
+            "[mapper]   {}: name='{}' is_mouse={}",
+            path.display(),
+            name,
+            is_m
+        );
         if !is_m {
             continue;
         }
@@ -287,12 +302,14 @@ fn is_mouse(dev: &Device) -> bool {
     // Heuristic: mouse has left/right buttons but NOT letter keys.
     // We also skip devices that already pass the keyboard heuristic
     // (combined keyboard+mouse combos should be grabbed as a keyboard).
-    keys.contains(Key::BTN_LEFT)
-        && keys.contains(Key::BTN_RIGHT)
-        && !is_keyboard(dev)
+    keys.contains(Key::BTN_LEFT) && keys.contains(Key::BTN_RIGHT) && !is_keyboard(dev)
 }
 
-pub fn spawn(device_path: String, mouse_path: Option<String>, cfg: AppConfig) -> Result<Handle, String> {
+pub fn spawn(
+    device_path: String,
+    mouse_path: Option<String>,
+    cfg: AppConfig,
+) -> Result<Handle, String> {
     #[cfg(debug_assertions)]
     {
         eprintln!(
@@ -391,8 +408,8 @@ fn run(
         .build()
         .map_err(|e| format!("uinput build: {e}"))?;
 
-    let _ = ready_tx.send(Ok(()));
     let driver = MultiDeviceLoopDriver::new(devices)?;
+    let _ = ready_tx.send(Ok(()));
     run_loop(driver, virt, cfg, stop)
 }
 

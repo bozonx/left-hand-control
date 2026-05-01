@@ -259,11 +259,7 @@ fn unsupported_os_msg(op: &str) -> String {
     }
 }
 
-pub fn start(
-    device_path: &str,
-    mouse_path: Option<&str>,
-    config_json: &str,
-) -> Result<(), String> {
+pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     lock_state().start(device_path, mouse_path, cfg)

@@ -115,8 +115,8 @@ pub struct Engine {
 
     /// Per-layer list of physical keys that trigger the temporary release of holds.
     layer_isolate_keys: HashMap<String, Vec<Key>>,
-    /// layer_id -> physical key that activated it
-    layer_triggers: HashMap<String, Key>,
+    /// layer_id -> physical keys that activated it, oldest to newest
+    layer_triggers: HashMap<String, Vec<Key>>,
     /// Tracks isolated holds per physical key (to restore on key release)
     isolated_holds: HashMap<Key, Vec<(Key, u32)>>,
 }
@@ -387,10 +387,7 @@ impl Engine {
 
             // Disallow left/right/middle mouse buttons as triggers —
             // remapping them would make the system unusable.
-            if matches!(
-                key,
-                Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE
-            ) {
+            if matches!(key, Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE) {
                 eprintln!(
                     "[mapper] rule key {:?}: mouse buttons 1-3 cannot be used as triggers — skipped",
                     r.key
@@ -686,17 +683,30 @@ impl Engine {
                 Some((layer_id, def)) => {
                     if let Some(isolate_keys) = self.layer_isolate_keys.get(&layer_id) {
                         if isolate_keys.contains(&key) {
-                            if let Some(trigger_phys) = self.layer_triggers.get(&layer_id).copied() {
+                            if let Some(trigger_phys) = self
+                                .layer_triggers
+                                .get(&layer_id)
+                                .and_then(|v| v.last())
+                                .copied()
+                            {
                                 if let Some(ks) = self.emitted.get(&trigger_phys).cloned() {
                                     let mut suppressed = Vec::new();
-                                    for target_key in ks.mods.iter().chain(std::iter::once(&ks.key)) {
-                                        let old_count = self.mod_refs.get(target_key).copied().unwrap_or(0);
+                                    for target_key in ks.mods.iter().chain(std::iter::once(&ks.key))
+                                    {
+                                        let old_count =
+                                            self.mod_refs.get(target_key).copied().unwrap_or(0);
                                         if let Some(count) = self.mod_refs.get_mut(target_key) {
                                             *count = 0;
                                         }
-                                        out.push(Out::KeyRaw { key: *target_key, down: false });
+                                        out.push(Out::KeyRaw {
+                                            key: *target_key,
+                                            down: false,
+                                        });
                                         suppressed.push((*target_key, old_count));
-                                        eprintln!("[mapper] isolate+ {:?} suppress hold {:?}", key, target_key);
+                                        eprintln!(
+                                            "[mapper] isolate+ {:?} suppress hold {:?}",
+                                            key, target_key
+                                        );
                                     }
                                     if !suppressed.is_empty() {
                                         self.isolated_holds.insert(key, suppressed);
@@ -760,7 +770,10 @@ impl Engine {
     fn on_release(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
         if let Some(suppressed) = self.isolated_holds.remove(&key) {
             for (target_key, old_count) in suppressed {
-                let still_held = self.emitted.values().any(|ks| ks.key == target_key || ks.mods.contains(&target_key));
+                let still_held = self
+                    .emitted
+                    .values()
+                    .any(|ks| ks.key == target_key || ks.mods.contains(&target_key));
                 if still_held {
                     eprintln!("[mapper] isolate- {:?} restore hold {:?}", key, target_key);
                     if old_count > 0 {
@@ -950,7 +963,7 @@ impl Engine {
         if let Some(id) = &rule.layer_id {
             eprintln!("[mapper] layer+ {id} (key={:?})", key);
             self.push_layer(id.clone());
-            self.layer_triggers.insert(id.clone(), key);
+            self.layer_triggers.entry(id.clone()).or_default().push(key);
         }
         match &rule.hold {
             HoldMode::Native => {
@@ -973,7 +986,14 @@ impl Engine {
         };
         if let Some(id) = &rule.layer_id {
             eprintln!("[mapper] layer- {id} (key={:?})", key);
-            self.layer_triggers.remove(id);
+            if let Some(triggers) = self.layer_triggers.get_mut(id) {
+                if let Some(pos) = triggers.iter().rposition(|trigger| *trigger == key) {
+                    triggers.remove(pos);
+                }
+                if triggers.is_empty() {
+                    self.layer_triggers.remove(id);
+                }
+            }
             self.pop_layer(id);
         }
         match &rule.hold {
@@ -1094,7 +1114,6 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
     true
 }
 
-/// Existing OR-style game-mode + layout condition check.
 fn rule_passes_legacy(rule: &RuleEntry) -> bool {
     let has_gm_cond = rule
         .condition_game_mode
@@ -1108,25 +1127,29 @@ fn rule_passes_legacy(rule: &RuleEntry) -> bool {
     if !has_gm_cond && !has_layout_cond {
         return true;
     }
-    let mut active = false;
     if has_gm_cond {
         let gm_active = crate::gamemode::cached_status_active();
-        if match rule.condition_game_mode.as_deref() {
+        if !match rule.condition_game_mode.as_deref() {
             Some("on") => gm_active,
             Some("off") => !gm_active,
             _ => false,
         } {
-            active = true;
+            return false;
         }
     }
     if has_layout_cond {
-        if let Some(current) = crate::layout::cached_layout_short() {
-            if rule.condition_layouts.as_ref().unwrap().contains(&current) {
-                active = true;
-            }
+        let Some(current) = crate::layout::cached_layout_short() else {
+            return false;
+        };
+        if !rule
+            .condition_layouts
+            .as_ref()
+            .is_some_and(|layouts| layouts.contains(&current))
+        {
+            return false;
         }
     }
-    active
+    true
 }
 
 /// Emit a resolved action as the appropriate `Out` event. Shared by the
@@ -1454,10 +1477,7 @@ mod tests {
     // so they don't race when cargo runs the suite in parallel.
     static APPS_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-    fn rule_with_apps(
-        whitelist: Option<Vec<String>>,
-        blacklist: Option<Vec<String>>,
-    ) -> RuleEntry {
+    fn rule_with_apps(whitelist: Option<Vec<String>>, blacklist: Option<Vec<String>>) -> RuleEntry {
         RuleEntry {
             tap: TapMode::Native,
             layer_id: None,
@@ -1511,10 +1531,7 @@ mod tests {
             title: "Editor — secret".into(),
             app_id: "editor".into(),
         }));
-        let rule = rule_with_apps(
-            Some(vec!["editor".into()]),
-            Some(vec!["secret".into()]),
-        );
+        let rule = rule_with_apps(Some(vec!["editor".into()]), Some(vec!["secret".into()]));
         assert!(!rule_passes_apps(&rule));
         crate::active_window::set_cached_for_test(None);
     }
@@ -1554,12 +1571,27 @@ mod tests {
         assert!(out.is_empty());
 
         // Mouse button should pass through without committing the pending hold.
-        engine.handle(Key::BTN_LEFT, true, now + Duration::from_millis(10), &mut out);
-        engine.handle(Key::BTN_LEFT, false, now + Duration::from_millis(11), &mut out);
+        engine.handle(
+            Key::BTN_LEFT,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        engine.handle(
+            Key::BTN_LEFT,
+            false,
+            now + Duration::from_millis(11),
+            &mut out,
+        );
 
         // Releasing Shift after mouse click should fire the tap (Escape),
         // proving the mouse click did NOT promote the pending rule to hold.
-        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
         assert!(matches!(
             out.as_slice(),
             [
@@ -1593,9 +1625,24 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
-        engine.handle(Key::BTN_SIDE, true, now + Duration::from_millis(10), &mut out);
-        engine.handle(Key::BTN_SIDE, false, now + Duration::from_millis(11), &mut out);
-        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(
+            Key::BTN_SIDE,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        engine.handle(
+            Key::BTN_SIDE,
+            false,
+            now + Duration::from_millis(11),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
 
         assert!(matches!(
             out.as_slice(),
@@ -1630,7 +1677,12 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::BTN_SIDE, true, now, &mut out);
-        engine.handle(Key::BTN_SIDE, false, now + Duration::from_millis(10), &mut out);
+        engine.handle(
+            Key::BTN_SIDE,
+            false,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
 
         assert!(matches!(
             out.as_slice(),
@@ -1672,8 +1724,18 @@ mod tests {
 
         engine.handle(Key::KEY_SPACE, true, now, &mut out);
         engine.tick(now + Duration::from_millis(260), &mut out);
-        engine.handle(Key::BTN_LEFT, true, now + Duration::from_millis(270), &mut out);
-        engine.handle(Key::BTN_LEFT, false, now + Duration::from_millis(271), &mut out);
+        engine.handle(
+            Key::BTN_LEFT,
+            true,
+            now + Duration::from_millis(270),
+            &mut out,
+        );
+        engine.handle(
+            Key::BTN_LEFT,
+            false,
+            now + Duration::from_millis(271),
+            &mut out,
+        );
 
         assert!(matches!(
             out.as_slice(),
@@ -1717,18 +1779,8 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
-        engine.handle(
-            Key::KEY_W,
-            true,
-            now + Duration::from_millis(10),
-            &mut out,
-        );
-        engine.handle(
-            Key::KEY_W,
-            false,
-            now + Duration::from_millis(11),
-            &mut out,
-        );
+        engine.handle(Key::KEY_W, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_W, false, now + Duration::from_millis(11), &mut out);
         engine.handle(
             Key::KEY_LEFTALT,
             false,

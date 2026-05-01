@@ -36,7 +36,7 @@ Do **not** introduce alternative UI libraries, CSS frameworks, or state managers
     ├── build.rs
     ├── capabilities/
     │   └── default.json       # Tauri v2 permissions
-    ├── icons/                 # generated via `pnpm tauri icon <src.png>`
+    ├── icons/                 # generated via `pnpm tauri icon <src.png>` and committed
     └── src/
         ├── main.rs            # thin entrypoint
         └── lib.rs             # `run()` + #[tauri::command] handlers
@@ -74,7 +74,7 @@ First-time prerequisites on the host (not auto-installed):
 - Node 20+, pnpm 9+
 - Rust stable (`rustup default stable`)
 - Linux system libs: `webkit2gtk-4.1`, `gtk3`, `libappindicator-gtk3`, `librsvg`, `libsoup3`, `openssl`, `xdotool`, `pkgconf`, `base-devel` (Manjaro/Arch names; see README for Debian/Ubuntu).
-- Icons generated into `src-tauri/icons/` — otherwise `cargo` fails with "failed to open icon ... 32x32.png".
+- Icons are committed under `src-tauri/icons/` so a clean checkout can build without regenerating them.
 
 ## Cross-platform architecture (Rust side)
 
@@ -189,7 +189,7 @@ For OS-level capabilities (fs, shell, dialog, clipboard, global shortcuts, ...),
 ## Common pitfalls (seen in this repo)
 
 - **`Can't resolve 'tailwindcss'`** — Tailwind v4 must be installed explicitly as a dep; it is not always pulled in transitively by `@nuxt/ui`. Kept in `package.json` as `tailwindcss: ^4`.
-- **`failed to open icon .../32x32.png`** — run `pnpm tauri icon <src.png>` once; icons are git-ignored and must be generated per clone.
+- **`failed to open icon .../32x32.png`** — `src-tauri/icons/` should be present in Git. If icons are intentionally changed, regenerate them with `pnpm tauri icon <src.png>` and commit the updated `src-tauri/icons/` output.
 - **`cargo metadata ... No such file or directory`** — Rust toolchain missing; install via `rustup`.
 - **Peer dep warning** `@nuxt/cli` vs `@nuxt/schema 3/4` — benign on Nuxt 3.21; ignore unless upgrading to Nuxt 4.
 - **`defineNuxtConfig` / `defineAppConfig` "not found"** in the editor before `pnpm install` — these are auto-imported; resolved after `nuxt prepare` runs.
@@ -199,7 +199,7 @@ For OS-level capabilities (fs, shell, dialog, clipboard, global shortcuts, ...),
 
 - Do not enable SSR or add `server/` API routes — there is no Node runtime in the shipped binary.
 - Do not switch package managers (no `npm i` / `yarn` — lockfile is pnpm).
-- Do not commit `src-tauri/icons/` output, `.nuxt/`, `.output/`, `node_modules/`, or `src-tauri/target/` (all git-ignored).
+- Do not commit `.nuxt/`, `.output/`, `node_modules/`, or `src-tauri/target/` (all git-ignored). Do commit `src-tauri/icons/` output; Tauri needs these files for reproducible clean-checkout builds.
 - Do not hardcode absolute filesystem paths in Rust or TS; use Tauri path APIs (`@tauri-apps/api/path`) or `app_handle.path()`.
 - Do not bypass Tauri capabilities by widening CSP or loosening permissions without an explicit reason.
 

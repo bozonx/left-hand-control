@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
-use std::process::Command;
 use tauri::{AppHandle, Emitter};
 
 use crate::mapper::config::GameModeSettings;
@@ -54,15 +54,15 @@ fn get_current_time() -> String {
 
 pub fn start_watcher(app: AppHandle) {
     WATCHER_STOP.store(false, Ordering::SeqCst);
-    
+
     let _ = thread::Builder::new()
         .name("gamemode-watcher".into())
         .spawn(move || {
             let mut last_active = false;
-            
+
             while !watcher_stop_requested() {
                 let status = check_gamemode(&app);
-                
+
                 if status.active != last_active {
                     CACHED_GAMEMODE_ACTIVE.store(status.active, Ordering::SeqCst);
                     let time_str = get_current_time();
@@ -79,7 +79,7 @@ pub fn start_watcher(app: AppHandle) {
                     }
                     last_active = status.active;
                 }
-                
+
                 thread::sleep(Duration::from_secs(2));
             }
         });

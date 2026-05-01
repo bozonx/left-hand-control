@@ -51,7 +51,9 @@ fn detect_kde_wayland() -> Option<ActiveWindow> {
     if !id_output.status.success() {
         return None;
     }
-    let window_id = String::from_utf8_lossy(&id_output.stdout).trim().to_string();
+    let window_id = String::from_utf8_lossy(&id_output.stdout)
+        .trim()
+        .to_string();
     if window_id.is_empty() {
         return None;
     }
@@ -89,11 +91,16 @@ fn detect_kde_wayland() -> Option<ActiveWindow> {
 }
 
 fn detect_x11() -> Option<ActiveWindow> {
-    let id_output = Command::new("xdotool").arg("getactivewindow").output().ok()?;
+    let id_output = Command::new("xdotool")
+        .arg("getactivewindow")
+        .output()
+        .ok()?;
     if !id_output.status.success() {
         return None;
     }
-    let window_id = String::from_utf8_lossy(&id_output.stdout).trim().to_string();
+    let window_id = String::from_utf8_lossy(&id_output.stdout)
+        .trim()
+        .to_string();
     if window_id.is_empty() {
         return None;
     }
@@ -137,7 +144,10 @@ fn detect_x11() -> Option<ActiveWindow> {
 // Returns the class (second value) when present, otherwise the instance,
 // otherwise empty.
 pub(crate) fn parse_wm_class(stdout: &str) -> String {
-    let line = stdout.lines().find(|l| l.contains("WM_CLASS")).unwrap_or("");
+    let line = stdout
+        .lines()
+        .find(|l| l.contains("WM_CLASS"))
+        .unwrap_or("");
     let Some((_, rhs)) = line.split_once('=') else {
         return String::new();
     };
@@ -155,49 +165,22 @@ pub(crate) fn parse_wm_class(stdout: &str) -> String {
     }
 }
 
-// Minimal JSON extractor for hyprctl: looks for "title" and "class" string
-// fields. Avoids pulling a dedicated JSON dependency just for this.
 pub(crate) fn parse_hyprctl_json(stdout: &str) -> Option<ActiveWindow> {
-    let title = extract_json_string_field(stdout, "title").unwrap_or_default();
-    let app_id = extract_json_string_field(stdout, "class").unwrap_or_default();
+    #[derive(serde::Deserialize)]
+    struct HyprWindow {
+        #[serde(default)]
+        title: String,
+        #[serde(default, rename = "class")]
+        app_id: String,
+    }
+
+    let parsed: HyprWindow = serde_json::from_str(stdout).ok()?;
+    let title = parsed.title;
+    let app_id = parsed.app_id;
     if title.is_empty() && app_id.is_empty() {
         return None;
     }
     Some(ActiveWindow { title, app_id })
-}
-
-fn extract_json_string_field(s: &str, field: &str) -> Option<String> {
-    let needle = format!("\"{field}\"");
-    let idx = s.find(&needle)?;
-    let after = &s[idx + needle.len()..];
-    let colon = after.find(':')?;
-    let rest = after[colon + 1..].trim_start();
-    let bytes = rest.as_bytes();
-    if bytes.first() != Some(&b'"') {
-        return None;
-    }
-    let mut out = String::new();
-    let mut escape = false;
-    for &b in &bytes[1..] {
-        if escape {
-            match b {
-                b'n' => out.push('\n'),
-                b't' => out.push('\t'),
-                b'r' => out.push('\r'),
-                b'"' => out.push('"'),
-                b'\\' => out.push('\\'),
-                other => out.push(other as char),
-            }
-            escape = false;
-        } else if b == b'\\' {
-            escape = true;
-        } else if b == b'"' {
-            return Some(out);
-        } else {
-            out.push(b as char);
-        }
-    }
-    None
 }
 
 #[cfg(test)]
@@ -224,7 +207,8 @@ mod tests {
 
     #[test]
     fn parses_hyprctl_json_basic() {
-        let s = r#"{"address":"0x1","title":"My Doc - Editor","class":"editor","fullscreen":false}"#;
+        let s =
+            r#"{"address":"0x1","title":"My Doc - Editor","class":"editor","fullscreen":false}"#;
         let aw = parse_hyprctl_json(s).unwrap();
         assert_eq!(aw.title, "My Doc - Editor");
         assert_eq!(aw.app_id, "editor");
@@ -233,5 +217,13 @@ mod tests {
     #[test]
     fn parses_hyprctl_json_missing_fields_returns_none() {
         assert!(parse_hyprctl_json("{}").is_none());
+    }
+
+    #[test]
+    fn parses_hyprctl_json_escaped_unicode() {
+        let s = r#"{"title":"\u0422\u0435\u0441\u0442","class":"kitty"}"#;
+        let aw = parse_hyprctl_json(s).unwrap();
+        assert_eq!(aw.title, "Тест");
+        assert_eq!(aw.app_id, "kitty");
     }
 }

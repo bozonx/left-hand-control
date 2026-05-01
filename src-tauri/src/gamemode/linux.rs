@@ -26,8 +26,12 @@ pub fn is_fullscreen_active() -> bool {
 }
 
 fn is_wayland_fullscreen_active() -> bool {
-    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default().to_lowercase();
-    let session = std::env::var("XDG_SESSION_DESKTOP").unwrap_or_default().to_lowercase();
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP")
+        .unwrap_or_default()
+        .to_lowercase();
+    let session = std::env::var("XDG_SESSION_DESKTOP")
+        .unwrap_or_default()
+        .to_lowercase();
 
     if desktop.contains("kde") || session.contains("kde") {
         return is_kde_wayland_fullscreen_active();
@@ -41,9 +45,7 @@ fn is_wayland_fullscreen_active() -> bool {
 }
 
 fn is_kde_wayland_fullscreen_active() -> bool {
-    let output = Command::new("kdotool")
-        .arg("getactivewindow")
-        .output();
+    let output = Command::new("kdotool").arg("getactivewindow").output();
 
     let Ok(output) = output else {
         if !KDOTOOL_WARN_ONCE.swap(true, Ordering::SeqCst) {
@@ -99,7 +101,9 @@ fn is_hyprland_fullscreen_active() -> bool {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    stdout.contains("\"fullscreen\": true") || stdout.contains("\"fullscreen\": 1") || stdout.contains("\"fullscreen\": 2")
+    stdout.contains("\"fullscreen\": true")
+        || stdout.contains("\"fullscreen\": 1")
+        || stdout.contains("\"fullscreen\": 2")
 }
 
 fn is_gnome_wayland_fullscreen_active() -> bool {
@@ -149,10 +153,7 @@ fn parse_kdotool_geometry(stdout: &str) -> Option<(i32, i32, i32, i32)> {
 }
 
 fn kde_display_geometry() -> Option<(i32, i32)> {
-    let output = Command::new("kscreen-doctor")
-        .arg("-o")
-        .output()
-        .ok()?;
+    let output = Command::new("kscreen-doctor").arg("-o").output().ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     for line in stdout.lines() {
@@ -183,7 +184,8 @@ fn is_x11_fullscreen_active() -> bool {
         return true;
     }
 
-    let Some((window_x, window_y, window_width, window_height)) = active_window_geometry(&window_id)
+    let Some((window_x, window_y, window_width, window_height)) =
+        active_window_geometry(&window_id)
     else {
         return false;
     };

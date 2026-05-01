@@ -179,7 +179,10 @@ mod kde {
                 return Some(invoke_shortcut("org_kde_krunner_desktop", "_launch"));
             }
             "launchSystemMonitor" => {
-                return Some(invoke_shortcut("org_kde_plasma_systemmonitor_desktop", "_launch"));
+                return Some(invoke_shortcut(
+                    "org_kde_plasma_systemmonitor_desktop",
+                    "_launch",
+                ));
             }
             "manageActivities" => {
                 return Some(invoke_shortcut("plasmashell", "manage activities"));
@@ -197,7 +200,10 @@ mod kde {
                 return Some(invoke_shortcut("org_kde_kscreen_desktop", "ShowOSD"));
             }
             "toggleTouchpad" => {
-                return Some(invoke_shortcut("org_kde_touchpadshortcuts_desktop", "ToggleTouchpad"));
+                return Some(invoke_shortcut(
+                    "org_kde_touchpadshortcuts_desktop",
+                    "ToggleTouchpad",
+                ));
             }
             "lockSession" => {
                 return Some(invoke_shortcut("ksmserver", "Lock Session"));
@@ -221,10 +227,16 @@ mod kde {
                 ));
             }
             "toggleKeyboardBacklight" => {
-                return Some(invoke_shortcut("org_kde_powerdevil", "Toggle Keyboard Backlight"));
+                return Some(invoke_shortcut(
+                    "org_kde_powerdevil",
+                    "Toggle Keyboard Backlight",
+                ));
             }
             "activateApplicationLauncher" => {
-                return Some(invoke_shortcut("plasmashell", "activate application launcher"));
+                return Some(invoke_shortcut(
+                    "plasmashell",
+                    "activate application launcher",
+                ));
             }
             "showDesktop" => {
                 return Some(invoke_shortcut("kwin", "Show Desktop"));
@@ -387,7 +399,6 @@ mod tests {
             matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "activate task manager entry 3")
         );
     }
-
 }
 
 // --- GNOME (Mutter / Shell) -------------------------------------------------

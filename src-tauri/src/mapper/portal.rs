@@ -75,9 +75,9 @@ enum Cmd {
     Type(String),
 }
 
-/// Sender to the singleton portal worker thread. `None` after a failed
-/// init so subsequent calls fail fast without blocking.
-static PORTAL_TX: OnceLock<Option<Sender<Cmd>>> = OnceLock::new();
+/// Sender to the current portal worker thread. Cleared when the worker is
+/// gone so a later literal injection can retry the portal handshake.
+static PORTAL_TX: Mutex<Option<Sender<Cmd>>> = Mutex::new(None);
 
 /// Path of the directory where we persist the restore token.
 static TOKEN_DIR: OnceLock<PathBuf> = OnceLock::new();
@@ -94,15 +94,31 @@ pub fn set_token_dir(dir: PathBuf) {
 /// the actual portal handshake (and its consent dialog) runs on a
 /// dedicated thread.
 pub fn type_text(text: &str) {
-    let tx = PORTAL_TX.get_or_init(start_singleton);
-    match tx {
-        Some(tx) => {
-            if tx.send(Cmd::Type(text.to_string())).is_err() {
-                eprintln!("[portal] literal {:?} dropped (worker gone)", text);
-            }
+    let Ok(mut slot) = PORTAL_TX.lock() else {
+        eprintln!("[portal] literal {:?} dropped (worker lock poisoned)", text);
+        return;
+    };
+
+    if let Some(tx) = slot.as_ref() {
+        if tx.send(Cmd::Type(text.to_string())).is_ok() {
+            return;
         }
-        None => eprintln!("[portal] literal {:?} dropped (init failed)", text),
+        eprintln!("[portal] worker gone; retrying backend init");
+        *slot = None;
     }
+
+    let Some(tx) = start_singleton() else {
+        eprintln!("[portal] literal {:?} dropped (worker spawn failed)", text);
+        return;
+    };
+    if tx.send(Cmd::Type(text.to_string())).is_err() {
+        eprintln!(
+            "[portal] literal {:?} dropped (worker exited during init)",
+            text
+        );
+        return;
+    }
+    *slot = Some(tx);
 }
 
 fn start_singleton() -> Option<Sender<Cmd>> {
@@ -127,15 +143,7 @@ fn worker(rx: Receiver<Cmd>) {
         }
         Err(e) => {
             eprintln!("[portal] backend unavailable: {e}");
-            // Drain the channel so senders don't block on a full buffer.
-            // (mpsc::channel is unbounded, but we still want to log drops.)
-            for cmd in rx.iter() {
-                match cmd {
-                    Cmd::Type(text) => {
-                        eprintln!("[portal] literal {:?} dropped (no backend)", text)
-                    }
-                }
-            }
+            drop(rx);
             return;
         }
     };
@@ -225,10 +233,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
         let mut opts: HashMap<String, Value> = HashMap::new();
         opts.insert("handle_token".into(), Value::from(handle_token));
         opts.insert("types".into(), Value::from(DEVICE_TYPE_KEYBOARD));
-        opts.insert(
-            "persist_mode".into(),
-            Value::from(PERSIST_MODE_PERMANENT),
-        );
+        opts.insert("persist_mode".into(), Value::from(PERSIST_MODE_PERMANENT));
         if let Some(tok) = &saved_token {
             opts.insert("restore_token".into(), Value::from(tok.clone()));
         }

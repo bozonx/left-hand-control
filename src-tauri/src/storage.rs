@@ -234,8 +234,7 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
         return Err("layout name is empty".into());
     }
     for ch in trimmed.chars() {
-        if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|')
-        {
+        if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
             return Err("layout name contains invalid filename characters".into());
         }
     }
@@ -334,9 +333,7 @@ mod tests {
             vec!["My layout".to_string()]
         );
         assert_eq!(
-            storage
-                .load_user_layout("My layout")
-                .expect("load layout"),
+            storage.load_user_layout("My layout").expect("load layout"),
             "description: test"
         );
     }
