@@ -77,12 +77,6 @@ async function toggleMapper() {
   }
 }
 
-async function quitApplication() {
-  const tauri = await useTauri()
-  if (!tauri) return
-  await tauri.invoke('quit_application')
-}
-
 onMounted(() => {
   void mapper.refreshStatus()
 })
@@ -224,15 +218,6 @@ onMounted(() => {
           size="sm"
           :aria-label="$t('tabs.settings')"
           @click="openTab('/settings')"
-        />
-
-        <UButton
-          color="neutral"
-          variant="ghost"
-          icon="i-lucide-log-out"
-          size="sm"
-          :aria-label="$t('app.quit')"
-          @click="quitApplication"
         />
       </template>
       <div v-else class="text-xs text-(--ui-text-muted)">

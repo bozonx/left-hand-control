@@ -250,16 +250,17 @@ export function useSettingsScreen() {
     settingsIssues.value.some((issue) => issue.severity === "error"),
   );
 
-  const settingsBanner = computed(() => {
-    if (!settingsIssues.value.length) return null;
-
+  const globalBanner = computed(() => {
+    const issues = globalIssues.value;
+    if (!issues.length) return null;
+    const hasErrors = issues.some((issue) => issue.severity === "error");
     return {
-      color: hasErrorIssues.value ? "error" : "warning",
-      icon: hasErrorIssues.value ? "i-lucide-circle-alert" : "i-lucide-triangle-alert",
-      title: hasErrorIssues.value
+      color: hasErrors ? "error" : "warning",
+      icon: hasErrors ? "i-lucide-circle-alert" : "i-lucide-triangle-alert",
+      title: hasErrors
         ? t("settings.issues.bannerErrorTitle")
         : t("settings.issues.bannerWarningTitle"),
-      issues: settingsIssues.value,
+      issues,
     } as const;
   });
 
@@ -633,7 +634,7 @@ export function useSettingsScreen() {
     library,
     mapper,
     platform,
-    settingsBanner,
+    globalBanner,
     globalIssues,
     mapperIssues,
     theme,

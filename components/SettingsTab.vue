@@ -9,7 +9,6 @@ const {
   settingsDir,
   library,
   mapper,
-  settingsBanner,
   mapperIssues,
   theme,
   appLocale,
@@ -25,26 +24,6 @@ const {
 
 <template>
   <div class="mx-auto w-full max-w-5xl space-y-4">
-    <UAlert
-      v-if="settingsBanner"
-      :color="settingsBanner.color"
-      variant="soft"
-      :icon="settingsBanner.icon"
-      :title="settingsBanner.title"
-    >
-      <template #description>
-        <ul class="space-y-2 text-sm">
-          <li
-            v-for="issue in settingsBanner.issues"
-            :key="issue.id"
-          >
-            <span class="font-medium">{{ issue.title }}</span>
-            <span class="text-(--ui-text-muted)"> — {{ issue.description }}</span>
-          </li>
-        </ul>
-      </template>
-    </UAlert>
-
     <MapperCard
       v-model:selected-device="selectedDevice"
       v-model:selected-mouse="selectedMouse"
@@ -66,7 +45,7 @@ const {
 
     <BehaviorCard :config="config" />
 
-    <GameModeCard :config="config" />
+    <GameModeCard v-model:game-mode="config.value.settings.gameMode" />
 
     <ConfigPathCard
       :settings-dir="settingsDir"

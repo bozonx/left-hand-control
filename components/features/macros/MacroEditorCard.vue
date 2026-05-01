@@ -92,7 +92,7 @@ async function copyMacroId() {
 
 <template>
   <div
-    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 cursor-pointer"
+    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-150 cursor-pointer"
     :class="[
       selected
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
@@ -251,9 +251,9 @@ async function copyMacroId() {
 
     <div class="w-px bg-(--ui-border) self-stretch"></div>
 
-    <div class="w-52 flex flex-col gap-4">
+    <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-4">
       <div class="flex items-center justify-between">
-        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <UButton
             icon="i-lucide-arrow-up"
             variant="ghost"
@@ -282,7 +282,7 @@ async function copyMacroId() {
           variant="ghost"
           size="sm"
           square
-          class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
           :aria-label="$t('macros.deleteMacro')"
           @click="$emit('remove', { uiKey: props.uiKey, id: macro.id })"
         />

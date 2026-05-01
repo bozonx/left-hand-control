@@ -43,7 +43,7 @@ const isConditionsOpen = ref(false)
 
 <template>
   <div
-    class="relative p-4 rounded-xl border flex gap-6 group group/rule transition-all duration-300 hover:shadow-lg cursor-pointer"
+    class="relative p-4 rounded-xl border flex gap-6 group group/rule transition-all duration-150 hover:shadow-lg cursor-pointer"
     :class="[
       rule.enabled === false ? 'opacity-50 grayscale-[30%]' : '',
       selected
@@ -121,7 +121,7 @@ const isConditionsOpen = ref(false)
               variant="subtle"
               color="success"
             >
-              {{ rule.conditionAppsWhitelist.length }} whitelist
+              {{ $t('rules.appsWhitelistCount', { count: rule.conditionAppsWhitelist.length }) }}
             </UBadge>
             <UBadge
               v-if="rule.conditionAppsBlacklist?.length"
@@ -129,7 +129,7 @@ const isConditionsOpen = ref(false)
               variant="subtle"
               color="error"
             >
-              {{ rule.conditionAppsBlacklist.length }} blacklist
+              {{ $t('rules.appsBlacklistCount', { count: rule.conditionAppsBlacklist.length }) }}
             </UBadge>
           </div>
         </UFormField>
@@ -213,9 +213,9 @@ const isConditionsOpen = ref(false)
 
     <div class="w-px bg-(--ui-border) self-stretch"></div>
 
-    <div class="w-52 flex flex-col gap-4">
+    <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-4">
       <div class="flex items-center justify-between">
-        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <UButton
             icon="i-lucide-arrow-up"
             variant="ghost"
@@ -242,7 +242,7 @@ const isConditionsOpen = ref(false)
               :model-value="rule.enabled !== false"
               @update:model-value="(val: boolean) => rule.enabled = val"
               size="sm"
-              class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             />
           </AppTooltip>
 
@@ -252,7 +252,7 @@ const isConditionsOpen = ref(false)
             variant="ghost"
             size="sm"
             square
-            class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             :aria-label="$t('rules.deleteRule')"
             @click="$emit('remove', rule.id)"
           />

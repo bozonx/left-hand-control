@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import type { AppConfig } from '~/types/config'
-
-const props = defineProps<{
-  config: AppConfig
-}>()
+const gameMode = defineModel<{
+  useGamemoded: boolean
+  useFullscreen: boolean
+}>('gameMode', { required: true })
 </script>
 
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-gamepad-2" class="h-5 w-5 text-(--ui-primary)" />
-        <h2 class="text-sm font-semibold">{{ $t('settings.gameModeTitle') }}</h2>
+      <div>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-gamepad-2" class="h-5 w-5 text-(--ui-primary)" />
+          <h2 class="text-sm font-semibold">{{ $t('settings.gameModeTitle') }}</h2>
+        </div>
+        <p class="mt-1 text-sm text-(--ui-text-muted)">
+          {{ $t('settings.gameModeSubtitle') }}
+        </p>
       </div>
-      <p class="mt-1 text-sm text-(--ui-text-muted)">
-        {{ $t('settings.gameModeSubtitle') }}
-      </p>
     </template>
 
     <div class="space-y-4">
@@ -24,14 +25,14 @@ const props = defineProps<{
           :label="$t('settings.gameModeUseGamemoded')"
           :description="$t('settings.gameModeUseGamemodedHint')"
         >
-          <UCheckbox v-model="config.settings.gameMode.useGamemoded" />
+          <UCheckbox v-model="gameMode.useGamemoded" />
         </UFormField>
 
         <UFormField
           :label="$t('settings.gameModeUseFullscreen')"
           :description="$t('settings.gameModeUseFullscreenHint')"
         >
-          <UCheckbox v-model="config.settings.gameMode.useFullscreen" />
+          <UCheckbox v-model="gameMode.useFullscreen" />
         </UFormField>
       </div>
 

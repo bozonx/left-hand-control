@@ -4,6 +4,7 @@ import HomeInfoCard from "~/components/HomeInfoCard.vue";
 import LayoutsLibraryCard from "~/components/features/settings/LayoutsLibraryCard.vue";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import { isLayoutInAuto, orderLayoutIds } from "~/utils/layoutAutoSwitch";
+import { LAYOUT_MODE_MANUAL, LAYOUT_MODE_AUTO } from "~/types/config";
 
 const {
   config,
@@ -50,6 +51,7 @@ const {
   deleteBusy,
   confirmDelete,
   clearDeletePending,
+  globalBanner,
 } = useSettingsScreen();
 
 const { activeAutoLayoutId } = useLayoutSwitcher()
@@ -59,18 +61,18 @@ const { t } = useI18n();
 
 const layoutMode = computed({
   get: () => config.value.settings.layoutMode,
-  set: (value: "manual" | "auto") => {
+  set: (value: typeof LAYOUT_MODE_MANUAL | typeof LAYOUT_MODE_AUTO) => {
     config.value.settings.layoutMode = value;
   },
 });
 
 const modeOptions = computed(() => [
-  { label: t("home.modeManual"), value: "manual" as const },
-  { label: t("home.modeAuto"), value: "auto" as const },
+  { label: t("home.modeManual"), value: LAYOUT_MODE_MANUAL },
+  { label: t("home.modeAuto"), value: LAYOUT_MODE_AUTO },
 ]);
 
 const activeMapperLayoutLabel = computed(() => {
-  const activeId = layoutMode.value === "auto"
+  const activeId = layoutMode.value === LAYOUT_MODE_AUTO
     ? activeAutoLayoutId.value
     : manualActiveLayoutId.value;
   if (!activeId) return t("home.activeLayoutNative");
@@ -80,7 +82,7 @@ const activeMapperLayoutLabel = computed(() => {
 
 const orderedEntries = computed<LayoutLibraryEntry[]>(() => {
   const entries: LayoutLibraryEntry[] = library.entries.value;
-  if (config.value.settings.layoutMode !== "auto") return entries;
+  if (config.value.settings.layoutMode !== LAYOUT_MODE_AUTO) return entries;
   const order = orderLayoutIds(
     entries.map((e: LayoutLibraryEntry) => e.id),
     config.value.settings.layoutOrder,
@@ -145,6 +147,26 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
         {{ $t("home.subtitle") }}
       </p>
     </div>
+
+    <UAlert
+      v-if="globalBanner"
+      :color="globalBanner.color"
+      variant="soft"
+      :icon="globalBanner.icon"
+      :title="globalBanner.title"
+    >
+      <template #description>
+        <ul class="space-y-2 text-sm">
+          <li
+            v-for="issue in globalBanner.issues"
+            :key="issue.id"
+          >
+            <span class="font-medium">{{ issue.title }}</span>
+            <span class="text-(--ui-text-muted)"> — {{ issue.description }}</span>
+          </li>
+        </ul>
+      </template>
+    </UAlert>
 
     <UCard>
       <div class="flex items-center justify-between gap-3 flex-wrap">

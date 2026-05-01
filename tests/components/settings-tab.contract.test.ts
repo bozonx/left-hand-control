@@ -53,6 +53,12 @@ mockComponent('~/components/features/settings/BehaviorCard.vue', () =>
   }),
 )
 
+mockComponent('~/components/features/settings/GameModeCard.vue', () =>
+  defineComponent({
+    template: '<div data-test="game-mode-card">game mode</div>',
+  }),
+)
+
 mockComponent('~/components/features/settings/ConfigPathCard.vue', () =>
   defineComponent({
     template: '<div data-test="config-card">config</div>',
@@ -89,7 +95,7 @@ describe('SettingsTab', () => {
         busy: ref(false),
         error: ref(null),
       },
-      settingsBanner: ref(null),
+      globalBanner: ref(null),
       globalIssues: ref([]),
       mapperIssues: ref([]),
       theme: {
@@ -132,7 +138,12 @@ describe('SettingsTab', () => {
     await wrapper.get('[data-test="mapper-card"]').trigger('click')
 
     expect(toggleMapperMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-test="mapper-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="general-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="behavior-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="game-mode-card"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="config-card"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="library-card"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="global-banner"]').exists()).toBe(false)
   })
 })

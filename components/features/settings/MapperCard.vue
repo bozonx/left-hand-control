@@ -8,7 +8,7 @@ interface SettingsIssue {
   description: string
 }
 
-defineProps<{
+const props = defineProps<{
   mapper: MapperState
   deviceOptions: Array<{ label: string, value: string }>
   selectedDevice: string
@@ -22,6 +22,10 @@ defineEmits<{
   'update:selectedMouse': [value: string]
   toggle: []
 }>()
+
+const hasErrorIssues = computed(() =>
+  props.issues.some((issue) => issue.severity === 'error'),
+)
 </script>
 
 <template>
@@ -54,6 +58,7 @@ defineEmits<{
       >
         <div class="flex gap-2 items-center">
           <USelectMenu
+            id="mapper-keyboard-device"
             :model-value="selectedDevice"
             :items="deviceOptions"
             value-key="value"
@@ -77,6 +82,7 @@ defineEmits<{
         :help="$t('settings.mouseHelp')"
       >
         <USelectMenu
+          id="mapper-mouse-device"
           :model-value="selectedMouse"
           :items="mouseOptions"
           value-key="value"
@@ -90,13 +96,14 @@ defineEmits<{
       <div class="flex items-center gap-2">
         <UButton
           :color="mapper.status.value.running ? 'error' : 'primary'"
+          :variant="mapper.status.value.running ? 'outline' : 'solid'"
           :icon="
             mapper.status.value.running
               ? 'i-lucide-square'
               : 'i-lucide-play'
           "
           :loading="mapper.busy.value"
-          :disabled="!mapper.status.value.running && !selectedDevice"
+          :disabled="!mapper.status.value.running && (!selectedDevice || hasErrorIssues)"
           @click="$emit('toggle')"
         >
           {{ mapper.status.value.running ? $t('settings.stop') : $t('settings.start') }}

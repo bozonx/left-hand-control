@@ -258,6 +258,8 @@ export default {
     appsBlacklistLabel: "Blocked applications (blacklist)",
     appsBlacklistHint:
       "Rule is blocked when the focused window matches at least one substring. Takes precedence over the whitelist.",
+    appsWhitelistCount: "{count} whitelist",
+    appsBlacklistCount: "{count} blacklist",
     enableRule: "Enable rule",
     disableRule: "Disable rule",
     keyRequired: "Pick a trigger key.",

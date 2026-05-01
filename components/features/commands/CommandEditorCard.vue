@@ -53,7 +53,7 @@ async function copyCommandId() {
 
 <template>
   <div
-    class="relative rounded-xl border p-4 transition-all duration-300 cursor-pointer"
+    class="relative rounded-xl border p-4 transition-all duration-150 cursor-pointer"
     :class="[
       selected
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'

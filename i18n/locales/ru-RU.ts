@@ -259,6 +259,8 @@ export default {
     appsBlacklistLabel: "Запрещённые приложения (blacklist)",
     appsBlacklistHint:
       "Правило блокируется, если активное окно совпадает хотя бы с одной подстрокой. Имеет приоритет над whitelist.",
+    appsWhitelistCount: "{count} разрешено",
+    appsBlacklistCount: "{count} запрещено",
     enableRule: "Включить правило",
     disableRule: "Выключить правило",
     keyRequired: "Выберите клавишу-триггер.",

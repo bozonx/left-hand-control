@@ -63,27 +63,6 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
         />
       </div>
 
-      <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
-        <div>
-          <div class="text-xs font-medium text-(--ui-text-muted) flex items-center gap-2">
-            {{ $t('settings.launchOnStartup') }}
-            <UBadge
-              color="neutral"
-              variant="outline"
-              size="sm"
-            >
-              {{ $t('settings.stubBadge') }}
-            </UBadge>
-          </div>
-          <div class="text-xs text-(--ui-text-muted)">
-            {{ $t('settings.launchOnStartupHint') }}
-          </div>
-        </div>
-        <USwitch
-          v-model="props.config.settings.launchOnStartup"
-          disabled
-        />
-      </div>
     </div>
   </UCard>
 </template>

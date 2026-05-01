@@ -239,7 +239,7 @@ function openBlacklist(entryId: string) {
                 <li
                     v-for="(entry, index) in entries"
                     :key="entry.id"
-                    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-300 hover:shadow-lg cursor-pointer"
+                    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-150 hover:shadow-lg cursor-pointer"
                     :class="[
                         layoutMode === 'auto' && !entryIsIncluded(entry.id) && !entryIsDefault(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
                         selectedId === entry.id
@@ -361,9 +361,9 @@ function openBlacklist(entryId: string) {
 
                     <div class="w-px bg-(--ui-border) self-stretch"></div>
 
-                    <div class="w-52 flex flex-col gap-2">
+                    <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-2">
                         <div class="flex items-center justify-end">
-                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                                 <UButton
                                     icon="i-lucide-pencil"
                                     variant="ghost"

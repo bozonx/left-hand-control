@@ -306,13 +306,15 @@ let focusoutTimer: ReturnType<typeof setTimeout> | null = null
 
 function handleContainerFocusOut(event: FocusEvent) {
   const container = event.currentTarget as HTMLElement
+  const related = event.relatedTarget as Node | null
+  if (related && container.contains(related)) return
   if (focusoutTimer) clearTimeout(focusoutTimer)
   focusoutTimer = setTimeout(() => {
     if (!container.contains(document.activeElement)) {
       showSuggestions.value = false
       activeIndex.value = -1
     }
-  }, 0)
+  }, 100)
 }
 
 watch(activeIndex, (idx) => {

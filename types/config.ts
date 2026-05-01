@@ -124,6 +124,9 @@ export type LocalePreference = 'auto' | 'en-US' | 'ru-RU'
 //     `autoDefaultLayoutId` or to native passthrough.
 export type LayoutMode = 'manual' | 'auto'
 
+export const LAYOUT_MODE_MANUAL = 'manual' as const
+export const LAYOUT_MODE_AUTO = 'auto' as const
+
 // A single condition set used as a whitelist or blacklist for a layout.
 // Missing `gameMode` means "do not check"; empty `layouts` means
 // "do not check layouts". A condition set is considered "empty" (no-op)
@@ -302,7 +305,7 @@ export function createDefaultConfig(): AppConfig {
       defaultMacroStepPauseMs: 20,
       defaultMacroModifierDelayMs: 5,
       inputDevicePath: '',
-      layoutMode: 'manual',
+      layoutMode: LAYOUT_MODE_MANUAL,
       manualActiveLayoutId: undefined,
       layoutOrder: [],
       layoutConditions: {},
