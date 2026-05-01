@@ -236,7 +236,7 @@ export function macroActionRef(id: string): string {
   return `${MACRO_ACTION_PREFIX}${id}`
 }
 
-export function parseMacroRef(action: string): string | null {
+export function parseMacroRef(action: string | null | undefined): string | null {
   if (!action) return null
   return action.startsWith(MACRO_ACTION_PREFIX)
     ? action.slice(MACRO_ACTION_PREFIX.length)
@@ -252,7 +252,7 @@ export function systemActionRef(id: string): string {
   return `${SYSTEM_ACTION_PREFIX}${id}`
 }
 
-export function parseSystemRef(action: string): string | null {
+export function parseSystemRef(action: string | null | undefined): string | null {
   if (!action) return null
   return action.startsWith(SYSTEM_ACTION_PREFIX)
     ? action.slice(SYSTEM_ACTION_PREFIX.length)
@@ -265,7 +265,7 @@ export function commandActionRef(id: string): string {
   return `${COMMAND_ACTION_PREFIX}${id}`
 }
 
-export function parseCommandRef(action: string): string | null {
+export function parseCommandRef(action: string | null | undefined): string | null {
   if (!action) return null
   return action.startsWith(COMMAND_ACTION_PREFIX)
     ? action.slice(COMMAND_ACTION_PREFIX.length)
@@ -278,7 +278,7 @@ export function textActionRef(text: string): string {
   return `${TEXT_ACTION_PREFIX}${text}`
 }
 
-export function parseTextAction(action: string): string | null {
+export function parseTextAction(action: string | null | undefined): string | null {
   if (!action) return null
   return action.startsWith(TEXT_ACTION_PREFIX)
     ? action.slice(TEXT_ACTION_PREFIX.length)

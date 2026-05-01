@@ -264,7 +264,6 @@ export function useConfig(): ConfigState {
   const { t } = useI18n()
   const config = ref<AppConfig>(createDefaultConfig())
   const loaded = ref(false)
-  const saving = ref(false)
   const lastError = ref<string | null>(null)
   const loadError = ref<string | null>(null)
   const settingsDir = ref('')
@@ -280,11 +279,6 @@ export function useConfig(): ConfigState {
     () => layoutSnapshotOf(config.value) !== layoutSnapshot.value,
   )
 
-  let saveTimer: ReturnType<typeof setTimeout> | null = null
-  let pendingFlushWaiters: Array<{
-    resolve: () => void
-    reject: (error: unknown) => void
-  }> = []
   let lastNotifiedSaveError: string | null = null
 
   function saveErrorMessage(error: unknown): string {
@@ -304,54 +298,27 @@ export function useConfig(): ConfigState {
     })
   }
 
-  async function persistNow() {
-    saving.value = true
-    try {
+  const persistence = usePersistedState({
+    delayMs: 300,
+    async onSave() {
       await Promise.all([
         writeConfigRaw(serializePersistedSettings(config.value)),
         writeCurrentLayoutRaw(serializeCurrentLayout(config.value)),
       ])
       lastError.value = null
       lastNotifiedSaveError = null
-      const waiters = pendingFlushWaiters
-      pendingFlushWaiters = []
-      for (const waiter of waiters) waiter.resolve()
-    } catch (e: unknown) {
+    },
+    onError(e) {
       const message = saveErrorMessage(e)
       lastError.value = message
       notifySaveError(message)
-      const waiters = pendingFlushWaiters
-      pendingFlushWaiters = []
-      for (const waiter of waiters) waiter.reject(e)
-      throw e
-    } finally {
-      saving.value = false
-    }
-  }
+    },
+    canSave() {
+      return loaded.value && !needsWelcome.value
+    },
+  })
 
-  function scheduleSave() {
-    if (!loaded.value) return
-    if (needsWelcome.value) return
-    if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => {
-      saveTimer = null
-      void persistNow().catch((e) => console.error('Background persist failed:', e))
-    }, 300)
-  }
-
-  async function flush() {
-    if (saveTimer) {
-      clearTimeout(saveTimer)
-      saveTimer = null
-      await persistNow()
-      return
-    }
-    if (saving.value) {
-      await new Promise<void>((resolve, reject) => {
-        pendingFlushWaiters.push({ resolve, reject })
-      })
-    }
-  }
+  const { saving, scheduleSave, flush, persistNow } = persistence
 
   async function applyPreset(
     preset: LayoutPreset,
@@ -365,9 +332,7 @@ export function useConfig(): ConfigState {
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     needsWelcome.value = false
     await flush()
-    if (!saveTimer && !saving.value) {
-      await persistNow()
-    }
+    await persistNow()
   }
 
   async function markLayoutSavedAs(layoutId: string) {
@@ -391,9 +356,7 @@ export function useConfig(): ConfigState {
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     needsWelcome.value = false
     await flush()
-    if (!saveTimer && !saving.value) {
-      await persistNow()
-    }
+    await persistNow()
   }
 
   async function resetCurrentLayout() {
@@ -404,9 +367,7 @@ export function useConfig(): ConfigState {
     )
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     await flush()
-    if (!saveTimer && !saving.value) {
-      await persistNow()
-    }
+    await persistNow()
   }
 
   async function load() {

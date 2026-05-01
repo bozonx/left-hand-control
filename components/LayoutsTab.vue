@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import HomeInfoCard from "~/components/HomeInfoCard.vue";
+import HomeHelpCard from "~/components/HomeHelpCard.vue";
+import HomePlatformStatusCard from "~/components/HomePlatformStatusCard.vue";
 import LayoutsLibraryCard from "~/components/features/settings/LayoutsLibraryCard.vue";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import { isLayoutInAuto, orderLayoutIds } from "~/utils/layoutAutoSwitch";
@@ -242,7 +243,8 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
         />
       </div>
 
-      <HomeInfoCard />
+      <HomeHelpCard />
+      <HomePlatformStatusCard />
     </div>
   </div>
 </template>

@@ -53,42 +53,21 @@ export function useUiState(): UiStateStore {
   const loaded = ref(false)
   const loadError = ref<string | null>(null)
 
-  let saveTimer: ReturnType<typeof setTimeout> | null = null
-  let saving = false
-  let pendingFlushWaiters: Array<{
-    resolve: () => void
-    reject: (error: unknown) => void
-  }> = []
-
-  async function persistNow() {
-    const tauri = await useTauri()
-    if (!tauri) return
-    saving = true
-    try {
+  const persistence = usePersistedState({
+    delayMs: 150,
+    async onSave() {
+      const tauri = await useTauri()
+      if (!tauri) return
       await tauri.invoke('save_ui_state', {
         contents: JSON.stringify(state.value, null, 2),
       })
-      const waiters = pendingFlushWaiters
-      pendingFlushWaiters = []
-      for (const waiter of waiters) waiter.resolve()
-    } catch (error) {
-      const waiters = pendingFlushWaiters
-      pendingFlushWaiters = []
-      for (const waiter of waiters) waiter.reject(error)
-      throw error
-    } finally {
-      saving = false
-    }
-  }
+    },
+    canSave() {
+      return loaded.value
+    },
+  })
 
-  function scheduleSave() {
-    if (!loaded.value) return
-    if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => {
-      saveTimer = null
-      void persistNow().catch(() => {})
-    }, 150)
-  }
+  const { scheduleSave, flush } = persistence
 
   async function load() {
     loaded.value = false
@@ -109,20 +88,6 @@ export function useUiState(): UiStateStore {
       loadError.value = error instanceof Error ? error.message : String(error)
     } finally {
       loaded.value = true
-    }
-  }
-
-  async function flush() {
-    if (saveTimer) {
-      clearTimeout(saveTimer)
-      saveTimer = null
-      await persistNow()
-      return
-    }
-    if (saving) {
-      await new Promise<void>((resolve, reject) => {
-        pendingFlushWaiters.push({ resolve, reject })
-      })
     }
   }
 

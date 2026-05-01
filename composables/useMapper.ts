@@ -1,8 +1,12 @@
 // Thin composable around the Rust mapper commands.
 // In the plain browser (pnpm dev without Tauri) everything becomes a no-op.
 
-import { layoutSnapshotOf, emptyLayoutPreset, applyPresetToConfig } from '~/utils/layoutPresets'
-import type { AppConfig } from '~/types/config'
+import {
+  useMapperDevices,
+  registerConsumer,
+  resetMapperDevicesState,
+} from '~/composables/useMapperDevices'
+import { useMapperRuntime } from '~/composables/useMapperRuntime'
 
 export interface KeyboardDevice {
   path: string
@@ -29,40 +33,10 @@ export interface MapperState {
 }
 
 let singleton: MapperState | null = null
-let statusPollTimer: ReturnType<typeof setInterval> | null = null
-let consumerCount = 0
-let reloadTimer: ReturnType<typeof setTimeout> | null = null
 
 export function resetMapperStateForTests() {
-  stopStatusPolling()
-  if (reloadTimer) {
-    clearTimeout(reloadTimer)
-    reloadTimer = null
-  }
-  consumerCount = 0
+  resetMapperDevicesState()
   singleton = null
-}
-
-function startStatusPolling(refreshStatus: () => Promise<void>) {
-  if (statusPollTimer) return
-  statusPollTimer = setInterval(() => {
-    void refreshStatus()
-  }, 2000)
-}
-
-function stopStatusPolling() {
-  if (!statusPollTimer) return
-  clearInterval(statusPollTimer)
-  statusPollTimer = null
-}
-
-function registerConsumer(refreshStatus: () => Promise<void>) {
-  startStatusPolling(refreshStatus)
-  consumerCount += 1
-  onScopeDispose(() => {
-    consumerCount = Math.max(0, consumerCount - 1)
-    if (consumerCount === 0) stopStatusPolling()
-  })
 }
 
 export function useMapper(): MapperState {
@@ -72,95 +46,18 @@ export function useMapper(): MapperState {
   }
 
   const { config, flush } = useConfig()
-  const { activeAutoLayoutId } = useLayoutSwitcher()
-  const library = useLayoutLibrary()
   const { t } = useI18n()
-  const devices = ref<KeyboardDevice[]>([])
-  const mice = ref<KeyboardDevice[]>([])
-  const status = ref<MapperStatus>({ running: false, device_path: null, mouse_device_path: null, last_error: null })
+  const { activeAutoLayoutId } = useLayoutSwitcher()
+  const {
+    devices,
+    mice,
+    status,
+    error,
+    refreshDevices,
+    refreshStatus,
+  } = useMapperDevices()
+
   const busy = ref(false)
-  const error = ref<string | null>(null)
-  let reloadPending = false
-
-  async function computeActiveConfig(): Promise<AppConfig> {
-    const settings = config.value.settings
-    const activeId = settings.layoutMode === 'auto'
-      ? activeAutoLayoutId?.value
-      : settings.manualActiveLayoutId
-    
-    if (activeId === settings.currentLayoutId) {
-      return config.value
-    }
-    
-    let preset = emptyLayoutPreset()
-    if (activeId) {
-      const loaded = await library.loadPreset(activeId)
-      if (loaded) preset = loaded
-    }
-    return applyPresetToConfig(config.value, preset, activeId)
-  }
-
-  const runtimeSnapshot = async () => {
-    const cfg = await computeActiveConfig()
-    return JSON.stringify({
-      layout: layoutSnapshotOf(cfg),
-      defaultHoldTimeoutMs: cfg.settings.defaultHoldTimeoutMs,
-      defaultDoubleTapTimeoutMs: cfg.settings.defaultDoubleTapTimeoutMs,
-      defaultMacroStepPauseMs: cfg.settings.defaultMacroStepPauseMs,
-      defaultMacroModifierDelayMs: cfg.settings.defaultMacroModifierDelayMs,
-    })
-  }
-  // Synchronous baseline using the freshly-loaded config — avoids the
-  // race where the first `watch` tick fires before the async
-  // initializer has set this, which used to look like a real change
-  // and trigger a spurious mapper reload.
-  let lastRuntimeSnapshot = JSON.stringify({
-    layout: layoutSnapshotOf(config.value),
-    defaultHoldTimeoutMs: config.value.settings.defaultHoldTimeoutMs,
-    defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
-    defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
-    defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
-  })
-  void runtimeSnapshot().then((s) => {
-    lastRuntimeSnapshot = s
-  })
-
-  async function refreshDevices() {
-    error.value = null
-    devices.value = []
-    mice.value = []
-
-    const tauri = await useTauri()
-    if (!tauri) {
-      error.value = t('mapper.desktopOnly')
-      return
-    }
-
-    try {
-      devices.value = await tauri.invoke<KeyboardDevice[]>('list_keyboards')
-      error.value = null
-    } catch (err: any) {
-      error.value = t('mapper.listFailed', { err: String(err) })
-      console.error('[useMapper] list_keyboards error:', err)
-    }
-
-    try {
-      mice.value = await tauri.invoke<KeyboardDevice[]>('list_mice')
-    } catch (err: any) {
-      console.error('[useMapper] list_mice error:', err)
-    }
-  }
-
-  async function refreshStatus() {
-    const tauri = await useTauri()
-    if (!tauri) return
-    try {
-      status.value = await tauri.invoke<MapperStatus>('mapper_status')
-      error.value = status.value.last_error
-    } catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : String(e)
-    }
-  }
 
   async function invokeStart(devicePath: string, mouseDevicePath?: string) {
     const tauri = await useTauri()
@@ -170,7 +67,7 @@ export function useMapper(): MapperState {
     }
     try {
       await flush()
-      const activeConfig = await computeActiveConfig()
+      const activeConfig = await runtime.computeActiveConfig()
       await tauri.invoke('start_mapper', {
         devicePath,
         mouseDevicePath: mouseDevicePath || null,
@@ -212,49 +109,23 @@ export function useMapper(): MapperState {
     }
   }
 
-  function scheduleReload() {
-    if (reloadTimer) clearTimeout(reloadTimer)
-    reloadTimer = setTimeout(() => {
-      reloadTimer = null
-      void reloadRunningMapper()
-    }, 150)
-  }
-
-  async function reloadRunningMapper() {
-    const devicePath = status.value.device_path ?? config.value.settings.inputDevicePath ?? ''
-    const mouseDevicePath = status.value.mouse_device_path ?? config.value.settings.inputMouseDevicePath ?? ''
-    if (!status.value.running || !devicePath) return
-    if (busy.value) {
-      reloadPending = true
-      return
-    }
-
-    const nextRuntimeSnapshot = await runtimeSnapshot()
-    if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
-
-    busy.value = true
-    try {
-      await invokeStop()
-      await invokeStart(devicePath, mouseDevicePath)
-      lastRuntimeSnapshot = nextRuntimeSnapshot
-    } finally {
-      busy.value = false
-      if (reloadPending) {
-        reloadPending = false
-        scheduleReload()
-      }
-    }
-  }
+  const runtime = useMapperRuntime({
+    status,
+    busy,
+    invokeStart,
+    invokeStop,
+  })
+  runtime.initSnapshot()
 
   registerConsumer(refreshStatus)
 
   watch([
     () => config.value,
     () => config.value.settings.manualActiveLayoutId,
-    () => activeAutoLayoutId?.value
+    () => activeAutoLayoutId?.value,
   ], () => {
     if (!status.value.running) return
-    scheduleReload()
+    runtime.scheduleReload()
   }, { deep: true })
 
   singleton = {

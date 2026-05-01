@@ -175,7 +175,11 @@ function cancel() {
     </template>
 
     <template #body>
-      <div class="mx-auto flex h-full w-full max-w-7xl flex-col" data-testid="action-picker-view">
+      <div
+        v-if="modalOpen"
+        class="mx-auto flex h-full w-full max-w-7xl flex-col"
+        data-testid="action-picker-view"
+      >
         <ActionPickerBody
           v-model="draft"
           :key-only="keyOnly"
