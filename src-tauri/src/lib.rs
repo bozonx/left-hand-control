@@ -1,9 +1,5 @@
 use crate::gamemode::get_gamemode_status;
-use tauri::{
-    menu::{Menu, MenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, RunEvent, WebviewWindow, WindowEvent,
-};
+use tauri::{Manager, RunEvent, WindowEvent};
 
 mod active_window;
 mod gamemode;
@@ -11,6 +7,7 @@ mod layout;
 mod mapper;
 mod platform;
 mod storage;
+mod tray;
 mod window_state;
 
 fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
@@ -190,105 +187,16 @@ fn get_platform_info() -> platform::PlatformInfo {
 
 #[tauri::command]
 fn quit_application(app: tauri::AppHandle) {
-    save_window_geometry(&app);
+    window_state::save(&app);
     let _ = mapper::stop();
     app.exit(0);
-}
-
-// --- Tray --------------------------------------------------------------------
-
-fn save_window_geometry(app: &tauri::AppHandle) {
-    window_state::save(app);
-}
-
-fn hide_main_window(window: &WebviewWindow) {
-    save_window_geometry(window.app_handle());
-    let _ = window.set_skip_taskbar(true);
-    let _ = window.hide();
-}
-
-fn show_main_window(window: &WebviewWindow) {
-    let _ = window.set_skip_taskbar(false);
-    let _ = window.show();
-    let _ = window.unminimize();
-    let _ = window.set_focus();
-}
-
-#[tauri::command]
-fn show_main_window_command(app: tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        show_main_window(&window);
-    }
-}
-
-#[tauri::command]
-fn hide_main_window_command(app: tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        hide_main_window(&window);
-    }
-}
-
-#[tauri::command]
-fn toggle_main_window_maximized_command(app: tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        if window.is_maximized().unwrap_or(false) {
-            let _ = window.unmaximize();
-        } else {
-            let _ = window.maximize();
-        }
-    }
-}
-
-fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, "show", "Показать окно", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Выход", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &quit])?;
-
-    let icon = app
-        .default_window_icon()
-        .cloned()
-        .ok_or_else(|| tauri::Error::AssetNotFound("tray icon".into()))?;
-
-    TrayIconBuilder::with_id("main")
-        .icon(icon)
-        .tooltip("Left Hand Control")
-        .menu(&menu)
-        .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(w) = app.get_webview_window("main") {
-                    show_main_window(&w);
-                }
-            }
-            "quit" => {
-                save_window_geometry(app);
-                let _ = mapper::stop();
-                app.exit(0);
-            }
-            _ => {}
-        })
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
-                button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
-                ..
-            } = event
-            {
-                let app = tray.app_handle();
-                if let Some(w) = app.get_webview_window("main") {
-                    show_main_window(&w);
-                }
-            }
-        })
-        .build(app)?;
-    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
         .setup(|app| {
-            build_tray(app.handle())?;
+            tray::build_tray(app.handle())?;
             if let Ok(storage) = app_storage(app.handle()) {
                 let _ = storage.ensure();
                 mapper::set_portal_token_dir(storage.data_dir().clone());
@@ -307,7 +215,7 @@ pub fn run() {
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 if let Some(w) = window.app_handle().get_webview_window("main") {
-                    hide_main_window(&w);
+                    tray::hide_main_window(&w);
                 }
             }
             WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
@@ -342,9 +250,9 @@ pub fn run() {
             get_gamemode_status,
             get_platform_info,
             active_window::get_active_window,
-            show_main_window_command,
-            hide_main_window_command,
-            toggle_main_window_maximized_command,
+            tray::show_main_window_command,
+            tray::hide_main_window_command,
+            tray::toggle_main_window_maximized_command,
             quit_application,
         ])
         .build(tauri::generate_context!())

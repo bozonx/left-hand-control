@@ -84,5 +84,5 @@ fn detect_active_window() -> Option<ActiveWindow> {
 
 #[tauri::command]
 pub fn get_active_window() -> Option<ActiveWindow> {
-    detect_active_window()
+    cached_active_window()
 }

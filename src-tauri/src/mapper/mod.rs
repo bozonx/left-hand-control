@@ -228,7 +228,10 @@ type OsBackend = LinuxBackend;
 type OsBackend = UnsupportedBackend;
 
 fn lock_state() -> MutexGuard<'static, MapperRuntime<OsBackend>> {
-    STATE.lock().unwrap_or_else(|e| e.into_inner())
+    STATE.lock().unwrap_or_else(|e| {
+        eprintln!("[mapper] STATE mutex poisoned, recovering");
+        e.into_inner()
+    })
 }
 
 pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
