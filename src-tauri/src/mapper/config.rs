@@ -212,3 +212,68 @@ fn default_mod_delay() -> u64 {
 fn default_double_tap() -> u64 {
     200
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_null_action_spec_is_swallow() {
+        let spec: ActionSpec = serde_json::from_str("null").unwrap();
+        assert!(matches!(spec, ActionSpec::Swallow));
+    }
+
+    #[test]
+    fn deserialize_empty_string_action_spec_is_native() {
+        let spec: ActionSpec = serde_json::from_str(r#""""#).unwrap();
+        assert!(matches!(spec, ActionSpec::Native));
+    }
+
+    #[test]
+    fn deserialize_nonempty_string_action_spec_is_action() {
+        let spec: ActionSpec = serde_json::from_str(r#""Escape""#).unwrap();
+        assert!(matches!(spec, ActionSpec::Action(ref s) if s == "Escape"));
+    }
+
+    #[test]
+    fn missing_action_spec_field_defaults_to_native() {
+        let rule: Rule = serde_json::from_str(r#"{"key":"KeyQ"}"#).unwrap();
+        assert!(matches!(rule.tap_action, ActionSpec::Native));
+        assert!(matches!(rule.hold_action, ActionSpec::Native));
+    }
+
+    #[test]
+    fn rule_enabled_defaults_to_true() {
+        let rule: Rule = serde_json::from_str(r#"{"key":"KeyQ"}"#).unwrap();
+        assert!(rule.enabled);
+    }
+
+    #[test]
+    fn app_config_deserializes_from_frontend_json() {
+        let json = r#"{
+            "rules":[{"key":"KeyQ","tapAction":"Escape","holdAction":""}],
+            "layerKeymaps":{},
+            "macros":[],
+            "commands":[],
+            "settings":{"defaultHoldTimeoutMs":300}
+        }"#;
+        let cfg: AppConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(cfg.rules.len(), 1);
+        assert_eq!(cfg.rules[0].key, "KeyQ");
+        assert!(matches!(cfg.rules[0].tap_action, ActionSpec::Action(ref s) if s == "Escape"));
+        assert!(matches!(cfg.rules[0].hold_action, ActionSpec::Native));
+        assert_eq!(cfg.settings.default_hold_timeout_ms, 300);
+    }
+
+    #[test]
+    fn default_settings_values() {
+        let s = Settings::default();
+        assert_eq!(s.default_hold_timeout_ms, 200);
+        assert_eq!(s.default_macro_step_pause_ms, 20);
+        assert_eq!(s.default_macro_modifier_delay_ms, 5);
+        assert_eq!(s.default_double_tap_timeout_ms, 200);
+        assert!(s.input_device_path.is_none());
+        assert!(s.game_mode.use_gamemoded);
+        assert!(!s.game_mode.use_fullscreen);
+    }
+}

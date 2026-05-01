@@ -83,3 +83,76 @@ fn parse_modifier(token: &str) -> Option<Key> {
 fn parse_single(token: &str) -> Option<Key> {
     code_to_key(token)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn explicit_text_extracts_after_prefix() {
+        assert_eq!(explicit_text("text:hello"), Some("hello".into()));
+    }
+
+    #[test]
+    fn explicit_text_returns_none_without_prefix() {
+        assert_eq!(explicit_text("hello"), None);
+    }
+
+    #[test]
+    fn explicit_text_trims_input() {
+        assert_eq!(explicit_text("  text:hello  "), Some("hello".into()));
+    }
+
+    #[test]
+    fn parse_single_key() {
+        let k = parse_action("Escape").unwrap();
+        assert_eq!(k.key, Key::KEY_ESC);
+        assert!(k.mods.is_empty());
+    }
+
+    #[test]
+    fn parse_modifier_plus_key() {
+        let k = parse_action("Ctrl+KeyC").unwrap();
+        assert_eq!(k.key, Key::KEY_C);
+        assert_eq!(k.mods, vec![Key::KEY_LEFTCTRL]);
+    }
+
+    #[test]
+    fn parse_multiple_modifiers() {
+        let k = parse_action("Ctrl+Shift+Tab").unwrap();
+        assert_eq!(k.key, Key::KEY_TAB);
+        assert_eq!(k.mods, vec![Key::KEY_LEFTCTRL, Key::KEY_LEFTSHIFT]);
+    }
+
+    #[test]
+    fn parse_unknown_key_returns_none() {
+        assert!(parse_action("UnknownKey").is_none());
+    }
+
+    #[test]
+    fn parse_empty_returns_none() {
+        assert!(parse_action("").is_none());
+    }
+
+    #[test]
+    fn parse_modifier_aliases() {
+        assert_eq!(parse_modifier("Ctrl"), Some(Key::KEY_LEFTCTRL));
+        assert_eq!(parse_modifier("ControlLeft"), Some(Key::KEY_LEFTCTRL));
+        assert_eq!(parse_modifier("ControlRight"), Some(Key::KEY_RIGHTCTRL));
+        assert_eq!(parse_modifier("Shift"), Some(Key::KEY_LEFTSHIFT));
+        assert_eq!(parse_modifier("ShiftLeft"), Some(Key::KEY_LEFTSHIFT));
+        assert_eq!(parse_modifier("ShiftRight"), Some(Key::KEY_RIGHTSHIFT));
+        assert_eq!(parse_modifier("Alt"), Some(Key::KEY_LEFTALT));
+        assert_eq!(parse_modifier("AltLeft"), Some(Key::KEY_LEFTALT));
+        assert_eq!(parse_modifier("AltRight"), Some(Key::KEY_RIGHTALT));
+        assert_eq!(parse_modifier("AltGr"), Some(Key::KEY_RIGHTALT));
+        assert_eq!(parse_modifier("Meta"), Some(Key::KEY_LEFTMETA));
+        assert_eq!(parse_modifier("MetaLeft"), Some(Key::KEY_LEFTMETA));
+        assert_eq!(parse_modifier("MetaRight"), Some(Key::KEY_RIGHTMETA));
+    }
+
+    #[test]
+    fn parse_unknown_modifier_returns_none() {
+        assert!(parse_modifier("Cmd").is_none());
+    }
+}

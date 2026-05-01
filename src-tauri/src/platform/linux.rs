@@ -115,6 +115,22 @@ pub fn detect() -> Session {
 }
 
 fn classify_desktop(xdg: &str, session: &str, has_swaysock: bool) -> Desktop {
+    classify_desktop_impl(
+        xdg,
+        session,
+        has_swaysock,
+        std::env::var("KDE_FULL_SESSION").is_ok(),
+        std::env::var("GNOME_DESKTOP_SESSION_ID").is_ok(),
+    )
+}
+
+fn classify_desktop_impl(
+    xdg: &str,
+    session: &str,
+    has_swaysock: bool,
+    kde_full_session: bool,
+    gnome_session_id: bool,
+) -> Desktop {
     let haystacks = [xdg, session];
     let contains = |needle: &str| -> bool {
         haystacks.iter().any(|h| {
@@ -152,12 +168,172 @@ fn classify_desktop(xdg: &str, session: &str, has_swaysock: bool) -> Desktop {
     if contains("Pantheon") {
         return Desktop::Pantheon;
     }
-    // Fallback: KDE sometimes only sets KDE_FULL_SESSION (old scripts).
-    if std::env::var("KDE_FULL_SESSION").is_ok() {
+    if kde_full_session {
         return Desktop::Kde;
     }
-    if std::env::var("GNOME_DESKTOP_SESSION_ID").is_ok() {
+    if gnome_session_id {
         return Desktop::Gnome;
     }
     Desktop::Unknown
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn classify_kde_from_xdg() {
+        assert_eq!(
+            classify_desktop_impl("KDE", "", false, false, false),
+            Desktop::Kde
+        );
+    }
+
+    #[test]
+    fn classify_kde_from_session() {
+        assert_eq!(
+            classify_desktop_impl("", "KDE", false, false, false),
+            Desktop::Kde
+        );
+    }
+
+    #[test]
+    fn classify_kde_from_colon_separated_xdg() {
+        assert_eq!(
+            classify_desktop_impl("ubuntu:KDE", "", false, false, false),
+            Desktop::Kde
+        );
+    }
+
+    #[test]
+    fn classify_gnome_from_xdg() {
+        assert_eq!(
+            classify_desktop_impl("GNOME", "", false, false, false),
+            Desktop::Gnome
+        );
+    }
+
+    #[test]
+    fn classify_gnome_classic() {
+        assert_eq!(
+            classify_desktop_impl("GNOME-Classic", "", false, false, false),
+            Desktop::Gnome
+        );
+    }
+
+    #[test]
+    fn classify_sway_from_xdg() {
+        assert_eq!(
+            classify_desktop_impl("sway", "", false, false, false),
+            Desktop::Sway
+        );
+    }
+
+    #[test]
+    fn classify_sway_from_sock() {
+        assert_eq!(
+            classify_desktop_impl("", "", true, false, false),
+            Desktop::Sway
+        );
+    }
+
+    #[test]
+    fn classify_hyprland() {
+        assert_eq!(
+            classify_desktop_impl("Hyprland", "", false, false, false),
+            Desktop::Hyprland
+        );
+    }
+
+    #[test]
+    fn classify_xfce() {
+        assert_eq!(
+            classify_desktop_impl("XFCE", "", false, false, false),
+            Desktop::Xfce
+        );
+    }
+
+    #[test]
+    fn classify_cinnamon() {
+        assert_eq!(
+            classify_desktop_impl("X-Cinnamon", "", false, false, false),
+            Desktop::Cinnamon
+        );
+    }
+
+    #[test]
+    fn classify_mate() {
+        assert_eq!(
+            classify_desktop_impl("MATE", "", false, false, false),
+            Desktop::Mate
+        );
+    }
+
+    #[test]
+    fn classify_lxqt() {
+        assert_eq!(
+            classify_desktop_impl("LXQt", "", false, false, false),
+            Desktop::Lxqt
+        );
+    }
+
+    #[test]
+    fn classify_unity() {
+        assert_eq!(
+            classify_desktop_impl("Unity", "", false, false, false),
+            Desktop::Unity
+        );
+    }
+
+    #[test]
+    fn classify_pantheon() {
+        assert_eq!(
+            classify_desktop_impl("Pantheon", "", false, false, false),
+            Desktop::Pantheon
+        );
+    }
+
+    #[test]
+    fn classify_unknown_when_no_match() {
+        assert_eq!(
+            classify_desktop_impl("", "", false, false, false),
+            Desktop::Unknown
+        );
+    }
+
+    #[test]
+    fn classify_kde_fallback_env() {
+        assert_eq!(
+            classify_desktop_impl("", "", false, true, false),
+            Desktop::Kde
+        );
+    }
+
+    #[test]
+    fn classify_gnome_fallback_env() {
+        assert_eq!(
+            classify_desktop_impl("", "", false, false, true),
+            Desktop::Gnome
+        );
+    }
+
+    #[test]
+    fn classify_haystack_beats_env_fallback() {
+        assert_eq!(
+            classify_desktop_impl("Sway", "", false, true, true),
+            Desktop::Sway
+        );
+    }
+
+    #[test]
+    fn classify_is_case_insensitive() {
+        assert_eq!(
+            classify_desktop_impl("kde", "", false, false, false),
+            Desktop::Kde
+        );
+        assert_eq!(
+            classify_desktop_impl("GnOmE", "", false, false, false),
+            Desktop::Gnome
+        );
+    }
 }

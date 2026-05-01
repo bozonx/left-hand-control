@@ -200,3 +200,96 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         _ => return None,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn letters_map_correctly() {
+        assert_eq!(code_to_key("KeyA"), Some(Key::KEY_A));
+        assert_eq!(code_to_key("KeyZ"), Some(Key::KEY_Z));
+    }
+
+    #[test]
+    fn digits_map_correctly() {
+        assert_eq!(code_to_key("Digit0"), Some(Key::KEY_0));
+        assert_eq!(code_to_key("Digit9"), Some(Key::KEY_9));
+    }
+
+    #[test]
+    fn f_keys_map_correctly() {
+        assert_eq!(code_to_key("F1"), Some(Key::KEY_F1));
+        assert_eq!(code_to_key("F24"), Some(Key::KEY_F24));
+    }
+
+    #[test]
+    fn navigation_keys_map_correctly() {
+        assert_eq!(code_to_key("Escape"), Some(Key::KEY_ESC));
+        assert_eq!(code_to_key("ArrowLeft"), Some(Key::KEY_LEFT));
+        assert_eq!(code_to_key("ArrowRight"), Some(Key::KEY_RIGHT));
+        assert_eq!(code_to_key("ArrowUp"), Some(Key::KEY_UP));
+        assert_eq!(code_to_key("ArrowDown"), Some(Key::KEY_DOWN));
+        assert_eq!(code_to_key("Space"), Some(Key::KEY_SPACE));
+        assert_eq!(code_to_key("Enter"), Some(Key::KEY_ENTER));
+    }
+
+    #[test]
+    fn punctuation_keys_map_correctly() {
+        assert_eq!(code_to_key("Backquote"), Some(Key::KEY_GRAVE));
+        assert_eq!(code_to_key("Minus"), Some(Key::KEY_MINUS));
+        assert_eq!(code_to_key("Equal"), Some(Key::KEY_EQUAL));
+        assert_eq!(code_to_key("Semicolon"), Some(Key::KEY_SEMICOLON));
+        assert_eq!(code_to_key("Slash"), Some(Key::KEY_SLASH));
+    }
+
+    #[test]
+    fn modifier_keys_map_correctly() {
+        assert_eq!(code_to_key("ShiftLeft"), Some(Key::KEY_LEFTSHIFT));
+        assert_eq!(code_to_key("ShiftRight"), Some(Key::KEY_RIGHTSHIFT));
+        assert_eq!(code_to_key("ControlLeft"), Some(Key::KEY_LEFTCTRL));
+        assert_eq!(code_to_key("ControlRight"), Some(Key::KEY_RIGHTCTRL));
+        assert_eq!(code_to_key("MetaLeft"), Some(Key::KEY_LEFTMETA));
+        assert_eq!(code_to_key("ContextMenu"), Some(Key::KEY_COMPOSE));
+    }
+
+    #[test]
+    fn media_keys_map_correctly() {
+        assert_eq!(code_to_key("VolumeUp"), Some(Key::KEY_VOLUMEUP));
+        assert_eq!(code_to_key("VolumeDown"), Some(Key::KEY_VOLUMEDOWN));
+        assert_eq!(code_to_key("MediaPlayPause"), Some(Key::KEY_PLAYPAUSE));
+        assert_eq!(code_to_key("BrowserBack"), Some(Key::KEY_BACK));
+    }
+
+    #[test]
+    fn numpad_keys_map_correctly() {
+        assert_eq!(code_to_key("NumLock"), Some(Key::KEY_NUMLOCK));
+        assert_eq!(code_to_key("Numpad0"), Some(Key::KEY_KP0));
+        assert_eq!(code_to_key("NumpadEnter"), Some(Key::KEY_KPENTER));
+    }
+
+    #[test]
+    fn mouse_buttons_map_correctly() {
+        assert_eq!(code_to_key("MouseLeft"), Some(Key::BTN_LEFT));
+        assert_eq!(code_to_key("MouseRight"), Some(Key::BTN_RIGHT));
+        assert_eq!(code_to_key("MouseMiddle"), Some(Key::BTN_MIDDLE));
+        assert_eq!(code_to_key("MouseForward"), Some(Key::BTN_FORWARD));
+        assert_eq!(code_to_key("MouseBack"), Some(Key::BTN_BACK));
+        assert_eq!(code_to_key("MouseTask"), Some(Key::BTN_TASK));
+    }
+
+    #[test]
+    fn international_keys_map_correctly() {
+        assert_eq!(code_to_key("IntlBackslash"), Some(Key::KEY_102ND));
+        assert_eq!(code_to_key("IntlYen"), Some(Key::KEY_YEN));
+        assert_eq!(code_to_key("IntlRo"), Some(Key::KEY_RO));
+        assert_eq!(code_to_key("KanaMode"), Some(Key::KEY_KATAKANAHIRAGANA));
+        assert_eq!(code_to_key("Lang5"), Some(Key::KEY_ZENKAKUHANKAKU));
+    }
+
+    #[test]
+    fn unknown_code_returns_none() {
+        assert_eq!(code_to_key("UnknownKey"), None);
+        assert_eq!(code_to_key(""), None);
+    }
+}
