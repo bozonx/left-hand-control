@@ -45,7 +45,12 @@ const {
 
     <BehaviorCard :config="config" />
 
-    <GameModeCard v-model:game-mode="config.value.settings.gameMode" />
+    <GameModeCard
+      :use-gamemoded="config.value?.settings?.gameMode?.useGamemoded ?? true"
+      :use-fullscreen="config.value?.settings?.gameMode?.useFullscreen ?? false"
+      @update:use-gamemoded="(v) => { if (config.value) config.value.settings.gameMode.useGamemoded = v }"
+      @update:use-fullscreen="(v) => { if (config.value) config.value.settings.gameMode.useFullscreen = v }"
+    />
 
     <ConfigPathCard
       :settings-dir="settingsDir"

@@ -1,12 +1,17 @@
 <script setup lang="ts">
-const gameMode = defineModel<{
+const props = defineProps<{
   useGamemoded: boolean
   useFullscreen: boolean
-}>('gameMode', { required: true })
+}>()
+
+const emit = defineEmits<{
+  'update:useGamemoded': [value: boolean]
+  'update:useFullscreen': [value: boolean]
+}>()
 </script>
 
 <template>
-  <UCard>
+  <UCard variant="outline">
     <template #header>
       <div>
         <div class="flex items-center gap-2">
@@ -25,14 +30,20 @@ const gameMode = defineModel<{
           :label="$t('settings.gameModeUseGamemoded')"
           :description="$t('settings.gameModeUseGamemodedHint')"
         >
-          <UCheckbox v-model="gameMode.useGamemoded" />
+          <UCheckbox
+            :model-value="useGamemoded"
+            @update:model-value="$emit('update:useGamemoded', $event as boolean)"
+          />
         </UFormField>
 
         <UFormField
           :label="$t('settings.gameModeUseFullscreen')"
           :description="$t('settings.gameModeUseFullscreenHint')"
         >
-          <UCheckbox v-model="gameMode.useFullscreen" />
+          <UCheckbox
+            :model-value="useFullscreen"
+            @update:model-value="$emit('update:useFullscreen', $event as boolean)"
+          />
         </UFormField>
       </div>
 
