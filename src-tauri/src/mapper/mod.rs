@@ -339,9 +339,14 @@ mod tests {
             Ok(self.devices.clone())
         }
 
+        fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+            Ok(Vec::new())
+        }
+
         fn spawn(
             &self,
             _device_path: String,
+            _mouse_path: Option<String>,
             _cfg: AppConfig,
         ) -> Result<Box<dyn BackendHandle>, String> {
             self.next_handles
@@ -375,7 +380,7 @@ mod tests {
         let mut runtime = MapperRuntime::new(runtime_backend);
 
         runtime
-            .start("/dev/input/event1", empty_cfg())
+            .start("/dev/input/event1", None, empty_cfg())
             .expect("start");
         let status = runtime.status();
 
@@ -398,7 +403,7 @@ mod tests {
         let mut runtime = MapperRuntime::new(runtime_backend);
 
         runtime
-            .start("/dev/input/event2", empty_cfg())
+            .start("/dev/input/event2", None, empty_cfg())
             .expect("start");
         runtime.stop().expect("stop");
 

@@ -585,6 +585,14 @@ impl Engine {
 
     /// Handle a raw key event from the grabbed device.
     pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
+        // Mouse buttons pass through transparently without affecting
+        // tap-hold decisions on modifier keys (e.g. Shift+Click).
+        let code = key.code();
+        if (272..=281).contains(&code) {
+            out.push(Out::KeyRaw { key, down });
+            return;
+        }
+
         if down {
             let is_active = if let Some(rule) = self.rules.get(&key) {
                 rule_passes_apps(rule) && rule_passes_legacy(rule)
@@ -1496,6 +1504,49 @@ mod tests {
         crate::active_window::set_cached_for_test(None);
         let rule = rule_with_apps(None, None);
         assert!(rule_passes_apps(&rule));
+    }
+
+    #[test]
+    fn mouse_button_does_not_interrupt_pending_hold() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            id: "r_shift".into(),
+            key: "ShiftLeft".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("Escape".into()),
+            hold_action: ActionSpec::Action("ControlLeft".into()),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        // No hold committed yet — Shift is still in WaitingDecision.
+        assert!(out.is_empty());
+
+        // Mouse button should pass through without committing the pending hold.
+        engine.handle(Key::BTN_LEFT, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::BTN_LEFT, false, now + Duration::from_millis(11), &mut out);
+
+        // Releasing Shift after mouse click should fire the tap (Escape),
+        // proving the mouse click did NOT promote the pending rule to hold.
+        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::KeyRaw { key: k1, down: true },
+                Out::KeyRaw { key: k2, down: false },
+                Out::Stroke { ks, .. },
+            ] if *k1 == Key::BTN_LEFT && *k2 == Key::BTN_LEFT && ks.key == Key::KEY_ESC
+        ));
     }
 
     #[test]
