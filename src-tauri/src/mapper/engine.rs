@@ -585,10 +585,7 @@ impl Engine {
 
     /// Handle a raw key event from the grabbed device.
     pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
-        // Mouse buttons pass through transparently without affecting
-        // tap-hold decisions on modifier keys (e.g. Shift+Click).
-        let code = key.code();
-        if (272..=281).contains(&code) {
+        if is_mouse_button(key) && !self.should_handle_mouse_button(key, down) {
             out.push(Out::KeyRaw { key, down });
             return;
         }
@@ -890,6 +887,22 @@ impl Engine {
         None
     }
 
+    fn should_handle_mouse_button(&self, key: Key, down: bool) -> bool {
+        if !down
+            && (self.pending.contains_key(&key)
+                || self.emitted.contains_key(&key)
+                || self.macro_consumed.contains(&key))
+        {
+            return true;
+        }
+
+        if self.lookup_mapping(key).is_some() {
+            return true;
+        }
+
+        !is_primary_mouse_button(key) && self.rules.contains_key(&key)
+    }
+
     fn push_layer(&mut self, id: String) {
         self.active_layers.push(id);
     }
@@ -1137,10 +1150,18 @@ fn fire_action(action: Option<&ActionDef>, mod_delay: Duration, out: &mut Vec<Ou
     }
 }
 
+fn is_primary_mouse_button(key: Key) -> bool {
+    matches!(key, Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE)
+}
+
+fn is_mouse_button(key: Key) -> bool {
+    (272..=281).contains(&key.code())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mapper::config::{AppConfig, LayerKeymap, Rule, Settings};
+    use crate::mapper::config::{AppConfig, ExtraKey, LayerKeymap, Rule, Settings};
     use evdev::Key;
     use std::collections::HashMap;
     use std::time::{Duration, Instant};
@@ -1546,6 +1567,123 @@ mod tests {
                 Out::KeyRaw { key: k2, down: false },
                 Out::Stroke { ks, .. },
             ] if *k1 == Key::BTN_LEFT && *k2 == Key::BTN_LEFT && ks.key == Key::KEY_ESC
+        ));
+    }
+
+    #[test]
+    fn unmapped_extra_mouse_button_does_not_interrupt_pending_hold() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            id: "r_shift".into(),
+            key: "ShiftLeft".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("Escape".into()),
+            hold_action: ActionSpec::Action("ControlLeft".into()),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(Key::BTN_SIDE, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::BTN_SIDE, false, now + Duration::from_millis(11), &mut out);
+        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::KeyRaw { key: k1, down: true },
+                Out::KeyRaw { key: k2, down: false },
+                Out::Stroke { ks, .. },
+            ] if *k1 == Key::BTN_SIDE && *k2 == Key::BTN_SIDE && ks.key == Key::KEY_ESC
+        ));
+    }
+
+    #[test]
+    fn extra_mouse_button_can_be_rule_trigger() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            id: "r_mouse_side".into(),
+            key: "MouseSide".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("BrowserBack".into()),
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::BTN_SIDE, true, now, &mut out);
+        engine.handle(Key::BTN_SIDE, false, now + Duration::from_millis(10), &mut out);
+
+        assert!(matches!(
+            out.as_slice(),
+            [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_BACK
+        ));
+    }
+
+    #[test]
+    fn primary_mouse_button_can_be_layer_mapping() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            id: "r_space".into(),
+            key: "Space".into(),
+            layer_id: "mouse".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut mouse = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        mouse.extras.push(ExtraKey {
+            id: "left".into(),
+            key: "MouseLeft".into(),
+            action: "Escape".into(),
+        });
+        cfg.layer_keymaps.insert("mouse".into(), mouse);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.tick(now + Duration::from_millis(260), &mut out);
+        engine.handle(Key::BTN_LEFT, true, now + Duration::from_millis(270), &mut out);
+        engine.handle(Key::BTN_LEFT, false, now + Duration::from_millis(271), &mut out);
+
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::ChordPress { ks: press, .. },
+                Out::KeyRaw {
+                    key: Key::KEY_ESC,
+                    down: false,
+                }
+            ] if press.mods.is_empty() && press.key == Key::KEY_ESC
         ));
     }
 
