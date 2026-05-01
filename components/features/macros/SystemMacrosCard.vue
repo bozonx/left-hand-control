@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import type { SystemMacro } from '~/utils/systemMacros'
 
 defineProps<{
@@ -82,16 +83,18 @@ async function copyMacroId(id: string) {
               <td class="py-2 pr-3 font-mono text-xs whitespace-nowrap">
                 <div class="flex items-center gap-1.5">
                   <span>{{ sys.id }}</span>
-                  <UButton
-                    icon="i-lucide-copy"
-                    size="xs"
-                    variant="ghost"
-                    color="neutral"
-                    square
-                    class="opacity-70 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
-                    :aria-label="$t('macros.copyId')"
-                    @click="copyMacroId(sys.id)"
-                  />
+                  <AppTooltip :text="$t('macros.copyId')">
+                    <UButton
+                      icon="i-lucide-copy"
+                      size="xs"
+                      variant="ghost"
+                      color="neutral"
+                      square
+                      class="opacity-70 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+                      :aria-label="$t('macros.copyId')"
+                      @click="copyMacroId(sys.id)"
+                    />
+                  </AppTooltip>
                 </div>
               </td>
               <td class="py-2 pr-3">
@@ -124,15 +127,17 @@ async function copyMacroId(id: string) {
                 </div>
               </td>
               <td class="py-2 pr-3 whitespace-nowrap">
-                <UButton
-                  size="xs"
-                  variant="outline"
-                  icon="i-lucide-copy-plus"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity"
-                  @click="$emit('clone', sys)"
-                >
-                  {{ $t('macros.cloneBtn') }}
-                </UButton>
+                <AppTooltip :text="$t('macros.cloneSystemTooltip')">
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    icon="i-lucide-copy-plus"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click="$emit('clone', sys)"
+                  >
+                    {{ $t('macros.cloneBtn') }}
+                  </UButton>
+                </AppTooltip>
               </td>
             </tr>
           </tbody>

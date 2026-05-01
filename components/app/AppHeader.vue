@@ -211,14 +211,16 @@ onMounted(() => {
           </UBadge>
         </AppTooltip>
 
-        <UButton
-          :color="isActive('/settings') ? 'primary' : 'neutral'"
-          :variant="isActive('/settings') ? 'soft' : 'ghost'"
-          icon="i-lucide-settings"
-          size="sm"
-          :aria-label="$t('tabs.settings')"
-          @click="openTab('/settings')"
-        />
+        <AppTooltip :text="$t('app.settingsTooltip')">
+          <UButton
+            :color="isActive('/settings') ? 'primary' : 'neutral'"
+            :variant="isActive('/settings') ? 'soft' : 'ghost'"
+            icon="i-lucide-settings"
+            size="sm"
+            :aria-label="$t('tabs.settings')"
+            @click="openTab('/settings')"
+          />
+        </AppTooltip>
       </template>
       <div v-else class="text-xs text-(--ui-text-muted)">
         {{ $t('app.loading') }}

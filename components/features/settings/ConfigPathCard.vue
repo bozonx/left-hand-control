@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
+
 const props = defineProps<{
   settingsDir: string
   layoutsDir: string
@@ -24,14 +26,16 @@ async function copyPath(path: string) {
           <code class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable">
             {{ settingsDir || '…' }}
           </code>
-          <UButton
-            size="xs"
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-copy"
-            :disabled="!settingsDir"
-            @click="copyPath(settingsDir)"
-          />
+          <AppTooltip :text="$t('settings.copyPathTooltip')">
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-copy"
+              :disabled="!settingsDir"
+              @click="copyPath(settingsDir)"
+            />
+          </AppTooltip>
         </div>
       </div>
 
@@ -41,14 +45,16 @@ async function copyPath(path: string) {
           <code class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable">
             {{ layoutsDir || '…' }}
           </code>
-          <UButton
-            size="xs"
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-copy"
-            :disabled="!layoutsDir"
-            @click="copyPath(layoutsDir)"
-          />
+          <AppTooltip :text="$t('settings.copyPathTooltip')">
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-copy"
+              :disabled="!layoutsDir"
+              @click="copyPath(layoutsDir)"
+            />
+          </AppTooltip>
         </div>
       </div>
     </div>

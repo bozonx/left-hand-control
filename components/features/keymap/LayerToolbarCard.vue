@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
+
 const props = defineProps<{
   selectedLayerId: string
   layerItems: Array<{ label: string, value: string }>
@@ -58,40 +60,48 @@ function stopDescriptionEditing() {
             class="w-full"
             @update:model-value="(value: string) => emit('update:selectedLayerId', value)"
           />
-          <UButton
-            icon="i-lucide-pencil"
-            size="sm"
-            color="neutral"
-            variant="ghost"
-            :aria-label="$t('keymap.renameLayerAria', { name: currentLayerName ?? '' })"
-            :disabled="!selectedLayerId"
-            @click="emit('rename')"
-          />
-          <UButton
-            icon="i-lucide-copy"
-            size="sm"
-            color="neutral"
-            variant="ghost"
-            :aria-label="$t('keymap.cloneLayerAria', { name: currentLayerName ?? '' })"
-            :disabled="!selectedLayerId"
-            @click="emit('clone')"
-          />
-          <UButton
-            icon="i-lucide-trash-2"
-            size="sm"
-            color="neutral"
-            variant="ghost"
-            square
-            :aria-label="$t('keymap.delete')"
-            :disabled="!selectedLayerId"
-            @click="$emit('delete')"
-          />
+          <AppTooltip :text="$t('keymap.renameLayerTooltip')">
+            <UButton
+              icon="i-lucide-pencil"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              :aria-label="$t('keymap.renameLayerAria', { name: currentLayerName ?? '' })"
+              :disabled="!selectedLayerId"
+              @click="emit('rename')"
+            />
+          </AppTooltip>
+          <AppTooltip :text="$t('keymap.cloneLayerTooltip')">
+            <UButton
+              icon="i-lucide-copy"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              :aria-label="$t('keymap.cloneLayerAria', { name: currentLayerName ?? '' })"
+              :disabled="!selectedLayerId"
+              @click="emit('clone')"
+            />
+          </AppTooltip>
+          <AppTooltip :text="$t('keymap.deleteLayerTooltip')">
+            <UButton
+              icon="i-lucide-trash-2"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              square
+              :aria-label="$t('keymap.delete')"
+              :disabled="!selectedLayerId"
+              @click="$emit('delete')"
+            />
+          </AppTooltip>
         </div>
       </UFormField>
       <div class="flex justify-end app-chrome">
-        <UButton icon="i-lucide-plus" size="sm" @click="$emit('create')">
-          {{ $t('keymap.newLayer') }}
-        </UButton>
+        <AppTooltip :text="$t('keymap.newLayerTooltip')">
+          <UButton icon="i-lucide-plus" size="sm" @click="$emit('create')">
+            {{ $t('keymap.newLayer') }}
+          </UButton>
+        </AppTooltip>
       </div>
     </div>
     <div class="mt-3">

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
+import FieldLabel from '~/components/FieldLabel.vue'
 import type { MapperState } from '~/composables/useMapper'
 
 interface SettingsIssue {
@@ -52,10 +54,13 @@ const hasErrorIssues = computed(() =>
         :description="issue.description"
       />
 
-      <UFormField
-        :label="$t('settings.keyboardLabel')"
-        :help="$t('settings.keyboardHelp')"
-      >
+      <UFormField>
+        <template #label>
+          <FieldLabel
+            :label="$t('settings.keyboardLabel')"
+            :hint="$t('settings.keyboardHelp')"
+          />
+        </template>
         <div class="flex gap-2 items-center">
           <USelectMenu
             id="mapper-keyboard-device"
@@ -67,20 +72,25 @@ const hasErrorIssues = computed(() =>
             :disabled="mapper.status.value.running"
             @update:model-value="(value: string) => $emit('update:selectedDevice', value)"
           />
-          <UButton
-            variant="ghost"
-            icon="i-lucide-refresh-cw"
-            :aria-label="$t('settings.refreshDevices')"
-            :disabled="mapper.status.value.running"
-            @click="mapper.refreshDevices()"
-          />
+          <AppTooltip :text="$t('settings.refreshDevicesTooltip')">
+            <UButton
+              variant="ghost"
+              icon="i-lucide-refresh-cw"
+              :aria-label="$t('settings.refreshDevices')"
+              :disabled="mapper.status.value.running"
+              @click="mapper.refreshDevices()"
+            />
+          </AppTooltip>
         </div>
       </UFormField>
 
-      <UFormField
-        :label="$t('settings.mouseLabel')"
-        :help="$t('settings.mouseHelp')"
-      >
+      <UFormField>
+        <template #label>
+          <FieldLabel
+            :label="$t('settings.mouseLabel')"
+            :hint="$t('settings.mouseHelp')"
+          />
+        </template>
         <USelectMenu
           id="mapper-mouse-device"
           :model-value="selectedMouse"

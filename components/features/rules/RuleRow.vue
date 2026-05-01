@@ -216,24 +216,28 @@ const isConditionsOpen = ref(false)
     <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <UButton
-            icon="i-lucide-arrow-up"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            square
-            :disabled="isFirst"
-            @click="$emit('moveUp', rule.id)"
-          />
-          <UButton
-            icon="i-lucide-arrow-down"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            square
-            :disabled="isLast"
-            @click="$emit('moveDown', rule.id)"
-          />
+          <AppTooltip :text="$t('common.moveUp')">
+            <UButton
+              icon="i-lucide-arrow-up"
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              square
+              :disabled="isFirst"
+              @click="$emit('moveUp', rule.id)"
+            />
+          </AppTooltip>
+          <AppTooltip :text="$t('common.moveDown')">
+            <UButton
+              icon="i-lucide-arrow-down"
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              square
+              :disabled="isLast"
+              @click="$emit('moveDown', rule.id)"
+            />
+          </AppTooltip>
         </div>
 
         <div class="flex gap-1 items-center">
@@ -246,16 +250,18 @@ const isConditionsOpen = ref(false)
             />
           </AppTooltip>
 
-          <UButton
-            icon="i-lucide-trash-2"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            square
-            class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-            :aria-label="$t('rules.deleteRule')"
-            @click="$emit('remove', rule.id)"
-          />
+          <AppTooltip :text="$t('rules.deleteRule')">
+            <UButton
+              icon="i-lucide-trash-2"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              square
+              class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+              :aria-label="$t('rules.deleteRule')"
+              @click="$emit('remove', rule.id)"
+            />
+          </AppTooltip>
         </div>
       </div>
 

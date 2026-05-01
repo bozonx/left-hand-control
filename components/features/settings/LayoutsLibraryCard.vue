@@ -255,26 +255,30 @@ function openBlacklist(entryId: string) {
                                 class="flex flex-col gap-0.5 shrink-0"
                                 @click.stop
                             >
-                                <UButton
-                                    color="neutral"
-                                    variant="ghost"
-                                    size="xs"
-                                    :square="true"
-                                    icon="i-lucide-chevron-up"
-                                    :aria-label="$t('settings.moveLayoutUpAria', { name: entry.name })"
-                                    :disabled="index === 0"
-                                    @click="$emit('moveUp', entry)"
-                                />
-                                <UButton
-                                    color="neutral"
-                                    variant="ghost"
-                                    size="xs"
-                                    :square="true"
-                                    icon="i-lucide-chevron-down"
-                                    :aria-label="$t('settings.moveLayoutDownAria', { name: entry.name })"
-                                    :disabled="index === entries.length - 1"
-                                    @click="$emit('moveDown', entry)"
-                                />
+                                <AppTooltip :text="$t('common.moveUp')">
+                                    <UButton
+                                        color="neutral"
+                                        variant="ghost"
+                                        size="xs"
+                                        :square="true"
+                                        icon="i-lucide-chevron-up"
+                                        :aria-label="$t('settings.moveLayoutUpAria', { name: entry.name })"
+                                        :disabled="index === 0"
+                                        @click="$emit('moveUp', entry)"
+                                    />
+                                </AppTooltip>
+                                <AppTooltip :text="$t('common.moveDown')">
+                                    <UButton
+                                        color="neutral"
+                                        variant="ghost"
+                                        size="xs"
+                                        :square="true"
+                                        icon="i-lucide-chevron-down"
+                                        :aria-label="$t('settings.moveLayoutDownAria', { name: entry.name })"
+                                        :disabled="index === entries.length - 1"
+                                        @click="$emit('moveDown', entry)"
+                                    />
+                                </AppTooltip>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="font-medium truncate flex items-center gap-2 flex-wrap">
@@ -364,35 +368,41 @@ function openBlacklist(entryId: string) {
                     <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-2">
                         <div class="flex items-center justify-end">
                             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                                <UButton
-                                    icon="i-lucide-pencil"
-                                    variant="ghost"
-                                    color="neutral"
-                                    size="sm"
-                                    square
-                                    :aria-label="$t('settings.editLayoutAria', { name: entry.name })"
-                                    @click.stop="$emit('requestEdit', entry)"
-                                />
-                                <UButton
-                                    icon="i-lucide-trash-2"
-                                    variant="ghost"
-                                    color="neutral"
-                                    size="sm"
-                                    square
-                                    :aria-label="$t('settings.deleteAria')"
-                                    @click.stop="$emit('requestDelete', entry)"
-                                />
+                                <AppTooltip :text="$t('settings.editLayoutAria', { name: entry.name })">
+                                    <UButton
+                                        icon="i-lucide-pencil"
+                                        variant="ghost"
+                                        color="neutral"
+                                        size="sm"
+                                        square
+                                        :aria-label="$t('settings.editLayoutAria', { name: entry.name })"
+                                        @click.stop="$emit('requestEdit', entry)"
+                                    />
+                                </AppTooltip>
+                                <AppTooltip :text="$t('settings.deleteAria')">
+                                    <UButton
+                                        icon="i-lucide-trash-2"
+                                        variant="ghost"
+                                        color="neutral"
+                                        size="sm"
+                                        square
+                                        :aria-label="$t('settings.deleteAria')"
+                                        @click.stop="$emit('requestDelete', entry)"
+                                    />
+                                </AppTooltip>
                             </div>
                         </div>
                         <div v-if="layoutMode === 'manual' && manualActiveLayoutId !== entry.id" class="flex items-center justify-end" @click.stop>
-                            <UButton
-                                size="sm"
-                                color="primary"
-                                variant="outline"
-                                @click.stop="entryActivateManual(entry.id)"
-                            >
-                                {{ $t('rules.activateBtn') }}
-                            </UButton>
+                            <AppTooltip :text="$t('rules.activateBtn')">
+                                <UButton
+                                    size="sm"
+                                    color="primary"
+                                    variant="outline"
+                                    @click.stop="entryActivateManual(entry.id)"
+                                >
+                                    {{ $t('rules.activateBtn') }}
+                                </UButton>
+                            </AppTooltip>
                         </div>
                         <div v-if="layoutMode === 'auto'" class="flex flex-col gap-2 items-end justify-end" @click.stop>
                             <AppTooltip :text="entryAutoSwitchDisabledReason(entry.id)" :disabled="!entryAutoSwitchDisabledReason(entry.id)">

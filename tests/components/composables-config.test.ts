@@ -1,38 +1,19 @@
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, ref } from 'vue'
 
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useConfig, resetConfigStateForTests } from '~/composables/useConfig'
 import { createDefaultConfig } from '~/types/config'
+
+const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }))
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: invokeMock,
+}))
 
 const toastAddMock = vi.fn()
 mockNuxtImport('useToast', () => () => ({ add: toastAddMock }))
-
-mockNuxtImport('useI18n', () => () => ({
-  t: (key: string) => key,
-  locale: ref('en-US'),
-}))
-
-const persistNowMock = vi.fn().mockResolvedValue(undefined)
-const flushMock = vi.fn().mockResolvedValue(undefined)
-const scheduleSaveMock = vi.fn()
-
-mockNuxtImport('usePersistedState', () => () => ({
-  saving: ref(false),
-  scheduleSave: scheduleSaveMock,
-  flush: flushMock,
-  persistNow: persistNowMock,
-}))
-
-vi.mock('~/composables/config/storage', () => ({
-  readConfigRaw: vi.fn(),
-  readCurrentLayoutRaw: vi.fn(),
-  writeConfigRaw: vi.fn().mockResolvedValue(undefined),
-  writeCurrentLayoutRaw: vi.fn().mockResolvedValue(undefined),
-  writeUserLayoutRaw: vi.fn().mockResolvedValue('ivan-k.yaml'),
-  getSettingsDir: vi.fn().mockResolvedValue('/tmp/settings'),
-}))
+mockNuxtImport('useI18n', () => () => ({ t: (key: string) => key, locale: ref('en-US') }))
 
 vi.mock('~/utils/layoutPresets', async (importOriginal) => {
   const actual = await importOriginal<typeof import('~/utils/layoutPresets')>()
@@ -43,12 +24,19 @@ vi.mock('~/utils/layoutPresets', async (importOriginal) => {
 })
 
 describe('useConfig', () => {
-  beforeEach(() => {
-    resetConfigStateForTests()
+  let useConfig: typeof import('~/composables/useConfig')['useConfig']
+  let resetConfigStateForTests: typeof import('~/composables/useConfig')['resetConfigStateForTests']
+
+  beforeEach(async () => {
+    vi.resetModules()
     toastAddMock.mockClear()
-    persistNowMock.mockClear()
-    flushMock.mockClear()
-    scheduleSaveMock.mockClear()
+    invokeMock.mockReset()
+    invokeMock.mockResolvedValue(undefined)
+
+    const mod = await import('~/composables/useConfig')
+    useConfig = mod.useConfig
+    resetConfigStateForTests = mod.resetConfigStateForTests
+    resetConfigStateForTests()
   })
 
   async function getApi() {
@@ -65,9 +53,7 @@ describe('useConfig', () => {
   }
 
   it('starts with default config and is not dirty', async () => {
-    const { readConfigRaw, readCurrentLayoutRaw } = await import('~/composables/config/storage')
-    ;(readConfigRaw as any).mockResolvedValue('')
-    ;(readCurrentLayoutRaw as any).mockResolvedValue('')
+    invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
 
     const api = await getApi()
     await api.load()
@@ -79,10 +65,8 @@ describe('useConfig', () => {
   })
 
   it('loads persisted settings and layout', async () => {
-    const { readConfigRaw, readCurrentLayoutRaw } = await import('~/composables/config/storage')
     const persisted = JSON.stringify({ version: 1, settings: { locale: 'ru-RU' } })
-    ;(readConfigRaw as any).mockResolvedValue(persisted)
-    ;(readCurrentLayoutRaw as any).mockResolvedValue('')
+    invokeMock.mockResolvedValueOnce(persisted).mockResolvedValueOnce('')
 
     const api = await getApi()
     await api.load()
@@ -93,9 +77,7 @@ describe('useConfig', () => {
   })
 
   it('marks layout dirty when config changes', async () => {
-    const { readConfigRaw, readCurrentLayoutRaw } = await import('~/composables/config/storage')
-    ;(readConfigRaw as any).mockResolvedValue('')
-    ;(readCurrentLayoutRaw as any).mockResolvedValue('')
+    invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
 
     const api = await getApi()
     await api.load()
@@ -107,9 +89,7 @@ describe('useConfig', () => {
   })
 
   it('applyPreset updates config and clears dirty', async () => {
-    const { readConfigRaw, readCurrentLayoutRaw } = await import('~/composables/config/storage')
-    ;(readConfigRaw as any).mockResolvedValue('')
-    ;(readCurrentLayoutRaw as any).mockResolvedValue('')
+    invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
 
     const api = await getApi()
     await api.load()
@@ -119,14 +99,12 @@ describe('useConfig', () => {
 
     expect(api.currentLayoutId.value).toBe('user:test')
     expect(api.isLayoutDirty.value).toBe(false)
-    expect(flushMock).toHaveBeenCalled()
-    expect(persistNowMock).toHaveBeenCalled()
+    expect(invokeMock).toHaveBeenCalledWith('save_config', expect.anything())
+    expect(invokeMock).toHaveBeenCalledWith('save_current_layout', expect.anything())
   })
 
   it('resetCurrentLayout restores saved preset and clears dirty', async () => {
-    const { readConfigRaw, readCurrentLayoutRaw } = await import('~/composables/config/storage')
-    ;(readConfigRaw as any).mockResolvedValue('')
-    ;(readCurrentLayoutRaw as any).mockResolvedValue('')
+    invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
 
     const api = await getApi()
     await api.load()
@@ -138,14 +116,12 @@ describe('useConfig', () => {
     await api.resetCurrentLayout()
     expect(api.isLayoutDirty.value).toBe(false)
     expect(api.config.value.commands).toHaveLength(0)
-    expect(flushMock).toHaveBeenCalled()
-    expect(persistNowMock).toHaveBeenCalled()
+    expect(invokeMock).toHaveBeenCalledWith('save_config', expect.anything())
+    expect(invokeMock).toHaveBeenCalledWith('save_current_layout', expect.anything())
   })
 
   it('markLayoutSavedAs updates currentLayoutId and clears dirty', async () => {
-    const { readConfigRaw, readCurrentLayoutRaw } = await import('~/composables/config/storage')
-    ;(readConfigRaw as any).mockResolvedValue('')
-    ;(readCurrentLayoutRaw as any).mockResolvedValue('')
+    invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
 
     const api = await getApi()
     await api.load()
@@ -157,12 +133,12 @@ describe('useConfig', () => {
     await api.markLayoutSavedAs('user:saved')
     expect(api.currentLayoutId.value).toBe('user:saved')
     expect(api.isLayoutDirty.value).toBe(false)
-    expect(flushMock).toHaveBeenCalled()
+    console.log('invokeMock calls:', invokeMock.mock.calls)
+    expect(invokeMock).toHaveBeenCalledWith('save_config', expect.anything())
   })
 
   it('handles load error and shows toast', async () => {
-    const { readConfigRaw } = await import('~/composables/config/storage')
-    ;(readConfigRaw as any).mockRejectedValue(new Error('disk full'))
+    invokeMock.mockRejectedValueOnce(new Error('disk full'))
 
     const api = await getApi()
     await api.load()

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import type { Macro, MacroStep } from '~/types/config'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 
@@ -118,16 +119,18 @@ async function copyMacroId() {
               class="w-full font-mono"
               :placeholder="$t('macros.idPh')"
             />
-            <UButton
-              icon="i-lucide-copy"
-              size="sm"
-              color="neutral"
-              variant="ghost"
-              class="shrink-0 opacity-70 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
-              :aria-label="$t('macros.copyId')"
-              :disabled="!macro.id"
-              @click="copyMacroId"
-            />
+            <AppTooltip :text="$t('macros.copyId')">
+              <UButton
+                icon="i-lucide-copy"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                class="shrink-0 opacity-70 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+                :aria-label="$t('macros.copyId')"
+                :disabled="!macro.id"
+                @click="copyMacroId"
+              />
+            </AppTooltip>
           </div>
         </UFormField>
 
@@ -215,35 +218,41 @@ async function copyMacroId() {
                 {{ stepWarning(step) }}
               </p>
             </UFormField>
-            <UButton
-              icon="i-lucide-chevron-up"
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              square
-              :disabled="idx === 0"
-              :aria-label="$t('macros.moveUp')"
-              @click="$emit('moveStep', macro, idx, -1)"
-            />
-            <UButton
-              icon="i-lucide-chevron-down"
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              square
-              :disabled="idx === macro.steps.length - 1"
-              :aria-label="$t('macros.moveDown')"
-              @click="$emit('moveStep', macro, idx, 1)"
-            />
-            <UButton
-              icon="i-lucide-trash-2"
-              size="xs"
-              variant="ghost"
-              color="error"
-              square
-              :aria-label="$t('macros.deleteStep')"
-              @click="askRemoveStep(step.id)"
-            />
+            <AppTooltip :text="$t('common.moveUp')">
+              <UButton
+                icon="i-lucide-chevron-up"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                square
+                :disabled="idx === 0"
+                :aria-label="$t('macros.moveUp')"
+                @click="$emit('moveStep', macro, idx, -1)"
+              />
+            </AppTooltip>
+            <AppTooltip :text="$t('common.moveDown')">
+              <UButton
+                icon="i-lucide-chevron-down"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                square
+                :disabled="idx === macro.steps.length - 1"
+                :aria-label="$t('macros.moveDown')"
+                @click="$emit('moveStep', macro, idx, 1)"
+              />
+            </AppTooltip>
+            <AppTooltip :text="$t('macros.deleteStep')">
+              <UButton
+                icon="i-lucide-trash-2"
+                size="xs"
+                variant="ghost"
+                color="error"
+                square
+                :aria-label="$t('macros.deleteStep')"
+                @click="askRemoveStep(step.id)"
+              />
+            </AppTooltip>
           </div>
         </div>
       </div>
@@ -254,38 +263,44 @@ async function copyMacroId() {
     <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <UButton
-            icon="i-lucide-arrow-up"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            square
-            :disabled="isFirst"
-            :aria-label="$t('macros.moveUp')"
-            @click="$emit('moveUp', props.uiKey)"
-          />
-          <UButton
-            icon="i-lucide-arrow-down"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            square
-            :disabled="isLast"
-            :aria-label="$t('macros.moveDown')"
-            @click="$emit('moveDown', props.uiKey)"
-          />
+          <AppTooltip :text="$t('common.moveUp')">
+            <UButton
+              icon="i-lucide-arrow-up"
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              square
+              :disabled="isFirst"
+              :aria-label="$t('macros.moveUp')"
+              @click="$emit('moveUp', props.uiKey)"
+            />
+          </AppTooltip>
+          <AppTooltip :text="$t('common.moveDown')">
+            <UButton
+              icon="i-lucide-arrow-down"
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              square
+              :disabled="isLast"
+              :aria-label="$t('macros.moveDown')"
+              @click="$emit('moveDown', props.uiKey)"
+            />
+          </AppTooltip>
         </div>
 
-        <UButton
-          icon="i-lucide-trash-2"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          square
-          class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-          :aria-label="$t('macros.deleteMacro')"
-          @click="$emit('remove', { uiKey: props.uiKey, id: macro.id })"
-        />
+        <AppTooltip :text="$t('macros.deleteMacro')">
+          <UButton
+            icon="i-lucide-trash-2"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            square
+            class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            :aria-label="$t('macros.deleteMacro')"
+            @click="$emit('remove', { uiKey: props.uiKey, id: macro.id })"
+          />
+        </AppTooltip>
       </div>
 
       <div class="flex flex-col gap-1 mt-1">

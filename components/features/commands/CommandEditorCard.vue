@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import type { Command } from '~/types/config'
 
 const props = defineProps<{
@@ -78,15 +79,17 @@ async function copyCommandId() {
               class="w-full font-mono"
               :placeholder="$t('commands.idPh')"
             />
-            <UButton
-              icon="i-lucide-copy"
-              size="sm"
-              color="neutral"
-              variant="ghost"
-              :aria-label="$t('commands.copyId')"
-              :disabled="!command.id"
-              @click="copyCommandId"
-            />
+            <AppTooltip :text="$t('commands.copyId')">
+              <UButton
+                icon="i-lucide-copy"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                :aria-label="$t('commands.copyId')"
+                :disabled="!command.id"
+                @click="copyCommandId"
+              />
+            </AppTooltip>
           </div>
         </UFormField>
 
@@ -108,35 +111,41 @@ async function copyCommandId() {
       </div>
 
       <div class="flex gap-1">
-        <UButton
-          icon="i-lucide-arrow-up"
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          square
-          :disabled="isFirst"
-          :aria-label="$t('commands.moveUp')"
-          @click="$emit('moveUp', uiKey)"
-        />
-        <UButton
-          icon="i-lucide-arrow-down"
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          square
-          :disabled="isLast"
-          :aria-label="$t('commands.moveDown')"
-          @click="$emit('moveDown', uiKey)"
-        />
-        <UButton
-          icon="i-lucide-trash-2"
-          variant="ghost"
-          color="error"
-          size="sm"
-          square
-          :aria-label="$t('commands.deleteCommand')"
-          @click="$emit('remove', { uiKey, id: command.id })"
-        />
+        <AppTooltip :text="$t('common.moveUp')">
+          <UButton
+            icon="i-lucide-arrow-up"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            square
+            :disabled="isFirst"
+            :aria-label="$t('commands.moveUp')"
+            @click="$emit('moveUp', uiKey)"
+          />
+        </AppTooltip>
+        <AppTooltip :text="$t('common.moveDown')">
+          <UButton
+            icon="i-lucide-arrow-down"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            square
+            :disabled="isLast"
+            :aria-label="$t('commands.moveDown')"
+            @click="$emit('moveDown', uiKey)"
+          />
+        </AppTooltip>
+        <AppTooltip :text="$t('commands.deleteCommand')">
+          <UButton
+            icon="i-lucide-trash-2"
+            variant="ghost"
+            color="error"
+            size="sm"
+            square
+            :aria-label="$t('commands.deleteCommand')"
+            @click="$emit('remove', { uiKey, id: command.id })"
+          />
+        </AppTooltip>
       </div>
     </div>
 
