@@ -64,10 +64,6 @@ async function setLayout(index: number): Promise<void> {
 
 export function useLayout() {
   void init()
-  onScopeDispose(() => {
-    // Keep listener alive across component teardown — state is module-global.
-    _unlisten?.()
-  })
   return {
     layout: computed(() => _layout.value),
     systemLayouts: computed(() => _systemLayouts.value),

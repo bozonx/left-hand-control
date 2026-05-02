@@ -103,6 +103,15 @@ pub fn cached_layout_short() -> Option<String> {
     }
 }
 
+#[cfg(target_os = "linux")]
+pub fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+    use crate::platform::linux::{detect, Desktop};
+    match detect().desktop {
+        Desktop::Kde => linux_kde::refresh_cache(),
+        _ => current(),
+    }
+}
+
 pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
     #[cfg(target_os = "linux")]
     {

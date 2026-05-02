@@ -1,3 +1,5 @@
+import { defineComponent } from "vue";
+
 import { mountSuspended } from "@nuxt/test-utils/runtime";
 import { describe, expect, it } from "vitest";
 
@@ -22,6 +24,13 @@ describe("LayoutsLibraryCard", () => {
         layoutsDir: "/tmp/layouts",
         layoutMode: "manual",
         autoIncludedIds: new Set<string>(),
+      },
+      global: {
+        stubs: {
+          AppTooltip: defineComponent({
+            template: "<span><slot /></span>",
+          }),
+        },
       },
     });
 

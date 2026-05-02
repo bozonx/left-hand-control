@@ -440,6 +440,9 @@ fn call_dbus(call: &DbusCall) {
 
     match result {
         Ok(_) => {
+            if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
+                let _ = crate::layout::refresh_cache();
+            }
             eprintln!(
                 "[mapper] dbus {} {} {}.{}",
                 call.destination,

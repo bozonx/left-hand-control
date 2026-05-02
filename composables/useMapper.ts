@@ -33,8 +33,14 @@ export interface MapperState {
 }
 
 let singleton: MapperState | null = null
+let singletonScope: ReturnType<typeof effectScope> | null = null
+let resetRuntime: (() => void) | null = null
 
 export function resetMapperStateForTests() {
+  singletonScope?.stop()
+  singletonScope = null
+  resetRuntime?.()
+  resetRuntime = null
   resetMapperDevicesState()
   singleton = null
 }
@@ -115,18 +121,22 @@ export function useMapper(): MapperState {
     invokeStart,
     invokeStop,
   })
+  resetRuntime = runtime.resetState
   runtime.initSnapshot()
 
   registerConsumer(refreshStatus)
 
-  watch([
-    () => config.value,
-    () => config.value.settings.manualActiveLayoutId,
-    () => activeAutoLayoutId?.value,
-  ], () => {
-    if (!status.value.running) return
-    runtime.scheduleReload()
-  }, { deep: true })
+  singletonScope = effectScope(true)
+  singletonScope.run(() => {
+    watch([
+      () => config.value,
+      () => config.value.settings.manualActiveLayoutId,
+      () => activeAutoLayoutId?.value,
+    ], () => {
+      if (!status.value.running) return
+      runtime.scheduleReload()
+    }, { deep: true })
+  })
 
   singleton = {
     devices,

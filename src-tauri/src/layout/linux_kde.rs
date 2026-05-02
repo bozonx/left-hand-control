@@ -25,14 +25,38 @@ const IFACE: &str = "org.kde.KeyboardLayouts";
 use std::sync::Mutex;
 
 static CACHED_LAYOUT: Mutex<Option<String>> = Mutex::new(None);
+static LAST_EMITTED_LAYOUT: Mutex<Option<String>> = Mutex::new(None);
 
 pub fn cached_layout_short() -> Option<String> {
     CACHED_LAYOUT.lock().ok().and_then(|g| g.clone())
 }
 
+fn update_cached_layout(info: &LayoutInfo) {
+    if let Ok(mut g) = CACHED_LAYOUT.lock() {
+        *g = Some(info.short.clone());
+    }
+}
+
+fn should_emit_layout(info: &LayoutInfo) -> bool {
+    match LAST_EMITTED_LAYOUT.lock() {
+        Ok(mut g) => {
+            if g.as_deref() == Some(info.short.as_str()) {
+                return false;
+            }
+            *g = Some(info.short.clone());
+            true
+        }
+        Err(_) => true,
+    }
+}
+
 pub fn current() -> Result<Option<LayoutInfo>, String> {
     let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
     current_with_conn(&conn)
+}
+
+pub fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+    current()
 }
 
 pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
@@ -76,6 +100,7 @@ pub fn set_layout(index: u32) -> Result<(), String> {
     if !ok {
         return Err(format!("setLayout({index}) rejected by KDE"));
     }
+    let _ = current_with_conn(&conn);
     Ok(())
 }
 
@@ -118,11 +143,8 @@ fn emit_current(app: &AppHandle, proxy: &Proxy<'_>) {
             return;
         }
     };
-    if let Ok(mut g) = CACHED_LAYOUT.lock() {
-        if g.as_deref() == Some(info.short.as_str()) {
-            return;
-        }
-        *g = Some(info.short.clone());
+    if !should_emit_layout(&info) {
+        return;
     }
     if let Err(e) = app.emit("layout-changed", info) {
         eprintln!("[layout/kde] emit error: {e}");
@@ -146,13 +168,15 @@ fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<LayoutInfo>, String> {
         .or_else(|| list.first())
         .cloned()
         .ok_or_else(|| "no layouts configured".to_string())?;
-    Ok(Some(LayoutInfo {
+    let info = LayoutInfo {
         short: entry.0,
         display: entry.1,
         long: entry.2,
         index: idx,
         backend: "linux-kde",
-    }))
+    };
+    update_cached_layout(&info);
+    Ok(Some(info))
 }
 
 fn call_index(proxy: &Proxy<'_>) -> Result<Option<u32>, String> {
