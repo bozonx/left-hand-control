@@ -17,6 +17,7 @@ const emit = defineEmits<{
   moveUp: []
   moveDown: []
   askRemove: [stepId: string]
+  'update:step': [step: MacroStep]
 }>()
 </script>
 
@@ -35,11 +36,12 @@ const emit = defineEmits<{
     </div>
     <UFormField :error="stepError?.(step) ?? undefined">
       <ActionPickerModal
-        v-model="step.keystroke"
+        :model-value="step.keystroke"
         :allow-macros="false"
         :excluded-macro-id="macroId"
         :placeholder="$t('macros.stepPh')"
         :invalid="!!stepError?.(step)"
+        @update:model-value="(v: string) => emit('update:step', { ...step, keystroke: v })"
       />
       <p
         v-if="stepWarning?.(step) && !stepError?.(step)"

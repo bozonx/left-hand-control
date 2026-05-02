@@ -5,6 +5,10 @@ const props = defineProps<{
   config: AppConfig
 }>()
 
+const emit = defineEmits<{
+  'update:config': [config: AppConfig]
+}>()
+
 function setNonNegativeInt(
   key:
     | 'defaultHoldTimeoutMs'
@@ -15,7 +19,13 @@ function setNonNegativeInt(
 ) {
   const parsed = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(parsed)) return
-  props.config.settings[key] = Math.max(0, Math.round(parsed))
+  emit('update:config', {
+    ...props.config,
+    settings: {
+      ...props.config.settings,
+      [key]: Math.max(0, Math.round(parsed)),
+    },
+  })
 }
 </script>
 

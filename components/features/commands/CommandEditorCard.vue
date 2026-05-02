@@ -21,6 +21,7 @@ const emit = defineEmits<{
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
   nameFocused: [uiKey: string]
+  'update:command': [command: Command]
 }>()
 
 function onCardClick(event: MouseEvent) {
@@ -73,11 +74,12 @@ async function copyCommandId() {
           </template>
           <div class="flex items-center gap-2">
             <UInput
-              v-model="command.id"
+              :model-value="command.id"
               :color="idError ? 'error' : undefined"
               :highlight="!!idError"
               class="w-full font-mono"
               :placeholder="$t('commands.idPh')"
+              @update:model-value="(v: string) => emit('update:command', { ...props.command, id: v })"
             />
             <AppTooltip :text="$t('commands.copyId')">
               <UButton
@@ -103,9 +105,10 @@ async function copyCommandId() {
           <UInput
             :id="nameInputId"
             ref="nameInputRef"
-            v-model="command.name"
+            :model-value="command.name"
             :placeholder="$t('commands.namePh')"
             class="w-full"
+            @update:model-value="(v: string) => emit('update:command', { ...props.command, name: v })"
           />
         </UFormField>
       </div>
@@ -176,11 +179,12 @@ async function copyCommandId() {
         />
       </template>
       <UTextarea
-        v-model="command.linux"
+        :model-value="command.linux"
         autoresize
         :rows="3"
         class="w-full font-mono"
         :placeholder="$t('commands.linuxPh')"
+        @update:model-value="(v: string) => emit('update:command', { ...props.command, linux: v })"
       />
     </UFormField>
   </div>

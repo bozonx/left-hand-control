@@ -29,7 +29,7 @@ provide('app-shell-scroll', {
 <template>
   <WelcomeScreen v-if="loaded && !loadError && needsWelcome" />
 
-  <div v-else class="h-screen flex flex-col overflow-hidden relative">
+  <div class="h-screen flex flex-col overflow-hidden relative">
     <AppHeader />
     <LayoutModals />
 
@@ -47,7 +47,7 @@ provide('app-shell-scroll', {
           :description="loadError"
         />
 
-        <UCard v-if="!loaded && !loadError">
+        <UCard v-show="!loaded && !loadError">
           <div class="py-12 text-center">
             <h2 class="text-sm font-semibold">{{ $t('app.title') }}</h2>
             <p class="mt-1 text-sm text-(--ui-text-muted)">
@@ -56,7 +56,9 @@ provide('app-shell-scroll', {
           </div>
         </UCard>
 
-        <slot v-else />
+        <div v-show="loaded && !loadError" class="contents">
+          <slot />
+        </div>
       </div>
     </main>
   </div>

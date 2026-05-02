@@ -30,6 +30,7 @@ const emit = defineEmits<{
   moveDown: [id: string]
   createLayer: [ruleId: string]
   keySelected: [id: string]
+  'update:rule': [rule: LayerRule]
 }>()
 
 function onCardClick(event: MouseEvent) {
@@ -69,7 +70,7 @@ const isConditionsOpen = ref(false)
             key-only
             :invalid="!!keyError"
             :placeholder="$t('rules.keyPh')"
-            @update:model-value="(value: string | null) => { rule.key = value ?? ''; if (value) $emit('keySelected', rule.id) }"
+            @update:model-value="(value: string | null) => { emit('update:rule', { ...rule, key: value ?? '' }); if (value) $emit('keySelected', rule.id) }"
           />
         </UFormField>
 
@@ -151,7 +152,7 @@ const isConditionsOpen = ref(false)
             </span>
           </template>
           <ResettableSelectMenu
-            v-model="rule.layerId"
+            :model-value="rule.layerId"
             :items="layerOptions"
             value-key="value"
             :placeholder="$t('common.none')"
@@ -159,6 +160,7 @@ const isConditionsOpen = ref(false)
             :reset-aria-label="$t('rules.clearLayer')"
             empty-item-value="__none__"
             empty-model-value=""
+            @update:model-value="(v: string | number | null) => emit('update:rule', { ...rule, layerId: String(v) })"
           />
         </UFormField>
       </div>
@@ -174,7 +176,7 @@ const isConditionsOpen = ref(false)
               hint-visible-on="group-hover-rule"
             />
           </template>
-          <RuleActionField v-model="rule.tapAction" :placeholder="$t('rules.tapPh')" />
+          <RuleActionField :model-value="rule.tapAction" :placeholder="$t('rules.tapPh')" @update:model-value="(v: string) => emit('update:rule', { ...rule, tapAction: v })" />
         </UFormField>
 
         <UFormField>
@@ -186,10 +188,11 @@ const isConditionsOpen = ref(false)
             />
           </template>
           <ActionPickerModal
-            v-model="rule.doubleTapAction"
+            :model-value="rule.doubleTapAction"
             allow-empty
             :placeholder="$t('rules.doubleTapPh')"
             :clear-label="$t('common.clear')"
+            @update:model-value="(v: string) => emit('update:rule', { ...rule, doubleTapAction: v })"
           />
         </UFormField>
 
@@ -202,10 +205,11 @@ const isConditionsOpen = ref(false)
             />
           </template>
           <RuleActionField
-            v-model="rule.holdAction"
+            :model-value="rule.holdAction"
             key-only
             mode-kind="hold"
             :placeholder="$t('rules.holdActionPh')"
+            @update:model-value="(v: string) => emit('update:rule', { ...rule, holdAction: v })"
           />
         </UFormField>
       </div>
@@ -246,7 +250,7 @@ const isConditionsOpen = ref(false)
               :model-value="rule.enabled !== false"
               size="sm"
               class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-              @update:model-value="(val: boolean) => rule.enabled = val"
+              @update:model-value="(val: boolean) => emit('update:rule', { ...rule, enabled: val })"
             />
           </AppTooltip>
 
@@ -267,24 +271,26 @@ const isConditionsOpen = ref(false)
 
       <div class="flex flex-col gap-1 mt-1">
         <SettingTimeoutField
-          v-model="rule.holdTimeoutMs"
+          :model-value="rule.holdTimeoutMs"
           :label="$t('rules.holdLabel')"
           :hint="$t('rules.holdHint')"
           :default-value="defaultHoldTimeoutMs"
           :suffix="$t('common.ms')"
           hint-visible-on="group-hover-rule"
+          @update:model-value="(v: number | undefined) => emit('update:rule', { ...rule, holdTimeoutMs: v })"
         />
 
         <SettingTimeoutField
-          v-model="rule.doubleTapTimeoutMs"
+          :model-value="rule.doubleTapTimeoutMs"
           :label="$t('rules.doubleTapWindowLabel')"
           :hint="$t('rules.doubleTapWindowHint')"
           :default-value="defaultDoubleTapTimeoutMs"
           :suffix="$t('common.ms')"
           hint-visible-on="group-hover-rule"
+          @update:model-value="(v: number | undefined) => emit('update:rule', { ...rule, doubleTapTimeoutMs: v })"
         />
       </div>
     </div>
-    <RuleConditionsModal v-model:open="isConditionsOpen" :rule="rule" />
+    <RuleConditionsModal v-model:open="isConditionsOpen" :rule="rule" @update:rule="(r: LayerRule) => emit('update:rule', r)" />
   </div>
 </template>

@@ -8,6 +8,10 @@ const props = defineProps<{
   rule: LayerRule
 }>()
 
+const emit = defineEmits<{
+  'update:rule': [rule: LayerRule]
+}>()
+
 const isOpen = defineModel<boolean>('open', { default: false })
 
 const draftConditions = ref<ConditionsValue>({
@@ -29,10 +33,13 @@ watch(isOpen, (open) => {
 })
 
 function apply() {
-  props.rule.conditionGameMode = draftConditions.value.gameMode === 'ignore' ? undefined : draftConditions.value.gameMode
-  props.rule.conditionLayouts = draftConditions.value.layouts.length > 0 ? draftConditions.value.layouts : undefined
-  props.rule.conditionAppsWhitelist = draftAppsWhitelist.value.length > 0 ? draftAppsWhitelist.value : undefined
-  props.rule.conditionAppsBlacklist = draftAppsBlacklist.value.length > 0 ? draftAppsBlacklist.value : undefined
+  emit('update:rule', {
+    ...props.rule,
+    conditionGameMode: draftConditions.value.gameMode === 'ignore' ? undefined : draftConditions.value.gameMode,
+    conditionLayouts: draftConditions.value.layouts.length > 0 ? draftConditions.value.layouts : undefined,
+    conditionAppsWhitelist: draftAppsWhitelist.value.length > 0 ? draftAppsWhitelist.value : undefined,
+    conditionAppsBlacklist: draftAppsBlacklist.value.length > 0 ? draftAppsBlacklist.value : undefined,
+  })
   isOpen.value = false
 }
 </script>

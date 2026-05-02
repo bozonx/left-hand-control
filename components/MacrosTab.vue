@@ -132,6 +132,7 @@ function cancelRemove() {
           @move-step="moveStep"
           @remove-step="removeStep"
           @name-focused="clearFocusMacroKey"
+          @update:macro="config.macros[index] = $event"
         />
       </div>
     </UCard>

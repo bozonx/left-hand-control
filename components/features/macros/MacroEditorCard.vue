@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
+import MacroStepRow from '~/components/features/macros/MacroStepRow.vue'
 import type { Macro, MacroStep } from '~/types/config'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 
@@ -28,6 +29,7 @@ const emit = defineEmits<{
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
   nameFocused: [uiKey: string]
+  'update:macro': [macro: Macro]
 }>()
 
 const stepsContainerRef = useTemplateRef<HTMLElement>('stepsContainerRef')
@@ -113,11 +115,12 @@ async function copyMacroId() {
           </template>
           <div class="flex items-center gap-2">
             <UInput
-              v-model="macro.id"
+              :model-value="macro.id"
               :color="idError ? 'error' : undefined"
               :highlight="!!idError"
               class="w-full font-mono"
               :placeholder="$t('macros.idPh')"
+              @update:model-value="(v: string) => emit('update:macro', { ...props.macro, id: v })"
             />
             <AppTooltip :text="$t('macros.copyId')">
               <UButton
@@ -145,9 +148,10 @@ async function copyMacroId() {
           <UInput
             :id="nameInputId"
             ref="nameInputRef"
-            v-model="macro.name"
+            :model-value="macro.name"
             :placeholder="$t('macros.namePh')"
             class="w-full"
+            @update:model-value="(v: string) => emit('update:macro', { ...props.macro, name: v })"
           />
         </UFormField>
       </div>
@@ -204,6 +208,7 @@ async function copyMacroId() {
             @move-up="$emit('moveStep', macro, idx, -1)"
             @move-down="$emit('moveStep', macro, idx, 1)"
             @ask-remove="askRemoveStep"
+            @update:step="(v: MacroStep) => emit('update:macro', { ...props.macro, steps: props.macro.steps.map((s, i) => i === idx ? v : s) })"
           />
         </div>
       </div>
@@ -256,18 +261,20 @@ async function copyMacroId() {
 
       <div class="flex flex-col gap-1 mt-1">
         <SettingTimeoutField
-          v-model="macro.stepPauseMs"
+          :model-value="macro.stepPauseMs"
           :label="$t('macros.stepPauseLabel')"
           :hint="$t('macros.stepPauseHint')"
           :default-value="defaultStepPauseMs"
           :suffix="$t('common.ms')"
+          @update:model-value="(v: number | undefined) => emit('update:macro', { ...props.macro, stepPauseMs: v })"
         />
         <SettingTimeoutField
-          v-model="macro.modifierDelayMs"
+          :model-value="macro.modifierDelayMs"
           :label="$t('macros.modDelayLabel')"
           :hint="$t('macros.modDelayHint')"
           :default-value="defaultModifierDelayMs"
           :suffix="$t('common.ms')"
+          @update:model-value="(v: number | undefined) => emit('update:macro', { ...props.macro, modifierDelayMs: v })"
         />
       </div>
     </div>

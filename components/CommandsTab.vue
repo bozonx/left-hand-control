@@ -110,6 +110,7 @@ function cancelRemove() {
           @move-up="moveCommand($event, -1)"
           @move-down="moveCommand($event, 1)"
           @name-focused="clearFocusCommandKey"
+          @update:command="config.commands[index] = $event"
         />
       </div>
     </UCard>

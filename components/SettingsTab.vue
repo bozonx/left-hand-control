@@ -43,7 +43,7 @@ const {
       :locale-items="localeItems"
     />
 
-    <BehaviorCard :config="config" />
+    <BehaviorCard :config="config" @update:config="c => config.value = c" />
 
     <GameModeCard
       :use-gamemoded="config.settings.gameMode?.useGamemoded ?? true"

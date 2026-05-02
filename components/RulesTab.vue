@@ -102,6 +102,7 @@ function cancelRemoveRule() {
           @move-down="moveRule($event, 'down')"
           @create-layer="openNewLayer"
           @key-selected="markRuleConfigured"
+          @update:rule="config.rules[index] = $event"
         />
       </div>
 
