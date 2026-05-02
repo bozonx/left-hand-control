@@ -3,7 +3,7 @@ const {
   isLayoutDirty,
   library,
   applying,
-  applyError,
+  applyError: _applyError,
   pendingApply,
   cancelApply,
   confirmApply,

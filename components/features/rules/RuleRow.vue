@@ -244,9 +244,9 @@ const isConditionsOpen = ref(false)
           <AppTooltip :text="rule.enabled === false ? $t('rules.enableRule') : $t('rules.disableRule')">
             <USwitch
               :model-value="rule.enabled !== false"
-              @update:model-value="(val: boolean) => rule.enabled = val"
               size="sm"
               class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+              @update:model-value="(val: boolean) => rule.enabled = val"
             />
           </AppTooltip>
 
@@ -285,6 +285,6 @@ const isConditionsOpen = ref(false)
         />
       </div>
     </div>
-    <RuleConditionsModal :rule="rule" v-model:open="isConditionsOpen" />
+    <RuleConditionsModal v-model:open="isConditionsOpen" :rule="rule" />
   </div>
 </template>

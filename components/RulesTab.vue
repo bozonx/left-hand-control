@@ -21,7 +21,7 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
   move: (id: string, delta: number) => moveRule(id, delta < 0 ? 'up' : 'down'),
 })
 
-const props = defineProps<{
+const _props = defineProps<{
   showBackToTop?: boolean
 }>()
 

@@ -33,7 +33,7 @@ export function useLayoutDelete({ config, library, flush }: LayoutDeleteOptions)
       await flush();
       deletePending.value = null;
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error("Delete layout failed:", error);
     } finally {
       deleteBusy.value = false;

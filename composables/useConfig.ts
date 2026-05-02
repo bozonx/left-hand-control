@@ -18,8 +18,6 @@ import {
   serializeCurrentLayout,
 } from '~/composables/config/layoutSerialization'
 import {
-  normalizeConfig,
-  parsePersistedConfig,
   parsePersistedSettings,
   serializePersistedSettings,
 } from '~/composables/config/normalization'

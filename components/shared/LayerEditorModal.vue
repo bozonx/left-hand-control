@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const _props = defineProps<{
   title: string
   confirmLabel: string
   namePlaceholder?: string

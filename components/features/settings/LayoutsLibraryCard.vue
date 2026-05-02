@@ -6,6 +6,7 @@ import type { LayoutMode } from "~/types/config";
 import { useLayoutConditions } from "~/composables/useLayoutConditions";
 import type { ConditionKind } from "~/composables/useLayoutConditions";
 import LayoutConditionsModal from "~/components/features/settings/LayoutConditionsModal.vue";
+import LayoutsLibraryItem from "~/components/features/settings/LayoutsLibraryItem.vue";
 
 const props = defineProps<{
     entries: LayoutLibraryEntry[];
@@ -24,7 +25,7 @@ const props = defineProps<{
     selectedId?: string | null;
 }>();
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
     saveCurrent: [];
     saveAs: [];
     requestApplyEntry: [entry: LayoutLibraryEntry];

@@ -2,7 +2,7 @@
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 
 const props = withDefaults(defineProps<{
-  items: Array<Record<string, any>>
+  items: Array<Record<string, unknown>>
   modelValue?: string | number | null
   placeholder?: string
   valueKey?: string

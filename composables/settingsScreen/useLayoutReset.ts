@@ -16,7 +16,7 @@ export function useLayoutReset({ resetCurrentLayout }: LayoutResetOptions) {
       await resetCurrentLayout();
       resetConfirmOpen.value = false;
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error("Reset layout failed:", error);
     } finally {
       resetBusy.value = false;

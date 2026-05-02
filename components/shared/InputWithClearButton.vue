@@ -5,6 +5,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
 }>(), {
   modelValue: '',
+  placeholder: undefined,
 })
 
 const emit = defineEmits<{

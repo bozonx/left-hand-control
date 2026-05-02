@@ -101,8 +101,8 @@ async function copyCommandId() {
             />
           </template>
           <UInput
-            ref="nameInputRef"
             :id="nameInputId"
+            ref="nameInputRef"
             v-model="command.name"
             :placeholder="$t('commands.namePh')"
             class="w-full"

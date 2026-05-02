@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import type { LayerRule } from '~/types/config'
 import ConditionsForm, { type ConditionsValue } from '~/components/features/shared/ConditionsForm.vue'
 import AppsListField from '~/components/features/shared/AppsListField.vue'

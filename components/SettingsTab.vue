@@ -35,10 +35,10 @@ const {
     />
 
     <GeneralCard
-      :config="config"
       v-model:theme-preference="theme.preference.value"
-      :resolved-theme="theme.resolved.value"
       v-model:locale-preference="appLocale.preference.value"
+      :config="config"
+      :resolved-theme="theme.resolved.value"
       :appearance-items="appearanceItems"
       :locale-items="localeItems"
     />

@@ -2,7 +2,6 @@ import type { AppConfig, LayoutPreset } from "~/types/config";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import {
   userLayoutId,
-  userLayoutNameFromId,
 } from "~/composables/useLayoutLibrary";
 import { normalizeLayoutName, validateLayoutName } from "~/utils/layoutNames";
 import { extractPresetFromConfig } from "~/utils/layoutPresets";

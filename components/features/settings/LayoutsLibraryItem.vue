@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
-import { isUserLayoutId, userLayoutNameFromId } from "~/composables/useLayoutLibrary";
 import type { LayoutMode } from "~/types/config";
 import { useLayoutConditions } from "~/composables/useLayoutConditions";
 import type { ConditionKind } from "~/composables/useLayoutConditions";

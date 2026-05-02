@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   suffix: '',
   min: 0,
   hintVisibleOn: 'always',
+  hint: undefined,
 })
 
 const model = defineModel<number | undefined>()

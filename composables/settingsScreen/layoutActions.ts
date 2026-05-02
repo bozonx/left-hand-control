@@ -1,6 +1,4 @@
 import type { AppConfig, LayoutPreset } from "~/types/config";
-import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
-import type { OverwriteAction } from "./types";
 import {
   isUserLayoutId,
   userLayoutNameFromId,
@@ -8,7 +6,6 @@ import {
 import { normalizeLayoutName, validateLayoutName } from "~/utils/layoutNames";
 import {
   emptyLayoutPreset,
-  extractPresetFromConfig,
   loadBuiltinLayout,
 } from "~/utils/layoutPresets";
 import { useLayoutApply } from "./useLayoutApply";

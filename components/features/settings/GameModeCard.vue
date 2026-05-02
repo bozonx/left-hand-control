@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import FieldLabel from '~/components/FieldLabel.vue'
 
-const props = defineProps<{
+const _props = defineProps<{
   useGamemoded: boolean
   useFullscreen: boolean
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   'update:useGamemoded': [value: boolean]
   'update:useFullscreen': [value: boolean]
 }>()

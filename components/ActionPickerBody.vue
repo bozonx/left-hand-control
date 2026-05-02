@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
   allowMacros?: boolean
 }>(), {
   allowMacros: true,
+  excludedMacroId: undefined,
 })
 
 const emit = defineEmits<{

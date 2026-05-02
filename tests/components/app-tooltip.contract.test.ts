@@ -1,4 +1,4 @@
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,7 +8,7 @@ import AppTooltip from '~/components/shared/AppTooltip.vue'
 const UTooltipStub = defineComponent({
   props: {
     open: { type: Boolean, default: false },
-    reference: { default: null },
+    reference: { type: Object, default: null },
     disabled: { type: Boolean, default: false },
     delayDuration: { type: Number, default: 0 },
     ui: { type: Object, default: () => ({}) },

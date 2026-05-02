@@ -1,4 +1,4 @@
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent } from 'vue'
 
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
@@ -85,7 +85,7 @@ describe('usePersistedState', () => {
       delayMs: 10,
       onSave,
     })
-    const wrapper = await mountSuspended(Harness)
+    const _wrapper = await mountSuspended(Harness)
     const { saving, scheduleSave } = getApi()
 
     scheduleSave()

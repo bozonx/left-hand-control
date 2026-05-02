@@ -143,8 +143,8 @@ async function copyMacroId() {
             />
           </template>
           <UInput
-            ref="nameInputRef"
             :id="nameInputId"
+            ref="nameInputRef"
             v-model="macro.name"
             :placeholder="$t('macros.namePh')"
             class="w-full"

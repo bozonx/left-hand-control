@@ -1,5 +1,4 @@
 import type { AppConfig } from "~/types/config";
-import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import {
   isUserLayoutId,
   userLayoutId,

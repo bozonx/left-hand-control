@@ -18,6 +18,10 @@ const props = withDefaults(defineProps<{
   excludedMacroId?: string
 }>(), {
   allowMacros: true,
+  placeholder: undefined,
+  title: undefined,
+  clearLabel: undefined,
+  excludedMacroId: undefined,
 })
 
 const emit = defineEmits<{

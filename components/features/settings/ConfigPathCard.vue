@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 
-const props = defineProps<{
+const _props = defineProps<{
   settingsDir: string
   layoutsDir: string
 }>()

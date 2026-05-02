@@ -54,7 +54,7 @@ async function copyMacroId(id: string) {
       </button>
     </template>
 
-    <div id="system-macros-content" v-show="systemOpen">
+    <div v-show="systemOpen" id="system-macros-content">
       <div
         v-if="systemMacros.length === 0"
         class="text-sm text-(--ui-text-muted)"

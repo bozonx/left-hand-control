@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MacroStep } from '~/types/config'
 
-const props = defineProps<{
+const _props = defineProps<{
   step: MacroStep
   idx: number
   isFirst: boolean
