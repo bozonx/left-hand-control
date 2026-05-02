@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import FieldLabel from '~/components/FieldLabel.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 
@@ -19,7 +20,7 @@ const props = withDefaults(defineProps<{
 const model = defineModel<number | undefined>()
 
 const isEditing = ref(false)
-const inputRef = ref<any>(null)
+const inputRef = ref<(ComponentPublicInstance & { $el: HTMLElement }) | null>(null)
 const draft = ref('')
 
 const isOverridden = computed(() => model.value !== undefined)

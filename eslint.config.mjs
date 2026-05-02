@@ -37,6 +37,12 @@ export default ts.config(
     },
   },
   {
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
     ignores: ['.nuxt/**', '.output/**', 'node_modules/**', 'src-tauri/target/**'],
   },
   eslintConfigPrettier

@@ -52,7 +52,7 @@ export default defineNuxtConfig({
     host: 'localhost',
     port: parseInt(process.env.PORT || '3000'),
     strictPort: true,
-  } as any,
+  },
 
   vite: {
     // Prevent Vite from obscuring Rust errors
