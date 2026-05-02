@@ -189,71 +189,22 @@ async function copyMacroId() {
         </div>
 
         <div v-else ref="stepsContainerRef" class="space-y-2">
-          <div
+          <MacroStepRow
             v-for="(step, idx) in macro.steps"
             :key="step.id"
-            class="grid grid-cols-[2rem_minmax(12rem,1fr)_auto_auto_auto] gap-2 items-center p-1 rounded-md transition-all duration-200"
-            :class="[
-              selectedStepId === step.id
-                ? 'border border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
-                : 'border border-transparent',
-            ]"
-            @click="selectedStepId = step.id"
-          >
-            <div class="text-xs text-(--ui-text-muted) font-mono text-right">
-              #{{ idx + 1 }}
-            </div>
-            <UFormField :error="stepError?.(step) ?? undefined">
-              <ActionPickerModal
-                v-model="step.keystroke"
-                :allow-macros="false"
-                :excluded-macro-id="macro.id"
-                :placeholder="$t('macros.stepPh')"
-                :invalid="!!stepError?.(step)"
-              />
-              <p
-                v-if="stepWarning?.(step) && !stepError?.(step)"
-                class="text-xs text-(--ui-warning) mt-0.5"
-              >
-                {{ stepWarning(step) }}
-              </p>
-            </UFormField>
-            <AppTooltip :text="$t('common.moveUp')">
-              <UButton
-                icon="i-lucide-chevron-up"
-                size="xs"
-                variant="ghost"
-                color="neutral"
-                square
-                :disabled="idx === 0"
-                :aria-label="$t('macros.moveUp')"
-                @click="$emit('moveStep', macro, idx, -1)"
-              />
-            </AppTooltip>
-            <AppTooltip :text="$t('common.moveDown')">
-              <UButton
-                icon="i-lucide-chevron-down"
-                size="xs"
-                variant="ghost"
-                color="neutral"
-                square
-                :disabled="idx === macro.steps.length - 1"
-                :aria-label="$t('macros.moveDown')"
-                @click="$emit('moveStep', macro, idx, 1)"
-              />
-            </AppTooltip>
-            <AppTooltip :text="$t('macros.deleteStep')">
-              <UButton
-                icon="i-lucide-trash-2"
-                size="xs"
-                variant="ghost"
-                color="error"
-                square
-                :aria-label="$t('macros.deleteStep')"
-                @click="askRemoveStep(step.id)"
-              />
-            </AppTooltip>
-          </div>
+            :step="step"
+            :idx="idx"
+            :is-first="idx === 0"
+            :is-last="idx === macro.steps.length - 1"
+            :macro-id="macro.id"
+            :selected="selectedStepId === step.id"
+            :step-error="stepError"
+            :step-warning="stepWarning"
+            @select="selectedStepId = step.id"
+            @move-up="$emit('moveStep', macro, idx, -1)"
+            @move-down="$emit('moveStep', macro, idx, 1)"
+            @ask-remove="askRemoveStep"
+          />
         </div>
       </div>
     </div>
