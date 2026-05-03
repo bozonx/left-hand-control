@@ -8,9 +8,9 @@ const { t: _t } = useI18n()
       <div class="flex items-center gap-2">
         <UIcon name="i-lucide-info" class="shrink-0 text-(--ui-primary)" />
         <div>
-          <h2 class="text-sm font-semibold">{{ $t("home.infoTitle") }}</h2>
+          <h2 class="text-sm font-semibold">{{ $t('home.infoTitle') }}</h2>
           <p class="text-sm text-(--ui-text-muted)">
-            {{ $t("home.infoSubtitle") }}
+            {{ $t('home.infoSubtitle') }}
           </p>
         </div>
       </div>
@@ -21,9 +21,9 @@ const { t: _t } = useI18n()
         <div class="flex items-start gap-2">
           <UIcon name="i-lucide-zap" class="mt-0.5 shrink-0 text-(--ui-primary)" />
           <div>
-            <div class="font-medium">{{ $t("home.whatIsItTitle") }}</div>
+            <div class="font-medium">{{ $t('home.whatIsItTitle') }}</div>
             <p class="mt-1 text-(--ui-text-muted)">
-              {{ $t("home.whatIsItBody") }}
+              {{ $t('home.whatIsItBody') }}
             </p>
           </div>
         </div>
@@ -33,9 +33,9 @@ const { t: _t } = useI18n()
         <div class="flex items-start gap-2">
           <UIcon name="i-lucide-power" class="mt-0.5 shrink-0 text-(--ui-primary)" />
           <div>
-            <div class="font-medium">{{ $t("home.howToStartTitle") }}</div>
+            <div class="font-medium">{{ $t('home.howToStartTitle') }}</div>
             <p class="mt-1 text-(--ui-text-muted)">
-              {{ $t("home.howToStartBody") }}
+              {{ $t('home.howToStartBody') }}
             </p>
           </div>
         </div>
@@ -45,9 +45,9 @@ const { t: _t } = useI18n()
         <div class="flex items-start gap-2">
           <UIcon name="i-lucide-layers" class="mt-0.5 shrink-0 text-(--ui-primary)" />
           <div>
-            <div class="font-medium">{{ $t("home.layersExplainedTitle") }}</div>
+            <div class="font-medium">{{ $t('home.layersExplainedTitle') }}</div>
             <p class="mt-1 text-(--ui-text-muted)">
-              {{ $t("home.layersExplainedBody") }}
+              {{ $t('home.layersExplainedBody') }}
             </p>
           </div>
         </div>
@@ -57,9 +57,9 @@ const { t: _t } = useI18n()
         <div class="flex items-start gap-2">
           <UIcon name="i-lucide-mouse-pointer-click" class="mt-0.5 shrink-0 text-(--ui-primary)" />
           <div>
-            <div class="font-medium">{{ $t("home.rulesExplainedTitle") }}</div>
+            <div class="font-medium">{{ $t('home.rulesExplainedTitle') }}</div>
             <p class="mt-1 text-(--ui-text-muted)">
-              {{ $t("home.rulesExplainedBody") }}
+              {{ $t('home.rulesExplainedBody') }}
             </p>
           </div>
         </div>
@@ -69,9 +69,9 @@ const { t: _t } = useI18n()
         <div class="flex items-start gap-2">
           <UIcon name="i-lucide-rocket" class="mt-0.5 shrink-0 text-(--ui-primary)" />
           <div>
-            <div class="font-medium">{{ $t("home.builtInLayoutTitle") }}</div>
+            <div class="font-medium">{{ $t('home.builtInLayoutTitle') }}</div>
             <p class="mt-1 text-(--ui-text-muted)">
-              {{ $t("home.builtInLayoutBody") }}
+              {{ $t('home.builtInLayoutBody') }}
             </p>
           </div>
         </div>
@@ -85,7 +85,7 @@ const { t: _t } = useI18n()
           target="_blank"
           trailing-icon="i-lucide-external-link"
         >
-          {{ $t("home.fullDocsLabel") }}
+          {{ $t('home.fullDocsLabel') }}
         </UButton>
       </div>
     </div>

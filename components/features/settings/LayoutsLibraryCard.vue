@@ -155,9 +155,7 @@ function openBlacklist(entryId: string) {
                 </p>
             </div>
 
-            <ul
-                class="divide-y divide-(--ui-border) border border-(--ui-border) rounded"
-            >
+            <ul class="space-y-3">
                 <LayoutsLibraryItem
                     v-for="(entry, index) in entries"
                     :key="entry.id"

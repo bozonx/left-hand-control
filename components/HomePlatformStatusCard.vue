@@ -107,7 +107,7 @@ const features = computed<FeatureRow[]>(() => {
       <div class="flex items-center gap-2">
         <UIcon name="i-lucide-cpu" class="shrink-0 text-(--ui-primary)" />
         <div>
-          <h2 class="text-sm font-semibold">{{ $t("home.howItWorksTitle") }}</h2>
+          <h2 class="text-sm font-semibold">{{ $t('home.howItWorksTitle') }}</h2>
         </div>
       </div>
     </template>

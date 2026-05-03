@@ -131,13 +131,6 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
 
 <template>
   <div class="w-full space-y-4">
-    <div class="space-y-1">
-      <h2 class="text-lg font-semibold">{{ $t("home.title") }}</h2>
-      <p class="text-sm text-(--ui-text-muted)">
-        {{ $t("home.subtitle") }}
-      </p>
-    </div>
-
     <UAlert
       v-if="globalBanner"
       :color="globalBanner.color"

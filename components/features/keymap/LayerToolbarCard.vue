@@ -96,7 +96,7 @@ function stopDescriptionEditing() {
           </AppTooltip>
         </div>
       </UFormField>
-      <div class="flex justify-end app-chrome">
+      <div class="flex justify-end">
         <AppTooltip :text="$t('keymap.newLayerTooltip')">
           <UButton icon="i-lucide-plus" size="sm" @click="$emit('create')">
             {{ $t('keymap.newLayer') }}

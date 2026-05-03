@@ -50,8 +50,8 @@ const isConditionsOpen = ref(false)
       selected
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
         : isNew
-          ? 'border-sky-500/60 bg-sky-500/8 ring-1 ring-sky-500/20 hover:bg-sky-500/12 hover:border-sky-500/70 hover:shadow-sky-500/10'
-          : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-sky-500/50 hover:shadow-sky-500/5'
+          ? 'border-(--ui-info)/60 bg-(--ui-info)/8 ring-1 ring-(--ui-info)/20 hover:bg-(--ui-info)/12 hover:border-(--ui-info)/70 hover:shadow-(--ui-info)/10'
+          : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
     ]"
     @click="onCardClick"
   >
