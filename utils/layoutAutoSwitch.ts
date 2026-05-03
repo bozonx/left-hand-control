@@ -95,28 +95,19 @@ export function evaluateLayoutGate(
   return 'allow'
 }
 
-// Returns true when an entry should be considered for auto-mode picking.
-// A layout is included when it has a whitelist or blacklist condition and is
-// not explicitly disabled via the auto-toggle.
 export function isLayoutInAuto(rule: LayoutConditionRule | undefined): boolean {
-  if (!rule) return false
-  if (rule.disabledInAuto) return false
-  if (rule.whitelist) return true
-  if (rule.blacklist) return true
-  return false
+  return rule?.enabledInAuto === true
 }
 
 // Pick the active layout id in auto mode.
 // Iterates over `availableIds` in `layoutOrder`-priority order, returns
 // the first id whose layout is included in auto and whose conditions
-// match. Falls back to `autoDefaultLayoutId` when no included layout
-// matches. Returns `null` when nothing is selected (true native
-// passthrough).
+// match. Returns `null` when nothing is selected (true native passthrough).
 export function pickActiveLayout(
   availableIds: string[],
   settings: Pick<
     AppSettings,
-    'layoutOrder' | 'layoutConditions' | 'autoDefaultLayoutId'
+    'layoutOrder' | 'layoutConditions'
   >,
   ctx: AutoSwitchContext,
 ): string | null {
@@ -126,15 +117,6 @@ export function pickActiveLayout(
     if (!isLayoutInAuto(rule)) continue
     if (evaluateLayoutGate(rule, ctx) === 'allow') {
       return id
-    }
-  }
-  if (
-    settings.autoDefaultLayoutId &&
-    availableIds.includes(settings.autoDefaultLayoutId)
-  ) {
-    const defaultRule = settings.layoutConditions[settings.autoDefaultLayoutId]
-    if (!defaultRule || !defaultRule.disabledInAuto) {
-      return settings.autoDefaultLayoutId
     }
   }
   return null

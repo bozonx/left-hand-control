@@ -3,9 +3,8 @@
 // whitelist / blacklist conditions and the priority order.
 //
 // In manual mode this composable is a no-op (the user picked the
-// active layout explicitly). In auto mode, when no layout matches and
-// no default is set, the active layout becomes empty (`undefined` id +
-// empty preset) so the mapper acts as a native passthrough.
+// active layout explicitly). In auto mode, when no layout matches, the
+// active layout becomes empty so the mapper acts as a native passthrough.
 
 import { pickActiveLayout } from '~/utils/layoutAutoSwitch'
 
@@ -50,7 +49,6 @@ export function useLayoutSwitcher() {
         () => config.value.settings.layoutMode,
         () => config.value.settings.layoutOrder,
         () => JSON.stringify(config.value.settings.layoutConditions),
-        () => config.value.settings.autoDefaultLayoutId,
         () => library.entries.value.map((e) => e.id).join('|'),
         () => systemLayout.value?.short ?? null,
         () => gameMode.status.value.active,

@@ -102,19 +102,8 @@ const autoIncludedIds = computed(() => {
   for (const id of Object.keys(map)) {
     if (isLayoutInAuto(map[id])) set.add(id);
   }
-  const defaultId = config.value.settings.autoDefaultLayoutId;
-  if (defaultId) {
-    const defaultRule = map[defaultId];
-    if (!defaultRule || !defaultRule.disabledInAuto) {
-      set.add(defaultId);
-    }
-  }
   return set;
 });
-
-const autoDefaultLayoutId = computed(
-  () => config.value.settings.autoDefaultLayoutId,
-);
 
 function syncLayoutOrder(ids: string[]) {
   config.value.settings.layoutOrder = ids;
@@ -172,7 +161,19 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
     <UCard>
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="min-w-0">
-          <h3 class="text-sm font-semibold">{{ $t("home.modeLabel") }}</h3>
+          <div class="flex items-center gap-1.5">
+            <h3 class="text-sm font-semibold">{{ $t("home.modeLabel") }}</h3>
+            <AppTooltip :text="layoutMode === 'auto' ? $t('home.modeAutoInfo') : $t('home.modeManualInfo')" align="start" toggle-on-click>
+              <UButton
+                icon="i-lucide-info"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                square
+                :aria-label="$t('home.modeInfoAria')"
+              />
+            </AppTooltip>
+          </div>
           <p class="text-xs text-(--ui-text-muted) mt-0.5">
             {{
               layoutMode === "auto"
@@ -225,7 +226,6 @@ const { selectedId, select, containerRef } = useListKeyboardNavigation({
           :layouts-dir="library.layoutsDir.value"
           :layout-mode="layoutMode"
           :auto-included-ids="autoIncludedIds"
-          :auto-default-layout-id="autoDefaultLayoutId"
           :active-auto-layout-id="activeAutoLayoutId"
           :manual-active-layout-id="manualActiveLayoutId"
           :selected-id="selectedId"

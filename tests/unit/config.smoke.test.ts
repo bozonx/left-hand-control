@@ -101,7 +101,7 @@ describe('config helpers', () => {
               layouts: ['us'],
               apps: ['code', 'kitty'],
             },
-            disabledInAuto: true,
+            enabledInAuto: true,
           },
         },
       },
@@ -114,7 +114,7 @@ describe('config helpers', () => {
         layouts: ['us'],
         apps: ['code', 'kitty'],
       },
-      disabledInAuto: true,
+      enabledInAuto: true,
     })
   })
 

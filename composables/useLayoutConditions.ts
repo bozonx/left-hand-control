@@ -1,10 +1,3 @@
-// Helpers for reading and mutating the per-layout conditions stored in
-// `AppSettings.layoutConditions`, plus the auto-mode fallback default.
-//
-// Centralised here so the UI does not have to think about object
-// initialisation, the "auto-include on first condition" rule, or the
-// mutual exclusivity between `autoDefaultLayoutId` and conditions.
-
 import type {
   AppSettings,
   LayoutConditionRule,
@@ -57,10 +50,6 @@ export function useLayoutConditions() {
     kind: ConditionKind,
     value: LayoutConditionSet,
   ) {
-    if (settings().autoDefaultLayoutId === layoutId) {
-      // Default layout cannot have conditions.
-      return
-    }
     const rule = ensureRule(layoutId)
     if (isConditionSetEmpty(value)) {
       delete rule[kind]
@@ -77,36 +66,18 @@ export function useLayoutConditions() {
     cleanupRule(layoutId, rule)
   }
 
-  function setDisabledInAuto(layoutId: string, disabled: boolean) {
+  function setEnabledInAuto(layoutId: string, enabled: boolean) {
     const r = ensureRule(layoutId)
-    if (disabled) {
-      r.disabledInAuto = true
+    if (enabled) {
+      r.enabledInAuto = true
     } else {
-      delete r.disabledInAuto
+      delete r.enabledInAuto
     }
     cleanupRule(layoutId, r)
   }
 
-  function setAsDefault(layoutId: string | undefined) {
-    const s = settings()
-    if (!layoutId) {
-      s.autoDefaultLayoutId = undefined
-      return
-    }
-    // Default cannot have conditions — drop them defensively.
-    const rule = s.layoutConditions[layoutId]
-    if (rule) {
-      delete rule.whitelist
-      delete rule.blacklist
-      // Default doesn't need the disabledInAuto flag — it's a fallback,
-      // not a candidate. Drop the rule entirely if nothing remains.
-      cleanupRule(layoutId, rule)
-    }
-    s.autoDefaultLayoutId = layoutId
-  }
-
   function cleanupRule(layoutId: string, rule: LayoutConditionRule) {
-    if (!rule.whitelist && !rule.blacklist && !rule.disabledInAuto) {
+    if (!rule.whitelist && !rule.blacklist && !rule.enabledInAuto) {
       delete settings().layoutConditions[layoutId]
     }
   }
@@ -115,8 +86,7 @@ export function useLayoutConditions() {
     getRule,
     getConditionSet,
     setConditionSet,
-    setDisabledInAuto,
-    setAsDefault,
+    setEnabledInAuto,
     isInAuto: (layoutId: string) => isLayoutInAuto(getRule(layoutId)),
   }
 }

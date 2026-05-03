@@ -2,7 +2,6 @@
 import { useI18n } from "vue-i18n";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import type { LayoutMode } from "~/types/config";
-import { useLayoutConditions } from "~/composables/useLayoutConditions";
 import type { ConditionKind } from "~/composables/useLayoutConditions";
 import type { LayoutConditionSet } from "~/types/config";
 import AppTooltip from "~/components/shared/AppTooltip.vue";
@@ -18,7 +17,6 @@ const props = defineProps<{
   isLayoutDirty: boolean;
   activeAutoLayoutId?: string;
   manualActiveLayoutId?: string;
-  autoDefaultLayoutId?: string;
   autoIncludedIds: Set<string>;
   selectedId?: string | null;
 }>();
@@ -30,7 +28,6 @@ const emit = defineEmits<{
   moveUp: [entry: LayoutLibraryEntry];
   moveDown: [entry: LayoutLibraryEntry];
   activateManual: [entryId: string];
-  toggleDefault: [entryId: string, value: boolean];
   toggleAuto: [entryId: string, value: boolean];
   openWhitelist: [entryId: string];
   openBlacklist: [entryId: string];
@@ -38,46 +35,17 @@ const emit = defineEmits<{
 
 const { config } = useConfig();
 const { t } = useI18n();
-const { setDisabledInAuto, setAsDefault } = useLayoutConditions();
-
-function entryIsDefault(entryId: string) {
-  return props.autoDefaultLayoutId === entryId;
-}
-
 function entryIsIncluded(entryId: string) {
   return props.autoIncludedIds.has(entryId);
 }
 
-function entryHasWhitelist(entryId: string) {
-  return !!config.value.settings.layoutConditions[entryId]?.whitelist;
-}
-
-function entryHasConditions(entryId: string) {
-  const rule = config.value.settings.layoutConditions[entryId];
-  return !!(rule?.whitelist || rule?.blacklist);
-}
-
-function entryToggleDefault(entryId: string, value: boolean) {
-  setAsDefault(value ? entryId : undefined);
-}
-
 function entryToggleAuto(entryId: string, value: boolean) {
-  setDisabledInAuto(entryId, !value);
+  emit("toggleAuto", entryId, value);
 }
 
 function entryIsEnabledInAuto(entryId: string) {
   const rule = config.value.settings.layoutConditions[entryId];
-  if (rule?.disabledInAuto) return false;
-  if (entryIsDefault(entryId)) return true;
-  if (!rule) return false;
-  if (!rule.whitelist && !rule.blacklist) return false;
-  return true;
-}
-
-function entryAutoSwitchDisabledReason(entryId: string): string | undefined {
-  if (entryIsDefault(entryId)) return undefined;
-  if (!entryHasConditions(entryId)) return t("rules.autoIncludeDisabledHintNoConditions");
-  return undefined;
+  return rule?.enabledInAuto === true;
 }
 
 function handleEntryClick(event: MouseEvent) {
@@ -113,12 +81,10 @@ function entryBlacklistSummary(entryId: string) {
 }
 
 function openWhitelist(entryId: string) {
-  if (entryIsDefault(entryId)) return;
   emit("openWhitelist", entryId);
 }
 
 function openBlacklist(entryId: string) {
-  if (entryIsDefault(entryId)) return;
   emit("openBlacklist", entryId);
 }
 
@@ -133,7 +99,7 @@ const description = computed(() => {
   <li
     class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-150 hover:shadow-lg cursor-pointer"
     :class="[
-      layoutMode === 'auto' && !entryIsIncluded(entry.id) && !entryIsDefault(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
+      layoutMode === 'auto' && !entryIsIncluded(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
       selectedId === entry.id
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
         : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
@@ -215,13 +181,12 @@ const description = computed(() => {
             {{ description }}
           </div>
           <div v-if="layoutMode === 'auto'" class="flex items-center justify-between gap-2 mt-1" @click.stop>
-            <div v-if="!entryIsDefault(entry.id)" class="flex items-center gap-2 flex-wrap">
-              <AppTooltip :text="$t('rules.blacklistDisabledHint')" :disabled="entryHasWhitelist(entry.id)">
+            <div class="flex items-center gap-2 flex-wrap">
+              <AppTooltip :text="$t('rules.blacklistHint')">
                 <UButton
                   size="xs"
                   color="neutral"
                   variant="outline"
-                  :disabled="!entryHasWhitelist(entry.id)"
                   @click="openBlacklist(entry.id)"
                 >
                   <div class="flex items-center gap-1 min-w-0">
@@ -241,14 +206,6 @@ const description = computed(() => {
                   <span class="truncate">{{ entryWhitelistSummary(entry.id) }}</span>
                 </div>
               </UButton>
-            </div>
-            <div v-else class="flex-1" />
-            <div class="flex items-center gap-1.5 cursor-pointer shrink-0">
-              <USwitch
-                :model-value="entryIsDefault(entry.id)"
-                @update:model-value="entryToggleDefault(entry.id, $event === true)"
-              />
-              <span class="text-xs text-(--ui-text-muted) select-none" @click.stop="entryToggleDefault(entry.id, !entryIsDefault(entry.id))">{{ $t('rules.autoDefaultLabel') }}</span>
             </div>
           </div>
         </div>
@@ -297,16 +254,15 @@ const description = computed(() => {
         </AppTooltip>
       </div>
       <div v-if="layoutMode === 'auto'" class="flex flex-col gap-2 items-end justify-end" @click.stop>
-        <AppTooltip :text="entryAutoSwitchDisabledReason(entry.id)" :disabled="!entryAutoSwitchDisabledReason(entry.id)">
+        <AppTooltip :text="$t('rules.autoIncludeHint')">
           <div class="flex items-center gap-1.5 cursor-pointer">
             <USwitch
               :model-value="entryIsEnabledInAuto(entry.id)"
-              :disabled="!entryHasConditions(entry.id) && !entryIsDefault(entry.id)"
               @update:model-value="entryToggleAuto(entry.id, $event === true)"
             />
             <span
               class="text-xs text-(--ui-text-muted) select-none"
-              @click.stop="(!entryHasConditions(entry.id) && !entryIsDefault(entry.id)) ? undefined : entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))"
+              @click.stop="entryToggleAuto(entry.id, !entryIsEnabledInAuto(entry.id))"
             >{{ $t('rules.autoIncludeLabel') }}</span>
           </div>
         </AppTooltip>

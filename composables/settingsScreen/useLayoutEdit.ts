@@ -110,9 +110,6 @@ export function useLayoutEdit({
           conditions[newId] = conditions[oldId];
           delete conditions[oldId];
         }
-        if (config.value.settings.autoDefaultLayoutId === oldId) {
-          config.value.settings.autoDefaultLayoutId = newId;
-        }
         if (config.value.settings.manualActiveLayoutId === oldId) {
           config.value.settings.manualActiveLayoutId = newId;
         }

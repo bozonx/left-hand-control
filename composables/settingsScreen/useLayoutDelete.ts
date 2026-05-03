@@ -25,9 +25,6 @@ export function useLayoutDelete({ config, library, flush }: LayoutDeleteOptions)
       if (settings.manualActiveLayoutId === entry.id) {
         settings.manualActiveLayoutId = undefined;
       }
-      if (settings.autoDefaultLayoutId === entry.id) {
-        settings.autoDefaultLayoutId = undefined;
-      }
       settings.layoutOrder = settings.layoutOrder.filter((id) => id !== entry.id);
       delete settings.layoutConditions[entry.id];
       await flush();

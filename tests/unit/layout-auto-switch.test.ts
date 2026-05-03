@@ -15,13 +15,12 @@ const ctxOnUSGame = { currentSystemLayout: 'us', gameModeActive: true }
 
 function settings(
   partial: Partial<
-    Pick<AppSettings, 'layoutOrder' | 'layoutConditions' | 'autoDefaultLayoutId'>
+    Pick<AppSettings, 'layoutOrder' | 'layoutConditions'>
   > = {},
-): Pick<AppSettings, 'layoutOrder' | 'layoutConditions' | 'autoDefaultLayoutId'> {
+): Pick<AppSettings, 'layoutOrder' | 'layoutConditions'> {
   return {
     layoutOrder: [],
     layoutConditions: {},
-    autoDefaultLayoutId: undefined,
     ...partial,
   }
 }
@@ -132,14 +131,14 @@ describe('isLayoutInAuto', () => {
   it('false when no rule', () => {
     expect(isLayoutInAuto(undefined)).toBe(false)
   })
-  it('false when disabled flag set', () => {
-    expect(isLayoutInAuto({ whitelist: { layouts: ['us'] }, disabledInAuto: true })).toBe(false)
+  it('false when the layout is not explicitly enabled', () => {
+    expect(isLayoutInAuto({ whitelist: { layouts: ['us'] } })).toBe(false)
   })
-  it('true when whitelist defined', () => {
-    expect(isLayoutInAuto({ whitelist: { layouts: ['us'] } })).toBe(true)
+  it('true when explicitly enabled without conditions', () => {
+    expect(isLayoutInAuto({ enabledInAuto: true })).toBe(true)
   })
-  it('true when only blacklist defined', () => {
-    expect(isLayoutInAuto({ blacklist: { layouts: ['us'] } })).toBe(true)
+  it('true when explicitly enabled with conditions', () => {
+    expect(isLayoutInAuto({ enabledInAuto: true, blacklist: { layouts: ['us'] } })).toBe(true)
   })
 })
 
@@ -165,8 +164,8 @@ describe('pickActiveLayout', () => {
       settings({
         layoutOrder: ['user:b', 'user:a'],
         layoutConditions: {
-          'user:a': { whitelist: { layouts: ['us'] } },
-          'user:b': { whitelist: { layouts: ['us'] } },
+          'user:a': { enabledInAuto: true, whitelist: { layouts: ['us'] } },
+          'user:b': { enabledInAuto: true, whitelist: { layouts: ['us'] } },
         },
       }),
       ctxOnUS,
@@ -181,10 +180,11 @@ describe('pickActiveLayout', () => {
         layoutOrder: ['user:a', 'user:b'],
         layoutConditions: {
           'user:a': {
+            enabledInAuto: true,
             whitelist: { layouts: ['us'] },
             blacklist: { gameMode: 'on', layouts: [] },
           },
-          'user:b': { whitelist: { layouts: ['us'] } },
+          'user:b': { enabledInAuto: true, whitelist: { layouts: ['us'] } },
         },
       }),
       ctxOnUSGame,
@@ -192,27 +192,12 @@ describe('pickActiveLayout', () => {
     expect(result).toBe('user:b')
   })
 
-  it('falls back to autoDefaultLayoutId when no match', () => {
-    const result = pickActiveLayout(
-      ['user:a', 'user:default'],
-      settings({
-        autoDefaultLayoutId: 'user:default',
-        layoutConditions: {
-          'user:a': { whitelist: { layouts: ['ru'] } },
-        },
-      }),
-      ctxOnUS,
-    )
-    expect(result).toBe('user:default')
-  })
-
-  it('returns null when default id is missing from available', () => {
+  it('returns null when no enabled layout matches', () => {
     const result = pickActiveLayout(
       ['user:a'],
       settings({
-        autoDefaultLayoutId: 'user:gone',
         layoutConditions: {
-          'user:a': { whitelist: { layouts: ['ru'] } },
+          'user:a': { enabledInAuto: true, whitelist: { layouts: ['ru'] } },
         },
       }),
       ctxOnUS,
@@ -220,13 +205,12 @@ describe('pickActiveLayout', () => {
     expect(result).toBeNull()
   })
 
-  it('does not pick a layout that has no conditions', () => {
-    // A layout without whitelist/blacklist is not a candidate.
+  it('does not pick a layout that is not enabled', () => {
     const result = pickActiveLayout(
       ['user:a'],
       settings({
         layoutConditions: {
-          'user:a': {},
+          'user:a': { whitelist: { layouts: ['ru'] } },
         },
       }),
       ctxOnRU,
@@ -234,13 +218,13 @@ describe('pickActiveLayout', () => {
     expect(result).toBeNull()
   })
 
-  it('falls back to default layout', () => {
+  it('picks an enabled layout without conditions as a catch-all', () => {
     const result = pickActiveLayout(
       ['user:a', 'user:b'],
       settings({
-        autoDefaultLayoutId: 'user:b',
         layoutConditions: {
-          'user:a': { whitelist: { layouts: ['ru'] } },
+          'user:a': { enabledInAuto: true, whitelist: { layouts: ['ru'] } },
+          'user:b': { enabledInAuto: true },
         },
       }),
       ctxOnUS,
@@ -248,19 +232,19 @@ describe('pickActiveLayout', () => {
     expect(result).toBe('user:b')
   })
 
-  it('does not fall back to default when it is disabled', () => {
+  it('uses order when a catch-all and a conditional layout both match', () => {
     const result = pickActiveLayout(
       ['user:a', 'user:b'],
       settings({
-        autoDefaultLayoutId: 'user:b',
+        layoutOrder: ['user:b', 'user:a'],
         layoutConditions: {
-          'user:a': { whitelist: { layouts: ['ru'] } },
-          'user:b': { disabledInAuto: true },
+          'user:a': { enabledInAuto: true },
+          'user:b': { enabledInAuto: true, whitelist: { layouts: ['us'] } },
         },
       }),
       ctxOnUS,
     )
-    expect(result).toBeNull()
+    expect(result).toBe('user:b')
   })
 
   it('picks a blacklist-only layout when its blacklist does not match', () => {
@@ -268,7 +252,7 @@ describe('pickActiveLayout', () => {
       ['user:a'],
       settings({
         layoutConditions: {
-          'user:a': { blacklist: { gameMode: 'on', layouts: [] } },
+          'user:a': { enabledInAuto: true, blacklist: { gameMode: 'on', layouts: [] } },
         },
       }),
       ctxOnRU,
@@ -281,7 +265,7 @@ describe('pickActiveLayout', () => {
       ['user:a'],
       settings({
         layoutConditions: {
-          'user:a': { blacklist: { gameMode: 'on', layouts: [] } },
+          'user:a': { enabledInAuto: true, blacklist: { gameMode: 'on', layouts: [] } },
         },
       }),
       ctxOnUSGame,

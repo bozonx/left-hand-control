@@ -73,7 +73,12 @@ export default {
     modeManualHint:
       "You pick a layout manually; it stays active. Its whitelist/blacklist still filter rules.",
     modeAutoHint:
-      "The app picks the active layout automatically from the priority list below. Only one layout is active at a time.",
+      "The app picks the first matching enabled layout from the list below.",
+    modeInfoAria: "How layout mode works",
+    modeManualInfo:
+      "In manual mode, you choose the active layout yourself. It stays active until you choose another one. Its whitelist/blacklist still apply: when conditions block the layout, input passes through natively.",
+    modeAutoInfo:
+      "In auto mode, only enabled layouts participate. Order matters: the app checks the list from top to bottom and activates the first layout allowed by its conditions. A whitelist limits where a layout can activate. A blacklist blocks it and takes priority. With only a blacklist, the layout is allowed everywhere except the blocked conditions. A layout with no lists matches everywhere. If nothing matches, no layout is active and input passes through natively.",
     activeLayoutLabel: "Active layout",
     activeLayoutNative: "Native (no layout active)",
     manualNoActiveTitle: "No active layout",
@@ -225,17 +230,7 @@ export default {
     saveToConfigureAuto: 'Save the layout to configure auto-mode conditions.',
     autoIncludeLabel: "Include in auto mode",
     autoIncludeHint:
-      "When this layout is in auto mode, let it be chosen based on conditions.",
-    autoDefaultLabel: "Auto fallback",
-    autoDefaultHint:
-      "If no layout matches its whitelist in auto mode, always fall back to this one.",
-    autoDefaultLockHint:
-      "The default layout cannot have whitelist or blacklist conditions.",
-    autoIncludeDisabledHintNoConditions:
-      "Add conditions to participate in auto mode",
-    autoIncludeDisabledHintNoWhitelist:
-      "Add a whitelist to participate in auto mode",
-    blacklistDisabledHint: "Set a whitelist first to enable blacklist",
+      "Enabled layouts participate in auto picking. Without whitelist/blacklist, the layout matches everywhere.",
     whitelistPrefix: "If present",
     blacklistPrefix: "If not",
     conditionsNone: "— any —",

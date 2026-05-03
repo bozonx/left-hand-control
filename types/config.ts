@@ -118,10 +118,9 @@ export type LocalePreference = 'auto' | 'en-US' | 'ru-RU'
 //   'manual' — user picks a layout and it stays active; its whitelist /
 //     blacklist still gate rule firing (a non-matching layout acts as
 //     native passthrough).
-//   'auto'   — the app picks the active layout from layouts included in
-//     auto mode, using `layoutOrder` as priority and evaluating each
-//     layout's whitelist / blacklist. If none matches, falls back to
-//     `autoDefaultLayoutId` or to native passthrough.
+//   'auto'   — the app picks the first enabled layout in `layoutOrder`
+//     whose whitelist / blacklist allows it. If none matches, native
+//     passthrough is used.
 export type LayoutMode = 'manual' | 'auto'
 
 export const LAYOUT_MODE_MANUAL = 'manual' as const
@@ -140,15 +139,13 @@ export interface LayoutConditionSet {
 }
 
 export interface LayoutConditionRule {
+  // When true, the layout participates in auto-mode picking.
+  enabledInAuto?: boolean
   // When set, the layout is only active while conditions match.
   whitelist?: LayoutConditionSet
   // When set and matches, the layout is blocked from activating (takes
   // precedence over whitelist).
   blacklist?: LayoutConditionSet
-  // When true, a layout that has whitelist/blacklist conditions is
-  // temporarily excluded from the auto-mode picker without removing its
-  // conditions.
-  disabledInAuto?: boolean
 }
 
 export interface AppSettings {
@@ -184,14 +181,10 @@ export interface AppSettings {
   // Priority order for auto mode — array of layout ids. Layouts absent
   // from this array are placed at the end (preserving library order).
   layoutOrder: string[]
-  // Per-layout whitelist / blacklist / auto-include settings, keyed by
+  // Per-layout auto-enable / whitelist / blacklist settings, keyed by
   // layout id (`user:<name>`). Stored here (not in the YAML) so layouts
   // stay portable across machines.
   layoutConditions: Record<string, LayoutConditionRule>
-  // Fallback layout used in auto mode when no other layout matches. Only
-  // one layout may be the default; the default layout cannot have
-  // whitelist/blacklist conditions.
-  autoDefaultLayoutId?: string
   gameMode: {
     useGamemoded: boolean
     useFullscreen: boolean

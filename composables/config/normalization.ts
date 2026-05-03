@@ -44,16 +44,14 @@ function normalizeSettings(
     for (const [id, value] of Object.entries(merged.layoutConditions)) {
       if (!value || typeof value !== "object") continue;
       const v = value as Partial<AppConfig["settings"]["layoutConditions"][string]>;
-      cleaned[id] = {
+      const rule: AppConfig["settings"]["layoutConditions"][string] = {
         whitelist: normalizeConditionSet(v.whitelist),
         blacklist: normalizeConditionSet(v.blacklist),
-        disabledInAuto: !!v.disabledInAuto,
       };
+      if (v.enabledInAuto === true) rule.enabledInAuto = true;
+      if (rule.enabledInAuto || rule.whitelist || rule.blacklist) cleaned[id] = rule;
     }
     merged.layoutConditions = cleaned;
-  }
-  if (typeof merged.autoDefaultLayoutId !== "string" || !merged.autoDefaultLayoutId) {
-    merged.autoDefaultLayoutId = undefined;
   }
   if (
     merged.layoutMode === "manual" &&

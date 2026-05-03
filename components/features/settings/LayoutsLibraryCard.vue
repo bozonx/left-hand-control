@@ -19,7 +19,6 @@ const props = defineProps<{
     layoutsDir: string;
     layoutMode: LayoutMode;
     autoIncludedIds: Set<string>;
-    autoDefaultLayoutId?: string;
     activeAutoLayoutId?: string;
     manualActiveLayoutId?: string;
     selectedId?: string | null;
@@ -40,7 +39,7 @@ const _emit = defineEmits<{
 }>();
 
 const { config } = useConfig();
-const { setDisabledInAuto, setAsDefault } = useLayoutConditions();
+const { setEnabledInAuto } = useLayoutConditions();
 
 const modalOpen = ref(false);
 const modalKind = ref<ConditionKind>("whitelist");
@@ -172,7 +171,6 @@ function openBlacklist(entryId: string) {
                     :is-layout-dirty="isLayoutDirty"
                     :active-auto-layout-id="activeAutoLayoutId"
                     :manual-active-layout-id="manualActiveLayoutId"
-                    :auto-default-layout-id="autoDefaultLayoutId"
                     :auto-included-ids="autoIncludedIds"
                     :selected-id="selectedId"
                     @select="$emit('select', $event)"
@@ -181,8 +179,7 @@ function openBlacklist(entryId: string) {
                     @move-up="$emit('moveUp', $event)"
                     @move-down="$emit('moveDown', $event)"
                     @activate-manual="config.settings.manualActiveLayoutId = $event"
-                    @toggle-default="setAsDefault($event ? $event : undefined)"
-                    @toggle-auto="setDisabledInAuto($event, !$event)"
+                    @toggle-auto="(entryId, value) => setEnabledInAuto(entryId, value)"
                     @open-whitelist="openWhitelist"
                     @open-blacklist="openBlacklist"
                 />
