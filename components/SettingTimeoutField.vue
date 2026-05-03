@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
 import FieldLabel from '~/components/FieldLabel.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 
@@ -20,8 +19,9 @@ const props = withDefaults(defineProps<{
 const model = defineModel<number | undefined>()
 
 const isEditing = ref(false)
-const inputRef = ref<(ComponentPublicInstance & { $el: HTMLElement }) | null>(null)
+const inputRef = ref<{ focus: () => void, select: () => void } | null>(null)
 const draft = ref('')
+let isJustFocused = false
 
 const isOverridden = computed(() => model.value !== undefined)
 const displayValue = computed(() => model.value ?? props.defaultValue)
@@ -30,12 +30,13 @@ function startEdit() {
   if (isEditing.value) return
   draft.value = String(displayValue.value)
   isEditing.value = true
+  isJustFocused = true
   nextTick(() => {
-    const input = inputRef.value?.$el.querySelector('input')
-    if (input) {
-      input.focus()
-      input.select()
-    }
+    inputRef.value?.focus()
+    inputRef.value?.select()
+    setTimeout(() => {
+      isJustFocused = false
+    }, 150)
   })
 }
 
@@ -54,6 +55,7 @@ function reset() {
 }
 
 function onBlur() {
+  if (isJustFocused) return
   if (draft.value.trim() === '') {
     reset()
   } else {
@@ -65,7 +67,7 @@ function onBlur() {
 <template>
   <div
     class="group flex items-center justify-between py-1.5 px-2 -mx-2 rounded-lg transition-all duration-200 hover:bg-(--ui-bg-muted) cursor-pointer select-none"
-    @click="startEdit"
+    @click.stop="startEdit"
   >
     <FieldLabel :label="label" :hint="hint" :hint-visible-on="hintVisibleOn" />
 
@@ -99,7 +101,6 @@ function onBlur() {
           size="xs"
           class="w-20 font-mono"
           :min="min"
-          autofocus
           @update:model-value="handleUpdate"
           @blur="onBlur"
           @keydown.enter="isEditing = false"

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
-
 const props = withDefaults(defineProps<{
   modelValue?: string | number
   min?: number
@@ -24,6 +22,8 @@ const emit = defineEmits<{
   keydown: [event: KeyboardEvent]
 }>()
 
+const rootClass = computed(() => props.class)
+
 function parseValue(): number | null {
   const v = typeof props.modelValue === 'number' ? props.modelValue : Number(props.modelValue)
   if (!Number.isFinite(v)) return null
@@ -37,9 +37,26 @@ function clampAndEmit(raw: number) {
   emit('update:modelValue', next)
 }
 
+const rootRef = ref<HTMLElement | null>(null)
+let wheelInput: HTMLInputElement | null = null
+
+function getInput() {
+  return rootRef.value?.querySelector('input') ?? null
+}
+
+function focus() {
+  getInput()?.focus()
+}
+
+function select() {
+  getInput()?.select()
+}
+
+defineExpose({ focus, select })
+
 function onWheel(event: WheelEvent) {
-  const target = event.target as HTMLInputElement | null
-  if (!target || document.activeElement !== target) return
+  const input = getInput()
+  if (!input || document.activeElement !== input) return
 
   event.preventDefault()
 
@@ -51,35 +68,32 @@ function onWheel(event: WheelEvent) {
   clampAndEmit(current + delta * step)
 }
 
-const inputRef = ref<(ComponentPublicInstance & { $el: HTMLElement }) | null>(null)
+onMounted(() => {
+  nextTick(() => {
+    wheelInput = getInput() ?? null
+    wheelInput?.addEventListener('wheel', onWheel, { passive: false })
+  })
+})
 
-function focus() {
-  const el = inputRef.value?.$el.querySelector('input')
-  el?.focus()
-}
-
-function select() {
-  const el = inputRef.value?.$el.querySelector('input')
-  el?.select()
-}
-
-defineExpose({ focus, select })
+onBeforeUnmount(() => {
+  wheelInput?.removeEventListener('wheel', onWheel)
+})
 </script>
 
 <template>
-  <UInput
-    ref="inputRef"
-    :model-value="String(modelValue)"
-    type="number"
-    :min="min"
-    :max="max"
-    :step="step"
-    :size="size"
-    :class="class"
-    @update:model-value="(v: string | number) => emit('update:modelValue', v)"
-    @blur="(e: FocusEvent) => emit('blur', e)"
-    @focus="(e: FocusEvent) => emit('focus', e)"
-    @keydown="(e: KeyboardEvent) => emit('keydown', e)"
-    @wheel="onWheel"
-  />
+  <span ref="rootRef" class="inline-block" :class="rootClass">
+    <UInput
+      :model-value="String(modelValue)"
+      type="number"
+      :min="min"
+      :max="max"
+      :step="step"
+      :size="size"
+      class="w-full"
+      @update:model-value="(v: string | number) => emit('update:modelValue', v)"
+      @blur="(e: FocusEvent) => emit('blur', e)"
+      @focus="(e: FocusEvent) => emit('focus', e)"
+      @keydown="(e: KeyboardEvent) => emit('keydown', e)"
+    />
+  </span>
 </template>
