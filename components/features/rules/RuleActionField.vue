@@ -10,6 +10,7 @@ const props = defineProps<{
   placeholder: string
   keyOnly?: boolean
   modeKind?: 'tap' | 'hold'
+  ghost?: boolean
 }>()
 
 const model = defineModel<string | null>({ default: '' })
@@ -19,6 +20,7 @@ const { getActionInfo } = useMacros()
 const pickerOpen = ref(false)
 const pickerValue = ref('')
 const pendingMode = ref<ModeKind | null>(null)
+const ghostOpen = ref(false)
 
 const modeItems = computed(() => {
   if (props.modeKind === 'hold') {
@@ -41,6 +43,8 @@ const currentMode = computed<ModeKind>(() => {
   if (model.value) return 'action'
   return 'native'
 })
+
+const showGhost = computed(() => props.ghost && (currentMode.value === 'native' || currentMode.value === 'none'))
 
 const selectMode = computed<ModeKind>({
   get: () => pendingMode.value ?? currentMode.value,
@@ -105,6 +109,17 @@ function cancelAction() {
       </button>
       <FieldResetButton :label="$t('common.reset')" @click="resetToDefault" />
     </div>
+    <template v-else-if="showGhost && !ghostOpen">
+      <UButton
+        variant="ghost"
+        color="neutral"
+        class="flex-1 min-w-0 h-8 px-2.5 justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50"
+        @click="ghostOpen = true"
+      >
+        <UIcon name="i-lucide-plus" class="shrink-0 w-4 h-4 mr-1.5" />
+        <span class="truncate">{{ props.placeholder }}</span>
+      </UButton>
+    </template>
     <ResettableSelectMenu
       v-else
       v-model="selectMode"

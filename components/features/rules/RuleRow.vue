@@ -155,12 +155,13 @@ const isConditionsOpen = ref(false)
             :model-value="rule.layerId"
             :items="layerOptions"
             value-key="value"
-            :placeholder="$t('common.none')"
+            :placeholder="$t('rules.layerPh')"
             reset-value=""
             :reset-aria-label="$t('rules.clearLayer')"
             empty-item-value="__none__"
             empty-model-value=""
-            @update:model-value="(v: string | number | null) => emit('update:rule', { ...rule, layerId: String(v) })"
+            ghost
+            @update:model-value="(v: string | number | null | undefined) => emit('update:rule', { ...rule, layerId: String(v ?? '') })"
           />
         </UFormField>
       </div>
@@ -176,7 +177,7 @@ const isConditionsOpen = ref(false)
               hint-visible-on="group-hover-rule"
             />
           </template>
-          <RuleActionField :model-value="rule.tapAction" :placeholder="$t('rules.tapPh')" @update:model-value="(v: string) => emit('update:rule', { ...rule, tapAction: v })" />
+          <RuleActionField :model-value="rule.tapAction" ghost :placeholder="$t('rules.tapPh')" @update:model-value="(v: string | null) => emit('update:rule', { ...rule, tapAction: v ?? '' })" />
         </UFormField>
 
         <UFormField>
@@ -190,9 +191,10 @@ const isConditionsOpen = ref(false)
           <ActionPickerModal
             :model-value="rule.doubleTapAction"
             allow-empty
+            ghost
             :placeholder="$t('rules.doubleTapPh')"
             :clear-label="$t('common.clear')"
-            @update:model-value="(v: string) => emit('update:rule', { ...rule, doubleTapAction: v })"
+            @update:model-value="(v: string | null) => emit('update:rule', { ...rule, doubleTapAction: v ?? '' })"
           />
         </UFormField>
 
@@ -208,8 +210,9 @@ const isConditionsOpen = ref(false)
             :model-value="rule.holdAction"
             key-only
             mode-kind="hold"
+            ghost
             :placeholder="$t('rules.holdActionPh')"
-            @update:model-value="(v: string) => emit('update:rule', { ...rule, holdAction: v })"
+            @update:model-value="(v: string | null) => emit('update:rule', { ...rule, holdAction: v ?? '' })"
           />
         </UFormField>
       </div>

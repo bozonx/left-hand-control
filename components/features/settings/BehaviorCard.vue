@@ -44,12 +44,11 @@ function setNonNegativeInt(
               :hint="$t('settings.holdTimeoutHint')"
             />
           </template>
-          <UInput
+          <NumericInput
             :model-value="String(props.config.settings.defaultHoldTimeoutMs)"
-            type="number"
-            min="0"
+            :min="0"
             class="w-full md:w-40"
-            @update:model-value="(value) => setNonNegativeInt('defaultHoldTimeoutMs', value)"
+            @update:model-value="(value: string | number) => setNonNegativeInt('defaultHoldTimeoutMs', value)"
           />
         </UFormField>
 
@@ -60,12 +59,11 @@ function setNonNegativeInt(
               :hint="$t('settings.doubleTapTimeoutHint')"
             />
           </template>
-          <UInput
+          <NumericInput
             :model-value="String(props.config.settings.defaultDoubleTapTimeoutMs)"
-            type="number"
-            min="0"
+            :min="0"
             class="w-full md:w-40"
-            @update:model-value="(value) => setNonNegativeInt('defaultDoubleTapTimeoutMs', value)"
+            @update:model-value="(value: string | number) => setNonNegativeInt('defaultDoubleTapTimeoutMs', value)"
           />
         </UFormField>
       </div>
@@ -78,12 +76,11 @@ function setNonNegativeInt(
               :hint="$t('settings.stepPauseHint')"
             />
           </template>
-          <UInput
+          <NumericInput
             :model-value="String(props.config.settings.defaultMacroStepPauseMs)"
-            type="number"
-            min="0"
+            :min="0"
             class="w-full md:w-40"
-            @update:model-value="(value) => setNonNegativeInt('defaultMacroStepPauseMs', value)"
+            @update:model-value="(value: string | number) => setNonNegativeInt('defaultMacroStepPauseMs', value)"
           />
         </UFormField>
 
@@ -94,12 +91,11 @@ function setNonNegativeInt(
               :hint="$t('settings.modDelayHint')"
             />
           </template>
-          <UInput
+          <NumericInput
             :model-value="String(props.config.settings.defaultMacroModifierDelayMs)"
-            type="number"
-            min="0"
+            :min="0"
             class="w-full md:w-40"
-            @update:model-value="(value) => setNonNegativeInt('defaultMacroModifierDelayMs', value)"
+            @update:model-value="(value: string | number) => setNonNegativeInt('defaultMacroModifierDelayMs', value)"
           />
         </UFormField>
       </div>

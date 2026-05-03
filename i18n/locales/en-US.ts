@@ -196,6 +196,7 @@ export default {
       'Layer that activates while the key is held. It can be combined with "Hold action", for example to activate a layer and hold Alt at the same time.',
     clearLayer: "Clear layer",
     createLayer: "Create layer",
+    layerPh: "Pick layer",
     tapLabel: "Tap action",
     tapHint:
       "Action performed on a short key press (released before the hold timeout elapses). Note: when a double-tap action is set, a single tap is delayed by the double-tap window to disambiguate it from the first press of a double tap.",

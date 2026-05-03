@@ -25,7 +25,10 @@ const inputRef = ref<InstanceType<typeof InputWithClearButton> | null>(null)
 const activeIndex = ref(-1)
 
 const captureActive = ref(false)
-const capturedKeys = ref<Set<string>>(new Set())
+const pressedCaptureKeys = ref<Set<string>>(new Set())
+const capturedChordKeys = ref<Set<string>>(new Set())
+const capturedDraft = ref('')
+const captureOriginalDraft = ref('')
 
 const isTextCategory = computed(() => props.activeCategory === 'text')
 const showChordHint = computed(() => props.keyOnly)
@@ -37,6 +40,17 @@ const textDraft = computed({
 })
 
 let focusoutTimer: ReturnType<typeof setTimeout> | null = null
+
+const MODIFIER_CODES = new Set([
+  'ControlLeft',
+  'ControlRight',
+  'ShiftLeft',
+  'ShiftRight',
+  'AltLeft',
+  'AltRight',
+  'MetaLeft',
+  'MetaRight',
+])
 
 function highlightParts(text: string, query: string): TextPart[] {
   if (!query) return [{ text, match: false }]
@@ -71,9 +85,36 @@ function buildChord(keys: Set<string>): string {
   return [...uniqueMods, ...main].join('+')
 }
 
-function stopCapture() {
+function buildCaptureValue(keys: Set<string>): string {
+  const codes = [...keys]
+  if (codes.length === 1 && isModifierCode(codes[0]!)) return codes[0]!
+  return buildChord(keys)
+}
+
+function isModifierCode(code: string) {
+  return MODIFIER_CODES.has(code)
+}
+
+function resetCaptureState() {
   captureActive.value = false
-  capturedKeys.value.clear()
+  pressedCaptureKeys.value.clear()
+  capturedChordKeys.value.clear()
+  capturedDraft.value = ''
+  captureOriginalDraft.value = ''
+}
+
+function stopCapture() {
+  resetCaptureState()
+}
+
+function cancelCapture() {
+  draft.value = captureOriginalDraft.value
+  resetCaptureState()
+}
+
+function commitCapture(value: string) {
+  draft.value = value
+  resetCaptureState()
 }
 
 function selectItem(item: ActionItem) {
@@ -87,29 +128,50 @@ function selectItem(item: ActionItem) {
 function onDocumentKeydown(event: KeyboardEvent) {
   if (!captureActive.value) return
   event.stopPropagation()
+  event.preventDefault()
   if (event.key === 'Escape') {
-    stopCapture()
+    cancelCapture()
     return
   }
-  event.preventDefault()
-  capturedKeys.value.add(event.code)
-  draft.value = buildChord(capturedKeys.value)
+  if (!event.code) return
+  pressedCaptureKeys.value.add(event.code)
+  capturedChordKeys.value.add(event.code)
+  capturedDraft.value = buildCaptureValue(capturedChordKeys.value)
 }
 
 function onDocumentKeyup(event: KeyboardEvent) {
   if (!captureActive.value) return
   event.stopPropagation()
-  capturedKeys.value.delete(event.code)
-  if (capturedKeys.value.size === 0) {
-    captureActive.value = false
+  event.preventDefault()
+  if (!event.code) return
+  pressedCaptureKeys.value.delete(event.code)
+  if (pressedCaptureKeys.value.size === 0 && capturedChordKeys.value.size > 0) {
+    commitCapture(buildCaptureValue(capturedChordKeys.value))
   }
 }
 
 function toggleCapture() {
-  captureActive.value = !captureActive.value
   if (captureActive.value) {
-    capturedKeys.value.clear()
+    cancelCapture()
+    return
   }
+  captureOriginalDraft.value = draft.value
+  pressedCaptureKeys.value.clear()
+  capturedChordKeys.value.clear()
+  capturedDraft.value = ''
+  showSuggestions.value = false
+  activeIndex.value = -1
+  captureActive.value = true
+}
+
+function stopOverlayPointer(event: Event) {
+  event.stopPropagation()
+}
+
+function cancelCaptureFromPointer(event: Event) {
+  event.stopPropagation()
+  event.preventDefault()
+  cancelCapture()
 }
 
 function handleInputKeydown(event: KeyboardEvent) {
@@ -210,6 +272,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onDocumentKeydown, true)
   document.removeEventListener('keyup', onDocumentKeyup, true)
+  resetCaptureState()
   if (focusoutTimer) clearTimeout(focusoutTimer)
 })
 </script>
@@ -232,16 +295,15 @@ onBeforeUnmount(() => {
             @keydown="handleInputKeydown"
           />
           <UButton
-            :icon="captureActive ? 'i-lucide-circle-stop' : 'i-lucide-keyboard'"
-            :color="captureActive ? 'error' : 'neutral'"
-            :variant="captureActive ? 'solid' : 'subtle'"
+            icon="i-lucide-keyboard"
+            color="neutral"
+            variant="subtle"
             size="sm"
-            class="shrink-0"
-            :aria-label="$t('picker.assignKey')"
+            class="h-8 w-8 shrink-0 p-0"
+            :aria-label="$t('picker.captureKeys')"
+            :title="$t('picker.captureKeys')"
             @click="toggleCapture"
-          >
-            {{ captureActive ? $t('picker.listeningKeys') : $t('picker.assignKey') }}
-          </UButton>
+          />
         </div>
         <div
           v-if="showSuggestions"
@@ -286,16 +348,6 @@ onBeforeUnmount(() => {
             </div>
           </button>
         </div>
-        <div
-          v-if="captureActive"
-          class="absolute inset-0 z-30 flex items-center justify-center bg-(--ui-bg)/60 backdrop-blur-sm rounded-md"
-        >
-          <div class="text-center space-y-1">
-            <UIcon name="i-lucide-keyboard" class="w-6 h-6 mx-auto text-(--ui-primary)" />
-            <p class="text-sm font-medium">{{ $t('picker.listeningKeys') }}</p>
-            <p class="text-xs text-(--ui-text-muted)">{{ $t('picker.pressEscapeToStop') }}</p>
-          </div>
-        </div>
       </div>
       <UTextarea
         v-else
@@ -316,6 +368,54 @@ onBeforeUnmount(() => {
       >
         {{ $t('picker.textHint') }}
       </p>
+      <Teleport to="body">
+        <div
+          v-if="captureActive"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-(--ui-bg)/80 p-4 backdrop-blur-sm"
+          data-testid="key-capture-overlay"
+          role="dialog"
+          aria-modal="true"
+          @pointerdown="stopOverlayPointer"
+          @pointerup="stopOverlayPointer"
+          @mousedown="stopOverlayPointer"
+          @mouseup="stopOverlayPointer"
+          @click="stopOverlayPointer"
+        >
+          <div
+            class="w-full max-w-md rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated) p-5 shadow-xl"
+            @pointerdown="stopOverlayPointer"
+            @pointerup="stopOverlayPointer"
+            @mousedown="stopOverlayPointer"
+            @mouseup="stopOverlayPointer"
+            @click="stopOverlayPointer"
+          >
+            <div class="flex items-start gap-3">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-(--ui-primary)/10 text-(--ui-primary)">
+                <UIcon name="i-lucide-keyboard" class="h-5 w-5" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-semibold">{{ $t('picker.listeningKeys') }}</h3>
+                <p class="mt-1 text-sm text-(--ui-text-muted)">
+                  {{ $t('picker.pressEscapeToStop') }}
+                </p>
+              </div>
+            </div>
+            <div class="mt-5 rounded-md border border-(--ui-border) bg-(--ui-bg) px-3 py-3 font-mono text-sm">
+              {{ capturedDraft || $t('picker.valuePh') }}
+            </div>
+            <div class="mt-5 flex justify-end">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                @pointerdown="cancelCaptureFromPointer"
+                @click="cancelCaptureFromPointer"
+              >
+                {{ $t('common.cancel') }}
+              </UButton>
+            </div>
+          </div>
+        </div>
+      </Teleport>
     </div>
   </UFormField>
 </template>

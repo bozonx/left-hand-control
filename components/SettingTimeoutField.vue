@@ -93,10 +93,9 @@ function onBlur() {
       </template>
 
       <div v-else class="flex items-center gap-1">
-        <UInput
+        <NumericInput
           ref="inputRef"
           :model-value="draft"
-          type="number"
           size="xs"
           class="w-20 font-mono"
           :min="min"

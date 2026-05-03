@@ -16,12 +16,14 @@ const props = withDefaults(defineProps<{
   requireValue?: boolean
   invalid?: boolean
   excludedMacroId?: string
+  ghost?: boolean
 }>(), {
   allowMacros: true,
   placeholder: undefined,
   title: undefined,
   clearLabel: undefined,
   excludedMacroId: undefined,
+  ghost: false,
 })
 
 const emit = defineEmits<{
@@ -124,10 +126,13 @@ function cancel() {
 <template>
   <div v-if="!props.hideTrigger" class="flex items-center gap-1 w-full">
     <UButton
-      variant="outline"
+      :variant="props.ghost && !model ? 'ghost' : 'outline'"
       color="neutral"
       class="flex-1 min-w-0 h-8 px-2.5 justify-start"
-      :class="props.invalid ? 'border-(--ui-error) ring-1 ring-(--ui-error)' : ''"
+      :class="[
+        props.invalid ? 'border-(--ui-error) ring-1 ring-(--ui-error)' : '',
+        props.ghost && !model ? 'border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50' : ''
+      ]"
       @click="openModal"
     >
       <UIcon
