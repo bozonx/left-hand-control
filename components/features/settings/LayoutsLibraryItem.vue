@@ -15,6 +15,7 @@ const props = defineProps<{
   currentLayoutId?: string;
   currentLayoutDescription?: string;
   isLayoutDirty: boolean;
+  applying: string;
   activeAutoLayoutId?: string;
   manualActiveLayoutId?: string;
   autoIncludedIds: Set<string>;
@@ -24,6 +25,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [id: string];
   requestEdit: [entry: LayoutLibraryEntry];
+  requestEditDescription: [entry: LayoutLibraryEntry];
+  requestApplyEntry: [entry: LayoutLibraryEntry];
   requestDelete: [entry: LayoutLibraryEntry];
   moveUp: [entry: LayoutLibraryEntry];
   moveDown: [entry: LayoutLibraryEntry];
@@ -46,13 +49,6 @@ function entryToggleAuto(entryId: string, value: boolean) {
 function entryIsEnabledInAuto(entryId: string) {
   const rule = config.value.settings.layoutConditions[entryId];
   return rule?.enabledInAuto === true;
-}
-
-function handleEntryClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null;
-  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return;
-  emit("select", props.entry.id);
-  emit("requestEdit", props.entry);
 }
 
 function entryActivateManual() {
@@ -97,50 +93,31 @@ const description = computed(() => {
 
 <template>
   <li
-    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-150 hover:shadow-lg cursor-pointer"
+    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-150 hover:shadow-lg"
     :class="[
       layoutMode === 'auto' && !entryIsIncluded(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
       selectedId === entry.id
         ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
         : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
     ]"
-    @click="handleEntryClick"
   >
     <div class="flex-1 flex flex-col gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <div
-          v-if="layoutMode === 'auto'"
-          class="flex flex-col gap-0.5 shrink-0"
-          @click.stop
-        >
-          <AppTooltip :text="$t('common.moveUp')">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              :square="true"
-              icon="i-lucide-chevron-up"
-              :aria-label="$t('settings.moveLayoutUpAria', { name: entry.name })"
-              :disabled="isFirst"
-              @click="$emit('moveUp', entry)"
-            />
-          </AppTooltip>
-          <AppTooltip :text="$t('common.moveDown')">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              :square="true"
-              icon="i-lucide-chevron-down"
-              :aria-label="$t('settings.moveLayoutDownAria', { name: entry.name })"
-              :disabled="isLast"
-              @click="$emit('moveDown', entry)"
-            />
-          </AppTooltip>
-        </div>
         <div class="min-w-0 flex-1">
           <div class="font-medium truncate flex items-center gap-2 flex-wrap">
-            {{ entry.name }}
+            <span class="truncate">{{ entry.name }}</span>
+            <AppTooltip :text="$t('settings.renameLayoutAria', { name: entry.name })">
+              <UButton
+                icon="i-lucide-pencil"
+                variant="ghost"
+                color="neutral"
+                size="xs"
+                square
+                class="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-150"
+                :aria-label="$t('settings.renameLayoutAria', { name: entry.name })"
+                @click="$emit('requestEdit', entry)"
+              />
+            </AppTooltip>
             <UBadge
               v-if="layoutMode === 'auto' && activeAutoLayoutId === entry.id"
               color="success"
@@ -176,10 +153,25 @@ const description = computed(() => {
           </div>
           <div
             v-if="description"
-            class="text-sm text-(--ui-text-muted) line-clamp-2 mt-0.5"
+            class="text-sm text-(--ui-text-muted) line-clamp-2 mt-0.5 cursor-text hover:text-(--ui-text)"
+            role="button"
+            tabindex="0"
+            @click="$emit('requestEditDescription', entry)"
+            @keydown.enter="$emit('requestEditDescription', entry)"
+            @keydown.space.prevent="$emit('requestEditDescription', entry)"
           >
             {{ description }}
           </div>
+          <UButton
+            v-else
+            color="neutral"
+            variant="link"
+            size="xs"
+            class="mt-0.5 px-0"
+            @click="$emit('requestEditDescription', entry)"
+          >
+            {{ $t('rules.addDescription') }}
+          </UButton>
           <div v-if="layoutMode === 'auto'" class="flex items-center justify-between gap-2 mt-1" @click.stop>
             <div class="flex items-center gap-2 flex-wrap">
               <AppTooltip :text="$t('rules.blacklistHint')">
@@ -215,19 +207,41 @@ const description = computed(() => {
     <div class="w-px bg-(--ui-border) self-stretch"></div>
 
     <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-2">
-      <div class="flex items-center justify-end">
-        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <AppTooltip :text="$t('settings.editLayoutAria', { name: entry.name })">
+      <div
+        class="flex items-center"
+        :class="layoutMode === 'auto' ? 'justify-between' : 'justify-end'"
+      >
+        <div
+          v-if="layoutMode === 'auto'"
+          class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+        >
+          <AppTooltip :text="$t('common.moveUp')">
             <UButton
-              icon="i-lucide-pencil"
+              icon="i-lucide-arrow-up"
               variant="ghost"
               color="neutral"
               size="sm"
               square
-              :aria-label="$t('settings.editLayoutAria', { name: entry.name })"
-              @click.stop="$emit('requestEdit', entry)"
+              :aria-label="$t('settings.moveLayoutUpAria', { name: entry.name })"
+              :disabled="isFirst"
+              @click="$emit('moveUp', entry)"
             />
           </AppTooltip>
+          <AppTooltip :text="$t('common.moveDown')">
+            <UButton
+              icon="i-lucide-arrow-down"
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              square
+              :aria-label="$t('settings.moveLayoutDownAria', { name: entry.name })"
+              :disabled="isLast"
+              @click="$emit('moveDown', entry)"
+            />
+          </AppTooltip>
+        </div>
+
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <AppTooltip :text="$t('settings.deleteAria')">
             <UButton
               icon="i-lucide-trash-2"
@@ -236,10 +250,23 @@ const description = computed(() => {
               size="sm"
               square
               :aria-label="$t('settings.deleteAria')"
-              @click.stop="$emit('requestDelete', entry)"
+              @click="$emit('requestDelete', entry)"
             />
           </AppTooltip>
         </div>
+      </div>
+      <div class="flex items-center justify-end">
+        <UButton
+          size="sm"
+          color="primary"
+          variant="outline"
+          icon="i-lucide-folder-open"
+          :loading="applying === entry.id"
+          :disabled="!!applying || currentLayoutId === entry.id"
+          @click="$emit('requestApplyEntry', entry)"
+        >
+          {{ $t('settings.openLayoutBtn') }}
+        </UButton>
       </div>
       <div v-if="layoutMode === 'manual' && manualActiveLayoutId !== entry.id" class="flex items-center justify-end" @click.stop>
         <AppTooltip :text="$t('rules.activateBtn')">

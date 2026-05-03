@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import { isUserLayoutId, userLayoutNameFromId } from "~/composables/useLayoutLibrary";
 import type { LayoutMode } from "~/types/config";
+import type { LayoutEditMode } from "~/composables/settingsScreen/useLayoutEdit";
 import { useLayoutConditions } from "~/composables/useLayoutConditions";
 import type { ConditionKind } from "~/composables/useLayoutConditions";
 import LayoutConditionsModal from "~/components/features/settings/LayoutConditionsModal.vue";
@@ -30,7 +31,7 @@ const _emit = defineEmits<{
     requestApplyEntry: [entry: LayoutLibraryEntry];
     createFromEmpty: [];
     createFromIvanK: [];
-    requestEdit: [entry: LayoutLibraryEntry];
+    requestEdit: [entry: LayoutLibraryEntry, mode?: LayoutEditMode];
     requestReset: [];
     requestDelete: [entry: LayoutLibraryEntry];
     moveUp: [entry: LayoutLibraryEntry];
@@ -167,12 +168,15 @@ function openBlacklist(entryId: string) {
                     :current-layout-id="currentLayoutId"
                     :current-layout-description="currentLayoutDescription"
                     :is-layout-dirty="isLayoutDirty"
+                    :applying="applying"
                     :active-auto-layout-id="activeAutoLayoutId"
                     :manual-active-layout-id="manualActiveLayoutId"
                     :auto-included-ids="autoIncludedIds"
                     :selected-id="selectedId"
                     @select="$emit('select', $event)"
-                    @request-edit="$emit('requestEdit', $event)"
+                    @request-edit="$emit('requestEdit', $event, 'name')"
+                    @request-edit-description="$emit('requestEdit', $event, 'description')"
+                    @request-apply-entry="$emit('requestApplyEntry', $event)"
                     @request-delete="$emit('requestDelete', $event)"
                     @move-up="$emit('moveUp', $event)"
                     @move-down="$emit('moveDown', $event)"

@@ -1,22 +1,47 @@
 <script setup lang="ts">
 const { t: _t } = useI18n()
+const uiState = useUiState()
+const isOpen = computed({
+  get: () => uiState.state.value.homeHelpOpen,
+  set: (value: boolean) => uiState.setHomeHelpOpen(value),
+})
+
+function toggleOpen() {
+  isOpen.value = !isOpen.value
+}
+
+onMounted(() => {
+  if (!uiState.loaded.value) void uiState.load()
+})
 </script>
 
 <template>
   <UCard class="h-full">
     <template #header>
-      <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-info" class="shrink-0 text-(--ui-primary)" />
-        <div>
-          <h2 class="text-sm font-semibold">{{ $t('home.infoTitle') }}</h2>
-          <p class="text-sm text-(--ui-text-muted)">
-            {{ $t('home.infoSubtitle') }}
-          </p>
+      <button
+        type="button"
+        class="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
+        :aria-expanded="isOpen"
+        @click="toggleOpen"
+      >
+        <div class="flex items-center gap-2 min-w-0">
+          <UIcon name="i-lucide-info" class="shrink-0 text-(--ui-primary)" />
+          <div class="min-w-0">
+            <h2 class="text-sm font-semibold">{{ $t('home.infoTitle') }}</h2>
+            <p class="text-sm text-(--ui-text-muted)">
+              {{ $t('home.infoSubtitle') }}
+            </p>
+          </div>
         </div>
-      </div>
+        <UIcon
+          :name="isOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+          class="shrink-0 text-(--ui-text-muted)"
+          aria-hidden="true"
+        />
+      </button>
     </template>
 
-    <div class="space-y-3 text-sm">
+    <div v-show="isOpen" class="space-y-3 text-sm">
       <div class="rounded-lg border border-(--ui-border) bg-(--ui-bg-muted)/40 p-3">
         <div class="flex items-start gap-2">
           <UIcon name="i-lucide-zap" class="mt-0.5 shrink-0 text-(--ui-primary)" />

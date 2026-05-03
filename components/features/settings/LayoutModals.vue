@@ -16,6 +16,7 @@ const {
   editModalOpen,
   editName,
   editDescription,
+  editMode,
   editBusy,
   editError,
   performEdit,
@@ -33,6 +34,13 @@ const {
   confirmDelete,
   clearDeletePending,
 } = useSettingsScreen();
+const { t } = useI18n()
+
+const editTitle = computed(() => {
+  if (editMode.value === 'name') return t('settings.renameLayoutTitle')
+  if (editMode.value === 'description') return t('settings.editDescriptionTitle')
+  return t('settings.editLayoutTitle')
+})
 </script>
 
 <template>
@@ -137,10 +145,10 @@ const {
     </template>
   </UModal>
 
-  <UModal v-model:open="editModalOpen" :title="$t('settings.editLayoutTitle')">
+  <UModal v-model:open="editModalOpen" :title="editTitle">
     <template #body>
       <div class="space-y-3">
-        <UFormField :label="$t('settings.nameLabel')">
+        <UFormField v-if="editMode !== 'description'" :label="$t('settings.nameLabel')">
           <UInput
             v-model="editName"
             class="w-full"
@@ -149,7 +157,7 @@ const {
             @keyup.enter="performEdit(false)"
           />
         </UFormField>
-        <UFormField :label="$t('settings.descriptionLabel')">
+        <UFormField v-if="editMode !== 'name'" :label="$t('settings.descriptionLabel')">
           <UTextarea
             v-model="editDescription"
             class="w-full"
@@ -157,7 +165,7 @@ const {
             :rows="4"
           />
         </UFormField>
-        <p class="text-xs text-(--ui-text-muted)">
+        <p v-if="editMode !== 'description'" class="text-xs text-(--ui-text-muted)">
           <i18n-t keypath="settings.saveHint" tag="span">
             <template #path>
               <code class="break-all"

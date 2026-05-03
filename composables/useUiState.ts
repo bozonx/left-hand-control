@@ -18,6 +18,8 @@ function normalizeUiState(raw: unknown): UiState {
   return {
     selectedLayerId,
     keyLabelMode,
+    homeHelpOpen: typeof value.homeHelpOpen === 'boolean' ? value.homeHelpOpen : base.homeHelpOpen,
+    homePlatformOpen: typeof value.homePlatformOpen === 'boolean' ? value.homePlatformOpen : base.homePlatformOpen,
   }
 }
 
@@ -38,6 +40,8 @@ interface UiStateStore {
   flush: () => Promise<void>
   setSelectedLayerId: (value: string) => void
   setKeyLabelMode: (value: KeyLabelMode) => void
+  setHomeHelpOpen: (value: boolean) => void
+  setHomePlatformOpen: (value: boolean) => void
 }
 
 let singleton: UiStateStore | null = null
@@ -110,6 +114,24 @@ export function useUiState(): UiStateStore {
     scheduleSave()
   }
 
+  function setHomeHelpOpen(value: boolean) {
+    if (state.value.homeHelpOpen === value) return
+    state.value = {
+      ...state.value,
+      homeHelpOpen: value,
+    }
+    scheduleSave()
+  }
+
+  function setHomePlatformOpen(value: boolean) {
+    if (state.value.homePlatformOpen === value) return
+    state.value = {
+      ...state.value,
+      homePlatformOpen: value,
+    }
+    scheduleSave()
+  }
+
   singleton = {
     state,
     loaded,
@@ -118,6 +140,8 @@ export function useUiState(): UiStateStore {
     flush,
     setSelectedLayerId,
     setKeyLabelMode,
+    setHomeHelpOpen,
+    setHomePlatformOpen,
   }
   return singleton
 }

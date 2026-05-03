@@ -1,8 +1,18 @@
 <script setup lang="ts">
 const platform = usePlatformInfo()
 const { t } = useI18n()
+const uiState = useUiState()
+const isOpen = computed({
+  get: () => uiState.state.value.homePlatformOpen,
+  set: (value: boolean) => uiState.setHomePlatformOpen(value),
+})
+
+function toggleOpen() {
+  isOpen.value = !isOpen.value
+}
 
 onMounted(() => {
+  if (!uiState.loaded.value) void uiState.load()
   platform.refresh()
 })
 
@@ -104,15 +114,27 @@ const features = computed<FeatureRow[]>(() => {
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-cpu" class="shrink-0 text-(--ui-primary)" />
-        <div>
-          <h2 class="text-sm font-semibold">{{ $t('home.howItWorksTitle') }}</h2>
+      <button
+        type="button"
+        class="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
+        :aria-expanded="isOpen"
+        @click="toggleOpen"
+      >
+        <div class="flex items-center gap-2 min-w-0">
+          <UIcon name="i-lucide-cpu" class="shrink-0 text-(--ui-primary)" />
+          <div class="min-w-0">
+            <h2 class="text-sm font-semibold">{{ $t('home.howItWorksTitle') }}</h2>
+          </div>
         </div>
-      </div>
+        <UIcon
+          :name="isOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+          class="shrink-0 text-(--ui-text-muted)"
+          aria-hidden="true"
+        />
+      </button>
     </template>
 
-    <div class="space-y-3 text-sm">
+    <div v-show="isOpen" class="space-y-3 text-sm">
       <p v-if="platformLabel" class="text-xs text-(--ui-text-muted)">
         {{ platformLabel }}
       </p>

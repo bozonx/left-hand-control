@@ -15,6 +15,8 @@ interface LayoutEditOptions {
   markLayoutSavedAs: (layoutId: string) => Promise<void>;
 }
 
+export type LayoutEditMode = "full" | "name" | "description";
+
 export function useLayoutEdit({
   config,
   currentLayoutId,
@@ -27,6 +29,7 @@ export function useLayoutEdit({
   const editModalOpen = ref(false);
   const editName = ref("");
   const editDescription = ref("");
+  const editMode = ref<LayoutEditMode>("full");
   const editBusy = ref(false);
   const editError = ref<string | null>(null);
   const editPending = ref<LayoutLibraryEntry | null>(null);
@@ -43,8 +46,9 @@ export function useLayoutEdit({
     return null;
   }
 
-  function openEditModal(entry: LayoutLibraryEntry) {
+  function openEditModal(entry: LayoutLibraryEntry, mode: LayoutEditMode = "full") {
     editPending.value = entry;
+    editMode.value = mode;
     editName.value = entry.name;
     editDescription.value =
       currentLayoutId.value === entry.id
@@ -137,6 +141,7 @@ export function useLayoutEdit({
   function closeEditModal() {
     editModalOpen.value = false;
     editPending.value = null;
+    editMode.value = "full";
   }
 
   async function confirmOverwrite() {
@@ -150,6 +155,7 @@ export function useLayoutEdit({
     editModalOpen,
     editName,
     editDescription,
+    editMode,
     editBusy,
     editError,
     editPending,

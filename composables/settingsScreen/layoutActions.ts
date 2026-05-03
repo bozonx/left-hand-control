@@ -1,6 +1,7 @@
 import type { AppConfig, LayoutPreset } from "~/types/config";
 import {
   isUserLayoutId,
+  userLayoutId,
   userLayoutNameFromId,
 } from "~/composables/useLayoutLibrary";
 import { normalizeLayoutName, validateLayoutName } from "~/utils/layoutNames";
@@ -149,7 +150,7 @@ export function useSettingsLayoutActions({
         preset,
         false,
       );
-      await replaceCurrentLayoutSnapshot(preset, savedName);
+      await replaceCurrentLayoutSnapshot(preset, userLayoutId(savedName));
     } catch (error) {
       apply.applyError.value = error instanceof Error ? error.message : String(error);
     } finally {
@@ -171,7 +172,7 @@ export function useSettingsLayoutActions({
         preset,
         false,
       );
-      await replaceCurrentLayoutSnapshot(preset, savedName);
+      await replaceCurrentLayoutSnapshot(preset, userLayoutId(savedName));
     } catch (error) {
       apply.applyError.value = error instanceof Error ? error.message : String(error);
     } finally {
@@ -200,6 +201,7 @@ export function useSettingsLayoutActions({
     editModalOpen: edit.editModalOpen,
     editName: edit.editName,
     editDescription: edit.editDescription,
+    editMode: edit.editMode,
     editBusy: edit.editBusy,
     editError: edit.editError,
     editPending: edit.editPending,

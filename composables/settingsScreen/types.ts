@@ -1,6 +1,7 @@
 import type { AppConfig, AppearancePreference, LocalePreference } from "~/types/config";
 import type { CapabilityStatus } from "~/types/platform";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
+import type { LayoutEditMode } from "./useLayoutEdit";
 
 export interface PendingApply {
   entry: LayoutLibraryEntry;
@@ -56,10 +57,11 @@ export interface SettingsScreenState {
   editModalOpen: Ref<boolean>;
   editName: Ref<string>;
   editDescription: Ref<string>;
+  editMode: Ref<LayoutEditMode>;
   editBusy: Ref<boolean>;
   editError: Ref<string | null>;
   editPending: Ref<LayoutLibraryEntry | null>;
-  openEditModal: (entry: LayoutLibraryEntry) => void;
+  openEditModal: (entry: LayoutLibraryEntry, mode?: LayoutEditMode) => void;
   performEdit: (overwrite?: boolean) => Promise<void>;
   closeEditModal: () => void;
   overwriteConfirmOpen: Ref<boolean>;

@@ -43,11 +43,21 @@ describe("LayoutsLibraryCard", () => {
     await buttons[3]?.trigger("click");
     await buttons[4]?.trigger("click");
     
-    // entries[0] Edit and Delete
+    // entries[0] Rename and description
     await buttons[5]?.trigger("click");
     await buttons[6]?.trigger("click");
 
-    // Click list items opens edit modal (requestEdit)
+    const openButton = wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Open"));
+    await openButton?.trigger("click");
+
+    const deleteButton = wrapper
+      .findAll("button")
+      .find((button) => button.attributes("aria-label") === "Delete");
+    await deleteButton?.trigger("click");
+
+    // Clicking list items does not open edit or apply.
     await listItems[0]?.trigger("click");
     await listItems[1]?.trigger("click");
 
@@ -56,11 +66,10 @@ describe("LayoutsLibraryCard", () => {
     expect(wrapper.emitted("saveAs")).toHaveLength(1);
     expect(wrapper.emitted("saveCurrent")).toHaveLength(1);
     expect(wrapper.emitted("requestReset")).toHaveLength(1);
-    expect(wrapper.emitted("requestApplyEntry")).toBeUndefined();
+    expect(wrapper.emitted("requestApplyEntry")).toEqual([[entries[0]]]);
     expect(wrapper.emitted("requestEdit")).toEqual([
-      [entries[0]],
-      [entries[0]],
-      [entries[1]],
+      [entries[0], "name"],
+      [entries[0], "description"],
     ]);
     expect(wrapper.emitted("requestDelete")).toEqual([[entries[0]]]);
   });
