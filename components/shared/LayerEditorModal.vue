@@ -9,9 +9,15 @@ const open = defineModel<boolean>({ required: true })
 const name = defineModel<string>('name', { required: true })
 const description = defineModel<string>('description', { default: '' })
 
-defineEmits<{
+const emit = defineEmits<{
   confirm: []
 }>()
+
+function confirmShortcut(event: KeyboardEvent) {
+  if (!event.ctrlKey && !event.metaKey) return
+  event.preventDefault()
+  emit('confirm')
+}
 </script>
 
 <template>
@@ -33,7 +39,7 @@ defineEmits<{
             :placeholder="$t('rules.layerDescPh')"
             :rows="3"
             class="w-full"
-            @keydown.enter.prevent="$emit('confirm')"
+            @keydown.enter="confirmShortcut"
           />
         </UFormField>
       </div>

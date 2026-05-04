@@ -3,9 +3,19 @@ const props = withDefaults(defineProps<{
   modelValue?: string
   placeholder?: string
   disabled?: boolean
+  role?: string
+  ariaAutocomplete?: string
+  ariaExpanded?: boolean
+  ariaControls?: string
+  ariaActivedescendant?: string
 }>(), {
   modelValue: '',
   placeholder: undefined,
+  role: undefined,
+  ariaAutocomplete: undefined,
+  ariaExpanded: undefined,
+  ariaControls: undefined,
+  ariaActivedescendant: undefined,
 })
 
 const emit = defineEmits<{
@@ -44,6 +54,11 @@ defineExpose({ focus })
       v-model="model"
       :placeholder="props.placeholder"
       :disabled="props.disabled"
+      :role="props.role"
+      :aria-autocomplete="props.ariaAutocomplete"
+      :aria-expanded="props.ariaExpanded"
+      :aria-controls="props.ariaControls"
+      :aria-activedescendant="props.ariaActivedescendant"
       class="w-full"
       :ui="{ trailing: 'pe-1' }"
       @focus="(e: FocusEvent) => $emit('focus', e)"

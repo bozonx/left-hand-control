@@ -22,7 +22,12 @@ const draft = defineModel<string>({ default: '' })
 
 const showSuggestions = ref(false)
 const inputRef = ref<InstanceType<typeof InputWithClearButton> | null>(null)
+const suggestionsRef = ref<HTMLElement | null>(null)
+const captureButtonRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
 const activeIndex = ref(-1)
+const pickerId = useId()
+const listboxId = `${pickerId}-listbox`
+const dialogTitleId = `${pickerId}-capture-title`
 
 const captureActive = ref(false)
 const pressedCaptureKeys = ref<Set<string>>(new Set())
@@ -40,6 +45,8 @@ const textDraft = computed({
 })
 
 let focusoutTimer: ReturnType<typeof setTimeout> | null = null
+
+const activeDescendantId = computed(() => activeIndex.value >= 0 ? `${pickerId}-option-${activeIndex.value}` : undefined)
 
 const MODIFIER_CODES = new Set([
   'ControlLeft',
@@ -107,14 +114,32 @@ function stopCapture() {
   resetCaptureState()
 }
 
+function focusCaptureButton() {
+  nextTick(() => {
+    const refValue = captureButtonRef.value
+    const root = refValue instanceof HTMLElement ? refValue : refValue?.$el
+    if (!(root instanceof HTMLElement)) return
+    const element = root.matches('button, [href], input, select, textarea, [tabindex]')
+      ? root
+      : root.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]')
+    element?.focus()
+  })
+}
+
 function cancelCapture() {
   draft.value = captureOriginalDraft.value
   resetCaptureState()
+  focusCaptureButton()
 }
 
 function commitCapture(value: string) {
   draft.value = value
   resetCaptureState()
+  nextTick(() => {
+    showSuggestions.value = false
+    activeIndex.value = -1
+  })
+  focusCaptureButton()
 }
 
 function selectItem(item: ActionItem) {
@@ -254,7 +279,7 @@ watch(activeIndex, (idx) => {
       inputRef.value?.focus()
       return
     }
-    const btn = document.querySelector(`[data-suggestion-index="${idx}"]`) as HTMLButtonElement | null
+    const btn = suggestionsRef.value?.querySelector<HTMLButtonElement>(`[data-suggestion-index="${idx}"]`)
     btn?.focus()
     btn?.scrollIntoView({ block: 'nearest' })
   })
@@ -291,10 +316,16 @@ onBeforeUnmount(() => {
             v-model="draft"
             :placeholder="$t('picker.valuePh')"
             class="w-full font-mono"
+            role="combobox"
+            aria-autocomplete="list"
+            :aria-expanded="showSuggestions"
+            :aria-controls="listboxId"
+            :aria-activedescendant="activeDescendantId"
             @focus="onInputFocus"
             @keydown="handleInputKeydown"
           />
           <UButton
+            ref="captureButtonRef"
             icon="i-lucide-keyboard"
             color="neutral"
             variant="subtle"
@@ -307,6 +338,9 @@ onBeforeUnmount(() => {
         </div>
         <div
           v-if="showSuggestions"
+          :id="listboxId"
+          ref="suggestionsRef"
+          role="listbox"
           class="absolute z-20 left-0 right-0 top-full mt-1 max-h-80 overflow-y-auto rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) shadow-lg p-1 space-y-0.5"
         >
           <div
@@ -317,8 +351,11 @@ onBeforeUnmount(() => {
           </div>
           <button
             v-for="(item, index) in filteredItems"
+            :id="`${pickerId}-option-${index}`"
             :key="item.value"
             type="button"
+            role="option"
+            :aria-selected="draft === item.value"
             :data-suggestion-index="index"
             class="w-full text-left px-2.5 py-1.5 rounded-md border text-sm transition-colors hover:bg-(--ui-bg-elevated) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-primary) focus-visible:ring-offset-1 focus-visible:ring-offset-(--ui-bg-elevated)"
             :class="[
@@ -375,6 +412,7 @@ onBeforeUnmount(() => {
           data-testid="key-capture-overlay"
           role="dialog"
           aria-modal="true"
+          :aria-labelledby="dialogTitleId"
           @pointerdown="stopOverlayPointer"
           @pointerup="stopOverlayPointer"
           @mousedown="stopOverlayPointer"
@@ -394,7 +432,7 @@ onBeforeUnmount(() => {
                 <UIcon name="i-lucide-keyboard" class="h-5 w-5" />
               </div>
               <div class="min-w-0 flex-1">
-                <h3 class="text-sm font-semibold">{{ $t('picker.listeningKeys') }}</h3>
+                <h3 :id="dialogTitleId" class="text-sm font-semibold">{{ $t('picker.listeningKeys') }}</h3>
                 <p class="mt-1 text-sm text-(--ui-text-muted)">
                   {{ $t('picker.pressEscapeToStop') }}
                 </p>

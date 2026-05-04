@@ -46,6 +46,12 @@ function stopDescriptionEditing() {
   saveDescription(descriptionDraft.value)
   isDescriptionEditing.value = false
 }
+
+function stopDescriptionEditingShortcut(event: KeyboardEvent) {
+  if (!event.ctrlKey && !event.metaKey) return
+  event.preventDefault()
+  stopDescriptionEditing()
+}
 </script>
 
 <template>
@@ -124,7 +130,7 @@ function stopDescriptionEditing() {
         :placeholder="$t('rules.layerDescPh')"
         class="w-full"
         @blur="stopDescriptionEditing"
-        @keydown.enter.prevent="stopDescriptionEditing"
+        @keydown.enter="stopDescriptionEditingShortcut"
       />
       <button
         v-else

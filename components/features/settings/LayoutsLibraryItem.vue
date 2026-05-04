@@ -147,17 +147,14 @@ const description = computed(() => {
               {{ $t("settings.unsavedBadge") }}
             </UBadge>
           </div>
-          <div
+          <button
             v-if="description"
-            class="text-sm text-(--ui-text-muted) line-clamp-2 mt-0.5 cursor-text hover:text-(--ui-text)"
-            role="button"
-            tabindex="0"
+            type="button"
+            class="mt-0.5 line-clamp-2 w-full cursor-text rounded-sm text-left text-sm text-(--ui-text-muted) hover:text-(--ui-text) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-primary) focus-visible:ring-offset-2 focus-visible:ring-offset-(--ui-bg)"
             @click="$emit('requestEditDescription', entry)"
-            @keydown.enter="$emit('requestEditDescription', entry)"
-            @keydown.space.prevent="$emit('requestEditDescription', entry)"
           >
             {{ description }}
-          </div>
+          </button>
           <UButton
             v-else
             color="neutral"
