@@ -26,9 +26,9 @@ export interface AutoSwitchContext {
 }
 
 // Returns true when a condition set matches the current context.
-// An empty set (no `gameMode` and no `layouts`) is considered a no-op
-// and **does not match** by itself — the caller decides what to do
-// with an absent set.
+// An empty set is a no-op and matches by itself. Empty sets are normally
+// cleaned up before persistence, so callers mostly see them in tests or
+// transient UI drafts.
 export function matchesConditionSet(
   set: LayoutConditionSet,
   ctx: AutoSwitchContext,

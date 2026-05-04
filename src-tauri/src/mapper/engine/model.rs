@@ -67,6 +67,7 @@ pub(super) enum MacroPhase {
     StrokeModDelayRelease(Keystroke),
 }
 
+#[derive(Clone)]
 pub(super) enum Phase {
     /// Waiting to decide between tap and hold (key is still down).
     WaitingDecision { deadline: Instant },
@@ -77,7 +78,9 @@ pub(super) enum Phase {
     WaitingSecond { deadline: Instant },
 }
 
+#[derive(Clone)]
 pub(super) struct Pending {
+    pub(super) rule: RuleEntry,
     pub(super) phase: Phase,
 }
 

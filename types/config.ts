@@ -127,8 +127,8 @@ export const LAYOUT_MODE_AUTO = 'auto' as const
 
 // A single condition set used as a whitelist or blacklist for a layout.
 // Missing `gameMode` means "do not check"; empty `layouts` means
-// "do not check layouts". A condition set is considered "empty" (no-op)
-// when neither `gameMode` is set nor `layouts` contains items.
+// "do not check layouts". Empty `apps` means "do not check apps". A
+// condition set is considered "empty" (no-op) when no fields constrain it.
 export interface LayoutConditionSet {
   gameMode?: 'on' | 'off'
   layouts: string[]

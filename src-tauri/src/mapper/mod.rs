@@ -48,6 +48,7 @@ static STATE: Mutex<MapperRuntime<OsBackend>> = Mutex::new(MapperRuntime::new(Os
 
 trait BackendHandle: Send {
     fn stop(self: Box<Self>);
+    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String>;
     fn last_error(&self) -> Option<String>;
     fn reap_if_finished(&mut self) -> bool;
 }
@@ -131,6 +132,18 @@ impl<B: MapperBackend> MapperRuntime<B> {
         Err("mapper is not running".into())
     }
 
+    fn update_config(&mut self, cfg: config::AppConfig) -> Result<(), String> {
+        let Some(handle) = self.handle.as_mut() else {
+            return Err("mapper is not running".into());
+        };
+        if handle.reap_if_finished() {
+            self.handle = None;
+            self.status.running = false;
+            return Err("mapper is not running".into());
+        }
+        handle.update_config(cfg)
+    }
+
     fn status(&mut self) -> MapperStatus {
         if let Some(handle) = self.handle.as_mut() {
             let err = handle.last_error();
@@ -151,6 +164,10 @@ impl<B: MapperBackend> MapperRuntime<B> {
 impl BackendHandle for linux::Handle {
     fn stop(self: Box<Self>) {
         (*self).stop();
+    }
+
+    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String> {
+        self.update_config(cfg)
     }
 
     fn last_error(&self) -> Option<String> {
@@ -276,6 +293,14 @@ pub fn stop() -> Result<(), String> {
     lock_state().stop()
 }
 
+pub fn update_config(config_json: &str) -> Result<(), String> {
+    let cfg: config::AppConfig =
+        serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
+    #[cfg(target_os = "linux")]
+    validation::validate_config(&cfg)?;
+    lock_state().update_config(cfg)
+}
+
 pub fn status() -> MapperStatus {
     lock_state().status()
 }
@@ -309,6 +334,10 @@ mod tests {
             if let Ok(mut slot) = self.stop_called.lock() {
                 *slot = true;
             }
+        }
+
+        fn update_config(&self, _cfg: AppConfig) -> Result<(), String> {
+            Ok(())
         }
 
         fn last_error(&self) -> Option<String> {

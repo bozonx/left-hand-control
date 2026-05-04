@@ -156,6 +156,16 @@ fn stop_mapper() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn update_mapper_config(config_json: String) -> Result<(), String> {
+    eprintln!("[cmd] update_mapper_config");
+    let r = mapper::update_config(&config_json);
+    if let Err(e) = &r {
+        eprintln!("[cmd] update_mapper_config ERR: {e}");
+    }
+    r
+}
+
+#[tauri::command]
 fn mapper_status() -> mapper::MapperStatus {
     mapper::status()
 }
@@ -243,6 +253,7 @@ pub fn run() {
             list_mice,
             start_mapper,
             stop_mapper,
+            update_mapper_config,
             mapper_status,
             get_current_layout,
             get_system_layouts,

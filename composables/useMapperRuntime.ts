@@ -9,6 +9,7 @@ export function useMapperRuntime(
     busy: Ref<boolean>
     invokeStart: (devicePath: string, mouseDevicePath?: string) => Promise<void>
     invokeStop: () => Promise<void>
+    invokeUpdateConfig: (config: AppConfig) => Promise<void>
   },
 ) {
   const { config } = useConfig()
@@ -31,6 +32,9 @@ export function useMapperRuntime(
     let preset = emptyLayoutPreset()
     if (activeId) {
       const loaded = await library.loadPreset(activeId)
+      if (!loaded) {
+        throw new Error(`Active layout could not be loaded: ${activeId}`)
+      }
       if (loaded) preset = loaded
     }
     return applyPresetToConfig(config.value, preset, activeId)
@@ -91,14 +95,15 @@ export function useMapperRuntime(
       return
     }
 
-    const nextRuntimeSnapshot = await runtimeSnapshot()
-    if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
-
     deps.busy.value = true
     try {
-      await deps.invokeStop()
-      await deps.invokeStart(devicePath, mouseDevicePath)
+      const nextRuntimeSnapshot = await runtimeSnapshot()
+      if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
+      const nextConfig = await computeActiveConfig()
+      await deps.invokeUpdateConfig(nextConfig)
       lastRuntimeSnapshot = nextRuntimeSnapshot
+    } catch (error) {
+      console.error('Mapper live config update failed:', error)
     } finally {
       deps.busy.value = false
       if (reloadPending) {

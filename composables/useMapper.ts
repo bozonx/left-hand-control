@@ -7,6 +7,7 @@ import {
   resetMapperDevicesState,
 } from '~/composables/useMapperDevices'
 import { useMapperRuntime } from '~/composables/useMapperRuntime'
+import type { AppConfig } from '~/types/config'
 
 export interface KeyboardDevice {
   path: string
@@ -106,6 +107,22 @@ export function useMapper(): MapperState {
     }
   }
 
+  async function invokeUpdateConfig(activeConfig: AppConfig) {
+    const tauri = await useTauri()
+    if (!tauri) return
+    try {
+      await flush()
+      await tauri.invoke('update_mapper_config', {
+        configJson: JSON.stringify(activeConfig),
+      })
+      error.value = null
+      await refreshStatus()
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : String(e)
+      throw e
+    }
+  }
+
   async function stop() {
     busy.value = true
     try {
@@ -120,6 +137,7 @@ export function useMapper(): MapperState {
     busy,
     invokeStart,
     invokeStop,
+    invokeUpdateConfig,
   })
   resetRuntime = runtime.resetState
   runtime.initSnapshot()

@@ -17,7 +17,6 @@ use tauri::AppHandle;
 use super::LayoutInfo;
 
 pub fn current() -> Result<Option<LayoutInfo>, String> {
-    eprintln!("[layout/x11] not implemented yet");
     Ok(None)
 }
 

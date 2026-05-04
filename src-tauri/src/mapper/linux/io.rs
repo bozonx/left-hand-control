@@ -301,9 +301,8 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
     if buf.is_empty() {
         return Ok(());
     }
-    // We emit in chunks: most Out variants go into a single atomic batch, but
-    // RunMacro needs to sleep between steps so we flush what we've got, run
-    // the macro with blocking sleeps, and continue with a fresh batch.
+    // We emit in chunks: most Out variants go into a single atomic batch, while
+    // chords, literals, and side effects need ordered flush boundaries.
     let mut events: Vec<InputEvent> = Vec::with_capacity(buf.len() * 3);
 
     fn flush_events<S: EventSink>(
@@ -497,4 +496,3 @@ fn call_dbus(call: &DbusCall) {
         }
     }
 }
-

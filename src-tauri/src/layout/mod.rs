@@ -94,7 +94,7 @@ pub fn cached_layout_short() -> Option<String> {
         use crate::platform::linux::{detect, Desktop};
         match detect().desktop {
             Desktop::Kde => linux_kde::cached_layout_short(),
-            _ => None,
+            _ => current().ok().flatten().map(|info| info.short),
         }
     }
     #[cfg(not(target_os = "linux"))]

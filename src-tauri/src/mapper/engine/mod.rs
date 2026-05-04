@@ -53,11 +53,10 @@ use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
 pub struct Engine {
-    rules: HashMap<Key, RuleEntry>,
+    rules: HashMap<Key, Vec<RuleEntry>>,
     /// layer_id -> (physical_key -> resolved action)
     layer_maps: HashMap<String, HashMap<Key, ActionDef>>,
     default_hold: Duration,
-    default_double_tap: Duration,
     default_mod_delay: Duration,
 
     /// Stack of currently active layers (top = highest priority).
@@ -215,11 +214,10 @@ impl Engine {
             self.commit_hold(k, out);
         }
         for k in expired_second {
-            self.pending.remove(&k);
+            let pending = self.pending.remove(&k);
             eprintln!("[mapper] dtap-window expired -> tap (key={:?})", k);
-            let tap = self.rules.get(&k).map(|r| r.tap.clone());
-            if let Some(tap) = tap {
-                self.fire_tap(k, &tap, Instant::now(), out);
+            if let Some(pending) = pending {
+                self.fire_tap(k, &pending.rule.tap, Instant::now(), out);
             }
         }
     }
@@ -231,18 +229,7 @@ impl Engine {
             return;
         }
 
-        if down {
-            let is_active = if let Some(rule) = self.rules.get(&key) {
-                rule_passes_apps(rule) && rule_passes_legacy(rule)
-            } else {
-                true
-            };
-
-            if !is_active {
-                out.push(Out::KeyRaw { key, down });
-                return;
-            }
-        } else {
+        if !down {
             if !self.pending.contains_key(&key)
                 && !self.emitted.contains_key(&key)
                 && !self.macro_consumed.contains(&key)
@@ -272,9 +259,9 @@ impl Engine {
             self.pending.get(&key).map(|p| &p.phase),
             Some(Phase::WaitingSecond { .. })
         ) {
-            self.pending.remove(&key);
+            let pending = self.pending.remove(&key);
             eprintln!("[mapper] double-tap fired (key={:?})", key);
-            let dtap = self.rules.get(&key).and_then(|r| r.double_tap.clone());
+            let dtap = pending.and_then(|p| p.rule.double_tap);
             self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
             // The matching release must not emit anything (fire-and-forget).
             self.macro_consumed.insert(key);
@@ -292,13 +279,14 @@ impl Engine {
         self.flush_waiting_second(out);
 
         if self.active_layers.is_empty() {
-            if let Some(rule) = self.rules.get(&key).cloned() {
+            if let Some(rule) = self.active_rule_for_key(key) {
                 // Fast path: no tap action, no double-tap → commit hold
                 // immediately without the decision wait.
                 if matches!(rule.tap, TapMode::Swallow) && rule.double_tap.is_none() {
                     self.pending.insert(
                         key,
                         Pending {
+                            rule: rule.clone(),
                             phase: Phase::HoldActive,
                         },
                     );
@@ -306,14 +294,21 @@ impl Engine {
                     return;
                 }
                 // Otherwise wait to decide between tap and hold.
+                let hold_timeout = rule.hold_timeout;
                 self.pending.insert(
                     key,
                     Pending {
+                        rule,
                         phase: Phase::WaitingDecision {
-                            deadline: now + rule.hold_timeout,
+                            deadline: now + hold_timeout,
                         },
                     },
                 );
+                return;
+            }
+            if self.rules.contains_key(&key) {
+                out.push(Out::KeyRaw { key, down: true });
+                self.emitted.insert(key, Keystroke { mods: vec![], key });
                 return;
             }
         }
@@ -436,25 +431,18 @@ impl Engine {
             }
         }
 
-        if let Some(pending) = self.pending.get(&key) {
+        if let Some(pending) = self.pending.get(&key).cloned() {
             match pending.phase {
                 Phase::HoldActive => {
                     self.pending.remove(&key);
-                    self.release_hold(key, out);
+                    self.release_hold_with(&pending.rule, key, out);
                 }
                 Phase::WaitingDecision { .. } => {
                     // Short press. If double-tap is configured, delay the
                     // tap by double_tap_window to see if a second press
                     // follows; otherwise fire tap immediately.
-                    let rule_opt = self.rules.get(&key).cloned();
-                    let has_dtap = rule_opt
-                        .as_ref()
-                        .and_then(|r| r.double_tap.as_ref())
-                        .is_some();
-                    let rule_window = rule_opt
-                        .as_ref()
-                        .map(|r| r.double_tap_window)
-                        .unwrap_or(self.default_double_tap);
+                    let has_dtap = pending.rule.double_tap.is_some();
+                    let rule_window = pending.rule.double_tap_window;
                     if has_dtap {
                         if let Some(p) = self.pending.get_mut(&key) {
                             p.phase = Phase::WaitingSecond {
@@ -463,9 +451,7 @@ impl Engine {
                         }
                     } else {
                         self.pending.remove(&key);
-                        if let Some(rule) = rule_opt {
-                            self.fire_tap(key, &rule.tap, now, out);
-                        }
+                        self.fire_tap(key, &pending.rule.tap, now, out);
                     }
                 }
                 Phase::WaitingSecond { .. } => {
@@ -549,6 +535,15 @@ impl Engine {
         None
     }
 
+    fn active_rule_for_key(&self, key: Key) -> Option<RuleEntry> {
+        self.rules.get(&key).and_then(|rules| {
+            rules
+                .iter()
+                .find(|rule| rule_passes_apps(rule) && rule_passes_legacy(rule))
+                .cloned()
+        })
+    }
+
     fn should_handle_mouse_button(&self, key: Key, down: bool) -> bool {
         if !down
             && (self.pending.contains_key(&key)
@@ -595,15 +590,12 @@ impl Engine {
     /// Commit a pending rule to HoldActive and emit the corresponding
     /// press side-effect (layer push, native key-down, keystroke-down).
     fn commit_hold(&mut self, key: Key, out: &mut Vec<Out>) {
-        let Some(rule) = self.rules.get(&key).cloned() else {
-            self.pending.remove(&key);
+        let Some(p) = self.pending.get_mut(&key) else {
             return;
         };
-        if let Some(p) = self.pending.get_mut(&key) {
+        let rule = p.rule.clone();
+        {
             p.phase = Phase::HoldActive;
-        } else {
-            // Shouldn't happen — commit is always from a pending entry.
-            return;
         }
         self.commit_hold_with(&rule, key, out);
     }
@@ -629,10 +621,7 @@ impl Engine {
     }
 
     /// Undo whatever `commit_hold_with` did for this rule key.
-    fn release_hold(&mut self, key: Key, out: &mut Vec<Out>) {
-        let Some(rule) = self.rules.get(&key).cloned() else {
-            return;
-        };
+    fn release_hold_with(&mut self, rule: &RuleEntry, key: Key, out: &mut Vec<Out>) {
         if let Some(id) = &rule.layer_id {
             eprintln!("[mapper] layer- {id} (key={:?})", key);
             if let Some(triggers) = self.layer_triggers.get_mut(id) {
@@ -706,11 +695,10 @@ impl Engine {
             .map(|(k, _)| *k)
             .collect();
         for k in keys {
-            self.pending.remove(&k);
+            let pending = self.pending.remove(&k);
             eprintln!("[mapper] dtap-window flushed -> tap (key={:?})", k);
-            let tap = self.rules.get(&k).map(|r| r.tap.clone());
-            if let Some(tap) = tap {
-                self.fire_tap(k, &tap, Instant::now(), out);
+            if let Some(pending) = pending {
+                self.fire_tap(k, &pending.rule.tap, Instant::now(), out);
             }
         }
     }
@@ -1198,6 +1186,56 @@ mod tests {
         crate::active_window::set_cached_for_test(None);
         let rule = rule_with_apps(None, None);
         assert!(rule_passes_apps(&rule));
+    }
+
+    #[test]
+    fn duplicate_key_rules_use_first_matching_condition() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::active_window::set_cached_for_test(None);
+
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: Some(vec!["firefox".into()]),
+            condition_apps_blacklist: None,
+            id: "blocked".into(),
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("KeyA".into()),
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            id: "fallback".into(),
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("KeyB".into()),
+            hold_action: ActionSpec::Native,
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
+
+        assert!(matches!(
+            out.as_slice(),
+            [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_B
+        ));
+        crate::active_window::set_cached_for_test(None);
     }
 
     #[test]

@@ -22,6 +22,7 @@ const START_TIMEOUT: Duration = Duration::from_secs(5);
 /// Handle to a running mapper thread.
 pub struct Handle {
     stop: Arc<AtomicBool>,
+    config_tx: mpsc::Sender<AppConfig>,
     join: Option<thread::JoinHandle<()>>,
     error: Arc<Mutex<Option<String>>>,
 }
@@ -43,6 +44,12 @@ impl Handle {
 
     pub fn last_error(&self) -> Option<String> {
         self.error.lock().ok().and_then(|g| g.clone())
+    }
+
+    pub fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
+        self.config_tx
+            .send(cfg)
+            .map_err(|e| format!("mapper update channel closed: {e}"))
     }
 
     pub fn reap_if_finished(&mut self) -> bool {
@@ -88,11 +95,12 @@ pub fn spawn(
     let stop_thread = stop.clone();
     let err_thread = error.clone();
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
+    let (config_tx, config_rx) = mpsc::channel::<AppConfig>();
 
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run(device_path, mouse_path, cfg, stop_thread, ready_tx) {
+            if let Err(e) = run(device_path, mouse_path, cfg, stop_thread, ready_tx, config_rx) {
                 eprintln!("[mapper] run_loop error: {e}");
                 if let Ok(mut slot) = err_thread.lock() {
                     *slot = Some(e);
@@ -120,6 +128,7 @@ pub fn spawn(
 
     Ok(Handle {
         stop,
+        config_tx,
         join: Some(join),
         error,
     })
@@ -131,6 +140,7 @@ fn run(
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
     ready_tx: mpsc::Sender<Result<(), String>>,
+    config_rx: mpsc::Receiver<AppConfig>,
 ) -> Result<(), String> {
     let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
     device
@@ -161,7 +171,7 @@ fn run(
 
     let driver = MultiDeviceLoopDriver::new(devices)?;
     let _ = ready_tx.send(Ok(()));
-    run_loop(driver, virt, cfg, stop)
+    run_loop(driver, virt, cfg, stop, config_rx)
 }
 
 fn run_loop<D: LoopDriver>(
@@ -169,11 +179,22 @@ fn run_loop<D: LoopDriver>(
     mut virt: VirtualDevice,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
+    config_rx: mpsc::Receiver<AppConfig>,
 ) -> Result<(), String> {
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
 
     while !stop.load(Ordering::SeqCst) {
+        while let Ok(next_cfg) = config_rx.try_recv() {
+            eprintln!(
+                "[mapper] live config update: rules={} layers={}",
+                next_cfg.rules.len(),
+                next_cfg.layer_keymaps.len()
+            );
+            engine.shutdown(&mut out_buf);
+            flush_out(&mut virt, &mut out_buf)?;
+            engine = Engine::new(&next_cfg);
+        }
         process_iteration(&mut driver, &mut engine, &mut virt, &mut out_buf)?;
     }
 
@@ -185,7 +206,7 @@ fn run_loop<D: LoopDriver>(
 #[cfg(test)]
 mod tests {
     use super::{flush_out_with, process_iteration_with, EventSink, LoopDriver, SideEffects};
-    use crate::mapper::action::{Keystroke, MacroStepItem};
+    use crate::mapper::action::Keystroke;
     use crate::mapper::config::{ActionSpec, AppConfig, Rule, Settings};
     use crate::mapper::engine::{Engine, Out};
     use crate::mapper::system::{DbusArg, DbusCall, SysAction, SysCommand};
@@ -306,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn flush_out_routes_key_batches_macros_literals_and_systems() {
+    fn flush_out_routes_key_batches_literals_and_systems() {
         let mut sink = FakeSink::default();
         let mut effects = FakeEffects::default();
         let mut buf = vec![
@@ -315,23 +336,11 @@ mod tests {
                 down: true,
             },
             Out::ReleaseMods(vec![Key::KEY_LEFTSHIFT]),
-            Out::RunMacro {
-                steps: vec![
-                    MacroStepItem::Stroke(Keystroke {
-                        mods: vec![Key::KEY_LEFTCTRL],
-                        key: Key::KEY_C,
-                    }),
-                    MacroStepItem::Literal("x".into()),
-                    MacroStepItem::System(SysAction::Spawn(SysCommand {
-                        program: "spectacle".into(),
-                        args: vec!["-r".into()],
-                    })),
-                    MacroStepItem::Command(SysCommand {
-                        program: "sh".into(),
-                        args: vec!["-lc".into(), "playerctl play-pause".into()],
-                    }),
-                ],
-                step_pause: Duration::from_millis(5),
+            Out::Stroke {
+                ks: Keystroke {
+                    mods: vec![Key::KEY_LEFTCTRL],
+                    key: Key::KEY_C,
+                },
                 mod_delay: Duration::from_millis(2),
             },
             Out::Literal("tail".into()),
@@ -370,28 +379,16 @@ mod tests {
         );
         assert_eq!(
             effects.sleeps,
-            vec![
-                Duration::from_millis(2),
-                Duration::from_millis(2),
-                Duration::from_millis(5),
-                Duration::from_millis(5),
-                Duration::from_millis(5),
-            ]
+            vec![Duration::from_millis(2), Duration::from_millis(2)]
         );
-        assert_eq!(effects.texts, vec!["x".to_string(), "tail".to_string()]);
+        assert_eq!(effects.texts, vec!["tail".to_string()]);
         assert_eq!(
             effects.systems,
-            vec![
-                "spawn:spectacle:[\"-r\"]".to_string(),
-                "dbus:org.test:Fire:1".to_string()
-            ]
+            vec!["dbus:org.test:Fire:1".to_string()]
         );
         assert_eq!(
             effects.commands,
-            vec![
-                "cmd:sh:[\"-lc\", \"playerctl play-pause\"]".to_string(),
-                "cmd:sh:[\"-lc\", \"notify-send done\"]".to_string(),
-            ]
+            vec!["cmd:sh:[\"-lc\", \"notify-send done\"]".to_string()]
         );
     }
 

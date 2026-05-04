@@ -17,7 +17,6 @@ use tauri::AppHandle;
 use super::LayoutInfo;
 
 pub fn current() -> Result<Option<LayoutInfo>, String> {
-    eprintln!("[layout/sway] not implemented yet");
     Ok(None)
 }
 

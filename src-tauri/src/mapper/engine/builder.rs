@@ -303,9 +303,10 @@ impl Engine {
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_double_tap);
 
-            rules.insert(
-                key,
-                RuleEntry {
+            rules
+                .entry(key)
+                .or_insert_with(Vec::new)
+                .push(RuleEntry {
                     tap,
                     layer_id,
                     hold,
@@ -316,8 +317,7 @@ impl Engine {
                     condition_layouts: r.condition_layouts.clone(),
                     condition_apps_whitelist: r.condition_apps_whitelist.clone(),
                     condition_apps_blacklist: r.condition_apps_blacklist.clone(),
-                },
-            );
+                });
         }
 
         let mut layer_maps: HashMap<String, HashMap<Key, ActionDef>> = HashMap::new();
@@ -373,7 +373,6 @@ impl Engine {
             rules,
             layer_maps,
             default_hold,
-            default_double_tap,
             default_mod_delay,
             active_layers: Vec::new(),
             pending: HashMap::new(),
