@@ -23,7 +23,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="grid grid-cols-[2rem_minmax(12rem,1fr)_auto_auto_auto] gap-2 items-center p-1 rounded-md transition-all duration-200"
+    class="group grid grid-cols-[2rem_minmax(12rem,1fr)_auto] gap-2 items-center p-1 rounded-md transition-all duration-200"
     :class="[
       selected
         ? 'border border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
@@ -41,7 +41,7 @@ const emit = defineEmits<{
         :excluded-macro-id="macroId"
         :placeholder="$t('macros.stepPh')"
         :invalid="!!stepError?.(step)"
-        @update:model-value="(v: string) => emit('update:step', { ...step, keystroke: v })"
+        @update:model-value="(v: string | null) => emit('update:step', { ...step, keystroke: v ?? '' })"
       />
       <p
         v-if="stepWarning?.(step) && !stepError?.(step)"
@@ -50,40 +50,42 @@ const emit = defineEmits<{
         {{ stepWarning(step) }}
       </p>
     </UFormField>
-    <AppTooltip :text="$t('common.moveUp')">
-      <UButton
-        icon="i-lucide-chevron-up"
-        size="xs"
-        variant="ghost"
-        color="neutral"
-        square
-        :disabled="isFirst"
-        :aria-label="$t('macros.moveUp')"
-        @click="emit('moveUp')"
-      />
-    </AppTooltip>
-    <AppTooltip :text="$t('common.moveDown')">
-      <UButton
-        icon="i-lucide-chevron-down"
-        size="xs"
-        variant="ghost"
-        color="neutral"
-        square
-        :disabled="isLast"
-        :aria-label="$t('macros.moveDown')"
-        @click="emit('moveDown')"
-      />
-    </AppTooltip>
-    <AppTooltip :text="$t('macros.deleteStep')">
-      <UButton
-        icon="i-lucide-trash-2"
-        size="xs"
-        variant="ghost"
-        color="error"
-        square
-        :aria-label="$t('macros.deleteStep')"
-        @click="emit('askRemove', step.id)"
-      />
-    </AppTooltip>
+    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+      <AppTooltip :text="$t('common.moveUp')">
+        <UButton
+          icon="i-lucide-chevron-up"
+          size="xs"
+          variant="ghost"
+          color="neutral"
+          square
+          :disabled="isFirst"
+          :aria-label="$t('macros.moveUp')"
+          @click="emit('moveUp')"
+        />
+      </AppTooltip>
+      <AppTooltip :text="$t('common.moveDown')">
+        <UButton
+          icon="i-lucide-chevron-down"
+          size="xs"
+          variant="ghost"
+          color="neutral"
+          square
+          :disabled="isLast"
+          :aria-label="$t('macros.moveDown')"
+          @click="emit('moveDown')"
+        />
+      </AppTooltip>
+      <AppTooltip :text="$t('macros.deleteStep')">
+        <UButton
+          icon="i-lucide-trash-2"
+          size="xs"
+          variant="ghost"
+          color="error"
+          square
+          :aria-label="$t('macros.deleteStep')"
+          @click="emit('askRemove', step.id)"
+        />
+      </AppTooltip>
+    </div>
   </div>
 </template>

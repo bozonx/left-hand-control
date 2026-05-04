@@ -43,6 +43,10 @@ export function useKeymapEditor() {
     requestClearSelectedLayer: layerOps.requestClearSelectedLayer,
     cancelClearSelectedLayer: layerOps.cancelClearSelectedLayer,
     clearSelectedLayer: layerOps.clearSelectedLayer,
+    clearExtrasConfirmOpen: layerOps.clearExtrasConfirmOpen,
+    requestClearExtras: layerOps.requestClearExtras,
+    cancelClearExtras: layerOps.cancelClearExtras,
+    clearSelectedExtras: layerOps.clearSelectedExtras,
     newLayerOpen: layerOps.newLayerOpen,
     newLayerName: layerOps.newLayerName,
     newLayerDescription: layerOps.newLayerDescription,
@@ -50,6 +54,7 @@ export function useKeymapEditor() {
     confirmNewLayer: layerOps.confirmNewLayer,
     cloneLayerOpen: layerOps.cloneLayerOpen,
     cloneDraftName: layerOps.cloneDraftName,
+    cloneDraftDescription: layerOps.cloneDraftDescription,
     openCloneLayer: layerOps.openCloneLayer,
     confirmCloneLayer: layerOps.confirmCloneLayer,
   }

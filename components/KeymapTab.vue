@@ -36,6 +36,10 @@ const {
   requestClearSelectedLayer,
   cancelClearSelectedLayer,
   clearSelectedLayer,
+  clearExtrasConfirmOpen,
+  requestClearExtras,
+  cancelClearExtras,
+  clearSelectedExtras,
   newLayerOpen,
   newLayerName,
   newLayerDescription,
@@ -43,6 +47,7 @@ const {
   confirmNewLayer,
   cloneLayerOpen,
   cloneDraftName,
+  cloneDraftDescription,
   openCloneLayer,
   confirmCloneLayer,
 } = useKeymapEditor()
@@ -87,6 +92,7 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
           @move-up="(id) => moveExtra(id, 'up')"
           @move-down="(id) => moveExtra(id, 'down')"
           @remove="removeExtra"
+          @clear-all="requestClearExtras"
         />
       </div>
     </template>
@@ -136,6 +142,7 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
     <LayerEditorModal
       v-model="cloneLayerOpen"
       v-model:name="cloneDraftName"
+      v-model:description="cloneDraftDescription"
       :title="$t('keymap.cloneLayerTitle')"
       :confirm-label="$t('common.duplicate')"
       :name-placeholder="$t('rules.layerNamePh')"
@@ -205,6 +212,35 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
             color="error"
             icon="i-lucide-eraser"
             @click="clearSelectedLayer"
+          >
+            {{ $t('common.clear') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="clearExtrasConfirmOpen"
+      :title="$t('keymap.clearExtrasTitle')"
+    >
+      <template #body>
+        <p class="text-sm">
+          {{ $t('keymap.clearExtrasBody') }}
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="cancelClearExtras"
+          >
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            icon="i-lucide-eraser"
+            @click="clearSelectedExtras"
           >
             {{ $t('common.clear') }}
           </UButton>

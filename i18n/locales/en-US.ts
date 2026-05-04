@@ -325,9 +325,12 @@ export default {
     swallowLabel: "Ignore",
     clearLayerTitle: "Clear layer",
     clearLayerBody:
-      "This will remove all key bindings and extra keys for this layer.",
+      "This will remove all key bindings for this layer.",
     layerCleared: "Layer cleared",
     undoClear: "Undo",
+    clearExtrasTitle: "Clear extra keys",
+    clearExtrasBody: "All extra keys will be removed.",
+    extrasCleared: "Extra keys cleared",
   },
   macros: {
     title: "User macros",
@@ -446,9 +449,7 @@ export default {
       "The mapper reads events directly from {input} and emits via {uinput}. You need access to those devices — see README (group {group} and a udev rule for {uinputDev}).",
     generalTitle: "General",
     behaviorTitle: "Global behavior defaults",
-    appearance: "Appearance",
-    appearanceHint:
-      '"Use system" mode follows the OS {pref} and switches automatically. Currently the {mode} theme is active.',
+    appearance: "Theme",
     appearanceLight: "light",
     appearanceDark: "dark",
     appearanceItems: {
@@ -457,8 +458,6 @@ export default {
       dark: "Dark",
     },
     language: "Language",
-    languageHint:
-      'Interface language. "Auto" picks a language similar to the system one, falling back to English.',
     languageAuto: "Auto (system)",
     languageAutoResolved: "Auto (system → {resolved})",
     launchOnStartup: "Launch on startup",

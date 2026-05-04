@@ -128,7 +128,7 @@ async function copyMacroId() {
                 size="sm"
                 color="neutral"
                 variant="ghost"
-                class="shrink-0 opacity-70 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+                class="shrink-0 opacity-70 transition-opacity"
                 :aria-label="$t('macros.copyId')"
                 :disabled="!macro.id"
                 @click="copyMacroId"
@@ -179,6 +179,7 @@ async function copyMacroId() {
             size="xs"
             icon="i-lucide-plus"
             variant="outline"
+            class="opacity-0 group-hover:opacity-100 transition-opacity"
             @click="$emit('addStep', macro)"
           >
             {{ $t('macros.addStep') }}
@@ -216,7 +217,7 @@ async function copyMacroId() {
 
     <div class="w-px bg-(--ui-border) self-stretch"></div>
 
-    <div class="min-w-[12rem] max-w-[16rem] flex flex-col gap-4">
+    <div class="min-w-[14rem] max-w-[18rem] flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <AppTooltip :text="$t('common.moveUp')">
@@ -264,6 +265,7 @@ async function copyMacroId() {
           :model-value="macro.stepPauseMs"
           :label="$t('macros.stepPauseLabel')"
           :hint="$t('macros.stepPauseHint')"
+          hint-visible-on="group-hover"
           :default-value="defaultStepPauseMs"
           :suffix="$t('common.ms')"
           @update:model-value="(v: number | undefined) => emit('update:macro', { ...props.macro, stepPauseMs: v })"
@@ -272,6 +274,7 @@ async function copyMacroId() {
           :model-value="macro.modifierDelayMs"
           :label="$t('macros.modDelayLabel')"
           :hint="$t('macros.modDelayHint')"
+          hint-visible-on="group-hover"
           :default-value="defaultModifierDelayMs"
           :suffix="$t('common.ms')"
           @update:model-value="(v: number | undefined) => emit('update:macro', { ...props.macro, modifierDelayMs: v })"

@@ -326,9 +326,12 @@ export default {
     swallowLabel: "Игнор",
     clearLayerTitle: "Очистить слой",
     clearLayerBody:
-      "Это удалит все назначения клавиш и дополнительные клавиши для этого слоя.",
+      "Это удалит все назначения клавиш для этого слоя.",
     layerCleared: "Слой очищен",
     undoClear: "Отменить",
+    clearExtrasTitle: "Очистить дополнительные клавиши",
+    clearExtrasBody: "Все дополнительные клавиши будут удалены.",
+    extrasCleared: "Дополнительные клавиши очищены",
   },
   macros: {
     title: "Пользовательские макросы",
@@ -449,9 +452,7 @@ export default {
       "Маппер читает события напрямую с {input} и эмитит через {uinput}. Нужен доступ к этим устройствам — см. README (группа {group} и udev-правило для {uinputDev}).",
     generalTitle: "Общие",
     behaviorTitle: "Глобальная настройка поведения",
-    appearance: "Оформление",
-    appearanceHint:
-      "Режим «Как в системе» следует настройке ОС {pref} и переключается автоматически. Сейчас активна {mode} тема.",
+    appearance: "Тема",
     appearanceLight: "светлая",
     appearanceDark: "тёмная",
     appearanceItems: {
@@ -460,8 +461,6 @@ export default {
       dark: "Тёмная",
     },
     language: "Язык интерфейса",
-    languageHint:
-      "Язык интерфейса. «Авто» подбирает близкий к системному, с откатом на английский.",
     languageAuto: "Авто (по системе)",
     languageAutoResolved: "Авто (по системе → {resolved})",
     launchOnStartup: "Запускать вместе с системой",

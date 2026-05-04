@@ -8,6 +8,7 @@ defineProps<{
 
 const emit = defineEmits<{
   add: []
+  'clear-all': []
   select: [id: string]
   'update-extra': [id: string, field: 'key' | 'action', value: string]
   moveUp: [id: string]
@@ -32,9 +33,21 @@ function onRowClick(event: MouseEvent, id: string) {
             {{ $t('keymap.extrasSub') }}
           </p>
         </div>
-        <UButton icon="i-lucide-plus" size="sm" @click="$emit('add')">
-          {{ $t('keymap.addExtra') }}
-        </UButton>
+        <div class="flex items-center gap-2">
+          <UButton
+            v-if="extras.length"
+            icon="i-lucide-eraser"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            @click="$emit('clear-all')"
+          >
+            {{ $t('common.clear') }}
+          </UButton>
+          <UButton icon="i-lucide-plus" size="sm" @click="$emit('add')">
+            {{ $t('keymap.addExtra') }}
+          </UButton>
+        </div>
       </div>
     </template>
     <div

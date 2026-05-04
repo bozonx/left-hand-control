@@ -40,7 +40,7 @@ export function useLayers() {
     return true
   }
 
-  function cloneLayer(id: string, newName: string) {
+  function cloneLayer(id: string, newName: string, description?: string) {
     const source = config.value.layers.find((layer) => layer.id === id)
     if (!source) return null
     const name = newName.trim()
@@ -49,7 +49,7 @@ export function useLayers() {
     config.value.layers.push({
       id: newId,
       name,
-      description: source.description,
+      description: description !== undefined ? description : source.description,
     })
     const sourceKeymap = config.value.layerKeymaps[id]
     if (sourceKeymap) {

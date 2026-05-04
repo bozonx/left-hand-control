@@ -23,23 +23,7 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
     </template>
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-4">
-        <div>
-          <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('settings.appearance') }}</div>
-          <div class="text-xs text-(--ui-text-muted)">
-            <i18n-t keypath="settings.appearanceHint" tag="span">
-              <template #pref><code>prefers-color-scheme</code></template>
-              <template #mode>
-                <span class="font-medium">
-                  {{
-                    props.resolvedTheme === 'dark'
-                      ? $t('settings.appearanceDark')
-                      : $t('settings.appearanceLight')
-                  }}
-                </span>
-              </template>
-            </i18n-t>
-          </div>
-        </div>
+        <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('settings.appearance') }}</div>
         <URadioGroup
           v-model="themePreference"
           :items="appearanceItems"
@@ -49,12 +33,7 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
       </div>
 
       <div class="flex items-center justify-between gap-4 pt-2 border-t border-(--ui-border)">
-        <div>
-          <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('settings.language') }}</div>
-          <div class="text-xs text-(--ui-text-muted)">
-            {{ $t('settings.languageHint') }}
-          </div>
-        </div>
+        <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('settings.language') }}</div>
         <USelectMenu
           v-model="localePreference"
           :items="localeItems"

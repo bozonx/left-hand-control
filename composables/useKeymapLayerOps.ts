@@ -1,4 +1,4 @@
-import type { AppConfig, Layer, LayerKeymap } from '~/types/config'
+import type { AppConfig, ExtraKey, Layer, LayerKeymap } from '~/types/config'
 
 export function useKeymapLayerOps(
   selectedLayerId: Ref<string>,
@@ -62,7 +62,7 @@ export function useKeymapLayerOps(
   }
 
   const clearConfirmOpen = ref(false)
-  const lastClearedBackup = ref<LayerKeymap | null>(null)
+  const lastClearedBackup = ref<{ keys: Record<string, string | null> } | null>(null)
 
   function requestClearSelectedLayer() {
     if (!currentLayer.value) return
@@ -79,10 +79,8 @@ export function useKeymapLayerOps(
     if (!keymap) return
     lastClearedBackup.value = {
       keys: { ...keymap.keys },
-      extras: keymap.extras.map((e: { id: string; key: string; action: string }) => ({ ...e })),
     }
     keymap.keys = {}
-    keymap.extras = []
     clearConfirmOpen.value = false
     toast.add({
       title: t('keymap.layerCleared'),
@@ -103,8 +101,48 @@ export function useKeymapLayerOps(
     const keymap = config.value.layerKeymaps[selectedLayerId.value]
     if (!keymap) return
     keymap.keys = backup.keys
-    keymap.extras = backup.extras
     lastClearedBackup.value = null
+  }
+
+  const clearExtrasConfirmOpen = ref(false)
+  const lastClearedExtrasBackup = ref<ExtraKey[] | null>(null)
+
+  function requestClearExtras() {
+    if (!currentLayer.value) return
+    clearExtrasConfirmOpen.value = true
+  }
+
+  function cancelClearExtras() {
+    clearExtrasConfirmOpen.value = false
+  }
+
+  function clearSelectedExtras() {
+    if (!currentLayer.value) return
+    const keymap = config.value.layerKeymaps[selectedLayerId.value]
+    if (!keymap) return
+    lastClearedExtrasBackup.value = keymap.extras.map((e) => ({ ...e }))
+    keymap.extras = []
+    clearExtrasConfirmOpen.value = false
+    toast.add({
+      title: t('keymap.extrasCleared'),
+      color: 'success',
+      icon: 'i-lucide-check',
+      actions: [
+        {
+          label: t('keymap.undoClear'),
+          onClick: undoClearExtras,
+        },
+      ],
+    })
+  }
+
+  function undoClearExtras() {
+    const backup = lastClearedExtrasBackup.value
+    if (!backup || !currentLayer.value) return
+    const keymap = config.value.layerKeymaps[selectedLayerId.value]
+    if (!keymap) return
+    keymap.extras = backup
+    lastClearedExtrasBackup.value = null
   }
 
   const newLayerOpen = ref(false)
@@ -129,15 +167,17 @@ export function useKeymapLayerOps(
 
   const cloneLayerOpen = ref(false)
   const cloneDraftName = ref('')
+  const cloneDraftDescription = ref('')
 
   function openCloneLayer() {
     const layer = currentLayer.value
     cloneDraftName.value = layer ? `${layer.name} copy` : ''
+    cloneDraftDescription.value = layer?.description ?? ''
     cloneLayerOpen.value = true
   }
 
   function confirmCloneLayer() {
-    const id = cloneLayer(selectedLayerId.value, cloneDraftName.value)
+    const id = cloneLayer(selectedLayerId.value, cloneDraftName.value, cloneDraftDescription.value)
     if (!id) return
     selectedLayerId.value = id
     cloneLayerOpen.value = false
@@ -165,8 +205,13 @@ export function useKeymapLayerOps(
     newLayerDescription,
     openNewLayer,
     confirmNewLayer,
+    clearExtrasConfirmOpen,
+    requestClearExtras,
+    cancelClearExtras,
+    clearSelectedExtras,
     cloneLayerOpen,
     cloneDraftName,
+    cloneDraftDescription,
     openCloneLayer,
     confirmCloneLayer,
   }
