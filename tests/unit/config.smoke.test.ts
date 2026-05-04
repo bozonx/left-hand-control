@@ -118,7 +118,7 @@ describe('config helpers', () => {
     })
   })
 
-  it('preserves explicit null layer mappings as swallow', () => {
+  it('preserves explicit null layer mappings as swallow and drops blank mappings', () => {
     const config = normalizeConfig({
       layers: [{ id: 'nav', name: 'Navigation' }],
       layerKeymaps: {
@@ -136,7 +136,6 @@ describe('config helpers', () => {
     expect(config.layerKeymaps.nav?.keys).toEqual({
       KeyH: null,
       KeyJ: 'ArrowDown',
-      KeyK: null,
     })
   })
 

@@ -115,8 +115,10 @@ export function normalizeConfig(raw: unknown): AppConfig {
       } else {
         km.keys = Object.fromEntries(
           Object.entries(km.keys)
-            .filter(([code, value]) => !!code && (typeof value === "string" || value === null))
-            .map(([code, value]) => [code, value === "" ? null : value]),
+            .filter(
+              ([code, value]) =>
+                !!code && (value === null || (typeof value === "string" && value.trim() !== "")),
+            ),
         );
       }
       if (!Array.isArray(km.extras)) km.extras = [];
