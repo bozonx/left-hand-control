@@ -46,9 +46,22 @@ pub struct MapperStatus {
 /// Global mapper handle. `None` when stopped.
 static STATE: Mutex<MapperRuntime<OsBackend>> = Mutex::new(MapperRuntime::new(OsBackend::new()));
 
+static APP_HANDLE: Mutex<Option<tauri::AppHandle>> = Mutex::new(None);
+
+pub fn set_app_handle(app: tauri::AppHandle) {
+    if let Ok(mut slot) = APP_HANDLE.lock() {
+        *slot = Some(app);
+    }
+}
+
+pub(crate) fn get_app_handle() -> Option<tauri::AppHandle> {
+    APP_HANDLE.lock().ok().and_then(|g| g.clone())
+}
+
 trait BackendHandle: Send {
     fn stop(self: Box<Self>);
     fn update_config(&self, cfg: config::AppConfig) -> Result<(), String>;
+    fn execute_action(&self, action: String) -> Result<(), String>;
     fn last_error(&self) -> Option<String>;
     fn reap_if_finished(&mut self) -> bool;
 }
@@ -144,6 +157,18 @@ impl<B: MapperBackend> MapperRuntime<B> {
         handle.update_config(cfg)
     }
 
+    fn execute_action(&mut self, action: String) -> Result<(), String> {
+        let Some(handle) = self.handle.as_mut() else {
+            return Err("mapper is not running".into());
+        };
+        if handle.reap_if_finished() {
+            self.handle = None;
+            self.status.running = false;
+            return Err("mapper is not running".into());
+        }
+        handle.execute_action(action)
+    }
+
     fn status(&mut self) -> MapperStatus {
         if let Some(handle) = self.handle.as_mut() {
             let err = handle.last_error();
@@ -168,6 +193,10 @@ impl BackendHandle for linux::Handle {
 
     fn update_config(&self, cfg: config::AppConfig) -> Result<(), String> {
         self.update_config(cfg)
+    }
+
+    fn execute_action(&self, action: String) -> Result<(), String> {
+        self.execute_action(action)
     }
 
     fn last_error(&self) -> Option<String> {
@@ -299,6 +328,10 @@ pub fn update_config(config_json: &str) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     validation::validate_config(&cfg)?;
     lock_state().update_config(cfg)
+}
+
+pub fn execute_action(action: String) -> Result<(), String> {
+    lock_state().execute_action(action)
 }
 
 pub fn status() -> MapperStatus {

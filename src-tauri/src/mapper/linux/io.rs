@@ -376,6 +376,12 @@ fn run_sys_action(action: &SysAction) {
     match action {
         SysAction::Spawn(cmd) => spawn_system(cmd),
         SysAction::Dbus(call) => call_dbus(call),
+        SysAction::TauriEvent(event) => {
+            if let Some(app) = super::super::get_app_handle() {
+                use tauri::Emitter;
+                let _ = app.emit(event, ());
+            }
+        }
     }
 }
 

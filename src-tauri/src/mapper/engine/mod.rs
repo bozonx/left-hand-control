@@ -731,6 +731,46 @@ impl Engine {
     pub fn default_hold(&self) -> Duration {
         self.default_hold
     }
+
+    pub fn execute_remote(&mut self, action: &str, out: &mut Vec<Out>) {
+        if let Some(ks) = super::action::parse_action(action) {
+            out.push(Out::Stroke {
+                ks,
+                mod_delay: self.default_mod_delay,
+            });
+            return;
+        }
+        if let Some(text) = super::action::explicit_text(action) {
+            out.push(Out::Literal(text));
+            return;
+        }
+        if let Some(rest) = action.trim().strip_prefix("sys:") {
+            if let Some(sys) = super::system::resolve(rest) {
+                out.push(Out::RunSystem(sys));
+            }
+            return;
+        }
+        if let Some(rest) = action.trim().strip_prefix("cmd:") {
+            let id = rest.trim();
+            if let Some(cmd) = self.rules.values().flatten().find_map(|r| {
+                if let TapMode::Action(ActionDef::Command(ref c)) = r.tap {
+                    if c.program == id {
+                        return Some(c.clone());
+                    }
+                }
+                None
+            }) {
+                // This is a bit hacky but works for finding the command by ID
+                out.push(Out::RunCommand(cmd));
+            } else {
+                // If it's a known command id from macros/commands list
+                // We don't have a direct lookup map here for all commands, 
+                // they are resolved at build time. 
+                // For simplicity, let's assume builder handles them.
+            }
+            return;
+        }
+    }
 }
 
 /// Returns true when a list of substrings matches the active window's

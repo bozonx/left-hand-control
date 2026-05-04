@@ -204,10 +204,17 @@ fn quit_application(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+#[tauri::command]
+fn execute_action(action: String) -> Result<(), String> {
+    eprintln!("[cmd] execute_action action={action}");
+    mapper::execute_action(action)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
         .setup(|app| {
+            mapper::set_app_handle(app.handle().clone());
             tray::build_tray(app.handle())?;
             if let Ok(storage) = app_storage(app.handle()) {
                 let _ = storage.ensure();
@@ -267,6 +274,7 @@ pub fn run() {
             tray::hide_main_window_command,
             tray::toggle_main_window_maximized_command,
             quit_application,
+            execute_action,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

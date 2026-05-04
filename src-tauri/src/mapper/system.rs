@@ -54,12 +54,16 @@ pub struct DbusCall {
 pub enum SysAction {
     Dbus(DbusCall),
     Spawn(SysCommand),
+    TauriEvent(String),
 }
 
 /// Resolve a system-function id (e.g. "switchDesktop3") into a concrete
 /// action to run on this machine, or `None` if the function is not
 /// available under the current desktop environment.
 pub fn resolve(name: &str) -> Option<SysAction> {
+    if name.trim() == "showQuickMenu" {
+        return Some(SysAction::TauriEvent("show_quick_menu".into()));
+    }
     use crate::platform::linux::detect;
     resolve_for_desktop(name, &detect().desktop)
 }

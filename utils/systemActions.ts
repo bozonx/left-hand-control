@@ -59,6 +59,12 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     }
   }),
   {
+    id: 'showQuickMenu',
+    nameKey: 'systemActions.showQuickMenu',
+    hint: 'App: Show Quick Actions menu at screen center',
+    platforms: ['linux-kde'],
+  },
+  {
     id: 'walkThroughWindowsAlternative',
     nameKey: 'systemActions.walkThroughWindowsAlternative',
     hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Walk Through Windows Alternative"',

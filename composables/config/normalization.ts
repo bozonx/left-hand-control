@@ -131,6 +131,7 @@ export function normalizeConfig(raw: unknown): AppConfig {
         : base.layerKeymaps,
     macros: Array.isArray(r.macros) ? r.macros : [],
     commands: Array.isArray(r.commands) ? r.commands : [],
+    quickActions: Array.isArray(r.quickActions) ? r.quickActions : [],
     settings: normalizeSettings(base.settings, r.settings),
   };
   for (const layer of cfg.layers) {

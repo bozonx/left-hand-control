@@ -19,10 +19,15 @@ use std::time::Duration;
 const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
+pub enum MapperControl {
+    Config(AppConfig),
+    Execute(String),
+}
+
 /// Handle to a running mapper thread.
 pub struct Handle {
     stop: Arc<AtomicBool>,
-    config_tx: mpsc::Sender<AppConfig>,
+    control_tx: mpsc::Sender<MapperControl>,
     join: Option<thread::JoinHandle<()>>,
     error: Arc<Mutex<Option<String>>>,
 }
@@ -47,8 +52,14 @@ impl Handle {
     }
 
     pub fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
-        self.config_tx
-            .send(cfg)
+        self.control_tx
+            .send(MapperControl::Config(cfg))
+            .map_err(|e| format!("mapper update channel closed: {e}"))
+    }
+
+    pub fn execute_action(&self, action: String) -> Result<(), String> {
+        self.control_tx
+            .send(MapperControl::Execute(action))
             .map_err(|e| format!("mapper update channel closed: {e}"))
     }
 
@@ -95,12 +106,12 @@ pub fn spawn(
     let stop_thread = stop.clone();
     let err_thread = error.clone();
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
-    let (config_tx, config_rx) = mpsc::channel::<AppConfig>();
+    let (control_tx, control_rx) = mpsc::channel::<MapperControl>();
 
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run(device_path, mouse_path, cfg, stop_thread, ready_tx, config_rx) {
+            if let Err(e) = run(device_path, mouse_path, cfg, stop_thread, ready_tx, control_rx) {
                 eprintln!("[mapper] run_loop error: {e}");
                 if let Ok(mut slot) = err_thread.lock() {
                     *slot = Some(e);
@@ -128,7 +139,7 @@ pub fn spawn(
 
     Ok(Handle {
         stop,
-        config_tx,
+        control_tx,
         join: Some(join),
         error,
     })
@@ -140,7 +151,7 @@ fn run(
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
     ready_tx: mpsc::Sender<Result<(), String>>,
-    config_rx: mpsc::Receiver<AppConfig>,
+    control_rx: mpsc::Receiver<MapperControl>,
 ) -> Result<(), String> {
     let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
     device
@@ -171,7 +182,7 @@ fn run(
 
     let driver = MultiDeviceLoopDriver::new(devices)?;
     let _ = ready_tx.send(Ok(()));
-    run_loop(driver, virt, cfg, stop, config_rx)
+    run_loop(driver, virt, cfg, stop, control_rx)
 }
 
 fn run_loop<D: LoopDriver>(
@@ -179,21 +190,30 @@ fn run_loop<D: LoopDriver>(
     mut virt: VirtualDevice,
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
-    config_rx: mpsc::Receiver<AppConfig>,
+    control_rx: mpsc::Receiver<MapperControl>,
 ) -> Result<(), String> {
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
 
     while !stop.load(Ordering::SeqCst) {
-        while let Ok(next_cfg) = config_rx.try_recv() {
-            eprintln!(
-                "[mapper] live config update: rules={} layers={}",
-                next_cfg.rules.len(),
-                next_cfg.layer_keymaps.len()
-            );
-            engine.shutdown(&mut out_buf);
-            flush_out(&mut virt, &mut out_buf)?;
-            engine = Engine::new(&next_cfg);
+        while let Ok(ctrl) = control_rx.try_recv() {
+            match ctrl {
+                MapperControl::Config(next_cfg) => {
+                    eprintln!(
+                        "[mapper] live config update: rules={} layers={}",
+                        next_cfg.rules.len(),
+                        next_cfg.layer_keymaps.len()
+                    );
+                    engine.shutdown(&mut out_buf);
+                    flush_out(&mut virt, &mut out_buf)?;
+                    engine = Engine::new(&next_cfg);
+                }
+                MapperControl::Execute(action) => {
+                    eprintln!("[mapper] remote execute: {action:?}");
+                    engine.execute_remote(&action, &mut out_buf);
+                    flush_out(&mut virt, &mut out_buf)?;
+                }
+            }
         }
         process_iteration(&mut driver, &mut engine, &mut virt, &mut out_buf)?;
     }
@@ -265,6 +285,7 @@ mod tests {
                     args,
                     ..
                 }) => format!("dbus:{destination}:{method}:{}", args.len()),
+                SysAction::TauriEvent(event) => format!("tauri:{event}"),
             };
             self.systems.push(label);
         }

@@ -60,6 +60,7 @@ export default {
     macros: "Макросы",
     commands: "Команды",
     settings: "Настройки",
+    quickActions: "Быстрые действия",
   },
   home: {
     title: "Главная",
@@ -396,6 +397,21 @@ export default {
     confirmDeleteStepTitle: "Удалить шаг?",
     confirmDeleteStepBody: "Этот шаг будет удалён из макроса.",
   },
+  quickActions: {
+    title: 'Быстрые действия',
+    subtitle: 'Сетка настраиваемых действий, которая появляется по центру экрана при вызове действия sys:showQuickMenu.',
+    empty: 'Пока нет быстрых действий. Добавьте первое, чтобы оно появилось в меню.',
+    addBtn: 'Добавить действие',
+    nameLabel: 'Название',
+    namePh: 'Например: Следующий трек',
+    actionLabel: 'Действие',
+    actionPh: 'Выберите действие',
+    deleteAction: 'Удалить',
+    moveUp: 'Влево',
+    moveDown: 'Вправо',
+    iconLabel: 'Иконка (необязательно)',
+    iconPh: 'Например: i-lucide-play',
+  },
   commands: {
     title: "Команды",
     subtitle:
@@ -661,6 +677,7 @@ export default {
     switchDesktop: "Переключиться на рабочий стол {n}",
     switchLayout: "Переключить раскладку на {n}",
     taskEntry: "Активировать запись панели задач {n}",
+    showQuickMenu: 'Показать быстрое меню действий',
     walkThroughWindowsAlternative:
       "Переключение между окнами: альтернативный режим",
     walkThroughWindowsCurrentApp:

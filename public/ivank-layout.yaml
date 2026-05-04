@@ -14,7 +14,11 @@ layers:
       KeyI: macro:upEnd
       KeyO: End
       KeyP: macro:up5Times
+      BracketLeft: null
+      BracketRight: null
+      Backslash: null
       
+      # KeyA:
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
       KeyF: PageDown
@@ -24,6 +28,7 @@ layers:
       KeyK: ArrowUp
       KeyL: ArrowRight
       Semicolon: macro:rightSpace
+      Quote: null
 
       KeyZ: macro:emptyLineBelow
       KeyX: macro:cutWordRightCenter
@@ -35,11 +40,11 @@ layers:
       Comma: macro:upHome
       Period: Ctrl+ArrowRight
       Slash: macro:down5Times
-    extras:
-      - key: MouseSide
-        action: BrowserBack
-      - key: MouseExtra
-        action: BrowserForward
+      # extras:
+      #   - key: MouseSide
+      #     action: BrowserBack
+      #   - key: MouseExtra
+      #     action: BrowserForward
   - id: sel
     keys:
       AltLeft: Ctrl+Enter
@@ -53,6 +58,9 @@ layers:
       KeyY: Shift+Home
       KeyO: Shift+End
       KeyP: macro:select5LinesUp
+      BracketLeft: null
+      BracketRight: null
+      Backslash: null
 
       KeyA: Ctrl+Slash
       KeyS: macro:copyToStart
@@ -63,6 +71,7 @@ layers:
       KeyK: Shift+ArrowUp
       KeyL: Shift+ArrowRight
       Semicolon: macro:selectWholeLine
+      Quote: null
       
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
@@ -83,6 +92,9 @@ layers:
       KeyO: Digit9
       KeyP: "text:="
       BracketLeft: "text:≠"
+      BracketRight: null
+      Backslash: null
+
       KeyA: "text:$"
       KeyS: "text:#"
       KeyD: "text:!"
@@ -93,6 +105,8 @@ layers:
       KeyK: Digit5
       KeyL: Digit6
       Semicolon: "text:+"
+      Quote: null
+
       Quote: "text:%"
       KeyZ: "text::"
       KeyX: "text:`"
@@ -104,6 +118,7 @@ layers:
       Comma: Digit2
       Period: Digit3
       Slash: "text:@"
+
       ShiftRight: "text:_"
   - id: fkeys
     keys:
@@ -117,6 +132,9 @@ layers:
       KeyO: F9
       KeyP: F12
       BracketLeft: "text:ℹ️"
+      BracketRight: null
+      Backslash: null
+
       KeyA: "text:€"
       KeyS: "text:№"
       KeyD: "text:‼️"
@@ -127,6 +145,7 @@ layers:
       KeyL: F6
       Semicolon: F11
       Quote: "text:☝️"
+
       KeyZ: "text:;"
       KeyX: "text:~"
       KeyC: "text:⏩"
@@ -159,8 +178,17 @@ layers:
       Digit9: sys:taskEntry9
       Digit0: sys:taskEntry10
 
+      KeyQ: sys:showQuickMenu
       KeyW: Ctrl+KeyA
+      KeyE: null
+      KeyR: null
       KeyT: sys:windowKeepAbove
+      KeyU: null
+      KeyI: null
+      KeyO: null
+      KeyP: null
+      BracketLeft: null
+      BracketRight: null
       Backslash: sys:screenOff
 
       KeyA: sys:switchDesktop4
@@ -172,6 +200,8 @@ layers:
       KeyJ: sys:quickTileWindowTop
       KeyK: sys:quickTileWindowBottom
       KeyL: sys:quickTileWindowRight
+      Semicolon: null
+      Quote: null
 
       KeyZ: sys:windowMaximizeVertical
       KeyX: sys:windowMaximizeHorizontal
@@ -227,3 +257,4 @@ rules:
   - key: ShiftRight
     tap: "text:-"
 macros: []
+quickActions: []

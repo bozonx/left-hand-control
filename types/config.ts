@@ -207,6 +207,13 @@ export interface AppSettings {
 // A layout preset: the subset of AppConfig that describes keyboard behaviour
 // (no global settings). Used for the bundled default and for user-saved YAML
 // layouts under <configDir>/layouts/.
+export interface QuickAction {
+  id: string
+  name: string
+  action: string
+  icon?: string
+}
+
 export interface LayoutPreset {
   description?: string
   layers: Layer[]
@@ -214,6 +221,7 @@ export interface LayoutPreset {
   layerKeymaps: Record<string, LayerKeymap>
   macros: Macro[]
   commands: Command[]
+  quickActions: QuickAction[]
 }
 
 export interface AppConfig {
@@ -227,6 +235,8 @@ export interface AppConfig {
   macros: Macro[]
   // User-defined shell commands, referenced from actions as "cmd:<id>".
   commands: Command[]
+  // User-defined quick actions available in the Quick Menu.
+  quickActions: QuickAction[]
   settings: AppSettings
 }
 
@@ -302,6 +312,7 @@ export function createDefaultConfig(): AppConfig {
     layerKeymaps: {},
     macros: [],
     commands: [],
+    quickActions: [],
     settings: {
       launchOnStartup: false,
       appearance: 'system',
