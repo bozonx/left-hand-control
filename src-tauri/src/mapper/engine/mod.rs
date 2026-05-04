@@ -46,7 +46,7 @@ mod builder;
 mod model;
 
 pub use self::model::Out;
-use self::model::{fire_action, ActionDef, HoldMode, Pending, Phase, RuleEntry, TapMode};
+use self::model::{ActionDef, HoldMode, Pending, Phase, RuleEntry, TapMode};
 use super::action::Keystroke;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
@@ -85,6 +85,9 @@ pub struct Engine {
     layer_triggers: HashMap<String, Vec<Key>>,
     /// Tracks isolated holds per physical key (to restore on key release)
     isolated_holds: HashMap<Key, Vec<(Key, u32)>>,
+
+    /// Currently executing macro (if any)
+    active_macro: Option<self::model::ActiveMacro>,
 }
 impl Engine {
     /// Time until the nearest pending deadline (hold-decision or
@@ -104,6 +107,96 @@ impl Engine {
     /// Tick pending state machines. Commits holds whose decision window
     /// elapsed and fires taps whose double-tap window elapsed.
     pub fn tick(&mut self, now: Instant, out: &mut Vec<Out>) {
+        if let Some(mut am) = self.active_macro.take() {
+            if now >= am.next_wake {
+                use self::model::MacroPhase;
+                use crate::mapper::action::MacroStepItem;
+
+                loop {
+                    if am.current_step >= am.steps.len() {
+                        break;
+                    }
+                    match am.phase {
+                        MacroPhase::NextStep => {
+                            let step = &am.steps[am.current_step];
+                            match step {
+                                MacroStepItem::Stroke(ks) => {
+                                    if !ks.mods.is_empty() {
+                                        for m in &ks.mods {
+                                            out.push(Out::KeyRaw { key: *m, down: true });
+                                        }
+                                        am.phase = MacroPhase::StrokeModDelayPress(ks.clone());
+                                        am.next_wake = now + am.mod_delay;
+                                        self.active_macro = Some(am);
+                                        break;
+                                    } else {
+                                        out.push(Out::KeyRaw { key: ks.key, down: true });
+                                        out.push(Out::KeyRaw { key: ks.key, down: false });
+                                        am.current_step += 1;
+                                        if am.current_step < am.steps.len() {
+                                            am.next_wake = now + am.step_pause;
+                                            self.active_macro = Some(am);
+                                            break;
+                                        }
+                                    }
+                                }
+                                MacroStepItem::System(action) => {
+                                    out.push(Out::RunSystem(action.clone()));
+                                    am.current_step += 1;
+                                    if am.current_step < am.steps.len() {
+                                        am.next_wake = now + am.step_pause;
+                                        self.active_macro = Some(am);
+                                        break;
+                                    }
+                                }
+                                MacroStepItem::Command(command) => {
+                                    out.push(Out::RunCommand(command.clone()));
+                                    am.current_step += 1;
+                                    if am.current_step < am.steps.len() {
+                                        am.next_wake = now + am.step_pause;
+                                        self.active_macro = Some(am);
+                                        break;
+                                    }
+                                }
+                                MacroStepItem::Literal(text) => {
+                                    out.push(Out::Literal(text.clone()));
+                                    am.current_step += 1;
+                                    if am.current_step < am.steps.len() {
+                                        am.next_wake = now + am.step_pause;
+                                        self.active_macro = Some(am);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        MacroPhase::StrokeModDelayPress(ref ks) => {
+                            let ks = ks.clone();
+                            out.push(Out::KeyRaw { key: ks.key, down: true });
+                            out.push(Out::KeyRaw { key: ks.key, down: false });
+                            am.phase = MacroPhase::StrokeModDelayRelease(ks.clone());
+                            am.next_wake = now + am.mod_delay;
+                            self.active_macro = Some(am);
+                            break;
+                        }
+                        MacroPhase::StrokeModDelayRelease(ref ks) => {
+                            for m in ks.mods.iter().rev() {
+                                out.push(Out::KeyRaw { key: *m, down: false });
+                            }
+                            am.phase = MacroPhase::NextStep;
+                            am.current_step += 1;
+                            if am.current_step < am.steps.len() {
+                                am.next_wake = now + am.step_pause;
+                                self.active_macro = Some(am);
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                self.active_macro = Some(am);
+            }
+        }
+
         let mut expired_hold: Vec<Key> = Vec::new();
         let mut expired_second: Vec<Key> = Vec::new();
         for (k, p) in &self.pending {
@@ -126,7 +219,7 @@ impl Engine {
             eprintln!("[mapper] dtap-window expired -> tap (key={:?})", k);
             let tap = self.rules.get(&k).map(|r| r.tap.clone());
             if let Some(tap) = tap {
-                self.fire_tap(k, &tap, out);
+                self.fire_tap(k, &tap, Instant::now(), out);
             }
         }
     }
@@ -182,7 +275,7 @@ impl Engine {
             self.pending.remove(&key);
             eprintln!("[mapper] double-tap fired (key={:?})", key);
             let dtap = self.rules.get(&key).and_then(|r| r.double_tap.clone());
-            fire_action(dtap.as_ref(), self.default_mod_delay, out);
+            self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
             // The matching release must not emit anything (fire-and-forget).
             self.macro_consumed.insert(key);
             return;
@@ -286,11 +379,16 @@ impl Engine {
                                 key,
                                 md.steps.len()
                             );
-                            out.push(Out::RunMacro {
-                                steps: md.steps,
-                                step_pause: md.step_pause,
-                                mod_delay: md.mod_delay,
-                            });
+                            if !md.steps.is_empty() {
+                                self.active_macro = Some(self::model::ActiveMacro {
+                                    steps: md.steps,
+                                    step_pause: md.step_pause,
+                                    mod_delay: md.mod_delay,
+                                    current_step: 0,
+                                    phase: self::model::MacroPhase::NextStep,
+                                    next_wake: now,
+                                });
+                            }
                             self.macro_consumed.insert(key);
                         }
                         ActionDef::System(action) => {
@@ -366,7 +464,7 @@ impl Engine {
                     } else {
                         self.pending.remove(&key);
                         if let Some(rule) = rule_opt {
-                            self.fire_tap(key, &rule.tap, out);
+                            self.fire_tap(key, &rule.tap, now, out);
                         }
                     }
                 }
@@ -555,18 +653,44 @@ impl Engine {
         }
     }
 
-    fn fire_tap(&mut self, key: Key, tap: &TapMode, out: &mut Vec<Out>) {
+    fn fire_action(&mut self, action: Option<&ActionDef>, mod_delay: Duration, now: Instant, out: &mut Vec<Out>) {
+        match action {
+            Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke {
+                ks: ks.clone(),
+                mod_delay,
+            }),
+            Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
+            Some(ActionDef::Macro(md)) => {
+                if !md.steps.is_empty() {
+                    self.active_macro = Some(self::model::ActiveMacro {
+                        steps: md.steps.clone(),
+                        step_pause: md.step_pause,
+                        mod_delay: md.mod_delay,
+                        current_step: 0,
+                        phase: self::model::MacroPhase::NextStep,
+                        next_wake: now,
+                    });
+                }
+            }
+            Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
+            Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
+            Some(ActionDef::Swallow) => {}
+            None => {}
+        }
+    }
+
+    fn fire_tap(&mut self, physical: Key, tap: &TapMode, now: Instant, out: &mut Vec<Out>) {
         match tap {
             TapMode::Native => {
                 // Short native press+release of the physical key.
                 out.push(Out::Stroke {
-                    ks: Keystroke { mods: vec![], key },
+                    ks: Keystroke { mods: vec![], key: physical },
                     mod_delay: self.default_mod_delay,
                 });
             }
             TapMode::Swallow => {}
             TapMode::Action(a) => {
-                fire_action(Some(a), self.default_mod_delay, out);
+                self.fire_action(Some(a), self.default_mod_delay, now, out);
             }
         }
     }
@@ -586,7 +710,7 @@ impl Engine {
             eprintln!("[mapper] dtap-window flushed -> tap (key={:?})", k);
             let tap = self.rules.get(&k).map(|r| r.tap.clone());
             if let Some(tap) = tap {
-                self.fire_tap(k, &tap, out);
+                self.fire_tap(k, &tap, Instant::now(), out);
             }
         }
     }

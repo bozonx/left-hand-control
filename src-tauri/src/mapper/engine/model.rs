@@ -50,6 +50,23 @@ pub(super) struct RuleEntry {
     pub(super) condition_apps_blacklist: Option<Vec<String>>,
 }
 
+#[derive(Clone)]
+pub(super) struct ActiveMacro {
+    pub(super) steps: Vec<MacroStepItem>,
+    pub(super) step_pause: Duration,
+    pub(super) mod_delay: Duration,
+    pub(super) current_step: usize,
+    pub(super) phase: MacroPhase,
+    pub(super) next_wake: Instant,
+}
+
+#[derive(Clone)]
+pub(super) enum MacroPhase {
+    NextStep,
+    StrokeModDelayPress(Keystroke),
+    StrokeModDelayRelease(Keystroke),
+}
+
 pub(super) enum Phase {
     /// Waiting to decide between tap and hold (key is still down).
     WaitingDecision { deadline: Instant },
@@ -80,13 +97,6 @@ pub enum Out {
     },
     /// Release modifiers.
     ReleaseMods(Vec<Key>),
-    /// Run a macro: sequence of keystrokes / system calls with inter-step
-    /// pauses and an intra-chord delay between modifiers and the main key.
-    RunMacro {
-        steps: Vec<MacroStepItem>,
-        step_pause: Duration,
-        mod_delay: Duration,
-    },
     /// Execute a system function (DBus call or fire-and-forget spawn).
     RunSystem(SysAction),
     /// Execute a shell command defined by the current layout.
@@ -94,25 +104,4 @@ pub enum Out {
     /// Type a single Unicode character via the Wayland virtual-keyboard
     /// backend. Fire-and-forget on key press; no release event is needed.
     Literal(String),
-}
-
-/// Emit a resolved action as the appropriate `Out` event. Shared by the
-/// tap / double-tap / deferred-tap paths.
-pub(super) fn fire_action(action: Option<&ActionDef>, mod_delay: Duration, out: &mut Vec<Out>) {
-    match action {
-        Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke {
-            ks: ks.clone(),
-            mod_delay,
-        }),
-        Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
-        Some(ActionDef::Macro(md)) => out.push(Out::RunMacro {
-            steps: md.steps.clone(),
-            step_pause: md.step_pause,
-            mod_delay: md.mod_delay,
-        }),
-        Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
-        Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
-        Some(ActionDef::Swallow) => {}
-        None => {}
-    }
 }

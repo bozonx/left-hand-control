@@ -1,4 +1,4 @@
-use super::super::action::{Keystroke, MacroStepItem};
+use super::super::action::Keystroke;
 use super::super::engine::{Engine, Out};
 use super::super::portal;
 use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
@@ -354,16 +354,6 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                     events.push(InputEvent::new(EventType::KEY, m.code(), 0));
                 }
             }
-            Out::RunMacro {
-                steps,
-                step_pause,
-                mod_delay,
-            } => {
-                // Emit whatever we've accumulated first so it doesn't get
-                // intermixed with the macro's timing.
-                flush_events(sink, &mut events)?;
-                run_macro(sink, effects, &steps, step_pause, mod_delay)?;
-            }
             Out::RunSystem(action) => {
                 flush_events(sink, &mut events)?;
                 effects.run_system(&action);
@@ -508,35 +498,3 @@ fn call_dbus(call: &DbusCall) {
     }
 }
 
-fn run_macro<S: EventSink, E: SideEffects>(
-    sink: &mut S,
-    effects: &mut E,
-    steps: &[MacroStepItem],
-    step_pause: Duration,
-    mod_delay: Duration,
-) -> Result<(), String> {
-    for (i, step) in steps.iter().enumerate() {
-        if i > 0 && !step_pause.is_zero() {
-            effects.sleep(step_pause);
-        }
-
-        let ks = match step {
-            MacroStepItem::Stroke(ks) => ks,
-            MacroStepItem::System(action) => {
-                effects.run_system(action);
-                continue;
-            }
-            MacroStepItem::Command(command) => {
-                effects.run_command(command);
-                continue;
-            }
-            MacroStepItem::Literal(text) => {
-                effects.type_text(text);
-                continue;
-            }
-        };
-
-        emit_stroke_tap(sink, effects, ks, mod_delay)?;
-    }
-    Ok(())
-}

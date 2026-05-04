@@ -107,9 +107,16 @@ function onBlur() {
       size="xs"
       class="w-20 font-mono"
       :min="min"
+      :max="max"
       @update:model-value="handleUpdate"
       @blur="onBlur"
       @keydown.enter="isEditing = false"
+      @keydown.esc="isEditing = false"
+      @click.stop
+    />
+  </div>
+</template>
+"
       @keydown.esc="isEditing = false"
       @click.stop
     />

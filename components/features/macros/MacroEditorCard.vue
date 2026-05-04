@@ -239,6 +239,7 @@ async function copyMacroId() {
           hint-visible-on="group-hover"
           :default-value="defaultStepPauseMs"
           :suffix="$t('common.ms')"
+          :max="2000"
         />
         <SettingTimeoutField
           v-model="macro.modifierDelayMs"
@@ -247,6 +248,7 @@ async function copyMacroId() {
           hint-visible-on="group-hover"
           :default-value="defaultModifierDelayMs"
           :suffix="$t('common.ms')"
+          :max="2000"
         />
       </div>
     </div>

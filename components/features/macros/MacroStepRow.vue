@@ -29,7 +29,7 @@ const emit = defineEmits<{
     <UFormField :error="stepError?.(step) ?? undefined">
       <ActionPickerModal
         :model-value="step.keystroke"
-        :allow-macros="false"
+        :allow-macros="true"
         :excluded-macro-id="macroId"
         :placeholder="$t('macros.stepPh')"
         :invalid="!!stepError?.(step)"

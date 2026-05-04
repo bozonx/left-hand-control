@@ -39,7 +39,7 @@ impl Engine {
                     id.to_string(),
                     SysCommand {
                         program: "sh".into(),
-                        args: vec!["-lc".into(), linux.to_string()],
+                        args: vec!["-c".into(), linux.to_string()],
                     },
                 );
             }
@@ -47,13 +47,28 @@ impl Engine {
             eprintln!("[mapper] shell commands are disabled for this layout");
         }
 
-        fn build_steps<'a>(
+        let mut raw_user_macros: HashMap<String, &crate::mapper::config::Macro> = HashMap::new();
+        for m in &cfg.macros {
+            if m.id.is_empty() {
+                eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
+                continue;
+            }
+            raw_user_macros.insert(m.id.clone(), m);
+        }
+
+        fn resolve_macro_steps(
             id: &str,
-            keystrokes: impl Iterator<Item = &'a str>,
+            raw_steps: Vec<&str>,
+            raw_user_macros: &HashMap<String, &crate::mapper::config::Macro>,
             commands: &HashMap<String, SysCommand>,
+            depth: usize,
         ) -> Vec<MacroStepItem> {
             let mut steps: Vec<MacroStepItem> = Vec::new();
-            for (idx, raw) in keystrokes.enumerate() {
+            if depth > 10 {
+                eprintln!("[mapper] macro {} exceeded max nesting depth", id);
+                return steps;
+            }
+            for raw in raw_steps {
                 let raw = raw.trim();
                 if raw.is_empty() {
                     continue;
@@ -62,21 +77,30 @@ impl Engine {
                     match system::resolve(rest.trim()) {
                         Some(cmd) => steps.push(MacroStepItem::System(cmd)),
                         None => eprintln!(
-                            "[mapper] macro {} step #{}: system fn {:?} not available",
+                            "[mapper] macro {} step: system fn {:?} not available",
                             id,
-                            idx + 1,
                             rest.trim()
                         ),
                     }
                     continue;
                 }
                 if let Some(rest) = raw.strip_prefix("macro:") {
-                    eprintln!(
-                        "[mapper] macro {} step #{}: nested macro ref {:?} is not supported",
-                        id,
-                        idx + 1,
-                        rest.trim()
-                    );
+                    let nested_id = rest.trim();
+                    let mut found = false;
+                    if let Some(sys_m) = SYSTEM_MACROS.iter().find(|s| s.id == nested_id) {
+                        let sys_steps: Vec<&str> = sys_m.steps.to_vec();
+                        let nested_steps = resolve_macro_steps(nested_id, sys_steps, raw_user_macros, commands, depth + 1);
+                        steps.extend(nested_steps);
+                        found = true;
+                    } else if let Some(user_m) = raw_user_macros.get(nested_id) {
+                        let user_steps: Vec<&str> = user_m.steps.iter().map(|s| s.keystroke.as_str()).collect();
+                        let nested_steps = resolve_macro_steps(nested_id, user_steps, raw_user_macros, commands, depth + 1);
+                        steps.extend(nested_steps);
+                        found = true;
+                    }
+                    if !found {
+                        eprintln!("[mapper] macro {}: unknown nested macro ref {:?}", id, nested_id);
+                    }
                     continue;
                 }
                 if let Some(rest) = raw.strip_prefix("cmd:") {
@@ -84,9 +108,8 @@ impl Engine {
                     match commands.get(cmd_id) {
                         Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
                         None => eprintln!(
-                            "[mapper] macro {} step #{}: unknown command ref {:?}",
+                            "[mapper] macro {} step: unknown command ref {:?}",
                             id,
-                            idx + 1,
                             cmd_id
                         ),
                     }
@@ -99,9 +122,8 @@ impl Engine {
                 match parse_action(raw) {
                     Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
                     None => eprintln!(
-                        "[mapper] macro {} step #{}: unknown keystroke {:?}",
+                        "[mapper] macro {} step: unknown keystroke {:?}",
                         id,
-                        idx + 1,
                         raw
                     ),
                 }
@@ -110,7 +132,7 @@ impl Engine {
         }
 
         for sys in SYSTEM_MACROS {
-            let steps = build_steps(sys.id, sys.steps.iter().copied(), &commands);
+            let steps = resolve_macro_steps(sys.id, sys.steps.to_vec(), &raw_user_macros, &commands, 0);
             if steps.is_empty() {
                 eprintln!(
                     "[mapper] system macro {} has no usable steps — skipped",
@@ -130,14 +152,10 @@ impl Engine {
 
         for m in &cfg.macros {
             if m.id.is_empty() {
-                eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
                 continue;
             }
-            let steps = build_steps(
-                &m.id,
-                m.steps.iter().map(|s| s.keystroke.as_str()),
-                &commands,
-            );
+            let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.keystroke.as_str()).collect();
+            let steps = resolve_macro_steps(&m.id, raw_steps, &raw_user_macros, &commands, 0);
             if steps.is_empty() {
                 eprintln!("[mapper] macro {} has no usable steps — skipped", m.id);
                 continue;
@@ -365,6 +383,7 @@ impl Engine {
             layer_isolate_keys,
             layer_triggers: HashMap::new(),
             isolated_holds: HashMap::new(),
+            active_macro: None,
         }
     }
 }

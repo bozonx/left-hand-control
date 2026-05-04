@@ -98,9 +98,8 @@ export function useMacroEditor() {
   function stepError(step: MacroStep): string | null {
     const raw = step.keystroke?.trim() ?? ''
     if (!raw) return null
-    if (parseMacroRef(raw)) return t('macros.stepErrors.nestedMacro')
     if (!isCanonicalAction(raw)) return t('picker.invalidValue')
-    if (validateActionValue(raw, config.value, { allowMacros: false }) !== null) {
+    if (validateActionValue(raw, config.value, { allowMacros: true }) !== null) {
       return t('picker.invalidValue')
     }
     return null
