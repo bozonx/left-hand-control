@@ -20,12 +20,6 @@ const {
   revoke,
 } = useCommandTrust()
 
-const commandIds = computed(() => config.value.commands.map((c) => uiKeyOf(c)))
-const { selectedId, select, containerRef } = useListKeyboardNavigation({
-  ids: commandIds,
-  move: moveCommand,
-})
-
 const confirmOpen = ref(false)
 const pendingDeleteKey = ref<string | null>(null)
 const pendingDeleteLabel = ref<string | null>(null)
@@ -90,7 +84,7 @@ function cancelRemove() {
         </div>
       </template>
 
-      <div ref="containerRef" class="space-y-4">
+      <div class="space-y-4">
         <div
           v-if="needsApproval"
           class="flex items-start justify-between gap-3 rounded-lg border border-(--ui-warning)/40 bg-(--ui-warning)/10 p-3"
@@ -162,8 +156,6 @@ function cancelRemove() {
           :is-first="index === 0"
           :is-last="index === config.commands.length - 1"
           :focus-name="uiKeyOf(command) === focusCommandKey"
-          :selected="selectedId === uiKeyOf(command)"
-          @select="select(uiKeyOf(command))"
           @remove="askRemove"
           @move-up="moveCommand($event, -1)"
           @move-down="moveCommand($event, 1)"

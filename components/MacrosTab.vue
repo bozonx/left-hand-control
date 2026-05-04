@@ -21,12 +21,6 @@ const {
   usage,
 } = useMacroEditor()
 
-const macroIds = computed(() => config.value.macros.map((m) => uiKeyOf(m)))
-const { selectedId, select, containerRef } = useListKeyboardNavigation({
-  ids: macroIds,
-  move: moveMacro,
-})
-
 const systemOpen = ref(false)
 const focusMacroKey = ref<string | null>(null)
 
@@ -100,7 +94,7 @@ function cancelRemove() {
         </div>
       </template>
 
-      <div ref="containerRef" class="space-y-4">
+      <div class="space-y-4">
         <div
           v-if="config.macros.length === 0"
           class="text-sm text-(--ui-text-muted)"
@@ -123,8 +117,6 @@ function cancelRemove() {
           :default-step-pause-ms="config.settings.defaultMacroStepPauseMs"
           :default-modifier-delay-ms="config.settings.defaultMacroModifierDelayMs"
           :focus-name="uiKeyOf(macro) === focusMacroKey"
-          :selected="selectedId === uiKeyOf(macro)"
-          @select="select(uiKeyOf(macro))"
           @remove="askRemove"
           @move-up="moveMacro($event, -1)"
           @move-down="moveMacro($event, 1)"

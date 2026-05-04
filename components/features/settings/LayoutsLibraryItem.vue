@@ -19,11 +19,9 @@ const props = defineProps<{
   activeAutoLayoutId?: string;
   manualActiveLayoutId?: string;
   autoIncludedIds: Set<string>;
-  selectedId?: string | null;
 }>();
 
 const emit = defineEmits<{
-  select: [id: string];
   requestEdit: [entry: LayoutLibraryEntry];
   requestEditDescription: [entry: LayoutLibraryEntry];
   requestApplyEntry: [entry: LayoutLibraryEntry];
@@ -96,9 +94,7 @@ const description = computed(() => {
     class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-150 hover:shadow-lg"
     :class="[
       layoutMode === 'auto' && !entryIsIncluded(entry.id) ? 'opacity-50 grayscale-[30%]' : '',
-      selectedId === entry.id
-        ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
-        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
+      'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
     ]"
   >
     <div class="flex-1 flex flex-col gap-2">

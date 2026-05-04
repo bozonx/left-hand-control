@@ -11,24 +11,16 @@ const props = defineProps<{
   linuxError?: string
   isFirst?: boolean
   isLast?: boolean
-  selected?: boolean
   focusName?: boolean
 }>()
 
 const emit = defineEmits<{
-  select: []
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
   nameFocused: [uiKey: string]
   'update:command': [command: Command]
 }>()
-
-function onCardClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return
-  emit('select')
-}
 
 const { copy: copyToClipboard } = useClipboardCopy()
 const nameInputRef = useTemplateRef<{ inputRef?: { value?: HTMLInputElement } }>('nameInputRef')
@@ -55,13 +47,7 @@ async function copyCommandId() {
 
 <template>
   <div
-    class="relative rounded-xl border p-4 transition-all duration-150 cursor-pointer"
-    :class="[
-      selected
-        ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
-        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-(--ui-primary)/5',
-    ]"
-    @click="onCardClick"
+    class="relative rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 p-4 transition-all duration-150 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-(--ui-primary)/5"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="grid flex-1 grid-cols-2 gap-3 min-w-0">

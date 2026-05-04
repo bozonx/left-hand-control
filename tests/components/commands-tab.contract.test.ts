@@ -7,15 +7,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CommandsTab from '~/components/CommandsTab.vue'
 import { createDefaultConfig } from '~/types/config'
 
-const { useConfigMock, useCommandEditorMock, useListKeyboardNavigationMock } = vi.hoisted(() => ({
+const { useConfigMock, useCommandEditorMock } = vi.hoisted(() => ({
   useConfigMock: vi.fn(),
   useCommandEditorMock: vi.fn(),
-  useListKeyboardNavigationMock: vi.fn(),
 }))
 
 mockNuxtImport('useConfig', () => useConfigMock)
 mockNuxtImport('useCommandEditor', () => useCommandEditorMock)
-mockNuxtImport('useListKeyboardNavigation', () => useListKeyboardNavigationMock)
 
 const CommandEditorCardStub = defineComponent({
   props: {
@@ -28,9 +26,8 @@ const CommandEditorCardStub = defineComponent({
     isFirst: { type: Boolean, default: false },
     isLast: { type: Boolean, default: false },
     focusName: { type: Boolean, default: false },
-    selected: { type: Boolean, default: false },
   },
-  emits: ['select', 'remove', 'moveUp', 'moveDown', 'nameFocused'],
+  emits: ['remove', 'moveUp', 'moveDown', 'nameFocused'],
   template: `
     <div data-testid="command-card" :data-ui-key="uiKey">
       <button data-testid="remove-btn" @click="$emit('remove', { uiKey, id: command.id })">remove</button>
@@ -86,18 +83,12 @@ describe('CommandsTab', () => {
   beforeEach(() => {
     useConfigMock.mockReset()
     useCommandEditorMock.mockReset()
-    useListKeyboardNavigationMock.mockReset()
   })
 
   it('shows empty state when no commands', async () => {
     const { config } = makeConfigState([])
     useConfigMock.mockReturnValue({ config })
     useCommandEditorMock.mockReturnValue(makeEditorApi([]))
-    useListKeyboardNavigationMock.mockReturnValue({
-      selectedId: ref(null),
-      select: vi.fn(),
-      containerRef: ref(null),
-    })
 
     const wrapper = await mountSuspended(CommandsTab, {
       global: {
@@ -122,11 +113,6 @@ describe('CommandsTab', () => {
     const editorApi = makeEditorApi(commands)
     useConfigMock.mockReturnValue({ config })
     useCommandEditorMock.mockReturnValue(editorApi)
-    useListKeyboardNavigationMock.mockReturnValue({
-      selectedId: ref(null),
-      select: vi.fn(),
-      containerRef: ref(null),
-    })
 
     const wrapper = await mountSuspended(CommandsTab, {
       global: {
@@ -159,11 +145,6 @@ describe('CommandsTab', () => {
     const editorApi = makeEditorApi(commands)
     useConfigMock.mockReturnValue({ config })
     useCommandEditorMock.mockReturnValue(editorApi)
-    useListKeyboardNavigationMock.mockReturnValue({
-      selectedId: ref(null),
-      select: vi.fn(),
-      containerRef: ref(null),
-    })
 
     const wrapper = await mountSuspended(CommandsTab, {
       global: {
@@ -193,11 +174,6 @@ describe('CommandsTab', () => {
     const editorApi = makeEditorApi(commands)
     useConfigMock.mockReturnValue({ config })
     useCommandEditorMock.mockReturnValue(editorApi)
-    useListKeyboardNavigationMock.mockReturnValue({
-      selectedId: ref(null),
-      select: vi.fn(),
-      containerRef: ref(null),
-    })
 
     const wrapper = await mountSuspended(CommandsTab, {
       global: {

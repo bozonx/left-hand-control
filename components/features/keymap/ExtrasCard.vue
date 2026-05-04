@@ -3,24 +3,17 @@ import type { ExtraKey } from '~/types/config'
 
 defineProps<{
   extras: ExtraKey[]
-  selectedId?: string | null
 }>()
 
 const emit = defineEmits<{
   add: []
   'clear-all': []
-  select: [id: string]
   'update-extra': [id: string, field: 'key' | 'action', value: string]
   moveUp: [id: string]
   moveDown: [id: string]
   remove: [id: string]
 }>()
 
-function onRowClick(event: MouseEvent, id: string) {
-  const target = event.target as HTMLElement | null
-  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return
-  emit('select', id)
-}
 </script>
 
 <template>
@@ -60,13 +53,7 @@ function onRowClick(event: MouseEvent, id: string) {
       <div
         v-for="(extra, index) in extras"
         :key="extra.id"
-        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] gap-3 items-center p-3 rounded-md border transition-all duration-200 cursor-pointer"
-        :class="[
-          selectedId === extra.id
-            ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
-            : 'border-(--ui-border) bg-(--ui-bg-muted) hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-elevated) hover:shadow-md',
-        ]"
-        @click="onRowClick($event, extra.id)"
+        class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] items-center gap-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted) p-3 transition-all duration-200 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-elevated) hover:shadow-md"
       >
         <UFormField>
           <template #label>

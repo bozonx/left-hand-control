@@ -7,13 +7,11 @@ const _props = defineProps<{
   isFirst: boolean
   isLast: boolean
   macroId: string
-  selected?: boolean
   stepError?: (step: MacroStep) => string | null
   stepWarning?: (step: MacroStep) => string | null
 }>()
 
 const emit = defineEmits<{
-  select: []
   moveUp: []
   moveDown: []
   askRemove: [stepId: string]
@@ -23,13 +21,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="group grid grid-cols-[2rem_minmax(12rem,1fr)_auto] gap-2 items-center p-1 rounded-md transition-all duration-200"
-    :class="[
-      selected
-        ? 'border border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-md shadow-(--ui-primary)/5'
-        : 'border border-transparent',
-    ]"
-    @click="emit('select')"
+    class="group grid grid-cols-[2rem_minmax(12rem,1fr)_auto] items-center gap-2 rounded-md border border-transparent p-1 transition-all duration-200"
   >
     <div class="text-xs text-(--ui-text-muted) font-mono text-right">
       #{{ idx + 1 }}

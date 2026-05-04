@@ -52,11 +52,6 @@ const {
   confirmCloneLayer,
 } = useKeymapEditor()
 
-const extraIds = computed(() => currentKeymap.value?.extras.map((e) => e.id) ?? [])
-const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasContainerRef } = useListKeyboardNavigation({
-  ids: extraIds,
-  move: (id: string, delta: number) => moveExtra(id, delta < 0 ? 'up' : 'down'),
-})
 </script>
 
 <template>
@@ -82,11 +77,9 @@ const { selectedId: selectedExtraId, select: selectExtra, containerRef: extrasCo
         @clear="requestClearSelectedLayer"
       />
 
-      <div ref="extrasContainerRef">
+      <div>
         <ExtrasCard
           :extras="currentKeymap.extras"
-          :selected-id="selectedExtraId"
-          @select="selectExtra"
           @add="addExtra"
           @update-extra="updateExtra"
           @move-up="(id) => moveExtra(id, 'up')"

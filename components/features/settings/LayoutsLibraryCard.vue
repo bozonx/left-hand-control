@@ -22,7 +22,6 @@ const props = defineProps<{
     autoIncludedIds: Set<string>;
     activeAutoLayoutId?: string;
     manualActiveLayoutId?: string;
-    selectedId?: string | null;
 }>();
 
 const _emit = defineEmits<{
@@ -36,7 +35,6 @@ const _emit = defineEmits<{
     requestDelete: [entry: LayoutLibraryEntry];
     moveUp: [entry: LayoutLibraryEntry];
     moveDown: [entry: LayoutLibraryEntry];
-    select: [id: string];
 }>();
 
 const { config } = useConfig();
@@ -172,8 +170,6 @@ function openBlacklist(entryId: string) {
                     :active-auto-layout-id="activeAutoLayoutId"
                     :manual-active-layout-id="manualActiveLayoutId"
                     :auto-included-ids="autoIncludedIds"
-                    :selected-id="selectedId"
-                    @select="$emit('select', $event)"
                     @request-edit="$emit('requestEdit', $event, 'name')"
                     @request-edit-description="$emit('requestEdit', $event, 'description')"
                     @request-apply-entry="$emit('requestApplyEntry', $event)"

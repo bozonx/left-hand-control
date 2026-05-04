@@ -20,11 +20,9 @@ defineProps<{
   isLast?: boolean
   isNew?: boolean
   keyError?: string
-  selected?: boolean
 }>()
 
 const emit = defineEmits<{
-  select: []
   remove: [id: string]
   moveUp: [id: string]
   moveDown: [id: string]
@@ -33,27 +31,18 @@ const emit = defineEmits<{
   'update:rule': [rule: LayerRule]
 }>()
 
-function onCardClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return
-  emit('select')
-}
-
 const isConditionsOpen = ref(false)
 </script>
 
 <template>
   <div
-    class="relative p-4 rounded-xl border flex gap-6 group group/rule transition-all duration-150 hover:shadow-lg cursor-pointer"
+    class="relative flex gap-6 rounded-xl border p-4 transition-all duration-150 group group/rule hover:shadow-lg"
     :class="[
       rule.enabled === false ? 'opacity-50 grayscale-[30%]' : '',
-      selected
-        ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
-        : isNew
-          ? 'border-(--ui-info)/60 bg-(--ui-info)/8 ring-1 ring-(--ui-info)/20 hover:bg-(--ui-info)/12 hover:border-(--ui-info)/70 hover:shadow-(--ui-info)/10'
-          : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
+      isNew
+        ? 'border-(--ui-info)/60 bg-(--ui-info)/8 ring-1 ring-(--ui-info)/20 hover:bg-(--ui-info)/12 hover:border-(--ui-info)/70 hover:shadow-(--ui-info)/10'
+        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
     ]"
-    @click="onCardClick"
   >
     <div class="flex-1 flex flex-col gap-5">
       <div class="grid grid-cols-3 gap-4">

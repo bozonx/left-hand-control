@@ -17,11 +17,9 @@ const props = defineProps<{
   isFirst?: boolean
   isLast?: boolean
   focusName?: boolean
-  selected?: boolean
 }>()
 
 const emit = defineEmits<{
-  select: []
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
@@ -31,23 +29,6 @@ const emit = defineEmits<{
   nameFocused: [uiKey: string]
   'update:macro': [macro: Macro]
 }>()
-
-const stepsContainerRef = useTemplateRef<HTMLElement>('stepsContainerRef')
-const stepIds = computed(() => props.macro.steps.map((s) => s.id))
-const { selectedId: selectedStepId } = useListKeyboardNavigation({
-  ids: stepIds,
-  move: (id, delta) => {
-    const idx = props.macro.steps.findIndex((s) => s.id === id)
-    if (idx < 0) return
-    emit('moveStep', props.macro, idx, delta)
-  },
-})
-
-function onCardClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  if (target?.closest('input, textarea, select, button, [role="dialog"], [role="listbox"]')) return
-  emit('select')
-}
 
 const { copy: copyToClipboard } = useClipboardCopy()
 const nameInputRef = useTemplateRef<{ inputRef?: { value?: HTMLInputElement } }>('nameInputRef')
@@ -95,13 +76,7 @@ async function copyMacroId() {
 
 <template>
   <div
-    class="relative p-4 rounded-xl border flex gap-6 group transition-all duration-150 cursor-pointer"
-    :class="[
-      selected
-        ? 'border-(--ui-primary) ring-1 ring-(--ui-primary) bg-(--ui-bg-muted)/60 shadow-lg shadow-(--ui-primary)/5'
-        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-lg hover:shadow-(--ui-primary)/5',
-    ]"
-    @click="onCardClick"
+    class="relative flex gap-6 rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 p-4 transition-all duration-150 group hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-(--ui-primary)/5"
   >
     <div class="flex-1 flex flex-col gap-4 min-w-0">
       <div class="grid grid-cols-2 gap-3">
@@ -193,7 +168,7 @@ async function copyMacroId() {
           {{ $t('macros.stepsEmpty') }}
         </div>
 
-        <div v-else ref="stepsContainerRef" class="space-y-2">
+        <div v-else class="space-y-2">
           <MacroStepRow
             v-for="(step, idx) in macro.steps"
             :key="step.id"
@@ -202,10 +177,8 @@ async function copyMacroId() {
             :is-first="idx === 0"
             :is-last="idx === macro.steps.length - 1"
             :macro-id="macro.id"
-            :selected="selectedStepId === step.id"
             :step-error="stepError"
             :step-warning="stepWarning"
-            @select="selectedStepId = step.id"
             @move-up="$emit('moveStep', macro, idx, -1)"
             @move-down="$emit('moveStep', macro, idx, 1)"
             @ask-remove="askRemoveStep"
