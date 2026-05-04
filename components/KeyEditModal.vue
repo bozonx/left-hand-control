@@ -2,6 +2,7 @@
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import { parseTextAction } from '~/types/config'
 import { isCanonicalAction, normalizeActionValue } from '~/utils/actionSyntax'
+import { validateActionValue } from '~/utils/actionValidation'
 
 const props = defineProps<{
   keyLabel: string
@@ -17,13 +18,17 @@ const emit = defineEmits<{
 
 const open = defineModel<boolean>({ required: true })
 
+const { config } = useConfig()
 const draft = ref(typeof props.action === 'string' ? props.action : '')
 const containerRef = ref<HTMLElement | null>(null)
 const normalizedDraft = computed(() => {
   const raw = draft.value ?? ''
   return parseTextAction(raw) !== null ? raw : raw.trim()
 })
-const draftInvalid = computed(() => !isCanonicalAction(normalizedDraft.value))
+const draftInvalid = computed(() =>
+  !isCanonicalAction(normalizedDraft.value)
+  || validateActionValue(normalizedDraft.value, config.value) !== null,
+)
 
 watch(open, (v) => {
   if (v) {
@@ -35,6 +40,7 @@ watch(open, (v) => {
 function save() {
   const next = normalizeActionValue(draft.value)
   if (next === null) return
+  if (validateActionValue(next, config.value) !== null) return
   emit('save', next)
   open.value = false
 }
@@ -53,6 +59,7 @@ function pickAndSave(value: string) {
   draft.value = value
   const next = normalizeActionValue(value)
   if (next === null) return
+  if (validateActionValue(next, config.value) !== null) return
   emit('save', next)
   open.value = false
 }

@@ -64,6 +64,10 @@ pub fn resolve(name: &str) -> Option<SysAction> {
     resolve_for_desktop(name, &detect().desktop)
 }
 
+pub fn is_known(name: &str) -> bool {
+    kde::resolve(name.trim()).is_some()
+}
+
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
     let name = name.trim();
     use crate::platform::linux::Desktop;

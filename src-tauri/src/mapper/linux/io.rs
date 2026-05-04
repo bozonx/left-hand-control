@@ -5,6 +5,8 @@ use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
 use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, Key};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
+use std::sync::mpsc;
+use std::sync::OnceLock;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -51,11 +53,46 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn run_system(&mut self, action: &SysAction) {
-        run_sys_action(action);
+        enqueue_side_effect(SideEffectJob::System(action.clone()));
     }
 
     fn run_command(&mut self, command: &SysCommand) {
-        run_shell_command(command);
+        enqueue_side_effect(SideEffectJob::Command(command.clone()));
+    }
+}
+
+enum SideEffectJob {
+    System(SysAction),
+    Command(SysCommand),
+}
+
+fn side_effect_tx() -> &'static mpsc::Sender<SideEffectJob> {
+    static TX: OnceLock<mpsc::Sender<SideEffectJob>> = OnceLock::new();
+    TX.get_or_init(|| {
+        let (tx, rx) = mpsc::channel();
+        match thread::Builder::new()
+            .name("lhc-side-effects".into())
+            .spawn(move || run_side_effect_worker(rx))
+        {
+            Ok(_) => {}
+            Err(e) => eprintln!("[mapper] could not spawn side-effect worker: {e}"),
+        }
+        tx
+    })
+}
+
+fn enqueue_side_effect(job: SideEffectJob) {
+    if let Err(e) = side_effect_tx().send(job) {
+        eprintln!("[mapper] side-effect queue unavailable: {e}");
+    }
+}
+
+fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
+    for job in rx {
+        match job {
+            SideEffectJob::System(action) => run_sys_action(&action),
+            SideEffectJob::Command(command) => run_shell_command(&command),
+        }
     }
 }
 
@@ -360,13 +397,24 @@ fn run_shell_command(command: &SysCommand) {
 fn spawn_system(cmd: &SysCommand) {
     let mut c = std::process::Command::new(&cmd.program);
     c.args(&cmd.args);
-    // Detach stdio so the child doesn't inherit our FDs in weird ways.
     c.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
     match c.spawn() {
-        Ok(_child) => {
-            eprintln!("[mapper] spawned system: {} {:?}", cmd.program, cmd.args);
+        Ok(mut child) => {
+            let pid = child.id();
+            eprintln!("[mapper] spawned side-effect pid={pid}: {} {:?}", cmd.program, cmd.args);
+            match child.wait() {
+                Ok(status) if status.success() => {
+                    eprintln!("[mapper] side-effect pid={pid} exited: {status}");
+                }
+                Ok(status) => {
+                    eprintln!("[mapper] side-effect pid={pid} failed: {status}");
+                }
+                Err(e) => {
+                    eprintln!("[mapper] side-effect pid={pid} wait failed: {e}");
+                }
+            }
         }
         Err(e) => {
             eprintln!("[mapper] spawn system {:?} failed: {}", cmd.program, e);

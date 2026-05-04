@@ -81,13 +81,12 @@ export interface LayerKeymap {
   extras: ExtraKey[]
 }
 
-// One step of a macro. For now only simple keystrokes are supported
-// (single key or key with modifiers, e.g. "Ctrl+Shift+KeyT", "Enter").
-// Reserved for future: { type: 'shell', command: '...' },
-//                      { type: 'system', name: '...' }.
+// One step of a macro. Stored under the legacy `keystroke` field for
+// compatibility, but the value is a full action string: key chord, `sys:<id>`,
+// `cmd:<id>`, or `text:<text>`. Nested `macro:<id>` is intentionally blocked.
 export interface MacroStep {
   id: string
-  // Keystroke string, same syntax as tap actions / keymap values.
+  // Full action string, same syntax as tap actions / keymap values.
   keystroke: string
 }
 

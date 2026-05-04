@@ -148,7 +148,7 @@ function cancelRemove() {
           v-for="(command, index) in config.commands"
           :key="uiKeyOf(command)"
           :ui-key="uiKeyOf(command)"
-          :command="command"
+          v-model:command="config.commands[index]"
           :name-input-id="commandNameInputId(uiKeyOf(command))"
           :usage="usage[command.id] ?? []"
           :id-error="idError(command) ?? undefined"
@@ -160,7 +160,6 @@ function cancelRemove() {
           @move-up="moveCommand($event, -1)"
           @move-down="moveCommand($event, 1)"
           @name-focused="clearFocusCommandKey"
-          @update:command="config.commands[index] = $event"
         />
       </div>
     </UCard>

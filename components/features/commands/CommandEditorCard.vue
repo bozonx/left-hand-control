@@ -3,7 +3,6 @@ import AppTooltip from '~/components/shared/AppTooltip.vue'
 import type { Command } from '~/types/config'
 
 const props = defineProps<{
-  command: Command
   uiKey: string
   nameInputId: string
   usage: string[]
@@ -14,12 +13,13 @@ const props = defineProps<{
   focusName?: boolean
 }>()
 
+const command = defineModel<Command>('command', { required: true })
+
 const emit = defineEmits<{
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
   nameFocused: [uiKey: string]
-  'update:command': [command: Command]
 }>()
 
 const { copy: copyToClipboard } = useClipboardCopy()
@@ -40,8 +40,8 @@ watch(
 )
 
 async function copyCommandId() {
-  if (!props.command.id) return
-  await copyToClipboard(props.command.id)
+  if (!command.value.id) return
+  await copyToClipboard(command.value.id)
 }
 </script>
 
@@ -61,12 +61,11 @@ async function copyCommandId() {
           </template>
           <div class="flex items-center gap-2">
             <UInput
-              :model-value="command.id"
+              v-model="command.id"
               :color="idError ? 'error' : undefined"
               :highlight="!!idError"
               class="w-full font-mono"
               :placeholder="$t('commands.idPh')"
-              @update:model-value="(v: string) => emit('update:command', { ...props.command, id: v })"
             />
             <AppTooltip :text="$t('commands.copyId')">
               <UButton
@@ -93,10 +92,9 @@ async function copyCommandId() {
           <UInput
             :id="nameInputId"
             ref="nameInputRef"
-            :model-value="command.name"
+            v-model="command.name"
             :placeholder="$t('commands.namePh')"
             class="w-full"
-            @update:model-value="(v: string) => emit('update:command', { ...props.command, name: v })"
           />
         </UFormField>
       </div>
@@ -168,12 +166,11 @@ async function copyCommandId() {
         />
       </template>
       <UTextarea
-        :model-value="command.linux"
+        v-model="command.linux"
         autoresize
         :rows="3"
         class="w-full font-mono"
         :placeholder="$t('commands.linuxPh')"
-        @update:model-value="(v: string) => emit('update:command', { ...props.command, linux: v })"
       />
     </UFormField>
   </div>

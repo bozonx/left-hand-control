@@ -3,6 +3,7 @@ import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
 import { parseTextAction } from '~/types/config'
 import { isCanonicalAction } from '~/utils/actionSyntax'
+import { validateActionValue } from '~/utils/actionValidation'
 
 type ModeKind = 'native' | 'none' | 'action'
 
@@ -16,6 +17,7 @@ const props = defineProps<{
 const model = defineModel<string | null>({ default: '' })
 const { t } = useI18n()
 const { getActionInfo } = useMacros()
+const { config } = useConfig()
 
 const pickerOpen = ref(false)
 const pickerValue = ref('')
@@ -83,6 +85,7 @@ function applyAction(value: string) {
   pickerOpen.value = false
   if (!next) return
   if (!isCanonicalAction(next)) return
+  if (validateActionValue(next, config.value) !== null) return
   model.value = next
 }
 

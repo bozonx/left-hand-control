@@ -106,7 +106,7 @@ function cancelRemove() {
           v-for="(macro, index) in config.macros"
           :key="uiKeyOf(macro)"
           :ui-key="uiKeyOf(macro)"
-          :macro="macro"
+          v-model:macro="config.macros[index]"
           :is-first="index === 0"
           :is-last="index === config.macros.length - 1"
           :name-input-id="macroNameInputId(uiKeyOf(macro))"
@@ -124,7 +124,6 @@ function cancelRemove() {
           @move-step="moveStep"
           @remove-step="removeStep"
           @name-focused="clearFocusMacroKey"
-          @update:macro="config.macros[index] = $event"
         />
       </div>
     </UCard>

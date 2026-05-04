@@ -5,7 +5,6 @@ import type { Macro, MacroStep } from '~/types/config'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 
 const props = defineProps<{
-  macro: Macro
   idError?: string
   usage: string[]
   defaultStepPauseMs: number
@@ -19,6 +18,8 @@ const props = defineProps<{
   focusName?: boolean
 }>()
 
+const macro = defineModel<Macro>('macro', { required: true })
+
 const emit = defineEmits<{
   remove: [payload: { uiKey: string, id: string }]
   moveUp: [uiKey: string]
@@ -27,7 +28,6 @@ const emit = defineEmits<{
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
   nameFocused: [uiKey: string]
-  'update:macro': [macro: Macro]
 }>()
 
 const { copy: copyToClipboard } = useClipboardCopy()
@@ -43,7 +43,7 @@ function askRemoveStep(stepId: string) {
 
 function confirmRemoveStep() {
   if (pendingStepId.value) {
-    emit('removeStep', props.macro, pendingStepId.value)
+    emit('removeStep', macro.value, pendingStepId.value)
   }
   pendingStepId.value = null
   stepConfirmOpen.value = false
@@ -69,8 +69,8 @@ watch(
 )
 
 async function copyMacroId() {
-  if (!props.macro.id) return
-  await copyToClipboard(props.macro.id)
+  if (!macro.value.id) return
+  await copyToClipboard(macro.value.id)
 }
 </script>
 
@@ -90,12 +90,11 @@ async function copyMacroId() {
           </template>
           <div class="flex items-center gap-2">
             <UInput
-              :model-value="macro.id"
+              v-model="macro.id"
               :color="idError ? 'error' : undefined"
               :highlight="!!idError"
               class="w-full font-mono"
               :placeholder="$t('macros.idPh')"
-              @update:model-value="(v: string) => emit('update:macro', { ...props.macro, id: v })"
             />
             <AppTooltip :text="$t('macros.copyId')">
               <UButton
@@ -123,10 +122,9 @@ async function copyMacroId() {
           <UInput
             :id="nameInputId"
             ref="nameInputRef"
-            :model-value="macro.name"
+            v-model="macro.name"
             :placeholder="$t('macros.namePh')"
             class="w-full"
-            @update:model-value="(v: string) => emit('update:macro', { ...props.macro, name: v })"
           />
         </UFormField>
       </div>
@@ -182,7 +180,7 @@ async function copyMacroId() {
             @move-up="$emit('moveStep', macro, idx, -1)"
             @move-down="$emit('moveStep', macro, idx, 1)"
             @ask-remove="askRemoveStep"
-            @update:step="(v: MacroStep) => emit('update:macro', { ...props.macro, steps: props.macro.steps.map((s, i) => i === idx ? v : s) })"
+            @update:step="(v: MacroStep) => { macro.steps[idx] = v }"
           />
         </div>
       </div>
@@ -235,22 +233,20 @@ async function copyMacroId() {
 
       <div class="flex flex-col gap-1 mt-1">
         <SettingTimeoutField
-          :model-value="macro.stepPauseMs"
+          v-model="macro.stepPauseMs"
           :label="$t('macros.stepPauseLabel')"
           :hint="$t('macros.stepPauseHint')"
           hint-visible-on="group-hover"
           :default-value="defaultStepPauseMs"
           :suffix="$t('common.ms')"
-          @update:model-value="(v: number | undefined) => emit('update:macro', { ...props.macro, stepPauseMs: v })"
         />
         <SettingTimeoutField
-          :model-value="macro.modifierDelayMs"
+          v-model="macro.modifierDelayMs"
           :label="$t('macros.modDelayLabel')"
           :hint="$t('macros.modDelayHint')"
           hint-visible-on="group-hover"
           :default-value="defaultModifierDelayMs"
           :suffix="$t('common.ms')"
-          @update:model-value="(v: number | undefined) => emit('update:macro', { ...props.macro, modifierDelayMs: v })"
         />
       </div>
     </div>

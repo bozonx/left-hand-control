@@ -81,7 +81,7 @@ function cancelRemoveRule() {
         <RuleRow
           v-for="(rule, index) in config.rules"
           :key="rule.id"
-          :rule="rule"
+          v-model:rule="config.rules[index]"
           :layer-options="layerOptions"
           :default-hold-timeout-ms="config.settings.defaultHoldTimeoutMs"
           :default-double-tap-timeout-ms="config.settings.defaultDoubleTapTimeoutMs"
@@ -94,7 +94,6 @@ function cancelRemoveRule() {
           @move-down="moveRule($event, 'down')"
           @create-layer="openNewLayer"
           @key-selected="markRuleConfigured"
-          @update:rule="config.rules[index] = $event"
         />
       </div>
 

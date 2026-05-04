@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { systemActionById, SYSTEM_ACTIONS } from '~/utils/systemActions'
 import { systemMacroById, SYSTEM_MACROS } from '~/utils/systemMacros'
@@ -40,5 +42,23 @@ describe('system macro catalog', () => {
       ],
     })
     expect(systemMacroById('missing')).toBeUndefined()
+  })
+
+  it('stays in sync with the Rust runtime catalog', () => {
+    const rust = readFileSync(
+      join(process.cwd(), 'src-tauri/src/mapper/system_macros.rs'),
+      'utf8',
+    )
+    const rustMacros = [...rust.matchAll(/id:\s*"([^"]+)",\s*steps:\s*&\[(.*?)\]/gs)]
+      .map((match) => ({
+        id: match[1],
+        steps: [...match[2]!.matchAll(/"([^"]+)"/g)].map((step) => ({ keystroke: step[1] })),
+      }))
+
+    expect(rustMacros).toHaveLength(SYSTEM_MACROS.length)
+    expect(SYSTEM_MACROS.map((macro) => ({
+      id: macro.id,
+      steps: macro.steps,
+    }))).toEqual(rustMacros)
   })
 })

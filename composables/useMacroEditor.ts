@@ -1,5 +1,6 @@
 import { parseMacroRef, type Macro, type MacroStep } from '~/types/config'
 import { isCanonicalAction } from '~/utils/actionSyntax'
+import { validateActionValue } from '~/utils/actionValidation'
 import { randomId } from '~/utils/keys'
 import { systemMacroById, type SystemMacro } from '~/utils/systemMacros'
 import { useEntityEditor } from '~/composables/useEntityEditor'
@@ -99,6 +100,9 @@ export function useMacroEditor() {
     if (!raw) return null
     if (parseMacroRef(raw)) return t('macros.stepErrors.nestedMacro')
     if (!isCanonicalAction(raw)) return t('picker.invalidValue')
+    if (validateActionValue(raw, config.value, { allowMacros: false }) !== null) {
+      return t('picker.invalidValue')
+    }
     return null
   }
 

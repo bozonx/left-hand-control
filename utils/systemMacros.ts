@@ -85,6 +85,71 @@ export const SYSTEM_MACROS: SystemMacro[] = [
     name: "Paste at line bottom",
     steps: s("End", "Enter", "Ctrl+KeyV"),
   },
+  {
+    id: "cutToStart",
+    name: "Cut to start",
+    steps: s("Shift+Home", "Ctrl+KeyX"),
+  },
+  {
+    id: "cutToEnd",
+    name: "Cut to end",
+    steps: s("Shift+End", "Ctrl+KeyX"),
+  },
+  {
+    id: "cutLineContent",
+    name: "Cut line content",
+    steps: s("Home", "Shift+End", "Ctrl+KeyX"),
+  },
+  {
+    id: "cutAndRemoveLine",
+    name: "Cut and remove line",
+    steps: s("Home", "Shift+End", "Ctrl+KeyX", "Delete"),
+  },
+  {
+    id: "select5LinesUp",
+    name: "Select 5 lines up",
+    steps: s("Shift+ArrowUp", "Shift+ArrowUp", "Shift+ArrowUp", "Shift+ArrowUp", "Shift+ArrowUp"),
+  },
+  {
+    id: "copyToStart",
+    name: "Copy to start",
+    steps: s("Shift+Home", "Ctrl+KeyC", "Home"),
+  },
+  {
+    id: "copyToEnd",
+    name: "Copy to end",
+    steps: s("Shift+End", "Ctrl+KeyC", "End"),
+  },
+  {
+    id: "copyLine",
+    name: "Copy line",
+    steps: s("Home", "Shift+End", "Ctrl+KeyC", "Home"),
+  },
+  {
+    id: "selectWholeLine",
+    name: "Select whole line",
+    steps: s("Home", "Shift+End"),
+  },
+  {
+    id: "replaceToStartWithBuffer",
+    name: "Replace to start with buffer",
+    steps: s("Shift+Home", "Ctrl+KeyV"),
+  },
+  {
+    id: "replaceToEndWithBuffer",
+    name: "Replace to end with buffer",
+    steps: s("Shift+End", "Ctrl+KeyV"),
+  },
+  {
+    id: "replaceLineWidthBuffer",
+    name: "Replace line with buffer",
+    steps: s("Home", "Shift+End", "Ctrl+KeyV"),
+  },
+  {
+    id: "select5LinesDown",
+    name: "Select 5 lines down",
+    steps: s("Shift+ArrowDown", "Shift+ArrowDown", "Shift+ArrowDown", "Shift+ArrowDown", "Shift+ArrowDown"),
+  },
 ];
 
 const BY_ID: Record<string, SystemMacro> = Object.fromEntries(

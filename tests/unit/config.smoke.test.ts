@@ -13,6 +13,7 @@ import {
 } from '~/types/config'
 import { normalizeConfig, parsePersistedConfig } from '~/composables/useConfig'
 import { isCanonicalAction } from '~/utils/actionSyntax'
+import { validateActionValue } from '~/utils/actionValidation'
 
 describe('config helpers', () => {
   it('creates the expected default config shape', () => {
@@ -54,6 +55,21 @@ describe('config helpers', () => {
     expect(isCanonicalAction('Ctrl+C')).toBe(false)
     expect(isCanonicalAction('1')).toBe(false)
     expect(isCanonicalAction('€')).toBe(false)
+  })
+
+  it('validates semantic action references against the current config', () => {
+    const config = createDefaultConfig()
+    config.macros.push({ id: 'copy', name: 'Copy', steps: [] })
+    config.commands.push({ id: 'terminal', name: 'Terminal', linux: 'kitty' })
+
+    expect(validateActionValue('macro:copy', config)).toBeNull()
+    expect(validateActionValue('macro:copyLine', config)).toBeNull()
+    expect(validateActionValue('cmd:terminal', config)).toBeNull()
+    expect(validateActionValue('sys:switchDesktop1', config)).toBeNull()
+    expect(validateActionValue('macro:missing', config)).toBe('unknownMacro')
+    expect(validateActionValue('cmd:missing', config)).toBe('unknownCommand')
+    expect(validateActionValue('sys:missing', config)).toBe('unknownSystemAction')
+    expect(validateActionValue('macro:copy', config, { allowMacros: false })).toBe('macroNotAllowed')
   })
 
   it('normalizes partial persisted config into a complete shape', () => {

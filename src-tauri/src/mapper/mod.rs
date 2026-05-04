@@ -23,6 +23,8 @@ mod portal;
 mod system;
 #[cfg(target_os = "linux")]
 mod system_macros;
+#[cfg(target_os = "linux")]
+mod validation;
 
 use serde::Serialize;
 use std::sync::{Mutex, MutexGuard};
@@ -265,6 +267,8 @@ fn unsupported_os_msg(op: &str) -> String {
 pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
+    #[cfg(target_os = "linux")]
+    validation::validate_config(&cfg)?;
     lock_state().start(device_path, mouse_path, cfg)
 }
 

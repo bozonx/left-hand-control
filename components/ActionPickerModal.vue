@@ -3,6 +3,7 @@ import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import { parseTextAction } from '~/types/config'
 import { isCanonicalAction, normalizeActionValue } from '~/utils/actionSyntax'
+import { validateActionValue } from '~/utils/actionValidation'
 
 const props = withDefaults(defineProps<{
   allowEmpty?: boolean
@@ -36,6 +37,7 @@ const emit = defineEmits<{
 const model = defineModel<string | null>({ default: '' })
 
 const { getActionInfo } = useMacros()
+const { config } = useConfig()
 const instance = getCurrentInstance()
 
 const uncontrolledOpen = ref(false)
@@ -62,7 +64,14 @@ const normalizedDraft = computed(() => {
   const raw = draft.value ?? ''
   return parseTextAction(raw) !== null ? raw : raw.trim()
 })
-const draftInvalid = computed(() => !isCanonicalAction(normalizedDraft.value))
+const draftIssue = computed(() => {
+  if (!isCanonicalAction(normalizedDraft.value)) return 'invalidSyntax'
+  return validateActionValue(normalizedDraft.value, config.value, {
+    allowMacros: props.allowMacros,
+    excludedMacroId: props.excludedMacroId,
+  })
+})
+const draftInvalid = computed(() => draftIssue.value !== null)
 const applyDisabled = computed(() =>
   (props.requireValue && !normalizedDraft.value)
   || draftInvalid.value,
