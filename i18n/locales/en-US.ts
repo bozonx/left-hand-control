@@ -437,7 +437,9 @@ export default {
     devicePh: "Not selected",
     mouseLabel: "Mouse (optional)",
     mouseHelp:
-      "Select the mouse to watch modifier + click interactions. Movement is not affected.",
+      "Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.",
+    mouseNativeActionNote:
+      "The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.",
     mouseDevicePh: "Not selected (no mouse support)",
     refreshDevices: "Refresh list",
     refreshDevicesTooltip: "Refresh device list",

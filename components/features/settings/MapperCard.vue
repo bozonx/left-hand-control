@@ -101,6 +101,9 @@ const hasErrorIssues = computed(() =>
           :disabled="mapper.status.value.running"
           @update:model-value="(value: string) => $emit('update:selectedMouse', value)"
         />
+        <p class="mt-2 text-xs text-(--ui-text-muted)">
+          {{ $t('settings.mouseNativeActionNote') }}
+        </p>
       </UFormField>
 
       <div class="flex items-center gap-2">
