@@ -61,15 +61,16 @@ pub enum SysAction {
 /// action to run on this machine, or `None` if the function is not
 /// available under the current desktop environment.
 pub fn resolve(name: &str) -> Option<SysAction> {
-    if name.trim() == "showQuickMenu" {
+    use crate::platform::linux::detect;
+    let name = name.trim();
+    if name == "showQuickMenu" {
         return Some(SysAction::TauriEvent("show_quick_menu".into()));
     }
-    use crate::platform::linux::detect;
     resolve_for_desktop(name, &detect().desktop)
 }
 
 pub fn is_known(name: &str) -> bool {
-    kde::resolve(name.trim()).is_some()
+    resolve(name.trim()).is_some()
 }
 
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {

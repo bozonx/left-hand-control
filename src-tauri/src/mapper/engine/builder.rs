@@ -28,7 +28,7 @@ impl Engine {
                 let id = c.id.trim();
                 let linux = c.linux.trim();
                 if id.is_empty() {
-                    eprintln!("[mapper] skipping command with empty id: {:?}", c.name);
+                    eprintln!("[mapper] skipping command with empty id");
                     continue;
                 }
                 if linux.is_empty() {
@@ -50,7 +50,7 @@ impl Engine {
         let mut raw_user_macros: HashMap<String, &crate::mapper::config::Macro> = HashMap::new();
         for m in &cfg.macros {
             if m.id.is_empty() {
-                eprintln!("[mapper] skipping macro with empty id: {:?}", m.name);
+                eprintln!("[mapper] skipping macro with empty id");
                 continue;
             }
             raw_user_macros.insert(m.id.clone(), m);
@@ -371,6 +371,8 @@ impl Engine {
 
         Self {
             rules,
+            macros,
+            commands,
             layer_maps,
             default_hold,
             default_mod_delay,

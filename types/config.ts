@@ -105,6 +105,8 @@ export interface Command {
   id: string
   name: string
   linux: string
+  windows?: string
+  macos?: string
 }
 
 export type AppearancePreference = 'system' | 'light' | 'dark'

@@ -38,18 +38,13 @@ const model = defineModel<string | null>({ default: '' })
 
 const { getActionInfo } = useMacros()
 const { config } = useConfig()
-const instance = getCurrentInstance()
 
 const uncontrolledOpen = ref(false)
 const draft = ref('')
 const closeReason = ref<'apply' | 'clear' | 'cancel' | null>(null)
 
 const actionInfo = computed(() => getActionInfo(model.value))
-const isControlled = computed(() => {
-  const vnodeProps = instance?.vnode.props ?? {}
-  return Object.prototype.hasOwnProperty.call(vnodeProps, 'open')
-    || Object.prototype.hasOwnProperty.call(vnodeProps, 'onUpdate:open')
-})
+const isControlled = computed(() => props.open !== undefined)
 const modalOpen = computed({
   get: () => (isControlled.value ? !!props.open : uncontrolledOpen.value),
   set: (value: boolean) => {

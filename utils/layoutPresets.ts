@@ -9,6 +9,7 @@ import {
   type LayoutPreset,
   type Macro,
   type MacroStep,
+  type QuickAction,
 } from "~/types/config";
 
 type TranslateFn = (key: string) => string;
@@ -51,6 +52,12 @@ interface LayoutYaml {
     id?: string;
     name?: string;
     linux?: string;
+  }>;
+  quickActions?: Array<{
+    id?: string;
+    name?: string;
+    action?: string;
+    icon?: string;
   }>;
 }
 
@@ -159,6 +166,18 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     });
   }
 
+  const quickActions: QuickAction[] = [];
+  for (const action of doc.quickActions ?? []) {
+    const value = action?.action?.trim() ?? "";
+    if (!action?.id || !value) continue;
+    quickActions.push({
+      id: action.id,
+      name: action.name?.trim() || action.id,
+      action: value,
+      icon: action.icon?.trim() || undefined,
+    });
+  }
+
   return {
     description: doc.description?.trim() || undefined,
     layers,
@@ -166,6 +185,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     layerKeymaps,
     macros,
     commands,
+    quickActions,
   };
 }
 
@@ -234,6 +254,12 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       name: c.name,
       linux: c.linux,
     })),
+    quickActions: preset.quickActions.map((action) => ({
+      id: action.id,
+      name: action.name,
+      action: action.action,
+      ...(action.icon ? { icon: action.icon } : {}),
+    })),
   };
   return yaml.dump(doc, { lineWidth: 100, noRefs: true });
 }
@@ -245,6 +271,7 @@ export function emptyLayoutPreset(): LayoutPreset {
     layerKeymaps: {},
     macros: [],
     commands: [],
+    quickActions: [],
   };
 }
 
@@ -260,6 +287,7 @@ export function extractPresetFromConfig(
     layerKeymaps: JSON.parse(JSON.stringify(config.layerKeymaps)),
     macros: JSON.parse(JSON.stringify(config.macros)),
     commands: JSON.parse(JSON.stringify(config.commands)),
+    quickActions: JSON.parse(JSON.stringify(config.quickActions)),
   };
 }
 
@@ -278,6 +306,7 @@ export function applyPresetToConfig(
     layerKeymaps: JSON.parse(JSON.stringify(preset.layerKeymaps)),
     macros: JSON.parse(JSON.stringify(preset.macros)),
     commands: JSON.parse(JSON.stringify(preset.commands)),
+    quickActions: JSON.parse(JSON.stringify(preset.quickActions)),
     settings: { ...config.settings, currentLayoutId: layoutId },
   };
   for (const layer of next.layers) {
@@ -297,6 +326,7 @@ export function layoutSnapshotOf(config: AppConfig): string {
     layerKeymaps: config.layerKeymaps,
     macros: config.macros,
     commands: config.commands,
+    quickActions: config.quickActions,
   });
 }
 

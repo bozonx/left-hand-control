@@ -220,10 +220,6 @@ fn validate_macro_step(
     if action.trim().is_empty() {
         return;
     }
-    if action.trim().strip_prefix("macro:").is_some() {
-        errors.push(format!("{where_}: nested macro references are not supported"));
-        return;
-    }
     validate_action(
         action,
         where_,
@@ -333,6 +329,8 @@ mod tests {
             id: "music".into(),
             name: "Music".into(),
             linux: "playerctl play-pause".into(),
+            windows: String::new(),
+            macos: String::new(),
         });
         cfg.macros.push(Macro {
             id: "m".into(),
@@ -356,6 +354,8 @@ mod tests {
             id: "music".into(),
             name: "Music".into(),
             linux: "playerctl play-pause".into(),
+            windows: String::new(),
+            macos: String::new(),
         });
         cfg.settings.current_layout_id = Some("custom".into());
         cfg.settings.command_trust.insert(

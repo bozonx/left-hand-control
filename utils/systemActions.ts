@@ -59,12 +59,6 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     }
   }),
   {
-    id: 'showQuickMenu',
-    nameKey: 'systemActions.showQuickMenu',
-    hint: 'App: Show Quick Actions menu at screen center',
-    platforms: ['linux-kde'],
-  },
-  {
     id: 'walkThroughWindowsAlternative',
     nameKey: 'systemActions.walkThroughWindowsAlternative',
     hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Walk Through Windows Alternative"',
@@ -80,6 +74,12 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     id: 'showClipboardHistory',
     nameKey: 'systemActions.showClipboardHistory',
     hint: 'KDE: qdbus org.kde.plasmashell /klipper org.kde.klipper.klipper.showKlipperPopupMenu',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'showQuickMenu',
+    nameKey: 'systemActions.showQuickMenu',
+    hint: 'App: Show Quick Actions menu at screen center',
     platforms: ['linux-kde'],
   },
   {

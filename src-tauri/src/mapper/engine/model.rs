@@ -56,6 +56,7 @@ pub(super) struct ActiveMacro {
     pub(super) step_pause: Duration,
     pub(super) mod_delay: Duration,
     pub(super) current_step: usize,
+    pub(super) steps_emitted: usize,
     pub(super) phase: MacroPhase,
     pub(super) next_wake: Instant,
 }

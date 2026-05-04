@@ -184,6 +184,7 @@ macros:
           linux: "kitty",
         },
       ],
+      quickActions: [],
     };
 
     const yaml = serializeLayoutYaml(original);
@@ -300,6 +301,7 @@ macros:
       layerKeymaps: {},
       macros: [],
       commands: [],
+      quickActions: [],
     });
   });
 
@@ -340,6 +342,7 @@ layers:
         layerKeymaps: {},
         macros: [],
         commands: [],
+        quickActions: [],
       },
       (key) =>
         ({

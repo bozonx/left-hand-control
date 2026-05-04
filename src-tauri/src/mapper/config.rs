@@ -16,9 +16,10 @@ use std::collections::HashMap;
 ///
 /// Deserialization rules (from JSON — the only format Rust reads):
 ///   missing field      => Native  (via `#[serde(default)]`)
-///   null               => Swallow
-///   ""                 => Native
-///   non-empty string   => Action(s)
+///   null (JSON)          => Swallow
+///   ""                   => Native
+///   non-empty string       => Action(s)
+/// Missing fields default to Native via #[serde(default)].
 #[derive(Debug, Clone, Default)]
 pub enum ActionSpec {
     #[default]
@@ -66,6 +67,10 @@ pub struct Command {
     pub name: String,
     #[serde(default)]
     pub linux: String,
+    #[serde(default)]
+    pub windows: String,
+    #[serde(default)]
+    pub macos: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -86,8 +91,8 @@ pub struct Macro {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MacroStep {
-    #[allow(dead_code)]
     #[serde(default)]
+    #[allow(dead_code)]
     pub id: String,
     #[serde(default)]
     pub keystroke: String,
@@ -96,8 +101,8 @@ pub struct MacroStep {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Rule {
-    #[allow(dead_code)]
     #[serde(default)]
+    #[allow(dead_code)]
     pub id: String,
     #[serde(default = "default_true")]
     pub enabled: bool,
@@ -125,8 +130,8 @@ pub struct Rule {
 }
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct ExtraKey {
-    #[allow(dead_code)]
     #[serde(default)]
+    #[allow(dead_code)]
     pub id: String,
     #[serde(alias = "name")]
     pub key: String,
@@ -154,14 +159,12 @@ pub struct Settings {
     pub default_macro_modifier_delay_ms: u64,
     #[serde(default = "default_double_tap")]
     pub default_double_tap_timeout_ms: u64,
-    #[allow(dead_code)]
     #[serde(default)]
     pub input_device_path: Option<String>,
     #[serde(default)]
     pub current_layout_id: Option<String>,
     #[serde(default)]
     pub command_trust: HashMap<String, CommandTrustEntry>,
-    #[allow(dead_code)]
     #[serde(default)]
     pub game_mode: GameModeSettings,
 }
@@ -170,8 +173,8 @@ pub struct Settings {
 #[serde(rename_all = "camelCase")]
 pub struct CommandTrustEntry {
     pub fingerprint: String,
-    #[allow(dead_code)]
     #[serde(default)]
+    #[allow(dead_code)]
     pub trusted_at: String,
 }
 
@@ -189,9 +192,6 @@ pub struct GameModeSettings {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GameModeProcessMatcher {
-    #[allow(dead_code)]
-    #[serde(default)]
-    pub id: String,
     #[serde(default)]
     pub name: String,
     #[serde(default)]
@@ -357,6 +357,8 @@ mod tests {
             id: "play".into(),
             name: "Play".into(),
             linux: "playerctl play-pause".into(),
+            windows: String::new(),
+            macos: String::new(),
         }];
         assert_eq!(command_fingerprint(&commands), "4b1e677e");
 
@@ -379,6 +381,8 @@ mod tests {
             id: "play".into(),
             name: "Play".into(),
             linux: "notify-send changed".into(),
+            windows: String::new(),
+            macos: String::new(),
         }];
         assert!(!settings.commands_trusted(&changed));
     }

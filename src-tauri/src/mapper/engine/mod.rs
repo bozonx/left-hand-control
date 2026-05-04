@@ -48,12 +48,15 @@ mod model;
 pub use self::model::Out;
 use self::model::{ActionDef, HoldMode, Pending, Phase, RuleEntry, TapMode};
 use super::action::Keystroke;
+use super::system::SysCommand;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
 pub struct Engine {
     rules: HashMap<Key, Vec<RuleEntry>>,
+    macros: HashMap<String, self::model::MacroDef>,
+    commands: HashMap<String, SysCommand>,
     /// layer_id -> (physical_key -> resolved action)
     layer_maps: HashMap<String, HashMap<Key, ActionDef>>,
     default_hold: Duration,
@@ -110,9 +113,14 @@ impl Engine {
             if now >= am.next_wake {
                 use self::model::MacroPhase;
                 use crate::mapper::action::MacroStepItem;
+                const MAX_MACRO_STEPS: usize = 1000;
 
                 loop {
                     if am.current_step >= am.steps.len() {
+                        break;
+                    }
+                    if am.steps_emitted >= MAX_MACRO_STEPS {
+                        eprintln!("[mapper] macro step limit ({}) exceeded, aborting", MAX_MACRO_STEPS);
                         break;
                     }
                     match am.phase {
@@ -131,6 +139,7 @@ impl Engine {
                                     } else {
                                         out.push(Out::KeyRaw { key: ks.key, down: true });
                                         out.push(Out::KeyRaw { key: ks.key, down: false });
+                                        am.steps_emitted += 1;
                                         am.current_step += 1;
                                         if am.current_step < am.steps.len() {
                                             am.next_wake = now + am.step_pause;
@@ -141,6 +150,7 @@ impl Engine {
                                 }
                                 MacroStepItem::System(action) => {
                                     out.push(Out::RunSystem(action.clone()));
+                                    am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
                                         am.next_wake = now + am.step_pause;
@@ -150,6 +160,7 @@ impl Engine {
                                 }
                                 MacroStepItem::Command(command) => {
                                     out.push(Out::RunCommand(command.clone()));
+                                    am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
                                         am.next_wake = now + am.step_pause;
@@ -159,6 +170,7 @@ impl Engine {
                                 }
                                 MacroStepItem::Literal(text) => {
                                     out.push(Out::Literal(text.clone()));
+                                    am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
                                         am.next_wake = now + am.step_pause;
@@ -182,6 +194,7 @@ impl Engine {
                                 out.push(Out::KeyRaw { key: *m, down: false });
                             }
                             am.phase = MacroPhase::NextStep;
+                            am.steps_emitted += 1;
                             am.current_step += 1;
                             if am.current_step < am.steps.len() {
                                 am.next_wake = now + am.step_pause;
@@ -380,6 +393,7 @@ impl Engine {
                                     step_pause: md.step_pause,
                                     mod_delay: md.mod_delay,
                                     current_step: 0,
+                                    steps_emitted: 0,
                                     phase: self::model::MacroPhase::NextStep,
                                     next_wake: now,
                                 });
@@ -656,6 +670,7 @@ impl Engine {
                         step_pause: md.step_pause,
                         mod_delay: md.mod_delay,
                         current_step: 0,
+                        steps_emitted: 0,
                         phase: self::model::MacroPhase::NextStep,
                         next_wake: now,
                     });
@@ -733,40 +748,34 @@ impl Engine {
     }
 
     pub fn execute_remote(&mut self, action: &str, out: &mut Vec<Out>) {
-        if let Some(ks) = super::action::parse_action(action) {
-            out.push(Out::Stroke {
-                ks,
-                mod_delay: self.default_mod_delay,
-            });
+        let trimmed = action.trim();
+        if trimmed.is_empty() {
             return;
         }
-        if let Some(text) = super::action::explicit_text(action) {
-            out.push(Out::Literal(text));
+        let resolved = if let Some(rest) = trimmed.strip_prefix("macro:") {
+            self.macros
+                .get(rest.trim())
+                .cloned()
+                .map(ActionDef::Macro)
+        } else if let Some(rest) = trimmed.strip_prefix("cmd:") {
+            self.commands
+                .get(rest.trim())
+                .cloned()
+                .map(ActionDef::Command)
+        } else if let Some(text) = super::action::explicit_text(trimmed) {
+            Some(ActionDef::Literal(text))
+        } else if let Some(ks) = super::action::parse_action(trimmed) {
+            Some(ActionDef::Stroke(ks))
+        } else {
+            None
+        };
+        if let Some(def) = resolved {
+            self.fire_action(Some(&def), self.default_mod_delay, Instant::now(), out);
             return;
         }
         if let Some(rest) = action.trim().strip_prefix("sys:") {
             if let Some(sys) = super::system::resolve(rest) {
                 out.push(Out::RunSystem(sys));
-            }
-            return;
-        }
-        if let Some(rest) = action.trim().strip_prefix("cmd:") {
-            let id = rest.trim();
-            if let Some(cmd) = self.rules.values().flatten().find_map(|r| {
-                if let TapMode::Action(ActionDef::Command(ref c)) = r.tap {
-                    if c.program == id {
-                        return Some(c.clone());
-                    }
-                }
-                None
-            }) {
-                // This is a bit hacky but works for finding the command by ID
-                out.push(Out::RunCommand(cmd));
-            } else {
-                // If it's a known command id from macros/commands list
-                // We don't have a direct lookup map here for all commands, 
-                // they are resolved at build time. 
-                // For simplicity, let's assume builder handles them.
             }
             return;
         }
@@ -869,7 +878,10 @@ fn is_mouse_button(key: Key) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mapper::config::{ActionSpec, AppConfig, ExtraKey, LayerKeymap, Rule, Settings};
+    use crate::mapper::config::{
+        ActionSpec, AppConfig, Command, CommandTrustEntry, ExtraKey, LayerKeymap, Macro, MacroStep,
+        Rule, Settings,
+    };
     use evdev::Key;
     use std::collections::HashMap;
     use std::time::{Duration, Instant};
@@ -882,6 +894,65 @@ mod tests {
             commands: Vec::new(),
             settings: Settings::default(),
         }
+    }
+
+    #[test]
+    fn remote_execute_macro_uses_current_macro_table() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "hello".into(),
+            name: "Hello".into(),
+            steps: vec![MacroStep {
+                id: "s1".into(),
+                keystroke: "KeyH".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+
+        engine.execute_remote("macro:hello", &mut out);
+        assert!(out.is_empty());
+
+        engine.tick(Instant::now() + Duration::from_millis(1), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::KeyRaw { key: Key::KEY_H, down: true },
+                Out::KeyRaw { key: Key::KEY_H, down: false },
+            ]
+        ));
+    }
+
+    #[test]
+    fn remote_execute_command_uses_current_command_table() {
+        let mut cfg = empty_cfg();
+        cfg.commands.push(Command {
+            id: "play".into(),
+            name: "Play".into(),
+            linux: "playerctl play-pause".into(),
+            windows: String::new(),
+            macos: String::new(),
+        });
+        cfg.settings.command_trust.insert(
+            "custom".into(),
+            CommandTrustEntry {
+                fingerprint: "4b1e677e".into(),
+                trusted_at: "2026-05-04T00:00:00.000Z".into(),
+            },
+        );
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+
+        engine.execute_remote("cmd:play", &mut out);
+
+        assert!(matches!(
+            out.as_slice(),
+            [Out::RunCommand(cmd)]
+                if cmd.program == "sh"
+                    && cmd.args == vec!["-c".to_string(), "playerctl play-pause".to_string()]
+        ));
     }
 
     #[test]

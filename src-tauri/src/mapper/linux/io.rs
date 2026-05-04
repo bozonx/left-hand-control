@@ -434,6 +434,8 @@ fn session_bus() -> Option<&'static zbus::blocking::Connection> {
 }
 
 fn call_dbus(call: &DbusCall) {
+    use std::sync::mpsc;
+    use std::time::Duration;
     use zbus::zvariant::StructureBuilder;
 
     let Some(conn) = session_bus() else {
@@ -444,45 +446,50 @@ fn call_dbus(call: &DbusCall) {
         return;
     };
 
-    let result = if call.args.is_empty() {
-        conn.call_method(
-            Some(call.destination.as_str()),
-            call.path.as_str(),
-            call.interface.as_deref(),
-            call.method.as_str(),
-            &(),
-        )
-    } else {
-        let mut b = StructureBuilder::new();
-        for a in &call.args {
-            b = match a {
-                DbusArg::U32(v) => b.add_field(*v),
-                DbusArg::I32(v) => b.add_field(*v),
-                DbusArg::Bool(v) => b.add_field(*v),
-                DbusArg::Str(s) => b.add_field(s.clone()),
-            };
-        }
-        let body = match b.build() {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!(
-                    "[mapper] dbus {}.{}: failed to build body: {}",
-                    call.destination, call.method, e
-                );
-                return;
-            }
-        };
-        conn.call_method(
-            Some(call.destination.as_str()),
-            call.path.as_str(),
-            call.interface.as_deref(),
-            call.method.as_str(),
-            &body,
-        )
-    };
+    let (tx, rx) = mpsc::channel();
+    let call_clone = call.clone();
+    let conn_ptr: usize = conn as *const _ as usize;
 
-    match result {
-        Ok(_) => {
+    std::thread::spawn(move || {
+        let conn = unsafe { &*(conn_ptr as *const zbus::blocking::Connection) };
+        let result = if call_clone.args.is_empty() {
+            conn.call_method(
+                Some(call_clone.destination.as_str()),
+                call_clone.path.as_str(),
+                call_clone.interface.as_deref(),
+                call_clone.method.as_str(),
+                &(),
+            )
+        } else {
+            let mut b = StructureBuilder::new();
+            for a in &call_clone.args {
+                b = match a {
+                    DbusArg::U32(v) => b.add_field(*v),
+                    DbusArg::I32(v) => b.add_field(*v),
+                    DbusArg::Bool(v) => b.add_field(*v),
+                    DbusArg::Str(s) => b.add_field(s.clone()),
+                };
+            }
+            let body = match b.build() {
+                Ok(s) => s,
+                Err(e) => {
+                    let _ = tx.send(Err(format!("build body: {e}")));
+                    return;
+                }
+            };
+            conn.call_method(
+                Some(call_clone.destination.as_str()),
+                call_clone.path.as_str(),
+                call_clone.interface.as_deref(),
+                call_clone.method.as_str(),
+                &body,
+            )
+        };
+        let _ = tx.send(result.map_err(|e| format!("{e}")));
+    });
+
+    match rx.recv_timeout(Duration::from_secs(5)) {
+        Ok(Ok(_)) => {
             if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
                 let _ = crate::layout::refresh_cache();
             }
@@ -494,10 +501,13 @@ fn call_dbus(call: &DbusCall) {
                 call.method,
             );
         }
-        Err(e) => {
+        Ok(Err(e)) => {
+            eprintln!("[mapper] dbus {}.{} failed: {}", call.destination, call.method, e);
+        }
+        Err(_) => {
             eprintln!(
-                "[mapper] dbus {}.{} failed: {}",
-                call.destination, call.method, e
+                "[mapper] dbus {}.{} timed out after 5s",
+                call.destination, call.method
             );
         }
     }

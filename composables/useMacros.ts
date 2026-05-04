@@ -43,21 +43,21 @@ export function useMacros() {
     const macroRef = parseMacroRef(action)
     if (macroRef) {
       const name = macroNameById(macroRef)
-      return name ? `▶ ${name}` : action
+      return name ? `[Macro] ${name}` : action
     }
     const cmdRef = parseCommandRef(action)
     if (cmdRef) {
       const name = commandNameById(cmdRef)
-      return name ? `> ${name}` : action
+      return name ? `[Cmd] ${name}` : action
     }
     const sysRef = parseSystemRef(action)
     if (sysRef) {
       const name = systemActionName(sysRef)
-      return name ? `⚙ ${name}` : action
+      return name ? `[Sys] ${name}` : action
     }
     const textAction = parseTextAction(action)
     if (textAction !== null) {
-      return `T "${textAction}"`
+      return `[Text] "${textAction}"`
     }
     return action
   }

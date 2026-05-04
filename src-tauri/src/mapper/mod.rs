@@ -373,6 +373,10 @@ mod tests {
             Ok(())
         }
 
+        fn execute_action(&self, _action: String) -> Result<(), String> {
+            Ok(())
+        }
+
         fn last_error(&self) -> Option<String> {
             self.last_error.clone()
         }
