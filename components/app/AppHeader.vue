@@ -20,12 +20,19 @@ const mapper = useMapper()
 const { layout } = useLayout()
 const gameMode = useGameMode()
 const { t } = useI18n()
+const { needsApproval: commandsNeedApproval } = useCommandTrust()
 
 const tabItems = computed(() => [
   { key: 'rules', to: '/rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { key: 'keymap', to: '/keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { key: 'macros', to: '/macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
-  { key: 'commands', to: '/commands', label: t('tabs.commands'), icon: 'i-lucide-terminal' },
+  {
+    key: 'commands',
+    to: '/commands',
+    label: t('tabs.commands'),
+    icon: 'i-lucide-terminal',
+    attention: commandsNeedApproval.value,
+  },
 ])
 
 const currentLayoutLabel = computed<string>(() => {
@@ -135,13 +142,18 @@ onMounted(() => {
             :icon="item.icon"
             :aria-label="item.label"
             size="sm"
-            class="px-3 text-(--ui-text-muted) hover:text-primary"
+            class="relative px-3 text-(--ui-text-muted) hover:text-primary"
             :class="isActive(item.to)
               ? 'text-primary shadow-none ring-1 ring-inset ring-(--ui-primary)/25 bg-(--ui-primary)/8'
               : 'bg-transparent shadow-none'"
             :to="item.to"
           >
             <span>{{ item.label }}</span>
+            <span
+              v-if="item.attention"
+              class="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-(--ui-warning)"
+              aria-hidden="true"
+            />
           </UButton>
         </div>
       </div>

@@ -157,9 +157,22 @@ pub struct Settings {
     #[allow(dead_code)]
     #[serde(default)]
     pub input_device_path: Option<String>,
+    #[serde(default)]
+    pub current_layout_id: Option<String>,
+    #[serde(default)]
+    pub command_trust: HashMap<String, CommandTrustEntry>,
     #[allow(dead_code)]
     #[serde(default)]
     pub game_mode: GameModeSettings,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandTrustEntry {
+    pub fingerprint: String,
+    #[allow(dead_code)]
+    #[serde(default)]
+    pub trusted_at: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -192,8 +205,44 @@ impl Default for Settings {
             default_macro_modifier_delay_ms: default_mod_delay(),
             default_double_tap_timeout_ms: default_double_tap(),
             input_device_path: None,
+            current_layout_id: None,
+            command_trust: HashMap::new(),
             game_mode: GameModeSettings::default(),
         }
+    }
+}
+
+impl Settings {
+    pub fn commands_trusted(&self, commands: &[Command]) -> bool {
+        if commands.is_empty() {
+            return true;
+        }
+        let key = self
+            .current_layout_id
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("custom");
+        self.command_trust
+            .get(key)
+            .is_some_and(|entry| entry.fingerprint == command_fingerprint(commands))
+    }
+}
+
+fn command_fingerprint(commands: &[Command]) -> String {
+    let mut hash: u32 = 0x811c9dc5;
+    for command in commands {
+        update_hash(&mut hash, command.id.as_bytes());
+        update_hash(&mut hash, &[0]);
+        update_hash(&mut hash, command.linux.as_bytes());
+        update_hash(&mut hash, &[0]);
+    }
+    format!("{hash:08x}")
+}
+
+fn update_hash(hash: &mut u32, bytes: &[u8]) {
+    for b in bytes {
+        *hash ^= u32::from(*b);
+        *hash = hash.wrapping_mul(0x01000193);
     }
 }
 
@@ -275,5 +324,37 @@ mod tests {
         assert!(s.input_device_path.is_none());
         assert!(s.game_mode.use_gamemoded);
         assert!(!s.game_mode.use_fullscreen);
+    }
+
+    #[test]
+    fn command_trust_requires_matching_fingerprint() {
+        let commands = vec![Command {
+            id: "play".into(),
+            name: "Play".into(),
+            linux: "playerctl play-pause".into(),
+        }];
+        assert_eq!(command_fingerprint(&commands), "4b1e677e");
+
+        let mut settings = Settings {
+            current_layout_id: Some("user:test".into()),
+            ..Settings::default()
+        };
+        assert!(!settings.commands_trusted(&commands));
+
+        settings.command_trust.insert(
+            "user:test".into(),
+            CommandTrustEntry {
+                fingerprint: command_fingerprint(&commands),
+                trusted_at: "2026-05-04T00:00:00.000Z".into(),
+            },
+        );
+        assert!(settings.commands_trusted(&commands));
+
+        let changed = vec![Command {
+            id: "play".into(),
+            name: "Play".into(),
+            linux: "notify-send changed".into(),
+        }];
+        assert!(!settings.commands_trusted(&changed));
     }
 }

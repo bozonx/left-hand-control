@@ -397,7 +397,7 @@ export default {
   commands: {
     title: "Commands",
     subtitle:
-      "Reusable shell commands for the current layout. On Linux they run through `sh -lc`.",
+      "Reusable Shell script commands for the current layout. On Linux they run through `sh -lc`; Windows and macOS will use separate platform-specific fields when mapper support is added.",
     addBtn: "New command",
     addDisabled: "Fix the existing command errors first",
     empty: 'No commands yet. Click "New command" to create the first one.',
@@ -410,9 +410,17 @@ export default {
       'Unique identifier for references like cmd:<id>. To bind the command to a key, pick this action on the "Layers" or "Rules" tab.',
     idPh: "id",
     copyId: "Copy ID",
-    linuxLabel: "Linux command",
-    linuxHint: "Shell command to run on Linux. It is passed to `sh -lc` as-is. To run a .sh file, use `sh /path/to/script.sh` or `. /path/to/script.sh`.",
-    linuxPh: "playerctl play-pause",
+    linuxLabel: "Shell script",
+    linuxHint: "Linux shell script. It is passed to `sh -lc` as-is, so multiline scripts, variables, pipes, conditions and loops are supported. Read scripts from shared layouts or the internet carefully before enabling them.",
+    linuxPh: "playerctl play-pause\nnotify-send 'Playback toggled'",
+    approvalTitle: "Shell commands are disabled",
+    approvalBody:
+      "This layout contains shell scripts. If the layout is not yours or commands were copied from the internet, read every script carefully before enabling them. Approval applies to all commands in this layout and resets when they change.",
+    approveBtn: "Allow commands",
+    approved: "Shell commands are allowed for this version of the current layout.",
+    revokeBtn: "Disable",
+    approvalToast:
+      "The layout contains shell commands. Allow them on the Commands tab.",
     usedIn: "Used in:",
     moveUp: "Up",
     moveDown: "Down",

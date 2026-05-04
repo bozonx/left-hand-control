@@ -29,6 +29,7 @@ import {
   writeCurrentLayoutRaw,
   writeUserLayoutRaw,
 } from '~/composables/config/storage'
+import { commandFingerprint, commandTrustKey } from '~/utils/commandTrust'
 
 export { getSettingsDir } from '~/composables/config/storage'
 export { normalizeConfig, parsePersistedConfig } from '~/composables/config/normalization'
@@ -99,6 +100,18 @@ export function useConfig(): ConfigState {
     })
   }
 
+  function notifyShellCommandsNeedApproval(preset: LayoutPreset, layoutId: string | undefined) {
+    if (preset.commands.length === 0) return
+    const key = commandTrustKey(layoutId)
+    const trusted = config.value.settings.commandTrust[key]?.fingerprint === commandFingerprint(preset.commands)
+    if (trusted) return
+    toast.add({
+      title: t('commands.approvalToast'),
+      color: 'warning',
+      icon: 'i-lucide-terminal',
+    })
+  }
+
   const persistence = usePersistedState({
     delayMs: 300,
     async onSave() {
@@ -125,6 +138,7 @@ export function useConfig(): ConfigState {
     preset: LayoutPreset,
     layoutId: string | undefined,
   ) {
+    notifyShellCommandsNeedApproval(preset, layoutId)
     config.value = applyPresetToConfig(config.value, preset, layoutId)
     if (config.value.settings.layoutMode === 'manual') {
       config.value.settings.manualActiveLayoutId = layoutId
@@ -137,6 +151,14 @@ export function useConfig(): ConfigState {
   }
 
   async function markLayoutSavedAs(layoutId: string) {
+    const oldTrustKey = commandTrustKey(config.value.settings.currentLayoutId)
+    const newTrustKey = commandTrustKey(layoutId)
+    const currentFingerprint = commandFingerprint(config.value.commands)
+    if (config.value.settings.commandTrust[oldTrustKey]?.fingerprint === currentFingerprint) {
+      config.value.settings.commandTrust[newTrustKey] = {
+        ...config.value.settings.commandTrust[oldTrustKey],
+      }
+    }
     config.value.settings.currentLayoutId = layoutId
     if (config.value.settings.layoutMode === 'manual') {
       config.value.settings.manualActiveLayoutId = layoutId
@@ -150,6 +172,7 @@ export function useConfig(): ConfigState {
     preset: LayoutPreset,
     layoutId: string,
   ) {
+    notifyShellCommandsNeedApproval(preset, layoutId)
     config.value = applyPresetToConfig(config.value, preset, layoutId)
     config.value.settings.layoutMode = 'manual'
     config.value.settings.manualActiveLayoutId = layoutId

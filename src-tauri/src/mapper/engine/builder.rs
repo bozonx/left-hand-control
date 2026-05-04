@@ -23,24 +23,28 @@ impl Engine {
         let mut macros: HashMap<String, MacroDef> = HashMap::new();
         let mut commands: HashMap<String, SysCommand> = HashMap::new();
 
-        for c in &cfg.commands {
-            let id = c.id.trim();
-            let linux = c.linux.trim();
-            if id.is_empty() {
-                eprintln!("[mapper] skipping command with empty id: {:?}", c.name);
-                continue;
+        if cfg.settings.commands_trusted(&cfg.commands) {
+            for c in &cfg.commands {
+                let id = c.id.trim();
+                let linux = c.linux.trim();
+                if id.is_empty() {
+                    eprintln!("[mapper] skipping command with empty id: {:?}", c.name);
+                    continue;
+                }
+                if linux.is_empty() {
+                    eprintln!("[mapper] command {} has empty linux string — skipped", id);
+                    continue;
+                }
+                commands.insert(
+                    id.to_string(),
+                    SysCommand {
+                        program: "sh".into(),
+                        args: vec!["-lc".into(), linux.to_string()],
+                    },
+                );
             }
-            if linux.is_empty() {
-                eprintln!("[mapper] command {} has empty linux string — skipped", id);
-                continue;
-            }
-            commands.insert(
-                id.to_string(),
-                SysCommand {
-                    program: "sh".into(),
-                    args: vec!["-lc".into(), linux.to_string()],
-                },
-            );
+        } else {
+            eprintln!("[mapper] shell commands are disabled for this layout");
         }
 
         fn build_steps<'a>(

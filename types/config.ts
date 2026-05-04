@@ -148,6 +148,11 @@ export interface LayoutConditionRule {
   blacklist?: LayoutConditionSet
 }
 
+export interface CommandTrustEntry {
+  fingerprint: string
+  trustedAt: string
+}
+
 export interface AppSettings {
   launchOnStartup: boolean
   // Visual theme preference. 'system' follows prefers-color-scheme.
@@ -185,6 +190,7 @@ export interface AppSettings {
   // layout id (`user:<name>`). Stored here (not in the YAML) so layouts
   // stay portable across machines.
   layoutConditions: Record<string, LayoutConditionRule>
+  commandTrust: Record<string, CommandTrustEntry>
   gameMode: {
     useGamemoded: boolean
     useFullscreen: boolean
@@ -302,6 +308,7 @@ export function createDefaultConfig(): AppConfig {
       manualActiveLayoutId: undefined,
       layoutOrder: [],
       layoutConditions: {},
+      commandTrust: {},
       gameMode: {
         useGamemoded: true,
         useFullscreen: false,

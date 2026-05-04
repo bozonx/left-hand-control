@@ -13,6 +13,12 @@ const {
   hasErrors,
   usage,
 } = useCommandEditor()
+const {
+  hasShellCommands,
+  needsApproval,
+  approve,
+  revoke,
+} = useCommandTrust()
 
 const commandIds = computed(() => config.value.commands.map((c) => uiKeyOf(c)))
 const { selectedId, select, containerRef } = useListKeyboardNavigation({
@@ -85,6 +91,58 @@ function cancelRemove() {
       </template>
 
       <div ref="containerRef" class="space-y-4">
+        <div
+          v-if="needsApproval"
+          class="flex items-start justify-between gap-3 rounded-lg border border-(--ui-warning)/40 bg-(--ui-warning)/10 p-3"
+        >
+          <div class="flex min-w-0 items-start gap-2 text-sm">
+            <UIcon
+              name="i-lucide-triangle-alert"
+              class="mt-0.5 shrink-0 text-(--ui-warning)"
+            />
+            <div class="space-y-1">
+              <div class="font-semibold">
+                {{ $t('commands.approvalTitle') }}
+              </div>
+              <p class="text-(--ui-text-muted)">
+                {{ $t('commands.approvalBody') }}
+              </p>
+            </div>
+          </div>
+          <UButton
+            icon="i-lucide-shield-check"
+            color="warning"
+            variant="solid"
+            class="shrink-0"
+            @click="approve"
+          >
+            {{ $t('commands.approveBtn') }}
+          </UButton>
+        </div>
+
+        <div
+          v-else-if="hasShellCommands"
+          class="flex items-center justify-between gap-3 rounded-lg border border-(--ui-border) bg-(--ui-bg-muted)/40 p-3 text-sm"
+        >
+          <div class="flex min-w-0 items-center gap-2">
+            <UIcon
+              name="i-lucide-shield-check"
+              class="shrink-0 text-(--ui-success)"
+            />
+            <span class="text-(--ui-text-muted)">
+              {{ $t('commands.approved') }}
+            </span>
+          </div>
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            @click="revoke"
+          >
+            {{ $t('commands.revokeBtn') }}
+          </UButton>
+        </div>
+
         <div
           v-if="config.commands.length === 0"
           class="text-sm text-(--ui-text-muted)"

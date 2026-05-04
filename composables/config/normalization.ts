@@ -53,6 +53,21 @@ function normalizeSettings(
     }
     merged.layoutConditions = cleaned;
   }
+  if (!merged.commandTrust || typeof merged.commandTrust !== "object") {
+    merged.commandTrust = {};
+  } else {
+    const cleaned: AppConfig["settings"]["commandTrust"] = {};
+    for (const [id, value] of Object.entries(merged.commandTrust)) {
+      if (!id || !value || typeof value !== "object") continue;
+      const v = value as Partial<AppConfig["settings"]["commandTrust"][string]>;
+      if (typeof v.fingerprint !== "string" || !v.fingerprint) continue;
+      cleaned[id] = {
+        fingerprint: v.fingerprint,
+        trustedAt: typeof v.trustedAt === "string" ? v.trustedAt : "",
+      };
+    }
+    merged.commandTrust = cleaned;
+  }
   if (
     merged.layoutMode === "manual" &&
     !merged.manualActiveLayoutId &&

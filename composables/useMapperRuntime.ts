@@ -1,6 +1,7 @@
 import { layoutSnapshotOf, emptyLayoutPreset, applyPresetToConfig } from '~/utils/layoutPresets'
 import type { AppConfig } from '~/types/config'
 import type { MapperStatus } from '~/composables/useMapper'
+import { commandsTrusted } from '~/utils/commandTrust'
 
 export function useMapperRuntime(
   deps: {
@@ -43,6 +44,7 @@ export function useMapperRuntime(
       defaultDoubleTapTimeoutMs: cfg.settings.defaultDoubleTapTimeoutMs,
       defaultMacroStepPauseMs: cfg.settings.defaultMacroStepPauseMs,
       defaultMacroModifierDelayMs: cfg.settings.defaultMacroModifierDelayMs,
+      commandsTrusted: commandsTrusted(cfg),
     })
   }
 
@@ -52,6 +54,7 @@ export function useMapperRuntime(
     defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
     defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
     defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
+    commandsTrusted: commandsTrusted(config.value),
   })
   void runtimeSnapshot().then((s) => {
     lastRuntimeSnapshot = s
@@ -64,6 +67,7 @@ export function useMapperRuntime(
       defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
       defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
       defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
+      commandsTrusted: commandsTrusted(config.value),
     })
     void runtimeSnapshot().then((s) => {
       lastRuntimeSnapshot = s
