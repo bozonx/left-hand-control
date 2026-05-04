@@ -51,6 +51,12 @@ const currentLayoutLabel = computed<string>(() => {
 const selectedDevice = computed(() => config.value.settings.inputDevicePath ?? '')
 const saveLabel = computed(() => (isLayoutDirty.value ? t('common.save') : t('app.saved')))
 const saveIcon = computed(() => (isLayoutDirty.value ? 'i-lucide-save' : 'i-lucide-check'))
+const gameModeTooltip = computed(() => {
+  if (!gameMode.status.value.active) return t('settings.gameModeInactive')
+  return gameMode.status.value.method
+    ? `${t('settings.gameModeActive')}: ${gameMode.status.value.method}`
+    : t('settings.gameModeActive')
+})
 
 function isActive(path: string) {
   return route.path === path
@@ -211,7 +217,7 @@ onMounted(() => {
           </UBadge>
         </AppTooltip>
 
-        <AppTooltip :text="gameMode.status.value.active ? $t('settings.gameModeActive') : $t('settings.gameModeInactive')">
+        <AppTooltip :text="gameModeTooltip">
           <UBadge
             :color="gameMode.status.value.active ? 'error' : 'neutral'"
             :variant="gameMode.status.value.active ? 'solid' : 'outline'"

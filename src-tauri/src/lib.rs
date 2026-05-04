@@ -28,7 +28,9 @@ fn load_config(app: tauri::AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 fn save_config(app: tauri::AppHandle, contents: String) -> Result<(), String> {
-    app_storage(&app)?.save_config(&contents)
+    app_storage(&app)?.save_config(&contents)?;
+    gamemode::update_settings_from_config_json(&contents);
+    Ok(())
 }
 
 #[tauri::command]

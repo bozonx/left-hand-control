@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -34,6 +35,7 @@ struct PersistedConfig {
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
 static CACHED_GAMEMODE_ACTIVE: AtomicBool = AtomicBool::new(false);
 static CACHED_GAMEMODE_DETECTION_ENABLED: AtomicBool = AtomicBool::new(true);
+static CACHED_SETTINGS: Mutex<Option<GameModeSettings>> = Mutex::new(None);
 
 pub fn cached_status_active() -> bool {
     CACHED_GAMEMODE_ACTIVE.load(Ordering::SeqCst)
@@ -43,6 +45,12 @@ pub fn cached_detection_enabled() -> bool {
     CACHED_GAMEMODE_DETECTION_ENABLED.load(Ordering::SeqCst)
 }
 
+#[cfg(test)]
+pub fn set_cached_for_test(active: bool, detection_enabled: bool) {
+    CACHED_GAMEMODE_ACTIVE.store(active, Ordering::SeqCst);
+    CACHED_GAMEMODE_DETECTION_ENABLED.store(detection_enabled, Ordering::SeqCst);
+}
+
 fn store_cached_status(status: &GameModeStatus) {
     CACHED_GAMEMODE_ACTIVE.store(status.active, Ordering::SeqCst);
     CACHED_GAMEMODE_DETECTION_ENABLED.store(status.detection_enabled, Ordering::SeqCst);
@@ -50,6 +58,13 @@ fn store_cached_status(status: &GameModeStatus) {
 
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
+}
+
+pub fn update_settings_from_config_json(raw: &str) {
+    let settings = parse_game_mode_settings(raw);
+    if let Ok(mut guard) = CACHED_SETTINGS.lock() {
+        *guard = settings;
+    }
 }
 
 fn watcher_stop_requested() -> bool {
@@ -155,6 +170,11 @@ pub fn get_gamemode_status(app: AppHandle) -> Result<GameModeStatus, String> {
 }
 
 fn load_game_mode_settings(app: &AppHandle) -> GameModeSettings {
+    if let Ok(guard) = CACHED_SETTINGS.lock() {
+        if let Some(settings) = guard.clone() {
+            return settings;
+        }
+    }
     let Ok(storage) = crate::storage::resolve_storage_paths(app) else {
         return GameModeSettings::default();
     };
@@ -164,7 +184,44 @@ fn load_game_mode_settings(app: &AppHandle) -> GameModeSettings {
     if raw.trim().is_empty() {
         return GameModeSettings::default();
     }
-    serde_json::from_str::<PersistedConfig>(&raw)
+    parse_game_mode_settings(&raw).unwrap_or_default()
+}
+
+fn parse_game_mode_settings(raw: &str) -> Option<GameModeSettings> {
+    serde_json::from_str::<PersistedConfig>(raw)
         .map(|config| config.settings.game_mode)
-        .unwrap_or_default()
+        .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_game_mode_settings;
+
+    #[test]
+    fn parses_cached_settings_from_persisted_config() {
+        let settings = parse_game_mode_settings(
+            r#"{
+                "settings": {
+                    "gameMode": {
+                        "useGamemoded": false,
+                        "useFullscreen": true,
+                        "processMatchers": [
+                            {
+                                "id": "steam",
+                                "name": "steam",
+                                "matchMode": "exact",
+                                "onlyActiveWindow": false
+                            }
+                        ]
+                    }
+                }
+            }"#,
+        )
+        .expect("parse settings");
+
+        assert!(!settings.use_gamemoded);
+        assert!(settings.use_fullscreen);
+        assert_eq!(settings.process_matchers.len(), 1);
+        assert_eq!(settings.process_matchers[0].name, "steam");
+    }
 }

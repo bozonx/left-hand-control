@@ -33,6 +33,7 @@ export function matchesConditionSet(
   set: LayoutConditionSet,
   ctx: AutoSwitchContext,
 ): boolean {
+  if (set.gameMode && ctx.gameModeDetectionEnabled === false) return false
   if (ctx.gameModeDetectionEnabled !== false) {
     if (set.gameMode === 'on' && !ctx.gameModeActive) return false
     if (set.gameMode === 'off' && ctx.gameModeActive) return false

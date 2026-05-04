@@ -38,13 +38,13 @@ describe('matchesConditionSet', () => {
     ).toBe(false)
   })
 
-  it('ignores gameMode when game mode detection is disabled', () => {
+  it('rejects gameMode conditions when game mode detection is disabled', () => {
     expect(
       matchesConditionSet(
         { gameMode: 'on', layouts: [] },
         { ...ctxOnUS, gameModeDetectionEnabled: false },
       ),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('rejects when layout list excludes current', () => {

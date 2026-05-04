@@ -791,15 +791,16 @@ fn rule_passes_legacy(rule: &RuleEntry) -> bool {
         return true;
     }
     if has_gm_cond {
-        if crate::gamemode::cached_detection_enabled() {
-            let gm_active = crate::gamemode::cached_status_active();
-            if !match rule.condition_game_mode.as_deref() {
-                Some("on") => gm_active,
-                Some("off") => !gm_active,
-                _ => false,
-            } {
-                return false;
-            }
+        if !crate::gamemode::cached_detection_enabled() {
+            return false;
+        }
+        let gm_active = crate::gamemode::cached_status_active();
+        if !match rule.condition_game_mode.as_deref() {
+            Some("on") => gm_active,
+            Some("off") => !gm_active,
+            _ => false,
+        } {
+            return false;
         }
     }
     if has_layout_cond {
@@ -1186,6 +1187,48 @@ mod tests {
         crate::active_window::set_cached_for_test(None);
         let rule = rule_with_apps(None, None);
         assert!(rule_passes_apps(&rule));
+    }
+
+    #[test]
+    fn game_mode_condition_blocks_when_detection_disabled() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::gamemode::set_cached_for_test(true, false);
+        let rule = RuleEntry {
+            tap: TapMode::Native,
+            layer_id: None,
+            hold: HoldMode::Swallow,
+            double_tap: None,
+            hold_timeout: Duration::from_millis(200),
+            double_tap_window: Duration::from_millis(200),
+            condition_game_mode: Some("on".into()),
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+        };
+
+        assert!(!rule_passes_legacy(&rule));
+        crate::gamemode::set_cached_for_test(false, true);
+    }
+
+    #[test]
+    fn game_mode_condition_passes_when_cached_state_matches() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::gamemode::set_cached_for_test(true, true);
+        let rule = RuleEntry {
+            tap: TapMode::Native,
+            layer_id: None,
+            hold: HoldMode::Swallow,
+            double_tap: None,
+            hold_timeout: Duration::from_millis(200),
+            double_tap_window: Duration::from_millis(200),
+            condition_game_mode: Some("on".into()),
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+        };
+
+        assert!(rule_passes_legacy(&rule));
+        crate::gamemode::set_cached_for_test(false, true);
     }
 
     #[test]
