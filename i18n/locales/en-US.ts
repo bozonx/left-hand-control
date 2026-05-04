@@ -596,6 +596,15 @@ export default {
     gameModeActive: "Game Mode active",
     gameModeInactive: "Game Mode",
     gameModeInfo: "Linux game mode detection currently supports gamemoded and fullscreen windows (X11/Wayland).",
+    gameModeDisabledInfo:
+      "Game Mode detection is disabled. All conditions depending on Game Mode will be ignored.",
+    gameModeAdvanced: "Advanced",
+    gameModeProcessPlaceholder: "Example: steam_app, cs2, eldenring.exe",
+    gameModeAddProcess: "Add",
+    gameModeRemoveProcess: "Remove process",
+    gameModeMatchSubstring: "Substring",
+    gameModeMatchExact: "Exact match",
+    gameModeOnlyActiveWindow: "Only active window",
   },
   picker: {
     currentValue: "Current value",

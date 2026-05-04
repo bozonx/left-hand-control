@@ -48,8 +48,10 @@ const {
     <GameModeCard
       :use-gamemoded="config.settings.gameMode?.useGamemoded ?? true"
       :use-fullscreen="config.settings.gameMode?.useFullscreen ?? false"
+      :process-matchers="config.settings.gameMode?.processMatchers ?? []"
       @update:use-gamemoded="(v) => { config.settings.gameMode.useGamemoded = v }"
       @update:use-fullscreen="(v) => { config.settings.gameMode.useFullscreen = v }"
+      @update:process-matchers="(v) => { config.settings.gameMode.processMatchers = v }"
     />
 
     <ConfigPathCard

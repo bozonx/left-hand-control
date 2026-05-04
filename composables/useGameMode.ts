@@ -1,10 +1,11 @@
-const _status = ref<GameModeStatus>({ active: false, method: null })
+const _status = ref<GameModeStatus>({ active: false, method: null, detectionEnabled: true })
 let _inited = false
 let _unlisten: (() => void) | null = null
 
 export interface GameModeStatus {
   active: boolean
   method: string | null
+  detectionEnabled: boolean
 }
 
 async function init() {
@@ -47,7 +48,7 @@ export function useGameMode() {
 
 export async function resetGameModeStateForTests() {
   _inited = false
-  _status.value = { active: false, method: null }
+  _status.value = { active: false, method: null, detectionEnabled: true }
   const unlisten = _unlisten
   _unlisten = null
   if (unlisten) await unlisten()

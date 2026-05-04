@@ -36,6 +36,7 @@ export function useLayoutSwitcher() {
       const target = pickActiveLayout(availableIds, settings, {
         currentSystemLayout: systemLayout.value?.short ?? null,
         gameModeActive: !!gameMode.status.value.active,
+        gameModeDetectionEnabled: gameMode.status.value.detectionEnabled,
         activeWindowTitle: activeWindow.state.value?.title ?? null,
         activeWindowAppId: activeWindow.state.value?.appId ?? null,
       })
@@ -52,6 +53,7 @@ export function useLayoutSwitcher() {
         () => library.entries.value.map((e) => e.id).join('|'),
         () => systemLayout.value?.short ?? null,
         () => gameMode.status.value.active,
+        () => gameMode.status.value.detectionEnabled,
         () => activeWindow.state.value?.title ?? null,
         () => activeWindow.state.value?.appId ?? null,
       ],

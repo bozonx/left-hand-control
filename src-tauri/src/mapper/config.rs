@@ -182,6 +182,30 @@ pub struct GameModeSettings {
     pub use_gamemoded: bool,
     #[serde(default)]
     pub use_fullscreen: bool,
+    #[serde(default)]
+    pub process_matchers: Vec<GameModeProcessMatcher>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GameModeProcessMatcher {
+    #[allow(dead_code)]
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub match_mode: GameModeProcessMatchMode,
+    #[serde(default = "default_true")]
+    pub only_active_window: bool,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum GameModeProcessMatchMode {
+    Exact,
+    #[default]
+    Substring,
 }
 
 impl Default for GameModeSettings {
@@ -189,6 +213,7 @@ impl Default for GameModeSettings {
         Self {
             use_gamemoded: true,
             use_fullscreen: false,
+            process_matchers: Vec::new(),
         }
     }
 }

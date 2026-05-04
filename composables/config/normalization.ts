@@ -30,6 +30,34 @@ function normalizeSettings(
   raw: Partial<AppConfig["settings"]> | undefined,
 ): AppConfig["settings"] {
   const merged = { ...base, ...(raw ?? {}) };
+  const rawGameMode =
+    raw?.gameMode && typeof raw.gameMode === "object"
+      ? raw.gameMode as Partial<AppConfig["settings"]["gameMode"]>
+      : {};
+  const rawProcessMatchers = rawGameMode.processMatchers as unknown;
+  merged.gameMode = {
+    ...base.gameMode,
+    ...rawGameMode,
+    useGamemoded:
+      typeof rawGameMode.useGamemoded === "boolean"
+        ? rawGameMode.useGamemoded
+        : base.gameMode.useGamemoded,
+    useFullscreen:
+      typeof rawGameMode.useFullscreen === "boolean"
+        ? rawGameMode.useFullscreen
+        : base.gameMode.useFullscreen,
+    processMatchers: Array.isArray(rawProcessMatchers)
+      ? rawProcessMatchers
+          .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
+          .map((item, index) => ({
+            id: typeof item.id === "string" && item.id ? item.id : `process-${index}`,
+            name: typeof item.name === "string" ? item.name.trim() : "",
+            matchMode: item.matchMode === "exact" ? "exact" as const : "substring" as const,
+            onlyActiveWindow: item.onlyActiveWindow !== false,
+          }))
+          .filter((item) => item.name.length > 0)
+      : base.gameMode.processMatchers,
+  };
   merged.layoutMode = merged.layoutMode === "auto" ? "auto" : "manual";
   if (typeof merged.manualActiveLayoutId !== "string" || !merged.manualActiveLayoutId) {
     merged.manualActiveLayoutId = undefined;

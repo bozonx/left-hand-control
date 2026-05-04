@@ -47,7 +47,7 @@ async function copyCommandId() {
 
 <template>
   <div
-    class="relative rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 p-4 transition-all duration-150 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-(--ui-primary)/5"
+    class="group relative rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 p-4 transition-all duration-150 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-(--ui-primary)/5"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="grid flex-1 grid-cols-2 gap-3 min-w-0">
@@ -56,6 +56,7 @@ async function copyCommandId() {
             <FieldLabel
               :label="$t('commands.idLabel')"
               :hint="$t('commands.idHint')"
+              hint-visible-on="group-hover"
             />
           </template>
           <div class="flex items-center gap-2">
@@ -86,6 +87,7 @@ async function copyCommandId() {
             <FieldLabel
               :label="$t('commands.nameLabel')"
               :hint="$t('commands.nameHint')"
+              hint-visible-on="group-hover"
             />
           </template>
           <UInput
@@ -99,7 +101,7 @@ async function copyCommandId() {
         </UFormField>
       </div>
 
-      <div class="flex gap-1">
+      <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
         <AppTooltip :text="$t('common.moveUp')">
           <UButton
             icon="i-lucide-arrow-up"
@@ -162,6 +164,7 @@ async function copyCommandId() {
         <FieldLabel
           :label="$t('commands.linuxLabel')"
           :hint="$t('commands.linuxHint')"
+          hint-visible-on="group-hover"
         />
       </template>
       <UTextarea

@@ -600,6 +600,15 @@ export default {
     gameModeActive: "Игровой режим активен",
     gameModeInactive: "Игровой режим",
     gameModeInfo: "Сейчас для Linux поддерживаются gamemoded и определение полноэкранного окна (X11/Wayland).",
+    gameModeDisabledInfo:
+      "Детекция игрового режима выключена. Все условия, завязанные на игровой режим, будут проигнорированы.",
+    gameModeAdvanced: "Расширенные",
+    gameModeProcessPlaceholder: "Например: steam_app, cs2, eldenring.exe",
+    gameModeAddProcess: "Добавить",
+    gameModeRemoveProcess: "Удалить процесс",
+    gameModeMatchSubstring: "Подстрока",
+    gameModeMatchExact: "Полное совпадение",
+    gameModeOnlyActiveWindow: "Только активное окно",
   },
   picker: {
     currentValue: "Текущее значение",

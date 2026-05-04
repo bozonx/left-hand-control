@@ -679,13 +679,15 @@ fn rule_passes_legacy(rule: &RuleEntry) -> bool {
         return true;
     }
     if has_gm_cond {
-        let gm_active = crate::gamemode::cached_status_active();
-        if !match rule.condition_game_mode.as_deref() {
-            Some("on") => gm_active,
-            Some("off") => !gm_active,
-            _ => false,
-        } {
-            return false;
+        if crate::gamemode::cached_detection_enabled() {
+            let gm_active = crate::gamemode::cached_status_active();
+            if !match rule.condition_game_mode.as_deref() {
+                Some("on") => gm_active,
+                Some("off") => !gm_active,
+                _ => false,
+            } {
+                return false;
+            }
         }
     }
     if has_layout_cond {

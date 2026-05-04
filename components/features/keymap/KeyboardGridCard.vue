@@ -29,21 +29,24 @@ const emit = defineEmits<{
           >
             {{ $t('common.clear') }}
           </UButton>
-          <UButtonGroup size="sm" color="neutral">
+          <UButtonGroup size="sm" class="bg-(--ui-bg-muted)/50 p-0.5 rounded-md">
             <UButton
-              :variant="keyLabelMode === 'label' ? 'soft' : 'ghost'"
+              :variant="keyLabelMode === 'label' ? 'solid' : 'ghost'"
+              color="neutral"
               @click="emit('update:keyLabelMode', 'label')"
             >
               {{ $t('keymap.keyViewLabels') }}
             </UButton>
             <UButton
-              :variant="keyLabelMode === 'code' ? 'soft' : 'ghost'"
+              :variant="keyLabelMode === 'code' ? 'solid' : 'ghost'"
+              color="neutral"
               @click="emit('update:keyLabelMode', 'code')"
             >
               {{ $t('keymap.keyViewCodes') }}
             </UButton>
             <UButton
-              :variant="keyLabelMode === 'numeric' ? 'soft' : 'ghost'"
+              :variant="keyLabelMode === 'numeric' ? 'solid' : 'ghost'"
+              color="neutral"
               @click="emit('update:keyLabelMode', 'numeric')"
             >
               {{ $t('keymap.keyViewNumeric') }}

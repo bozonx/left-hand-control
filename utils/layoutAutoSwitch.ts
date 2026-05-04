@@ -17,6 +17,7 @@ export interface AutoSwitchContext {
   currentSystemLayout: string | null
   // Whether Game Mode is currently active.
   gameModeActive: boolean
+  gameModeDetectionEnabled?: boolean
   // Title of the currently focused window. `null` means detection is
   // unavailable; app-based conditions then evaluate as "no match".
   activeWindowTitle?: string | null
@@ -32,8 +33,10 @@ export function matchesConditionSet(
   set: LayoutConditionSet,
   ctx: AutoSwitchContext,
 ): boolean {
-  if (set.gameMode === 'on' && !ctx.gameModeActive) return false
-  if (set.gameMode === 'off' && ctx.gameModeActive) return false
+  if (ctx.gameModeDetectionEnabled !== false) {
+    if (set.gameMode === 'on' && !ctx.gameModeActive) return false
+    if (set.gameMode === 'off' && ctx.gameModeActive) return false
+  }
   if (set.layouts.length > 0) {
     if (!ctx.currentSystemLayout) return false
     if (!set.layouts.includes(ctx.currentSystemLayout)) return false

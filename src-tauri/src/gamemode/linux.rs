@@ -1,6 +1,7 @@
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::mapper::config::{GameModeProcessMatchMode, GameModeProcessMatcher};
 use crate::platform::linux::SessionType;
 
 pub static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
@@ -14,6 +15,84 @@ pub fn is_gamemoded_active() -> bool {
             stdout.contains("is active")
         })
         .unwrap_or(false)
+}
+
+pub fn active_process_match(matchers: &[GameModeProcessMatcher]) -> Option<String> {
+    for matcher in matchers {
+        let name = matcher.name.trim();
+        if name.is_empty() {
+            continue;
+        }
+        if matcher.only_active_window {
+            if active_window_matches(matcher) {
+                return Some(name.to_string());
+            }
+        } else if running_process_matches(matcher) {
+            return Some(name.to_string());
+        }
+    }
+    None
+}
+
+fn active_window_matches(matcher: &GameModeProcessMatcher) -> bool {
+    let Some(window) = crate::active_window::cached_active_window() else {
+        return false;
+    };
+    [window.app_id.as_str(), window.title.as_str()]
+        .iter()
+        .any(|candidate| process_name_matches(matcher, candidate))
+}
+
+fn running_process_matches(matcher: &GameModeProcessMatcher) -> bool {
+    let Ok(entries) = std::fs::read_dir("/proc") else {
+        return false;
+    };
+    for entry in entries.flatten() {
+        let file_name = entry.file_name();
+        let Some(file_name) = file_name.to_str() else {
+            continue;
+        };
+        if !file_name.as_bytes().iter().all(|b| b.is_ascii_digit()) {
+            continue;
+        }
+        let path = entry.path();
+        let comm = std::fs::read_to_string(path.join("comm")).unwrap_or_default();
+        if process_name_matches(matcher, comm.trim()) {
+            return true;
+        }
+        if let Ok(cmdline) = std::fs::read(path.join("cmdline")) {
+            let args: Vec<String> = cmdline
+                .split(|b| *b == 0)
+                .filter(|part| !part.is_empty())
+                .map(|part| String::from_utf8_lossy(part).into_owned())
+                .collect();
+            if args.iter().any(|arg| process_name_matches(matcher, arg)) {
+                return true;
+            }
+            if let Some(first) = args.first().and_then(|arg| {
+                std::path::Path::new(arg)
+                    .file_name()
+                    .and_then(|name| name.to_str())
+            }) {
+                if process_name_matches(matcher, first) {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+fn process_name_matches(matcher: &GameModeProcessMatcher, candidate: &str) -> bool {
+    let needle = matcher.name.trim().to_lowercase();
+    let haystack = candidate.trim().to_lowercase();
+    if needle.is_empty() || haystack.is_empty() {
+        return false;
+    }
+    match matcher.match_mode {
+        GameModeProcessMatchMode::Exact => haystack == needle,
+        GameModeProcessMatchMode::Substring => haystack.contains(&needle),
+    }
 }
 
 pub fn is_fullscreen_active() -> bool {

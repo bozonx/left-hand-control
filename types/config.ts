@@ -153,6 +153,13 @@ export interface CommandTrustEntry {
   trustedAt: string
 }
 
+export interface GameModeProcessMatcher {
+  id: string
+  name: string
+  matchMode: 'exact' | 'substring'
+  onlyActiveWindow: boolean
+}
+
 export interface AppSettings {
   launchOnStartup: boolean
   // Visual theme preference. 'system' follows prefers-color-scheme.
@@ -194,6 +201,7 @@ export interface AppSettings {
   gameMode: {
     useGamemoded: boolean
     useFullscreen: boolean
+    processMatchers: GameModeProcessMatcher[]
   }
 }
 
@@ -312,6 +320,7 @@ export function createDefaultConfig(): AppConfig {
       gameMode: {
         useGamemoded: true,
         useFullscreen: false,
+        processMatchers: [],
       },
     },
   }

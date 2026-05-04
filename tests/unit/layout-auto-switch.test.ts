@@ -38,6 +38,15 @@ describe('matchesConditionSet', () => {
     ).toBe(false)
   })
 
+  it('ignores gameMode when game mode detection is disabled', () => {
+    expect(
+      matchesConditionSet(
+        { gameMode: 'on', layouts: [] },
+        { ...ctxOnUS, gameModeDetectionEnabled: false },
+      ),
+    ).toBe(true)
+  })
+
   it('rejects when layout list excludes current', () => {
     expect(
       matchesConditionSet({ layouts: ['ru'] }, ctxOnUS),
