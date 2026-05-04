@@ -23,6 +23,7 @@ export default {
     settingsTooltip: "Settings",
   },
   common: {
+    notSet: "Not set",
     cancel: "Cancel",
     save: "Save",
     delete: "Delete",

@@ -72,6 +72,16 @@ const isConditionsOpen = ref(false)
             />
           </template>
           <UButton
+            v-if="!((rule.conditionGameMode && rule.conditionGameMode !== 'ignore') || rule.conditionLayouts?.length || rule.conditionAppsWhitelist?.length || rule.conditionAppsBlacklist?.length)"
+            color="neutral"
+            variant="ghost"
+            class="w-full h-8 px-2.5 justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50 font-normal"
+            @click="isConditionsOpen = true"
+          >
+            <span class="truncate">{{ $t('common.notSet') }}</span>
+          </UButton>
+          <UButton
+            v-else
             color="neutral"
             variant="soft"
             class="w-full justify-between"

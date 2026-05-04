@@ -23,6 +23,7 @@ export default {
     settingsTooltip: "Настройки",
   },
   common: {
+    notSet: "Не задано",
     cancel: "Отмена",
     save: "Сохранить",
     delete: "Удалить",

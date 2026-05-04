@@ -57,8 +57,7 @@ function updateValue(value: string | number | null | undefined) {
         class="flex-1 min-w-0 h-8 px-2.5 justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50"
         @click="ghostOpen = true"
       >
-        <UIcon name="i-lucide-plus" class="shrink-0 w-4 h-4 mr-1.5" />
-        <span class="truncate">{{ props.placeholder }}</span>
+        <span class="truncate">{{ $t('common.notSet') }}</span>
       </UButton>
     </template>
     <template v-else>

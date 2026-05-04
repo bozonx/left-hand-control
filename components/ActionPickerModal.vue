@@ -136,6 +136,7 @@ function cancel() {
       @click="openModal"
     >
       <UIcon
+        v-if="!(props.ghost && !model)"
         :name="actionInfo.icon || (model ? 'i-lucide-square-mouse-pointer' : 'i-lucide-plus')"
         class="shrink-0 w-4 h-4 text-(--ui-text-muted)"
       />
@@ -143,7 +144,7 @@ function cancel() {
         <span>{{ actionInfo.label }}</span>
       </AppTooltip>
       <span v-else class="text-(--ui-text-muted) truncate">
-        {{ placeholder ?? $t('picker.chooseAction') }}
+        {{ (props.ghost && !model) ? $t('common.notSet') : (placeholder ?? $t('picker.chooseAction')) }}
       </span>
     </UButton>
     <FieldResetButton
