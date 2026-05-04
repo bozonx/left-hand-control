@@ -14,7 +14,19 @@ const emit = defineEmits<{
 }>()
 
 const isTextCategory = computed(() => props.activeCategory === 'text')
-const showPhysicalKeyHint = computed(() => ['lettersSymbols'].includes(props.activeCategory))
+const activeCategoryHint = computed<string | undefined>(() => {
+  const map: Record<string, string> = {
+    lettersSymbols: 'picker.physicalKeyHint',
+    commands: 'picker.commandsHint',
+    macros: 'picker.macrosHint',
+    'system-macros': 'picker.systemMacrosHint',
+    special: 'picker.specialHint',
+    media: 'picker.mediaHint',
+    mouse: 'picker.mouseHint',
+    other: 'picker.otherHint',
+  }
+  return map[props.activeCategory]
+})
 const listGridClass = computed(() =>
   ['commands', 'macros', 'system-macros', 'system'].includes(props.activeCategory)
     ? [
@@ -71,9 +83,9 @@ const listGridClass = computed(() =>
   </div>
 
   <p
-    v-if="showPhysicalKeyHint"
+    v-if="activeCategoryHint"
     class="text-xs text-(--ui-text-muted)"
   >
-    {{ $t('picker.physicalKeyHint') }}
+    {{ $t(activeCategoryHint) }}
   </p>
 </template>

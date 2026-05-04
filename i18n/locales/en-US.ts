@@ -622,6 +622,13 @@ export default {
     noResults: "No results",
     chordHint:
       "If you need a trigger chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.",
+    commandsHint: "Commands are defined on the Commands tab.",
+    macrosHint: "Macros are defined on the Macros tab.",
+    systemMacrosHint: "Built-in macros that cannot be edited. To customize, create a user macro based on one.",
+    specialHint: "These are special key codes, not direct system calls.",
+    mediaHint: "These are special key buttons, not system action calls. If you remap them in your system, your remapped action will fire.",
+    mouseHint: "Check the extra mouse buttons on your mouse; they may not match. To check, press the assign key button.",
+    otherHint: "These are key codes, not direct system action calls.",
   },
   categories: {
     special: "Special",

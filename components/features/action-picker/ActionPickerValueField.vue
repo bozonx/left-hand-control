@@ -175,6 +175,46 @@ function onDocumentKeyup(event: KeyboardEvent) {
   }
 }
 
+function getMouseButtonCode(button: number): string | null {
+  switch (button) {
+    case 0: return 'MouseLeft'
+    case 1: return 'MouseMiddle'
+    case 2: return 'MouseRight'
+    case 3: return 'MouseBack'
+    case 4: return 'MouseForward'
+    default: return null
+  }
+}
+
+function onDocumentMousedown(event: MouseEvent) {
+  if (!captureActive.value) return
+  const code = getMouseButtonCode(event.button)
+  if (!code) return
+  event.stopPropagation()
+  event.preventDefault()
+  pressedCaptureKeys.value.add(code)
+  capturedChordKeys.value.add(code)
+  capturedDraft.value = buildCaptureValue(capturedChordKeys.value)
+}
+
+function onDocumentMouseup(event: MouseEvent) {
+  if (!captureActive.value) return
+  const code = getMouseButtonCode(event.button)
+  if (!code) return
+  event.stopPropagation()
+  event.preventDefault()
+  pressedCaptureKeys.value.delete(code)
+  if (pressedCaptureKeys.value.size === 0 && capturedChordKeys.value.size > 0) {
+    commitCapture(buildCaptureValue(capturedChordKeys.value))
+  }
+}
+
+function onDocumentContextmenu(event: MouseEvent) {
+  if (!captureActive.value) return
+  event.stopPropagation()
+  event.preventDefault()
+}
+
 function toggleCapture() {
   if (captureActive.value) {
     cancelCapture()
@@ -292,11 +332,17 @@ watch(draft, (val) => {
 onMounted(() => {
   document.addEventListener('keydown', onDocumentKeydown, true)
   document.addEventListener('keyup', onDocumentKeyup, true)
+  document.addEventListener('mousedown', onDocumentMousedown, true)
+  document.addEventListener('mouseup', onDocumentMouseup, true)
+  document.addEventListener('contextmenu', onDocumentContextmenu, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onDocumentKeydown, true)
   document.removeEventListener('keyup', onDocumentKeyup, true)
+  document.removeEventListener('mousedown', onDocumentMousedown, true)
+  document.removeEventListener('mouseup', onDocumentMouseup, true)
+  document.removeEventListener('contextmenu', onDocumentContextmenu, true)
   resetCaptureState()
   if (focusoutTimer) clearTimeout(focusoutTimer)
 })
