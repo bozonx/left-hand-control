@@ -39,6 +39,7 @@ interface LayoutYaml {
     dtap?: string | null;
     holdMs?: number | null;
     dtapMs?: number | null;
+    isolate?: string | string[] | null;
     id?: string;
   }>;
   macros?: Array<{
@@ -68,6 +69,7 @@ function genId(prefix: string): string {
 function parsePreset(doc: LayoutYaml): LayoutPreset {
   const layers: Layer[] = [];
   const layerKeymaps: Record<string, LayerKeymap> = {};
+  const legacyLayerIsolate: Record<string, string[]> = {};
 
   for (const l of doc.layers ?? []) {
     if (!l?.id) continue;
@@ -88,6 +90,9 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     const isolate = Array.isArray(l.isolate)
       ? l.isolate.filter((s): s is string => typeof s === "string")
       : undefined;
+    if (isolate && isolate.length > 0) {
+      legacyLayerIsolate[l.id] = isolate;
+    }
     const extras: ExtraKey[] = [];
     for (const e of l.extras ?? []) {
       const key = e?.key ?? e?.name;
@@ -98,7 +103,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
         action: e.action,
       });
     }
-    layerKeymaps[l.id] = { keys, isolate, extras };
+    layerKeymaps[l.id] = { keys, extras };
   }
 
   const rules: LayerRule[] = [];
@@ -116,12 +121,19 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       : r.hold === null
         ? null
         : String(r.hold);
+    const ownIsolate = Array.isArray(r.isolate)
+      ? r.isolate.filter((s): s is string => typeof s === "string").join(", ")
+      : typeof r.isolate === "string"
+        ? r.isolate
+        : "";
+    const migratedIsolate = r.layer ? legacyLayerIsolate[r.layer]?.join(", ") ?? "" : "";
     rules.push({
       id: r.id ?? genId("r_"),
       key: r.key,
       layerId: r.layer ?? "",
       tapAction,
       holdAction,
+      isolate: ownIsolate || migratedIsolate || undefined,
       doubleTapAction: r.dtap ?? "",
       holdTimeoutMs:
         typeof r.holdMs === "number" && r.holdMs >= 0 ? r.holdMs : undefined,
@@ -210,9 +222,6 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
         name: l.name,
         ...(l.description ? { description: l.description } : {}),
         ...(km && Object.keys(km.keys).length > 0 ? { keys: km.keys } : {}),
-        ...(km && km.isolate && km.isolate.length > 0
-          ? { isolate: km.isolate }
-          : {}),
         ...(km && km.extras.length > 0
           ? {
               extras: km.extras.map((e) => ({
@@ -230,6 +239,7 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       // (emit `null`); non-empty string => action / action.
       ...(r.tapAction === "" ? {} : { tap: r.tapAction }),
       ...(r.holdAction === "" ? {} : { hold: r.holdAction }),
+      ...(r.isolate && r.isolate.trim() ? { isolate: r.isolate.trim() } : {}),
       ...(r.doubleTapAction ? { dtap: r.doubleTapAction } : {}),
       ...(typeof r.holdTimeoutMs === "number"
         ? { holdMs: r.holdTimeoutMs }

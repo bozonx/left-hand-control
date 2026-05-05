@@ -23,7 +23,7 @@ defineProps<{
 
 const rule = defineModel<LayerRule>('rule', { required: true })
 
-defineEmits<{
+const emit = defineEmits<{
   remove: [id: string]
   moveUp: [id: string]
   moveDown: [id: string]
@@ -32,6 +32,20 @@ defineEmits<{
 }>()
 
 const isConditionsOpen = ref(false)
+
+function setRuleKey(value: string | null) {
+  rule.value.key = value ?? ''
+  if (value) {
+    emit('keySelected', rule.value.id)
+  }
+}
+
+function updateHoldAction(value: string | null) {
+  rule.value.holdAction = value ?? ''
+  if (!rule.value.holdAction) {
+    rule.value.isolate = ''
+  }
+}
 </script>
 
 <template>
@@ -55,11 +69,11 @@ const isConditionsOpen = ref(false)
             />
           </template>
           <ActionPickerModal
-            :model-value="rule.key"
+            v-model="rule.key"
             key-only
             :invalid="!!keyError"
             :placeholder="$t('rules.keyPh')"
-            @update:model-value="(value: string | null) => { rule.key = value ?? ''; if (value) $emit('keySelected', rule.id) }"
+            @update:model-value="setRuleKey"
           />
         </UFormField>
 
@@ -188,32 +202,44 @@ const isConditionsOpen = ref(false)
             />
           </template>
           <ActionPickerModal
-            :model-value="rule.doubleTapAction"
+            v-model="rule.doubleTapAction"
             allow-empty
             ghost
             :placeholder="$t('rules.doubleTapPh')"
             :clear-label="$t('common.clear')"
-            @update:model-value="(v: string | null) => { rule.doubleTapAction = v ?? '' }"
           />
         </UFormField>
 
-        <UFormField>
-          <template #label>
-            <FieldLabel
-              :label="$t('rules.holdActionLabel')"
-              :hint="$t('rules.holdActionHint')"
-              hint-visible-on="group-hover-rule"
+        <div class="flex flex-col gap-3">
+          <UFormField>
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.holdActionLabel')"
+                :hint="$t('rules.holdActionHint')"
+                hint-visible-on="group-hover-rule"
+              />
+            </template>
+            <RuleActionField
+              :model-value="rule.holdAction"
+              key-only
+              mode-kind="hold"
+              ghost
+              :placeholder="$t('rules.holdActionPh')"
+              @update:model-value="updateHoldAction"
             />
-          </template>
-          <RuleActionField
-            :model-value="rule.holdAction"
-            key-only
-            mode-kind="hold"
-            ghost
-            :placeholder="$t('rules.holdActionPh')"
-            @update:model-value="(v: string | null) => { rule.holdAction = v ?? '' }"
-          />
-        </UFormField>
+          </UFormField>
+          <UFormField
+            v-if="rule.holdAction"
+            :label="$t('rules.isolateLabel')"
+            :hint="$t('rules.isolateHint')"
+          >
+            <UInput
+              v-model="rule.isolate"
+              size="sm"
+              :placeholder="$t('rules.isolatePh')"
+            />
+          </UFormField>
+        </div>
       </div>
     </div>
 

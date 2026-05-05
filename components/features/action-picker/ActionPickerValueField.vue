@@ -139,6 +139,7 @@ function commitCapture(value: string) {
     showSuggestions.value = false
     activeIndex.value = -1
   })
+  emit('pick', value)
   focusCaptureButton()
 }
 

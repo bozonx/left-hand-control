@@ -46,7 +46,7 @@ mod builder;
 mod model;
 
 pub use self::model::Out;
-use self::model::{ActionDef, HoldMode, Pending, Phase, RuleEntry, TapMode};
+use self::model::{ActionDef, HoldMode, LayerTrigger, Pending, Phase, RuleEntry, TapMode};
 use super::action::Keystroke;
 use super::system::SysCommand;
 use evdev::Key;
@@ -81,10 +81,8 @@ pub struct Engine {
     /// Currently "held down" virtual modifiers (refcounted).
     mod_refs: HashMap<Key, u32>,
 
-    /// Per-layer list of physical keys that trigger the temporary release of holds.
-    layer_isolate_keys: HashMap<String, Vec<Key>>,
-    /// layer_id -> physical keys that activated it, oldest to newest
-    layer_triggers: HashMap<String, Vec<Key>>,
+    /// layer_id -> rules that activated it, oldest to newest
+    layer_triggers: HashMap<String, Vec<LayerTrigger>>,
     /// Tracks isolated holds per physical key (to restore on key release)
     isolated_holds: HashMap<Key, Vec<(Key, u32)>>,
 
@@ -120,7 +118,10 @@ impl Engine {
                         break;
                     }
                     if am.steps_emitted >= MAX_MACRO_STEPS {
-                        eprintln!("[mapper] macro step limit ({}) exceeded, aborting", MAX_MACRO_STEPS);
+                        eprintln!(
+                            "[mapper] macro step limit ({}) exceeded, aborting",
+                            MAX_MACRO_STEPS
+                        );
                         break;
                     }
                     match am.phase {
@@ -130,15 +131,24 @@ impl Engine {
                                 MacroStepItem::Stroke(ks) => {
                                     if !ks.mods.is_empty() {
                                         for m in &ks.mods {
-                                            out.push(Out::KeyRaw { key: *m, down: true });
+                                            out.push(Out::KeyRaw {
+                                                key: *m,
+                                                down: true,
+                                            });
                                         }
                                         am.phase = MacroPhase::StrokeModDelayPress(ks.clone());
                                         am.next_wake = now + am.mod_delay;
                                         self.active_macro = Some(am);
                                         break;
                                     } else {
-                                        out.push(Out::KeyRaw { key: ks.key, down: true });
-                                        out.push(Out::KeyRaw { key: ks.key, down: false });
+                                        out.push(Out::KeyRaw {
+                                            key: ks.key,
+                                            down: true,
+                                        });
+                                        out.push(Out::KeyRaw {
+                                            key: ks.key,
+                                            down: false,
+                                        });
                                         am.steps_emitted += 1;
                                         am.current_step += 1;
                                         if am.current_step < am.steps.len() {
@@ -182,8 +192,14 @@ impl Engine {
                         }
                         MacroPhase::StrokeModDelayPress(ref ks) => {
                             let ks = ks.clone();
-                            out.push(Out::KeyRaw { key: ks.key, down: true });
-                            out.push(Out::KeyRaw { key: ks.key, down: false });
+                            out.push(Out::KeyRaw {
+                                key: ks.key,
+                                down: true,
+                            });
+                            out.push(Out::KeyRaw {
+                                key: ks.key,
+                                down: false,
+                            });
                             am.phase = MacroPhase::StrokeModDelayRelease(ks.clone());
                             am.next_wake = now + am.mod_delay;
                             self.active_macro = Some(am);
@@ -191,7 +207,10 @@ impl Engine {
                         }
                         MacroPhase::StrokeModDelayRelease(ref ks) => {
                             for m in ks.mods.iter().rev() {
-                                out.push(Out::KeyRaw { key: *m, down: false });
+                                out.push(Out::KeyRaw {
+                                    key: *m,
+                                    down: false,
+                                });
                             }
                             am.phase = MacroPhase::NextStep;
                             am.steps_emitted += 1;
@@ -332,36 +351,29 @@ impl Engine {
             let mapped = self.lookup_mapping(key);
             match mapped {
                 Some((layer_id, def)) => {
-                    if let Some(isolate_keys) = self.layer_isolate_keys.get(&layer_id) {
-                        if isolate_keys.contains(&key) {
-                            if let Some(trigger_phys) = self
-                                .layer_triggers
-                                .get(&layer_id)
-                                .and_then(|v| v.last())
-                                .copied()
-                            {
-                                if let Some(ks) = self.emitted.get(&trigger_phys).cloned() {
-                                    let mut suppressed = Vec::new();
-                                    for target_key in ks.mods.iter().chain(std::iter::once(&ks.key))
-                                    {
-                                        let old_count =
-                                            self.mod_refs.get(target_key).copied().unwrap_or(0);
-                                        if let Some(count) = self.mod_refs.get_mut(target_key) {
-                                            *count = 0;
-                                        }
-                                        out.push(Out::KeyRaw {
-                                            key: *target_key,
-                                            down: false,
-                                        });
-                                        suppressed.push((*target_key, old_count));
-                                        eprintln!(
-                                            "[mapper] isolate+ {:?} suppress hold {:?}",
-                                            key, target_key
-                                        );
+                    if let Some(trigger) = self.layer_triggers.get(&layer_id).and_then(|v| v.last())
+                    {
+                        if trigger.isolate_keys.contains(&key) {
+                            if let Some(ks) = self.emitted.get(&trigger.key).cloned() {
+                                let mut suppressed = Vec::new();
+                                for target_key in ks.mods.iter().chain(std::iter::once(&ks.key)) {
+                                    let old_count =
+                                        self.mod_refs.get(target_key).copied().unwrap_or(0);
+                                    if let Some(count) = self.mod_refs.get_mut(target_key) {
+                                        *count = 0;
                                     }
-                                    if !suppressed.is_empty() {
-                                        self.isolated_holds.insert(key, suppressed);
-                                    }
+                                    out.push(Out::KeyRaw {
+                                        key: *target_key,
+                                        down: false,
+                                    });
+                                    suppressed.push((*target_key, old_count));
+                                    eprintln!(
+                                        "[mapper] isolate+ {:?} suppress hold {:?}",
+                                        key, target_key
+                                    );
+                                }
+                                if !suppressed.is_empty() {
+                                    self.isolated_holds.insert(key, suppressed);
                                 }
                             }
                         }
@@ -617,7 +629,13 @@ impl Engine {
         if let Some(id) = &rule.layer_id {
             eprintln!("[mapper] layer+ {id} (key={:?})", key);
             self.push_layer(id.clone());
-            self.layer_triggers.entry(id.clone()).or_default().push(key);
+            self.layer_triggers
+                .entry(id.clone())
+                .or_default()
+                .push(LayerTrigger {
+                    key,
+                    isolate_keys: rule.isolate_keys.clone(),
+                });
         }
         match &rule.hold {
             HoldMode::Native => {
@@ -638,7 +656,7 @@ impl Engine {
         if let Some(id) = &rule.layer_id {
             eprintln!("[mapper] layer- {id} (key={:?})", key);
             if let Some(triggers) = self.layer_triggers.get_mut(id) {
-                if let Some(pos) = triggers.iter().rposition(|trigger| *trigger == key) {
+                if let Some(pos) = triggers.iter().rposition(|trigger| trigger.key == key) {
                     triggers.remove(pos);
                 }
                 if triggers.is_empty() {
@@ -655,7 +673,13 @@ impl Engine {
         }
     }
 
-    fn fire_action(&mut self, action: Option<&ActionDef>, mod_delay: Duration, now: Instant, out: &mut Vec<Out>) {
+    fn fire_action(
+        &mut self,
+        action: Option<&ActionDef>,
+        mod_delay: Duration,
+        now: Instant,
+        out: &mut Vec<Out>,
+    ) {
         match action {
             Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke {
                 ks: ks.clone(),
@@ -686,7 +710,10 @@ impl Engine {
             TapMode::Native => {
                 // Short native press+release of the physical key.
                 out.push(Out::Stroke {
-                    ks: Keystroke { mods: vec![], key: physical },
+                    ks: Keystroke {
+                        mods: vec![],
+                        key: physical,
+                    },
                     mod_delay: self.default_mod_delay,
                 });
             }
@@ -751,10 +778,7 @@ impl Engine {
             return;
         }
         let resolved = if let Some(rest) = trimmed.strip_prefix("macro:") {
-            self.macros
-                .get(rest.trim())
-                .cloned()
-                .map(ActionDef::Macro)
+            self.macros.get(rest.trim()).cloned().map(ActionDef::Macro)
         } else if let Some(rest) = trimmed.strip_prefix("cmd:") {
             self.commands
                 .get(rest.trim())
@@ -914,8 +938,14 @@ mod tests {
         assert!(matches!(
             out.as_slice(),
             [
-                Out::KeyRaw { key: Key::KEY_H, down: true },
-                Out::KeyRaw { key: Key::KEY_H, down: false },
+                Out::KeyRaw {
+                    key: Key::KEY_H,
+                    down: true
+                },
+                Out::KeyRaw {
+                    key: Key::KEY_H,
+                    down: false
+                },
             ]
         ));
     }
@@ -964,6 +994,7 @@ mod tests {
             layer_id: "sel".into(),
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1003,6 +1034,7 @@ mod tests {
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1018,6 +1050,7 @@ mod tests {
             layer_id: "sel".into(),
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1062,6 +1095,7 @@ mod tests {
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1110,6 +1144,7 @@ mod tests {
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1145,6 +1180,7 @@ mod tests {
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
             hold_action: ActionSpec::Action("AltLeft".into()),
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1194,6 +1230,7 @@ mod tests {
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
             hold_action: ActionSpec::Native,
+            isolate: "KeyW".into(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1233,6 +1270,7 @@ mod tests {
             tap: TapMode::Native,
             layer_id: None,
             hold: HoldMode::Swallow,
+            isolate_keys: Vec::new(),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1303,6 +1341,7 @@ mod tests {
             tap: TapMode::Native,
             layer_id: None,
             hold: HoldMode::Swallow,
+            isolate_keys: Vec::new(),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1332,6 +1371,7 @@ mod tests {
             tap: TapMode::Native,
             layer_id: None,
             hold: HoldMode::Swallow,
+            isolate_keys: Vec::new(),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1362,6 +1402,7 @@ mod tests {
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyA".into()),
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1377,6 +1418,7 @@ mod tests {
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyB".into()),
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1409,6 +1451,7 @@ mod tests {
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
             hold_action: ActionSpec::Action("ControlLeft".into()),
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1467,6 +1510,7 @@ mod tests {
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
             hold_action: ActionSpec::Action("ControlLeft".into()),
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1519,6 +1563,7 @@ mod tests {
             layer_id: String::new(),
             tap_action: ActionSpec::Action("BrowserBack".into()),
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1555,6 +1600,7 @@ mod tests {
             layer_id: "mouse".into(),
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1614,13 +1660,13 @@ mod tests {
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
             hold_action: ActionSpec::Action("AltLeft".into()),
+            isolate: "KeyW".into(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
         let mut win = LayerKeymap {
             keys: HashMap::new(),
-            isolate: vec!["KeyW".into()],
             ..Default::default()
         };
         win.keys.insert("KeyW".into(), Some("Ctrl+KeyA".into()));

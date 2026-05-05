@@ -214,6 +214,10 @@ export default {
     holdModeNativeDefault: "Use physical key",
     holdModeNone: "Do nothing",
     holdModeAction: "Hold another key",
+    isolateLabel: "Hold exclusions",
+    isolateHint:
+      "Comma-separated keys in the active layer that temporarily release the held key.",
+    isolatePh: "KeyW, KeyC, Slash",
     doubleTapLabel: "Double-tap action",
     doubleTapHint:
       "Action performed when the key is pressed twice in quick succession (second key-down within the double-tap window after a short first press). Fires on the second press; no need to release the key first.",

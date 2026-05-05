@@ -155,13 +155,6 @@ layers:
       Period: F3
       Slash: F10
   - id: win
-    isolate:
-      - KeyW
-      - KeyC
-      - KeyV
-      - Comma
-      - Period
-      - Slash
     keys:
       Tab: Tab
       CapsLock: sys:walkThroughWindowsAlternative
@@ -245,6 +238,7 @@ rules:
     tap: Enter
     layer: win
     hold: AltLeft
+    isolate: KeyW, KeyC, KeyV, Comma, Period, Slash
   - key: Space
     layer: space
   - key: AltRight

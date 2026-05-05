@@ -138,6 +138,7 @@ export function normalizeConfig(raw: unknown): AppConfig {
           conditionAppsBlacklist: Array.isArray(rule.conditionAppsBlacklist)
             ? rule.conditionAppsBlacklist.filter((s): s is string => typeof s === 'string')
             : undefined,
+          isolate: typeof rule.isolate === "string" ? rule.isolate : undefined,
         }))
       : [],
     layerKeymaps:
@@ -167,6 +168,16 @@ export function normalizeConfig(raw: unknown): AppConfig {
       }
       if (!Array.isArray(km.extras)) km.extras = [];
     }
+  }
+  for (const rule of cfg.rules) {
+    if (rule.isolate || !rule.layerId) continue;
+    const legacyIsolate = cfg.layerKeymaps[rule.layerId]?.isolate;
+    if (Array.isArray(legacyIsolate) && legacyIsolate.length > 0) {
+      rule.isolate = legacyIsolate.filter((s): s is string => typeof s === "string").join(", ");
+    }
+  }
+  for (const keymap of Object.values(cfg.layerKeymaps)) {
+    delete keymap.isolate;
   }
   return cfg;
 }

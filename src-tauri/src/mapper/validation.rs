@@ -319,6 +319,7 @@ mod tests {
             layer_id: String::new(),
             tap_action: ActionSpec::Action("macro:missing".into()),
             hold_action: ActionSpec::Native,
+            isolate: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,

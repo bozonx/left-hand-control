@@ -9,6 +9,20 @@ use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
+fn parse_isolate_keys(raw: &str) -> Vec<Key> {
+    raw.split(',')
+        .map(str::trim)
+        .filter(|code| !code.is_empty())
+        .filter_map(|code| {
+            let key = code_to_key(code);
+            if key.is_none() {
+                eprintln!("[mapper] unknown isolate key code: {code}");
+            }
+            key
+        })
+        .collect()
+}
+
 impl Engine {
     pub fn new(cfg: &AppConfig) -> Self {
         let default_hold = Duration::from_millis(cfg.settings.default_hold_timeout_ms.max(1));
@@ -89,16 +103,31 @@ impl Engine {
                     let mut found = false;
                     if let Some(sys_m) = SYSTEM_MACROS.iter().find(|s| s.id == nested_id) {
                         let sys_steps: Vec<&str> = sys_m.steps.to_vec();
-                        let nested_steps = resolve_macro_steps(nested_id, sys_steps, raw_user_macros, commands, depth + 1);
+                        let nested_steps = resolve_macro_steps(
+                            nested_id,
+                            sys_steps,
+                            raw_user_macros,
+                            commands,
+                            depth + 1,
+                        );
                         steps.extend(nested_steps);
                         found = true;
                     } else if let Some(user_m) = raw_user_macros.get(nested_id) {
-                        let nested_steps = resolve_macro_steps(nested_id, user_m.steps.iter().map(|s| s.action.as_str()).collect(), raw_user_macros, commands, depth + 1);
+                        let nested_steps = resolve_macro_steps(
+                            nested_id,
+                            user_m.steps.iter().map(|s| s.action.as_str()).collect(),
+                            raw_user_macros,
+                            commands,
+                            depth + 1,
+                        );
                         steps.extend(nested_steps);
                         found = true;
                     }
                     if !found {
-                        eprintln!("[mapper] macro {}: unknown nested macro ref {:?}", id, nested_id);
+                        eprintln!(
+                            "[mapper] macro {}: unknown nested macro ref {:?}",
+                            id, nested_id
+                        );
                     }
                     continue;
                 }
@@ -108,8 +137,7 @@ impl Engine {
                         Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
                         None => eprintln!(
                             "[mapper] macro {} step: unknown command ref {:?}",
-                            id,
-                            cmd_id
+                            id, cmd_id
                         ),
                     }
                     continue;
@@ -120,18 +148,15 @@ impl Engine {
                 }
                 match parse_action(raw) {
                     Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
-                    None => eprintln!(
-                        "[mapper] macro {} step: unknown keystroke {:?}",
-                        id,
-                        raw
-                    ),
+                    None => eprintln!("[mapper] macro {} step: unknown keystroke {:?}", id, raw),
                 }
             }
             steps
         }
 
         for sys in SYSTEM_MACROS {
-            let steps = resolve_macro_steps(sys.id, sys.steps.to_vec(), &raw_user_macros, &commands, 0);
+            let steps =
+                resolve_macro_steps(sys.id, sys.steps.to_vec(), &raw_user_macros, &commands, 0);
             if steps.is_empty() {
                 eprintln!(
                     "[mapper] system macro {} has no usable steps — skipped",
@@ -301,22 +326,32 @@ impl Engine {
                 .double_tap_timeout_ms
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_double_tap);
+            let mut isolate_keys = parse_isolate_keys(&r.isolate);
+            if isolate_keys.is_empty() {
+                if let Some(layer_id) = &layer_id {
+                    if let Some(km) = cfg.layer_keymaps.get(layer_id) {
+                        isolate_keys = km
+                            .isolate
+                            .iter()
+                            .filter_map(|code| code_to_key(code))
+                            .collect();
+                    }
+                }
+            }
 
-            rules
-                .entry(key)
-                .or_insert_with(Vec::new)
-                .push(RuleEntry {
-                    tap,
-                    layer_id,
-                    hold,
-                    double_tap,
-                    hold_timeout,
-                    double_tap_window,
-                    condition_game_mode: r.condition_game_mode.clone(),
-                    condition_layouts: r.condition_layouts.clone(),
-                    condition_apps_whitelist: r.condition_apps_whitelist.clone(),
-                    condition_apps_blacklist: r.condition_apps_blacklist.clone(),
-                });
+            rules.entry(key).or_insert_with(Vec::new).push(RuleEntry {
+                tap,
+                layer_id,
+                hold,
+                isolate_keys,
+                double_tap,
+                hold_timeout,
+                double_tap_window,
+                condition_game_mode: r.condition_game_mode.clone(),
+                condition_layouts: r.condition_layouts.clone(),
+                condition_apps_whitelist: r.condition_apps_whitelist.clone(),
+                condition_apps_blacklist: r.condition_apps_blacklist.clone(),
+            });
         }
 
         let mut layer_maps: HashMap<String, HashMap<Key, ActionDef>> = HashMap::new();
@@ -355,19 +390,6 @@ impl Engine {
             layer_maps.insert(layer_id.clone(), m);
         }
 
-        let mut layer_isolate_keys: HashMap<String, Vec<Key>> = HashMap::new();
-        for (layer_id, km) in &cfg.layer_keymaps {
-            let mut isolates = Vec::new();
-            for code in &km.isolate {
-                if let Some(k) = code_to_key(code) {
-                    isolates.push(k);
-                }
-            }
-            if !isolates.is_empty() {
-                layer_isolate_keys.insert(layer_id.clone(), isolates);
-            }
-        }
-
         Self {
             rules,
             macros,
@@ -380,7 +402,6 @@ impl Engine {
             emitted: HashMap::new(),
             oneshot_consumed: HashSet::new(),
             mod_refs: HashMap::new(),
-            layer_isolate_keys,
             layer_triggers: HashMap::new(),
             isolated_holds: HashMap::new(),
             active_macro: None,

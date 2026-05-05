@@ -347,7 +347,7 @@ macros:
     });
   });
 
-  it("parses and serializes isolate on a layer", () => {
+  it("migrates legacy layer isolate to the rule", () => {
     const preset = parseLayoutYaml(`
 layers:
   - id: win
@@ -355,16 +355,19 @@ layers:
       - KeyW
     keys:
       KeyW: Ctrl+KeyA
+rules:
+  - key: AltLeft
+    layer: win
 `);
     expect(preset).not.toBeNull();
     expect(preset!.layerKeymaps.win).toMatchObject({
       keys: { KeyW: "Ctrl+KeyA" },
-      isolate: ["KeyW"],
     });
+    expect(preset!.rules[0]?.isolate).toBe("KeyW");
 
     const yaml = serializeLayoutYaml(preset!);
     expect(yaml).toContain("isolate:");
-    expect(yaml).toContain("- KeyW");
+    expect(yaml).toContain("isolate: KeyW");
   });
 
   it("returns null for invalid or non-object yaml", () => {

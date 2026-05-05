@@ -24,6 +24,7 @@ export function useRulesEditor() {
       layerId: '',
       tapAction: '',
       holdAction: '',
+      isolate: '',
       doubleTapAction: '',
       holdTimeoutMs: undefined,
       doubleTapTimeoutMs: undefined,

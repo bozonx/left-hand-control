@@ -124,6 +124,8 @@ pub struct Rule {
     #[serde(default)]
     pub hold_action: ActionSpec,
     #[serde(default)]
+    pub isolate: String,
+    #[serde(default)]
     pub hold_timeout_ms: Option<u64>,
     #[serde(default)]
     pub double_tap_action: String,

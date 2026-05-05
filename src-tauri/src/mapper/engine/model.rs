@@ -41,6 +41,7 @@ pub(super) struct RuleEntry {
     pub(super) tap: TapMode,
     pub(super) layer_id: Option<String>,
     pub(super) hold: HoldMode,
+    pub(super) isolate_keys: Vec<Key>,
     pub(super) double_tap: Option<ActionDef>,
     pub(super) hold_timeout: Duration,
     pub(super) double_tap_window: Duration,
@@ -48,6 +49,12 @@ pub(super) struct RuleEntry {
     pub(super) condition_layouts: Option<Vec<String>>,
     pub(super) condition_apps_whitelist: Option<Vec<String>>,
     pub(super) condition_apps_blacklist: Option<Vec<String>>,
+}
+
+#[derive(Clone)]
+pub(super) struct LayerTrigger {
+    pub(super) key: Key,
+    pub(super) isolate_keys: Vec<Key>,
 }
 
 #[derive(Clone)]

@@ -53,11 +53,18 @@ function cancelEdit() {
   isEditingDescription.value = false;
 }
 
-async function saveEdit() {
+function saveEdit() {
   if (editValue.value !== description.value) {
     emit("updateDescription", props.entry, editValue.value);
   }
   isEditingDescription.value = false;
+}
+
+function handleDescriptionFocusout(event: FocusEvent) {
+  const container = event.currentTarget as HTMLElement;
+  const related = event.relatedTarget as Node | null;
+  if (related && container.contains(related)) return;
+  saveEdit();
 }
 
 function entryIsIncluded(entryId: string) {
@@ -171,7 +178,7 @@ const description = computed(() => {
               {{ $t("settings.unsavedBadge") }}
             </UBadge>
           </div>
-          <div v-if="isEditingDescription" class="mt-1 flex flex-col gap-1.5">
+          <div v-if="isEditingDescription" class="mt-1 flex flex-col gap-1.5" @focusout="handleDescriptionFocusout">
             <UTextarea
               ref="textareaRef"
               v-model="editValue"
@@ -181,28 +188,7 @@ const description = computed(() => {
               size="sm"
               class="w-full"
               @keydown.esc="cancelEdit"
-              @keydown.enter.ctrl="saveEdit"
             />
-            <div class="flex items-center gap-1.5">
-              <UButton
-                size="xs"
-                color="primary"
-                @click="saveEdit"
-              >
-                {{ $t('common.save') }}
-              </UButton>
-              <UButton
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                @click="cancelEdit"
-              >
-                {{ $t('common.cancel') }}
-              </UButton>
-              <span class="text-[10px] text-(--ui-text-muted) ml-auto">
-                Ctrl + Enter to save
-              </span>
-            </div>
           </div>
           <template v-else>
             <button
