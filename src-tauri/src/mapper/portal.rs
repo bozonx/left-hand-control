@@ -170,7 +170,7 @@ fn worker(rx: Receiver<Cmd>) {
 }
 
 fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    for ch in text.chars() {
+    'outer: for ch in text.chars() {
         let ks = keysym_for(ch);
         let empty: HashMap<String, Value> = HashMap::new();
         for state in [STATE_PRESSED, STATE_RELEASED] {
@@ -178,7 +178,7 @@ fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
                 portal.call_method("NotifyKeyboardKeysym", &(session, &empty, ks, state))
             {
                 eprintln!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
-                return;
+                continue 'outer;
             }
         }
     }

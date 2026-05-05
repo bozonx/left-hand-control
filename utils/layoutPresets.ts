@@ -33,7 +33,7 @@ interface LayoutYaml {
     // tap / hold follow a three-state convention:
     //   field absent                          -> native passthrough
     //   field present but null / ~            -> explicit swallow
-    //   field present with a non-empty string -> action / keystroke
+    //   field present with a non-empty string -> action / action
     tap?: string | null;
     hold?: string | null;
     dtap?: string | null;
@@ -44,7 +44,7 @@ interface LayoutYaml {
   macros?: Array<{
     id?: string;
     name?: string;
-    steps?: Array<string | { id?: string; keystroke?: string }>;
+    steps?: Array<string | { id?: string; action?: string }>;
     stepPauseMs?: number | null;
     modifierDelayMs?: number | null;
   }>;
@@ -136,9 +136,9 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     const steps: MacroStep[] = [];
     for (const s of m.steps ?? []) {
       if (typeof s === "string") {
-        if (s.trim()) steps.push({ id: genId("s_"), keystroke: s });
-      } else if (s?.keystroke) {
-        steps.push({ id: s.id ?? genId("s_"), keystroke: s.keystroke });
+        if (s.trim()) steps.push({ id: genId("s_"), action: s });
+      } else if (s?.action) {
+        steps.push({ id: s.id ?? genId("s_"), action: s.action });
       }
     }
     macros.push({
@@ -227,7 +227,7 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       key: r.key,
       ...(r.layerId ? { layer: r.layerId } : {}),
       // tap/hold: '' => native (omit field); null => explicit swallow
-      // (emit `null`); non-empty string => action / keystroke.
+      // (emit `null`); non-empty string => action / action.
       ...(r.tapAction === "" ? {} : { tap: r.tapAction }),
       ...(r.holdAction === "" ? {} : { hold: r.holdAction }),
       ...(r.doubleTapAction ? { dtap: r.doubleTapAction } : {}),
@@ -247,7 +247,7 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       ...(typeof m.modifierDelayMs === "number"
         ? { modifierDelayMs: m.modifierDelayMs }
         : {}),
-      steps: m.steps.map((s) => s.keystroke),
+      steps: m.steps.map((s) => s.action),
     })),
     commands: preset.commands.map((c) => ({
       id: c.id,

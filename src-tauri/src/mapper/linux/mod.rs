@@ -20,7 +20,7 @@ const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub enum MapperControl {
-    Config(AppConfig),
+    Config(Box<AppConfig>),
     Execute(String),
 }
 
@@ -53,7 +53,7 @@ impl Handle {
 
     pub fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
         self.control_tx
-            .send(MapperControl::Config(cfg))
+            .send(MapperControl::Config(Box::new(cfg)))
             .map_err(|e| format!("mapper update channel closed: {e}"))
     }
 
@@ -199,6 +199,7 @@ fn run_loop<D: LoopDriver>(
         while let Ok(ctrl) = control_rx.try_recv() {
             match ctrl {
                 MapperControl::Config(next_cfg) => {
+                    let next_cfg = *next_cfg;
                     eprintln!(
                         "[mapper] live config update: rules={} layers={}",
                         next_cfg.rules.len(),

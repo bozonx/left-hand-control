@@ -16,7 +16,7 @@ defineEmits<{
 const { copy: copyToClipboard } = useClipboardCopy()
 
 function stepsPreview(sys: SystemMacro): string {
-  return sys.steps.map((step) => step.keystroke).join(' → ')
+  return sys.steps.map((step) => step.action).join(' → ')
 }
 
 async function copyMacroId(id: string) {

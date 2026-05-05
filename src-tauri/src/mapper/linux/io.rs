@@ -91,7 +91,7 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
     for job in rx {
         match job {
             SideEffectJob::System(action) => run_sys_action(&action),
-            SideEffectJob::Command(command) => run_shell_command(&command),
+            SideEffectJob::Command(command) => spawn_system(&command),
         }
     }
 }
@@ -385,10 +385,6 @@ fn run_sys_action(action: &SysAction) {
     }
 }
 
-fn run_shell_command(command: &SysCommand) {
-    spawn_system(command);
-}
-
 fn spawn_system(cmd: &SysCommand) {
     let mut c = std::process::Command::new(&cmd.program);
     c.args(&cmd.args);
@@ -399,17 +395,20 @@ fn spawn_system(cmd: &SysCommand) {
         Ok(mut child) => {
             let pid = child.id();
             eprintln!("[mapper] spawned side-effect pid={pid}: {} {:?}", cmd.program, cmd.args);
-            match child.wait() {
-                Ok(status) if status.success() => {
-                    eprintln!("[mapper] side-effect pid={pid} exited: {status}");
+            // Detach the wait so a hung child cannot stall the side-effect worker.
+            std::thread::spawn(move || {
+                match child.wait() {
+                    Ok(status) if status.success() => {
+                        eprintln!("[mapper] side-effect pid={pid} exited: {status}");
+                    }
+                    Ok(status) => {
+                        eprintln!("[mapper] side-effect pid={pid} failed: {status}");
+                    }
+                    Err(e) => {
+                        eprintln!("[mapper] side-effect pid={pid} wait failed: {e}");
+                    }
                 }
-                Ok(status) => {
-                    eprintln!("[mapper] side-effect pid={pid} failed: {status}");
-                }
-                Err(e) => {
-                    eprintln!("[mapper] side-effect pid={pid} wait failed: {e}");
-                }
-            }
+            });
         }
         Err(e) => {
             eprintln!("[mapper] spawn system {:?} failed: {}", cmd.program, e);

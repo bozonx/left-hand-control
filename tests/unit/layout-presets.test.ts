@@ -43,7 +43,7 @@ macros:
   - id: duplicateLine
     steps:
       - Ctrl+KeyC
-      - keystroke: Ctrl+KeyV
+      - action: Ctrl+KeyV
         id: step-2
     stepPauseMs: 30
 `);
@@ -84,8 +84,8 @@ macros:
           name: "duplicateLine",
           stepPauseMs: 30,
           steps: [
-            { keystroke: "Ctrl+KeyC" },
-            { id: "step-2", keystroke: "Ctrl+KeyV" },
+            { action: "Ctrl+KeyC" },
+            { id: "step-2", action: "Ctrl+KeyV" },
           ],
         },
       ],
@@ -132,7 +132,7 @@ macros:
       macros: [
         {
           id: "snippet",
-          steps: [{ keystroke: "text:TODO: " }],
+          steps: [{ action: "text:TODO: " }],
         },
       ],
     });
@@ -170,8 +170,8 @@ macros:
           id: "copyLine",
           name: "Copy line",
           steps: [
-            { id: "s1", keystroke: "Home" },
-            { id: "s2", keystroke: "Shift+End" },
+            { id: "s1", action: "Home" },
+            { id: "s2", action: "Shift+End" },
           ],
           stepPauseMs: 10,
           modifierDelayMs: 5,
@@ -215,7 +215,7 @@ macros:
         {
           id: "copyLine",
           name: "Copy line",
-          steps: [{ keystroke: "Home" }, { keystroke: "Shift+End" }],
+          steps: [{ action: "Home" }, { action: "Shift+End" }],
           stepPauseMs: 10,
           modifierDelayMs: 5,
         },
@@ -249,7 +249,7 @@ macros:
     config.macros.push({
       id: "duplicateLine",
       name: "Duplicate line",
-      steps: [{ id: "step-1", keystroke: "Ctrl+KeyC" }],
+      steps: [{ id: "step-1", action: "Ctrl+KeyC" }],
     });
     config.commands.push({
       id: "terminal",
@@ -298,9 +298,9 @@ macros:
     expect(emptyLayoutPreset()).toEqual({
       layers: [],
       rules: [],
-      layerKeymaps: {},
-      macros: [],
       commands: [],
+      macros: [],
+      layerKeymaps: {},
       quickActions: [],
     });
   });

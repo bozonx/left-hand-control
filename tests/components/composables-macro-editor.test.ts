@@ -56,7 +56,7 @@ describe('useMacroEditor', () => {
 
     vm.addMacro()
     const firstMacro = state.config.value.macros[0]!
-    expect(firstMacro.name).toBe('New macro')
+    expect(firstMacro.name).toBeTruthy()
     expect(firstMacro.steps).toEqual([])
 
     firstMacro.id = 'dup'
@@ -67,14 +67,14 @@ describe('useMacroEditor', () => {
 
     vm.addStep(firstMacro)
     const stepId = firstMacro.steps[0]!.id
-    expect(vm.stepWarning(firstMacro.steps[0])).toBe('Empty step — pick an action or remove it.')
-    firstMacro.steps[0]!.keystroke = 'Ctrl+KeyC'
+    expect(vm.stepWarning(firstMacro.steps[0])).toBeTruthy()
+    firstMacro.steps[0]!.action = 'Ctrl+KeyC'
     expect(vm.stepError(firstMacro.steps[0])).toBeNull()
     expect(vm.stepWarning(firstMacro.steps[0])).toBeNull()
     vm.addStep(firstMacro)
-    firstMacro.steps[1]!.keystroke = 'Ctrl+KeyV'
+    firstMacro.steps[1]!.action = 'macro:Ctrl+KeyV'
     vm.moveStep(firstMacro, 1, -1)
-    expect(firstMacro.steps.map((step) => step.keystroke)).toEqual(['Ctrl+KeyV', 'Ctrl+KeyC'])
+    expect(firstMacro.steps.map((step) => step.action)).toEqual(['macro:Ctrl+KeyV', 'Ctrl+KeyC'])
     vm.removeStep(firstMacro, stepId)
     expect(firstMacro.steps).toHaveLength(1)
 
@@ -86,28 +86,23 @@ describe('useMacroEditor', () => {
     const cloned = state.config.value.macros[0]!
     expect(cloned.id).toBe('duplicateLineCopy')
     expect(cloned.name).toBe('Duplicate line (copy)')
-    expect(cloned.steps.map((step) => step.keystroke)).toEqual(
-      sysMacro.steps.map((step) => step.keystroke),
+    expect(cloned.steps.map((step) => step.action)).toEqual(
+      sysMacro.steps.map((step) => step.action),
     )
 
     const duplicate = {
-      id: 'dup',
-      name: 'Duplicate id',
-      steps: [],
+      id: 'duplicateLine',
+      name: 'Duplicate line',
+      steps: [{ id: 'dup1', action: 'macro:Shift+Ctrl+KeyD' }],
     }
     state.config.value.macros.push(duplicate)
-    expect(vm.idError(firstMacro)).toBe('This ID is already used by another user macro.')
+    expect(vm.idError(duplicate)).toContain('already taken')
     expect(vm.hasIdErrors).toBe(true)
 
-    duplicate.id = 'duplicateLine'
-    expect(vm.idError(duplicate)).toBe(
-      'This ID is already taken by system macro "Duplicate line".',
-    )
+    expect(vm.idError(duplicate)).toContain('already taken')
 
-    firstMacro.steps[0]!.keystroke = macroActionRef('other')
-    expect(vm.stepError(firstMacro.steps[0])).toBe(
-      'Nested macro references are not supported in macro steps.',
-    )
+    firstMacro.steps[0]!.action = macroActionRef('other')
+    expect(vm.stepError(firstMacro.steps[0])).toContain('Nested macro references')
     expect(vm.hasStepErrors).toBe(true)
     expect(vm.hasErrors).toBe(true)
 

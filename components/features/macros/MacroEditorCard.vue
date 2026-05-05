@@ -31,8 +31,6 @@ const emit = defineEmits<{
 }>()
 
 const { copy: copyToClipboard } = useClipboardCopy()
-const nameInputRef = useTemplateRef<{ inputRef?: { value?: HTMLInputElement } }>('nameInputRef')
-
 const stepConfirmOpen = ref(false)
 const pendingStepId = ref<string | null>(null)
 
@@ -56,10 +54,9 @@ function cancelRemoveStep() {
 
 watch(
   () => props.focusName,
-  async (value) => {
+  (value) => {
     if (!value) return
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
-    const input = nameInputRef.value?.inputRef?.value
+    const input = document.getElementById(props.nameInputId) as HTMLInputElement | null
     if (!input) return
     input.focus()
     input.select()
@@ -121,7 +118,6 @@ async function copyMacroId() {
           </template>
           <UInput
             :id="nameInputId"
-            ref="nameInputRef"
             v-model="macro.name"
             :placeholder="$t('macros.namePh')"
             class="w-full"
@@ -174,7 +170,6 @@ async function copyMacroId() {
             :idx="idx"
             :is-first="idx === 0"
             :is-last="idx === macro.steps.length - 1"
-            :macro-id="macro.id"
             :step-error="stepError"
             :step-warning="stepWarning"
             @move-up="$emit('moveStep', macro, idx, -1)"

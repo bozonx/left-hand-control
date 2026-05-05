@@ -124,7 +124,7 @@ describe('AppTooltip', () => {
     await openTooltip(wrapper)
     expect(wrapper.find('[data-testid="tooltip-content"]').exists()).toBe(true)
 
-    await wrapper.setProps({ disabled: true })
+    await (wrapper as any).setProps({ disabled: true })
     await nextTick()
     expect(wrapper.find('[data-testid="tooltip-content"]').exists()).toBe(false)
   })

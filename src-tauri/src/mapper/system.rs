@@ -62,15 +62,18 @@ pub enum SysAction {
 /// available under the current desktop environment.
 pub fn resolve(name: &str) -> Option<SysAction> {
     use crate::platform::linux::detect;
-    let name = name.trim();
-    if name == "showQuickMenu" {
-        return Some(SysAction::TauriEvent("show_quick_menu".into()));
-    }
-    resolve_for_desktop(name, &detect().desktop)
+    resolve_for_desktop(name.trim(), &detect().desktop)
 }
 
 pub fn is_known(name: &str) -> bool {
-    resolve(name.trim()).is_some()
+    let name = name.trim();
+    use crate::platform::linux::Desktop;
+    // Check against the KDE catalog, which is the most complete backend.
+    // This keeps config validation portable: a config created on KDE
+    // (or using KDE-known ids) is not rejected when the mapper starts
+    // on GNOME / Sway / X11 generic. At runtime `resolve()` will return
+    // None there and the action becomes a no-op with a log line.
+    resolve_for_desktop(name, &Desktop::Kde).is_some()
 }
 
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {

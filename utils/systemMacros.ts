@@ -14,7 +14,7 @@
 // silently fail at runtime (or vice-versa).
 
 export interface SystemMacroStep {
-  keystroke: string;
+  action: string;
 }
 
 export interface SystemMacro {
@@ -25,12 +25,12 @@ export interface SystemMacro {
   name: string;
   // Short description shown as a secondary label in the UI.
   description?: string;
-  // Ordered list of keystroke steps.
+  // Ordered list of action steps.
   steps: SystemMacroStep[];
 }
 
-function s(...keystrokes: string[]): SystemMacroStep[] {
-  return keystrokes.map((k) => ({ keystroke: k }));
+function s(...actions: string[]): SystemMacroStep[] {
+  return actions.map((action) => ({ action }));
 }
 
 export const SYSTEM_MACROS: SystemMacro[] = [

@@ -1,7 +1,7 @@
 import { randomId } from '~/utils/keys'
 
 export function useEntityEditor<T extends { id: string }>(items: Ref<T[]>) {
-  const uiKeys = new WeakMap<T, string>()
+  const uiKeys = new Map<string, string>()
 
   function newId(base?: string): string {
     const arr = items.value
@@ -20,10 +20,10 @@ export function useEntityEditor<T extends { id: string }>(items: Ref<T[]>) {
   }
 
   function uiKeyOf(entity: T): string {
-    let key = uiKeys.get(entity)
+    let key = uiKeys.get(entity.id)
     if (!key) {
       key = randomId()
-      uiKeys.set(entity, key)
+      uiKeys.set(entity.id, key)
     }
     return key
   }

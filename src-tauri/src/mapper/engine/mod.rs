@@ -76,7 +76,7 @@ pub struct Engine {
 
     /// Physical keys whose press triggered a one-shot macro / literal.
     /// Release just clears the entry — no virtual key release is needed.
-    macro_consumed: HashSet<Key>,
+    oneshot_consumed: HashSet<Key>,
 
     /// Currently "held down" virtual modifiers (refcounted).
     mod_refs: HashMap<Key, u32>,
@@ -242,14 +242,13 @@ impl Engine {
             return;
         }
 
-        if !down {
-            if !self.pending.contains_key(&key)
-                && !self.emitted.contains_key(&key)
-                && !self.macro_consumed.contains(&key)
-            {
-                out.push(Out::KeyRaw { key, down });
-                return;
-            }
+        if !down
+            && !self.pending.contains_key(&key)
+            && !self.emitted.contains_key(&key)
+            && !self.oneshot_consumed.contains(&key)
+        {
+            out.push(Out::KeyRaw { key, down });
+            return;
         }
 
         eprintln!(
@@ -277,7 +276,7 @@ impl Engine {
             let dtap = pending.and_then(|p| p.rule.double_tap);
             self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
             // The matching release must not emit anything (fire-and-forget).
-            self.macro_consumed.insert(key);
+            self.oneshot_consumed.insert(key);
             return;
         }
 
@@ -379,7 +378,7 @@ impl Engine {
                         ActionDef::Literal(text) => {
                             eprintln!("[mapper]   press {:?} -> literal {:?}", key, text);
                             out.push(Out::Literal(text));
-                            self.macro_consumed.insert(key);
+                            self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Macro(md) => {
                             eprintln!(
@@ -398,21 +397,21 @@ impl Engine {
                                     next_wake: now,
                                 });
                             }
-                            self.macro_consumed.insert(key);
+                            self.oneshot_consumed.insert(key);
                         }
                         ActionDef::System(action) => {
                             eprintln!("[mapper]   press {:?} -> run system {:?}", key, action);
                             out.push(Out::RunSystem(action));
-                            self.macro_consumed.insert(key);
+                            self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Command(command) => {
                             eprintln!("[mapper]   press {:?} -> run command {:?}", key, command);
                             out.push(Out::RunCommand(command));
-                            self.macro_consumed.insert(key);
+                            self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Swallow => {
                             eprintln!("[mapper]   press {:?} -> swallow", key);
-                            self.macro_consumed.insert(key);
+                            self.oneshot_consumed.insert(key);
                         }
                     }
                 }
@@ -475,7 +474,7 @@ impl Engine {
             return;
         }
 
-        if self.macro_consumed.remove(&key) {
+        if self.oneshot_consumed.remove(&key) {
             // Macro / literal / double-tap fired on press — nothing to release.
             return;
         }
@@ -508,7 +507,7 @@ impl Engine {
         let Some(ks) = self.emitted.remove(&physical) else {
             return;
         };
-        let mods = self.take_releaseable_mods(&ks.mods);
+        let mods = self.take_releasable_mods(&ks.mods);
         if ks.mods.is_empty() {
             out.push(Out::KeyRaw {
                 key: ks.key,
@@ -523,7 +522,7 @@ impl Engine {
         });
     }
 
-    fn take_releaseable_mods(&mut self, mods: &[Key]) -> Vec<Key> {
+    fn take_releasable_mods(&mut self, mods: &[Key]) -> Vec<Key> {
         if mods.is_empty() {
             return Vec::new();
         }
@@ -562,7 +561,7 @@ impl Engine {
         if !down
             && (self.pending.contains_key(&key)
                 || self.emitted.contains_key(&key)
-                || self.macro_consumed.contains(&key))
+                || self.oneshot_consumed.contains(&key))
         {
             return true;
         }
@@ -663,19 +662,18 @@ impl Engine {
                 mod_delay,
             }),
             Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
-            Some(ActionDef::Macro(md)) => {
-                if !md.steps.is_empty() {
-                    self.active_macro = Some(self::model::ActiveMacro {
-                        steps: md.steps.clone(),
-                        step_pause: md.step_pause,
-                        mod_delay: md.mod_delay,
-                        current_step: 0,
-                        steps_emitted: 0,
-                        phase: self::model::MacroPhase::NextStep,
-                        next_wake: now,
-                    });
-                }
+            Some(ActionDef::Macro(md)) if !md.steps.is_empty() => {
+                self.active_macro = Some(self::model::ActiveMacro {
+                    steps: md.steps.clone(),
+                    step_pause: md.step_pause,
+                    mod_delay: md.mod_delay,
+                    current_step: 0,
+                    steps_emitted: 0,
+                    phase: self::model::MacroPhase::NextStep,
+                    next_wake: now,
+                });
             }
+            Some(ActionDef::Macro(_)) => {}
             Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
             Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
             Some(ActionDef::Swallow) => {}
@@ -737,7 +735,7 @@ impl Engine {
         }
         self.active_layers.clear();
         self.pending.clear();
-        self.macro_consumed.clear();
+        self.oneshot_consumed.clear();
         self.layer_triggers.clear();
         self.isolated_holds.clear();
     }
@@ -764,10 +762,8 @@ impl Engine {
                 .map(ActionDef::Command)
         } else if let Some(text) = super::action::explicit_text(trimmed) {
             Some(ActionDef::Literal(text))
-        } else if let Some(ks) = super::action::parse_action(trimmed) {
-            Some(ActionDef::Stroke(ks))
         } else {
-            None
+            super::action::parse_action(trimmed).map(ActionDef::Stroke)
         };
         if let Some(def) = resolved {
             self.fire_action(Some(&def), self.default_mod_delay, Instant::now(), out);
@@ -777,7 +773,6 @@ impl Engine {
             if let Some(sys) = super::system::resolve(rest) {
                 out.push(Out::RunSystem(sys));
             }
-            return;
         }
     }
 }
@@ -904,7 +899,7 @@ mod tests {
             name: "Hello".into(),
             steps: vec![MacroStep {
                 id: "s1".into(),
-                keystroke: "KeyH".into(),
+                action: "KeyH".into(),
             }],
             step_pause_ms: None,
             modifier_delay_ms: None,

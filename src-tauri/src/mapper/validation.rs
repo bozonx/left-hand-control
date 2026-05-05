@@ -1,4 +1,5 @@
 #![cfg(target_os = "linux")]
+#![allow(clippy::too_many_arguments)]
 
 use super::action::{explicit_text, parse_action};
 use super::config::{ActionSpec, AppConfig};
@@ -129,7 +130,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     for m in &cfg.macros {
         for (idx, step) in m.steps.iter().enumerate() {
             validate_macro_step(
-                &step.keystroke,
+                &step.action,
                 &format!("macro `{}` step #{}", m.id, idx + 1),
                 &user_macro_ids,
                 &system_macro_ids,
@@ -217,7 +218,12 @@ fn validate_macro_step(
     commands_trusted: bool,
     errors: &mut Vec<String>,
 ) {
-    if action.trim().is_empty() {
+    let action = action.trim();
+    if action.is_empty() {
+        return;
+    }
+    if action.strip_prefix("macro:").is_some() {
+        errors.push(format!("{where_}: nested macro references are not supported"));
         return;
     }
     validate_action(
@@ -337,7 +343,7 @@ mod tests {
             name: "M".into(),
             steps: vec![MacroStep {
                 id: "s".into(),
-                keystroke: "cmd:music".into(),
+                action: "cmd:music".into(),
             }],
             step_pause_ms: None,
             modifier_delay_ms: None,
@@ -370,7 +376,7 @@ mod tests {
             name: "M".into(),
             steps: vec![MacroStep {
                 id: "s".into(),
-                keystroke: "cmd:music".into(),
+                action: "cmd:music".into(),
             }],
             step_pause_ms: None,
             modifier_delay_ms: None,
@@ -387,7 +393,7 @@ mod tests {
             name: "Copy line".into(),
             steps: vec![MacroStep {
                 id: "s".into(),
-                keystroke: "macro:duplicateLine".into(),
+                action: "macro:duplicateLine".into(),
             }],
             step_pause_ms: None,
             modifier_delay_ms: None,

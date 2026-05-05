@@ -23,14 +23,12 @@ const emit = defineEmits<{
 }>()
 
 const { copy: copyToClipboard } = useClipboardCopy()
-const nameInputRef = useTemplateRef<{ inputRef?: { value?: HTMLInputElement } }>('nameInputRef')
 
 watch(
   () => props.focusName,
-  async (value) => {
+  (value) => {
     if (!value) return
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
-    const input = nameInputRef.value?.inputRef?.value
+    const input = document.getElementById(props.nameInputId) as HTMLInputElement | null
     if (!input) return
     input.focus()
     input.select()
@@ -91,7 +89,6 @@ async function copyCommandId() {
           </template>
           <UInput
             :id="nameInputId"
-            ref="nameInputRef"
             v-model="command.name"
             :placeholder="$t('commands.namePh')"
             class="w-full"

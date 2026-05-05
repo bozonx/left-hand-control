@@ -44,7 +44,7 @@ describe('useCommandEditor', () => {
     state.config.value.macros.push({
       id: 'macro-1',
       name: 'Macro',
-      steps: [{ id: 'step-1', keystroke: commandActionRef('terminal') }],
+      steps: [{ id: 'step-1', action: commandActionRef('terminal') }],
     })
     useConfigMock.mockReturnValue(state)
 

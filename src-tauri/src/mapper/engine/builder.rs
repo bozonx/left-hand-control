@@ -93,8 +93,7 @@ impl Engine {
                         steps.extend(nested_steps);
                         found = true;
                     } else if let Some(user_m) = raw_user_macros.get(nested_id) {
-                        let user_steps: Vec<&str> = user_m.steps.iter().map(|s| s.keystroke.as_str()).collect();
-                        let nested_steps = resolve_macro_steps(nested_id, user_steps, raw_user_macros, commands, depth + 1);
+                        let nested_steps = resolve_macro_steps(nested_id, user_m.steps.iter().map(|s| s.action.as_str()).collect(), raw_user_macros, commands, depth + 1);
                         steps.extend(nested_steps);
                         found = true;
                     }
@@ -154,7 +153,7 @@ impl Engine {
             if m.id.is_empty() {
                 continue;
             }
-            let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.keystroke.as_str()).collect();
+            let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.action.as_str()).collect();
             let steps = resolve_macro_steps(&m.id, raw_steps, &raw_user_macros, &commands, 0);
             if steps.is_empty() {
                 eprintln!("[mapper] macro {} has no usable steps — skipped", m.id);
@@ -379,7 +378,7 @@ impl Engine {
             active_layers: Vec::new(),
             pending: HashMap::new(),
             emitted: HashMap::new(),
-            macro_consumed: HashSet::new(),
+            oneshot_consumed: HashSet::new(),
             mod_refs: HashMap::new(),
             layer_isolate_keys,
             layer_triggers: HashMap::new(),

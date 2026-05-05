@@ -8,10 +8,12 @@ const props = withDefaults(defineProps<{
   defaultValue: number
   suffix?: string
   min?: number
+  max?: number
   hintVisibleOn?: 'always' | 'group-hover' | 'group-hover-rule'
 }>(), {
   suffix: '',
   min: 0,
+  max: undefined,
   hintVisibleOn: 'always',
   hint: undefined,
 })
@@ -111,12 +113,6 @@ function onBlur() {
       @update:model-value="handleUpdate"
       @blur="onBlur"
       @keydown.enter="isEditing = false"
-      @keydown.esc="isEditing = false"
-      @click.stop
-    />
-  </div>
-</template>
-"
       @keydown.esc="isEditing = false"
       @click.stop
     />

@@ -6,7 +6,6 @@ const _props = defineProps<{
   idx: number
   isFirst: boolean
   isLast: boolean
-  macroId: string
   stepError?: (step: MacroStep) => string | null
   stepWarning?: (step: MacroStep) => string | null
 }>()
@@ -28,12 +27,11 @@ const emit = defineEmits<{
     </div>
     <UFormField :error="stepError?.(step) ?? undefined">
       <ActionPickerModal
-        :model-value="step.keystroke"
-        :allow-macros="true"
-        :excluded-macro-id="macroId"
+        :model-value="step.action"
+        :allow-macros="false"
         :placeholder="$t('macros.stepPh')"
         :invalid="!!stepError?.(step)"
-        @update:model-value="(v: string | null) => emit('update:step', { ...step, keystroke: v ?? '' })"
+        @update:model-value="(v: string | null) => emit('update:step', { ...step, action: v ?? '' })"
       />
       <p
         v-if="stepWarning?.(step) && !stepError?.(step)"

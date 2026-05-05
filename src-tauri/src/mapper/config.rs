@@ -68,8 +68,10 @@ pub struct Command {
     #[serde(default)]
     pub linux: String,
     #[serde(default)]
+    #[allow(dead_code)]
     pub windows: String,
     #[serde(default)]
+    #[allow(dead_code)]
     pub macos: String,
 }
 
@@ -95,7 +97,7 @@ pub struct MacroStep {
     #[allow(dead_code)]
     pub id: String,
     #[serde(default)]
-    pub keystroke: String,
+    pub action: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -160,12 +162,14 @@ pub struct Settings {
     #[serde(default = "default_double_tap")]
     pub default_double_tap_timeout_ms: u64,
     #[serde(default)]
+    #[allow(dead_code)]
     pub input_device_path: Option<String>,
     #[serde(default)]
     pub current_layout_id: Option<String>,
     #[serde(default)]
     pub command_trust: HashMap<String, CommandTrustEntry>,
     #[serde(default)]
+    #[allow(dead_code)]
     pub game_mode: GameModeSettings,
 }
 
@@ -385,5 +389,27 @@ mod tests {
             macos: String::new(),
         }];
         assert!(!settings.commands_trusted(&changed));
+    }
+
+    #[test]
+    fn command_fingerprint_regression() {
+        let commands = vec![
+            Command {
+                id: "play".into(),
+                name: "Play".into(),
+                linux: "playerctl play".into(),
+                windows: String::new(),
+                macos: String::new(),
+            },
+            Command {
+                id: "pause".into(),
+                name: "Pause".into(),
+                linux: "playerctl pause".into(),
+                windows: String::new(),
+                macos: String::new(),
+            },
+        ];
+        let fp = command_fingerprint(&commands);
+        assert_eq!(fp, "0ab77369", "command_fingerprint changed — update the TS side too");
     }
 }

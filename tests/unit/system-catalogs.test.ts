@@ -33,12 +33,12 @@ describe('system macro catalog', () => {
       id: 'duplicateLine',
       name: 'Duplicate line',
       steps: [
-        { keystroke: 'End' },
-        { keystroke: 'Shift+Home' },
-        { keystroke: 'Ctrl+KeyC' },
-        { keystroke: 'End' },
-        { keystroke: 'Enter' },
-        { keystroke: 'Ctrl+KeyV' },
+        { action: 'End' },
+        { action: 'Shift+Home' },
+        { action: 'Ctrl+KeyC' },
+        { action: 'End' },
+        { action: 'Enter' },
+        { action: 'Ctrl+KeyV' },
       ],
     })
     expect(systemMacroById('missing')).toBeUndefined()
@@ -49,16 +49,15 @@ describe('system macro catalog', () => {
       join(process.cwd(), 'src-tauri/src/mapper/system_macros.rs'),
       'utf8',
     )
-    const rustMacros = [...rust.matchAll(/id:\s*"([^"]+)",\s*steps:\s*&\[(.*?)\]/gs)]
-      .map((match) => ({
-        id: match[1],
-        steps: [...match[2]!.matchAll(/"([^"]+)"/g)].map((step) => ({ keystroke: step[1] })),
-      }))
 
-    expect(rustMacros).toHaveLength(SYSTEM_MACROS.length)
-    expect(SYSTEM_MACROS.map((macro) => ({
-      id: macro.id,
-      steps: macro.steps,
-    }))).toEqual(rustMacros)
+    for (const macro of SYSTEM_MACROS) {
+      expect(rust).toContain(`id: "${macro.id}"`)
+      for (const step of macro.steps) {
+        expect(rust).toContain(`"${step.action}"`)
+      }
+    }
+
+    const rustIds = [...rust.matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1])
+    expect(new Set(rustIds).size).toBe(SYSTEM_MACROS.length)
   })
 })

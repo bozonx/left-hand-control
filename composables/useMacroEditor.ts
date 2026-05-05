@@ -36,7 +36,7 @@ export function useMacroEditor() {
     const macro: Macro = {
       id: newId(`${sys.id}Copy`),
       name: `${sys.name} ${t('macros.copySuffix')}`,
-      steps: sys.steps.map((step) => ({ id: randomId(), keystroke: step.keystroke })),
+      steps: sys.steps.map((step) => ({ id: randomId(), action: step.action })),
       stepPauseMs: undefined,
       modifierDelayMs: undefined,
     }
@@ -55,7 +55,7 @@ export function useMacroEditor() {
   }
 
   function addStep(macro: Macro) {
-    macro.steps.push({ id: randomId(), keystroke: '' })
+    macro.steps.push({ id: randomId(), action: '' })
   }
 
   function removeStep(macro: Macro, stepId: string) {
@@ -96,17 +96,18 @@ export function useMacroEditor() {
   )
 
   function stepError(step: MacroStep): string | null {
-    const raw = step.keystroke?.trim() ?? ''
+    const raw = step.action?.trim() ?? ''
     if (!raw) return null
     if (!isCanonicalAction(raw)) return t('picker.invalidValue')
-    if (validateActionValue(raw, config.value, { allowMacros: true }) !== null) {
+    if (parseMacroRef(raw) !== null) return t('macros.stepErrors.nestedMacro')
+    if (validateActionValue(raw, config.value, { allowMacros: false }) !== null) {
       return t('picker.invalidValue')
     }
     return null
   }
 
   function stepWarning(step: MacroStep): string | null {
-    const raw = step.keystroke?.trim() ?? ''
+    const raw = step.action?.trim() ?? ''
     if (!raw) return t('macros.stepWarnings.empty')
     return null
   }

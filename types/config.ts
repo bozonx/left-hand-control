@@ -81,13 +81,13 @@ export interface LayerKeymap {
   extras: ExtraKey[]
 }
 
-// One step of a macro. Stored under the legacy `keystroke` field for
-// compatibility, but the value is a full action string: key chord, `sys:<id>`,
-// `cmd:<id>`, or `text:<text>`. Nested `macro:<id>` is intentionally blocked.
+// One step of a macro. The value is a full action string: key chord,
+// `sys:<id>`, `cmd:<id>`, or `text:<text>`. Nested `macro:<id>` is intentionally
+// blocked in validation.
 export interface MacroStep {
   id: string
-  // Full action string, same syntax as tap actions / keymap values.
-  keystroke: string
+  // The action spec string (e.g. 'KeyA', 'cmd:bar', 'sys:showQuickMenu', 'text:hello').
+  action: string
 }
 
 export interface Macro {

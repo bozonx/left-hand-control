@@ -27,7 +27,9 @@ export function useActionUsage(parseRef: (action: string | null | undefined) => 
     }
     for (const macro of config.value.macros) {
       for (const [index, step] of macro.steps.entries()) {
-        noteIf(step.keystroke, `macro ${macro.id} (#${index + 1})`)
+        if (step.action && step.action.trim()) {
+          noteIf(step.action, `macro ${macro.id} (#${index + 1})`)
+        }
       }
     }
     return byId
