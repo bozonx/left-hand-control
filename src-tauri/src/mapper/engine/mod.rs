@@ -552,7 +552,7 @@ impl Engine {
         self.rules.get(&key).and_then(|rules| {
             rules
                 .iter()
-                .find(|rule| rule_passes_apps(rule) && rule_passes_legacy(rule))
+                .find(|rule| rule_passes_apps(rule) && rule_passes_conditions(rule))
                 .cloned()
         })
     }
@@ -806,10 +806,10 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
     }
     let aw = crate::active_window::cached_active_window();
     if let Some(bl) = bl {
-        if let Some(aw) = &aw {
-            if matches_active_window(bl, aw) {
-                return false;
-            }
+        match &aw {
+            Some(aw) if matches_active_window(bl, aw) => return false,
+            Some(_) => {}
+            None => return false, // fail-closed: unknown window + blacklist -> block
         }
     }
     if let Some(wl) = wl {
@@ -821,7 +821,7 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
     true
 }
 
-fn rule_passes_legacy(rule: &RuleEntry) -> bool {
+fn rule_passes_conditions(rule: &RuleEntry) -> bool {
     let has_gm_cond = rule
         .condition_game_mode
         .as_deref()
@@ -1312,8 +1312,16 @@ mod tests {
             condition_apps_blacklist: None,
         };
 
-        assert!(!rule_passes_legacy(&rule));
+        assert!(!rule_passes_conditions(&rule));
         crate::gamemode::set_cached_for_test(false, true);
+    }
+
+    #[test]
+    fn apps_blacklist_blocks_when_no_active_window() {
+        let _g = APPS_TEST_LOCK.lock().unwrap();
+        crate::active_window::set_cached_for_test(None);
+        let rule = rule_with_apps(None, Some(vec!["secret".into()]));
+        assert!(!rule_passes_apps(&rule));
     }
 
     #[test]
@@ -1333,7 +1341,7 @@ mod tests {
             condition_apps_blacklist: None,
         };
 
-        assert!(rule_passes_legacy(&rule));
+        assert!(rule_passes_conditions(&rule));
         crate::gamemode::set_cached_for_test(false, true);
     }
 

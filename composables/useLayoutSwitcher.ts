@@ -49,7 +49,6 @@ export function useLayoutSwitcher() {
       [
         () => config.value.settings.layoutMode,
         () => config.value.settings.layoutOrder,
-        () => JSON.stringify(config.value.settings.layoutConditions),
         () => library.entries.value.map((e) => e.id).join('|'),
         () => systemLayout.value?.short ?? null,
         () => gameMode.status.value.active,
@@ -61,6 +60,14 @@ export function useLayoutSwitcher() {
         void evaluate()
       },
       { immediate: true },
+    )
+
+    watch(
+      () => config.value.settings.layoutConditions,
+      () => {
+        void evaluate()
+      },
+      { immediate: true, deep: true },
     )
   })
 

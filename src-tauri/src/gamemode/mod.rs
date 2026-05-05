@@ -106,7 +106,7 @@ pub fn start_watcher(app: AppHandle) {
                     last_status = status;
                 }
 
-                thread::sleep(Duration::from_secs(2));
+                thread::sleep(Duration::from_millis(200));
             }
         });
 }

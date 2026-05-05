@@ -123,6 +123,21 @@ export function normalizeConfig(raw: unknown): AppConfig {
           doubleTapAction: rule.doubleTapAction ?? "",
           tapAction: rule.tapAction ?? "",
           holdAction: rule.holdAction ?? "",
+          conditionGameMode:
+            rule.conditionGameMode === 'ignore' ||
+            rule.conditionGameMode === 'on' ||
+            rule.conditionGameMode === 'off'
+              ? rule.conditionGameMode
+              : undefined,
+          conditionLayouts: Array.isArray(rule.conditionLayouts)
+            ? rule.conditionLayouts.filter((s): s is string => typeof s === 'string')
+            : undefined,
+          conditionAppsWhitelist: Array.isArray(rule.conditionAppsWhitelist)
+            ? rule.conditionAppsWhitelist.filter((s): s is string => typeof s === 'string')
+            : undefined,
+          conditionAppsBlacklist: Array.isArray(rule.conditionAppsBlacklist)
+            ? rule.conditionAppsBlacklist.filter((s): s is string => typeof s === 'string')
+            : undefined,
         }))
       : [],
     layerKeymaps:

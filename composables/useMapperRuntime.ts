@@ -42,7 +42,12 @@ export function useMapperRuntime(
 
   const runtimeSnapshot = async () => {
     const cfg = await computeActiveConfig()
+    const settings = config.value.settings
+    const activeLayoutId = settings.layoutMode === 'auto'
+      ? activeAutoLayoutId?.value
+      : settings.manualActiveLayoutId
     return JSON.stringify({
+      activeLayoutId: activeLayoutId ?? null,
       layout: layoutSnapshotOf(cfg),
       defaultHoldTimeoutMs: cfg.settings.defaultHoldTimeoutMs,
       defaultDoubleTapTimeoutMs: cfg.settings.defaultDoubleTapTimeoutMs,
@@ -53,6 +58,10 @@ export function useMapperRuntime(
   }
 
   let lastRuntimeSnapshot = JSON.stringify({
+    activeLayoutId:
+      config.value.settings.layoutMode === 'auto'
+        ? activeAutoLayoutId?.value ?? null
+        : config.value.settings.manualActiveLayoutId ?? null,
     layout: layoutSnapshotOf(config.value),
     defaultHoldTimeoutMs: config.value.settings.defaultHoldTimeoutMs,
     defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
@@ -66,6 +75,10 @@ export function useMapperRuntime(
 
   function initSnapshot() {
     lastRuntimeSnapshot = JSON.stringify({
+      activeLayoutId:
+        config.value.settings.layoutMode === 'auto'
+          ? activeAutoLayoutId?.value ?? null
+          : config.value.settings.manualActiveLayoutId ?? null,
       layout: layoutSnapshotOf(config.value),
       defaultHoldTimeoutMs: config.value.settings.defaultHoldTimeoutMs,
       defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
