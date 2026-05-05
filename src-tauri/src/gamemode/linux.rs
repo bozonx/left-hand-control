@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::process::{Command, Stdio};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -18,14 +19,23 @@ fn run_cmd_with_timeout(cmd: &mut Command, timeout_ms: u64) -> Option<std::proce
         .ok()?;
     let id = child.id();
 
+    let finished = Arc::new(AtomicBool::new(false));
+    let finished_clone = finished.clone();
+
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(timeout_ms));
-        let _ = Command::new("kill")
-            .args(["-9", &id.to_string()])
-            .status();
+        if !finished_clone.load(Ordering::SeqCst) {
+            let _ = Command::new("kill")
+                .args(["-9", &id.to_string()])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
+        }
     });
 
-    child.wait_with_output().ok()
+    let output = child.wait_with_output().ok();
+    finished.store(true, Ordering::SeqCst);
+    output
 }
 
 pub fn is_gamemoded_active() -> bool {
