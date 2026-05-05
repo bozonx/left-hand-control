@@ -11,24 +11,27 @@ const {
   requestApplyEntryMock,
   createFromEmptyMock,
   saveCurrentLayoutMock,
+  updateDescriptionMock,
 } = vi.hoisted(() => ({
   useSettingsScreenMock: vi.fn(),
   requestApplyEntryMock: vi.fn(),
   createFromEmptyMock: vi.fn(),
   saveCurrentLayoutMock: vi.fn(),
+  updateDescriptionMock: vi.fn(),
 }))
 
 mockNuxtImport('useSettingsScreen', () => useSettingsScreenMock)
 
 mockComponent('~/components/features/settings/LayoutsLibraryCard.vue', () =>
   defineComponent({
-    emits: ['saveCurrent', 'requestApplyEntry', 'createFromEmpty', 'requestDelete'],
+    emits: ['saveCurrent', 'requestApplyEntry', 'createFromEmpty', 'requestDelete', 'updateDescription'],
     template: `
       <div data-test="library-card">
         <button data-test="save-current" @click="$emit('saveCurrent')">save</button>
         <button data-test="apply-entry" @click="$emit('requestApplyEntry', { id: 'user:test', name: 'Test' })">apply</button>
         <button data-test="apply-empty" @click="$emit('createFromEmpty')">empty</button>
         <button data-test="request-delete" @click="$emit('requestDelete', { id: 'user:test', name: 'Test' })">delete</button>
+        <button data-test="update-description" @click="$emit('updateDescription', { id: 'user:test', name: 'Test' }, 'new desc')">update</button>
       </div>
     `,
   }),
@@ -40,6 +43,7 @@ describe('LayoutsTab', () => {
     requestApplyEntryMock.mockReset()
     createFromEmptyMock.mockReset()
     saveCurrentLayoutMock.mockReset()
+    updateDescriptionMock.mockReset()
 
     useSettingsScreenMock.mockReturnValue({
       config: ref(createDefaultConfig()),
@@ -76,6 +80,7 @@ describe('LayoutsTab', () => {
       editPending: ref(null),
       openEditModal: vi.fn(),
       performEdit: vi.fn(),
+      updateDescription: updateDescriptionMock,
       closeEditModal: vi.fn(),
       overwriteConfirmOpen: ref(false),
       overwriteTargetName: ref(''),
@@ -100,6 +105,7 @@ describe('LayoutsTab', () => {
     await wrapper.get('[data-test="apply-entry"]').trigger('click')
     await wrapper.get('[data-test="apply-empty"]').trigger('click')
     await wrapper.get('[data-test="request-delete"]').trigger('click')
+    await wrapper.get('[data-test="update-description"]').trigger('click')
 
     expect(saveCurrentLayoutMock).toHaveBeenCalledTimes(1)
     expect(requestApplyEntryMock).toHaveBeenCalledWith({
@@ -107,6 +113,10 @@ describe('LayoutsTab', () => {
       name: 'Test',
     })
     expect(createFromEmptyMock).toHaveBeenCalledTimes(1)
+    expect(updateDescriptionMock).toHaveBeenCalledWith({
+      id: 'user:test',
+      name: 'Test',
+    }, 'new desc')
 
     const state = useSettingsScreenMock.mock.results[0]?.value
     expect(state.deletePending.value).toEqual({

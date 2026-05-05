@@ -39,6 +39,13 @@ commands:
   - id: terminal
     name: Terminal
     linux: kitty
+quickActions:
+  - id: play
+    name: Play
+    action: MediaPlayPause
+    icon: i-lucide-play
+  - id: draft
+    name: Draft action
 macros:
   - id: duplicateLine
     steps:
@@ -94,6 +101,19 @@ macros:
           id: "terminal",
           name: "Terminal",
           linux: "kitty",
+        },
+      ],
+      quickActions: [
+        {
+          id: "play",
+          name: "Play",
+          action: "MediaPlayPause",
+          icon: "i-lucide-play",
+        },
+        {
+          id: "draft",
+          name: "Draft action",
+          action: "",
         },
       ],
     });
@@ -184,7 +204,19 @@ macros:
           linux: "kitty",
         },
       ],
-      quickActions: [],
+      quickActions: [
+        {
+          id: "play",
+          name: "Play",
+          action: "MediaPlayPause",
+          icon: "i-lucide-play",
+        },
+        {
+          id: "draft",
+          name: "Draft action",
+          action: "",
+        },
+      ],
     };
 
     const yaml = serializeLayoutYaml(original);
@@ -227,6 +259,7 @@ macros:
           linux: "kitty",
         },
       ],
+      quickActions: original.quickActions,
     });
     expect(reparsed?.rules[0]?.id).toMatch(/^r_[a-z0-9]{8}$/);
   });
@@ -256,6 +289,12 @@ macros:
       name: "Terminal",
       linux: "kitty",
     });
+    config.quickActions.push({
+      id: "play",
+      name: "Play",
+      action: "MediaPlayPause",
+      icon: "i-lucide-play",
+    });
     config.settings.appearance = "dark";
 
     const preset = extractPresetFromConfig(config);
@@ -272,13 +311,16 @@ macros:
     expect(next.layerKeymaps).toEqual(config.layerKeymaps);
     expect(next.macros).toEqual(config.macros);
     expect(next.commands).toEqual(config.commands);
+    expect(next.quickActions).toEqual(config.quickActions);
 
     preset.layers[0]!.name = "Changed later";
     preset.layerKeymaps.nav!.keys.KeyH = "Changed";
     preset.commands[0]!.linux = "changed";
+    preset.quickActions[0]!.name = "Changed action";
     expect(next.layers[0]!.name).toBe("Navigation");
     expect(next.layerKeymaps.nav!.keys.KeyH).toBe("ArrowLeft");
     expect(next.commands[0]!.linux).toBe("kitty");
+    expect(next.quickActions[0]!.name).toBe("Play");
   });
 
   it("creates stable layout snapshots and empty presets without implicit layers", () => {

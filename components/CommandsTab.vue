@@ -147,8 +147,8 @@ function cancelRemove() {
         <CommandEditorCard
           v-for="(command, index) in config.commands"
           :key="uiKeyOf(command)"
-          :ui-key="uiKeyOf(command)"
           v-model:command="config.commands[index]"
+          :ui-key="uiKeyOf(command)"
           :name-input-id="commandNameInputId(uiKeyOf(command))"
           :usage="usage[command.id] ?? []"
           :id-error="idError(command) ?? undefined"

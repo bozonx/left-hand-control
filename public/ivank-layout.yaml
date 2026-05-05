@@ -17,7 +17,7 @@ layers:
       BracketLeft: null
       BracketRight: null
       Backslash: null
-      
+
       # KeyA:
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
@@ -72,7 +72,7 @@ layers:
       KeyL: Shift+ArrowRight
       Semicolon: macro:selectWholeLine
       Quote: null
-      
+
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
       KeyB: macro:replaceLineWidthBuffer
@@ -81,75 +81,74 @@ layers:
       Slash: macro:select5LinesDown
   - id: sym
     keys:
-      KeyQ: "text:<"
-      KeyW: "text:{"
-      KeyE: "text:["
-      KeyR: "text:("
-      KeyT: "text:|"
-      KeyY: "text:^"
+      KeyQ: 'text:<'
+      KeyW: 'text:{'
+      KeyE: 'text:['
+      KeyR: 'text:('
+      KeyT: 'text:|'
+      KeyY: 'text:^'
       KeyU: Digit7
       KeyI: Digit8
       KeyO: Digit9
-      KeyP: "text:="
-      BracketLeft: "text:≠"
+      KeyP: 'text:='
+      BracketLeft: 'text:≠'
       BracketRight: null
       Backslash: null
 
-      KeyA: "text:$"
-      KeyS: "text:#"
-      KeyD: "text:!"
-      KeyF: "text:?"
-      KeyG: "text:&"
-      KeyH: "text:*"
+      KeyA: 'text:$'
+      KeyS: 'text:#'
+      KeyD: 'text:!'
+      KeyF: 'text:?'
+      KeyG: 'text:&'
+      KeyH: 'text:*'
       KeyJ: Digit4
       KeyK: Digit5
       KeyL: Digit6
-      Semicolon: "text:+"
-      Quote: null
+      Semicolon: 'text:+'
+      Quote: 'text:%'
 
-      Quote: "text:%"
-      KeyZ: "text::"
-      KeyX: "text:`"
+      KeyZ: 'text::'
+      KeyX: 'text:`'
       KeyC: "text:'"
       KeyV: 'text:"'
-      KeyB: "text:/"
+      KeyB: 'text:/'
       KeyN: Digit0
       KeyM: Digit1
       Comma: Digit2
       Period: Digit3
-      Slash: "text:@"
+      Slash: 'text:@'
 
-      ShiftRight: "text:_"
+      ShiftRight: 'text:_'
   - id: fkeys
     keys:
-      KeyQ: "text:>"
-      KeyW: "text:}"
-      KeyE: "text:]"
-      KeyR: "text:)"
-      KeyT: "text:TODO: "
+      KeyQ: 'text:>'
+      KeyW: 'text:}'
+      KeyE: 'text:]'
+      KeyR: 'text:)'
+      KeyT: 'text:TODO: '
       KeyU: F7
       KeyI: F8
       KeyO: F9
       KeyP: F12
-      BracketLeft: "text:ℹ️"
+      BracketLeft: 'text:ℹ️'
       BracketRight: null
       Backslash: null
 
-      KeyA: "text:€"
-      KeyS: "text:№"
-      KeyD: "text:‼️"
-      KeyF: "text:❓"
-      KeyG: "text:❌"
+      KeyA: 'text:€'
+      KeyS: 'text:№'
+      KeyD: 'text:‼️'
+      KeyF: 'text:❓'
+      KeyG: 'text:❌'
       KeyJ: F4
       KeyK: F5
       KeyL: F6
       Semicolon: F11
-      Quote: "text:☝️"
+      Quote: 'text:☝️'
 
-      KeyZ: "text:;"
-      KeyX: "text:~"
-      KeyC: "text:⏩"
-      KeyV: "text:✅"
+      KeyZ: 'text:;'
+      KeyX: 'text:~'
+      KeyC: 'text:⏩'
+      KeyV: 'text:✅'
       KeyB: "text:\\"
       KeyM: F1
       Comma: F2
@@ -249,12 +248,12 @@ rules:
   - key: Space
     layer: space
   - key: AltRight
-    tap: "text:."
+    tap: 'text:.'
     layer: sym
   - key: ControlRight
-    tap: "text:,"
+    tap: 'text:,'
     layer: fkeys
   - key: ShiftRight
-    tap: "text:-"
+    tap: 'text:-'
 macros: []
 quickActions: []

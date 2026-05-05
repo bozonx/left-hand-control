@@ -31,6 +31,7 @@ const _emit = defineEmits<{
     createFromEmpty: [];
     createFromIvanK: [];
     requestEdit: [entry: LayoutLibraryEntry, mode?: LayoutEditMode];
+    updateDescription: [entry: LayoutLibraryEntry, description: string];
     requestReset: [];
     requestDelete: [entry: LayoutLibraryEntry];
     moveUp: [entry: LayoutLibraryEntry];
@@ -171,7 +172,7 @@ function openBlacklist(entryId: string) {
                     :manual-active-layout-id="manualActiveLayoutId"
                     :auto-included-ids="autoIncludedIds"
                     @request-edit="$emit('requestEdit', $event, 'name')"
-                    @request-edit-description="$emit('requestEdit', $event, 'description')"
+                    @update-description="(entry, description) => $emit('updateDescription', entry, description)"
                     @request-apply-entry="$emit('requestApplyEntry', $event)"
                     @request-delete="$emit('requestDelete', $event)"
                     @move-up="$emit('moveUp', $event)"

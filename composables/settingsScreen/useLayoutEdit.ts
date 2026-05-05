@@ -151,6 +151,13 @@ export function useLayoutEdit({
     }
   }
 
+  async function updateDescription(entry: LayoutLibraryEntry, description: string) {
+    editPending.value = entry;
+    editName.value = entry.name;
+    editDescription.value = description;
+    await performEdit(true);
+  }
+
   return {
     editModalOpen,
     editName,
@@ -161,6 +168,7 @@ export function useLayoutEdit({
     editPending,
     openEditModal,
     performEdit,
+    updateDescription,
     closeEditModal,
     confirmOverwrite,
     overwriteConfirmOpen: overwrite.overwriteConfirmOpen,

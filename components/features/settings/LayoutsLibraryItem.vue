@@ -23,7 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   requestEdit: [entry: LayoutLibraryEntry];
-  requestEditDescription: [entry: LayoutLibraryEntry];
+  updateDescription: [entry: LayoutLibraryEntry, description: string];
   requestApplyEntry: [entry: LayoutLibraryEntry];
   requestDelete: [entry: LayoutLibraryEntry];
   moveUp: [entry: LayoutLibraryEntry];
@@ -36,6 +36,30 @@ const emit = defineEmits<{
 
 const { config } = useConfig();
 const { t } = useI18n();
+
+const isEditingDescription = ref(false);
+const editValue = ref("");
+const textareaRef = ref<import('vue').ComponentPublicInstance | null>(null);
+
+function startEdit() {
+  editValue.value = description.value || "";
+  isEditingDescription.value = true;
+  nextTick(() => {
+    textareaRef.value?.$el?.querySelector('textarea')?.focus();
+  });
+}
+
+function cancelEdit() {
+  isEditingDescription.value = false;
+}
+
+async function saveEdit() {
+  if (editValue.value !== description.value) {
+    emit("updateDescription", props.entry, editValue.value);
+  }
+  isEditingDescription.value = false;
+}
+
 function entryIsIncluded(entryId: string) {
   return props.autoIncludedIds.has(entryId);
 }
@@ -147,24 +171,59 @@ const description = computed(() => {
               {{ $t("settings.unsavedBadge") }}
             </UBadge>
           </div>
-          <button
-            v-if="description"
-            type="button"
-            class="mt-0.5 line-clamp-2 w-full cursor-text rounded-sm text-left text-sm text-(--ui-text-muted) hover:text-(--ui-text) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-primary) focus-visible:ring-offset-2 focus-visible:ring-offset-(--ui-bg)"
-            @click="$emit('requestEditDescription', entry)"
-          >
-            {{ description }}
-          </button>
-          <UButton
-            v-else
-            color="neutral"
-            variant="link"
-            size="xs"
-            class="mt-0.5 px-0"
-            @click="$emit('requestEditDescription', entry)"
-          >
-            {{ $t('rules.addDescription') }}
-          </UButton>
+          <div v-if="isEditingDescription" class="mt-1 flex flex-col gap-1.5">
+            <UTextarea
+              ref="textareaRef"
+              v-model="editValue"
+              :placeholder="$t('rules.addDescription')"
+              autoresize
+              :rows="1"
+              size="sm"
+              class="w-full"
+              @keydown.esc="cancelEdit"
+              @keydown.enter.ctrl="saveEdit"
+            />
+            <div class="flex items-center gap-1.5">
+              <UButton
+                size="xs"
+                color="primary"
+                @click="saveEdit"
+              >
+                {{ $t('common.save') }}
+              </UButton>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="cancelEdit"
+              >
+                {{ $t('common.cancel') }}
+              </UButton>
+              <span class="text-[10px] text-(--ui-text-muted) ml-auto">
+                Ctrl + Enter to save
+              </span>
+            </div>
+          </div>
+          <template v-else>
+            <button
+              v-if="description"
+              type="button"
+              class="mt-0.5 line-clamp-2 w-full cursor-text rounded-sm text-left text-sm text-(--ui-text-muted) hover:text-(--ui-text) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-primary) focus-visible:ring-offset-2 focus-visible:ring-offset-(--ui-bg)"
+              @click="startEdit"
+            >
+              {{ description }}
+            </button>
+            <UButton
+              v-else
+              color="neutral"
+              variant="link"
+              size="xs"
+              class="mt-0.5 px-0"
+              @click="startEdit"
+            >
+              {{ $t('rules.addDescription') }}
+            </UButton>
+          </template>
           <div v-if="layoutMode === 'auto'" class="flex items-center justify-between gap-2 mt-1" @click.stop>
             <div class="flex items-center gap-2 flex-wrap">
               <AppTooltip :text="$t('rules.blacklistHint')">

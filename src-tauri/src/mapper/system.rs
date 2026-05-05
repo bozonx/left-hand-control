@@ -78,6 +78,10 @@ pub fn is_known(name: &str) -> bool {
 
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
     let name = name.trim();
+    if name == "showQuickMenu" {
+        return Some(SysAction::TauriEvent("show_quick_menu".into()));
+    }
+
     use crate::platform::linux::Desktop;
     match desktop {
         Desktop::Kde => kde::resolve(name),
@@ -326,6 +330,15 @@ mod kde {
 mod tests {
     use super::{resolve_for_desktop, DbusArg, SysAction};
     use crate::platform::linux::Desktop;
+
+    #[test]
+    fn resolve_show_quick_menu() {
+        let Some(SysAction::TauriEvent(event)) = resolve_for_desktop("showQuickMenu", &Desktop::Kde)
+        else {
+            panic!("showQuickMenu did not resolve to a TauriEvent");
+        };
+        assert_eq!(event, "show_quick_menu");
+    }
 
     #[test]
     fn switch_layout_uses_zero_based_kde_index() {

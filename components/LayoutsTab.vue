@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import AppTooltip from "~/components/shared/AppTooltip.vue";
 import HomeHelpCard from "~/components/HomeHelpCard.vue";
 import HomePlatformStatusCard from "~/components/HomePlatformStatusCard.vue";
 import LayoutsLibraryCard from "~/components/features/settings/LayoutsLibraryCard.vue";
@@ -38,6 +39,7 @@ const {
   editPending: _editPending,
   openEditModal,
   performEdit: _performEdit,
+  updateDescription,
   closeEditModal: _closeEditModal,
   overwriteConfirmOpen: _overwriteConfirmOpen,
   overwriteTargetName: _overwriteTargetName,
@@ -217,6 +219,7 @@ function moveLayout(entry: LayoutLibraryEntry, direction: "up" | "down") {
         @create-from-empty="createFromEmpty"
         @create-from-ivan-k="createFromIvanK"
         @request-edit="openEditModal"
+        @update-description="updateDescription"
         @request-reset="requestReset"
         @request-delete="(entry) => (deletePending = entry)"
         @move-up="(entry) => moveLayout(entry, 'up')"

@@ -101,7 +101,6 @@ export function useMapperRuntime(
 
   async function reloadRunningMapper() {
     const devicePath = deps.status.value.device_path ?? config.value.settings.inputDevicePath ?? ''
-    const mouseDevicePath = deps.status.value.mouse_device_path ?? config.value.settings.inputMouseDevicePath ?? ''
     if (!deps.status.value.running || !devicePath) return
     if (deps.busy.value) {
       reloadPending = true

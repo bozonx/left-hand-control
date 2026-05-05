@@ -5,7 +5,7 @@ import type {
   LocalePreference,
 } from '~/types/config'
 
-const props = defineProps<{
+defineProps<{
   config: AppConfig
   resolvedTheme: 'light' | 'dark'
   appearanceItems: Array<{ label: string, value: AppearancePreference }>

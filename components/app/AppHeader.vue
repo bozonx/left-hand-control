@@ -26,7 +26,7 @@ const tabItems = computed(() => [
   { key: 'rules', to: '/rules', label: t('tabs.rules'), icon: 'i-lucide-workflow' },
   { key: 'keymap', to: '/keymap', label: t('tabs.keymap'), icon: 'i-lucide-keyboard' },
   { key: 'macros', to: '/macros', label: t('tabs.macros'), icon: 'i-lucide-zap' },
-  { key: 'quick-actions', to: '/quick-actions', label: t('tabs.quickActions'), icon: 'i-lucide-zap-fast' },
+  { key: 'quick-actions', to: '/quick-actions', label: t('tabs.quickActions'), icon: 'i-lucide-zap' },
   {
     key: 'commands',
     to: '/commands',

@@ -1,4 +1,4 @@
-import type { AppConfig, ExtraKey, Layer, LayerKeymap } from '~/types/config'
+import type { AppConfig, ExtraKey, Layer } from '~/types/config'
 
 export function useKeymapLayerOps(
   selectedLayerId: Ref<string>,

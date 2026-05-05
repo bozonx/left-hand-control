@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { createDefaultConfig } from '~/types/config'
-import type { AppConfig, Command, CommandTrustEntry } from '~/types/config'
 import {
   commandFingerprint,
   commandTrustKey,

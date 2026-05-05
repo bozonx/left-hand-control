@@ -207,6 +207,7 @@ export function useSettingsLayoutActions({
     editPending: edit.editPending,
     openEditModal: edit.openEditModal,
     performEdit: performEditWithOverwrite,
+    updateDescription: edit.updateDescription,
     closeEditModal: edit.closeEditModal,
     overwriteConfirmOpen: overwriteConfirm.overwriteConfirmOpen,
     overwriteTargetName: overwriteConfirm.overwriteTargetName,

@@ -1,52 +1,43 @@
 <script setup lang="ts">
-import { useConfig } from '~/composables/useConfig'
 import type { QuickAction } from '~/types/config'
 import ActionPickerModal from '~/components/ActionPickerModal.vue'
+import QuickActionEditorCard from '~/components/features/quickActions/QuickActionEditorCard.vue'
 
-const { config, applyConfigUpdate } = useConfig()
+const { config } = useConfig()
 const { t } = useI18n()
-const toast = useToast()
 
-const actions = computed(() => config.value.quickActions)
+const actions = computed(() => config.value.quickActions || [])
 
 function addAction() {
   const newAction: QuickAction = {
     id: crypto.randomUUID(),
-    name: 'New Action',
+    name: t('quickActions.defaultName'),
     action: '',
   }
-  applyConfigUpdate((draft) => {
-    if (!draft.quickActions) draft.quickActions = []
-    draft.quickActions.push(newAction)
-  })
-}
-
-function updateAction(index: number, updates: Partial<QuickAction>) {
-  applyConfigUpdate((draft) => {
-    if (!draft.quickActions) return
-    draft.quickActions[index] = { ...draft.quickActions[index]!, ...updates }
-  })
+  if (!config.value.quickActions) {
+    config.value.quickActions = [newAction]
+  } else {
+    config.value.quickActions.push(newAction)
+  }
 }
 
 function removeAction(index: number) {
-  applyConfigUpdate((draft) => {
-    if (!draft.quickActions) return
-    draft.quickActions.splice(index, 1)
-  })
+  if (!config.value.quickActions) return
+  config.value.quickActions.splice(index, 1)
 }
 
 function moveAction(index: number, delta: number) {
   const newIndex = index + delta
-  if (newIndex < 0 || newIndex >= actions.value.length) return
-  applyConfigUpdate((draft) => {
-    if (!draft.quickActions) return
-    const item = draft.quickActions[index]!
-    draft.quickActions.splice(index, 1)
-    draft.quickActions.splice(newIndex, 0, item)
-  })
+  if (!config.value.quickActions || newIndex < 0 || newIndex >= config.value.quickActions.length) return
+
+  const arr = [...config.value.quickActions]
+  const item = arr[index]
+  if (!item) return
+  arr.splice(index, 1)
+  arr.splice(newIndex, 0, item)
+  config.value.quickActions = arr
 }
 
-// Action picker state
 const pickerState = ref<{
   isOpen: boolean
   index: number | null
@@ -66,104 +57,58 @@ function openPicker(index: number, currentValue: string) {
 }
 
 function onPickerSelect(value: string | null) {
-  if (pickerState.value.index !== null) {
-    updateAction(pickerState.value.index, { action: value || '' })
+  if (pickerState.value.index !== null && config.value.quickActions) {
+    config.value.quickActions[pickerState.value.index].action = value || ''
   }
   pickerState.value.isOpen = false
 }
 </script>
 
 <template>
-  <div class="p-6 max-w-5xl mx-auto flex flex-col gap-6 h-[calc(100vh-var(--app-header-height))] overflow-y-auto min-h-0">
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-(--ui-text-highlighted) mb-1">
-          {{ $t('quickActions.title') }}
-        </h1>
-        <p class="text-(--ui-text-muted)">
-          {{ $t('quickActions.subtitle') }}
-        </p>
-      </div>
-      <UButton icon="i-lucide-plus" @click="addAction">
-        {{ $t('quickActions.addBtn') }}
-      </UButton>
-    </div>
-
-    <div v-if="actions.length === 0" class="flex flex-col items-center justify-center p-12 text-center bg-(--ui-bg-elevated) border border-(--ui-border-muted) rounded-lg border-dashed">
-      <UIcon name="i-lucide-zap-fast" class="w-12 h-12 text-(--ui-text-muted) mb-4 opacity-50" />
-      <p class="text-(--ui-text-muted)">
-        {{ $t('quickActions.empty') }}
-      </p>
-    </div>
-
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div v-for="(action, i) in actions" :key="action.id" class="flex flex-col gap-3 p-4 rounded-lg bg-(--ui-bg-elevated) border border-(--ui-border) shadow-sm">
-        <div class="flex justify-between items-start gap-2">
-          <UInput
-            :model-value="action.name"
-            :placeholder="$t('quickActions.namePh')"
-            size="sm"
-            class="flex-1 font-semibold"
-            @update:model-value="updateAction(i, { name: $event })"
-          />
-          <div class="flex gap-1 shrink-0">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-lucide-arrow-left"
-              size="xs"
-              :disabled="i === 0"
-              :aria-label="$t('quickActions.moveUp')"
-              @click="moveAction(i, -1)"
-            />
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-lucide-arrow-right"
-              size="xs"
-              :disabled="i === actions.length - 1"
-              :aria-label="$t('quickActions.moveDown')"
-              @click="moveAction(i, 1)"
-            />
-            <UButton
-              color="error"
-              variant="ghost"
-              icon="i-lucide-trash-2"
-              size="xs"
-              :aria-label="$t('quickActions.deleteAction')"
-              @click="removeAction(i)"
-            />
+  <div class="space-y-4">
+    <UCard>
+      <template #header>
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold">{{ $t('quickActions.title') }}</h2>
+            <p class="mt-0.5 text-xs text-(--ui-text-muted)">
+              {{ $t('quickActions.subtitle') }}
+            </p>
           </div>
-        </div>
-
-        <div>
-          <label class="text-xs text-(--ui-text-muted) mb-1 block">{{ $t('quickActions.iconLabel') }}</label>
-          <UInput
-            :model-value="action.icon"
-            :placeholder="$t('quickActions.iconPh')"
-            size="sm"
-            icon="i-lucide-image"
-            @update:model-value="updateAction(i, { icon: $event })"
-          />
-        </div>
-
-        <div>
-          <label class="text-xs text-(--ui-text-muted) mb-1 block">{{ $t('quickActions.actionLabel') }}</label>
           <UButton
-            color="neutral"
-            variant="subtle"
+            icon="i-lucide-plus"
             size="sm"
-            class="w-full justify-start font-mono text-xs overflow-hidden"
-            :icon="action.action ? undefined : 'i-lucide-plus'"
-            @click="openPicker(i, action.action)"
+            class="whitespace-nowrap"
+            @click="addAction"
           >
-            <span class="truncate">
-              {{ action.action || $t('quickActions.actionPh') }}
-            </span>
+            {{ $t('quickActions.addBtn') }}
           </UButton>
         </div>
+      </template>
+
+      <div class="space-y-4">
+        <div v-if="actions.length === 0" class="flex flex-col items-center justify-center p-12 text-center bg-(--ui-bg-elevated) border border-(--ui-border-muted) rounded-lg border-dashed">
+          <UIcon name="i-lucide-zap" class="w-12 h-12 text-(--ui-text-muted) mb-4 opacity-50" />
+          <p class="text-(--ui-text-muted)">
+            {{ $t('quickActions.empty') }}
+          </p>
+        </div>
+
+        <template v-else>
+          <QuickActionEditorCard
+            v-for="(_, i) in actions"
+            :key="actions[i].id"
+            v-model:action="config.quickActions[i]"
+            :is-first="i === 0"
+            :is-last="i === actions.length - 1"
+            @remove="removeAction(i)"
+            @move-up="moveAction(i, -1)"
+            @move-down="moveAction(i, 1)"
+            @pick-action="openPicker(i, actions[i].action)"
+          />
+        </template>
       </div>
-    </div>
+    </UCard>
 
     <ActionPickerModal
       v-model:open="pickerState.isOpen"

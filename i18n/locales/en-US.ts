@@ -401,6 +401,7 @@ export default {
     subtitle: 'A grid of customizable actions that appears at the center of the screen when triggered by the sys:showQuickMenu action.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
+    defaultName: 'New action',
     nameLabel: 'Label',
     namePh: 'e.g. Next Track',
     actionLabel: 'Action',

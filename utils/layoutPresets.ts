@@ -168,12 +168,12 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
 
   const quickActions: QuickAction[] = [];
   for (const action of doc.quickActions ?? []) {
-    const value = action?.action?.trim() ?? "";
-    if (!action?.id || !value) continue;
+    if (!action) continue;
+    const id = action.id?.trim() || genId("qa_");
     quickActions.push({
-      id: action.id,
-      name: action.name?.trim() || action.id,
-      action: value,
+      id,
+      name: action.name?.trim() || id,
+      action: typeof action.action === "string" ? action.action : "",
       icon: action.icon?.trim() || undefined,
     });
   }
@@ -287,7 +287,7 @@ export function extractPresetFromConfig(
     layerKeymaps: JSON.parse(JSON.stringify(config.layerKeymaps)),
     macros: JSON.parse(JSON.stringify(config.macros)),
     commands: JSON.parse(JSON.stringify(config.commands)),
-    quickActions: JSON.parse(JSON.stringify(config.quickActions)),
+    quickActions: config.quickActions ? JSON.parse(JSON.stringify(config.quickActions)) : [],
   };
 }
 

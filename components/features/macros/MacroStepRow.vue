@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import type { MacroStep } from '~/types/config'
 
 const _props = defineProps<{

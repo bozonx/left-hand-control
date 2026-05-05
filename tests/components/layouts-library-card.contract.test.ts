@@ -69,7 +69,6 @@ describe("LayoutsLibraryCard", () => {
     expect(wrapper.emitted("requestApplyEntry")).toEqual([[entries[0]]]);
     expect(wrapper.emitted("requestEdit")).toEqual([
       [entries[0], "name"],
-      [entries[0], "description"],
     ]);
     expect(wrapper.emitted("requestDelete")).toEqual([[entries[0]]]);
   });

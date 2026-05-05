@@ -23,7 +23,7 @@ defineProps<{
 
 const rule = defineModel<LayerRule>('rule', { required: true })
 
-const emit = defineEmits<{
+defineEmits<{
   remove: [id: string]
   moveUp: [id: string]
   moveDown: [id: string]

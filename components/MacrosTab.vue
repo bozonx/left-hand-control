@@ -105,8 +105,8 @@ function cancelRemove() {
         <MacroEditorCard
           v-for="(macro, index) in config.macros"
           :key="uiKeyOf(macro)"
-          :ui-key="uiKeyOf(macro)"
           v-model:macro="config.macros[index]"
+          :ui-key="uiKeyOf(macro)"
           :is-first="index === 0"
           :is-last="index === config.macros.length - 1"
           :name-input-id="macroNameInputId(uiKeyOf(macro))"
