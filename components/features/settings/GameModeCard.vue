@@ -16,7 +16,8 @@ const emit = defineEmits<{
 }>()
 
 const advancedOpen = ref(false)
-const newProcessName = ref('')
+const newWhitelistName = ref('')
+const newBlacklistName = ref('')
 
 const matchModeItems = computed(() => [
   { label: t('settings.gameModeMatchSubstring'), value: 'substring' as const },
@@ -27,8 +28,11 @@ const detectionEnabled = computed(
   () =>
     props.useGamemoded ||
     props.useFullscreen ||
-    props.processMatchers.some((item) => item.name.trim().length > 0),
+    props.processMatchers.some((item) => !item.isBlacklist && item.name.trim().length > 0),
 )
+
+const whitelistMatchers = computed(() => props.processMatchers.filter(item => !item.isBlacklist))
+const blacklistMatchers = computed(() => props.processMatchers.filter(item => item.isBlacklist))
 
 function updateMatcher(id: string, patch: Partial<GameModeProcessMatcher>) {
   emit(
@@ -44,8 +48,9 @@ function removeMatcher(id: string) {
   )
 }
 
-function addMatcher() {
-  const name = newProcessName.value.trim()
+function addMatcher(isBlacklist: boolean) {
+  const nameRef = isBlacklist ? newBlacklistName : newWhitelistName
+  const name = nameRef.value.trim()
   if (!name) return
   emit('update:processMatchers', [
     ...props.processMatchers,
@@ -53,10 +58,11 @@ function addMatcher() {
       id: `process-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name,
       matchMode: 'substring',
-      onlyActiveWindow: true,
+      onlyActiveWindow: false,
+      isBlacklist,
     },
   ])
-  newProcessName.value = ''
+  nameRef.value = ''
 }
 </script>
 
@@ -123,53 +129,110 @@ function addMatcher() {
         {{ $t('settings.gameModeAdvanced') }}
       </UButton>
 
-      <div v-if="advancedOpen" class="space-y-3 border-t border-(--ui-border) pt-4">
-        <div class="flex gap-2">
-          <UInput
-            v-model="newProcessName"
-            class="min-w-0 flex-1"
-            :placeholder="$t('settings.gameModeProcessPlaceholder')"
-            @keydown.enter.prevent="addMatcher"
-          />
-          <UButton
-            type="button"
-            icon="i-lucide-plus"
-            :disabled="!newProcessName.trim()"
-            @click="addMatcher"
-          >
-            {{ $t('settings.gameModeAddProcess') }}
-          </UButton>
-        </div>
-
-        <div v-if="processMatchers.length > 0" class="space-y-2">
-          <div
-            v-for="item in processMatchers"
-            :key="item.id"
-            class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_auto] lg:items-center"
-          >
+      <div v-if="advancedOpen" class="space-y-6 border-t border-(--ui-border) pt-4">
+        <!-- Whitelist Section -->
+        <div class="space-y-3">
+          <h3 class="text-sm font-medium">{{ $t('settings.gameModeWhitelistTitle') }}</h3>
+          <div class="flex gap-2">
             <UInput
-              :model-value="item.name"
-              @update:model-value="updateMatcher(item.id, { name: String($event) })"
-            />
-            <USelectMenu
-              :model-value="item.matchMode"
-              :items="matchModeItems"
-              value-key="value"
-              @update:model-value="updateMatcher(item.id, { matchMode: $event as GameModeProcessMatcher['matchMode'] })"
-            />
-            <UCheckbox
-              :model-value="item.onlyActiveWindow"
-              :label="$t('settings.gameModeOnlyActiveWindow')"
-              @update:model-value="updateMatcher(item.id, { onlyActiveWindow: $event as boolean })"
+              v-model="newWhitelistName"
+              class="min-w-0 flex-1"
+              :placeholder="$t('settings.gameModeProcessPlaceholder')"
+              @keydown.enter.prevent="addMatcher(false)"
             />
             <UButton
               type="button"
-              color="neutral"
-              variant="ghost"
-              icon="i-lucide-trash-2"
-              :aria-label="$t('settings.gameModeRemoveProcess')"
-              @click="removeMatcher(item.id)"
+              icon="i-lucide-plus"
+              :disabled="!newWhitelistName.trim()"
+              @click="addMatcher(false)"
+            >
+              {{ $t('settings.gameModeAddProcess') }}
+            </UButton>
+          </div>
+
+          <div v-if="whitelistMatchers.length > 0" class="space-y-2">
+            <div
+              v-for="item in whitelistMatchers"
+              :key="item.id"
+              class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_auto] lg:items-center"
+            >
+              <UInput
+                :model-value="item.name"
+                @update:model-value="updateMatcher(item.id, { name: String($event) })"
+              />
+              <USelectMenu
+                :model-value="item.matchMode"
+                :items="matchModeItems"
+                value-key="value"
+                @update:model-value="updateMatcher(item.id, { matchMode: $event as GameModeProcessMatcher['matchMode'] })"
+              />
+              <UCheckbox
+                :model-value="item.onlyActiveWindow"
+                :label="$t('settings.gameModeOnlyActiveWindow')"
+                @update:model-value="updateMatcher(item.id, { onlyActiveWindow: $event as boolean })"
+              />
+              <UButton
+                type="button"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-trash-2"
+                :aria-label="$t('settings.gameModeRemoveProcess')"
+                @click="removeMatcher(item.id)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Blacklist Section -->
+        <div class="space-y-3">
+          <h3 class="text-sm font-medium">{{ $t('settings.gameModeBlacklistTitle') }}</h3>
+          <div class="flex gap-2">
+            <UInput
+              v-model="newBlacklistName"
+              class="min-w-0 flex-1"
+              :placeholder="$t('settings.gameModeProcessPlaceholder')"
+              @keydown.enter.prevent="addMatcher(true)"
             />
+            <UButton
+              type="button"
+              icon="i-lucide-plus"
+              :disabled="!newBlacklistName.trim()"
+              @click="addMatcher(true)"
+            >
+              {{ $t('settings.gameModeAddProcess') }}
+            </UButton>
+          </div>
+
+          <div v-if="blacklistMatchers.length > 0" class="space-y-2">
+            <div
+              v-for="item in blacklistMatchers"
+              :key="item.id"
+              class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_auto] lg:items-center bg-(--ui-bg-muted)/50"
+            >
+              <UInput
+                :model-value="item.name"
+                @update:model-value="updateMatcher(item.id, { name: String($event) })"
+              />
+              <USelectMenu
+                :model-value="item.matchMode"
+                :items="matchModeItems"
+                value-key="value"
+                @update:model-value="updateMatcher(item.id, { matchMode: $event as GameModeProcessMatcher['matchMode'] })"
+              />
+              <UCheckbox
+                :model-value="item.onlyActiveWindow"
+                :label="$t('settings.gameModeOnlyActiveWindow')"
+                @update:model-value="updateMatcher(item.id, { onlyActiveWindow: $event as boolean })"
+              />
+              <UButton
+                type="button"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-trash-2"
+                :aria-label="$t('settings.gameModeRemoveProcess')"
+                @click="removeMatcher(item.id)"
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -621,6 +621,8 @@ export default {
     gameModeMatchSubstring: "Substring",
     gameModeMatchExact: "Exact match",
     gameModeOnlyActiveWindow: "Only active window",
+    gameModeWhitelistTitle: "Triggers (Whitelist)",
+    gameModeBlacklistTitle: "Exceptions (Blacklist)",
   },
   picker: {
     currentValue: "Current value",

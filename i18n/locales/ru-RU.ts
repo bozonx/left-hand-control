@@ -625,6 +625,8 @@ export default {
     gameModeMatchSubstring: "Подстрока",
     gameModeMatchExact: "Полное совпадение",
     gameModeOnlyActiveWindow: "Только активное окно",
+    gameModeWhitelistTitle: "Триггеры (Белый список)",
+    gameModeBlacklistTitle: "Исключения (Чёрный список)",
   },
   picker: {
     currentValue: "Текущее значение",

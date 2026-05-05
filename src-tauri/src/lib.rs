@@ -160,6 +160,7 @@ fn stop_mapper() -> Result<(), String> {
 #[tauri::command]
 fn update_mapper_config(config_json: String) -> Result<(), String> {
     eprintln!("[cmd] update_mapper_config");
+    gamemode::update_settings_from_config_json(&config_json);
     let r = mapper::update_config(&config_json);
     if let Err(e) = &r {
         eprintln!("[cmd] update_mapper_config ERR: {e}");

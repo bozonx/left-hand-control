@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::thread;
@@ -72,10 +71,10 @@ fn watcher_stop_requested() -> bool {
 }
 
 fn get_current_time() -> String {
-    let output = Command::new("date").arg("+%Y-%m-%d %H:%M:%S").output().ok();
-    output
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-        .unwrap_or_else(|| "unknown time".to_string())
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
+    format!("{}.{:03}", now.as_secs(), now.subsec_millis())
 }
 
 pub fn start_watcher(app: AppHandle) {
@@ -118,7 +117,7 @@ fn check_gamemode(app: &AppHandle) -> GameModeStatus {
         || settings
             .process_matchers
             .iter()
-            .any(|matcher| !matcher.name.trim().is_empty());
+            .any(|matcher| !matcher.is_blacklist && !matcher.name.trim().is_empty());
 
     if !detection_enabled {
         return GameModeStatus {
@@ -130,6 +129,23 @@ fn check_gamemode(app: &AppHandle) -> GameModeStatus {
 
     #[cfg(target_os = "linux")]
     {
+        let blacklist: Vec<_> = settings
+            .process_matchers
+            .iter()
+            .filter(|m| m.is_blacklist)
+            .cloned()
+            .collect();
+
+        if !blacklist.is_empty() {
+            if let Some(_name) = linux::active_process_match(&blacklist) {
+                return GameModeStatus {
+                    active: false,
+                    method: None,
+                    detection_enabled,
+                };
+            }
+        }
+
         if settings.use_gamemoded && linux::is_gamemoded_active() {
             return GameModeStatus {
                 active: true,
@@ -138,7 +154,14 @@ fn check_gamemode(app: &AppHandle) -> GameModeStatus {
             };
         }
 
-        if let Some(name) = linux::active_process_match(&settings.process_matchers) {
+        let whitelist: Vec<_> = settings
+            .process_matchers
+            .iter()
+            .filter(|m| !m.is_blacklist)
+            .cloned()
+            .collect();
+
+        if let Some(name) = linux::active_process_match(&whitelist) {
             return GameModeStatus {
                 active: true,
                 method: Some(format!("process:{name}")),

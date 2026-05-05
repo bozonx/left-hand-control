@@ -59,7 +59,7 @@ export function useLayoutSwitcher() {
       () => {
         void evaluate()
       },
-      { immediate: true },
+      { immediate: false },
     )
 
     watch(
@@ -67,8 +67,15 @@ export function useLayoutSwitcher() {
       () => {
         void evaluate()
       },
-      { immediate: true, deep: true },
+      { immediate: false, deep: true },
     )
+
+    async function initAndEvaluate() {
+      await gameMode.ready()
+      await evaluate()
+    }
+
+    void initAndEvaluate()
   })
 
   return { activeAutoLayoutId }

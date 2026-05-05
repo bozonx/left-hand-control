@@ -1,15 +1,35 @@
-use std::process::Command;
+use std::collections::HashSet;
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use crate::mapper::config::{GameModeProcessMatchMode, GameModeProcessMatcher};
 use crate::platform::linux::{Desktop, SessionType};
 
 pub static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 
+/// Run a command with a timeout. If the timeout expires the child is killed
+/// with SIGKILL so the caller does not block indefinitely.
+fn run_cmd_with_timeout(cmd: &mut Command, timeout_ms: u64) -> Option<std::process::Output> {
+    let child = cmd
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .ok()?;
+    let id = child.id();
+
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(timeout_ms));
+        let _ = Command::new("kill")
+            .args(["-9", &id.to_string()])
+            .status();
+    });
+
+    child.wait_with_output().ok()
+}
+
 pub fn is_gamemoded_active() -> bool {
-    Command::new("gamemoded")
-        .arg("-s")
-        .output()
+    run_cmd_with_timeout(Command::new("gamemoded").arg("-s"), 3000)
         .map(|output| {
             let stdout = String::from_utf8_lossy(&output.stdout);
             stdout.contains("is active")
@@ -18,6 +38,13 @@ pub fn is_gamemoded_active() -> bool {
 }
 
 pub fn active_process_match(matchers: &[GameModeProcessMatcher]) -> Option<String> {
+    let need_running = matchers.iter().any(|m| !m.only_active_window);
+    let running_names = if need_running {
+        Some(running_process_names())
+    } else {
+        None
+    };
+
     for matcher in matchers {
         let name = matcher.name.trim();
         if name.is_empty() {
@@ -27,8 +54,18 @@ pub fn active_process_match(matchers: &[GameModeProcessMatcher]) -> Option<Strin
             if active_window_matches(matcher) {
                 return Some(name.to_string());
             }
-        } else if running_process_matches(matcher) {
-            return Some(name.to_string());
+        } else if let Some(ref names) = running_names {
+            let needle = name.to_lowercase();
+            if needle.is_empty() {
+                continue;
+            }
+            let matched = match matcher.match_mode {
+                GameModeProcessMatchMode::Exact => names.contains(&needle),
+                GameModeProcessMatchMode::Substring => names.iter().any(|n| n.contains(&needle)),
+            };
+            if matched {
+                return Some(name.to_string());
+            }
         }
     }
     None
@@ -43,9 +80,10 @@ fn active_window_matches(matcher: &GameModeProcessMatcher) -> bool {
         .any(|candidate| process_name_matches(matcher, candidate))
 }
 
-fn running_process_matches(matcher: &GameModeProcessMatcher) -> bool {
+fn running_process_names() -> HashSet<String> {
+    let mut names = HashSet::new();
     let Ok(entries) = std::fs::read_dir("/proc") else {
-        return false;
+        return names;
     };
     for entry in entries.flatten() {
         let file_name = entry.file_name();
@@ -57,8 +95,9 @@ fn running_process_matches(matcher: &GameModeProcessMatcher) -> bool {
         }
         let path = entry.path();
         let comm = std::fs::read_to_string(path.join("comm")).unwrap_or_default();
-        if process_name_matches(matcher, comm.trim()) {
-            return true;
+        let comm = comm.trim().to_lowercase();
+        if !comm.is_empty() {
+            names.insert(comm);
         }
         if let Ok(cmdline) = std::fs::read(path.join("cmdline")) {
             let args: Vec<String> = cmdline
@@ -66,21 +105,25 @@ fn running_process_matches(matcher: &GameModeProcessMatcher) -> bool {
                 .filter(|part| !part.is_empty())
                 .map(|part| String::from_utf8_lossy(part).into_owned())
                 .collect();
-            if args.iter().any(|arg| process_name_matches(matcher, arg)) {
-                return true;
+            for arg in &args {
+                let arg_lower = arg.trim().to_lowercase();
+                if !arg_lower.is_empty() {
+                    names.insert(arg_lower);
+                }
             }
             if let Some(first) = args.first().and_then(|arg| {
                 std::path::Path::new(arg)
                     .file_name()
                     .and_then(|name| name.to_str())
             }) {
-                if process_name_matches(matcher, first) {
-                    return true;
+                let first_lower = first.trim().to_lowercase();
+                if !first_lower.is_empty() {
+                    names.insert(first_lower);
                 }
             }
         }
     }
-    false
+    names
 }
 
 fn process_name_matches(matcher: &GameModeProcessMatcher, candidate: &str) -> bool {
@@ -110,14 +153,15 @@ fn is_wayland_fullscreen_active() -> bool {
         Desktop::Kde => is_kde_wayland_fullscreen_active(),
         Desktop::Hyprland => is_hyprland_fullscreen_active(),
         Desktop::Gnome => is_gnome_wayland_fullscreen_active(),
+        Desktop::Sway => is_sway_fullscreen_active(),
         _ => false,
     }
 }
 
 fn is_kde_wayland_fullscreen_active() -> bool {
-    let output = Command::new("kdotool").arg("getactivewindow").output();
+    let output = run_cmd_with_timeout(Command::new("kdotool").arg("getactivewindow"), 3000);
 
-    let Ok(output) = output else {
+    let Some(output) = output else {
         if !KDOTOOL_WARN_ONCE.swap(true, Ordering::SeqCst) {
             eprintln!("[gamemode] KDE Wayland fullscreen detection requires 'kdotool'");
         }
@@ -133,10 +177,10 @@ fn is_kde_wayland_fullscreen_active() -> bool {
         return false;
     }
 
-    let geom_output = Command::new("kdotool")
-        .args(["getwindowgeometry", &window_id])
-        .output()
-        .ok();
+    let geom_output = run_cmd_with_timeout(
+        Command::new("kdotool").args(["getwindowgeometry", &window_id]),
+        3000,
+    );
 
     let Some(geom_output) = geom_output else {
         return false;
@@ -159,11 +203,12 @@ fn is_kde_wayland_fullscreen_active() -> bool {
 }
 
 fn is_hyprland_fullscreen_active() -> bool {
-    let output = Command::new("hyprctl")
-        .args(["activewindow", "-j"])
-        .output();
+    let output = run_cmd_with_timeout(
+        Command::new("hyprctl").args(["activewindow", "-j"]),
+        3000,
+    );
 
-    let Ok(output) = output else {
+    let Some(output) = output else {
         return false;
     };
     if !output.status.success() {
@@ -177,6 +222,22 @@ fn is_gnome_wayland_fullscreen_active() -> bool {
     // GNOME DBus APIs for getting active window geometry or fullscreen status
     // are locked down without an extension. We return false for now.
     false
+}
+
+fn is_sway_fullscreen_active() -> bool {
+    let output = run_cmd_with_timeout(
+        Command::new("swaymsg").args(["-t", "get_tree", "-r"]),
+        3000,
+    );
+
+    let Some(output) = output else {
+        return false;
+    };
+    if !output.status.success() {
+        return false;
+    }
+
+    parse_sway_fullscreen(&String::from_utf8_lossy(&output.stdout))
 }
 
 fn parse_kdotool_geometry(stdout: &str) -> Option<(i32, i32, i32, i32)> {
@@ -220,7 +281,7 @@ fn parse_kdotool_geometry(stdout: &str) -> Option<(i32, i32, i32, i32)> {
 }
 
 fn kde_display_geometry() -> Option<(i32, i32)> {
-    let output = Command::new("kscreen-doctor").arg("-o").output().ok()?;
+    let output = run_cmd_with_timeout(Command::new("kscreen-doctor").arg("-o"), 3000)?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     for line in stdout.lines() {
@@ -263,10 +324,7 @@ fn is_x11_fullscreen_active() -> bool {
 }
 
 fn active_window_id() -> Option<String> {
-    let output = Command::new("xdotool")
-        .arg("getactivewindow")
-        .output()
-        .ok()?;
+    let output = run_cmd_with_timeout(Command::new("xdotool").arg("getactivewindow"), 3000)?;
     if !output.status.success() {
         return None;
     }
@@ -278,11 +336,12 @@ fn active_window_id() -> Option<String> {
 }
 
 fn active_window_has_fullscreen_state(window_id: &str) -> bool {
-    let output = Command::new("xprop")
-        .args(["-id", window_id, "_NET_WM_STATE"])
-        .output();
+    let output = run_cmd_with_timeout(
+        Command::new("xprop").args(["-id", window_id, "_NET_WM_STATE"]),
+        3000,
+    );
 
-    let Ok(output) = output else {
+    let Some(output) = output else {
         return false;
     };
     if !output.status.success() {
@@ -293,10 +352,11 @@ fn active_window_has_fullscreen_state(window_id: &str) -> bool {
 }
 
 fn active_window_geometry(window_id: &str) -> Option<(i32, i32, i32, i32)> {
-    let output = Command::new("xdotool")
-        .args(["getwindowgeometry", "--shell", window_id])
-        .output()
-        .ok()?;
+    let output = run_cmd_with_timeout(
+        Command::new("xdotool")
+            .args(["getwindowgeometry", "--shell", window_id]),
+        3000,
+    )?;
     if !output.status.success() {
         return None;
     }
@@ -304,10 +364,10 @@ fn active_window_geometry(window_id: &str) -> Option<(i32, i32, i32, i32)> {
 }
 
 fn display_geometry() -> Option<(i32, i32)> {
-    let output = Command::new("xdotool")
-        .arg("getdisplaygeometry")
-        .output()
-        .ok()?;
+    let output = run_cmd_with_timeout(
+        Command::new("xdotool").arg("getdisplaygeometry"),
+        3000,
+    )?;
     if !output.status.success() {
         return None;
     }
@@ -360,9 +420,43 @@ fn parse_hyprland_fullscreen(stdout: &str) -> bool {
     }
 }
 
+fn parse_sway_fullscreen(stdout: &str) -> bool {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(stdout) else {
+        return false;
+    };
+    find_focused_fullscreen(&value)
+}
+
+fn find_focused_fullscreen(value: &serde_json::Value) -> bool {
+    if let Some(node) = value.as_object() {
+        if node.get("focused").and_then(|v| v.as_bool()) == Some(true) {
+            if let Some(mode) = node.get("fullscreen_mode").and_then(|v| v.as_i64()) {
+                return mode > 0;
+            }
+            if let Some(full) = node.get("fullscreen").and_then(|v| v.as_bool()) {
+                return full;
+            }
+            return false;
+        }
+        for key in ["nodes", "floating_nodes"] {
+            if let Some(children) = node.get(key).and_then(|v| v.as_array()) {
+                for child in children {
+                    if find_focused_fullscreen(child) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{parse_display_geometry, parse_hyprland_fullscreen, parse_window_geometry};
+    use super::{
+        find_focused_fullscreen, parse_display_geometry, parse_hyprland_fullscreen,
+        parse_window_geometry,
+    };
 
     #[test]
     fn parses_window_geometry() {
@@ -390,5 +484,23 @@ mod tests {
     fn parses_hyprland_fullscreen_number() {
         assert!(parse_hyprland_fullscreen(r#"{"fullscreen":2}"#));
         assert!(!parse_hyprland_fullscreen(r#"{"fullscreen":0}"#));
+    }
+
+    #[test]
+    fn parses_sway_fullscreen_boolean() {
+        let tree: serde_json::Value = serde_json::from_str(r#"{"focused":true,"fullscreen_mode":1}"#).unwrap();
+        assert!(find_focused_fullscreen(&tree));
+    }
+
+    #[test]
+    fn parses_sway_fullscreen_nested() {
+        let tree: serde_json::Value = serde_json::from_str(r#"{"nodes":[{"focused":false,"nodes":[{"focused":true,"fullscreen":true}]}]}"#).unwrap();
+        assert!(find_focused_fullscreen(&tree));
+    }
+
+    #[test]
+    fn ignores_sway_unfocused_fullscreen() {
+        let tree: serde_json::Value = serde_json::from_str(r#"{"nodes":[{"focused":false,"fullscreen_mode":1}]}"#).unwrap();
+        assert!(!find_focused_fullscreen(&tree));
     }
 }

@@ -159,6 +159,7 @@ export interface GameModeProcessMatcher {
   name: string
   matchMode: 'exact' | 'substring'
   onlyActiveWindow: boolean
+  isBlacklist?: boolean
 }
 
 export interface AppSettings {

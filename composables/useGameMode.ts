@@ -2,6 +2,7 @@ const _status = ref<GameModeStatus>({ active: false, method: null, detectionEnab
 let _inited = false
 let _consumerCount = 0
 let _unlisten: (() => void) | null = null
+let _initPromise: Promise<void> | null = null
 
 export interface GameModeStatus {
   active: boolean
@@ -11,6 +12,15 @@ export interface GameModeStatus {
 
 async function init() {
   if (_inited) return
+  if (_initPromise) {
+    await _initPromise
+    return
+  }
+  _initPromise = doInit()
+  await _initPromise
+}
+
+async function doInit() {
   _inited = true
   try {
     const tauri = await useTauri()
@@ -49,6 +59,7 @@ export function useGameMode() {
   })
   return {
     status: readonly(_status),
+    ready: () => _initPromise ?? Promise.resolve(),
     refreshStatus: async () => {
       try {
         const tauri = await useTauri()
@@ -65,6 +76,7 @@ export function useGameMode() {
 export async function resetGameModeStateForTests() {
   _inited = false
   _consumerCount = 0
+  _initPromise = null
   _status.value = { active: false, method: null, detectionEnabled: true }
   const unlisten = _unlisten
   _unlisten = null

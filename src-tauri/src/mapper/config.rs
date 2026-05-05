@@ -185,7 +185,7 @@ pub struct CommandTrustEntry {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GameModeSettings {
-    #[serde(default = "default_true")]
+    #[serde(default)]
     pub use_gamemoded: bool,
     #[serde(default)]
     pub use_fullscreen: bool,
@@ -200,8 +200,10 @@ pub struct GameModeProcessMatcher {
     pub name: String,
     #[serde(default)]
     pub match_mode: GameModeProcessMatchMode,
-    #[serde(default = "default_true")]
+    #[serde(default)]
     pub only_active_window: bool,
+    #[serde(default)]
+    pub is_blacklist: bool,
 }
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Eq)]
@@ -215,7 +217,7 @@ pub enum GameModeProcessMatchMode {
 impl Default for GameModeSettings {
     fn default() -> Self {
         Self {
-            use_gamemoded: true,
+            use_gamemoded: false,
             use_fullscreen: false,
             process_matchers: Vec::new(),
         }
@@ -351,7 +353,7 @@ mod tests {
         assert_eq!(s.default_macro_modifier_delay_ms, 5);
         assert_eq!(s.default_double_tap_timeout_ms, 200);
         assert!(s.input_device_path.is_none());
-        assert!(s.game_mode.use_gamemoded);
+        assert!(!s.game_mode.use_gamemoded);
         assert!(!s.game_mode.use_fullscreen);
     }
 
