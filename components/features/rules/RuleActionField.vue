@@ -45,7 +45,7 @@ const currentMode = computed<ModeKind>(() => {
   return 'native'
 })
 
-const showGhost = computed(() => props.ghost && (currentMode.value === 'native' || currentMode.value === 'none'))
+const showGhost = computed(() => props.ghost && currentMode.value === 'native')
 
 const selectMode = computed<ModeKind>({
   get: () => pendingMode.value ?? currentMode.value,
