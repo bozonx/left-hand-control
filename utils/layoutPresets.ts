@@ -1,4 +1,5 @@
 import yaml from "js-yaml";
+import { logger } from "~/utils/logger";
 import {
   type AppConfig,
   type Command,
@@ -234,7 +235,7 @@ export function parseLayoutYaml(text: string): LayoutPreset | null {
     if (!doc || typeof doc !== "object") return null;
     return parsePreset(doc);
   } catch (e) {
-    console.error("[LHC] parseLayoutYaml failed:", e);
+    logger.error('[LHC] parseLayoutYaml failed', e);
     return null;
   }
 }
@@ -445,7 +446,7 @@ export async function loadBuiltinLayout(
     const preset = parseLayoutYaml(text);
     return preset ? localizeBuiltinLayoutPreset(preset, t) : null;
   } catch (e) {
-    console.error("[LHC] loadBuiltinLayout failed:", e);
+    logger.error('[LHC] loadBuiltinLayout failed', e);
     return null;
   }
 }

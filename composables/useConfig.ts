@@ -234,9 +234,7 @@ export function useConfig(): ConfigState {
         layoutSnapshot.value = layoutSnapshotOf(config.value)
         settingsDir.value = await getSettingsDir()
         loadError.value = null
-        console.info(
-          '[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout.',
-        )
+        logger.info('[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout')
         return
       }
 

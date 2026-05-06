@@ -44,7 +44,7 @@ async function runAction(action: string) {
       await tauri.invoke('execute_action', { action })
     }
   } catch (e) {
-    console.error('Failed to execute quick action:', e)
+    logger.error('Failed to execute quick action', e)
   } finally {
     await hideMenu()
   }

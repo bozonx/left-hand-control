@@ -58,13 +58,13 @@ export function useMapperDevices() {
       error.value = null
     } catch (err: unknown) {
       error.value = t('mapper.listFailed', { err: String(err) })
-      console.error('[useMapper] list_keyboards error:', err)
+      logger.error('[mapper] list_keyboards failed', err)
     }
 
     try {
       mice.value = await tauri.invoke<KeyboardDevice[]>('list_mice')
     } catch (err: unknown) {
-      console.error('[useMapper] list_mice error:', err)
+      logger.error('[mapper] list_mice failed', err)
     }
   }
 

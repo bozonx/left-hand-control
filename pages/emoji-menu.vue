@@ -25,7 +25,7 @@ function wait(ms: number) {
 
 async function closeMenu() {
   await invoke('hide_emoji_menu').catch((e) => {
-    console.error('Failed to hide emoji menu:', e)
+    logger.error('Failed to hide emoji menu', e)
   })
 }
 
@@ -40,7 +40,7 @@ async function applyEmoji(emoji: string | undefined) {
   try {
     await invoke('execute_action', { action: textActionRef(emoji) })
   } catch (e) {
-    console.error('Failed to insert emoji:', e)
+    logger.error('Failed to insert emoji', e)
   }
 }
 

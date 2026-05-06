@@ -121,7 +121,7 @@ export function useMapperRuntime(
       await deps.invokeUpdateConfig(nextConfig)
       lastRuntimeSnapshot = nextRuntimeSnapshot
     } catch (error) {
-      console.error('Mapper live config update failed:', error)
+      logger.error('[mapper] live config update failed', error)
     } finally {
       deps.busy.value = false
       if (reloadPending) {

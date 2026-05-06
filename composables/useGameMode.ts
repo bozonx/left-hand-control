@@ -43,7 +43,7 @@ async function doInit() {
     _unlisten = unlisten
   } catch (e) {
     _inited = false
-    console.error('Failed to init gamemode:', e)
+    logger.error('Failed to init gamemode', e)
   }
 }
 
@@ -67,7 +67,7 @@ export function useGameMode() {
         const res = await tauri.invoke<GameModeStatus>('get_gamemode_status')
         _status.value = res
       } catch (e) {
-        console.error('Failed to get gamemode status:', e)
+        logger.error('Failed to get gamemode status', e)
       }
     },
   }

@@ -38,8 +38,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        run: pnpm lint
+
       - name: Check system macros sync
         run: node scripts/check-system-macros-sync.mjs
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level high
+        continue-on-error: true
 
       - name: Run unit tests
         run: pnpm test:unit
@@ -53,6 +60,13 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}
           path: test-results/**/*.xml
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
 
       - name: Type check
         run: pnpm typecheck
@@ -94,6 +108,13 @@ jobs:
       - name: Run cargo clippy
         working-directory: src-tauri
         run: cargo clippy --all-features -- -D warnings
+
+      - name: Audit Rust dependencies
+        if: matrix.os == 'ubuntu-latest'
+        uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: src-tauri
 
   tauri-smoke:
     strategy:

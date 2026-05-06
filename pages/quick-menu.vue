@@ -16,7 +16,7 @@ function wait(ms: number) {
 
 async function closeMenu() {
   await invoke('hide_quick_menu').catch((e) => {
-    console.error('Failed to hide quick menu:', e)
+    logger.error('Failed to hide quick menu', e)
   })
 }
 
@@ -47,7 +47,7 @@ async function runAction(action: string) {
   try {
     await invoke('execute_action', { action })
   } catch (e) {
-    console.error('Failed to execute action:', e)
+    logger.error('Failed to execute action', e)
   }
 }
 </script>

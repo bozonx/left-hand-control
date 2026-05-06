@@ -100,6 +100,20 @@ fn delete_user_layout(app: tauri::AppHandle, name: String) -> Result<(), String>
 
 // --- Mapper commands ---------------------------------------------------------
 
+fn validate_device_path(path: &str) -> Result<(), String> {
+    let path = path.trim();
+    if path.is_empty() {
+        return Err("device path is empty".into());
+    }
+    if !path.starts_with("/dev/input/") {
+        return Err(format!("device path must be under /dev/input/, got: {path}"));
+    }
+    if path.contains("..") {
+        return Err("device path contains invalid sequence".into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
     eprintln!("[cmd] list_keyboards");
@@ -130,6 +144,12 @@ fn start_mapper(
     config_json: Option<String>,
 ) -> Result<(), String> {
     eprintln!("[cmd] start_mapper device={device_path} mouse={mouse_device_path:?}");
+    validate_device_path(&device_path)?;
+    if let Some(ref mouse) = mouse_device_path {
+        if !mouse.trim().is_empty() {
+            validate_device_path(mouse)?;
+        }
+    }
     let raw = match config_json {
         Some(s) if !s.trim().is_empty() => s,
         _ => {

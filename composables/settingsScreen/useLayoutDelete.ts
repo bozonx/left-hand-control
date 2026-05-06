@@ -11,6 +11,7 @@ interface LayoutDeleteOptions {
 export function useLayoutDelete({ config, library, flush }: LayoutDeleteOptions) {
   const deletePending = ref<LayoutLibraryEntry | null>(null);
   const deleteBusy = ref(false);
+  const toast = useToast();
 
   async function confirmDelete() {
     const entry = deletePending.value;
@@ -30,8 +31,14 @@ export function useLayoutDelete({ config, library, flush }: LayoutDeleteOptions)
       await flush();
       deletePending.value = null;
     } catch (error) {
-       
-      console.error("Delete layout failed:", error);
+      logger.error('Delete layout failed', error);
+      toast.add({
+        title: 'Failed to delete layout',
+        description: error instanceof Error ? error.message : String(error),
+        color: 'error',
+        icon: 'i-lucide-circle-alert',
+        close: true,
+      });
     } finally {
       deleteBusy.value = false;
     }

@@ -34,7 +34,7 @@ async function init() {
       }
     })
   } catch (e) {
-    console.error('Failed to init active window:', e)
+    logger.error('Failed to init active window', e)
   }
 }
 
@@ -52,7 +52,7 @@ export function useActiveWindow() {
         const res = await tauri.invoke<ActiveWindow | null>('get_active_window')
         _state.value = res ?? null
       } catch (e) {
-        console.error('Failed to get active window:', e)
+        logger.error('Failed to get active window', e)
       }
     },
   }
