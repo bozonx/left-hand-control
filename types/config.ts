@@ -225,6 +225,36 @@ export interface QuickAction {
   icon?: string
 }
 
+export const EMOJI_HOTKEYS = [
+  'q', 'w', 'e', 'r', 't',
+  'a', 's', 'd', 'f', 'g',
+  'z', 'x', 'c', 'v', 'b',
+] as const
+
+export type EmojiHotkey = typeof EMOJI_HOTKEYS[number]
+
+export interface EmojiPage {
+  id: string
+  name: string
+  cells: Partial<Record<EmojiHotkey, string>>
+}
+
+export const STANDARD_EMOJIS = [
+  '😀', '😄', '😂', '🙂', '😉', '😍', '😘', '😎', '🤔', '😭',
+  '😡', '👍', '👎', '👏', '🙏', '💪', '🔥', '✨', '🎉', '❤️',
+  '💜', '✅', '❌', '⭐', '🚀', '💡', '👀', '🤝', '🙌', '👌',
+] as const
+
+export function createDefaultEmojiPage(): EmojiPage {
+  return {
+    id: 'emoji_default',
+    name: 'Emoji 1',
+    cells: Object.fromEntries(
+      EMOJI_HOTKEYS.map((key, index) => [key, STANDARD_EMOJIS[index] ?? '']),
+    ) as Partial<Record<EmojiHotkey, string>>,
+  }
+}
+
 export interface LayoutPreset {
   description?: string
   layers: Layer[]
@@ -233,6 +263,7 @@ export interface LayoutPreset {
   macros: Macro[]
   commands: Command[]
   quickActions: QuickAction[]
+  emojiPages?: EmojiPage[]
 }
 
 export interface AppConfig {
@@ -248,6 +279,8 @@ export interface AppConfig {
   commands: Command[]
   // User-defined quick actions available in the Quick Menu.
   quickActions: QuickAction[]
+  // User-defined emoji pages available in the Emoji Menu.
+  emojiPages: EmojiPage[]
   settings: AppSettings
 }
 
@@ -324,6 +357,7 @@ export function createDefaultConfig(): AppConfig {
     macros: [],
     commands: [],
     quickActions: [],
+    emojiPages: [createDefaultEmojiPage()],
     settings: {
       launchOnStartup: false,
       appearance: 'system',

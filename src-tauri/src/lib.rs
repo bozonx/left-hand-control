@@ -221,6 +221,16 @@ fn hide_quick_menu(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn hide_emoji_menu(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("emoji-menu") {
+        window
+            .hide()
+            .map_err(|e| format!("hide emoji menu: {e}"))?;
+    }
+    Ok(())
+}
+
 fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
     let window = if let Some(window) = app.get_webview_window("quick-menu") {
         window
@@ -245,6 +255,33 @@ fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
     window
         .set_focus()
         .map_err(|e| format!("focus quick menu: {e}"))?;
+    Ok(())
+}
+
+fn show_emoji_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
+    let window = if let Some(window) = app.get_webview_window("emoji-menu") {
+        window
+    } else {
+        WebviewWindowBuilder::new(app, "emoji-menu", WebviewUrl::App("emoji-menu".into()))
+            .title("Emoji")
+            .inner_size(520.0, 500.0)
+            .min_inner_size(360.0, 260.0)
+            .resizable(false)
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .focused(true)
+            .center()
+            .visible(false)
+            .build()
+            .map_err(|e| format!("create emoji menu window: {e}"))?
+    };
+    window.center().map_err(|e| format!("center emoji menu: {e}"))?;
+    window.show().map_err(|e| format!("show emoji menu: {e}"))?;
+    window
+        .set_focus()
+        .map_err(|e| format!("focus emoji menu: {e}"))?;
     Ok(())
 }
 
@@ -273,6 +310,18 @@ pub fn run() {
                     eprintln!("[quick-menu] schedule show failed: {e}");
                 }
             });
+            let emoji_menu_app = app.handle().clone();
+            app.listen("show_emoji_menu", move |_| {
+                let app = emoji_menu_app.clone();
+                let app_for_thread = app.clone();
+                if let Err(e) = app.run_on_main_thread(move || {
+                    if let Err(e) = show_emoji_menu_window(&app_for_thread) {
+                        eprintln!("[emoji-menu] {e}");
+                    }
+                }) {
+                    eprintln!("[emoji-menu] schedule show failed: {e}");
+                }
+            });
             if let Some(window) = app.get_webview_window("main") {
                 window_state::restore(&window);
                 let _ = window.show();
@@ -283,7 +332,7 @@ pub fn run() {
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
-                if window.label() == "quick-menu" {
+                if window.label() == "quick-menu" || window.label() == "emoji-menu" {
                     let _ = window.hide();
                 } else if let Some(w) = window.app_handle().get_webview_window("main") {
                     tray::hide_main_window(&w);
@@ -328,6 +377,7 @@ pub fn run() {
             quit_application,
             execute_action,
             hide_quick_menu,
+            hide_emoji_menu,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

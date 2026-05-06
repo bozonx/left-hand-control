@@ -1,5 +1,6 @@
-import type { AppConfig, PersistedConfig } from "~/types/config";
+import type { AppConfig, EmojiHotkey, EmojiPage, PersistedConfig } from "~/types/config";
 import {
+  EMOJI_HOTKEYS,
   createDefaultConfig,
   createDefaultPersistedConfig,
 } from "~/types/config";
@@ -110,6 +111,32 @@ function normalizeSettings(
   return merged;
 }
 
+function normalizeEmojiPages(raw: unknown, base: EmojiPage[]): EmojiPage[] {
+  if (!Array.isArray(raw)) return JSON.parse(JSON.stringify(base));
+  const keySet = new Set<string>(EMOJI_HOTKEYS);
+  const pages = raw
+    .filter((page): page is Record<string, unknown> => !!page && typeof page === "object")
+    .map((page, index) => {
+      const id = typeof page.id === "string" && page.id.trim() ? page.id.trim() : `emoji_${index + 1}`;
+      const cellsRaw = page.cells && typeof page.cells === "object"
+        ? page.cells as Record<string, unknown>
+        : {};
+      const cells: Partial<Record<EmojiHotkey, string>> = {};
+      for (const [key, value] of Object.entries(cellsRaw)) {
+        if (!keySet.has(key) || typeof value !== "string") continue;
+        cells[key as EmojiHotkey] = value;
+      }
+      return {
+        id,
+        name: typeof page.name === "string" && page.name.trim()
+          ? page.name.trim()
+          : `Emoji ${index + 1}`,
+        cells,
+      };
+    });
+  return pages.length > 0 ? pages : JSON.parse(JSON.stringify(base));
+}
+
 export function normalizeConfig(raw: unknown): AppConfig {
   const base = createDefaultConfig();
   if (!raw || typeof raw !== "object") return base;
@@ -151,6 +178,7 @@ export function normalizeConfig(raw: unknown): AppConfig {
     macros: Array.isArray(r.macros) ? r.macros : [],
     commands: Array.isArray(r.commands) ? r.commands : [],
     quickActions: Array.isArray(r.quickActions) ? r.quickActions : [],
+    emojiPages: normalizeEmojiPages(r.emojiPages, base.emojiPages),
     settings: normalizeSettings(base.settings, r.settings),
   };
   for (const layer of cfg.layers) {

@@ -61,6 +61,7 @@ export default {
     commands: 'Commands',
     settings: 'Settings',
     quickActions: 'Quick Actions',
+    emoji: 'Emoji',
   },
   home: {
     title: "Home",
@@ -414,6 +415,20 @@ export default {
     moveUp: 'Move up',
     moveDown: 'Move down',
   },
+  emoji: {
+    title: 'Emoji',
+    subtitle: 'Emoji pages with 15 cells each. They open in a separate window through sys:showEmojiMenu.',
+    addPage: 'Add page',
+    deletePage: 'Delete page',
+    pageLabel: 'Page name',
+    pageName: 'Emoji {n}',
+    cellLabel: 'Cell {key}',
+    customPlaceholder: 'Paste an emoji or text',
+    clearCell: 'Clear cell',
+  },
+  emojiMenu: {
+    tabHint: 'Press Tab to switch pages; Q W E R T / A S D F G / Z X C V B insert emoji',
+  },
   commands: {
     title: "Commands",
     subtitle:
@@ -692,6 +707,7 @@ export default {
     switchLayout: "Switch to layout {n}",
     taskEntry: "Activate task manager entry {n}",
     showQuickMenu: 'Show Quick Action Menu',
+    showEmojiMenu: 'Show Emoji menu',
     walkThroughWindowsAlternative: 'Walk Through Windows Alternative',
     walkThroughWindowsCurrentApp: "Walk through windows of current application",
     showClipboardHistory: "Show clipboard history",

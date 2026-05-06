@@ -2,6 +2,8 @@ import yaml from "js-yaml";
 import {
   type AppConfig,
   type Command,
+  type EmojiHotkey,
+  type EmojiPage,
   type ExtraKey,
   type Layer,
   type LayerKeymap,
@@ -10,6 +12,8 @@ import {
   type Macro,
   type MacroStep,
   type QuickAction,
+  EMOJI_HOTKEYS,
+  createDefaultEmojiPage,
 } from "~/types/config";
 
 type TranslateFn = (key: string) => string;
@@ -59,6 +63,11 @@ interface LayoutYaml {
     name?: string;
     action?: string;
     icon?: string;
+  }>;
+  emojiPages?: Array<{
+    id?: string;
+    name?: string;
+    cells?: Record<string, string | null>;
   }>;
 }
 
@@ -190,6 +199,23 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     });
   }
 
+  const emojiKeySet = new Set<string>(EMOJI_HOTKEYS);
+  const emojiPages: EmojiPage[] = [];
+  for (const page of doc.emojiPages ?? []) {
+    if (!page) continue;
+    const id = page.id?.trim() || genId("emoji_");
+    const cells: Partial<Record<EmojiHotkey, string>> = {};
+    for (const [key, value] of Object.entries(page.cells ?? {})) {
+      if (!emojiKeySet.has(key) || typeof value !== "string") continue;
+      cells[key as EmojiHotkey] = value;
+    }
+    emojiPages.push({
+      id,
+      name: page.name?.trim() || id,
+      cells,
+    });
+  }
+
   return {
     description: doc.description?.trim() || undefined,
     layers,
@@ -198,6 +224,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     macros,
     commands,
     quickActions,
+    emojiPages: emojiPages.length > 0 ? emojiPages : [createDefaultEmojiPage()],
   };
 }
 
@@ -270,6 +297,15 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       action: action.action,
       ...(action.icon ? { icon: action.icon } : {}),
     })),
+    emojiPages: (preset.emojiPages ?? []).map((page) => ({
+      id: page.id,
+      name: page.name,
+      cells: Object.fromEntries(
+        EMOJI_HOTKEYS
+          .map((key) => [key, page.cells[key]])
+          .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1] !== ""),
+      ),
+    })),
   };
   return yaml.dump(doc, { lineWidth: 100, noRefs: true });
 }
@@ -282,6 +318,7 @@ export function emptyLayoutPreset(): LayoutPreset {
     macros: [],
     commands: [],
     quickActions: [],
+    emojiPages: [],
   };
 }
 
@@ -298,6 +335,7 @@ export function extractPresetFromConfig(
     macros: JSON.parse(JSON.stringify(config.macros)),
     commands: JSON.parse(JSON.stringify(config.commands)),
     quickActions: config.quickActions ? JSON.parse(JSON.stringify(config.quickActions)) : [],
+    emojiPages: config.emojiPages ? JSON.parse(JSON.stringify(config.emojiPages)) : [createDefaultEmojiPage()],
   };
 }
 
@@ -317,6 +355,7 @@ export function applyPresetToConfig(
     macros: JSON.parse(JSON.stringify(preset.macros)),
     commands: JSON.parse(JSON.stringify(preset.commands)),
     quickActions: JSON.parse(JSON.stringify(preset.quickActions)),
+    emojiPages: JSON.parse(JSON.stringify(preset.emojiPages ?? [createDefaultEmojiPage()])),
     settings: { ...config.settings, currentLayoutId: layoutId },
   };
   for (const layer of next.layers) {
@@ -337,6 +376,7 @@ export function layoutSnapshotOf(config: AppConfig): string {
     macros: config.macros,
     commands: config.commands,
     quickActions: config.quickActions,
+    emojiPages: config.emojiPages,
   });
 }
 

@@ -17,7 +17,7 @@ onMounted(() => {
 
 <template>
   <UApp>
-    <NuxtPage v-if="route.path === '/quick-menu'" />
+    <NuxtPage v-if="route.path === '/quick-menu' || route.path === '/emoji-menu'" />
     <AppShell v-else>
       <NuxtPage />
     </AppShell>

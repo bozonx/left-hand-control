@@ -61,6 +61,7 @@ export default {
     commands: "Команды",
     settings: "Настройки",
     quickActions: "Быстрые действия",
+    emoji: "Emoji",
   },
   home: {
     title: "Главная",
@@ -415,6 +416,20 @@ export default {
     moveUp: 'Выше',
     moveDown: 'Ниже',
   },
+  emoji: {
+    title: 'Emoji',
+    subtitle: 'Страницы эмоджи по 15 ячеек. Открываются отдельным окном через sys:showEmojiMenu.',
+    addPage: 'Добавить страницу',
+    deletePage: 'Удалить страницу',
+    pageLabel: 'Название страницы',
+    pageName: 'Emoji {n}',
+    cellLabel: 'Ячейка {key}',
+    customPlaceholder: 'Вставьте эмоджи или текст',
+    clearCell: 'Очистить ячейку',
+  },
+  emojiMenu: {
+    tabHint: 'Tab листает страницы, клавиши Q W E R T / A S D F G / Z X C V B вставляют эмоджи',
+  },
   commands: {
     title: "Команды",
     subtitle:
@@ -697,6 +712,7 @@ export default {
     switchLayout: "Переключить раскладку на {n}",
     taskEntry: "Активировать запись панели задач {n}",
     showQuickMenu: 'Показать быстрое меню действий',
+    showEmojiMenu: 'Показать окно выбора emoji',
     walkThroughWindowsAlternative:
       "Переключение между окнами: альтернативный режим",
     walkThroughWindowsCurrentApp:

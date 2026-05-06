@@ -81,6 +81,9 @@ fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) ->
     if name == "showQuickMenu" {
         return Some(SysAction::TauriEvent("show_quick_menu".into()));
     }
+    if name == "showEmojiMenu" {
+        return Some(SysAction::TauriEvent("show_emoji_menu".into()));
+    }
 
     use crate::platform::linux::Desktop;
     match desktop {
@@ -347,6 +350,15 @@ mod tests {
             panic!("showQuickMenu did not resolve to a TauriEvent");
         };
         assert_eq!(event, "show_quick_menu");
+    }
+
+    #[test]
+    fn resolve_show_emoji_menu() {
+        let Some(SysAction::TauriEvent(event)) = resolve_for_desktop("showEmojiMenu", &Desktop::Kde)
+        else {
+            panic!("showEmojiMenu did not resolve to a TauriEvent");
+        };
+        assert_eq!(event, "show_emoji_menu");
     }
 
     #[test]
