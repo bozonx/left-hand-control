@@ -41,7 +41,7 @@ function setRuleKey(value: string | null) {
 }
 
 function updateHoldAction(value: string | null) {
-  rule.value.holdAction = value ?? ''
+  rule.value.holdAction = value
   if (!rule.value.holdAction) {
     rule.value.isolate = ''
   }
@@ -191,7 +191,7 @@ function updateHoldAction(value: string | null) {
               hint-visible-on="group-hover-rule"
             />
           </template>
-          <RuleActionField :model-value="rule.tapAction" ghost :placeholder="$t('rules.tapPh')" @update:model-value="(v: string | null) => { rule.tapAction = v ?? '' }" />
+          <RuleActionField :model-value="rule.tapAction" ghost :placeholder="$t('rules.tapPh')" @update:model-value="(v: string | null) => { rule.tapAction = v }" />
         </UFormField>
 
         <UFormField>
