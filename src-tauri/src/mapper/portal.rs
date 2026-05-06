@@ -14,7 +14,8 @@
 //                                 the consent dialog again.
 //   3. `Start()`                – shows the permission dialog (only once
 //                                 per machine if persist mode + token work).
-//   4. `NotifyKeyboardKeysym()` – fires X keysyms, layout-independent.
+//   4. `NotifyKeyboardKeysym()` – fires X keysyms; theoretically
+//      layout-independent but in practice compositor-dependent (see below).
 //
 // The session and its DBus connection are owned by a process-wide
 // singleton: it is created lazily on the first injection request and
@@ -26,31 +27,68 @@
 // persist it next to the user data, so subsequent app launches can
 // restore the permission silently.
 //
-// For ASCII characters the keysym equals the Unicode code point; for
-// anything outside Latin-1 we fall back to the XKB "direct unicode"
-// encoding (`0x01000000 | codepoint`). The compositor then translates the
-// keysym to the right character regardless of the user's active layout,
-// which is exactly what this module exists for.
+// Text injection strategy (to work around a KDE Plasma bug where
+// `NotifyKeyboardKeysym` looks up the physical key for the keysym in the
+// current layout but emits it without the required modifier, producing the
+// wrong character when a non-Latin layout is active):
+//
+//   1. Load the current XKB keymap and build a keysym→(keycode, level) table.
+//   2. For each character, look it up in the table and inject via
+//      `NotifyKeyboardKeycode` with the appropriate modifier keys — this is
+//      truly layout-driven and always correct for characters in the layout.
+//   3. If the character is absent from the current layout (e.g. typing `?`
+//      while Russian is active), fall back to `wl-copy` + Ctrl+V paste.
+//   4. If `wl-copy` is unavailable, fall back to `NotifyKeyboardKeysym`
+//      (original behaviour, works on compositors with correct implementations).
 
 #![cfg(target_os = "linux")]
 
 use std::collections::HashMap;
+use std::ffi::{c_char, CString};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
 
+enum XkbContext {}
+enum XkbKeymap {}
+
+#[repr(C)]
+struct XkbRuleNames {
+    rules: *const c_char,
+    model: *const c_char,
+    layout: *const c_char,
+    variant: *const c_char,
+    options: *const c_char,
+}
+
 #[link(name = "xkbcommon")]
 unsafe extern "C" {
-    // SAFETY: `xkb_utf32_to_keysym` is a pure function from `libxkbcommon`
-    // that maps a Unicode scalar value to an XKB keysym; it never dereferences
-    // a pointer argument and is safe to call from any thread.
     fn xkb_utf32_to_keysym(ucs: u32) -> u32;
+    fn xkb_context_new(flags: u32) -> *mut XkbContext;
+    fn xkb_context_unref(ctx: *mut XkbContext);
+    fn xkb_keymap_new_from_names(
+        ctx: *mut XkbContext,
+        names: *const XkbRuleNames,
+        flags: u32,
+    ) -> *mut XkbKeymap;
+    fn xkb_keymap_unref(keymap: *mut XkbKeymap);
+    fn xkb_keymap_min_keycode(keymap: *mut XkbKeymap) -> u32;
+    fn xkb_keymap_max_keycode(keymap: *mut XkbKeymap) -> u32;
+    fn xkb_keymap_num_layouts_for_key(keymap: *mut XkbKeymap, key: u32) -> u32;
+    fn xkb_keymap_num_levels_for_key(keymap: *mut XkbKeymap, key: u32, layout: u32) -> u32;
+    fn xkb_keymap_key_get_syms_by_level(
+        keymap: *mut XkbKeymap,
+        key: u32,
+        layout: u32,
+        level: u32,
+        syms_out: *mut *const u32,
+    ) -> i32;
 }
 
 // --- Portal DBus identifiers --------------------------------------------
@@ -71,6 +109,119 @@ const STATE_RELEASED: u32 = 0;
 const STATE_PRESSED: u32 = 1;
 
 const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
+
+// --- XKB keymap lookup for layout-aware text injection ------------------
+
+// evdev keycodes for modifier/paste keys used in text injection.
+const KEY_LEFTSHIFT_EVDEV: u32 = 42;
+const KEY_RIGHTALT_EVDEV: u32 = 100; // AltGr
+const KEY_LEFTCTRL_EVDEV: u32 = 29;
+const KEY_V_EVDEV: u32 = 47;
+
+// Map XKB level index to the evdev modifier keys that must be held.
+// Covers the vast majority of European layouts:
+//   level 0 = base (no mods), 1 = Shift, 2 = AltGr, 3 = Shift+AltGr.
+fn level_to_mods(level: u32) -> &'static [u32] {
+    match level {
+        0 => &[],
+        1 => &[KEY_LEFTSHIFT_EVDEV],
+        2 => &[KEY_RIGHTALT_EVDEV],
+        3 => &[KEY_LEFTSHIFT_EVDEV, KEY_RIGHTALT_EVDEV],
+        _ => &[],
+    }
+}
+
+struct KeycodeEntry {
+    evdev: u32,
+    level: u32,
+}
+
+static KEYMAP_CACHE: Mutex<Option<(String, Arc<HashMap<u32, KeycodeEntry>>)>> =
+    Mutex::new(None);
+
+fn keymap_table() -> Arc<HashMap<u32, KeycodeEntry>> {
+    let layout = crate::layout::cached_layout_short()
+        .or_else(|| std::env::var("XKB_DEFAULT_LAYOUT").ok())
+        .unwrap_or_else(|| "us".to_string());
+
+    if let Ok(mut guard) = KEYMAP_CACHE.lock() {
+        if let Some((ref k, ref t)) = *guard {
+            if *k == layout {
+                return Arc::clone(t);
+            }
+        }
+        let t = Arc::new(build_keymap_table(&layout));
+        *guard = Some((layout, Arc::clone(&t)));
+        return t;
+    }
+    Arc::new(HashMap::new())
+}
+
+fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
+    let mut map: HashMap<u32, KeycodeEntry> = HashMap::new();
+
+    let Ok(layout_c) = CString::new(layout) else {
+        return map;
+    };
+    let variant_c = std::env::var("XKB_DEFAULT_VARIANT")
+        .ok()
+        .and_then(|v| CString::new(v).ok());
+    let variant_ptr = variant_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+
+    unsafe {
+        let ctx = xkb_context_new(0);
+        if ctx.is_null() {
+            return map;
+        }
+        let names = XkbRuleNames {
+            rules: std::ptr::null(),
+            model: std::ptr::null(),
+            layout: layout_c.as_ptr(),
+            variant: variant_ptr,
+            options: std::ptr::null(),
+        };
+        let keymap = xkb_keymap_new_from_names(ctx, &names, 0);
+        xkb_context_unref(ctx);
+        if keymap.is_null() {
+            eprintln!("[portal] xkb_keymap_new_from_names({layout:?}) failed");
+            return map;
+        }
+
+        let min_kc = xkb_keymap_min_keycode(keymap);
+        let max_kc = xkb_keymap_max_keycode(keymap);
+
+        for kc in min_kc..=max_kc {
+            if xkb_keymap_num_layouts_for_key(keymap, kc) == 0 {
+                continue;
+            }
+            let nlevels = xkb_keymap_num_levels_for_key(keymap, kc, 0).min(4);
+            for level in 0..nlevels {
+                let mut syms: *const u32 = std::ptr::null();
+                let nsyms =
+                    xkb_keymap_key_get_syms_by_level(keymap, kc, 0, level, &mut syms);
+                if nsyms <= 0 || syms.is_null() {
+                    continue;
+                }
+                for i in 0..nsyms as usize {
+                    let sym = *syms.add(i);
+                    if sym == 0 {
+                        continue;
+                    }
+                    let evdev = kc.saturating_sub(8);
+                    if evdev == 0 {
+                        continue;
+                    }
+                    // Keep lowest-level entry (fewest modifiers needed).
+                    map.entry(sym).or_insert(KeycodeEntry { evdev, level });
+                }
+            }
+        }
+
+        xkb_keymap_unref(keymap);
+        eprintln!("[portal] XKB keymap {:?}: {} keysyms indexed", layout, map.len());
+        map
+    }
+}
 
 // --- Public API ---------------------------------------------------------
 
@@ -170,16 +321,105 @@ fn worker(rx: Receiver<Cmd>) {
 }
 
 fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    'outer: for ch in text.chars() {
-        let ks = keysym_for(ch);
-        let empty: HashMap<String, Value> = HashMap::new();
-        for state in [STATE_PRESSED, STATE_RELEASED] {
-            if let Err(e) =
-                portal.call_method("NotifyKeyboardKeysym", &(session, &empty, ks, state))
-            {
-                eprintln!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
-                continue 'outer;
+    let table = keymap_table();
+    let empty: HashMap<String, Value> = HashMap::new();
+    for ch in text.chars() {
+        let keysym: u32 = unsafe { xkb_utf32_to_keysym(ch as u32) };
+        if let Some(entry) = table.get(&keysym) {
+            let mods = level_to_mods(entry.level);
+            if inject_keycode_combo(portal, session, &empty, mods, entry.evdev) {
+                continue;
             }
+        }
+        if !inject_via_clipboard(portal, session, &empty, ch) {
+            inject_keysym(portal, session, &empty, keysym, ch);
+        }
+    }
+}
+
+fn inject_keycode_combo(
+    portal: &Proxy,
+    session: &OwnedObjectPath,
+    empty: &HashMap<String, Value>,
+    mods: &[u32],
+    key: u32,
+) -> bool {
+    for &m in mods {
+        if let Err(e) = portal.call_method(
+            "NotifyKeyboardKeycode",
+            &(session, empty, m, STATE_PRESSED),
+        ) {
+            eprintln!("[portal] mod keycode {m} press failed: {e}");
+            for &m2 in mods {
+                let _ = portal.call_method(
+                    "NotifyKeyboardKeycode",
+                    &(session, empty, m2, STATE_RELEASED),
+                );
+            }
+            return false;
+        }
+    }
+    let ok = portal
+        .call_method("NotifyKeyboardKeycode", &(session, empty, key, STATE_PRESSED))
+        .is_ok()
+        && portal
+            .call_method(
+                "NotifyKeyboardKeycode",
+                &(session, empty, key, STATE_RELEASED),
+            )
+            .is_ok();
+    for &m in mods.iter().rev() {
+        let _ = portal.call_method(
+            "NotifyKeyboardKeycode",
+            &(session, empty, m, STATE_RELEASED),
+        );
+    }
+    ok
+}
+
+fn inject_via_clipboard(
+    portal: &Proxy,
+    session: &OwnedObjectPath,
+    empty: &HashMap<String, Value>,
+    ch: char,
+) -> bool {
+    use std::io::Write as _;
+    use std::process::{Command, Stdio};
+
+    let mut buf = [0u8; 4];
+    let s = ch.encode_utf8(&mut buf);
+
+    let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+    if let Some(mut stdin) = child.stdin.take() {
+        let _ = stdin.write_all(s.as_bytes());
+    }
+    // Reap the child when wl-copy eventually exits (when clipboard is taken over).
+    thread::spawn(move || {
+        let _ = child.wait();
+    });
+
+    // Give the compositor time to register the new clipboard owner.
+    thread::sleep(std::time::Duration::from_millis(50));
+
+    inject_keycode_combo(portal, session, empty, &[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV)
+}
+
+fn inject_keysym(
+    portal: &Proxy,
+    session: &OwnedObjectPath,
+    empty: &HashMap<String, Value>,
+    keysym: u32,
+    ch: char,
+) {
+    for state in [STATE_PRESSED, STATE_RELEASED] {
+        if let Err(e) =
+            portal.call_method("NotifyKeyboardKeysym", &(session, empty, keysym, state))
+        {
+            eprintln!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
+            break;
         }
     }
 }
@@ -428,8 +668,3 @@ fn make_request_path(sender_escaped: &str, handle_token: &str) -> String {
     format!("/org/freedesktop/portal/desktop/request/{sender_escaped}/{handle_token}")
 }
 
-/// Map a character to its XKB keysym value. ASCII + Latin-1 are identity,
-/// everything else uses the XKB direct-unicode encoding.
-fn keysym_for(ch: char) -> i32 {
-    unsafe { xkb_utf32_to_keysym(ch as u32) as i32 }
-}
