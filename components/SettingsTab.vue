@@ -56,11 +56,7 @@ const {
       @update:process-matchers="(v) => { config.settings.gameMode.processMatchers = v }"
     />
 
-    <SystemCard
-      :config="config"
-      :platform="platform.info.value"
-      @update:config="c => config.value = c"
-    />
+    <SystemCard :platform="platform.info.value" />
 
     <ConfigPathCard
       :settings-dir="settingsDir"

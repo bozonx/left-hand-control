@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import type { AppConfig, LinuxWaylandTextMode } from '~/types/config'
 import type { PlatformInfo } from '~/types/platform'
+import type { LinuxWaylandTextMode } from '~/types/config'
 
 const props = defineProps<{
-  config: AppConfig
   platform: PlatformInfo | null
 }>()
 
-const emit = defineEmits<{
-  'update:config': [config: AppConfig]
-}>()
-
+const { config } = useConfig()
 const { t } = useI18n()
 
 const isLinuxWayland = computed(() => !!props.platform?.linux?.has_wayland)
@@ -29,15 +25,9 @@ const textModeItems = computed(() => [
 ])
 
 const textMode = computed({
-  get: () => props.config.settings.linuxWaylandTextMode ?? 'keycode',
+  get: () => config.value.settings.linuxWaylandTextMode ?? 'keycode',
   set: (value: LinuxWaylandTextMode) => {
-    emit('update:config', {
-      ...props.config,
-      settings: {
-        ...props.config.settings,
-        linuxWaylandTextMode: value,
-      },
-    })
+    config.value.settings.linuxWaylandTextMode = value
   },
 })
 </script>
@@ -63,7 +53,6 @@ const textMode = computed({
           :items="textModeItems"
           orientation="vertical"
           size="sm"
-          value-key="value"
         />
       </UFormField>
     </div>
