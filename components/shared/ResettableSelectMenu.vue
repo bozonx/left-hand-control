@@ -69,7 +69,7 @@ function updateValue(value: string | number | null | undefined) {
       :search-input="props.searchable"
       class="w-full flex-1 min-w-0"
       :ui="showGhost ? {
-        base: 'border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50',
+        base: '!border !border-dashed !border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:!border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50',
         value: 'truncate text-(--ui-text-muted)'
       } : undefined"
     >
