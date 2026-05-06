@@ -150,6 +150,11 @@ function isKeyToken(token: string) {
   return KEY_TOKENS.has(token)
 }
 
+export function isSingleKeyAction(action: string | null | undefined): boolean {
+  const raw = action ?? ''
+  return raw.length > 0 && isKeyToken(raw)
+}
+
 function isModifierToken(token: string) {
   return MOD_TOKENS.has(token)
 }

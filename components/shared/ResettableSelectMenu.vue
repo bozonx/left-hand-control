@@ -13,6 +13,8 @@ const props = withDefaults(defineProps<{
   emptyItemValue?: string | number | null
   emptyModelValue?: string | number | null
   ghost?: boolean
+  ghostActive?: boolean
+  ghostLabel?: string
 }>(), {
   modelValue: undefined,
   placeholder: '',
@@ -24,6 +26,8 @@ const props = withDefaults(defineProps<{
   emptyItemValue: undefined,
   emptyModelValue: undefined,
   ghost: false,
+  ghostActive: undefined,
+  ghostLabel: undefined,
 })
 
 const emit = defineEmits<{
@@ -31,8 +35,15 @@ const emit = defineEmits<{
 }>()
 
 const isReset = computed(() => props.modelValue === props.resetValue)
-const showGhost = computed(() => props.ghost && isReset.value)
-const ghostOpen = ref(false)
+const showGhost = computed(() => props.ghost && (props.ghostActive ?? isReset.value))
+const selectModel = computed({
+  get: () => (
+    props.emptyItemValue !== undefined && props.modelValue === props.emptyModelValue
+      ? props.emptyItemValue
+      : props.modelValue
+  ),
+  set: updateValue,
+})
 
 function reset() {
   emit('update:modelValue', props.resetValue)
@@ -49,28 +60,25 @@ function updateValue(value: string | number | null | undefined) {
 </script>
 
 <template>
-  <div class="flex items-center gap-1">
-    <template v-if="showGhost && !ghostOpen">
-      <UButton
-        variant="ghost"
-        color="neutral"
-        class="flex-1 min-w-0 h-8 px-2.5 justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50"
-        @click="ghostOpen = true"
-      >
-        <span class="truncate">{{ $t('common.notSet') }}</span>
-      </UButton>
-    </template>
-    <template v-else>
-      <USelectMenu
-        :model-value="props.modelValue"
-        :items="props.items"
-        :value-key="props.valueKey"
-        :placeholder="props.placeholder"
-        :search-input="props.searchable"
-        class="flex-1 min-w-0"
-        @update:model-value="(v: unknown) => updateValue(v as string | number | null | undefined)"
-      />
-    </template>
+  <div class="flex w-full items-center gap-1">
+    <USelectMenu
+      v-model="selectModel"
+      :items="props.items"
+      :value-key="props.valueKey"
+      :placeholder="props.placeholder"
+      :search-input="props.searchable"
+      class="w-full flex-1 min-w-0"
+      :ui="showGhost ? {
+        base: 'border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50',
+        value: 'truncate text-(--ui-text-muted)'
+      } : undefined"
+    >
+      <template v-if="showGhost" #default>
+        <span class="truncate text-(--ui-text-muted)">
+          {{ props.ghostLabel ?? $t('common.notSet') }}
+        </span>
+      </template>
+    </USelectMenu>
     <FieldResetButton
       v-if="props.clearable && !isReset"
       :label="props.resetAriaLabel || $t('common.reset')"

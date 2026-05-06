@@ -12,6 +12,7 @@ const props = defineProps<{
   activeCategory: string
   filteredItems: ActionItem[]
   keyOnly?: boolean
+  singleKeyOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -94,6 +95,7 @@ function buildChord(keys: Set<string>): string {
 
 function buildCaptureValue(keys: Set<string>): string {
   const codes = [...keys]
+  if (props.singleKeyOnly) return codes.at(-1) ?? ''
   if (codes.length === 1 && isModifierCode(codes[0]!)) return codes[0]!
   return buildChord(keys)
 }

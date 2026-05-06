@@ -22,7 +22,6 @@ const { config } = useConfig()
 const pickerOpen = ref(false)
 const pickerValue = ref('')
 const pendingMode = ref<ModeKind | null>(null)
-const ghostOpen = ref(false)
 
 const modeItems = computed(() => {
   if (props.modeKind === 'hold') {
@@ -97,8 +96,8 @@ function cancelAction() {
 </script>
 
 <template>
-  <div class="space-y-1.5">
-    <div v-if="currentMode === 'action'" class="flex items-center gap-1">
+  <div class="w-full space-y-1.5">
+    <div v-if="currentMode === 'action'" class="flex w-full items-center gap-1">
       <button
         type="button"
         class="flex-1 min-w-0 h-8 px-2.5 flex items-center gap-2 rounded-md border border-(--ui-border) bg-(--ui-bg) hover:bg-(--ui-bg-elevated) text-left text-sm transition-colors"
@@ -112,16 +111,6 @@ function cancelAction() {
       </button>
       <FieldResetButton :label="$t('common.reset')" @click="resetToDefault" />
     </div>
-    <template v-else-if="showGhost && !ghostOpen">
-      <UButton
-        variant="ghost"
-        color="neutral"
-        class="flex-1 min-w-0 h-8 px-2.5 justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50"
-        @click="ghostOpen = true"
-      >
-        <span class="truncate">{{ $t('common.notSet') }}</span>
-      </UButton>
-    </template>
     <ResettableSelectMenu
       v-else
       v-model="selectMode"
@@ -129,6 +118,9 @@ function cancelAction() {
       value-key="value"
       :reset-value="'native'"
       :searchable="false"
+      :ghost="props.ghost"
+      :ghost-active="showGhost"
+      :clearable="false"
     />
     <ActionPickerModal
       v-model="pickerValue"

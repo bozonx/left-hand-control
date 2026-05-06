@@ -71,6 +71,7 @@ function updateHoldAction(value: string | null) {
           <ActionPickerModal
             v-model="rule.key"
             key-only
+            single-key-only
             :invalid="!!keyError"
             :placeholder="$t('rules.keyPh')"
             @update:model-value="setRuleKey"

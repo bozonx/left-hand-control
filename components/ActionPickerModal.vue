@@ -2,7 +2,7 @@
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import { parseTextAction } from '~/types/config'
-import { isCanonicalAction, normalizeActionValue } from '~/utils/actionSyntax'
+import { isCanonicalAction, isSingleKeyAction, normalizeActionValue } from '~/utils/actionSyntax'
 import { validateActionValue } from '~/utils/actionValidation'
 
 const props = withDefaults(defineProps<{
@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
   invalid?: boolean
   excludedMacroId?: string
   ghost?: boolean
+  singleKeyOnly?: boolean
 }>(), {
   allowMacros: true,
   placeholder: undefined,
@@ -60,6 +61,7 @@ const normalizedDraft = computed(() => {
   return parseTextAction(raw) !== null ? raw : raw.trim()
 })
 const draftIssue = computed(() => {
+  if (props.singleKeyOnly && !isSingleKeyAction(normalizedDraft.value)) return 'invalidSyntax'
   if (!isCanonicalAction(normalizedDraft.value)) return 'invalidSyntax'
   return validateActionValue(normalizedDraft.value, config.value, {
     allowMacros: props.allowMacros,
@@ -99,6 +101,7 @@ function openModal() {
 function apply() {
   const next = normalizeActionValue(draft.value, props.requireValue)
   if (next === null) return
+  if (props.singleKeyOnly && !isSingleKeyAction(next)) return
   model.value = next
   closeReason.value = 'apply'
   modalOpen.value = false
@@ -108,6 +111,7 @@ function pickAndApply(value: string) {
   draft.value = value
   const next = normalizeActionValue(value, props.requireValue)
   if (next === null) return
+  if (props.singleKeyOnly && !isSingleKeyAction(next)) return
   model.value = next
   closeReason.value = 'apply'
   modalOpen.value = false
@@ -197,6 +201,7 @@ function cancel() {
         <ActionPickerBody
           v-model="draft"
           :key-only="keyOnly"
+          :single-key-only="singleKeyOnly"
           :allow-macros="allowMacros"
           :excluded-macro-id="excludedMacroId"
           spacious

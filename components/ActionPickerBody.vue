@@ -16,6 +16,7 @@ const props = withDefaults(defineProps<{
   spacious?: boolean
   excludedMacroId?: string
   allowMacros?: boolean
+  singleKeyOnly?: boolean
 }>(), {
   allowMacros: true,
   excludedMacroId: undefined,
@@ -146,6 +147,7 @@ function pickItem(item: ActionItem) {
       :active-category="activeCategory"
       :filtered-items="filteredItems"
       :key-only="props.keyOnly"
+      :single-key-only="props.singleKeyOnly"
       @pick="pickValue"
     />
 
