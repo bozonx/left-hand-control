@@ -3,72 +3,76 @@ import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { invoke } from '@tauri-apps/api/core'
 import { useConfig } from '~/composables/useConfig'
+import type { QuickAction } from '~/types/config'
 
 const appWindow = getCurrentWindow()
 const { config, load } = useConfig()
 
 const actions = computed(() => config.value.quickActions || [])
+const runnableActions = computed(() => actions.value.filter((action): action is QuickAction => !!action.action.trim()))
+let unlistenShow: (() => void) | null = null
+let unlistenFocus: (() => void) | null = null
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    void appWindow.hide()
+  }
+}
 
 onMounted(async () => {
-  // Ensure config is loaded in this window too
   await load()
 
-  // Listen for the show event from Rust mapper
-  await listen('show_quick_menu', async () => {
-    // Refresh config to get latest actions
+  unlistenShow = await listen('show_quick_menu', async () => {
     await load()
+    await appWindow.center()
     await appWindow.show()
     await appWindow.setFocus()
   })
 
-  // Hide on Escape
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      void appWindow.hide()
-    }
-  })
+  window.addEventListener('keydown', onKeydown)
 
-  // Hide on focus loss
-  await appWindow.onFocusChanged(({ isFocused }) => {
+  unlistenFocus = await appWindow.onFocusChanged(({ isFocused }) => {
     if (!isFocused) {
       void appWindow.hide()
     }
   })
 })
 
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  unlistenShow?.()
+  unlistenFocus?.()
+})
+
 async function runAction(action: string) {
+  await appWindow.hide()
   try {
     await invoke('execute_action', { action })
   } catch (e) {
     console.error('Failed to execute action:', e)
-  } finally {
-    await appWindow.hide()
   }
 }
 </script>
 
 <template>
-  <div class="h-screen w-screen flex items-center justify-center bg-transparent overflow-hidden select-none p-4">
-    <div 
-      class="bg-(--ui-bg-elevated)/90 backdrop-blur-md border border-(--ui-border) rounded-2xl shadow-2xl p-6 min-w-[300px] max-w-[600px] max-h-[90vh] overflow-y-auto custom-scrollbar"
+  <div class="flex h-screen w-screen select-none items-center justify-center overflow-hidden bg-transparent p-4">
+    <div
+      class="max-h-[90vh] w-full max-w-[420px] overflow-y-auto rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated)/95 p-2 shadow-2xl backdrop-blur-md custom-scrollbar"
     >
-      <div v-if="actions.length === 0" class="text-center p-8">
-        <UIcon name="i-lucide-zap-off" class="w-12 h-12 text-(--ui-text-muted) mb-4 opacity-50 mx-auto" />
+      <div v-if="runnableActions.length === 0" class="p-8 text-center">
         <p class="text-(--ui-text-muted)">{{ $t('quickActions.empty') }}</p>
       </div>
 
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div v-else class="flex flex-col gap-1">
         <button
-          v-for="action in actions"
+          v-for="action in runnableActions"
           :key="action.id"
-          class="flex flex-col items-center justify-center p-4 rounded-xl bg-(--ui-bg) hover:bg-primary/10 border border-(--ui-border-muted) hover:border-primary transition-all group gap-2"
+          type="button"
+          class="flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-(--ui-bg-accented)"
           @click="runAction(action.action)"
         >
-          <UIcon 
-            :name="action.icon || 'i-lucide-zap'" 
-            class="w-8 h-8 text-(--ui-text-muted) group-hover:text-primary transition-colors"
-          />
-          <span class="text-xs font-semibold text-center truncate w-full px-1">
+          <UIcon name="i-lucide-zap" class="h-4 w-4 shrink-0 text-(--ui-text-muted)" />
+          <span class="min-w-0 flex-1 truncate text-sm font-medium">
             {{ action.name }}
           </span>
         </button>

@@ -1,5 +1,5 @@
 use crate::gamemode::get_gamemode_status;
-use tauri::{Manager, RunEvent, WindowEvent};
+use tauri::{Listener, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 mod active_window;
 mod gamemode;
@@ -211,6 +211,33 @@ fn execute_action(action: String) -> Result<(), String> {
     mapper::execute_action(action)
 }
 
+fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
+    let window = if let Some(window) = app.get_webview_window("quick-menu") {
+        window
+    } else {
+        WebviewWindowBuilder::new(app, "quick-menu", WebviewUrl::App("quick-menu".into()))
+            .title("Quick Actions")
+            .inner_size(420.0, 520.0)
+            .min_inner_size(320.0, 120.0)
+            .resizable(false)
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .focused(true)
+            .center()
+            .visible(false)
+            .build()
+            .map_err(|e| format!("create quick menu window: {e}"))?
+    };
+    window.center().map_err(|e| format!("center quick menu: {e}"))?;
+    window.show().map_err(|e| format!("show quick menu: {e}"))?;
+    window
+        .set_focus()
+        .map_err(|e| format!("focus quick menu: {e}"))?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
@@ -224,6 +251,18 @@ pub fn run() {
             layout::start_watcher(app.handle().clone());
             gamemode::start_watcher(app.handle().clone());
             active_window::start_watcher(app.handle().clone());
+            let quick_menu_app = app.handle().clone();
+            app.listen("show_quick_menu", move |_| {
+                let app = quick_menu_app.clone();
+                let app_for_thread = app.clone();
+                if let Err(e) = app.run_on_main_thread(move || {
+                    if let Err(e) = show_quick_menu_window(&app_for_thread) {
+                        eprintln!("[quick-menu] {e}");
+                    }
+                }) {
+                    eprintln!("[quick-menu] schedule show failed: {e}");
+                }
+            });
             if let Some(window) = app.get_webview_window("main") {
                 window_state::restore(&window);
                 let _ = window.show();

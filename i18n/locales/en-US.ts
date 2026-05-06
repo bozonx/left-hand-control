@@ -402,7 +402,7 @@ export default {
   },
   quickActions: {
     title: 'Quick Actions',
-    subtitle: 'A grid of customizable actions that appears at the center of the screen when triggered by the sys:showQuickMenu action.',
+    subtitle: 'A vertical menu of layout actions shown in a centered quick window by sys:showQuickMenu.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
     defaultName: 'New action',
@@ -411,10 +411,8 @@ export default {
     actionLabel: 'Action',
     actionPh: 'Choose an action',
     deleteAction: 'Delete action',
-    moveUp: 'Move left',
-    moveDown: 'Move right',
-    iconLabel: 'Icon (Optional)',
-    iconPh: 'e.g. i-lucide-play',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
   },
   commands: {
     title: "Commands",

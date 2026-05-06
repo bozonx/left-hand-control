@@ -7,12 +7,13 @@ const { config } = useConfig()
 const { t } = useI18n()
 
 const actions = computed(() => config.value.quickActions || [])
+const pickerValue = ref<string | null>('')
 
-function addAction() {
+function appendAction(action: string) {
   const newAction: QuickAction = {
     id: crypto.randomUUID(),
     name: t('quickActions.defaultName'),
-    action: '',
+    action,
   }
   if (!config.value.quickActions) {
     config.value.quickActions = [newAction]
@@ -41,25 +42,37 @@ function moveAction(index: number, delta: number) {
 const pickerState = ref<{
   isOpen: boolean
   index: number | null
-  currentValue: string
 }>({
   isOpen: false,
   index: null,
-  currentValue: '',
 })
 
-function openPicker(index: number, currentValue: string) {
+function addAction() {
+  pickerValue.value = ''
   pickerState.value = {
     isOpen: true,
-    index,
-    currentValue,
+    index: null,
   }
 }
 
-function onPickerSelect(value: string | null) {
-  if (pickerState.value.index !== null && config.value.quickActions) {
-    config.value.quickActions[pickerState.value.index].action = value || ''
+function openPicker(index: number, currentValue: string) {
+  pickerValue.value = currentValue
+  pickerState.value = {
+    isOpen: true,
+    index,
   }
+}
+
+function onPickerApply(value: string) {
+  if (pickerState.value.index === null) {
+    appendAction(value)
+  } else if (config.value.quickActions) {
+    config.value.quickActions[pickerState.value.index].action = value
+  }
+  pickerState.value.isOpen = false
+}
+
+function onPickerCancel() {
   pickerState.value.isOpen = false
 }
 </script>
@@ -111,9 +124,12 @@ function onPickerSelect(value: string | null) {
     </UCard>
 
     <ActionPickerModal
+      v-model="pickerValue"
       v-model:open="pickerState.isOpen"
-      :current-value="pickerState.currentValue"
-      @select="onPickerSelect"
+      hide-trigger
+      require-value
+      @apply="onPickerApply"
+      @cancel="onPickerCancel"
     />
   </div>
 </template>

@@ -403,7 +403,7 @@ export default {
   },
   quickActions: {
     title: 'Быстрые действия',
-    subtitle: 'Сетка настраиваемых действий, которая появляется по центру экрана при вызове действия sys:showQuickMenu.',
+    subtitle: 'Вертикальное меню действий текущей раскладки, которое открывается отдельным окном по sys:showQuickMenu.',
     empty: 'Пока нет быстрых действий. Добавьте первое, чтобы оно появилось в меню.',
     addBtn: 'Добавить действие',
     defaultName: 'Новое действие',
@@ -412,10 +412,8 @@ export default {
     actionLabel: 'Действие',
     actionPh: 'Выберите действие',
     deleteAction: 'Удалить',
-    moveUp: 'Влево',
-    moveDown: 'Вправо',
-    iconLabel: 'Иконка (необязательно)',
-    iconPh: 'Например: i-lucide-play',
+    moveUp: 'Выше',
+    moveDown: 'Ниже',
   },
   commands: {
     title: "Команды",
