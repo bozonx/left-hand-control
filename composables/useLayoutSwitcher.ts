@@ -8,7 +8,8 @@
 
 import { pickActiveLayout } from '~/utils/layoutAutoSwitch'
 
-const activeAutoLayoutId = ref<string | undefined>(undefined)
+// undefined = not yet evaluated (startup); null = evaluated, no match (passthrough); string = active layout id
+const activeAutoLayoutId = ref<string | null | undefined>(undefined)
 
 let started = false
 let scope: ReturnType<typeof effectScope> | null = null
@@ -41,7 +42,7 @@ export function useLayoutSwitcher() {
         activeWindowAppId: activeWindow.state.value?.appId ?? null,
       })
 
-      activeAutoLayoutId.value = target ?? undefined
+      activeAutoLayoutId.value = target
     }
 
     // React to mode flip / order / conditions / system layout / game mode / window.

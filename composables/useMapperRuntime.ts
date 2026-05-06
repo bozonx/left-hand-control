@@ -25,6 +25,12 @@ export function useMapperRuntime(
       ? activeAutoLayoutId?.value
       : settings.manualActiveLayoutId
 
+    // undefined in auto mode means the switcher hasn't run yet — keep current config
+    // rather than wiping layers with an empty preset.
+    if (settings.layoutMode === 'auto' && activeId === undefined) {
+      return config.value
+    }
+
     if (activeId === settings.currentLayoutId) {
       return config.value
     }
@@ -37,7 +43,7 @@ export function useMapperRuntime(
       }
       if (loaded) preset = loaded
     }
-    return applyPresetToConfig(config.value, preset, activeId)
+    return applyPresetToConfig(config.value, preset, activeId ?? undefined)
   }
 
   const runtimeSnapshot = async () => {
