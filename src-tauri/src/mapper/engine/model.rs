@@ -1,4 +1,5 @@
 use super::super::action::{Keystroke, MacroStepItem};
+use super::super::config::GameModeCondition;
 use super::super::system::{SysAction, SysCommand};
 use evdev::Key;
 use std::time::{Duration, Instant};
@@ -45,7 +46,7 @@ pub(super) struct RuleEntry {
     pub(super) double_tap: Option<ActionDef>,
     pub(super) hold_timeout: Duration,
     pub(super) double_tap_window: Duration,
-    pub(super) condition_game_mode: Option<String>,
+    pub(super) condition_game_mode: Option<GameModeCondition>,
     pub(super) condition_layouts: Option<Vec<String>>,
     pub(super) condition_apps_whitelist: Option<Vec<String>>,
     pub(super) condition_apps_blacklist: Option<Vec<String>>,

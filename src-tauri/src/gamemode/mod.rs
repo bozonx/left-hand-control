@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -35,6 +35,8 @@ static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
 static CACHED_GAMEMODE_ACTIVE: AtomicBool = AtomicBool::new(false);
 static CACHED_GAMEMODE_DETECTION_ENABLED: AtomicBool = AtomicBool::new(true);
 static CACHED_SETTINGS: Mutex<Option<GameModeSettings>> = Mutex::new(None);
+// Full status (including method string) cached for get_gamemode_status.
+static CACHED_STATUS_FULL: OnceLock<Mutex<GameModeStatus>> = OnceLock::new();
 
 pub fn cached_status_active() -> bool {
     CACHED_GAMEMODE_ACTIVE.load(Ordering::SeqCst)
@@ -53,10 +55,22 @@ pub fn set_cached_for_test(active: bool, detection_enabled: bool) {
 fn store_cached_status(status: &GameModeStatus) {
     CACHED_GAMEMODE_ACTIVE.store(status.active, Ordering::SeqCst);
     CACHED_GAMEMODE_DETECTION_ENABLED.store(status.detection_enabled, Ordering::SeqCst);
+    let mutex = CACHED_STATUS_FULL.get_or_init(|| Mutex::new(GameModeStatus::default()));
+    if let Ok(mut guard) = mutex.lock() {
+        *guard = status.clone();
+    }
 }
 
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
+}
+
+fn cached_status_full() -> GameModeStatus {
+    CACHED_STATUS_FULL
+        .get_or_init(|| Mutex::new(GameModeStatus::default()))
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or_default()
 }
 
 pub fn update_settings_from_config_json(raw: &str) {
@@ -71,17 +85,10 @@ fn watcher_stop_requested() -> bool {
     WATCHER_STOP.load(Ordering::SeqCst)
 }
 
-fn get_current_time() -> String {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default();
-    format!("{}.{:03}", now.as_secs(), now.subsec_millis())
-}
-
 pub fn start_watcher(app: AppHandle) {
     WATCHER_STOP.store(false, Ordering::SeqCst);
 
-    let _ = thread::Builder::new()
+    if let Err(e) = thread::Builder::new()
         .name("gamemode-watcher".into())
         .spawn(move || {
             let mut last_status = GameModeStatus::default();
@@ -91,13 +98,10 @@ pub fn start_watcher(app: AppHandle) {
                 store_cached_status(&status);
 
                 if status != last_status {
-                    let time_str = get_current_time();
-                    let trigger = status.method.as_deref().unwrap_or("none");
                     eprintln!(
-                        "[gamemode debug] [{}] State changed: {} (Trigger: {})",
-                        time_str,
-                        if status.active { "ACTIVE" } else { "INACTIVE" },
-                        trigger
+                        "[gamemode] state changed: {} (method: {})",
+                        if status.active { "active" } else { "inactive" },
+                        status.method.as_deref().unwrap_or("none"),
                     );
 
                     if let Err(e) = app.emit("game-mode-changed", status.clone()) {
@@ -108,7 +112,10 @@ pub fn start_watcher(app: AppHandle) {
 
                 thread::sleep(Duration::from_millis(200));
             }
-        });
+        })
+    {
+        eprintln!("[gamemode] watcher thread spawn failed: {e}");
+    }
 }
 
 fn check_gamemode(app: &AppHandle) -> GameModeStatus {
@@ -187,10 +194,10 @@ fn check_gamemode(app: &AppHandle) -> GameModeStatus {
 }
 
 #[tauri::command]
-pub fn get_gamemode_status(app: AppHandle) -> Result<GameModeStatus, String> {
-    let status = check_gamemode(&app);
-    store_cached_status(&status);
-    Ok(status)
+pub fn get_gamemode_status() -> Result<GameModeStatus, String> {
+    // Return the watcher's cached status immediately; the watcher thread
+    // keeps it fresh on its 200ms cycle without blocking this call.
+    Ok(cached_status_full())
 }
 
 fn load_game_mode_settings(app: &AppHandle) -> GameModeSettings {
@@ -208,7 +215,12 @@ fn load_game_mode_settings(app: &AppHandle) -> GameModeSettings {
     if raw.trim().is_empty() {
         return GameModeSettings::default();
     }
-    parse_game_mode_settings(&raw).unwrap_or_default()
+    let settings = parse_game_mode_settings(&raw).unwrap_or_default();
+    // Populate the cache so subsequent watcher cycles skip the disk read.
+    if let Ok(mut guard) = CACHED_SETTINGS.lock() {
+        *guard = Some(settings.clone());
+    }
+    settings
 }
 
 fn parse_game_mode_settings(raw: &str) -> Option<GameModeSettings> {

@@ -48,6 +48,7 @@ mod model;
 pub use self::model::Out;
 use self::model::{ActionDef, HoldMode, LayerTrigger, Pending, Phase, RuleEntry, TapMode};
 use super::action::Keystroke;
+use super::config::GameModeCondition;
 use super::system::SysCommand;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
@@ -848,8 +849,8 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
 fn rule_passes_conditions(rule: &RuleEntry) -> bool {
     let has_gm_cond = rule
         .condition_game_mode
-        .as_deref()
-        .is_some_and(|m| m != "ignore" && !m.is_empty());
+        .as_ref()
+        .is_some_and(|m| *m != GameModeCondition::Ignore);
     let has_layout_cond = rule
         .condition_layouts
         .as_ref()
@@ -863,9 +864,9 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
             return false;
         }
         let gm_active = crate::gamemode::cached_status_active();
-        if !match rule.condition_game_mode.as_deref() {
-            Some("on") => gm_active,
-            Some("off") => !gm_active,
+        if !match rule.condition_game_mode {
+            Some(GameModeCondition::On) => gm_active,
+            Some(GameModeCondition::Off) => !gm_active,
             _ => false,
         } {
             return false;
@@ -1345,7 +1346,7 @@ mod tests {
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
-            condition_game_mode: Some("on".into()),
+            condition_game_mode: Some(GameModeCondition::On),
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
@@ -1375,7 +1376,7 @@ mod tests {
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
-            condition_game_mode: Some("on".into()),
+            condition_game_mode: Some(GameModeCondition::On),
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,

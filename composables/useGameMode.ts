@@ -26,6 +26,7 @@ async function doInit() {
     const tauri = await useTauri()
     if (!tauri) {
       _inited = false
+      _initPromise = null
       return
     }
     const res = await tauri.invoke<GameModeStatus>('get_gamemode_status')
@@ -38,11 +39,13 @@ async function doInit() {
     if (_consumerCount === 0) {
       unlisten()
       _inited = false
+      _initPromise = null
       return
     }
     _unlisten = unlisten
   } catch (e) {
     _inited = false
+    _initPromise = null
     logger.error('Failed to init gamemode', e)
   }
 }
@@ -56,6 +59,7 @@ export function useGameMode() {
     _unlisten?.()
     _unlisten = null
     _inited = false
+    _initPromise = null
   })
   return {
     status: readonly(_status),

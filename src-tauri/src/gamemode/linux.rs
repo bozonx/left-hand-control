@@ -5,13 +5,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mapper::config::{GameModeProcessMatchMode, GameModeProcessMatcher};
-use crate::platform::linux::{Desktop, SessionType};
+use crate::platform::linux::{Desktop, Session, SessionType};
 
 pub static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 
-/// Run a command with a timeout. If the timeout expires the child is killed
-/// via `Child::kill()` so the caller does not block indefinitely and we avoid
-/// PID-reuse risks of `kill -9 <pid>`.
+/// Run a command with a timeout. The timeout thread sends SIGKILL to the child
+/// process if it has not yet exited. The `done` flag prevents a kill after the
+/// process has already been reaped and its PID potentially recycled.
 fn run_cmd_with_timeout(cmd: &mut Command, timeout_ms: u64) -> Option<std::process::Output> {
     let child = cmd
         .stdout(Stdio::piped())
@@ -19,23 +19,22 @@ fn run_cmd_with_timeout(cmd: &mut Command, timeout_ms: u64) -> Option<std::proce
         .spawn()
         .ok()?;
 
-    let child_arc = Arc::new(std::sync::Mutex::new(Some(child)));
-    let child_for_timeout = Arc::clone(&child_arc);
+    let pid = child.id() as libc::pid_t;
+    let done = Arc::new(AtomicBool::new(false));
+    let done_clone = Arc::clone(&done);
 
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(timeout_ms));
-        if let Ok(mut guard) = child_for_timeout.lock() {
-            if let Some(mut c) = guard.take() {
-                let _ = c.kill();
-            }
+        // Only kill if wait_with_output hasn't returned yet. While
+        // wait_with_output is blocked the process is still alive (or a
+        // zombie whose PID cannot be recycled), so the kill is safe.
+        if !done_clone.load(Ordering::SeqCst) {
+            unsafe { libc::kill(pid, libc::SIGKILL) };
         }
     });
 
-    let output = {
-        let mut guard = child_arc.lock().ok()?;
-        let child = guard.take()?;
-        child.wait_with_output().ok()
-    };
+    let output = child.wait_with_output().ok();
+    done.store(true, Ordering::SeqCst);
     output
 }
 
@@ -110,27 +109,22 @@ fn running_process_names() -> HashSet<String> {
         if !comm.is_empty() {
             names.insert(comm);
         }
+        // Only add the basename of the executable (first cmdline entry), not
+        // flags or paths from other arguments — those cause false positives.
         if let Ok(cmdline) = std::fs::read(path.join("cmdline")) {
-            let args: Vec<String> = cmdline
+            if let Some(exe) = cmdline
                 .split(|b| *b == 0)
-                .filter(|part| !part.is_empty())
-                .map(|part| String::from_utf8_lossy(part).into_owned())
-                .collect();
-            for arg in &args {
-                let arg_lower = arg.trim().to_lowercase();
-                if !arg_lower.is_empty() {
-                    names.insert(arg_lower);
-                }
-            }
-            if let Some(first) = args.first().and_then(|arg| {
-                std::path::Path::new(arg)
-                    .file_name()
-                    .and_then(|name| name.to_str())
-            }) {
-                let first_lower = first.trim().to_lowercase();
-                if !first_lower.is_empty() {
-                    names.insert(first_lower);
-                }
+                .next()
+                .filter(|p| !p.is_empty())
+                .and_then(|p| {
+                    std::path::Path::new(&*String::from_utf8_lossy(p))
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|s| s.trim().to_lowercase())
+                })
+                .filter(|s| !s.is_empty())
+            {
+                names.insert(exe);
             }
         }
     }
@@ -153,13 +147,12 @@ pub fn is_fullscreen_active() -> bool {
     let session = crate::platform::linux::detect();
     match session.session_type {
         SessionType::X11 => is_x11_fullscreen_active(),
-        SessionType::Wayland => is_wayland_fullscreen_active(),
+        SessionType::Wayland => is_wayland_fullscreen_active(&session),
         SessionType::Tty | SessionType::Unknown => false,
     }
 }
 
-fn is_wayland_fullscreen_active() -> bool {
-    let session = crate::platform::linux::detect();
+fn is_wayland_fullscreen_active(session: &Session) -> bool {
     match session.desktop {
         Desktop::Kde => is_kde_wayland_fullscreen_active(),
         Desktop::Hyprland => is_hyprland_fullscreen_active(),

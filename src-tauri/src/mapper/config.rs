@@ -109,7 +109,7 @@ pub struct Rule {
     #[serde(default = "default_true")]
     pub enabled: bool,
     #[serde(default)]
-    pub condition_game_mode: Option<String>,
+    pub condition_game_mode: Option<GameModeCondition>,
     #[serde(default)]
     pub condition_layouts: Option<Vec<String>>,
     #[serde(default)]
@@ -216,6 +216,17 @@ pub enum GameModeProcessMatchMode {
     Exact,
     #[default]
     Substring,
+}
+
+/// Three-valued condition on game-mode state for a rule.
+/// `Ignore` (the default when the field is absent) means the rule always
+/// fires regardless of game-mode state.
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum GameModeCondition {
+    On,
+    Off,
+    Ignore,
 }
 
 fn default_true() -> bool {
