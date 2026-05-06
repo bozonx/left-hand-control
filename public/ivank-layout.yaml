@@ -18,7 +18,7 @@ layers:
       BracketRight: null
       Backslash: null
 
-      # KeyA:
+      KeyA: sys:showEmojiMenu
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
       KeyF: PageDown

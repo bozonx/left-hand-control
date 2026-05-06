@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 pub fn resolve_storage_paths(app: &tauri::AppHandle) -> Result<StoragePaths, String> {
+    #[cfg(debug_assertions)]
     if let Ok(dev_dir) = std::env::var("VITE_LHC_DEV_DIR") {
         let path = PathBuf::from(dev_dir);
         let base = if path.is_absolute() {

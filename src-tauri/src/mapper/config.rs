@@ -186,7 +186,7 @@ pub struct CommandTrustEntry {
     pub trusted_at: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct GameModeSettings {
     #[serde(default)]
@@ -216,16 +216,6 @@ pub enum GameModeProcessMatchMode {
     Exact,
     #[default]
     Substring,
-}
-
-impl Default for GameModeSettings {
-    fn default() -> Self {
-        Self {
-            use_gamemoded: false,
-            use_fullscreen: false,
-            process_matchers: Vec::new(),
-        }
-    }
 }
 
 fn default_true() -> bool {
@@ -417,6 +407,9 @@ mod tests {
             },
         ];
         let fp = command_fingerprint(&commands);
-        assert_eq!(fp, "0ab77369", "command_fingerprint changed — update the TS side too");
+        assert_eq!(
+            fp, "0ab77369",
+            "command_fingerprint changed — update the TS side too"
+        );
     }
 }

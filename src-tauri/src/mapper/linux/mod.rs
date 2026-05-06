@@ -80,7 +80,10 @@ pub fn spawn(
     cfg: AppConfig,
 ) -> Result<Handle, String> {
     super::portal::set_text_mode(
-        cfg.settings.linux_wayland_text_mode.as_deref().unwrap_or("keycode"),
+        cfg.settings
+            .linux_wayland_text_mode
+            .as_deref()
+            .unwrap_or("keycode"),
     );
     #[cfg(debug_assertions)]
     {
@@ -102,8 +105,6 @@ pub fn spawn(
         }
     }
 
-    let _ = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
-
     let stop = Arc::new(AtomicBool::new(false));
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let stop_thread = stop.clone();
@@ -114,11 +115,37 @@ pub fn spawn(
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
-            if let Err(e) = run(device_path, mouse_path, cfg, stop_thread, ready_tx, control_rx) {
-                eprintln!("[mapper] run_loop error: {e}");
-                match err_thread.lock() {
-                    Ok(mut slot) => *slot = Some(e),
-                    Err(pe) => eprintln!("[mapper] error slot lock poisoned, error lost: {pe}"),
+            use std::panic::catch_unwind;
+            let result = catch_unwind(std::panic::AssertUnwindSafe(|| {
+                run(
+                    device_path,
+                    mouse_path,
+                    cfg,
+                    stop_thread,
+                    ready_tx,
+                    control_rx,
+                )
+            }));
+            match result {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => {
+                    eprintln!("[mapper] run_loop error: {e}");
+                    if let Ok(mut slot) = err_thread.lock() {
+                        *slot = Some(e);
+                    }
+                }
+                Err(panic_info) => {
+                    let msg = if let Some(s) = panic_info.downcast_ref::<String>() {
+                        s.clone()
+                    } else if let Some(s) = panic_info.downcast_ref::<&str>() {
+                        s.to_string()
+                    } else {
+                        "mapper thread panicked".to_string()
+                    };
+                    eprintln!("[mapper] {msg}");
+                    if let Ok(mut slot) = err_thread.lock() {
+                        *slot = Some(msg);
+                    }
                 }
             }
         })
@@ -133,11 +160,19 @@ pub fn spawn(
         Err(mpsc::RecvTimeoutError::Timeout) => {
             stop.store(true, Ordering::SeqCst);
             let _ = join.join();
-            return Err("mapper start timed out".into());
+            let err_msg = "mapper start timed out";
+            if let Ok(mut slot) = error.lock() {
+                *slot = Some(err_msg.into());
+            }
+            return Err(err_msg.into());
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => {
             let _ = join.join();
-            return Err("mapper worker exited before reporting readiness".into());
+            let err_msg = "mapper worker exited before reporting readiness";
+            if let Ok(mut slot) = error.lock() {
+                *slot = Some(err_msg.into());
+            }
+            return Err(err_msg.into());
         }
     }
 
@@ -199,36 +234,43 @@ fn run_loop<D: LoopDriver>(
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
 
-    while !stop.load(Ordering::SeqCst) {
-        while let Ok(ctrl) = control_rx.try_recv() {
-            match ctrl {
-                MapperControl::Config(next_cfg) => {
-                    let next_cfg = *next_cfg;
-                    eprintln!(
-                        "[mapper] live config update: rules={} layers={}",
-                        next_cfg.rules.len(),
-                        next_cfg.layer_keymaps.len()
-                    );
-                    super::portal::set_text_mode(
-                        next_cfg.settings.linux_wayland_text_mode.as_deref().unwrap_or("keycode"),
-                    );
-                    engine.shutdown(&mut out_buf);
-                    flush_out(&mut virt, &mut out_buf)?;
-                    engine = Engine::new(&next_cfg);
-                }
-                MapperControl::Execute(action) => {
-                    eprintln!("[mapper] remote execute: {action:?}");
-                    engine.execute_remote(&action, &mut out_buf);
-                    flush_out(&mut virt, &mut out_buf)?;
+    let result = (|| {
+        while !stop.load(Ordering::SeqCst) {
+            while let Ok(ctrl) = control_rx.try_recv() {
+                match ctrl {
+                    MapperControl::Config(next_cfg) => {
+                        let next_cfg = *next_cfg;
+                        eprintln!(
+                            "[mapper] live config update: rules={} layers={}",
+                            next_cfg.rules.len(),
+                            next_cfg.layer_keymaps.len()
+                        );
+                        super::portal::set_text_mode(
+                            next_cfg
+                                .settings
+                                .linux_wayland_text_mode
+                                .as_deref()
+                                .unwrap_or("keycode"),
+                        );
+                        engine.shutdown(&mut out_buf);
+                        flush_out(&mut virt, &mut out_buf)?;
+                        engine = Engine::new(&next_cfg);
+                    }
+                    MapperControl::Execute(action) => {
+                        eprintln!("[mapper] remote execute: {action:?}");
+                        engine.execute_remote(&action, &mut out_buf);
+                        flush_out(&mut virt, &mut out_buf)?;
+                    }
                 }
             }
+            process_iteration(&mut driver, &mut engine, &mut virt, &mut out_buf)?;
         }
-        process_iteration(&mut driver, &mut engine, &mut virt, &mut out_buf)?;
-    }
+        Ok(())
+    })();
 
     engine.shutdown(&mut out_buf);
-    flush_out(&mut virt, &mut out_buf)?;
-    Ok(())
+    let _ = flush_out(&mut virt, &mut out_buf);
+    result
 }
 
 #[cfg(test)]
@@ -411,10 +453,7 @@ mod tests {
             vec![Duration::from_millis(2), Duration::from_millis(2)]
         );
         assert_eq!(effects.texts, vec!["tail".to_string()]);
-        assert_eq!(
-            effects.systems,
-            vec!["dbus:org.test:Fire:1".to_string()]
-        );
+        assert_eq!(effects.systems, vec!["dbus:org.test:Fire:1".to_string()]);
         assert_eq!(
             effects.commands,
             vec!["cmd:sh:[\"-lc\", \"notify-send done\"]".to_string()]

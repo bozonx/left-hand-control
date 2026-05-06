@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::process::{Command, Stdio};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mapper::config::{GameModeProcessMatchMode, GameModeProcessMatcher};
@@ -10,31 +10,32 @@ use crate::platform::linux::{Desktop, SessionType};
 pub static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 
 /// Run a command with a timeout. If the timeout expires the child is killed
-/// with SIGKILL so the caller does not block indefinitely.
+/// via `Child::kill()` so the caller does not block indefinitely and we avoid
+/// PID-reuse risks of `kill -9 <pid>`.
 fn run_cmd_with_timeout(cmd: &mut Command, timeout_ms: u64) -> Option<std::process::Output> {
     let child = cmd
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .ok()?;
-    let id = child.id();
 
-    let finished = Arc::new(AtomicBool::new(false));
-    let finished_clone = finished.clone();
+    let child_arc = Arc::new(std::sync::Mutex::new(Some(child)));
+    let child_for_timeout = Arc::clone(&child_arc);
 
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(timeout_ms));
-        if !finished_clone.load(Ordering::SeqCst) {
-            let _ = Command::new("kill")
-                .args(["-9", &id.to_string()])
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status();
+        if let Ok(mut guard) = child_for_timeout.lock() {
+            if let Some(mut c) = guard.take() {
+                let _ = c.kill();
+            }
         }
     });
 
-    let output = child.wait_with_output().ok();
-    finished.store(true, Ordering::SeqCst);
+    let output = {
+        let mut guard = child_arc.lock().ok()?;
+        let child = guard.take()?;
+        child.wait_with_output().ok()
+    };
     output
 }
 
@@ -213,10 +214,7 @@ fn is_kde_wayland_fullscreen_active() -> bool {
 }
 
 fn is_hyprland_fullscreen_active() -> bool {
-    let output = run_cmd_with_timeout(
-        Command::new("hyprctl").args(["activewindow", "-j"]),
-        3000,
-    );
+    let output = run_cmd_with_timeout(Command::new("hyprctl").args(["activewindow", "-j"]), 3000);
 
     let Some(output) = output else {
         return false;
@@ -235,10 +233,7 @@ fn is_gnome_wayland_fullscreen_active() -> bool {
 }
 
 fn is_sway_fullscreen_active() -> bool {
-    let output = run_cmd_with_timeout(
-        Command::new("swaymsg").args(["-t", "get_tree", "-r"]),
-        3000,
-    );
+    let output = run_cmd_with_timeout(Command::new("swaymsg").args(["-t", "get_tree", "-r"]), 3000);
 
     let Some(output) = output else {
         return false;
@@ -363,8 +358,7 @@ fn active_window_has_fullscreen_state(window_id: &str) -> bool {
 
 fn active_window_geometry(window_id: &str) -> Option<(i32, i32, i32, i32)> {
     let output = run_cmd_with_timeout(
-        Command::new("xdotool")
-            .args(["getwindowgeometry", "--shell", window_id]),
+        Command::new("xdotool").args(["getwindowgeometry", "--shell", window_id]),
         3000,
     )?;
     if !output.status.success() {
@@ -374,10 +368,7 @@ fn active_window_geometry(window_id: &str) -> Option<(i32, i32, i32, i32)> {
 }
 
 fn display_geometry() -> Option<(i32, i32)> {
-    let output = run_cmd_with_timeout(
-        Command::new("xdotool").arg("getdisplaygeometry"),
-        3000,
-    )?;
+    let output = run_cmd_with_timeout(Command::new("xdotool").arg("getdisplaygeometry"), 3000)?;
     if !output.status.success() {
         return None;
     }
@@ -498,19 +489,24 @@ mod tests {
 
     #[test]
     fn parses_sway_fullscreen_boolean() {
-        let tree: serde_json::Value = serde_json::from_str(r#"{"focused":true,"fullscreen_mode":1}"#).unwrap();
+        let tree: serde_json::Value =
+            serde_json::from_str(r#"{"focused":true,"fullscreen_mode":1}"#).unwrap();
         assert!(find_focused_fullscreen(&tree));
     }
 
     #[test]
     fn parses_sway_fullscreen_nested() {
-        let tree: serde_json::Value = serde_json::from_str(r#"{"nodes":[{"focused":false,"nodes":[{"focused":true,"fullscreen":true}]}]}"#).unwrap();
+        let tree: serde_json::Value = serde_json::from_str(
+            r#"{"nodes":[{"focused":false,"nodes":[{"focused":true,"fullscreen":true}]}]}"#,
+        )
+        .unwrap();
         assert!(find_focused_fullscreen(&tree));
     }
 
     #[test]
     fn ignores_sway_unfocused_fullscreen() {
-        let tree: serde_json::Value = serde_json::from_str(r#"{"nodes":[{"focused":false,"fullscreen_mode":1}]}"#).unwrap();
+        let tree: serde_json::Value =
+            serde_json::from_str(r#"{"nodes":[{"focused":false,"fullscreen_mode":1}]}"#).unwrap();
         assert!(!find_focused_fullscreen(&tree));
     }
 }

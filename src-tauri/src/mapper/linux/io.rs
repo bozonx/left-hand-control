@@ -394,19 +394,20 @@ fn spawn_system(cmd: &SysCommand) {
     match c.spawn() {
         Ok(mut child) => {
             let pid = child.id();
-            eprintln!("[mapper] spawned side-effect pid={pid}: {} {:?}", cmd.program, cmd.args);
+            eprintln!(
+                "[mapper] spawned side-effect pid={pid}: {} {:?}",
+                cmd.program, cmd.args
+            );
             // Detach the wait so a hung child cannot stall the side-effect worker.
-            std::thread::spawn(move || {
-                match child.wait() {
-                    Ok(status) if status.success() => {
-                        eprintln!("[mapper] side-effect pid={pid} exited: {status}");
-                    }
-                    Ok(status) => {
-                        eprintln!("[mapper] side-effect pid={pid} failed: {status}");
-                    }
-                    Err(e) => {
-                        eprintln!("[mapper] side-effect pid={pid} wait failed: {e}");
-                    }
+            std::thread::spawn(move || match child.wait() {
+                Ok(status) if status.success() => {
+                    eprintln!("[mapper] side-effect pid={pid} exited: {status}");
+                }
+                Ok(status) => {
+                    eprintln!("[mapper] side-effect pid={pid} failed: {status}");
+                }
+                Err(e) => {
+                    eprintln!("[mapper] side-effect pid={pid} wait failed: {e}");
                 }
             });
         }
@@ -416,41 +417,22 @@ fn spawn_system(cmd: &SysCommand) {
     }
 }
 
-/// Lazily-initialised, process-wide session-bus connection. We keep it
-/// alive so each `switchDesktopN` is a single roundtrip instead of a
-/// `fork+exec` of a helper binary like `qdbus`.
-fn session_bus() -> Option<&'static zbus::blocking::Connection> {
-    use std::sync::OnceLock;
-    static CONN: OnceLock<Option<zbus::blocking::Connection>> = OnceLock::new();
-    CONN.get_or_init(|| match zbus::blocking::Connection::session() {
-        Ok(c) => Some(c),
-        Err(e) => {
-            eprintln!("[mapper] dbus session bus unavailable: {e}");
-            None
-        }
-    })
-    .as_ref()
-}
-
 fn call_dbus(call: &DbusCall) {
     use std::sync::mpsc;
     use std::time::Duration;
     use zbus::zvariant::StructureBuilder;
 
-    let Some(conn) = session_bus() else {
-        eprintln!(
-            "[mapper] dbus {}.{} skipped (no session bus)",
-            call.destination, call.method
-        );
-        return;
-    };
-
     let (tx, rx) = mpsc::channel();
     let call_clone = call.clone();
 
-    // conn is &'static Connection (from OnceLock); Connection: Send + Sync,
-    // so moving it into the thread is safe without raw-pointer casts.
     std::thread::spawn(move || {
+        let conn = match zbus::blocking::Connection::session() {
+            Ok(c) => c,
+            Err(e) => {
+                let _ = tx.send(Err(format!("connect session bus: {e}")));
+                return;
+            }
+        };
         let result = if call_clone.args.is_empty() {
             conn.call_method(
                 Some(call_clone.destination.as_str()),
@@ -501,7 +483,10 @@ fn call_dbus(call: &DbusCall) {
             );
         }
         Ok(Err(e)) => {
-            eprintln!("[mapper] dbus {}.{} failed: {}", call.destination, call.method, e);
+            eprintln!(
+                "[mapper] dbus {}.{} failed: {}",
+                call.destination, call.method, e
+            );
         }
         Err(_) => {
             eprintln!(

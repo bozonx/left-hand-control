@@ -50,7 +50,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
@@ -140,8 +140,8 @@ struct KeycodeEntry {
     level: u32,
 }
 
-static KEYMAP_CACHE: Mutex<Option<(String, Arc<HashMap<u32, KeycodeEntry>>)>> =
-    Mutex::new(None);
+type KeymapCache = Option<(String, Arc<HashMap<u32, KeycodeEntry>>)>;
+static KEYMAP_CACHE: Mutex<KeymapCache> = Mutex::new(None);
 
 fn keymap_table() -> Arc<HashMap<u32, KeycodeEntry>> {
     let layout = crate::layout::cached_layout_short()
@@ -201,8 +201,7 @@ fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
             let nlevels = xkb_keymap_num_levels_for_key(keymap, kc, 0).min(4);
             for level in 0..nlevels {
                 let mut syms: *const u32 = std::ptr::null();
-                let nsyms =
-                    xkb_keymap_key_get_syms_by_level(keymap, kc, 0, level, &mut syms);
+                let nsyms = xkb_keymap_key_get_syms_by_level(keymap, kc, 0, level, &mut syms);
                 if nsyms <= 0 || syms.is_null() {
                     continue;
                 }
@@ -222,7 +221,11 @@ fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
         }
 
         xkb_keymap_unref(keymap);
-        eprintln!("[portal] XKB keymap {:?}: {} keysyms indexed", layout, map.len());
+        eprintln!(
+            "[portal] XKB keymap {:?}: {} keysyms indexed",
+            layout,
+            map.len()
+        );
         map
     }
 }
@@ -374,7 +377,9 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
     let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("[portal] wl-copy unavailable in clipboard mode ({e}), falling back to keycode");
+            eprintln!(
+                "[portal] wl-copy unavailable in clipboard mode ({e}), falling back to keycode"
+            );
             inject_text_keycode(portal, session, text);
             return;
         }
@@ -436,10 +441,9 @@ fn inject_keycode_combo(
     key: u32,
 ) -> bool {
     for &m in mods {
-        if let Err(e) = portal.call_method(
-            "NotifyKeyboardKeycode",
-            &(session, empty, m, STATE_PRESSED),
-        ) {
+        if let Err(e) =
+            portal.call_method("NotifyKeyboardKeycode", &(session, empty, m, STATE_PRESSED))
+        {
             eprintln!("[portal] mod keycode {m} press failed: {e}");
             for &m2 in mods {
                 let _ = portal.call_method(
@@ -451,7 +455,10 @@ fn inject_keycode_combo(
         }
     }
     let ok = portal
-        .call_method("NotifyKeyboardKeycode", &(session, empty, key, STATE_PRESSED))
+        .call_method(
+            "NotifyKeyboardKeycode",
+            &(session, empty, key, STATE_PRESSED),
+        )
         .is_ok()
         && portal
             .call_method(
@@ -506,8 +513,7 @@ fn inject_keysym(
     ch: char,
 ) {
     for state in [STATE_PRESSED, STATE_RELEASED] {
-        if let Err(e) =
-            portal.call_method("NotifyKeyboardKeysym", &(session, empty, keysym, state))
+        if let Err(e) = portal.call_method("NotifyKeyboardKeysym", &(session, empty, keysym, state))
         {
             eprintln!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
             break;
@@ -635,9 +641,15 @@ where
         .call_method(method, args)
         .map_err(|e| format!("{method}: call: {e}"))?;
 
-    let msg = signals
-        .next()
-        .ok_or_else(|| format!("{method}: Response stream closed"))?;
+    let (sig_tx, sig_rx) = mpsc::channel();
+    thread::spawn(move || {
+        let _ = sig_tx.send(signals.next());
+    });
+    let msg = match sig_rx.recv_timeout(Duration::from_secs(30)) {
+        Ok(Some(msg)) => msg,
+        Ok(None) => return Err(format!("{method}: Response stream closed")),
+        Err(_) => return Err(format!("{method}: portal response timed out")),
+    };
     let body = msg.body();
     let (status, results): (u32, HashMap<String, OwnedValue>) = body
         .deserialize()
@@ -758,4 +770,3 @@ fn gen_token(prefix: &str) -> String {
 fn make_request_path(sender_escaped: &str, handle_token: &str) -> String {
     format!("/org/freedesktop/portal/desktop/request/{sender_escaped}/{handle_token}")
 }
-
