@@ -47,7 +47,8 @@ export default defineNuxtConfig({
     appManifest: false,
   },
 
-  // Nuxt dev server configuration for Tauri
+  // Nuxt dev server configuration for Tauri. The dev script checks the port
+  // before launching Nuxt so it cannot silently drift away from Tauri's devUrl.
   devServer: {
     host: 'localhost',
     port: parseInt(process.env.PORT || '3000'),

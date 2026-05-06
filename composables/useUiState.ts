@@ -28,7 +28,7 @@ function parsePersistedUiState(raw: string): UiState {
     return normalizeUiState(JSON.parse(raw))
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`ui-state.json is invalid: ${message}`)
+    throw new Error(`ui-state.json is invalid: ${message}`, { cause: error })
   }
 }
 

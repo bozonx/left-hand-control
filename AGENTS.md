@@ -6,14 +6,14 @@ Guidance for AI coding agents working in this repository. Read this first before
 
 **Left Hand Control** is a **desktop application** (not a web app) — a keyboard layout/mapper that proposes ergonomic layouts biased toward left-hand control for professionals.
 
-It is shipped as a **Tauri 2** native binary with a **Nuxt 3 SPA** frontend.
+It is shipped as a **Tauri 2** native binary with a **Nuxt 4 SPA** frontend.
 
 ## Tech stack (authoritative)
 
-- **Tauri 2** — native shell (Rust). Source: `src-tauri/`
-- **Nuxt 3** in **SPA mode** (`ssr: false`, `nitro.preset: 'static'`). Source: repo root
+- **Tauri 2.11+** — native shell (Rust). Source: `src-tauri/`
+- **Nuxt 4.4+** in **SPA mode** (`ssr: false`, `nitro.preset: 'static'`). Source: repo root
 - **Vue 3** with `<script setup>` and Composition API
-- **Nuxt UI v3** — component library and theming (`<UApp>`, `<UButton>`, `<UCard>`, etc.)
+- **Nuxt UI v4** — component library and theming (`<UApp>`, `<UButton>`, `<UCard>`, etc.)
 - **Tailwind CSS v4** — bundled via Nuxt UI; entry at `assets/css/main.css`
 - **TypeScript**
 - **pnpm** — the only supported package manager (see `packageManager` in `package.json`)
@@ -49,6 +49,7 @@ Nuxt conventions apply: `pages/`, `components/`, `composables/`, `layouts/`, `se
 These must stay in sync — change them together or not at all:
 
 - `nuxt.config.ts` → `devServer.port = 3000`, `vite.server.strictPort = true`
+- `scripts/nuxt-dev.mjs` → checks the configured port before launching Nuxt so the dev server cannot silently choose a fallback port
 - `src-tauri/tauri.conf.json` → `build.devUrl = "http://localhost:3000"`
 - `src-tauri/tauri.conf.json` → `build.frontendDist = "../.output/public"` (output of `nuxt generate` with `nitro.preset: 'static'`)
 - `src-tauri/tauri.conf.json` → `build.beforeDevCommand = "pnpm dev"`, `beforeBuildCommand = "pnpm generate"`
@@ -191,9 +192,9 @@ For OS-level capabilities (fs, shell, dialog, clipboard, global shortcuts, ...),
 - **`Can't resolve 'tailwindcss'`** — Tailwind v4 must be installed explicitly as a dep; it is not always pulled in transitively by `@nuxt/ui`. Kept in `package.json` as `tailwindcss: ^4`.
 - **`failed to open icon .../32x32.png`** — `src-tauri/icons/` should be present in Git. If icons are intentionally changed, regenerate them with `pnpm tauri icon <src.png>` and commit the updated `src-tauri/icons/` output.
 - **`cargo metadata ... No such file or directory`** — Rust toolchain missing; install via `rustup`.
-- **Peer dep warning** `@nuxt/cli` vs `@nuxt/schema 3/4` — benign on Nuxt 3.21; ignore unless upgrading to Nuxt 4.
+- **Peer dep warning** `@bomb.sh/tab` / `cac` from Nuxt CLI — benign with current Nuxt 4.4; track it during Nuxt CLI upgrades.
 - **`defineNuxtConfig` / `defineAppConfig` "not found"** in the editor before `pnpm install` — these are auto-imported; resolved after `nuxt prepare` runs.
-- **HMR / port conflicts** — `strictPort: true` is intentional so Tauri's `devUrl` stays valid. Do not silently change the port.
+- **HMR / port conflicts** — the `pnpm dev` wrapper must fail if the configured port is busy so Tauri's `devUrl` stays valid. Do not silently change the port.
 
 ## What NOT to do
 

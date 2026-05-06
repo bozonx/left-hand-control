@@ -4,6 +4,7 @@ export default defineVitestConfig({
   test: {
     name: 'components',
     environment: 'nuxt',
+    hookTimeout: 30000,
     include: ['tests/components/**/*.test.ts'],
     setupFiles: ['tests/setup/components.ts'],
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],

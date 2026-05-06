@@ -1,10 +1,10 @@
-Built as a desktop application on top of **Tauri 2**, **Nuxt 3**, **Nuxt UI v3**, **Vue 3** and **Tailwind CSS v4**.
+Built as a desktop application on top of **Tauri 2.11+**, **Nuxt 4.4+**, **Nuxt UI v4**, **Vue 3** and **Tailwind CSS v4**.
 Currently, only **Linux** is supported.
 
 ## Stack
 
-- [Nuxt 3](https://nuxt.com) (SPA mode, `ssr: false`)
-- [Nuxt UI v3](https://ui.nuxt.com) — components + theming
+- [Nuxt 4](https://nuxt.com) (SPA mode, `ssr: false`)
+- [Nuxt UI v4](https://ui.nuxt.com) — components + theming
 - [Tailwind CSS v4](https://tailwindcss.com) (bundled via Nuxt UI)
 - [Vue 3](https://vuejs.org) + `<script setup>`
 - [Tauri 2](https://tauri.app) for the native shell
@@ -37,7 +37,7 @@ pnpm install
 pnpm tauri:dev
 ```
 
-This starts the Nuxt dev server on the port specified in `.env` (default `http://localhost:3000`) and launches the Tauri window pointing at it.
+This starts the Nuxt dev server on the port specified in `.env` (default `http://localhost:3000`) and launches the Tauri window pointing at it. The dev wrapper fails when the configured port is busy, because Tauri needs a stable `devUrl`.
 
 Development mode is supported on Linux only. The current `pnpm dev` / `pnpm tauri:dev` scripts are not intended to work on Windows.
 
@@ -65,7 +65,7 @@ Available commands:
 pnpm tauri:build
 ```
 
-The Nuxt frontend is statically generated into `.output/public` (via `pnpm generate`) and bundled by Tauri into `src-tauri/target/release/bundle/`.
+The Nuxt frontend is statically generated into `.output/public` (via `pnpm generate`) and bundled by Tauri into `src-tauri/target/release/bundle/`. The current Linux build targets are Debian and RPM packages; AppImage is not enabled because it requires a working `linuxdeploy` toolchain on the build host.
 
 ## Project layout
 

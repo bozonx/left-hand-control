@@ -66,6 +66,12 @@ mockComponent('~/components/features/settings/ConfigPathCard.vue', () =>
   }),
 )
 
+mockComponent('~/components/features/settings/SystemCard.vue', () =>
+  defineComponent({
+    template: '<div data-test="system-card">system</div>',
+  }),
+)
+
 describe('SettingsTab', () => {
   beforeEach(() => {
     useSettingsScreenMock.mockReset()
@@ -107,6 +113,9 @@ describe('SettingsTab', () => {
         preference: ref('auto'),
         available: ['en-US', 'ru-RU'],
       },
+      platform: {
+        info: ref(null),
+      },
       appearanceItems: ref([]),
       localeItems: ref([]),
       applying: ref(''),
@@ -129,6 +138,8 @@ describe('SettingsTab', () => {
       clearDeletePending: clearDeletePendingMock,
       deviceOptions: ref([]),
       selectedDevice: ref(''),
+      mouseOptions: ref([]),
+      selectedMouse: ref(''),
       toggleMapper: toggleMapperMock,
     })
   })

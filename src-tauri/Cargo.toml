@@ -1,6 +1,6 @@
 [package]
 name = "left-hand-control"
-version = "0.1.0"
+version = "0.2.0"
 description = "Left Hand Control desktop app"
 authors = ["Ivan Kolesnikov <ivan@bozonx.com>"]
 edition = "2021"

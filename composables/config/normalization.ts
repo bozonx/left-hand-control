@@ -190,7 +190,7 @@ export function parsePersistedConfig(raw: string): AppConfig {
     return normalizeConfig(JSON.parse(raw));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`config.json is invalid: ${message}`);
+    throw new Error(`config.json is invalid: ${message}`, { cause: error });
   }
 }
 
@@ -209,7 +209,7 @@ export function parsePersistedSettings(raw: string): PersistedConfig {
     return normalizePersistedConfig(JSON.parse(raw));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`config.json is invalid: ${message}`);
+    throw new Error(`config.json is invalid: ${message}`, { cause: error });
   }
 }
 

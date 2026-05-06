@@ -4,6 +4,10 @@ let tauriCache: TauriCore | null | undefined
 
 export async function useTauri(): Promise<TauriCore | null> {
   if (tauriCache !== undefined) return tauriCache
+  if (typeof window === 'undefined' || !('__TAURI_INTERNALS__' in window)) {
+    tauriCache = null
+    return tauriCache
+  }
   try {
     tauriCache = await import('@tauri-apps/api/core')
   } catch {

@@ -1,3 +1,4 @@
+/* eslint-disable vue/one-component-per-file */
 import { defineComponent, ref } from 'vue'
 
 import { mockComponent, mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
@@ -21,6 +22,12 @@ const {
 }))
 
 mockNuxtImport('useSettingsScreen', () => useSettingsScreenMock)
+
+mockComponent('~/components/shared/AppTooltip.vue', () =>
+  defineComponent({
+    template: '<span data-test="app-tooltip"><slot /></span>',
+  }),
+)
 
 mockComponent('~/components/features/settings/LayoutsLibraryCard.vue', () =>
   defineComponent({
