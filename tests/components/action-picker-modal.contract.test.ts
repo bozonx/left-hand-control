@@ -123,6 +123,83 @@ describe('ActionPickerModal', () => {
     expect(wrapper.find('[data-testid="action-picker-view"]').exists()).toBe(false)
   })
 
+  it('emits apply without cancel when an item is picked from the list', async () => {
+    const Harness = defineComponent({
+      components: { ActionPickerModal },
+      setup() {
+        const value = ref('')
+        const open = ref(true)
+        const applied = ref<string[]>([])
+        const cancelled = ref(0)
+        return { applied, cancelled, open, value }
+      },
+      template: `
+        <ActionPickerModal
+          v-model="value"
+          v-model:open="open"
+          placeholder="pick action"
+          @apply="applied.push($event)"
+          @cancel="cancelled += 1"
+        />
+      `,
+    })
+
+    const wrapper = await mountSuspended(Harness, {
+      global: {
+        stubs: {
+          Teleport: defineComponent({
+            props: { to: { type: String, default: 'body' } },
+            template: '<div><slot /></div>',
+          }),
+          UModal: UModalStub,
+          ActionPickerBody: ActionPickerBodyStub,
+          AppTooltip: defineComponent({
+            template: '<div><slot /></div>',
+          }),
+        },
+      },
+    })
+
+    await wrapper.get('[data-testid="picker-item"]').trigger('click')
+    await flushPromises()
+
+    expect((wrapper.vm as any).value).toBe('KeyA')
+    expect((wrapper.vm as any).applied).toEqual(['KeyA'])
+    expect((wrapper.vm as any).cancelled).toBe(0)
+  })
+
+  it('opens from its trigger button', async () => {
+    const Harness = defineComponent({
+      components: { ActionPickerModal },
+      setup() {
+        const value = ref('')
+        return { value }
+      },
+      template: '<ActionPickerModal v-model="value" placeholder="pick action" />',
+    })
+
+    const wrapper = await mountSuspended(Harness, {
+      global: {
+        stubs: {
+          Teleport: defineComponent({
+            props: { to: { type: String, default: 'body' } },
+            template: '<div><slot /></div>',
+          }),
+          UModal: UModalStub,
+          ActionPickerBody: ActionPickerBodyStub,
+          AppTooltip: defineComponent({
+            template: '<div><slot /></div>',
+          }),
+        },
+      },
+    })
+
+    await wrapper.get('[data-testid="action-picker-trigger"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="action-picker-view"]').exists()).toBe(true)
+  })
+
   it('forwards allowMacros to the picker body', async () => {
     const Harness = defineComponent({
       components: { ActionPickerModal },

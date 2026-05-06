@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<{
   placeholder: undefined,
   title: undefined,
   clearLabel: undefined,
+  open: undefined,
   excludedMacroId: undefined,
   ghost: false,
 })
@@ -88,7 +89,6 @@ watch(modalOpen, (isOpen, wasOpen) => {
   if (!isOpen && wasOpen) {
     const reason = closeReason.value ?? 'cancel'
     if (reason === 'cancel') emit('cancel')
-    if (reason === 'apply' && model.value) emit('apply', model.value)
     if (reason === 'clear') emit('clear')
     closeReason.value = null
   }
@@ -103,6 +103,7 @@ function apply() {
   if (next === null) return
   if (props.singleKeyOnly && !isSingleKeyAction(next)) return
   model.value = next
+  emit('apply', next)
   closeReason.value = 'apply'
   modalOpen.value = false
 }
@@ -113,6 +114,7 @@ function pickAndApply(value: string) {
   if (next === null) return
   if (props.singleKeyOnly && !isSingleKeyAction(next)) return
   model.value = next
+  emit('apply', next)
   closeReason.value = 'apply'
   modalOpen.value = false
 }
@@ -133,13 +135,15 @@ function cancel() {
 
 <template>
   <div v-if="!props.hideTrigger" class="flex items-center gap-1 w-full">
-    <UButton
-      :variant="props.ghost && !model ? 'ghost' : 'outline'"
-      color="neutral"
-      class="flex-1 min-w-0 h-8 px-2.5 justify-start"
+    <button
+      type="button"
+      data-testid="action-picker-trigger"
+      class="flex-1 min-w-0 h-8 px-2.5 inline-flex items-center gap-1.5 rounded-md text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-75"
       :class="[
+        props.ghost && !model
+          ? 'justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50'
+          : 'justify-start border border-(--ui-border) bg-(--ui-bg) hover:bg-(--ui-bg-elevated)',
         props.invalid ? 'border-(--ui-error) ring-1 ring-(--ui-error)' : '',
-        props.ghost && !model ? 'border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50' : ''
       ]"
       @click="openModal"
     >
@@ -154,7 +158,7 @@ function cancel() {
       <span v-else class="text-(--ui-text-muted) truncate">
         {{ (props.ghost && !model) ? $t('common.notSet') : (placeholder ?? $t('picker.chooseAction')) }}
       </span>
-    </UButton>
+    </button>
     <FieldResetButton
       v-if="allowEmpty && model"
       :label="props.clearLabel ?? $t('common.clear')"
@@ -166,6 +170,7 @@ function cancel() {
     <template #header>
       <div class="mx-auto flex w-full max-w-7xl items-center gap-3">
         <UButton
+          type="button"
           icon="i-lucide-arrow-left"
           color="neutral"
           variant="ghost"
@@ -183,10 +188,10 @@ function cancel() {
           :label="props.clearLabel ?? $t('common.clear')"
           @click="clear"
         />
-        <UButton color="neutral" variant="ghost" @click="cancel">
+        <UButton type="button" color="neutral" variant="ghost" @click="cancel">
           {{ $t('common.cancel') }}
         </UButton>
-        <UButton icon="i-lucide-check" :disabled="applyDisabled" @click="apply">
+        <UButton type="button" icon="i-lucide-check" :disabled="applyDisabled" @click="apply">
           {{ $t('common.apply') }}
         </UButton>
       </div>
