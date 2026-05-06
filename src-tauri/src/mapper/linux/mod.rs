@@ -79,6 +79,9 @@ pub fn spawn(
     mouse_path: Option<String>,
     cfg: AppConfig,
 ) -> Result<Handle, String> {
+    super::portal::set_text_mode(
+        cfg.settings.linux_wayland_text_mode.as_deref().unwrap_or("keycode"),
+    );
     #[cfg(debug_assertions)]
     {
         eprintln!(
@@ -205,6 +208,9 @@ fn run_loop<D: LoopDriver>(
                         "[mapper] live config update: rules={} layers={}",
                         next_cfg.rules.len(),
                         next_cfg.layer_keymaps.len()
+                    );
+                    super::portal::set_text_mode(
+                        next_cfg.settings.linux_wayland_text_mode.as_deref().unwrap_or("keycode"),
                     );
                     engine.shutdown(&mut out_buf);
                     flush_out(&mut virt, &mut out_buf)?;

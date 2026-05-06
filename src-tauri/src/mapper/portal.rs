@@ -46,7 +46,7 @@
 use std::collections::HashMap;
 use std::ffi::{c_char, CString};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
@@ -229,6 +229,22 @@ enum Cmd {
     Type(String),
 }
 
+/// When true, all text is injected via wl-copy + Ctrl+V instead of
+/// per-character keycode injection. Configurable via `set_text_mode`.
+static TEXT_MODE_CLIPBOARD: AtomicBool = AtomicBool::new(false);
+
+/// Switch between text injection strategies.
+///   "clipboard" — use wl-copy + Ctrl+V for the whole string at once.
+///   anything else — XKB keycode injection (default).
+pub fn set_text_mode(mode: &str) {
+    let clipboard = mode == "clipboard";
+    TEXT_MODE_CLIPBOARD.store(clipboard, Ordering::Relaxed);
+    eprintln!(
+        "[portal] text mode: {}",
+        if clipboard { "clipboard" } else { "keycode" }
+    );
+}
+
 /// Sender to the current portal worker thread. Cleared when the worker is
 /// gone so a later literal injection can retry the portal handshake.
 static PORTAL_TX: Mutex<Option<Sender<Cmd>>> = Mutex::new(None);
@@ -321,6 +337,14 @@ fn worker(rx: Receiver<Cmd>) {
 }
 
 fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
+    if TEXT_MODE_CLIPBOARD.load(Ordering::Relaxed) {
+        inject_full_text_via_clipboard(portal, session, text);
+        return;
+    }
+    inject_text_keycode(portal, session, text);
+}
+
+fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
     let table = keymap_table();
     let empty: HashMap<String, Value> = HashMap::new();
     for ch in text.chars() {
@@ -335,6 +359,31 @@ fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
             inject_keysym(portal, session, &empty, keysym, ch);
         }
     }
+}
+
+fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
+    use std::io::Write as _;
+    use std::process::{Command, Stdio};
+
+    let empty: HashMap<String, Value> = HashMap::new();
+
+    let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("[portal] wl-copy unavailable in clipboard mode ({e}), falling back to keycode");
+            inject_text_keycode(portal, session, text);
+            return;
+        }
+    };
+    if let Some(mut stdin) = child.stdin.take() {
+        let _ = stdin.write_all(text.as_bytes());
+    }
+    thread::spawn(move || {
+        let _ = child.wait();
+    });
+
+    thread::sleep(std::time::Duration::from_millis(50));
+    inject_keycode_combo(portal, session, &empty, &[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV);
 }
 
 fn inject_keycode_combo(

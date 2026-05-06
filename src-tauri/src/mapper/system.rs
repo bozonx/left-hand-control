@@ -311,6 +311,15 @@ mod kde {
             "zoomActualSize" => {
                 return Some(invoke_shortcut("kwin", "view_actual_size"));
             }
+            "killWindow" => {
+                return Some(invoke_shortcut("kwin", "Kill Window"));
+            }
+            "windowFullscreen" => {
+                return Some(invoke_shortcut("kwin", "Window Fullscreen"));
+            }
+            "windowOnAllDesktops" => {
+                return Some(invoke_shortcut("kwin", "Window On All Desktops"));
+            }
             _ => {}
         }
         if name == "showClipboardHistory" {

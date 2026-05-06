@@ -358,6 +358,24 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut view_actual_size',
     platforms: ['linux-kde'],
   },
+  {
+    id: 'killWindow',
+    nameKey: 'systemActions.killWindow',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Kill Window"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'windowFullscreen',
+    nameKey: 'systemActions.windowFullscreen',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window Fullscreen"',
+    platforms: ['linux-kde'],
+  },
+  {
+    id: 'windowOnAllDesktops',
+    nameKey: 'systemActions.windowOnAllDesktops',
+    hint: 'KDE: org.kde.kglobalaccel /component/kwin invokeShortcut "Window On All Desktops"',
+    platforms: ['linux-kde'],
+  },
 ]
 
 const BY_ID: Record<string, SystemAction> = Object.fromEntries(

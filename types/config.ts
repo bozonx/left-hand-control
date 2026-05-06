@@ -161,6 +161,13 @@ export interface GameModeProcessMatcher {
   isBlacklist?: boolean
 }
 
+// How literal text is injected on Linux/Wayland.
+//   'keycode'   — XKB-aware keycode injection (default); falls back to
+//                 clipboard for characters missing from the current layout.
+//   'clipboard' — always use wl-copy + Ctrl+V for every text action.
+//                 Use this if keycode injection produces wrong characters.
+export type LinuxWaylandTextMode = 'keycode' | 'clipboard'
+
 export interface AppSettings {
   launchOnStartup: boolean
   // Visual theme preference. 'system' follows prefers-color-scheme.
@@ -204,6 +211,8 @@ export interface AppSettings {
     useFullscreen: boolean
     processMatchers: GameModeProcessMatcher[]
   }
+  // Linux/Wayland only. Controls how text: actions are injected.
+  linuxWaylandTextMode?: LinuxWaylandTextMode
 }
 
 // A layout preset: the subset of AppConfig that describes keyboard behaviour

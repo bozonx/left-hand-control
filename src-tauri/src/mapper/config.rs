@@ -173,6 +173,8 @@ pub struct Settings {
     #[serde(default)]
     #[allow(dead_code)]
     pub game_mode: GameModeSettings,
+    #[serde(default)]
+    pub linux_wayland_text_mode: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -241,6 +243,7 @@ impl Default for Settings {
             current_layout_id: None,
             command_trust: HashMap::new(),
             game_mode: GameModeSettings::default(),
+            linux_wayland_text_mode: None,
         }
     }
 }

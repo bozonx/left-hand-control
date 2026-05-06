@@ -104,6 +104,9 @@ function normalizeSettings(
   ) {
     merged.manualActiveLayoutId = merged.currentLayoutId;
   }
+  if (merged.linuxWaylandTextMode !== 'keycode' && merged.linuxWaylandTextMode !== 'clipboard') {
+    merged.linuxWaylandTextMode = undefined;
+  }
   return merged;
 }
 

@@ -628,6 +628,20 @@ export default {
     gameModeOnlyActiveWindow: "Only active window",
     gameModeWhitelistTitle: "Triggers (Whitelist)",
     gameModeBlacklistTitle: "Exceptions (Blacklist)",
+    system: {
+      title: "System / Troubleshooting",
+      waylandNote:
+        "These options help work around issues specific to your desktop environment.",
+      textModeLabel: "Text injection method (Linux/Wayland)",
+      textModeHint:
+        "Controls how \"text:\" actions are sent. If characters come out wrong (e.g. wrong symbols when a non-Latin layout is active), try the clipboard method.",
+      textModeKeycode: "XKB keycode (default)",
+      textModeKeycodeHint:
+        "Reads the current keyboard layout and injects characters as keycodes with the correct modifiers. Falls back to clipboard for characters not present in the layout.",
+      textModeClipboard: "Clipboard (via wl-copy)",
+      textModeClipboardHint:
+        "Copies the entire text to clipboard using wl-copy and pastes with Ctrl+V. More reliable across layouts, but briefly replaces clipboard contents.",
+    },
   },
   picker: {
     currentValue: "Current value",
@@ -729,6 +743,9 @@ export default {
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
     zoomActualSize: "Zoom to actual size",
+    killWindow: "Kill window",
+    windowFullscreen: "Make window fullscreen",
+    windowOnAllDesktops: "Keep window on all desktops",
   },
   mapper: {
     desktopOnly:

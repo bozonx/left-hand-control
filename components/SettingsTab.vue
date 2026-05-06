@@ -3,6 +3,7 @@ import MapperCard from '~/components/features/settings/MapperCard.vue'
 import GeneralCard from '~/components/features/settings/GeneralCard.vue'
 import BehaviorCard from '~/components/features/settings/BehaviorCard.vue'
 import GameModeCard from '~/components/features/settings/GameModeCard.vue'
+import SystemCard from '~/components/features/settings/SystemCard.vue'
 import ConfigPathCard from '~/components/features/settings/ConfigPathCard.vue'
 const {
   config,
@@ -10,6 +11,7 @@ const {
   library,
   mapper,
   mapperIssues,
+  platform,
   theme,
   appLocale,
   appearanceItems,
@@ -52,6 +54,12 @@ const {
       @update:use-gamemoded="(v) => { config.settings.gameMode.useGamemoded = v }"
       @update:use-fullscreen="(v) => { config.settings.gameMode.useFullscreen = v }"
       @update:process-matchers="(v) => { config.settings.gameMode.processMatchers = v }"
+    />
+
+    <SystemCard
+      :config="config"
+      :platform="platform.info.value"
+      @update:config="c => config.value = c"
     />
 
     <ConfigPathCard
