@@ -447,10 +447,10 @@ fn call_dbus(call: &DbusCall) {
 
     let (tx, rx) = mpsc::channel();
     let call_clone = call.clone();
-    let conn_ptr: usize = conn as *const _ as usize;
 
+    // conn is &'static Connection (from OnceLock); Connection: Send + Sync,
+    // so moving it into the thread is safe without raw-pointer casts.
     std::thread::spawn(move || {
-        let conn = unsafe { &*(conn_ptr as *const zbus::blocking::Connection) };
         let result = if call_clone.args.is_empty() {
             conn.call_method(
                 Some(call_clone.destination.as_str()),

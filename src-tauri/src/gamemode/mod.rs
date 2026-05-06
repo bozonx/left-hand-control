@@ -61,8 +61,9 @@ pub fn stop_watcher() {
 
 pub fn update_settings_from_config_json(raw: &str) {
     let settings = parse_game_mode_settings(raw);
-    if let Ok(mut guard) = CACHED_SETTINGS.lock() {
-        *guard = settings;
+    match CACHED_SETTINGS.lock() {
+        Ok(mut guard) => *guard = settings,
+        Err(e) => eprintln!("[gamemode] settings cache lock poisoned, update skipped: {e}"),
     }
 }
 

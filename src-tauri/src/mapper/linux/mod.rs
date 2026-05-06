@@ -113,8 +113,9 @@ pub fn spawn(
         .spawn(move || {
             if let Err(e) = run(device_path, mouse_path, cfg, stop_thread, ready_tx, control_rx) {
                 eprintln!("[mapper] run_loop error: {e}");
-                if let Ok(mut slot) = err_thread.lock() {
-                    *slot = Some(e);
+                match err_thread.lock() {
+                    Ok(mut slot) => *slot = Some(e),
+                    Err(pe) => eprintln!("[mapper] error slot lock poisoned, error lost: {pe}"),
                 }
             }
         })

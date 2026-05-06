@@ -45,15 +45,16 @@ pub fn parse_action(action: &str) -> Option<Keystroke> {
     // Handle "Mod+Mod+Key" combos.
     if trimmed.contains('+') && trimmed.len() > 1 {
         let parts: Vec<&str> = trimmed.split('+').map(|p| p.trim()).collect();
-        if parts.len() >= 2 {
-            let (key_part, mod_parts) = parts.split_last().unwrap();
-            let mut mods = Vec::with_capacity(mod_parts.len());
-            for m in mod_parts {
-                let k = parse_modifier(m)?;
-                mods.push(k);
+        if let Some((key_part, mod_parts)) = parts.split_last() {
+            if !mod_parts.is_empty() {
+                let mut mods = Vec::with_capacity(mod_parts.len());
+                for m in mod_parts {
+                    let k = parse_modifier(m)?;
+                    mods.push(k);
+                }
+                let key = parse_single(key_part)?;
+                return Some(Keystroke { mods, key });
             }
-            let key = parse_single(key_part)?;
-            return Some(Keystroke { mods, key });
         }
     }
 
