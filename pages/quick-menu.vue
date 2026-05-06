@@ -18,7 +18,9 @@ function wait(ms: number) {
 }
 
 async function closeMenu() {
-  await appWindow.hide().catch(() => undefined)
+  await invoke('hide_quick_menu').catch((e) => {
+    console.error('Failed to hide quick menu:', e)
+  })
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -32,9 +34,6 @@ onMounted(async () => {
 
   unlistenShow = await listen('show_quick_menu', async () => {
     await load()
-    await appWindow.center()
-    await appWindow.show()
-    await appWindow.setFocus()
   })
 
   window.addEventListener('keydown', onKeydown)

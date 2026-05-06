@@ -211,6 +211,16 @@ fn execute_action(action: String) -> Result<(), String> {
     mapper::execute_action(action)
 }
 
+#[tauri::command]
+fn hide_quick_menu(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("quick-menu") {
+        window
+            .hide()
+            .map_err(|e| format!("hide quick menu: {e}"))?;
+    }
+    Ok(())
+}
+
 fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
     let window = if let Some(window) = app.get_webview_window("quick-menu") {
         window
@@ -273,7 +283,9 @@ pub fn run() {
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
-                if let Some(w) = window.app_handle().get_webview_window("main") {
+                if window.label() == "quick-menu" {
+                    let _ = window.hide();
+                } else if let Some(w) = window.app_handle().get_webview_window("main") {
                     tray::hide_main_window(&w);
                 }
             }
@@ -315,6 +327,7 @@ pub fn run() {
             tray::toggle_main_window_maximized_command,
             quit_application,
             execute_action,
+            hide_quick_menu,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
