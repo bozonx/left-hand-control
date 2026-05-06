@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 import { invoke } from '@tauri-apps/api/core'
 import { useConfig } from '~/composables/useConfig'
 import type { QuickAction } from '~/types/config'
 
-const appWindow = getCurrentWindow()
 const { config, load } = useConfig()
 
 const actions = computed(() => config.value.quickActions || [])
 const runnableActions = computed(() => actions.value.filter((action): action is QuickAction => !!action.action.trim()))
 let unlistenShow: (() => void) | null = null
-let unlistenFocus: (() => void) | null = null
 
 function wait(ms: number) {
   return new Promise(resolve => window.setTimeout(resolve, ms))
@@ -37,18 +34,11 @@ onMounted(async () => {
   })
 
   window.addEventListener('keydown', onKeydown)
-
-  unlistenFocus = await appWindow.onFocusChanged(({ isFocused }) => {
-    if (!isFocused) {
-      void closeMenu()
-    }
-  })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   unlistenShow?.()
-  unlistenFocus?.()
 })
 
 async function runAction(action: string) {
