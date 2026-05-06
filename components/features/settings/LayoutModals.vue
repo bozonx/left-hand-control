@@ -27,10 +27,12 @@ const {
   closeOverwriteConfirm,
   resetConfirmOpen,
   resetBusy,
+  resetError,
   confirmReset,
   closeResetConfirm,
   deletePending,
   deleteBusy,
+  deleteError,
   confirmDelete,
   clearDeletePending,
 } = useSettingsScreen();
@@ -225,9 +227,10 @@ const editTitle = computed(() => {
     @update:open="(v) => !v && closeResetConfirm()"
   >
     <template #body>
-      <p class="text-sm">
-        {{ $t("settings.resetUnsavedBody") }}
-      </p>
+      <div class="space-y-3 text-sm">
+        <p>{{ $t("settings.resetUnsavedBody") }}</p>
+        <p v-if="resetError" class="text-(--ui-error)">{{ resetError }}</p>
+      </div>
     </template>
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
@@ -247,9 +250,10 @@ const editTitle = computed(() => {
     @update:open="(v) => !v && clearDeletePending()"
   >
     <template #body>
-      <p class="text-sm">
-        {{ $t("settings.deleteBody") }}
-      </p>
+      <div class="space-y-3 text-sm">
+        <p>{{ $t("settings.deleteBody") }}</p>
+        <p v-if="deleteError" class="text-(--ui-error)">{{ deleteError }}</p>
+      </div>
     </template>
     <template #footer>
       <div class="flex gap-2 justify-end w-full">

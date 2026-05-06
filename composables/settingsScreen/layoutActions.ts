@@ -215,11 +215,13 @@ export function useSettingsLayoutActions({
     closeOverwriteConfirm: overwriteConfirm.closeOverwriteConfirm,
     resetConfirmOpen: reset.resetConfirmOpen,
     resetBusy: reset.resetBusy,
+    resetError: reset.resetError,
     requestReset: reset.requestReset,
     confirmReset: reset.confirmReset,
     closeResetConfirm: reset.closeResetConfirm,
     deletePending: del.deletePending,
     deleteBusy: del.deleteBusy,
+    deleteError: del.deleteError,
     confirmDelete: del.confirmDelete,
     clearDeletePending: del.clearDeletePending,
   };

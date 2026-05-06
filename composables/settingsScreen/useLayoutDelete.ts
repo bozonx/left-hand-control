@@ -11,12 +11,13 @@ interface LayoutDeleteOptions {
 export function useLayoutDelete({ config, library, flush }: LayoutDeleteOptions) {
   const deletePending = ref<LayoutLibraryEntry | null>(null);
   const deleteBusy = ref(false);
-  const toast = useToast();
+  const deleteError = ref<string | null>(null);
 
   async function confirmDelete() {
     const entry = deletePending.value;
     if (!entry) return;
     deleteBusy.value = true;
+    deleteError.value = null;
     try {
       const { settings } = config.value;
       await library.deleteUserPreset(userLayoutNameFromId(entry.id));
@@ -32,13 +33,7 @@ export function useLayoutDelete({ config, library, flush }: LayoutDeleteOptions)
       deletePending.value = null;
     } catch (error) {
       logger.error('Delete layout failed', error);
-      toast.add({
-        title: 'Failed to delete layout',
-        description: error instanceof Error ? error.message : String(error),
-        color: 'error',
-        icon: 'i-lucide-circle-alert',
-        close: true,
-      });
+      deleteError.value = error instanceof Error ? error.message : String(error);
     } finally {
       deleteBusy.value = false;
     }
@@ -46,11 +41,13 @@ export function useLayoutDelete({ config, library, flush }: LayoutDeleteOptions)
 
   function clearDeletePending() {
     deletePending.value = null;
+    deleteError.value = null;
   }
 
   return {
     deletePending,
     deleteBusy,
+    deleteError,
     confirmDelete,
     clearDeletePending,
   };

@@ -5,7 +5,7 @@ interface LayoutResetOptions {
 export function useLayoutReset({ resetCurrentLayout }: LayoutResetOptions) {
   const resetConfirmOpen = ref(false);
   const resetBusy = ref(false);
-  const toast = useToast();
+  const resetError = ref<string | null>(null);
 
   function requestReset() {
     resetConfirmOpen.value = true;
@@ -13,18 +13,13 @@ export function useLayoutReset({ resetCurrentLayout }: LayoutResetOptions) {
 
   async function confirmReset() {
     resetBusy.value = true;
+    resetError.value = null;
     try {
       await resetCurrentLayout();
       resetConfirmOpen.value = false;
     } catch (error) {
       logger.error('Reset layout failed', error);
-      toast.add({
-        title: 'Failed to reset layout',
-        description: error instanceof Error ? error.message : String(error),
-        color: 'error',
-        icon: 'i-lucide-circle-alert',
-        close: true,
-      });
+      resetError.value = error instanceof Error ? error.message : String(error);
     } finally {
       resetBusy.value = false;
     }
@@ -32,11 +27,13 @@ export function useLayoutReset({ resetCurrentLayout }: LayoutResetOptions) {
 
   function closeResetConfirm() {
     resetConfirmOpen.value = false;
+    resetError.value = null;
   }
 
   return {
     resetConfirmOpen,
     resetBusy,
+    resetError,
     requestReset,
     confirmReset,
     closeResetConfirm,

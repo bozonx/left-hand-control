@@ -70,11 +70,13 @@ export interface SettingsScreenState {
   closeOverwriteConfirm: () => void;
   resetConfirmOpen: Ref<boolean>;
   resetBusy: Ref<boolean>;
+  resetError: Ref<string | null>;
   requestReset: () => void;
   confirmReset: () => Promise<void>;
   closeResetConfirm: () => void;
   deletePending: Ref<LayoutLibraryEntry | null>;
   deleteBusy: Ref<boolean>;
+  deleteError: Ref<string | null>;
   confirmDelete: () => Promise<void>;
   clearDeletePending: () => void;
   deviceOptions: ComputedRef<{ label: string; value: string }[]>;
