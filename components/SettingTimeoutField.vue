@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import FieldLabel from '~/components/FieldLabel.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
+import NumericInput from '~/components/shared/NumericInput.vue'
 
 const props = withDefaults(defineProps<{
   label: string

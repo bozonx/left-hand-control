@@ -112,11 +112,15 @@ const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
 
 // --- XKB keymap lookup for layout-aware text injection ------------------
 
-// evdev keycodes for modifier/paste keys used in text injection.
+// evdev keycodes for modifier keys used in text injection.
 const KEY_LEFTSHIFT_EVDEV: u32 = 42;
 const KEY_RIGHTALT_EVDEV: u32 = 100; // AltGr
 const KEY_LEFTCTRL_EVDEV: u32 = 29;
-const KEY_V_EVDEV: u32 = 47;
+
+// XKB keysym for Latin lowercase 'v'. Used for the Ctrl+V paste shortcut
+// instead of the evdev keycode so that the compositor sees the correct keysym
+// regardless of the currently active keyboard layout (e.g. Russian 'м' ≠ 'v').
+const XKB_KEY_V_LOWER: u32 = 0x0076;
 
 // Map XKB level index to the evdev modifier keys that must be held.
 // Covers the vast majority of European layouts:
@@ -383,7 +387,45 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
     });
 
     thread::sleep(std::time::Duration::from_millis(50));
-    inject_keycode_combo(portal, session, &empty, &[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV);
+    if !inject_paste(portal, session, &empty) {
+        eprintln!("[portal] clipboard paste: Ctrl+V injection failed");
+    }
+}
+
+/// Inject Ctrl+V to paste clipboard content, layout-independently.
+///
+/// Ctrl is sent via keycode (modifier keys are not layout-sensitive).
+/// V is sent via keysym (XKB_KEY_v = 0x76) so the compositor sees the
+/// Latin 'v' keysym regardless of the active layout — pressing evdev
+/// keycode 47 in a Russian layout would produce 'м', not 'v'.
+fn inject_paste(portal: &Proxy, session: &OwnedObjectPath, empty: &HashMap<String, Value>) -> bool {
+    if let Err(e) = portal.call_method(
+        "NotifyKeyboardKeycode",
+        &(session, empty, KEY_LEFTCTRL_EVDEV, STATE_PRESSED),
+    ) {
+        eprintln!("[portal] paste: Ctrl press failed: {e}");
+        return false;
+    }
+    let v_ok = portal
+        .call_method(
+            "NotifyKeyboardKeysym",
+            &(session, empty, XKB_KEY_V_LOWER, STATE_PRESSED),
+        )
+        .is_ok()
+        && portal
+            .call_method(
+                "NotifyKeyboardKeysym",
+                &(session, empty, XKB_KEY_V_LOWER, STATE_RELEASED),
+            )
+            .is_ok();
+    if !v_ok {
+        eprintln!("[portal] paste: V keysym injection failed");
+    }
+    let _ = portal.call_method(
+        "NotifyKeyboardKeycode",
+        &(session, empty, KEY_LEFTCTRL_EVDEV, STATE_RELEASED),
+    );
+    v_ok
 }
 
 fn inject_keycode_combo(
@@ -453,7 +495,7 @@ fn inject_via_clipboard(
     // Give the compositor time to register the new clipboard owner.
     thread::sleep(std::time::Duration::from_millis(50));
 
-    inject_keycode_combo(portal, session, empty, &[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV)
+    inject_paste(portal, session, empty)
 }
 
 fn inject_keysym(

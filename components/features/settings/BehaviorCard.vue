@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AppConfig } from '~/types/config'
+import NumericInput from '~/components/shared/NumericInput.vue'
 
 const props = defineProps<{
   config: AppConfig
