@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultConfig } from "~/types/config";
+import { createDefaultConfig, createDefaultEmojiPage } from "~/types/config";
 import {
   applyPresetToConfig,
   builtinLayoutName,
@@ -374,6 +374,136 @@ rules:
   it("returns null for invalid or non-object yaml", () => {
     expect(parseLayoutYaml("not: [valid")).toBeNull();
     expect(parseLayoutYaml("hello")).toBeNull();
+  });
+
+  it("parses emojiPages from yaml", () => {
+    const preset = parseLayoutYaml(`
+emojiPages:
+  - id: page1
+    name: Reactions
+    cells:
+      KeyQ: "😀"
+      KeyW: "👍"
+      KeyE: "❤️"
+`);
+    expect(preset).not.toBeNull();
+    expect(preset!.emojiPages).toHaveLength(1);
+    expect(preset!.emojiPages[0]).toMatchObject({
+      id: "page1",
+      name: "Reactions",
+      cells: {
+        KeyQ: "😀",
+        KeyW: "👍",
+        KeyE: "❤️",
+      },
+    });
+  });
+
+  it("serializes emojiPages to yaml and round-trips without loss", () => {
+    const original = parseLayoutYaml(`
+emojiPages:
+  - id: page1
+    name: Smileys
+    cells:
+      KeyQ: "😀"
+      KeyA: "🔥"
+      KeyZ: "✨"
+`);
+    expect(original).not.toBeNull();
+    const yaml = serializeLayoutYaml(original!);
+    const reparsed = parseLayoutYaml(yaml);
+    expect(reparsed).not.toBeNull();
+    expect(reparsed!.emojiPages[0]).toMatchObject({
+      id: "page1",
+      name: "Smileys",
+      cells: { KeyQ: "😀", KeyA: "🔥", KeyZ: "✨" },
+    });
+  });
+
+  it("migrates legacy single-char emoji hotkeys to KeyX format", () => {
+    const preset = parseLayoutYaml(`
+emojiPages:
+  - id: legacy
+    name: Old format
+    cells:
+      q: "😀"
+      w: "👍"
+      a: "🔥"
+`);
+    expect(preset).not.toBeNull();
+    const cells = preset!.emojiPages[0]!.cells;
+    expect(cells["KeyQ" as keyof typeof cells]).toBe("😀");
+    expect(cells["KeyW" as keyof typeof cells]).toBe("👍");
+    expect(cells["KeyA" as keyof typeof cells]).toBe("🔥");
+    expect(cells["q" as keyof typeof cells]).toBeUndefined();
+  });
+
+  it("filters out invalid hotkey names in emojiPages cells", () => {
+    const preset = parseLayoutYaml(`
+emojiPages:
+  - id: p1
+    name: Test
+    cells:
+      KeyQ: "😀"
+      InvalidKey: "💥"
+      "": "🤔"
+`);
+    expect(preset).not.toBeNull();
+    const cells = preset!.emojiPages[0]!.cells;
+    expect(cells["KeyQ" as keyof typeof cells]).toBe("😀");
+    expect(Object.keys(cells)).toHaveLength(1);
+  });
+
+  it("falls back to a default emoji page when emojiPages is empty or absent", () => {
+    const fromEmpty = parseLayoutYaml(`
+emojiPages: []
+`);
+    const fromAbsent = parseLayoutYaml(`
+quickActions: []
+`);
+    const defaultPage = createDefaultEmojiPage();
+    expect(fromEmpty!.emojiPages).toHaveLength(1);
+    expect(fromAbsent!.emojiPages).toHaveLength(1);
+    expect(fromEmpty!.emojiPages[0]!.cells).toMatchObject(defaultPage.cells);
+  });
+
+  it("preserves multiple emoji pages on round-trip", () => {
+    const preset = parseLayoutYaml(`
+emojiPages:
+  - id: p1
+    name: Page One
+    cells:
+      KeyQ: "😀"
+  - id: p2
+    name: Page Two
+    cells:
+      KeyW: "🎉"
+`);
+    expect(preset!.emojiPages).toHaveLength(2);
+    const yaml = serializeLayoutYaml(preset!);
+    const reparsed = parseLayoutYaml(yaml);
+    expect(reparsed!.emojiPages).toHaveLength(2);
+    expect(reparsed!.emojiPages[0]!.name).toBe("Page One");
+    expect(reparsed!.emojiPages[1]!.name).toBe("Page Two");
+  });
+
+  it("extracts and applies emojiPages in preset round-trip while cloning data", () => {
+    const config = createDefaultConfig();
+    config.emojiPages = [
+      {
+        id: "p1",
+        name: "My Emojis",
+        cells: { KeyQ: "😀", KeyW: "🔥" },
+      },
+    ];
+
+    const preset = extractPresetFromConfig(config);
+    const next = applyPresetToConfig(createDefaultConfig(), preset, undefined);
+
+    expect(next.emojiPages).toEqual(config.emojiPages);
+
+    preset.emojiPages[0]!.name = "Changed";
+    expect(next.emojiPages[0]!.name).toBe("My Emojis");
   });
 
   it("localizes the built-in preset from i18n without changing the user yaml format", () => {

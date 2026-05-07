@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { emit, listen } from '@tauri-apps/api/event'
+import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import {
     EMOJI_HOTKEYS,
@@ -7,14 +7,12 @@ import {
     createDefaultEmojiPage,
 } from '~/types/config'
 import type { EmojiHotkey } from '~/types/config'
+import { useMenuPage } from '~/composables/useMenuPage'
 
 const { config, load } = useConfig()
 const toast = useToast()
 const { t } = useI18n()
 
-const pageIndex = ref(0)
-const scrollEl = ref<HTMLElement | null>(null)
-const pageEls = ref<HTMLElement[]>([])
 const pages = computed(() => {
     const configured = config.value.emojiPages || []
     return configured.length > 0 ? configured : [createDefaultEmojiPage()]
@@ -26,51 +24,25 @@ const page = computed(
         createDefaultEmojiPage(),
 )
 
-let unlistenShow: (() => void) | null = null
-let scrollFrame = 0
+const {
+    pageIndex,
+    scrollEl,
+    pageEls,
+    wait,
+    setPage,
+    setPageRef,
+    onScroll,
+    resetScroll,
+    handleTabKey,
+    cleanup,
+} = useMenuPage(pages)
 
-function wait(ms: number) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms))
-}
+let unlistenShow: (() => void) | null = null
 
 async function closeMenu() {
-    await emit('hide_emoji_menu').catch((e) => {
-        logger.error('Failed to emit hide emoji menu', e)
+    await invoke('hide_emoji_menu').catch((e) => {
+        logger.error('Failed to hide emoji menu', e)
     })
-}
-
-function nextPage() {
-    setPage((pageIndex.value + 1) % Math.max(1, pages.value.length))
-}
-
-function prevPage() {
-    setPage(
-        (pageIndex.value - 1 + Math.max(1, pages.value.length)) %
-            Math.max(1, pages.value.length),
-    )
-}
-
-function setPage(index: number) {
-    pageIndex.value = index
-    pageEls.value[index]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-}
-
-function setPageRef(el: unknown, index: number) {
-    if (el instanceof HTMLElement) {
-        pageEls.value[index] = el
-    }
-}
-
-function updatePageFromScroll() {
-    const scroller = scrollEl.value
-    if (!scroller) return
-    const next = Math.round(scroller.scrollTop / Math.max(1, scroller.clientHeight))
-    pageIndex.value = Math.min(Math.max(next, 0), Math.max(0, pages.value.length - 1))
-}
-
-function onScroll() {
-    if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
-    scrollFrame = window.requestAnimationFrame(updatePageFromScroll)
 }
 
 async function applyEmoji(emoji: string | undefined) {
@@ -95,15 +67,7 @@ function onKeydown(e: KeyboardEvent) {
         void closeMenu()
         return
     }
-    if (e.key === 'Tab') {
-        e.preventDefault()
-        if (e.shiftKey) {
-            prevPage()
-        } else {
-            nextPage()
-        }
-        return
-    }
+    if (handleTabKey(e)) return
     const code = e.code
     if ((EMOJI_HOTKEYS as readonly string[]).includes(code)) {
         e.preventDefault()
@@ -116,9 +80,7 @@ onMounted(async () => {
 
     unlistenShow = await listen('show_emoji_menu', async () => {
         await load()
-        pageIndex.value = 0
-        await nextTick()
-        scrollEl.value?.scrollTo({ top: 0 })
+        await resetScroll()
     })
 
     window.addEventListener('keydown', onKeydown)
@@ -126,7 +88,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKeydown)
-    if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
+    cleanup()
     unlistenShow?.()
 })
 </script>
@@ -184,7 +146,7 @@ onBeforeUnmount(() => {
                 </section>
             </div>
 
-            <div class="mt-2 flex items-center justify-center gap-1.5">
+            <div v-if="pages.length > 1" class="mt-2 flex items-center justify-center gap-1.5">
                 <button
                     v-for="(_, index) in pages"
                     :key="index"

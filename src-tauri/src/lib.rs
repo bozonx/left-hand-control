@@ -242,6 +242,14 @@ fn hide_quick_menu(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn hide_emoji_menu(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("emoji-menu") {
+        window.hide().map_err(|e| format!("hide emoji menu: {e}"))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn insert_text(text: String) -> Result<(), String> {
     let action = format!("text:{}", text);
     eprintln!("[cmd] insert_text action={action}");
@@ -343,20 +351,6 @@ pub fn run() {
                     eprintln!("[emoji-menu] schedule show failed: {e}");
                 }
             });
-            let hide_emoji_menu_app = app.handle().clone();
-            app.listen("hide_emoji_menu", move |_| {
-                let app = hide_emoji_menu_app.clone();
-                let app_for_thread = app.clone();
-                if let Err(e) = app.run_on_main_thread(move || {
-                    if let Some(window) = app_for_thread.get_webview_window("emoji-menu") {
-                        if let Err(e) = window.destroy() {
-                            eprintln!("[emoji-menu] destroy failed: {e}");
-                        }
-                    }
-                }) {
-                    eprintln!("[emoji-menu] schedule hide failed: {e}");
-                }
-            });
             if let Some(window) = app.get_webview_window("main") {
                 window_state::restore(&window);
                 let _ = window.show();
@@ -413,6 +407,7 @@ pub fn run() {
             execute_action,
             insert_text,
             hide_quick_menu,
+            hide_emoji_menu,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
