@@ -4,7 +4,6 @@ import type { Command } from '~/types/config'
 
 const props = defineProps<{
   uiKey: string
-  nameInputId: string
   usage: string[]
   idError?: string
   linuxError?: string
@@ -23,12 +22,13 @@ const emit = defineEmits<{
 }>()
 
 const { copy: copyToClipboard } = useClipboardCopy()
+const nameInput = useTemplateRef('nameInput')
 
 watch(
   () => props.focusName,
   (value) => {
     if (!value) return
-    const input = document.getElementById(props.nameInputId) as HTMLInputElement | null
+    const input = (nameInput.value as any)?.inputRef as HTMLInputElement | null
     if (!input) return
     input.focus()
     input.select()
@@ -88,7 +88,7 @@ async function copyCommandId() {
             />
           </template>
           <UInput
-            :id="nameInputId"
+            ref="nameInput"
             v-model="command.name"
             :placeholder="$t('commands.namePh')"
             class="w-full"

@@ -10,7 +10,6 @@ const props = defineProps<{
   defaultStepPauseMs: number
   defaultModifierDelayMs: number
   uiKey: string
-  nameInputId: string
   stepError?: (step: MacroStep) => string | null
   stepWarning?: (step: MacroStep) => string | null
   isFirst?: boolean
@@ -31,6 +30,7 @@ const emit = defineEmits<{
 }>()
 
 const { copy: copyToClipboard } = useClipboardCopy()
+const nameInput = useTemplateRef('nameInput')
 const stepConfirmOpen = ref(false)
 const pendingStepId = ref<string | null>(null)
 
@@ -56,7 +56,7 @@ watch(
   () => props.focusName,
   (value) => {
     if (!value) return
-    const input = document.getElementById(props.nameInputId) as HTMLInputElement | null
+    const input = (nameInput.value as any)?.inputRef as HTMLInputElement | null
     if (!input) return
     input.focus()
     input.select()
@@ -117,7 +117,7 @@ async function copyMacroId() {
             />
           </template>
           <UInput
-            :id="nameInputId"
+            ref="nameInput"
             v-model="macro.name"
             :placeholder="$t('macros.namePh')"
             class="w-full"

@@ -25,10 +25,6 @@ const pendingDeleteKey = ref<string | null>(null)
 const pendingDeleteLabel = ref<string | null>(null)
 const focusCommandKey = ref<string | null>(null)
 
-function commandNameInputId(uiKey: string) {
-  return `command-name-${uiKey}`
-}
-
 function clearFocusCommandKey(uiKey: string) {
   if (focusCommandKey.value === uiKey) focusCommandKey.value = null
 }
@@ -149,7 +145,6 @@ function cancelRemove() {
           :key="uiKeyOf(command)"
           v-model:command="config.commands[index]"
           :ui-key="uiKeyOf(command)"
-          :name-input-id="commandNameInputId(uiKeyOf(command))"
           :usage="usage[command.id] ?? []"
           :id-error="idError(command) ?? undefined"
           :linux-error="linuxError(command) ?? undefined"

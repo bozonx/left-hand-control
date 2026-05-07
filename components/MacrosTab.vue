@@ -24,10 +24,6 @@ const {
 const systemOpen = ref(false)
 const focusMacroKey = ref<string | null>(null)
 
-function macroNameInputId(uiKey: string) {
-  return `macro-name-${uiKey}`
-}
-
 function clearFocusMacroKey(uiKey: string) {
   if (focusMacroKey.value === uiKey) focusMacroKey.value = null
 }
@@ -109,7 +105,6 @@ function cancelRemove() {
           :ui-key="uiKeyOf(macro)"
           :is-first="index === 0"
           :is-last="index === config.macros.length - 1"
-          :name-input-id="macroNameInputId(uiKeyOf(macro))"
           :id-error="idError(macro) ?? undefined"
           :step-error="stepError"
           :step-warning="stepWarning"
