@@ -20,7 +20,7 @@ onMounted(() => {
     <template #header>
       <button
         type="button"
-        class="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
+        class="w-full flex items-center justify-between gap-3 text-left cursor-pointer -m-4 p-4 sm:-mx-6 sm:px-6"
         :aria-expanded="isOpen"
         @click="toggleOpen"
       >

@@ -91,6 +91,7 @@ const editTitle = computed(() => {
         <UButton
           :color="isLayoutDirty ? 'error' : 'primary'"
           :loading="!!applying"
+          autofocus
           @click="confirmApply"
         >
           {{
@@ -154,7 +155,7 @@ const editTitle = computed(() => {
           <UInput
             v-model="editName"
             class="w-full"
-            :placeholder="$t('settings.namePh')"
+            :placeholder="editMode !== 'name' ? $t('settings.namePh') : undefined"
             autofocus
             @keyup.enter="performEdit(false)"
           />
@@ -214,7 +215,7 @@ const editTitle = computed(() => {
         <UButton variant="ghost" color="neutral" @click="closeOverwriteConfirm">
           {{ $t("common.cancel") }}
         </UButton>
-        <UButton color="error" @click="confirmOverwrite">
+        <UButton color="error" autofocus @click="confirmOverwrite">
           {{ $t("common.override") }}
         </UButton>
       </div>
@@ -237,7 +238,7 @@ const editTitle = computed(() => {
         <UButton variant="ghost" color="neutral" @click="closeResetConfirm">
           {{ $t("common.cancel") }}
         </UButton>
-        <UButton color="error" :loading="resetBusy" @click="confirmReset">
+        <UButton color="error" :loading="resetBusy" autofocus @click="confirmReset">
           {{ $t("settings.resetUnsavedBtn") }}
         </UButton>
       </div>
@@ -260,7 +261,7 @@ const editTitle = computed(() => {
         <UButton variant="ghost" color="neutral" @click="clearDeletePending">
           {{ $t("common.cancel") }}
         </UButton>
-        <UButton color="error" :loading="deleteBusy" @click="confirmDelete">
+        <UButton color="error" :loading="deleteBusy" autofocus @click="confirmDelete">
           {{ $t("common.delete") }}
         </UButton>
       </div>

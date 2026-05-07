@@ -37,6 +37,7 @@ export function useSettingsScreen(): SettingsScreenState {
     config,
     currentLayoutId,
     currentLayoutDescription,
+    isLayoutDirty,
     library,
     applyPreset,
     markLayoutSavedAs,

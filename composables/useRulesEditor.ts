@@ -4,6 +4,7 @@ export function useRulesEditor() {
   const { config } = useConfig()
   const { createLayer } = useLayers()
   const { t } = useI18n()
+  const toast = useToast()
 
   const layerOptions = computed(() =>
     [
@@ -64,6 +65,11 @@ export function useRulesEditor() {
       )
       if (rule) rule.layerId = id
     }
+    toast.add({
+      title: t('rules.layerCreated', { name: newLayerName.value }),
+      color: 'success',
+      icon: 'i-lucide-layers',
+    })
     newLayerOpen.value = false
   }
 

@@ -15,19 +15,6 @@ const {
   markRuleConfigured,
 } = useRulesEditor()
 
-const _props = defineProps<{
-  showBackToTop?: boolean
-}>()
-
-const emit = defineEmits<{
-  backToTop: []
-}>()
-
-function addRuleFromFooter() {
-  addRule()
-  emit('backToTop')
-}
-
 const deleteConfirmOpen = ref(false)
 const pendingDeleteRuleId = ref<string | null>(null)
 
@@ -88,7 +75,7 @@ function cancelRemoveRule() {
           :is-first="index === 0"
           :is-last="index === config.rules.length - 1"
           :is-new="rule.id === newestRuleId"
-          :key-error="rule.id === newestRuleId && !rule.key ? $t('rules.keyRequired') : undefined"
+          :key-error="!rule.key ? $t('rules.keyRequired') : undefined"
           @remove="requestRemoveRule"
           @move-up="moveRule($event, 'up')"
           @move-down="moveRule($event, 'down')"
@@ -97,20 +84,6 @@ function cancelRemoveRule() {
         />
       </div>
 
-      <template #footer>
-        <div class="flex items-center justify-between gap-3">
-          <UButton icon="i-lucide-plus" size="sm" @click="addRuleFromFooter">
-            {{ $t('rules.addBtn') }}
-          </UButton>
-          <ULink
-            v-if="showBackToTop"
-            class="text-xs text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors cursor-pointer"
-            @click="emit('backToTop')"
-          >
-            {{ $t('common.backToTop') }}
-          </ULink>
-        </div>
-      </template>
     </UCard>
 
     <LayerEditorModal
@@ -133,7 +106,7 @@ function cancelRemoveRule() {
           <UButton variant="ghost" color="neutral" @click="cancelRemoveRule">
             {{ $t('common.cancel') }}
           </UButton>
-          <UButton color="error" icon="i-lucide-trash-2" @click="confirmRemoveRule">
+          <UButton color="error" icon="i-lucide-trash-2" autofocus @click="confirmRemoveRule">
             {{ $t('common.delete') }}
           </UButton>
         </div>

@@ -204,7 +204,7 @@ export default {
     tapHint:
       'Runs when the trigger key is released before the hold timeout. If a double-tap action is set, the single tap waits for the double-tap window before firing.',
     tapPh: 'No action',
-    holdActionLabel: 'Hold action',
+    holdActionLabel: 'Hold button',
     holdActionHint:
       'What happens while the trigger key is held. Use the physical key as-is, suppress it, or hold another key or shortcut instead. This can run together with a layer.',
     holdActionPh: 'Pick a keystroke',
@@ -282,6 +282,7 @@ export default {
     layerNamePh: 'For example: Navigation',
     layerDesc: 'Description (optional)',
     layerDescPh: 'Short description of this layer',
+    layerCreated: 'Layer "{name}" created',
   },
   keymap: {
     layerLabel: 'Layer',
@@ -340,6 +341,8 @@ export default {
     clearExtrasTitle: 'Clear extra keys',
     clearExtrasBody: 'All extra keys will be removed.',
     extrasCleared: 'Extra keys cleared',
+    clearKeyboardTooltip: 'Clears key bindings only. Extra keys are not affected.',
+    keyboardInfo: 'Display modes affect labels only — the key code stays the same. "US layout" shows standard letter labels for visual reference. "Key codes" shows app-specific codes (e.g. KeyA, ArrowLeft). "Numeric codes" shows raw system event codes.',
   },
   macros: {
     title: 'User macros',

@@ -3,6 +3,7 @@ const _props = defineProps<{
   title: string
   confirmLabel: string
   namePlaceholder?: string
+  nameOnly?: boolean
 }>()
 
 const open = defineModel<boolean>({ required: true })
@@ -33,7 +34,7 @@ function confirmShortcut(event: KeyboardEvent) {
             @keydown.enter="$emit('confirm')"
           />
         </UFormField>
-        <UFormField :label="$t('rules.layerDesc')">
+        <UFormField v-if="!_props.nameOnly" :label="$t('rules.layerDesc')">
           <UTextarea
             v-model="description"
             :placeholder="$t('rules.layerDescPh')"

@@ -129,6 +129,7 @@ const {
       v-model:description="renameDraftDescription"
       :title="$t('keymap.renameLayerTitle')"
       :confirm-label="$t('common.save')"
+      name-only
       @confirm="confirmRename"
     />
 
@@ -175,6 +176,7 @@ const {
           <UButton
             color="error"
             icon="i-lucide-trash-2"
+            autofocus
             @click="deleteSelectedLayer"
           >
             {{ $t('common.delete') }}
@@ -204,6 +206,7 @@ const {
           <UButton
             color="error"
             icon="i-lucide-eraser"
+            autofocus
             @click="clearSelectedLayer"
           >
             {{ $t('common.clear') }}
@@ -233,6 +236,7 @@ const {
           <UButton
             color="error"
             icon="i-lucide-eraser"
+            autofocus
             @click="clearSelectedExtras"
           >
             {{ $t('common.clear') }}

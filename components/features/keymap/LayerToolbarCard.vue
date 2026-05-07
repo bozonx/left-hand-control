@@ -77,17 +77,6 @@ function stopDescriptionEditingShortcut(event: KeyboardEvent) {
               @click="emit('rename')"
             />
           </AppTooltip>
-          <AppTooltip :text="$t('keymap.cloneLayerTooltip')">
-            <UButton
-              icon="i-lucide-copy"
-              size="sm"
-              color="neutral"
-              variant="ghost"
-              :aria-label="$t('keymap.cloneLayerAria', { name: currentLayerName ?? '' })"
-              :disabled="!selectedLayerId"
-              @click="emit('clone')"
-            />
-          </AppTooltip>
           <AppTooltip :text="$t('keymap.deleteLayerTooltip')">
             <UButton
               icon="i-lucide-trash-2"
@@ -100,6 +89,17 @@ function stopDescriptionEditingShortcut(event: KeyboardEvent) {
               @click="$emit('delete')"
             />
           </AppTooltip>
+          <UButton
+            icon="i-lucide-copy"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            :aria-label="$t('keymap.cloneLayerAria', { name: currentLayerName ?? '' })"
+            :disabled="!selectedLayerId"
+            @click="emit('clone')"
+          >
+            {{ $t('common.duplicate') }}
+          </UButton>
         </div>
       </UFormField>
       <div class="flex justify-end">

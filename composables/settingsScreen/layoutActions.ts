@@ -20,6 +20,7 @@ interface LayoutActionOptions {
   config: Ref<AppConfig>;
   currentLayoutId: ComputedRef<string | undefined>;
   currentLayoutDescription: ComputedRef<string>;
+  isLayoutDirty: ComputedRef<boolean>;
   library: ReturnType<typeof useLayoutLibrary>;
   applyPreset: (preset: LayoutPreset, layoutId: string | undefined) => Promise<void>;
   markLayoutSavedAs: (layoutId: string) => Promise<void>;
@@ -32,6 +33,7 @@ export function useSettingsLayoutActions({
   config,
   currentLayoutId,
   currentLayoutDescription,
+  isLayoutDirty,
   library,
   applyPreset,
   markLayoutSavedAs,
@@ -55,6 +57,7 @@ export function useSettingsLayoutActions({
     library,
     applyPreset,
     replaceCurrentLayoutSnapshot,
+    isLayoutDirty,
   });
 
   const save = useLayoutSave({

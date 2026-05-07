@@ -9,6 +9,8 @@ import {
 } from '~/types/config'
 import { systemActionById } from '~/utils/systemActions'
 import { systemMacroById } from '~/utils/systemMacros'
+import { STATIC_CATEGORIES } from '~/utils/actionCategories'
+import { isSingleKeyAction } from '~/utils/actionSyntax'
 
 // Helpers around macro references. `macro:<id>` resolves against the user's
 // `config.macros` first and falls back to the built-in system macros
@@ -97,7 +99,15 @@ export function useMacros() {
       }
     }
 
-    return { label: action }
+    if (isSingleKeyAction(action)) {
+      for (const cat of STATIC_CATEGORIES) {
+        if (cat.items.some((item) => item.value === action)) {
+          return { label: action, icon: cat.icon }
+        }
+      }
+    }
+
+    return { label: action, icon: 'i-lucide-keyboard' }
   }
 
   return {

@@ -1,3 +1,4 @@
+import type { ComputedRef } from "vue";
 import type { LayoutPreset } from "~/types/config";
 import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
 import {
@@ -12,12 +13,14 @@ interface LayoutApplyOptions {
   library: ReturnType<typeof useLayoutLibrary>;
   applyPreset: (preset: LayoutPreset, layoutId: string | undefined) => Promise<void>;
   replaceCurrentLayoutSnapshot: (preset: LayoutPreset, layoutId: string) => Promise<void>;
+  isLayoutDirty: ComputedRef<boolean>;
 }
 
 export function useLayoutApply({
   library,
   applyPreset,
   replaceCurrentLayoutSnapshot,
+  isLayoutDirty,
 }: LayoutApplyOptions) {
   const toast = useToast();
   const { t } = useI18n();
@@ -39,6 +42,9 @@ export function useLayoutApply({
   function requestApplyEntry(entry: LayoutLibraryEntry) {
     applyError.value = null;
     pendingApply.value = { entry, label: entry.name };
+    if (!isLayoutDirty.value) {
+      void confirmApply();
+    }
   }
 
   function cancelApply() {

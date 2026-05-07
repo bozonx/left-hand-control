@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { LEFT_HAND_ROWS, RIGHT_HAND_ROWS, keyLabel, type KeyLabelMode } from '~/utils/keys'
 import type { LayerKeymap } from '~/types/config'
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 
 const props = defineProps<{
   currentKeymap: LayerKeymap
@@ -18,17 +19,31 @@ const emit = defineEmits<{
   <UCard>
     <template #header>
       <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
+        <div class="flex items-center gap-1.5">
+          <h2 class="text-sm font-semibold">{{ $t('keymap.keyboardTitle') }}</h2>
+          <AppTooltip :text="$t('keymap.keyboardInfo')" align="start" toggle-on-click>
+            <UButton
+              icon="i-lucide-info"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :aria-label="$t('keymap.keyboardInfo')"
+            />
+          </AppTooltip>
+        </div>
         <div class="flex items-center gap-2">
-          <UButton
-            size="sm"
-            color="neutral"
-            variant="ghost"
-            icon="i-lucide-eraser"
-            @click="emit('clear')"
-          >
-            {{ $t('common.clear') }}
-          </UButton>
+          <AppTooltip :text="$t('keymap.clearKeyboardTooltip')">
+            <UButton
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-eraser"
+              @click="emit('clear')"
+            >
+              {{ $t('common.clear') }}
+            </UButton>
+          </AppTooltip>
           <UButtonGroup size="sm" class="bg-(--ui-bg-muted)/50 p-0.5 rounded-md">
             <UButton
               :variant="keyLabelMode === 'label' ? 'solid' : 'ghost'"

@@ -151,7 +151,7 @@ function updateHoldAction(value: string | null) {
 
         <UFormField>
           <template #label>
-            <span class="inline-flex items-center gap-2">
+            <span class="inline-flex items-center justify-between w-full">
               <FieldLabel
                 :label="$t('rules.layerLabel')"
                 :hint="$t('rules.layerHint')"
@@ -229,11 +229,14 @@ function updateHoldAction(value: string | null) {
               @update:model-value="updateHoldAction"
             />
           </UFormField>
-          <UFormField
-            v-if="rule.holdAction"
-            :label="$t('rules.isolateLabel')"
-            :hint="$t('rules.isolateHint')"
-          >
+          <UFormField v-if="rule.holdAction">
+            <template #label>
+              <FieldLabel
+                :label="$t('rules.isolateLabel')"
+                :hint="$t('rules.isolateHint')"
+                hint-visible-on="group-hover-rule"
+              />
+            </template>
             <UInput
               v-model="rule.isolate"
               size="sm"
