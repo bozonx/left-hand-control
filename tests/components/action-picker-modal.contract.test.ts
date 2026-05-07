@@ -44,6 +44,18 @@ const UModalStub = defineComponent({
   template: '<div v-if="open"><slot name="header" /><slot name="body" /></div>',
 })
 
+const defaultStubs = {
+  Teleport: defineComponent({
+    props: { to: { type: String, default: 'body' } },
+    template: '<div><slot /></div>',
+  }),
+  UModal: UModalStub,
+  ActionPickerBody: ActionPickerBodyStub,
+  AppTooltip: defineComponent({
+    template: '<div><slot /></div>',
+  }),
+}
+
 describe('ActionPickerModal', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -67,72 +79,40 @@ describe('ActionPickerModal', () => {
       template: '<ActionPickerModal v-model="value" v-model:open="open" placeholder="pick action" />',
     })
 
-    const wrapper = await mountSuspended(Harness, {
-      global: {
-        stubs: {
-          Teleport: defineComponent({
-            props: { to: { type: String, default: 'body' } },
-            template: '<div><slot /></div>',
-          }),
-          UModal: UModalStub,
-          ActionPickerBody: ActionPickerBodyStub,
-          AppTooltip: defineComponent({
-            template: '<div><slot /></div>',
-          }),
-        },
-      },
-    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     expect(wrapper.find('[data-testid="action-picker-view"]').exists()).toBe(true)
   })
 
   it('applies and closes immediately when an item is picked from the list', async () => {
+    const value = ref('')
+    const open = ref(true)
     const Harness = defineComponent({
       components: { ActionPickerModal },
-      setup() {
-        const value = ref('')
-        const open = ref(true)
-        return { open, value }
-      },
+      setup() { return { open, value } },
       template: '<ActionPickerModal v-model="value" v-model:open="open" placeholder="pick action" />',
     })
 
-    const wrapper = await mountSuspended(Harness, {
-      global: {
-        stubs: {
-          Teleport: defineComponent({
-            props: { to: { type: String, default: 'body' } },
-            template: '<div><slot /></div>',
-          }),
-          UModal: UModalStub,
-          ActionPickerBody: ActionPickerBodyStub,
-          AppTooltip: defineComponent({
-            template: '<div><slot /></div>',
-          }),
-        },
-      },
-    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     const pickerItem = wrapper.find('[data-testid="picker-item"]')
     expect(pickerItem.exists()).toBe(true)
     await pickerItem.trigger('click')
     await flushPromises()
 
-    expect((wrapper.vm as any).value).toBe('KeyA')
-    expect((wrapper.vm as any).open).toBe(false)
+    expect(value.value).toBe('KeyA')
+    expect(open.value).toBe(false)
     expect(wrapper.find('[data-testid="action-picker-view"]').exists()).toBe(false)
   })
 
   it('emits apply without cancel when an item is picked from the list', async () => {
+    const value = ref('')
+    const open = ref(true)
+    const applied = ref<string[]>([])
+    const cancelled = ref(0)
     const Harness = defineComponent({
       components: { ActionPickerModal },
-      setup() {
-        const value = ref('')
-        const open = ref(true)
-        const applied = ref<string[]>([])
-        const cancelled = ref(0)
-        return { applied, cancelled, open, value }
-      },
+      setup() { return { applied, cancelled, open, value } },
       template: `
         <ActionPickerModal
           v-model="value"
@@ -144,28 +124,14 @@ describe('ActionPickerModal', () => {
       `,
     })
 
-    const wrapper = await mountSuspended(Harness, {
-      global: {
-        stubs: {
-          Teleport: defineComponent({
-            props: { to: { type: String, default: 'body' } },
-            template: '<div><slot /></div>',
-          }),
-          UModal: UModalStub,
-          ActionPickerBody: ActionPickerBodyStub,
-          AppTooltip: defineComponent({
-            template: '<div><slot /></div>',
-          }),
-        },
-      },
-    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     await wrapper.get('[data-testid="picker-item"]').trigger('click')
     await flushPromises()
 
-    expect((wrapper.vm as any).value).toBe('KeyA')
-    expect((wrapper.vm as any).applied).toEqual(['KeyA'])
-    expect((wrapper.vm as any).cancelled).toBe(0)
+    expect(value.value).toBe('KeyA')
+    expect(applied.value).toEqual(['KeyA'])
+    expect(cancelled.value).toBe(0)
   })
 
   it('opens from its trigger button', async () => {
@@ -178,21 +144,7 @@ describe('ActionPickerModal', () => {
       template: '<ActionPickerModal v-model="value" placeholder="pick action" />',
     })
 
-    const wrapper = await mountSuspended(Harness, {
-      global: {
-        stubs: {
-          Teleport: defineComponent({
-            props: { to: { type: String, default: 'body' } },
-            template: '<div><slot /></div>',
-          }),
-          UModal: UModalStub,
-          ActionPickerBody: ActionPickerBodyStub,
-          AppTooltip: defineComponent({
-            template: '<div><slot /></div>',
-          }),
-        },
-      },
-    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     await wrapper.get('[data-testid="action-picker-trigger"]').trigger('click')
     await flushPromises()
@@ -211,21 +163,7 @@ describe('ActionPickerModal', () => {
       template: '<ActionPickerModal v-model="value" v-model:open="open" :allow-macros="false" placeholder="pick action" />',
     })
 
-    const wrapper = await mountSuspended(Harness, {
-      global: {
-        stubs: {
-          Teleport: defineComponent({
-            props: { to: { type: String, default: 'body' } },
-            template: '<div><slot /></div>',
-          }),
-          UModal: UModalStub,
-          ActionPickerBody: ActionPickerBodyStub,
-          AppTooltip: defineComponent({
-            template: '<div><slot /></div>',
-          }),
-        },
-      },
-    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     expect(wrapper.find('[data-testid="allow-macros"]').text()).toBe('false')
   })

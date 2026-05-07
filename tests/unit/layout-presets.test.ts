@@ -365,7 +365,7 @@ emojiPages:
 `)
     expect(preset).not.toBeNull()
     expect(preset!.emojiPages).toHaveLength(1)
-    expect(preset!.emojiPages[0]).toMatchObject({
+    expect(preset!.emojiPages![0]!).toMatchObject({
       id: 'page1',
       name: 'Reactions',
       cells: {
@@ -390,7 +390,7 @@ emojiPages:
     const yaml = serializeLayoutYaml(original!)
     const reparsed = parseLayoutYaml(yaml)
     expect(reparsed).not.toBeNull()
-    expect(reparsed!.emojiPages[0]).toMatchObject({
+    expect(reparsed!.emojiPages![0]!).toMatchObject({
       id: 'page1',
       name: 'Smileys',
       cells: { KeyQ: '😀', KeyA: '🔥', KeyZ: '✨' },
@@ -408,7 +408,7 @@ emojiPages:
       a: "🔥"
 `)
     expect(preset).not.toBeNull()
-    const cells = preset!.emojiPages[0]!.cells
+    const cells = preset!.emojiPages![0]!.cells
     expect(Object.keys(cells)).toHaveLength(0)
   })
 
@@ -423,7 +423,7 @@ emojiPages:
       "": "🤔"
 `)
     expect(preset).not.toBeNull()
-    const cells = preset!.emojiPages[0]!.cells
+    const cells = preset!.emojiPages![0]!.cells
     expect(cells['KeyQ' as keyof typeof cells]).toBe('😀')
     expect(Object.keys(cells)).toHaveLength(1)
   })
@@ -438,7 +438,7 @@ quickActions: []
     const defaultPage = createDefaultEmojiPage()
     expect(fromEmpty!.emojiPages).toHaveLength(1)
     expect(fromAbsent!.emojiPages).toHaveLength(1)
-    expect(fromEmpty!.emojiPages[0]!.cells).toMatchObject(defaultPage.cells)
+    expect(fromEmpty!.emojiPages![0]!.cells).toMatchObject(defaultPage.cells)
   })
 
   it('preserves multiple emoji pages on round-trip', () => {
@@ -457,8 +457,8 @@ emojiPages:
     const yaml = serializeLayoutYaml(preset!)
     const reparsed = parseLayoutYaml(yaml)
     expect(reparsed!.emojiPages).toHaveLength(2)
-    expect(reparsed!.emojiPages[0]!.name).toBe('Page One')
-    expect(reparsed!.emojiPages[1]!.name).toBe('Page Two')
+    expect(reparsed!.emojiPages![0]!.name).toBe('Page One')
+    expect(reparsed!.emojiPages![1]!.name).toBe('Page Two')
   })
 
   it('extracts and applies emojiPages in preset round-trip while cloning data', () => {
@@ -476,7 +476,7 @@ emojiPages:
 
     expect(next.emojiPages).toEqual(config.emojiPages)
 
-    preset.emojiPages[0]!.name = 'Changed'
+    preset.emojiPages![0]!.name = 'Changed'
     expect(next.emojiPages[0]!.name).toBe('My Emojis')
   })
 

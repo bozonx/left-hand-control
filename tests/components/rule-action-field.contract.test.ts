@@ -65,6 +65,12 @@ const FieldResetButtonStub = defineComponent({
   template: '<button type="button" data-testid="field-reset" :aria-label="label" @click="$emit(\'click\')">reset</button>',
 })
 
+const defaultStubs = {
+  FieldResetButton: FieldResetButtonStub,
+  ResettableSelectMenu: ResettableSelectMenuStub,
+  ActionPickerModal: ActionPickerModalStub,
+}
+
 describe('RuleActionField', () => {
   beforeEach(() => {
     useMacrosMock.mockReset()
@@ -78,58 +84,38 @@ describe('RuleActionField', () => {
   })
 
   it('restores the previous value when action picking is cancelled', async () => {
+    const value = ref<string | null>('')
     const Harness = defineComponent({
       components: { RuleActionField },
-      setup() {
-        const value = ref<string | null>('')
-        return { value }
-      },
+      setup() { return { value } },
       template: '<RuleActionField v-model="value" placeholder="pick action" />',
     })
 
-    const wrapper = await mountSuspended(Harness, {
-      global: {
-        stubs: {
-          FieldResetButton: FieldResetButtonStub,
-          ResettableSelectMenu: ResettableSelectMenuStub,
-          ActionPickerModal: ActionPickerModalStub,
-        },
-      },
-    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     await wrapper.get('[data-testid="pick-action"]').trigger('click')
     expect(wrapper.get('[data-testid="picker-modal"]').attributes('data-open')).toBe('yes')
 
     await wrapper.get('[data-testid="modal-cancel"]').trigger('click')
 
-    expect((wrapper.vm as any).value).toBe('')
+    expect(value.value).toBe('')
     expect(wrapper.find('[data-testid="mode-select"]').exists()).toBe(true)
   })
 
   it('stores the chosen action and can reset back to native', async () => {
+    const value = ref<string | null>('')
     const Harness = defineComponent({
       components: { RuleActionField },
-      setup() {
-        const value = ref<string | null>('')
-        return { value }
-      },
+      setup() { return { value } },
       template: '<RuleActionField v-model="value" placeholder="pick action" />',
     })
 
-    const wrapper = await mountSuspended(Harness, {
-      global: {
-        stubs: {
-          FieldResetButton: FieldResetButtonStub,
-          ResettableSelectMenu: ResettableSelectMenuStub,
-          ActionPickerModal: ActionPickerModalStub,
-        },
-      },
-    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     await wrapper.get('[data-testid="pick-action"]').trigger('click')
     await wrapper.get('[data-testid="modal-apply"]').trigger('click')
 
-    expect((wrapper.vm as any).value).toBe('KeyA')
+    expect(value.value).toBe('KeyA')
     expect(wrapper.find('[data-testid="mode-select"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('KeyA')
 
@@ -140,7 +126,7 @@ describe('RuleActionField', () => {
 
     await resetButton!.trigger('click')
 
-    expect((wrapper.vm as any).value).toBe('')
+    expect(value.value).toBe('')
     expect(wrapper.find('[data-testid="mode-select"]').exists()).toBe(true)
   })
 })

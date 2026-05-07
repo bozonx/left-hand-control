@@ -5,20 +5,23 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import ActionPickerValueField from '~/components/features/action-picker/ActionPickerValueField.vue'
 
-const Harness = defineComponent({
-  components: { ActionPickerValueField },
-  setup() {
-    const value = ref('KeyA')
-    return { value }
-  },
-  template: `
-    <ActionPickerValueField
-      v-model="value"
-      active-category="special"
-      :filtered-items="[]"
-    />
-  `,
-})
+function makeHarness() {
+  const value = ref('KeyA')
+  const component = defineComponent({
+    components: { ActionPickerValueField },
+    setup() {
+      return { value }
+    },
+    template: `
+      <ActionPickerValueField
+        v-model="value"
+        active-category="special"
+        :filtered-items="[]"
+      />
+    `,
+  })
+  return { value, component }
+}
 
 describe('ActionPickerValueField key capture', () => {
   beforeEach(() => {
@@ -26,7 +29,8 @@ describe('ActionPickerValueField key capture', () => {
   })
 
   it('captures a modifier chord from the overlay', async () => {
-    const wrapper = await mountSuspended(Harness)
+    const { value, component } = makeHarness()
+    const wrapper = await mountSuspended(component)
 
     await wrapper.get('button[aria-label="Listen for key press"]').trigger('click')
 
@@ -36,24 +40,25 @@ describe('ActionPickerValueField key capture', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyK', key: 'k' }))
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).value).toBe('KeyA')
+    expect(value.value).toBe('KeyA')
     expect(document.querySelector('[data-testid="key-capture-overlay"]')?.textContent).toContain('Ctrl+KeyK')
 
     document.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyK', key: 'k' }))
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).value).toBe('KeyA')
+    expect(value.value).toBe('KeyA')
     expect(document.querySelector('[data-testid="key-capture-overlay"]')).not.toBeNull()
 
     document.dispatchEvent(new KeyboardEvent('keyup', { code: 'ControlLeft', key: 'Control' }))
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).value).toBe('Ctrl+KeyK')
+    expect(value.value).toBe('Ctrl+KeyK')
     expect(document.querySelector('[data-testid="key-capture-overlay"]')).toBeNull()
   })
 
   it('cancels capture without changing the draft', async () => {
-    const wrapper = await mountSuspended(Harness)
+    const { value, component } = makeHarness()
+    const wrapper = await mountSuspended(component)
 
     await wrapper.get('button[aria-label="Listen for key press"]').trigger('click')
     document.dispatchEvent(new KeyboardEvent('keydown', { code: 'ControlLeft', key: 'Control' }))
@@ -64,19 +69,20 @@ describe('ActionPickerValueField key capture', () => {
     cancel.click()
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).value).toBe('KeyA')
+    expect(value.value).toBe('KeyA')
     expect(document.querySelector('[data-testid="key-capture-overlay"]')).toBeNull()
   })
 
   it('captures a single modifier by its physical key code', async () => {
-    const wrapper = await mountSuspended(Harness)
+    const { value, component } = makeHarness()
+    const wrapper = await mountSuspended(component)
 
     await wrapper.get('button[aria-label="Listen for key press"]').trigger('click')
     document.dispatchEvent(new KeyboardEvent('keydown', { code: 'ShiftLeft', key: 'Shift' }))
     document.dispatchEvent(new KeyboardEvent('keyup', { code: 'ShiftLeft', key: 'Shift' }))
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).value).toBe('ShiftLeft')
+    expect(value.value).toBe('ShiftLeft')
     expect(document.querySelector('[data-testid="key-capture-overlay"]')).toBeNull()
   })
 })
