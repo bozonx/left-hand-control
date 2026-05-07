@@ -13,7 +13,6 @@ import {
 import { userLayoutId } from '~/composables/useLayoutLibrary'
 import {
   clonePreset,
-  legacyPresetFromPersistedConfig,
   parseCurrentLayout,
   serializeCurrentLayout,
 } from '~/composables/config/layoutSerialization'
@@ -32,7 +31,10 @@ import {
 import { commandFingerprint, commandTrustKey } from '~/utils/commandTrust'
 
 export { getSettingsDir } from '~/composables/config/storage'
-export { normalizeConfig, parsePersistedConfig } from '~/composables/config/normalization'
+export {
+  normalizeConfig,
+  parsePersistedConfig,
+} from '~/composables/config/normalization'
 
 interface ConfigState {
   config: Ref<AppConfig>
@@ -46,9 +48,15 @@ interface ConfigState {
   isLayoutDirty: ComputedRef<boolean>
   load: () => Promise<void>
   flush: () => Promise<void>
-  applyPreset: (preset: LayoutPreset, layoutId: string | undefined) => Promise<void>
+  applyPreset: (
+    preset: LayoutPreset,
+    layoutId: string | undefined,
+  ) => Promise<void>
   markLayoutSavedAs: (layoutId: string) => Promise<void>
-  replaceCurrentLayoutSnapshot: (preset: LayoutPreset, layoutId: string) => Promise<void>
+  replaceCurrentLayoutSnapshot: (
+    preset: LayoutPreset,
+    layoutId: string,
+  ) => Promise<void>
   resetCurrentLayout: () => Promise<void>
 }
 
@@ -71,7 +79,9 @@ export function useConfig(): ConfigState {
   const settingsDir = ref('')
   const needsWelcome = ref(false)
   const layoutSnapshot = ref<string>(layoutSnapshotOf(config.value))
-  const savedLayoutPreset = ref<LayoutPreset>(extractPresetFromConfig(config.value))
+  const savedLayoutPreset = ref<LayoutPreset>(
+    extractPresetFromConfig(config.value),
+  )
 
   const currentLayoutId = computed<string | undefined>(
     () => config.value.settings.currentLayoutId || undefined,
@@ -100,10 +110,15 @@ export function useConfig(): ConfigState {
     })
   }
 
-  function notifyShellCommandsNeedApproval(preset: LayoutPreset, layoutId: string | undefined) {
+  function notifyShellCommandsNeedApproval(
+    preset: LayoutPreset,
+    layoutId: string | undefined,
+  ) {
     if (preset.commands.length === 0) return
     const key = commandTrustKey(layoutId)
-    const trusted = config.value.settings.commandTrust[key]?.fingerprint === commandFingerprint(preset.commands)
+    const trusted =
+      config.value.settings.commandTrust[key]?.fingerprint ===
+      commandFingerprint(preset.commands)
     if (trusted) return
     toast.add({
       title: t('commands.approvalToast'),
@@ -154,7 +169,10 @@ export function useConfig(): ConfigState {
     const oldTrustKey = commandTrustKey(config.value.settings.currentLayoutId)
     const newTrustKey = commandTrustKey(layoutId)
     const currentFingerprint = commandFingerprint(config.value.commands)
-    if (config.value.settings.commandTrust[oldTrustKey]?.fingerprint === currentFingerprint) {
+    if (
+      config.value.settings.commandTrust[oldTrustKey]?.fingerprint ===
+      currentFingerprint
+    ) {
       config.value.settings.commandTrust[newTrustKey] = {
         ...config.value.settings.commandTrust[oldTrustKey],
       }
@@ -234,14 +252,15 @@ export function useConfig(): ConfigState {
         layoutSnapshot.value = layoutSnapshotOf(config.value)
         settingsDir.value = await getSettingsDir()
         loadError.value = null
-        logger.info('[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout')
+        logger.info(
+          '[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout',
+        )
         return
       }
 
       if (rawConfig) {
         needsWelcome.value = false
-        const persistedLayout =
-          parseCurrentLayout(rawCurrentLayout) ?? legacyPresetFromPersistedConfig(rawConfig)
+        const persistedLayout = parseCurrentLayout(rawCurrentLayout)
 
         if (persistedLayout) {
           config.value = applyPresetToConfig(

@@ -118,22 +118,22 @@ fn validate_device_path(path: &str) -> Result<(), String> {
 
 #[tauri::command]
 fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
-    eprintln!("[cmd] list_keyboards");
+    log::debug!("[cmd] list_keyboards");
     let r = mapper::list_keyboards();
     match &r {
-        Ok(v) => eprintln!("[cmd] list_keyboards -> {} devices", v.len()),
-        Err(e) => eprintln!("[cmd] list_keyboards ERR: {e}"),
+        Ok(v) => log::debug!("[cmd] list_keyboards -> {} devices", v.len()),
+        Err(e) => log::debug!("[cmd] list_keyboards ERR: {e}"),
     }
     r
 }
 
 #[tauri::command]
 fn list_mice() -> Result<Vec<mapper::KeyboardDevice>, String> {
-    eprintln!("[cmd] list_mice");
+    log::debug!("[cmd] list_mice");
     let r = mapper::list_mice();
     match &r {
-        Ok(v) => eprintln!("[cmd] list_mice -> {} devices", v.len()),
-        Err(e) => eprintln!("[cmd] list_mice ERR: {e}"),
+        Ok(v) => log::debug!("[cmd] list_mice -> {} devices", v.len()),
+        Err(e) => log::debug!("[cmd] list_mice ERR: {e}"),
     }
     r
 }
@@ -145,7 +145,7 @@ fn start_mapper(
     mouse_device_path: Option<String>,
     config_json: Option<String>,
 ) -> Result<(), String> {
-    eprintln!("[cmd] start_mapper device={device_path} mouse={mouse_device_path:?}");
+    log::debug!("[cmd] start_mapper device={device_path} mouse={mouse_device_path:?}");
     validate_device_path(&device_path)?;
     if let Some(ref mouse) = mouse_device_path {
         if !mouse.trim().is_empty() {
@@ -156,36 +156,36 @@ fn start_mapper(
         Some(s) if !s.trim().is_empty() => s,
         _ => {
             let msg = "configJson is required to start mapper".to_string();
-            eprintln!("[cmd] start_mapper ERR: {msg}");
+            log::debug!("[cmd] start_mapper ERR: {msg}");
             return Err(msg);
         }
     };
     if raw.is_empty() {
         let msg = "config.json not found — save settings first".to_string();
-        eprintln!("[cmd] start_mapper ERR: {msg}");
+        log::debug!("[cmd] start_mapper ERR: {msg}");
         return Err(msg);
     }
     let mouse = mouse_device_path.as_deref().filter(|s| !s.is_empty());
     let r = mapper::start(&device_path, mouse, &raw);
     if let Err(e) = &r {
-        eprintln!("[cmd] start_mapper ERR: {e}");
+        log::debug!("[cmd] start_mapper ERR: {e}");
     }
     r
 }
 
 #[tauri::command]
 fn stop_mapper() -> Result<(), String> {
-    eprintln!("[cmd] stop_mapper");
+    log::debug!("[cmd] stop_mapper");
     mapper::stop()
 }
 
 #[tauri::command]
 fn update_mapper_config(config_json: String) -> Result<(), String> {
-    eprintln!("[cmd] update_mapper_config");
+    log::debug!("[cmd] update_mapper_config");
     gamemode::update_settings_from_config_json(&config_json);
     let r = mapper::update_config(&config_json);
     if let Err(e) = &r {
-        eprintln!("[cmd] update_mapper_config ERR: {e}");
+        log::debug!("[cmd] update_mapper_config ERR: {e}");
     }
     r
 }
@@ -207,10 +207,10 @@ fn get_system_layouts() -> Result<Vec<layout::LayoutInfo>, String> {
 
 #[tauri::command]
 fn set_current_layout(index: u32) -> Result<(), String> {
-    eprintln!("[cmd] set_current_layout index={index}");
+    log::debug!("[cmd] set_current_layout index={index}");
     let r = layout::set(index);
     if let Err(e) = &r {
-        eprintln!("[cmd] set_current_layout ERR: {e}");
+        log::debug!("[cmd] set_current_layout ERR: {e}");
     }
     r
 }
@@ -229,7 +229,7 @@ fn quit_application(app: tauri::AppHandle) {
 
 #[tauri::command]
 fn execute_action(action: String) -> Result<(), String> {
-    eprintln!("[cmd] execute_action action={action}");
+    log::debug!("[cmd] execute_action action={action}");
     mapper::execute_action(action)
 }
 
@@ -252,7 +252,7 @@ fn hide_emoji_menu(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn insert_text(text: String) -> Result<(), String> {
     let action = format!("text:{}", text);
-    eprintln!("[cmd] insert_text action={action}");
+    log::debug!("[cmd] insert_text action={action}");
     mapper::execute_action(action)
 }
 
@@ -333,10 +333,10 @@ pub fn run() {
                 let app_for_thread = app.clone();
                 if let Err(e) = app.run_on_main_thread(move || {
                     if let Err(e) = show_quick_menu_window(&app_for_thread) {
-                        eprintln!("[quick-menu] {e}");
+                        log::debug!("[quick-menu] {e}");
                     }
                 }) {
-                    eprintln!("[quick-menu] schedule show failed: {e}");
+                    log::debug!("[quick-menu] schedule show failed: {e}");
                 }
             });
             let emoji_menu_app = app.handle().clone();
@@ -345,10 +345,10 @@ pub fn run() {
                 let app_for_thread = app.clone();
                 if let Err(e) = app.run_on_main_thread(move || {
                     if let Err(e) = show_emoji_menu_window(&app_for_thread) {
-                        eprintln!("[emoji-menu] {e}");
+                        log::debug!("[emoji-menu] {e}");
                     }
                 }) {
-                    eprintln!("[emoji-menu] schedule show failed: {e}");
+                    log::debug!("[emoji-menu] schedule show failed: {e}");
                 }
             });
             if let Some(window) = app.get_webview_window("main") {

@@ -1884,6 +1884,7 @@ version = "0.2.0"
 dependencies = [
  "evdev",
  "libc",
+ "log",
  "nix 0.29.0",
  "serde",
  "serde_json",

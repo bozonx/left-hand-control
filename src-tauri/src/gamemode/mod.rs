@@ -77,7 +77,7 @@ pub fn update_settings_from_config_json(raw: &str) {
     let settings = parse_game_mode_settings(raw);
     match CACHED_SETTINGS.lock() {
         Ok(mut guard) => *guard = settings,
-        Err(e) => eprintln!("[gamemode] settings cache lock poisoned, update skipped: {e}"),
+        Err(e) => log::debug!("[gamemode] settings cache lock poisoned, update skipped: {e}"),
     }
 }
 
@@ -98,14 +98,14 @@ pub fn start_watcher(app: AppHandle) {
                 store_cached_status(&status);
 
                 if status != last_status {
-                    eprintln!(
+                    log::debug!(
                         "[gamemode] state changed: {} (method: {})",
                         if status.active { "active" } else { "inactive" },
                         status.method.as_deref().unwrap_or("none"),
                     );
 
                     if let Err(e) = app.emit("game-mode-changed", status.clone()) {
-                        eprintln!("[gamemode] emit error: {e}");
+                        log::debug!("[gamemode] emit error: {e}");
                     }
                     last_status = status;
                 }
@@ -114,7 +114,7 @@ pub fn start_watcher(app: AppHandle) {
             }
         })
     {
-        eprintln!("[gamemode] watcher thread spawn failed: {e}");
+        log::debug!("[gamemode] watcher thread spawn failed: {e}");
     }
 }
 

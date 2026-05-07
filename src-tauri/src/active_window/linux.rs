@@ -42,7 +42,7 @@ fn detect_kde_wayland() -> Option<ActiveWindow> {
     let id_output = Command::new("kdotool").arg("getactivewindow").output();
     let Ok(id_output) = id_output else {
         if !KDOTOOL_WARN_ONCE.swap(true, Ordering::SeqCst) {
-            eprintln!(
+            log::debug!(
                 "[active-window] Для определения активного окна в KDE Wayland требуется 'kdotool'. Установите его (например: paru -S kdotool)."
             );
         }

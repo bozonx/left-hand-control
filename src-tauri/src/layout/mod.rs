@@ -157,7 +157,7 @@ pub fn start_watcher(app: tauri::AppHandle) {
     {
         use crate::platform::linux::{detect, Desktop};
         let s = detect();
-        eprintln!(
+        log::debug!(
             "[layout] linux session: desktop={} session_type={} xdg={:?}",
             s.desktop.label(),
             s.session_type.label(),

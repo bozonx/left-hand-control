@@ -167,7 +167,7 @@ fn is_kde_wayland_fullscreen_active() -> bool {
 
     let Some(output) = output else {
         if !KDOTOOL_WARN_ONCE.swap(true, Ordering::SeqCst) {
-            eprintln!("[gamemode] KDE Wayland fullscreen detection requires 'kdotool'");
+            log::debug!("[gamemode] KDE Wayland fullscreen detection requires 'kdotool'");
         }
         return false;
     };

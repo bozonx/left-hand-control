@@ -277,7 +277,7 @@ type OsBackend = UnsupportedBackend;
 
 fn lock_state() -> MutexGuard<'static, MapperRuntime<OsBackend>> {
     STATE.lock().unwrap_or_else(|e| {
-        eprintln!("[mapper] STATE mutex poisoned, recovering");
+        log::debug!("[mapper] STATE mutex poisoned, recovering");
         e.into_inner()
     })
 }

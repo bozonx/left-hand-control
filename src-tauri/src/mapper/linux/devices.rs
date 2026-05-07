@@ -17,19 +17,19 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
         })
         .collect();
     paths.sort();
-    eprintln!(
+    log::debug!(
         "[mapper] list_keyboards: found {} event* paths",
         paths.len()
     );
 
     for path in paths {
         let Ok(dev) = Device::open(&path) else {
-            eprintln!("[mapper]   {}: open failed", path.display());
+            log::debug!("[mapper]   {}: open failed", path.display());
             continue;
         };
         let name = dev.name().unwrap_or("(unknown)").to_string();
         let is_kb = is_keyboard(&dev);
-        eprintln!(
+        log::debug!(
             "[mapper]   {}: name='{}' is_keyboard={}",
             path.display(),
             name,
@@ -46,7 +46,7 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
             name,
         });
     }
-    eprintln!("[mapper] list_keyboards -> {} keyboards", out.len());
+    log::debug!("[mapper] list_keyboards -> {} keyboards", out.len());
     Ok(out)
 }
 
@@ -64,16 +64,16 @@ pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
         })
         .collect();
     paths.sort();
-    eprintln!("[mapper] list_mice: found {} event* paths", paths.len());
+    log::debug!("[mapper] list_mice: found {} event* paths", paths.len());
 
     for path in paths {
         let Ok(dev) = Device::open(&path) else {
-            eprintln!("[mapper]   {}: open failed", path.display());
+            log::debug!("[mapper]   {}: open failed", path.display());
             continue;
         };
         let name = dev.name().unwrap_or("(unknown)").to_string();
         let is_m = is_mouse(&dev);
-        eprintln!(
+        log::debug!(
             "[mapper]   {}: name='{}' is_mouse={}",
             path.display(),
             name,
@@ -90,7 +90,7 @@ pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
             name,
         });
     }
-    eprintln!("[mapper] list_mice -> {} mice", out.len());
+    log::debug!("[mapper] list_mice -> {} mice", out.len());
     Ok(out)
 }
 

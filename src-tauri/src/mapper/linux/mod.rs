@@ -87,7 +87,7 @@ pub fn spawn(
     );
     #[cfg(debug_assertions)]
     {
-        eprintln!(
+        log::debug!(
             "[mapper] started: device={} mouse={:?} rules={} layers={}",
             device_path,
             mouse_path,
@@ -95,13 +95,13 @@ pub fn spawn(
             cfg.layer_keymaps.len()
         );
         for r in &cfg.rules {
-            eprintln!(
+            log::debug!(
                 "[mapper]   rule key={} layer={:?} tap={:?} hold={:?} holdMs={:?}",
                 r.key, r.layer_id, r.tap_action, r.hold_action, r.hold_timeout_ms
             );
         }
         for (lid, km) in &cfg.layer_keymaps {
-            eprintln!("[mapper]   keymap[{lid}] keys={}", km.keys.len());
+            log::debug!("[mapper]   keymap[{lid}] keys={}", km.keys.len());
         }
     }
 
@@ -129,7 +129,7 @@ pub fn spawn(
             match result {
                 Ok(Ok(())) => {}
                 Ok(Err(e)) => {
-                    eprintln!("[mapper] run_loop error: {e}");
+                    log::debug!("[mapper] run_loop error: {e}");
                     if let Ok(mut slot) = err_thread.lock() {
                         *slot = Some(e);
                     }
@@ -142,7 +142,7 @@ pub fn spawn(
                     } else {
                         "mapper thread panicked".to_string()
                     };
-                    eprintln!("[mapper] {msg}");
+                    log::debug!("[mapper] {msg}");
                     if let Ok(mut slot) = err_thread.lock() {
                         *slot = Some(msg);
                     }
@@ -240,7 +240,7 @@ fn run_loop<D: LoopDriver>(
                 match ctrl {
                     MapperControl::Config(next_cfg) => {
                         let next_cfg = *next_cfg;
-                        eprintln!(
+                        log::debug!(
                             "[mapper] live config update: rules={} layers={}",
                             next_cfg.rules.len(),
                             next_cfg.layer_keymaps.len()
@@ -257,7 +257,7 @@ fn run_loop<D: LoopDriver>(
                         engine = Engine::new(&next_cfg);
                     }
                     MapperControl::Execute(action) => {
-                        eprintln!("[mapper] remote execute: {action:?}");
+                        log::debug!("[mapper] remote execute: {action:?}");
                         engine.execute_remote(&action, &mut out_buf);
                         flush_out(&mut virt, &mut out_buf)?;
                     }
@@ -539,7 +539,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),

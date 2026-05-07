@@ -10,8 +10,7 @@ import type { LocalePreference } from '~/types/config'
 // Bridges the persisted `settings.locale` with the vue-i18n instance.
 //
 // `config.settings.locale` is the single source of truth:
-//   - 'auto'  — resolve from the OS language (navigator.languages) with
-//               fallback to English;
+//   - 'auto'  — resolve from the OS language (navigator.languages) with fallback to English;
 //   - 'en-US' / 'ru-RU' — explicit override.
 //
 // Whenever the preference changes, the resolved locale is written into
@@ -44,7 +43,7 @@ export function useAppLocale(): AppLocaleApi {
   const systemLocale = ref<SupportedLocale>(detectSystemLocale())
 
   const preference = computed<LocalePreference>({
-    get: () => (config.value.settings.locale ?? 'auto'),
+    get: () => config.value.settings.locale ?? 'auto',
     set: (v) => {
       config.value.settings.locale = v
     },

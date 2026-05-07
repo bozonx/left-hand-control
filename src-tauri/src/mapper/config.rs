@@ -63,25 +63,13 @@ pub struct AppConfig {
 pub struct Command {
     pub id: String,
     #[serde(default)]
-    #[allow(dead_code)]
-    pub name: String,
-    #[serde(default)]
     pub linux: String,
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub windows: String,
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub macos: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Macro {
     pub id: String,
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub name: String,
     #[serde(default)]
     pub steps: Vec<MacroStep>,
     #[serde(default)]
@@ -94,18 +82,12 @@ pub struct Macro {
 #[serde(rename_all = "camelCase")]
 pub struct MacroStep {
     #[serde(default)]
-    #[allow(dead_code)]
-    pub id: String,
-    #[serde(default)]
     pub action: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Rule {
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub id: String,
     #[serde(default = "default_true")]
     pub enabled: bool,
     #[serde(default)]
@@ -134,9 +116,6 @@ pub struct Rule {
 }
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct ExtraKey {
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub id: String,
     #[serde(alias = "name")]
     pub key: String,
     pub action: String,
@@ -164,15 +143,9 @@ pub struct Settings {
     #[serde(default = "default_double_tap")]
     pub default_double_tap_timeout_ms: u64,
     #[serde(default)]
-    #[allow(dead_code)]
-    pub input_device_path: Option<String>,
-    #[serde(default)]
     pub current_layout_id: Option<String>,
     #[serde(default)]
     pub command_trust: HashMap<String, CommandTrustEntry>,
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub game_mode: GameModeSettings,
     #[serde(default)]
     pub linux_wayland_text_mode: Option<String>,
 }
@@ -181,9 +154,6 @@ pub struct Settings {
 #[serde(rename_all = "camelCase")]
 pub struct CommandTrustEntry {
     pub fingerprint: String,
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub trusted_at: String,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -240,10 +210,8 @@ impl Default for Settings {
             default_macro_step_pause_ms: default_step_pause(),
             default_macro_modifier_delay_ms: default_mod_delay(),
             default_double_tap_timeout_ms: default_double_tap(),
-            input_device_path: None,
             current_layout_id: None,
             command_trust: HashMap::new(),
-            game_mode: GameModeSettings::default(),
             linux_wayland_text_mode: None,
         }
     }
@@ -358,19 +326,14 @@ mod tests {
         assert_eq!(s.default_macro_step_pause_ms, 20);
         assert_eq!(s.default_macro_modifier_delay_ms, 5);
         assert_eq!(s.default_double_tap_timeout_ms, 200);
-        assert!(s.input_device_path.is_none());
-        assert!(!s.game_mode.use_gamemoded);
-        assert!(!s.game_mode.use_fullscreen);
+        assert!(s.linux_wayland_text_mode.is_none());
     }
 
     #[test]
     fn command_trust_requires_matching_fingerprint() {
         let commands = vec![Command {
             id: "play".into(),
-            name: "Play".into(),
             linux: "playerctl play-pause".into(),
-            windows: String::new(),
-            macos: String::new(),
         }];
         assert_eq!(command_fingerprint(&commands), "4b1e677e");
 
@@ -384,17 +347,13 @@ mod tests {
             "user:test".into(),
             CommandTrustEntry {
                 fingerprint: command_fingerprint(&commands),
-                trusted_at: "2026-05-04T00:00:00.000Z".into(),
             },
         );
         assert!(settings.commands_trusted(&commands));
 
         let changed = vec![Command {
             id: "play".into(),
-            name: "Play".into(),
             linux: "notify-send changed".into(),
-            windows: String::new(),
-            macos: String::new(),
         }];
         assert!(!settings.commands_trusted(&changed));
     }
@@ -404,17 +363,11 @@ mod tests {
         let commands = vec![
             Command {
                 id: "play".into(),
-                name: "Play".into(),
                 linux: "playerctl play".into(),
-                windows: String::new(),
-                macos: String::new(),
             },
             Command {
                 id: "pause".into(),
-                name: "Pause".into(),
                 linux: "playerctl pause".into(),
-                windows: String::new(),
-                macos: String::new(),
             },
         ];
         let fp = command_fingerprint(&commands);

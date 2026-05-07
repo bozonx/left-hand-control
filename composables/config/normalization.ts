@@ -8,7 +8,6 @@ import {
   EMOJI_HOTKEYS,
   createDefaultConfig,
   createDefaultPersistedConfig,
-  migrateEmojiHotkey,
 } from '~/types/config'
 
 function normalizeConditionSet(
@@ -154,10 +153,9 @@ function normalizeEmojiPages(raw: unknown, base: EmojiPage[]): EmojiPage[] {
           : {}
       const cells: Partial<Record<EmojiHotkey, string>> = {}
       for (const [key, value] of Object.entries(cellsRaw)) {
-        const migrated = migrateEmojiHotkey(key)
-        if (!migrated || !keySet.has(migrated) || typeof value !== 'string')
+        if (!keySet.has(key as EmojiHotkey) || typeof value !== 'string')
           continue
-        cells[migrated] = value
+        cells[key as EmojiHotkey] = value
       }
       return {
         id,
@@ -237,18 +235,6 @@ export function normalizeConfig(raw: unknown): AppConfig {
       }
       if (!Array.isArray(km.extras)) km.extras = []
     }
-  }
-  for (const rule of cfg.rules) {
-    if (rule.isolate || !rule.layerId) continue
-    const legacyIsolate = cfg.layerKeymaps[rule.layerId]?.isolate
-    if (Array.isArray(legacyIsolate) && legacyIsolate.length > 0) {
-      rule.isolate = legacyIsolate
-        .filter((s): s is string => typeof s === 'string')
-        .join(', ')
-    }
-  }
-  for (const keymap of Object.values(cfg.layerKeymaps)) {
-    delete keymap.isolate
   }
   return cfg
 }

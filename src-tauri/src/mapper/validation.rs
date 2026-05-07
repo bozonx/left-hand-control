@@ -112,7 +112,10 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         }
         for extra in &km.extras {
             if code_to_key(&extra.key).is_none() {
-                errors.push(format!("keymap `{layer_id}` extra: unknown key `{}`", extra.key));
+                errors.push(format!(
+                    "keymap `{layer_id}` extra: unknown key `{}`",
+                    extra.key
+                ));
             }
             validate_action(
                 &extra.action,
@@ -223,7 +226,9 @@ fn validate_macro_step(
         return;
     }
     if action.strip_prefix("macro:").is_some() {
-        errors.push(format!("{where_}: nested macro references are not supported"));
+        errors.push(format!(
+            "{where_}: nested macro references are not supported"
+        ));
         return;
     }
     validate_action(
@@ -254,7 +259,9 @@ fn validate_action(
     }
     if matches!(kind, ActionKind::HoldKeystroke) {
         if parse_action(action).is_none() {
-            errors.push(format!("{where_}: hold action must be a key or chord, got `{action}`"));
+            errors.push(format!(
+                "{where_}: hold action must be a key or chord, got `{action}`"
+            ));
         }
         return;
     }
@@ -270,7 +277,9 @@ fn validate_action(
         if !command_ids.contains(id) {
             errors.push(format!("{where_}: unknown command `{id}`"));
         } else if !commands_trusted {
-            errors.push(format!("{where_}: command `{id}` is not approved for this layout"));
+            errors.push(format!(
+                "{where_}: command `{id}` is not approved for this layout"
+            ));
         }
         return;
     }
@@ -309,7 +318,6 @@ mod tests {
     fn rejects_unknown_macro_reference() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
-            id: "r".into(),
             enabled: true,
             condition_game_mode: None,
             condition_layouts: None,
@@ -334,16 +342,11 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "music".into(),
-            name: "Music".into(),
             linux: "playerctl play-pause".into(),
-            windows: String::new(),
-            macos: String::new(),
         });
         cfg.macros.push(Macro {
             id: "m".into(),
-            name: "M".into(),
             steps: vec![MacroStep {
-                id: "s".into(),
                 action: "cmd:music".into(),
             }],
             step_pause_ms: None,
@@ -359,24 +362,18 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "music".into(),
-            name: "Music".into(),
             linux: "playerctl play-pause".into(),
-            windows: String::new(),
-            macos: String::new(),
         });
         cfg.settings.current_layout_id = Some("custom".into());
         cfg.settings.command_trust.insert(
             "custom".into(),
             CommandTrustEntry {
                 fingerprint: "3823d099".into(),
-                trusted_at: String::new(),
             },
         );
         cfg.macros.push(Macro {
             id: "m".into(),
-            name: "M".into(),
             steps: vec![MacroStep {
-                id: "s".into(),
                 action: "cmd:music".into(),
             }],
             step_pause_ms: None,
@@ -391,9 +388,7 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.macros.push(Macro {
             id: "copyLine".into(),
-            name: "Copy line".into(),
             steps: vec![MacroStep {
-                id: "s".into(),
                 action: "macro:duplicateLine".into(),
             }],
             step_pause_ms: None,

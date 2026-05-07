@@ -187,7 +187,7 @@ fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
         let keymap = xkb_keymap_new_from_names(ctx, &names, 0);
         xkb_context_unref(ctx);
         if keymap.is_null() {
-            eprintln!("[portal] xkb_keymap_new_from_names({layout:?}) failed");
+            log::debug!("[portal] xkb_keymap_new_from_names({layout:?}) failed");
             return map;
         }
 
@@ -221,7 +221,7 @@ fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
         }
 
         xkb_keymap_unref(keymap);
-        eprintln!(
+        log::debug!(
             "[portal] XKB keymap {:?}: {} keysyms indexed",
             layout,
             map.len()
@@ -246,7 +246,7 @@ static TEXT_MODE_CLIPBOARD: AtomicBool = AtomicBool::new(false);
 pub fn set_text_mode(mode: &str) {
     let clipboard = mode == "clipboard";
     TEXT_MODE_CLIPBOARD.store(clipboard, Ordering::Relaxed);
-    eprintln!(
+    log::debug!(
         "[portal] text mode: {}",
         if clipboard { "clipboard" } else { "keycode" }
     );
@@ -272,7 +272,7 @@ pub fn set_token_dir(dir: PathBuf) {
 /// dedicated thread.
 pub fn type_text(text: &str) {
     let Ok(mut slot) = PORTAL_TX.lock() else {
-        eprintln!("[portal] literal {:?} dropped (worker lock poisoned)", text);
+        log::debug!("[portal] literal {:?} dropped (worker lock poisoned)", text);
         return;
     };
 
@@ -280,16 +280,16 @@ pub fn type_text(text: &str) {
         if tx.send(Cmd::Type(text.to_string())).is_ok() {
             return;
         }
-        eprintln!("[portal] worker gone; retrying backend init");
+        log::debug!("[portal] worker gone; retrying backend init");
         *slot = None;
     }
 
     let Some(tx) = start_singleton() else {
-        eprintln!("[portal] literal {:?} dropped (worker spawn failed)", text);
+        log::debug!("[portal] literal {:?} dropped (worker spawn failed)", text);
         return;
     };
     if tx.send(Cmd::Type(text.to_string())).is_err() {
-        eprintln!(
+        log::debug!(
             "[portal] literal {:?} dropped (worker exited during init)",
             text
         );
@@ -306,7 +306,7 @@ fn start_singleton() -> Option<Sender<Cmd>> {
     match spawn_result {
         Ok(_join) => Some(tx),
         Err(e) => {
-            eprintln!("[portal] could not spawn worker thread: {e}");
+            log::debug!("[portal] could not spawn worker thread: {e}");
             None
         }
     }
@@ -315,11 +315,11 @@ fn start_singleton() -> Option<Sender<Cmd>> {
 fn worker(rx: Receiver<Cmd>) {
     let (conn, session_handle) = match init_portal() {
         Ok(v) => {
-            eprintln!("[portal] backend online");
+            log::debug!("[portal] backend online");
             v
         }
         Err(e) => {
-            eprintln!("[portal] backend unavailable: {e}");
+            log::debug!("[portal] backend unavailable: {e}");
             drop(rx);
             return;
         }
@@ -328,7 +328,7 @@ fn worker(rx: Receiver<Cmd>) {
     let portal = match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("[portal] could not re-create RemoteDesktop proxy: {e}");
+            log::debug!("[portal] could not re-create RemoteDesktop proxy: {e}");
             close_session(&conn, &session_handle);
             return;
         }
@@ -377,7 +377,7 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
     let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!(
+            log::debug!(
                 "[portal] wl-copy unavailable in clipboard mode ({e}), falling back to keycode"
             );
             inject_text_keycode(portal, session, text);
@@ -393,7 +393,7 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
 
     thread::sleep(std::time::Duration::from_millis(50));
     if !inject_paste(portal, session, &empty) {
-        eprintln!("[portal] clipboard paste: Ctrl+V injection failed");
+        log::debug!("[portal] clipboard paste: Ctrl+V injection failed");
     }
 }
 
@@ -408,7 +408,7 @@ fn inject_paste(portal: &Proxy, session: &OwnedObjectPath, empty: &HashMap<Strin
         "NotifyKeyboardKeycode",
         &(session, empty, KEY_LEFTCTRL_EVDEV, STATE_PRESSED),
     ) {
-        eprintln!("[portal] paste: Ctrl press failed: {e}");
+        log::debug!("[portal] paste: Ctrl press failed: {e}");
         return false;
     }
     let v_ok = portal
@@ -424,7 +424,7 @@ fn inject_paste(portal: &Proxy, session: &OwnedObjectPath, empty: &HashMap<Strin
             )
             .is_ok();
     if !v_ok {
-        eprintln!("[portal] paste: V keysym injection failed");
+        log::debug!("[portal] paste: V keysym injection failed");
     }
     let _ = portal.call_method(
         "NotifyKeyboardKeycode",
@@ -444,7 +444,7 @@ fn inject_keycode_combo(
         if let Err(e) =
             portal.call_method("NotifyKeyboardKeycode", &(session, empty, m, STATE_PRESSED))
         {
-            eprintln!("[portal] mod keycode {m} press failed: {e}");
+            log::debug!("[portal] mod keycode {m} press failed: {e}");
             for &m2 in mods {
                 let _ = portal.call_method(
                     "NotifyKeyboardKeycode",
@@ -515,7 +515,7 @@ fn inject_keysym(
     for state in [STATE_PRESSED, STATE_RELEASED] {
         if let Err(e) = portal.call_method("NotifyKeyboardKeysym", &(session, empty, keysym, state))
         {
-            eprintln!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
+            log::debug!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
             break;
         }
     }
@@ -525,10 +525,10 @@ fn close_session(conn: &Connection, session: &OwnedObjectPath) {
     match Proxy::new(conn, PORTAL_DEST, &**session, IFACE_SESSION) {
         Ok(sp) => {
             if let Err(e) = sp.call_method("Close", &()) {
-                eprintln!("[portal] Session.Close failed: {e}");
+                log::debug!("[portal] Session.Close failed: {e}");
             }
         }
-        Err(e) => eprintln!("[portal] cannot build Session proxy for close: {e}"),
+        Err(e) => log::debug!("[portal] cannot build Session proxy for close: {e}"),
     }
 }
 
@@ -545,7 +545,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
     let portal = Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE)
         .map_err(|e| format!("create RemoteDesktop proxy: {e}"))?;
 
-    eprintln!("[portal] handshake: CreateSession");
+    log::debug!("[portal] handshake: CreateSession");
     let session_token = gen_token("s");
     let (_, results) = {
         let handle_token = gen_token("c");
@@ -559,13 +559,13 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
         call_with_response(&conn, &portal, "CreateSession", &(opts,), &request_path)?
     };
     let session_handle = extract_session_handle(&results)?;
-    eprintln!("[portal] session: {}", session_handle.as_str());
+    log::debug!("[portal] session: {}", session_handle.as_str());
 
     let saved_token = load_restore_token();
     if saved_token.is_some() {
-        eprintln!("[portal] handshake: SelectDevices (with saved restore_token)");
+        log::debug!("[portal] handshake: SelectDevices (with saved restore_token)");
     } else {
-        eprintln!("[portal] handshake: SelectDevices (keyboard, persist_mode=2)");
+        log::debug!("[portal] handshake: SelectDevices (keyboard, persist_mode=2)");
     }
     {
         let handle_token = gen_token("d");
@@ -586,7 +586,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
         )?;
     }
 
-    eprintln!("[portal] handshake: Start (consent dialog if no valid restore_token)");
+    log::debug!("[portal] handshake: Start (consent dialog if no valid restore_token)");
     let start_results = {
         let handle_token = gen_token("t");
         let request_path = make_request_path(&sender_escaped, &handle_token);
@@ -608,11 +608,11 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
         }
     } else if saved_token.is_some() {
         // The portal dropped our token (revoked / invalidated).
-        eprintln!("[portal] no restore_token returned; clearing saved token");
+        log::debug!("[portal] no restore_token returned; clearing saved token");
         clear_restore_token();
     }
 
-    eprintln!("[portal] handshake: complete, ready to inject keysyms");
+    log::debug!("[portal] handshake: complete, ready to inject keysyms");
     Ok((conn, session_handle))
 }
 
@@ -724,13 +724,13 @@ fn persist_restore_token(token: &str) {
         *guard = Some(token.to_string());
     }
     let Some(path) = restore_token_path() else {
-        eprintln!("[portal] cannot persist restore_token (TOKEN_DIR not set)");
+        log::debug!("[portal] cannot persist restore_token (TOKEN_DIR not set)");
         return;
     };
     if let Err(e) = write_token_atomic(&path, token) {
-        eprintln!("[portal] failed to persist restore_token: {e}");
+        log::debug!("[portal] failed to persist restore_token: {e}");
     } else {
-        eprintln!("[portal] restore_token saved to {}", path.display());
+        log::debug!("[portal] restore_token saved to {}", path.display());
     }
 }
 

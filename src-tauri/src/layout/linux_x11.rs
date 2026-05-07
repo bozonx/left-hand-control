@@ -21,5 +21,5 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
 }
 
 pub fn start_watcher(_app: AppHandle) {
-    eprintln!("[layout/x11] watcher not implemented yet");
+    log::debug!("[layout/x11] watcher not implemented yet");
 }

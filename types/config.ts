@@ -267,31 +267,6 @@ export const EMOJI_HOTKEYS = LEFT_HAND_HOTKEYS
 export type EmojiHotkey = LeftHandHotkey
 export const EMOJI_HOTKEY_LABELS = LEFT_HAND_HOTKEY_LABELS
 
-const LEGACY_EMOJI_KEY_MAP: Record<string, EmojiHotkey> = {
-  q: 'KeyQ',
-  w: 'KeyW',
-  e: 'KeyE',
-  r: 'KeyR',
-  t: 'KeyT',
-  a: 'KeyA',
-  s: 'KeyS',
-  d: 'KeyD',
-  f: 'KeyF',
-  g: 'KeyG',
-  z: 'KeyZ',
-  x: 'KeyX',
-  c: 'KeyC',
-  v: 'KeyV',
-  b: 'KeyB',
-}
-
-export function migrateEmojiHotkey(key: string): EmojiHotkey | undefined {
-  if ((EMOJI_HOTKEYS as readonly string[]).includes(key)) {
-    return key as EmojiHotkey
-  }
-  return LEGACY_EMOJI_KEY_MAP[key]
-}
-
 export interface EmojiPage {
   id: string
   name: string

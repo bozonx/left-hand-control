@@ -461,7 +461,7 @@ mod gnome {
         //           .activate(global.get_current_time())")
         //      On stock GNOME 41+ Eval is restricted in user mode.
         //   2. X11 sessions: spawn `wmctrl -s (N-1)`.
-        eprintln!("[sys/gnome] {name:?}: not implemented yet");
+        log::debug!("[sys/gnome] {name:?}: not implemented yet");
         None
     }
 }
@@ -482,7 +482,7 @@ mod sway {
         //           }));
         //       }
         //   }
-        eprintln!("[sys/sway] {name:?}: not implemented yet");
+        log::debug!("[sys/sway] {name:?}: not implemented yet");
         None
     }
 }
@@ -495,7 +495,7 @@ mod x11_generic {
     pub fn resolve(name: &str) -> Option<SysAction> {
         // TODO: spawn `wmctrl -s (N-1)` (EWMH-compliant WMs: i3, Openbox,
         // Fluxbox, Xfwm, Mutter-on-X11, Marco, Metacity, Kwin-on-X11).
-        eprintln!("[sys/x11] {name:?}: not implemented yet");
+        log::debug!("[sys/x11] {name:?}: not implemented yet");
         None
     }
 }

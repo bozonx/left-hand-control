@@ -61,7 +61,7 @@ pub fn start_watcher(app: AppHandle) {
                     }
                     let payload = current.clone().unwrap_or_default();
                     if let Err(e) = app.emit("active-window-changed", payload) {
-                        eprintln!("[active-window] emit error: {e}");
+                        log::debug!("[active-window] emit error: {e}");
                     }
                     last = current;
                 }

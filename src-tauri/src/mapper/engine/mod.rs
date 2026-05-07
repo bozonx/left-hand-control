@@ -119,7 +119,7 @@ impl Engine {
                         break;
                     }
                     if am.steps_emitted >= MAX_MACRO_STEPS {
-                        eprintln!(
+                        log::debug!(
                             "[mapper] macro step limit ({}) exceeded, aborting",
                             MAX_MACRO_STEPS
                         );
@@ -243,12 +243,12 @@ impl Engine {
             }
         }
         for k in expired_hold {
-            eprintln!("[mapper] hold-timeout -> commit hold (key={:?})", k);
+            log::debug!("[mapper] hold-timeout -> commit hold (key={:?})", k);
             self.commit_hold(k, out);
         }
         for k in expired_second {
             let pending = self.pending.remove(&k);
-            eprintln!("[mapper] dtap-window expired -> tap (key={:?})", k);
+            log::debug!("[mapper] dtap-window expired -> tap (key={:?})", k);
             if let Some(pending) = pending {
                 self.fire_tap(k, &pending.rule.tap, Instant::now(), out);
             }
@@ -271,7 +271,7 @@ impl Engine {
             return;
         }
 
-        eprintln!(
+        log::debug!(
             "[mapper] in {} key={:?} active={:?}",
             if down { "DOWN" } else { " UP " },
             key,
@@ -292,7 +292,7 @@ impl Engine {
             Some(Phase::WaitingSecond { .. })
         ) {
             let pending = self.pending.remove(&key);
-            eprintln!("[mapper] double-tap fired (key={:?})", key);
+            log::debug!("[mapper] double-tap fired (key={:?})", key);
             let dtap = pending.and_then(|p| p.rule.double_tap);
             self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
             // The matching release must not emit anything (fire-and-forget).
@@ -368,9 +368,10 @@ impl Engine {
                                         down: false,
                                     });
                                     suppressed.push((*target_key, old_count));
-                                    eprintln!(
+                                    log::debug!(
                                         "[mapper] isolate+ {:?} suppress hold {:?}",
-                                        key, target_key
+                                        key,
+                                        target_key
                                     );
                                 }
                                 if !suppressed.is_empty() {
@@ -382,19 +383,21 @@ impl Engine {
 
                     match def {
                         ActionDef::Stroke(ks) => {
-                            eprintln!(
+                            log::debug!(
                                 "[mapper]   press {:?} -> remap mods={:?} key={:?}",
-                                key, ks.mods, ks.key
+                                key,
+                                ks.mods,
+                                ks.key
                             );
                             self.emit_stroke_press(key, ks, out);
                         }
                         ActionDef::Literal(text) => {
-                            eprintln!("[mapper]   press {:?} -> literal {:?}", key, text);
+                            log::debug!("[mapper]   press {:?} -> literal {:?}", key, text);
                             out.push(Out::Literal(text));
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Macro(md) => {
-                            eprintln!(
+                            log::debug!(
                                 "[mapper]   press {:?} -> run macro ({} steps)",
                                 key,
                                 md.steps.len()
@@ -413,23 +416,23 @@ impl Engine {
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::System(action) => {
-                            eprintln!("[mapper]   press {:?} -> run system {:?}", key, action);
+                            log::debug!("[mapper]   press {:?} -> run system {:?}", key, action);
                             out.push(Out::RunSystem(action));
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Command(command) => {
-                            eprintln!("[mapper]   press {:?} -> run command {:?}", key, command);
+                            log::debug!("[mapper]   press {:?} -> run command {:?}", key, command);
                             out.push(Out::RunCommand(command));
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Swallow => {
-                            eprintln!("[mapper]   press {:?} -> swallow", key);
+                            log::debug!("[mapper]   press {:?} -> swallow", key);
                             self.oneshot_consumed.insert(key);
                         }
                     }
                 }
                 None => {
-                    eprintln!("[mapper]   press {:?} -> passthrough", key);
+                    log::debug!("[mapper]   press {:?} -> passthrough", key);
                     out.push(Out::KeyRaw { key, down: true });
                     self.emitted.insert(key, Keystroke { mods: vec![], key });
                 }
@@ -445,7 +448,7 @@ impl Engine {
                     .values()
                     .any(|ks| ks.key == target_key || ks.mods.contains(&target_key));
                 if still_held {
-                    eprintln!("[mapper] isolate- {:?} restore hold {:?}", key, target_key);
+                    log::debug!("[mapper] isolate- {:?} restore hold {:?}", key, target_key);
                     if old_count > 0 {
                         *self.mod_refs.entry(target_key).or_insert(0) = old_count;
                     }
@@ -608,7 +611,7 @@ impl Engine {
             .map(|(k, _)| *k)
             .collect();
         for k in keys {
-            eprintln!("[mapper] interrupt -> commit hold (key={:?})", k);
+            log::debug!("[mapper] interrupt -> commit hold (key={:?})", k);
             self.commit_hold(k, out);
         }
     }
@@ -628,7 +631,7 @@ impl Engine {
 
     fn commit_hold_with(&mut self, rule: &RuleEntry, key: Key, out: &mut Vec<Out>) {
         if let Some(id) = &rule.layer_id {
-            eprintln!("[mapper] layer+ {id} (key={:?})", key);
+            log::debug!("[mapper] layer+ {id} (key={:?})", key);
             self.push_layer(id.clone());
             self.layer_triggers
                 .entry(id.clone())
@@ -655,7 +658,7 @@ impl Engine {
     /// Undo whatever `commit_hold_with` did for this rule key.
     fn release_hold_with(&mut self, rule: &RuleEntry, key: Key, out: &mut Vec<Out>) {
         if let Some(id) = &rule.layer_id {
-            eprintln!("[mapper] layer- {id} (key={:?})", key);
+            log::debug!("[mapper] layer- {id} (key={:?})", key);
             if let Some(triggers) = self.layer_triggers.get_mut(id) {
                 if let Some(pos) = triggers.iter().rposition(|trigger| trigger.key == key) {
                     triggers.remove(pos);
@@ -737,7 +740,7 @@ impl Engine {
             .collect();
         for k in keys {
             let pending = self.pending.remove(&k);
-            eprintln!("[mapper] dtap-window flushed -> tap (key={:?})", k);
+            log::debug!("[mapper] dtap-window flushed -> tap (key={:?})", k);
             if let Some(pending) = pending {
                 self.fire_tap(k, &pending.rule.tap, Instant::now(), out);
             }
@@ -921,9 +924,7 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.macros.push(Macro {
             id: "hello".into(),
-            name: "Hello".into(),
             steps: vec![MacroStep {
-                id: "s1".into(),
                 action: "KeyH".into(),
             }],
             step_pause_ms: None,
@@ -956,16 +957,12 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "play".into(),
-            name: "Play".into(),
             linux: "playerctl play-pause".into(),
-            windows: String::new(),
-            macos: String::new(),
         });
         cfg.settings.command_trust.insert(
             "custom".into(),
             CommandTrustEntry {
                 fingerprint: "4b1e677e".into(),
-                trusted_at: "2026-05-04T00:00:00.000Z".into(),
             },
         );
         let mut engine = Engine::new(&cfg);
@@ -990,7 +987,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_tab".into(),
             key: "Tab".into(),
             layer_id: "sel".into(),
             tap_action: ActionSpec::Native,
@@ -1030,7 +1026,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
@@ -1046,7 +1041,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_tab".into(),
             key: "Tab".into(),
             layer_id: "sel".into(),
             tap_action: ActionSpec::Native,
@@ -1091,7 +1085,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
@@ -1140,7 +1133,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_space".into(),
             key: "Space".into(),
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
@@ -1176,7 +1168,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
@@ -1226,7 +1217,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
@@ -1398,7 +1388,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: Some(vec!["firefox".into()]),
             condition_apps_blacklist: None,
-            id: "blocked".into(),
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyA".into()),
@@ -1414,7 +1403,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "fallback".into(),
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyB".into()),
@@ -1447,7 +1435,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_shift".into(),
             key: "ShiftLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
@@ -1506,7 +1493,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_shift".into(),
             key: "ShiftLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
@@ -1559,7 +1545,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_mouse_side".into(),
             key: "MouseSide".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("BrowserBack".into()),
@@ -1596,7 +1581,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_space".into(),
             key: "Space".into(),
             layer_id: "mouse".into(),
             tap_action: ActionSpec::Native,
@@ -1611,7 +1595,6 @@ mod tests {
             ..Default::default()
         };
         mouse.extras.push(ExtraKey {
-            id: "left".into(),
             key: "MouseLeft".into(),
             action: "Escape".into(),
         });
@@ -1656,7 +1639,6 @@ mod tests {
             condition_layouts: None,
             condition_apps_whitelist: None,
             condition_apps_blacklist: None,
-            id: "r_alt".into(),
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),

@@ -75,7 +75,7 @@ fn side_effect_tx() -> &'static mpsc::Sender<SideEffectJob> {
             .spawn(move || run_side_effect_worker(rx))
         {
             Ok(_) => {}
-            Err(e) => eprintln!("[mapper] could not spawn side-effect worker: {e}"),
+            Err(e) => log::debug!("[mapper] could not spawn side-effect worker: {e}"),
         }
         tx
     })
@@ -83,7 +83,7 @@ fn side_effect_tx() -> &'static mpsc::Sender<SideEffectJob> {
 
 fn enqueue_side_effect(job: SideEffectJob) {
     if let Err(e) = side_effect_tx().send(job) {
-        eprintln!("[mapper] side-effect queue unavailable: {e}");
+        log::debug!("[mapper] side-effect queue unavailable: {e}");
     }
 }
 
@@ -394,25 +394,25 @@ fn spawn_system(cmd: &SysCommand) {
     match c.spawn() {
         Ok(mut child) => {
             let pid = child.id();
-            eprintln!(
+            log::debug!(
                 "[mapper] spawned side-effect pid={pid}: {} {:?}",
                 cmd.program, cmd.args
             );
             // Detach the wait so a hung child cannot stall the side-effect worker.
             std::thread::spawn(move || match child.wait() {
                 Ok(status) if status.success() => {
-                    eprintln!("[mapper] side-effect pid={pid} exited: {status}");
+                    log::debug!("[mapper] side-effect pid={pid} exited: {status}");
                 }
                 Ok(status) => {
-                    eprintln!("[mapper] side-effect pid={pid} failed: {status}");
+                    log::debug!("[mapper] side-effect pid={pid} failed: {status}");
                 }
                 Err(e) => {
-                    eprintln!("[mapper] side-effect pid={pid} wait failed: {e}");
+                    log::debug!("[mapper] side-effect pid={pid} wait failed: {e}");
                 }
             });
         }
         Err(e) => {
-            eprintln!("[mapper] spawn system {:?} failed: {}", cmd.program, e);
+            log::debug!("[mapper] spawn system {:?} failed: {}", cmd.program, e);
         }
     }
 }
@@ -474,7 +474,7 @@ fn call_dbus(call: &DbusCall) {
             if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
                 let _ = crate::layout::refresh_cache();
             }
-            eprintln!(
+            log::debug!(
                 "[mapper] dbus {} {} {}.{}",
                 call.destination,
                 call.path,
@@ -483,13 +483,13 @@ fn call_dbus(call: &DbusCall) {
             );
         }
         Ok(Err(e)) => {
-            eprintln!(
+            log::debug!(
                 "[mapper] dbus {}.{} failed: {}",
                 call.destination, call.method, e
             );
         }
         Err(_) => {
-            eprintln!(
+            log::debug!(
                 "[mapper] dbus {}.{} timed out after 5s",
                 call.destination, call.method
             );

@@ -15,7 +15,6 @@ import {
   type QuickAction,
   EMOJI_HOTKEYS,
   createDefaultEmojiPage,
-  migrateEmojiHotkey,
 } from '~/types/config'
 
 type TranslateFn = (key: string) => string
@@ -85,7 +84,6 @@ function genId(prefix: string): string {
 function parsePreset(doc: LayoutYaml): LayoutPreset {
   const layers: Layer[] = []
   const layerKeymaps: Record<string, LayerKeymap> = {}
-  const legacyLayerIsolate: Record<string, string[]> = {}
 
   for (const l of doc.layers ?? []) {
     if (!l?.id) continue
@@ -102,12 +100,6 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
         continue
       }
       keys[k] = String(v)
-    }
-    const isolate = Array.isArray(l.isolate)
-      ? l.isolate.filter((s): s is string => typeof s === 'string')
-      : undefined
-    if (isolate && isolate.length > 0) {
-      legacyLayerIsolate[l.id] = isolate
     }
     const extras: ExtraKey[] = []
     for (const e of l.extras ?? []) {
@@ -142,16 +134,13 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       : typeof r.isolate === 'string'
         ? r.isolate
         : ''
-    const migratedIsolate = r.layer
-      ? (legacyLayerIsolate[r.layer]?.join(', ') ?? '')
-      : ''
     rules.push({
       id: r.id ?? genId('r_'),
       key: r.key,
       layerId: r.layer ?? '',
       tapAction,
       holdAction,
-      isolate: ownIsolate || migratedIsolate || undefined,
+      isolate: ownIsolate || undefined,
       doubleTapAction: r.dtap ?? '',
       holdTimeoutMs:
         typeof r.holdMs === 'number' && r.holdMs >= 0 ? r.holdMs : undefined,
@@ -215,10 +204,9 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     const id = page.id?.trim() || genId('emoji_')
     const cells: Partial<Record<EmojiHotkey, string>> = {}
     for (const [key, value] of Object.entries(page.cells ?? {})) {
-      const migrated = migrateEmojiHotkey(key)
-      if (!migrated || !emojiKeySet.has(migrated) || typeof value !== 'string')
+      if (!emojiKeySet.has(key as EmojiHotkey) || typeof value !== 'string')
         continue
-      cells[migrated] = value
+      cells[key as EmojiHotkey] = value
     }
     emojiPages.push({
       id,

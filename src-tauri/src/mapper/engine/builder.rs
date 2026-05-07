@@ -16,7 +16,7 @@ fn parse_isolate_keys(raw: &str) -> Vec<Key> {
         .filter_map(|code| {
             let key = code_to_key(code);
             if key.is_none() {
-                eprintln!("[mapper] unknown isolate key code: {code}");
+                log::debug!("[mapper] unknown isolate key code: {code}");
             }
             key
         })
@@ -42,11 +42,11 @@ impl Engine {
                 let id = c.id.trim();
                 let linux = c.linux.trim();
                 if id.is_empty() {
-                    eprintln!("[mapper] skipping command with empty id");
+                    log::debug!("[mapper] skipping command with empty id");
                     continue;
                 }
                 if linux.is_empty() {
-                    eprintln!("[mapper] command {} has empty linux string — skipped", id);
+                    log::debug!("[mapper] command {} has empty linux string — skipped", id);
                     continue;
                 }
                 commands.insert(
@@ -58,13 +58,13 @@ impl Engine {
                 );
             }
         } else {
-            eprintln!("[mapper] shell commands are disabled for this layout");
+            log::debug!("[mapper] shell commands are disabled for this layout");
         }
 
         let mut raw_user_macros: HashMap<String, &crate::mapper::config::Macro> = HashMap::new();
         for m in &cfg.macros {
             if m.id.is_empty() {
-                eprintln!("[mapper] skipping macro with empty id");
+                log::debug!("[mapper] skipping macro with empty id");
                 continue;
             }
             raw_user_macros.insert(m.id.clone(), m);
@@ -79,7 +79,7 @@ impl Engine {
         ) -> Vec<MacroStepItem> {
             let mut steps: Vec<MacroStepItem> = Vec::new();
             if depth > 10 {
-                eprintln!("[mapper] macro {} exceeded max nesting depth", id);
+                log::debug!("[mapper] macro {} exceeded max nesting depth", id);
                 return steps;
             }
             for raw in raw_steps {
@@ -90,7 +90,7 @@ impl Engine {
                 if let Some(rest) = raw.strip_prefix("sys:") {
                     match system::resolve(rest.trim()) {
                         Some(cmd) => steps.push(MacroStepItem::System(cmd)),
-                        None => eprintln!(
+                        None => log::debug!(
                             "[mapper] macro {} step: system fn {:?} not available",
                             id,
                             rest.trim()
@@ -124,7 +124,7 @@ impl Engine {
                         found = true;
                     }
                     if !found {
-                        eprintln!(
+                        log::debug!(
                             "[mapper] macro {}: unknown nested macro ref {:?}",
                             id, nested_id
                         );
@@ -135,7 +135,7 @@ impl Engine {
                     let cmd_id = rest.trim();
                     match commands.get(cmd_id) {
                         Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
-                        None => eprintln!(
+                        None => log::debug!(
                             "[mapper] macro {} step: unknown command ref {:?}",
                             id, cmd_id
                         ),
@@ -148,7 +148,7 @@ impl Engine {
                 }
                 match parse_action(raw) {
                     Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
-                    None => eprintln!("[mapper] macro {} step: unknown keystroke {:?}", id, raw),
+                    None => log::debug!("[mapper] macro {} step: unknown keystroke {:?}", id, raw),
                 }
             }
             steps
@@ -158,7 +158,7 @@ impl Engine {
             let steps =
                 resolve_macro_steps(sys.id, sys.steps.to_vec(), &raw_user_macros, &commands, 0);
             if steps.is_empty() {
-                eprintln!(
+                log::debug!(
                     "[mapper] system macro {} has no usable steps — skipped",
                     sys.id
                 );
@@ -181,7 +181,7 @@ impl Engine {
             let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.action.as_str()).collect();
             let steps = resolve_macro_steps(&m.id, raw_steps, &raw_user_macros, &commands, 0);
             if steps.is_empty() {
-                eprintln!("[mapper] macro {} has no usable steps — skipped", m.id);
+                log::debug!("[mapper] macro {} has no usable steps — skipped", m.id);
                 continue;
             }
             let step_pause = m
@@ -212,7 +212,7 @@ impl Engine {
                 if let Some(md) = macros.get(id) {
                     return Some(ActionDef::Macro(md.clone()));
                 }
-                eprintln!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
+                log::debug!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
                 return None;
             }
             if let Some(rest) = trimmed.strip_prefix("cmd:") {
@@ -220,7 +220,7 @@ impl Engine {
                 if let Some(cmd) = commands.get(id) {
                     return Some(ActionDef::Command(cmd.clone()));
                 }
-                eprintln!("[mapper] unknown command ref {:?} ({})", trimmed, where_);
+                log::debug!("[mapper] unknown command ref {:?} ({})", trimmed, where_);
                 return None;
             }
             if let Some(rest) = trimmed.strip_prefix("sys:") {
@@ -228,7 +228,7 @@ impl Engine {
                 match system::resolve(name) {
                     Some(cmd) => return Some(ActionDef::System(cmd)),
                     None => {
-                        eprintln!(
+                        log::debug!(
                             "[mapper] system fn {:?} not available on this OS/DE ({})",
                             name, where_
                         );
@@ -242,7 +242,7 @@ impl Engine {
             match parse_action(trimmed) {
                 Some(ks) => Some(ActionDef::Stroke(ks)),
                 None => {
-                    eprintln!("[mapper] unknown action {:?} ({})", trimmed, where_);
+                    log::debug!("[mapper] unknown action {:?} ({})", trimmed, where_);
                     None
                 }
             }
@@ -255,14 +255,14 @@ impl Engine {
             }
 
             let Some(key) = code_to_key(&r.key) else {
-                eprintln!("[mapper] unknown rule key: {}", r.key);
+                log::debug!("[mapper] unknown rule key: {}", r.key);
                 continue;
             };
 
             // Disallow left/right/middle mouse buttons as triggers —
             // remapping them would make the system unusable.
             if matches!(key, Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE) {
-                eprintln!(
+                log::debug!(
                     "[mapper] rule key {:?}: mouse buttons 1-3 cannot be used as triggers — skipped",
                     r.key
                 );
@@ -290,7 +290,7 @@ impl Engine {
                 ActionSpec::Action(s) => match parse_action(s) {
                     Some(ks) => HoldMode::Keystroke(ks),
                     None => {
-                        eprintln!(
+                        log::debug!(
                             "[mapper] rule {:?}: unknown hold keystroke {:?} — falling back to native hold",
                             r.key, s
                         );
@@ -311,7 +311,7 @@ impl Engine {
                 && matches!(hold, HoldMode::Native)
                 && double_tap.is_none()
             {
-                eprintln!(
+                log::debug!(
                     "[mapper] rule {:?}: tap=native, hold=native, no double-tap — skipped (passthrough)",
                     r.key
                 );
@@ -359,7 +359,7 @@ impl Engine {
             let mut m = HashMap::new();
             for (code, action) in &km.keys {
                 let Some(key) = code_to_key(code) else {
-                    eprintln!("[mapper] unknown key code in keymap {layer_id}: {code}");
+                    log::debug!("[mapper] unknown key code in keymap {layer_id}: {code}");
                     continue;
                 };
                 let Some(def) = action
@@ -373,7 +373,7 @@ impl Engine {
             }
             for extra in &km.extras {
                 let Some(key) = code_to_key(&extra.key) else {
-                    eprintln!(
+                    log::debug!(
                         "[mapper] unknown extra key code in keymap {layer_id}: {}",
                         extra.key
                     );

@@ -115,7 +115,7 @@ fn run_watcher(app: AppHandle) {
         match watch_once(&app) {
             Ok(()) => return,
             Err(e) => {
-                eprintln!("[layout/kde] watcher error: {e}; retrying in 2s");
+                log::debug!("[layout/kde] watcher error: {e}; retrying in 2s");
                 thread::sleep(Duration::from_secs(2));
             }
         }
@@ -139,7 +139,7 @@ fn emit_current(app: &AppHandle, proxy: &Proxy<'_>) {
         Ok(Some(info)) => info,
         Ok(None) => return,
         Err(e) => {
-            eprintln!("[layout/kde] poll error: {e}");
+            log::debug!("[layout/kde] poll error: {e}");
             return;
         }
     };
@@ -147,7 +147,7 @@ fn emit_current(app: &AppHandle, proxy: &Proxy<'_>) {
         return;
     }
     if let Err(e) = app.emit("layout-changed", info) {
-        eprintln!("[layout/kde] emit error: {e}");
+        log::debug!("[layout/kde] emit error: {e}");
     }
 }
 
