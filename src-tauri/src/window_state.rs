@@ -1,5 +1,6 @@
-use std::fs;
-use std::path::PathBuf;
+use std::fs::{self, File};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
@@ -56,10 +57,22 @@ fn write(app: &tauri::AppHandle, state: WindowState) {
     let Ok(path) = state_path(app) else { return };
     if let Ok(json) = serde_json::to_string(&state) {
         let tmp = path.with_extension("json.tmp");
-        if fs::write(&tmp, json.as_bytes()).is_ok() {
-            let _ = fs::rename(&tmp, &path);
-        }
+        let _ = write_atomic(&tmp, &path, json.as_bytes());
     }
+}
+
+fn write_atomic(tmp: &Path, path: &Path, contents: &[u8]) -> Result<(), String> {
+    let mut file = File::create(tmp).map_err(|e| format!("create tmp: {e}"))?;
+    file.write_all(contents)
+        .map_err(|e| format!("write tmp: {e}"))?;
+    file.sync_all().map_err(|e| format!("sync tmp: {e}"))?;
+    fs::rename(tmp, path).map_err(|e| format!("rename: {e}"))?;
+    if let Some(parent) = path.parent() {
+        File::open(parent)
+            .and_then(|dir| dir.sync_all())
+            .map_err(|e| format!("sync dir: {e}"))?;
+    }
+    Ok(())
 }
 
 pub fn remember(window: &WebviewWindow) {

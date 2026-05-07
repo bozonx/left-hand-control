@@ -1,5 +1,6 @@
-use std::fs;
-use std::path::PathBuf;
+use std::fs::{self, File};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use tauri::Manager;
 
 pub fn resolve_storage_paths(app: &tauri::AppHandle) -> Result<StoragePaths, String> {
@@ -87,8 +88,7 @@ impl StoragePaths {
         fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let path = self.config_path();
         let tmp = self.config_dir.join("config.json.tmp");
-        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
-        fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+        write_atomic(&tmp, &path, contents.as_bytes())?;
         Ok(())
     }
 
@@ -106,8 +106,7 @@ impl StoragePaths {
         fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let path = self.ui_state_path();
         let tmp = self.config_dir.join("ui-state.json.tmp");
-        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
-        fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+        write_atomic(&tmp, &path, contents.as_bytes())?;
         Ok(())
     }
 
@@ -125,8 +124,7 @@ impl StoragePaths {
         fs::create_dir_all(&self.data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let path = self.current_layout_path();
         let tmp = self.data_dir.join("current-layout.yaml.tmp");
-        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
-        fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+        write_atomic(&tmp, &path, contents.as_bytes())?;
         Ok(())
     }
 
@@ -178,8 +176,7 @@ impl StoragePaths {
             return Err(format!("layout '{safe}' already exists"));
         }
         let tmp = dir.join(format!("{safe}.yaml.tmp"));
-        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
-        fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
+        write_atomic(&tmp, &path, contents.as_bytes())?;
         Ok(safe)
     }
 
@@ -203,13 +200,15 @@ impl StoragePaths {
             return Err(format!("layout '{new_safe}' already exists"));
         }
         let tmp = dir.join(format!("{new_safe}.yaml.tmp"));
-        fs::write(&tmp, contents.as_bytes()).map_err(|e| format!("write tmp: {e}"))?;
+        write_tmp_synced(&tmp, contents.as_bytes())?;
         if new_path.exists() && old_path != new_path {
             fs::remove_file(&new_path).map_err(|e| format!("remove_file: {e}"))?;
         }
         fs::rename(&tmp, &new_path).map_err(|e| format!("rename: {e}"))?;
+        sync_parent_dir(&new_path)?;
         if old_path != new_path && old_path.exists() {
             fs::remove_file(&old_path).map_err(|e| format!("remove_file: {e}"))?;
+            sync_parent_dir(&old_path)?;
         }
         Ok(new_safe)
     }
@@ -246,6 +245,28 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
         return Err("layout name cannot start with '.'".into());
     }
     Ok(trimmed.to_string())
+}
+
+fn write_atomic(tmp: &Path, path: &Path, contents: &[u8]) -> Result<(), String> {
+    write_tmp_synced(tmp, contents)?;
+    fs::rename(tmp, path).map_err(|e| format!("rename: {e}"))?;
+    sync_parent_dir(path)
+}
+
+fn write_tmp_synced(tmp: &Path, contents: &[u8]) -> Result<(), String> {
+    let mut file = File::create(tmp).map_err(|e| format!("create tmp: {e}"))?;
+    file.write_all(contents)
+        .map_err(|e| format!("write tmp: {e}"))?;
+    file.sync_all().map_err(|e| format!("sync tmp: {e}"))
+}
+
+fn sync_parent_dir(path: &Path) -> Result<(), String> {
+    let Some(parent) = path.parent() else {
+        return Ok(());
+    };
+    File::open(parent)
+        .and_then(|dir| dir.sync_all())
+        .map_err(|e| format!("sync dir: {e}"))
 }
 
 #[cfg(test)]

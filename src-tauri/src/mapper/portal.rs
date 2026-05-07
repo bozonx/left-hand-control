@@ -748,8 +748,16 @@ fn write_token_atomic(path: &Path, token: &str) -> std::io::Result<()> {
         std::fs::create_dir_all(parent)?;
     }
     let tmp = path.with_extension("token.tmp");
-    std::fs::write(&tmp, token.as_bytes())?;
+    {
+        use std::io::Write;
+        let mut file = std::fs::File::create(&tmp)?;
+        file.write_all(token.as_bytes())?;
+        file.sync_all()?;
+    }
     std::fs::rename(&tmp, path)?;
+    if let Some(parent) = path.parent() {
+        std::fs::File::open(parent)?.sync_all()?;
+    }
     Ok(())
 }
 
