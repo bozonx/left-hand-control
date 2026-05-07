@@ -106,7 +106,9 @@ fn validate_device_path(path: &str) -> Result<(), String> {
         return Err("device path is empty".into());
     }
     if !path.starts_with("/dev/input/") {
-        return Err(format!("device path must be under /dev/input/, got: {path}"));
+        return Err(format!(
+            "device path must be under /dev/input/, got: {path}"
+        ));
     }
     if path.contains("..") {
         return Err("device path contains invalid sequence".into());
@@ -234,21 +236,16 @@ fn execute_action(action: String) -> Result<(), String> {
 #[tauri::command]
 fn hide_quick_menu(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("quick-menu") {
-        window
-            .hide()
-            .map_err(|e| format!("hide quick menu: {e}"))?;
+        window.hide().map_err(|e| format!("hide quick menu: {e}"))?;
     }
     Ok(())
 }
 
 #[tauri::command]
-fn hide_emoji_menu(app: tauri::AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("emoji-menu") {
-        window
-            .hide()
-            .map_err(|e| format!("hide emoji menu: {e}"))?;
-    }
-    Ok(())
+fn insert_text(text: String) -> Result<(), String> {
+    let action = format!("text:{}", text);
+    eprintln!("[cmd] insert_text action={action}");
+    mapper::execute_action(action)
 }
 
 fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
@@ -270,7 +267,9 @@ fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
             .build()
             .map_err(|e| format!("create quick menu window: {e}"))?
     };
-    window.center().map_err(|e| format!("center quick menu: {e}"))?;
+    window
+        .center()
+        .map_err(|e| format!("center quick menu: {e}"))?;
     window.show().map_err(|e| format!("show quick menu: {e}"))?;
     window
         .set_focus()
@@ -297,7 +296,9 @@ fn show_emoji_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
             .build()
             .map_err(|e| format!("create emoji menu window: {e}"))?
     };
-    window.center().map_err(|e| format!("center emoji menu: {e}"))?;
+    window
+        .center()
+        .map_err(|e| format!("center emoji menu: {e}"))?;
     window.show().map_err(|e| format!("show emoji menu: {e}"))?;
     window
         .set_focus()
@@ -340,6 +341,20 @@ pub fn run() {
                     }
                 }) {
                     eprintln!("[emoji-menu] schedule show failed: {e}");
+                }
+            });
+            let hide_emoji_menu_app = app.handle().clone();
+            app.listen("hide_emoji_menu", move |_| {
+                let app = hide_emoji_menu_app.clone();
+                let app_for_thread = app.clone();
+                if let Err(e) = app.run_on_main_thread(move || {
+                    if let Some(window) = app_for_thread.get_webview_window("emoji-menu") {
+                        if let Err(e) = window.destroy() {
+                            eprintln!("[emoji-menu] destroy failed: {e}");
+                        }
+                    }
+                }) {
+                    eprintln!("[emoji-menu] schedule hide failed: {e}");
                 }
             });
             if let Some(window) = app.get_webview_window("main") {
@@ -396,8 +411,8 @@ pub fn run() {
             tray::toggle_main_window_maximized_command,
             quit_application,
             execute_action,
+            insert_text,
             hide_quick_menu,
-            hide_emoji_menu,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

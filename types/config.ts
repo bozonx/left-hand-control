@@ -226,12 +226,67 @@ export interface QuickAction {
 }
 
 export const EMOJI_HOTKEYS = [
-  'q', 'w', 'e', 'r', 't',
-  'a', 's', 'd', 'f', 'g',
-  'z', 'x', 'c', 'v', 'b',
+  'KeyQ',
+  'KeyW',
+  'KeyE',
+  'KeyR',
+  'KeyT',
+  'KeyA',
+  'KeyS',
+  'KeyD',
+  'KeyF',
+  'KeyG',
+  'KeyZ',
+  'KeyX',
+  'KeyC',
+  'KeyV',
+  'KeyB',
 ] as const
 
-export type EmojiHotkey = typeof EMOJI_HOTKEYS[number]
+export type EmojiHotkey = (typeof EMOJI_HOTKEYS)[number]
+
+export const EMOJI_HOTKEY_LABELS: Record<EmojiHotkey, string> = {
+  KeyQ: 'Q',
+  KeyW: 'W',
+  KeyE: 'E',
+  KeyR: 'R',
+  KeyT: 'T',
+  KeyA: 'A',
+  KeyS: 'S',
+  KeyD: 'D',
+  KeyF: 'F',
+  KeyG: 'G',
+  KeyZ: 'Z',
+  KeyX: 'X',
+  KeyC: 'C',
+  KeyV: 'V',
+  KeyB: 'B',
+} as const
+
+const LEGACY_EMOJI_KEY_MAP: Record<string, EmojiHotkey> = {
+  q: 'KeyQ',
+  w: 'KeyW',
+  e: 'KeyE',
+  r: 'KeyR',
+  t: 'KeyT',
+  a: 'KeyA',
+  s: 'KeyS',
+  d: 'KeyD',
+  f: 'KeyF',
+  g: 'KeyG',
+  z: 'KeyZ',
+  x: 'KeyX',
+  c: 'KeyC',
+  v: 'KeyV',
+  b: 'KeyB',
+}
+
+export function migrateEmojiHotkey(key: string): EmojiHotkey | undefined {
+  if ((EMOJI_HOTKEYS as readonly string[]).includes(key)) {
+    return key as EmojiHotkey
+  }
+  return LEGACY_EMOJI_KEY_MAP[key]
+}
 
 export interface EmojiPage {
   id: string
@@ -240,9 +295,36 @@ export interface EmojiPage {
 }
 
 export const STANDARD_EMOJIS = [
-  '😀', '😄', '😂', '🙂', '😉', '😍', '😘', '😎', '🤔', '😭',
-  '😡', '👍', '👎', '👏', '🙏', '💪', '🔥', '✨', '🎉', '❤️',
-  '💜', '✅', '❌', '⭐', '🚀', '💡', '👀', '🤝', '🙌', '👌',
+  '😀',
+  '😄',
+  '😂',
+  '🙂',
+  '😉',
+  '😍',
+  '😘',
+  '😎',
+  '🤔',
+  '😭',
+  '😡',
+  '👍',
+  '👎',
+  '👏',
+  '🙏',
+  '💪',
+  '🔥',
+  '✨',
+  '🎉',
+  '❤️',
+  '💜',
+  '✅',
+  '❌',
+  '⭐',
+  '🚀',
+  '💡',
+  '👀',
+  '🤝',
+  '🙌',
+  '👌',
 ] as const
 
 export function createDefaultEmojiPage(): EmojiPage {
@@ -254,6 +336,8 @@ export function createDefaultEmojiPage(): EmojiPage {
     ) as Partial<Record<EmojiHotkey, string>>,
   }
 }
+
+export const MAX_EMOJI_CELL_LENGTH = 100
 
 export interface LayoutPreset {
   description?: string
@@ -296,7 +380,9 @@ export function macroActionRef(id: string): string {
   return `${MACRO_ACTION_PREFIX}${id}`
 }
 
-export function parseMacroRef(action: string | null | undefined): string | null {
+export function parseMacroRef(
+  action: string | null | undefined,
+): string | null {
   if (!action) return null
   return action.startsWith(MACRO_ACTION_PREFIX)
     ? action.slice(MACRO_ACTION_PREFIX.length)
@@ -312,7 +398,9 @@ export function systemActionRef(id: string): string {
   return `${SYSTEM_ACTION_PREFIX}${id}`
 }
 
-export function parseSystemRef(action: string | null | undefined): string | null {
+export function parseSystemRef(
+  action: string | null | undefined,
+): string | null {
   if (!action) return null
   return action.startsWith(SYSTEM_ACTION_PREFIX)
     ? action.slice(SYSTEM_ACTION_PREFIX.length)
@@ -325,7 +413,9 @@ export function commandActionRef(id: string): string {
   return `${COMMAND_ACTION_PREFIX}${id}`
 }
 
-export function parseCommandRef(action: string | null | undefined): string | null {
+export function parseCommandRef(
+  action: string | null | undefined,
+): string | null {
   if (!action) return null
   return action.startsWith(COMMAND_ACTION_PREFIX)
     ? action.slice(COMMAND_ACTION_PREFIX.length)
@@ -338,7 +428,9 @@ export function textActionRef(text: string): string {
   return `${TEXT_ACTION_PREFIX}${text}`
 }
 
-export function parseTextAction(action: string | null | undefined): string | null {
+export function parseTextAction(
+  action: string | null | undefined,
+): string | null {
   if (!action) return null
   return action.startsWith(TEXT_ACTION_PREFIX)
     ? action.slice(TEXT_ACTION_PREFIX.length)
