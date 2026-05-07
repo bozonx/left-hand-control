@@ -418,6 +418,10 @@ export default {
     moveDown: 'Move down',
     menuHint:
       'Press Tab to switch pages; Q W E R T / A S D F G / Z X C V B run actions',
+    pageName: 'Page {n}',
+    emptyCell: 'Empty',
+    cellLabel: 'Key {key}',
+    cellHint: 'Moving this action changes which quick-menu key runs it.',
   },
   emoji: {
     title: 'Emoji',

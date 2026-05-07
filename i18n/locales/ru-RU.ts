@@ -425,6 +425,11 @@ export default {
     moveDown: 'Ниже',
     menuHint:
       'Tab листает страницы, клавиши Q W E R T / A S D F G / Z X C V B запускают действия',
+    pageName: 'Страница {n}',
+    emptyCell: 'Пусто',
+    cellLabel: 'Клавиша {key}',
+    cellHint:
+      'Перемещение этого действия меняет клавишу, которая запускает его в quick menu.',
   },
   emoji: {
     title: 'Emoji',
