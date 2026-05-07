@@ -408,6 +408,7 @@ export default {
       'Quick action pages with 15 cells each. They open in a separate window through sys:showQuickMenu.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
+    addPage: 'Add page',
     defaultName: 'New action',
     nameLabel: 'Label',
     namePh: 'e.g. Next Track',

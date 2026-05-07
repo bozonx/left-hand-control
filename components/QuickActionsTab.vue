@@ -16,7 +16,7 @@ const selectedIndex = ref<number | null>(null)
 const selectedPageIndex = ref(0)
 const pageSize = LEFT_HAND_HOTKEYS.length
 const pageCount = computed(() =>
-  Math.max(1, Math.floor(actions.value.length / pageSize) + 1),
+  Math.max(1, Math.ceil(actions.value.length / pageSize)),
 )
 const pageStart = computed(() => selectedPageIndex.value * pageSize)
 const pageItems = computed(() =>
@@ -69,6 +69,19 @@ function createEmptyAction(): QuickAction {
     name: t('quickActions.defaultName'),
     action: '',
   }
+}
+
+function addPage() {
+  if (!config.value.quickActions) {
+    config.value.quickActions = []
+  }
+  const currentLength = config.value.quickActions.length
+  const padding = (pageSize - (currentLength % pageSize)) % pageSize
+  for (let i = 0; i < padding + pageSize; i += 1) {
+    config.value.quickActions.push(createEmptyAction())
+  }
+  selectedPageIndex.value = Math.floor((currentLength + padding) / pageSize)
+  selectedIndex.value = selectedPageIndex.value * pageSize
 }
 
 function setActionAt(index: number, action: string): number {
@@ -186,13 +199,21 @@ watch(actions, clampSelection, { immediate: true })
   <div class="space-y-4">
     <UCard>
       <template #header>
-        <div>
-          <div>
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
             <h2 class="text-sm font-semibold">{{ $t('quickActions.title') }}</h2>
             <p class="mt-0.5 text-xs text-(--ui-text-muted)">
               {{ $t('quickActions.subtitle') }}
             </p>
           </div>
+          <UButton
+            icon="i-lucide-plus"
+            size="sm"
+            class="whitespace-nowrap"
+            @click="addPage"
+          >
+            {{ $t('quickActions.addPage') }}
+          </UButton>
         </div>
       </template>
 

@@ -13,6 +13,8 @@ const toast = useToast()
 const { t } = useI18n()
 
 const pageIndex = ref(0)
+const scrollEl = ref<HTMLElement | null>(null)
+const pageEls = ref<HTMLElement[]>([])
 const pages = computed(() => {
     const configured = config.value.emojiPages || []
     return configured.length > 0 ? configured : [createDefaultEmojiPage()]
@@ -25,6 +27,7 @@ const page = computed(
 )
 
 let unlistenShow: (() => void) | null = null
+let scrollFrame = 0
 
 function wait(ms: number) {
     return new Promise((resolve) => window.setTimeout(resolve, ms))
@@ -37,13 +40,37 @@ async function closeMenu() {
 }
 
 function nextPage() {
-    pageIndex.value = (pageIndex.value + 1) % Math.max(1, pages.value.length)
+    setPage((pageIndex.value + 1) % Math.max(1, pages.value.length))
 }
 
 function prevPage() {
-    pageIndex.value =
+    setPage(
         (pageIndex.value - 1 + Math.max(1, pages.value.length)) %
-        Math.max(1, pages.value.length)
+            Math.max(1, pages.value.length),
+    )
+}
+
+function setPage(index: number) {
+    pageIndex.value = index
+    pageEls.value[index]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+}
+
+function setPageRef(el: unknown, index: number) {
+    if (el instanceof HTMLElement) {
+        pageEls.value[index] = el
+    }
+}
+
+function updatePageFromScroll() {
+    const scroller = scrollEl.value
+    if (!scroller) return
+    const next = Math.round(scroller.scrollTop / Math.max(1, scroller.clientHeight))
+    pageIndex.value = Math.min(Math.max(next, 0), Math.max(0, pages.value.length - 1))
+}
+
+function onScroll() {
+    if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
+    scrollFrame = window.requestAnimationFrame(updatePageFromScroll)
 }
 
 async function applyEmoji(emoji: string | undefined) {
@@ -90,6 +117,8 @@ onMounted(async () => {
     unlistenShow = await listen('show_emoji_menu', async () => {
         await load()
         pageIndex.value = 0
+        await nextTick()
+        scrollEl.value?.scrollTo({ top: 0 })
     })
 
     window.addEventListener('keydown', onKeydown)
@@ -97,6 +126,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKeydown)
+    if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
     unlistenShow?.()
 })
 </script>
@@ -122,23 +152,36 @@ onBeforeUnmount(() => {
                 </UBadge>
             </div>
 
-            <div class="grid grid-cols-5 gap-2">
-                <button
-                    v-for="key in EMOJI_HOTKEYS"
-                    :key="key"
-                    type="button"
-                    class="flex aspect-square min-h-20 flex-col items-center justify-center gap-2 rounded-md border border-(--ui-border-muted) bg-(--ui-bg) p-2 transition hover:border-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-40"
-                    :disabled="!page.cells[key]"
-                    @click="applyEmoji(page.cells[key])"
+            <div
+                ref="scrollEl"
+                class="h-[296px] overflow-y-auto overscroll-contain scroll-smooth snap-y snap-mandatory rounded-md"
+                @scroll="onScroll"
+            >
+                <section
+                    v-for="(emojiPage, pageNumber) in pages"
+                    :key="emojiPage.id"
+                    :ref="(el) => setPageRef(el, pageNumber)"
+                    class="flex h-full snap-start flex-col"
                 >
-                    <span class="text-3xl leading-none">{{
-                        page.cells[key] || ' '
-                    }}</span>
-                    <span
-                        class="font-mono text-xs uppercase text-(--ui-text-muted)"
-                        >{{ EMOJI_HOTKEY_LABELS[key] }}</span
-                    >
-                </button>
+                    <div class="grid grid-cols-5 gap-2">
+                        <button
+                            v-for="key in EMOJI_HOTKEYS"
+                            :key="key"
+                            type="button"
+                            class="flex aspect-square min-h-20 flex-col items-center justify-center gap-2 rounded-md border border-(--ui-border-muted) bg-(--ui-bg) p-2 transition hover:border-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-40"
+                            :disabled="!emojiPage.cells[key]"
+                            @click="applyEmoji(emojiPage.cells[key])"
+                        >
+                            <span class="text-3xl leading-none">{{
+                                emojiPage.cells[key] || ' '
+                            }}</span>
+                            <span
+                                class="font-mono text-xs uppercase text-(--ui-text-muted)"
+                                >{{ EMOJI_HOTKEY_LABELS[key] }}</span
+                            >
+                        </button>
+                    </div>
+                </section>
             </div>
 
             <div class="mt-2 flex items-center justify-center gap-1.5">
@@ -152,7 +195,7 @@ onBeforeUnmount(() => {
                             ? 'w-4 bg-primary'
                             : 'w-1.5 bg-(--ui-border-accented) hover:bg-(--ui-text-muted)'
                     "
-                    @click="pageIndex = index"
+                    @click="setPage(index)"
                 />
             </div>
 

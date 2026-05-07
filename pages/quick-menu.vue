@@ -16,6 +16,8 @@ const hasRunnableActions = computed(() =>
   actions.value.some((action) => action.action.trim()),
 )
 const pageIndex = ref(0)
+const scrollEl = ref<HTMLElement | null>(null)
+const pageEls = ref<HTMLElement[]>([])
 const pages = computed(() => {
   const chunks: QuickAction[][] = []
   for (let i = 0; i < actions.value.length; i += LEFT_HAND_HOTKEYS.length) {
@@ -25,6 +27,7 @@ const pages = computed(() => {
 })
 const page = computed(() => pages.value[pageIndex.value] ?? pages.value[0] ?? [])
 let unlistenShow: (() => void) | null = null
+let scrollFrame = 0
 
 function wait(ms: number) {
   return new Promise(resolve => window.setTimeout(resolve, ms))
@@ -37,13 +40,37 @@ async function closeMenu() {
 }
 
 function nextPage() {
-  pageIndex.value = (pageIndex.value + 1) % Math.max(1, pages.value.length)
+  setPage((pageIndex.value + 1) % Math.max(1, pages.value.length))
 }
 
 function prevPage() {
-  pageIndex.value =
+  setPage(
     (pageIndex.value - 1 + Math.max(1, pages.value.length)) %
-    Math.max(1, pages.value.length)
+      Math.max(1, pages.value.length),
+  )
+}
+
+function setPage(index: number) {
+  pageIndex.value = index
+  pageEls.value[index]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+}
+
+function setPageRef(el: unknown, index: number) {
+  if (el instanceof HTMLElement) {
+    pageEls.value[index] = el
+  }
+}
+
+function updatePageFromScroll() {
+  const scroller = scrollEl.value
+  if (!scroller) return
+  const next = Math.round(scroller.scrollTop / Math.max(1, scroller.clientHeight))
+  pageIndex.value = Math.min(Math.max(next, 0), Math.max(0, pages.value.length - 1))
+}
+
+function onScroll() {
+  if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
+  scrollFrame = window.requestAnimationFrame(updatePageFromScroll)
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -77,6 +104,8 @@ onMounted(async () => {
   unlistenShow = await listen('show_quick_menu', async () => {
     await load()
     pageIndex.value = 0
+    await nextTick()
+    scrollEl.value?.scrollTo({ top: 0 })
   })
 
   window.addEventListener('keydown', onKeydown)
@@ -84,6 +113,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
+  if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
   unlistenShow?.()
 })
 
@@ -121,28 +151,42 @@ async function runAction(action: string) {
         <p class="text-(--ui-text-muted)">{{ $t('quickActions.empty') }}</p>
       </div>
 
-      <div v-else class="grid grid-cols-5 gap-2">
-        <button
-          v-for="(key, index) in LEFT_HAND_HOTKEYS"
-          :key="key"
-          type="button"
-          class="flex h-24 min-w-0 flex-col items-start justify-between gap-2 rounded-md border border-(--ui-border-muted) bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-40"
-          :disabled="!page[index]?.action.trim()"
-          @click="page[index]?.action.trim() && runAction(page[index].action)"
+      <div
+        v-else
+        ref="scrollEl"
+        class="h-[328px] overflow-y-auto overscroll-contain scroll-smooth snap-y snap-mandatory rounded-md"
+        @scroll="onScroll"
+      >
+        <section
+          v-for="(quickPage, pageNumber) in pages"
+          :key="pageNumber"
+          :ref="(el) => setPageRef(el, pageNumber)"
+          class="flex h-full snap-start flex-col"
         >
-          <span class="flex min-w-0 items-center gap-2 self-stretch">
-            <UIcon
-              :name="page[index]?.action.trim() ? page[index].icon || 'i-lucide-zap' : 'i-lucide-plus'"
-              class="h-4 w-4 shrink-0 text-(--ui-text-muted)"
-            />
-            <span class="quick-menu-action-name truncate text-sm font-medium">
-              {{ page[index]?.action.trim() ? page[index].name : ' ' }}
-            </span>
-          </span>
-          <span class="font-mono text-xs uppercase text-(--ui-text-muted)">
-            {{ LEFT_HAND_HOTKEY_LABELS[key as LeftHandHotkey] }}
-          </span>
-        </button>
+          <div class="grid grid-cols-5 gap-2">
+            <button
+              v-for="(key, index) in LEFT_HAND_HOTKEYS"
+              :key="key"
+              type="button"
+              class="flex h-24 min-w-0 flex-col items-start justify-between gap-2 rounded-md border border-(--ui-border-muted) bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-40"
+              :disabled="!quickPage[index]?.action.trim()"
+              @click="quickPage[index]?.action.trim() && runAction(quickPage[index].action)"
+            >
+              <span class="flex min-w-0 items-center gap-2 self-stretch">
+                <UIcon
+                  :name="quickPage[index]?.action.trim() ? quickPage[index].icon || 'i-lucide-zap' : 'i-lucide-plus'"
+                  class="h-4 w-4 shrink-0 text-(--ui-text-muted)"
+                />
+                <span class="quick-menu-action-name truncate text-sm font-medium">
+                  {{ quickPage[index]?.action.trim() ? quickPage[index].name : ' ' }}
+                </span>
+              </span>
+              <span class="font-mono text-xs uppercase text-(--ui-text-muted)">
+                {{ LEFT_HAND_HOTKEY_LABELS[key as LeftHandHotkey] }}
+              </span>
+            </button>
+          </div>
+        </section>
       </div>
 
       <div v-if="pages.length > 1" class="mt-2 flex items-center justify-center gap-1.5">
@@ -156,7 +200,7 @@ async function runAction(action: string) {
               ? 'w-4 bg-primary'
               : 'w-1.5 bg-(--ui-border-accented) hover:bg-(--ui-text-muted)'
           "
-          @click="pageIndex = index"
+          @click="setPage(index)"
         />
       </div>
 
