@@ -405,7 +405,7 @@ export default {
   quickActions: {
     title: 'Quick Actions',
     subtitle:
-      'A vertical menu of layout actions shown in a centered quick window by sys:showQuickMenu.',
+      'Quick action pages with 15 cells each. They open in a separate window through sys:showQuickMenu.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
     defaultName: 'New action',
@@ -416,6 +416,8 @@ export default {
     deleteAction: 'Delete action',
     moveUp: 'Move up',
     moveDown: 'Move down',
+    menuHint:
+      'Press Tab to switch pages; Q W E R T / A S D F G / Z X C V B run actions',
   },
   emoji: {
     title: 'Emoji',

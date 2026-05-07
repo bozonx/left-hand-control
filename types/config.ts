@@ -225,7 +225,7 @@ export interface QuickAction {
   icon?: string
 }
 
-export const EMOJI_HOTKEYS = [
+export const LEFT_HAND_HOTKEYS = [
   'KeyQ',
   'KeyW',
   'KeyE',
@@ -243,9 +243,9 @@ export const EMOJI_HOTKEYS = [
   'KeyB',
 ] as const
 
-export type EmojiHotkey = (typeof EMOJI_HOTKEYS)[number]
+export type LeftHandHotkey = (typeof LEFT_HAND_HOTKEYS)[number]
 
-export const EMOJI_HOTKEY_LABELS: Record<EmojiHotkey, string> = {
+export const LEFT_HAND_HOTKEY_LABELS: Record<LeftHandHotkey, string> = {
   KeyQ: 'Q',
   KeyW: 'W',
   KeyE: 'E',
@@ -262,6 +262,10 @@ export const EMOJI_HOTKEY_LABELS: Record<EmojiHotkey, string> = {
   KeyV: 'V',
   KeyB: 'B',
 } as const
+
+export const EMOJI_HOTKEYS = LEFT_HAND_HOTKEYS
+export type EmojiHotkey = LeftHandHotkey
+export const EMOJI_HOTKEY_LABELS = LEFT_HAND_HOTKEY_LABELS
 
 const LEGACY_EMOJI_KEY_MAP: Record<string, EmojiHotkey> = {
   q: 'KeyQ',

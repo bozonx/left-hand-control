@@ -411,7 +411,7 @@ export default {
   quickActions: {
     title: 'Быстрые действия',
     subtitle:
-      'Вертикальное меню действий текущей раскладки, которое открывается отдельным окном по sys:showQuickMenu.',
+      'Страницы быстрых действий по 15 ячеек. Открываются отдельным окном через sys:showQuickMenu.',
     empty:
       'Пока нет быстрых действий. Добавьте первое, чтобы оно появилось в меню.',
     addBtn: 'Добавить действие',
@@ -423,6 +423,8 @@ export default {
     deleteAction: 'Удалить',
     moveUp: 'Выше',
     moveDown: 'Ниже',
+    menuHint:
+      'Tab листает страницы, клавиши Q W E R T / A S D F G / Z X C V B запускают действия',
   },
   emoji: {
     title: 'Emoji',

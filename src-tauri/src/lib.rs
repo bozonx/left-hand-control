@@ -254,8 +254,8 @@ fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
     } else {
         WebviewWindowBuilder::new(app, "quick-menu", WebviewUrl::App("quick-menu".into()))
             .title("Quick Actions")
-            .inner_size(420.0, 520.0)
-            .min_inner_size(320.0, 120.0)
+            .inner_size(760.0, 520.0)
+            .min_inner_size(520.0, 120.0)
             .resizable(false)
             .decorations(false)
             .transparent(true)
