@@ -11,7 +11,7 @@ export default {
       'The app could not be initialized. Check the error below and try loading the config again.',
     notSavedBadge: '• unsaved',
     dirtyTooltip:
-      'The current layout has unsaved changes. Save it under My layouts, otherwise they will be lost when switching.',
+      'The current layout has unsaved changes. Save it under My Layouts, otherwise they will be lost when switching.',
     customLayout: 'Custom layout',
     noLayout: 'No layout',
     switchToLight: 'Switch to light theme',
@@ -697,7 +697,7 @@ export default {
     textHint:
       'Text actions are stored as text:<your text>. Use this for characters and strings, not for physical key remaps.',
     textTabBody:
-      'This action inserts text as-is. Good for symbols like €, snippets like TODO: , and other printable strings.',
+      'This action inserts text as-is. Good for symbols like €, snippets like "TODO: ", and other printable strings.',
     physicalKeyHint:
       "Letters and symbols here mean the physical key code on a standard English layout, not the character from the user's current layout.",
     captureKeys: 'Listen for key press',
