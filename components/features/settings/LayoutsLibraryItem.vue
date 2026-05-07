@@ -182,7 +182,7 @@ const description = computed(() => {
             <UTextarea
               ref="textareaRef"
               v-model="editValue"
-              :placeholder="$t('rules.addDescription')"
+              :placeholder="$t('settings.descriptionPh')"
               autoresize
               :rows="1"
               size="sm"
@@ -207,7 +207,7 @@ const description = computed(() => {
               class="mt-0.5 px-0"
               @click="startEdit"
             >
-              {{ $t('rules.addDescription') }}
+              {{ $t('keymap.addDescription') }}
             </UButton>
           </template>
           <div v-if="layoutMode === 'auto'" class="flex items-center justify-between gap-2 mt-1" @click.stop>

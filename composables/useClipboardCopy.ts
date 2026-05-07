@@ -3,11 +3,12 @@ export function useClipboardCopy() {
   const { t } = useI18n()
 
   async function copy(text: string) {
+    const description = text.length > 80 ? `${text.slice(0, 77)}...` : text
     try {
       await navigator.clipboard.writeText(text)
       toast.add({
         title: t('common.copied'),
-        description: text,
+        description,
         icon: 'i-lucide-copy-check',
         close: true,
       })

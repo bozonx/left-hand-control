@@ -7,10 +7,10 @@ export default {
     saved: 'Saved',
     saveFailedTitle: 'Failed to save changes',
     loadFailedBody:
-      'The app could not be initialized. Check the error below and try loading the config again.',
+      'The app could not load its configuration. Check the error below, then try again.',
     notSavedBadge: '• unsaved',
     dirtyTooltip:
-      'The current layout has unsaved changes. Save it under My Layouts, otherwise they will be lost when switching.',
+      'The current layout has unsaved changes. Save it to My Layouts before switching if you want to keep them.',
     customLayout: 'Custom layout',
     noLayout: 'No layout',
     switchToLight: 'Switch to light theme',
@@ -66,24 +66,24 @@ export default {
   home: {
     title: 'Home',
     subtitle:
-      'Your layouts live here together with a short reference on how the app applies actions.',
+      'Choose the active layout and check what is supported on this system.',
     infoTitle: 'Quick start',
     infoSubtitle: 'Everything you need to know to get started.',
     layoutsHintTitle: 'Using the library',
     layoutsHintBody:
-      'Create empty layouts or copies of the Ivan K base layout, switch between them, and save the current changes into a separate file.',
+      'Create layouts, switch between them, and save edits as separate layout files.',
     modeLabel: 'Layout mode',
     modeManual: 'Manual',
     modeAuto: 'Auto',
     modeManualHint:
-      'You pick a layout manually; it stays active. Its whitelist/blacklist still filter rules.',
+      'You choose the active layout. Its allow/block conditions still decide whether input is remapped.',
     modeAutoHint:
       'The app picks the first matching enabled layout from the list below.',
     modeInfoAria: 'How layout mode works',
     modeManualInfo:
-      'In manual mode, you choose the active layout yourself. It stays active until you choose another one. Its whitelist/blacklist still apply: when conditions block the layout, input passes through natively.',
+      'In manual mode, you choose the active layout yourself. It stays active until you choose another one. Its allow/block conditions still apply: when they block the layout, input passes through unchanged.',
     modeAutoInfo:
-      'In auto mode, only enabled layouts participate. Order matters: the app checks the list from top to bottom and activates the first layout allowed by its conditions. A whitelist limits where a layout can activate. A blacklist blocks it and takes priority. With only a blacklist, the layout is allowed everywhere except the blocked conditions. A layout with no lists matches everywhere. If nothing matches, no layout is active and input passes through natively.',
+      'In auto mode, only enabled layouts participate. Order matters: the app checks the list from top to bottom and activates the first layout allowed by its conditions. Allow conditions limit where a layout can activate. Block conditions take priority. With only block conditions, the layout works everywhere except the blocked cases. A layout with no conditions matches everywhere. If nothing matches, no layout is active and input passes through unchanged.',
     activeLayoutLabel: 'Active layout',
     activeLayoutNative: 'Native (no layout active)',
     manualNoActiveTitle: 'No active layout',
@@ -93,16 +93,16 @@ export default {
       'Left Hand Control intercepts your physical keyboard at the OS level and remaps keys in real time. You can turn rarely-used keys into powerful modifiers: hold CapsLock and the home row becomes arrow keys, navigation, or symbols.',
     howToStartTitle: 'How do I turn it on?',
     howToStartBody:
-      "Open Settings → Key-mapper, select your keyboard, and press Start. The app needs access to /dev/input/event* (usually via the 'input' group) and /dev/uinput. See README for udev rules.",
+      "Open Settings → Key-mapper, select your keyboard, and press Start. The app needs access to /dev/input/event* (usually via the 'input' group) and /dev/uinput. See the README for the udev rule.",
     layersExplainedTitle: 'What are layers?',
     layersExplainedBody:
       "A layer is an alternate keymap that activates while you hold a specific key. For example, in the built-in layout holding CapsLock turns J/K/L/I into ArrowLeft/ArrowDown/ArrowRight/ArrowUp, U/O into Home/End, and so on. Release the key and you're back to normal typing.",
     rulesExplainedTitle: 'What are rules?',
     rulesExplainedBody:
-      'Rules define what a physical key does. Each rule supports three behaviors: a short press (Tap), holding the key longer (Hold — usually activates a layer), and pressing twice quickly (Double-tap). You can also add conditions: active application, game mode, or keyboard layout language.',
+      'Rules define what a physical key does. A rule can handle a short press, a hold, and a quick double press. You can also limit it by active application, game mode, or keyboard layout language.',
     builtInLayoutTitle: 'Try the built-in layout',
     builtInLayoutBody:
-      "The app already loaded Ivan K's left-hand layout. It adds a navigation layer on CapsLock, a symbols layer on Right Alt, and a window-manager layer on Left Alt. You don't have to configure anything — just start the mapper and try it in your editor.",
+      "The app includes Ivan K's left-hand layout. It adds a navigation layer on CapsLock, a symbols layer on Right Alt, and a window-management layer on Left Alt. Start the mapper and try it in your editor.",
     fullDocsLabel: 'Read the full documentation →',
     howItWorksTitle: 'How it works on your system',
     platformDetected: 'Detected: {platform}',
@@ -116,9 +116,9 @@ export default {
     textInjectionStub: 'Not yet implemented on this operating system.',
     systemActionsLabel: 'System actions',
     systemActionsLinuxKde:
-      'Window management, virtual desktops, and other system functions use qdbus to call KDE Plasma D-Bus interfaces (KWin, etc.). Standard on any working Plasma install.',
+      'Window management, virtual desktops, and other system functions use qdbus to call KDE Plasma D-Bus interfaces such as KWin. This is normally available on Plasma.',
     systemActionsLinuxOther:
-      'System actions are not yet fully integrated with {desktop}. Only basic or no actions are available.',
+      'System actions are not fully integrated with {desktop} yet. Some actions may be unavailable.',
     systemActionsStub: 'Not yet implemented on this operating system.',
     layoutDetectionLabel: 'Layout detection',
     layoutDetectionLinuxKde:
@@ -137,7 +137,7 @@ export default {
     useThis: 'Use this layout',
     emptyTitle: 'Empty layout',
     emptyDesc:
-      'Start from scratch: no layers, rules or macros. Good if you want to build your own stack of additional layers from zero.',
+      'Start from scratch: no layers, rules, or macros. Use this if you want to build your own layout.',
     emptyBtn: 'Start empty',
     footnote: 'You can always change the chosen layout under {path}.',
     footnotePath: 'Settings → Layouts',
@@ -149,7 +149,7 @@ export default {
     ivank: {
       name: "Ivan K's left hand control",
       description:
-        "Pre-made author's layout: CapsLock — navigation layer, right Alt — symbols layer, left Alt — window manager. Includes a set of IDE macros.",
+        "Ready-made layout: CapsLock for navigation, Right Alt for symbols, Left Alt for window management. Includes IDE-oriented macros.",
       layers: {
         nav: {
           name: 'Navigation',
@@ -187,7 +187,7 @@ export default {
   rules: {
     title: 'Rules and triggers',
     subtitle:
-      'Configure the logic: how physical keys activate layers or trigger actions.',
+      'Define how physical keys activate layers or run actions.',
     addBtn: 'Add rule',
     empty:
       'No rules yet. Click "Add rule" to define how a physical key should behave.',
@@ -196,17 +196,17 @@ export default {
     keyPh: 'Pick a key',
     layerLabel: 'Layer (hold)',
     layerHint:
-      'Layer that activates while the key is held. It can be combined with "Hold action", for example to activate a layer and hold Alt at the same time.',
+      'Layer that stays active while the trigger key is held. You can combine it with a hold action, for example to activate a layer while holding Alt.',
     clearLayer: 'Clear layer',
     createLayer: 'Create layer',
     layerPh: 'Pick layer',
     tapLabel: 'Tap action',
     tapHint:
-      'Action performed on a short key press (released before the hold timeout elapses). Note: when a double-tap action is set, a single tap is delayed by the double-tap window to disambiguate it from the first press of a double tap.',
+      'Runs when the trigger key is released before the hold timeout. If a double-tap action is set, the single tap waits for the double-tap window before firing.',
     tapPh: 'No action',
     holdActionLabel: 'Hold action',
     holdActionHint:
-      'What happens while the key is held. "Use physical key" keeps the trigger key held as itself. "Do nothing" suppresses the trigger key on hold. "Hold another key" keeps a different key or shortcut held instead. It can be combined with a Layer so the rule both activates the layer and holds the selected key.',
+      'What happens while the trigger key is held. Use the physical key as-is, suppress it, or hold another key or shortcut instead. This can run together with a layer.',
     holdActionPh: 'Pick a keystroke',
     modeNative: 'Native',
     modeNativeDefault: 'Native (default)',
@@ -217,11 +217,11 @@ export default {
     holdModeAction: 'Hold another key',
     isolateLabel: 'Hold exclusions',
     isolateHint:
-      'Comma-separated keys in the active layer that temporarily release the held key.',
+      'Keys in the active layer that temporarily release the held key. Separate multiple keys with commas.',
     isolatePh: 'KeyW, KeyC, Slash',
     doubleTapLabel: 'Double-tap action',
     doubleTapHint:
-      'Action performed when the key is pressed twice in quick succession (second key-down within the double-tap window after a short first press). Fires on the second press; no need to release the key first.',
+      'Runs when the trigger key is pressed twice quickly. It fires on the second key-down, before the second release.',
     doubleTapPh: 'No action',
     holdLabel: 'Hold timeout, ms',
     holdHint:
@@ -231,7 +231,7 @@ export default {
       'Max time between first release and second key-down to recognise a double tap. Defaults to the value from Settings.',
     deleteRule: 'Delete rule',
     conditionsLabel: 'Conditions',
-    conditionsHint: 'Conditions for the rule to trigger (Game Mode, Layouts)',
+    conditionsHint: 'Limit this rule by game mode, keyboard layout, or active application.',
     manualActiveLabel: 'Active Layout (Manual)',
     manualActiveHint: 'Click activate to use this layout right now.',
     activateBtn: 'Activate',
@@ -241,13 +241,13 @@ export default {
     saveToConfigureAuto: 'Save the layout to configure auto-mode conditions.',
     autoIncludeLabel: 'Include in auto mode',
     autoIncludeHint:
-      'Enabled layouts participate in auto picking. Without whitelist/blacklist, the layout matches everywhere.',
-    whitelistPrefix: 'If present',
-    blacklistPrefix: 'If not',
+      'Enabled layouts can be picked automatically. With no conditions, the layout matches everywhere.',
+    whitelistPrefix: 'Allow when',
+    blacklistPrefix: 'Block when',
     conditionsNone: '— any —',
-    conditionsBtn: 'Conditions...',
+    conditionsBtn: 'Conditions…',
     gameModeLabel: 'Game Mode',
-    gameModeHint: 'Rule will only work if Game Mode is in the selected state',
+    gameModeHint: 'Run this rule only when game mode is in the selected state.',
     gameModeIgnore: 'Ignore',
     gameModeOn: 'On',
     gameModeOff: 'Off',
@@ -255,22 +255,22 @@ export default {
     gameModeOffSummary: 'game mode off',
     layoutsLabel: 'Language Layouts',
     layoutsHint:
-      'Rule will only work if the current layout is one of the selected. Leave empty to ignore layout.',
+      'Run this rule only when the current keyboard layout language is selected. Leave empty to ignore language.',
     anyLayout: 'Any layout',
     noLayoutsDetected:
-      'No layouts detected. Make sure the app is running in Tauri.',
+      'No keyboard layouts detected. Layout detection is available only in the desktop app.',
     appsLabel: 'Active application',
     appsHint:
       'Substrings (case-insensitive) matched against the focused window title or app id. Empty list means "do not check".',
     appsPlaceholder: 'e.g. firefox, Steam, .exe',
-    appsWhitelistLabel: 'Allowed applications (whitelist)',
+    appsWhitelistLabel: 'Allowed applications',
     appsWhitelistHint:
       'Rule fires only when the focused window matches at least one substring. Leave empty to ignore.',
-    appsBlacklistLabel: 'Blocked applications (blacklist)',
+    appsBlacklistLabel: 'Blocked applications',
     appsBlacklistHint:
-      'Rule is blocked when the focused window matches at least one substring. Takes precedence over the whitelist.',
-    appsWhitelistCount: '{count} whitelist',
-    appsBlacklistCount: '{count} blacklist',
+      'Rule is blocked when the focused window matches at least one substring. Takes precedence over allowed applications.',
+    appsWhitelistCount: '{count} allowed',
+    appsBlacklistCount: '{count} blocked',
     enableRule: 'Enable rule',
     disableRule: 'Disable rule',
     keyRequired: 'Pick a trigger key.',
@@ -281,7 +281,7 @@ export default {
     layerName: 'Layer name',
     layerNamePh: 'For example: Navigation',
     layerDesc: 'Description (optional)',
-    layerDescPh: 'Shortly: what this layer is for',
+    layerDescPh: 'Short description of this layer',
   },
   keymap: {
     layerLabel: 'Layer',
@@ -297,27 +297,27 @@ export default {
     rightHand: 'Right hand',
     extrasTitle: 'Additional keys',
     extrasSub:
-      'Mouse buttons, media keys or any other triggers not on the main keyboard.',
+      'Mouse buttons, media keys, and other triggers outside the main keyboard grid.',
     addExtra: 'Add',
     extrasEmpty: 'No extra keys for this layer yet.',
     extraKeyLabel: 'Key',
     extraKeyHint:
       'Trigger key: mouse button, media key or any other key from the full list.',
     extraActionLabel: 'Action',
-    extraActionHint: 'What this key does while the layer is active.',
+    extraActionHint: 'Action sent by this key while the layer is active.',
     moveExtraUp: 'Move up',
     moveExtraDown: 'Move down',
     deleteExtra: 'Delete',
     deleteLayerTitle: 'Delete layer “{name}”',
     deleteLayerBody:
-      'This removes the layer, its keymap, and clears references to it from layer rules.',
+      'This removes the layer, deletes its key bindings, and clears rules that activate it.',
     deleteLayerRulesHint_one:
       'One rule references this layer. It will be cleared.',
     deleteLayerRulesHint_other:
       '{count} rules reference this layer. They will be cleared.',
     emptyTitle: 'No layers yet',
     emptyBody:
-      'Create an extra layer to define its keymap and activate it from hold rules.',
+      'Create a layer, assign keys to it, then activate it from a hold rule.',
     editLayerTitle: 'Edit layer',
     renameLayerTitle: 'Rename layer',
     renameLayerAria: 'Rename layer {name}',
@@ -334,7 +334,7 @@ export default {
     swallowAction: 'Ignore in this layer',
     swallowLabel: 'Ignore',
     clearLayerTitle: 'Clear layer',
-    clearLayerBody: 'This will remove all key bindings for this layer.',
+    clearLayerBody: 'All key bindings in this layer will be removed.',
     layerCleared: 'Layer cleared',
     undoClear: 'Undo',
     clearExtrasTitle: 'Clear extra keys',
@@ -344,7 +344,7 @@ export default {
   macros: {
     title: 'User macros',
     subtitle:
-      'A sequence of steps. Each step — one key chord or system action. Steps run in order: the previous chord is fully released, the pause is honored, then the next is pressed.',
+      'Build reusable sequences from key chords, text actions, commands, or system actions. Steps run in order with the configured pause between them.',
     addBtn: 'New macro',
     addDisabled: 'Fix the existing macro errors first',
     empty: 'No macros yet. Click "New macro" to create the first one.',
@@ -354,7 +354,7 @@ export default {
     namePh: 'Macro name',
     idLabel: 'ID',
     idHint:
-      'Unique identifier for references like macro:<id>. To bind the macro to a key, pick this action on the "Layers" or "Rules" tab. Only change the ID if no key uses this macro.',
+      'Unique identifier used in references like macro:<id>. To bind this macro to a key, choose that action on the Layers or Rules tab. Change the ID only when nothing uses this macro.',
     idPh: 'id',
     copyId: 'Copy ID',
     idErrors: {
@@ -385,7 +385,7 @@ export default {
     deleteStep: 'Delete step',
     deleteMacro: 'Delete macro',
     assignHint:
-      'To bind the macro to a key, pick the action {ref} on the "Layers" or "Rules" tab.',
+      'To bind this macro to a key, choose {ref} on the Layers or Rules tab.',
     copySuffix: '(copy)',
     systemTitle: 'System macros',
     systemSub:
@@ -405,7 +405,7 @@ export default {
   quickActions: {
     title: 'Quick Actions',
     subtitle:
-      'Quick action pages with 15 cells each. They open in a separate window through sys:showQuickMenu.',
+      'Configure the 15-cell menu opened by sys:showQuickMenu.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
     addPage: 'Add page',
@@ -418,16 +418,16 @@ export default {
     moveUp: 'Move up',
     moveDown: 'Move down',
     menuHint:
-      'Press Tab to switch pages; Q W E R T / A S D F G / Z X C V B run actions',
+      'Tab switches pages. Q W E R T / A S D F G / Z X C V B run actions.',
     pageName: 'Page {n}',
     emptyCell: 'Empty',
     cellLabel: 'Key {key}',
-    cellHint: 'Moving this action changes which quick-menu key runs it.',
+    cellHint: 'Moving this action changes which menu key runs it.',
   },
   emoji: {
     title: 'Emoji',
     subtitle:
-      'Emoji pages with 15 cells each. They open in a separate window through sys:showEmojiMenu.',
+      'Configure the 15-cell menu opened by sys:showEmojiMenu.',
     addPage: 'Add page',
     deletePage: 'Delete page',
     pageLabel: 'Page name',
@@ -440,15 +440,15 @@ export default {
   },
   emojiMenu: {
     tabHint:
-      'Press Tab to switch pages; Q W E R T / A S D F G / Z X C V B insert emoji',
+      'Tab switches pages. Q W E R T / A S D F G / Z X C V B insert the selected cell.',
     insertFailedTitle: 'Failed to insert',
     insertFailedBody:
-      'The text could not be injected. Make sure the mapper is running and the portal is available.',
+      'The text could not be inserted. Start the mapper and check that xdg-desktop-portal is available.',
   },
   commands: {
     title: 'Commands',
     subtitle:
-      'Reusable Shell script commands for the current layout. On Linux they run through `sh -lc`; Windows and macOS will use separate platform-specific fields when mapper support is added.',
+      'Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.',
     addBtn: 'New command',
     addDisabled: 'Fix the existing command errors first',
     empty: 'No commands yet. Click "New command" to create the first one.',
@@ -458,22 +458,22 @@ export default {
     namePh: 'Command name',
     idLabel: 'ID',
     idHint:
-      'Unique identifier for references like cmd:<id>. To bind the command to a key, pick this action on the "Layers" or "Rules" tab.',
+      'Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab.',
     idPh: 'id',
     copyId: 'Copy ID',
-    linuxLabel: 'Shell script',
+    linuxLabel: 'Linux shell script',
     linuxHint:
-      'Linux shell script. It is passed to `sh -lc` as-is, so multiline scripts, variables, pipes, conditions and loops are supported. Read scripts from shared layouts or the internet carefully before enabling them.',
+      'Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them.',
     linuxPh: "playerctl play-pause\nnotify-send 'Playback toggled'",
-    approvalTitle: 'Shell commands are disabled',
+    approvalTitle: 'Shell commands require approval',
     approvalBody:
-      'This layout contains shell scripts. If the layout is not yours or commands were copied from the internet, read every script carefully before enabling them. Approval applies to all commands in this layout and resets when they change.',
+      'This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to all commands in this layout and resets when they change.',
     approveBtn: 'Allow commands',
     approved:
       'Shell commands are allowed for this version of the current layout.',
     revokeBtn: 'Disable',
     approvalToast:
-      'This layout contains shell commands. Review and allow them on the Commands tab.',
+      'Shell commands are blocked until you review and allow them on the Commands tab.',
     usedIn: 'Used in:',
     moveUp: 'Up',
     moveDown: 'Down',
@@ -488,7 +488,7 @@ export default {
     },
     confirmDeleteTitle: 'Delete command?',
     confirmDeleteBody:
-      'The command will be deleted. References {ref} will stop working.',
+      'The command will be deleted. Keys or macros that reference {ref} will stop working.',
   },
   settings: {
     mapperTitle: 'Key-mapper',
@@ -509,9 +509,9 @@ export default {
     startDisabledTooltip: 'Select a keyboard in Settings to start the mapper.',
     stop: 'Stop',
     mapperHint:
-      'The mapper reads events directly from {input} and emits via {uinput}. You need access to those devices — see README (group {group} and a udev rule for {uinputDev}).',
+      'The mapper reads from {input} and emits through {uinput}. If Start fails, grant access to those devices: usually the {group} group plus a udev rule for {uinputDev}.',
     generalTitle: 'General',
-    behaviorTitle: 'Global behavior defaults',
+    behaviorTitle: 'Behavior defaults',
     appearance: 'Theme',
     appearanceItems: {
       system: 'Use system',
@@ -523,41 +523,41 @@ export default {
     languageAutoResolved: 'Auto (system → {resolved})',
     launchOnStartup: 'Launch on startup',
     launchOnStartupHint:
-      'Not yet implemented — the switch is saved in config but does not register autostart.',
+      'Saved in settings, but autostart registration is not implemented yet.',
     stubBadge: 'Stub',
     issues: {
-      bannerErrorTitle: 'Some features are blocked in this environment',
-      bannerWarningTitle: 'Some features are limited in this environment',
+      bannerErrorTitle: 'Some features need attention',
+      bannerWarningTitle: 'Some features are limited on this system',
       platformCheckTitle: 'Could not check platform requirements',
       mapperStartTitle: 'The mapper cannot start right now',
       mapperStartBody:
-        'The app needs access to /dev/input/event* and /dev/uinput before key interception can run.',
+        'Grant access to /dev/input/event* and /dev/uinput, then try starting the mapper again.',
       literalInjectionTitle: 'Literal text output may be unavailable',
       literalInjectionBody:
-        'Text injection depends on xdg-desktop-portal RemoteDesktop and user approval.',
+        'Text actions depend on xdg-desktop-portal RemoteDesktop and may require a system permission prompt.',
       layoutDetectionUnsupportedTitle:
         'Automatic layout detection is not implemented here yet',
       layoutDetectionUnsupportedBody:
-        'The current desktop/backend ({desktop}) does not have a layout-detection integration yet.',
+        'Automatic keyboard-layout detection is not implemented for {desktop} yet.',
       layoutDetectionUnavailableTitle:
         'Automatic layout detection is unavailable right now',
       layoutDetectionUnavailableBody:
-        'The current desktop/backend ({desktop}) should support layout detection, but the runtime check did not pass.',
+        'Layout detection should work on {desktop}, but the runtime check failed.',
       systemActionsUnsupportedTitle:
         'Some system actions are not implemented here yet',
       systemActionsUnsupportedBody:
-        'The current desktop/backend ({desktop}) does not have system-action integration yet.',
+        'System actions are not implemented for {desktop} yet.',
       systemActionsUnavailableTitle:
         'Some system actions are unavailable right now',
       systemActionsUnavailableBody:
-        'The current desktop/backend ({desktop}) should support system actions, but the runtime check did not pass.',
+        'System actions should work on {desktop}, but the runtime check failed.',
     },
     holdTimeout: 'Default hold timeout, ms',
     holdTimeoutHint:
-      'Decides single tap vs. layer hold. If the key is released before the timeout — the tap action fires; if held longer — the layer activates. Used by rules that do not define their own value.',
+      'Used by rules without their own value. Release before this timeout to run the tap action; hold longer to activate the hold behavior.',
     doubleTapTimeout: 'Default double-tap window, ms',
     doubleTapTimeoutHint:
-      'Max time between first release and second key-down to recognise a double tap. When a rule has a double-tap action, its single tap is delayed by this value to disambiguate. Used by rules that do not define their own value.',
+      'Used by rules without their own value. A double tap is recognized when the second key-down happens within this time after the first release. Single taps wait for this window when a double-tap action exists.',
     stepPauseLabel: 'Default macro step pause, ms',
     stepPauseHint:
       'Global default. Used when a macro step does not set its own.',
@@ -575,7 +575,7 @@ export default {
     loadBtn: 'Load',
     openLayoutBtn: 'Open',
     saveCurrent: 'Save',
-    saveAs: 'Save As',
+    saveAs: 'Save as',
     newLayoutBtn: 'New',
     newEmptyLayoutBtn: 'New empty',
     newFromIvanKBtn: 'New from Ivan K',
@@ -583,26 +583,26 @@ export default {
     editLayoutAria: 'Edit layout {name}',
     renameLayoutAria: 'Rename layout {name}',
     dirtyBadgeTitle: 'The current layout has unsaved changes.',
-    whitelist: 'Whitelist',
-    whitelistTitle: 'Whitelist conditions',
+    whitelist: 'Allowed conditions',
+    whitelistTitle: 'Allowed conditions',
     whitelistHint:
       'The layout will only activate when all of these conditions are met.',
-    blacklist: 'Blacklist',
-    blacklistTitle: 'Blacklist conditions',
+    blacklist: 'Blocked conditions',
+    blacklistTitle: 'Blocked conditions',
     blacklistHint:
-      'The layout will never activate when any of these conditions are met. If only a blacklist is set (no whitelist), the layout is allowed everywhere except matching conditions.',
+      'The layout will never activate when any of these conditions are met. If only blocked conditions are set, the layout is allowed everywhere else.',
     defaultBadge: 'default',
     inAutoBadge: 'in auto',
     moveLayoutUpAria: 'Move {name} up',
     moveLayoutDownAria: 'Move {name} down',
     dirtyBadgeBody:
-      'Switching to another layout will replace the rules, layers, keymap and macros. Save the current as a user layout to keep it.',
+      'Switching layouts replaces rules, layers, key bindings, macros, commands, quick actions, and emoji pages. Save the current layout first if you want to keep these changes.',
     resetUnsavedBtn: 'Reset changes',
     resetUnsavedTitle: 'Reset unsaved changes?',
     resetUnsavedBody:
       'Unsaved edits will be discarded and the current layout will be restored from disk.',
     resetHint:
-      'Reset everything: clear layers, rules, keymap and macros. App settings are preserved.',
+      'Reset the current layout data: layers, rules, key bindings, macros, commands, quick actions, and emoji pages. App settings are preserved.',
     resetBtn: 'Reset all',
     emptyLayoutName: 'Empty layout',
     userLayoutsDir: 'Your layouts:',
@@ -611,10 +611,10 @@ export default {
     layoutsPath: 'Your layouts',
     confirmApplyTitle: 'Switch to "{label}"?',
     confirmApplyBody:
-      'The current layers, rules, keymap and macros will be replaced. App settings are preserved.',
+      'Current layout data will be replaced: layers, rules, key bindings, macros, commands, quick actions, and emoji pages. App settings are preserved.',
     dirtyWarnTitle: 'Warning: the current layout has unsaved changes.',
     dirtyWarnBody:
-      'If you proceed, they will be lost permanently. Go back and click {btn} to write them to disk.',
+      'If you continue, they will be lost. Go back and click {btn} to write them to disk.',
     loseAndSwitch: 'Lose changes and switch',
     switch: 'Switch',
     saveModalTitle: 'Save layout',
@@ -624,7 +624,7 @@ export default {
     nameLabel: 'Layout name',
     namePh: 'my-layout',
     descriptionLabel: 'Description',
-    descriptionPh: 'Shortly: what this layout is for',
+    descriptionPh: 'Short description of this layout',
     saveHint:
       'The file will be saved as {path}. An existing layout with the same name will be overwritten.',
     saveErrorEmpty: 'Enter a layout name.',
@@ -632,28 +632,28 @@ export default {
       'The file name contains unsupported characters. Do not use \\ / : * ? " < > | and do not start the name with a dot.',
     overwriteTitle: 'Overwrite "{name}"?',
     overwriteBody:
-      'A layout file with this name already exists. The existing file will be replaced.',
+      'A layout file with this name already exists. Replacing it cannot be undone.',
     deleteTitle: 'Delete "{name}"?',
     deleteBody:
-      'The layout file will be deleted from disk. This cannot be undone. The currently active layout does not change.',
+      'The layout file will be deleted from disk. This cannot be undone. The active in-memory layout will not change.',
     outputPrincipleTitle: 'How output works',
     outputPrincipleBody1:
       'The mapper does not try to reinterpret already assembled shortcuts. It sends the system the final result: a single key or a shortcut such as Ctrl+KeyZ, Ctrl+KeyC, or Shift+Tab.',
     outputPrincipleBody2:
       'Because of that, the target app usually receives exactly the shortcut you configured in the layout. If an action is set to Ctrl+KeyZ, the system will see Ctrl+KeyZ even if the physical Z key is remapped to something else inside the layout.',
     gameModeTitle: 'Game Mode',
-    gameModeSubtitle: 'Automatically detect running games to manage layouts.',
+    gameModeSubtitle: 'Detect games so rules and layout conditions can react.',
     gameModeUseGamemoded: 'Use gamemoded',
     gameModeUseGamemodedHint: 'Recommended for Linux (Steam, Lutris).',
-    gameModeUseFullscreen: 'Fullscreen Detection',
+    gameModeUseFullscreen: 'Detect fullscreen windows',
     gameModeUseFullscreenHint:
       'Consider game running if the active window is fullscreen.',
     gameModeActive: 'Game Mode active',
     gameModeInactive: 'Game Mode',
     gameModeInfo:
-      'Linux game mode detection currently supports gamemoded and fullscreen windows (X11/Wayland).',
+      'Game mode detection can use gamemoded and fullscreen-window checks on Linux.',
     gameModeDisabledInfo:
-      'Game Mode detection is disabled. All conditions depending on Game Mode will be ignored.',
+      'Game mode detection is disabled. Conditions that check game mode will behave as ignored.',
     gameModeAdvanced: 'Advanced',
     gameModeProcessPlaceholder: 'Example: steam_app, cs2, eldenring.exe',
     gameModeAddProcess: 'Add',
@@ -661,15 +661,15 @@ export default {
     gameModeMatchSubstring: 'Substring',
     gameModeMatchExact: 'Exact match',
     gameModeOnlyActiveWindow: 'Only active window',
-    gameModeWhitelistTitle: 'Triggers (Whitelist)',
-    gameModeBlacklistTitle: 'Exceptions (Blacklist)',
+    gameModeWhitelistTitle: 'Triggers',
+    gameModeBlacklistTitle: 'Exceptions',
     system: {
       title: 'System / Troubleshooting',
       waylandNote:
-        'These options help work around issues specific to your desktop environment.',
+        'Use these options when text actions behave differently on your desktop.',
       textModeLabel: 'Text injection method (Linux/Wayland)',
       textModeHint:
-        'Controls how "text:" actions are sent. If characters come out wrong (e.g. wrong symbols when a non-Latin layout is active), try the clipboard method.',
+        'Controls how text: actions are sent. If characters come out wrong, for example with a non-Latin layout active, try the clipboard method.',
       textModeKeycode: 'XKB keycode (default)',
       textModeKeycodeHint:
         'Reads the current keyboard layout and injects characters as keycodes with the correct modifiers. Falls back to clipboard for characters not present in the layout.',
@@ -696,23 +696,23 @@ export default {
     textTabBody:
       'This action inserts text as-is. Good for symbols like €, snippets like "TODO: ", and other printable strings.',
     physicalKeyHint:
-      "Letters and symbols here mean the physical key code on a standard English layout, not the character from the user's current layout.",
+      "Letters and symbols here mean the physical key position on a standard US keyboard, not the character produced by the user's current layout.",
     captureKeys: 'Listen for key press',
     assignKey: 'Assign',
-    listeningKeys: 'Listening...',
+    listeningKeys: 'Listening…',
     pressEscapeToStop: 'Press Escape to stop',
     noResults: 'No results',
     chordHint:
-      'If you need a trigger chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.',
+      'For a chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.',
     commandsHint: 'Commands are defined on the Commands tab.',
     macrosHint: 'Macros are defined on the Macros tab.',
     systemMacrosHint:
       'Built-in macros that cannot be edited. To customize, create a user macro based on one.',
     specialHint: 'These are special key codes, not direct system calls.',
     mediaHint:
-      'These are special key buttons, not system action calls. If you remap them in your system, your remapped action will fire.',
+      'These are media/special keys, not system action calls. If your OS remaps them, the OS remapping may still apply.',
     mouseHint:
-      'Check the extra mouse buttons on your mouse; they may not match. To check, press the assign key button.',
+      'Extra mouse buttons vary by device. Use the listen button to capture the exact button code.',
     otherHint: 'These are key codes, not direct system action calls.',
   },
   categories: {
@@ -784,13 +784,13 @@ export default {
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     zoomActualSize: 'Zoom to actual size',
-    killWindow: 'Kill window',
+    killWindow: 'Force close window',
     windowFullscreen: 'Make window fullscreen',
     windowOnAllDesktops: 'Keep window on all desktops',
   },
   mapper: {
     desktopOnly:
-      'The mapper is only available in the desktop build (pnpm tauri:dev).',
+      'The mapper is available only in the desktop app. Browser preview cannot access input devices.',
     listFailed: 'Failed to list devices: {err}',
   },
   language: {
