@@ -16,7 +16,7 @@ const selectedIndex = ref<number | null>(null)
 const selectedPageIndex = ref(0)
 const pageSize = LEFT_HAND_HOTKEYS.length
 const pageCount = computed(() =>
-  Math.max(1, Math.ceil(actions.value.length / pageSize)),
+  Math.max(1, Math.floor(actions.value.length / pageSize) + 1),
 )
 const pageStart = computed(() => selectedPageIndex.value * pageSize)
 const pageItems = computed(() =>
@@ -29,9 +29,11 @@ const pageItems = computed(() =>
     }
   }),
 )
-const selectedAction = computed(() =>
-  selectedIndex.value === null ? null : actions.value[selectedIndex.value] ?? null,
-)
+const selectedAction = computed(() => {
+  if (selectedIndex.value === null) return null
+  const action = actions.value[selectedIndex.value] ?? null
+  return action?.action.trim() ? action : null
+})
 const selectedHotkey = computed(() => {
   if (selectedIndex.value === null) return null
   return LEFT_HAND_HOTKEYS[selectedIndex.value % pageSize] ?? null
@@ -40,11 +42,20 @@ const selectedHotkey = computed(() => {
 function clampSelection() {
   if (actions.value.length === 0) {
     selectedIndex.value = null
-    selectedPageIndex.value = 0
+    selectedPageIndex.value = Math.min(selectedPageIndex.value, pageCount.value - 1)
     return
   }
-  if (selectedIndex.value === null || selectedIndex.value >= actions.value.length) {
-    selectedIndex.value = actions.value.length - 1
+  if (
+    selectedIndex.value === null ||
+    selectedIndex.value >= actions.value.length ||
+    !actions.value[selectedIndex.value]?.action.trim()
+  ) {
+    const firstFilledIndex = actions.value.findIndex((action) => action.action.trim())
+    selectedIndex.value = firstFilledIndex === -1 ? null : firstFilledIndex
+  }
+  if (selectedIndex.value === null) {
+    selectedPageIndex.value = Math.min(selectedPageIndex.value, pageCount.value - 1)
+    return
   }
   selectedPageIndex.value = Math.min(
     Math.floor(selectedIndex.value / pageSize),
@@ -52,28 +63,38 @@ function clampSelection() {
   )
 }
 
-function appendAction(action: string): number {
+function createEmptyAction(): QuickAction {
+  return {
+    id: crypto.randomUUID(),
+    name: t('quickActions.defaultName'),
+    action: '',
+  }
+}
+
+function setActionAt(index: number, action: string): number {
   const newAction: QuickAction = {
     id: crypto.randomUUID(),
     name: t('quickActions.defaultName'),
     action,
   }
   if (!config.value.quickActions) {
-    config.value.quickActions = [newAction]
+    config.value.quickActions = []
+  }
+  while (config.value.quickActions.length < index) {
+    config.value.quickActions.push(createEmptyAction())
+  }
+  if (config.value.quickActions[index]) {
+    config.value.quickActions[index] = newAction
   } else {
     config.value.quickActions.push(newAction)
   }
-  return config.value.quickActions.length - 1
+  return index
 }
 
-function removeAction(index: number) {
+function clearAction(index: number) {
   if (!config.value.quickActions) return
-  config.value.quickActions.splice(index, 1)
-  if (selectedIndex.value === index) {
-    selectedIndex.value = Math.min(index, config.value.quickActions.length - 1)
-  } else if (selectedIndex.value !== null && selectedIndex.value > index) {
-    selectedIndex.value -= 1
-  }
+  config.value.quickActions[index] = createEmptyAction()
+  selectedIndex.value = null
   clampSelection()
 }
 
@@ -94,33 +115,42 @@ function moveAction(index: number, delta: number) {
 const pickerState = ref<{
   isOpen: boolean
   index: number | null
+  insertIndex: number | null
 }>({
   isOpen: false,
   index: null,
+  insertIndex: null,
 })
-
-function addAction() {
-  pickerValue.value = ''
-  pickerState.value = {
-    isOpen: true,
-    index: null,
-  }
-}
 
 function openPicker(index: number, currentValue: string) {
   pickerValue.value = currentValue
   pickerState.value = {
     isOpen: true,
     index,
+    insertIndex: null,
+  }
+}
+
+function openEmptyCell(index: number) {
+  pickerValue.value = ''
+  pickerState.value = {
+    isOpen: true,
+    index: null,
+    insertIndex: index,
   }
 }
 
 function onPickerApply(value: string) {
-  if (pickerState.value.index === null) {
-    selectedIndex.value = appendAction(value)
+  if (pickerState.value.index !== null) {
+    if (config.value.quickActions) {
+      config.value.quickActions[pickerState.value.index].action = value
+    }
+  } else {
+    selectedIndex.value = setActionAt(
+      pickerState.value.insertIndex ?? actions.value.length,
+      value,
+    )
     selectedPageIndex.value = Math.floor(selectedIndex.value / pageSize)
-  } else if (config.value.quickActions) {
-    config.value.quickActions[pickerState.value.index].action = value
   }
   pickerState.value.isOpen = false
 }
@@ -131,6 +161,14 @@ function onPickerCancel() {
 
 function selectAction(index: number) {
   selectedIndex.value = index
+}
+
+function onCellClick(index: number, action: QuickAction | null) {
+  if (action?.action.trim()) {
+    selectAction(index)
+  } else {
+    openEmptyCell(index)
+  }
 }
 
 function setPage(index: number) {
@@ -148,33 +186,18 @@ watch(actions, clampSelection, { immediate: true })
   <div class="space-y-4">
     <UCard>
       <template #header>
-        <div class="flex items-center justify-between gap-3">
+        <div>
           <div>
             <h2 class="text-sm font-semibold">{{ $t('quickActions.title') }}</h2>
             <p class="mt-0.5 text-xs text-(--ui-text-muted)">
               {{ $t('quickActions.subtitle') }}
             </p>
           </div>
-          <UButton
-            icon="i-lucide-plus"
-            size="sm"
-            class="whitespace-nowrap"
-            @click="addAction"
-          >
-            {{ $t('quickActions.addBtn') }}
-          </UButton>
         </div>
       </template>
 
       <div class="space-y-4">
-        <div v-if="actions.length === 0" class="flex flex-col items-center justify-center p-12 text-center bg-(--ui-bg-elevated) border border-(--ui-border-muted) rounded-lg border-dashed">
-          <UIcon name="i-lucide-zap" class="w-12 h-12 text-(--ui-text-muted) mb-4 opacity-50" />
-          <p class="text-(--ui-text-muted)">
-            {{ $t('quickActions.empty') }}
-          </p>
-        </div>
-
-        <div v-else class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div class="space-y-3">
             <div class="flex flex-wrap items-center gap-2">
               <UButton
@@ -194,22 +217,21 @@ watch(actions, clampSelection, { immediate: true })
                 v-for="item in pageItems"
                 :key="item.key"
                 type="button"
-                class="flex h-28 min-w-0 flex-col items-start justify-between rounded-md border bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-45"
+                class="flex h-28 min-w-0 flex-col items-start justify-between rounded-md border bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10"
                 :class="
                   item.actionIndex === selectedIndex
                     ? 'border-primary ring-1 ring-primary/35'
                     : 'border-(--ui-border-muted)'
                 "
-                :disabled="!item.action"
-                @click="item.action && selectAction(item.actionIndex)"
+                @click="onCellClick(item.actionIndex, item.action)"
               >
                 <span class="flex min-w-0 items-center gap-2 self-stretch">
                   <UIcon
-                    :name="item.action?.icon || 'i-lucide-zap'"
+                    :name="item.action?.action.trim() ? item.action.icon || 'i-lucide-zap' : 'i-lucide-plus'"
                     class="h-4 w-4 shrink-0 text-(--ui-text-muted)"
                   />
                   <span class="min-w-0 truncate text-sm font-medium">
-                    {{ item.action?.name || $t('quickActions.emptyCell') }}
+                    {{ item.action?.action.trim() ? item.action.name : $t('quickActions.emptyCell') }}
                   </span>
                 </span>
                 <span class="min-w-0 self-stretch truncate font-mono text-[11px] text-(--ui-text-muted)">
@@ -298,7 +320,7 @@ watch(actions, clampSelection, { immediate: true })
                   size="sm"
                   square
                   :aria-label="$t('quickActions.deleteAction')"
-                  @click="selectedIndex !== null && removeAction(selectedIndex)"
+                  @click="selectedIndex !== null && clearAction(selectedIndex)"
                 />
               </div>
             </div>

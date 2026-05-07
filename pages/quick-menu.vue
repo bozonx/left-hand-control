@@ -12,12 +12,14 @@ import {
 const { config, load } = useConfig()
 
 const actions = computed(() => config.value.quickActions || [])
-const runnableActions = computed(() => actions.value.filter((action): action is QuickAction => !!action.action.trim()))
+const hasRunnableActions = computed(() =>
+  actions.value.some((action) => action.action.trim()),
+)
 const pageIndex = ref(0)
 const pages = computed(() => {
   const chunks: QuickAction[][] = []
-  for (let i = 0; i < runnableActions.value.length; i += LEFT_HAND_HOTKEYS.length) {
-    chunks.push(runnableActions.value.slice(i, i + LEFT_HAND_HOTKEYS.length))
+  for (let i = 0; i < actions.value.length; i += LEFT_HAND_HOTKEYS.length) {
+    chunks.push(actions.value.slice(i, i + LEFT_HAND_HOTKEYS.length))
   }
   return chunks
 })
@@ -63,7 +65,7 @@ function onKeydown(e: KeyboardEvent) {
   if (hotkeyIndex !== -1) {
     e.preventDefault()
     const action = page.value[hotkeyIndex]
-    if (action) {
+    if (action?.action.trim()) {
       void runAction(action.action)
     }
   }
@@ -115,7 +117,7 @@ async function runAction(action: string) {
         </UBadge>
       </div>
 
-      <div v-if="runnableActions.length === 0" class="p-8 text-center">
+      <div v-if="!hasRunnableActions" class="p-8 text-center">
         <p class="text-(--ui-text-muted)">{{ $t('quickActions.empty') }}</p>
       </div>
 
@@ -125,16 +127,16 @@ async function runAction(action: string) {
           :key="key"
           type="button"
           class="flex h-24 min-w-0 flex-col items-start justify-between gap-2 rounded-md border border-(--ui-border-muted) bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-40"
-          :disabled="!page[index]"
-          @click="page[index] && runAction(page[index].action)"
+          :disabled="!page[index]?.action.trim()"
+          @click="page[index]?.action.trim() && runAction(page[index].action)"
         >
           <span class="flex min-w-0 items-center gap-2 self-stretch">
             <UIcon
-              :name="page[index]?.icon || 'i-lucide-zap'"
+              :name="page[index]?.action.trim() ? page[index].icon || 'i-lucide-zap' : 'i-lucide-plus'"
               class="h-4 w-4 shrink-0 text-(--ui-text-muted)"
             />
             <span class="quick-menu-action-name truncate text-sm font-medium">
-              {{ page[index]?.name || ' ' }}
+              {{ page[index]?.action.trim() ? page[index].name : ' ' }}
             </span>
           </span>
           <span class="font-mono text-xs uppercase text-(--ui-text-muted)">
