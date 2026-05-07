@@ -151,14 +151,14 @@ function updateHoldAction(value: string | null) {
 
         <UFormField>
           <template #label>
-            <span class="inline-flex items-center justify-between w-full">
+            <span class="flex w-full items-center justify-between gap-2">
               <FieldLabel
                 :label="$t('rules.layerLabel')"
                 :hint="$t('rules.layerHint')"
                 hint-visible-on="group-hover-rule"
               />
               <ULink
-                class="text-xs text-(--ui-text-muted) opacity-0 group-hover/rule:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
+                class="ml-auto shrink-0 text-right text-xs text-(--ui-text-muted) opacity-0 group-hover/rule:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
                 @click="$emit('createLayer', rule.id)"
               >
                 {{ $t('rules.createLayer') }}

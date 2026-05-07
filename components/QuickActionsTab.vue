@@ -192,40 +192,34 @@ watch(actions, clampSelection, { immediate: true })
               {{ $t('quickActions.subtitle') }}
             </p>
           </div>
+          <UButton
+            icon="i-lucide-plus"
+            size="sm"
+            class="whitespace-nowrap"
+            @click="addPage"
+          >
+            {{ $t('quickActions.addPage') }}
+          </UButton>
         </div>
       </template>
 
       <div class="space-y-4">
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div class="space-y-3">
-            <div class="rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-muted)/40 p-3">
-              <div class="mb-2 flex items-center justify-between gap-3">
-                <div class="text-xs font-medium text-(--ui-text-muted)">
-                  {{ $t('common.page') }}
-                </div>
-                <UButton
-                  icon="i-lucide-plus"
-                  size="xs"
-                  color="neutral"
-                  variant="outline"
-                  class="whitespace-nowrap"
-                  @click="addPage"
-                >
-                  {{ $t('quickActions.addPage') }}
-                </UButton>
+            <div class="flex flex-wrap gap-2">
+              <div class="flex h-8 items-center px-1 text-xs font-medium text-(--ui-text-muted)">
+                {{ $t('common.page') }}
               </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <UButton
-                  v-for="index in pageCount"
-                  :key="index"
-                  :color="index - 1 === selectedPageIndex ? 'primary' : 'neutral'"
-                  :variant="index - 1 === selectedPageIndex ? 'soft' : 'outline'"
-                  size="sm"
-                  @click="setPage(index - 1)"
-                >
-                  {{ $t('quickActions.pageName', { n: index }) }}
-                </UButton>
-              </div>
+              <UButton
+                v-for="index in pageCount"
+                :key="index"
+                :color="index - 1 === selectedPageIndex ? 'primary' : 'neutral'"
+                :variant="index - 1 === selectedPageIndex ? 'soft' : 'outline'"
+                size="sm"
+                @click="setPage(index - 1)"
+              >
+                {{ $t('quickActions.pageName', { n: index }) }}
+              </UButton>
             </div>
 
             <div class="grid grid-cols-5 gap-2 rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-elevated) p-3">

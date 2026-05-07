@@ -700,6 +700,8 @@ export default {
   },
   picker: {
     currentValue: 'Current value',
+    currentValueWithValue: 'Previously selected: {value}',
+    currentValueEmpty: 'No value was selected before opening',
     valuePh:
       'E.g.: Ctrl+KeyC, Escape, KeyA, macro:copyLine, cmd:toggleMusic, text:TODO: ',
     textPh: 'Type the text to insert. Example: TODO: ',

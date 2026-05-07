@@ -46,7 +46,7 @@ function setNonNegativeInt(
             />
           </template>
           <NumericInput
-            :model-value="String(props.config.settings.defaultHoldTimeoutMs)"
+            :model-value="props.config.settings.defaultHoldTimeoutMs"
             :min="0"
             class="w-full md:w-40"
             @update:model-value="(value: string | number) => setNonNegativeInt('defaultHoldTimeoutMs', value)"
@@ -61,7 +61,7 @@ function setNonNegativeInt(
             />
           </template>
           <NumericInput
-            :model-value="String(props.config.settings.defaultDoubleTapTimeoutMs)"
+            :model-value="props.config.settings.defaultDoubleTapTimeoutMs"
             :min="0"
             class="w-full md:w-40"
             @update:model-value="(value: string | number) => setNonNegativeInt('defaultDoubleTapTimeoutMs', value)"
@@ -78,7 +78,7 @@ function setNonNegativeInt(
             />
           </template>
           <NumericInput
-            :model-value="String(props.config.settings.defaultMacroStepPauseMs)"
+            :model-value="props.config.settings.defaultMacroStepPauseMs"
             :min="0"
             class="w-full md:w-40"
             @update:model-value="(value: string | number) => setNonNegativeInt('defaultMacroStepPauseMs', value)"
@@ -93,7 +93,7 @@ function setNonNegativeInt(
             />
           </template>
           <NumericInput
-            :model-value="String(props.config.settings.defaultMacroModifierDelayMs)"
+            :model-value="props.config.settings.defaultMacroModifierDelayMs"
             :min="0"
             class="w-full md:w-40"
             @update:model-value="(value: string | number) => setNonNegativeInt('defaultMacroModifierDelayMs', value)"

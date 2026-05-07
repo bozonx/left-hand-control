@@ -216,11 +216,17 @@ onMounted(ensurePages)
                             <div
                                 class="flex items-center justify-between gap-2"
                             >
-                                <UInput
-                                    v-model="selectedPage.name"
-                                    size="sm"
-                                    :aria-label="$t('emoji.pageLabel')"
-                                />
+                                <UFormField class="min-w-0 flex-1">
+                                    <template #label>
+                                        <FieldLabel :label="$t('common.page')" />
+                                    </template>
+                                    <UInput
+                                        v-model="selectedPage.name"
+                                        size="sm"
+                                        :aria-label="$t('emoji.pageLabel')"
+                                        class="w-full"
+                                    />
+                                </UFormField>
                                 <UButton
                                     icon="i-lucide-trash-2"
                                     color="neutral"

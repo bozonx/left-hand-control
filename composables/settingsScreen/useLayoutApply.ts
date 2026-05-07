@@ -41,10 +41,11 @@ export function useLayoutApply({
 
   function requestApplyEntry(entry: LayoutLibraryEntry) {
     applyError.value = null;
-    pendingApply.value = { entry, label: entry.name };
     if (!isLayoutDirty.value) {
-      void confirmApply();
+      void applyEntry(entry);
+      return;
     }
+    pendingApply.value = { entry, label: entry.name };
   }
 
   function cancelApply() {
@@ -54,16 +55,20 @@ export function useLayoutApply({
   async function confirmApply() {
     const target = pendingApply.value;
     if (!target) return;
-    applying.value = target.entry.id;
+    await applyEntry(target.entry);
+  }
+
+  async function applyEntry(entry: LayoutLibraryEntry) {
+    applying.value = entry.id;
     try {
-      const preset = await library.loadPreset(target.entry.id);
+      const preset = await library.loadPreset(entry.id);
       if (!preset) {
-        applyError.value = t("settings.loadFailed", { name: target.entry.name });
+        applyError.value = t("settings.loadFailed", { name: entry.name });
         return;
       }
-      await applyPreset(preset, target.entry.id);
+      await applyPreset(preset, entry.id);
       toast.add({
-        title: t("settings.layoutApplied", { name: target.entry.name }),
+        title: t("settings.layoutApplied", { name: entry.name }),
         color: "success",
         icon: "i-lucide-check",
       });

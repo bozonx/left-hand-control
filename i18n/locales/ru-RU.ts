@@ -714,6 +714,8 @@ export default {
   },
   picker: {
     currentValue: 'Текущее значение',
+    currentValueWithValue: 'Было выбрано: {value}',
+    currentValueEmpty: 'До открытия значение не было выбрано',
     valuePh:
       'Например: Ctrl+KeyC, Escape, KeyA, macro:copyLine, cmd:toggleMusic, text:TODO: ',
     textPh: 'Введите текст для вставки. Например: TODO: ',

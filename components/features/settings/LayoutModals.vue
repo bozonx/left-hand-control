@@ -168,7 +168,7 @@ const editTitle = computed(() => {
             :rows="4"
           />
         </UFormField>
-        <p v-if="editMode !== 'description'" class="text-xs text-(--ui-text-muted)">
+        <p v-if="editMode === 'full'" class="text-xs text-(--ui-text-muted)">
           <i18n-t keypath="settings.saveHint" tag="span">
             <template #path>
               <code class="break-all"

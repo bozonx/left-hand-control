@@ -184,9 +184,9 @@ const description = computed(() => {
               v-model="editValue"
               :placeholder="$t('settings.descriptionPh')"
               autoresize
-              :rows="1"
-              size="sm"
-              class="w-full"
+              :rows="2"
+              class="w-full text-sm leading-5"
+              :ui="{ base: 'min-h-16 resize-none px-3 py-2 text-sm leading-5' }"
               @keydown.esc="cancelEdit"
             />
           </div>

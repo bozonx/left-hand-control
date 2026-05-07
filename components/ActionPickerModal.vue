@@ -88,6 +88,11 @@ const pickerTitle = computed(
         props.title ??
         (props.keyOnly ? t('picker.titleKey') : t('picker.titleAction')),
 )
+const originalValueLabel = computed(() =>
+    originalValue.value
+        ? t('picker.currentValueWithValue', { value: originalValue.value })
+        : t('picker.currentValueEmpty'),
+)
 
 watch(modalOpen, (isOpen, wasOpen) => {
     if (isOpen && !wasOpen) {
@@ -209,7 +214,7 @@ function cancel() {
                         {{ pickerTitle }}
                     </h2>
                     <p class="truncate text-xs text-(--ui-text-muted)">
-                        {{ originalValue || $t('picker.valuePh') }}
+                        {{ originalValueLabel }}
                     </p>
                 </div>
                 <FieldResetButton
