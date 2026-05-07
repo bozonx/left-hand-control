@@ -150,7 +150,7 @@ export default {
     ivank: {
       name: "Ivan K's left hand control",
       description:
-        "Ready-made layout: CapsLock for navigation, Right Alt for symbols, Left Alt for window management. Includes IDE-oriented macros.",
+        'Ready-made layout: CapsLock for navigation, Right Alt for symbols, Left Alt for window management. Includes IDE-oriented macros.',
       layers: {
         nav: {
           name: 'Navigation',
@@ -187,8 +187,7 @@ export default {
   },
   rules: {
     title: 'Rules and triggers',
-    subtitle:
-      'Define how physical keys activate layers or run actions.',
+    subtitle: 'Define how physical keys activate layers or run actions.',
     addBtn: 'Add rule',
     empty:
       'No rules yet. Click "Add rule" to define how a physical key should behave.',
@@ -232,7 +231,8 @@ export default {
       'Max time between first release and second key-down to recognise a double tap. Defaults to the value from Settings.',
     deleteRule: 'Delete rule',
     conditionsLabel: 'Conditions',
-    conditionsHint: 'Limit this rule by game mode, keyboard layout, or active application.',
+    conditionsHint:
+      'Limit this rule by game mode, keyboard layout, or active application.',
     manualActiveLabel: 'Active Layout (Manual)',
     manualActiveHint: 'Click activate to use this layout right now.',
     activateBtn: 'Activate',
@@ -256,7 +256,7 @@ export default {
     gameModeOffSummary: 'game mode off',
     layoutsLabel: 'Language Layouts',
     layoutsHint:
-      'Run this rule only when the current keyboard layout language is selected. Leave empty to ignore language.',
+      'Multiple layouts can be selected. The rule will run when any of the selected layouts is active.',
     anyLayout: 'Any layout',
     noLayoutsDetected:
       'No keyboard layouts detected. Layout detection is available only in the desktop app.',
@@ -342,8 +342,10 @@ export default {
     clearExtrasTitle: 'Clear extra keys',
     clearExtrasBody: 'All extra keys will be removed.',
     extrasCleared: 'Extra keys cleared',
-    clearKeyboardTooltip: 'Clears key bindings only. Extra keys are not affected.',
-    keyboardInfo: 'Display modes affect labels only — the key code stays the same. "US layout" shows standard letter labels for visual reference. "Key codes" shows app-specific codes (e.g. KeyA, ArrowLeft). "Numeric codes" shows raw system event codes.',
+    clearKeyboardTooltip:
+      'Clears key bindings only. Extra keys are not affected.',
+    keyboardInfo:
+      'Display modes affect labels only — the key code stays the same. "US layout" shows standard letter labels for visual reference. "Key codes" shows app-specific codes (e.g. KeyA, ArrowLeft). "Numeric codes" shows raw system event codes.',
   },
   macros: {
     title: 'User macros',
@@ -408,8 +410,7 @@ export default {
   },
   quickActions: {
     title: 'Quick Actions',
-    subtitle:
-      'Configure the 15-cell menu opened by sys:showQuickMenu.',
+    subtitle: 'Configure the 15-cell menu opened by sys:showQuickMenu.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
     addPage: 'Add page',
@@ -431,8 +432,7 @@ export default {
   },
   emoji: {
     title: 'Emoji',
-    subtitle:
-      'Configure the 15-cell menu opened by sys:showEmojiMenu.',
+    subtitle: 'Configure the 15-cell menu opened by sys:showEmojiMenu.',
     addPage: 'Add page',
     deletePage: 'Delete page',
     deletePageTitle: 'Page deletion',
@@ -659,18 +659,21 @@ export default {
     outputPrincipleBody2:
       'Because of that, the target app usually receives exactly the shortcut you configured in the layout. If an action is set to Ctrl+KeyZ, the system will see Ctrl+KeyZ even if the physical Z key is remapped to something else inside the layout.',
     gameModeTitle: 'Game Mode',
-    gameModeSubtitle: 'Detect games so rules and layout conditions can react.',
+    gameModeSubtitle:
+      'Used for auto-switch layout conditions and trigger rules.',
     gameModeUseGamemoded: 'Use gamemoded',
-    gameModeUseGamemodedHint: 'Recommended for Linux (Steam, Lutris).',
+    gameModeUseGamemodedHint:
+      'Not supported by all games — only works when the game runs through gamemoded (usually Steam, Lutris).',
     gameModeUseFullscreen: 'Detect fullscreen windows',
     gameModeUseFullscreenHint:
-      'Consider game running if the active window is fullscreen.',
+      'Triggers for any fullscreen application, including media players.',
     gameModeActive: 'Game Mode active',
     gameModeInactive: 'Game Mode',
-    gameModeInfo:
-      'Game mode detection can use gamemoded and fullscreen-window checks on Linux.',
+    gameModeInfo: 'Game mode detection is enabled.',
     gameModeDisabledInfo:
       'Game mode detection is disabled. Conditions that check game mode will behave as ignored.',
+    gameModeTitleHint:
+      'Game mode is detected via running processes, fullscreen windows, or gamemoded. This state can be used in layout and rule conditions.',
     gameModeAdvanced: 'Advanced',
     gameModeProcessPlaceholder: 'Example: steam_app, cs2, eldenring.exe',
     gameModeAddProcess: 'Add',
