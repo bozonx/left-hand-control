@@ -51,7 +51,7 @@ fn should_emit_layout(info: &LayoutInfo) -> bool {
 }
 
 pub fn current() -> Result<Option<LayoutInfo>, String> {
-    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let conn = Connection::session().map_err(|e| format!("Cannot connect to session bus: {e}"))?;
     current_with_conn(&conn)
 }
 
@@ -60,9 +60,9 @@ pub fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
 }
 
 pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
-    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let conn = Connection::session().map_err(|e| format!("Cannot connect to session bus: {e}"))?;
     let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
-        .map_err(|e| format!("create keyboard proxy: {e}"))?;
+        .map_err(|e| format!("Cannot create keyboard proxy: {e}"))?;
     let list = match call_list(&proxy)? {
         Some(v) => v,
         None => return Ok(vec![]),
@@ -92,13 +92,13 @@ pub fn set_layout(index: u32) -> Result<(), String> {
         .map_err(|e| format!("create keyboard proxy: {e}"))?;
     let msg = proxy
         .call_method("setLayout", &(index,))
-        .map_err(|e| format!("setLayout({index}) failed: {e}"))?;
+        .map_err(|e| format!("Failed to switch layout to {index}: {e}"))?;
     let ok: bool = msg
         .body()
         .deserialize()
-        .map_err(|e| format!("decode setLayout response: {e}"))?;
+        .map_err(|e| format!("Failed to decode setLayout response: {e}"))?;
     if !ok {
-        return Err(format!("setLayout({index}) rejected by KDE"));
+        return Err(format!("Layout switch to {index} was rejected by KDE"));
     }
     let _ = current_with_conn(&conn);
     Ok(())
@@ -167,7 +167,7 @@ fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<LayoutInfo>, String> {
         .get(idx as usize)
         .or_else(|| list.first())
         .cloned()
-        .ok_or_else(|| "no layouts configured".to_string())?;
+        .ok_or_else(|| "No keyboard layouts configured".to_string())?;
     let info = LayoutInfo {
         short: entry.0,
         display: entry.1,
@@ -187,12 +187,12 @@ fn call_index(proxy: &Proxy<'_>) -> Result<Option<u32>, String> {
         {
             return Ok(None);
         }
-        Err(e) => return Err(format!("getLayout failed: {e}")),
+        Err(e) => return Err(format!("Failed to get current layout: {e}")),
     };
     let idx: u32 = msg
         .body()
         .deserialize()
-        .map_err(|e| format!("decode getLayout response: {e}"))?;
+        .map_err(|e| format!("Failed to decode getLayout response: {e}"))?;
     Ok(Some(idx))
 }
 
@@ -204,11 +204,11 @@ fn call_list(proxy: &Proxy<'_>) -> Result<Option<LayoutList>, String> {
         {
             return Ok(None);
         }
-        Err(e) => return Err(format!("getLayoutsList failed: {e}")),
+        Err(e) => return Err(format!("Failed to get layout list: {e}")),
     };
     let list: Vec<(String, String, String)> = msg
         .body()
         .deserialize()
-        .map_err(|e| format!("decode getLayoutsList response: {e}"))?;
+        .map_err(|e| format!("Failed to decode getLayoutsList response: {e}"))?;
     Ok(Some(list))
 }

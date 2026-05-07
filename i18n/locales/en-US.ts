@@ -3,8 +3,7 @@ export default {
   app: {
     title: 'Left Hand Control',
     badge: 'Linux key-mapper',
-    loading: 'loading…',
-    saving: 'saving',
+    loading: 'Loading…',
     saved: 'Saved',
     saveFailedTitle: 'Failed to save changes',
     loadFailedBody:
@@ -37,6 +36,7 @@ export default {
     add: 'Add',
     close: 'Close',
     copy: 'Copy',
+    copyFailed: 'Copy failed',
     duplicate: 'Duplicate',
     copied: 'Copied',
     reset: 'Reset to default',
@@ -193,7 +193,7 @@ export default {
       'No rules yet. Click "Add rule" to define how a physical key should behave.',
     keyLabel: 'Trigger key',
     keyHint: 'Physical key that triggers this rule on press or hold.',
-    keyPh: 'pick a key',
+    keyPh: 'Pick a key',
     layerLabel: 'Layer (hold)',
     layerHint:
       'Layer that activates while the key is held. It can be combined with "Hold action", for example to activate a layer and hold Alt at the same time.',
@@ -203,11 +203,11 @@ export default {
     tapLabel: 'Tap action',
     tapHint:
       'Action performed on a short key press (released before the hold timeout elapses). Note: when a double-tap action is set, a single tap is delayed by the double-tap window to disambiguate it from the first press of a double tap.',
-    tapPh: 'no action',
+    tapPh: 'No action',
     holdActionLabel: 'Hold action',
     holdActionHint:
       'What happens while the key is held. "Use physical key" keeps the trigger key held as itself. "Do nothing" suppresses the trigger key on hold. "Hold another key" keeps a different key or shortcut held instead. It can be combined with a Layer so the rule both activates the layer and holds the selected key.',
-    holdActionPh: 'pick a keystroke',
+    holdActionPh: 'Pick a keystroke',
     modeNative: 'Native',
     modeNativeDefault: 'Native (default)',
     modeNone: 'None (swallow)',
@@ -222,8 +222,8 @@ export default {
     doubleTapLabel: 'Double-tap action',
     doubleTapHint:
       'Action performed when the key is pressed twice in quick succession (second key-down within the double-tap window after a short first press). Fires on the second press; no need to release the key first.',
-    doubleTapPh: 'no action',
-    holdLabel: 'Hold ms',
+    doubleTapPh: 'No action',
+    holdLabel: 'Hold timeout, ms',
     holdHint:
       'Individual hold timeout for this rule. Defaults to the value from Settings.',
     doubleTapWindowLabel: 'Double-tap ms',
@@ -473,7 +473,7 @@ export default {
       'Shell commands are allowed for this version of the current layout.',
     revokeBtn: 'Disable',
     approvalToast:
-      'The layout contains shell commands. Allow them on the Commands tab.',
+      'This layout contains shell commands. Review and allow them on the Commands tab.',
     usedIn: 'Used in:',
     moveUp: 'Up',
     moveDown: 'Down',
@@ -506,16 +506,13 @@ export default {
     refreshDevicesTooltip: 'Refresh device list',
     copyPathTooltip: 'Copy path',
     start: 'Start',
-    startDisabledTooltip:
-      'Go to Settings and select a keyboard, then you can start the mapper.',
+    startDisabledTooltip: 'Select a keyboard in Settings to start the mapper.',
     stop: 'Stop',
     mapperHint:
       'The mapper reads events directly from {input} and emits via {uinput}. You need access to those devices — see README (group {group} and a udev rule for {uinputDev}).',
     generalTitle: 'General',
     behaviorTitle: 'Global behavior defaults',
     appearance: 'Theme',
-    appearanceLight: 'light',
-    appearanceDark: 'dark',
     appearanceItems: {
       system: 'Use system',
       light: 'Light',
@@ -794,6 +791,7 @@ export default {
   mapper: {
     desktopOnly:
       'The mapper is only available in the desktop build (pnpm tauri:dev).',
+    listFailed: 'Failed to list devices: {err}',
   },
   language: {
     name: 'English',

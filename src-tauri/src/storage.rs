@@ -156,7 +156,7 @@ impl StoragePaths {
         self.ensure()?;
         let path = self.layout_path(name)?;
         if !path.exists() {
-            return Err(format!("layout '{name}' not found"));
+            return Err(format!("Layout \"{name}\" not found"));
         }
         fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
     }
@@ -173,7 +173,7 @@ impl StoragePaths {
         let safe = validate_layout_name(name)?;
         let path = dir.join(format!("{safe}.yaml"));
         if path.exists() && !overwrite {
-            return Err(format!("layout '{safe}' already exists"));
+            return Err(format!("Layout \"{safe}\" already exists"));
         }
         let tmp = dir.join(format!("{safe}.yaml.tmp"));
         write_atomic(&tmp, &path, contents.as_bytes())?;
@@ -190,14 +190,14 @@ impl StoragePaths {
         self.ensure()?;
         let old_path = self.layout_path(old_name)?;
         if !old_path.exists() {
-            return Err(format!("layout '{old_name}' not found"));
+            return Err(format!("Layout \"{old_name}\" not found"));
         }
         let new_safe = validate_layout_name(new_name)?;
         let dir = self.layouts_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let new_path = dir.join(format!("{new_safe}.yaml"));
         if new_path.exists() && old_path != new_path && !overwrite {
-            return Err(format!("layout '{new_safe}' already exists"));
+            return Err(format!("Layout \"{new_safe}\" already exists"));
         }
         let tmp = dir.join(format!("{new_safe}.yaml.tmp"));
         write_tmp_synced(&tmp, contents.as_bytes())?;
@@ -231,7 +231,7 @@ impl StoragePaths {
 pub fn validate_layout_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
-        return Err("layout name is empty".into());
+        return Err("Layout name cannot be empty".into());
     }
     for ch in trimmed.chars() {
         if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
@@ -239,10 +239,10 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
         }
     }
     if trimmed == "." || trimmed == ".." {
-        return Err("layout name is reserved".into());
+        return Err("Layout name is reserved".into());
     }
     if trimmed.starts_with('.') {
-        return Err("layout name cannot start with '.'".into());
+        return Err("Layout name cannot start with a dot".into());
     }
     Ok(trimmed.to_string())
 }

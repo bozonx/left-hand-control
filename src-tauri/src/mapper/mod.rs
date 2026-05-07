@@ -306,7 +306,7 @@ fn unsupported_os_msg(op: &str) -> String {
     }
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     {
-        format!("{op}: this operating system is not supported")
+        format!("{op} is not supported on this operating system")
     }
 }
 

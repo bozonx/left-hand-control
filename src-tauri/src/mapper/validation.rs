@@ -17,14 +17,14 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     for m in &cfg.macros {
         let id = m.id.trim();
         if id.is_empty() {
-            errors.push("macro with empty id".to_string());
+            errors.push("Macro ID cannot be empty".to_string());
             continue;
         }
         if !seen_macro_ids.insert(id.to_string()) {
-            errors.push(format!("duplicate macro id `{id}`"));
+            errors.push(format!("Duplicate macro ID \"{id}\""));
         }
         if system_macro_ids.contains(id) {
-            errors.push(format!("user macro `{id}` conflicts with a system macro"));
+            errors.push(format!("Macro ID \"{id}\" conflicts with a system macro"));
         }
         user_macro_ids.insert(id.to_string());
     }
@@ -34,14 +34,14 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     for c in &cfg.commands {
         let id = c.id.trim();
         if id.is_empty() {
-            errors.push("command with empty id".to_string());
+            errors.push("Command ID cannot be empty".to_string());
             continue;
         }
         if !seen_command_ids.insert(id.to_string()) {
-            errors.push(format!("duplicate command id `{id}`"));
+            errors.push(format!("Duplicate command ID \"{id}\""));
         }
         if c.linux.trim().is_empty() {
-            errors.push(format!("command `{id}` has an empty linux script"));
+            errors.push(format!("Command \"{id}\" has an empty Linux script"));
         }
         command_ids.insert(id.to_string());
     }
@@ -51,15 +51,15 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
 
     for r in &cfg.rules {
         let where_key = if r.key.trim().is_empty() {
-            "rule with empty key".to_string()
+            "Rule trigger key cannot be empty".to_string()
         } else {
-            format!("rule `{}`", r.key)
+            format!("Rule \"{}\"", r.key)
         };
         if code_to_key(&r.key).is_none() {
-            errors.push(format!("{where_key}: unknown physical key `{}`", r.key));
+            errors.push(format!("{where_key}: unknown physical key \"{}\"", r.key));
         }
         if !r.layer_id.is_empty() && !layer_ids.contains(r.layer_id.as_str()) {
-            errors.push(format!("{where_key}: unknown layer `{}`", r.layer_id));
+            errors.push(format!("{where_key}: unknown layer \"{}\"", r.layer_id));
         }
         validate_action_spec(
             &r.tap_action,
@@ -95,12 +95,12 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     for (layer_id, km) in &cfg.layer_keymaps {
         for (code, action) in &km.keys {
             if code_to_key(code).is_none() {
-                errors.push(format!("keymap `{layer_id}`: unknown key `{code}`"));
+                errors.push(format!("Keymap \"{layer_id}\": unknown key \"{code}\""));
             }
             if let Some(action) = action {
                 validate_action(
                     action,
-                    &format!("keymap `{layer_id}` key `{code}`"),
+                    &format!("Keymap \"{layer_id}\" key \"{code}\""),
                     ActionKind::Any,
                     &user_macro_ids,
                     &system_macro_ids,
@@ -113,13 +113,13 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         for extra in &km.extras {
             if code_to_key(&extra.key).is_none() {
                 errors.push(format!(
-                    "keymap `{layer_id}` extra: unknown key `{}`",
+                    "Keymap \"{layer_id}\" extra: unknown key \"{}\"",
                     extra.key
                 ));
             }
             validate_action(
                 &extra.action,
-                &format!("keymap `{layer_id}` extra `{}`", extra.key),
+                &format!("Keymap \"{layer_id}\" extra \"{}\"", extra.key),
                 ActionKind::Any,
                 &user_macro_ids,
                 &system_macro_ids,
@@ -134,7 +134,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         for (idx, step) in m.steps.iter().enumerate() {
             validate_macro_step(
                 &step.action,
-                &format!("macro `{}` step #{}", m.id, idx + 1),
+                &format!("Macro \"{}\" step #{}", m.id, idx + 1),
                 &user_macro_ids,
                 &system_macro_ids,
                 &command_ids,
@@ -148,7 +148,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         Ok(())
     } else {
         Err(format!(
-            "mapper config has {} error(s):\n{}",
+            "Config has {} error(s):\n{}",
             errors.len(),
             errors
                 .into_iter()
@@ -260,7 +260,7 @@ fn validate_action(
     if matches!(kind, ActionKind::HoldKeystroke) {
         if parse_action(action).is_none() {
             errors.push(format!(
-                "{where_}: hold action must be a key or chord, got `{action}`"
+                "{where_}: hold action must be a key or chord (got \"{action}\")"
             ));
         }
         return;
@@ -268,17 +268,17 @@ fn validate_action(
     if let Some(id) = action.strip_prefix("macro:") {
         let id = id.trim();
         if !user_macro_ids.contains(id) && !system_macro_ids.contains(id) {
-            errors.push(format!("{where_}: unknown macro `{id}`"));
+            errors.push(format!("{where_}: unknown macro \"{id}\""));
         }
         return;
     }
     if let Some(id) = action.strip_prefix("cmd:") {
         let id = id.trim();
         if !command_ids.contains(id) {
-            errors.push(format!("{where_}: unknown command `{id}`"));
+            errors.push(format!("{where_}: unknown command \"{id}\""));
         } else if !commands_trusted {
             errors.push(format!(
-                "{where_}: command `{id}` is not approved for this layout"
+                "{where_}: command \"{id}\" is not approved for this layout"
             ));
         }
         return;
@@ -286,7 +286,7 @@ fn validate_action(
     if let Some(id) = action.strip_prefix("sys:") {
         let id = id.trim();
         if !system::is_known(id) {
-            errors.push(format!("{where_}: unknown system action `{id}`"));
+            errors.push(format!("{where_}: unknown system action \"{id}\""));
         }
         return;
     }
@@ -294,7 +294,7 @@ fn validate_action(
         return;
     }
     if parse_action(action).is_none() {
-        errors.push(format!("{where_}: unknown action `{action}`"));
+        errors.push(format!("{where_}: unknown action \"{action}\""));
     }
 }
 
@@ -334,7 +334,7 @@ mod tests {
         });
 
         let err = validate_config(&cfg).expect_err("validation should fail");
-        assert!(err.contains("unknown macro `missing`"));
+        assert!(err.contains("unknown macro \"missing\""));
     }
 
     #[test]
@@ -354,7 +354,7 @@ mod tests {
         });
 
         let err = validate_config(&cfg).expect_err("validation should fail");
-        assert!(err.contains("command `music` is not approved"));
+        assert!(err.contains("command \"music\" is not approved"));
     }
 
     #[test]

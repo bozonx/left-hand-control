@@ -137,7 +137,7 @@ pub fn set(index: u32) -> Result<(), String> {
         match detect().desktop {
             Desktop::Kde => linux_kde::set_layout(index),
             d => Err(format!(
-                "switching layout is not implemented for desktop '{}'",
+                "Switching layout is not implemented for desktop '{}'",
                 d.label()
             )),
         }
@@ -145,7 +145,7 @@ pub fn set(index: u32) -> Result<(), String> {
     #[cfg(not(target_os = "linux"))]
     {
         let _ = index;
-        Err("switching layout is not implemented on this OS".to_string())
+        Err("Switching layout is not implemented on this OS".to_string())
     }
 }
 

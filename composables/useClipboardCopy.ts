@@ -13,7 +13,7 @@ export function useClipboardCopy() {
       })
     } catch (error) {
       toast.add({
-        title: t('common.copy'),
+        title: t('common.copyFailed'),
         description: error instanceof Error ? error.message : String(error),
         color: 'error',
         icon: 'i-lucide-circle-alert',

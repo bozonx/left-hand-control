@@ -103,7 +103,7 @@ fn delete_user_layout(app: tauri::AppHandle, name: String) -> Result<(), String>
 fn validate_device_path(path: &str) -> Result<(), String> {
     let path = path.trim();
     if path.is_empty() {
-        return Err("device path is empty".into());
+        return Err("Keyboard device path is required".into());
     }
     if !path.starts_with("/dev/input/") {
         return Err(format!(
@@ -111,7 +111,7 @@ fn validate_device_path(path: &str) -> Result<(), String> {
         ));
     }
     if path.contains("..") {
-        return Err("device path contains invalid sequence".into());
+        return Err("Device path cannot contain '..'".into());
     }
     Ok(())
 }
@@ -155,7 +155,7 @@ fn start_mapper(
     let raw = match config_json {
         Some(s) if !s.trim().is_empty() => s,
         _ => {
-            let msg = "configJson is required to start mapper".to_string();
+            let msg = "Mapper configuration is required".to_string();
             log::debug!("[cmd] start_mapper ERR: {msg}");
             return Err(msg);
         }

@@ -213,18 +213,18 @@ fn probe_linux_layout_detection(s: &linux::Session) -> CapabilityStatus {
 
 #[cfg(target_os = "linux")]
 fn probe_kde_keyboard_layout_service() -> Result<(), String> {
-    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let conn = Connection::session().map_err(|e| format!("Cannot connect to session bus: {e}"))?;
     let proxy = Proxy::new(
         &conn,
         "org.kde.keyboard",
         "/Layouts",
         "org.kde.KeyboardLayouts",
     )
-    .map_err(|e| format!("create KDE keyboard proxy: {e}"))?;
+    .map_err(|e| format!("Cannot create KDE keyboard proxy: {e}"))?;
     proxy
         .call_method("getLayoutsList", &())
         .map(|_| ())
-        .map_err(|e| format!("KDE keyboard layout service unavailable: {e}"))
+        .map_err(|e| format!("KDE keyboard layout service is unavailable: {e}"))
 }
 
 #[cfg(target_os = "linux")]
@@ -245,20 +245,20 @@ fn probe_linux_system_actions(s: &linux::Session) -> CapabilityStatus {
 
 #[cfg(target_os = "linux")]
 fn probe_dbus_names_have_owner(names: &[&str]) -> Result<(), String> {
-    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let conn = Connection::session().map_err(|e| format!("Cannot connect to session bus: {e}"))?;
     let dbus = Proxy::new(
         &conn,
         "org.freedesktop.DBus",
         "/org/freedesktop/DBus",
         "org.freedesktop.DBus",
     )
-    .map_err(|e| format!("create DBus proxy: {e}"))?;
+    .map_err(|e| format!("Cannot create D-Bus proxy: {e}"))?;
 
     let mut missing = Vec::new();
     for name in names {
         let msg = dbus
             .call_method("NameHasOwner", &(*name,))
-            .map_err(|e| format!("NameHasOwner({name}) failed: {e}"))?;
+            .map_err(|e| format!("NameHasOwner({name}) call failed: {e}"))?;
         let has_owner: bool = msg
             .body()
             .deserialize()
@@ -271,14 +271,14 @@ fn probe_dbus_names_have_owner(names: &[&str]) -> Result<(), String> {
     if missing.is_empty() {
         Ok(())
     } else {
-        Err(format!("missing DBus service(s): {}", missing.join(", ")))
+        Err(format!("Missing D-Bus service(s): {}", missing.join(", ")))
     }
 }
 
 #[cfg(target_os = "linux")]
 fn probe_linux_key_interception_paths(input_dir: &Path, uinput_path: &Path) -> CapabilityStatus {
     let event_result = fs::read_dir(input_dir)
-        .map_err(|e| format!("cannot read /dev/input: {e}"))
+        .map_err(|e| format!("Cannot read /dev/input: {e}"))
         .and_then(|dir| {
             let mut event_paths = dir
                 .filter_map(|entry| entry.ok())
@@ -293,7 +293,7 @@ fn probe_linux_key_interception_paths(input_dir: &Path, uinput_path: &Path) -> C
             event_paths.sort();
 
             if event_paths.is_empty() {
-                return Err("no /dev/input/event* devices found".into());
+                return Err("No /dev/input/event* devices found".into());
             }
 
             if event_paths
@@ -302,7 +302,7 @@ fn probe_linux_key_interception_paths(input_dir: &Path, uinput_path: &Path) -> C
             {
                 Ok(())
             } else {
-                Err("cannot open any /dev/input/event* device for reading".into())
+                Err("Cannot open any /dev/input/event* device for reading".into())
             }
         });
 
@@ -311,7 +311,7 @@ fn probe_linux_key_interception_paths(input_dir: &Path, uinput_path: &Path) -> C
         .write(true)
         .open(uinput_path)
         .map(|_| ())
-        .map_err(|e| format!("cannot open /dev/uinput read-write: {e}"));
+        .map_err(|e| format!("Cannot open /dev/uinput for reading and writing: {e}"));
 
     match (event_result, uinput_result) {
         (Ok(()), Ok(())) => CapabilityStatus {
@@ -374,14 +374,16 @@ where
             Err(e) => CapabilityStatus {
                 supported: true,
                 available: false,
-                detail: Some(format!("portal backend unavailable: {e}; {detail_suffix}")),
+                detail: Some(format!(
+                    "Portal backend is unavailable: {e}; {detail_suffix}"
+                )),
             },
         },
         Err(e) => CapabilityStatus {
             supported: true,
             available: false,
             detail: Some(format!(
-                "cannot connect to session bus: {e}; {detail_suffix}"
+                "Cannot connect to session bus: {e}; {detail_suffix}"
             )),
         },
     }
@@ -433,7 +435,7 @@ mod tests {
             .detail
             .as_deref()
             .unwrap_or_default()
-            .contains("no /dev/input/event* devices found"));
+            .contains("No /dev/input/event* devices found"));
     }
 
     #[test]
@@ -448,7 +450,7 @@ mod tests {
             .detail
             .as_deref()
             .unwrap_or_default()
-            .contains("portal backend unavailable"));
+            .contains("Portal backend is unavailable"));
     }
 
     #[test]
