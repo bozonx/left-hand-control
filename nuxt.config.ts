@@ -52,7 +52,6 @@ export default defineNuxtConfig({
   devServer: {
     host: 'localhost',
     port: parseInt(process.env.PORT || '3000'),
-    strictPort: true,
   },
 
   vite: {

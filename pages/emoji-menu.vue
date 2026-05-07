@@ -27,7 +27,6 @@ const page = computed(
 const {
     pageIndex,
     scrollEl,
-    pageEls,
     wait,
     setPage,
     setPageRef,
@@ -146,7 +145,10 @@ onBeforeUnmount(() => {
                 </section>
             </div>
 
-            <div v-if="pages.length > 1" class="mt-2 flex items-center justify-center gap-1.5">
+            <div
+                v-if="pages.length > 1"
+                class="mt-2 flex items-center justify-center gap-1.5"
+            >
                 <button
                     v-for="(_, index) in pages"
                     :key="index"
