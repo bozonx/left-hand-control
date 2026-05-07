@@ -23,6 +23,7 @@ const {
 
 const systemOpen = ref(false)
 const focusMacroKey = ref<string | null>(null)
+const { scrollToTop } = useAppShellScroll()
 
 function clearFocusMacroKey(uiKey: string) {
   if (focusMacroKey.value === uiKey) focusMacroKey.value = null
@@ -38,6 +39,8 @@ async function createFromSystemMacro(sys: SystemMacro) {
   const macro = cloneSystemMacro(sys)
   const uiKey = uiKeyOf(macro)
   focusMacroKey.value = uiKey
+  await nextTick()
+  scrollToTop()
 }
 
 // --- Deletion confirmation -----------------------------------------------
@@ -71,10 +74,19 @@ function cancelRemove() {
       <template #header>
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-sm font-semibold">{{ $t('macros.title') }}</h2>
-            <p class="text-xs text-(--ui-text-muted) mt-0.5">
-              {{ $t('macros.subtitle') }}
-            </p>
+            <div class="flex items-center gap-1.5">
+              <h2 class="text-sm font-semibold">{{ $t('macros.title') }}</h2>
+              <AppTooltip :text="$t('macros.subtitle')" toggle-on-click>
+                <UButton
+                  icon="i-lucide-info"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  square
+                  :aria-label="$t('macros.subtitle')"
+                />
+              </AppTooltip>
+            </div>
           </div>
           <AppTooltip :disabled="!hasErrors" :text="$t('macros.addDisabled')">
             <UButton

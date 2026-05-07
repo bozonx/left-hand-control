@@ -15,6 +15,9 @@ const toast = useToast()
 const selectedPageIndex = ref(0)
 const selectedKey = ref<EmojiHotkey>('KeyQ')
 const customEmoji = ref('')
+const confirmDeletePageOpen = ref(false)
+const pendingDeletePageIndex = ref<number | null>(null)
+const deletePageConfirm = ref<{ $el?: HTMLButtonElement } | null>(null)
 
 const pages = computed(() => config.value.emojiPages || [])
 const selectedPage = computed(
@@ -66,6 +69,24 @@ function removePage(index: number) {
     )
 }
 
+function askRemovePage(index: number) {
+    pendingDeletePageIndex.value = index
+    confirmDeletePageOpen.value = true
+}
+
+function confirmRemovePage() {
+    if (pendingDeletePageIndex.value !== null) {
+        removePage(pendingDeletePageIndex.value)
+    }
+    pendingDeletePageIndex.value = null
+    confirmDeletePageOpen.value = false
+}
+
+function cancelRemovePage() {
+    pendingDeletePageIndex.value = null
+    confirmDeletePageOpen.value = false
+}
+
 function setCell(value: string) {
     ensurePages()
     const page = config.value.emojiPages[selectedPageIndex.value]
@@ -101,6 +122,12 @@ watch(
     { immediate: true },
 )
 
+watch(confirmDeletePageOpen, async (open) => {
+    if (!open) return
+    await nextTick()
+    deletePageConfirm.value?.$el?.focus()
+})
+
 onMounted(ensurePages)
 </script>
 
@@ -131,6 +158,11 @@ onMounted(ensurePages)
             <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div class="space-y-4">
                     <div class="flex flex-wrap gap-2">
+                        <div
+                            class="flex h-8 items-center px-1 text-xs font-medium text-(--ui-text-muted)"
+                        >
+                            {{ $t('common.page') }}
+                        </div>
                         <UButton
                             v-for="(page, index) in pages"
                             :key="page.id"
@@ -165,12 +197,14 @@ onMounted(ensurePages)
                             "
                             @click="selectedKey = key"
                         >
-                            <span class="text-3xl leading-none">{{
-                                selectedPage.cells[key] || '＋'
+                            <span
+                                class="font-mono text-xs uppercase text-(--ui-primary)"
+                            >{{
+                                EMOJI_HOTKEY_LABELS[key]
                             }}</span>
                             <span
-                                class="font-mono text-xs uppercase text-(--ui-text-muted)"
-                                >{{ EMOJI_HOTKEY_LABELS[key] }}</span
+                                class="text-3xl leading-none"
+                                >{{ selectedPage.cells[key] || '＋' }}</span
                             >
                         </button>
                     </div>
@@ -189,11 +223,12 @@ onMounted(ensurePages)
                                 />
                                 <UButton
                                     icon="i-lucide-trash-2"
-                                    color="error"
+                                    color="neutral"
                                     variant="ghost"
                                     size="sm"
+                                    :title="$t('emoji.deletePageTitle')"
                                     :aria-label="$t('emoji.deletePage')"
-                                    @click="removePage(selectedPageIndex)"
+                                    @click="askRemovePage(selectedPageIndex)"
                                 />
                             </div>
                         </template>
@@ -221,9 +256,11 @@ onMounted(ensurePages)
                                         "
                                     />
                                     <UButton
-                                        icon="i-lucide-check"
-                                        :aria-label="$t('common.apply')"
-                                        @click="setCell(customEmoji)"
+                                        icon="i-lucide-eraser"
+                                        color="neutral"
+                                        variant="ghost"
+                                        :aria-label="$t('emoji.clearCell')"
+                                        @click="clearCell"
                                     />
                                 </div>
                             </div>
@@ -239,20 +276,31 @@ onMounted(ensurePages)
                                     {{ emoji }}
                                 </button>
                             </div>
-
-                            <UButton
-                                icon="i-lucide-eraser"
-                                color="neutral"
-                                variant="outline"
-                                block
-                                @click="clearCell"
-                            >
-                                {{ $t('emoji.clearCell') }}
-                            </UButton>
                         </div>
                     </UCard>
                 </div>
             </div>
         </UCard>
+
+        <UModal v-model:open="confirmDeletePageOpen" :title="$t('emoji.confirmDeletePageTitle')">
+            <template #body>
+                <p class="text-sm">{{ $t('emoji.confirmDeletePageBody') }}</p>
+            </template>
+            <template #footer>
+                <div class="flex w-full justify-end gap-2">
+                    <UButton color="neutral" variant="ghost" @click="cancelRemovePage">
+                        {{ $t('common.cancel') }}
+                    </UButton>
+                    <UButton
+                        ref="deletePageConfirm"
+                        color="error"
+                        icon="i-lucide-trash-2"
+                        @click="confirmRemovePage"
+                    >
+                        {{ $t('common.delete') }}
+                    </UButton>
+                </div>
+            </template>
+        </UModal>
     </div>
 </template>

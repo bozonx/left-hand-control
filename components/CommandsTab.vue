@@ -19,11 +19,25 @@ const {
   approve,
   revoke,
 } = useCommandTrust()
+const platform = usePlatformInfo()
+const { t } = useI18n()
 
 const confirmOpen = ref(false)
 const pendingDeleteKey = ref<string | null>(null)
 const pendingDeleteLabel = ref<string | null>(null)
 const focusCommandKey = ref<string | null>(null)
+
+const commandDescription = computed(() => {
+  const os = platform.info.value?.os
+  if (os === 'linux') return t('commands.subtitleLinux')
+  if (os === 'windows') return t('commands.subtitleWindows')
+  if (os === 'macos') return t('commands.subtitleMacos')
+  return t('commands.subtitleUnknown')
+})
+
+onMounted(() => {
+  void platform.refresh()
+})
 
 function clearFocusCommandKey(uiKey: string) {
   if (focusCommandKey.value === uiKey) focusCommandKey.value = null
@@ -61,10 +75,19 @@ function cancelRemove() {
       <template #header>
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-sm font-semibold">{{ $t('commands.title') }}</h2>
-            <p class="mt-0.5 text-xs text-(--ui-text-muted)">
-              {{ $t('commands.subtitle') }}
-            </p>
+            <div class="flex items-center gap-1.5">
+              <h2 class="text-sm font-semibold">{{ $t('commands.title') }}</h2>
+              <AppTooltip :text="commandDescription" toggle-on-click>
+                <UButton
+                  icon="i-lucide-info"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  square
+                  :aria-label="commandDescription"
+                />
+              </AppTooltip>
+            </div>
           </div>
           <AppTooltip :disabled="!hasErrors" :text="$t('commands.addDisabled')">
             <UButton

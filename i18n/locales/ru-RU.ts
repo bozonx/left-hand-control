@@ -47,6 +47,7 @@ export default {
     none: '— нет —',
     asInSystem: 'Как в системе',
     backToTop: 'вернуться наверх',
+    page: 'Страница',
     moveUp: 'Вверх',
     moveDown: 'Вниз',
     expand: 'Развернуть',
@@ -426,6 +427,7 @@ export default {
     actionLabel: 'Действие',
     actionPh: 'Выберите действие',
     deleteAction: 'Удалить',
+    clearAction: 'Очистить',
     moveUp: 'Выше',
     moveDown: 'Ниже',
     menuHint:
@@ -442,6 +444,7 @@ export default {
       'Настройте меню из 15 ячеек, которое открывается действием sys:showEmojiMenu.',
     addPage: 'Добавить страницу',
     deletePage: 'Удалить страницу',
+    deletePageTitle: 'Удаление страницы',
     pageLabel: 'Название страницы',
     pageName: 'Emoji {n}',
     cellLabel: 'Ячейка {key}',
@@ -449,6 +452,9 @@ export default {
     clearCell: 'Очистить ячейку',
     cellTooLongTitle: 'Текст слишком длинный',
     cellTooLongBody: 'Максимум {max} символов в ячейке.',
+    confirmDeletePageTitle: 'Удалить страницу?',
+    confirmDeletePageBody:
+      'Страница будет удалена вместе со всеми назначенными ячейками.',
   },
   emojiMenu: {
     tabHint:
@@ -461,6 +467,14 @@ export default {
     title: 'Команды',
     subtitle:
       'Переиспользуемые shell-команды текущей раскладки. На Linux они запускаются через sh -lc после явного разрешения.',
+    subtitleLinux:
+      'Переиспользуемые shell-команды текущей раскладки. На Linux они запускаются через sh -lc после явного разрешения.',
+    subtitleWindows:
+      'Команды сохраняются в раскладке, но запуск shell-команд на Windows пока не реализован.',
+    subtitleMacos:
+      'Команды сохраняются в раскладке, но запуск shell-команд на macOS пока не реализован.',
+    subtitleUnknown:
+      'Переиспользуемые команды текущей раскладки. Доступность запуска зависит от текущей платформы.',
     addBtn: 'Новая команда',
     addDisabled: 'Сначала исправьте ошибки в существующих командах',
     empty:

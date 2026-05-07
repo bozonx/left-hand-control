@@ -77,6 +77,8 @@ describe('useCommandEditor', () => {
     })
     const duplicate = state.config.value.commands[1]!
     expect(vm.idError(firstCommand)).toBe('This ID is already used by another command.')
+    expect(vm.idError(duplicate)).toBe('This ID is already used by another command.')
+    expect(vm.uiKeyOf(duplicate)).not.toBe(vm.uiKeyOf(firstCommand))
     expect(vm.hasErrors).toBe(true)
 
     duplicate.id = 'wezterm'

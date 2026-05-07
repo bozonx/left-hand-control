@@ -1,4 +1,4 @@
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -80,6 +80,20 @@ describe('useMacroEditor', () => {
 
     const sameUiKey = vm.uiKeyOf(firstMacro)
     expect(vm.uiKeyOf(firstMacro)).toBe(sameUiKey)
+
+    const userDuplicate = {
+      id: 'dup',
+      name: 'Duplicate user macro',
+      steps: [],
+    }
+    state.config.value.macros.push(userDuplicate)
+    expect(vm.idError(firstMacro)).toBe('This ID is already used by another user macro.')
+    expect(vm.idError(userDuplicate)).toBe('This ID is already used by another user macro.')
+    expect(vm.uiKeyOf(userDuplicate)).not.toBe(vm.uiKeyOf(firstMacro))
+    state.config.value.macros[state.config.value.macros.length - 1]!.id = 'dup2'
+    await nextTick()
+    expect(vm.idError(firstMacro)).toBeNull()
+    expect(vm.idError(userDuplicate)).toBeNull()
 
     const sysMacro = systemMacroById('duplicateLine')!
     vm.cloneSystemMacro(sysMacro)

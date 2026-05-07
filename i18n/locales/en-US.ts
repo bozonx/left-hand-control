@@ -47,6 +47,7 @@ export default {
     none: '— none —',
     asInSystem: 'Use system',
     backToTop: 'back to top',
+    page: 'Page',
     moveUp: 'Move up',
     moveDown: 'Move down',
     expand: 'Expand',
@@ -418,6 +419,7 @@ export default {
     actionLabel: 'Action',
     actionPh: 'Choose an action',
     deleteAction: 'Delete action',
+    clearAction: 'Clear',
     moveUp: 'Move up',
     moveDown: 'Move down',
     menuHint:
@@ -433,6 +435,7 @@ export default {
       'Configure the 15-cell menu opened by sys:showEmojiMenu.',
     addPage: 'Add page',
     deletePage: 'Delete page',
+    deletePageTitle: 'Page deletion',
     pageLabel: 'Page name',
     pageName: 'Emoji {n}',
     cellLabel: 'Cell {key}',
@@ -440,6 +443,9 @@ export default {
     clearCell: 'Clear cell',
     cellTooLongTitle: 'Text is too long',
     cellTooLongBody: 'Maximum {max} characters per cell.',
+    confirmDeletePageTitle: 'Delete page?',
+    confirmDeletePageBody:
+      'The page and all assigned cells on it will be deleted.',
   },
   emojiMenu: {
     tabHint:
@@ -452,6 +458,14 @@ export default {
     title: 'Commands',
     subtitle:
       'Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.',
+    subtitleLinux:
+      'Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.',
+    subtitleWindows:
+      'Commands are saved in the layout, but shell command execution on Windows is not implemented yet.',
+    subtitleMacos:
+      'Commands are saved in the layout, but shell command execution on macOS is not implemented yet.',
+    subtitleUnknown:
+      'Reusable commands for the current layout. Execution support depends on the current platform.',
     addBtn: 'New command',
     addDisabled: 'Fix the existing command errors first',
     empty: 'No commands yet. Click "New command" to create the first one.',

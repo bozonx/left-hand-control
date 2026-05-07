@@ -111,20 +111,6 @@ function clearAction(index: number) {
   clampSelection()
 }
 
-function moveAction(index: number, delta: number) {
-  const newIndex = index + delta
-  if (!config.value.quickActions || newIndex < 0 || newIndex >= config.value.quickActions.length) return
-
-  const arr = [...config.value.quickActions]
-  const item = arr[index]
-  if (!item) return
-  arr.splice(index, 1)
-  arr.splice(newIndex, 0, item)
-  config.value.quickActions = arr
-  selectedIndex.value = newIndex
-  selectedPageIndex.value = Math.floor(newIndex / pageSize)
-}
-
 const pickerState = ref<{
   isOpen: boolean
   index: number | null
@@ -206,31 +192,40 @@ watch(actions, clampSelection, { immediate: true })
               {{ $t('quickActions.subtitle') }}
             </p>
           </div>
-          <UButton
-            icon="i-lucide-plus"
-            size="sm"
-            class="whitespace-nowrap"
-            @click="addPage"
-          >
-            {{ $t('quickActions.addPage') }}
-          </UButton>
         </div>
       </template>
 
       <div class="space-y-4">
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div class="space-y-3">
-            <div class="flex flex-wrap items-center gap-2">
-              <UButton
-                v-for="index in pageCount"
-                :key="index"
-                :color="index - 1 === selectedPageIndex ? 'primary' : 'neutral'"
-                :variant="index - 1 === selectedPageIndex ? 'soft' : 'outline'"
-                size="sm"
-                @click="setPage(index - 1)"
-              >
-                {{ $t('quickActions.pageName', { n: index }) }}
-              </UButton>
+            <div class="rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-muted)/40 p-3">
+              <div class="mb-2 flex items-center justify-between gap-3">
+                <div class="text-xs font-medium text-(--ui-text-muted)">
+                  {{ $t('common.page') }}
+                </div>
+                <UButton
+                  icon="i-lucide-plus"
+                  size="xs"
+                  color="neutral"
+                  variant="outline"
+                  class="whitespace-nowrap"
+                  @click="addPage"
+                >
+                  {{ $t('quickActions.addPage') }}
+                </UButton>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <UButton
+                  v-for="index in pageCount"
+                  :key="index"
+                  :color="index - 1 === selectedPageIndex ? 'primary' : 'neutral'"
+                  :variant="index - 1 === selectedPageIndex ? 'soft' : 'outline'"
+                  size="sm"
+                  @click="setPage(index - 1)"
+                >
+                  {{ $t('quickActions.pageName', { n: index }) }}
+                </UButton>
+              </div>
             </div>
 
             <div class="grid grid-cols-5 gap-2 rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-elevated) p-3">
@@ -238,7 +233,7 @@ watch(actions, clampSelection, { immediate: true })
                 v-for="item in pageItems"
                 :key="item.key"
                 type="button"
-                class="flex h-28 min-w-0 flex-col items-start justify-between rounded-md border bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10"
+                class="flex h-28 min-w-0 flex-col items-start gap-2 rounded-md border bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10"
                 :class="
                   item.actionIndex === selectedIndex
                     ? 'border-primary ring-1 ring-primary/35'
@@ -246,9 +241,13 @@ watch(actions, clampSelection, { immediate: true })
                 "
                 @click="onCellClick(item.actionIndex, item.action)"
               >
+                <span class="font-mono text-xs uppercase text-(--ui-primary)">
+                  {{ LEFT_HAND_HOTKEY_LABELS[item.key as LeftHandHotkey] }}
+                </span>
                 <span class="flex min-w-0 items-center gap-2 self-stretch">
                   <UIcon
-                    :name="item.action?.action.trim() ? item.action.icon || 'i-lucide-zap' : 'i-lucide-plus'"
+                    v-if="item.action?.action.trim()"
+                    :name="item.action.icon || 'i-lucide-zap'"
                     class="h-4 w-4 shrink-0 text-(--ui-text-muted)"
                   />
                   <span class="min-w-0 truncate text-sm font-medium">
@@ -257,9 +256,6 @@ watch(actions, clampSelection, { immediate: true })
                 </span>
                 <span class="min-w-0 self-stretch truncate font-mono text-[11px] text-(--ui-text-muted)">
                   {{ item.action?.action || '—' }}
-                </span>
-                <span class="font-mono text-xs uppercase text-(--ui-primary)">
-                  {{ LEFT_HAND_HOTKEY_LABELS[item.key as LeftHandHotkey] }}
                 </span>
               </button>
             </div>
@@ -278,9 +274,6 @@ watch(actions, clampSelection, { immediate: true })
                     {{ $t('quickActions.cellHint') }}
                   </p>
                 </div>
-                <UBadge color="primary" variant="soft" size="sm">
-                  {{ selectedIndex !== null ? selectedIndex + 1 : '' }}
-                </UBadge>
               </div>
             </template>
 
@@ -315,32 +308,12 @@ watch(actions, clampSelection, { immediate: true })
 
               <div class="flex justify-end gap-1 border-t border-(--ui-border-muted) pt-3">
                 <UButton
-                  icon="i-lucide-arrow-up"
+                  icon="i-lucide-eraser"
                   variant="ghost"
                   color="neutral"
                   size="sm"
                   square
-                  :disabled="selectedIndex === null || selectedIndex === 0"
-                  :aria-label="$t('quickActions.moveUp')"
-                  @click="selectedIndex !== null && moveAction(selectedIndex, -1)"
-                />
-                <UButton
-                  icon="i-lucide-arrow-down"
-                  variant="ghost"
-                  color="neutral"
-                  size="sm"
-                  square
-                  :disabled="selectedIndex === null || selectedIndex === actions.length - 1"
-                  :aria-label="$t('quickActions.moveDown')"
-                  @click="selectedIndex !== null && moveAction(selectedIndex, 1)"
-                />
-                <UButton
-                  icon="i-lucide-trash-2"
-                  variant="ghost"
-                  color="error"
-                  size="sm"
-                  square
-                  :aria-label="$t('quickActions.deleteAction')"
+                  :aria-label="$t('quickActions.clearAction')"
                   @click="selectedIndex !== null && clearAction(selectedIndex)"
                 />
               </div>

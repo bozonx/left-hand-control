@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
                         {{ $t('emojiMenu.tabHint') }}
                     </p>
                 </div>
-                <UBadge color="neutral" variant="outline" size="sm">
+                <UBadge color="neutral" variant="outline" size="sm" class="shrink-0 whitespace-nowrap">
                     {{ pageIndex + 1 }} / {{ pages.length }}
                 </UBadge>
             </div>
@@ -133,13 +133,13 @@ onBeforeUnmount(() => {
                             :disabled="!emojiPage.cells[key]"
                             @click="applyEmoji(emojiPage.cells[key])"
                         >
-                            <span class="text-3xl leading-none">{{
-                                emojiPage.cells[key] || ' '
-                            }}</span>
                             <span
                                 class="font-mono text-xs uppercase text-(--ui-text-muted)"
                                 >{{ EMOJI_HOTKEY_LABELS[key] }}</span
                             >
+                            <span class="text-3xl leading-none">{{
+                                emojiPage.cells[key] || ' '
+                            }}</span>
                         </button>
                     </div>
                 </section>

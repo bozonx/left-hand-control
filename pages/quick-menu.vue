@@ -90,6 +90,14 @@ async function runAction(action: string) {
         logger.error('Failed to execute action', e)
     }
 }
+
+function onMenuCellClick(action: QuickAction | undefined) {
+    if (action?.action.trim()) {
+        void runAction(action.action)
+        return
+    }
+    void closeMenu()
+}
 </script>
 
 <template>
@@ -108,7 +116,7 @@ async function runAction(action: string) {
                         {{ $t('quickActions.menuHint') }}
                     </p>
                 </div>
-                <UBadge color="neutral" variant="outline" size="sm">
+                <UBadge color="neutral" variant="outline" size="sm" class="shrink-0 whitespace-nowrap">
                     {{ pageIndex + 1 }} / {{ Math.max(1, pages.length) }}
                 </UBadge>
             </div>
@@ -136,23 +144,24 @@ async function runAction(action: string) {
                             v-for="(key, index) in LEFT_HAND_HOTKEYS"
                             :key="key"
                             type="button"
-                            class="flex h-24 min-w-0 flex-col items-start justify-between gap-2 rounded-md border border-(--ui-border-muted) bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-40"
-                            :disabled="!quickPage[index]?.action.trim()"
-                            @click="
-                                quickPage[index]?.action.trim() &&
-                                runAction(quickPage[index].action)
-                            "
+                            class="flex h-24 min-w-0 flex-col items-start gap-2 rounded-md border border-(--ui-border-muted) bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10"
+                            @click="onMenuCellClick(quickPage[index])"
                         >
+                            <span
+                                class="font-mono text-xs uppercase text-(--ui-text-muted)"
+                            >
+                                {{
+                                    LEFT_HAND_HOTKEY_LABELS[
+                                        key as LeftHandHotkey
+                                    ]
+                                }}
+                            </span>
                             <span
                                 class="flex min-w-0 items-center gap-2 self-stretch"
                             >
                                 <UIcon
-                                    :name="
-                                        quickPage[index]?.action.trim()
-                                            ? quickPage[index].icon ||
-                                              'i-lucide-zap'
-                                            : 'i-lucide-plus'
-                                    "
+                                    v-if="quickPage[index]?.action.trim()"
+                                    :name="quickPage[index].icon || 'i-lucide-zap'"
                                     class="h-4 w-4 shrink-0 text-(--ui-text-muted)"
                                 />
                                 <span
@@ -164,15 +173,6 @@ async function runAction(action: string) {
                                             : ' '
                                     }}
                                 </span>
-                            </span>
-                            <span
-                                class="font-mono text-xs uppercase text-(--ui-text-muted)"
-                            >
-                                {{
-                                    LEFT_HAND_HOTKEY_LABELS[
-                                        key as LeftHandHotkey
-                                    ]
-                                }}
                             </span>
                         </button>
                     </div>

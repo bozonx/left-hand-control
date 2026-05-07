@@ -185,9 +185,10 @@ describe('CommandsTab', () => {
       },
     })
 
-    const addBtn = wrapper.find('button')
-    expect(addBtn.text()).toContain('New command')
-    await addBtn.trigger('click')
+    const addBtn = wrapper.findAll('button').find((button) => button.text().includes('New command'))
+    expect(addBtn).toBeTruthy()
+    expect(addBtn!.text()).toContain('New command')
+    await addBtn!.trigger('click')
     expect(editorApi.addCommand).toHaveBeenCalledTimes(1)
   })
 })
