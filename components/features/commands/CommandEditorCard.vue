@@ -22,20 +22,15 @@ const emit = defineEmits<{
 }>()
 
 const { copy: copyToClipboard } = useClipboardCopy()
-const nameInput = useTemplateRef('nameInput')
+const commandInput = useTemplateRef('commandInput')
 
-watch(
-  () => props.focusName,
-  (value) => {
-    if (!value) return
-    const input = (nameInput.value as any)?.inputRef as HTMLInputElement | null
-    if (!input) return
-    input.focus()
-    input.select()
-    emit('nameFocused', props.uiKey)
-  },
-  { immediate: true, flush: 'post' },
-)
+onMounted(() => {
+  if (!props.focusName) return
+  const input = (commandInput.value as any)?.textareaRef as HTMLTextAreaElement | null
+  if (!input) return
+  input.focus()
+  emit('nameFocused', props.uiKey)
+})
 
 async function copyCommandId() {
   if (!command.value.id) return
@@ -88,7 +83,6 @@ async function copyCommandId() {
             />
           </template>
           <UInput
-            ref="nameInput"
             v-model="command.name"
             :placeholder="$t('commands.namePh')"
             class="w-full"
@@ -163,6 +157,7 @@ async function copyCommandId() {
         />
       </template>
       <UTextarea
+        ref="commandInput"
         v-model="command.linux"
         autoresize
         :rows="3"

@@ -34,6 +34,15 @@ const nameInput = useTemplateRef('nameInput')
 const stepConfirmOpen = ref(false)
 const pendingStepId = ref<string | null>(null)
 
+onMounted(() => {
+  if (!props.focusName) return
+  const input = (nameInput.value as any)?.inputRef as HTMLInputElement | null
+  if (!input) return
+  input.focus()
+  input.select()
+  emit('nameFocused', props.uiKey)
+})
+
 function askRemoveStep(stepId: string) {
   pendingStepId.value = stepId
   stepConfirmOpen.value = true
@@ -51,19 +60,6 @@ function cancelRemoveStep() {
   pendingStepId.value = null
   stepConfirmOpen.value = false
 }
-
-watch(
-  () => props.focusName,
-  (value) => {
-    if (!value) return
-    const input = (nameInput.value as any)?.inputRef as HTMLInputElement | null
-    if (!input) return
-    input.focus()
-    input.select()
-    emit('nameFocused', props.uiKey)
-  },
-  { immediate: true, flush: 'post' },
-)
 
 async function copyMacroId() {
   if (!macro.value.id) return
