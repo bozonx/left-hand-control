@@ -115,7 +115,6 @@ function setCell(value: string) {
     } else {
         delete page.cells[selectedKey.value]
     }
-    customEmoji.value = ''
 }
 
 function clearCell() {
@@ -266,9 +265,8 @@ onMounted(ensurePages)
                                         :placeholder="
                                             $t('emoji.customPlaceholder')
                                         "
-                                        @keydown.enter.prevent="
-                                            setCell(customEmoji)
-                                        "
+                                        @keydown.enter.prevent="setCell(customEmoji)"
+                                        @blur="setCell(customEmoji)"
                                     />
                                     <UButton
                                         icon="i-lucide-eraser"
