@@ -344,6 +344,7 @@ macros:
       macros: [],
       layerKeymaps: {},
       quickActions: [],
+      quickActionPages: [],
       emojiPages: [],
     })
   })

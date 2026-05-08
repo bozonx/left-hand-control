@@ -27,6 +27,14 @@ const selectedValue = computed(
     () => selectedPage.value?.cells[selectedKey.value] ?? '',
 )
 
+function cellContentClass(value: string | undefined): string {
+    if (!value) return 'text-3xl leading-none'
+    const len = [...value].length
+    if (len <= 2) return 'text-3xl leading-none'
+    if (len <= 6) return 'text-base leading-snug'
+    return 'text-xs leading-snug break-all'
+}
+
 function ensurePages() {
     if (!config.value.emojiPages || config.value.emojiPages.length === 0) {
         config.value.emojiPages = [createDefaultEmojiPage()]
@@ -203,7 +211,8 @@ onMounted(ensurePages)
                                 EMOJI_HOTKEY_LABELS[key]
                             }}</span>
                             <span
-                                class="text-3xl leading-none"
+                                class="overflow-hidden text-center"
+                                :class="cellContentClass(selectedPage.cells[key])"
                                 >{{ selectedPage.cells[key] || '＋' }}</span
                             >
                         </button>

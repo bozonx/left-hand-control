@@ -13,6 +13,7 @@ import {
 const { config, load } = useConfig()
 
 const actions = computed(() => config.value.quickActions || [])
+const quickActionPages = computed(() => config.value.quickActionPages || [])
 const hasRunnableActions = computed(() =>
     actions.value.some((action) => action.action.trim()),
 )
@@ -25,6 +26,9 @@ const pages = computed(() => {
 })
 const page = computed(
     () => pages.value[pageIndex.value] ?? pages.value[0] ?? [],
+)
+const pageName = computed(
+    () => quickActionPages.value[pageIndex.value]?.name || '',
 )
 
 const {
@@ -110,7 +114,7 @@ function onMenuCellClick(action: QuickAction | undefined) {
             <div class="mb-3 flex items-center justify-between gap-3">
                 <div class="min-w-0">
                     <p class="truncate text-sm font-semibold">
-                        {{ $t('quickActions.title') }}
+                        {{ pageName || $t('quickActions.title') }}
                     </p>
                     <p class="text-xs text-(--ui-text-muted)">
                         {{ $t('quickActions.menuHint') }}

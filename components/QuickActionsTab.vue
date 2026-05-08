@@ -9,16 +9,24 @@ import ActionPickerModal from '~/components/ActionPickerModal.vue'
 
 const { config } = useConfig()
 const { t } = useI18n()
+const { getActionInfo } = useMacros()
 
 const actions = computed(() => config.value.quickActions || [])
+const quickActionPages = computed(() => config.value.quickActionPages || [])
 const pickerValue = ref<string | null>('')
 const selectedIndex = ref<number | null>(null)
 const selectedPageIndex = ref(0)
+const confirmDeletePageOpen = ref(false)
+const pendingDeletePageIndex = ref<number | null>(null)
+const deletePageConfirm = ref<{ $el?: HTMLButtonElement } | null>(null)
 const pageSize = LEFT_HAND_HOTKEYS.length
 const pageCount = computed(() =>
-  Math.max(1, Math.ceil(actions.value.length / pageSize)),
+  Math.max(1, Math.ceil(actions.value.length / pageSize), quickActionPages.value.length),
 )
 const pageStart = computed(() => selectedPageIndex.value * pageSize)
+const selectedPage = computed(() =>
+  quickActionPages.value[selectedPageIndex.value] ?? null,
+)
 const pageItems = computed(() =>
   LEFT_HAND_HOTKEYS.map((key, cellIndex) => {
     const actionIndex = pageStart.value + cellIndex
@@ -39,7 +47,27 @@ const selectedHotkey = computed(() => {
   return LEFT_HAND_HOTKEYS[selectedIndex.value % pageSize] ?? null
 })
 
+function createPageMeta(n: number = (config.value.quickActionPages?.length ?? 0) + 1) {
+  return {
+    id: crypto.randomUUID(),
+    name: t('quickActions.pageName', { n }),
+  }
+}
+
+function ensurePages() {
+  if (!config.value.quickActionPages) {
+    config.value.quickActionPages = []
+  }
+  while (config.value.quickActionPages.length < pageCount.value) {
+    config.value.quickActionPages.push(createPageMeta())
+  }
+  if (selectedPageIndex.value >= config.value.quickActionPages.length) {
+    selectedPageIndex.value = Math.max(0, config.value.quickActionPages.length - 1)
+  }
+}
+
 function clampSelection() {
+  ensurePages()
   if (actions.value.length === 0) {
     selectedIndex.value = null
     selectedPageIndex.value = Math.min(selectedPageIndex.value, pageCount.value - 1)
@@ -75,19 +103,60 @@ function addPage() {
   if (!config.value.quickActions) {
     config.value.quickActions = []
   }
-  const currentLength = config.value.quickActions.length
-  const padding = (pageSize - (currentLength % pageSize)) % pageSize
-  for (let i = 0; i < padding + pageSize; i += 1) {
+  ensurePages()
+  const newPageIndex = config.value.quickActionPages.length
+  const targetLength = (newPageIndex + 1) * pageSize
+  while (config.value.quickActions.length < targetLength) {
     config.value.quickActions.push(createEmptyAction())
   }
-  selectedPageIndex.value = Math.floor((currentLength + padding) / pageSize)
-  selectedIndex.value = selectedPageIndex.value * pageSize
+  config.value.quickActionPages.push(createPageMeta())
+  selectedPageIndex.value = newPageIndex
+  selectedIndex.value = null
+}
+
+function removePage(index: number) {
+  ensurePages()
+  if (!config.value.quickActions || !config.value.quickActionPages) return
+  if (config.value.quickActionPages.length <= 1) {
+    config.value.quickActions = []
+    config.value.quickActionPages = [createPageMeta(1)]
+    selectedPageIndex.value = 0
+    selectedIndex.value = null
+    return
+  }
+  config.value.quickActions.splice(index * pageSize, pageSize)
+  config.value.quickActionPages.splice(index, 1)
+  selectedPageIndex.value = Math.min(index, config.value.quickActionPages.length - 1)
+  selectedIndex.value = null
+  clampSelection()
+}
+
+function askRemovePage(index: number) {
+  pendingDeletePageIndex.value = index
+  confirmDeletePageOpen.value = true
+}
+
+function confirmRemovePage() {
+  if (pendingDeletePageIndex.value !== null) {
+    removePage(pendingDeletePageIndex.value)
+  }
+  pendingDeletePageIndex.value = null
+  confirmDeletePageOpen.value = false
+}
+
+function cancelRemovePage() {
+  pendingDeletePageIndex.value = null
+  confirmDeletePageOpen.value = false
+}
+
+function actionNameFor(action: string): string {
+  return getActionInfo(action).label || action || t('quickActions.defaultName')
 }
 
 function setActionAt(index: number, action: string): number {
   const newAction: QuickAction = {
     id: crypto.randomUUID(),
-    name: t('quickActions.defaultName'),
+    name: actionNameFor(action),
     action,
   }
   if (!config.value.quickActions) {
@@ -142,7 +211,11 @@ function openEmptyCell(index: number) {
 function onPickerApply(value: string) {
   if (pickerState.value.index !== null) {
     if (config.value.quickActions) {
-      config.value.quickActions[pickerState.value.index].action = value
+      const action = config.value.quickActions[pickerState.value.index]
+      action.action = value
+      if (!action.name.trim() || action.name === t('quickActions.defaultName')) {
+        action.name = actionNameFor(value)
+      }
     }
   } else {
     selectedIndex.value = setActionAt(
@@ -171,6 +244,7 @@ function onCellClick(index: number, action: QuickAction | null) {
 }
 
 function setPage(index: number) {
+  ensurePages()
   selectedPageIndex.value = index
   const firstActionIndex = index * pageSize
   if (actions.value[firstActionIndex]) {
@@ -179,6 +253,12 @@ function setPage(index: number) {
 }
 
 watch(actions, clampSelection, { immediate: true })
+watch(confirmDeletePageOpen, async (open) => {
+  if (!open) return
+  await nextTick()
+  deletePageConfirm.value?.$el?.focus()
+})
+onMounted(ensurePages)
 </script>
 
 <template>
@@ -211,14 +291,14 @@ watch(actions, clampSelection, { immediate: true })
                 {{ $t('common.page') }}
               </div>
               <UButton
-                v-for="index in pageCount"
-                :key="index"
-                :color="index - 1 === selectedPageIndex ? 'primary' : 'neutral'"
-                :variant="index - 1 === selectedPageIndex ? 'soft' : 'outline'"
+                v-for="(page, index) in quickActionPages"
+                :key="page.id"
+                :color="index === selectedPageIndex ? 'primary' : 'neutral'"
+                :variant="index === selectedPageIndex ? 'soft' : 'outline'"
                 size="sm"
-                @click="setPage(index - 1)"
+                @click="setPage(index)"
               >
-                {{ $t('quickActions.pageName', { n: index }) }}
+                {{ page.name }}
               </UButton>
             </div>
 
@@ -255,23 +335,44 @@ watch(actions, clampSelection, { immediate: true })
             </div>
           </div>
 
-          <UCard v-if="selectedAction">
+          <UCard v-if="selectedPage">
             <template #header>
               <div class="flex items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <h3 class="truncate text-sm font-semibold">
-                    {{ $t('quickActions.cellLabel', {
-                      key: selectedHotkey ? LEFT_HAND_HOTKEY_LABELS[selectedHotkey] : '',
-                    }) }}
-                  </h3>
-                  <p class="mt-0.5 text-xs text-(--ui-text-muted)">
-                    {{ $t('quickActions.cellHint') }}
-                  </p>
-                </div>
+                <UFormField class="min-w-0 flex-1">
+                  <template #label>
+                    <FieldLabel :label="$t('common.page')" />
+                  </template>
+                  <UInput
+                    v-model="selectedPage.name"
+                    size="sm"
+                    :aria-label="$t('quickActions.pageLabel')"
+                    class="w-full"
+                  />
+                </UFormField>
+                <UButton
+                  icon="i-lucide-trash-2"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  :title="$t('quickActions.deletePageTitle')"
+                  :aria-label="$t('quickActions.deletePage')"
+                  @click="askRemovePage(selectedPageIndex)"
+                />
               </div>
             </template>
 
-            <div class="space-y-3">
+            <div v-if="selectedAction" class="space-y-3">
+              <div>
+                <h3 class="truncate text-sm font-semibold">
+                  {{ $t('quickActions.cellLabel', {
+                    key: selectedHotkey ? LEFT_HAND_HOTKEY_LABELS[selectedHotkey] : '',
+                  }) }}
+                </h3>
+                <p class="mt-0.5 text-xs text-(--ui-text-muted)">
+                  {{ $t('quickActions.cellHint') }}
+                </p>
+              </div>
+
               <UFormField>
                 <template #label>
                   <FieldLabel :label="$t('quickActions.nameLabel')" />
@@ -287,30 +388,28 @@ watch(actions, clampSelection, { immediate: true })
                 <template #label>
                   <FieldLabel :label="$t('quickActions.actionLabel')" />
                 </template>
-                <UButton
-                  color="neutral"
-                  variant="subtle"
-                  class="h-9 w-full justify-start overflow-hidden font-mono text-xs"
-                  :icon="selectedAction.action ? undefined : 'i-lucide-plus'"
-                  @click="selectedIndex !== null && openPicker(selectedIndex, selectedAction.action)"
-                >
-                  <span class="truncate">
-                    {{ selectedAction.action || $t('quickActions.actionPh') }}
-                  </span>
-                </UButton>
+                <div class="flex gap-2">
+                  <UButton
+                    color="neutral"
+                    variant="subtle"
+                    class="h-9 min-w-0 flex-1 justify-start overflow-hidden font-mono text-xs"
+                    :icon="selectedAction.action ? undefined : 'i-lucide-plus'"
+                    @click="selectedIndex !== null && openPicker(selectedIndex, selectedAction.action)"
+                  >
+                    <span class="truncate">
+                      {{ selectedAction.action || $t('quickActions.actionPh') }}
+                    </span>
+                  </UButton>
+                  <UButton
+                    icon="i-lucide-eraser"
+                    variant="ghost"
+                    color="neutral"
+                    square
+                    :aria-label="$t('quickActions.clearAction')"
+                    @click="selectedIndex !== null && clearAction(selectedIndex)"
+                  />
+                </div>
               </UFormField>
-
-              <div class="flex justify-end gap-1 border-t border-(--ui-border-muted) pt-3">
-                <UButton
-                  icon="i-lucide-eraser"
-                  variant="ghost"
-                  color="neutral"
-                  size="sm"
-                  square
-                  :aria-label="$t('quickActions.clearAction')"
-                  @click="selectedIndex !== null && clearAction(selectedIndex)"
-                />
-              </div>
             </div>
           </UCard>
         </div>
@@ -325,5 +424,26 @@ watch(actions, clampSelection, { immediate: true })
       @apply="onPickerApply"
       @cancel="onPickerCancel"
     />
+
+    <UModal v-model:open="confirmDeletePageOpen" :title="$t('quickActions.confirmDeletePageTitle')">
+      <template #body>
+        <p class="text-sm">{{ $t('quickActions.confirmDeletePageBody') }}</p>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton color="neutral" variant="ghost" @click="cancelRemovePage">
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton
+            ref="deletePageConfirm"
+            color="error"
+            icon="i-lucide-trash-2"
+            @click="confirmRemovePage"
+          >
+            {{ $t('common.delete') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

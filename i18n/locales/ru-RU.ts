@@ -62,7 +62,7 @@ export default {
     commands: 'Команды',
     settings: 'Настройки',
     quickActions: 'Быстрые действия',
-    emoji: 'Emoji',
+    emoji: 'Emoji и символы',
   },
   home: {
     title: 'Главная',
@@ -424,6 +424,9 @@ export default {
       'Пока нет быстрых действий. Добавьте первое, чтобы оно появилось в меню.',
     addBtn: 'Добавить действие',
     addPage: 'Добавить страницу',
+    deletePage: 'Удалить страницу',
+    deletePageTitle: 'Удаление страницы',
+    pageLabel: 'Название страницы',
     defaultName: 'Новое действие',
     nameLabel: 'Название',
     namePh: 'Например: Следующий трек',
@@ -440,18 +443,21 @@ export default {
     cellLabel: 'Клавиша {key}',
     cellHint:
       'Перемещение действия меняет клавишу, которая запускает его в меню.',
+    confirmDeletePageTitle: 'Удалить страницу?',
+    confirmDeletePageBody:
+      'Страница будет удалена вместе со всеми назначенными ячейками.',
   },
   emoji: {
-    title: 'Emoji',
+    title: 'Emoji и символы',
     subtitle:
-      'Настройте меню из 15 ячеек, которое открывается действием sys:showEmojiMenu.',
+      'Настройте меню из 15 ячеек, которое открывается действием sys:showEmojiMenu. В каждую ячейку можно вставить эмоджи, UTF-символ, букву или короткую фразу.',
     addPage: 'Добавить страницу',
     deletePage: 'Удалить страницу',
     deletePageTitle: 'Удаление страницы',
     pageLabel: 'Название страницы',
-    pageName: 'Emoji {n}',
+    pageName: 'Страница {n}',
     cellLabel: 'Ячейка {key}',
-    customPlaceholder: 'Вставьте эмоджи или текст',
+    customPlaceholder: 'Эмоджи, символ или любой текст',
     clearCell: 'Очистить ячейку',
     cellTooLongTitle: 'Текст слишком длинный',
     cellTooLongBody: 'Максимум {max} символов в ячейке.',
@@ -774,7 +780,7 @@ export default {
     switchLayout: 'Переключить раскладку на {n}',
     taskEntry: 'Активировать запись панели задач {n}',
     showQuickMenu: 'Показать быстрое меню действий',
-    showEmojiMenu: 'Показать окно выбора emoji',
+    showEmojiMenu: 'Показать меню emoji и символов',
     walkThroughWindowsAlternative:
       'Переключение между окнами: альтернативный режим',
     walkThroughWindowsCurrentApp:

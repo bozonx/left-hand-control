@@ -85,7 +85,7 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
   {
     id: 'showEmojiMenu',
     nameKey: 'systemActions.showEmojiMenu',
-    hint: 'App: Show Emoji menu at screen center',
+    hint: 'App: Show Emoji & Symbols menu at screen center',
     platforms: ['linux-kde'],
   },
   {

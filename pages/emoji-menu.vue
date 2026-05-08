@@ -36,6 +36,14 @@ const {
     cleanup,
 } = useMenuPage(pages)
 
+function cellContentClass(value: string | undefined): string {
+    if (!value) return 'text-3xl leading-none'
+    const len = [...value].length
+    if (len <= 2) return 'text-3xl leading-none'
+    if (len <= 6) return 'text-base leading-snug'
+    return 'text-xs leading-snug break-all'
+}
+
 let unlistenShow: (() => void) | null = null
 
 async function closeMenu() {
@@ -137,9 +145,10 @@ onBeforeUnmount(() => {
                                 class="font-mono text-xs uppercase text-(--ui-text-muted)"
                                 >{{ EMOJI_HOTKEY_LABELS[key] }}</span
                             >
-                            <span class="text-3xl leading-none">{{
-                                emojiPage.cells[key] || ' '
-                            }}</span>
+                            <span
+                                class="overflow-hidden text-center"
+                                :class="cellContentClass(emojiPage.cells[key])"
+                            >{{ emojiPage.cells[key] || ' ' }}</span>
                         </button>
                     </div>
                 </section>

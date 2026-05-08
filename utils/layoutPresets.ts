@@ -13,7 +13,9 @@ import {
   type Macro,
   type MacroStep,
   type QuickAction,
+  type QuickActionPage,
   EMOJI_HOTKEYS,
+  LEFT_HAND_HOTKEYS,
   createDefaultEmojiPage,
 } from '~/types/config'
 
@@ -69,6 +71,10 @@ interface LayoutYaml {
     name?: string
     action?: string
     icon?: string
+  }>
+  quickActionPages?: Array<{
+    id?: string
+    name?: string
   }>
   emojiPages?: Array<{
     id?: string
@@ -197,6 +203,20 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     })
   }
 
+  const quickActionPageCount = Math.max(
+    1,
+    Math.ceil(quickActions.length / LEFT_HAND_HOTKEYS.length),
+    doc.quickActionPages?.length ?? 0,
+  )
+  const quickActionPages: QuickActionPage[] = []
+  for (let index = 0; index < quickActionPageCount; index += 1) {
+    const page = doc.quickActionPages?.[index]
+    quickActionPages.push({
+      id: page?.id?.trim() || genId('qap_'),
+      name: page?.name?.trim() || `Page ${index + 1}`,
+    })
+  }
+
   const emojiKeySet = new Set<string>(EMOJI_HOTKEYS)
   const emojiPages: EmojiPage[] = []
   for (const page of doc.emojiPages ?? []) {
@@ -223,6 +243,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     macros,
     commands,
     quickActions,
+    quickActionPages,
     emojiPages: emojiPages.length > 0 ? emojiPages : [createDefaultEmojiPage()],
   }
 }
@@ -296,6 +317,10 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       action: action.action,
       ...(action.icon ? { icon: action.icon } : {}),
     })),
+    quickActionPages: (preset.quickActionPages ?? []).map((page) => ({
+      id: page.id,
+      name: page.name,
+    })),
     emojiPages: (preset.emojiPages ?? []).map((page) => ({
       id: page.id,
       name: page.name,
@@ -318,6 +343,7 @@ export function emptyLayoutPreset(): LayoutPreset {
     macros: [],
     commands: [],
     quickActions: [],
+    quickActionPages: [],
     emojiPages: [],
   }
 }
@@ -334,6 +360,9 @@ export function extractPresetFromConfig(config: AppConfig): LayoutPreset {
     commands: JSON.parse(JSON.stringify(config.commands)),
     quickActions: config.quickActions
       ? JSON.parse(JSON.stringify(config.quickActions))
+      : [],
+    quickActionPages: config.quickActionPages
+      ? JSON.parse(JSON.stringify(config.quickActionPages))
       : [],
     emojiPages: config.emojiPages
       ? JSON.parse(JSON.stringify(config.emojiPages))
@@ -357,6 +386,7 @@ export function applyPresetToConfig(
     macros: JSON.parse(JSON.stringify(preset.macros)),
     commands: JSON.parse(JSON.stringify(preset.commands)),
     quickActions: JSON.parse(JSON.stringify(preset.quickActions)),
+    quickActionPages: JSON.parse(JSON.stringify(preset.quickActionPages ?? [])),
     emojiPages: JSON.parse(
       JSON.stringify(preset.emojiPages ?? [createDefaultEmojiPage()]),
     ),
@@ -380,6 +410,7 @@ export function layoutSnapshotOf(config: AppConfig): string {
     macros: config.macros,
     commands: config.commands,
     quickActions: config.quickActions,
+    quickActionPages: config.quickActionPages,
     emojiPages: config.emojiPages,
   })
 }

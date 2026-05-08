@@ -224,6 +224,11 @@ export interface QuickAction {
   icon?: string
 }
 
+export interface QuickActionPage {
+  id: string
+  name: string
+}
+
 export const LEFT_HAND_HOTKEYS = [
   'KeyQ',
   'KeyW',
@@ -325,6 +330,7 @@ export interface LayoutPreset {
   macros: Macro[]
   commands: Command[]
   quickActions: QuickAction[]
+  quickActionPages?: QuickActionPage[]
   emojiPages?: EmojiPage[]
 }
 
@@ -341,6 +347,8 @@ export interface AppConfig {
   commands: Command[]
   // User-defined quick actions available in the Quick Menu.
   quickActions: QuickAction[]
+  // User-defined quick action page names.
+  quickActionPages: QuickActionPage[]
   // User-defined emoji pages available in the Emoji Menu.
   emojiPages: EmojiPage[]
   settings: AppSettings
@@ -427,6 +435,7 @@ export function createDefaultConfig(): AppConfig {
     macros: [],
     commands: [],
     quickActions: [],
+    quickActionPages: [{ id: 'quick_default', name: 'Page 1' }],
     emojiPages: [createDefaultEmojiPage()],
     settings: {
       launchOnStartup: false,

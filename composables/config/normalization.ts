@@ -3,9 +3,11 @@ import type {
   EmojiHotkey,
   EmojiPage,
   PersistedConfig,
+  QuickActionPage,
 } from '~/types/config'
 import {
   EMOJI_HOTKEYS,
+  LEFT_HAND_HOTKEYS,
   createDefaultConfig,
   createDefaultPersistedConfig,
 } from '~/types/config'
@@ -165,6 +167,38 @@ function normalizeEmojiPages(raw: unknown, base: EmojiPage[]): EmojiPage[] {
   return pages.length > 0 ? pages : JSON.parse(JSON.stringify(base))
 }
 
+function normalizeQuickActionPages(
+  raw: unknown,
+  quickActionCount: number,
+  base: QuickActionPage[],
+): QuickActionPage[] {
+  const pageCount = Math.max(
+    1,
+    Math.ceil(quickActionCount / LEFT_HAND_HOTKEYS.length),
+  )
+  const source = Array.isArray(raw) ? raw : base
+  const pages: QuickActionPage[] = []
+  for (let index = 0; index < Math.max(pageCount, source.length); index += 1) {
+    const page = source[index]
+    if (page && typeof page === 'object') {
+      const candidate = page as Record<string, unknown>
+      pages.push({
+        id:
+          typeof candidate.id === 'string' && candidate.id.trim()
+            ? candidate.id.trim()
+            : `quick_${index + 1}`,
+        name:
+          typeof candidate.name === 'string' && candidate.name.trim()
+            ? candidate.name.trim()
+            : `Page ${index + 1}`,
+      })
+      continue
+    }
+    pages.push({ id: `quick_${index + 1}`, name: `Page ${index + 1}` })
+  }
+  return pages
+}
+
 export function normalizeConfig(raw: unknown): AppConfig {
   const base = createDefaultConfig()
   if (!raw || typeof raw !== 'object') return base
@@ -209,6 +243,11 @@ export function normalizeConfig(raw: unknown): AppConfig {
     macros: Array.isArray(r.macros) ? r.macros : [],
     commands: Array.isArray(r.commands) ? r.commands : [],
     quickActions: Array.isArray(r.quickActions) ? r.quickActions : [],
+    quickActionPages: normalizeQuickActionPages(
+      r.quickActionPages,
+      Array.isArray(r.quickActions) ? r.quickActions.length : 0,
+      base.quickActionPages,
+    ),
     emojiPages: normalizeEmojiPages(r.emojiPages, base.emojiPages),
     settings: normalizeSettings(base.settings, r.settings),
   }
