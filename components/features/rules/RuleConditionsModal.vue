@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { Ref } from 'vue'
 import type { LayerRule } from '~/types/config'
 import ConditionsForm, { type ConditionsValue } from '~/components/features/shared/ConditionsForm.vue'
 import AppTooltip from '~/components/shared/AppTooltip.vue'
@@ -33,17 +32,20 @@ watch(isOpen, (open) => {
   draftAppsBlacklist.value = [...(props.rule.conditionAppsBlacklist ?? [])]
 })
 
-function addToList(list: Ref<string[]>) {
-  list.value = [...list.value, '']
+function addApp(isBlacklist: boolean) {
+  if (isBlacklist) draftAppsBlacklist.value = [...draftAppsBlacklist.value, '']
+  else draftAppsWhitelist.value = [...draftAppsWhitelist.value, '']
 }
 
-function removeFromList(list: Ref<string[]>, index: number) {
+function removeApp(isBlacklist: boolean, index: number) {
+  const list = isBlacklist ? draftAppsBlacklist : draftAppsWhitelist
   const next = [...list.value]
   next.splice(index, 1)
   list.value = next
 }
 
-function moveInList(list: Ref<string[]>, index: number, direction: -1 | 1) {
+function moveApp(isBlacklist: boolean, index: number, direction: -1 | 1) {
+  const list = isBlacklist ? draftAppsBlacklist : draftAppsWhitelist
   const nextIndex = index + direction
   if (nextIndex < 0 || nextIndex >= list.value.length) return
   const next = [...list.value]
@@ -52,7 +54,8 @@ function moveInList(list: Ref<string[]>, index: number, direction: -1 | 1) {
   list.value = next
 }
 
-function updateInList(list: Ref<string[]>, index: number, value: string) {
+function updateApp(isBlacklist: boolean, index: number, value: string) {
+  const list = isBlacklist ? draftAppsBlacklist : draftAppsWhitelist
   const next = [...list.value]
   next[index] = value
   list.value = next
@@ -90,7 +93,7 @@ function apply() {
                 <UIcon name="i-lucide-info" class="h-4 w-4 cursor-help text-(--ui-text-muted)" />
               </AppTooltip>
             </div>
-            <UButton type="button" icon="i-lucide-plus" size="sm" @click="addToList(draftAppsWhitelist)">
+            <UButton type="button" icon="i-lucide-plus" size="sm" @click="addApp(false)">
               {{ $t('common.add') }}
             </UButton>
           </div>
@@ -105,7 +108,7 @@ function apply() {
                 :model-value="item"
                 class="flex-1"
                 :placeholder="$t('rules.appsPlaceholder')"
-                @update:model-value="updateInList(draftAppsWhitelist, index, String($event))"
+                @update:model-value="updateApp(false, index, String($event))"
               />
               <div class="flex items-center gap-1">
                 <AppTooltip :text="$t('common.moveUp')">
@@ -116,7 +119,7 @@ function apply() {
                     icon="i-lucide-arrow-up"
                     :disabled="index === 0"
                     :aria-label="$t('common.moveUp')"
-                    @click="moveInList(draftAppsWhitelist, index, -1)"
+                    @click="moveApp(false, index, -1)"
                   />
                 </AppTooltip>
                 <AppTooltip :text="$t('common.moveDown')">
@@ -127,7 +130,7 @@ function apply() {
                     icon="i-lucide-arrow-down"
                     :disabled="index === draftAppsWhitelist.length - 1"
                     :aria-label="$t('common.moveDown')"
-                    @click="moveInList(draftAppsWhitelist, index, 1)"
+                    @click="moveApp(false, index, 1)"
                   />
                 </AppTooltip>
                 <UButton
@@ -136,7 +139,7 @@ function apply() {
                   variant="ghost"
                   icon="i-lucide-trash-2"
                   :aria-label="$t('common.delete')"
-                  @click="removeFromList(draftAppsWhitelist, index)"
+                  @click="removeApp(false, index)"
                 />
               </div>
             </div>
@@ -151,7 +154,7 @@ function apply() {
                 <UIcon name="i-lucide-info" class="h-4 w-4 cursor-help text-(--ui-text-muted)" />
               </AppTooltip>
             </div>
-            <UButton type="button" icon="i-lucide-plus" size="sm" @click="addToList(draftAppsBlacklist)">
+            <UButton type="button" icon="i-lucide-plus" size="sm" @click="addApp(true)">
               {{ $t('common.add') }}
             </UButton>
           </div>
@@ -166,7 +169,7 @@ function apply() {
                 :model-value="item"
                 class="flex-1"
                 :placeholder="$t('rules.appsPlaceholder')"
-                @update:model-value="updateInList(draftAppsBlacklist, index, String($event))"
+                @update:model-value="updateApp(true, index, String($event))"
               />
               <div class="flex items-center gap-1">
                 <AppTooltip :text="$t('common.moveUp')">
@@ -177,7 +180,7 @@ function apply() {
                     icon="i-lucide-arrow-up"
                     :disabled="index === 0"
                     :aria-label="$t('common.moveUp')"
-                    @click="moveInList(draftAppsBlacklist, index, -1)"
+                    @click="moveApp(true, index, -1)"
                   />
                 </AppTooltip>
                 <AppTooltip :text="$t('common.moveDown')">
@@ -188,7 +191,7 @@ function apply() {
                     icon="i-lucide-arrow-down"
                     :disabled="index === draftAppsBlacklist.length - 1"
                     :aria-label="$t('common.moveDown')"
-                    @click="moveInList(draftAppsBlacklist, index, 1)"
+                    @click="moveApp(true, index, 1)"
                   />
                 </AppTooltip>
                 <UButton
@@ -197,7 +200,7 @@ function apply() {
                   variant="ghost"
                   icon="i-lucide-trash-2"
                   :aria-label="$t('common.delete')"
-                  @click="removeFromList(draftAppsBlacklist, index)"
+                  @click="removeApp(true, index)"
                 />
               </div>
             </div>
