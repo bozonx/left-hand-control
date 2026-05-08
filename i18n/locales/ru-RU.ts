@@ -252,6 +252,8 @@ export default {
     blacklistPrefix: 'Неактивно, если',
     conditionsNone: '— любое —',
     conditionsBtn: 'Условия…',
+    editConditions: 'Изменить условия',
+    clearConditions: 'Очистить условия',
     gameModeLabel: 'Игровой режим',
     gameModeHint:
       'Правило будет работать только когда игровой режим находится в выбранном состоянии.',

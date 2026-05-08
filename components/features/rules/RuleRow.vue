@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { LayerRule } from '~/types/config'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
@@ -32,6 +32,24 @@ const emit = defineEmits<{
 }>()
 
 const isConditionsOpen = ref(false)
+
+const hasConditions = computed(() => Boolean(
+  (rule.value.conditionGameMode && rule.value.conditionGameMode !== 'ignore')
+  || (rule.value.conditionLayouts?.length ?? 0) > 0
+  || (rule.value.conditionAppsWhitelist?.length ?? 0) > 0
+  || (rule.value.conditionAppsBlacklist?.length ?? 0) > 0
+))
+
+function clearConditions() {
+  rule.value.conditionGameMode = undefined
+  rule.value.conditionLayouts = undefined
+  rule.value.conditionAppsWhitelist = undefined
+  rule.value.conditionAppsBlacklist = undefined
+}
+
+function appBadgeLabel(value: string) {
+  return value.trim().slice(0, 8)
+}
 
 function setRuleKey(value: string | null) {
   rule.value.key = value ?? ''
@@ -86,32 +104,30 @@ function updateHoldAction(value: string | null) {
               hint-visible-on="group-hover-rule"
             />
           </template>
-          <UButton
-            v-if="!((rule.conditionGameMode && rule.conditionGameMode !== 'ignore') || rule.conditionLayouts?.length || rule.conditionAppsWhitelist?.length || rule.conditionAppsBlacklist?.length)"
-            color="neutral"
-            variant="ghost"
-            class="w-full h-8 px-2.5 justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50 font-normal"
-            @click="isConditionsOpen = true"
-          >
-            <span class="truncate">{{ $t('common.notSet') }}</span>
-          </UButton>
-          <UButton
-            v-else
-            color="neutral"
-            variant="soft"
-            class="w-full justify-between"
-            trailing-icon="i-lucide-chevron-down"
-            @click="isConditionsOpen = true"
-          >
-            <span class="truncate">{{ $t('rules.conditionsBtn') }}</span>
-          </UButton>
+          <div class="flex gap-2">
+            <UButton
+              color="neutral"
+              :variant="hasConditions ? 'soft' : 'ghost'"
+              class="h-8 min-w-0 flex-1 justify-start font-normal"
+              :class="hasConditions ? '' : 'border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50'"
+              @click="isConditionsOpen = true"
+            >
+              <span class="truncate">{{ hasConditions ? $t('rules.editConditions') : $t('common.notSet') }}</span>
+            </UButton>
+            <UButton
+              v-if="hasConditions"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-x"
+              size="sm"
+              :aria-label="$t('rules.clearConditions')"
+              @click="clearConditions"
+            >
+              {{ $t('common.clear') }}
+            </UButton>
+          </div>
           <div
-            v-if="
-              (rule.conditionGameMode && rule.conditionGameMode !== 'ignore')
-                || rule.conditionLayouts?.length
-                || rule.conditionAppsWhitelist?.length
-                || rule.conditionAppsBlacklist?.length
-            "
+            v-if="hasConditions"
             class="flex flex-wrap gap-1 mt-1.5"
           >
             <UBadge
@@ -120,31 +136,35 @@ function updateHoldAction(value: string | null) {
               variant="subtle"
               color="primary"
             >
+              <UIcon name="i-lucide-gamepad-2" class="mr-1 h-3 w-3" />
               {{ rule.conditionGameMode === 'on' ? $t('rules.gameModeOn') : $t('rules.gameModeOff') }}
             </UBadge>
             <UBadge
-              v-if="rule.conditionLayouts?.length"
+              v-for="layoutCode in rule.conditionLayouts"
+              :key="`layout-${layoutCode}`"
               size="xs"
               variant="subtle"
               color="neutral"
             >
-              {{ rule.conditionLayouts.length }} {{ $t('rules.layoutsLabel') }}
+              {{ layoutCode }}
             </UBadge>
             <UBadge
-              v-if="rule.conditionAppsWhitelist?.length"
+              v-for="(app, index) in rule.conditionAppsWhitelist?.filter((value) => value.trim())"
+              :key="`whitelist-${index}-${app}`"
               size="xs"
               variant="subtle"
               color="success"
             >
-              {{ $t('rules.appsWhitelistCount', { count: rule.conditionAppsWhitelist.length }) }}
+              {{ appBadgeLabel(app) }}
             </UBadge>
             <UBadge
-              v-if="rule.conditionAppsBlacklist?.length"
+              v-for="(app, index) in rule.conditionAppsBlacklist?.filter((value) => value.trim())"
+              :key="`blacklist-${index}-${app}`"
               size="xs"
               variant="subtle"
               color="error"
             >
-              {{ $t('rules.appsBlacklistCount', { count: rule.conditionAppsBlacklist.length }) }}
+              {{ appBadgeLabel(app) }}
             </UBadge>
           </div>
         </UFormField>

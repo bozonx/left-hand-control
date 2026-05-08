@@ -247,6 +247,8 @@ export default {
     blacklistPrefix: 'Inactive when',
     conditionsNone: '— any —',
     conditionsBtn: 'Conditions…',
+    editConditions: 'Edit conditions',
+    clearConditions: 'Clear conditions',
     gameModeLabel: 'Game Mode',
     gameModeHint: 'Run this rule only when game mode is in the selected state.',
     gameModeIgnore: 'Ignore',
