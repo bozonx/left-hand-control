@@ -264,14 +264,14 @@ export default {
     appsHint:
       'Text fragments (case-insensitive) searched in the focused window title or app id. Empty list means "do not check".',
     appsPlaceholder: 'e.g. firefox, Steam, .exe',
-    appsWhitelistLabel: 'Allowed applications',
+    appsWhitelistLabel: 'Triggers for apps',
     appsWhitelistHint:
       'Rule fires only when the focused window title or app id contains at least one listed text fragment. Leave empty to ignore.',
-    appsBlacklistLabel: 'Blocked applications',
+    appsBlacklistLabel: 'Skipped for apps',
     appsBlacklistHint:
       'Rule is blocked when the focused window title or app id contains at least one listed text fragment. Takes precedence over allowed applications.',
-    appsWhitelistCount: '{count} allowed',
-    appsBlacklistCount: '{count} blocked',
+    appsWhitelistCount: '{count} included',
+    appsBlacklistCount: '{count} excluded',
     enableRule: 'Enable rule',
     disableRule: 'Disable rule',
     keyRequired: 'Pick a trigger key.',

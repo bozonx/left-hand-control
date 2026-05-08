@@ -270,14 +270,14 @@ export default {
     appsHint:
       'Части строки (регистр не важен), которые ищутся в заголовке активного окна и id приложения. Пустой список — не проверять.',
     appsPlaceholder: 'например: firefox, Steam, .exe',
-    appsWhitelistLabel: 'Разрешённые приложения',
+    appsWhitelistLabel: 'Срабатывает для приложений',
     appsWhitelistHint:
       'Правило срабатывает, только когда заголовок активного окна или id приложения содержит хотя бы одну указанную часть строки. Пусто — не проверять.',
-    appsBlacklistLabel: 'Заблокированные приложения',
+    appsBlacklistLabel: 'Не срабатывает для приложений',
     appsBlacklistHint:
       'Правило блокируется, если заголовок активного окна или id приложения содержит хотя бы одну указанную часть строки. Имеет приоритет над разрешёнными приложениями.',
-    appsWhitelistCount: '{count} разрешено',
-    appsBlacklistCount: '{count} запрещено',
+    appsWhitelistCount: '{count} включено',
+    appsBlacklistCount: '{count} исключено',
     enableRule: 'Включить правило',
     disableRule: 'Выключить правило',
     keyRequired: 'Выберите клавишу-триггер.',
