@@ -3,7 +3,6 @@ import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldLabel from '~/components/FieldLabel.vue'
 import type { GameModeProcessMatcher } from '~/types/config'
 
-const { t } = useI18n()
 const props = defineProps<{
     useGamemoded: boolean
     useFullscreen: boolean
@@ -17,14 +16,6 @@ const emit = defineEmits<{
 }>()
 
 const advancedOpen = ref(false)
-
-const matchModeItems = computed(() => [
-    {
-        label: t('settings.gameModeMatchSubstring'),
-        value: 'substring' as const,
-    },
-    { label: t('settings.gameModeMatchExact'), value: 'exact' as const },
-])
 
 const whitelistMatchers = computed(() =>
     props.processMatchers.filter((item) => !item.isBlacklist),
@@ -55,7 +46,6 @@ function addMatcher(isBlacklist: boolean) {
         {
             id: `process-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             name: '',
-            matchMode: 'substring',
             onlyActiveWindow: false,
             isBlacklist,
         },
@@ -116,36 +106,36 @@ function moveMatcher(id: string, isBlacklist: boolean, direction: -1 | 1) {
         </template>
 
         <div class="space-y-4">
-            <div class="grid gap-4 sm:grid-cols-2">
-                <UFormField>
-                    <template #label>
-                        <FieldLabel
-                            :label="$t('settings.gameModeUseGamemoded')"
-                            :hint="$t('settings.gameModeUseGamemodedHint')"
-                        />
-                    </template>
-                    <UCheckbox
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <USwitch
                         :model-value="useGamemoded"
                         @update:model-value="
                             $emit('update:useGamemoded', $event as boolean)
                         "
                     />
-                </UFormField>
-
-                <UFormField>
-                    <template #label>
+                    <div>
                         <FieldLabel
-                            :label="$t('settings.gameModeUseFullscreen')"
-                            :hint="$t('settings.gameModeUseFullscreenHint')"
+                            :label="$t('settings.gameModeUseGamemoded')"
+                            :hint="$t('settings.gameModeUseGamemodedHint')"
                         />
-                    </template>
-                    <UCheckbox
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <USwitch
                         :model-value="useFullscreen"
                         @update:model-value="
                             $emit('update:useFullscreen', $event as boolean)
                         "
                     />
-                </UFormField>
+                    <div>
+                        <FieldLabel
+                            :label="$t('settings.gameModeUseFullscreen')"
+                            :hint="$t('settings.gameModeUseFullscreenHint')"
+                        />
+                    </div>
+                </div>
             </div>
 
             <UButton
@@ -203,7 +193,7 @@ function moveMatcher(id: string, isBlacklist: boolean, direction: -1 | 1) {
                             <div
                                 v-for="(item, index) in whitelistMatchers"
                                 :key="item.id"
-                                class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_12rem_13rem_auto] lg:items-center"
+                                class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_13rem_auto] lg:items-center"
                             >
                                 <div class="flex min-w-0 items-center gap-2">
                                     <UInput
@@ -236,17 +226,6 @@ function moveMatcher(id: string, isBlacklist: boolean, direction: -1 | 1) {
                                         />
                                     </AppTooltip>
                                 </div>
-                                <USelectMenu
-                                    :model-value="item.matchMode"
-                                    :items="matchModeItems"
-                                    value-key="value"
-                                    @update:model-value="
-                                        updateMatcher(item.id, {
-                                            matchMode:
-                                                $event as GameModeProcessMatcher['matchMode'],
-                                        })
-                                    "
-                                />
                                 <div class="flex items-center gap-2">
                                     <UCheckbox
                                         :model-value="item.onlyActiveWindow"
@@ -346,7 +325,7 @@ function moveMatcher(id: string, isBlacklist: boolean, direction: -1 | 1) {
                             <div
                                 v-for="(item, index) in blacklistMatchers"
                                 :key="item.id"
-                                class="grid gap-2 rounded-lg border border-(--ui-border) bg-(--ui-bg-muted)/50 p-3 lg:grid-cols-[minmax(0,1fr)_12rem_13rem_auto] lg:items-center"
+                                class="grid gap-2 rounded-lg border border-(--ui-border) bg-(--ui-bg-muted)/50 p-3 lg:grid-cols-[minmax(0,1fr)_13rem_auto] lg:items-center"
                             >
                                 <div class="flex min-w-0 items-center gap-2">
                                     <UInput
@@ -379,17 +358,6 @@ function moveMatcher(id: string, isBlacklist: boolean, direction: -1 | 1) {
                                         />
                                     </AppTooltip>
                                 </div>
-                                <USelectMenu
-                                    :model-value="item.matchMode"
-                                    :items="matchModeItems"
-                                    value-key="value"
-                                    @update:model-value="
-                                        updateMatcher(item.id, {
-                                            matchMode:
-                                                $event as GameModeProcessMatcher['matchMode'],
-                                        })
-                                    "
-                                />
                                 <div class="flex items-center gap-2">
                                     <UCheckbox
                                         :model-value="item.onlyActiveWindow"

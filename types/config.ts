@@ -156,7 +156,6 @@ export interface CommandTrustEntry {
 export interface GameModeProcessMatcher {
   id: string
   name: string
-  matchMode: 'exact' | 'substring'
   onlyActiveWindow: boolean
   isBlacklist?: boolean
 }

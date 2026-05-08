@@ -173,19 +173,9 @@ pub struct GameModeProcessMatcher {
     #[serde(default)]
     pub name: String,
     #[serde(default)]
-    pub match_mode: GameModeProcessMatchMode,
-    #[serde(default)]
     pub only_active_window: bool,
     #[serde(default)]
     pub is_blacklist: bool,
-}
-
-#[derive(Debug, Deserialize, Clone, Default, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub enum GameModeProcessMatchMode {
-    Exact,
-    #[default]
-    Substring,
 }
 
 /// Three-valued condition on game-mode state for a rule.

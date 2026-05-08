@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::mapper::config::{GameModeProcessMatchMode, GameModeProcessMatcher};
+use crate::mapper::config::GameModeProcessMatcher;
 use crate::platform::linux::{Desktop, Session, SessionType};
 
 pub static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
@@ -69,10 +69,7 @@ pub fn active_process_match(matchers: &[GameModeProcessMatcher]) -> Option<Strin
             if needle.is_empty() {
                 continue;
             }
-            let matched = match matcher.match_mode {
-                GameModeProcessMatchMode::Exact => names.contains(&needle),
-                GameModeProcessMatchMode::Substring => names.iter().any(|n| n.contains(&needle)),
-            };
+            let matched = names.iter().any(|n| n.contains(&needle));
             if matched {
                 return Some(name.to_string());
             }
@@ -137,10 +134,7 @@ fn process_name_matches(matcher: &GameModeProcessMatcher, candidate: &str) -> bo
     if needle.is_empty() || haystack.is_empty() {
         return false;
     }
-    match matcher.match_mode {
-        GameModeProcessMatchMode::Exact => haystack == needle,
-        GameModeProcessMatchMode::Substring => haystack.contains(&needle),
-    }
+    haystack.contains(&needle)
 }
 
 pub fn is_fullscreen_active() -> bool {

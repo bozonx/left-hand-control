@@ -64,10 +64,6 @@ function normalizeSettings(
                 ? item.id
                 : `process-${index}`,
             name: typeof item.name === 'string' ? item.name.trim() : '',
-            matchMode:
-              item.matchMode === 'exact'
-                ? ('exact' as const)
-                : ('substring' as const),
             onlyActiveWindow: item.onlyActiveWindow !== false,
             isBlacklist: item.isBlacklist === true,
           }))

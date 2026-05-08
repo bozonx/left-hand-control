@@ -245,7 +245,6 @@ mod tests {
                             {
                                 "id": "steam",
                                 "name": "steam",
-                                "matchMode": "exact",
                                 "onlyActiveWindow": false
                             }
                         ]

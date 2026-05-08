@@ -262,14 +262,14 @@ export default {
       'No keyboard layouts detected. Layout detection is available only in the desktop app.',
     appsLabel: 'Active application',
     appsHint:
-      'Substrings (case-insensitive) matched against the focused window title or app id. Empty list means "do not check".',
+      'Text fragments (case-insensitive) searched in the focused window title or app id. Empty list means "do not check".',
     appsPlaceholder: 'e.g. firefox, Steam, .exe',
     appsWhitelistLabel: 'Allowed applications',
     appsWhitelistHint:
-      'Rule fires only when the focused window matches at least one substring. Leave empty to ignore.',
+      'Rule fires only when the focused window title or app id contains at least one listed text fragment. Leave empty to ignore.',
     appsBlacklistLabel: 'Blocked applications',
     appsBlacklistHint:
-      'Rule is blocked when the focused window matches at least one substring. Takes precedence over allowed applications.',
+      'Rule is blocked when the focused window title or app id contains at least one listed text fragment. Takes precedence over allowed applications.',
     appsWhitelistCount: '{count} allowed',
     appsBlacklistCount: '{count} blocked',
     enableRule: 'Enable rule',
@@ -678,16 +678,14 @@ export default {
     gameModeProcessPlaceholder: 'Example: steam_app, cs2, eldenring.exe',
     gameModeAddProcess: 'Add',
     gameModeRemoveProcess: 'Remove process',
-    gameModeMatchSubstring: 'Substring',
-    gameModeMatchExact: 'Exact match',
     gameModeOnlyActiveWindow: 'Only active window',
     gameModeOnlyActiveWindowHint:
       'Check only the active window app and title. When off, the rule searches all running processes.',
     gameModeListsTitle: 'Application blacklist and whitelist',
     gameModeListsHint:
-      'The whitelist enables game mode when at least one listed app is running. The blacklist disables game mode when at least one listed app is running, and takes priority over the whitelist, gamemoded, and fullscreen detection. Items inside each list use logical OR.',
+      'The whitelist enables game mode when at least one app has a process name, app id, or window title containing a listed text fragment. The blacklist disables game mode using the same match and takes priority over the whitelist, gamemoded, and fullscreen detection. Items inside each list use logical OR.',
     gameModeProcessNameHint:
-      'Enter a process name, app id, or part of the window title. An empty required field is shown as invalid and ignored by game mode detection.',
+      'Enter part of a process name, app id, or window title. The full name is not required. An empty required field is shown as invalid and ignored by game mode detection.',
     gameModeWhitelistTitle: 'If running ...',
     gameModeBlacklistTitle: 'If not running ...',
     system: {
