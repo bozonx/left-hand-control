@@ -243,8 +243,8 @@ export default {
     autoIncludeLabel: 'Include in auto mode',
     autoIncludeHint:
       'Enabled layouts can be picked automatically. With no conditions, the layout matches everywhere.',
-    whitelistPrefix: 'Allow when',
-    blacklistPrefix: 'Block when',
+    whitelistPrefix: 'Active when',
+    blacklistPrefix: 'Inactive when',
     conditionsNone: '— any —',
     conditionsBtn: 'Conditions…',
     gameModeLabel: 'Game Mode',
@@ -601,11 +601,11 @@ export default {
     renameLayoutAria: 'Rename layout {name}',
     dirtyBadgeTitle: 'The current layout has unsaved changes.',
     whitelist: 'Allowed conditions',
-    whitelistTitle: 'Allowed conditions',
+    whitelistTitle: 'Active when ...',
     whitelistHint:
       'The layout will only activate when all of these conditions are met.',
     blacklist: 'Blocked conditions',
-    blacklistTitle: 'Blocked conditions',
+    blacklistTitle: 'Inactive when ...',
     blacklistHint:
       'The layout will never activate when any of these conditions are met. If only blocked conditions are set, the layout is allowed everywhere else.',
     defaultBadge: 'default',
@@ -686,8 +686,8 @@ export default {
       'The whitelist enables game mode when at least one app has a process name, app id, or window title containing a listed text fragment. The blacklist disables game mode using the same match and takes priority over the whitelist, gamemoded, and fullscreen detection. Items inside each list use logical OR.',
     gameModeProcessNameHint:
       'Enter part of a process name, app id, or window title. The full name is not required. An empty required field is shown as invalid and ignored by game mode detection.',
-    gameModeWhitelistTitle: 'If running ...',
-    gameModeBlacklistTitle: 'If not running ...',
+    gameModeWhitelistTitle: 'Active when running ...',
+    gameModeBlacklistTitle: 'Inactive when running ...',
     system: {
       title: 'System / Troubleshooting',
       waylandNote:
