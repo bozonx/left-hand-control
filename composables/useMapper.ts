@@ -74,7 +74,7 @@ export function useMapper(): MapperState {
     }
     try {
       await flush()
-      const activeConfig = await runtime.computeActiveConfig()
+      const activeConfig = await runtime.computeRuntimeConfig()
       await tauri.invoke('start_mapper', {
         devicePath,
         mouseDevicePath: mouseDevicePath || null,

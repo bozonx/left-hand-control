@@ -2,6 +2,12 @@ import { layoutSnapshotOf, emptyLayoutPreset, applyPresetToConfig } from '~/util
 import type { AppConfig } from '~/types/config'
 import type { MapperStatus } from '~/composables/useMapper'
 import { commandsTrusted } from '~/utils/commandTrust'
+import {
+  analyzeRules,
+  blockingRuleIssues,
+  ruleIssueFallbackMessage,
+  runtimeConfigForMapper,
+} from '~/utils/ruleDiagnostics'
 
 export function useMapperRuntime(
   deps: {
@@ -46,8 +52,18 @@ export function useMapperRuntime(
     return applyPresetToConfig(config.value, preset, activeId ?? undefined)
   }
 
+  async function computeRuntimeConfig(): Promise<AppConfig> {
+    const activeConfig = await computeActiveConfig()
+    const diagnostics = analyzeRules(activeConfig)
+    const blockingIssues = blockingRuleIssues(diagnostics.issues)
+    if (blockingIssues.length > 0) {
+      throw new Error(ruleIssueFallbackMessage(blockingIssues[0]!))
+    }
+    return runtimeConfigForMapper(activeConfig)
+  }
+
   const runtimeSnapshot = async () => {
-    const cfg = await computeActiveConfig()
+    const cfg = await computeRuntimeConfig()
     const settings = config.value.settings
     const activeLayoutId = settings.layoutMode === 'auto'
       ? activeAutoLayoutId?.value
@@ -75,9 +91,13 @@ export function useMapperRuntime(
     defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
     commandsTrusted: commandsTrusted(config.value),
   })
-  void runtimeSnapshot().then((s) => {
-    lastRuntimeSnapshot = s
-  })
+  void runtimeSnapshot()
+    .then((s) => {
+      lastRuntimeSnapshot = s
+    })
+    .catch((error) => {
+      logger.debug('[mapper] initial runtime snapshot skipped', error)
+    })
 
   function initSnapshot() {
     lastRuntimeSnapshot = JSON.stringify({
@@ -92,9 +112,13 @@ export function useMapperRuntime(
       defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
       commandsTrusted: commandsTrusted(config.value),
     })
-    void runtimeSnapshot().then((s) => {
-      lastRuntimeSnapshot = s
-    })
+    void runtimeSnapshot()
+      .then((s) => {
+        lastRuntimeSnapshot = s
+      })
+      .catch((error) => {
+        logger.debug('[mapper] initial runtime snapshot skipped', error)
+      })
   }
 
   function scheduleReload() {
@@ -117,7 +141,7 @@ export function useMapperRuntime(
     try {
       const nextRuntimeSnapshot = await runtimeSnapshot()
       if (nextRuntimeSnapshot === lastRuntimeSnapshot) return
-      const nextConfig = await computeActiveConfig()
+      const nextConfig = await computeRuntimeConfig()
       await deps.invokeUpdateConfig(nextConfig)
       lastRuntimeSnapshot = nextRuntimeSnapshot
     } catch (error) {
@@ -141,6 +165,7 @@ export function useMapperRuntime(
 
   return {
     computeActiveConfig,
+    computeRuntimeConfig,
     runtimeSnapshot,
     initSnapshot,
     scheduleReload,

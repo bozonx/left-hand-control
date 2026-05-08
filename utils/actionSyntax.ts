@@ -150,6 +150,11 @@ function isKeyToken(token: string) {
   return KEY_TOKENS.has(token)
 }
 
+export function isKnownActionKey(action: string | null | undefined): boolean {
+  const raw = action ?? ''
+  return raw.length > 0 && isKeyToken(raw)
+}
+
 export function isSingleKeyAction(action: string | null | undefined): boolean {
   const raw = action ?? ''
   return raw.length > 0 && isKeyToken(raw)
@@ -177,4 +182,12 @@ export function isCanonicalAction(action: string | null | undefined): boolean {
   if (!isKeyToken(main)) return false
   if (!modifiers.every(isModifierToken)) return false
   return true
+}
+
+export function isKeystrokeAction(action: string | null | undefined): boolean {
+  const raw = action ?? ''
+  if (!raw) return true
+  if (parseMacroRef(raw) || parseCommandRef(raw) || parseSystemRef(raw)) return false
+  if (parseTextAction(raw) !== null) return false
+  return isCanonicalAction(raw)
 }

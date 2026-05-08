@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import RuleRow from '~/components/features/rules/RuleRow.vue'
 import LayerEditorModal from '~/components/shared/LayerEditorModal.vue'
+import {
+  analyzeRules,
+  blockingRuleIssues,
+  ruleIssueMessageKey,
+  ruleIssuesById,
+} from '~/utils/ruleDiagnostics'
 const {
   config,
   layerOptions,
@@ -17,6 +23,9 @@ const {
 
 const deleteConfirmOpen = ref(false)
 const pendingDeleteRuleId = ref<string | null>(null)
+const ruleDiagnostics = computed(() => analyzeRules(config.value))
+const issuesByRuleId = computed(() => ruleIssuesById(ruleDiagnostics.value.issues))
+const blockingIssues = computed(() => blockingRuleIssues(ruleDiagnostics.value.issues))
 
 function requestRemoveRule(id: string) {
   const rule = config.value.rules.find((item) => item.id === id)
@@ -57,6 +66,20 @@ function cancelRemoveRule() {
         </div>
       </template>
 
+      <UAlert
+        v-if="ruleDiagnostics.ignoredDraftCount > 0 || blockingIssues.length > 0"
+        class="mb-4"
+        :color="blockingIssues.length > 0 ? 'error' : 'warning'"
+        variant="soft"
+        :icon="blockingIssues.length > 0 ? 'i-lucide-circle-alert' : 'i-lucide-triangle-alert'"
+        :title="blockingIssues.length > 0 ? $t('rules.issuesTitle') : $t('rules.draftsTitle')"
+        :description="
+          blockingIssues.length > 0
+            ? $t(ruleIssueMessageKey(blockingIssues[0]!), { trigger: blockingIssues[0]!.trigger })
+            : $t('rules.draftsDescription', { count: ruleDiagnostics.ignoredDraftCount })
+        "
+      />
+
       <div v-if="config.rules.length === 0" class="py-8 text-center space-y-2">
         <UIcon name="i-lucide-clipboard-list" class="w-8 h-8 text-(--ui-text-muted) mx-auto" />
         <p class="text-sm text-(--ui-text-muted)">
@@ -75,7 +98,7 @@ function cancelRemoveRule() {
           :is-first="index === 0"
           :is-last="index === config.rules.length - 1"
           :is-new="rule.id === newestRuleId"
-          :key-error="!rule.key ? $t('rules.keyRequired') : undefined"
+          :issues="issuesByRuleId[rule.id] ?? []"
           @remove="requestRemoveRule"
           @move-up="moveRule($event, 'up')"
           @move-down="moveRule($event, 'down')"

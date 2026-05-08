@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { LayerRule } from '~/types/config'
+import type { RuleIssue } from '~/utils/ruleDiagnostics'
+import { ruleIssueMessageKey } from '~/utils/ruleDiagnostics'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 import ResettableSelectMenu from '~/components/shared/ResettableSelectMenu.vue'
 import RuleActionField from '~/components/features/rules/RuleActionField.vue'
@@ -11,7 +13,7 @@ defineOptions({
   inheritAttrs: false
 })
 
-defineProps<{
+const props = defineProps<{
   layerOptions: Array<{ label: string, value: string }>
   defaultHoldTimeoutMs: number
   defaultDoubleTapTimeoutMs: number
@@ -19,6 +21,7 @@ defineProps<{
   isLast?: boolean
   isNew?: boolean
   keyError?: string
+  issues?: RuleIssue[]
 }>()
 
 const rule = defineModel<LayerRule>('rule', { required: true })
@@ -39,6 +42,9 @@ const hasConditions = computed(() => Boolean(
   || (rule.value.conditionAppsWhitelist?.length ?? 0) > 0
   || (rule.value.conditionAppsBlacklist?.length ?? 0) > 0
 ))
+
+const hasErrors = computed(() => (props.issues ?? []).some((issue) => issue.severity === 'error'))
+const hasWarnings = computed(() => (props.issues ?? []).some((issue) => issue.severity === 'warning'))
 
 function clearConditions() {
   rule.value.conditionGameMode = undefined
@@ -73,7 +79,12 @@ function updateHoldAction(value: string | null) {
       rule.enabled === false ? 'opacity-50 grayscale-[30%]' : '',
       isNew
         ? 'border-(--ui-info)/60 bg-(--ui-info)/8 ring-1 ring-(--ui-info)/20 hover:bg-(--ui-info)/12 hover:border-(--ui-info)/70 hover:shadow-(--ui-info)/10'
-        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5'
+        : 'border-(--ui-border) bg-(--ui-bg-muted)/40 hover:bg-(--ui-bg-muted)/60 hover:border-(--ui-primary)/50 hover:shadow-(--ui-primary)/5',
+      hasErrors
+        ? 'border-(--ui-error)/50 bg-(--ui-error)/5 hover:border-(--ui-error)/60 hover:shadow-(--ui-error)/10'
+        : hasWarnings
+          ? 'border-(--ui-warning)/50 bg-(--ui-warning)/5 hover:border-(--ui-warning)/60 hover:shadow-(--ui-warning)/10'
+          : ''
     ]"
   >
     <div class="flex-1 flex flex-col gap-5">
@@ -198,6 +209,25 @@ function updateHoldAction(value: string | null) {
             @update:model-value="(v: string | number | null | undefined) => { rule.layerId = String(v ?? '') }"
           />
         </UFormField>
+      </div>
+
+      <div
+        v-if="issues?.length"
+        class="flex flex-wrap gap-1.5"
+      >
+        <UBadge
+          v-for="issue in issues"
+          :key="`${issue.code}-${issue.ruleId}`"
+          size="xs"
+          :color="issue.severity === 'error' ? 'error' : 'warning'"
+          variant="subtle"
+        >
+          <UIcon
+            :name="issue.severity === 'error' ? 'i-lucide-circle-alert' : 'i-lucide-triangle-alert'"
+            class="mr-1 h-3 w-3"
+          />
+          {{ $t(ruleIssueMessageKey(issue), { trigger: issue.trigger ?? rule.key }) }}
+        </UBadge>
       </div>
 
       <div class="h-px bg-(--ui-border) w-full"></div>

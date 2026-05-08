@@ -277,6 +277,22 @@ export default {
     enableRule: 'Enable rule',
     disableRule: 'Disable rule',
     keyRequired: 'Pick a trigger key.',
+    draftsTitle: 'Draft rules will be ignored',
+    draftsDescription:
+      '{count} enabled rule has no trigger key. It is saved, but will not run.',
+    issuesTitle: 'Fix rule conflicts before starting',
+    issueMessages: {
+      missingTrigger: 'Saved draft: add a trigger key to make this rule run.',
+      invalidTrigger: 'Trigger {trigger} cannot be used for a rule.',
+      duplicateTrigger:
+        'Trigger {trigger} is used by more than one active rule.',
+      unknownLayer: 'Rule {trigger} points to a layer that no longer exists.',
+      invalidTapAction: 'Rule {trigger} has an invalid tap action.',
+      invalidHoldAction:
+        'Rule {trigger} has an invalid hold action. Hold actions must be a key or chord.',
+      invalidDoubleTapAction:
+        'Rule {trigger} has an invalid double-tap action.',
+    },
     confirmDeleteTitle: 'Delete rule?',
     confirmDeleteBody:
       'This rule already has a trigger key. Delete it permanently?',
@@ -543,6 +559,7 @@ export default {
     start: 'Start',
     startDisabledTooltip: 'Select a keyboard in Settings to start the mapper.',
     stop: 'Stop',
+    mapperStartFailed: 'Could not start mapper',
     mapperHint:
       'The mapper reads from {input} and emits through {uinput}. If Start fails, grant access to those devices: usually the {group} group plus a udev rule for {uinputDev}.',
     generalTitle: 'General',
