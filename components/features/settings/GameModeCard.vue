@@ -17,8 +17,6 @@ const emit = defineEmits<{
 }>()
 
 const advancedOpen = ref(false)
-const newWhitelistName = ref('')
-const newBlacklistName = ref('')
 
 const matchModeItems = computed(() => [
     {
@@ -27,15 +25,6 @@ const matchModeItems = computed(() => [
     },
     { label: t('settings.gameModeMatchExact'), value: 'exact' as const },
 ])
-
-const detectionEnabled = computed(
-    () =>
-        props.useGamemoded ||
-        props.useFullscreen ||
-        props.processMatchers.some(
-            (item) => !item.isBlacklist && item.name.trim().length > 0,
-        ),
-)
 
 const whitelistMatchers = computed(() =>
     props.processMatchers.filter((item) => !item.isBlacklist),
@@ -61,20 +50,39 @@ function removeMatcher(id: string) {
 }
 
 function addMatcher(isBlacklist: boolean) {
-    const nameRef = isBlacklist ? newBlacklistName : newWhitelistName
-    const name = nameRef.value.trim()
-    if (!name) return
     emit('update:processMatchers', [
         ...props.processMatchers,
         {
             id: `process-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            name,
+            name: '',
             matchMode: 'substring',
             onlyActiveWindow: false,
             isBlacklist,
         },
     ])
-    nameRef.value = ''
+}
+
+function moveMatcher(id: string, isBlacklist: boolean, direction: -1 | 1) {
+    const group = props.processMatchers.filter(
+        (item) => !!item.isBlacklist === isBlacklist,
+    )
+    const index = group.findIndex((item) => item.id === id)
+    const nextIndex = index + direction
+    if (index < 0 || nextIndex < 0 || nextIndex >= group.length) return
+
+    const reordered = [...group]
+    const [item] = reordered.splice(index, 1)
+    reordered.splice(nextIndex, 0, item)
+
+    let groupIndex = 0
+    emit(
+        'update:processMatchers',
+        props.processMatchers.map((item) =>
+            !!item.isBlacklist === isBlacklist
+                ? reordered[groupIndex++]
+                : item,
+        ),
+    )
 }
 </script>
 
@@ -159,146 +167,306 @@ function addMatcher(isBlacklist: boolean) {
                 v-if="advancedOpen"
                 class="space-y-6 border-t border-(--ui-border) pt-4"
             >
-                <!-- Whitelist Section -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-medium">
-                        {{ $t('settings.gameModeWhitelistTitle') }}
-                    </h3>
-                    <div class="flex gap-2">
-                        <UInput
-                            v-model="newWhitelistName"
-                            class="min-w-0 flex-1"
-                            :placeholder="
-                                $t('settings.gameModeProcessPlaceholder')
-                            "
-                            @keydown.enter.prevent="addMatcher(false)"
-                        />
-                        <UButton
-                            type="button"
-                            icon="i-lucide-plus"
-                            :disabled="!newWhitelistName.trim()"
-                            @click="addMatcher(false)"
+                <div class="space-y-4 rounded-lg border border-(--ui-border) p-4">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-medium">
+                            {{ $t('settings.gameModeListsTitle') }}
+                        </h3>
+                        <AppTooltip
+                            :text="$t('settings.gameModeListsHint')"
+                            align="start"
+                            toggle-on-click
                         >
-                            {{ $t('settings.gameModeAddProcess') }}
-                        </UButton>
+                            <UIcon
+                                name="i-lucide-info"
+                                class="h-4 w-4 cursor-help text-(--ui-text-muted)"
+                            />
+                        </AppTooltip>
                     </div>
 
-                    <div v-if="whitelistMatchers.length > 0" class="space-y-2">
-                        <div
-                            v-for="item in whitelistMatchers"
-                            :key="item.id"
-                            class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_auto] lg:items-center"
-                        >
-                            <UInput
-                                :model-value="item.name"
-                                @update:model-value="
-                                    updateMatcher(item.id, {
-                                        name: String($event),
-                                    })
-                                "
-                            />
-                            <USelectMenu
-                                :model-value="item.matchMode"
-                                :items="matchModeItems"
-                                value-key="value"
-                                @update:model-value="
-                                    updateMatcher(item.id, {
-                                        matchMode:
-                                            $event as GameModeProcessMatcher['matchMode'],
-                                    })
-                                "
-                            />
-                            <UCheckbox
-                                :model-value="item.onlyActiveWindow"
-                                :label="$t('settings.gameModeOnlyActiveWindow')"
-                                @update:model-value="
-                                    updateMatcher(item.id, {
-                                        onlyActiveWindow: $event as boolean,
-                                    })
-                                "
-                            />
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <h4 class="text-sm font-medium">
+                                {{ $t('settings.gameModeWhitelistTitle') }}
+                            </h4>
                             <UButton
                                 type="button"
-                                color="neutral"
-                                variant="ghost"
-                                icon="i-lucide-trash-2"
-                                :aria-label="
-                                    $t('settings.gameModeRemoveProcess')
-                                "
-                                @click="removeMatcher(item.id)"
-                            />
+                                icon="i-lucide-plus"
+                                size="sm"
+                                @click="addMatcher(false)"
+                            >
+                                {{ $t('settings.gameModeAddProcess') }}
+                            </UButton>
+                        </div>
+
+                        <div v-if="whitelistMatchers.length > 0" class="space-y-2">
+                            <div
+                                v-for="(item, index) in whitelistMatchers"
+                                :key="item.id"
+                                class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_12rem_13rem_auto] lg:items-center"
+                            >
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <UInput
+                                        :model-value="item.name"
+                                        class="min-w-0 flex-1"
+                                        :color="
+                                            item.name.trim()
+                                                ? 'neutral'
+                                                : 'error'
+                                        "
+                                        :placeholder="
+                                            $t(
+                                                'settings.gameModeProcessPlaceholder',
+                                            )
+                                        "
+                                        :aria-invalid="!item.name.trim()"
+                                        @update:model-value="
+                                            updateMatcher(item.id, {
+                                                name: String($event),
+                                            })
+                                        "
+                                    />
+                                    <AppTooltip
+                                        :text="$t('settings.gameModeProcessNameHint')"
+                                        toggle-on-click
+                                    >
+                                        <UIcon
+                                            name="i-lucide-info"
+                                            class="h-4 w-4 shrink-0 cursor-help text-(--ui-text-muted)"
+                                        />
+                                    </AppTooltip>
+                                </div>
+                                <USelectMenu
+                                    :model-value="item.matchMode"
+                                    :items="matchModeItems"
+                                    value-key="value"
+                                    @update:model-value="
+                                        updateMatcher(item.id, {
+                                            matchMode:
+                                                $event as GameModeProcessMatcher['matchMode'],
+                                        })
+                                    "
+                                />
+                                <div class="flex items-center gap-2">
+                                    <UCheckbox
+                                        :model-value="item.onlyActiveWindow"
+                                        :label="
+                                            $t(
+                                                'settings.gameModeOnlyActiveWindow',
+                                            )
+                                        "
+                                        @update:model-value="
+                                            updateMatcher(item.id, {
+                                                onlyActiveWindow:
+                                                    $event as boolean,
+                                            })
+                                        "
+                                    />
+                                    <AppTooltip
+                                        :text="
+                                            $t(
+                                                'settings.gameModeOnlyActiveWindowHint',
+                                            )
+                                        "
+                                        toggle-on-click
+                                    >
+                                        <UIcon
+                                            name="i-lucide-info"
+                                            class="h-4 w-4 shrink-0 cursor-help text-(--ui-text-muted)"
+                                        />
+                                    </AppTooltip>
+                                </div>
+                                <div class="flex items-center justify-end gap-1">
+                                    <AppTooltip :text="$t('common.moveUp')">
+                                        <UButton
+                                            type="button"
+                                            color="neutral"
+                                            variant="ghost"
+                                            icon="i-lucide-arrow-up"
+                                            :disabled="index === 0"
+                                            :aria-label="$t('common.moveUp')"
+                                            @click="moveMatcher(item.id, false, -1)"
+                                        />
+                                    </AppTooltip>
+                                    <AppTooltip :text="$t('common.moveDown')">
+                                        <UButton
+                                            type="button"
+                                            color="neutral"
+                                            variant="ghost"
+                                            icon="i-lucide-arrow-down"
+                                            :disabled="
+                                                index ===
+                                                whitelistMatchers.length - 1
+                                            "
+                                            :aria-label="$t('common.moveDown')"
+                                            @click="moveMatcher(item.id, false, 1)"
+                                        />
+                                    </AppTooltip>
+                                    <AppTooltip
+                                        :text="
+                                            $t(
+                                                'settings.gameModeRemoveProcess',
+                                            )
+                                        "
+                                    >
+                                        <UButton
+                                            type="button"
+                                            color="neutral"
+                                            variant="ghost"
+                                            icon="i-lucide-trash-2"
+                                            :aria-label="
+                                                $t(
+                                                    'settings.gameModeRemoveProcess',
+                                                )
+                                            "
+                                            @click="removeMatcher(item.id)"
+                                        />
+                                    </AppTooltip>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Blacklist Section -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-medium">
-                        {{ $t('settings.gameModeBlacklistTitle') }}
-                    </h3>
-                    <div class="flex gap-2">
-                        <UInput
-                            v-model="newBlacklistName"
-                            class="min-w-0 flex-1"
-                            :placeholder="
-                                $t('settings.gameModeProcessPlaceholder')
-                            "
-                            @keydown.enter.prevent="addMatcher(true)"
-                        />
-                        <UButton
-                            type="button"
-                            icon="i-lucide-plus"
-                            :disabled="!newBlacklistName.trim()"
-                            @click="addMatcher(true)"
-                        >
-                            {{ $t('settings.gameModeAddProcess') }}
-                        </UButton>
-                    </div>
-
-                    <div v-if="blacklistMatchers.length > 0" class="space-y-2">
-                        <div
-                            v-for="item in blacklistMatchers"
-                            :key="item.id"
-                            class="grid gap-2 rounded-lg border border-(--ui-border) p-3 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_auto] lg:items-center bg-(--ui-bg-muted)/50"
-                        >
-                            <UInput
-                                :model-value="item.name"
-                                @update:model-value="
-                                    updateMatcher(item.id, {
-                                        name: String($event),
-                                    })
-                                "
-                            />
-                            <USelectMenu
-                                :model-value="item.matchMode"
-                                :items="matchModeItems"
-                                value-key="value"
-                                @update:model-value="
-                                    updateMatcher(item.id, {
-                                        matchMode:
-                                            $event as GameModeProcessMatcher['matchMode'],
-                                    })
-                                "
-                            />
-                            <UCheckbox
-                                :model-value="item.onlyActiveWindow"
-                                :label="$t('settings.gameModeOnlyActiveWindow')"
-                                @update:model-value="
-                                    updateMatcher(item.id, {
-                                        onlyActiveWindow: $event as boolean,
-                                    })
-                                "
-                            />
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <h4 class="text-sm font-medium">
+                                {{ $t('settings.gameModeBlacklistTitle') }}
+                            </h4>
                             <UButton
                                 type="button"
-                                color="neutral"
-                                variant="ghost"
-                                icon="i-lucide-trash-2"
-                                :aria-label="
-                                    $t('settings.gameModeRemoveProcess')
-                                "
-                                @click="removeMatcher(item.id)"
-                            />
+                                icon="i-lucide-plus"
+                                size="sm"
+                                @click="addMatcher(true)"
+                            >
+                                {{ $t('settings.gameModeAddProcess') }}
+                            </UButton>
+                        </div>
+
+                        <div v-if="blacklistMatchers.length > 0" class="space-y-2">
+                            <div
+                                v-for="(item, index) in blacklistMatchers"
+                                :key="item.id"
+                                class="grid gap-2 rounded-lg border border-(--ui-border) bg-(--ui-bg-muted)/50 p-3 lg:grid-cols-[minmax(0,1fr)_12rem_13rem_auto] lg:items-center"
+                            >
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <UInput
+                                        :model-value="item.name"
+                                        class="min-w-0 flex-1"
+                                        :color="
+                                            item.name.trim()
+                                                ? 'neutral'
+                                                : 'error'
+                                        "
+                                        :placeholder="
+                                            $t(
+                                                'settings.gameModeProcessPlaceholder',
+                                            )
+                                        "
+                                        :aria-invalid="!item.name.trim()"
+                                        @update:model-value="
+                                            updateMatcher(item.id, {
+                                                name: String($event),
+                                            })
+                                        "
+                                    />
+                                    <AppTooltip
+                                        :text="$t('settings.gameModeProcessNameHint')"
+                                        toggle-on-click
+                                    >
+                                        <UIcon
+                                            name="i-lucide-info"
+                                            class="h-4 w-4 shrink-0 cursor-help text-(--ui-text-muted)"
+                                        />
+                                    </AppTooltip>
+                                </div>
+                                <USelectMenu
+                                    :model-value="item.matchMode"
+                                    :items="matchModeItems"
+                                    value-key="value"
+                                    @update:model-value="
+                                        updateMatcher(item.id, {
+                                            matchMode:
+                                                $event as GameModeProcessMatcher['matchMode'],
+                                        })
+                                    "
+                                />
+                                <div class="flex items-center gap-2">
+                                    <UCheckbox
+                                        :model-value="item.onlyActiveWindow"
+                                        :label="
+                                            $t(
+                                                'settings.gameModeOnlyActiveWindow',
+                                            )
+                                        "
+                                        @update:model-value="
+                                            updateMatcher(item.id, {
+                                                onlyActiveWindow:
+                                                    $event as boolean,
+                                            })
+                                        "
+                                    />
+                                    <AppTooltip
+                                        :text="
+                                            $t(
+                                                'settings.gameModeOnlyActiveWindowHint',
+                                            )
+                                        "
+                                        toggle-on-click
+                                    >
+                                        <UIcon
+                                            name="i-lucide-info"
+                                            class="h-4 w-4 shrink-0 cursor-help text-(--ui-text-muted)"
+                                        />
+                                    </AppTooltip>
+                                </div>
+                                <div class="flex items-center justify-end gap-1">
+                                    <AppTooltip :text="$t('common.moveUp')">
+                                        <UButton
+                                            type="button"
+                                            color="neutral"
+                                            variant="ghost"
+                                            icon="i-lucide-arrow-up"
+                                            :disabled="index === 0"
+                                            :aria-label="$t('common.moveUp')"
+                                            @click="moveMatcher(item.id, true, -1)"
+                                        />
+                                    </AppTooltip>
+                                    <AppTooltip :text="$t('common.moveDown')">
+                                        <UButton
+                                            type="button"
+                                            color="neutral"
+                                            variant="ghost"
+                                            icon="i-lucide-arrow-down"
+                                            :disabled="
+                                                index ===
+                                                blacklistMatchers.length - 1
+                                            "
+                                            :aria-label="$t('common.moveDown')"
+                                            @click="moveMatcher(item.id, true, 1)"
+                                        />
+                                    </AppTooltip>
+                                    <AppTooltip
+                                        :text="
+                                            $t(
+                                                'settings.gameModeRemoveProcess',
+                                            )
+                                        "
+                                    >
+                                        <UButton
+                                            type="button"
+                                            color="neutral"
+                                            variant="ghost"
+                                            icon="i-lucide-trash-2"
+                                            :aria-label="
+                                                $t(
+                                                    'settings.gameModeRemoveProcess',
+                                                )
+                                            "
+                                            @click="removeMatcher(item.id)"
+                                        />
+                                    </AppTooltip>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

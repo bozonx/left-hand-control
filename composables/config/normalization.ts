@@ -69,8 +69,8 @@ function normalizeSettings(
                 ? ('exact' as const)
                 : ('substring' as const),
             onlyActiveWindow: item.onlyActiveWindow !== false,
+            isBlacklist: item.isBlacklist === true,
           }))
-          .filter((item) => item.name.length > 0)
       : base.gameMode.processMatchers,
   }
   merged.layoutMode = merged.layoutMode === 'auto' ? 'auto' : 'manual'

@@ -681,8 +681,15 @@ export default {
     gameModeMatchSubstring: 'Substring',
     gameModeMatchExact: 'Exact match',
     gameModeOnlyActiveWindow: 'Only active window',
-    gameModeWhitelistTitle: 'Triggers',
-    gameModeBlacklistTitle: 'Exceptions',
+    gameModeOnlyActiveWindowHint:
+      'Check only the active window app and title. When off, the rule searches all running processes.',
+    gameModeListsTitle: 'Application blacklist and whitelist',
+    gameModeListsHint:
+      'The whitelist enables game mode when at least one listed app is running. The blacklist disables game mode when at least one listed app is running, and takes priority over the whitelist, gamemoded, and fullscreen detection. Items inside each list use logical OR.',
+    gameModeProcessNameHint:
+      'Enter a process name, app id, or part of the window title. An empty required field is shown as invalid and ignored by game mode detection.',
+    gameModeWhitelistTitle: 'If running ...',
+    gameModeBlacklistTitle: 'If not running ...',
     system: {
       title: 'System / Troubleshooting',
       waylandNote:
