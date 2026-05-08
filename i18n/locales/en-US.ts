@@ -372,7 +372,7 @@ export default {
       dupSystem: 'This ID is already taken by system macro "{name}".',
     },
     stepErrors: {
-      nestedMacro: 'Nested macro references are not supported in macro steps.',
+      macroCycle: 'Macro references cannot form a cycle.',
     },
     stepWarnings: {
       empty: 'Empty step — pick an action or remove it.',

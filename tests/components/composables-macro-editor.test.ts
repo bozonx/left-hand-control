@@ -115,8 +115,16 @@ describe('useMacroEditor', () => {
 
     expect(vm.idError(duplicate)).toContain('already taken')
 
+    firstMacro.steps[0]!.action = macroActionRef('dup2')
+    expect(vm.stepError(firstMacro.steps[0], firstMacro.id)).toBeNull()
+
+    state.config.value.macros.push({
+      id: 'other',
+      name: 'Other macro',
+      steps: [{ id: 'other-step', action: macroActionRef('dup') }],
+    })
     firstMacro.steps[0]!.action = macroActionRef('other')
-    expect(vm.stepError(firstMacro.steps[0])).toContain('Nested macro references')
+    expect(vm.stepError(firstMacro.steps[0], firstMacro.id)).toContain('cycle')
     expect(vm.hasStepErrors).toBe(true)
     expect(vm.hasErrors).toBe(true)
 
@@ -125,6 +133,7 @@ describe('useMacroEditor', () => {
       'rule CapsLock (tap)',
       'nav.KeyH',
       'nav.MouseSide',
+      'macro other (#1)',
     ])
 
     vm.removeMacro(vm.uiKeyOf(firstMacro))

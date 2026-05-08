@@ -6,7 +6,7 @@ use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system;
 use super::system_macros::SYSTEM_MACROS;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     let mut errors = Vec::new();
@@ -143,6 +143,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             );
         }
     }
+    validate_macro_cycles(cfg, &mut errors);
 
     if errors.is_empty() {
         Ok(())
@@ -225,12 +226,6 @@ fn validate_macro_step(
     if action.is_empty() {
         return;
     }
-    if action.strip_prefix("macro:").is_some() {
-        errors.push(format!(
-            "{where_}: nested macro references are not supported"
-        ));
-        return;
-    }
     validate_action(
         action,
         where_,
@@ -296,6 +291,68 @@ fn validate_action(
     if parse_action(action).is_none() {
         errors.push(format!("{where_}: unknown action \"{action}\""));
     }
+}
+
+fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
+    let mut graph: HashMap<String, Vec<String>> = HashMap::new();
+
+    for sys in SYSTEM_MACROS {
+        graph.insert(
+            sys.id.to_string(),
+            sys.steps
+                .iter()
+                .filter_map(|step| step.trim().strip_prefix("macro:"))
+                .map(|id| id.trim().to_string())
+                .collect(),
+        );
+    }
+
+    for m in &cfg.macros {
+        graph.insert(
+            m.id.trim().to_string(),
+            m.steps
+                .iter()
+                .filter_map(|step| step.action.trim().strip_prefix("macro:"))
+                .map(|id| id.trim().to_string())
+                .collect(),
+        );
+    }
+
+    for m in &cfg.macros {
+        let source = m.id.trim();
+        if source.is_empty() {
+            continue;
+        }
+        for target in graph.get(source).into_iter().flatten() {
+            let mut visited = HashSet::new();
+            if macro_path_reaches(source, target, &graph, &mut visited) {
+                errors.push(format!(
+                    "Macro \"{source}\": macro references cannot form a cycle"
+                ));
+                break;
+            }
+        }
+    }
+}
+
+fn macro_path_reaches(
+    source: &str,
+    current: &str,
+    graph: &HashMap<String, Vec<String>>,
+    visited: &mut HashSet<String>,
+) -> bool {
+    if current == source {
+        return true;
+    }
+    if !visited.insert(current.to_string()) {
+        return false;
+    }
+    for next in graph.get(current).into_iter().flatten() {
+        if macro_path_reaches(source, next, graph, visited) {
+            return true;
+        }
+    }
+    false
 }
 
 #[cfg(test)]
@@ -384,7 +441,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_system_macro_shadowing_and_nested_macro_steps() {
+    fn rejects_system_macro_shadowing() {
         let mut cfg = empty_cfg();
         cfg.macros.push(Macro {
             id: "copyLine".into(),
@@ -397,6 +454,57 @@ mod tests {
 
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("conflicts with a system macro"));
-        assert!(err.contains("nested macro references are not supported"));
+    }
+
+    #[test]
+    fn accepts_nested_macro_steps() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "outer".into(),
+            steps: vec![
+                MacroStep {
+                    action: "macro:inner".into(),
+                },
+                MacroStep {
+                    action: "macro:duplicateLine".into(),
+                },
+            ],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        cfg.macros.push(Macro {
+            id: "inner".into(),
+            steps: vec![MacroStep {
+                action: "Ctrl+KeyC".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+
+        validate_config(&cfg).expect("validation should pass");
+    }
+
+    #[test]
+    fn rejects_macro_reference_cycles() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "outer".into(),
+            steps: vec![MacroStep {
+                action: "macro:inner".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        cfg.macros.push(Macro {
+            id: "inner".into(),
+            steps: vec![MacroStep {
+                action: "macro:outer".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("macro references cannot form a cycle"));
     }
 }

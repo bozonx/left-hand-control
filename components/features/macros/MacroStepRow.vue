@@ -7,7 +7,8 @@ const _props = defineProps<{
   idx: number
   isFirst: boolean
   isLast: boolean
-  stepError?: (step: MacroStep) => string | null
+  excludedMacroId?: string
+  stepError?: (step: MacroStep, excludedMacroId?: string) => string | null
   stepWarning?: (step: MacroStep) => string | null
 }>()
 
@@ -26,16 +27,16 @@ const emit = defineEmits<{
     <div class="text-xs text-(--ui-text-muted) font-mono text-right">
       #{{ idx + 1 }}
     </div>
-    <UFormField :error="stepError?.(step) ?? undefined">
+    <UFormField :error="stepError?.(step, excludedMacroId) ?? undefined">
       <ActionPickerModal
         :model-value="step.action"
-        :allow-macros="false"
+        :excluded-macro-id="excludedMacroId"
         :placeholder="$t('macros.stepPh')"
-        :invalid="!!stepError?.(step)"
+        :invalid="!!stepError?.(step, excludedMacroId)"
         @update:model-value="(v: string | null) => emit('update:step', { ...step, action: v ?? '' })"
       />
       <p
-        v-if="stepWarning?.(step) && !stepError?.(step)"
+        v-if="stepWarning?.(step) && !stepError?.(step, excludedMacroId)"
         class="text-xs text-(--ui-warning) mt-0.5"
       >
         {{ stepWarning(step) }}

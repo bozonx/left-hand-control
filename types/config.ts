@@ -82,8 +82,7 @@ export interface LayerKeymap {
 }
 
 // One step of a macro. The value is a full action string: key chord,
-// `sys:<id>`, `cmd:<id>`, or `text:<text>`. Nested `macro:<id>` is intentionally
-// blocked in validation.
+// `macro:<id>`, `sys:<id>`, `cmd:<id>`, or `text:<text>`.
 export interface MacroStep {
   id: string
   // The action spec string (e.g. 'KeyA', 'cmd:bar', 'sys:showQuickMenu', 'text:hello').

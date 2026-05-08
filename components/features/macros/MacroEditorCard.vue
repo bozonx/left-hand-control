@@ -10,7 +10,7 @@ const props = defineProps<{
   defaultStepPauseMs: number
   defaultModifierDelayMs: number
   uiKey: string
-  stepError?: (step: MacroStep) => string | null
+  stepError?: (step: MacroStep, excludedMacroId?: string) => string | null
   stepWarning?: (step: MacroStep) => string | null
   isFirst?: boolean
   isLast?: boolean
@@ -166,6 +166,7 @@ async function copyMacroId() {
             :idx="idx"
             :is-first="idx === 0"
             :is-last="idx === macro.steps.length - 1"
+            :excluded-macro-id="macro.id"
             :step-error="stepError"
             :step-warning="stepWarning"
             @move-up="$emit('moveStep', macro, idx, -1)"

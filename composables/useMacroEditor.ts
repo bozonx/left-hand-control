@@ -95,13 +95,45 @@ export function useMacroEditor() {
     config.value.macros.some((macro) => idError(macro) !== null),
   )
 
-  function stepError(step: MacroStep): string | null {
+  function macroReferencesSource(sourceId: string, targetId: string): boolean {
+    if (!sourceId || !targetId) return false
+    const visited = new Set<string>()
+
+    function stepActionsFor(id: string): string[] {
+      const userMacro = config.value.macros.find((macro) => macro.id === id)
+      if (userMacro) return userMacro.steps.map((step) => step.action)
+      const systemMacro = systemMacroById(id)
+      return systemMacro?.steps.map((step) => step.action) ?? []
+    }
+
+    function visit(id: string): boolean {
+      if (id === sourceId) return true
+      if (visited.has(id)) return false
+      visited.add(id)
+
+      for (const nestedAction of stepActionsFor(id)) {
+        const nestedId = parseMacroRef(nestedAction.trim())
+        if (nestedId && visit(nestedId)) return true
+      }
+      return false
+    }
+
+    return visit(targetId)
+  }
+
+  function stepError(step: MacroStep, excludedMacroId?: string): string | null {
     const raw = step.action?.trim() ?? ''
     if (!raw) return null
     if (!isCanonicalAction(raw)) return t('picker.invalidValue')
-    if (parseMacroRef(raw) !== null) return t('macros.stepErrors.nestedMacro')
-    if (validateActionValue(raw, config.value, { allowMacros: false }) !== null) {
+    const macroId = parseMacroRef(raw)
+    if (validateActionValue(raw, config.value, {
+      allowMacros: true,
+      excludedMacroId,
+    }) !== null) {
       return t('picker.invalidValue')
+    }
+    if (macroId && excludedMacroId && macroReferencesSource(excludedMacroId, macroId)) {
+      return t('macros.stepErrors.macroCycle')
     }
     return null
   }
@@ -114,7 +146,7 @@ export function useMacroEditor() {
 
   const hasStepErrors = computed(() =>
     config.value.macros.some((macro) =>
-      macro.steps.some((step) => stepError(step) !== null),
+      macro.steps.some((step) => stepError(step, macro.id) !== null),
     ),
   )
 
