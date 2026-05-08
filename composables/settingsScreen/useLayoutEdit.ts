@@ -140,8 +140,7 @@ export function useLayoutEdit({
 
   function closeEditModal() {
     editModalOpen.value = false;
-    editPending.value = null;
-    editMode.value = "full";
+    editError.value = null;
   }
 
   async function confirmOverwrite() {

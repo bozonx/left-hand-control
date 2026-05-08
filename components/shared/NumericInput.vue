@@ -38,7 +38,6 @@ function clampAndEmit(raw: number) {
 }
 
 const rootRef = ref<HTMLElement | null>(null)
-let wheelInput: HTMLInputElement | null = null
 
 function getInput() {
   return rootRef.value?.querySelector('input') ?? null
@@ -67,21 +66,10 @@ function onWheel(event: WheelEvent) {
 
   clampAndEmit(current + delta * step)
 }
-
-onMounted(() => {
-  nextTick(() => {
-    wheelInput = getInput() ?? null
-    wheelInput?.addEventListener('wheel', onWheel, { passive: false })
-  })
-})
-
-onBeforeUnmount(() => {
-  wheelInput?.removeEventListener('wheel', onWheel)
-})
 </script>
 
 <template>
-  <span ref="rootRef" class="inline-block" :class="rootClass">
+  <span ref="rootRef" class="inline-block" :class="rootClass" @wheel.capture="onWheel">
     <UInput
       :model-value="String(modelValue)"
       type="number"
