@@ -452,6 +452,16 @@ export default {
     confirmDeletePageTitle: 'Delete page?',
     confirmDeletePageBody:
       'The page and all assigned cells on it will be deleted.',
+    categories: {
+      smileys: 'Smileys & Emotion',
+      people: 'People & Gestures',
+      symbols: 'Emoji Symbols',
+      work: 'Work & Objects',
+      nature: 'Animals & Nature',
+      food: 'Food & Drink',
+      travel: 'Travel & Places',
+      utf: 'UTF Symbols',
+    },
   },
   emojiMenu: {
     tabHint:

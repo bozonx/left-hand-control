@@ -464,6 +464,16 @@ export default {
     confirmDeletePageTitle: 'Удалить страницу?',
     confirmDeletePageBody:
       'Страница будет удалена вместе со всеми назначенными ячейками.',
+    categories: {
+      smileys: 'Смайлы и эмоции',
+      people: 'Люди и жесты',
+      symbols: 'Emoji-символы',
+      work: 'Работа и объекты',
+      nature: 'Природа',
+      food: 'Еда и напитки',
+      travel: 'Места и транспорт',
+      utf: 'UTF-символы',
+    },
   },
   emojiMenu: {
     tabHint:

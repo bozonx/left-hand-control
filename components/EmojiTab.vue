@@ -4,9 +4,9 @@ import {
     EMOJI_HOTKEYS,
     EMOJI_HOTKEY_LABELS,
     MAX_EMOJI_CELL_LENGTH,
-    STANDARD_EMOJIS,
     createDefaultEmojiPage,
 } from '~/types/config'
+import { EMOJI_CATALOG } from '~/utils/emojiCatalog'
 
 const { config } = useConfig()
 const { t } = useI18n()
@@ -278,16 +278,31 @@ onMounted(ensurePages)
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-6 gap-1.5">
-                                <button
-                                    v-for="emoji in STANDARD_EMOJIS"
-                                    :key="emoji"
-                                    type="button"
-                                    class="flex aspect-square items-center justify-center rounded-md border border-(--ui-border-muted) bg-(--ui-bg) text-xl transition hover:border-primary hover:bg-primary/10"
-                                    @click="setCell(emoji)"
+                            <div
+                                class="max-h-[34rem] space-y-4 overflow-y-auto pr-1"
+                            >
+                                <section
+                                    v-for="category in EMOJI_CATALOG"
+                                    :key="category.id"
+                                    class="space-y-2"
                                 >
-                                    {{ emoji }}
-                                </button>
+                                    <h3
+                                        class="sticky top-0 z-10 bg-(--ui-bg) py-1 text-xs font-semibold uppercase tracking-wide text-(--ui-text-muted)"
+                                    >
+                                        {{ $t(category.labelKey) }}
+                                    </h3>
+                                    <div class="grid grid-cols-6 gap-1.5">
+                                        <button
+                                            v-for="item in category.items"
+                                            :key="`${category.id}-${item}`"
+                                            type="button"
+                                            class="flex aspect-square items-center justify-center rounded-md border border-(--ui-border-muted) bg-(--ui-bg) text-xl transition hover:border-primary hover:bg-primary/10"
+                                            @click="setCell(item)"
+                                        >
+                                            {{ item }}
+                                        </button>
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     </UCard>

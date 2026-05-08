@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLayout } from '~/composables/useLayout'
 import AppsListField from '~/components/features/shared/AppsListField.vue'
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 
 // Canonical shape used by both per-rule conditions and layout
 // whitelist / blacklist conditions. `gameMode === 'ignore'` represents
@@ -70,10 +71,15 @@ function toggleLayout(value: string, checked: boolean | 'indeterminate') {
 <template>
     <div class="flex flex-col gap-4">
         <UCard variant="outline" :ui="{ body: 'p-4' }">
-            <UFormField
-                :label="$t('rules.gameModeLabel')"
-                :help="$t('rules.gameModeHint')"
-            >
+            <UFormField>
+                <template #label>
+                    <span class="flex items-center gap-1.5">
+                        {{ $t('rules.gameModeLabel') }}
+                        <AppTooltip :text="$t('rules.gameModeHint')" align="start" toggle-on-click>
+                            <UIcon name="i-lucide-info" class="h-4 w-4 cursor-help text-(--ui-text-muted)" />
+                        </AppTooltip>
+                    </span>
+                </template>
                 <USelectMenu
                     v-model="gameMode"
                     :items="gameModeOptions"
@@ -83,10 +89,15 @@ function toggleLayout(value: string, checked: boolean | 'indeterminate') {
         </UCard>
 
         <UCard variant="outline" :ui="{ body: 'p-4' }">
-            <UFormField
-                :label="$t('rules.layoutsLabel')"
-                :help="$t('rules.layoutsHint')"
-            >
+            <UFormField>
+                <template #label>
+                    <span class="flex items-center gap-1.5">
+                        {{ $t('rules.layoutsLabel') }}
+                        <AppTooltip :text="$t('rules.layoutsHint')" align="start" toggle-on-click>
+                            <UIcon name="i-lucide-info" class="h-4 w-4 cursor-help text-(--ui-text-muted)" />
+                        </AppTooltip>
+                    </span>
+                </template>
                 <div
                     class="flex flex-col gap-2 p-3 border rounded-lg border-(--ui-border) max-h-60 overflow-y-auto bg-(--ui-bg-muted)/30"
                 >

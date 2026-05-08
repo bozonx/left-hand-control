@@ -1,5 +1,6 @@
 // Shared types for the key-mapper config persisted at
 // ~/.config/LeftHandControl/config.json
+import { STANDARD_EMOJIS } from '~/utils/emojiCatalog'
 
 export interface Layer {
   id: string
@@ -276,39 +277,6 @@ export interface EmojiPage {
   name: string
   cells: Partial<Record<EmojiHotkey, string>>
 }
-
-export const STANDARD_EMOJIS = [
-  '😀',
-  '😄',
-  '😂',
-  '🙂',
-  '😉',
-  '😍',
-  '😘',
-  '😎',
-  '🤔',
-  '😭',
-  '😡',
-  '👍',
-  '👎',
-  '👏',
-  '🙏',
-  '💪',
-  '🔥',
-  '✨',
-  '🎉',
-  '❤️',
-  '💜',
-  '✅',
-  '❌',
-  '⭐',
-  '🚀',
-  '💡',
-  '👀',
-  '🤝',
-  '🙌',
-  '👌',
-] as const
 
 export function createDefaultEmojiPage(): EmojiPage {
   return {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 
 // Reusable editor for a list of substrings matched (case-insensitive,
 // OR) against the focused window's title and app id. Empty list means
@@ -42,7 +43,15 @@ function onEnter(event: KeyboardEvent) {
 </script>
 
 <template>
-  <UFormField :label="label" :help="hint">
+  <UFormField>
+    <template v-if="label" #label>
+      <span class="flex items-center gap-1.5">
+        {{ label }}
+        <AppTooltip v-if="hint" :text="hint" align="start" toggle-on-click>
+          <UIcon name="i-lucide-info" class="h-4 w-4 cursor-help text-(--ui-text-muted)" />
+        </AppTooltip>
+      </span>
+    </template>
     <div class="flex flex-col gap-2">
       <div class="flex gap-2">
         <UInput
