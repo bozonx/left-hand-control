@@ -15,10 +15,11 @@ export function commandFingerprint(commands: Command[]): string {
       hash = Math.imul(hash, 0x01000193) >>> 0
     }
   }
-  for (const command of commands) {
-    update(command.id)
-    update('\u0000')
-    update(command.linux)
+  const entries = commands
+    .map((command) => `${command.id}\u0000${command.linux}`)
+    .sort()
+  for (const entry of entries) {
+    update(entry)
     update('\u0000')
   }
   return hash.toString(16).padStart(8, '0')

@@ -83,6 +83,16 @@ describe('command trust', () => {
     expect(fp1).not.toBe(fp2)
   })
 
+  it('reordering commands does not invalidate trust', () => {
+    const commands = [
+      { id: 'music', name: 'Music', linux: 'playerctl play-pause', windows: '', macos: '' },
+      { id: 'notify', name: 'Notify', linux: 'notify-send hello', windows: '', macos: '' },
+    ]
+    const reordered = [commands[1]!, commands[0]!]
+
+    expect(commandFingerprint(reordered)).toBe(commandFingerprint(commands))
+  })
+
   it('changing command name does not affect fingerprint', () => {
     const commands = [
       { id: 'music', name: 'Music', linux: 'playerctl play-pause', windows: 'win', macos: 'mac' },

@@ -225,10 +225,13 @@ impl Settings {
 
 fn command_fingerprint(commands: &[Command]) -> String {
     let mut hash: u32 = 0x811c9dc5;
-    for command in commands {
-        update_hash(&mut hash, command.id.as_bytes());
-        update_hash(&mut hash, &[0]);
-        update_hash(&mut hash, command.linux.as_bytes());
+    let mut entries: Vec<String> = commands
+        .iter()
+        .map(|command| format!("{}\0{}", command.id, command.linux))
+        .collect();
+    entries.sort();
+    for entry in entries {
+        update_hash(&mut hash, entry.as_bytes());
         update_hash(&mut hash, &[0]);
     }
     format!("{hash:08x}")
@@ -362,8 +365,25 @@ mod tests {
         ];
         let fp = command_fingerprint(&commands);
         assert_eq!(
-            fp, "0ab77369",
+            fp, "b9597ee1",
             "command_fingerprint changed — update the TS side too"
         );
+    }
+
+    #[test]
+    fn command_fingerprint_ignores_command_order() {
+        let commands = vec![
+            Command {
+                id: "play".into(),
+                linux: "playerctl play".into(),
+            },
+            Command {
+                id: "pause".into(),
+                linux: "playerctl pause".into(),
+            },
+        ];
+        let reordered = vec![commands[1].clone(), commands[0].clone()];
+
+        assert_eq!(command_fingerprint(&commands), command_fingerprint(&reordered));
     }
 }

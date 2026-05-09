@@ -518,7 +518,7 @@ export default {
     linuxPh: "playerctl play-pause\nnotify-send 'Playback toggled'",
     approvalTitle: 'Shell commands require approval',
     approvalBody:
-      'This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to all commands in this layout and resets when they change.',
+      'This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change.',
     approveBtn: 'Allow commands',
     approved:
       'Shell commands are allowed for this version of the current layout.',
