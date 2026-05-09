@@ -57,17 +57,30 @@ body {
 /* ----------------------------------------------------------------------------
  * Crisp Rendering Fixes
  * ----------------------------------------------------------------------------
- * Transforms (used in Modals, Popovers, Tooltips) can cause sub-pixel blurriness
- * on some Linux WebViews (WebKit2GTK), so action pickers avoid transformed
- * modal surfaces and only keep lightweight smoothing for tooltip chrome.
+ * scale(0.95) in Nuxt UI's scale-in/scale-out keyframes causes sub-pixel
+ * blurriness in WebKit2GTK (Tauri on Linux): fractional scale misaligns text
+ * to non-integer pixel coordinates. Override keyframes to pure opacity fades.
  * -------------------------------------------------------------------------- */
+@keyframes scale-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Reka UI positions popovers/dropdowns/selects via transform: translate(X, Y)
+ * with fractional pixel values. backface-visibility forces WebKit to snap the
+ * compositing layer to integer device pixels, eliminating text blurriness. */
+[data-reka-popper-content-wrapper] {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 [role='tooltip'] {
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
-}
-
-[role='dialog'] .overflow-y-auto {
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Prevent accidental selection only in chrome-like controls. */

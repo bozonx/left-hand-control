@@ -438,7 +438,7 @@ export default {
   quickActions: {
     title: 'Быстрые действия',
     subtitle:
-      'Настройте меню из 15 ячеек, которое открывается действием sys:showQuickMenu.',
+      'Настройте меню из 15 ячеек, которое открывается действием app:showQuickMenu.',
     empty:
       'Пока нет быстрых действий. Добавьте первое, чтобы оно появилось в меню.',
     addBtn: 'Добавить действие',
@@ -469,7 +469,7 @@ export default {
   emoji: {
     title: 'Emoji и символы',
     subtitle:
-      'Настройте меню из 15 ячеек, которое открывается действием sys:showEmojiMenu. В каждую ячейку можно вставить эмоджи, UTF-символ, букву или короткую фразу.',
+      'Настройте меню из 15 ячеек, которое открывается действием app:showEmojiMenu. В каждую ячейку можно вставить эмоджи, UTF-символ, букву или короткую фразу.',
     addPage: 'Добавить страницу',
     deletePage: 'Удалить страницу',
     deletePageTitle: 'Удаление страницы',
@@ -766,7 +766,7 @@ export default {
     titleKey: 'Выбор клавиши',
     emptyCategory: 'В этой категории пока нет элементов.',
     invalidValue:
-      'Используйте только канонический синтаксис действий: KeyA, Digit1, ArrowLeft, Ctrl+KeyC, macro:<id>, cmd:<id>, sys:<id> или text:<текст>.',
+      'Используйте только канонический синтаксис действий: KeyA, Digit1, ArrowLeft, Ctrl+KeyC, macro:<id>, cmd:<id>, sys:<id>, app:<id> или text:<текст>.',
     clearAria: 'Очистить',
     textHint:
       'Текстовые действия сохраняются как text:<ваш текст>. Используйте их для символов и строк, а не для ремапа физических клавиш.',
@@ -802,15 +802,18 @@ export default {
     commands: 'Команды',
     macros: 'Макросы',
     systemMacros: 'Системные макросы',
+    app: 'App',
     system: 'Системные',
     text: 'Текст',
+  },
+  appActions: {
+    showQuickMenu: 'Показать быстрое меню действий',
+    showEmojiMenu: 'Показать меню emoji и символов',
   },
   systemActions: {
     switchDesktop: 'Переключиться на рабочий стол {n}',
     switchLayout: 'Переключить раскладку на {n}',
     taskEntry: 'Активировать запись панели задач {n}',
-    showQuickMenu: 'Показать быстрое меню действий',
-    showEmojiMenu: 'Показать меню emoji и символов',
     walkThroughWindowsAlternative:
       'Переключение между окнами: альтернативный режим',
     walkThroughWindowsCurrentApp:

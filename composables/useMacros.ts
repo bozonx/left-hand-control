@@ -2,11 +2,13 @@ import { useI18n } from 'vue-i18n'
 import {
   type Macro,
   MACRO_ACTION_PREFIX,
+  parseAppRef,
   parseCommandRef,
   parseMacroRef,
   parseSystemRef,
   parseTextAction,
 } from '~/types/config'
+import { appActionById } from '~/utils/appActions'
 import { systemActionById } from '~/utils/systemActions'
 import { systemMacroById } from '~/utils/systemMacros'
 import { STATIC_CATEGORIES } from '~/utils/actionCategories'
@@ -40,6 +42,12 @@ export function useMacros() {
     return t(found.nameKey, found.nameParams ?? {})
   }
 
+  function appActionName(id: string): string | undefined {
+    const found = appActionById(id)
+    if (!found) return undefined
+    return t(found.nameKey)
+  }
+
   function displayAction(action: string | undefined | null): string {
     if (!action) return ''
     const macroRef = parseMacroRef(action)
@@ -56,6 +64,11 @@ export function useMacros() {
     if (sysRef) {
       const name = systemActionName(sysRef)
       return name ? `[Sys] ${name}` : action
+    }
+    const appRef = parseAppRef(action)
+    if (appRef) {
+      const name = appActionName(appRef)
+      return name ? `[App] ${name}` : action
     }
     const textAction = parseTextAction(action)
     if (textAction !== null) {
@@ -88,6 +101,14 @@ export function useMacros() {
       return {
         label: systemActionName(sysRef) ?? action,
         icon: 'i-lucide-settings-2',
+      }
+    }
+
+    const appRef = parseAppRef(action)
+    if (appRef) {
+      return {
+        label: appActionName(appRef) ?? action,
+        icon: 'i-lucide-app-window',
       }
     }
 

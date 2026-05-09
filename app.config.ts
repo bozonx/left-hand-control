@@ -18,7 +18,7 @@ export default defineAppConfig({
         transition: {
           true: {
             overlay: 'data-[state=open]:animate-[fade-in_200ms_ease-out] data-[state=closed]:animate-[fade-out_200ms_ease-in]',
-            content: ''
+            // scale-in/out keyframes are globally overridden in main.css to pure fades — no scale() here
           }
         }
       },
@@ -49,7 +49,7 @@ export default defineAppConfig({
     },
     selectMenu: {
       slots: {
-        content: 'max-h-60 w-(--reka-select-trigger-width) bg-default shadow-lg rounded-md ring ring-default overflow-hidden pointer-events-auto flex flex-col origin-(--reka-combobox-content-transform-origin)'
+        content: 'max-h-60 w-(--reka-select-trigger-width) bg-default shadow-lg rounded-md ring ring-default overflow-hidden pointer-events-auto flex flex-col'
       }
     },
     inputMenu: {

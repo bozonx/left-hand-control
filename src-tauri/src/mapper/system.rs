@@ -76,14 +76,20 @@ pub fn is_known(name: &str) -> bool {
     resolve_for_desktop(name, &Desktop::Kde).is_some()
 }
 
+pub fn resolve_app(name: &str) -> Option<SysAction> {
+    match name.trim() {
+        "showQuickMenu" => Some(SysAction::TauriEvent("show_quick_menu".into())),
+        "showEmojiMenu" => Some(SysAction::TauriEvent("show_emoji_menu".into())),
+        _ => None,
+    }
+}
+
+pub fn is_known_app(name: &str) -> bool {
+    resolve_app(name).is_some()
+}
+
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
     let name = name.trim();
-    if name == "showQuickMenu" {
-        return Some(SysAction::TauriEvent("show_quick_menu".into()));
-    }
-    if name == "showEmojiMenu" {
-        return Some(SysAction::TauriEvent("show_emoji_menu".into()));
-    }
 
     use crate::platform::linux::Desktop;
     match desktop {
@@ -340,25 +346,25 @@ mod kde {
 
 #[cfg(test)]
 mod tests {
-    use super::{resolve_for_desktop, DbusArg, SysAction};
+    use super::{resolve_app, resolve_for_desktop, DbusArg, SysAction};
     use crate::platform::linux::Desktop;
 
     #[test]
     fn resolve_show_quick_menu() {
-        let Some(SysAction::TauriEvent(event)) = resolve_for_desktop("showQuickMenu", &Desktop::Kde)
-        else {
+        let Some(SysAction::TauriEvent(event)) = resolve_app("showQuickMenu") else {
             panic!("showQuickMenu did not resolve to a TauriEvent");
         };
         assert_eq!(event, "show_quick_menu");
+        assert!(resolve_for_desktop("showQuickMenu", &Desktop::Kde).is_none());
     }
 
     #[test]
     fn resolve_show_emoji_menu() {
-        let Some(SysAction::TauriEvent(event)) = resolve_for_desktop("showEmojiMenu", &Desktop::Kde)
-        else {
+        let Some(SysAction::TauriEvent(event)) = resolve_app("showEmojiMenu") else {
             panic!("showEmojiMenu did not resolve to a TauriEvent");
         };
         assert_eq!(event, "show_emoji_menu");
+        assert!(resolve_for_desktop("showEmojiMenu", &Desktop::Kde).is_none());
     }
 
     #[test]

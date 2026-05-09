@@ -285,6 +285,13 @@ fn validate_action(
         }
         return;
     }
+    if let Some(id) = action.strip_prefix("app:") {
+        let id = id.trim();
+        if !system::is_known_app(id) {
+            errors.push(format!("{where_}: unknown app action \"{id}\""));
+        }
+        return;
+    }
     if explicit_text(action).is_some() {
         return;
     }

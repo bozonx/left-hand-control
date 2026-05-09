@@ -3,8 +3,10 @@ import ActionPickerCategoryPanel from '~/components/features/action-picker/Actio
 import ActionPickerCategoryTabs from '~/components/features/action-picker/ActionPickerCategoryTabs.vue'
 import ActionPickerValueField from '~/components/features/action-picker/ActionPickerValueField.vue'
 import {
+    appActionRef,
     commandActionRef,
     macroActionRef,
+    parseAppRef,
     parseCommandRef,
     parseMacroRef,
     parseSystemRef,
@@ -16,6 +18,7 @@ import {
     type ActionItem,
     type StaticCategory,
 } from '~/utils/actionCategories'
+import { APP_ACTIONS } from '~/utils/appActions'
 import { SYSTEM_ACTIONS } from '~/utils/systemActions'
 import { SYSTEM_MACROS } from '~/utils/systemMacros'
 
@@ -92,6 +95,16 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
                   },
               ]),
         {
+            id: 'app',
+            labelKey: 'categories.app',
+            icon: 'i-lucide-app-window',
+            items: APP_ACTIONS.map((action) => ({
+                label: t(action.nameKey),
+                value: appActionRef(action.id),
+                hint: action.id,
+            })),
+        },
+        {
             id: 'system',
             labelKey: 'categories.system',
             icon: 'i-lucide-settings-2',
@@ -137,6 +150,8 @@ function detectCategory(value: string): string | null {
     }
 
     if (parseSystemRef(value) !== null) return 'system'
+
+    if (parseAppRef(value) !== null) return 'app'
 
     for (const cat of STATIC_CATEGORIES) {
         if (cat.items.some((item) => item.value === value)) return cat.id

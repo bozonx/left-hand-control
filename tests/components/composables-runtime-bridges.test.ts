@@ -4,7 +4,7 @@ import { defineComponent, ref, nextTick, type Ref } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { commandActionRef, createDefaultConfig, macroActionRef, systemActionRef, textActionRef } from '~/types/config'
+import { appActionRef, commandActionRef, createDefaultConfig, macroActionRef, systemActionRef, textActionRef } from '~/types/config'
 import { useAppLocale } from '~/composables/useAppLocale'
 import { useAppTheme } from '~/composables/useAppTheme'
 import { useMacros } from '~/composables/useMacros'
@@ -33,6 +33,7 @@ vi.mock('vue-i18n', async () => {
       locale: ref('en-US'),
       t: (key: string, params?: Record<string, unknown>) => {
         if (key === 'systemActions.switchDesktop') return `Switch desktop ${params?.n}`
+        if (key === 'appActions.showQuickMenu') return 'Show Quick Action Menu'
         return key
       },
     })),
@@ -80,6 +81,7 @@ describe('runtime bridge composables', () => {
     expect(api!.displayAction(macroActionRef('moveLineDown'))).toBe('[Macro] Move line down')
     expect(api!.displayAction(commandActionRef('toggleMusic'))).toBe('[Cmd] Toggle music')
     expect(api!.displayAction(systemActionRef('switchDesktop2'))).toBe('[Sys] Switch desktop 2')
+    expect(api!.displayAction(appActionRef('showQuickMenu'))).toBe('[App] Show Quick Action Menu')
     expect(api!.displayAction(textActionRef('TODO: '))).toBe('[Text] "TODO: "')
     expect(api!.displayAction('Enter')).toBe('Enter')
     expect(api!.displayAction('')).toBe('')

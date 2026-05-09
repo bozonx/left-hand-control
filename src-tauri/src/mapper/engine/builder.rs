@@ -98,6 +98,17 @@ impl Engine {
                     }
                     continue;
                 }
+                if let Some(rest) = raw.strip_prefix("app:") {
+                    match system::resolve_app(rest.trim()) {
+                        Some(cmd) => steps.push(MacroStepItem::System(cmd)),
+                        None => log::debug!(
+                            "[mapper] macro {} step: app action {:?} not available",
+                            id,
+                            rest.trim()
+                        ),
+                    }
+                    continue;
+                }
                 if let Some(rest) = raw.strip_prefix("macro:") {
                     let nested_id = rest.trim();
                     let mut found = false;
@@ -231,6 +242,20 @@ impl Engine {
                         log::debug!(
                             "[mapper] system fn {:?} not available on this OS/DE ({})",
                             name, where_
+                        );
+                        return None;
+                    }
+                }
+            }
+            if let Some(rest) = trimmed.strip_prefix("app:") {
+                let name = rest.trim();
+                match system::resolve_app(name) {
+                    Some(cmd) => return Some(ActionDef::System(cmd)),
+                    None => {
+                        log::debug!(
+                            "[mapper] app action {:?} not available ({})",
+                            name,
+                            where_
                         );
                         return None;
                     }

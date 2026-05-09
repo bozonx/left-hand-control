@@ -428,7 +428,7 @@ export default {
   },
   quickActions: {
     title: 'Quick Actions',
-    subtitle: 'Configure the 15-cell menu opened by sys:showQuickMenu.',
+    subtitle: 'Configure the 15-cell menu opened by app:showQuickMenu.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
     addPage: 'Add page',
@@ -456,7 +456,7 @@ export default {
   },
   emoji: {
     title: 'Emoji & Symbols',
-    subtitle: 'Configure the 15-cell menu opened by sys:showEmojiMenu. Each cell can hold any text: emoji, UTF symbols, letters, or a short phrase.',
+    subtitle: 'Configure the 15-cell menu opened by app:showEmojiMenu. Each cell can hold any text: emoji, UTF symbols, letters, or a short phrase.',
     addPage: 'Add page',
     deletePage: 'Delete page',
     deletePageTitle: 'Page deletion',
@@ -751,7 +751,7 @@ export default {
     titleKey: 'Pick key',
     emptyCategory: 'This category is empty.',
     invalidValue:
-      'Use canonical action syntax only: KeyA, Digit1, ArrowLeft, Ctrl+KeyC, macro:<id>, cmd:<id>, sys:<id>, or text:<text>.',
+      'Use canonical action syntax only: KeyA, Digit1, ArrowLeft, Ctrl+KeyC, macro:<id>, cmd:<id>, sys:<id>, app:<id>, or text:<text>.',
     clearAria: 'Clear',
     textHint:
       'Text actions are stored as text:<your text>. Use this for characters and strings, not for physical key remaps.',
@@ -787,15 +787,18 @@ export default {
     commands: 'Commands',
     macros: 'Macros',
     systemMacros: 'System macros',
+    app: 'App',
     system: 'System',
     text: 'Text',
+  },
+  appActions: {
+    showQuickMenu: 'Show Quick Action Menu',
+    showEmojiMenu: 'Show Emoji & Symbols menu',
   },
   systemActions: {
     switchDesktop: 'Switch to desktop {n}',
     switchLayout: 'Switch to layout {n}',
     taskEntry: 'Activate task manager entry {n}',
-    showQuickMenu: 'Show Quick Action Menu',
-    showEmojiMenu: 'Show Emoji & Symbols menu',
     walkThroughWindowsAlternative: 'Walk Through Windows Alternative',
     walkThroughWindowsCurrentApp: 'Walk through windows of current application',
     showClipboardHistory: 'Show clipboard history',

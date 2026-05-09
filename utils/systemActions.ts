@@ -77,18 +77,6 @@ export const SYSTEM_ACTIONS: SystemAction[] = [
     platforms: ['linux-kde'],
   },
   {
-    id: 'showQuickMenu',
-    nameKey: 'systemActions.showQuickMenu',
-    hint: 'App: Show Quick Actions menu at screen center',
-    platforms: ['linux-kde'],
-  },
-  {
-    id: 'showEmojiMenu',
-    nameKey: 'systemActions.showEmojiMenu',
-    hint: 'App: Show Emoji & Symbols menu at screen center',
-    platforms: ['linux-kde'],
-  },
-  {
     id: 'volumeDown',
     nameKey: 'systemActions.volumeDown',
     hint: 'KDE: org.kde.kglobalaccel /component/kmix invokeShortcut decrease_volume',

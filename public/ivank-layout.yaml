@@ -18,7 +18,7 @@ layers:
       BracketRight: null
       Backslash: null
 
-      KeyA: sys:showEmojiMenu
+      KeyA: app:showEmojiMenu
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
       KeyF: PageDown
@@ -170,7 +170,7 @@ layers:
       Digit9: sys:taskEntry9
       Digit0: sys:taskEntry10
 
-      KeyQ: sys:showQuickMenu
+      KeyQ: app:showQuickMenu
       KeyW: Ctrl+KeyA
       KeyE: null
       KeyR: null

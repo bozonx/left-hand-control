@@ -1,10 +1,12 @@
 import type { AppConfig } from '~/types/config'
 import {
   parseCommandRef,
+  parseAppRef,
   parseMacroRef,
   parseSystemRef,
 } from '~/types/config'
 import { isCanonicalAction } from '~/utils/actionSyntax'
+import { appActionById } from '~/utils/appActions'
 import { systemActionById } from '~/utils/systemActions'
 import { systemMacroById } from '~/utils/systemMacros'
 
@@ -15,6 +17,7 @@ export type ActionValidationIssue =
   | 'unknownMacro'
   | 'unknownCommand'
   | 'unknownSystemAction'
+  | 'unknownAppAction'
 
 export interface ActionValidationOptions {
   allowMacros?: boolean
@@ -52,6 +55,11 @@ export function validateActionValue(
   const systemId = parseSystemRef(raw)
   if (systemId !== null) {
     return systemActionById(systemId) ? null : 'unknownSystemAction'
+  }
+
+  const appId = parseAppRef(raw)
+  if (appId !== null) {
+    return appActionById(appId) ? null : 'unknownAppAction'
   }
 
   return null

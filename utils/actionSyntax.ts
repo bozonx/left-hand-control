@@ -1,5 +1,6 @@
 import {
   parseCommandRef,
+  parseAppRef,
   parseMacroRef,
   parseSystemRef,
   parseTextAction,
@@ -168,7 +169,7 @@ export function isCanonicalAction(action: string | null | undefined): boolean {
   const raw = action ?? ''
   if (!raw) return true
 
-  if (parseMacroRef(raw) || parseCommandRef(raw) || parseSystemRef(raw)) return true
+  if (parseMacroRef(raw) || parseCommandRef(raw) || parseSystemRef(raw) || parseAppRef(raw)) return true
 
   const textAction = parseTextAction(raw)
   if (textAction !== null) return true
@@ -187,7 +188,7 @@ export function isCanonicalAction(action: string | null | undefined): boolean {
 export function isKeystrokeAction(action: string | null | undefined): boolean {
   const raw = action ?? ''
   if (!raw) return true
-  if (parseMacroRef(raw) || parseCommandRef(raw) || parseSystemRef(raw)) return false
+  if (parseMacroRef(raw) || parseCommandRef(raw) || parseSystemRef(raw) || parseAppRef(raw)) return false
   if (parseTextAction(raw) !== null) return false
   return isCanonicalAction(raw)
 }

@@ -801,6 +801,10 @@ impl Engine {
             if let Some(sys) = super::system::resolve(rest) {
                 out.push(Out::RunSystem(sys));
             }
+        } else if let Some(rest) = action.trim().strip_prefix("app:") {
+            if let Some(app) = super::system::resolve_app(rest) {
+                out.push(Out::RunSystem(app));
+            }
         }
     }
 }

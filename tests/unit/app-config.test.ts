@@ -10,8 +10,8 @@ describe('app modal config', () => {
     const { default: appConfig } = await import('~/app.config')
     const modal = appConfig.ui.modal
 
-    expect(modal.variants.transition.true.content).toBe('')
-
+    // scale-in/scale-out keyframes are globally overridden in main.css to pure fades,
+    // so the modal config must not re-introduce scale animation classes anywhere.
     const flatten = (v: unknown): string => {
       if (!v) return ''
       if (typeof v === 'string') return v

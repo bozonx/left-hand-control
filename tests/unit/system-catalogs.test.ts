@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { systemActionById, SYSTEM_ACTIONS } from '~/utils/systemActions'
+import { appActionById, APP_ACTIONS } from '~/utils/appActions'
 import { systemMacroById, SYSTEM_MACROS } from '~/utils/systemMacros'
 
 describe('system action catalog', () => {
@@ -21,6 +22,23 @@ describe('system action catalog', () => {
       nameParams: { n: 10 },
     })
     expect(systemActionById('missing')).toBeUndefined()
+  })
+})
+
+describe('app action catalog', () => {
+  it('provides unique ids and indexed lookup', () => {
+    const ids = APP_ACTIONS.map((action) => action.id)
+
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(appActionById('showQuickMenu')).toMatchObject({
+      id: 'showQuickMenu',
+      nameKey: 'appActions.showQuickMenu',
+    })
+    expect(appActionById('showEmojiMenu')).toMatchObject({
+      id: 'showEmojiMenu',
+      nameKey: 'appActions.showEmojiMenu',
+    })
+    expect(appActionById('missing')).toBeUndefined()
   })
 })
 

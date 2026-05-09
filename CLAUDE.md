@@ -53,7 +53,8 @@ Every bindable action is a plain string with a canonical prefix:
 | *(none)* | `KeyA`, `Ctrl+KeyC` | Key chord / keystroke |
 | `macro:` | `macro:copyLine` | User or system macro by id |
 | `cmd:` | `cmd:toggleMusic` | User shell command by id |
-| `sys:` | `sys:showQuickMenu` | Built-in system action |
+| `sys:` | `sys:switchDesktop1` | Built-in system action |
+| `app:` | `app:showQuickMenu` | Built-in app action |
 | `text:` | `text:TODO: ` | Literal text injection |
 | `null` | — | Explicit swallow (suppress the key) |
 | `""` / `undefined` | — | Native passthrough |
