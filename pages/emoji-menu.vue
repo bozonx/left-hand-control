@@ -105,7 +105,7 @@ onBeforeUnmount(() => {
         class="flex h-screen w-screen select-none items-center justify-center overflow-hidden bg-transparent p-4"
     >
         <div
-            class="flex w-full max-w-[520px] flex-col rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated)/95 p-3 shadow-2xl backdrop-blur-md"
+            class="flex w-full max-w-[520px] flex-col rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated) p-3 shadow-2xl"
         >
             <div class="mb-3 flex items-center justify-between gap-3">
                 <div class="min-w-0">

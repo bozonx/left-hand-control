@@ -504,7 +504,7 @@ onBeforeUnmount(() => {
             <Teleport to="body">
                 <div
                     v-if="captureActive"
-                    class="fixed inset-0 z-[9999] flex items-center justify-center bg-(--ui-bg)/80 p-4 backdrop-blur-sm"
+                    class="fixed inset-0 z-[9999] flex items-center justify-center bg-(--ui-bg)/90 p-4"
                     data-testid="key-capture-overlay"
                     role="dialog"
                     aria-modal="true"

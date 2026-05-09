@@ -45,11 +45,8 @@ body {
     'Roboto',
     'Helvetica Neue',
     sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   text-rendering: auto;
   line-height: 1.5;
-  /* Improves Inter font rendering and sharpness */
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   font-optical-sizing: auto;
 }
@@ -80,7 +77,6 @@ body {
 
 [role='tooltip'] {
   backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
 }
 
 /* Prevent accidental selection only in chrome-like controls. */
