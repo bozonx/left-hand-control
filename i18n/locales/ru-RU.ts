@@ -556,6 +556,7 @@ export default {
   },
   settings: {
     mapperTitle: 'Key-mapper',
+    mapperInfo: 'Информация о key-mapper',
     keyboardLabel: 'Клавиатура',
     keyboardHelp:
       'Выберите физическое устройство, события которого нужно перехватывать.',

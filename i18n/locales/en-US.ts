@@ -543,6 +543,7 @@ export default {
   },
   settings: {
     mapperTitle: 'Key-mapper',
+    mapperInfo: 'Key-mapper information',
     keyboardLabel: 'Keyboard',
     keyboardHelp:
       'Pick the physical device whose events should be intercepted.',

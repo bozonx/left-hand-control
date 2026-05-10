@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
-import FieldLabel from '~/components/FieldLabel.vue'
 import type { MapperState } from '~/composables/useMapper'
 
 interface SettingsIssue {
@@ -41,6 +40,22 @@ const emit = defineEmits<{
 
 const hasErrorIssues = computed(() =>
   props.issues.some((issue) => issue.severity === 'error'),
+)
+
+const { t } = useI18n()
+
+const mapperInfo = computed(() =>
+  [
+    t('settings.keyboardHelp'),
+    t('settings.mouseHelp'),
+    t('settings.mouseNativeActionNote'),
+    t('settings.mapperHint', {
+      input: '/dev/input/eventX',
+      uinput: 'uinput',
+      group: 'input',
+      uinputDev: '/dev/uinput',
+    }),
+  ].join('\n\n'),
 )
 
 const manualKeyboard = ref(false)
@@ -94,7 +109,18 @@ function selectMouse(value: string) {
   <UCard>
     <template #header>
       <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold">{{ $t('settings.mapperTitle') }}</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold">{{ $t('settings.mapperTitle') }}</h2>
+          <AppTooltip :text="mapperInfo" align="start" toggle-on-click>
+            <UButton
+              variant="ghost"
+              color="neutral"
+              icon="i-lucide-info"
+              size="xs"
+              :aria-label="$t('settings.mapperInfo')"
+            />
+          </AppTooltip>
+        </div>
         <div class="flex items-center gap-2">
           <AppTooltip :text="$t('settings.refreshDevicesTooltip')">
             <UButton
@@ -127,10 +153,7 @@ function selectMouse(value: string) {
 
       <UFormField>
         <template #label>
-          <FieldLabel
-            :label="$t('settings.keyboardLabel')"
-            :hint="$t('settings.keyboardHelp')"
-          />
+          <span class="text-xs text-(--ui-text-muted)">{{ $t('settings.keyboardLabel') }}</span>
         </template>
         <USelectMenu
           id="mapper-keyboard-device"
@@ -154,10 +177,7 @@ function selectMouse(value: string) {
 
       <UFormField>
         <template #label>
-          <FieldLabel
-            :label="$t('settings.mouseLabel')"
-            :hint="$t('settings.mouseHelp')"
-          />
+          <span class="text-xs text-(--ui-text-muted)">{{ $t('settings.mouseLabel') }}</span>
         </template>
         <USelectMenu
           id="mapper-mouse-device"
@@ -177,9 +197,6 @@ function selectMouse(value: string) {
           :disabled="mapper.status.value.running"
           @update:model-value="(value: string) => $emit('update:selectedMouse', value)"
         />
-        <p class="mt-2 text-xs text-(--ui-text-muted)">
-          {{ $t('settings.mouseNativeActionNote') }}
-        </p>
       </UFormField>
 
       <div class="flex items-center gap-2">
@@ -204,15 +221,6 @@ function selectMouse(value: string) {
           {{ mapper.error.value }}
         </span>
       </div>
-
-      <p class="text-xs text-(--ui-text-muted)">
-        <i18n-t keypath="settings.mapperHint" tag="span">
-          <template #input><code>/dev/input/eventX</code></template>
-          <template #uinput><code>uinput</code></template>
-          <template #group><code>input</code></template>
-          <template #uinputDev><code>/dev/uinput</code></template>
-        </i18n-t>
-      </p>
     </div>
   </UCard>
 </template>
