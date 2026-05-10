@@ -306,8 +306,8 @@ export default {
   keymap: {
     layerLabel: 'Layer',
     keyViewLabels: 'US layout',
-    keyViewCodes: 'Key codes',
-    keyViewNumeric: 'Numeric codes',
+    keyViewCodes: 'Internal codes',
+    keyViewNumeric: 'System codes',
     newLayer: 'New layer',
     edit: 'Edit',
     addDescription: 'Add description',
@@ -349,7 +349,7 @@ export default {
     deleteLayerTooltip: 'Delete layer',
     newLayerTooltip: 'Create new layer',
     editTitle: 'Edit: {label}',
-    keyCode: 'Key code: {code}',
+    keyCode: 'Internal code: {code}',
     editKeyAria: 'Edit {label}',
     swallowAction: 'Ignore in this layer',
     swallowLabel: 'Ignore',
@@ -363,7 +363,7 @@ export default {
     clearKeyboardTooltip:
       'Clears key bindings only. Extra keys are not affected.',
     keyboardInfo:
-      'Display modes affect labels only — the key code stays the same. "US layout" shows standard letter labels for visual reference. "Key codes" shows app-specific codes (e.g. KeyA, ArrowLeft). "Numeric codes" shows raw system event codes.',
+      'Display modes affect labels only — the key code stays the same. "US layout" shows standard letter labels for visual reference. "Internal codes" shows app-specific codes (e.g. KeyA, ArrowLeft). "System codes" shows raw system event codes.',
   },
   macros: {
     title: 'User macros',
