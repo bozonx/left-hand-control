@@ -1,7 +1,7 @@
 #![cfg(target_os = "linux")]
 #![allow(clippy::too_many_arguments)]
 
-use super::action::{explicit_text, parse_action};
+use super::action::{explicit_pause, explicit_text, parse_action};
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system;
@@ -228,6 +228,12 @@ fn validate_macro_step(
     if action.is_empty() {
         return;
     }
+    if action.starts_with("pause:") {
+        if explicit_pause(action).is_none() {
+            errors.push(format!("{where_}: invalid pause step \"{action}\""));
+        }
+        return;
+    }
     validate_action(
         action,
         where_,
@@ -295,6 +301,10 @@ fn validate_action(
         return;
     }
     if explicit_text(action).is_some() {
+        return;
+    }
+    if action.starts_with("pause:") {
+        errors.push(format!("{where_}: pause is only allowed inside macros"));
         return;
     }
     if parse_action(action).is_none() {
@@ -491,6 +501,44 @@ mod tests {
         });
 
         validate_config(&cfg).expect("validation should pass");
+    }
+
+    #[test]
+    fn accepts_pause_macro_step() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "m".into(),
+            steps: vec![MacroStep {
+                action: "pause:250".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+
+        validate_config(&cfg).expect("validation should pass");
+    }
+
+    #[test]
+    fn rejects_pause_outside_macro_steps() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "CapsLock".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("pause:250".into()),
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("pause is only allowed inside macros"));
     }
 
     #[test]

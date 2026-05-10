@@ -6,6 +6,7 @@
 use super::keys::code_to_key;
 use super::system::{SysAction, SysCommand};
 use evdev::Key;
+use std::time::Duration;
 
 /// A keystroke = optional modifiers + one main key.
 #[derive(Clone, Debug)]
@@ -23,6 +24,7 @@ pub enum MacroStepItem {
     System(SysAction),
     Command(SysCommand),
     Literal(String),
+    Pause(Duration),
 }
 
 pub fn explicit_text(action: &str) -> Option<String> {
@@ -30,6 +32,15 @@ pub fn explicit_text(action: &str) -> Option<String> {
         .trim()
         .strip_prefix("text:")
         .map(|text| text.to_string())
+}
+
+pub fn explicit_pause(action: &str) -> Option<Duration> {
+    let raw = action.trim();
+    let ms = raw.strip_prefix("pause:")?.parse::<u64>().ok()?;
+    if ms > 10_000 {
+        return None;
+    }
+    Some(Duration::from_millis(ms))
 }
 
 /// Parse an action like:

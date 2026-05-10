@@ -153,7 +153,7 @@ impl Engine {
                                         am.steps_emitted += 1;
                                         am.current_step += 1;
                                         if am.current_step < am.steps.len() {
-                                            am.next_wake = now + am.step_pause;
+                                            am.next_wake = next_macro_wake(now, &am);
                                             self.active_macro = Some(am);
                                             break;
                                         }
@@ -164,7 +164,7 @@ impl Engine {
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
-                                        am.next_wake = now + am.step_pause;
+                                        am.next_wake = next_macro_wake(now, &am);
                                         self.active_macro = Some(am);
                                         break;
                                     }
@@ -174,7 +174,7 @@ impl Engine {
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
-                                        am.next_wake = now + am.step_pause;
+                                        am.next_wake = next_macro_wake(now, &am);
                                         self.active_macro = Some(am);
                                         break;
                                     }
@@ -184,7 +184,16 @@ impl Engine {
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
-                                        am.next_wake = now + am.step_pause;
+                                        am.next_wake = next_macro_wake(now, &am);
+                                        self.active_macro = Some(am);
+                                        break;
+                                    }
+                                }
+                                MacroStepItem::Pause(duration) => {
+                                    am.steps_emitted += 1;
+                                    am.current_step += 1;
+                                    if am.current_step < am.steps.len() {
+                                        am.next_wake = now + *duration;
                                         self.active_macro = Some(am);
                                         break;
                                     }
@@ -217,7 +226,7 @@ impl Engine {
                             am.steps_emitted += 1;
                             am.current_step += 1;
                             if am.current_step < am.steps.len() {
-                                am.next_wake = now + am.step_pause;
+                                am.next_wake = next_macro_wake(now, &am);
                                 self.active_macro = Some(am);
                                 break;
                             }
@@ -898,6 +907,16 @@ fn is_primary_mouse_button(key: Key) -> bool {
     matches!(key, Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE)
 }
 
+fn next_macro_wake(now: Instant, am: &self::model::ActiveMacro) -> Instant {
+    use crate::mapper::action::MacroStepItem;
+
+    if matches!(am.steps.get(am.current_step), Some(MacroStepItem::Pause(_))) {
+        now
+    } else {
+        now + am.step_pause
+    }
+}
+
 fn is_mouse_button(key: Key) -> bool {
     (272..=281).contains(&key.code())
 }
@@ -950,6 +969,66 @@ mod tests {
                 },
                 Out::KeyRaw {
                     key: Key::KEY_H,
+                    down: false
+                },
+            ]
+        ));
+    }
+
+    #[test]
+    fn macro_pause_step_delays_following_steps() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "hello".into(),
+            steps: vec![
+                MacroStep {
+                    action: "KeyH".into(),
+                },
+                MacroStep {
+                    action: "pause:100".into(),
+                },
+                MacroStep {
+                    action: "KeyI".into(),
+                },
+            ],
+            step_pause_ms: Some(1),
+            modifier_delay_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.execute_remote("macro:hello", &mut out);
+        engine.tick(now + Duration::from_millis(1), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::KeyRaw {
+                    key: Key::KEY_H,
+                    down: true
+                },
+                Out::KeyRaw {
+                    key: Key::KEY_H,
+                    down: false
+                },
+            ]
+        ));
+
+        out.clear();
+        engine.tick(now + Duration::from_millis(1), &mut out);
+        assert!(out.is_empty());
+        engine.tick(now + Duration::from_millis(100), &mut out);
+        assert!(out.is_empty());
+        engine.tick(now + Duration::from_millis(101), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::KeyRaw {
+                    key: Key::KEY_I,
+                    down: true
+                },
+                Out::KeyRaw {
+                    key: Key::KEY_I,
                     down: false
                 },
             ]

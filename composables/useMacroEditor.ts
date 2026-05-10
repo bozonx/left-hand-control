@@ -1,5 +1,5 @@
 import { parseMacroRef, type Macro, type MacroStep } from '~/types/config'
-import { isCanonicalAction } from '~/utils/actionSyntax'
+import { isCanonicalAction, parsePauseAction } from '~/utils/actionSyntax'
 import { validateActionValue } from '~/utils/actionValidation'
 import { randomId } from '~/utils/keys'
 import { systemMacroById, type SystemMacro } from '~/utils/systemMacros'
@@ -56,6 +56,10 @@ export function useMacroEditor() {
 
   function addStep(macro: Macro) {
     macro.steps.push({ id: randomId(), action: '' })
+  }
+
+  function addPauseStep(macro: Macro, ms = 100) {
+    macro.steps.push({ id: randomId(), action: `pause:${ms}` })
   }
 
   function removeStep(macro: Macro, stepId: string) {
@@ -124,6 +128,11 @@ export function useMacroEditor() {
   function stepError(step: MacroStep, excludedMacroId?: string): string | null {
     const raw = step.action?.trim() ?? ''
     if (!raw) return null
+    const pauseMs = parsePauseAction(raw)
+    if (pauseMs !== null) {
+      return pauseMs <= 10000 ? null : t('macros.stepErrors.pauseRange')
+    }
+    if (raw.startsWith('pause:')) return t('macros.stepErrors.pauseFormat')
     if (!isCanonicalAction(raw)) return t('picker.invalidValue')
     const macroId = parseMacroRef(raw)
     if (validateActionValue(raw, config.value, {
@@ -158,6 +167,7 @@ export function useMacroEditor() {
     removeMacro,
     moveMacro,
     addStep,
+    addPauseStep,
     removeStep,
     moveStep,
     uiKeyOf,

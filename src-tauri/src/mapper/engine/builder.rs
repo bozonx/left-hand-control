@@ -1,6 +1,6 @@
 use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
 use super::Engine;
-use crate::mapper::action::{explicit_text, parse_action, MacroStepItem};
+use crate::mapper::action::{explicit_pause, explicit_text, parse_action, MacroStepItem};
 use crate::mapper::config::{ActionSpec, AppConfig};
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
@@ -155,6 +155,10 @@ impl Engine {
                 }
                 if let Some(text) = explicit_text(raw) {
                     steps.push(MacroStepItem::Literal(text));
+                    continue;
+                }
+                if let Some(duration) = explicit_pause(raw) {
+                    steps.push(MacroStepItem::Pause(duration));
                     continue;
                 }
                 match parse_action(raw) {

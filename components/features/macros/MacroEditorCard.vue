@@ -24,6 +24,7 @@ const emit = defineEmits<{
   moveUp: [uiKey: string]
   moveDown: [uiKey: string]
   addStep: [macro: Macro]
+  addPauseStep: [macro: Macro]
   moveStep: [macro: Macro, index: number, delta: number]
   removeStep: [macro: Macro, stepId: string]
   nameFocused: [uiKey: string]
@@ -140,15 +141,27 @@ async function copyMacroId() {
       <div class="border-t border-(--ui-border) pt-3">
         <div class="flex items-center justify-between mb-2">
           <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('macros.steps') }}</div>
-          <UButton
-            size="xs"
-            icon="i-lucide-plus"
-            variant="outline"
-            class="opacity-0 group-hover:opacity-100 transition-opacity"
-            @click="$emit('addStep', macro)"
-          >
-            {{ $t('macros.addStep') }}
-          </UButton>
+          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <AppTooltip :text="$t('macros.addPauseStep')">
+              <UButton
+                size="xs"
+                icon="i-lucide-clock"
+                variant="ghost"
+                color="neutral"
+                square
+                :aria-label="$t('macros.addPauseStep')"
+                @click="$emit('addPauseStep', macro)"
+              />
+            </AppTooltip>
+            <UButton
+              size="xs"
+              icon="i-lucide-plus"
+              variant="outline"
+              @click="$emit('addStep', macro)"
+            >
+              {{ $t('macros.addStep') }}
+            </UButton>
+          </div>
         </div>
 
         <div

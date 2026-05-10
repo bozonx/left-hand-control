@@ -165,6 +165,15 @@ function isModifierToken(token: string) {
   return MOD_TOKENS.has(token)
 }
 
+export function parsePauseAction(action: string | null | undefined): number | null {
+  const raw = action ?? ''
+  const match = raw.match(/^pause:(\d+)$/)
+  if (!match) return null
+  const value = Number(match[1])
+  if (!Number.isSafeInteger(value)) return null
+  return value
+}
+
 export function isCanonicalAction(action: string | null | undefined): boolean {
   const raw = action ?? ''
   if (!raw) return true

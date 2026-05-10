@@ -82,10 +82,11 @@ export interface LayerKeymap {
 }
 
 // One step of a macro. The value is a full action string: key chord,
-// `macro:<id>`, `sys:<id>`, `app:<id>`, `cmd:<id>`, or `text:<text>`.
+// `macro:<id>`, `sys:<id>`, `app:<id>`, `cmd:<id>`, `text:<text>`,
+// or macro-only `pause:<ms>`.
 export interface MacroStep {
   id: string
-  // The action spec string (e.g. 'KeyA', 'cmd:bar', 'app:showQuickMenu', 'text:hello').
+  // The action spec string (e.g. 'KeyA', 'cmd:bar', 'app:showQuickMenu', 'text:hello', 'pause:100').
   action: string
 }
 

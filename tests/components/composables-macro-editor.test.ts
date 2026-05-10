@@ -71,12 +71,18 @@ describe('useMacroEditor', () => {
     firstMacro.steps[0]!.action = 'Ctrl+KeyC'
     expect(vm.stepError(firstMacro.steps[0])).toBeNull()
     expect(vm.stepWarning(firstMacro.steps[0])).toBeNull()
+    vm.addPauseStep(firstMacro)
+    expect(firstMacro.steps[1]!.action).toBe('pause:100')
+    expect(vm.stepError(firstMacro.steps[1])).toBeNull()
+    firstMacro.steps[1]!.action = 'pause:10001'
+    expect(vm.stepError(firstMacro.steps[1])).toContain('between')
+    firstMacro.steps[1]!.action = 'pause:100'
     vm.addStep(firstMacro)
-    firstMacro.steps[1]!.action = 'macro:Ctrl+KeyV'
-    vm.moveStep(firstMacro, 1, -1)
-    expect(firstMacro.steps.map((step) => step.action)).toEqual(['macro:Ctrl+KeyV', 'Ctrl+KeyC'])
+    firstMacro.steps[2]!.action = 'macro:Ctrl+KeyV'
+    vm.moveStep(firstMacro, 2, -1)
+    expect(firstMacro.steps.map((step) => step.action)).toEqual(['Ctrl+KeyC', 'macro:Ctrl+KeyV', 'pause:100'])
     vm.removeStep(firstMacro, stepId)
-    expect(firstMacro.steps).toHaveLength(1)
+    expect(firstMacro.steps).toHaveLength(2)
 
     const sameUiKey = vm.uiKeyOf(firstMacro)
     expect(vm.uiKeyOf(firstMacro)).toBe(sameUiKey)

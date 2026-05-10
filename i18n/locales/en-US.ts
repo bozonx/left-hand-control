@@ -393,6 +393,8 @@ export default {
     },
     stepErrors: {
       macroCycle: 'Macro references cannot form a cycle.',
+      pauseFormat: 'Pause step must use pause:<milliseconds>.',
+      pauseRange: 'Pause must be between 0 and 10000 ms.',
     },
     stepWarnings: {
       empty: 'Empty step — pick an action or remove it.',
@@ -406,6 +408,9 @@ export default {
     usedIn: 'Used in:',
     steps: 'Steps',
     addStep: 'Add step',
+    addPauseStep: 'Add pause',
+    pauseStep: 'Turn into pause',
+    actionStep: 'Turn into action',
     stepsEmpty: 'No steps yet. Each step — one chord or action.',
     stepPh: 'Pick an action',
     moveUp: 'Up',

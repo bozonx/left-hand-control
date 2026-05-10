@@ -11,6 +11,7 @@ const {
     removeMacro,
     moveMacro,
     addStep,
+    addPauseStep,
     removeStep,
     moveStep,
     uiKeyOf,
@@ -140,6 +141,7 @@ function cancelRemove() {
                     @move-up="moveMacro($event, -1)"
                     @move-down="moveMacro($event, 1)"
                     @add-step="addStep"
+                    @add-pause-step="addPauseStep"
                     @move-step="moveStep"
                     @remove-step="removeStep"
                     @name-focused="clearFocusMacroKey"
