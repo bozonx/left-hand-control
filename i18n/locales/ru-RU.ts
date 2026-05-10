@@ -55,7 +55,8 @@ export default {
     moveDown: 'Вниз',
     expand: 'Развернуть',
     collapse: 'Свернуть',
-    usingGlobalDefault: 'Глобальное значение: {value}. Нажмите, чтобы изменить.',
+    usingGlobalDefault:
+      'Глобальное значение: {value}. Нажмите, чтобы изменить.',
   },
   tabs: {
     home: 'Главная',
@@ -297,8 +298,7 @@ export default {
       invalidTrigger: 'Триггер {trigger} нельзя использовать для правила.',
       duplicateTrigger:
         'Триггер {trigger} используется в нескольких активных правилах.',
-      unknownLayer:
-        'Правило {trigger} ссылается на слой, которого больше нет.',
+      unknownLayer: 'Правило {trigger} ссылается на слой, которого больше нет.',
       invalidTapAction: 'В правиле {trigger} некорректное действие на нажатие.',
       invalidHoldAction:
         'В правиле {trigger} некорректное действие на удержание. Нужно выбрать клавишу или сочетание.',
@@ -441,8 +441,7 @@ export default {
   },
   quickActions: {
     title: 'Быстрые действия',
-    subtitle:
-      'Настройте меню из 15 ячеек, которое открывается действием app:showQuickMenu.',
+    subtitle: 'Открывается по вызову действий app:showQuickMenu.',
     empty:
       'Пока нет быстрых действий. Добавьте первое, чтобы оно появилось в меню.',
     addBtn: 'Добавить действие',
@@ -459,13 +458,12 @@ export default {
     clearAction: 'Очистить',
     moveUp: 'Выше',
     moveDown: 'Ниже',
-    menuHint:
-      'Tab переключает страницы. Q W E R T / A S D F G / Z X C V B запускают действия.',
+    menuTabHint: 'Tab переключает страницы.',
+    menuKeysHint: 'Q W E R T / A S D F G / Z X C V B запускают действие.',
     pageName: 'Страница {n}',
     emptyCell: 'Пусто',
     cellLabel: 'Клавиша {key}',
-    cellHint:
-      'Перемещение действия меняет клавишу, которая запускает его в меню.',
+
     confirmDeletePageTitle: 'Удалить страницу?',
     confirmDeletePageBody:
       'Страница будет удалена вместе со всеми назначенными ячейками.',
@@ -473,7 +471,7 @@ export default {
   emoji: {
     title: 'Emoji и символы',
     subtitle:
-      'Настройте меню из 15 ячеек, которое открывается действием app:showEmojiMenu. В каждую ячейку можно вставить эмоджи, UTF-символ, букву или короткую фразу.',
+      'Открывается по вызову действий app:showEmojiMenu. В каждую ячейку можно вставить эмоджи, UTF-символ (например ≠), любой другой символ (например №) или короткую фразу (например "// TODO: ").',
     addPage: 'Добавить страницу',
     deletePage: 'Удалить страницу',
     deletePageTitle: 'Удаление страницы',
@@ -499,8 +497,8 @@ export default {
     },
   },
   emojiMenu: {
-    tabHint:
-      'Tab переключает страницы. Q W E R T / A S D F G / Z X C V B вставляют выбранную ячейку.',
+    tabHint: 'Tab переключает страницы.',
+    keysHint: 'Q W E R T / A S D F G / Z X C V B вставляют выбранную ячейку.',
     insertFailedTitle: 'Не удалось вставить',
     insertFailedBody:
       'Не удалось вставить текст. Запустите маппер и проверьте, что xdg-desktop-portal доступен.',

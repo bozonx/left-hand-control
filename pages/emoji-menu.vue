@@ -112,11 +112,23 @@ onBeforeUnmount(() => {
                     <p class="truncate text-sm font-semibold">
                         {{ page.name }}
                     </p>
-                    <p class="text-xs text-(--ui-text-muted)">
+                    <p
+                        v-if="pages.length > 1"
+                        class="text-xs text-(--ui-text-muted)"
+                    >
                         {{ $t('emojiMenu.tabHint') }}
                     </p>
+                    <p class="text-xs text-(--ui-text-muted)">
+                        {{ $t('emojiMenu.keysHint') }}
+                    </p>
                 </div>
-                <UBadge color="neutral" variant="outline" size="sm" class="shrink-0 whitespace-nowrap">
+                <UBadge
+                    v-if="pages.length > 1"
+                    color="neutral"
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0 whitespace-nowrap"
+                >
                     {{ pageIndex + 1 }} / {{ pages.length }}
                 </UBadge>
             </div>
@@ -148,7 +160,8 @@ onBeforeUnmount(() => {
                             <span
                                 class="overflow-hidden text-center"
                                 :class="cellContentClass(emojiPage.cells[key])"
-                            >{{ emojiPage.cells[key] || ' ' }}</span>
+                                >{{ emojiPage.cells[key] || ' ' }}</span
+                            >
                         </button>
                     </div>
                 </section>

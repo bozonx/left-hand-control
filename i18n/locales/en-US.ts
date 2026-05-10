@@ -432,7 +432,7 @@ export default {
   },
   quickActions: {
     title: 'Quick Actions',
-    subtitle: 'Configure the 15-cell menu opened by app:showQuickMenu.',
+    subtitle: 'Opened by the app:showQuickMenu action.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
     addPage: 'Add page',
@@ -448,19 +448,20 @@ export default {
     clearAction: 'Clear',
     moveUp: 'Move up',
     moveDown: 'Move down',
-    menuHint:
-      'Tab switches pages. Q W E R T / A S D F G / Z X C V B run actions.',
+    menuTabHint: 'Tab switches pages.',
+    menuKeysHint: 'Q W E R T / A S D F G / Z X C V B run the selected action.',
     pageName: 'Page {n}',
     emptyCell: 'Empty',
     cellLabel: 'Key {key}',
-    cellHint: 'Moving this action changes which menu key runs it.',
+
     confirmDeletePageTitle: 'Delete page?',
     confirmDeletePageBody:
       'The page and all assigned cells on it will be deleted.',
   },
   emoji: {
     title: 'Emoji & Symbols',
-    subtitle: 'Configure the 15-cell menu opened by app:showEmojiMenu. Each cell can hold any text: emoji, UTF symbols, letters, or a short phrase.',
+    subtitle:
+      'Opened by the app:showEmojiMenu action. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. "// TODO: ").',
     addPage: 'Add page',
     deletePage: 'Delete page',
     deletePageTitle: 'Page deletion',
@@ -486,8 +487,8 @@ export default {
     },
   },
   emojiMenu: {
-    tabHint:
-      'Tab switches pages. Q W E R T / A S D F G / Z X C V B insert the selected cell.',
+    tabHint: 'Tab switches pages.',
+    keysHint: 'Q W E R T / A S D F G / Z X C V B insert the selected cell.',
     insertFailedTitle: 'Failed to insert',
     insertFailedBody:
       'The text could not be inserted. Start the mapper and check that xdg-desktop-portal is available.',

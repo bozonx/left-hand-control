@@ -116,12 +116,24 @@ function onMenuCellClick(action: QuickAction | undefined) {
                     <p class="truncate text-sm font-semibold">
                         {{ pageName || $t('quickActions.title') }}
                     </p>
+                    <p
+                        v-if="pages.length > 1"
+                        class="text-xs text-(--ui-text-muted)"
+                    >
+                        {{ $t('quickActions.menuTabHint') }}
+                    </p>
                     <p class="text-xs text-(--ui-text-muted)">
-                        {{ $t('quickActions.menuHint') }}
+                        {{ $t('quickActions.menuKeysHint') }}
                     </p>
                 </div>
-                <UBadge color="neutral" variant="outline" size="sm" class="shrink-0 whitespace-nowrap">
-                    {{ pageIndex + 1 }} / {{ Math.max(1, pages.length) }}
+                <UBadge
+                    v-if="pages.length > 1"
+                    color="neutral"
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0 whitespace-nowrap"
+                >
+                    {{ pageIndex + 1 }} / {{ pages.length }}
                 </UBadge>
             </div>
 
@@ -165,7 +177,9 @@ function onMenuCellClick(action: QuickAction | undefined) {
                             >
                                 <UIcon
                                     v-if="quickPage[index]?.action.trim()"
-                                    :name="quickPage[index].icon || 'i-lucide-zap'"
+                                    :name="
+                                        quickPage[index].icon || 'i-lucide-zap'
+                                    "
                                     class="h-4 w-4 shrink-0 text-(--ui-text-muted)"
                                 />
                                 <span
