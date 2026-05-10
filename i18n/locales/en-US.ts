@@ -21,6 +21,8 @@ export default {
     gameModeLabel: 'GAME',
     settingsTooltip: 'Settings',
     activeLayoutTooltip: 'Active layout',
+    layoutsBack: 'Layouts',
+    saveLayoutTooltip: 'Save "{name}"',
   },
   common: {
     notSet: 'Not set',

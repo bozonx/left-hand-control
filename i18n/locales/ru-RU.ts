@@ -21,6 +21,8 @@ export default {
     gameModeLabel: 'GAME',
     settingsTooltip: 'Настройки',
     activeLayoutTooltip: 'Активная раскладка',
+    layoutsBack: 'Раскладки',
+    saveLayoutTooltip: 'Сохранить «{name}»',
   },
   common: {
     notSet: 'Не задано',

@@ -87,11 +87,10 @@ const currentLayoutLabel = computed<string>(() => {
 const selectedDevice = computed(
     () => config.value.settings.inputDevicePath ?? '',
 )
-const saveLabel = computed(() =>
-    isLayoutDirty.value ? t('common.save') : t('app.saved'),
-)
-const saveIcon = computed(() =>
-    isLayoutDirty.value ? 'i-lucide-save' : 'i-lucide-check',
+const saveTooltip = computed(() =>
+    isLayoutDirty.value
+        ? t('app.saveLayoutTooltip', { name: currentLayoutLabel.value })
+        : t('app.saved'),
 )
 const gameModeTooltip = computed(() => {
     if (!gameMode.status.value.active) return t('settings.gameModeInactive')
@@ -177,6 +176,26 @@ onMounted(() => {
                 >
                     {{ $t('app.title') }}
                 </span>
+
+                <span
+                    v-if="loaded"
+                    class="shrink-0 mx-1 h-5 w-px bg-(--ui-border)"
+                    aria-hidden="true"
+                />
+
+                <AppTooltip v-if="loaded" :text="saveTooltip">
+                    <UButton
+                        icon="i-lucide-save"
+                        size="sm"
+                        :color="isLayoutDirty ? 'primary' : 'neutral'"
+                        :variant="isLayoutDirty ? 'solid' : 'outline'"
+                        :loading="saveBusy"
+                        :disabled="!isLayoutDirty"
+                        @click="saveCurrentLayout"
+                    >
+                        {{ $t('common.save') }}
+                    </UButton>
+                </AppTooltip>
             </div>
 
             <div class="flex items-center gap-3 shrink-0">
@@ -296,50 +315,44 @@ onMounted(() => {
             </div>
         </div>
 
-        <!-- Row 2: layout context — name + save + edit tabs of the active layout -->
+        <!-- Row 2: layout context — breadcrumb to layouts + current name + edit tabs -->
         <div
             ref="contextRowRef"
             class="flex items-center px-4 gap-2 h-[var(--app-context-height)] border-t border-(--ui-border)/60 bg-(--ui-bg)"
         >
-            <UIcon
-                name="i-lucide-folder-open"
-                class="shrink-0 text-(--ui-text-muted) opacity-70"
+            <UButton
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                icon="i-lucide-arrow-left"
+                class="shrink-0 -ml-2 transition-all duration-200"
+                :class="
+                    isActive('/')
+                        ? 'text-primary bg-(--ui-primary)/8'
+                        : 'text-(--ui-text-muted) hover:text-primary'
+                "
+                to="/"
+            >
+                {{ $t('app.layoutsBack') }}
+            </UButton>
+
+            <span
+                class="shrink-0 text-(--ui-text-muted) opacity-50 select-none"
                 aria-hidden="true"
-            />
+            >/</span>
 
             <AppTooltip :text="currentLayoutLabel">
-                <UButton
-                    color="neutral"
-                    variant="ghost"
-                    size="sm"
-                    class="shrink min-w-0 max-w-[14rem] transition-all duration-200"
-                    :class="
-                        isActive('/')
-                            ? 'text-primary bg-(--ui-primary)/8'
-                            : 'text-(--ui-text-highlighted) hover:text-primary'
-                    "
-                    to="/"
+                <span
+                    class="block shrink min-w-0 max-w-[14rem] truncate px-1 text-sm font-semibold text-(--ui-text-highlighted)"
                 >
-                    <span class="block truncate text-sm font-semibold">
-                        {{ currentLayoutLabel }}
-                    </span>
-                </UButton>
+                    {{ currentLayoutLabel }}
+                </span>
             </AppTooltip>
 
-            <AppTooltip
-                :disabled="!isLayoutDirty"
-                :text="$t('app.dirtyTooltip')"
-            >
-                <UButton
-                    :icon="saveIcon"
-                    size="sm"
-                    :color="isLayoutDirty ? 'primary' : 'neutral'"
-                    :variant="isLayoutDirty ? 'solid' : 'outline'"
-                    :loading="saveBusy"
-                    :disabled="!isLayoutDirty"
-                    square
-                    :aria-label="saveLabel"
-                    @click="saveCurrentLayout"
+            <AppTooltip v-if="isLayoutDirty" :text="$t('app.dirtyTooltip')">
+                <span
+                    class="shrink-0 inline-block size-2 rounded-full bg-(--ui-primary)"
+                    aria-hidden="true"
                 />
             </AppTooltip>
 
