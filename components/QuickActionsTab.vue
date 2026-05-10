@@ -296,9 +296,15 @@ function moveQuickActionWithinPage(fromCellIndex: number, toCellIndex: number) {
             selectedIndex.value >= pageStart.value &&
             selectedIndex.value < pageStart.value + pageSize
         ) {
-            if (fromIndex < selectedIndex.value && selectedIndex.value <= toIndex) {
+            if (
+                fromIndex < selectedIndex.value &&
+                selectedIndex.value <= toIndex
+            ) {
                 selectedIndex.value -= 1
-            } else if (toIndex <= selectedIndex.value && selectedIndex.value < fromIndex) {
+            } else if (
+                toIndex <= selectedIndex.value &&
+                selectedIndex.value < fromIndex
+            ) {
                 selectedIndex.value += 1
             }
         }
@@ -309,12 +315,19 @@ function initQuickActionsSortable() {
     if (quickActionsSortable || !quickActionsGridRef.value) return
     quickActionsSortable = Sortable.create(quickActionsGridRef.value, {
         animation: 150,
+        forceFallback: true,
         handle: '.quick-action-drag-handle',
         draggable: '[data-sortable-cell]',
         ghostClass: 'opacity-50',
         onEnd(event: SortableEvent) {
-            if (event.oldIndex === undefined || event.newIndex === undefined) return
+            if (event.oldIndex === undefined || event.newIndex === undefined)
+                return
             moveQuickActionWithinPage(event.oldIndex, event.newIndex)
+            nextTick(() => {
+                quickActionsSortable?.sort(
+                    pageItems.value.map((_, i) => `qa-cell-${i}`),
+                )
+            })
         },
     })
 }
@@ -333,6 +346,12 @@ watch(confirmDeletePageOpen, async (open) => {
     if (!open) return
     await nextTick()
     deletePageConfirm.value?.$el?.focus()
+})
+watch(selectedPageIndex, async () => {
+    quickActionsSortable?.destroy()
+    quickActionsSortable = null
+    await nextTick()
+    initQuickActionsSortable()
 })
 onMounted(ensurePages)
 onMounted(async () => {
@@ -403,8 +422,9 @@ onBeforeUnmount(() => {
                             class="grid grid-cols-5 gap-2 rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-elevated) p-3"
                         >
                             <button
-                                v-for="item in pageItems"
+                                v-for="(item, cellIndex) in pageItems"
                                 :key="item.key"
+                                :data-id="'qa-cell-' + cellIndex"
                                 type="button"
                                 data-sortable-cell
                                 class="flex h-28 min-w-0 flex-col items-start gap-2 rounded-md border bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10"
@@ -417,7 +437,9 @@ onBeforeUnmount(() => {
                                     onCellClick(item.actionIndex, item.action)
                                 "
                             >
-                                <span class="flex w-full items-center justify-between gap-2">
+                                <span
+                                    class="flex w-full items-center justify-between gap-2"
+                                >
                                     <span
                                         class="font-mono text-xs uppercase text-(--ui-primary)"
                                     >
@@ -432,7 +454,10 @@ onBeforeUnmount(() => {
                                         :aria-label="$t('common.drag')"
                                         @click.stop
                                     >
-                                        <UIcon name="i-lucide-grip" class="h-3.5 w-3.5" />
+                                        <UIcon
+                                            name="i-lucide-grip"
+                                            class="h-3.5 w-3.5"
+                                        />
                                     </span>
                                 </span>
                                 <span

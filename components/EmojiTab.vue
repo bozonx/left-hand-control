@@ -129,9 +129,11 @@ function moveSelectedEmojiKey(fromIndex: number, toIndex: number) {
     if (selectedIndex === fromIndex) {
         selectedKey.value = EMOJI_HOTKEYS[toIndex] ?? selectedKey.value
     } else if (fromIndex < selectedIndex && selectedIndex <= toIndex) {
-        selectedKey.value = EMOJI_HOTKEYS[selectedIndex - 1] ?? selectedKey.value
+        selectedKey.value =
+            EMOJI_HOTKEYS[selectedIndex - 1] ?? selectedKey.value
     } else if (toIndex <= selectedIndex && selectedIndex < fromIndex) {
-        selectedKey.value = EMOJI_HOTKEYS[selectedIndex + 1] ?? selectedKey.value
+        selectedKey.value =
+            EMOJI_HOTKEYS[selectedIndex + 1] ?? selectedKey.value
     }
 }
 
@@ -160,12 +162,19 @@ function initEmojiSortable() {
     if (emojiSortable || !emojiGridRef.value) return
     emojiSortable = Sortable.create(emojiGridRef.value, {
         animation: 150,
+        forceFallback: true,
         handle: '.emoji-drag-handle',
         draggable: '[data-sortable-cell]',
         ghostClass: 'opacity-50',
         onEnd(event: SortableEvent) {
-            if (event.oldIndex === undefined || event.newIndex === undefined) return
+            if (event.oldIndex === undefined || event.newIndex === undefined)
+                return
             moveEmojiCellWithinPage(event.oldIndex, event.newIndex)
+            nextTick(() => {
+                emojiSortable?.sort(
+                    EMOJI_HOTKEYS.map((_, i) => `emoji-cell-${i}`),
+                )
+            })
         },
     })
 }
@@ -182,6 +191,13 @@ watch(confirmDeletePageOpen, async (open) => {
     if (!open) return
     await nextTick()
     deletePageConfirm.value?.$el?.focus()
+})
+
+watch(selectedPageIndex, async () => {
+    emojiSortable?.destroy()
+    emojiSortable = null
+    await nextTick()
+    initEmojiSortable()
 })
 
 onMounted(ensurePages)
@@ -253,8 +269,9 @@ onBeforeUnmount(() => {
                         class="grid grid-cols-5 gap-2 rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-elevated) p-3"
                     >
                         <button
-                            v-for="key in EMOJI_HOTKEYS"
+                            v-for="(key, index) in EMOJI_HOTKEYS"
                             :key="key"
+                            :data-id="'emoji-cell-' + index"
                             type="button"
                             data-sortable-cell
                             class="flex aspect-square min-h-20 flex-col items-center justify-center gap-2 rounded-md border bg-(--ui-bg) p-2 transition hover:border-primary hover:bg-primary/10"
@@ -265,7 +282,9 @@ onBeforeUnmount(() => {
                             "
                             @click="selectedKey = key"
                         >
-                            <span class="flex w-full items-center justify-between gap-2">
+                            <span
+                                class="flex w-full items-center justify-between gap-2"
+                            >
                                 <span
                                     class="font-mono text-xs uppercase text-(--ui-primary)"
                                     >{{ EMOJI_HOTKEY_LABELS[key] }}</span
@@ -275,7 +294,10 @@ onBeforeUnmount(() => {
                                     :aria-label="$t('common.drag')"
                                     @click.stop
                                 >
-                                    <UIcon name="i-lucide-grip" class="h-3.5 w-3.5" />
+                                    <UIcon
+                                        name="i-lucide-grip"
+                                        class="h-3.5 w-3.5"
+                                    />
                                 </span>
                             </span>
                             <span
