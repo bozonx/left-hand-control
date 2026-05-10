@@ -31,13 +31,6 @@ const pauseMs = computed({
   },
 })
 
-function setActionStep() {
-  emit('update:step', { ...props.step, action: '' })
-}
-
-function setPauseStep() {
-  emit('update:step', { ...props.step, action: 'pause:100' })
-}
 </script>
 
 <template>
@@ -74,17 +67,6 @@ function setPauseStep() {
       </p>
     </UFormField>
     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-      <AppTooltip :text="isPauseStep ? $t('macros.actionStep') : $t('macros.pauseStep')">
-        <UButton
-          :icon="isPauseStep ? 'i-lucide-keyboard' : 'i-lucide-clock'"
-          size="xs"
-          variant="ghost"
-          color="neutral"
-          square
-          :aria-label="isPauseStep ? $t('macros.actionStep') : $t('macros.pauseStep')"
-          @click="isPauseStep ? setActionStep() : setPauseStep()"
-        />
-      </AppTooltip>
       <AppTooltip :text="$t('common.moveUp')">
         <UButton
           icon="i-lucide-chevron-up"

@@ -142,17 +142,15 @@ async function copyMacroId() {
         <div class="flex items-center justify-between mb-2">
           <div class="text-xs font-medium text-(--ui-text-muted)">{{ $t('macros.steps') }}</div>
           <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <AppTooltip :text="$t('macros.addPauseStep')">
-              <UButton
-                size="xs"
-                icon="i-lucide-clock"
-                variant="ghost"
-                color="neutral"
-                square
-                :aria-label="$t('macros.addPauseStep')"
-                @click="$emit('addPauseStep', macro)"
-              />
-            </AppTooltip>
+            <UButton
+              size="xs"
+              icon="i-lucide-clock"
+              variant="ghost"
+              color="neutral"
+              @click="$emit('addPauseStep', macro)"
+            >
+              {{ $t('macros.addPauseStep') }}
+            </UButton>
             <UButton
               size="xs"
               icon="i-lucide-plus"
