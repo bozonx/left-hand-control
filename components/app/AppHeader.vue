@@ -208,7 +208,9 @@ onMounted(() => {
                     >
                         <UButton
                             :color="
-                                mapper.status.value.running ? 'error' : 'primary'
+                                mapper.status.value.running
+                                    ? 'error'
+                                    : 'primary'
                             "
                             :variant="
                                 mapper.status.value.running ? 'soft' : 'solid'
@@ -240,7 +242,9 @@ onMounted(() => {
                     >
                         <UBadge
                             :color="
-                                mapper.status.value.running ? 'primary' : 'neutral'
+                                mapper.status.value.running
+                                    ? 'primary'
+                                    : 'neutral'
                             "
                             :variant="
                                 mapper.status.value.running ? 'soft' : 'outline'
@@ -280,14 +284,20 @@ onMounted(() => {
                     <AppTooltip :text="gameModeTooltip">
                         <UBadge
                             :color="
-                                gameMode.status.value.active ? 'error' : 'neutral'
+                                gameMode.status.value.active
+                                    ? 'error'
+                                    : 'neutral'
                             "
                             :variant="
-                                gameMode.status.value.active ? 'solid' : 'outline'
+                                gameMode.status.value.active
+                                    ? 'solid'
+                                    : 'outline'
                             "
                             size="sm"
                             :class="
-                                !gameMode.status.value.active ? 'opacity-50' : ''
+                                !gameMode.status.value.active
+                                    ? 'opacity-50'
+                                    : ''
                             "
                         >
                             <UIcon
@@ -300,7 +310,9 @@ onMounted(() => {
 
                     <AppTooltip :text="$t('app.settingsTooltip')">
                         <UButton
-                            :color="isActive('/settings') ? 'primary' : 'neutral'"
+                            :color="
+                                isActive('/settings') ? 'primary' : 'neutral'
+                            "
                             :variant="isActive('/settings') ? 'soft' : 'ghost'"
                             icon="i-lucide-settings"
                             size="sm"
@@ -324,7 +336,7 @@ onMounted(() => {
                 color="neutral"
                 variant="ghost"
                 size="sm"
-                icon="i-lucide-arrow-left"
+                :icon="isActive('/') ? 'i-lucide-home' : 'i-lucide-arrow-left'"
                 class="shrink-0 -ml-2 transition-all duration-200"
                 :class="
                     isActive('/')
@@ -339,7 +351,8 @@ onMounted(() => {
             <span
                 class="shrink-0 text-(--ui-text-muted) opacity-50 select-none"
                 aria-hidden="true"
-            >/</span>
+                >/</span
+            >
 
             <AppTooltip :text="currentLayoutLabel">
                 <span
