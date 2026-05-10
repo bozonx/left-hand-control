@@ -53,6 +53,7 @@ export default {
     page: 'Page',
     moveUp: 'Move up',
     moveDown: 'Move down',
+    drag: 'Drag',
     expand: 'Expand',
     collapse: 'Collapse',
     usingGlobalDefault: 'Global default: {value}. Click to override.',

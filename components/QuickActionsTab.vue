@@ -6,6 +6,7 @@ import {
     type QuickAction,
 } from '~/types/config'
 import ActionPickerModal from '~/components/ActionPickerModal.vue'
+import Sortable, { type SortableEvent } from 'sortablejs'
 
 const { config } = useConfig()
 const { t } = useI18n()
@@ -20,6 +21,8 @@ const confirmDeletePageOpen = ref(false)
 const pendingDeletePageIndex = ref<number | null>(null)
 const deletePageConfirm = ref<{ $el?: HTMLButtonElement } | null>(null)
 const pageSize = LEFT_HAND_HOTKEYS.length
+const quickActionsGridRef = ref<HTMLElement | null>(null)
+let quickActionsSortable: Sortable | null = null
 const pageCount = computed(() =>
     Math.max(
         1,
@@ -268,6 +271,54 @@ function onCellClick(index: number, action: QuickAction | null) {
     }
 }
 
+function ensureQuickActionsLength(length: number) {
+    if (!config.value.quickActions) {
+        config.value.quickActions = []
+    }
+    while (config.value.quickActions.length < length) {
+        config.value.quickActions.push(createEmptyAction())
+    }
+}
+
+function moveQuickActionWithinPage(fromCellIndex: number, toCellIndex: number) {
+    if (fromCellIndex === toCellIndex) return
+    const fromIndex = pageStart.value + fromCellIndex
+    const toIndex = pageStart.value + toCellIndex
+    ensureQuickActionsLength(pageStart.value + pageSize)
+    const [item] = config.value.quickActions.splice(fromIndex, 1)
+    if (!item) return
+    config.value.quickActions.splice(toIndex, 0, item)
+
+    if (selectedIndex.value !== null) {
+        if (selectedIndex.value === fromIndex) {
+            selectedIndex.value = toIndex
+        } else if (
+            selectedIndex.value >= pageStart.value &&
+            selectedIndex.value < pageStart.value + pageSize
+        ) {
+            if (fromIndex < selectedIndex.value && selectedIndex.value <= toIndex) {
+                selectedIndex.value -= 1
+            } else if (toIndex <= selectedIndex.value && selectedIndex.value < fromIndex) {
+                selectedIndex.value += 1
+            }
+        }
+    }
+}
+
+function initQuickActionsSortable() {
+    if (quickActionsSortable || !quickActionsGridRef.value) return
+    quickActionsSortable = Sortable.create(quickActionsGridRef.value, {
+        animation: 150,
+        handle: '.quick-action-drag-handle',
+        draggable: '[data-sortable-cell]',
+        ghostClass: 'opacity-50',
+        onEnd(event: SortableEvent) {
+            if (event.oldIndex === undefined || event.newIndex === undefined) return
+            moveQuickActionWithinPage(event.oldIndex, event.newIndex)
+        },
+    })
+}
+
 function setPage(index: number) {
     ensurePages()
     selectedPageIndex.value = index
@@ -284,6 +335,14 @@ watch(confirmDeletePageOpen, async (open) => {
     deletePageConfirm.value?.$el?.focus()
 })
 onMounted(ensurePages)
+onMounted(async () => {
+    await nextTick()
+    initQuickActionsSortable()
+})
+onBeforeUnmount(() => {
+    quickActionsSortable?.destroy()
+    quickActionsSortable = null
+})
 </script>
 
 <template>
@@ -340,12 +399,14 @@ onMounted(ensurePages)
                         </div>
 
                         <div
+                            ref="quickActionsGridRef"
                             class="grid grid-cols-5 gap-2 rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-elevated) p-3"
                         >
                             <button
                                 v-for="item in pageItems"
                                 :key="item.key"
                                 type="button"
+                                data-sortable-cell
                                 class="flex h-28 min-w-0 flex-col items-start gap-2 rounded-md border bg-(--ui-bg) p-3 text-left transition hover:border-primary hover:bg-primary/10"
                                 :class="
                                     item.actionIndex === selectedIndex
@@ -356,14 +417,23 @@ onMounted(ensurePages)
                                     onCellClick(item.actionIndex, item.action)
                                 "
                             >
-                                <span
-                                    class="font-mono text-xs uppercase text-(--ui-primary)"
-                                >
-                                    {{
-                                        LEFT_HAND_HOTKEY_LABELS[
-                                            item.key as LeftHandHotkey
-                                        ]
-                                    }}
+                                <span class="flex w-full items-center justify-between gap-2">
+                                    <span
+                                        class="font-mono text-xs uppercase text-(--ui-primary)"
+                                    >
+                                        {{
+                                            LEFT_HAND_HOTKEY_LABELS[
+                                                item.key as LeftHandHotkey
+                                            ]
+                                        }}
+                                    </span>
+                                    <span
+                                        class="quick-action-drag-handle cursor-grab rounded p-0.5 text-(--ui-text-muted) hover:text-(--ui-primary) active:cursor-grabbing"
+                                        :aria-label="$t('common.drag')"
+                                        @click.stop
+                                    >
+                                        <UIcon name="i-lucide-grip" class="h-3.5 w-3.5" />
+                                    </span>
                                 </span>
                                 <span
                                     class="flex min-w-0 items-center gap-2 self-stretch"

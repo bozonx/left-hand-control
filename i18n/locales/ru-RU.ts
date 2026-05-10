@@ -53,6 +53,7 @@ export default {
     page: 'Страница',
     moveUp: 'Вверх',
     moveDown: 'Вниз',
+    drag: 'Перетащить',
     expand: 'Развернуть',
     collapse: 'Свернуть',
     usingGlobalDefault:

@@ -7,6 +7,7 @@ import {
     createDefaultEmojiPage,
 } from '~/types/config'
 import { EMOJI_CATALOG } from '~/utils/emojiCatalog'
+import Sortable, { type SortableEvent } from 'sortablejs'
 
 const { config } = useConfig()
 const { t } = useI18n()
@@ -18,6 +19,8 @@ const customEmoji = ref('')
 const confirmDeletePageOpen = ref(false)
 const pendingDeletePageIndex = ref<number | null>(null)
 const deletePageConfirm = ref<{ $el?: HTMLButtonElement } | null>(null)
+const emojiGridRef = ref<HTMLElement | null>(null)
+let emojiSortable: Sortable | null = null
 
 const pages = computed(() => config.value.emojiPages || [])
 const selectedPage = computed(
@@ -121,6 +124,52 @@ function clearCell() {
     setCell('')
 }
 
+function moveSelectedEmojiKey(fromIndex: number, toIndex: number) {
+    const selectedIndex = EMOJI_HOTKEYS.indexOf(selectedKey.value)
+    if (selectedIndex === fromIndex) {
+        selectedKey.value = EMOJI_HOTKEYS[toIndex] ?? selectedKey.value
+    } else if (fromIndex < selectedIndex && selectedIndex <= toIndex) {
+        selectedKey.value = EMOJI_HOTKEYS[selectedIndex - 1] ?? selectedKey.value
+    } else if (toIndex <= selectedIndex && selectedIndex < fromIndex) {
+        selectedKey.value = EMOJI_HOTKEYS[selectedIndex + 1] ?? selectedKey.value
+    }
+}
+
+function moveEmojiCellWithinPage(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return
+    ensurePages()
+    const page = config.value.emojiPages[selectedPageIndex.value]
+    if (!page) return
+
+    const values = EMOJI_HOTKEYS.map((key) => page.cells[key] ?? '')
+    const [item] = values.splice(fromIndex, 1)
+    values.splice(toIndex, 0, item ?? '')
+
+    for (const [index, key] of EMOJI_HOTKEYS.entries()) {
+        const value = values[index]?.trim() ?? ''
+        if (value) {
+            page.cells[key] = value
+        } else {
+            delete page.cells[key]
+        }
+    }
+    moveSelectedEmojiKey(fromIndex, toIndex)
+}
+
+function initEmojiSortable() {
+    if (emojiSortable || !emojiGridRef.value) return
+    emojiSortable = Sortable.create(emojiGridRef.value, {
+        animation: 150,
+        handle: '.emoji-drag-handle',
+        draggable: '[data-sortable-cell]',
+        ghostClass: 'opacity-50',
+        onEnd(event: SortableEvent) {
+            if (event.oldIndex === undefined || event.newIndex === undefined) return
+            moveEmojiCellWithinPage(event.oldIndex, event.newIndex)
+        },
+    })
+}
+
 watch(
     selectedValue,
     (value) => {
@@ -136,6 +185,14 @@ watch(confirmDeletePageOpen, async (open) => {
 })
 
 onMounted(ensurePages)
+onMounted(async () => {
+    await nextTick()
+    initEmojiSortable()
+})
+onBeforeUnmount(() => {
+    emojiSortable?.destroy()
+    emojiSortable = null
+})
 </script>
 
 <template>
@@ -192,12 +249,14 @@ onMounted(ensurePages)
 
                     <div
                         v-if="selectedPage"
+                        ref="emojiGridRef"
                         class="grid grid-cols-5 gap-2 rounded-lg border border-(--ui-border-muted) bg-(--ui-bg-elevated) p-3"
                     >
                         <button
                             v-for="key in EMOJI_HOTKEYS"
                             :key="key"
                             type="button"
+                            data-sortable-cell
                             class="flex aspect-square min-h-20 flex-col items-center justify-center gap-2 rounded-md border bg-(--ui-bg) p-2 transition hover:border-primary hover:bg-primary/10"
                             :class="
                                 selectedKey === key
@@ -206,10 +265,19 @@ onMounted(ensurePages)
                             "
                             @click="selectedKey = key"
                         >
-                            <span
-                                class="font-mono text-xs uppercase text-(--ui-primary)"
-                                >{{ EMOJI_HOTKEY_LABELS[key] }}</span
-                            >
+                            <span class="flex w-full items-center justify-between gap-2">
+                                <span
+                                    class="font-mono text-xs uppercase text-(--ui-primary)"
+                                    >{{ EMOJI_HOTKEY_LABELS[key] }}</span
+                                >
+                                <span
+                                    class="emoji-drag-handle cursor-grab rounded p-0.5 text-(--ui-text-muted) hover:text-(--ui-primary) active:cursor-grabbing"
+                                    :aria-label="$t('common.drag')"
+                                    @click.stop
+                                >
+                                    <UIcon name="i-lucide-grip" class="h-3.5 w-3.5" />
+                                </span>
+                            </span>
                             <span
                                 class="overflow-hidden text-center"
                                 :class="
