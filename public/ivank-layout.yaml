@@ -231,6 +231,7 @@ rules:
     dtap: Ctrl+KeyX
   - key: ControlLeft
     hold: AltLeft
+    tap: app:showQuickMenu1
   - key: MetaLeft
     tap: Escape
     hold: ControlLeft
