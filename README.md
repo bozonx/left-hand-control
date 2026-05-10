@@ -37,9 +37,11 @@ pnpm install
 pnpm tauri:dev
 ```
 
-This starts the Nuxt dev server on the port specified in `.env` (default `http://localhost:3000`) and launches the Tauri window pointing at it. The dev wrapper fails when the configured port is busy, because Tauri needs a stable `devUrl`.
+This starts the Nuxt dev server on `http://localhost:3000` (override via `LHC_DEV_PORT` in `.env`) and launches the Tauri window pointing at it. The dev wrapper fails when the configured port is busy, because Tauri needs a stable `devUrl`.
 
-Development mode is supported on Linux only. The current `pnpm dev` / `pnpm tauri:dev` scripts are not intended to work on Windows.
+In debug builds the desktop app stores its `config.json`, `ui-state.json` and user layouts in `<repo>/.dev-files/` instead of `~/.config/...`, so dev runs do not pollute your real settings and can be reset with `rm -rf .dev-files`. Override the location with `LHC_DEV_DIR` (absolute or relative to CWD).
+
+The dev scripts (`pnpm dev`, `pnpm tauri:dev`) work on Linux, macOS and Windows. The native key-interception engine itself is currently Linux-only — see `AGENTS.md` for the per-platform coverage matrix.
 
 ## Run the web UI only (browser)
 

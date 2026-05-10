@@ -1,33 +1,51 @@
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+#[cfg(not(debug_assertions))]
 use tauri::Manager;
 
+#[cfg_attr(debug_assertions, allow(unused_variables))]
 pub fn resolve_storage_paths(app: &tauri::AppHandle) -> Result<StoragePaths, String> {
+    // In debug builds, redirect storage into a project-local directory so that
+    // dev runs do not pollute the user's real `~/.config/...` and can be reset
+    // by simply removing the folder. `LHC_DEV_DIR` overrides the default,
+    // which is `<repo>/.dev-files` (resolved at compile time via
+    // `CARGO_MANIFEST_DIR`, so it works regardless of the process cwd).
     #[cfg(debug_assertions)]
-    if let Ok(dev_dir) = std::env::var("VITE_LHC_DEV_DIR") {
-        let path = PathBuf::from(dev_dir);
-        let base = if path.is_absolute() {
-            path
+    {
+        let base = if let Ok(dev_dir) = std::env::var("LHC_DEV_DIR") {
+            let path = PathBuf::from(dev_dir);
+            if path.is_absolute() {
+                path
+            } else {
+                std::env::current_dir()
+                    .map_err(|e| format!("resolve current_dir: {e}"))?
+                    .join(path)
+            }
         } else {
-            std::env::current_dir()
-                .map_err(|e| format!("resolve current_dir: {e}"))?
-                .join(path)
+            // `CARGO_MANIFEST_DIR` points to `<repo>/src-tauri` at compile time.
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .ok_or_else(|| "resolve repo root from CARGO_MANIFEST_DIR".to_string())?
+                .join(".dev-files")
         };
         let config_dir = base.join("config");
         let data_dir = base.join("data");
         return Ok(StoragePaths::new(config_dir, data_dir));
     }
 
-    let config_dir = app
-        .path()
-        .app_config_dir()
-        .map_err(|e| format!("resolve app_config_dir: {e}"))?;
-    let data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("resolve app_data_dir: {e}"))?;
-    Ok(StoragePaths::new(config_dir, data_dir))
+    #[cfg(not(debug_assertions))]
+    {
+        let config_dir = app
+            .path()
+            .app_config_dir()
+            .map_err(|e| format!("resolve app_config_dir: {e}"))?;
+        let data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| format!("resolve app_data_dir: {e}"))?;
+        Ok(StoragePaths::new(config_dir, data_dir))
+    }
 }
 
 pub struct StoragePaths {

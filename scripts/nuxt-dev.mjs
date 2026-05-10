@@ -2,10 +2,11 @@ import { spawn } from 'node:child_process'
 import net from 'node:net'
 
 const host = process.env.HOST || 'localhost'
-const port = Number.parseInt(process.env.PORT || '3000', 10)
+const rawPort = process.env.LHC_DEV_PORT || '3000'
+const port = Number.parseInt(rawPort, 10)
 
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-  console.error(`Invalid PORT value: ${process.env.PORT}`)
+  console.error(`Invalid LHC_DEV_PORT value: ${rawPort}`)
   process.exit(1)
 }
 
@@ -27,9 +28,11 @@ try {
   process.exit(1)
 }
 
+// On Windows, npm/pnpm-installed binaries are `.cmd` shims that cannot be
+// launched without a shell, so spawn through cmd.exe there.
 const child = spawn('nuxt', ['dev', '--host', host, '--port', String(port)], {
   stdio: 'inherit',
-  shell: false,
+  shell: process.platform === 'win32',
 })
 
 child.on('exit', (code, signal) => {

@@ -1,7 +1,11 @@
 import { spawn } from 'node:child_process'
 
-const port = process.env.PORT || '3000'
+const port = process.env.LHC_DEV_PORT || '3000'
 const devUrl = `http://localhost:${port}`
+
+// Pass the resolved port down to Nuxt via `pnpm dev` so Tauri's beforeDevCommand
+// reads the same value, regardless of whether `.env` was loaded by the parent.
+process.env.LHC_DEV_PORT = port
 
 const config = {
   build: {
@@ -21,9 +25,10 @@ const config = {
   },
 }
 
+// On Windows, the `tauri` binary is a `.cmd` shim that requires a shell.
 const child = spawn('tauri', ['dev', '--config', JSON.stringify(config)], {
   stdio: 'inherit',
-  shell: false,
+  shell: process.platform === 'win32',
 })
 
 child.on('exit', (code, signal) => {

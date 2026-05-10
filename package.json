@@ -1,10 +1,10 @@
 {
   "name": "left-hand-control",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e .env -- node scripts/nuxt-dev.mjs",
+    "dev": "node --env-file-if-exists=.env scripts/nuxt-dev.mjs",
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "nuxt prepare",
     "tauri": "tauri",
-    "tauri:dev": "dotenv -e .env -- node scripts/tauri-dev.mjs",
+    "tauri:dev": "node --env-file-if-exists=.env scripts/tauri-dev.mjs",
     "tauri:build": "cross-env NO_STRIP=true tauri build"
   },
   "dependencies": {
@@ -40,7 +40,6 @@
     "@types/node": "^25.6.0",
     "@vue/test-utils": "^2.4.10",
     "cross-env": "^10.1.0",
-    "dotenv-cli": "^11.0.0",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.9.1",

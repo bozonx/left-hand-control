@@ -7,10 +7,7 @@ import {
   applyPresetToConfig,
   extractPresetFromConfig,
   layoutSnapshotOf,
-  loadBuiltinLayout,
-  serializeLayoutYaml,
 } from '~/utils/layoutPresets'
-import { userLayoutId } from '~/composables/useLayoutLibrary'
 import {
   clonePreset,
   parseCurrentLayout,
@@ -26,7 +23,6 @@ import {
   readCurrentLayoutRaw,
   writeConfigRaw,
   writeCurrentLayoutRaw,
-  writeUserLayoutRaw,
 } from '~/composables/config/storage'
 import { commandFingerprint, commandTrustKey } from '~/utils/commandTrust'
 
@@ -214,9 +210,6 @@ export function useConfig(): ConfigState {
 
   async function load() {
     const gen = ++loadGeneration
-    const forceIvank =
-      import.meta.env.VITE_LHC_FORCE_IVANK === 'true' ||
-      import.meta.env.VITE_LHC_FORCE_IVANK === '1'
 
     loaded.value = false
     loadError.value = null
@@ -232,33 +225,6 @@ export function useConfig(): ConfigState {
 
       if (rawConfig) {
         config.value.settings = parsePersistedSettings(rawConfig).settings
-      }
-
-      if (forceIvank) {
-        const preset = await loadBuiltinLayout(t)
-        if (preset) {
-          const savedName = await writeUserLayoutRaw(
-            t('welcome.defaultIvanKFileName'),
-            serializeLayoutYaml(preset),
-            true,
-          )
-          config.value = applyPresetToConfig(
-            config.value,
-            preset,
-            userLayoutId(savedName),
-          )
-          savedLayoutPreset.value = clonePreset(preset)
-        }
-        layoutSnapshot.value = layoutSnapshotOf(config.value)
-        settingsDir.value = await getSettingsDir()
-        loadError.value = null
-        logger.info(
-          '[LHC] VITE_LHC_FORCE_IVANK is set — loaded bundled preset, ignoring persisted layout',
-        )
-        return
-      }
-
-      if (rawConfig) {
         needsWelcome.value = false
         const persistedLayout = parseCurrentLayout(rawCurrentLayout)
 
