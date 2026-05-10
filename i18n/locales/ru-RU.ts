@@ -568,6 +568,12 @@ export default {
     mouseDevicePh: 'Не выбрано (без поддержки мыши)',
     refreshDevices: 'Обновить список',
     refreshDevicesTooltip: 'Обновить список устройств',
+    keyboardLikeDevices: 'Похоже на клавиатуру',
+    mouseLikeDevices: 'Похоже на мышь',
+    otherDevices: 'Остальные устройства',
+    manualDeviceGroup: 'Вручную',
+    manualDeviceOption: 'Ввести путь устройства вручную',
+    manualDevicePlaceholder: '/dev/input/eventX',
     copyPathTooltip: 'Скопировать путь',
     start: 'Запустить',
     startDisabledTooltip:

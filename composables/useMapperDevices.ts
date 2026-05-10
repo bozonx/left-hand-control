@@ -1,4 +1,4 @@
-import type { KeyboardDevice, MapperStatus } from '~/composables/useMapper'
+import type { InputDevice, MapperStatus } from '~/composables/useMapper'
 
 let statusPollTimer: ReturnType<typeof setInterval> | null = null
 let consumerCount = 0
@@ -32,8 +32,13 @@ export function resetMapperDevicesState() {
 
 export function useMapperDevices() {
   const { t } = useI18n()
-  const devices = ref<KeyboardDevice[]>([])
-  const mice = ref<KeyboardDevice[]>([])
+  const inputDevices = ref<InputDevice[]>([])
+  const devices = computed(() =>
+    inputDevices.value.filter((device) => device.is_keyboard),
+  )
+  const mice = computed(() =>
+    inputDevices.value.filter((device) => device.is_mouse),
+  )
   const status = ref<MapperStatus>({
     running: false,
     device_path: null,
@@ -44,8 +49,7 @@ export function useMapperDevices() {
 
   async function refreshDevices() {
     error.value = null
-    devices.value = []
-    mice.value = []
+    inputDevices.value = []
 
     const tauri = await useTauri()
     if (!tauri) {
@@ -54,17 +58,11 @@ export function useMapperDevices() {
     }
 
     try {
-      devices.value = await tauri.invoke<KeyboardDevice[]>('list_keyboards')
+      inputDevices.value = await tauri.invoke<InputDevice[]>('list_input_devices')
       error.value = null
     } catch (err: unknown) {
       error.value = t('mapper.listFailed', { err: String(err) })
-      logger.error('[mapper] list_keyboards failed', err)
-    }
-
-    try {
-      mice.value = await tauri.invoke<KeyboardDevice[]>('list_mice')
-    } catch (err: unknown) {
-      logger.error('[mapper] list_mice failed', err)
+      logger.error('[mapper] list_input_devices failed', err)
     }
   }
 
@@ -80,6 +78,7 @@ export function useMapperDevices() {
   }
 
   return {
+    inputDevices,
     devices,
     mice,
     status,

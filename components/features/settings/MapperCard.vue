@@ -10,16 +10,30 @@ interface SettingsIssue {
   description: string
 }
 
+interface DeviceOption {
+  label: string
+  value: string
+}
+
+interface DeviceOptionLabel {
+  type: 'label'
+  label: string
+}
+
+type DeviceOptionGroup = Array<DeviceOption | DeviceOptionLabel>
+
+const MANUAL_DEVICE_VALUE = '__manual_device_path__'
+
 const props = defineProps<{
   mapper: MapperState
-  deviceOptions: Array<{ label: string, value: string }>
+  deviceOptions: DeviceOptionGroup[]
   selectedDevice: string
-  mouseOptions: Array<{ label: string, value: string }>
+  mouseOptions: DeviceOptionGroup[]
   selectedMouse: string
   issues: SettingsIssue[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:selectedDevice': [value: string]
   'update:selectedMouse': [value: string]
   toggle: []
@@ -28,6 +42,52 @@ defineEmits<{
 const hasErrorIssues = computed(() =>
   props.issues.some((issue) => issue.severity === 'error'),
 )
+
+const manualKeyboard = ref(false)
+const manualMouse = ref(false)
+
+function optionValues(groups: DeviceOptionGroup[]) {
+  return groups.flatMap((group) =>
+    group.flatMap((item) => 'value' in item ? [item.value] : []),
+  )
+}
+
+const keyboardSelectValue = computed(() => {
+  if (manualKeyboard.value) return MANUAL_DEVICE_VALUE
+  if (!props.selectedDevice) return ''
+  return optionValues(props.deviceOptions).includes(props.selectedDevice)
+    ? props.selectedDevice
+    : MANUAL_DEVICE_VALUE
+})
+
+const mouseSelectValue = computed(() => {
+  if (manualMouse.value) return MANUAL_DEVICE_VALUE
+  if (!props.selectedMouse) return ''
+  return optionValues(props.mouseOptions).includes(props.selectedMouse)
+    ? props.selectedMouse
+    : MANUAL_DEVICE_VALUE
+})
+
+const showManualKeyboard = computed(() => keyboardSelectValue.value === MANUAL_DEVICE_VALUE)
+const showManualMouse = computed(() => mouseSelectValue.value === MANUAL_DEVICE_VALUE)
+
+function selectKeyboard(value: string) {
+  manualKeyboard.value = value === MANUAL_DEVICE_VALUE
+  if (manualKeyboard.value) {
+    emit('update:selectedDevice', '')
+    return
+  }
+  emit('update:selectedDevice', value)
+}
+
+function selectMouse(value: string) {
+  manualMouse.value = value === MANUAL_DEVICE_VALUE
+  if (manualMouse.value) {
+    emit('update:selectedMouse', '')
+    return
+  }
+  emit('update:selectedMouse', value)
+}
 </script>
 
 <template>
@@ -35,12 +95,23 @@ const hasErrorIssues = computed(() =>
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">{{ $t('settings.mapperTitle') }}</h2>
-        <UBadge
-          :color="mapper.status.value.running ? 'success' : 'neutral'"
-          variant="subtle"
-        >
-          {{ mapper.status.value.running ? $t('common.active') : $t('common.stopped') }}
-        </UBadge>
+        <div class="flex items-center gap-2">
+          <AppTooltip :text="$t('settings.refreshDevicesTooltip')">
+            <UButton
+              variant="ghost"
+              icon="i-lucide-refresh-cw"
+              :aria-label="$t('settings.refreshDevices')"
+              :disabled="mapper.status.value.running"
+              @click="mapper.refreshDevices()"
+            />
+          </AppTooltip>
+          <UBadge
+            :color="mapper.status.value.running ? 'success' : 'neutral'"
+            variant="subtle"
+          >
+            {{ mapper.status.value.running ? $t('common.active') : $t('common.stopped') }}
+          </UBadge>
+        </div>
       </div>
     </template>
     <div class="space-y-4">
@@ -61,27 +132,24 @@ const hasErrorIssues = computed(() =>
             :hint="$t('settings.keyboardHelp')"
           />
         </template>
-        <div class="flex gap-2 items-center">
-          <USelectMenu
-            id="mapper-keyboard-device"
-            :model-value="selectedDevice"
-            :items="deviceOptions"
-            value-key="value"
-            :placeholder="$t('settings.devicePh')"
-            class="flex-1"
-            :disabled="mapper.status.value.running"
-            @update:model-value="(value: string) => $emit('update:selectedDevice', value)"
-          />
-          <AppTooltip :text="$t('settings.refreshDevicesTooltip')">
-            <UButton
-              variant="ghost"
-              icon="i-lucide-refresh-cw"
-              :aria-label="$t('settings.refreshDevices')"
-              :disabled="mapper.status.value.running"
-              @click="mapper.refreshDevices()"
-            />
-          </AppTooltip>
-        </div>
+        <USelectMenu
+          id="mapper-keyboard-device"
+          :model-value="keyboardSelectValue"
+          :items="deviceOptions"
+          value-key="value"
+          :placeholder="$t('settings.devicePh')"
+          class="w-full"
+          :disabled="mapper.status.value.running"
+          @update:model-value="selectKeyboard"
+        />
+        <UInput
+          v-if="showManualKeyboard"
+          :model-value="selectedDevice"
+          :placeholder="$t('settings.manualDevicePlaceholder')"
+          class="mt-2 w-full"
+          :disabled="mapper.status.value.running"
+          @update:model-value="(value: string) => $emit('update:selectedDevice', value)"
+        />
       </UFormField>
 
       <UFormField>
@@ -93,11 +161,19 @@ const hasErrorIssues = computed(() =>
         </template>
         <USelectMenu
           id="mapper-mouse-device"
-          :model-value="selectedMouse"
+          :model-value="mouseSelectValue"
           :items="mouseOptions"
           value-key="value"
           :placeholder="$t('settings.mouseDevicePh')"
           class="w-full"
+          :disabled="mapper.status.value.running"
+          @update:model-value="selectMouse"
+        />
+        <UInput
+          v-if="showManualMouse"
+          :model-value="selectedMouse"
+          :placeholder="$t('settings.manualDevicePlaceholder')"
+          class="mt-2 w-full"
           :disabled="mapper.status.value.running"
           @update:model-value="(value: string) => $emit('update:selectedMouse', value)"
         />

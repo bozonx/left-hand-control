@@ -35,6 +35,14 @@ pub struct KeyboardDevice {
     pub name: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct InputDevice {
+    pub path: String,
+    pub name: String,
+    pub is_keyboard: bool,
+    pub is_mouse: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct MapperStatus {
     pub running: bool,
@@ -67,6 +75,7 @@ trait BackendHandle: Send {
 }
 
 trait MapperBackend: Send + Sync + 'static {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String>;
     fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String>;
     fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String>;
     fn spawn(
@@ -99,6 +108,10 @@ impl<B> MapperRuntime<B> {
 }
 
 impl<B: MapperBackend> MapperRuntime<B> {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+        self.backend.list_input_devices()
+    }
+
     fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
         self.backend.list_keyboards()
     }
@@ -220,6 +233,10 @@ impl LinuxBackend {
 
 #[cfg(target_os = "linux")]
 impl MapperBackend for LinuxBackend {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+        linux::list_input_devices()
+    }
+
     fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
         linux::list_keyboards()
     }
@@ -251,6 +268,10 @@ impl UnsupportedBackend {
 
 #[cfg(not(target_os = "linux"))]
 impl MapperBackend for UnsupportedBackend {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+        Err(unsupported_os_msg("listing input devices"))
+    }
+
     fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
         Err(unsupported_os_msg("listing keyboards"))
     }
@@ -284,6 +305,10 @@ fn lock_state() -> MutexGuard<'static, MapperRuntime<OsBackend>> {
 
 pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
     lock_state().list_keyboards()
+}
+
+pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
+    lock_state().list_input_devices()
 }
 
 pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
@@ -351,7 +376,7 @@ pub fn set_portal_token_dir(_dir: std::path::PathBuf) {}
 
 #[cfg(test)]
 mod tests {
-    use super::{BackendHandle, KeyboardDevice, MapperBackend, MapperRuntime};
+    use super::{BackendHandle, InputDevice, KeyboardDevice, MapperBackend, MapperRuntime};
     use crate::mapper::config::{AppConfig, Settings};
     use std::collections::VecDeque;
     use std::sync::{Arc, Mutex};
@@ -406,6 +431,19 @@ mod tests {
     }
 
     impl MapperBackend for FakeBackend {
+        fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+            Ok(self
+                .devices
+                .iter()
+                .map(|device| InputDevice {
+                    path: device.path.clone(),
+                    name: device.name.clone(),
+                    is_keyboard: true,
+                    is_mouse: false,
+                })
+                .collect())
+        }
+
         fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
             Ok(self.devices.clone())
         }

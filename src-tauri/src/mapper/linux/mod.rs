@@ -1,7 +1,7 @@
 mod devices;
 mod io;
 
-pub use devices::{list_keyboards, list_mice};
+pub use devices::{list_input_devices, list_keyboards, list_mice};
 
 use super::config::AppConfig;
 use super::engine::{Engine, Out};

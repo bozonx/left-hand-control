@@ -1,9 +1,9 @@
 use super::VIRTUAL_DEVICE_NAME;
-use crate::mapper::KeyboardDevice;
+use crate::mapper::{InputDevice, KeyboardDevice};
 use evdev::{Device, Key};
 use std::path::PathBuf;
 
-pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
+pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
     let mut out = Vec::new();
     let dir = std::fs::read_dir("/dev/input").map_err(|e| format!("read /dev/input: {e}"))?;
     let mut paths: Vec<PathBuf> = dir
@@ -18,7 +18,7 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
         .collect();
     paths.sort();
     log::debug!(
-        "[mapper] list_keyboards: found {} event* paths",
+        "[mapper] list_input_devices: found {} event* paths",
         paths.len()
     );
 
@@ -28,70 +28,49 @@ pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
             continue;
         };
         let name = dev.name().unwrap_or("(unknown)").to_string();
-        let is_kb = is_keyboard(&dev);
+        let is_keyboard = is_keyboard(&dev);
+        let is_mouse = is_mouse(&dev);
         log::debug!(
-            "[mapper]   {}: name='{}' is_keyboard={}",
+            "[mapper]   {}: name='{}' is_keyboard={} is_mouse={}",
             path.display(),
             name,
-            is_kb
+            is_keyboard,
+            is_mouse
         );
-        if !is_kb {
-            continue;
-        }
         if name == VIRTUAL_DEVICE_NAME {
             continue;
         }
-        out.push(KeyboardDevice {
+        out.push(InputDevice {
             path: path.to_string_lossy().to_string(),
             name,
+            is_keyboard,
+            is_mouse,
         });
     }
-    log::debug!("[mapper] list_keyboards -> {} keyboards", out.len());
+    log::debug!("[mapper] list_input_devices -> {} devices", out.len());
     Ok(out)
 }
 
-pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
-    let mut out = Vec::new();
-    let dir = std::fs::read_dir("/dev/input").map_err(|e| format!("read /dev/input: {e}"))?;
-    let mut paths: Vec<PathBuf> = dir
-        .filter_map(|e| e.ok())
-        .map(|e| e.path())
-        .filter(|p| {
-            p.file_name()
-                .and_then(|n| n.to_str())
-                .map(|n| n.starts_with("event"))
-                .unwrap_or(false)
+pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
+    Ok(list_input_devices()?
+        .into_iter()
+        .filter(|device| device.is_keyboard)
+        .map(|device| KeyboardDevice {
+            path: device.path,
+            name: device.name,
         })
-        .collect();
-    paths.sort();
-    log::debug!("[mapper] list_mice: found {} event* paths", paths.len());
+        .collect())
+}
 
-    for path in paths {
-        let Ok(dev) = Device::open(&path) else {
-            log::debug!("[mapper]   {}: open failed", path.display());
-            continue;
-        };
-        let name = dev.name().unwrap_or("(unknown)").to_string();
-        let is_m = is_mouse(&dev);
-        log::debug!(
-            "[mapper]   {}: name='{}' is_mouse={}",
-            path.display(),
-            name,
-            is_m
-        );
-        if !is_m {
-            continue;
-        }
-        if name == VIRTUAL_DEVICE_NAME {
-            continue;
-        }
-        out.push(KeyboardDevice {
-            path: path.to_string_lossy().to_string(),
-            name,
-        });
-    }
-    log::debug!("[mapper] list_mice -> {} mice", out.len());
-    Ok(out)
+pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
+    Ok(list_input_devices()?
+        .into_iter()
+        .filter(|device| device.is_mouse)
+        .map(|device| KeyboardDevice {
+            path: device.path,
+            name: device.name,
+        })
+        .collect())
 }
 
 fn is_keyboard(dev: &Device) -> bool {

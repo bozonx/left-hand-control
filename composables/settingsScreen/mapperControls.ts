@@ -11,6 +11,20 @@ interface MapperControlOptions {
   flush: () => Promise<void>;
 }
 
+const MANUAL_DEVICE_VALUE = "__manual_device_path__";
+
+type DeviceOption = {
+  label: string;
+  value: string;
+};
+
+type DeviceOptionLabel = {
+  type: "label";
+  label: string;
+};
+
+type DeviceOptionGroup = Array<DeviceOption | DeviceOptionLabel>;
+
 export function useSettingsMapperControls({
   config,
   mapper,
@@ -18,11 +32,41 @@ export function useSettingsMapperControls({
 }: MapperControlOptions) {
   const toast = useToast();
   const { t } = useI18n();
-  const deviceOptions = computed(() =>
-    mapper.devices.value.map((device) => ({
+
+  function optionFor(device: { name: string; path: string }): DeviceOption {
+    return {
       label: `${device.name}  —  ${device.path}`,
       value: device.path,
-    })),
+    };
+  }
+
+  function groupedDeviceOptions(
+    preferred: (device: { is_keyboard: boolean; is_mouse: boolean }) => boolean,
+    preferredLabel: string,
+    otherLabel: string,
+  ): DeviceOptionGroup[] {
+    const preferredDevices = mapper.inputDevices.value.filter(preferred);
+    const otherDevices = mapper.inputDevices.value.filter((device) => !preferred(device));
+    const groups: DeviceOptionGroup[] = [];
+    if (preferredDevices.length > 0) {
+      groups.push([{ type: "label", label: preferredLabel }, ...preferredDevices.map(optionFor)]);
+    }
+    if (otherDevices.length > 0) {
+      groups.push([{ type: "label", label: otherLabel }, ...otherDevices.map(optionFor)]);
+    }
+    groups.push([
+      { type: "label", label: t("settings.manualDeviceGroup") },
+      { label: t("settings.manualDeviceOption"), value: MANUAL_DEVICE_VALUE },
+    ]);
+    return groups;
+  }
+
+  const deviceOptions = computed(() =>
+    groupedDeviceOptions(
+      (device) => device.is_keyboard,
+      t("settings.keyboardLikeDevices"),
+      t("settings.otherDevices"),
+    ),
   );
 
   const selectedDevice = computed<string>({
@@ -33,10 +77,11 @@ export function useSettingsMapperControls({
   });
 
   const mouseOptions = computed(() =>
-    mapper.mice.value.map((device) => ({
-      label: `${device.name}  —  ${device.path}`,
-      value: device.path,
-    })),
+    groupedDeviceOptions(
+      (device) => device.is_mouse,
+      t("settings.mouseLikeDevices"),
+      t("settings.otherDevices"),
+    ),
   );
 
   const selectedMouse = computed<string>({
@@ -99,5 +144,6 @@ export function useSettingsMapperControls({
     mouseOptions,
     selectedMouse,
     toggleMapper,
+    MANUAL_DEVICE_VALUE,
   };
 }

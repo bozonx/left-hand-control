@@ -79,9 +79,9 @@ export interface SettingsScreenState {
   deleteError: Ref<string | null>;
   confirmDelete: () => Promise<void>;
   clearDeletePending: () => void;
-  deviceOptions: ComputedRef<{ label: string; value: string }[]>;
+  deviceOptions: ComputedRef<Array<Array<{ label: string; value: string } | { type: "label"; label: string }>>>;
   selectedDevice: ComputedRef<string>;
-  mouseOptions: ComputedRef<{ label: string; value: string }[]>;
+  mouseOptions: ComputedRef<Array<Array<{ label: string; value: string } | { type: "label"; label: string }>>>;
   selectedMouse: ComputedRef<string>;
   toggleMapper: () => Promise<void>;
 }

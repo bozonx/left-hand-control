@@ -117,6 +117,17 @@ fn validate_device_path(path: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn list_input_devices() -> Result<Vec<mapper::InputDevice>, String> {
+    log::debug!("[cmd] list_input_devices");
+    let r = mapper::list_input_devices();
+    match &r {
+        Ok(v) => log::debug!("[cmd] list_input_devices -> {} devices", v.len()),
+        Err(e) => log::debug!("[cmd] list_input_devices ERR: {e}"),
+    }
+    r
+}
+
+#[tauri::command]
 fn list_keyboards() -> Result<Vec<mapper::KeyboardDevice>, String> {
     log::debug!("[cmd] list_keyboards");
     let r = mapper::list_keyboards();
@@ -388,6 +399,7 @@ pub fn run() {
             save_user_layout,
             rename_user_layout,
             delete_user_layout,
+            list_input_devices,
             list_keyboards,
             list_mice,
             start_mapper,

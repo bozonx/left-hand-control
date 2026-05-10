@@ -100,8 +100,28 @@ describe('useSettingsScreen', () => {
       layoutExists: vi.fn().mockReturnValue(false),
     }
     const mapper = {
+      inputDevices: ref([
+        {
+          name: 'Keyboard',
+          path: '/dev/input/event1',
+          is_keyboard: true,
+          is_mouse: false,
+        },
+        {
+          name: 'Mouse',
+          path: '/dev/input/event2',
+          is_keyboard: false,
+          is_mouse: true,
+        },
+      ]),
       devices: ref([{ name: 'Keyboard', path: '/dev/input/event1' }]),
-      status: ref({ running: false, device_path: null, last_error: null }),
+      mice: ref([{ name: 'Mouse', path: '/dev/input/event2' }]),
+      status: ref({
+        running: false,
+        device_path: null,
+        mouse_device_path: null,
+        last_error: null,
+      }),
       busy: ref(false),
       error: ref<string | null>(null),
       refreshDevices: vi.fn(),
@@ -149,7 +169,18 @@ describe('useSettingsScreen', () => {
     expect(platform.refresh).toHaveBeenCalledTimes(1)
     expect(library.refresh).toHaveBeenCalledTimes(1)
     expect(vm.deviceOptions).toEqual([
-      { label: 'Keyboard  —  /dev/input/event1', value: '/dev/input/event1' },
+      [
+        { type: 'label', label: 'settings.keyboardLikeDevices' },
+        { label: 'Keyboard  —  /dev/input/event1', value: '/dev/input/event1' },
+      ],
+      [
+        { type: 'label', label: 'settings.otherDevices' },
+        { label: 'Mouse  —  /dev/input/event2', value: '/dev/input/event2' },
+      ],
+      [
+        { type: 'label', label: 'settings.manualDeviceGroup' },
+        { label: 'settings.manualDeviceOption', value: '__manual_device_path__' },
+      ],
     ])
     expect(vm.selectedDevice).toBe('/dev/input/event1')
     vm.selectedDevice = '/dev/input/event2'
@@ -191,8 +222,22 @@ describe('useSettingsScreen', () => {
       layoutExists: vi.fn().mockReturnValue(false),
     }
     const mapper = {
+      inputDevices: ref([
+        {
+          name: 'Keyboard',
+          path: '/dev/input/event1',
+          is_keyboard: true,
+          is_mouse: false,
+        },
+      ]),
       devices: ref([{ name: 'Keyboard', path: '/dev/input/event1' }]),
-      status: ref({ running: false, device_path: null, last_error: null }),
+      mice: ref([]),
+      status: ref({
+        running: false,
+        device_path: null,
+        mouse_device_path: null,
+        last_error: null,
+      }),
       busy: ref(false),
       error: ref<string | null>(null),
       refreshDevices: vi.fn(),
@@ -308,8 +353,15 @@ describe('useSettingsScreen', () => {
       layoutExists: vi.fn().mockReturnValue(false),
     }
     const mapper = {
+      inputDevices: ref([]),
       devices: ref([]),
-      status: ref({ running: false, device_path: null, last_error: null }),
+      mice: ref([]),
+      status: ref({
+        running: false,
+        device_path: null,
+        mouse_device_path: null,
+        last_error: null,
+      }),
       busy: ref(false),
       error: ref<string | null>(null),
       refreshDevices: vi.fn(),

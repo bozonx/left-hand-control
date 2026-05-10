@@ -14,6 +14,11 @@ export interface KeyboardDevice {
   name: string
 }
 
+export interface InputDevice extends KeyboardDevice {
+  is_keyboard: boolean
+  is_mouse: boolean
+}
+
 export interface MapperStatus {
   running: boolean
   device_path: string | null
@@ -22,8 +27,9 @@ export interface MapperStatus {
 }
 
 export interface MapperState {
-  devices: Ref<KeyboardDevice[]>
-  mice: Ref<KeyboardDevice[]>
+  inputDevices: Readonly<Ref<InputDevice[]>>
+  devices: Readonly<Ref<KeyboardDevice[]>>
+  mice: Readonly<Ref<KeyboardDevice[]>>
   status: Ref<MapperStatus>
   busy: Ref<boolean>
   error: Ref<string | null>
@@ -56,6 +62,7 @@ export function useMapper(): MapperState {
   const { t } = useI18n()
   const { activeAutoLayoutId } = useLayoutSwitcher()
   const {
+    inputDevices,
     devices,
     mice,
     status,
@@ -157,6 +164,7 @@ export function useMapper(): MapperState {
   })
 
   singleton = {
+    inputDevices,
     devices,
     mice,
     status,
