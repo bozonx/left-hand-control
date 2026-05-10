@@ -5,6 +5,7 @@ const props = defineProps<{
   activeCategory: string
   categories: StaticCategory[]
   keyOnly?: boolean
+  showTextCategory?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -52,7 +53,7 @@ function handleCategoryKeydown(event: KeyboardEvent, id: string) {
 <template>
   <div ref="catBarRef" role="tablist" class="flex flex-wrap gap-1.5 border-b border-(--ui-border) pb-2">
     <UButton
-      v-if="!props.keyOnly"
+      v-if="!props.keyOnly && props.showTextCategory !== false"
       role="tab"
       data-category-id="text"
       :aria-selected="props.activeCategory === 'text'"

@@ -136,11 +136,21 @@ const allCategories = computed<StaticCategory[]>(() =>
 )
 
 const activeCategory = ref<string>(allCategories.value[0]?.id ?? 'special')
+const textCategoryAvailable = computed(
+    () => !props.keyOnly && !props.excludedCategoryIds.includes('text'),
+)
+
+function categoryAvailable(id: string, cats = allCategories.value) {
+    if (id === 'text') return textCategoryAvailable.value
+    return cats.some((category) => category.id === id)
+}
 
 function detectCategory(value: string): string | null {
     if (!value) return null
 
-    if (parseTextAction(value) !== null) return 'text'
+    if (parseTextAction(value) !== null) {
+        return textCategoryAvailable.value ? 'text' : null
+    }
 
     const commandId = parseCommandRef(value)
     if (commandId !== null) {
@@ -177,16 +187,16 @@ watchEffect(() => {
     const cats = allCategories.value
 
     if (!val) {
-        if (!cats.some((c) => c.id === activeCategory.value)) {
+        if (!categoryAvailable(activeCategory.value, cats)) {
             activeCategory.value = cats[0]?.id ?? 'special'
         }
         return
     }
 
     const detected = detectCategory(val)
-    if (detected && cats.some((c) => c.id === detected)) {
+    if (detected && categoryAvailable(detected, cats)) {
         activeCategory.value = detected
-    } else if (!cats.some((c) => c.id === activeCategory.value)) {
+    } else if (!categoryAvailable(activeCategory.value, cats)) {
         activeCategory.value = cats[0]?.id ?? 'special'
     }
 })
@@ -244,6 +254,7 @@ function pickItem(item: ActionItem) {
             v-model:active-category="activeCategory"
             :categories="allCategories"
             :key-only="props.keyOnly"
+            :show-text-category="textCategoryAvailable"
         />
 
         <ActionPickerCategoryPanel
