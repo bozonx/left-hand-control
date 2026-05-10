@@ -37,7 +37,6 @@ const capturedDraft = ref('')
 const captureOriginalDraft = ref('')
 
 const isTextCategory = computed(() => props.activeCategory === 'text')
-const showChordHint = computed(() => props.keyOnly)
 const textDraft = computed({
     get: () => parseTextAction(draft.value) ?? '',
     set: (value: string) => {
@@ -495,9 +494,6 @@ onBeforeUnmount(() => {
                 :placeholder="$t('picker.textPh')"
                 class="w-full font-mono"
             />
-            <p v-if="showChordHint" class="text-xs text-(--ui-text-muted)">
-                {{ $t('picker.chordHint') }}
-            </p>
             <p v-if="isTextCategory" class="text-xs text-(--ui-text-muted)">
                 {{ $t('picker.textHint') }}
             </p>

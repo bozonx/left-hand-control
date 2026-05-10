@@ -131,16 +131,12 @@ function apply() {
     modalOpen.value = false
 }
 
-function pickAndApply(value: string) {
-    draft.value = value
+function pickDraft(value: string) {
     const next = normalizeActionValue(value, props.requireValue)
     if (next === null) return
     if (props.excludedValues.includes(next)) return
     if (props.singleKeyOnly && !isSingleKeyAction(next)) return
-    model.value = next
-    emit('apply', next)
-    closeReason.value = 'apply'
-    modalOpen.value = false
+    draft.value = value
 }
 
 function clear() {
@@ -241,6 +237,7 @@ function cancel() {
                 <UButton
                     type="button"
                     icon="i-lucide-check"
+                    data-testid="action-picker-apply"
                     :disabled="applyDisabled"
                     @click="apply"
                 >
@@ -264,7 +261,7 @@ function cancel() {
                     :excluded-values="excludedValues"
                     :excluded-category-ids="excludedCategoryIds"
                     spacious
-                    @pick="pickAndApply"
+                    @pick="pickDraft"
                 />
                 <p v-if="draftInvalid" class="mt-3 text-sm text-(--ui-error)">
                     {{ $t('picker.invalidValue') }}

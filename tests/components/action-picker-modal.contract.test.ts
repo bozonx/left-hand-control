@@ -94,7 +94,7 @@ describe('ActionPickerModal', () => {
     expect(wrapper.find('[data-testid="action-picker-view"]').exists()).toBe(true)
   })
 
-  it('applies and closes immediately when an item is picked from the list', async () => {
+  it('keeps the modal open and waits for apply when an item is picked from the list', async () => {
     const value = ref('')
     const open = ref(true)
     const Harness = defineComponent({
@@ -110,12 +110,19 @@ describe('ActionPickerModal', () => {
     await pickerItem.trigger('click')
     await flushPromises()
 
+    expect(value.value).toBe('')
+    expect(open.value).toBe(true)
+    expect(wrapper.find('[data-testid="action-picker-view"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="picker-body"]').text()).toContain('KeyA')
+
+    await wrapper.get('[data-testid="action-picker-apply"]').trigger('click')
+    await flushPromises()
+
     expect(value.value).toBe('KeyA')
     expect(open.value).toBe(false)
-    expect(wrapper.find('[data-testid="action-picker-view"]').exists()).toBe(false)
   })
 
-  it('emits apply without cancel when an item is picked from the list', async () => {
+  it('emits apply without cancel after a picked item is applied', async () => {
     const value = ref('')
     const open = ref(true)
     const applied = ref<string[]>([])
@@ -137,6 +144,12 @@ describe('ActionPickerModal', () => {
     const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     await wrapper.get('[data-testid="picker-item"]').trigger('click')
+    await flushPromises()
+
+    expect(value.value).toBe('')
+    expect(applied.value).toEqual([])
+
+    await wrapper.get('[data-testid="action-picker-apply"]').trigger('click')
     await flushPromises()
 
     expect(value.value).toBe('KeyA')
