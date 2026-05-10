@@ -30,14 +30,17 @@ describe('app action catalog', () => {
     const ids = APP_ACTIONS.map((action) => action.id)
 
     expect(new Set(ids).size).toBe(ids.length)
-    expect(appActionById('showQuickMenu')).toMatchObject({
-      id: 'showQuickMenu',
+    expect(appActionById('showQuickMenu1')).toMatchObject({
+      id: 'showQuickMenu1',
       nameKey: 'appActions.showQuickMenu',
+      nameParams: { n: 1 },
     })
-    expect(appActionById('showEmojiMenu')).toMatchObject({
-      id: 'showEmojiMenu',
+    expect(appActionById('showEmojiMenu5')).toMatchObject({
+      id: 'showEmojiMenu5',
       nameKey: 'appActions.showEmojiMenu',
+      nameParams: { n: 5 },
     })
+    expect(appActionById('showQuickMenu')).toBeUndefined()
     expect(appActionById('missing')).toBeUndefined()
   })
 })

@@ -438,7 +438,7 @@ export default {
   },
   quickActions: {
     title: 'Quick Actions',
-    subtitle: 'Opened by the app:showQuickMenu action.',
+    subtitle: 'Opened by the app:showQuickMenu1...5 actions.',
     empty: 'No quick actions yet. Add one to see it in the Quick Menu.',
     addBtn: 'Add Action',
     addPage: 'Add page',
@@ -467,7 +467,7 @@ export default {
   emoji: {
     title: 'Emoji & Symbols',
     subtitle:
-      'Opened by the app:showEmojiMenu action. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. "// TODO: ").',
+      'Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. "// TODO: ").',
     addPage: 'Add page',
     deletePage: 'Delete page',
     deletePageTitle: 'Page deletion',
@@ -810,8 +810,8 @@ export default {
     text: 'Text',
   },
   appActions: {
-    showQuickMenu: 'Show Quick Action Menu',
-    showEmojiMenu: 'Show Emoji & Symbols menu',
+    showQuickMenu: 'Show Quick Action Menu page {n}',
+    showEmojiMenu: 'Show Emoji & Symbols menu page {n}',
   },
   systemActions: {
     switchDesktop: 'Switch to desktop {n}',

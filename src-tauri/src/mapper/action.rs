@@ -16,7 +16,7 @@ pub struct Keystroke {
 }
 
 /// A single step of a macro. Macros may mix raw keystrokes with
-/// system/app invocations (e.g. `sys:switchDesktop1`, `app:showQuickMenu`) and explicit
+/// system/app invocations (e.g. `sys:switchDesktop1`, `app:showQuickMenu1`) and explicit
 /// text literals (`text:TODO: `).
 #[derive(Clone, Debug)]
 pub enum MacroStepItem {

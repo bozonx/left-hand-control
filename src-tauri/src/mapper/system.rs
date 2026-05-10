@@ -77,11 +77,16 @@ pub fn is_known(name: &str) -> bool {
 }
 
 pub fn resolve_app(name: &str) -> Option<SysAction> {
-    match name.trim() {
-        "showQuickMenu" => Some(SysAction::TauriEvent("show_quick_menu".into())),
-        "showEmojiMenu" => Some(SysAction::TauriEvent("show_emoji_menu".into())),
-        _ => None,
+    let name = name.trim();
+    for page in 1..=5 {
+        if name == format!("showQuickMenu{page}") {
+            return Some(SysAction::TauriEvent(format!("show_quick_menu_{page}")));
+        }
+        if name == format!("showEmojiMenu{page}") {
+            return Some(SysAction::TauriEvent(format!("show_emoji_menu_{page}")));
+        }
     }
+    None
 }
 
 pub fn is_known_app(name: &str) -> bool {
@@ -350,21 +355,23 @@ mod tests {
     use crate::platform::linux::Desktop;
 
     #[test]
-    fn resolve_show_quick_menu() {
-        let Some(SysAction::TauriEvent(event)) = resolve_app("showQuickMenu") else {
-            panic!("showQuickMenu did not resolve to a TauriEvent");
+    fn resolve_show_quick_menu_page() {
+        let Some(SysAction::TauriEvent(event)) = resolve_app("showQuickMenu3") else {
+            panic!("showQuickMenu3 did not resolve to a TauriEvent");
         };
-        assert_eq!(event, "show_quick_menu");
-        assert!(resolve_for_desktop("showQuickMenu", &Desktop::Kde).is_none());
+        assert_eq!(event, "show_quick_menu_3");
+        assert!(resolve_app("showQuickMenu").is_none());
+        assert!(resolve_for_desktop("showQuickMenu3", &Desktop::Kde).is_none());
     }
 
     #[test]
-    fn resolve_show_emoji_menu() {
-        let Some(SysAction::TauriEvent(event)) = resolve_app("showEmojiMenu") else {
-            panic!("showEmojiMenu did not resolve to a TauriEvent");
+    fn resolve_show_emoji_menu_page() {
+        let Some(SysAction::TauriEvent(event)) = resolve_app("showEmojiMenu5") else {
+            panic!("showEmojiMenu5 did not resolve to a TauriEvent");
         };
-        assert_eq!(event, "show_emoji_menu");
-        assert!(resolve_for_desktop("showEmojiMenu", &Desktop::Kde).is_none());
+        assert_eq!(event, "show_emoji_menu_5");
+        assert!(resolve_app("showEmojiMenu").is_none());
+        assert!(resolve_for_desktop("showEmojiMenu5", &Desktop::Kde).is_none());
     }
 
     #[test]

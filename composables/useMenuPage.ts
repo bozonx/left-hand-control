@@ -22,8 +22,12 @@ export function useMenuPage(pages: Ref<unknown[]>) {
   }
 
   function setPage(index: number) {
-    pageIndex.value = index
-    pageEls.value[index]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    const next = Math.min(
+      Math.max(index, 0),
+      Math.max(0, pages.value.length - 1),
+    )
+    pageIndex.value = next
+    pageEls.value[next]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
 
   function setPageRef(el: unknown, index: number) {
@@ -49,11 +53,17 @@ export function useMenuPage(pages: Ref<unknown[]>) {
     scrollFrame = window.requestAnimationFrame(updatePageFromScroll)
   }
 
-  async function resetScroll() {
-    pageIndex.value = 0
+  async function resetScroll(index = 0) {
+    const next = Math.min(
+      Math.max(index, 0),
+      Math.max(0, pages.value.length - 1),
+    )
+    pageIndex.value = next
     pageEls.value = []
     await nextTick()
-    scrollEl.value?.scrollTo({ top: 0 })
+    scrollEl.value?.scrollTo({
+      top: scrollEl.value.clientHeight * next,
+    })
   }
 
   function handleTabKey(e: KeyboardEvent): boolean {

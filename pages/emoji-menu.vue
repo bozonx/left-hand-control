@@ -10,6 +10,7 @@ import type { EmojiHotkey } from '~/types/config'
 import { useMenuPage } from '~/composables/useMenuPage'
 
 const { config, load } = useConfig()
+const route = useRoute()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -45,6 +46,14 @@ function cellContentClass(value: string | undefined): string {
 }
 
 let unlistenShow: (() => void) | null = null
+
+function menuPageFromPayload(payload: unknown): number {
+    const page =
+        typeof payload === 'number'
+            ? payload
+            : Number.parseInt(String(payload), 10)
+    return Number.isFinite(page) ? page - 1 : 0
+}
 
 async function closeMenu() {
     await invoke('hide_emoji_menu').catch((e) => {
@@ -84,10 +93,11 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(async () => {
     await load()
+    await resetScroll(menuPageFromPayload(route.query.page))
 
-    unlistenShow = await listen('show_emoji_menu', async () => {
+    unlistenShow = await listen('open_emoji_menu_page', async (event) => {
         await load()
-        await resetScroll()
+        await resetScroll(menuPageFromPayload(event.payload))
     })
 
     window.addEventListener('keydown', onKeydown)

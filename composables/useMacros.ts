@@ -45,7 +45,7 @@ export function useMacros() {
   function appActionName(id: string): string | undefined {
     const found = appActionById(id)
     if (!found) return undefined
-    return t(found.nameKey)
+    return t(found.nameKey, found.nameParams ?? {})
   }
 
   function displayAction(action: string | undefined | null): string {

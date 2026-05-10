@@ -86,7 +86,7 @@ export interface LayerKeymap {
 // or macro-only `pause:<ms>`.
 export interface MacroStep {
   id: string
-  // The action spec string (e.g. 'KeyA', 'cmd:bar', 'app:showQuickMenu', 'text:hello', 'pause:100').
+  // The action spec string (e.g. 'KeyA', 'cmd:bar', 'app:showQuickMenu1', 'text:hello', 'pause:100').
   action: string
 }
 

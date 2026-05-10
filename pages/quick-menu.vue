@@ -11,6 +11,7 @@ import {
 } from '~/types/config'
 
 const { config, load } = useConfig()
+const route = useRoute()
 
 const actions = computed(() => config.value.quickActions || [])
 const quickActionPages = computed(() => config.value.quickActionPages || [])
@@ -45,6 +46,14 @@ const {
 
 let unlistenShow: (() => void) | null = null
 
+function menuPageFromPayload(payload: unknown): number {
+    const page =
+        typeof payload === 'number'
+            ? payload
+            : Number.parseInt(String(payload), 10)
+    return Number.isFinite(page) ? page - 1 : 0
+}
+
 async function closeMenu() {
     await invoke('hide_quick_menu').catch((e) => {
         logger.error('Failed to hide quick menu', e)
@@ -70,10 +79,11 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(async () => {
     await load()
+    await resetScroll(menuPageFromPayload(route.query.page))
 
-    unlistenShow = await listen('show_quick_menu', async () => {
+    unlistenShow = await listen('open_quick_menu_page', async (event) => {
         await load()
-        await resetScroll()
+        await resetScroll(menuPageFromPayload(event.payload))
     })
 
     window.addEventListener('keydown', onKeydown)

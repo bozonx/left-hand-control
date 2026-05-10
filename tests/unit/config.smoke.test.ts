@@ -33,7 +33,7 @@ describe('config helpers', () => {
     expect(parseSystemRef(systemActionRef('switchDesktop1'))).toBe(
       'switchDesktop1',
     )
-    expect(parseAppRef(appActionRef('showQuickMenu'))).toBe('showQuickMenu')
+    expect(parseAppRef(appActionRef('showQuickMenu1'))).toBe('showQuickMenu1')
     expect(parseTextAction(textActionRef('TODO: '))).toBe('TODO: ')
     expect(parseMacroRef('Enter')).toBeNull()
     expect(parseCommandRef('Enter')).toBeNull()
@@ -70,7 +70,8 @@ describe('config helpers', () => {
     expect(validateActionValue('macro:copyLine', config)).toBeNull()
     expect(validateActionValue('cmd:terminal', config)).toBeNull()
     expect(validateActionValue('sys:switchDesktop1', config)).toBeNull()
-    expect(validateActionValue('app:showQuickMenu', config)).toBeNull()
+    expect(validateActionValue('app:showQuickMenu1', config)).toBeNull()
+    expect(validateActionValue('app:showQuickMenu', config)).toBe('unknownAppAction')
     expect(validateActionValue('macro:missing', config)).toBe('unknownMacro')
     expect(validateActionValue('cmd:missing', config)).toBe('unknownCommand')
     expect(validateActionValue('sys:missing', config)).toBe('unknownSystemAction')

@@ -1,5 +1,5 @@
 use crate::gamemode::get_gamemode_status;
-use tauri::{Listener, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::{Emitter, Listener, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 mod active_window;
 mod gamemode;
@@ -267,24 +267,28 @@ fn insert_text(text: String) -> Result<(), String> {
     mapper::execute_action(action)
 }
 
-fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
+fn show_quick_menu_window(app: &tauri::AppHandle, page: u8) -> Result<(), String> {
     let window = if let Some(window) = app.get_webview_window("quick-menu") {
         window
     } else {
-        WebviewWindowBuilder::new(app, "quick-menu", WebviewUrl::App("quick-menu".into()))
-            .title("Quick Actions")
-            .inner_size(760.0, 520.0)
-            .min_inner_size(520.0, 120.0)
-            .resizable(false)
-            .decorations(false)
-            .transparent(true)
-            .always_on_top(true)
-            .skip_taskbar(true)
-            .focused(true)
-            .center()
-            .visible(false)
-            .build()
-            .map_err(|e| format!("create quick menu window: {e}"))?
+        WebviewWindowBuilder::new(
+            app,
+            "quick-menu",
+            WebviewUrl::App(format!("quick-menu?page={page}").into()),
+        )
+        .title("Quick Actions")
+        .inner_size(760.0, 520.0)
+        .min_inner_size(520.0, 120.0)
+        .resizable(false)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .focused(true)
+        .center()
+        .visible(false)
+        .build()
+        .map_err(|e| format!("create quick menu window: {e}"))?
     };
     window
         .center()
@@ -293,27 +297,33 @@ fn show_quick_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
     window
         .set_focus()
         .map_err(|e| format!("focus quick menu: {e}"))?;
+    app.emit_to("quick-menu", "open_quick_menu_page", page)
+        .map_err(|e| format!("emit quick menu page: {e}"))?;
     Ok(())
 }
 
-fn show_emoji_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
+fn show_emoji_menu_window(app: &tauri::AppHandle, page: u8) -> Result<(), String> {
     let window = if let Some(window) = app.get_webview_window("emoji-menu") {
         window
     } else {
-        WebviewWindowBuilder::new(app, "emoji-menu", WebviewUrl::App("emoji-menu".into()))
-            .title("Emoji")
-            .inner_size(520.0, 500.0)
-            .min_inner_size(360.0, 260.0)
-            .resizable(false)
-            .decorations(false)
-            .transparent(true)
-            .always_on_top(true)
-            .skip_taskbar(true)
-            .focused(true)
-            .center()
-            .visible(false)
-            .build()
-            .map_err(|e| format!("create emoji menu window: {e}"))?
+        WebviewWindowBuilder::new(
+            app,
+            "emoji-menu",
+            WebviewUrl::App(format!("emoji-menu?page={page}").into()),
+        )
+        .title("Emoji")
+        .inner_size(520.0, 500.0)
+        .min_inner_size(360.0, 260.0)
+        .resizable(false)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .focused(true)
+        .center()
+        .visible(false)
+        .build()
+        .map_err(|e| format!("create emoji menu window: {e}"))?
     };
     window
         .center()
@@ -322,7 +332,31 @@ fn show_emoji_menu_window(app: &tauri::AppHandle) -> Result<(), String> {
     window
         .set_focus()
         .map_err(|e| format!("focus emoji menu: {e}"))?;
+    app.emit_to("emoji-menu", "open_emoji_menu_page", page)
+        .map_err(|e| format!("emit emoji menu page: {e}"))?;
     Ok(())
+}
+
+fn listen_menu_pages(
+    app: &tauri::App,
+    event_prefix: &'static str,
+    log_prefix: &'static str,
+    show: fn(&tauri::AppHandle, u8) -> Result<(), String>,
+) {
+    for page in 1..=5 {
+        let menu_app = app.handle().clone();
+        app.listen(format!("{event_prefix}_{page}"), move |_| {
+            let app = menu_app.clone();
+            let app_for_thread = app.clone();
+            if let Err(e) = app.run_on_main_thread(move || {
+                if let Err(e) = show(&app_for_thread, page) {
+                    log::debug!("[{log_prefix}] {e}");
+                }
+            }) {
+                log::debug!("[{log_prefix}] schedule show failed: {e}");
+            }
+        });
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -338,30 +372,8 @@ pub fn run() {
             layout::start_watcher(app.handle().clone());
             gamemode::start_watcher(app.handle().clone());
             active_window::start_watcher(app.handle().clone());
-            let quick_menu_app = app.handle().clone();
-            app.listen("show_quick_menu", move |_| {
-                let app = quick_menu_app.clone();
-                let app_for_thread = app.clone();
-                if let Err(e) = app.run_on_main_thread(move || {
-                    if let Err(e) = show_quick_menu_window(&app_for_thread) {
-                        log::debug!("[quick-menu] {e}");
-                    }
-                }) {
-                    log::debug!("[quick-menu] schedule show failed: {e}");
-                }
-            });
-            let emoji_menu_app = app.handle().clone();
-            app.listen("show_emoji_menu", move |_| {
-                let app = emoji_menu_app.clone();
-                let app_for_thread = app.clone();
-                if let Err(e) = app.run_on_main_thread(move || {
-                    if let Err(e) = show_emoji_menu_window(&app_for_thread) {
-                        log::debug!("[emoji-menu] {e}");
-                    }
-                }) {
-                    log::debug!("[emoji-menu] schedule show failed: {e}");
-                }
-            });
+            listen_menu_pages(app, "show_quick_menu", "quick-menu", show_quick_menu_window);
+            listen_menu_pages(app, "show_emoji_menu", "emoji-menu", show_emoji_menu_window);
             if let Some(window) = app.get_webview_window("main") {
                 window_state::restore(&window);
                 let _ = window.show();
