@@ -20,6 +20,7 @@ export default {
     layoutLanguageLabel: 'Language:',
     gameModeLabel: 'GAME',
     settingsTooltip: 'Settings',
+    activeLayoutTooltip: 'Active layout',
   },
   common: {
     notSet: 'Not set',

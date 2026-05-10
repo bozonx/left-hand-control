@@ -20,6 +20,7 @@ export default {
     layoutLanguageLabel: 'Язык:',
     gameModeLabel: 'GAME',
     settingsTooltip: 'Настройки',
+    activeLayoutTooltip: 'Активная раскладка',
   },
   common: {
     notSet: 'Не задано',

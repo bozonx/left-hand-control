@@ -16,6 +16,20 @@ const { layout } = useLayout()
 const gameMode = useGameMode()
 const { t } = useI18n()
 const { needsApproval: commandsNeedApproval } = useCommandTrust()
+const { activeAutoLayoutId } = useLayoutSwitcher()
+
+const activeLayoutId = computed<string | null | undefined>(() => {
+    const settings = config.value.settings
+    if (settings.layoutMode === 'auto') return activeAutoLayoutId.value
+    return settings.manualActiveLayoutId ?? null
+})
+
+const activeLayoutLabel = computed<string | null>(() => {
+    const id = activeLayoutId.value
+    if (!id) return null
+    if (isUserLayoutId(id)) return userLayoutNameFromId(id)
+    return id
+})
 
 const tabItems = computed(() => [
     {
@@ -199,6 +213,30 @@ onMounted(() => {
                                     : $t('settings.start')
                             }}
                         </UButton>
+                    </AppTooltip>
+
+                    <AppTooltip
+                        v-if="activeLayoutLabel"
+                        :text="$t('app.activeLayoutTooltip')"
+                    >
+                        <UBadge
+                            :color="
+                                mapper.status.value.running ? 'primary' : 'neutral'
+                            "
+                            :variant="
+                                mapper.status.value.running ? 'soft' : 'outline'
+                            "
+                            size="sm"
+                            :class="
+                                !mapper.status.value.running ? 'opacity-50' : ''
+                            "
+                        >
+                            <UIcon
+                                name="i-lucide-radio"
+                                class="mr-1 shrink-0"
+                            />
+                            {{ activeLayoutLabel }}
+                        </UBadge>
                     </AppTooltip>
 
                     <AppTooltip v-if="layout" :text="layout.long">
