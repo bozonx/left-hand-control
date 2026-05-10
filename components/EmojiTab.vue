@@ -245,6 +245,7 @@ onMounted(ensurePages)
                                     color="neutral"
                                     variant="ghost"
                                     size="sm"
+                                    class="self-end"
                                     :title="$t('emoji.deletePageTitle')"
                                     :aria-label="$t('emoji.deletePage')"
                                     @click="askRemovePage(selectedPageIndex)"
