@@ -162,7 +162,9 @@ onMounted(ensurePages)
                 </div>
             </template>
 
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div
+                class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]"
+            >
                 <div class="space-y-4">
                     <div class="flex flex-wrap gap-2">
                         <div
@@ -206,12 +208,13 @@ onMounted(ensurePages)
                         >
                             <span
                                 class="font-mono text-xs uppercase text-(--ui-primary)"
-                            >{{
-                                EMOJI_HOTKEY_LABELS[key]
-                            }}</span>
+                                >{{ EMOJI_HOTKEY_LABELS[key] }}</span
+                            >
                             <span
                                 class="overflow-hidden text-center"
-                                :class="cellContentClass(selectedPage.cells[key])"
+                                :class="
+                                    cellContentClass(selectedPage.cells[key])
+                                "
                                 >{{ selectedPage.cells[key] || '＋' }}</span
                             >
                         </button>
@@ -226,7 +229,9 @@ onMounted(ensurePages)
                             >
                                 <UFormField class="min-w-0 flex-1">
                                     <template #label>
-                                        <FieldLabel :label="$t('common.page')" />
+                                        <FieldLabel
+                                            :label="$t('common.page')"
+                                        />
                                     </template>
                                     <UInput
                                         v-model="selectedPage.name"
@@ -265,7 +270,9 @@ onMounted(ensurePages)
                                         :placeholder="
                                             $t('emoji.customPlaceholder')
                                         "
-                                        @keydown.enter.prevent="setCell(customEmoji)"
+                                        @keydown.enter.prevent="
+                                            setCell(customEmoji)
+                                        "
                                         @blur="setCell(customEmoji)"
                                     />
                                     <UButton
@@ -279,7 +286,7 @@ onMounted(ensurePages)
                             </div>
 
                             <div
-                                class="max-h-[34rem] space-y-4 overflow-y-auto pr-1"
+                                class="max-h-[26rem] space-y-4 overflow-y-auto pr-1"
                             >
                                 <section
                                     v-for="category in EMOJI_CATALOG"
@@ -310,13 +317,20 @@ onMounted(ensurePages)
             </div>
         </UCard>
 
-        <UModal v-model:open="confirmDeletePageOpen" :title="$t('emoji.confirmDeletePageTitle')">
+        <UModal
+            v-model:open="confirmDeletePageOpen"
+            :title="$t('emoji.confirmDeletePageTitle')"
+        >
             <template #body>
                 <p class="text-sm">{{ $t('emoji.confirmDeletePageBody') }}</p>
             </template>
             <template #footer>
                 <div class="flex w-full justify-end gap-2">
-                    <UButton color="neutral" variant="ghost" @click="cancelRemovePage">
+                    <UButton
+                        color="neutral"
+                        variant="ghost"
+                        @click="cancelRemovePage"
+                    >
                         {{ $t('common.cancel') }}
                     </UButton>
                     <UButton
