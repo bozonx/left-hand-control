@@ -7,6 +7,7 @@ import {
 
 const route = useRoute()
 const tabsScrollRef = ref<HTMLElement | null>(null)
+const contextRowRef = ref<HTMLElement | null>(null)
 
 const { loaded, config, flush, currentLayoutId, isLayoutDirty } = useConfig()
 const { saveCurrentLayout, saveBusy } = useSettingsScreen()
@@ -118,6 +119,15 @@ async function toggleMapper() {
     }
 }
 
+watch(currentLayoutId, () => {
+    const el = contextRowRef.value
+    if (!el) return
+    el.classList.remove('layout-context-flash')
+    // Force reflow so the animation restarts when triggered repeatedly.
+    void el.offsetWidth
+    el.classList.add('layout-context-flash')
+})
+
 onMounted(() => {
     void mapper.refreshStatus()
 })
@@ -125,24 +135,138 @@ onMounted(() => {
 
 <template>
     <header
-        class="flex items-center justify-between px-4 h-[var(--app-header-height)] border-b border-(--ui-border) bg-(--ui-bg-elevated) gap-3 shrink-0 app-chrome"
+        class="flex flex-col shrink-0 app-chrome border-b border-(--ui-border) bg-(--ui-bg-elevated)"
         data-tauri-drag-region
     >
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-            <UButton
-                color="neutral"
-                variant="ghost"
-                :square="true"
-                size="sm"
-                icon="i-lucide-keyboard"
-                :aria-label="$t('app.title')"
-                class="shrink-0 -ml-2 transition-all duration-200"
-                :class="
-                    isActive('/')
-                        ? 'text-primary bg-(--ui-primary)/8'
-                        : 'text-(--ui-text-muted) hover:text-primary'
-                "
-                to="/"
+        <!-- Row 1: app chrome — global controls and status -->
+        <div
+            class="flex items-center justify-between px-4 gap-3 h-[var(--app-chrome-height)]"
+        >
+            <div class="flex items-center gap-2 min-w-0">
+                <UButton
+                    color="neutral"
+                    variant="ghost"
+                    :square="true"
+                    size="sm"
+                    icon="i-lucide-keyboard"
+                    :aria-label="$t('app.title')"
+                    class="shrink-0 -ml-2 transition-all duration-200"
+                    :class="
+                        isActive('/')
+                            ? 'text-primary bg-(--ui-primary)/8'
+                            : 'text-(--ui-text-muted) hover:text-primary'
+                    "
+                    to="/"
+                />
+                <span
+                    class="text-sm font-semibold text-(--ui-text-highlighted) truncate"
+                >
+                    {{ $t('app.title') }}
+                </span>
+            </div>
+
+            <div class="flex items-center gap-3 shrink-0">
+                <template v-if="loaded">
+                    <AppTooltip
+                        :disabled="
+                            mapper.status.value.running || !!selectedDevice
+                        "
+                        :text="$t('settings.startDisabledTooltip')"
+                    >
+                        <UButton
+                            :color="
+                                mapper.status.value.running ? 'error' : 'primary'
+                            "
+                            :variant="
+                                mapper.status.value.running ? 'soft' : 'solid'
+                            "
+                            :icon="
+                                mapper.status.value.running
+                                    ? 'i-lucide-square'
+                                    : 'i-lucide-play'
+                            "
+                            size="sm"
+                            class="whitespace-nowrap"
+                            :loading="mapper.busy.value"
+                            :disabled="
+                                !mapper.status.value.running && !selectedDevice
+                            "
+                            @click="toggleMapper"
+                        >
+                            {{
+                                mapper.status.value.running
+                                    ? $t('settings.stop')
+                                    : $t('settings.start')
+                            }}
+                        </UButton>
+                    </AppTooltip>
+
+                    <AppTooltip v-if="layout" :text="layout.long">
+                        <UBadge
+                            color="neutral"
+                            variant="outline"
+                            size="sm"
+                            class="font-mono uppercase"
+                        >
+                            <UIcon
+                                name="i-lucide-languages"
+                                class="mr-1 shrink-0"
+                            />
+                            <span class="text-xs opacity-60 mr-0.5">{{
+                                $t('app.layoutLanguageLabel')
+                            }}</span>
+                            {{ layout.short
+                            }}{{ layout.display ? ` (${layout.display})` : '' }}
+                        </UBadge>
+                    </AppTooltip>
+
+                    <AppTooltip :text="gameModeTooltip">
+                        <UBadge
+                            :color="
+                                gameMode.status.value.active ? 'error' : 'neutral'
+                            "
+                            :variant="
+                                gameMode.status.value.active ? 'solid' : 'outline'
+                            "
+                            size="sm"
+                            :class="
+                                !gameMode.status.value.active ? 'opacity-50' : ''
+                            "
+                        >
+                            <UIcon
+                                name="i-lucide-gamepad-2"
+                                class="mr-1 h-3.5 w-3.5"
+                            />
+                            {{ $t('app.gameModeLabel') }}
+                        </UBadge>
+                    </AppTooltip>
+
+                    <AppTooltip :text="$t('app.settingsTooltip')">
+                        <UButton
+                            :color="isActive('/settings') ? 'primary' : 'neutral'"
+                            :variant="isActive('/settings') ? 'soft' : 'ghost'"
+                            icon="i-lucide-settings"
+                            size="sm"
+                            :aria-label="$t('tabs.settings')"
+                            @click="openTab('/settings')"
+                        />
+                    </AppTooltip>
+                </template>
+                <div v-else class="text-xs text-(--ui-text-muted)">
+                    {{ $t('app.loading') }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: layout context — name + save + edit tabs of the active layout -->
+        <div
+            ref="contextRowRef"
+            class="flex items-center px-4 gap-2 h-[var(--app-context-height)] border-t border-(--ui-border)/60 bg-(--ui-bg)"
+        >
+            <UIcon
+                name="i-lucide-folder-open"
+                class="shrink-0 text-(--ui-text-muted) opacity-70"
+                aria-hidden="true"
             />
 
             <AppTooltip :text="currentLayoutLabel">
@@ -181,7 +305,10 @@ onMounted(() => {
                 />
             </AppTooltip>
 
-            <span class="shrink-0 w-1" aria-hidden="true" />
+            <span
+                class="shrink-0 mx-1 h-5 w-px bg-(--ui-border)"
+                aria-hidden="true"
+            />
 
             <div
                 ref="tabsScrollRef"
@@ -213,96 +340,6 @@ onMounted(() => {
                         />
                     </UButton>
                 </div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3 shrink-0">
-            <template v-if="loaded">
-                <AppTooltip
-                    :disabled="mapper.status.value.running || !!selectedDevice"
-                    :text="$t('settings.startDisabledTooltip')"
-                >
-                    <UButton
-                        :color="
-                            mapper.status.value.running ? 'error' : 'primary'
-                        "
-                        :variant="
-                            mapper.status.value.running ? 'soft' : 'solid'
-                        "
-                        :icon="
-                            mapper.status.value.running
-                                ? 'i-lucide-square'
-                                : 'i-lucide-play'
-                        "
-                        size="sm"
-                        class="whitespace-nowrap"
-                        :loading="mapper.busy.value"
-                        :disabled="
-                            !mapper.status.value.running && !selectedDevice
-                        "
-                        @click="toggleMapper"
-                    >
-                        {{
-                            mapper.status.value.running
-                                ? $t('settings.stop')
-                                : $t('settings.start')
-                        }}
-                    </UButton>
-                </AppTooltip>
-
-                <AppTooltip v-if="layout" :text="layout.long">
-                    <UBadge
-                        color="neutral"
-                        variant="outline"
-                        size="sm"
-                        class="font-mono uppercase"
-                    >
-                        <UIcon
-                            name="i-lucide-languages"
-                            class="mr-1 shrink-0"
-                        />
-                        <span class="text-xs opacity-60 mr-0.5">{{
-                            $t('app.layoutLanguageLabel')
-                        }}</span>
-                        {{ layout.short
-                        }}{{ layout.display ? ` (${layout.display})` : '' }}
-                    </UBadge>
-                </AppTooltip>
-
-                <AppTooltip :text="gameModeTooltip">
-                    <UBadge
-                        :color="
-                            gameMode.status.value.active ? 'error' : 'neutral'
-                        "
-                        :variant="
-                            gameMode.status.value.active ? 'solid' : 'outline'
-                        "
-                        size="sm"
-                        :class="
-                            !gameMode.status.value.active ? 'opacity-50' : ''
-                        "
-                    >
-                        <UIcon
-                            name="i-lucide-gamepad-2"
-                            class="mr-1 h-3.5 w-3.5"
-                        />
-                        {{ $t('app.gameModeLabel') }}
-                    </UBadge>
-                </AppTooltip>
-
-                <AppTooltip :text="$t('app.settingsTooltip')">
-                    <UButton
-                        :color="isActive('/settings') ? 'primary' : 'neutral'"
-                        :variant="isActive('/settings') ? 'soft' : 'ghost'"
-                        icon="i-lucide-settings"
-                        size="sm"
-                        :aria-label="$t('tabs.settings')"
-                        @click="openTab('/settings')"
-                    />
-                </AppTooltip>
-            </template>
-            <div v-else class="text-xs text-(--ui-text-muted)">
-                {{ $t('app.loading') }}
             </div>
         </div>
     </header>

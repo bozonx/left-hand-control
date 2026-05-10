@@ -12,10 +12,25 @@
  * -------------------------------------------------------------------------- */
 
 :root {
-  /* Set root to 16px to make rem calculations (0.875rem, 0.75rem, etc.) 
+  /* Set root to 16px to make rem calculations (0.875rem, 0.75rem, etc.)
      result in integer pixels, which is essential for text sharpness. */
   font-size: 16px;
-  --app-header-height: 44px;
+  --app-chrome-height: 38px;
+  --app-context-height: 40px;
+  --app-header-height: calc(var(--app-chrome-height) + var(--app-context-height));
+}
+
+@keyframes layout-context-flash {
+  0% {
+    background-color: color-mix(in oklab, var(--ui-primary) 14%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.layout-context-flash {
+  animation: layout-context-flash 700ms ease-out;
 }
 
 /* Explicit dark-mode surface overrides — keep backgrounds warm-neutral, not blue.
