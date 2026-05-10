@@ -378,6 +378,11 @@ pub fn run() {
                     tray::hide_main_window(&w);
                 }
             }
+            WindowEvent::Focused(false) => {
+                if window.label() == "quick-menu" || window.label() == "emoji-menu" {
+                    let _ = window.hide();
+                }
+            }
             WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
                 if let Some(w) = window.app_handle().get_webview_window("main") {
                     window_state::remember(&w);
