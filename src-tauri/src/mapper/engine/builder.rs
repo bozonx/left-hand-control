@@ -404,11 +404,17 @@ impl Engine {
                     );
                     continue;
                 };
-                let Some(def) = resolve(
-                    &extra.action,
-                    &format!("keymap {layer_id}.extra({})", extra.key),
-                ) else {
-                    continue;
+                let def = match &extra.action {
+                    ActionSpec::Native => continue,
+                    ActionSpec::Swallow => ActionDef::Swallow,
+                    ActionSpec::Action(s) => {
+                        let Some(def) =
+                            resolve(s, &format!("keymap {layer_id}.extra({})", extra.key))
+                        else {
+                            continue;
+                        };
+                        def
+                    }
                 };
                 m.insert(key, def);
             }

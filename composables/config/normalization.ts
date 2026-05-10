@@ -268,7 +268,21 @@ export function normalizeConfig(raw: unknown): AppConfig {
           ),
         )
       }
-      if (!Array.isArray(km.extras)) km.extras = []
+      if (!Array.isArray(km.extras)) {
+        km.extras = []
+      } else {
+        km.extras = km.extras
+          .filter((extra) => !!extra && typeof extra === 'object')
+          .map((extra) => ({
+            ...extra,
+            key: typeof extra.key === 'string' ? extra.key : '',
+            action: extra.action === null
+              ? null
+              : typeof extra.action === 'string'
+                ? extra.action
+                : '',
+          }))
+      }
     }
   }
   return cfg

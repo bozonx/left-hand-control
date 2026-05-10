@@ -68,8 +68,8 @@ export interface ExtraKey {
   id: string
   // Physical key code (mouse button, media key, etc.) that triggers this binding.
   key: string
-  // Action mapped to this extra key.
-  action: string
+  // Action mapped to this extra key. Null explicitly swallows the key.
+  action: string | null
 }
 
 export interface LayerKeymap {

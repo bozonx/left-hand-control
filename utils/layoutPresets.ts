@@ -36,7 +36,7 @@ interface LayoutYaml {
       id?: string
       key?: string
       name?: string
-      action?: string
+      action?: string | null
     }>
   }>
   rules?: Array<{
@@ -110,11 +110,11 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
     const extras: ExtraKey[] = []
     for (const e of l.extras ?? []) {
       const key = e?.key ?? e?.name
-      if (!key || !e?.action) continue
+      if (!key || e?.action === undefined || e.action === '') continue
       extras.push({
         id: e.id ?? genId('x_'),
         key,
-        action: e.action,
+        action: e.action === null ? null : String(e.action),
       })
     }
     layerKeymaps[l.id] = { keys, extras }

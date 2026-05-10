@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RuleActionField from '~/components/features/rules/RuleActionField.vue'
 import type { ExtraKey } from '~/types/config'
 import { VISUAL_KEY_CODES } from '~/utils/keys'
 
@@ -9,7 +10,7 @@ defineProps<{
 const emit = defineEmits<{
   add: []
   'clear-all': []
-  'update-extra': [id: string, field: 'key' | 'action', value: string]
+  'update-extra': [id: string, field: 'key' | 'action', value: string | null]
   moveUp: [id: string]
   moveDown: [id: string]
   remove: [id: string]
@@ -79,10 +80,10 @@ const emit = defineEmits<{
               :hint="$t('keymap.extraActionHint')"
             />
           </template>
-          <ActionPickerModal
+          <RuleActionField
             :model-value="extra.action"
             :placeholder="$t('rules.tapPh')"
-            @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'action', value ?? '')"
+            @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'action', value)"
           />
         </UFormField>
         <div class="flex items-start gap-1">

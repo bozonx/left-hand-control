@@ -27,6 +27,8 @@ layers:
     extras:
       - key: MouseSide
         action: BrowserBack
+      - key: MouseExtra
+        action: ~
 rules:
   - key: CapsLock
     layer: nav
@@ -81,6 +83,10 @@ macros:
             {
               key: 'MouseSide',
               action: 'BrowserBack',
+            },
+            {
+              key: 'MouseExtra',
+              action: null,
             },
           ],
         },
@@ -182,7 +188,10 @@ macros:
       layerKeymaps: {
         edit: {
           keys: { KeyH: 'ArrowLeft', KeyJ: null },
-          extras: [{ id: 'extra-1', key: 'MouseSide', action: 'BrowserBack' }],
+          extras: [
+            { id: 'extra-1', key: 'MouseSide', action: 'BrowserBack' },
+            { id: 'extra-2', key: 'MouseExtra', action: null },
+          ],
         },
       },
       macros: [
@@ -240,7 +249,10 @@ macros:
       layerKeymaps: {
         edit: {
           keys: { KeyH: 'ArrowLeft', KeyJ: null },
-          extras: [{ key: 'MouseSide', action: 'BrowserBack' }],
+          extras: [
+            { key: 'MouseSide', action: 'BrowserBack' },
+            { key: 'MouseExtra', action: null },
+          ],
         },
       },
       macros: [

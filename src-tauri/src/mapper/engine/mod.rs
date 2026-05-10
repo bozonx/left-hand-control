@@ -1600,7 +1600,7 @@ mod tests {
         };
         mouse.extras.push(ExtraKey {
             key: "MouseLeft".into(),
-            action: "Escape".into(),
+            action: ActionSpec::Action("Escape".into()),
         });
         cfg.layer_keymaps.insert("mouse".into(), mouse);
         let mut engine = Engine::new(&cfg);
@@ -1632,6 +1632,56 @@ mod tests {
                 }
             ] if press.mods.is_empty() && press.key == Key::KEY_ESC
         ));
+    }
+
+    #[test]
+    fn explicit_null_extra_in_layer_keymap_swallows_key() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "Space".into(),
+            layer_id: "mouse".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut mouse = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        mouse.extras.push(ExtraKey {
+            key: "MouseSide".into(),
+            action: ActionSpec::Swallow,
+        });
+        cfg.layer_keymaps.insert("mouse".into(), mouse);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.tick(now + Duration::from_millis(260), &mut out);
+        out.clear();
+        engine.handle(
+            Key::BTN_SIDE,
+            true,
+            now + Duration::from_millis(270),
+            &mut out,
+        );
+        engine.handle(
+            Key::BTN_SIDE,
+            false,
+            now + Duration::from_millis(271),
+            &mut out,
+        );
+
+        assert!(out.is_empty());
     }
 
     #[test]

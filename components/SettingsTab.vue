@@ -22,6 +22,10 @@ const {
   selectedMouse,
   toggleMapper,
 } = useSettingsScreen()
+
+function updateConfig(nextConfig: typeof config.value) {
+  config.value = nextConfig
+}
 </script>
 
 <template>
@@ -45,7 +49,7 @@ const {
       :locale-items="localeItems"
     />
 
-    <BehaviorCard :config="config" @update:config="c => config.value = c" />
+    <BehaviorCard :config="config" @update:config="updateConfig" />
 
     <GameModeCard
       :use-gamemoded="config.settings.gameMode?.useGamemoded ?? true"

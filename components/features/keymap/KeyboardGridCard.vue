@@ -44,8 +44,12 @@ const emit = defineEmits<{
               {{ $t('common.clear') }}
             </UButton>
           </AppTooltip>
-          <UButtonGroup size="sm" class="bg-(--ui-bg-muted)/50 p-0.5 rounded-md">
+          <div
+            role="group"
+            class="inline-flex items-center gap-0.5 rounded-md bg-(--ui-bg-muted)/50 p-0.5"
+          >
             <UButton
+              size="sm"
               :variant="keyLabelMode === 'label' ? 'solid' : 'ghost'"
               color="neutral"
               @click="emit('update:keyLabelMode', 'label')"
@@ -53,6 +57,7 @@ const emit = defineEmits<{
               {{ $t('keymap.keyViewLabels') }}
             </UButton>
             <UButton
+              size="sm"
               :variant="keyLabelMode === 'code' ? 'solid' : 'ghost'"
               color="neutral"
               @click="emit('update:keyLabelMode', 'code')"
@@ -60,13 +65,14 @@ const emit = defineEmits<{
               {{ $t('keymap.keyViewCodes') }}
             </UButton>
             <UButton
+              size="sm"
               :variant="keyLabelMode === 'numeric' ? 'solid' : 'ghost'"
               color="neutral"
               @click="emit('update:keyLabelMode', 'numeric')"
             >
               {{ $t('keymap.keyViewNumeric') }}
             </UButton>
-          </UButtonGroup>
+          </div>
         </div>
       </div>
     </template>

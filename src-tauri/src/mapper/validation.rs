@@ -117,16 +117,18 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                     extra.key
                 ));
             }
-            validate_action(
-                &extra.action,
-                &format!("Keymap \"{layer_id}\" extra \"{}\"", extra.key),
-                ActionKind::Any,
-                &user_macro_ids,
-                &system_macro_ids,
-                &command_ids,
-                commands_trusted,
-                &mut errors,
-            );
+            if let crate::mapper::config::ActionSpec::Action(action) = &extra.action {
+                validate_action(
+                    action,
+                    &format!("Keymap \"{layer_id}\" extra \"{}\"", extra.key),
+                    ActionKind::Any,
+                    &user_macro_ids,
+                    &system_macro_ids,
+                    &command_ids,
+                    commands_trusted,
+                    &mut errors,
+                );
+            }
         }
     }
 

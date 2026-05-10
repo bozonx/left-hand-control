@@ -118,7 +118,8 @@ pub struct Rule {
 pub struct ExtraKey {
     #[serde(alias = "name")]
     pub key: String,
-    pub action: String,
+    #[serde(default)]
+    pub action: ActionSpec,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]

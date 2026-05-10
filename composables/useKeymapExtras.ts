@@ -32,11 +32,11 @@ export function useKeymapExtras(
     )
   }
 
-  function updateExtra(id: string, field: 'key' | 'action', value: string) {
+  function updateExtra(id: string, field: 'key' | 'action', value: string | null) {
     if (!currentLayer.value) return
     const extra = currentKeymap.value.extras.find((e) => e.id === id)
     if (!extra) return
-    if (field === 'key') extra.key = value
+    if (field === 'key') extra.key = value ?? ''
     else extra.action = value
   }
 
