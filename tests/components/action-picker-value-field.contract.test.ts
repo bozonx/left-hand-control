@@ -7,20 +7,22 @@ import ActionPickerValueField from '~/components/features/action-picker/ActionPi
 
 function makeHarness() {
   const value = ref('KeyA')
+  const selectionVersion = ref(0)
   const component = defineComponent({
     components: { ActionPickerValueField },
     setup() {
-      return { value }
+      return { selectionVersion, value }
     },
     template: `
       <ActionPickerValueField
         v-model="value"
         active-category="special"
-        :filtered-items="[]"
+        :filtered-items="[{ label: 'Key B', value: 'KeyB', hint: 'KeyB' }]"
+        :selection-version="selectionVersion"
       />
     `,
   })
-  return { value, component }
+  return { selectionVersion, value, component }
 }
 
 describe('ActionPickerValueField key capture', () => {
@@ -32,7 +34,7 @@ describe('ActionPickerValueField key capture', () => {
     const { value, component } = makeHarness()
     const wrapper = await mountSuspended(component)
 
-    await wrapper.get('button[aria-label="Listen for key press"]').trigger('click')
+    await wrapper.get('button[aria-label="Capture"]').trigger('click')
 
     expect(document.querySelector('[data-testid="key-capture-overlay"]')).not.toBeNull()
 
@@ -60,7 +62,7 @@ describe('ActionPickerValueField key capture', () => {
     const { value, component } = makeHarness()
     const wrapper = await mountSuspended(component)
 
-    await wrapper.get('button[aria-label="Listen for key press"]').trigger('click')
+    await wrapper.get('button[aria-label="Capture"]').trigger('click')
     document.dispatchEvent(new KeyboardEvent('keydown', { code: 'ControlLeft', key: 'Control' }))
     await wrapper.vm.$nextTick()
 
@@ -77,12 +79,29 @@ describe('ActionPickerValueField key capture', () => {
     const { value, component } = makeHarness()
     const wrapper = await mountSuspended(component)
 
-    await wrapper.get('button[aria-label="Listen for key press"]').trigger('click')
+    await wrapper.get('button[aria-label="Capture"]').trigger('click')
     document.dispatchEvent(new KeyboardEvent('keydown', { code: 'ShiftLeft', key: 'Shift' }))
     document.dispatchEvent(new KeyboardEvent('keyup', { code: 'ShiftLeft', key: 'Shift' }))
     await wrapper.vm.$nextTick()
 
     expect(value.value).toBe('ShiftLeft')
     expect(document.querySelector('[data-testid="key-capture-overlay"]')).toBeNull()
+  })
+
+  it('hides suggestions after a value is selected outside the input suggestions', async () => {
+    const { selectionVersion, value, component } = makeHarness()
+    const wrapper = await mountSuspended(component)
+
+    const input = wrapper.get('input')
+    await input.setValue('Key')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[role="listbox"]').exists()).toBe(true)
+
+    value.value = 'KeyB'
+    selectionVersion.value += 1
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[role="listbox"]').exists()).toBe(false)
   })
 })

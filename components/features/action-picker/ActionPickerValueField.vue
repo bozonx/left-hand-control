@@ -12,6 +12,7 @@ const props = defineProps<{
     activeCategory: string
     filteredItems: ActionItem[]
     keyOnly?: boolean
+    selectionVersion?: number
     singleKeyOnly?: boolean
 }>()
 
@@ -161,6 +162,17 @@ function selectItem(item: ActionItem) {
     emit('pick', item.value)
 }
 
+function closeSuggestions() {
+    showSuggestions.value = false
+    activeIndex.value = -1
+}
+
+function updateDraftFromInput(value: string) {
+    draft.value = value
+    showSuggestions.value = !!value.trim()
+    if (!showSuggestions.value) activeIndex.value = -1
+}
+
 function onDocumentKeydown(event: KeyboardEvent) {
     if (!captureActive.value) return
     event.stopPropagation()
@@ -268,8 +280,7 @@ function handleInputKeydown(event: KeyboardEvent) {
         return
     }
     if (event.key === 'Escape') {
-        showSuggestions.value = false
-        activeIndex.value = -1
+        closeSuggestions()
         return
     }
     if (event.key === 'ArrowDown' && props.filteredItems.length > 0) {
@@ -312,8 +323,7 @@ function handleSuggestionKeydown(
         event.preventDefault()
         selectItem(item)
     } else if (event.key === 'Escape') {
-        showSuggestions.value = false
-        activeIndex.value = -1
+        closeSuggestions()
     }
 }
 
@@ -343,6 +353,13 @@ watch(
     },
 )
 
+watch(
+    () => props.selectionVersion,
+    () => {
+        closeSuggestions()
+    },
+)
+
 watch(activeIndex, (idx) => {
     nextTick(() => {
         if (idx < 0) {
@@ -355,10 +372,6 @@ watch(activeIndex, (idx) => {
         btn?.focus()
         btn?.scrollIntoView({ block: 'nearest' })
     })
-})
-
-watch(draft, (val) => {
-    showSuggestions.value = !!val.trim()
 })
 
 onMounted(() => {
@@ -391,7 +404,7 @@ onBeforeUnmount(() => {
                 <div class="flex gap-2">
                     <InputWithClearButton
                         ref="inputRef"
-                        v-model="draft"
+                        :model-value="draft"
                         :placeholder="$t('picker.valuePh')"
                         class="w-full font-mono"
                         role="combobox"
@@ -399,6 +412,7 @@ onBeforeUnmount(() => {
                         :aria-expanded="showSuggestions"
                         :aria-controls="listboxId"
                         :aria-activedescendant="activeDescendantId"
+                        @update:model-value="updateDraftFromInput"
                         @focus="onInputFocus"
                         @keydown="handleInputKeydown"
                     />
@@ -406,8 +420,8 @@ onBeforeUnmount(() => {
                         ref="captureButtonRef"
                         icon="i-lucide-keyboard"
                         color="neutral"
-                        variant="subtle"
-                        class="shrink-0"
+                        variant="outline"
+                        class="shrink-0 bg-yellow-100 text-yellow-950 shadow-sm ring-yellow-300/80 hover:bg-yellow-200 active:bg-yellow-200 focus-visible:ring-yellow-400 dark:bg-yellow-400/15 dark:text-yellow-100 dark:ring-yellow-400/45 dark:hover:bg-yellow-400/25 dark:active:bg-yellow-400/25"
                         :aria-label="$t('picker.captureKeys')"
                         :title="$t('picker.captureKeys')"
                         @click="toggleCapture"

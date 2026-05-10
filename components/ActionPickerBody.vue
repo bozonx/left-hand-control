@@ -45,6 +45,7 @@ const emit = defineEmits<{
 }>()
 
 const draft = defineModel<string>({ default: '' })
+const selectionVersion = ref(0)
 
 const { macros } = useMacros()
 const { commands } = useCommands()
@@ -214,6 +215,7 @@ const filteredItems = computed(() => {
 
 function pickValue(value: string) {
     draft.value = value
+    selectionVersion.value += 1
     emit('pick', value)
 }
 
@@ -233,6 +235,7 @@ function pickItem(item: ActionItem) {
             :active-category="activeCategory"
             :filtered-items="filteredItems"
             :key-only="props.keyOnly"
+            :selection-version="selectionVersion"
             :single-key-only="props.singleKeyOnly"
             @pick="pickValue"
         />

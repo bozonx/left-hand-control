@@ -771,7 +771,7 @@ export default {
       'This action inserts text as-is. Good for symbols like €, snippets like "TODO: ", and other printable strings.',
     physicalKeyHint:
       "Letters and symbols here mean the physical key position on a standard US keyboard, not the character produced by the user's current layout.",
-    captureKeys: 'Listen for key press',
+    captureKeys: 'Capture',
     assignKey: 'Assign',
     listeningKeys: 'Listening…',
     pressEscapeToStop: 'Press Escape to stop',
