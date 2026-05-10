@@ -55,6 +55,7 @@ export default {
     moveDown: 'Move down',
     expand: 'Expand',
     collapse: 'Collapse',
+    usingGlobalDefault: 'Global default: {value}. Click to override.',
   },
   tabs: {
     home: 'Home',

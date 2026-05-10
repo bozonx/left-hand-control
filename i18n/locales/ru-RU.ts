@@ -55,6 +55,7 @@ export default {
     moveDown: 'Вниз',
     expand: 'Развернуть',
     collapse: 'Свернуть',
+    usingGlobalDefault: 'Глобальное значение: {value}. Нажмите, чтобы изменить.',
   },
   tabs: {
     home: 'Главная',

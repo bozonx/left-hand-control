@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldLabel from '~/components/FieldLabel.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
 import NumericInput from '~/components/shared/NumericInput.vue'
@@ -80,19 +81,24 @@ function onBlur() {
     >
       <FieldLabel :label="label" :hint="hint" :hint-visible-on="hintVisibleOn" />
 
-      <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
-        <span
-          class="truncate font-mono text-sm"
-          :class="isOverridden ? 'text-(--ui-primary) font-medium' : 'text-(--ui-text-muted)'"
-        >
-          {{ displayValue }}<span v-if="suffix" class="ml-0.5 font-sans text-[10px] uppercase opacity-60">{{ suffix }}</span>
-        </span>
-        <UIcon
-          v-if="!isOverridden"
-          name="i-lucide-pencil"
-          class="h-3.5 w-3.5 text-(--ui-text-muted) opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-        />
-      </div>
+      <AppTooltip
+        :text="$t('common.usingGlobalDefault', { value: suffix ? `${defaultValue} ${suffix}` : String(defaultValue) })"
+        :disabled="isOverridden"
+      >
+        <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
+          <span
+            class="truncate font-mono text-sm"
+            :class="isOverridden ? 'text-(--ui-primary) font-medium' : 'text-(--ui-text-muted)'"
+          >
+            {{ displayValue }}<span v-if="suffix" class="ml-0.5 font-sans text-[10px] uppercase opacity-60">{{ suffix }}</span>
+          </span>
+          <UIcon
+            v-if="!isOverridden"
+            name="i-lucide-pencil"
+            class="h-3.5 w-3.5 text-(--ui-text-muted) opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          />
+        </div>
+      </AppTooltip>
     </button>
     <div v-if="isOverridden" class="ml-2 shrink-0" @mousedown.stop @click.stop>
       <FieldResetButton
