@@ -51,7 +51,7 @@ export default defineNuxtConfig({
   // before launching Nuxt so it cannot silently drift away from Tauri's devUrl.
   devServer: {
     host: 'localhost',
-    port: Number.parseInt(process.env.LHC_DEV_PORT || '3000', 10),
+    port: Number.parseInt(process.env.LHC_DEV_PORT || '3010', 10),
   },
 
   vite: {

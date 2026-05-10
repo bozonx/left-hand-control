@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import net from 'node:net'
 
 const host = process.env.HOST || 'localhost'
-const rawPort = process.env.LHC_DEV_PORT || '3000'
+const rawPort = process.env.LHC_DEV_PORT || '3010'
 const port = Number.parseInt(rawPort, 10)
 
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
@@ -24,7 +24,9 @@ function checkPortAvailable() {
 try {
   await checkPortAvailable()
 } catch {
-  console.error(`Port ${port} on ${host} is already in use. Tauri devUrl requires a fixed port.`)
+  console.error(
+    `Port ${port} on ${host} is already in use. Tauri devUrl requires a fixed port.`,
+  )
   process.exit(1)
 }
 

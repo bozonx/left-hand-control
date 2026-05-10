@@ -48,10 +48,10 @@ Nuxt conventions apply: `pages/`, `components/`, `composables/`, `layouts/`, `se
 
 These must stay in sync — change them together or not at all:
 
-- `nuxt.config.ts` → `devServer.port = LHC_DEV_PORT || 3000`, `vite.server.strictPort = true`
+- `nuxt.config.ts` → `devServer.port = LHC_DEV_PORT || 3010`, `vite.server.strictPort = true`
 - `scripts/nuxt-dev.mjs` → checks the configured port before launching Nuxt so the dev server cannot silently drift away from Tauri's devUrl
 - `scripts/tauri-dev.mjs` → single source of truth for the dev-only `devUrl` + CSP override; `src-tauri/tauri.conf.json` only carries the production CSP (no `localhost`)
-- `src-tauri/tauri.conf.json` → `build.devUrl = "http://localhost:3000"` (used as the documented default; overridden at runtime by `tauri-dev.mjs` when `LHC_DEV_PORT` is set)
+- `src-tauri/tauri.conf.json` → `build.devUrl = "http://localhost:3010"` (used as the documented default; overridden at runtime by `tauri-dev.mjs` when `LHC_DEV_PORT` is set)
 - `src-tauri/tauri.conf.json` → `build.frontendDist = "../.output/public"` (output of `nuxt generate` with `nitro.preset: 'static'`)
 - `src-tauri/tauri.conf.json` → `build.beforeDevCommand = "pnpm dev"`, `beforeBuildCommand = "pnpm generate"`
 - `ssr: false` in `nuxt.config.ts` — Tauri has no Node runtime at runtime; keep the app a pure SPA.
@@ -210,7 +210,7 @@ For OS-level capabilities (fs, shell, dialog, clipboard, global shortcuts, ...),
 Minimum signal before declaring done:
 
 1. `pnpm install` succeeds.
-2. `pnpm dev` serves on `http://localhost:3000` with no Vite/Nuxt errors.
+2. `pnpm dev` serves on `http://localhost:3010` with no Vite/Nuxt errors.
 3. For changes touching `src-tauri/` or the bridge: `pnpm tauri:dev` opens the window and the UI is interactive.
 4. For production-affecting changes: `pnpm generate` produces `.output/public` and `pnpm tauri:build` succeeds.
 

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 
-const port = process.env.LHC_DEV_PORT || '3000'
+const port = process.env.LHC_DEV_PORT || '3010'
 const devUrl = `http://localhost:${port}`
 
 // Pass the resolved port down to Nuxt via `pnpm dev` so Tauri's beforeDevCommand
