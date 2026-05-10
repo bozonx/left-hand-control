@@ -14,10 +14,6 @@ defineEmits<{
 
 const { copy: copyToClipboard } = useClipboardCopy()
 
-function stepsPreview(sys: SystemMacro): string {
-    return sys.steps.map((step) => step.action).join(' → ')
-}
-
 async function copyMacroId(id: string) {
     if (!id) return
     await copyToClipboard(id)
@@ -87,7 +83,7 @@ async function copyMacroId(id: string) {
                         <tr
                             v-for="sys in systemMacros"
                             :key="sys.id"
-                            class="group border-b border-(--ui-border) last:border-b-0 align-top transition-colors hover:bg-(--ui-bg-muted)"
+                            class="group border-b border-(--ui-border) last:border-b-0 align-middle transition-colors hover:bg-(--ui-bg-muted)"
                         >
                             <td
                                 class="py-2 pr-3 font-mono text-xs whitespace-nowrap"
@@ -118,11 +114,24 @@ async function copyMacroId(id: string) {
                                 </div>
                             </td>
                             <td class="py-2 pr-3">
-                                <code
-                                    class="text-xs font-mono text-(--ui-text-muted)"
+                                <div
+                                    class="flex min-h-7 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-(--ui-text-muted)"
                                 >
-                                    {{ stepsPreview(sys) }}
-                                </code>
+                                    <template
+                                        v-for="(step, index) in sys.steps"
+                                        :key="`${sys.id}-${index}`"
+                                    >
+                                        <UIcon
+                                            v-if="index > 0"
+                                            name="i-lucide-chevron-right"
+                                            class="size-3 shrink-0 text-(--ui-text-dimmed)"
+                                            aria-hidden="true"
+                                        />
+                                        <code class="font-mono">
+                                            {{ step.action }}
+                                        </code>
+                                    </template>
+                                </div>
                             </td>
                             <td class="py-2 pr-3 whitespace-nowrap">
                                 <AppTooltip

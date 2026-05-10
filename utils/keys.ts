@@ -206,6 +206,8 @@ export const ALL_KEYS: KeyDef[] = [
   ...RIGHT_HAND_ROWS.flat(),
 ]
 
+export const VISUAL_KEY_CODES = ALL_KEYS.map((key) => key.code)
+
 export function keyLabel(code: string, mode: KeyLabelMode = 'label'): string {
   if (mode === 'code') return code
   if (mode === 'numeric') return String(KEY_NUMERIC_CODES[code] ?? code)

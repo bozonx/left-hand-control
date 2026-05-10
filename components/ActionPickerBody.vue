@@ -27,12 +27,16 @@ const props = withDefaults(
         keyOnly?: boolean
         spacious?: boolean
         excludedMacroId?: string
+        excludedValues?: string[]
+        excludedCategoryIds?: string[]
         allowMacros?: boolean
         singleKeyOnly?: boolean
     }>(),
     {
         allowMacros: true,
         excludedMacroId: undefined,
+        excludedValues: () => [],
+        excludedCategoryIds: () => [],
     },
 )
 
@@ -118,9 +122,16 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
 })
 
 const allCategories = computed<StaticCategory[]>(() =>
-    props.keyOnly
+    (props.keyOnly
         ? STATIC_CATEGORIES
-        : [...dynamicCategories.value, ...STATIC_CATEGORIES],
+        : [...dynamicCategories.value, ...STATIC_CATEGORIES])
+        .filter((category) => !props.excludedCategoryIds.includes(category.id))
+        .map((category) => ({
+            ...category,
+            items: category.items.filter(
+                (item) => !props.excludedValues.includes(item.value),
+            ),
+        })),
 )
 
 const activeCategory = ref<string>(allCategories.value[0]?.id ?? 'special')

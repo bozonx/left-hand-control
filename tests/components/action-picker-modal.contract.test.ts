@@ -23,12 +23,22 @@ const ActionPickerBodyStub = defineComponent({
       type: Boolean,
       default: true,
     },
+    excludedValues: {
+      type: Array,
+      default: () => [],
+    },
+    excludedCategoryIds: {
+      type: Array,
+      default: () => [],
+    },
   },
   emits: ['update:modelValue', 'pick'],
   template: `
     <div data-testid="picker-body">
       {{ modelValue }}
       <span data-testid="allow-macros">{{ allowMacros }}</span>
+      <span data-testid="excluded-values">{{ excludedValues.join(',') }}</span>
+      <span data-testid="excluded-category-ids">{{ excludedCategoryIds.join(',') }}</span>
       <button data-testid="picker-item" @click="$emit('pick', 'KeyA')">Pick A</button>
     </div>
   `,
@@ -166,5 +176,50 @@ describe('ActionPickerModal', () => {
     const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
 
     expect(wrapper.find('[data-testid="allow-macros"]').text()).toBe('false')
+  })
+
+  it('does not apply excluded values picked by the body', async () => {
+    const value = ref('')
+    const open = ref(true)
+    const applied = ref<string[]>([])
+    const Harness = defineComponent({
+      components: { ActionPickerModal },
+      setup() { return { applied, open, value } },
+      template: `
+        <ActionPickerModal
+          v-model="value"
+          v-model:open="open"
+          :excluded-values="['KeyA']"
+          placeholder="pick action"
+          @apply="applied.push($event)"
+        />
+      `,
+    })
+
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
+
+    expect(wrapper.find('[data-testid="excluded-values"]').text()).toBe('KeyA')
+    await wrapper.get('[data-testid="picker-item"]').trigger('click')
+    await flushPromises()
+
+    expect(value.value).toBe('')
+    expect(applied.value).toEqual([])
+    expect(open.value).toBe(true)
+  })
+
+  it('forwards excluded categories to the picker body', async () => {
+    const Harness = defineComponent({
+      components: { ActionPickerModal },
+      setup() {
+        const value = ref('')
+        const open = ref(true)
+        return { open, value }
+      },
+      template: '<ActionPickerModal v-model="value" v-model:open="open" :excluded-category-ids="[\'lettersSymbols\']" />',
+    })
+
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
+
+    expect(wrapper.find('[data-testid="excluded-category-ids"]').text()).toBe('lettersSymbols')
   })
 })

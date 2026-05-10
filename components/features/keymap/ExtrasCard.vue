@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ExtraKey } from '~/types/config'
+import { VISUAL_KEY_CODES } from '~/utils/keys'
 
 defineProps<{
   extras: ExtraKey[]
@@ -65,6 +66,8 @@ const emit = defineEmits<{
           <ActionPickerModal
             :model-value="extra.key"
             key-only
+            :excluded-values="VISUAL_KEY_CODES"
+            :excluded-category-ids="['lettersSymbols']"
             :placeholder="$t('rules.keyPh')"
             @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'key', value ?? '')"
           />

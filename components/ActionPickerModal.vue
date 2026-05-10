@@ -22,6 +22,8 @@ const props = withDefaults(
         requireValue?: boolean
         invalid?: boolean
         excludedMacroId?: string
+        excludedValues?: string[]
+        excludedCategoryIds?: string[]
         ghost?: boolean
         singleKeyOnly?: boolean
     }>(),
@@ -32,6 +34,8 @@ const props = withDefaults(
         clearLabel: undefined,
         open: undefined,
         excludedMacroId: undefined,
+        excludedValues: () => [],
+        excludedCategoryIds: () => [],
         ghost: false,
     },
 )
@@ -70,6 +74,8 @@ const normalizedDraft = computed(() => {
     return parseTextAction(raw) !== null ? raw : raw.trim()
 })
 const draftIssue = computed(() => {
+    if (props.excludedValues.includes(normalizedDraft.value))
+        return 'invalidSyntax'
     if (props.singleKeyOnly && !isSingleKeyAction(normalizedDraft.value))
         return 'invalidSyntax'
     if (!isCanonicalAction(normalizedDraft.value)) return 'invalidSyntax'
@@ -117,6 +123,7 @@ function openModal() {
 function apply() {
     const next = normalizeActionValue(draft.value, props.requireValue)
     if (next === null) return
+    if (props.excludedValues.includes(next)) return
     if (props.singleKeyOnly && !isSingleKeyAction(next)) return
     model.value = next
     emit('apply', next)
@@ -128,6 +135,7 @@ function pickAndApply(value: string) {
     draft.value = value
     const next = normalizeActionValue(value, props.requireValue)
     if (next === null) return
+    if (props.excludedValues.includes(next)) return
     if (props.singleKeyOnly && !isSingleKeyAction(next)) return
     model.value = next
     emit('apply', next)
@@ -253,6 +261,8 @@ function cancel() {
                     :single-key-only="singleKeyOnly"
                     :allow-macros="allowMacros"
                     :excluded-macro-id="excludedMacroId"
+                    :excluded-values="excludedValues"
+                    :excluded-category-ids="excludedCategoryIds"
                     spacious
                     @pick="pickAndApply"
                 />
