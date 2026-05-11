@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppHeader from '~/components/app/AppHeader.vue'
+import WindowResizeHandles from '~/components/app/WindowResizeHandles.vue'
 import WelcomeScreen from '~/components/WelcomeScreen.vue'
 import LayoutModals from '~/components/features/settings/LayoutModals.vue'
 
@@ -30,6 +31,7 @@ provide('app-shell-scroll', {
   <WelcomeScreen v-if="loaded && !loadError && needsWelcome" />
 
   <div class="h-screen flex flex-col overflow-hidden relative">
+    <WindowResizeHandles />
     <AppHeader />
     <LayoutModals />
 

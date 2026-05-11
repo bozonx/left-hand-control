@@ -23,6 +23,10 @@ export default {
     activeLayoutTooltip: 'Активная раскладка',
     layoutsBack: 'Раскладки',
     saveLayoutTooltip: 'Сохранить «{name}»',
+    windowMinimize: 'Свернуть',
+    windowMaximize: 'Развернуть',
+    windowRestore: 'Восстановить',
+    windowClose: 'Свернуть в трей',
   },
   common: {
     notSet: 'Не задано',

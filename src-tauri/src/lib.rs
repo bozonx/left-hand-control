@@ -10,6 +10,7 @@ mod mapper;
 mod platform;
 mod storage;
 mod tray;
+mod window_controls;
 
 static LAST_QUICK_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
 static LAST_EMOJI_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
@@ -514,6 +515,7 @@ pub fn run() {
             set_current_layout,
             get_gamemode_status,
             get_platform_info,
+            window_controls::get_window_controls_layout,
             active_window::get_active_window,
             tray::show_main_window_command,
             tray::hide_main_window_command,

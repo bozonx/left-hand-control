@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
+import WindowControls from '~/components/app/WindowControls.vue'
 import {
     isUserLayoutId,
     userLayoutNameFromId,
@@ -155,13 +156,18 @@ onMounted(() => {
 <template>
     <header
         class="flex flex-col shrink-0 app-chrome border-b border-(--ui-border) bg-(--ui-bg-elevated)"
-        data-tauri-drag-region
     >
-        <!-- Row 1: app chrome — global controls and status -->
+        <!-- Row 1: app chrome — drag region, global controls and status.
+             `data-tauri-drag-region` only drags when the click lands on the
+             element that carries it (Tauri matches the exact target), so it is
+             repeated on the row's filler areas; interactive children stay
+             clickable because they are not the drag-region element. -->
         <div
             class="flex items-center justify-between px-4 gap-3 h-[var(--app-chrome-height)]"
+            data-tauri-drag-region
         >
-            <div class="flex items-center gap-2 min-w-0">
+            <div class="flex items-center gap-2 min-w-0" data-tauri-drag-region>
+                <WindowControls side="left" />
                 <UButton
                     color="neutral"
                     variant="ghost"
@@ -179,6 +185,7 @@ onMounted(() => {
                 />
                 <span
                     class="text-sm font-semibold text-(--ui-text-highlighted) truncate"
+                    data-tauri-drag-region
                 >
                     {{ $t('app.title') }}
                 </span>
@@ -217,7 +224,10 @@ onMounted(() => {
                 </AppTooltip>
             </div>
 
-            <div class="flex items-center gap-3 shrink-0">
+            <div
+                class="flex items-center gap-3 shrink-0"
+                data-tauri-drag-region
+            >
                 <template v-if="loaded">
                     <AppTooltip
                         :disabled="
@@ -340,9 +350,14 @@ onMounted(() => {
                         />
                     </AppTooltip>
                 </template>
-                <div v-else class="text-xs text-(--ui-text-muted)">
+                <div
+                    v-else
+                    class="text-xs text-(--ui-text-muted)"
+                    data-tauri-drag-region
+                >
                     {{ $t('app.loading') }}
                 </div>
+                <WindowControls side="right" />
             </div>
         </div>
 

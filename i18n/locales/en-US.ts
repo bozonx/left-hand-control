@@ -23,6 +23,10 @@ export default {
     activeLayoutTooltip: 'Active layout',
     layoutsBack: 'Layouts',
     saveLayoutTooltip: 'Save "{name}"',
+    windowMinimize: 'Minimize',
+    windowMaximize: 'Maximize',
+    windowRestore: 'Restore',
+    windowClose: 'Close to tray',
   },
   common: {
     notSet: 'Not set',
