@@ -45,15 +45,19 @@
 
 use std::collections::HashMap;
 use std::ffi::{c_char, CString};
+use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use reis::ei::{self, handshake::ContextType, keyboard::KeyState};
+use reis::enumflags2::BitFlags;
+use reis::event::{DeviceCapability, EiEvent, EiEventConverter};
 use zbus::blocking::{Connection, Proxy};
-use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
+use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
 enum XkbContext {}
 enum XkbKeymap {}
@@ -116,6 +120,7 @@ const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
 const KEY_LEFTSHIFT_EVDEV: u32 = 42;
 const KEY_RIGHTALT_EVDEV: u32 = 100; // AltGr
 const KEY_LEFTCTRL_EVDEV: u32 = 29;
+const KEY_V_EVDEV: u32 = 47;
 
 // XKB keysym for Latin lowercase 'v'. Used for the Ctrl+V paste shortcut
 // instead of the evdev keycode so that the compositor sees the correct keysym
@@ -279,15 +284,13 @@ pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>) {
             ydotool_path,
         };
     }
-    log::debug!(
-        "[portal] text backend: {:?}",
-        backend
-    );
+    log::debug!("[portal] text backend: {:?}", backend);
 }
 
 /// Sender to the current portal worker thread. Cleared when the worker is
 /// gone so a later literal injection can retry the portal handshake.
 static PORTAL_TX: Mutex<Option<Sender<Cmd>>> = Mutex::new(None);
+static LIBEI_TX: Mutex<Option<Sender<Cmd>>> = Mutex::new(None);
 
 /// Path of the directory where we persist the restore token.
 static TOKEN_DIR: OnceLock<PathBuf> = OnceLock::new();
@@ -319,9 +322,13 @@ pub fn type_text(text: &str) {
         TextBackend::Libei => {
             if !LIBEI_FALLBACK_LOGGED.swap(true, Ordering::Relaxed) {
                 log::debug!(
-                    "[portal] libei text backend is selected; native EI transport is not wired yet, falling back to RemoteDesktop keycode injection"
+                    "[portal] libei text backend is selected; using RemoteDesktop.ConnectToEIS when available"
                 );
             }
+            if type_text_libei(text) {
+                return;
+            }
+            log::debug!("[portal] libei backend unavailable; falling back to RemoteDesktop keycode injection");
         }
         TextBackend::Clipboard | TextBackend::Keycode => {}
     }
@@ -363,7 +370,7 @@ fn type_text_portal(text: &str) {
         *slot = None;
     }
 
-    let Some(tx) = start_singleton() else {
+    let Some(tx) = start_portal_singleton() else {
         log::debug!("[portal] literal {:?} dropped (worker spawn failed)", text);
         return;
     };
@@ -377,11 +384,39 @@ fn type_text_portal(text: &str) {
     *slot = Some(tx);
 }
 
-fn start_singleton() -> Option<Sender<Cmd>> {
+fn type_text_libei(text: &str) -> bool {
+    let Ok(mut slot) = LIBEI_TX.lock() else {
+        log::debug!("[libei] literal {:?} dropped (worker lock poisoned)", text);
+        return false;
+    };
+
+    if let Some(tx) = slot.as_ref() {
+        if tx.send(Cmd::Type(text.to_string())).is_ok() {
+            return true;
+        }
+        log::debug!("[libei] worker gone; retrying backend init");
+        *slot = None;
+    }
+
+    let Some(tx) = start_libei_singleton() else {
+        return false;
+    };
+    if tx.send(Cmd::Type(text.to_string())).is_err() {
+        log::debug!(
+            "[libei] literal {:?} dropped (worker exited during init)",
+            text
+        );
+        return false;
+    }
+    *slot = Some(tx);
+    true
+}
+
+fn start_portal_singleton() -> Option<Sender<Cmd>> {
     let (tx, rx) = mpsc::channel::<Cmd>();
     let spawn_result = thread::Builder::new()
         .name("lhc-portal".into())
-        .spawn(move || worker(rx));
+        .spawn(move || portal_worker(rx));
     match spawn_result {
         Ok(_join) => Some(tx),
         Err(e) => {
@@ -391,7 +426,32 @@ fn start_singleton() -> Option<Sender<Cmd>> {
     }
 }
 
-fn worker(rx: Receiver<Cmd>) {
+fn start_libei_singleton() -> Option<Sender<Cmd>> {
+    let (tx, rx) = mpsc::channel::<Cmd>();
+    let (ready_tx, ready_rx) = mpsc::sync_channel::<Result<(), String>>(1);
+    let spawn_result = thread::Builder::new()
+        .name("lhc-libei".into())
+        .spawn(move || libei_worker(rx, ready_tx));
+    match spawn_result {
+        Ok(_join) => match ready_rx.recv_timeout(Duration::from_secs(10)) {
+            Ok(Ok(())) => Some(tx),
+            Ok(Err(e)) => {
+                log::debug!("[libei] backend unavailable: {e}");
+                None
+            }
+            Err(e) => {
+                log::debug!("[libei] backend init timed out: {e}");
+                None
+            }
+        },
+        Err(e) => {
+            log::debug!("[libei] could not spawn worker thread: {e}");
+            None
+        }
+    }
+}
+
+fn portal_worker(rx: Receiver<Cmd>) {
     let (conn, session_handle) = match init_portal() {
         Ok(v) => {
             log::debug!("[portal] backend online");
@@ -420,6 +480,316 @@ fn worker(rx: Receiver<Cmd>) {
     }
 
     close_session(&conn, &session_handle);
+}
+
+fn libei_worker(rx: Receiver<Cmd>, ready_tx: mpsc::SyncSender<Result<(), String>>) {
+    let mut backend = match LibeiBackend::new() {
+        Ok(backend) => {
+            let _ = ready_tx.send(Ok(()));
+            backend
+        }
+        Err(e) => {
+            let _ = ready_tx.send(Err(e));
+            drop(rx);
+            return;
+        }
+    };
+
+    while let Ok(cmd) = rx.recv() {
+        match cmd {
+            Cmd::Type(text) => {
+                if let Err(e) = backend.type_text(&text) {
+                    log::debug!("[libei] text injection failed: {e}");
+                    break;
+                }
+            }
+        }
+    }
+
+    backend.close();
+}
+
+struct LibeiBackend {
+    conn: Connection,
+    session_handle: OwnedObjectPath,
+    context: ei::Context,
+    converter: EiEventConverter,
+    connection: reis::event::Connection,
+    keyboard_device: Option<(ei::Device, ei::Keyboard)>,
+    keyboard_emulating: bool,
+    sequence: u32,
+}
+
+impl LibeiBackend {
+    fn new() -> Result<Self, String> {
+        let (conn, session_handle) = init_portal()?;
+        let portal = match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
+            Ok(portal) => portal,
+            Err(e) => {
+                close_session(&conn, &session_handle);
+                return Err(format!("create RemoteDesktop proxy for EIS: {e}"));
+            }
+        };
+        let empty: HashMap<String, Value> = HashMap::new();
+        let fd: OwnedFd = match portal.call("ConnectToEIS", &(&session_handle, empty)) {
+            Ok(fd) => fd,
+            Err(e) => {
+                close_session(&conn, &session_handle);
+                return Err(format!("ConnectToEIS: {e}"));
+            }
+        };
+        let socket = UnixStream::from(std::os::fd::OwnedFd::from(fd));
+        let context = match ei::Context::new(socket) {
+            Ok(context) => context,
+            Err(e) => {
+                close_session(&conn, &session_handle);
+                return Err(format!("create EI context: {e}"));
+            }
+        };
+        let handshake = match ei_handshake_with_timeout(&context, Duration::from_secs(5)) {
+            Ok(handshake) => handshake,
+            Err(e) => {
+                close_session(&conn, &session_handle);
+                return Err(e);
+            }
+        };
+        let converter = EiEventConverter::new(&context, handshake);
+        let connection = converter.connection().clone();
+        let mut backend = Self {
+            conn,
+            session_handle,
+            context,
+            converter,
+            connection,
+            keyboard_device: None,
+            keyboard_emulating: false,
+            sequence: 1,
+        };
+        if let Err(e) = backend.wait_for_keyboard(Duration::from_secs(5)) {
+            close_session(&backend.conn, &backend.session_handle);
+            return Err(e);
+        }
+        log::debug!("[libei] backend online");
+        Ok(backend)
+    }
+
+    fn type_text(&mut self, text: &str) -> Result<(), String> {
+        self.pump_events()?;
+        if !self.has_keyboard() {
+            self.wait_for_keyboard(Duration::from_secs(2))?;
+        }
+        let table = keymap_table();
+        if text
+            .chars()
+            .any(|ch| !table.contains_key(&unsafe { xkb_utf32_to_keysym(ch as u32) }))
+        {
+            self.type_text_via_clipboard(text)
+        } else {
+            for ch in text.chars() {
+                let keysym = unsafe { xkb_utf32_to_keysym(ch as u32) };
+                let entry = table
+                    .get(&keysym)
+                    .ok_or_else(|| format!("no keycode for {ch:?}"))?;
+                self.inject_keycode_combo(level_to_mods(entry.level), entry.evdev)?;
+            }
+            self.context.flush().map_err(|e| format!("EI flush: {e}"))?;
+            Ok(())
+        }
+    }
+
+    fn type_text_via_clipboard(&mut self, text: &str) -> Result<(), String> {
+        use std::io::Write as _;
+        use std::process::{Command, Stdio};
+
+        let mut child = Command::new("wl-copy")
+            .stdin(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("wl-copy unavailable for libei clipboard fallback: {e}"))?;
+        if let Some(mut stdin) = child.stdin.take() {
+            stdin
+                .write_all(text.as_bytes())
+                .map_err(|e| format!("write wl-copy stdin: {e}"))?;
+        }
+        thread::spawn(move || {
+            let _ = child.wait();
+        });
+        thread::sleep(Duration::from_millis(50));
+        self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV)
+    }
+
+    fn inject_keycode_combo(&mut self, mods: &[u32], key: u32) -> Result<(), String> {
+        for &m in mods {
+            self.inject_key(m, KeyState::Press)?;
+        }
+        self.inject_key(key, KeyState::Press)?;
+        self.inject_key(key, KeyState::Released)?;
+        for &m in mods.iter().rev() {
+            self.inject_key(m, KeyState::Released)?;
+        }
+        Ok(())
+    }
+
+    fn inject_key(&mut self, key: u32, state: KeyState) -> Result<(), String> {
+        let Some((device, keyboard)) = self.keyboard_device.as_ref() else {
+            return Err("no EI keyboard device".into());
+        };
+        keyboard.key(key, state);
+        device.frame(self.connection.serial(), monotonic_micros());
+        self.context.flush().map_err(|e| format!("EI flush: {e}"))
+    }
+
+    fn wait_for_keyboard(&mut self, timeout: Duration) -> Result<(), String> {
+        let deadline = Instant::now() + timeout;
+        while Instant::now() < deadline {
+            self.pump_events()?;
+            if self.has_keyboard() {
+                return Ok(());
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        Err("EI keyboard device was not advertised".into())
+    }
+
+    fn pump_events(&mut self) -> Result<(), String> {
+        self.context.read().map_err(|e| format!("EI read: {e}"))?;
+        while let Some(result) = self.context.pending_event() {
+            let event = match result {
+                reis::PendingRequestResult::Request(event) => event,
+                reis::PendingRequestResult::ParseError(e) => {
+                    return Err(format!("EI parse error: {e}"));
+                }
+                reis::PendingRequestResult::InvalidObject(id) => {
+                    return Err(format!("EI invalid object: {id}"));
+                }
+            };
+            self.converter
+                .handle_event(event)
+                .map_err(|e| format!("EI event error: {e}"))?;
+        }
+        while let Some(event) = self.converter.next_event() {
+            self.handle_event(event)?;
+        }
+        self.context.flush().map_err(|e| format!("EI flush: {e}"))?;
+        Ok(())
+    }
+
+    fn handle_event(&mut self, event: EiEvent) -> Result<(), String> {
+        match event {
+            EiEvent::Disconnected(e) => {
+                return Err(format!("EI disconnected: {:?}", e.explanation));
+            }
+            EiEvent::SeatAdded(e) => {
+                e.seat
+                    .bind_capabilities(BitFlags::from(DeviceCapability::Keyboard));
+            }
+            EiEvent::DeviceAdded(e) => {
+                if let Some(keyboard) = e.device.interface::<ei::Keyboard>() {
+                    let device = e.device.device().clone();
+                    self.start_keyboard_emulation(&device);
+                    self.keyboard_device = Some((device, keyboard));
+                }
+            }
+            EiEvent::DevicePaused(e) => {
+                if self
+                    .keyboard_device
+                    .as_ref()
+                    .is_some_and(|(device, _)| device == e.device.device())
+                {
+                    self.keyboard_emulating = false;
+                }
+            }
+            EiEvent::DeviceResumed(e) => {
+                if self
+                    .keyboard_device
+                    .as_ref()
+                    .is_some_and(|(device, _)| device == e.device.device())
+                {
+                    self.start_keyboard_emulation(e.device.device());
+                }
+            }
+            EiEvent::DeviceRemoved(e) => {
+                if self
+                    .keyboard_device
+                    .as_ref()
+                    .is_some_and(|(device, _)| device == e.device.device())
+                {
+                    self.keyboard_device = None;
+                    self.keyboard_emulating = false;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn has_keyboard(&self) -> bool {
+        self.keyboard_device.is_some()
+    }
+
+    fn start_keyboard_emulation(&mut self, device: &ei::Device) {
+        if self.keyboard_emulating {
+            return;
+        }
+        device.start_emulating(self.connection.serial(), self.sequence);
+        self.sequence += 1;
+        self.keyboard_emulating = true;
+    }
+
+    fn close(self) {
+        close_session(&self.conn, &self.session_handle);
+    }
+}
+
+fn monotonic_micros() -> u64 {
+    let mut ts = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    let ok = unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, &mut ts) } == 0;
+    if ok {
+        (ts.tv_sec as u64 * 1_000_000) + (ts.tv_nsec as u64 / 1_000)
+    } else {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_micros() as u64
+    }
+}
+
+fn ei_handshake_with_timeout(
+    context: &ei::Context,
+    timeout: Duration,
+) -> Result<reis::handshake::HandshakeResp, String> {
+    let mut handshaker =
+        reis::handshake::EiHandshaker::new("Left Hand Control", ContextType::Sender);
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        context
+            .read()
+            .map_err(|e| format!("EI handshake read: {e}"))?;
+        while let Some(result) = context.pending_event() {
+            let event = match result {
+                reis::PendingRequestResult::Request(event) => event,
+                reis::PendingRequestResult::ParseError(e) => {
+                    return Err(format!("EI handshake parse error: {e}"));
+                }
+                reis::PendingRequestResult::InvalidObject(id) => {
+                    return Err(format!("EI handshake invalid object: {id}"));
+                }
+            };
+            if let Some(handshake) = handshaker
+                .handle_event(event)
+                .map_err(|e| format!("EI handshake: {e}"))?
+            {
+                return Ok(handshake);
+            }
+        }
+        context
+            .flush()
+            .map_err(|e| format!("EI handshake flush: {e}"))?;
+        thread::sleep(Duration::from_millis(10));
+    }
+    Err("EI handshake timed out".into())
 }
 
 fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
