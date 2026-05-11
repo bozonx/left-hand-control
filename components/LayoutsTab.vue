@@ -211,7 +211,6 @@ function moveLayout(entry: LayoutLibraryEntry, direction: 'up' | 'down') {
                 :active-auto-layout-id="activeAutoLayoutId"
                 :manual-active-layout-id="manualActiveLayoutId"
                 @save-current="saveCurrentLayout"
-                @save-as="openSaveAsModal"
                 @request-apply-entry="requestApplyEntry"
                 @create-from-empty="createFromEmpty"
                 @create-from-ivan-k="createFromIvanK"

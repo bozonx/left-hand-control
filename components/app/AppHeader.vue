@@ -10,7 +10,7 @@ const tabsScrollRef = ref<HTMLElement | null>(null)
 const contextRowRef = ref<HTMLElement | null>(null)
 
 const { loaded, config, flush, currentLayoutId, isLayoutDirty } = useConfig()
-const { saveCurrentLayout, saveBusy } = useSettingsScreen()
+const { saveCurrentLayout, saveBusy, openSaveAsModal } = useSettingsScreen()
 const mapper = useMapper()
 const { layout } = useLayout()
 const gameMode = useGameMode()
@@ -128,7 +128,10 @@ async function toggleMapper() {
             return
         }
         if (!selectedDevice.value) return
-        await mapper.start(selectedDevice.value, selectedMouse.value || undefined)
+        await mapper.start(
+            selectedDevice.value,
+            selectedMouse.value || undefined,
+        )
     } catch (error) {
         mapper.error.value =
             error instanceof Error ? error.message : String(error)
@@ -197,6 +200,19 @@ onMounted(() => {
                         @click="saveCurrentLayout"
                     >
                         {{ $t('common.save') }}
+                    </UButton>
+                </AppTooltip>
+
+                <AppTooltip v-if="loaded" :text="$t('settings.saveAs')">
+                    <UButton
+                        icon="i-lucide-copy"
+                        size="sm"
+                        color="neutral"
+                        variant="outline"
+                        :disabled="!currentLayoutId"
+                        @click="openSaveAsModal"
+                    >
+                        {{ $t('settings.saveAs') }}
                     </UButton>
                 </AppTooltip>
             </div>

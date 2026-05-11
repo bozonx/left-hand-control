@@ -1,68 +1,70 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import type { LayoutLibraryEntry } from "~/composables/useLayoutLibrary";
-import { isUserLayoutId, userLayoutNameFromId } from "~/composables/useLayoutLibrary";
-import type { LayoutMode } from "~/types/config";
-import type { LayoutEditMode } from "~/composables/settingsScreen/useLayoutEdit";
-import { useLayoutConditions } from "~/composables/useLayoutConditions";
-import type { ConditionKind } from "~/composables/useLayoutConditions";
-import LayoutConditionsModal from "~/components/features/settings/LayoutConditionsModal.vue";
-import LayoutsLibraryItem from "~/components/features/settings/LayoutsLibraryItem.vue";
+import { computed, ref } from 'vue'
+import type { LayoutLibraryEntry } from '~/composables/useLayoutLibrary'
+import {
+    isUserLayoutId,
+    userLayoutNameFromId,
+} from '~/composables/useLayoutLibrary'
+import type { LayoutMode } from '~/types/config'
+import type { LayoutEditMode } from '~/composables/settingsScreen/useLayoutEdit'
+import { useLayoutConditions } from '~/composables/useLayoutConditions'
+import type { ConditionKind } from '~/composables/useLayoutConditions'
+import LayoutConditionsModal from '~/components/features/settings/LayoutConditionsModal.vue'
+import LayoutsLibraryItem from '~/components/features/settings/LayoutsLibraryItem.vue'
 
 const props = defineProps<{
-    entries: LayoutLibraryEntry[];
-    currentLayoutId?: string;
-    currentLayoutDescription?: string;
-    isLayoutDirty: boolean;
-    applying: string;
-    applyError?: string | null;
-    libraryError?: string | null;
-    layoutsDir: string;
-    layoutMode: LayoutMode;
-    autoIncludedIds: Set<string>;
-    activeAutoLayoutId?: string;
-    manualActiveLayoutId?: string;
-}>();
+    entries: LayoutLibraryEntry[]
+    currentLayoutId?: string
+    currentLayoutDescription?: string
+    isLayoutDirty: boolean
+    applying: string
+    applyError?: string | null
+    libraryError?: string | null
+    layoutsDir: string
+    layoutMode: LayoutMode
+    autoIncludedIds: Set<string>
+    activeAutoLayoutId?: string
+    manualActiveLayoutId?: string
+}>()
 
 const _emit = defineEmits<{
-    saveCurrent: [];
-    saveAs: [];
-    requestApplyEntry: [entry: LayoutLibraryEntry];
-    createFromEmpty: [];
-    createFromIvanK: [];
-    requestEdit: [entry: LayoutLibraryEntry, mode?: LayoutEditMode];
-    updateDescription: [entry: LayoutLibraryEntry, description: string];
-    requestReset: [];
-    requestDelete: [entry: LayoutLibraryEntry];
-    moveUp: [entry: LayoutLibraryEntry];
-    moveDown: [entry: LayoutLibraryEntry];
-}>();
+    saveCurrent: []
+    requestApplyEntry: [entry: LayoutLibraryEntry]
+    createFromEmpty: []
+    createFromIvanK: []
+    requestEdit: [entry: LayoutLibraryEntry, mode?: LayoutEditMode]
+    updateDescription: [entry: LayoutLibraryEntry, description: string]
+    requestReset: []
+    requestDelete: [entry: LayoutLibraryEntry]
+    moveUp: [entry: LayoutLibraryEntry]
+    moveDown: [entry: LayoutLibraryEntry]
+}>()
 
-const { config } = useConfig();
-const { setEnabledInAuto } = useLayoutConditions();
+const { config } = useConfig()
+const { setEnabledInAuto } = useLayoutConditions()
 
-const modalOpen = ref(false);
-const modalKind = ref<ConditionKind>("whitelist");
-const modalLayoutId = ref<string | undefined>(undefined);
+const modalOpen = ref(false)
+const modalKind = ref<ConditionKind>('whitelist')
+const modalLayoutId = ref<string | undefined>(undefined)
 
 const modalLayoutLabel = computed(() => {
-    const id = modalLayoutId.value;
-    if (!id) return "";
-    const entry = props.entries.find((e) => e.id === id);
-    if (entry) return entry.name;
-    return isUserLayoutId(id) ? userLayoutNameFromId(id) : id;
-});
+    const id = modalLayoutId.value
+    if (!id) return ''
+    const entry = props.entries.find((e) => e.id === id)
+    if (entry) return entry.name
+    return isUserLayoutId(id) ? userLayoutNameFromId(id) : id
+})
 
 function openWhitelist(entryId: string) {
-    modalLayoutId.value = entryId;
-    modalKind.value = "whitelist";
-    modalOpen.value = true;
+    modalLayoutId.value = entryId
+    modalKind.value = 'whitelist'
+    modalOpen.value = true
 }
 
 function openBlacklist(entryId: string) {
-    modalLayoutId.value = entryId;
-    modalKind.value = "blacklist";
-    modalOpen.value = true;
+    modalLayoutId.value = entryId
+    modalKind.value = 'blacklist'
+    modalOpen.value = true
 }
 </script>
 
@@ -71,7 +73,7 @@ function openBlacklist(entryId: string) {
         <template #header>
             <div class="flex items-center justify-between gap-3 flex-wrap">
                 <h2 class="text-sm font-semibold">
-                    {{ $t("settings.layoutsTitle") }}
+                    {{ $t('settings.layoutsTitle') }}
                 </h2>
                 <div class="flex items-center gap-2">
                     <UButton
@@ -82,7 +84,7 @@ function openBlacklist(entryId: string) {
                         :disabled="!!applying"
                         @click="$emit('createFromEmpty')"
                     >
-                        {{ $t("settings.newEmptyLayoutBtn") }}
+                        {{ $t('settings.newEmptyLayoutBtn') }}
                     </UButton>
                     <UButton
                         color="neutral"
@@ -92,16 +94,7 @@ function openBlacklist(entryId: string) {
                         :disabled="!!applying"
                         @click="$emit('createFromIvanK')"
                     >
-                        {{ $t("settings.newFromIvanKBtn") }}
-                    </UButton>
-                    <UButton
-                        color="neutral"
-                        variant="outline"
-                        icon="i-lucide-copy"
-                        :disabled="!currentLayoutId"
-                        @click="$emit('saveAs')"
-                    >
-                        {{ $t("settings.saveAs") }}
+                        {{ $t('settings.newFromIvanKBtn') }}
                     </UButton>
                 </div>
             </div>
@@ -119,10 +112,10 @@ function openBlacklist(entryId: string) {
                     />
                     <div class="min-w-0">
                         <div class="font-semibold">
-                            {{ $t("settings.dirtyBadgeTitle") }}
+                            {{ $t('settings.dirtyBadgeTitle') }}
                         </div>
                         <div class="text-(--ui-text-muted)">
-                            {{ $t("settings.dirtyBadgeBody") }}
+                            {{ $t('settings.dirtyBadgeBody') }}
                         </div>
                     </div>
                 </div>
@@ -133,7 +126,7 @@ function openBlacklist(entryId: string) {
                         icon="i-lucide-rotate-ccw"
                         @click="$emit('requestReset')"
                     >
-                        {{ $t("settings.resetUnsavedBtn") }}
+                        {{ $t('settings.resetUnsavedBtn') }}
                     </UButton>
                     <UButton
                         color="primary"
@@ -141,7 +134,7 @@ function openBlacklist(entryId: string) {
                         :disabled="!currentLayoutId"
                         @click="$emit('saveCurrent')"
                     >
-                        {{ $t("settings.saveCurrent") }}
+                        {{ $t('settings.saveCurrent') }}
                     </UButton>
                 </div>
             </div>
@@ -172,20 +165,32 @@ function openBlacklist(entryId: string) {
                     :manual-active-layout-id="manualActiveLayoutId"
                     :auto-included-ids="autoIncludedIds"
                     @request-edit="$emit('requestEdit', $event, 'name')"
-                    @update-description="(entry, description) => $emit('updateDescription', entry, description)"
+                    @update-description="
+                        (entry, description) =>
+                            $emit('updateDescription', entry, description)
+                    "
                     @request-apply-entry="$emit('requestApplyEntry', $event)"
                     @request-delete="$emit('requestDelete', $event)"
                     @move-up="$emit('moveUp', $event)"
                     @move-down="$emit('moveDown', $event)"
-                    @activate-manual="config.settings.manualActiveLayoutId = $event"
-                    @toggle-auto="(entryId, value) => setEnabledInAuto(entryId, value)"
+                    @activate-manual="
+                        config.settings.manualActiveLayoutId = $event
+                    "
+                    @toggle-auto="
+                        (entryId, value) => setEnabledInAuto(entryId, value)
+                    "
                     @open-whitelist="openWhitelist"
                     @open-blacklist="openBlacklist"
                 />
             </ul>
 
-            <div v-if="!entries.length" class="py-8 text-center text-sm text-(--ui-text-muted)">
-                <p class="font-medium text-(--ui-text-highlighted)">{{ $t('settings.emptyLayoutsTitle') }}</p>
+            <div
+                v-if="!entries.length"
+                class="py-8 text-center text-sm text-(--ui-text-muted)"
+            >
+                <p class="font-medium text-(--ui-text-highlighted)">
+                    {{ $t('settings.emptyLayoutsTitle') }}
+                </p>
                 <p class="mt-1">{{ $t('settings.emptyLayoutsBody') }}</p>
             </div>
         </div>
