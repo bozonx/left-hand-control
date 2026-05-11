@@ -56,6 +56,8 @@ layers:
       KeyR: macro:cutLineContent
       KeyT: macro:cutAndRemoveLine
       KeyY: Shift+Home
+      KeyU: null
+      KeyI: null
       KeyO: Shift+End
       KeyP: macro:select5LinesUp
       BracketLeft: null
@@ -66,6 +68,7 @@ layers:
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
       KeyF: macro:copyLine
+      KeyG: null
       KeyH: Shift+ArrowLeft
       KeyJ: Shift+ArrowDown
       KeyK: Shift+ArrowUp
@@ -73,10 +76,14 @@ layers:
       Semicolon: macro:selectWholeLine
       Quote: null
 
+      KeyZ: null
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
+      KeyV: null
       KeyB: macro:replaceLineWidthBuffer
       KeyN: Ctrl+Shift+ArrowLeft
+      KeyM: Null
+      Comma: null
       Period: Ctrl+Shift+ArrowRight
       Slash: macro:select5LinesDown
   - id: sym
@@ -126,6 +133,7 @@ layers:
       KeyE: 'text:]'
       KeyR: 'text:)'
       KeyT: 'text:TODO: '
+      KeyY: null
       KeyU: F7
       KeyI: F8
       KeyO: F9
@@ -139,6 +147,7 @@ layers:
       KeyD: 'text:‼️'
       KeyF: 'text:❓'
       KeyG: 'text:❌'
+      KeyH: null
       KeyJ: F4
       KeyK: F5
       KeyL: F6
@@ -150,6 +159,7 @@ layers:
       KeyC: 'text:⏩'
       KeyV: 'text:✅'
       KeyB: 'text:€'
+      KeyN: null
       KeyM: F1
       Comma: F2
       Period: F3
@@ -177,6 +187,7 @@ layers:
       KeyE: null
       KeyR: null
       KeyT: sys:windowKeepAbove
+      KeyY: null
       KeyU: null
       KeyI: null
       KeyO: null
