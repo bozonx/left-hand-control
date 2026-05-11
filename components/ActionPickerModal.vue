@@ -160,7 +160,7 @@ function cancel() {
             class="flex-1 min-w-0 h-8 px-2.5 inline-flex items-center gap-1.5 rounded-md text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-75"
             :class="[
                 props.ghost && !model
-                    ? 'justify-start border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50'
+                    ? 'empty-field-dashed justify-start'
                     : 'justify-start border border-(--ui-border) bg-(--ui-bg) hover:bg-(--ui-bg-elevated)',
                 props.invalid
                     ? 'border-(--ui-error) ring-1 ring-(--ui-error)'

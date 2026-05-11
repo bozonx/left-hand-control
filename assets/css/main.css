@@ -140,3 +140,14 @@ code,
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+.empty-field-dashed {
+  border: 1px dashed var(--ui-border-accented) !important;
+  color: var(--ui-text-muted);
+}
+
+.empty-field-dashed:hover {
+  border-color: var(--ui-primary) !important;
+  color: var(--ui-text);
+  background: color-mix(in oklab, var(--ui-bg-elevated) 50%, transparent);
+}

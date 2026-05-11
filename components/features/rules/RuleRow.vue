@@ -120,7 +120,7 @@ function updateHoldAction(value: string | null) {
               color="neutral"
               :variant="hasConditions ? 'soft' : 'ghost'"
               class="h-8 min-w-0 flex-1 justify-start font-normal"
-              :class="hasConditions ? '' : 'border border-dashed border-(--ui-border) text-(--ui-text-muted) hover:text-(--ui-text) hover:border-(--ui-border-accent) hover:bg-(--ui-bg-elevated)/50'"
+              :class="hasConditions ? '' : 'empty-field-dashed'"
               @click="isConditionsOpen = true"
             >
               <span class="truncate">{{ hasConditions ? $t('rules.editConditions') : $t('common.notSet') }}</span>
