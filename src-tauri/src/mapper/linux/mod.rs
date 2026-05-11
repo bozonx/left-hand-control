@@ -161,7 +161,7 @@ pub fn spawn(
         }
         Err(mpsc::RecvTimeoutError::Timeout) => {
             stop.store(true, Ordering::SeqCst);
-            let _ = join.join();
+            drop(join); // detach — may be stuck in a kernel syscall; stop flag is set, thread cleans up when unblocked
             let err_msg = "mapper start timed out";
             if let Ok(mut slot) = error.lock() {
                 *slot = Some(err_msg.into());
