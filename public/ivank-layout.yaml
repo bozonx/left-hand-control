@@ -47,6 +47,17 @@ layers:
       #     action: BrowserForward
   - id: sel
     keys:
+      Digit1: sys:switchLayout1
+      Digit2: sys:switchLayout2
+      Digit3: sys:switchLayout3
+      Digit4: sys:switchLayout4
+      Digit5: sys:switchLayout5
+      Digit6: sys:switchLayout6
+      Digit7: sys:switchLayout7
+      Digit8: sys:switchLayout8
+      Digit9: sys:switchLayout9
+      Digit0: sys:switchLayout10
+
       AltLeft: Ctrl+Enter
       Space: Backspace
 
@@ -182,18 +193,18 @@ layers:
       Digit9: sys:taskEntry9
       Digit0: sys:taskEntry10
 
-      KeyQ: app:showQuickMenu1
+      KeyQ: null
       KeyW: Ctrl+KeyA
       KeyE: null
       KeyR: null
       KeyT: sys:windowKeepAbove
-      KeyY: null
-      KeyU: null
-      KeyI: null
-      KeyO: null
-      KeyP: null
-      BracketLeft: null
-      BracketRight: null
+      KeyY: sys:switchLayout1
+      KeyU: sys:switchLayout2
+      KeyI: sys:switchLayout3
+      KeyO: sys:switchLayout4
+      KeyP: sys:switchLayout5
+      BracketLeft: sys:switchLayout6
+      BracketRight: sys:switchLayout7
       Backslash: sys:screenOff
 
       KeyA: sys:switchDesktop4
@@ -225,14 +236,14 @@ layers:
       # Slash: sys:muteAudio
       Slash: VolumeMute
       ShiftRight: sys:muteMicrophone
-  - id: space
-    keys:
-      Tab: sys:switchLayout1
-      CapsLock: sys:switchLayout2
-      ShiftLeft: sys:switchLayout3
-      ShiftRight: sys:switchLayout4
-      Enter: sys:switchLayout5
-      Backslash: sys:switchLayout6
+  # - id: space
+  #   keys:
+  #     Tab: sys:switchLayout1
+  #     CapsLock: sys:switchLayout2
+  #     ShiftLeft: sys:switchLayout3
+  #     ShiftRight: sys:switchLayout4
+  #     Enter: sys:switchLayout5
+  #     Backslash: sys:switchLayout6
 rules:
   - key: Tab
     layer: sel
@@ -254,8 +265,8 @@ rules:
     layer: win
     hold: AltLeft
     isolate: KeyW, KeyC, KeyV, Comma, Period, Slash
-  - key: Space
-    layer: space
+  # - key: Space
+  #   layer: space
   - key: AltRight
     tap: 'text:.'
     layer: sym
