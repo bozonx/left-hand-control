@@ -87,6 +87,9 @@ const currentLayoutLabel = computed<string>(() => {
 const selectedDevice = computed(
     () => config.value.settings.inputDevicePath ?? '',
 )
+const selectedMouse = computed(
+    () => config.value.settings.inputMouseDevicePath ?? '',
+)
 const saveTooltip = computed(() =>
     isLayoutDirty.value
         ? t('app.saveLayoutTooltip', { name: currentLayoutLabel.value })
@@ -125,7 +128,7 @@ async function toggleMapper() {
             return
         }
         if (!selectedDevice.value) return
-        await mapper.start(selectedDevice.value)
+        await mapper.start(selectedDevice.value, selectedMouse.value || undefined)
     } catch (error) {
         mapper.error.value =
             error instanceof Error ? error.message : String(error)

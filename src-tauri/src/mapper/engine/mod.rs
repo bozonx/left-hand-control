@@ -266,9 +266,22 @@ impl Engine {
 
     /// Handle a raw key event from the grabbed device.
     pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
-        if is_mouse_button(key) && !self.should_handle_mouse_button(key, down) {
-            out.push(Out::KeyRaw { key, down });
-            return;
+        if is_mouse_button(key) {
+            if down {
+                // Commit all pending tap/hold decisions before processing the
+                // mouse event. Two goals:
+                // (a) Modifier holds (ShiftLeft, CtrlLeft, …) reach uinput
+                //     before the physical mouse click arrives at the OS.
+                // (b) Layer triggers activate so that layer keymaps are
+                //     consulted when should_handle_mouse_button runs below.
+                self.commit_waiting_decisions(out);
+                self.flush_waiting_second(out);
+            }
+            if !self.should_handle_mouse_button(key, down) {
+                out.push(Out::KeyRaw { key, down });
+                return;
+            }
+            // Fall through to normal key handling below.
         }
 
         if !down
@@ -1510,7 +1523,9 @@ mod tests {
     }
 
     #[test]
-    fn mouse_button_does_not_interrupt_pending_hold() {
+    fn mouse_button_commits_pending_hold() {
+        // All pending WaitingDecision holds commit on mouse button press,
+        // regardless of hold mode (Keystroke, Native, or Swallow).
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
             enabled: true,
@@ -1535,7 +1550,8 @@ mod tests {
         // No hold committed yet — Shift is still in WaitingDecision.
         assert!(out.is_empty());
 
-        // Mouse button should pass through without committing the pending hold.
+        // LMB click commits the pending hold (ControlLeft) so the physical
+        // mouse event reaches the OS with the modifier active.
         engine.handle(
             Key::BTN_LEFT,
             true,
@@ -1549,8 +1565,7 @@ mod tests {
             &mut out,
         );
 
-        // Releasing Shift after mouse click should fire the tap (Escape),
-        // proving the mouse click did NOT promote the pending rule to hold.
+        // Releasing Shift releases the committed hold (ControlLeft).
         engine.handle(
             Key::KEY_LEFTSHIFT,
             false,
@@ -1560,15 +1575,20 @@ mod tests {
         assert!(matches!(
             out.as_slice(),
             [
+                Out::ChordPress { ks, .. },
                 Out::KeyRaw { key: k1, down: true },
                 Out::KeyRaw { key: k2, down: false },
-                Out::Stroke { ks, .. },
-            ] if *k1 == Key::BTN_LEFT && *k2 == Key::BTN_LEFT && ks.key == Key::KEY_ESC
+                Out::KeyRaw { key: ctrl, down: false },
+            ] if ks.mods.is_empty()
+                && ks.key == Key::KEY_LEFTCTRL
+                && *k1 == Key::BTN_LEFT
+                && *k2 == Key::BTN_LEFT
+                && *ctrl == Key::KEY_LEFTCTRL
         ));
     }
 
     #[test]
-    fn unmapped_extra_mouse_button_does_not_interrupt_pending_hold() {
+    fn extra_mouse_button_commits_pending_keystroke_hold() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
             enabled: true,
@@ -1609,13 +1629,78 @@ mod tests {
             &mut out,
         );
 
+        // Any mouse button (not just primary) commits pending keystroke holds.
         assert!(matches!(
             out.as_slice(),
             [
+                Out::ChordPress { ks, .. },
                 Out::KeyRaw { key: k1, down: true },
                 Out::KeyRaw { key: k2, down: false },
-                Out::Stroke { ks, .. },
-            ] if *k1 == Key::BTN_SIDE && *k2 == Key::BTN_SIDE && ks.key == Key::KEY_ESC
+                Out::KeyRaw { key: ctrl, down: false },
+            ] if ks.mods.is_empty()
+                && ks.key == Key::KEY_LEFTCTRL
+                && *k1 == Key::BTN_SIDE
+                && *k2 == Key::BTN_SIDE
+                && *ctrl == Key::KEY_LEFTCTRL
+        ));
+    }
+
+    #[test]
+    fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
+        // Layer trigger still in WaitingDecision when the mouse button is
+        // pressed. commit_waiting_decisions fires first; should_handle_mouse_button
+        // then finds the mapping in the now-active layer and routes the button
+        // through on_press rather than the fast path.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "Space".into(),
+            layer_id: "sp".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Swallow,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut sp = crate::mapper::config::LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        sp.extras.push(crate::mapper::config::ExtraKey {
+            key: "MouseSide".into(),
+            action: ActionSpec::Action("BrowserBack".into()),
+        });
+        cfg.layer_keymaps.insert("sp".into(), sp);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        assert!(out.is_empty()); // WaitingDecision, no output yet
+
+        // BTN_SIDE pressed while Space is still in WaitingDecision.
+        // commit_waiting_decisions commits Space (layer activates), then
+        // should_handle_mouse_button sees the layer mapping and routes
+        // BTN_SIDE through on_press → BrowserBack keystroke fires.
+        engine.handle(Key::BTN_SIDE, true, now + Duration::from_millis(10), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_BACK
+        ));
+
+        out.clear();
+        engine.handle(Key::BTN_SIDE, false, now + Duration::from_millis(11), &mut out);
+        engine.handle(Key::KEY_SPACE, false, now + Duration::from_millis(20), &mut out);
+        // BTN_SIDE release emits the mapped key (KEY_BACK) release.
+        // Space hold release is silent (Swallow hold mode).
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw { key: back, down: false }] if *back == Key::KEY_BACK
         ));
     }
 
