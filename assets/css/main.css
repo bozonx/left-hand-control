@@ -147,7 +147,7 @@ code,
 }
 
 .empty-field-dashed:hover {
-  border-color: var(--ui-primary) !important;
+  border-color: var(--ui-border-accented) !important;
   color: var(--ui-text);
-  background: color-mix(in oklab, var(--ui-bg-elevated) 50%, transparent);
+  background: color-mix(in oklab, var(--ui-bg-elevated) 65%, transparent);
 }
