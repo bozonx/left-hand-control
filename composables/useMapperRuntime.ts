@@ -75,6 +75,8 @@ export function useMapperRuntime(
       defaultDoubleTapTimeoutMs: cfg.settings.defaultDoubleTapTimeoutMs,
       defaultMacroStepPauseMs: cfg.settings.defaultMacroStepPauseMs,
       defaultMacroModifierDelayMs: cfg.settings.defaultMacroModifierDelayMs,
+      linuxWaylandTextMode: cfg.settings.linuxWaylandTextMode ?? 'libei',
+      linuxYdotoolPath: cfg.settings.linuxYdotoolPath ?? '',
       commandsTrusted: commandsTrusted(cfg),
     })
   }
@@ -89,6 +91,8 @@ export function useMapperRuntime(
     defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
     defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
     defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
+    linuxWaylandTextMode: config.value.settings.linuxWaylandTextMode ?? 'libei',
+    linuxYdotoolPath: config.value.settings.linuxYdotoolPath ?? '',
     commandsTrusted: commandsTrusted(config.value),
   })
   void runtimeSnapshot()
@@ -110,6 +114,8 @@ export function useMapperRuntime(
       defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
       defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
       defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
+      linuxWaylandTextMode: config.value.settings.linuxWaylandTextMode ?? 'libei',
+      linuxYdotoolPath: config.value.settings.linuxYdotoolPath ?? '',
       commandsTrusted: commandsTrusted(config.value),
     })
     void runtimeSnapshot()
