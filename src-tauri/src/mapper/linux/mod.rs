@@ -435,7 +435,7 @@ mod tests {
         flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
 
         assert!(buf.is_empty());
-        assert_eq!(sink.batches.len(), 4);
+        assert_eq!(sink.batches.len(), 5);
         assert_eq!(
             key_events(&sink.batches[0]),
             vec![(Key::KEY_A.code(), 1), (Key::KEY_LEFTSHIFT.code(), 0)]
@@ -444,17 +444,19 @@ mod tests {
             key_events(&sink.batches[1]),
             vec![(Key::KEY_LEFTCTRL.code(), 1)]
         );
+        assert_eq!(key_events(&sink.batches[2]), vec![(Key::KEY_C.code(), 1)]);
+        assert_eq!(key_events(&sink.batches[3]), vec![(Key::KEY_C.code(), 0)]);
         assert_eq!(
-            key_events(&sink.batches[2]),
-            vec![(Key::KEY_C.code(), 1), (Key::KEY_C.code(), 0)]
-        );
-        assert_eq!(
-            key_events(&sink.batches[3]),
+            key_events(&sink.batches[4]),
             vec![(Key::KEY_LEFTCTRL.code(), 0)]
         );
         assert_eq!(
             effects.sleeps,
-            vec![Duration::from_millis(2), Duration::from_millis(2)]
+            vec![
+                Duration::from_millis(2),
+                Duration::from_millis(1),
+                Duration::from_millis(2)
+            ]
         );
         assert_eq!(effects.texts, vec!["tail".to_string()]);
         assert_eq!(effects.systems, vec!["dbus:org.test:Fire:1".to_string()]);
@@ -525,11 +527,9 @@ mod tests {
         .expect("iteration");
 
         assert_eq!(driver.seen_waits, vec![Duration::from_millis(100)]);
-        assert_eq!(sink.batches.len(), 1);
-        assert_eq!(
-            key_events(&sink.batches[0]),
-            vec![(Key::KEY_A.code(), 1), (Key::KEY_A.code(), 0)]
-        );
+        assert_eq!(sink.batches.len(), 2);
+        assert_eq!(key_events(&sink.batches[0]), vec![(Key::KEY_A.code(), 1)]);
+        assert_eq!(key_events(&sink.batches[1]), vec![(Key::KEY_A.code(), 0)]);
         assert!(effects.texts.is_empty());
         assert!(out_buf.is_empty());
     }

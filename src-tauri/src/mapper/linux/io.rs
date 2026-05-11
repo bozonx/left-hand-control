@@ -10,6 +10,11 @@ use std::sync::OnceLock;
 use std::thread;
 use std::time::{Duration, Instant};
 
+/// Gap inserted between a synthetic key-down and key-up so the receiving
+/// app sees a non-zero hold duration. A bare down+up pair in a single
+/// `EV_SYN` frame is treated as zero-duration by some apps and dropped.
+const KEY_TAP_GAP: Duration = Duration::from_millis(1);
+
 pub(super) trait EventSink {
     fn emit(&mut self, events: &[InputEvent]) -> Result<(), String>;
 }
@@ -229,11 +234,11 @@ fn emit_stroke_tap<S: EventSink, E: SideEffects>(
         effects.sleep(mod_delay);
     }
 
-    let down_up = [
-        InputEvent::new(EventType::KEY, ks.key.code(), 1),
-        InputEvent::new(EventType::KEY, ks.key.code(), 0),
-    ];
-    sink.emit(&down_up)?;
+    // Down and up go in separate `EV_SYN` frames (with a tiny gap) so the
+    // tap isn't seen as a zero-duration event and dropped.
+    sink.emit(&[InputEvent::new(EventType::KEY, ks.key.code(), 1)])?;
+    effects.sleep(KEY_TAP_GAP);
+    sink.emit(&[InputEvent::new(EventType::KEY, ks.key.code(), 0)])?;
 
     if !ks.mods.is_empty() {
         effects.sleep(mod_delay);
@@ -325,6 +330,12 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                 let code = key.code();
                 if (272..=281).contains(&code) {
                     continue;
+                }
+                // Two transitions of the same key must not share one
+                // `EV_SYN` frame — some apps coalesce them and lose the
+                // first transition (a press+release becomes a no-op).
+                if events.iter().any(|ev| ev.code() == code) {
+                    flush_events(sink, &mut events)?;
                 }
                 events.push(InputEvent::new(
                     EventType::KEY,
