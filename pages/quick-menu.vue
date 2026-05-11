@@ -45,6 +45,10 @@ const {
 } = useMenuPage(pages)
 
 let unlistenShow: (() => void) | null = null
+let menuGeneration = 0
+let pendingHotkeyCode: string | null = null
+let isKeydownListenerAttached = false
+const isReady = ref(false)
 
 function menuPageFromPayload(payload: unknown): number {
     const page =
@@ -60,6 +64,40 @@ async function closeMenu() {
     })
 }
 
+async function prepareMenu(payload: unknown, clearPending = true) {
+    const generation = ++menuGeneration
+    const nextPage = menuPageFromPayload(payload)
+    isReady.value = false
+    pageIndex.value = nextPage
+    if (clearPending) pendingHotkeyCode = null
+
+    await load()
+    await resetScroll(nextPage)
+
+    if (generation !== menuGeneration) return
+    isReady.value = true
+    flushPendingHotkey()
+}
+
+function runHotkey(code: string) {
+    if (!isReady.value) {
+        pendingHotkeyCode = code
+        return
+    }
+    const hotkeyIndex = (LEFT_HAND_HOTKEYS as readonly string[]).indexOf(code)
+    if (hotkeyIndex === -1) return
+    const action = page.value[hotkeyIndex]
+    if (action?.action.trim()) {
+        void runAction(action.action)
+    }
+}
+
+function flushPendingHotkey() {
+    const code = pendingHotkeyCode
+    pendingHotkeyCode = null
+    if (code) runHotkey(code)
+}
+
 function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
         e.preventDefault()
@@ -70,34 +108,42 @@ function onKeydown(e: KeyboardEvent) {
     const hotkeyIndex = (LEFT_HAND_HOTKEYS as readonly string[]).indexOf(e.code)
     if (hotkeyIndex !== -1) {
         e.preventDefault()
-        const action = page.value[hotkeyIndex]
-        if (action?.action.trim()) {
-            void runAction(action.action)
-        }
+        runHotkey(e.code)
     }
 }
 
-onMounted(async () => {
-    await load()
-    await resetScroll(menuPageFromPayload(route.query.page))
+function attachKeydownListener() {
+    if (!import.meta.client || isKeydownListenerAttached) return
+    window.addEventListener('keydown', onKeydown, true)
+    isKeydownListenerAttached = true
+}
 
+function detachKeydownListener() {
+    if (!import.meta.client || !isKeydownListenerAttached) return
+    window.removeEventListener('keydown', onKeydown, true)
+    isKeydownListenerAttached = false
+}
+
+attachKeydownListener()
+
+onMounted(async () => {
+    attachKeydownListener()
     unlistenShow = await listen('open_quick_menu_page', async (event) => {
-        await load()
-        await resetScroll(menuPageFromPayload(event.payload))
+        await prepareMenu(event.payload)
     })
 
-    window.addEventListener('keydown', onKeydown)
+    await prepareMenu(route.query.page, false)
 })
 
 onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onKeydown)
+    detachKeydownListener()
     cleanup()
     unlistenShow?.()
 })
 
 async function runAction(action: string) {
     await closeMenu()
-    await wait(80)
+    await wait(0)
     try {
         await invoke('execute_action', { action })
     } catch (e) {

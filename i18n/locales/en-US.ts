@@ -748,12 +748,22 @@ export default {
       textModeLabel: 'Text injection method (Linux/Wayland)',
       textModeHint:
         'Controls how text: actions are sent. If characters come out wrong, for example with a non-Latin layout active, try the clipboard method.',
-      textModeKeycode: 'XKB keycode (default)',
+      textModeLibei: 'libei (default)',
+      textModeLibeiHint:
+        'Uses the Wayland emulated-input path when available. Falls back to the RemoteDesktop portal keycode path until native libei support is available on this desktop.',
+      textModeKeycode: 'XKB keycode',
       textModeKeycodeHint:
         'Reads the current keyboard layout and injects characters as keycodes with the correct modifiers. Falls back to clipboard for characters not present in the layout.',
       textModeClipboard: 'Clipboard (via wl-copy)',
       textModeClipboardHint:
         'Copies the entire text to clipboard using wl-copy and pastes with Ctrl+V. More reliable across layouts, but briefly replaces clipboard contents.',
+      textModeYdotool: 'ydotool-compatible',
+      textModeYdotoolHint:
+        'Runs a ydotool-compatible executable as `type <text>`. Requires ydotoold and access to /dev/uinput.',
+      ydotoolPathLabel: 'ydotool executable',
+      ydotoolPathHint:
+        'Leave empty to use ydotool from PATH, or set an absolute path/custom wrapper.',
+      ydotoolPathPlaceholder: 'ydotool or /usr/bin/ydotool',
     },
   },
   picker: {

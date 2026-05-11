@@ -124,10 +124,15 @@ function normalizeSettings(
     merged.manualActiveLayoutId = merged.currentLayoutId
   }
   if (
+    merged.linuxWaylandTextMode !== 'libei' &&
     merged.linuxWaylandTextMode !== 'keycode' &&
-    merged.linuxWaylandTextMode !== 'clipboard'
+    merged.linuxWaylandTextMode !== 'clipboard' &&
+    merged.linuxWaylandTextMode !== 'ydotool'
   ) {
     merged.linuxWaylandTextMode = undefined
+  }
+  if (typeof merged.linuxYdotoolPath !== 'string') {
+    merged.linuxYdotoolPath = ''
   }
   return merged
 }

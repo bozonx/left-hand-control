@@ -162,11 +162,13 @@ export interface GameModeProcessMatcher {
 }
 
 // How literal text is injected on Linux/Wayland.
-//   'keycode'   — XKB-aware keycode injection (default); falls back to
+//   'libei'     — preferred Wayland-native emulated input path.
+//   'keycode'   — XKB-aware RemoteDesktop keycode injection; falls back to
 //                 clipboard for characters missing from the current layout.
 //   'clipboard' — always use wl-copy + Ctrl+V for every text action.
 //                 Use this if keycode injection produces wrong characters.
-export type LinuxWaylandTextMode = 'keycode' | 'clipboard'
+//   'ydotool'   — run a ydotool-compatible executable (`ydotool type ...`).
+export type LinuxWaylandTextMode = 'libei' | 'keycode' | 'clipboard' | 'ydotool'
 
 export interface AppSettings {
   launchOnStartup: boolean
@@ -213,6 +215,9 @@ export interface AppSettings {
   }
   // Linux/Wayland only. Controls how text: actions are injected.
   linuxWaylandTextMode?: LinuxWaylandTextMode
+  // Linux/Wayland only. Optional path/name for the ydotool-compatible
+  // executable used when linuxWaylandTextMode is 'ydotool'.
+  linuxYdotoolPath?: string
 }
 
 // A layout preset: the subset of AppConfig that describes keyboard behaviour
@@ -439,6 +444,8 @@ export function createDefaultConfig(): AppConfig {
         useFullscreen: false,
         processMatchers: [],
       },
+      linuxWaylandTextMode: 'libei',
+      linuxYdotoolPath: '',
     },
   }
 }

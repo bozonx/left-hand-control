@@ -46,6 +46,10 @@ function cellContentClass(value: string | undefined): string {
 }
 
 let unlistenShow: (() => void) | null = null
+let menuGeneration = 0
+let pendingHotkeyCode: string | null = null
+let isKeydownListenerAttached = false
+const isReady = ref(false)
 
 function menuPageFromPayload(payload: unknown): number {
     const page =
@@ -61,10 +65,25 @@ async function closeMenu() {
     })
 }
 
+async function prepareMenu(payload: unknown, clearPending = true) {
+    const generation = ++menuGeneration
+    const nextPage = menuPageFromPayload(payload)
+    isReady.value = false
+    pageIndex.value = nextPage
+    if (clearPending) pendingHotkeyCode = null
+
+    await load()
+    await resetScroll(nextPage)
+
+    if (generation !== menuGeneration) return
+    isReady.value = true
+    flushPendingHotkey()
+}
+
 async function applyEmoji(emoji: string | undefined) {
     if (!emoji) return
     await closeMenu()
-    await wait(80)
+    await wait(0)
     try {
         await invoke('insert_text', { text: emoji })
     } catch (e) {
@@ -77,6 +96,20 @@ async function applyEmoji(emoji: string | undefined) {
     }
 }
 
+function applyHotkey(code: string) {
+    if (!isReady.value) {
+        pendingHotkeyCode = code
+        return
+    }
+    void applyEmoji(page.value.cells[code as EmojiHotkey])
+}
+
+function flushPendingHotkey() {
+    const code = pendingHotkeyCode
+    pendingHotkeyCode = null
+    if (code) applyHotkey(code)
+}
+
 function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
         e.preventDefault()
@@ -87,24 +120,35 @@ function onKeydown(e: KeyboardEvent) {
     const code = e.code
     if ((EMOJI_HOTKEYS as readonly string[]).includes(code)) {
         e.preventDefault()
-        void applyEmoji(page.value.cells[code as EmojiHotkey])
+        applyHotkey(code)
     }
 }
 
-onMounted(async () => {
-    await load()
-    await resetScroll(menuPageFromPayload(route.query.page))
+function attachKeydownListener() {
+    if (!import.meta.client || isKeydownListenerAttached) return
+    window.addEventListener('keydown', onKeydown, true)
+    isKeydownListenerAttached = true
+}
 
+function detachKeydownListener() {
+    if (!import.meta.client || !isKeydownListenerAttached) return
+    window.removeEventListener('keydown', onKeydown, true)
+    isKeydownListenerAttached = false
+}
+
+attachKeydownListener()
+
+onMounted(async () => {
+    attachKeydownListener()
     unlistenShow = await listen('open_emoji_menu_page', async (event) => {
-        await load()
-        await resetScroll(menuPageFromPayload(event.payload))
+        await prepareMenu(event.payload)
     })
 
-    window.addEventListener('keydown', onKeydown)
+    await prepareMenu(route.query.page, false)
 })
 
 onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onKeydown)
+    detachKeydownListener()
     cleanup()
     unlistenShow?.()
 })

@@ -236,19 +236,56 @@ enum Cmd {
     Type(String),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TextBackend {
+    Libei,
+    Keycode,
+    Clipboard,
+    Ydotool,
+}
+
+#[derive(Clone, Debug)]
+struct TextBackendConfig {
+    backend: TextBackend,
+    ydotool_path: Option<String>,
+}
+
 /// When true, all text is injected via wl-copy + Ctrl+V instead of
-/// per-character keycode injection. Configurable via `set_text_mode`.
+/// per-character keycode injection. Configurable via `set_text_backend`.
 static TEXT_MODE_CLIPBOARD: AtomicBool = AtomicBool::new(false);
+static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
+    backend: TextBackend::Libei,
+    ydotool_path: None,
+});
+static LIBEI_FALLBACK_LOGGED: AtomicBool = AtomicBool::new(false);
 
 /// Switch between text injection strategies.
+///   "libei" — default Wayland-native backend. Currently falls back to the
+///              RemoteDesktop keycode path while the EI transport is wired.
 ///   "clipboard" — use wl-copy + Ctrl+V for the whole string at once.
-///   anything else — XKB keycode injection (default).
-pub fn set_text_mode(mode: &str) {
-    let clipboard = mode == "clipboard";
-    TEXT_MODE_CLIPBOARD.store(clipboard, Ordering::Relaxed);
+///   "ydotool" — run a ydotool-compatible executable as `type <text>`.
+///   anything else — XKB keycode injection.
+pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>) {
+    let backend = match mode {
+        "libei" => TextBackend::Libei,
+        "clipboard" => TextBackend::Clipboard,
+        "ydotool" => TextBackend::Ydotool,
+        _ => TextBackend::Keycode,
+    };
+    TEXT_MODE_CLIPBOARD.store(backend == TextBackend::Clipboard, Ordering::Relaxed);
+    let ydotool_path = ydotool_path
+        .map(str::trim)
+        .filter(|path| !path.is_empty())
+        .map(ToOwned::to_owned);
+    if let Ok(mut cfg) = TEXT_BACKEND.lock() {
+        *cfg = TextBackendConfig {
+            backend,
+            ydotool_path,
+        };
+    }
     log::debug!(
-        "[portal] text mode: {}",
-        if clipboard { "clipboard" } else { "keycode" }
+        "[portal] text backend: {:?}",
+        backend
     );
 }
 
@@ -271,6 +308,58 @@ pub fn set_token_dir(dir: PathBuf) {
 /// the actual portal handshake (and its consent dialog) runs on a
 /// dedicated thread.
 pub fn type_text(text: &str) {
+    let cfg = TEXT_BACKEND
+        .lock()
+        .map(|guard| guard.clone())
+        .unwrap_or(TextBackendConfig {
+            backend: TextBackend::Keycode,
+            ydotool_path: None,
+        });
+    match cfg.backend {
+        TextBackend::Ydotool => {
+            type_text_ydotool(text, cfg.ydotool_path);
+            return;
+        }
+        TextBackend::Libei => {
+            if !LIBEI_FALLBACK_LOGGED.swap(true, Ordering::Relaxed) {
+                log::debug!(
+                    "[portal] libei text backend is selected; native EI transport is not wired yet, falling back to RemoteDesktop keycode injection"
+                );
+            }
+            TEXT_MODE_CLIPBOARD.store(false, Ordering::Relaxed);
+        }
+        TextBackend::Clipboard => {
+            TEXT_MODE_CLIPBOARD.store(true, Ordering::Relaxed);
+        }
+        TextBackend::Keycode => {
+            TEXT_MODE_CLIPBOARD.store(false, Ordering::Relaxed);
+        }
+    }
+    type_text_portal(text);
+}
+
+fn type_text_ydotool(text: &str, ydotool_path: Option<String>) {
+    let text = text.to_string();
+    let program = ydotool_path.unwrap_or_else(|| "ydotool".to_string());
+    match thread::Builder::new()
+        .name("lhc-ydotool".into())
+        .spawn(move || {
+            let status = std::process::Command::new(&program)
+                .arg("type")
+                .arg(&text)
+                .status();
+            match status {
+                Ok(status) if status.success() => {}
+                Ok(status) => log::debug!("[ydotool] {program:?} exited with {status}"),
+                Err(e) => log::debug!("[ydotool] failed to run {program:?}: {e}"),
+            }
+        }) {
+        Ok(_) => {}
+        Err(e) => log::debug!("[ydotool] could not spawn worker: {e}"),
+    }
+}
+
+fn type_text_portal(text: &str) {
     let Ok(mut slot) = PORTAL_TX.lock() else {
         log::debug!("[portal] literal {:?} dropped (worker lock poisoned)", text);
         return;

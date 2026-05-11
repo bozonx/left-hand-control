@@ -79,11 +79,12 @@ pub fn spawn(
     mouse_path: Option<String>,
     cfg: AppConfig,
 ) -> Result<Handle, String> {
-    super::portal::set_text_mode(
+    super::portal::set_text_backend(
         cfg.settings
             .linux_wayland_text_mode
             .as_deref()
-            .unwrap_or("keycode"),
+            .unwrap_or("libei"),
+        cfg.settings.linux_ydotool_path.as_deref(),
     );
     #[cfg(debug_assertions)]
     {
@@ -245,12 +246,13 @@ fn run_loop<D: LoopDriver>(
                             next_cfg.rules.len(),
                             next_cfg.layer_keymaps.len()
                         );
-                        super::portal::set_text_mode(
+                        super::portal::set_text_backend(
                             next_cfg
                                 .settings
                                 .linux_wayland_text_mode
                                 .as_deref()
-                                .unwrap_or("keycode"),
+                                .unwrap_or("libei"),
+                            next_cfg.settings.linux_ydotool_path.as_deref(),
                         );
                         engine.shutdown(&mut out_buf);
                         flush_out(&mut virt, &mut out_buf)?;

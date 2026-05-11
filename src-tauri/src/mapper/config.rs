@@ -149,6 +149,8 @@ pub struct Settings {
     pub command_trust: HashMap<String, CommandTrustEntry>,
     #[serde(default)]
     pub linux_wayland_text_mode: Option<String>,
+    #[serde(default)]
+    pub linux_ydotool_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -203,7 +205,8 @@ impl Default for Settings {
             default_double_tap_timeout_ms: default_double_tap(),
             current_layout_id: None,
             command_trust: HashMap::new(),
-            linux_wayland_text_mode: None,
+            linux_wayland_text_mode: Some("libei".into()),
+            linux_ydotool_path: None,
         }
     }
 }
@@ -320,7 +323,8 @@ mod tests {
         assert_eq!(s.default_macro_step_pause_ms, 20);
         assert_eq!(s.default_macro_modifier_delay_ms, 5);
         assert_eq!(s.default_double_tap_timeout_ms, 200);
-        assert!(s.linux_wayland_text_mode.is_none());
+        assert_eq!(s.linux_wayland_text_mode.as_deref(), Some("libei"));
+        assert!(s.linux_ydotool_path.is_none());
     }
 
     #[test]

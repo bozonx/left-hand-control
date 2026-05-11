@@ -760,12 +760,22 @@ export default {
       textModeLabel: 'Метод ввода текста (Linux/Wayland)',
       textModeHint:
         'Определяет, как выполняются действия text:. Если символы вводятся неверно, например при активной нелатинской раскладке, попробуйте режим через буфер обмена.',
-      textModeKeycode: 'XKB keycode (по умолчанию)',
+      textModeLibei: 'libei (по умолчанию)',
+      textModeLibeiHint:
+        'Использует Wayland-путь эмуляции ввода, когда он доступен. Пока нативная поддержка libei недоступна в окружении, откатывается на RemoteDesktop portal с вводом keycode.',
+      textModeKeycode: 'XKB keycode',
       textModeKeycodeHint:
         'Считывает текущую клавиатурную раскладку и вводит символы через коды клавиш с нужными модификаторами. Для символов, отсутствующих в раскладке, автоматически использует буфер обмена.',
       textModeClipboard: 'Буфер обмена (через wl-copy)',
       textModeClipboardHint:
         'Копирует весь текст в буфер обмена через wl-copy и вставляет по Ctrl+V. Работает надёжнее при любых раскладках, но временно заменяет содержимое буфера обмена.',
+      textModeYdotool: 'ydotool-compatible',
+      textModeYdotoolHint:
+        'Запускает ydotool-совместимый исполняемый файл как `type <text>`. Требуется ydotoold и доступ к /dev/uinput.',
+      ydotoolPathLabel: 'Исполняемый файл ydotool',
+      ydotoolPathHint:
+        'Оставьте пустым, чтобы использовать ydotool из PATH, или укажите абсолютный путь/свой wrapper.',
+      ydotoolPathPlaceholder: 'ydotool или /usr/bin/ydotool',
     },
   },
   picker: {

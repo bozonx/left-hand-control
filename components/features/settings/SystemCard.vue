@@ -13,6 +13,11 @@ const isLinuxWayland = computed(() => !!props.platform?.linux?.has_wayland)
 
 const textModeItems = computed(() => [
   {
+    value: 'libei' as LinuxWaylandTextMode,
+    label: t('settings.system.textModeLibei'),
+    description: t('settings.system.textModeLibeiHint'),
+  },
+  {
     value: 'keycode' as LinuxWaylandTextMode,
     label: t('settings.system.textModeKeycode'),
     description: t('settings.system.textModeKeycodeHint'),
@@ -22,12 +27,24 @@ const textModeItems = computed(() => [
     label: t('settings.system.textModeClipboard'),
     description: t('settings.system.textModeClipboardHint'),
   },
+  {
+    value: 'ydotool' as LinuxWaylandTextMode,
+    label: t('settings.system.textModeYdotool'),
+    description: t('settings.system.textModeYdotoolHint'),
+  },
 ])
 
 const textMode = computed({
-  get: () => config.value.settings.linuxWaylandTextMode ?? 'keycode',
+  get: () => config.value.settings.linuxWaylandTextMode ?? 'libei',
   set: (value: LinuxWaylandTextMode) => {
     config.value.settings.linuxWaylandTextMode = value
+  },
+})
+
+const ydotoolPath = computed({
+  get: () => config.value.settings.linuxYdotoolPath ?? '',
+  set: (value: string) => {
+    config.value.settings.linuxYdotoolPath = value
   },
 })
 </script>
@@ -53,6 +70,20 @@ const textMode = computed({
           :items="textModeItems"
           orientation="vertical"
           size="sm"
+        />
+      </UFormField>
+
+      <UFormField v-if="textMode === 'ydotool'">
+        <template #label>
+          <FieldLabel
+            :label="$t('settings.system.ydotoolPathLabel')"
+            :hint="$t('settings.system.ydotoolPathHint')"
+          />
+        </template>
+        <UInput
+          v-model="ydotoolPath"
+          :placeholder="$t('settings.system.ydotoolPathPlaceholder')"
+          class="w-full"
         />
       </UFormField>
     </div>
