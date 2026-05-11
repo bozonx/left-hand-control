@@ -168,7 +168,8 @@ export interface GameModeProcessMatcher {
 //   'clipboard' — always use wl-copy + Ctrl+V for every text action.
 //                 Use this if keycode injection produces wrong characters.
 //   'ydotool'   — run a ydotool-compatible executable (`ydotool type ...`).
-export type LinuxWaylandTextMode = 'libei' | 'keycode' | 'clipboard' | 'ydotool'
+//   'xdotool'   — run xdotool (`xdotool type --clearmodifiers ...`), X11/XWayland only.
+export type LinuxWaylandTextMode = 'libei' | 'keycode' | 'clipboard' | 'ydotool' | 'xdotool'
 
 export interface AppSettings {
   launchOnStartup: boolean
@@ -218,6 +219,9 @@ export interface AppSettings {
   // Linux/Wayland only. Optional path/name for the ydotool-compatible
   // executable used when linuxWaylandTextMode is 'ydotool'.
   linuxYdotoolPath?: string
+  // Linux/Wayland only. Optional path/name for the xdotool executable
+  // used when linuxWaylandTextMode is 'xdotool'.
+  linuxXdotoolPath?: string
 }
 
 // A layout preset: the subset of AppConfig that describes keyboard behaviour
@@ -446,6 +450,7 @@ export function createDefaultConfig(): AppConfig {
       },
       linuxWaylandTextMode: 'libei',
       linuxYdotoolPath: '',
+      linuxXdotoolPath: '',
     },
   }
 }

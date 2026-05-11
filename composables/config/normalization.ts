@@ -127,12 +127,16 @@ function normalizeSettings(
     merged.linuxWaylandTextMode !== 'libei' &&
     merged.linuxWaylandTextMode !== 'keycode' &&
     merged.linuxWaylandTextMode !== 'clipboard' &&
-    merged.linuxWaylandTextMode !== 'ydotool'
+    merged.linuxWaylandTextMode !== 'ydotool' &&
+    merged.linuxWaylandTextMode !== 'xdotool'
   ) {
     merged.linuxWaylandTextMode = undefined
   }
   if (typeof merged.linuxYdotoolPath !== 'string') {
     merged.linuxYdotoolPath = ''
+  }
+  if (typeof merged.linuxXdotoolPath !== 'string') {
+    merged.linuxXdotoolPath = ''
   }
   return merged
 }

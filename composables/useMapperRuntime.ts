@@ -77,6 +77,7 @@ export function useMapperRuntime(
       defaultMacroModifierDelayMs: cfg.settings.defaultMacroModifierDelayMs,
       linuxWaylandTextMode: cfg.settings.linuxWaylandTextMode ?? 'libei',
       linuxYdotoolPath: cfg.settings.linuxYdotoolPath ?? '',
+      linuxXdotoolPath: cfg.settings.linuxXdotoolPath ?? '',
       commandsTrusted: commandsTrusted(cfg),
     })
   }

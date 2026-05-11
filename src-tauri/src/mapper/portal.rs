@@ -247,34 +247,42 @@ enum TextBackend {
     Keycode,
     Clipboard,
     Ydotool,
+    Xdotool,
 }
 
 #[derive(Clone, Debug)]
 struct TextBackendConfig {
     backend: TextBackend,
     ydotool_path: Option<String>,
+    xdotool_path: Option<String>,
 }
 
 static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
     backend: TextBackend::Libei,
     ydotool_path: None,
+    xdotool_path: None,
 });
 static LIBEI_FALLBACK_LOGGED: AtomicBool = AtomicBool::new(false);
 
 /// Switch between text injection strategies.
-///   "libei" — default Wayland-native backend. Currently falls back to the
-///              RemoteDesktop keycode path while the EI transport is wired.
+///   "libei"     — default Wayland-native backend via XDG Desktop Portal EIS.
 ///   "clipboard" — use wl-copy + Ctrl+V for the whole string at once.
-///   "ydotool" — run a ydotool-compatible executable as `type <text>`.
-///   anything else — XKB keycode injection.
-pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>) {
+///   "ydotool"   — run a ydotool-compatible executable as `type <text>`.
+///   "xdotool"   — run xdotool as `type --clearmodifiers <text>` (X11/XWayland).
+///   anything else — XKB keycode injection via RemoteDesktop portal.
+pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>, xdotool_path: Option<&str>) {
     let backend = match mode {
         "libei" => TextBackend::Libei,
         "clipboard" => TextBackend::Clipboard,
         "ydotool" => TextBackend::Ydotool,
+        "xdotool" => TextBackend::Xdotool,
         _ => TextBackend::Keycode,
     };
     let ydotool_path = ydotool_path
+        .map(str::trim)
+        .filter(|path| !path.is_empty())
+        .map(ToOwned::to_owned);
+    let xdotool_path = xdotool_path
         .map(str::trim)
         .filter(|path| !path.is_empty())
         .map(ToOwned::to_owned);
@@ -282,6 +290,7 @@ pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>) {
         *cfg = TextBackendConfig {
             backend,
             ydotool_path,
+            xdotool_path,
         };
     }
     log::debug!("[portal] text backend: {:?}", backend);
@@ -313,10 +322,15 @@ pub fn type_text(text: &str) {
         .unwrap_or(TextBackendConfig {
             backend: TextBackend::Keycode,
             ydotool_path: None,
+            xdotool_path: None,
         });
     match cfg.backend {
         TextBackend::Ydotool => {
             type_text_ydotool(text, cfg.ydotool_path);
+            return;
+        }
+        TextBackend::Xdotool => {
+            type_text_xdotool(text, cfg.xdotool_path);
             return;
         }
         TextBackend::Libei => {
@@ -353,6 +367,28 @@ fn type_text_ydotool(text: &str, ydotool_path: Option<String>) {
         }) {
         Ok(_) => {}
         Err(e) => log::debug!("[ydotool] could not spawn worker: {e}"),
+    }
+}
+
+fn type_text_xdotool(text: &str, xdotool_path: Option<String>) {
+    let text = text.to_string();
+    let program = xdotool_path.unwrap_or_else(|| "xdotool".to_string());
+    match thread::Builder::new()
+        .name("lhc-xdotool".into())
+        .spawn(move || {
+            let status = std::process::Command::new(&program)
+                .arg("type")
+                .arg("--clearmodifiers")
+                .arg(&text)
+                .status();
+            match status {
+                Ok(status) if status.success() => {}
+                Ok(status) => log::debug!("[xdotool] {program:?} exited with {status}"),
+                Err(e) => log::debug!("[xdotool] failed to run {program:?}: {e}"),
+            }
+        }) {
+        Ok(_) => {}
+        Err(e) => log::debug!("[xdotool] could not spawn worker: {e}"),
     }
 }
 
@@ -610,11 +646,19 @@ impl LibeiBackend {
                 .write_all(text.as_bytes())
                 .map_err(|e| format!("write wl-copy stdin: {e}"))?;
         }
-        thread::spawn(move || {
-            let _ = child.wait();
-        });
+        // Wait synchronously so wl-copy registers clipboard ownership with the
+        // compositor before we fire Ctrl+V.
+        let _ = child.wait();
         thread::sleep(Duration::from_millis(50));
-        self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV)
+        // EI only supports keycode injection. Look up which evdev keycode produces
+        // 'v' in the current XKB layout. Falls back to physical key 47 (Latin V)
+        // which compositors typically honour for Ctrl+V even in non-Latin layouts.
+        let table = keymap_table();
+        let v_keycode = table
+            .get(&XKB_KEY_V_LOWER)
+            .map(|e| e.evdev)
+            .unwrap_or(KEY_V_EVDEV);
+        self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], v_keycode)
     }
 
     fn inject_keycode_combo(&mut self, mods: &[u32], key: u32) -> Result<(), String> {
@@ -799,7 +843,7 @@ fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
         .unwrap_or(TextBackend::Keycode);
     match backend {
         TextBackend::Clipboard => inject_full_text_via_clipboard(portal, session, text),
-        TextBackend::Libei | TextBackend::Keycode | TextBackend::Ydotool => {
+        TextBackend::Libei | TextBackend::Keycode | TextBackend::Ydotool | TextBackend::Xdotool => {
             inject_text_keycode(portal, session, text)
         }
     }
@@ -839,9 +883,9 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
     if let Some(mut stdin) = child.stdin.take() {
         let _ = stdin.write_all(text.as_bytes());
     }
-    thread::spawn(move || {
-        let _ = child.wait();
-    });
+    // Wait synchronously so wl-copy registers clipboard ownership with the
+    // compositor before we fire Ctrl+V.
+    let _ = child.wait();
 
     thread::sleep(std::time::Duration::from_millis(50));
     if !inject_paste(portal, session, &empty) {

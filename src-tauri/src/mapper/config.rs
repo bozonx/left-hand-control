@@ -151,6 +151,8 @@ pub struct Settings {
     pub linux_wayland_text_mode: Option<String>,
     #[serde(default)]
     pub linux_ydotool_path: Option<String>,
+    #[serde(default)]
+    pub linux_xdotool_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -207,6 +209,7 @@ impl Default for Settings {
             command_trust: HashMap::new(),
             linux_wayland_text_mode: Some("libei".into()),
             linux_ydotool_path: None,
+            linux_xdotool_path: None,
         }
     }
 }

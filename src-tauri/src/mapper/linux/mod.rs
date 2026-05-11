@@ -85,6 +85,7 @@ pub fn spawn(
             .as_deref()
             .unwrap_or("libei"),
         cfg.settings.linux_ydotool_path.as_deref(),
+        cfg.settings.linux_xdotool_path.as_deref(),
     );
     #[cfg(debug_assertions)]
     {
@@ -253,6 +254,7 @@ fn run_loop<D: LoopDriver>(
                                 .as_deref()
                                 .unwrap_or("libei"),
                             next_cfg.settings.linux_ydotool_path.as_deref(),
+                            next_cfg.settings.linux_xdotool_path.as_deref(),
                         );
                         engine.shutdown(&mut out_buf);
                         flush_out(&mut virt, &mut out_buf)?;

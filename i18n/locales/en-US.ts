@@ -764,6 +764,13 @@ export default {
       ydotoolPathHint:
         'Leave empty to use ydotool from PATH, or set an absolute path/custom wrapper.',
       ydotoolPathPlaceholder: 'ydotool or /usr/bin/ydotool',
+      textModeXdotool: 'xdotool (X11/XWayland)',
+      textModeXdotoolHint:
+        'Runs xdotool as `type --clearmodifiers <text>`. Works on X11 and XWayland sessions. No daemon required.',
+      xdotoolPathLabel: 'xdotool executable',
+      xdotoolPathHint:
+        'Leave empty to use xdotool from PATH, or set an absolute path.',
+      xdotoolPathPlaceholder: 'xdotool or /usr/bin/xdotool',
     },
   },
   picker: {

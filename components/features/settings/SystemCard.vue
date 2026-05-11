@@ -32,6 +32,11 @@ const textModeItems = computed(() => [
     label: t('settings.system.textModeYdotool'),
     description: t('settings.system.textModeYdotoolHint'),
   },
+  {
+    value: 'xdotool' as LinuxWaylandTextMode,
+    label: t('settings.system.textModeXdotool'),
+    description: t('settings.system.textModeXdotoolHint'),
+  },
 ])
 
 const textMode = computed({
@@ -45,6 +50,13 @@ const ydotoolPath = computed({
   get: () => config.value.settings.linuxYdotoolPath ?? '',
   set: (value: string) => {
     config.value.settings.linuxYdotoolPath = value
+  },
+})
+
+const xdotoolPath = computed({
+  get: () => config.value.settings.linuxXdotoolPath ?? '',
+  set: (value: string) => {
+    config.value.settings.linuxXdotoolPath = value
   },
 })
 </script>
@@ -83,6 +95,20 @@ const ydotoolPath = computed({
         <UInput
           v-model="ydotoolPath"
           :placeholder="$t('settings.system.ydotoolPathPlaceholder')"
+          class="w-full"
+        />
+      </UFormField>
+
+      <UFormField v-if="textMode === 'xdotool'">
+        <template #label>
+          <FieldLabel
+            :label="$t('settings.system.xdotoolPathLabel')"
+            :hint="$t('settings.system.xdotoolPathHint')"
+          />
+        </template>
+        <UInput
+          v-model="xdotoolPath"
+          :placeholder="$t('settings.system.xdotoolPathPlaceholder')"
           class="w-full"
         />
       </UFormField>
