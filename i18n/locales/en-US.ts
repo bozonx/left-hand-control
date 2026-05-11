@@ -759,7 +759,7 @@ export default {
         'Reads the current keyboard layout and injects characters as keycodes with the correct modifiers. Does not touch the clipboard.',
       textModeClipboard: 'Clipboard (via wl-copy)',
       textModeClipboardHint:
-        'Copies the entire text to clipboard using wl-copy and pastes with Ctrl+V. More reliable across layouts, but briefly replaces clipboard contents.',
+        'Copies text via wl-copy and pastes with Ctrl+V through the RemoteDesktop portal. Known limitation: Ctrl+V may not fire on KDE with a non-Latin layout active (use libei + clipboard fallback instead).',
       textModeYdotool: 'ydotool-compatible',
       textModeYdotoolHint:
         'Runs a ydotool-compatible executable as `type <text>`. Requires ydotoold and access to /dev/uinput.',

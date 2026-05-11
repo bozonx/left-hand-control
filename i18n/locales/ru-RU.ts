@@ -771,7 +771,7 @@ export default {
         'Считывает текущую клавиатурную раскладку и вводит символы через коды клавиш с нужными модификаторами. Не трогает буфер обмена.',
       textModeClipboard: 'Буфер обмена (через wl-copy)',
       textModeClipboardHint:
-        'Копирует весь текст в буфер обмена через wl-copy и вставляет по Ctrl+V. Работает надёжнее при любых раскладках, но временно заменяет содержимое буфера обмена.',
+        'Копирует текст через wl-copy и вставляет по Ctrl+V через RemoteDesktop portal. Известное ограничение: Ctrl+V может не срабатывать в KDE при активной нелатинской раскладке — используйте тогда libei + clipboard fallback.',
       textModeYdotool: 'ydotool-compatible',
       textModeYdotoolHint:
         'Запускает ydotool-совместимый исполняемый файл как `type <text>`. Требуется ydotoold и доступ к /dev/uinput.',
