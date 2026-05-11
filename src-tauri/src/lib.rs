@@ -1,4 +1,6 @@
 use crate::gamemode::get_gamemode_status;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::{Emitter, Listener, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 mod active_window;
@@ -9,6 +11,9 @@ mod platform;
 mod storage;
 mod tray;
 mod window_state;
+
+static LAST_QUICK_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
+static LAST_EMOJI_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
 
 fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
     storage::resolve_storage_paths(app)
@@ -260,6 +265,93 @@ fn hide_emoji_menu(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+fn remember_menu_target(label: &str) {
+    let target = active_window::detect_active_window_now();
+    let slot = match label {
+        "quick-menu" => Some(&LAST_QUICK_MENU_TARGET),
+        "emoji-menu" => Some(&LAST_EMOJI_MENU_TARGET),
+        _ => None,
+    };
+    if let Some(slot) = slot {
+        if let Ok(mut guard) = slot.lock() {
+            *guard = target;
+        }
+    }
+}
+
+fn remembered_menu_target(label: &str) -> Option<active_window::ActiveWindow> {
+    let slot = match label {
+        "quick-menu" => Some(&LAST_QUICK_MENU_TARGET),
+        "emoji-menu" => Some(&LAST_EMOJI_MENU_TARGET),
+        _ => None,
+    }?;
+    slot.lock().ok().and_then(|guard| guard.clone())
+}
+
+fn is_menu_active_window(window: &active_window::ActiveWindow) -> bool {
+    let title = window.title.trim();
+    title == "Quick Actions" || title == "Emoji"
+}
+
+fn can_detect_focus_after_menu_hide() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{Desktop, SessionType};
+        let session = crate::platform::linux::detect();
+        return matches!(
+            (session.desktop, session.session_type),
+            (Desktop::Hyprland, _)
+                | (Desktop::Kde, SessionType::Wayland)
+                | (_, SessionType::X11)
+        );
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        false
+    }
+}
+
+fn wait_for_post_menu_focus(label: &str) {
+    if !can_detect_focus_after_menu_hide() {
+        std::thread::sleep(Duration::from_millis(40));
+        return;
+    }
+
+    let target = remembered_menu_target(label);
+    let deadline = Instant::now() + Duration::from_millis(250);
+    while Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(10));
+
+        let current = active_window::detect_active_window_now();
+        match (&target, current) {
+            (Some(expected), Some(current)) if current == *expected => return,
+            (_, Some(current)) if !is_menu_active_window(&current) => return,
+            _ => {}
+        }
+    }
+}
+
+fn hide_menu_window(app: &tauri::AppHandle, label: &str) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window(label) {
+        window
+            .hide()
+            .map_err(|e| format!("hide {label}: {e}"))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn commit_menu_action(app: tauri::AppHandle, menu: String, action: String) -> Result<(), String> {
+    let label = match menu.as_str() {
+        "quick-menu" | "emoji-menu" => menu.as_str(),
+        other => return Err(format!("unknown menu window: {other}")),
+    };
+
+    hide_menu_window(&app, label)?;
+    wait_for_post_menu_focus(label);
+    mapper::execute_action(action)
+}
+
 #[tauri::command]
 fn insert_text(text: String) -> Result<(), String> {
     let action = format!("text:{}", text);
@@ -268,6 +360,7 @@ fn insert_text(text: String) -> Result<(), String> {
 }
 
 fn show_quick_menu_window(app: &tauri::AppHandle, page: u8) -> Result<(), String> {
+    remember_menu_target("quick-menu");
     let window = if let Some(window) = app.get_webview_window("quick-menu") {
         window
     } else {
@@ -303,6 +396,7 @@ fn show_quick_menu_window(app: &tauri::AppHandle, page: u8) -> Result<(), String
 }
 
 fn show_emoji_menu_window(app: &tauri::AppHandle, page: u8) -> Result<(), String> {
+    remember_menu_target("emoji-menu");
     let window = if let Some(window) = app.get_webview_window("emoji-menu") {
         window
     } else {
@@ -434,6 +528,7 @@ pub fn run() {
             tray::toggle_main_window_maximized_command,
             quit_application,
             execute_action,
+            commit_menu_action,
             insert_text,
             hide_quick_menu,
             hide_emoji_menu,

@@ -35,7 +35,6 @@ const pageName = computed(
 const {
     pageIndex,
     scrollEl,
-    wait,
     setPage,
     setPageRef,
     onScroll,
@@ -142,10 +141,8 @@ onBeforeUnmount(() => {
 })
 
 async function runAction(action: string) {
-    await closeMenu()
-    await wait(0)
     try {
-        await invoke('execute_action', { action })
+        await invoke('commit_menu_action', { menu: 'quick-menu', action })
     } catch (e) {
         logger.error('Failed to execute action', e)
     }

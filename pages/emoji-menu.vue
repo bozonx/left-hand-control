@@ -28,7 +28,6 @@ const page = computed(
 const {
     pageIndex,
     scrollEl,
-    wait,
     setPage,
     setPageRef,
     onScroll,
@@ -82,10 +81,11 @@ async function prepareMenu(payload: unknown, clearPending = true) {
 
 async function applyEmoji(emoji: string | undefined) {
     if (!emoji) return
-    await closeMenu()
-    await wait(0)
     try {
-        await invoke('insert_text', { text: emoji })
+        await invoke('commit_menu_action', {
+            menu: 'emoji-menu',
+            action: `text:${emoji}`,
+        })
     } catch (e) {
         logger.error('Failed to insert emoji', e)
         toast.add({

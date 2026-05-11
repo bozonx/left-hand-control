@@ -250,9 +250,6 @@ struct TextBackendConfig {
     ydotool_path: Option<String>,
 }
 
-/// When true, all text is injected via wl-copy + Ctrl+V instead of
-/// per-character keycode injection. Configurable via `set_text_backend`.
-static TEXT_MODE_CLIPBOARD: AtomicBool = AtomicBool::new(false);
 static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
     backend: TextBackend::Libei,
     ydotool_path: None,
@@ -272,7 +269,6 @@ pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>) {
         "ydotool" => TextBackend::Ydotool,
         _ => TextBackend::Keycode,
     };
-    TEXT_MODE_CLIPBOARD.store(backend == TextBackend::Clipboard, Ordering::Relaxed);
     let ydotool_path = ydotool_path
         .map(str::trim)
         .filter(|path| !path.is_empty())
@@ -326,14 +322,8 @@ pub fn type_text(text: &str) {
                     "[portal] libei text backend is selected; native EI transport is not wired yet, falling back to RemoteDesktop keycode injection"
                 );
             }
-            TEXT_MODE_CLIPBOARD.store(false, Ordering::Relaxed);
         }
-        TextBackend::Clipboard => {
-            TEXT_MODE_CLIPBOARD.store(true, Ordering::Relaxed);
-        }
-        TextBackend::Keycode => {
-            TEXT_MODE_CLIPBOARD.store(false, Ordering::Relaxed);
-        }
+        TextBackend::Clipboard | TextBackend::Keycode => {}
     }
     type_text_portal(text);
 }
@@ -433,11 +423,16 @@ fn worker(rx: Receiver<Cmd>) {
 }
 
 fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    if TEXT_MODE_CLIPBOARD.load(Ordering::Relaxed) {
-        inject_full_text_via_clipboard(portal, session, text);
-        return;
+    let backend = TEXT_BACKEND
+        .lock()
+        .map(|guard| guard.backend)
+        .unwrap_or(TextBackend::Keycode);
+    match backend {
+        TextBackend::Clipboard => inject_full_text_via_clipboard(portal, session, text),
+        TextBackend::Libei | TextBackend::Keycode | TextBackend::Ydotool => {
+            inject_text_keycode(portal, session, text)
+        }
     }
-    inject_text_keycode(portal, session, text);
 }
 
 fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
@@ -451,9 +446,7 @@ fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
                 continue;
             }
         }
-        if !inject_via_clipboard(portal, session, &empty, ch) {
-            inject_keysym(portal, session, &empty, keysym, ch);
-        }
+        inject_keysym(portal, session, &empty, keysym, ch);
     }
 }
 
@@ -562,36 +555,6 @@ fn inject_keycode_combo(
         );
     }
     ok
-}
-
-fn inject_via_clipboard(
-    portal: &Proxy,
-    session: &OwnedObjectPath,
-    empty: &HashMap<String, Value>,
-    ch: char,
-) -> bool {
-    use std::io::Write as _;
-    use std::process::{Command, Stdio};
-
-    let mut buf = [0u8; 4];
-    let s = ch.encode_utf8(&mut buf);
-
-    let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
-        Ok(c) => c,
-        Err(_) => return false,
-    };
-    if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(s.as_bytes());
-    }
-    // Reap the child when wl-copy eventually exits (when clipboard is taken over).
-    thread::spawn(move || {
-        let _ = child.wait();
-    });
-
-    // Give the compositor time to register the new clipboard owner.
-    thread::sleep(std::time::Duration::from_millis(50));
-
-    inject_paste(portal, session, empty)
 }
 
 fn inject_keysym(

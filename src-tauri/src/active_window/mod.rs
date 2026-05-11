@@ -82,6 +82,14 @@ fn detect_active_window() -> Option<ActiveWindow> {
     }
 }
 
+pub fn detect_active_window_now() -> Option<ActiveWindow> {
+    let current = detect_active_window();
+    if let Ok(mut guard) = CACHED.lock() {
+        *guard = current.clone();
+    }
+    current
+}
+
 #[tauri::command]
 pub fn get_active_window() -> Option<ActiveWindow> {
     cached_active_window()

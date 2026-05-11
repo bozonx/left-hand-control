@@ -753,7 +753,7 @@ export default {
         'Uses the Wayland emulated-input path when available. Falls back to the RemoteDesktop portal keycode path until native libei support is available on this desktop.',
       textModeKeycode: 'XKB keycode',
       textModeKeycodeHint:
-        'Reads the current keyboard layout and injects characters as keycodes with the correct modifiers. Falls back to clipboard for characters not present in the layout.',
+        'Reads the current keyboard layout and injects characters as keycodes with the correct modifiers. Does not touch the clipboard.',
       textModeClipboard: 'Clipboard (via wl-copy)',
       textModeClipboardHint:
         'Copies the entire text to clipboard using wl-copy and pastes with Ctrl+V. More reliable across layouts, but briefly replaces clipboard contents.',
