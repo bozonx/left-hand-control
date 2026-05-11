@@ -95,8 +95,8 @@ layers:
       BracketRight: null
       Backslash: null
 
-      KeyA: 'text:$'
-      KeyS: 'text:#'
+      KeyA: 'text:#'
+      KeyS: 'text::'
       KeyD: 'text:!'
       KeyF: 'text:?'
       KeyG: 'text:&'
@@ -107,11 +107,11 @@ layers:
       Semicolon: 'text:+'
       Quote: 'text:%'
 
-      KeyZ: 'text::'
+      KeyZ: 'text:/'
       KeyX: 'text:`'
       KeyC: "text:'"
       KeyV: 'text:"'
-      KeyB: 'text:/'
+      KeyB: 'text:$'
       KeyN: Digit0
       KeyM: Digit1
       Comma: Digit2
@@ -134,8 +134,8 @@ layers:
       BracketRight: null
       Backslash: null
 
-      KeyA: 'text:€'
-      KeyS: 'text:№'
+      KeyA: 'text:№'
+      KeyS: 'text:;'
       KeyD: 'text:‼️'
       KeyF: 'text:❓'
       KeyG: 'text:❌'
@@ -145,17 +145,19 @@ layers:
       Semicolon: F11
       Quote: 'text:☝️'
 
-      KeyZ: 'text:;'
+      KeyZ: "text:\\"
       KeyX: 'text:~'
       KeyC: 'text:⏩'
       KeyV: 'text:✅'
-      KeyB: "text:\\"
+      KeyB: 'text:€'
       KeyM: F1
       Comma: F2
       Period: F3
       Slash: F10
   - id: win
     keys:
+      F4: F4
+
       Tab: Tab
       CapsLock: sys:walkThroughWindowsAlternative
       ShiftLeft: sys:walkThroughWindowsCurrentApp
@@ -211,6 +213,7 @@ layers:
       #Period: sys:volumeUp
       # Slash: sys:muteAudio
       Slash: VolumeMute
+      ShiftRight: sys:muteMicrophone
   - id: space
     keys:
       Tab: sys:switchLayout1

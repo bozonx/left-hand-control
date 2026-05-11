@@ -239,6 +239,7 @@ export interface QuickAction {
   name: string
   action: string
   icon?: string
+  nameCustomized?: boolean
 }
 
 export interface QuickActionPage {

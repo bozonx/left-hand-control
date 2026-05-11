@@ -233,15 +233,20 @@ function openEmptyCell(index: number) {
     }
 }
 
+function onNameInput(value: string) {
+    if (selectedIndex.value === null || !config.value.quickActions) return
+    const action = config.value.quickActions[selectedIndex.value]
+    if (!action) return
+    action.name = value
+    action.nameCustomized = true
+}
+
 function onPickerApply(value: string) {
     if (pickerState.value.index !== null) {
         if (config.value.quickActions) {
             const action = config.value.quickActions[pickerState.value.index]
             action.action = value
-            if (
-                !action.name.trim() ||
-                action.name === t('quickActions.defaultName')
-            ) {
+            if (!action.nameCustomized) {
                 action.name = actionNameFor(value)
             }
         }
@@ -543,9 +548,10 @@ onBeforeUnmount(() => {
                                     />
                                 </template>
                                 <UInput
-                                    v-model="selectedAction.name"
+                                    :model-value="selectedAction.name"
                                     :placeholder="$t('quickActions.namePh')"
                                     class="w-full"
+                                    @update:model-value="onNameInput"
                                 />
                             </UFormField>
 
