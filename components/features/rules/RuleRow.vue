@@ -180,22 +180,20 @@ function updateHoldAction(value: string | null) {
           </div>
         </UFormField>
 
-        <UFormField>
-          <template #label>
-            <span class="flex w-full items-center justify-between gap-2">
-              <FieldLabel
-                :label="$t('rules.layerLabel')"
-                :hint="$t('rules.layerHint')"
-                hint-visible-on="group-hover-rule"
-              />
-              <ULink
-                class="ml-auto shrink-0 text-right text-xs text-(--ui-text-muted) opacity-0 group-hover/rule:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
-                @click="$emit('createLayer', rule.id)"
-              >
-                {{ $t('rules.createLayer') }}
-              </ULink>
-            </span>
-          </template>
+        <div class="min-w-0 space-y-1.5">
+          <div class="flex min-h-5 w-full items-center justify-between gap-2">
+            <FieldLabel
+              :label="$t('rules.layerLabel')"
+              :hint="$t('rules.layerHint')"
+              hint-visible-on="group-hover-rule"
+            />
+            <ULink
+              class="shrink-0 text-right text-xs text-(--ui-text-muted) opacity-0 group-hover/rule:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
+              @click="$emit('createLayer', rule.id)"
+            >
+              {{ $t('rules.createLayer') }}
+            </ULink>
+          </div>
           <ResettableSelectMenu
             :model-value="rule.layerId"
             :items="layerOptions"
@@ -208,7 +206,7 @@ function updateHoldAction(value: string | null) {
             ghost
             @update:model-value="(v: string | number | null | undefined) => { rule.layerId = String(v ?? '') }"
           />
-        </UFormField>
+        </div>
       </div>
 
       <div
