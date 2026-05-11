@@ -209,22 +209,24 @@ function updateHoldAction(value: string | null) {
                     </div>
                 </UFormField>
 
-                <div class="min-w-0 space-y-1.5">
-                    <div
-                        class="flex min-h-5 w-full items-center justify-between gap-2"
-                    >
-                        <FieldLabel
-                            :label="$t('rules.layerLabel')"
-                            :hint="$t('rules.layerHint')"
-                            hint-visible-on="group-hover-rule"
-                        />
-                        <ULink
-                            class="shrink-0 text-right text-xs text-(--ui-text-muted) opacity-0 group-hover/rule:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
-                            @click="$emit('createLayer', rule.id)"
+                <UFormField class="min-w-0" :ui="{ label: 'w-full' }">
+                    <template #label>
+                        <div
+                            class="flex w-full items-center justify-between gap-2"
                         >
-                            {{ $t('rules.createLayer') }}
-                        </ULink>
-                    </div>
+                            <FieldLabel
+                                :label="$t('rules.layerLabel')"
+                                :hint="$t('rules.layerHint')"
+                                hint-visible-on="group-hover-rule"
+                            />
+                            <ULink
+                                class="shrink-0 text-right text-xs text-(--ui-text-muted) opacity-0 group-hover/rule:opacity-100 hover:text-(--ui-primary) transition-all duration-200 cursor-pointer"
+                                @click="$emit('createLayer', rule.id)"
+                            >
+                                {{ $t('rules.createLayer') }}
+                            </ULink>
+                        </div>
+                    </template>
                     <ResettableSelectMenu
                         :model-value="rule.layerId"
                         :items="layerOptions"
@@ -241,7 +243,7 @@ function updateHoldAction(value: string | null) {
                             }
                         "
                     />
-                </div>
+                </UFormField>
             </div>
 
             <div v-if="issues?.length" class="flex flex-wrap gap-1.5">
