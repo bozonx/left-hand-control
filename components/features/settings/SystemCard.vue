@@ -18,6 +18,11 @@ const textModeItems = computed(() => [
     description: t('settings.system.textModeLibeiHint'),
   },
   {
+    value: 'libei-pure' as LinuxWaylandTextMode,
+    label: t('settings.system.textModeLibeiPure'),
+    description: t('settings.system.textModeLibeiPureHint'),
+  },
+  {
     value: 'keycode' as LinuxWaylandTextMode,
     label: t('settings.system.textModeKeycode'),
     description: t('settings.system.textModeKeycodeHint'),

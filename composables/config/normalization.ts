@@ -125,6 +125,7 @@ function normalizeSettings(
   }
   if (
     merged.linuxWaylandTextMode !== 'libei' &&
+    merged.linuxWaylandTextMode !== 'libei-pure' &&
     merged.linuxWaylandTextMode !== 'keycode' &&
     merged.linuxWaylandTextMode !== 'clipboard' &&
     merged.linuxWaylandTextMode !== 'ydotool' &&

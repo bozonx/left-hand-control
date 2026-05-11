@@ -238,12 +238,13 @@ fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
 // --- Public API ---------------------------------------------------------
 
 enum Cmd {
-    Type(String),
+    Type(String, bool), // (text, clipboard_fallback)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum TextBackend {
-    Libei,
+    Libei,     // libei + clipboard fallback for chars not in keymap (default)
+    LibeiPure, // libei only, no clipboard fallback
     Keycode,
     Clipboard,
     Ydotool,
@@ -273,6 +274,7 @@ static LIBEI_FALLBACK_LOGGED: AtomicBool = AtomicBool::new(false);
 pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>, xdotool_path: Option<&str>) {
     let backend = match mode {
         "libei" => TextBackend::Libei,
+        "libei-pure" => TextBackend::LibeiPure,
         "clipboard" => TextBackend::Clipboard,
         "ydotool" => TextBackend::Ydotool,
         "xdotool" => TextBackend::Xdotool,
@@ -333,13 +335,14 @@ pub fn type_text(text: &str) {
             type_text_xdotool(text, cfg.xdotool_path);
             return;
         }
-        TextBackend::Libei => {
+        TextBackend::Libei | TextBackend::LibeiPure => {
             if !LIBEI_FALLBACK_LOGGED.swap(true, Ordering::Relaxed) {
                 log::debug!(
                     "[portal] libei text backend is selected; using RemoteDesktop.ConnectToEIS when available"
                 );
             }
-            if type_text_libei(text) {
+            let clipboard_fallback = matches!(cfg.backend, TextBackend::Libei);
+            if type_text_libei(text, clipboard_fallback) {
                 return;
             }
             log::debug!("[portal] libei backend unavailable; falling back to RemoteDesktop keycode injection");
@@ -399,7 +402,7 @@ fn type_text_portal(text: &str) {
     };
 
     if let Some(tx) = slot.as_ref() {
-        if tx.send(Cmd::Type(text.to_string())).is_ok() {
+        if tx.send(Cmd::Type(text.to_string(), false)).is_ok() {
             return;
         }
         log::debug!("[portal] worker gone; retrying backend init");
@@ -410,7 +413,7 @@ fn type_text_portal(text: &str) {
         log::debug!("[portal] literal {:?} dropped (worker spawn failed)", text);
         return;
     };
-    if tx.send(Cmd::Type(text.to_string())).is_err() {
+    if tx.send(Cmd::Type(text.to_string(), false)).is_err() {
         log::debug!(
             "[portal] literal {:?} dropped (worker exited during init)",
             text
@@ -420,14 +423,15 @@ fn type_text_portal(text: &str) {
     *slot = Some(tx);
 }
 
-fn type_text_libei(text: &str) -> bool {
+fn type_text_libei(text: &str, clipboard_fallback: bool) -> bool {
     let Ok(mut slot) = LIBEI_TX.lock() else {
         log::debug!("[libei] literal {:?} dropped (worker lock poisoned)", text);
         return false;
     };
 
+    let cmd = Cmd::Type(text.to_string(), clipboard_fallback);
     if let Some(tx) = slot.as_ref() {
-        if tx.send(Cmd::Type(text.to_string())).is_ok() {
+        if tx.send(cmd).is_ok() {
             return true;
         }
         log::debug!("[libei] worker gone; retrying backend init");
@@ -437,7 +441,8 @@ fn type_text_libei(text: &str) -> bool {
     let Some(tx) = start_libei_singleton() else {
         return false;
     };
-    if tx.send(Cmd::Type(text.to_string())).is_err() {
+    let cmd = Cmd::Type(text.to_string(), clipboard_fallback);
+    if tx.send(cmd).is_err() {
         log::debug!(
             "[libei] literal {:?} dropped (worker exited during init)",
             text
@@ -511,7 +516,7 @@ fn portal_worker(rx: Receiver<Cmd>) {
 
     while let Ok(cmd) = rx.recv() {
         match cmd {
-            Cmd::Type(text) => inject_text(&portal, &session_handle, &text),
+            Cmd::Type(text, _) => inject_text(&portal, &session_handle, &text),
         }
     }
 
@@ -533,8 +538,8 @@ fn libei_worker(rx: Receiver<Cmd>, ready_tx: mpsc::SyncSender<Result<(), String>
 
     while let Ok(cmd) = rx.recv() {
         match cmd {
-            Cmd::Type(text) => {
-                if let Err(e) = backend.type_text(&text) {
+            Cmd::Type(text, clipboard_fallback) => {
+                if let Err(e) = backend.type_text(&text, clipboard_fallback) {
                     log::debug!("[libei] text injection failed: {e}");
                     break;
                 }
@@ -609,28 +614,28 @@ impl LibeiBackend {
         Ok(backend)
     }
 
-    fn type_text(&mut self, text: &str) -> Result<(), String> {
+    fn type_text(&mut self, text: &str, clipboard_fallback: bool) -> Result<(), String> {
         self.pump_events()?;
         if !self.has_keyboard() {
             self.wait_for_keyboard(Duration::from_secs(2))?;
         }
         let table = keymap_table();
-        if text
+        let has_missing = text
             .chars()
-            .any(|ch| !table.contains_key(&unsafe { xkb_utf32_to_keysym(ch as u32) }))
-        {
-            self.type_text_via_clipboard(text)
-        } else {
-            for ch in text.chars() {
-                let keysym = unsafe { xkb_utf32_to_keysym(ch as u32) };
-                let entry = table
-                    .get(&keysym)
-                    .ok_or_else(|| format!("no keycode for {ch:?}"))?;
-                self.inject_keycode_combo(level_to_mods(entry.level), entry.evdev)?;
-            }
-            self.context.flush().map_err(|e| format!("EI flush: {e}"))?;
-            Ok(())
+            .any(|ch| !table.contains_key(&unsafe { xkb_utf32_to_keysym(ch as u32) }));
+        if has_missing && clipboard_fallback {
+            return self.type_text_via_clipboard(text);
         }
+        for ch in text.chars() {
+            let keysym = unsafe { xkb_utf32_to_keysym(ch as u32) };
+            let Some(entry) = table.get(&keysym) else {
+                log::debug!("[libei] no keycode for {ch:?}, skipping");
+                continue;
+            };
+            self.inject_keycode_combo(level_to_mods(entry.level), entry.evdev)?;
+        }
+        self.context.flush().map_err(|e| format!("EI flush: {e}"))?;
+        Ok(())
     }
 
     fn type_text_via_clipboard(&mut self, text: &str) -> Result<(), String> {
@@ -843,9 +848,11 @@ fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
         .unwrap_or(TextBackend::Keycode);
     match backend {
         TextBackend::Clipboard => inject_full_text_via_clipboard(portal, session, text),
-        TextBackend::Libei | TextBackend::Keycode | TextBackend::Ydotool | TextBackend::Xdotool => {
-            inject_text_keycode(portal, session, text)
-        }
+        TextBackend::Libei
+        | TextBackend::LibeiPure
+        | TextBackend::Keycode
+        | TextBackend::Ydotool
+        | TextBackend::Xdotool => inject_text_keycode(portal, session, text),
     }
 }
 
@@ -893,40 +900,32 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
     }
 }
 
-/// Inject Ctrl+V to paste clipboard content, layout-independently.
+/// Inject Ctrl+V to paste clipboard content.
 ///
-/// Ctrl is sent via keycode (modifier keys are not layout-sensitive).
-/// V is sent via keysym (XKB_KEY_v = 0x76) so the compositor sees the
-/// Latin 'v' keysym regardless of the active layout — pressing evdev
-/// keycode 47 in a Russian layout would produce 'м', not 'v'.
+/// Both Ctrl and V are injected via keycodes (not keysyms).  KDE Plasma 6.x
+/// matches keyboard shortcuts by physical key position (scancode / evdev
+/// keycode), so keycode 47 triggers Ctrl+V paste even when a non-Latin
+/// layout is active — the compositor recognises the shortcut before
+/// translating the keycode through the active layout group.
+///
+/// The previous keysym-based approach (NotifyKeyboardKeysym for V) was
+/// silently dropped by KDE when no key in the active layout maps to the
+/// XK_v keysym (e.g. Russian layout), causing paste to never fire.
 fn inject_paste(portal: &Proxy, session: &OwnedObjectPath, empty: &HashMap<String, Value>) -> bool {
-    if let Err(e) = portal.call_method(
-        "NotifyKeyboardKeycode",
-        &(session, empty, KEY_LEFTCTRL_EVDEV, STATE_PRESSED),
-    ) {
-        log::debug!("[portal] paste: Ctrl press failed: {e}");
-        return false;
+    for (keycode, state, label) in [
+        (KEY_LEFTCTRL_EVDEV, STATE_PRESSED, "Ctrl press"),
+        (KEY_V_EVDEV, STATE_PRESSED, "V press"),
+        (KEY_V_EVDEV, STATE_RELEASED, "V release"),
+        (KEY_LEFTCTRL_EVDEV, STATE_RELEASED, "Ctrl release"),
+    ] {
+        if let Err(e) =
+            portal.call_method("NotifyKeyboardKeycode", &(session, empty, keycode, state))
+        {
+            log::debug!("[portal] paste: {label} failed: {e}");
+            return false;
+        }
     }
-    let v_ok = portal
-        .call_method(
-            "NotifyKeyboardKeysym",
-            &(session, empty, XKB_KEY_V_LOWER, STATE_PRESSED),
-        )
-        .is_ok()
-        && portal
-            .call_method(
-                "NotifyKeyboardKeysym",
-                &(session, empty, XKB_KEY_V_LOWER, STATE_RELEASED),
-            )
-            .is_ok();
-    if !v_ok {
-        log::debug!("[portal] paste: V keysym injection failed");
-    }
-    let _ = portal.call_method(
-        "NotifyKeyboardKeycode",
-        &(session, empty, KEY_LEFTCTRL_EVDEV, STATE_RELEASED),
-    );
-    v_ok
+    true
 }
 
 fn inject_keycode_combo(

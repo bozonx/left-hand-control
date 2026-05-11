@@ -168,8 +168,15 @@ export interface GameModeProcessMatcher {
 //   'clipboard' — always use wl-copy + Ctrl+V for every text action.
 //                 Use this if keycode injection produces wrong characters.
 //   'ydotool'   — run a ydotool-compatible executable (`ydotool type ...`).
+//   'libei-pure' — libei only, no clipboard fallback; skips chars not in the active keymap.
 //   'xdotool'   — run xdotool (`xdotool type --clearmodifiers ...`), X11/XWayland only.
-export type LinuxWaylandTextMode = 'libei' | 'keycode' | 'clipboard' | 'ydotool' | 'xdotool'
+export type LinuxWaylandTextMode =
+  | 'libei'
+  | 'libei-pure'
+  | 'keycode'
+  | 'clipboard'
+  | 'ydotool'
+  | 'xdotool'
 
 export interface AppSettings {
   launchOnStartup: boolean

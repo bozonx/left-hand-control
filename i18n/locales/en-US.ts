@@ -748,9 +748,12 @@ export default {
       textModeLabel: 'Text injection method (Linux/Wayland)',
       textModeHint:
         'Controls how text: actions are sent. If characters come out wrong, for example with a non-Latin layout active, try the clipboard method.',
-      textModeLibei: 'libei (default)',
+      textModeLibei: 'libei + clipboard fallback (default)',
       textModeLibeiHint:
-        'Uses the Wayland emulated-input path when available. Falls back to the RemoteDesktop portal keycode path until native libei support is available on this desktop.',
+        'Uses libei (EI protocol) for keycode injection. If any character is not in the current keyboard layout, the entire text is sent via clipboard (wl-copy + Ctrl+V).',
+      textModeLibeiPure: 'libei (pure)',
+      textModeLibeiPureHint:
+        'Uses libei for keycode injection only. Characters not present in the active layout are skipped silently. Use this if you want libei without touching the clipboard.',
       textModeKeycode: 'XKB keycode',
       textModeKeycodeHint:
         'Reads the current keyboard layout and injects characters as keycodes with the correct modifiers. Does not touch the clipboard.',
