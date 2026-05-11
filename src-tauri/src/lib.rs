@@ -10,7 +10,6 @@ mod mapper;
 mod platform;
 mod storage;
 mod tray;
-mod window_state;
 
 static LAST_QUICK_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
 static LAST_EMOJI_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
@@ -238,7 +237,6 @@ fn get_platform_info() -> platform::PlatformInfo {
 
 #[tauri::command]
 fn quit_application(app: tauri::AppHandle) {
-    window_state::save(&app);
     let _ = mapper::stop();
     app.exit(0);
 }
@@ -469,7 +467,6 @@ pub fn run() {
             listen_menu_pages(app, "show_quick_menu", "quick-menu", show_quick_menu_window);
             listen_menu_pages(app, "show_emoji_menu", "emoji-menu", show_emoji_menu_window);
             if let Some(window) = app.get_webview_window("main") {
-                window_state::restore(&window);
                 let _ = window.show();
                 let _ = window.set_focus();
             }
@@ -487,11 +484,6 @@ pub fn run() {
             WindowEvent::Focused(false) => {
                 if window.label() == "quick-menu" || window.label() == "emoji-menu" {
                     let _ = window.hide();
-                }
-            }
-            WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
-                if let Some(w) = window.app_handle().get_webview_window("main") {
-                    window_state::remember(&w);
                 }
             }
             _ => {}

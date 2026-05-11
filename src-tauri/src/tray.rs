@@ -4,12 +4,7 @@ use tauri::{
     Manager, WebviewWindow,
 };
 
-pub fn save_window_geometry(app: &tauri::AppHandle) {
-    crate::window_state::save(app);
-}
-
 pub fn hide_main_window(window: &WebviewWindow) {
-    save_window_geometry(window.app_handle());
     let _ = window.set_skip_taskbar(true);
     let _ = window.hide();
 }
@@ -68,7 +63,6 @@ pub fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 }
             }
             "quit" => {
-                save_window_geometry(app);
                 let _ = crate::mapper::stop();
                 app.exit(0);
             }
