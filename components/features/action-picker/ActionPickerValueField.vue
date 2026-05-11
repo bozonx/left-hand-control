@@ -203,8 +203,6 @@ function onDocumentKeyup(event: KeyboardEvent) {
 
 function getMouseButtonCode(button: number): string | null {
     switch (button) {
-        case 0:
-            return 'MouseLeft'
         case 1:
             return 'MouseMiddle'
         case 2:
@@ -266,6 +264,13 @@ function toggleCapture() {
 
 function stopOverlayPointer(event: Event) {
     event.stopPropagation()
+}
+
+function cancelCaptureFromBackdrop(event: Event) {
+    if (event.target !== event.currentTarget) return
+    event.stopPropagation()
+    event.preventDefault()
+    cancelCapture()
 }
 
 function cancelCaptureFromPointer(event: Event) {
@@ -511,67 +516,64 @@ onBeforeUnmount(() => {
             <p v-if="isTextCategory" class="text-xs text-(--ui-text-muted)">
                 {{ $t('picker.textHint') }}
             </p>
-            <Teleport to="body">
+            <div
+                v-if="captureActive"
+                class="fixed inset-0 z-[9999] flex items-center justify-center bg-(--ui-bg)/90 p-4"
+                data-testid="key-capture-overlay"
+                role="dialog"
+                aria-modal="true"
+                :aria-labelledby="dialogTitleId"
+                @pointerdown="stopOverlayPointer"
+                @pointerup="stopOverlayPointer"
+                @mousedown="stopOverlayPointer"
+                @mouseup="stopOverlayPointer"
+                @click="cancelCaptureFromBackdrop"
+            >
                 <div
-                    v-if="captureActive"
-                    class="fixed inset-0 z-[9999] flex items-center justify-center bg-(--ui-bg)/90 p-4"
-                    data-testid="key-capture-overlay"
-                    role="dialog"
-                    aria-modal="true"
-                    :aria-labelledby="dialogTitleId"
+                    class="w-full max-w-md rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated) p-5 shadow-xl"
                     @pointerdown="stopOverlayPointer"
                     @pointerup="stopOverlayPointer"
                     @mousedown="stopOverlayPointer"
                     @mouseup="stopOverlayPointer"
                     @click="stopOverlayPointer"
                 >
-                    <div
-                        class="w-full max-w-md rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated) p-5 shadow-xl"
-                        @pointerdown="stopOverlayPointer"
-                        @pointerup="stopOverlayPointer"
-                        @mousedown="stopOverlayPointer"
-                        @mouseup="stopOverlayPointer"
-                        @click="stopOverlayPointer"
-                    >
-                        <div class="flex items-start gap-3">
-                            <div
-                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-(--ui-primary)/10 text-(--ui-primary)"
-                            >
-                                <UIcon
-                                    name="i-lucide-keyboard"
-                                    class="h-5 w-5"
-                                />
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <h3
-                                    :id="dialogTitleId"
-                                    class="text-sm font-semibold"
-                                >
-                                    {{ $t('picker.listeningKeys') }}
-                                </h3>
-                                <p class="mt-1 text-sm text-(--ui-text-muted)">
-                                    {{ $t('picker.pressEscapeToStop') }}
-                                </p>
-                            </div>
-                        </div>
+                    <div class="flex items-start gap-3">
                         <div
-                            class="mt-5 rounded-md border border-(--ui-border) bg-(--ui-bg) px-3 py-3 font-mono text-sm"
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-(--ui-primary)/10 text-(--ui-primary)"
                         >
-                            {{ capturedDraft || $t('picker.valuePh') }}
+                            <UIcon
+                                name="i-lucide-keyboard"
+                                class="h-5 w-5"
+                            />
                         </div>
-                        <div class="mt-5 flex justify-end">
-                            <UButton
-                                color="neutral"
-                                variant="ghost"
-                                @pointerdown="cancelCaptureFromPointer"
-                                @click="cancelCaptureFromPointer"
+                        <div class="min-w-0 flex-1">
+                            <h3
+                                :id="dialogTitleId"
+                                class="text-sm font-semibold"
                             >
-                                {{ $t('common.cancel') }}
-                            </UButton>
+                                {{ $t('picker.listeningKeys') }}
+                            </h3>
+                            <p class="mt-1 text-sm text-(--ui-text-muted)">
+                                {{ $t('picker.pressEscapeToStop') }}
+                            </p>
                         </div>
                     </div>
+                    <div
+                        class="mt-5 rounded-md border border-(--ui-border) bg-(--ui-bg) px-3 py-3 font-mono text-sm"
+                    >
+                        {{ capturedDraft || $t('picker.valuePh') }}
+                    </div>
+                    <div class="mt-5 flex justify-end">
+                        <UButton
+                            color="neutral"
+                            variant="ghost"
+                            @click="cancelCaptureFromPointer"
+                        >
+                            {{ $t('common.cancel') }}
+                        </UButton>
+                    </div>
                 </div>
-            </Teleport>
+            </div>
         </div>
     </UFormField>
 </template>
