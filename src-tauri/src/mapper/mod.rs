@@ -385,6 +385,8 @@ mod tests {
         stop_called: Arc<Mutex<bool>>,
         finished: bool,
         last_error: Option<String>,
+        update_configs: Arc<Mutex<Vec<AppConfig>>>,
+        executed_actions: Arc<Mutex<Vec<String>>>,
     }
 
     impl BackendHandle for FakeHandle {
@@ -394,11 +396,17 @@ mod tests {
             }
         }
 
-        fn update_config(&self, _cfg: AppConfig) -> Result<(), String> {
+        fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
+            if let Ok(mut slot) = self.update_configs.lock() {
+                slot.push(cfg);
+            }
             Ok(())
         }
 
-        fn execute_action(&self, _action: String) -> Result<(), String> {
+        fn execute_action(&self, action: String) -> Result<(), String> {
+            if let Ok(mut slot) = self.executed_actions.lock() {
+                slot.push(action);
+            }
             Ok(())
         }
 
@@ -484,6 +492,8 @@ mod tests {
                 stop_called: Arc::new(Mutex::new(false)),
                 finished: true,
                 last_error: Some("boom".into()),
+                update_configs: Arc::new(Mutex::new(Vec::new())),
+                executed_actions: Arc::new(Mutex::new(Vec::new())),
             }))],
         );
         let mut runtime = MapperRuntime::new(runtime_backend);
@@ -507,6 +517,8 @@ mod tests {
                 stop_called: stop_called.clone(),
                 finished: false,
                 last_error: None,
+                update_configs: Arc::new(Mutex::new(Vec::new())),
+                executed_actions: Arc::new(Mutex::new(Vec::new())),
             }))],
         );
         let mut runtime = MapperRuntime::new(runtime_backend);
@@ -533,5 +545,111 @@ mod tests {
         let devices = runtime.list_keyboards().expect("list keyboards");
         assert_eq!(devices.len(), 1);
         assert_eq!(devices[0].name, "Test Keyboard");
+    }
+
+    #[test]
+    fn runtime_update_config_propagates_to_handle() {
+        let updated = Arc::new(Mutex::new(Vec::new()));
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![Ok(Box::new(FakeHandle {
+                stop_called: Arc::new(Mutex::new(false)),
+                finished: false,
+                last_error: None,
+                update_configs: updated.clone(),
+                executed_actions: Arc::new(Mutex::new(Vec::new())),
+            }))],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event1", None, empty_cfg())
+            .expect("start");
+        let mut cfg = empty_cfg();
+        cfg.macros.push(crate::mapper::config::Macro {
+            id: "test".into(),
+            steps: vec![],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        runtime.update_config(cfg.clone()).expect("update");
+
+        let configs = updated.lock().expect("lock");
+        assert_eq!(configs.len(), 1);
+        assert_eq!(configs[0].macros[0].id, "test");
+    }
+
+    #[test]
+    fn runtime_execute_action_propagates_to_handle() {
+        let executed = Arc::new(Mutex::new(Vec::new()));
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![Ok(Box::new(FakeHandle {
+                stop_called: Arc::new(Mutex::new(false)),
+                finished: false,
+                last_error: None,
+                update_configs: Arc::new(Mutex::new(Vec::new())),
+                executed_actions: executed.clone(),
+            }))],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event1", None, empty_cfg())
+            .expect("start");
+        runtime
+            .execute_action("macro:test".into())
+            .expect("execute");
+
+        let actions = executed.lock().expect("lock");
+        assert_eq!(actions.as_slice(), &["macro:test"]);
+    }
+
+    #[test]
+    fn runtime_update_config_fails_when_not_running() {
+        let mut runtime = MapperRuntime::new(FakeBackend::new(Vec::new(), Vec::new()));
+        let err = runtime.update_config(empty_cfg()).expect_err("should fail");
+        assert!(err.contains("not running"));
+    }
+
+    #[test]
+    fn runtime_execute_action_fails_when_not_running() {
+        let mut runtime = MapperRuntime::new(FakeBackend::new(Vec::new(), Vec::new()));
+        let err = runtime
+            .execute_action("test".into())
+            .expect_err("should fail");
+        assert!(err.contains("not running"));
+    }
+
+    #[test]
+    fn runtime_start_fails_when_already_running() {
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![
+                Ok(Box::new(FakeHandle {
+                    stop_called: Arc::new(Mutex::new(false)),
+                    finished: false,
+                    last_error: None,
+                    update_configs: Arc::new(Mutex::new(Vec::new())),
+                    executed_actions: Arc::new(Mutex::new(Vec::new())),
+                })),
+                Ok(Box::new(FakeHandle {
+                    stop_called: Arc::new(Mutex::new(false)),
+                    finished: false,
+                    last_error: None,
+                    update_configs: Arc::new(Mutex::new(Vec::new())),
+                    executed_actions: Arc::new(Mutex::new(Vec::new())),
+                })),
+            ],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event1", None, empty_cfg())
+            .expect("first start");
+        let err = runtime
+            .start("/dev/input/event2", None, empty_cfg())
+            .expect_err("second start");
+        assert!(err.contains("already running"));
     }
 }

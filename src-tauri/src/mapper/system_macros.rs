@@ -158,3 +158,32 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
         ],
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::SYSTEM_MACROS;
+    use crate::mapper::action::parse_action;
+
+    #[test]
+    fn all_system_macros_have_valid_keystrokes() {
+        for m in SYSTEM_MACROS {
+            for step in m.steps {
+                assert!(
+                    parse_action(step).is_some(),
+                    "system macro {} has invalid step: {}",
+                    m.id,
+                    step
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn all_system_macro_ids_are_non_empty_and_unique() {
+        let mut ids = std::collections::HashSet::new();
+        for m in SYSTEM_MACROS {
+            assert!(!m.id.is_empty(), "system macro id cannot be empty");
+            assert!(ids.insert(m.id), "duplicate system macro id: {}", m.id);
+        }
+    }
+}

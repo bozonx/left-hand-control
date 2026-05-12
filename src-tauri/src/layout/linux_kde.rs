@@ -212,3 +212,61 @@ fn call_list(proxy: &Proxy<'_>) -> Result<Option<LayoutList>, String> {
         .map_err(|e| format!("Failed to decode getLayoutsList response: {e}"))?;
     Ok(Some(list))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cached_layout_short_returns_none_by_default() {
+        // Ensure cache is clean
+        if let Ok(mut g) = CACHED_LAYOUT.lock() {
+            *g = None;
+        }
+        assert!(cached_layout_short().is_none());
+    }
+
+    #[test]
+    fn update_cached_layout_sets_short() {
+        let info = LayoutInfo {
+            short: "us".into(),
+            display: "lat".into(),
+            long: "English (US)".into(),
+            index: 0,
+            backend: "linux-kde",
+        };
+        update_cached_layout(&info);
+        assert_eq!(cached_layout_short().as_deref(), Some("us"));
+    }
+
+    #[test]
+    fn should_emit_layout_returns_true_for_new_layout() {
+        if let Ok(mut g) = LAST_EMITTED_LAYOUT.lock() {
+            *g = None;
+        }
+        let info = LayoutInfo {
+            short: "ru".into(),
+            display: "rus".into(),
+            long: "Russian".into(),
+            index: 1,
+            backend: "linux-kde",
+        };
+        assert!(should_emit_layout(&info));
+    }
+
+    #[test]
+    fn should_emit_layout_returns_false_for_same_layout() {
+        let info = LayoutInfo {
+            short: "de".into(),
+            display: "de".into(),
+            long: "German".into(),
+            index: 2,
+            backend: "linux-kde",
+        };
+        // Set cached
+        if let Ok(mut g) = LAST_EMITTED_LAYOUT.lock() {
+            *g = Some("de".into());
+        }
+        assert!(!should_emit_layout(&info));
+    }
+}

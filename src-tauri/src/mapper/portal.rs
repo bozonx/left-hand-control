@@ -1243,3 +1243,79 @@ fn gen_token(prefix: &str) -> String {
 fn make_request_path(sender_escaped: &str, handle_token: &str) -> String {
     format!("/org/freedesktop/portal/desktop/request/{sender_escaped}/{handle_token}")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn level_to_mods_maps_common_levels() {
+        assert_eq!(level_to_mods(0), &[] as &[u32]);
+        assert_eq!(level_to_mods(1), &[KEY_LEFTSHIFT_EVDEV]);
+        assert_eq!(level_to_mods(2), &[KEY_RIGHTALT_EVDEV]);
+        assert_eq!(level_to_mods(3), &[KEY_LEFTSHIFT_EVDEV, KEY_RIGHTALT_EVDEV]);
+        assert_eq!(level_to_mods(99), &[] as &[u32]);
+    }
+
+    #[test]
+    fn extract_restore_token_reads_token_value() {
+        let mut map: HashMap<String, OwnedValue> = HashMap::new();
+        assert!(extract_restore_token(&map).is_none());
+
+        map.insert(
+            "restore_token".to_string(),
+            zbus::zvariant::Str::from("my-secret-token").into(),
+        );
+        assert_eq!(
+            extract_restore_token(&map).as_deref(),
+            Some("my-secret-token")
+        );
+    }
+
+    #[test]
+    fn make_request_path_formats_correctly() {
+        assert_eq!(
+            make_request_path("org_example", "tok_1"),
+            "/org/freedesktop/portal/desktop/request/org_example/tok_1"
+        );
+    }
+
+    #[test]
+    fn gen_token_produces_unique_values() {
+        let a = gen_token("test");
+        let b = gen_token("test");
+        assert_ne!(a, b);
+        assert!(a.starts_with("lhc_test_"));
+    }
+
+    #[test]
+    fn token_persistence_roundtrip() {
+        let temp = std::env::temp_dir().join(format!("lhc-portal-test-{}", std::process::id()));
+        std::fs::create_dir_all(&temp).expect("create temp dir");
+        set_token_dir(temp.clone());
+
+        clear_restore_token();
+        assert!(load_restore_token().is_none());
+
+        persist_restore_token("secret-42");
+        assert_eq!(load_restore_token().as_deref(), Some("secret-42"));
+
+        persist_restore_token("secret-99");
+        assert_eq!(load_restore_token().as_deref(), Some("secret-99"));
+
+        clear_restore_token();
+        assert!(load_restore_token().is_none());
+
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn write_token_atomic_creates_readable_file() {
+        let temp = std::env::temp_dir().join(format!("lhc-atomic-test-{}", std::process::id()));
+        write_token_atomic(&temp, "hello").expect("write");
+        let contents = std::fs::read_to_string(&temp).expect("read");
+        assert_eq!(contents, "hello");
+        let _ = std::fs::remove_file(&temp);
+    }
+}

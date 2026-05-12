@@ -1687,15 +1687,30 @@ mod tests {
         // commit_waiting_decisions commits Space (layer activates), then
         // should_handle_mouse_button sees the layer mapping and routes
         // BTN_SIDE through on_press → BrowserBack keystroke fires.
-        engine.handle(Key::BTN_SIDE, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(
+            Key::BTN_SIDE,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
         assert!(matches!(
             out.as_slice(),
             [Out::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_BACK
         ));
 
         out.clear();
-        engine.handle(Key::BTN_SIDE, false, now + Duration::from_millis(11), &mut out);
-        engine.handle(Key::KEY_SPACE, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(
+            Key::BTN_SIDE,
+            false,
+            now + Duration::from_millis(11),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_SPACE,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
         // BTN_SIDE release emits the mapped key (KEY_BACK) release.
         // Space hold release is silent (Swallow hold mode).
         assert!(matches!(
@@ -1905,5 +1920,531 @@ mod tests {
                 && ctrl_release.as_slice() == [Key::KEY_LEFTCTRL]
                 && *release_alt_2 == Key::KEY_LEFTALT
         ));
+    }
+
+    #[test]
+    fn tap_on_release_fires_tap_action() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "CapsLock".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("Escape".into()),
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: Some(200),
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_CAPSLOCK, true, now, &mut out);
+        assert!(out.is_empty());
+
+        engine.handle(
+            Key::KEY_CAPSLOCK,
+            false,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        assert!(matches!(
+            out.as_slice(),
+            [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_ESC
+        ));
+    }
+
+    #[test]
+    fn hold_timeout_commits_hold_via_tick() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "AltLeft".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("Escape".into()),
+            hold_action: ActionSpec::Action("ControlLeft".into()),
+            isolate: String::new(),
+            hold_timeout_ms: Some(50),
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
+        assert!(out.is_empty());
+
+        engine.tick(now + Duration::from_millis(60), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_LEFTCTRL
+        ));
+    }
+
+    #[test]
+    fn double_tap_fires_double_tap_action() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("KeyA".into()),
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: "KeyB".into(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        // First tap
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
+        assert!(out.is_empty()); // WaitingSecond
+
+        // Second tap within window
+        engine.handle(Key::KEY_Q, true, now + Duration::from_millis(20), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_B
+        ));
+
+        // Release of second tap must be silent
+        out.clear();
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(30), &mut out);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn double_tap_window_expired_fires_tap() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("KeyA".into()),
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: "KeyB".into(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
+        assert!(out.is_empty());
+
+        engine.tick(now + Duration::from_millis(250), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_A
+        ));
+    }
+
+    #[test]
+    fn double_tap_flush_on_other_key_press() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("KeyA".into()),
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: "KeyB".into(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
+        assert!(out.is_empty());
+
+        // Another key press flushes the deferred tap before processing
+        engine.handle(Key::KEY_W, true, now + Duration::from_millis(20), &mut out);
+        assert_eq!(out.len(), 2);
+        assert!(matches!(
+            out[0],
+            Out::Stroke { ref ks, .. } if ks.mods.is_empty() && ks.key == Key::KEY_A
+        ));
+        assert!(matches!(
+            out[1],
+            Out::KeyRaw { key, down: true } if key == Key::KEY_W
+        ));
+    }
+
+    #[test]
+    fn shutdown_releases_all_emitted_keys_and_mods() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "Space".into(),
+            layer_id: "sp".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut sp = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        sp.keys.insert("KeyA".into(), Some("Ctrl+KeyC".into()));
+        cfg.layer_keymaps.insert("sp".into(), sp);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.tick(now + Duration::from_millis(260), &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(270), &mut out);
+        out.clear();
+
+        engine.shutdown(&mut out);
+        // Should emit: KeyC release, Ctrl release (ReleaseMods)
+        assert!(out
+            .iter()
+            .any(|o| matches!(o, Out::KeyRaw { key, down: false } if *key == Key::KEY_C)));
+        assert!(out
+            .iter()
+            .any(|o| matches!(o, Out::ReleaseMods(mods) if mods.contains(&Key::KEY_LEFTCTRL))));
+        assert!(engine.active_layers.is_empty());
+        assert!(engine.pending.is_empty());
+    }
+
+    #[test]
+    fn layer_native_extra_is_skipped() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "Space".into(),
+            layer_id: "sp".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut sp = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        sp.keys.insert("KeyA".into(), Some("Escape".into()));
+        sp.extras.push(ExtraKey {
+            key: "KeyB".into(),
+            action: ActionSpec::Native,
+        });
+        cfg.layer_keymaps.insert("sp".into(), sp);
+
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.tick(now + Duration::from_millis(260), &mut out);
+        out.clear();
+
+        // KeyB mapped as Native extra should passthrough
+        engine.handle(Key::KEY_B, true, now + Duration::from_millis(270), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw { key, down: true }] if *key == Key::KEY_B
+        ));
+    }
+
+    #[test]
+    fn mod_refs_shared_by_two_keys() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "Space".into(),
+            layer_id: "sp".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut sp = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        sp.keys.insert("KeyA".into(), Some("Ctrl+KeyC".into()));
+        sp.keys.insert("KeyB".into(), Some("Ctrl+KeyV".into()));
+        cfg.layer_keymaps.insert("sp".into(), sp);
+
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.tick(now + Duration::from_millis(260), &mut out);
+
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(270), &mut out);
+        engine.handle(Key::KEY_B, true, now + Duration::from_millis(280), &mut out);
+        out.clear();
+
+        // Release KeyA — Ctrl should NOT be released because KeyB still holds it
+        engine.handle(
+            Key::KEY_A,
+            false,
+            now + Duration::from_millis(290),
+            &mut out,
+        );
+        assert!(out
+            .iter()
+            .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == Key::KEY_C)));
+        assert!(!out.iter().any(
+            |o| matches!(o, Out::ChordRelease { mods, .. } if mods.contains(&Key::KEY_LEFTCTRL))
+        ));
+
+        out.clear();
+        // Release KeyB — now Ctrl should be released
+        engine.handle(
+            Key::KEY_B,
+            false,
+            now + Duration::from_millis(300),
+            &mut out,
+        );
+        assert!(out
+            .iter()
+            .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == Key::KEY_V)));
+        assert!(out.iter().any(
+            |o| matches!(o, Out::ChordRelease { mods, .. } if mods.contains(&Key::KEY_LEFTCTRL))
+        ));
+    }
+
+    #[test]
+    fn unknown_key_on_release_passes_through() {
+        let mut engine = Engine::new(&empty_cfg());
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_A, false, now, &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw { key, down: false }] if *key == Key::KEY_A
+        ));
+    }
+
+    #[test]
+    fn commit_waiting_decisions_on_other_key_press() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "ShiftLeft".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("Escape".into()),
+            hold_action: ActionSpec::Action("ControlLeft".into()),
+            isolate: String::new(),
+            hold_timeout_ms: Some(200),
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        assert!(out.is_empty());
+
+        // Another key press commits the pending hold
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(10), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::ChordPress { ks, .. },
+                Out::KeyRaw { key: k1, down: true },
+            ] if ks.mods.is_empty() && ks.key == Key::KEY_LEFTCTRL && *k1 == Key::KEY_A
+        ));
+    }
+
+    #[test]
+    fn builder_skips_unknown_rule_key() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "UnknownKey".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let engine = Engine::new(&cfg);
+        assert!(!engine.rules.contains_key(&Key::KEY_A));
+    }
+
+    #[test]
+    fn builder_skips_primary_mouse_buttons_as_triggers() {
+        let mut cfg = empty_cfg();
+        for key in ["MouseLeft", "MouseRight", "MouseMiddle"] {
+            cfg.rules.push(Rule {
+                enabled: true,
+                condition_game_mode: None,
+                condition_layouts: None,
+                condition_apps_whitelist: None,
+                condition_apps_blacklist: None,
+                key: key.into(),
+                layer_id: String::new(),
+                tap_action: ActionSpec::Action("Escape".into()),
+                hold_action: ActionSpec::Native,
+                isolate: String::new(),
+                hold_timeout_ms: None,
+                double_tap_action: String::new(),
+                double_tap_timeout_ms: None,
+            });
+        }
+        let engine = Engine::new(&cfg);
+        assert!(!engine.rules.contains_key(&Key::BTN_LEFT));
+        assert!(!engine.rules.contains_key(&Key::BTN_RIGHT));
+        assert!(!engine.rules.contains_key(&Key::BTN_MIDDLE));
+    }
+
+    #[test]
+    fn builder_unknown_tap_action_falls_back_to_swallow() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("BadActionSyntax!!!".into()),
+            hold_action: ActionSpec::Swallow,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
+        // Unknown tap action resolves to Swallow, hold is Swallow → fast path, nothing emitted
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn builder_resolves_system_macro() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("macro:copyLine".into()),
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        // Tap fires the macro on release (no double-tap)
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        assert!(out.is_empty());
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
+        // Macro should now be active
+        assert!(engine.active_macro.is_some());
+    }
+
+    #[test]
+    fn empty_macro_does_not_crash() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "empty".into(),
+            steps: vec![],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("macro:empty".into()),
+            hold_action: ActionSpec::Swallow,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        // Empty macro resolves to nothing → fast path Swallow+Swallow, no crash
+        assert!(engine.active_macro.is_none());
     }
 }

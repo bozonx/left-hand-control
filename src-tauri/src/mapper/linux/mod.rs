@@ -99,7 +99,11 @@ pub fn spawn(
         for r in &cfg.rules {
             log::debug!(
                 "[mapper]   rule key={} layer={:?} tap={:?} hold={:?} holdMs={:?}",
-                r.key, r.layer_id, r.tap_action, r.hold_action, r.hold_timeout_ms
+                r.key,
+                r.layer_id,
+                r.tap_action,
+                r.hold_action,
+                r.hold_timeout_ms
             );
         }
         for (lid, km) in &cfg.layer_keymaps {
@@ -532,6 +536,54 @@ mod tests {
         assert_eq!(key_events(&sink.batches[1]), vec![(Key::KEY_A.code(), 0)]);
         assert!(effects.texts.is_empty());
         assert!(out_buf.is_empty());
+    }
+
+    #[test]
+    fn flush_out_filters_mouse_buttons() {
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        let mut buf = vec![
+            Out::KeyRaw {
+                key: Key::BTN_LEFT,
+                down: true,
+            },
+            Out::KeyRaw {
+                key: Key::BTN_RIGHT,
+                down: true,
+            },
+            Out::KeyRaw {
+                key: Key::KEY_A,
+                down: true,
+            },
+        ];
+
+        flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
+
+        // Mouse buttons in range 272..=281 are filtered out
+        assert_eq!(sink.batches.len(), 1);
+        assert_eq!(key_events(&sink.batches[0]), vec![(Key::KEY_A.code(), 1)]);
+    }
+
+    #[test]
+    fn flush_out_splits_same_key_code_to_avoid_coalesce() {
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        let mut buf = vec![
+            Out::KeyRaw {
+                key: Key::KEY_A,
+                down: true,
+            },
+            Out::KeyRaw {
+                key: Key::KEY_A,
+                down: false,
+            },
+        ];
+
+        flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
+
+        assert_eq!(sink.batches.len(), 2);
+        assert_eq!(key_events(&sink.batches[0]), vec![(Key::KEY_A.code(), 1)]);
+        assert_eq!(key_events(&sink.batches[1]), vec![(Key::KEY_A.code(), 0)]);
     }
 
     #[test]

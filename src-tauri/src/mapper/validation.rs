@@ -564,4 +564,144 @@ mod tests {
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("macro references cannot form a cycle"));
     }
+
+    #[test]
+    fn rejects_unknown_rule_key() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "UnknownKey".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("unknown physical key \"UnknownKey\""));
+    }
+
+    #[test]
+    fn rejects_unknown_layer_in_rule() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "CapsLock".into(),
+            layer_id: "missing".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("unknown layer \"missing\""));
+    }
+
+    #[test]
+    fn rejects_duplicate_macro_id() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "dup".into(),
+            steps: vec![MacroStep {
+                action: "KeyA".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        cfg.macros.push(Macro {
+            id: "dup".into(),
+            steps: vec![MacroStep {
+                action: "KeyB".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("Duplicate macro ID \"dup\""));
+    }
+
+    #[test]
+    fn rejects_duplicate_command_id() {
+        let mut cfg = empty_cfg();
+        cfg.commands.push(Command {
+            id: "dup".into(),
+            linux: "echo 1".into(),
+        });
+        cfg.commands.push(Command {
+            id: "dup".into(),
+            linux: "echo 2".into(),
+        });
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("Duplicate command ID \"dup\""));
+    }
+
+    #[test]
+    fn rejects_empty_command_linux_script() {
+        let mut cfg = empty_cfg();
+        cfg.commands.push(Command {
+            id: "empty".into(),
+            linux: "   ".into(),
+        });
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("Command \"empty\" has an empty Linux script"));
+    }
+
+    #[test]
+    fn rejects_unknown_key_in_layer_keymap() {
+        let mut cfg = empty_cfg();
+        let mut km = crate::mapper::config::LayerKeymap::default();
+        km.keys.insert("BadKey".into(), Some("Escape".into()));
+        cfg.layer_keymaps.insert("nav".into(), km);
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("unknown key \"BadKey\""));
+    }
+
+    #[test]
+    fn rejects_hold_action_that_is_not_keystroke() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "CapsLock".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Action("macro:copyLine".into()),
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("hold action must be a key or chord"));
+    }
+
+    #[test]
+    fn accepts_empty_config() {
+        validate_config(&empty_cfg()).expect("empty config should pass");
+    }
+
+    #[test]
+    fn rejects_unknown_action_in_layer_keymap() {
+        let mut cfg = empty_cfg();
+        let mut km = crate::mapper::config::LayerKeymap::default();
+        km.keys.insert("KeyA".into(), Some("BadAction!!!".into()));
+        cfg.layer_keymaps.insert("nav".into(), km);
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("unknown action \"BadAction!!!\""));
+    }
 }
