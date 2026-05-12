@@ -169,6 +169,7 @@ onMounted(() => {
             <div class="flex items-center gap-2 min-w-0" data-tauri-drag-region>
                 <WindowControls side="left" />
                 <UButton
+                    data-testid="home-nav-button"
                     color="neutral"
                     variant="ghost"
                     :square="true"
@@ -335,6 +336,7 @@ onMounted(() => {
 
                     <AppTooltip :text="$t('app.settingsTooltip')">
                         <UButton
+                            data-testid="settings-nav-button"
                             :color="
                                 isActive('/settings') ? 'primary' : 'neutral'
                             "

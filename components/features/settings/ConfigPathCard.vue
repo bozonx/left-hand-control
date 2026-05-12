@@ -15,7 +15,7 @@ async function copyPath(path: string) {
 </script>
 
 <template>
-  <UCard>
+  <UCard data-testid="config-path-card">
     <template #header>
       <h2 class="text-sm font-semibold">{{ $t('settings.configTitle') }}</h2>
     </template>
@@ -23,7 +23,10 @@ async function copyPath(path: string) {
       <div class="grid gap-2 md:grid-cols-[13rem_minmax(0,1fr)] md:items-center">
         <div class="text-(--ui-text-muted)">{{ $t('settings.settingsDirPath') }}</div>
         <div class="flex min-w-0 items-center gap-2">
-          <code class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable">
+          <code
+            data-testid="settings-dir-path"
+            class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable"
+          >
             {{ settingsDir || '…' }}
           </code>
           <AppTooltip :text="$t('settings.copyPathTooltip')">
@@ -42,7 +45,10 @@ async function copyPath(path: string) {
       <div class="grid gap-2 md:grid-cols-[13rem_minmax(0,1fr)] md:items-center">
         <div class="text-(--ui-text-muted)">{{ $t('settings.layoutsPath') }}</div>
         <div class="flex min-w-0 items-center gap-2">
-          <code class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable">
+          <code
+            data-testid="layouts-dir-path"
+            class="min-w-0 flex-1 rounded bg-(--ui-bg-muted) px-2 py-1.5 break-all copyable"
+          >
             {{ layoutsDir || '…' }}
           </code>
           <AppTooltip :text="$t('settings.copyPathTooltip')">

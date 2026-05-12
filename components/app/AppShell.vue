@@ -40,6 +40,7 @@ provide('app-shell-scroll', {
   <WindowResizeHandles />
 
   <div
+    data-testid="app-shell"
     class="h-screen flex flex-col overflow-hidden relative bg-(--ui-bg)"
     :class="floating ? 'rounded-xl border border-(--ui-border)' : ''"
   >

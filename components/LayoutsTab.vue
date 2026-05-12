@@ -28,7 +28,7 @@ const {
     saveError: _saveError,
     saveCurrentLayout,
     openSaveModal: _openSaveModal,
-    openSaveAsModal,
+    openSaveAsModal: _openSaveAsModal,
     performSave: _performSave,
     closeSaveModal: _closeSaveModal,
     editModalOpen: _editModalOpen,
@@ -115,7 +115,7 @@ function moveLayout(entry: LayoutLibraryEntry, direction: 'up' | 'down') {
 </script>
 
 <template>
-    <div class="w-full space-y-4">
+    <div data-testid="layouts-page" class="w-full space-y-4">
         <UAlert
             v-if="globalBanner"
             :color="globalBanner.color"

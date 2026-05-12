@@ -29,7 +29,7 @@ function updateConfig(nextConfig: typeof config.value) {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-5xl space-y-4">
+  <div data-testid="settings-page" class="mx-auto w-full max-w-5xl space-y-4">
     <MapperCard
       v-model:selected-device="selectedDevice"
       v-model:selected-mouse="selectedMouse"

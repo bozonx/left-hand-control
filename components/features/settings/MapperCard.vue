@@ -110,7 +110,7 @@ function selectMouse(value: string) {
 </script>
 
 <template>
-    <UCard>
+    <UCard data-testid="mapper-card">
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2">

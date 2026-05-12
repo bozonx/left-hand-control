@@ -265,7 +265,7 @@ rules:
     tap: Enter
     layer: win
     hold: AltLeft
-    isolate: KeyW, KeyC, KeyV, Comma, Period, Slash
+    isolate: KeyW, ShiftLeft, KeyZ, KeyX, KeyC, KeyV, Comma, Period, Slash
   # - key: Space
   #   layer: space
   - key: AltRight

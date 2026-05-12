@@ -2,7 +2,6 @@
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import BehaviorCard from '~/components/features/settings/BehaviorCard.vue'

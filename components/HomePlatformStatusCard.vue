@@ -114,7 +114,37 @@ const features = computed<FeatureRow[]>(() => {
 </script>
 
 <template>
-    <UCard :ui="{ header: 'p-0 sm:p-0' }">
+    <UCard
+        data-testid="platform-status-card"
+        :data-platform-os="platform.info.value?.os ?? ''"
+        :data-platform-desktop="platform.info.value?.linux?.desktop ?? ''"
+        :data-platform-session="platform.info.value?.linux?.session_type ?? ''"
+        :data-layout-detection-supported="
+            String(
+                platform.info.value?.capabilities.layout_detection.supported ??
+                    '',
+            )
+        "
+        :data-layout-detection-available="
+            String(
+                platform.info.value?.capabilities.layout_detection.available ??
+                    '',
+            )
+        "
+        :data-system-actions-supported="
+            String(
+                platform.info.value?.capabilities.system_actions.supported ??
+                    '',
+            )
+        "
+        :data-system-actions-available="
+            String(
+                platform.info.value?.capabilities.system_actions.available ??
+                    '',
+            )
+        "
+        :ui="{ header: 'p-0 sm:p-0' }"
+    >
         <template #header>
             <button
                 type="button"
@@ -144,7 +174,11 @@ const features = computed<FeatureRow[]>(() => {
         </template>
 
         <div v-show="isOpen" class="space-y-3 text-sm">
-            <p v-if="platformLabel" class="text-xs text-(--ui-text-muted)">
+            <p
+                v-if="platformLabel"
+                data-testid="platform-label"
+                class="text-xs text-(--ui-text-muted)"
+            >
                 {{ platformLabel }}
             </p>
 

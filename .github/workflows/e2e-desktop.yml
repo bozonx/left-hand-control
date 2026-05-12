@@ -1,0 +1,48 @@
+name: Desktop E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: E2E target to run
+        required: true
+        default: kde-wayland
+        type: choice
+        options:
+          - kde-wayland
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.target }}
+  cancel-in-progress: true
+
+jobs:
+  kde-wayland:
+    if: inputs.target == 'kde-wayland'
+    name: Manjaro KDE Plasma Wayland
+    runs-on: [self-hosted, linux, manjaro, kde, wayland]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --locked
+
+      - name: Run KDE Wayland E2E smoke tests
+        run: pnpm test:e2e:kde
