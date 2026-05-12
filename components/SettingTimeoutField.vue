@@ -74,7 +74,7 @@ function onBlur() {
 <template>
     <div
         v-if="!isEditing"
-        class="group -mx-2 flex items-center justify-between rounded-lg px-2 py-1.5 transition-all duration-200 hover:bg-(--ui-bg-muted)"
+        class="group -mx-2 flex h-8 items-center justify-between rounded-lg px-2 transition-all duration-200 hover:bg-(--ui-bg-muted)"
         @click.stop="startEdit"
     >
         <button
@@ -134,7 +134,7 @@ function onBlur() {
 
     <div
         v-else
-        class="-mx-2 flex items-center justify-between rounded-lg px-2 py-1.5"
+        class="-mx-2 flex h-8 items-center justify-between rounded-lg px-2"
     >
         <FieldLabel
             :label="label"
