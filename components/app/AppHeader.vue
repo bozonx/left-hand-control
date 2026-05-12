@@ -236,11 +236,7 @@ onMounted(() => {
                         :text="$t('settings.startDisabledTooltip')"
                     >
                         <UButton
-                            :color="
-                                mapper.status.value.running
-                                    ? 'error'
-                                    : 'primary'
-                            "
+                            :color="'primary'"
                             :variant="
                                 mapper.status.value.running ? 'soft' : 'solid'
                             "
