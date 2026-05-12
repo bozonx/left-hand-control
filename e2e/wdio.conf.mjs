@@ -27,7 +27,7 @@ export const config = {
   },
   capabilities: [
     {
-      browserName: 'wry',
+      maxInstances: 1,
       'tauri:options': {
         application: appPath,
       },
