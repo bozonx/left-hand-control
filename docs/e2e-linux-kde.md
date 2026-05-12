@@ -57,10 +57,16 @@ Required runtime/build tools:
 
 ```bash
 sudo pacman -S --needed nodejs pnpm rustup base-devel curl wget file \
-  webkit2gtk-4.1 libxdo openssl libappindicator-gtk3 librsvg fuse2 \
+  webkit2gtk-4.1 webkitgtk-6.0 libxdo openssl libappindicator-gtk3 librsvg fuse2 \
   qt6-tools glib2 xdg-desktop-portal xdg-desktop-portal-kde
 rustup default stable
 cargo install tauri-driver --locked
+```
+
+`tauri-driver` needs the native `WebKitWebDriver` binary on Linux. On current Arch/Manjaro it is provided by `webkitgtk-6.0` as `/usr/bin/WebKitWebDriver`. If your distribution installs it elsewhere, pass the absolute path:
+
+```bash
+LHC_E2E_NATIVE_DRIVER=/path/to/WebKitWebDriver pnpm test:e2e:kde
 ```
 
 Validate the session before running E2E:

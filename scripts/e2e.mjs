@@ -15,6 +15,9 @@ const appName = process.platform === 'win32' ? 'left-hand-control.exe' : 'left-h
 const appPath =
   process.env.LHC_E2E_APP ||
   path.join(root, 'src-tauri', 'target', 'debug', appName)
+const cargoBin = path.join(os.homedir(), '.cargo', 'bin')
+const pathDelimiter = process.platform === 'win32' ? ';' : ':'
+const runnerPath = [cargoBin, process.env.PATH || ''].filter(Boolean).join(pathDelimiter)
 
 const env = {
   ...process.env,
@@ -22,6 +25,7 @@ const env = {
   LHC_E2E_APP: appPath,
   LHC_E2E_TARGET: target,
   LHC_TAURI_DRIVER_PORT: String(port),
+  PATH: runnerPath,
 }
 
 if (!knownTargets.has(target)) {
@@ -83,9 +87,28 @@ async function preflight() {
     throw new Error(`Invalid LHC_TAURI_DRIVER_PORT value: ${process.env.LHC_TAURI_DRIVER_PORT}`)
   }
 
-  const hasDriver = await commandWorks('tauri-driver', ['--version'])
+  const hasDriver = await commandWorks('tauri-driver', ['--help'])
   if (!hasDriver) {
     throw new Error('tauri-driver is required. Install it with: cargo install tauri-driver --locked')
+  }
+
+  if (process.platform === 'linux') {
+    if (process.env.LHC_E2E_NATIVE_DRIVER) {
+      if (!fs.existsSync(process.env.LHC_E2E_NATIVE_DRIVER)) {
+        throw new Error(`LHC_E2E_NATIVE_DRIVER does not exist: ${process.env.LHC_E2E_NATIVE_DRIVER}`)
+      }
+    } else {
+      const hasWebKitWebDriver = await commandWorks('WebKitWebDriver', ['--help'])
+      if (!hasWebKitWebDriver) {
+        throw new Error(
+          [
+            'WebKitWebDriver is required for Linux Tauri E2E.',
+            'On Arch/Manjaro install it with: sudo pacman -S webkitgtk-6.0',
+            'Or set LHC_E2E_NATIVE_DRIVER=/absolute/path/to/WebKitWebDriver.',
+          ].join('\n'),
+        )
+      }
+    }
   }
 
   if (target === 'kde-wayland') {
@@ -125,7 +148,11 @@ function waitForTcp(host, tcpPort, timeoutMs = 15000) {
 }
 
 function startTauriDriver() {
-  const child = spawn('tauri-driver', ['--port', String(port)], {
+  const args = ['--port', String(port)]
+  if (process.env.LHC_E2E_NATIVE_DRIVER) {
+    args.push('--native-driver', process.env.LHC_E2E_NATIVE_DRIVER)
+  }
+  const child = spawn('tauri-driver', args, {
     cwd: root,
     env,
     stdio: ['ignore', 'inherit', 'inherit'],

@@ -9,7 +9,7 @@ const appPath =
 
 export const config = {
   runner: 'local',
-  specs: ['./e2e/specs/**/*.e2e.js'],
+  specs: [path.join(root, 'e2e', 'specs', '**', '*.e2e.js')],
   maxInstances: 1,
   hostname: process.env.LHC_TAURI_DRIVER_HOST || '127.0.0.1',
   port: Number.parseInt(process.env.LHC_TAURI_DRIVER_PORT || '4444', 10),
