@@ -423,6 +423,7 @@ onBeforeUnmount(() => {
                     />
                     <UButton
                         ref="captureButtonRef"
+                        data-testid="capture-button"
                         icon="i-lucide-keyboard"
                         color="neutral"
                         variant="outline"
@@ -541,10 +542,7 @@ onBeforeUnmount(() => {
                         <div
                             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-(--ui-primary)/10 text-(--ui-primary)"
                         >
-                            <UIcon
-                                name="i-lucide-keyboard"
-                                class="h-5 w-5"
-                            />
+                            <UIcon name="i-lucide-keyboard" class="h-5 w-5" />
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3

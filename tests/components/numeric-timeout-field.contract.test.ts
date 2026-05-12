@@ -7,6 +7,14 @@ import { describe, expect, it } from 'vitest'
 import SettingTimeoutField from '~/components/SettingTimeoutField.vue'
 import NumericInput from '~/components/shared/NumericInput.vue'
 
+const AppTooltipStub = defineComponent({
+  name: 'AppTooltip',
+  props: ['text', 'disabled'],
+  setup(_props, { slots }) {
+    return () => slots.default?.()
+  },
+})
+
 describe('numeric timeout fields', () => {
   it('opens the editor when the timeout row is clicked', async () => {
     const Harness = defineComponent({
@@ -31,6 +39,9 @@ describe('numeric timeout fields', () => {
         components: {
           NumericInput,
         },
+        stubs: {
+          AppTooltip: AppTooltipStub,
+        },
       },
     })
 
@@ -38,7 +49,8 @@ describe('numeric timeout fields', () => {
 
     await wrapper.get('.group').trigger('click')
 
-    const input = wrapper.get('input[type="number"]').element as HTMLInputElement
+    const input = wrapper.get('input[type="number"]')
+      .element as HTMLInputElement
     expect(input.value).toBe('200')
     expect(document.activeElement).toBe(input)
   })

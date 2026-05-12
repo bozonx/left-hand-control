@@ -10,7 +10,7 @@
     "preview": "nuxt preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "pnpm test:unit && pnpm test:components",
+    "test": "pnpm test:unit && pnpm test:composables && pnpm test:components",
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:unit:watch": "vitest --config vitest.unit.config.ts",
     "test:components": "vitest run --config vitest.components.config.ts",
@@ -19,7 +19,9 @@
     "postinstall": "nuxt prepare",
     "tauri": "tauri",
     "tauri:dev": "node --env-file-if-exists=.env scripts/tauri-dev.mjs",
-    "tauri:build": "cross-env NO_STRIP=true tauri build"
+    "tauri:build": "cross-env NO_STRIP=true tauri build",
+    "test:composables": "vitest run --config vitest.composables.config.ts",
+    "test:composables:watch": "vitest --config vitest.composables.config.ts"
   },
   "dependencies": {
     "@nuxt/ui": "^4.7.1",

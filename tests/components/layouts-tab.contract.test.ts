@@ -1,11 +1,15 @@
 /* eslint-disable vue/one-component-per-file */
-import { defineComponent, ref } from 'vue'
+import { defineComponent } from 'vue'
 
-import { mockComponent, mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import {
+  mockComponent,
+  mockNuxtImport,
+  mountSuspended,
+} from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import LayoutsTab from '~/components/LayoutsTab.vue'
-import { createDefaultConfig } from '~/types/config'
+import { makeSettingsScreenMock } from '~/tests/factories/settings-screen'
 
 const {
   useSettingsScreenMock,
@@ -31,7 +35,13 @@ mockComponent('~/components/shared/AppTooltip.vue', () =>
 
 mockComponent('~/components/features/settings/LayoutsLibraryCard.vue', () =>
   defineComponent({
-    emits: ['saveCurrent', 'requestApplyEntry', 'createFromEmpty', 'requestDelete', 'updateDescription'],
+    emits: [
+      'saveCurrent',
+      'requestApplyEntry',
+      'createFromEmpty',
+      'requestDelete',
+      'updateDescription',
+    ],
     template: `
       <div data-test="library-card">
         <button data-test="save-current" @click="$emit('saveCurrent')">save</button>
@@ -52,57 +62,14 @@ describe('LayoutsTab', () => {
     saveCurrentLayoutMock.mockReset()
     updateDescriptionMock.mockReset()
 
-    useSettingsScreenMock.mockReturnValue({
-      config: ref(createDefaultConfig()),
-      currentLayoutId: ref('user:test'),
-      currentLayoutDescription: ref(''),
-      isLayoutDirty: ref(true),
-      library: {
-        entries: ref([{ id: 'user:test', name: 'Test' }]),
-        error: ref(null),
-        layoutsDir: ref('/tmp/layouts'),
-      },
-      applying: ref(''),
-      applyError: ref(null),
-      pendingApply: ref(null),
-      requestApplyEntry: requestApplyEntryMock,
-      createFromEmpty: createFromEmptyMock,
-      createFromIvanK: vi.fn(),
-      cancelApply: vi.fn(),
-      confirmApply: vi.fn(),
-      saveModalOpen: ref(false),
-      saveName: ref(''),
-      saveBusy: ref(false),
-      saveError: ref(null),
-      saveCurrentLayout: saveCurrentLayoutMock,
-      openSaveModal: vi.fn(),
-      openSaveAsModal: vi.fn(),
-      performSave: vi.fn(),
-      closeSaveModal: vi.fn(),
-      editModalOpen: ref(false),
-      editName: ref(''),
-      editDescription: ref(''),
-      editBusy: ref(false),
-      editError: ref(null),
-      editPending: ref(null),
-      openEditModal: vi.fn(),
-      performEdit: vi.fn(),
-      updateDescription: updateDescriptionMock,
-      closeEditModal: vi.fn(),
-      overwriteConfirmOpen: ref(false),
-      overwriteTargetName: ref(''),
-      confirmOverwrite: vi.fn(),
-      closeOverwriteConfirm: vi.fn(),
-      resetConfirmOpen: ref(false),
-      resetBusy: ref(false),
-      requestReset: vi.fn(),
-      confirmReset: vi.fn(),
-      closeResetConfirm: vi.fn(),
-      deletePending: ref(null),
-      deleteBusy: ref(false),
-      confirmDelete: vi.fn(),
-      clearDeletePending: vi.fn(),
-    })
+    useSettingsScreenMock.mockReturnValue(
+      makeSettingsScreenMock({
+        requestApplyEntry: requestApplyEntryMock,
+        createFromEmpty: createFromEmptyMock,
+        saveCurrentLayout: saveCurrentLayoutMock,
+        updateDescription: updateDescriptionMock,
+      }),
+    )
   })
 
   it('wires layout library events into the settings-screen actions', async () => {
@@ -120,10 +87,13 @@ describe('LayoutsTab', () => {
       name: 'Test',
     })
     expect(createFromEmptyMock).toHaveBeenCalledTimes(1)
-    expect(updateDescriptionMock).toHaveBeenCalledWith({
-      id: 'user:test',
-      name: 'Test',
-    }, 'new desc')
+    expect(updateDescriptionMock).toHaveBeenCalledWith(
+      {
+        id: 'user:test',
+        name: 'Test',
+      },
+      'new desc',
+    )
 
     const state = useSettingsScreenMock.mock.results[0]?.value
     expect(state.deletePending.value).toEqual({

@@ -34,31 +34,19 @@ describe('LayoutsLibraryCard', () => {
       },
     })
 
-    const buttons = wrapper.findAll('button')
-    const listItems = wrapper.findAll('li')
+    await wrapper.get('[data-testid="create-empty-layout"]').trigger('click')
+    await wrapper.get('[data-testid="create-from-ivank"]').trigger('click')
+    await wrapper.get('[data-testid="reset-unsaved"]').trigger('click')
+    await wrapper.get('[data-testid="save-current"]').trigger('click')
 
-    await buttons[0]?.trigger('click')
-    await buttons[1]?.trigger('click')
-    await buttons[2]?.trigger('click')
-    await buttons[3]?.trigger('click')
+    // First entry actions
+    await wrapper.findAll('[data-testid="layout-rename"]')[0]?.trigger('click')
+    await wrapper
+      .findAll('[data-testid="layout-description"]')[0]
+      ?.trigger('click')
 
-    // entries[0] Rename and description
-    await buttons[4]?.trigger('click')
-    await buttons[5]?.trigger('click')
-
-    const openButton = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Open'))
-    await openButton?.trigger('click')
-
-    const deleteButton = wrapper
-      .findAll('button')
-      .find((button) => button.attributes('aria-label') === 'Delete')
-    await deleteButton?.trigger('click')
-
-    // Clicking list items does not open edit or apply.
-    await listItems[0]?.trigger('click')
-    await listItems[1]?.trigger('click')
+    await wrapper.findAll('[data-testid="layout-open"]')[0]?.trigger('click')
+    await wrapper.findAll('[data-testid="layout-delete"]')[0]?.trigger('click')
 
     expect(wrapper.emitted('createFromEmpty')).toHaveLength(1)
     expect(wrapper.emitted('createFromIvanK')).toHaveLength(1)

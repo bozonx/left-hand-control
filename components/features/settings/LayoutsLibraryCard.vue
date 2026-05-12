@@ -77,6 +77,7 @@ function openBlacklist(entryId: string) {
                 </h2>
                 <div class="flex items-center gap-2">
                     <UButton
+                        data-testid="create-empty-layout"
                         color="neutral"
                         variant="outline"
                         icon="i-lucide-file-plus"
@@ -87,6 +88,7 @@ function openBlacklist(entryId: string) {
                         {{ $t('settings.newEmptyLayoutBtn') }}
                     </UButton>
                     <UButton
+                        data-testid="create-from-ivank"
                         color="neutral"
                         variant="outline"
                         icon="i-lucide-copy-plus"
@@ -121,6 +123,7 @@ function openBlacklist(entryId: string) {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <UButton
+                        data-testid="reset-unsaved"
                         color="neutral"
                         variant="outline"
                         icon="i-lucide-rotate-ccw"
@@ -129,6 +132,7 @@ function openBlacklist(entryId: string) {
                         {{ $t('settings.resetUnsavedBtn') }}
                     </UButton>
                     <UButton
+                        data-testid="save-current"
                         color="primary"
                         icon="i-lucide-save"
                         :disabled="!currentLayoutId"
