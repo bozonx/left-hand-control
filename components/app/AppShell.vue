@@ -6,10 +6,10 @@ import LayoutModals from '~/components/features/settings/LayoutModals.vue'
 
 const { loaded, loadError, needsWelcome } = useConfig()
 
-// Borderless + transparent window: draw the app as a rounded panel with a
-// drop shadow, leaving a small transparent gutter around it for the shadow.
-// Skipped when maximized (fills the screen, square corners) and outside the
-// Tauri shell (a plain browser has no window chrome to mimic).
+// Borderless + transparent window: round the app's corners (the area outside
+// the radius is transparent → shows the desktop). Skipped when maximized
+// (fills the screen, square corners) and outside the Tauri shell (a plain
+// browser has no window chrome to mimic).
 const { available: hasWindowChrome, isMaximized } = useWindowControls()
 const floating = computed(() => hasWindowChrome.value && !isMaximized.value)
 
@@ -39,46 +39,40 @@ provide('app-shell-scroll', {
 
   <WindowResizeHandles />
 
-  <div class="h-screen overflow-hidden" :class="floating ? 'p-3' : ''">
-    <div
-      class="h-full flex flex-col overflow-hidden relative bg-(--ui-bg)"
-      :class="
-        floating
-          ? 'rounded-xl border border-(--ui-border) shadow-[0_8px_28px_-4px_rgba(0,0,0,0.6)]'
-          : ''
-      "
-    >
-      <AppHeader />
-      <LayoutModals />
+  <div
+    class="h-screen flex flex-col overflow-hidden relative bg-(--ui-bg)"
+    :class="floating ? 'rounded-xl border border-(--ui-border)' : ''"
+  >
+    <AppHeader />
+    <LayoutModals />
 
-      <main ref="mainRef" class="flex-1 overflow-y-auto p-4" @scroll="onScroll">
-        <div
-          class="w-full space-y-4"
-          :class="isFullWidth ? '' : 'mx-auto max-w-7xl'"
-        >
-          <UAlert
-            v-if="loadError"
-            color="error"
-            variant="soft"
-            icon="i-lucide-circle-alert"
-            :title="$t('app.loadFailedBody')"
-            :description="loadError"
-          />
+    <main ref="mainRef" class="flex-1 overflow-y-auto p-4" @scroll="onScroll">
+      <div
+        class="w-full space-y-4"
+        :class="isFullWidth ? '' : 'mx-auto max-w-7xl'"
+      >
+        <UAlert
+          v-if="loadError"
+          color="error"
+          variant="soft"
+          icon="i-lucide-circle-alert"
+          :title="$t('app.loadFailedBody')"
+          :description="loadError"
+        />
 
-          <UCard v-show="!loaded && !loadError">
-            <div class="py-12 text-center">
-              <h2 class="text-sm font-semibold">{{ $t('app.title') }}</h2>
-              <p class="mt-1 text-sm text-(--ui-text-muted)">
-                {{ $t('app.loading') }}
-              </p>
-            </div>
-          </UCard>
-
-          <div v-show="loaded && !loadError" class="contents">
-            <slot />
+        <UCard v-show="!loaded && !loadError">
+          <div class="py-12 text-center">
+            <h2 class="text-sm font-semibold">{{ $t('app.title') }}</h2>
+            <p class="mt-1 text-sm text-(--ui-text-muted)">
+              {{ $t('app.loading') }}
+            </p>
           </div>
+        </UCard>
+
+        <div v-show="loaded && !loadError" class="contents">
+          <slot />
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 </template>

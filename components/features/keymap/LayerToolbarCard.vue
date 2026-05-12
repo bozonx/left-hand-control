@@ -123,12 +123,12 @@ function stopDescriptionEditingShortcut(event: KeyboardEvent) {
                         class="w-48"
                     />
                     <UButton
-                        v-if="testInput"
                         icon="i-lucide-x"
                         size="sm"
                         color="neutral"
                         variant="ghost"
                         square
+                        :disabled="!testInput"
                         :aria-label="$t('common.clear')"
                         @click="testInput = ''"
                     />
