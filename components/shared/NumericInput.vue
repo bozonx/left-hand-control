@@ -6,6 +6,7 @@ const props = withDefaults(defineProps<{
   step?: number
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   class?: string
+  inputClass?: string
 }>(), {
   modelValue: '',
   min: undefined,
@@ -13,6 +14,7 @@ const props = withDefaults(defineProps<{
   step: 1,
   size: 'md',
   class: '',
+  inputClass: '',
 })
 
 const emit = defineEmits<{
@@ -78,6 +80,7 @@ function onWheel(event: WheelEvent) {
       :step="step"
       :size="size"
       class="w-full"
+      :ui="{ base: `min-h-0 ${inputClass}` }"
       @update:model-value="(v: string | number) => emit('update:modelValue', v)"
       @blur="(e: FocusEvent) => emit('blur', e)"
       @focus="(e: FocusEvent) => emit('focus', e)"
