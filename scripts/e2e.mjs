@@ -168,18 +168,41 @@ function startTauriDriver() {
 }
 
 let driver
-function stopDriver() {
-  if (!driver || driver.killed) return
-  driver.kill()
+function waitForExit(child, timeoutMs) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve()
+  }
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(resolve, timeoutMs)
+    child.once('exit', () => {
+      clearTimeout(timeout)
+      resolve()
+    })
+  })
 }
 
-process.on('exit', stopDriver)
+async function stopDriver() {
+  if (!driver || driver.killed) return
+  driver.kill()
+  await waitForExit(driver, 2000)
+  if (driver.exitCode === null && driver.signalCode === null) {
+    driver.kill('SIGKILL')
+    await waitForExit(driver, 1000)
+  }
+}
+
+process.on('exit', () => {
+  if (driver && !driver.killed) {
+    driver.kill('SIGKILL')
+  }
+})
 process.on('SIGINT', () => {
-  stopDriver()
+  void stopDriver()
   process.exit(130)
 })
 process.on('SIGTERM', () => {
-  stopDriver()
+  void stopDriver()
   process.exit(143)
 })
 
@@ -200,8 +223,9 @@ try {
   driver = startTauriDriver()
   await waitForTcp('127.0.0.1', port)
   await run('pnpm', ['exec', 'wdio', 'run', 'e2e/wdio.conf.mjs'])
+  await stopDriver()
 } catch (error) {
-  stopDriver()
+  await stopDriver()
   console.error(error instanceof Error ? error.message : String(error))
   process.exit(1)
 }
