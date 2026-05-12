@@ -15,7 +15,7 @@
   /* Set root to 16px to make rem calculations (0.875rem, 0.75rem, etc.)
      result in integer pixels, which is essential for text sharpness. */
   font-size: 16px;
-  --app-chrome-height: 38px;
+  --app-chrome-height: 44px;
   --app-context-height: 40px;
   --app-header-height: calc(var(--app-chrome-height) + var(--app-context-height));
 }
@@ -46,6 +46,17 @@ body,
   height: 100%;
   background: var(--ui-bg);
   color: var(--ui-text);
+}
+
+/* Inside the Tauri shell the window is borderless + transparent so the app can
+ * draw rounded corners (and a drop shadow). The page background must be see-
+ * through for that to work — the opaque surface is painted by `AppShell`'s
+ * inner panel instead. In a plain browser (`pnpm dev`) the class is absent and
+ * the normal opaque background above applies. */
+html.is-tauri,
+html.is-tauri body,
+html.is-tauri #__nuxt {
+  background: transparent;
 }
 
 body {

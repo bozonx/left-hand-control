@@ -314,6 +314,7 @@ export default {
   },
   keymap: {
     layerLabel: 'Layer',
+    typeTestPlaceholder: 'Type to test...',
     keyViewLabels: 'US layout',
     keyViewCodes: 'Internal codes',
     keyViewNumeric: 'System codes',
