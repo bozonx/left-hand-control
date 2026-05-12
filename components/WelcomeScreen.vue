@@ -102,6 +102,7 @@ async function pickEmpty() {
           </p>
           <template #footer>
             <UButton
+              data-testid="welcome-empty-layout"
               block
               color="neutral"
               variant="outline"

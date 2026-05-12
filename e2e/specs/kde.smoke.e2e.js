@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { openHome, waitForAttribute, waitForTestId } from '../helpers/app.js'
+import { isKdeWaylandTarget } from '../helpers/targets.js'
 
 describe('KDE Plasma Wayland smoke', () => {
   before(function () {
-    if (process.env.LHC_E2E_TARGET !== 'kde-wayland') {
+    if (!isKdeWaylandTarget()) {
       this.skip()
     }
   })

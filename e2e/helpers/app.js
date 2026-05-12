@@ -11,13 +11,27 @@ export async function waitForTestId(testId, timeout = 30000) {
   return element
 }
 
+export async function completeWelcomeIfPresent() {
+  const welcomeEmpty = await byTestId('welcome-empty-layout')
+  const exists = await welcomeEmpty.waitForExist({
+    timeout: 1500,
+    reverse: false,
+  }).catch(() => false)
+  if (!exists) return
+
+  await welcomeEmpty.click()
+  await waitForTestId('settings-page', 30000)
+}
+
 export async function openHome() {
+  await completeWelcomeIfPresent()
   const home = await waitForTestId('home-nav-button')
   await home.click()
   await waitForTestId('layouts-page')
 }
 
 export async function openSettings() {
+  await completeWelcomeIfPresent()
   const settings = await waitForTestId('settings-nav-button')
   await settings.click()
   await waitForTestId('settings-page')

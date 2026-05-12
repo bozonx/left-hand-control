@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import {
   assertContainsPath,
+  completeWelcomeIfPresent,
+  openHome,
   openSettings,
   waitForTestId,
 } from '../helpers/app.js'
@@ -8,6 +10,8 @@ import {
 describe('desktop app smoke', () => {
   it('starts the Tauri shell and renders the layouts page', async () => {
     await waitForTestId('app-shell', 60000)
+    await completeWelcomeIfPresent()
+    await openHome()
     await waitForTestId('layouts-page')
     await waitForTestId('layouts-library-card')
   })

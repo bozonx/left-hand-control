@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const port = Number.parseInt(process.env.LHC_TAURI_DRIVER_PORT || '4444', 10)
 const target = process.env.LHC_E2E_TARGET || 'desktop'
+const knownTargets = new Set(['desktop', 'kde-wayland', 'windows'])
 const devDir =
   process.env.LHC_DEV_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'lhc-e2e-'))
 const appName = process.platform === 'win32' ? 'left-hand-control.exe' : 'left-hand-control'
@@ -21,6 +22,23 @@ const env = {
   LHC_E2E_APP: appPath,
   LHC_E2E_TARGET: target,
   LHC_TAURI_DRIVER_PORT: String(port),
+}
+
+if (!knownTargets.has(target)) {
+  console.error(
+    `Unknown LHC_E2E_TARGET="${target}". Expected one of: ${[...knownTargets].join(', ')}`,
+  )
+  process.exit(1)
+}
+
+if (target === 'windows' && process.platform !== 'win32') {
+  console.error('LHC_E2E_TARGET=windows must run on a Windows desktop VM.')
+  process.exit(1)
+}
+
+if (target === 'kde-wayland' && process.platform !== 'linux') {
+  console.error('LHC_E2E_TARGET=kde-wayland must run on a Linux KDE Wayland desktop VM.')
+  process.exit(1)
 }
 
 function run(command, args, options = {}) {
@@ -45,6 +63,43 @@ function run(command, args, options = {}) {
       reject(new Error(`${command} ${args.join(' ')} exited with code ${code}`))
     })
   })
+}
+
+async function commandWorks(command, args) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      cwd: root,
+      env,
+      stdio: 'ignore',
+      shell: process.platform === 'win32',
+    })
+    child.on('error', () => resolve(false))
+    child.on('exit', (code) => resolve(code === 0))
+  })
+}
+
+async function preflight() {
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    throw new Error(`Invalid LHC_TAURI_DRIVER_PORT value: ${process.env.LHC_TAURI_DRIVER_PORT}`)
+  }
+
+  const hasDriver = await commandWorks('tauri-driver', ['--version'])
+  if (!hasDriver) {
+    throw new Error('tauri-driver is required. Install it with: cargo install tauri-driver --locked')
+  }
+
+  if (target === 'kde-wayland') {
+    if (process.env.XDG_SESSION_TYPE !== 'wayland') {
+      throw new Error(
+        `KDE E2E must run inside a Wayland session. XDG_SESSION_TYPE=${process.env.XDG_SESSION_TYPE || '<empty>'}`,
+      )
+    }
+    if (!String(process.env.XDG_CURRENT_DESKTOP || '').toLowerCase().includes('kde')) {
+      throw new Error(
+        `KDE E2E must run inside Plasma. XDG_CURRENT_DESKTOP=${process.env.XDG_CURRENT_DESKTOP || '<empty>'}`,
+      )
+    }
+  }
 }
 
 function waitForTcp(host, tcpPort, timeoutMs = 15000) {
@@ -104,10 +159,22 @@ process.on('SIGTERM', () => {
 console.log(`E2E target: ${target}`)
 console.log(`E2E dev dir: ${devDir}`)
 
-if (process.env.LHC_E2E_SKIP_BUILD !== '1') {
-  await run('pnpm', ['tauri', 'build', '--debug', '--no-bundle'])
-}
+try {
+  await preflight()
 
-driver = startTauriDriver()
-await waitForTcp('127.0.0.1', port)
-await run('pnpm', ['exec', 'wdio', 'run', 'e2e/wdio.conf.mjs'])
+  if (process.env.LHC_E2E_SKIP_BUILD !== '1') {
+    await run('pnpm', ['tauri', 'build', '--debug', '--no-bundle'])
+  }
+
+  if (!fs.existsSync(appPath)) {
+    throw new Error(`Tauri debug binary not found: ${appPath}`)
+  }
+
+  driver = startTauriDriver()
+  await waitForTcp('127.0.0.1', port)
+  await run('pnpm', ['exec', 'wdio', 'run', 'e2e/wdio.conf.mjs'])
+} catch (error) {
+  stopDriver()
+  console.error(error instanceof Error ? error.message : String(error))
+  process.exit(1)
+}

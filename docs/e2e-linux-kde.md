@@ -21,7 +21,14 @@ Run the KDE Plasma Wayland smoke target:
 
 ```bash
 pnpm install --frozen-lockfile
-LHC_E2E_TARGET=kde-wayland pnpm test:e2e:kde
+pnpm test:e2e:kde
+```
+
+Run the Windows desktop smoke target inside a Windows VM:
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm test:e2e:windows
 ```
 
 The runner builds `src-tauri/target/debug/left-hand-control`, starts `tauri-driver` on port `4444`, and launches the app with an isolated `LHC_DEV_DIR` under `/tmp`. Override these when needed:
@@ -35,6 +42,12 @@ If the debug binary is already built:
 ```bash
 LHC_E2E_SKIP_BUILD=1 pnpm test:e2e:no-build
 ```
+
+Supported `LHC_E2E_TARGET` values:
+
+- `desktop`: generic app startup, routing, storage and IPC smoke.
+- `kde-wayland`: generic smoke plus KDE Plasma Wayland service assertions.
+- `windows`: generic smoke plus Windows platform assertions.
 
 ## Manjaro KDE Plasma Wayland VM
 
@@ -89,14 +102,42 @@ e2e-kde-wayland:
 
 For repeatability, prefer VM snapshots: restore a clean snapshot, run E2E, collect logs/artifacts, then discard the VM state.
 
+## Windows VM
+
+Use a Windows 11 VM with an interactive desktop session for the runner user.
+
+Install:
+
+- Node.js 20
+- pnpm 9
+- Rust stable with the MSVC toolchain
+- Microsoft Edge WebView2 Runtime
+- `tauri-driver`
+
+One-time setup:
+
+```powershell
+rustup default stable
+cargo install tauri-driver --locked
+```
+
+Run:
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm test:e2e:windows
+```
+
+The Windows target currently checks startup, routing, isolated debug storage, Tauri IPC and `get_platform_info` returning `windows`. It intentionally does not test key interception because the Windows mapper backend is still a stub.
+
 ## Target Matrix
 
 Current target:
 
 - `kde-wayland`: Manjaro KDE Plasma Wayland. Checks app startup, routing, isolated debug storage, Tauri IPC, KDE desktop detection, KDE layout detection and KDE system action services.
+- `windows`: Windows 11 desktop. Checks app startup, routing, isolated debug storage, Tauri IPC and Windows platform detection.
 
 Future targets:
 
 - `linux-gnome-wayland`: app startup and GNOME-specific capability expectations.
 - `linux-kde-x11`: KDE behavior under X11.
-- `windows`: app startup, routing, Tauri IPC and Windows stub capability expectations.
