@@ -3,15 +3,35 @@ export function e2eTarget(): string {
 }
 
 export function isKdeWaylandTarget(): boolean {
-  return e2eTarget() === 'kde-wayland'
+  const t = e2eTarget()
+  return t === 'kde-wayland' || t === 'linux-kde-wayland'
+}
+
+export function isGnomeWaylandTarget(): boolean {
+  return e2eTarget() === 'linux-gnome-wayland'
+}
+
+export function isSwayWaylandTarget(): boolean {
+  return e2eTarget() === 'linux-sway-wayland'
 }
 
 export function isWindowsTarget(): boolean {
   return e2eTarget() === 'windows'
 }
 
+export function isLinuxWaylandTarget(): boolean {
+  return isKdeWaylandTarget() || isGnomeWaylandTarget() || isSwayWaylandTarget()
+}
+
 export function expectedOsForTarget(): string | null {
   if (isWindowsTarget()) return 'windows'
-  if (isKdeWaylandTarget()) return 'linux'
+  if (isLinuxWaylandTarget()) return 'linux'
+  return null
+}
+
+export function expectedDesktopForTarget(): string | null {
+  if (isKdeWaylandTarget()) return 'KDE Plasma'
+  if (isGnomeWaylandTarget()) return 'GNOME'
+  if (isSwayWaylandTarget()) return 'Sway'
   return null
 }

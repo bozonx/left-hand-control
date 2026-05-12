@@ -2,6 +2,28 @@
 
 The E2E layer runs the real Tauri desktop binary through `tauri-driver` and WebdriverIO. Keep these tests on real desktop sessions or full VMs; Linux DE behavior depends on DBus, the compositor, portals, WebKitGTK and the input stack.
 
+## Vagrant VMs (Local Matrix)
+
+A `Vagrantfile` in the repo root defines KVM/libvirt VMs for each Linux DE target:
+
+```bash
+# Start a specific VM
+vagrant up fedora-kde
+
+# SSH into the VM and run E2E
+vagrant ssh fedora-kde
+# Inside the VM:
+cd /vagrant
+pnpm install
+LHC_E2E_TARGET=linux-kde-wayland pnpm test:e2e
+```
+
+Available VM names: `ubuntu-gnome`, `ubuntu-kde`, `fedora-gnome`, `fedora-kde`, `fedora-sway`.
+
+Each VM is provisioned with the DE, dev tools (Node, pnpm, Rust, `tauri-driver`) and an autologin configuration so it boots straight into a graphical session.
+
+> **Tip:** The first `vagrant up` may take a while because it downloads the box image and provisions the VM. Subsequent runs are fast if you keep the VM running.
+
 ## Local Run
 
 Install the one-time WebDriver binary:
@@ -138,12 +160,14 @@ The Windows target currently checks startup, routing, isolated debug storage, Ta
 
 ## Target Matrix
 
-Current target:
+Current targets:
 
-- `kde-wayland`: Manjaro KDE Plasma Wayland. Checks app startup, routing, isolated debug storage, Tauri IPC, KDE desktop detection, KDE layout detection and KDE system action services.
+- `desktop`: generic app startup, routing, storage and IPC smoke.
+- `kde-wayland` / `linux-kde-wayland`: KDE Plasma Wayland. Checks app startup, routing, isolated debug storage, Tauri IPC, KDE desktop detection, KDE layout detection and KDE system action services.
+- `linux-gnome-wayland`: GNOME Wayland. Checks app startup, routing, isolated debug storage, Tauri IPC and GNOME desktop detection.
+- `linux-sway-wayland`: Sway Wayland. Checks app startup, routing, isolated debug storage, Tauri IPC and Sway desktop detection.
 - `windows`: Windows 11 desktop. Checks app startup, routing, isolated debug storage, Tauri IPC and Windows platform detection.
 
 Future targets:
 
-- `linux-gnome-wayland`: app startup and GNOME-specific capability expectations.
 - `linux-kde-x11`: KDE behavior under X11.

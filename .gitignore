@@ -8,6 +8,7 @@ dist
 .env.*
 !.env.example
 dist/
+.vagrant/
 
 # Node
 node_modules

@@ -8,7 +8,14 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const port = Number.parseInt(process.env.LHC_TAURI_DRIVER_PORT || '4444', 10)
 const target = process.env.LHC_E2E_TARGET || 'desktop'
-const knownTargets = new Set(['desktop', 'kde-wayland', 'windows'])
+const knownTargets = new Set([
+  'desktop',
+  'kde-wayland',
+  'linux-kde-wayland',
+  'linux-gnome-wayland',
+  'linux-sway-wayland',
+  'windows',
+])
 const isTempDir = !process.env.LHC_DEV_DIR
 const devDir =
   process.env.LHC_DEV_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'lhc-e2e-'))
@@ -112,7 +119,7 @@ async function preflight() {
     }
   }
 
-  if (target === 'kde-wayland') {
+  if (target === 'kde-wayland' || target === 'linux-kde-wayland') {
     if (process.env.XDG_SESSION_TYPE !== 'wayland') {
       throw new Error(
         `KDE E2E must run inside a Wayland session. XDG_SESSION_TYPE=${process.env.XDG_SESSION_TYPE || '<empty>'}`,
@@ -121,6 +128,34 @@ async function preflight() {
     if (!String(process.env.XDG_CURRENT_DESKTOP || '').toLowerCase().includes('kde')) {
       throw new Error(
         `KDE E2E must run inside Plasma. XDG_CURRENT_DESKTOP=${process.env.XDG_CURRENT_DESKTOP || '<empty>'}`,
+      )
+    }
+  }
+
+  if (target === 'linux-gnome-wayland') {
+    if (process.env.XDG_SESSION_TYPE !== 'wayland') {
+      throw new Error(
+        `GNOME E2E must run inside a Wayland session. XDG_SESSION_TYPE=${process.env.XDG_SESSION_TYPE || '<empty>'}`,
+      )
+    }
+    if (!String(process.env.XDG_CURRENT_DESKTOP || '').toLowerCase().includes('gnome')) {
+      throw new Error(
+        `GNOME E2E must run inside a GNOME session. XDG_CURRENT_DESKTOP=${process.env.XDG_CURRENT_DESKTOP || '<empty>'}`,
+      )
+    }
+  }
+
+  if (target === 'linux-sway-wayland') {
+    if (process.env.XDG_SESSION_TYPE !== 'wayland') {
+      throw new Error(
+        `Sway E2E must run inside a Wayland session. XDG_SESSION_TYPE=${process.env.XDG_SESSION_TYPE || '<empty>'}`,
+      )
+    }
+    const desktop = String(process.env.XDG_CURRENT_DESKTOP || '').toLowerCase()
+    const hasSwaySock = !!process.env.SWAYSOCK
+    if (!desktop.includes('sway') && !hasSwaySock) {
+      throw new Error(
+        `Sway E2E must run inside a Sway session. XDG_CURRENT_DESKTOP=${process.env.XDG_CURRENT_DESKTOP || '<empty>'} SWAYSOCK=${process.env.SWAYSOCK || '<empty>'}`,
       )
     }
   }
