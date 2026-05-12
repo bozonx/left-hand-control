@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { $, browser } from '@wdio/globals'
 
-export async function byTestId(testId) {
+export async function byTestId(testId: string) {
   return $(`[data-testid="${testId}"]`)
 }
 
-export async function waitForTestId(testId, timeout = 30000) {
+export async function waitForTestId(testId: string, timeout = 30000) {
   const element = await byTestId(testId)
   await element.waitForExist({ timeout })
   return element
@@ -37,23 +37,31 @@ export async function openSettings() {
   await waitForTestId('settings-page')
 }
 
-export async function waitForAttribute(testId, name, predicate, timeout = 30000) {
+export async function waitForAttribute(
+  testId: string,
+  name: string,
+  predicate: (value: string) => boolean,
+  timeout = 30000,
+) {
   const element = await waitForTestId(testId)
   await browser.waitUntil(
-    async () => predicate(await element.getAttribute(name)),
+    async () => {
+      const value = await element.getAttribute(name)
+      return value != null && predicate(value)
+    },
     {
       timeout,
       timeoutMsg: `Timed out waiting for ${testId} ${name}`,
     },
   )
-  return element.getAttribute(name)
+  return await element.getAttribute(name)
 }
 
-export function normalizePathForAssert(value) {
+export function normalizePathForAssert(value: string) {
   return value.replaceAll('\\', '/')
 }
 
-export function assertContainsPath(actual, expected) {
+export function assertContainsPath(actual: string, expected: string) {
   assert.ok(
     normalizePathForAssert(actual).includes(normalizePathForAssert(expected)),
     `Expected "${actual}" to contain "${expected}"`,

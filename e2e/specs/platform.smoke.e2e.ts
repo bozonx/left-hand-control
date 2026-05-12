@@ -3,8 +3,11 @@ import { openHome, waitForAttribute, waitForTestId } from '../helpers/app.js'
 import { expectedOsForTarget, isWindowsTarget } from '../helpers/targets.js'
 
 describe('platform smoke', () => {
-  it('loads platform diagnostics through Tauri IPC', async () => {
+  before(async () => {
     await openHome()
+  })
+
+  it('loads platform diagnostics through Tauri IPC', async () => {
     await waitForTestId('platform-status-card')
 
     const os = await waitForAttribute(

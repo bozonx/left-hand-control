@@ -8,9 +8,12 @@ import {
 } from '../helpers/app.js'
 
 describe('desktop app smoke', () => {
+  before(async () => {
+    await completeWelcomeIfPresent()
+  })
+
   it('starts the Tauri shell and renders the layouts page', async () => {
     await waitForTestId('app-shell', 60000)
-    await completeWelcomeIfPresent()
     await openHome()
     await waitForTestId('layouts-page')
     await waitForTestId('layouts-library-card')

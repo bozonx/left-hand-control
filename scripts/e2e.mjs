@@ -9,6 +9,7 @@ const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const port = Number.parseInt(process.env.LHC_TAURI_DRIVER_PORT || '4444', 10)
 const target = process.env.LHC_E2E_TARGET || 'desktop'
 const knownTargets = new Set(['desktop', 'kde-wayland', 'windows'])
+const isTempDir = !process.env.LHC_DEV_DIR
 const devDir =
   process.env.LHC_DEV_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'lhc-e2e-'))
 const appName = process.platform === 'win32' ? 'left-hand-control.exe' : 'left-hand-control'
@@ -182,6 +183,13 @@ function waitForExit(child, timeoutMs) {
   })
 }
 
+async function cleanup() {
+  await stopDriver()
+  if (isTempDir && fs.existsSync(devDir)) {
+    fs.rmSync(devDir, { recursive: true, force: true })
+  }
+}
+
 async function stopDriver() {
   if (!driver || driver.killed) return
   driver.kill()
@@ -196,13 +204,16 @@ process.on('exit', () => {
   if (driver && !driver.killed) {
     driver.kill('SIGKILL')
   }
+  if (isTempDir && fs.existsSync(devDir)) {
+    fs.rmSync(devDir, { recursive: true, force: true })
+  }
 })
 process.on('SIGINT', () => {
-  void stopDriver()
+  void cleanup()
   process.exit(130)
 })
 process.on('SIGTERM', () => {
-  void stopDriver()
+  void cleanup()
   process.exit(143)
 })
 
@@ -222,10 +233,10 @@ try {
 
   driver = startTauriDriver()
   await waitForTcp('127.0.0.1', port)
-  await run('pnpm', ['exec', 'wdio', 'run', 'e2e/wdio.conf.mjs'])
-  await stopDriver()
+  await run('pnpm', ['exec', 'wdio', 'run', 'e2e/wdio.conf.ts'])
+  await cleanup()
 } catch (error) {
-  await stopDriver()
+  await cleanup()
   console.error(error instanceof Error ? error.message : String(error))
   process.exit(1)
 }
