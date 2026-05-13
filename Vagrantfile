@@ -38,6 +38,7 @@ Vagrant.configure("2") do |config|
       case stage
       when :system
         <<~SH
+          set -e
           export DEBIAN_FRONTEND=noninteractive
           apt-get update
           apt-get install -y ubuntu-desktop-minimal gdm3 gnome-session gnome-shell
@@ -48,6 +49,7 @@ Vagrant.configure("2") do |config|
           curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
           apt-get install -y nodejs
           npm install -g pnpm@9
+          ln -sf "$(which pnpm)" /usr/local/bin/pnpm
           systemctl set-default graphical.target
           systemctl enable gdm3
           sed -i 's/^#*AutomaticLoginEnable=.*/AutomaticLoginEnable=true/' /etc/gdm3/custom.conf
@@ -71,6 +73,7 @@ Vagrant.configure("2") do |config|
       case stage
       when :system
         <<~SH
+          set -e
           export DEBIAN_FRONTEND=noninteractive
           apt-get update
           apt-get install -y kde-plasma-desktop sddm
@@ -82,6 +85,7 @@ Vagrant.configure("2") do |config|
           curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
           apt-get install -y nodejs
           npm install -g pnpm@9
+          ln -sf "$(which pnpm)" /usr/local/bin/pnpm
           systemctl set-default graphical.target
           systemctl enable sddm
           mkdir -p /etc/sddm.conf.d
@@ -109,15 +113,17 @@ EOF
       case stage
       when :system
         <<~SH
+          set -e
           dnf update -y
           dnf group install -y "GNOME Desktop Environment"
           dnf install -y gdm
-          dnf install -y webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel \
+          dnf install -y webkit2gtk4.1 webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel \
             librsvg2-devel libsoup3-devel javascriptcoregtk4.1-devel \
             openssl-devel pkgconf gcc curl wget git file
           dnf install -y xdotool xdg-desktop-portal-gnome xdg-desktop-portal
           dnf install -y nodejs npm
           npm install -g pnpm@9
+          ln -sf "$(which pnpm)" /usr/local/bin/pnpm
           systemctl set-default graphical.target
           systemctl enable gdm
           sed -i 's/^#*AutomaticLoginEnable=.*/AutomaticLoginEnable=true/' /etc/gdm/custom.conf
@@ -141,16 +147,18 @@ EOF
       case stage
       when :system
         <<~SH
+          set -e
           dnf update -y
           dnf group install -y "KDE Plasma Workspaces"
           dnf install -y sddm
-          dnf install -y webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel \
+          dnf install -y webkit2gtk4.1 webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel \
             librsvg2-devel libsoup3-devel javascriptcoregtk4.1-devel \
             openssl-devel pkgconf gcc curl wget git file
           dnf install -y qdbus xdotool qt6-qttools \
             xdg-desktop-portal-kde xdg-desktop-portal
           dnf install -y nodejs npm
           npm install -g pnpm@9
+          ln -sf "$(which pnpm)" /usr/local/bin/pnpm
           systemctl set-default graphical.target
           systemctl enable sddm
           mkdir -p /etc/sddm.conf.d
@@ -178,14 +186,16 @@ EOF
       case stage
       when :system
         <<~SH
+          set -e
           dnf update -y
           dnf install -y sway waybar swayidle swaylock foot lightdm
-          dnf install -y webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel \
+          dnf install -y webkit2gtk4.1 webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel \
             librsvg2-devel libsoup3-devel javascriptcoregtk4.1-devel \
             openssl-devel pkgconf gcc curl wget git file
           dnf install -y xdotool xdg-desktop-portal-wlr xdg-desktop-portal
           dnf install -y nodejs npm
           npm install -g pnpm@9
+          ln -sf "$(which pnpm)" /usr/local/bin/pnpm
           systemctl set-default graphical.target
           systemctl enable lightdm
           mkdir -p /etc/lightdm/lightdm.conf.d

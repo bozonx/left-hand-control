@@ -9,7 +9,7 @@ import { createDefaultConfig } from '~/types/config'
 
 const AppTooltipStub = defineComponent({
   name: 'AppTooltip',
-  props: ['text', 'disabled'],
+  props: { text: { type: String, default: '' }, disabled: { type: Boolean, default: false } },
   setup(_props, { slots }) {
     return () => slots.default?.()
   },

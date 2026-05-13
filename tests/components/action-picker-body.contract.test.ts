@@ -1,3 +1,4 @@
+/* eslint-disable vue/one-component-per-file */
 import { defineComponent, ref } from 'vue'
 
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'

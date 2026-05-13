@@ -1,8 +1,9 @@
+/* eslint-disable vue/one-component-per-file */
 import { defineComponent, h } from 'vue'
 
 export const AppTooltipStub = defineComponent({
   name: 'AppTooltip',
-  props: ['text', 'disabled'],
+  props: { text: { type: String, default: '' }, disabled: { type: Boolean, default: false } },
   setup(_props, { slots }) {
     return () => slots.default?.()
   },
@@ -10,7 +11,7 @@ export const AppTooltipStub = defineComponent({
 
 export const UModalStub = defineComponent({
   name: 'UModal',
-  props: ['modelValue'],
+  props: { modelValue: { type: [String, Number, Boolean], required: false, default: undefined } },
   setup(props, { slots, emit }) {
     return () =>
       h('div', { 'data-testid': 'u-modal' }, [
@@ -25,7 +26,7 @@ export const UModalStub = defineComponent({
 
 export const FieldResetButtonStub = defineComponent({
   name: 'FieldResetButton',
-  props: ['label'],
+  props: { label: { type: String, required: false, default: '' } },
   setup(_props, { emit }) {
     return () =>
       h('button', {
@@ -37,7 +38,7 @@ export const FieldResetButtonStub = defineComponent({
 
 export const UButtonStub = defineComponent({
   name: 'UButton',
-  props: ['icon', 'color', 'variant'],
+  props: { icon: { type: String, required: false, default: '' }, color: { type: String, required: false, default: '' }, variant: { type: String, required: false, default: '' } },
   setup(_props, { slots, attrs }) {
     return () => h('button', { ...attrs }, slots)
   },
