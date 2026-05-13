@@ -61,6 +61,43 @@ Available commands:
 - `pnpm test:components` — component tests for `.vue` files in the Nuxt test environment
 - `pnpm test:unit:watch` / `pnpm test:components:watch` — watch mode during UI work
 
+## Run E2E tests
+
+E2E tests launch the real Tauri binary through `tauri-driver` and WebdriverIO. They require a graphical desktop session (DBus, compositor, portals). The repo includes a `Vagrantfile` with VMs for each supported Linux DE.
+
+### VirtualBox setup
+
+Requires [VirtualBox](https://www.virtualbox.org/) and [Vagrant](https://www.vagrantup.com/).
+
+```bash
+# Start a VM (example: Fedora KDE)
+vagrant up fedora-kde --provider=virtualbox
+
+# SSH into the VM and run E2E
+vagrant ssh fedora-kde
+cd /vagrant
+pnpm install
+pnpm test:e2e:linux-kde
+```
+
+Or run without entering the VM interactively:
+
+```bash
+vagrant ssh fedora-kde -c 'cd /vagrant && pnpm install && pnpm test:e2e:linux-kde'
+```
+
+Available VMs: `ubuntu-gnome`, `ubuntu-kde`, `fedora-gnome`, `fedora-kde`, `fedora-sway`.
+
+E2E target scripts:
+
+- `pnpm test:e2e` — generic desktop smoke tests
+- `pnpm test:e2e:linux-kde` — KDE Plasma Wayland assertions
+- `pnpm test:e2e:gnome` — GNOME Wayland assertions
+- `pnpm test:e2e:sway` — Sway Wayland assertions
+- `pnpm test:e2e:windows` — Windows desktop assertions
+
+Each VM is provisioned with the DE, Node, pnpm, Rust, `tauri-driver` and an autologin configuration. The first `vagrant up` may take a while because it downloads the box image and provisions the VM.
+
 ## Build a production desktop bundle
 
 ```bash
