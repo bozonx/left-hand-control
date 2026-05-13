@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "pnpm test:unit && pnpm test:composables && pnpm test:components",
+    "ci": "pnpm typecheck && pnpm lint && pnpm test",
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:unit:watch": "vitest --config vitest.unit.config.ts",
     "test:components": "vitest run --config vitest.components.config.ts",

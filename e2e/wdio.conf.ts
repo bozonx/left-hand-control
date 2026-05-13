@@ -2,7 +2,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
-const appName = process.platform === 'win32' ? 'left-hand-control.exe' : 'left-hand-control'
+const appName =
+  process.platform === 'win32' ? 'left-hand-control.exe' : 'left-hand-control'
 const appPath =
   process.env.LHC_E2E_APP ||
   path.join(root, 'src-tauri', 'target', 'debug', appName)
@@ -16,7 +17,8 @@ export const config: WebdriverIO.Config = {
   hostname: process.env.LHC_TAURI_DRIVER_HOST || '127.0.0.1',
   port: Number.parseInt(process.env.LHC_TAURI_DRIVER_PORT || '4444', 10),
   path: '/',
-  logLevel: (process.env.LHC_E2E_WDIO_LOG_LEVEL || 'warn') as any,
+  logLevel: (process.env.LHC_E2E_WDIO_LOG_LEVEL ||
+    'warn') as unknown as WebdriverIO.Config['logLevel'],
   bail: 0,
   waitforTimeout: 10000,
   connectionRetryTimeout: 120000,
@@ -35,7 +37,7 @@ export const config: WebdriverIO.Config = {
       'tauri:options': {
         application: appPath,
       },
-    } as any,
+    } as unknown as WebdriverIO.Capabilities,
   ],
   before() {
     // Intentionally empty; reserved for pre-test app reset when needed.
@@ -46,8 +48,11 @@ export const config: WebdriverIO.Config = {
       if (!fs.existsSync(screenshotPath)) {
         fs.mkdirSync(screenshotPath, { recursive: true })
       }
-      const fileName = `${test.parent} - ${test.title} - ${Date.now()}.png`
-        .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+      const fileName =
+        `${test.parent} - ${test.title} - ${Date.now()}.png`.replace(
+          /[^a-zA-Z0-9.\-_]/g,
+          '_',
+        )
       const filePath = path.join(screenshotPath, fileName)
       await browser.saveScreenshot(filePath)
     }
