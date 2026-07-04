@@ -1,13 +1,15 @@
 layers:
   - id: nav
     keys:
+      Tab: CapsLock
+
       AltLeft: macro:pasteAtLineBottom
       MetaLeft: Ctrl+KeyX
       Space: Delete
       KeyQ: macro:moveLineDown
       KeyW: Ctrl+Backspace
       KeyE: Ctrl+Delete
-      KeyR: PageUp
+      KeyR: macro:cutLineContent
       KeyT: Ctrl+Home
       KeyY: Home
       KeyU: macro:downEnd
@@ -21,7 +23,7 @@ layers:
       KeyA: app:showEmojiMenu1
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
-      KeyF: PageDown
+      #KeyF: PageDown
       KeyG: Ctrl+End
       KeyH: ArrowLeft
       KeyJ: ArrowDown
@@ -47,6 +49,8 @@ layers:
       #     action: BrowserForward
   - id: sel
     keys:
+      CapsLock: null
+
       Digit1: sys:switchLayout1
       Digit2: sys:switchLayout2
       Digit3: sys:switchLayout3
@@ -64,11 +68,11 @@ layers:
       KeyQ: Ctrl+KeyZ
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
-      KeyR: macro:cutLineContent
-      KeyT: macro:cutAndRemoveLine
+      KeyR: macro:cutAndRemoveLine
+      KeyT: null
       KeyY: Shift+Home
-      KeyU: null
-      KeyI: null
+      KeyU: PageDown
+      KeyI: PageUp
       KeyO: Shift+End
       KeyP: macro:select5LinesUp
       BracketLeft: null
@@ -93,7 +97,7 @@ layers:
       KeyV: null
       KeyB: macro:replaceLineWidthBuffer
       KeyN: Ctrl+Shift+ArrowLeft
-      KeyM: Null
+      KeyM: null
       Comma: null
       Period: Ctrl+Shift+ArrowRight
       Slash: macro:select5LinesDown
@@ -109,7 +113,7 @@ layers:
       KeyI: Digit8
       KeyO: Digit9
       KeyP: 'text:='
-      BracketLeft: 'text:≠'
+      BracketLeft: null
       BracketRight: null
       Backslash: null
 
@@ -144,11 +148,11 @@ layers:
       KeyE: 'text:]'
       KeyR: 'text:)'
       KeyT: 'text:TODO: '
-      KeyY: null
+      KeyY: F12
       KeyU: F7
       KeyI: F8
       KeyO: F9
-      KeyP: F12
+      KeyP: 'text:≠'
       BracketLeft: 'text:ℹ️'
       BracketRight: null
       Backslash: null
@@ -158,11 +162,11 @@ layers:
       KeyD: 'text:‼️'
       KeyF: 'text:❓'
       KeyG: 'text:❌'
-      KeyH: null
+      KeyH: F11
       KeyJ: F4
       KeyK: F5
       KeyL: F6
-      Semicolon: F11
+      Semicolon: null
       Quote: 'text:☝️'
 
       KeyZ: "text:\\"
@@ -170,14 +174,15 @@ layers:
       KeyC: 'text:⏩'
       KeyV: 'text:✅'
       KeyB: 'text:€'
-      KeyN: null
+      KeyN: F10
       KeyM: F1
       Comma: F2
       Period: F3
-      Slash: F10
+      Slash: null
   - id: win
     keys:
       F4: F4
+      Backspace: sys:screenOff
 
       Tab: Tab
       CapsLock: sys:walkThroughWindowsAlternative
@@ -205,7 +210,7 @@ layers:
       KeyP: sys:switchLayout5
       BracketLeft: sys:switchLayout6
       BracketRight: sys:switchLayout7
-      Backslash: sys:screenOff
+      #Backslash: sys:screenOff
 
       KeyA: sys:switchDesktop4
       KeyS: sys:switchDesktop3
