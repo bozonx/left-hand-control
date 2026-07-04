@@ -103,11 +103,7 @@ impl StoragePaths {
 
     pub fn save_config(&self, contents: &str) -> Result<(), String> {
         self.ensure()?;
-        fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-        let path = self.config_path();
-        let tmp = self.config_dir.join("config.json.tmp");
-        write_atomic(&tmp, &path, contents.as_bytes())?;
-        Ok(())
+        write_atomic(&self.config_path(), contents.as_bytes())
     }
 
     pub fn load_ui_state(&self) -> Result<String, String> {
@@ -121,11 +117,7 @@ impl StoragePaths {
 
     pub fn save_ui_state(&self, contents: &str) -> Result<(), String> {
         self.ensure()?;
-        fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-        let path = self.ui_state_path();
-        let tmp = self.config_dir.join("ui-state.json.tmp");
-        write_atomic(&tmp, &path, contents.as_bytes())?;
-        Ok(())
+        write_atomic(&self.ui_state_path(), contents.as_bytes())
     }
 
     pub fn load_current_layout(&self) -> Result<String, String> {
@@ -139,11 +131,7 @@ impl StoragePaths {
 
     pub fn save_current_layout(&self, contents: &str) -> Result<(), String> {
         self.ensure()?;
-        fs::create_dir_all(&self.data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
-        let path = self.current_layout_path();
-        let tmp = self.data_dir.join("current-layout.yaml.tmp");
-        write_atomic(&tmp, &path, contents.as_bytes())?;
-        Ok(())
+        write_atomic(&self.current_layout_path(), contents.as_bytes())
     }
 
     pub fn list_user_layouts(&self) -> Result<Vec<String>, String> {
@@ -193,8 +181,7 @@ impl StoragePaths {
         if path.exists() && !overwrite {
             return Err(format!("Layout \"{safe}\" already exists"));
         }
-        let tmp = dir.join(format!("{safe}.yaml.tmp"));
-        write_atomic(&tmp, &path, contents.as_bytes())?;
+        write_atomic(&path, contents.as_bytes())?;
         Ok(safe)
     }
 
@@ -217,12 +204,15 @@ impl StoragePaths {
         if new_path.exists() && old_path != new_path && !overwrite {
             return Err(format!("Layout \"{new_safe}\" already exists"));
         }
-        let tmp = dir.join(format!("{new_safe}.yaml.tmp"));
+        let tmp = unique_tmp_path(&new_path);
         write_tmp_synced(&tmp, contents.as_bytes())?;
         if new_path.exists() && old_path != new_path {
             fs::remove_file(&new_path).map_err(|e| format!("remove_file: {e}"))?;
         }
-        fs::rename(&tmp, &new_path).map_err(|e| format!("rename: {e}"))?;
+        if let Err(e) = fs::rename(&tmp, &new_path) {
+            let _ = fs::remove_file(&tmp);
+            return Err(format!("rename: {e}"));
+        }
         sync_parent_dir(&new_path)?;
         if old_path != new_path && old_path.exists() {
             fs::remove_file(&old_path).map_err(|e| format!("remove_file: {e}"))?;
@@ -251,6 +241,9 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
     if trimmed.is_empty() {
         return Err("Layout name cannot be empty".into());
     }
+    if trimmed.chars().count() > 128 {
+        return Err("Layout name is too long (max 128 characters)".into());
+    }
     for ch in trimmed.chars() {
         if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
             return Err("layout name contains invalid filename characters".into());
@@ -262,12 +255,35 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
     if trimmed.starts_with('.') {
         return Err("Layout name cannot start with a dot".into());
     }
+    // Windows rejects file names ending in a dot; keep names portable.
+    if trimmed.ends_with('.') {
+        return Err("Layout name cannot end with a dot".into());
+    }
     Ok(trimmed.to_string())
 }
 
-fn write_atomic(tmp: &Path, path: &Path, contents: &[u8]) -> Result<(), String> {
-    write_tmp_synced(tmp, contents)?;
-    fs::rename(tmp, path).map_err(|e| format!("rename: {e}"))?;
+/// Per-call unique sibling path for atomic writes. A fixed `.tmp` name
+/// would let two concurrent saves of the same file interleave their
+/// writes and rename a corrupted mix into place.
+fn unique_tmp_path(path: &Path) -> PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let mut name = path
+        .file_name()
+        .map(|s| s.to_os_string())
+        .unwrap_or_default();
+    name.push(format!(".{}.{n}.tmp", std::process::id()));
+    path.with_file_name(name)
+}
+
+fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
+    let tmp = unique_tmp_path(path);
+    write_tmp_synced(&tmp, contents)?;
+    if let Err(e) = fs::rename(&tmp, path) {
+        let _ = fs::remove_file(&tmp);
+        return Err(format!("rename: {e}"));
+    }
     sync_parent_dir(path)
 }
 

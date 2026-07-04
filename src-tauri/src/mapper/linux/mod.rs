@@ -40,7 +40,11 @@ impl Handle {
     fn wake(&self) {
         let buf = [1u8];
         unsafe {
-            libc::write(self.wake_tx.as_raw_fd(), buf.as_ptr() as *const libc::c_void, 1);
+            libc::write(
+                self.wake_tx.as_raw_fd(),
+                buf.as_ptr() as *const libc::c_void,
+                1,
+            );
         }
     }
 
@@ -155,8 +159,9 @@ pub fn spawn(
                 Ok(Err(e)) => {
                     log::debug!("[mapper] run_loop error: {e}");
                     if let Ok(mut slot) = err_thread.lock() {
-                        *slot = Some(e);
+                        *slot = Some(e.clone());
                     }
+                    notify_mapper_stopped(&e);
                 }
                 Err(panic_info) => {
                     let msg = if let Some(s) = panic_info.downcast_ref::<String>() {
@@ -168,8 +173,9 @@ pub fn spawn(
                     };
                     log::debug!("[mapper] {msg}");
                     if let Ok(mut slot) = err_thread.lock() {
-                        *slot = Some(msg);
+                        *slot = Some(msg.clone());
                     }
+                    notify_mapper_stopped(&msg);
                 }
             }
         })
@@ -209,14 +215,20 @@ pub fn spawn(
     })
 }
 
+/// Tell the frontend the mapper thread died unexpectedly (device gone,
+/// panic, …) so it can update state without waiting for a status poll.
+fn notify_mapper_stopped(error: &str) {
+    if let Some(app) = super::get_app_handle() {
+        use tauri::Emitter;
+        let _ = app.emit("mapper-stopped", error.to_string());
+    }
+}
+
 fn make_wake_pipe() -> Result<(OwnedFd, OwnedFd), String> {
     let mut fds = [0i32; 2];
     let rc = unsafe { libc::pipe2(fds.as_mut_ptr(), libc::O_NONBLOCK | libc::O_CLOEXEC) };
     if rc != 0 {
-        return Err(format!(
-            "pipe2: {}",
-            std::io::Error::last_os_error()
-        ));
+        return Err(format!("pipe2: {}", std::io::Error::last_os_error()));
     }
     // SAFETY: pipe2 just returned these fds and nothing else owns them.
     Ok(unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) })
@@ -252,7 +264,12 @@ fn run(
     }
 
     let mut all_keys = AttributeSet::<Key>::new();
-    for code in 1u16..=248 {
+    // Keyboard block (1..=248) plus the extended KEY_* block above the
+    // BTN_* range: keys.rs maps e.g. KEY_SELECT (353) and KEY_FN (464),
+    // which the virtual device must register or their emits are silently
+    // dropped by uinput. The BTN_* block (256..=351) is skipped on purpose
+    // so the device is not classified as a mouse/joystick.
+    for code in (1u16..=248).chain(352..=511) {
         all_keys.insert(Key::new(code));
     }
     let virt = VirtualDeviceBuilder::new()

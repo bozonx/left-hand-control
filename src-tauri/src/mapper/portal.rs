@@ -149,32 +149,40 @@ type KeymapCache = Option<(String, Arc<HashMap<u32, KeycodeEntry>>)>;
 static KEYMAP_CACHE: Mutex<KeymapCache> = Mutex::new(None);
 
 fn keymap_table() -> Arc<HashMap<u32, KeycodeEntry>> {
-    let layout = crate::layout::cached_layout_short()
+    let cached = crate::layout::cached_layout();
+    let layout = cached
+        .as_ref()
+        .map(|info| info.short.clone())
         .or_else(|| std::env::var("XKB_DEFAULT_LAYOUT").ok())
         .unwrap_or_else(|| "us".to_string());
+    let variant = cached
+        .as_ref()
+        .map(|info| info.display.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .or_else(|| std::env::var("XKB_DEFAULT_VARIANT").ok())
+        .filter(|v| !v.is_empty());
+    let cache_key = format!("{}\0{}", layout, variant.as_deref().unwrap_or(""));
 
     if let Ok(mut guard) = KEYMAP_CACHE.lock() {
         if let Some((ref k, ref t)) = *guard {
-            if *k == layout {
+            if *k == cache_key {
                 return Arc::clone(t);
             }
         }
-        let t = Arc::new(build_keymap_table(&layout));
-        *guard = Some((layout, Arc::clone(&t)));
+        let t = Arc::new(build_keymap_table(&layout, variant.as_deref()));
+        *guard = Some((cache_key, Arc::clone(&t)));
         return t;
     }
     Arc::new(HashMap::new())
 }
 
-fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
+fn build_keymap_table(layout: &str, variant: Option<&str>) -> HashMap<u32, KeycodeEntry> {
     let mut map: HashMap<u32, KeycodeEntry> = HashMap::new();
 
     let Ok(layout_c) = CString::new(layout) else {
         return map;
     };
-    let variant_c = std::env::var("XKB_DEFAULT_VARIANT")
-        .ok()
-        .and_then(|v| CString::new(v).ok());
+    let variant_c = variant.and_then(|v| CString::new(v).ok());
     let variant_ptr = variant_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
 
     unsafe {
@@ -192,7 +200,7 @@ fn build_keymap_table(layout: &str) -> HashMap<u32, KeycodeEntry> {
         let keymap = xkb_keymap_new_from_names(ctx, &names, 0);
         xkb_context_unref(ctx);
         if keymap.is_null() {
-            log::debug!("[portal] xkb_keymap_new_from_names({layout:?}) failed");
+            log::debug!("[portal] xkb_keymap_new_from_names({layout:?}, {variant:?}) failed");
             return map;
         }
 
@@ -639,21 +647,9 @@ impl LibeiBackend {
     }
 
     fn type_text_via_clipboard(&mut self, text: &str) -> Result<(), String> {
-        use std::io::Write as _;
-        use std::process::{Command, Stdio};
-
-        let mut child = Command::new("wl-copy")
-            .stdin(Stdio::piped())
-            .spawn()
+        let previous_clipboard = read_wayland_clipboard_text();
+        set_wayland_clipboard_text(text)
             .map_err(|e| format!("wl-copy unavailable for libei clipboard fallback: {e}"))?;
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin
-                .write_all(text.as_bytes())
-                .map_err(|e| format!("write wl-copy stdin: {e}"))?;
-        }
-        // Wait synchronously so wl-copy registers clipboard ownership with the
-        // compositor before we fire Ctrl+V.
-        let _ = child.wait();
         thread::sleep(Duration::from_millis(50));
         // EI only supports keycode injection. Look up which evdev keycode produces
         // 'v' in the current XKB layout. Falls back to physical key 47 (Latin V)
@@ -663,7 +659,9 @@ impl LibeiBackend {
             .get(&XKB_KEY_V_LOWER)
             .map(|e| e.evdev)
             .unwrap_or(KEY_V_EVDEV);
-        self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], v_keycode)
+        let result = self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], v_keycode);
+        restore_wayland_clipboard_text(previous_clipboard);
+        result
     }
 
     fn inject_keycode_combo(&mut self, mods: &[u32], key: u32) -> Result<(), String> {
@@ -872,13 +870,11 @@ fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
 }
 
 fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    use std::io::Write as _;
-    use std::process::{Command, Stdio};
-
     let empty: HashMap<String, Value> = HashMap::new();
 
-    let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
-        Ok(c) => c,
+    let previous_clipboard = read_wayland_clipboard_text();
+    match set_wayland_clipboard_text(text) {
+        Ok(()) => {}
         Err(e) => {
             log::debug!(
                 "[portal] wl-copy unavailable in clipboard mode ({e}), falling back to keycode"
@@ -886,17 +882,51 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
             inject_text_keycode(portal, session, text);
             return;
         }
-    };
-    if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(text.as_bytes());
     }
-    // Wait synchronously so wl-copy registers clipboard ownership with the
-    // compositor before we fire Ctrl+V.
-    let _ = child.wait();
 
     thread::sleep(std::time::Duration::from_millis(50));
     if !inject_paste(portal, session, &empty) {
         log::debug!("[portal] clipboard paste: Ctrl+V injection failed");
+    }
+    restore_wayland_clipboard_text(previous_clipboard);
+}
+
+fn read_wayland_clipboard_text() -> Option<String> {
+    use std::process::Command;
+
+    let output =
+        crate::exec::run_cmd_with_timeout(Command::new("wl-paste").args(["--no-newline"]), 1000)?;
+    if !output.status.success() {
+        return None;
+    }
+    String::from_utf8(output.stdout).ok()
+}
+
+fn set_wayland_clipboard_text(text: &str) -> Result<(), String> {
+    use std::io::Write as _;
+    use std::process::{Command, Stdio};
+
+    let mut child = Command::new("wl-copy")
+        .stdin(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("{e}"))?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(text.as_bytes())
+            .map_err(|e| format!("write wl-copy stdin: {e}"))?;
+    }
+    let _ = child.wait();
+    Ok(())
+}
+
+fn restore_wayland_clipboard_text(previous: Option<String>) {
+    if let Some(previous) = previous {
+        thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(120));
+            if let Err(e) = set_wayland_clipboard_text(&previous) {
+                log::debug!("[portal] clipboard restore failed: {e}");
+            }
+        });
     }
 }
 

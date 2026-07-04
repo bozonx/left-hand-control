@@ -4,6 +4,8 @@ use std::time::{Duration, Instant};
 use tauri::{Emitter, Listener, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 mod active_window;
+#[cfg(target_os = "linux")]
+mod exec;
 mod gamemode;
 mod layout;
 mod mapper;
@@ -176,11 +178,6 @@ fn start_mapper(
             return Err(msg);
         }
     };
-    if raw.is_empty() {
-        let msg = "config.json not found — save settings first".to_string();
-        log::debug!("[cmd] start_mapper ERR: {msg}");
-        return Err(msg);
-    }
     let mouse = mouse_device_path.as_deref().filter(|s| !s.is_empty());
     let r = mapper::start(&device_path, mouse, &raw);
     if let Err(e) = &r {
@@ -299,9 +296,7 @@ fn can_detect_focus_after_menu_hide() -> bool {
         let session = crate::platform::linux::detect();
         return matches!(
             (session.desktop, session.session_type),
-            (Desktop::Hyprland, _)
-                | (Desktop::Kde, SessionType::Wayland)
-                | (_, SessionType::X11)
+            (Desktop::Hyprland, _) | (Desktop::Kde, SessionType::Wayland) | (_, SessionType::X11)
         );
     }
     #[cfg(not(target_os = "linux"))]
@@ -318,8 +313,9 @@ fn wait_for_post_menu_focus(label: &str) {
 
     let target = remembered_menu_target(label);
     let deadline = Instant::now() + Duration::from_millis(250);
+    let poll_interval = Duration::from_millis(60);
     while Instant::now() < deadline {
-        std::thread::sleep(Duration::from_millis(10));
+        std::thread::sleep(poll_interval);
 
         let current = active_window::detect_active_window_now();
         match (&target, current) {
@@ -332,9 +328,7 @@ fn wait_for_post_menu_focus(label: &str) {
 
 fn hide_menu_window(app: &tauri::AppHandle, label: &str) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(label) {
-        window
-            .hide()
-            .map_err(|e| format!("hide {label}: {e}"))?;
+        window.hide().map_err(|e| format!("hide {label}: {e}"))?;
     }
     Ok(())
 }

@@ -231,24 +231,19 @@ impl Settings {
 }
 
 fn command_fingerprint(commands: &[Command]) -> String {
-    let mut hash: u32 = 0x811c9dc5;
+    use sha2::{Digest, Sha256};
+
     let mut entries: Vec<String> = commands
         .iter()
         .map(|command| format!("{}\0{}", command.id, command.linux))
         .collect();
     entries.sort();
+    let mut hash = Sha256::new();
     for entry in entries {
-        update_hash(&mut hash, entry.as_bytes());
-        update_hash(&mut hash, &[0]);
+        hash.update(entry.as_bytes());
+        hash.update([0]);
     }
-    format!("{hash:08x}")
-}
-
-fn update_hash(hash: &mut u32, bytes: &[u8]) {
-    for b in bytes {
-        *hash ^= u32::from(*b);
-        *hash = hash.wrapping_mul(0x01000193);
-    }
+    format!("{:x}", hash.finalize())
 }
 
 fn default_hold() -> u64 {
@@ -336,7 +331,10 @@ mod tests {
             id: "play".into(),
             linux: "playerctl play-pause".into(),
         }];
-        assert_eq!(command_fingerprint(&commands), "4b1e677e");
+        assert_eq!(
+            command_fingerprint(&commands),
+            "3f37f286618ea990d440a2cf7c669ec4999b224a2035279ddfcff72b6b3e687e"
+        );
 
         let mut settings = Settings {
             current_layout_id: Some("user:test".into()),
@@ -373,7 +371,7 @@ mod tests {
         ];
         let fp = command_fingerprint(&commands);
         assert_eq!(
-            fp, "b9597ee1",
+            fp, "4d61d04170fc9f287ecef6bce976c4f0a9338ac772441dc7487e0761b7307f94",
             "command_fingerprint changed — update the TS side too"
         );
     }
@@ -392,6 +390,9 @@ mod tests {
         ];
         let reordered = vec![commands[1].clone(), commands[0].clone()];
 
-        assert_eq!(command_fingerprint(&commands), command_fingerprint(&reordered));
+        assert_eq!(
+            command_fingerprint(&commands),
+            command_fingerprint(&reordered)
+        );
     }
 }

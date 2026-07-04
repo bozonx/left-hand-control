@@ -53,7 +53,13 @@ trait WindowControlsSource {
 fn sources() -> Vec<Box<dyn WindowControlsSource>> {
     #[cfg(target_os = "linux")]
     {
-        vec![Box::new(linux::KdeKwinrc), Box::new(linux::GnomeGsettings)]
+        use crate::platform::linux::{detect, Desktop};
+
+        match detect().desktop {
+            Desktop::Gnome => vec![Box::new(linux::GnomeGsettings), Box::new(linux::KdeKwinrc)],
+            Desktop::Kde => vec![Box::new(linux::KdeKwinrc), Box::new(linux::GnomeGsettings)],
+            _ => vec![Box::new(linux::KdeKwinrc), Box::new(linux::GnomeGsettings)],
+        }
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -273,8 +279,8 @@ mod linux {
 
 #[cfg(test)]
 mod tests {
-    use super::WindowButton::{Close, Maximize, Minimize};
     use super::platform_default;
+    use super::WindowButton::{Close, Maximize, Minimize};
 
     #[test]
     fn platform_default_exposes_the_three_standard_buttons() {

@@ -24,26 +24,31 @@ const IFACE: &str = "org.kde.KeyboardLayouts";
 
 use std::sync::Mutex;
 
-static CACHED_LAYOUT: Mutex<Option<String>> = Mutex::new(None);
+static CACHED_LAYOUT: Mutex<Option<LayoutInfo>> = Mutex::new(None);
 static LAST_EMITTED_LAYOUT: Mutex<Option<String>> = Mutex::new(None);
 
-pub fn cached_layout_short() -> Option<String> {
+pub fn cached_layout() -> Option<LayoutInfo> {
     CACHED_LAYOUT.lock().ok().and_then(|g| g.clone())
+}
+
+pub fn cached_layout_short() -> Option<String> {
+    cached_layout().map(|info| info.short)
 }
 
 fn update_cached_layout(info: &LayoutInfo) {
     if let Ok(mut g) = CACHED_LAYOUT.lock() {
-        *g = Some(info.short.clone());
+        *g = Some(info.clone());
     }
 }
 
 fn should_emit_layout(info: &LayoutInfo) -> bool {
     match LAST_EMITTED_LAYOUT.lock() {
         Ok(mut g) => {
-            if g.as_deref() == Some(info.short.as_str()) {
+            let key = format!("{}\0{}", info.short, info.display);
+            if g.as_deref() == Some(key.as_str()) {
                 return false;
             }
-            *g = Some(info.short.clone());
+            *g = Some(key);
             true
         }
         Err(_) => true,
@@ -302,7 +307,7 @@ mod tests {
         };
         // Set cached
         if let Ok(mut g) = LAST_EMITTED_LAYOUT.lock() {
-            *g = Some("de".into());
+            *g = Some("de\0de".into());
         }
         assert!(!should_emit_layout(&info));
     }

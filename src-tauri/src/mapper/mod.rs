@@ -90,6 +90,9 @@ struct MapperRuntime<B> {
     backend: B,
     handle: Option<Box<dyn BackendHandle>>,
     status: MapperStatus,
+    /// True while a start is in flight outside the state lock (spawn can
+    /// wait seconds for readiness and must not block status()/stop()).
+    starting: bool,
 }
 
 impl<B> MapperRuntime<B> {
@@ -103,6 +106,7 @@ impl<B> MapperRuntime<B> {
                 mouse_device_path: None,
                 last_error: None,
             },
+            starting: false,
         }
     }
 }
@@ -120,42 +124,71 @@ impl<B: MapperBackend> MapperRuntime<B> {
         self.backend.list_mice()
     }
 
-    fn start(
-        &mut self,
-        device_path: &str,
-        mouse_path: Option<&str>,
-        cfg: config::AppConfig,
-    ) -> Result<(), String> {
+    /// Reserve the "starting" slot. Must be paired with `finish_start`.
+    fn begin_start(&mut self) -> Result<(), String> {
         if let Some(handle) = self.handle.as_mut() {
             if handle.reap_if_finished() {
                 self.handle = None;
                 self.status.running = false;
             }
         }
-        if self.handle.is_some() {
+        if self.handle.is_some() || self.starting {
             return Err("mapper already running".into());
         }
-        let mouse = mouse_path.map(|s| s.to_string());
-        let handle = self
-            .backend
-            .spawn(device_path.to_string(), mouse.clone(), cfg)?;
+        self.starting = true;
+        Ok(())
+    }
+
+    /// Commit (or roll back) a spawn attempt made outside the lock.
+    fn finish_start(
+        &mut self,
+        result: Result<Box<dyn BackendHandle>, String>,
+        device_path: &str,
+        mouse_path: Option<&str>,
+    ) -> Result<(), String> {
+        self.starting = false;
+        let handle = result?;
         self.handle = Some(handle);
         self.status = MapperStatus {
             running: true,
             device_path: Some(device_path.to_string()),
-            mouse_device_path: mouse,
+            mouse_device_path: mouse_path.map(|s| s.to_string()),
             last_error: None,
         };
         Ok(())
     }
 
-    fn stop(&mut self) -> Result<(), String> {
-        if let Some(handle) = self.handle.take() {
-            handle.stop();
-            self.status.running = false;
-            return Ok(());
+    #[cfg(test)]
+    fn start(
+        &mut self,
+        device_path: &str,
+        mouse_path: Option<&str>,
+        cfg: config::AppConfig,
+    ) -> Result<(), String> {
+        self.begin_start()?;
+        let result = self.backend.spawn(
+            device_path.to_string(),
+            mouse_path.map(|s| s.to_string()),
+            cfg,
+        );
+        self.finish_start(result, device_path, mouse_path)
+    }
+
+    /// Detach the running handle so the caller can join it without
+    /// holding the state lock.
+    fn take_handle(&mut self) -> Result<Box<dyn BackendHandle>, String> {
+        match self.handle.take() {
+            Some(handle) => {
+                self.status.running = false;
+                Ok(handle)
+            }
+            None => Err("mapper is not running".into()),
         }
-        Err("mapper is not running".into())
+    }
+
+    #[cfg(test)]
+    fn stop(&mut self) -> Result<(), String> {
+        self.take_handle().map(|handle| handle.stop())
     }
 
     fn update_config(&mut self, cfg: config::AppConfig) -> Result<(), String> {
@@ -340,11 +373,24 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     #[cfg(target_os = "linux")]
     validation::validate_config(&cfg)?;
-    lock_state().start(device_path, mouse_path, cfg)
+    // Spawn outside the state lock: waiting for the worker to grab the
+    // device and report readiness can take seconds and must not block
+    // concurrent status()/stop() calls from the frontend.
+    lock_state().begin_start()?;
+    let result = OsBackend::new().spawn(
+        device_path.to_string(),
+        mouse_path.map(|s| s.to_string()),
+        cfg,
+    );
+    lock_state().finish_start(result, device_path, mouse_path)
 }
 
 pub fn stop() -> Result<(), String> {
-    lock_state().stop()
+    // Join the worker thread outside the state lock so status polling
+    // does not freeze while the mapper shuts down.
+    let handle = lock_state().take_handle()?;
+    handle.stop();
+    Ok(())
 }
 
 pub fn update_config(config_json: &str) -> Result<(), String> {

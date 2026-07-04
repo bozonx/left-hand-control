@@ -6,11 +6,10 @@
 //   * X11 (any DE)    -> xdotool + xprop
 //   * everything else -> None (condition will not match)
 
-use std::process::{Command, Output, Stdio};
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
 
+use crate::exec::run_cmd_with_timeout;
 use crate::platform::linux::{Desktop, SessionType};
 
 use super::ActiveWindow;
@@ -30,7 +29,10 @@ pub fn detect() -> Option<ActiveWindow> {
 }
 
 fn detect_hyprland() -> Option<ActiveWindow> {
-    let output = run_cmd_with_timeout(Command::new("hyprctl").args(["activewindow", "-j"]))?;
+    let output = run_cmd_with_timeout(
+        Command::new("hyprctl").args(["activewindow", "-j"]),
+        COMMAND_TIMEOUT_MS,
+    )?;
     if !output.status.success() {
         return None;
     }
@@ -39,12 +41,13 @@ fn detect_hyprland() -> Option<ActiveWindow> {
 }
 
 fn detect_kde_wayland() -> Option<ActiveWindow> {
-    let id_output = run_cmd_with_timeout(Command::new("kdotool").arg("getactivewindow"));
+    let id_output = run_cmd_with_timeout(
+        Command::new("kdotool").arg("getactivewindow"),
+        COMMAND_TIMEOUT_MS,
+    );
     let Some(id_output) = id_output else {
         if !KDOTOOL_WARN_ONCE.swap(true, Ordering::SeqCst) {
-            log::debug!(
-                "[active-window] Для определения активного окна в KDE Wayland требуется 'kdotool'. Установите его (например: paru -S kdotool)."
-            );
+            log::debug!("[active-window] KDE Wayland active-window detection requires 'kdotool'");
         }
         return None;
     };
@@ -58,26 +61,31 @@ fn detect_kde_wayland() -> Option<ActiveWindow> {
         return None;
     }
 
-    let title = run_cmd_with_timeout(Command::new("kdotool").args(["getwindowname", &window_id]))
-        .and_then(|o| {
-            if o.status.success() {
-                Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
-            } else {
-                None
-            }
-        })
-        .unwrap_or_default();
+    let title = run_cmd_with_timeout(
+        Command::new("kdotool").args(["getwindowname", &window_id]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .and_then(|o| {
+        if o.status.success() {
+            Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
+        } else {
+            None
+        }
+    })
+    .unwrap_or_default();
 
-    let app_id =
-        run_cmd_with_timeout(Command::new("kdotool").args(["getwindowclassname", &window_id]))
-            .and_then(|o| {
-                if o.status.success() {
-                    Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_default();
+    let app_id = run_cmd_with_timeout(
+        Command::new("kdotool").args(["getwindowclassname", &window_id]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .and_then(|o| {
+        if o.status.success() {
+            Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
+        } else {
+            None
+        }
+    })
+    .unwrap_or_default();
 
     if title.is_empty() && app_id.is_empty() {
         return None;
@@ -86,7 +94,10 @@ fn detect_kde_wayland() -> Option<ActiveWindow> {
 }
 
 fn detect_x11() -> Option<ActiveWindow> {
-    let id_output = run_cmd_with_timeout(Command::new("xdotool").arg("getactivewindow"))?;
+    let id_output = run_cmd_with_timeout(
+        Command::new("xdotool").arg("getactivewindow"),
+        COMMAND_TIMEOUT_MS,
+    )?;
     if !id_output.status.success() {
         return None;
     }
@@ -97,18 +108,23 @@ fn detect_x11() -> Option<ActiveWindow> {
         return None;
     }
 
-    let title = run_cmd_with_timeout(Command::new("xdotool").args(["getwindowname", &window_id]))
-        .and_then(|o| {
-            if o.status.success() {
-                Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
-            } else {
-                None
-            }
-        })
-        .unwrap_or_default();
+    let title = run_cmd_with_timeout(
+        Command::new("xdotool").args(["getwindowname", &window_id]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .and_then(|o| {
+        if o.status.success() {
+            Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
+        } else {
+            None
+        }
+    })
+    .unwrap_or_default();
 
-    let class_output =
-        run_cmd_with_timeout(Command::new("xprop").args(["-id", &window_id, "WM_CLASS"]));
+    let class_output = run_cmd_with_timeout(
+        Command::new("xprop").args(["-id", &window_id, "WM_CLASS"]),
+        COMMAND_TIMEOUT_MS,
+    );
     let app_id = class_output
         .and_then(|o| {
             if o.status.success() {
@@ -124,28 +140,6 @@ fn detect_x11() -> Option<ActiveWindow> {
         return None;
     }
     Some(ActiveWindow { title, app_id })
-}
-
-fn run_cmd_with_timeout(cmd: &mut Command) -> Option<Output> {
-    let child = cmd
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .ok()?;
-    let pid = child.id() as libc::pid_t;
-    let done = Arc::new(AtomicBool::new(false));
-    let done_clone = Arc::clone(&done);
-
-    std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(COMMAND_TIMEOUT_MS));
-        if !done_clone.load(Ordering::SeqCst) {
-            unsafe { libc::kill(pid, libc::SIGKILL) };
-        }
-    });
-
-    let output = child.wait_with_output().ok();
-    done.store(true, Ordering::SeqCst);
-    output
 }
 
 // Parses `xprop WM_CLASS` output of the form:

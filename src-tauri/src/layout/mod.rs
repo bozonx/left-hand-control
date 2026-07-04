@@ -88,13 +88,22 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
     }
 }
 
+#[cfg(target_os = "linux")]
+pub fn cached_layout() -> Option<LayoutInfo> {
+    use crate::platform::linux::{detect, Desktop};
+    match detect().desktop {
+        Desktop::Kde => linux_kde::cached_layout(),
+        _ => current().ok().flatten(),
+    }
+}
+
 pub fn cached_layout_short() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
         use crate::platform::linux::{detect, Desktop};
         match detect().desktop {
             Desktop::Kde => linux_kde::cached_layout_short(),
-            _ => current().ok().flatten().map(|info| info.short),
+            _ => cached_layout().map(|info| info.short),
         }
     }
     #[cfg(not(target_os = "linux"))]

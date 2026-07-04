@@ -84,8 +84,9 @@ pub struct Engine {
 
     /// layer_id -> rules that activated it, oldest to newest
     layer_triggers: HashMap<String, Vec<LayerTrigger>>,
-    /// Tracks isolated holds per physical key (to restore on key release)
-    isolated_holds: HashMap<Key, Vec<(Key, u32)>>,
+    /// Physical keys whose hold is currently suppressed, per isolate key
+    /// (so the last isolate-key release can restore the hold).
+    isolated_holds: HashMap<Key, Vec<Key>>,
 
     /// Currently executing macro (if any)
     active_macro: Option<self::model::ActiveMacro>,
@@ -128,6 +129,19 @@ impl Engine {
                             "[mapper] macro step limit ({}) exceeded, aborting",
                             MAX_MACRO_STEPS
                         );
+                        // Aborting mid-stroke: the stroke's modifiers were
+                        // pressed in an earlier phase and must be released
+                        // here or they stay stuck down.
+                        if let MacroPhase::StrokeModDelayPress(ref ks)
+                        | MacroPhase::StrokeModDelayRelease(ref ks) = am.phase
+                        {
+                            for m in ks.mods.iter().rev() {
+                                out.push(Out::KeyRaw {
+                                    key: *m,
+                                    down: false,
+                                });
+                            }
+                        }
                         break;
                     }
                     match am.phase {
@@ -135,14 +149,23 @@ impl Engine {
                             let step = &am.steps[am.current_step];
                             match step {
                                 MacroStepItem::Stroke(ks) => {
-                                    if !ks.mods.is_empty() {
-                                        for m in &ks.mods {
+                                    // Skip modifiers something else already
+                                    // holds down (a `hold:` rule, a chord, a
+                                    // passthrough key): pressing them again is
+                                    // redundant, and releasing them at the end
+                                    // of the stroke would break the hold.
+                                    let mods = self.mods_not_held(&ks.mods);
+                                    if !mods.is_empty() {
+                                        for m in &mods {
                                             out.push(Out::KeyRaw {
                                                 key: *m,
                                                 down: true,
                                             });
                                         }
-                                        am.phase = MacroPhase::StrokeModDelayPress(ks.clone());
+                                        am.phase = MacroPhase::StrokeModDelayPress(Keystroke {
+                                            mods,
+                                            key: ks.key,
+                                        });
                                         am.next_wake = now + am.mod_delay;
                                         self.active_macro = Some(am);
                                         break;
@@ -411,22 +434,17 @@ impl Engine {
                                     // suppressed this target — record the
                                     // entry (so release bookkeeping stays
                                     // balanced) but don't emit a second up.
-                                    let already_suppressed =
-                                        self.isolated_holds.values().any(|v| {
-                                            v.iter().any(|(k, _)| k == target_key)
-                                        });
-                                    let old_count =
-                                        self.mod_refs.get(target_key).copied().unwrap_or(0);
-                                    if let Some(count) = self.mod_refs.get_mut(target_key) {
-                                        *count = 0;
-                                    }
-                                    if !already_suppressed {
+                                    // Refcounts are left untouched: they keep
+                                    // tracking chord ownership while the key
+                                    // is physically up, so unrelated chords
+                                    // release correctly afterwards.
+                                    if !self.is_suppressed(*target_key) {
                                         out.push(Out::KeyRaw {
                                             key: *target_key,
                                             down: false,
                                         });
                                     }
-                                    suppressed.push((*target_key, old_count));
+                                    suppressed.push(*target_key);
                                     log::debug!(
                                         "[mapper] isolate+ {:?} suppress hold {:?}",
                                         key,
@@ -502,14 +520,10 @@ impl Engine {
 
     fn on_release(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
         if let Some(suppressed) = self.isolated_holds.remove(&key) {
-            for (target_key, old_count) in suppressed {
+            for target_key in suppressed {
                 // Don't restore while another isolate key still suppresses
                 // the same target — its own release will handle it.
-                if self
-                    .isolated_holds
-                    .values()
-                    .any(|v| v.iter().any(|(k, _)| *k == target_key))
-                {
+                if self.is_suppressed(target_key) {
                     continue;
                 }
                 let still_held = self
@@ -518,9 +532,6 @@ impl Engine {
                     .any(|ks| ks.key == target_key || ks.mods.contains(&target_key));
                 if still_held {
                     log::debug!("[mapper] isolate- {:?} restore hold {:?}", key, target_key);
-                    if old_count > 0 {
-                        *self.mod_refs.entry(target_key).or_insert(0) = old_count;
-                    }
                     out.push(Out::KeyRaw {
                         key: target_key,
                         down: true,
@@ -618,13 +629,41 @@ impl Engine {
         }
         // A modifier stays down while another chord still references it
         // (refcount) or while some mapping holds it as its *main* key
-        // (e.g. a rule with `hold: ControlLeft`).
+        // (e.g. a rule with `hold: ControlLeft`). A suppressed modifier
+        // (isolate) is already physically up — emitting another release
+        // would be spurious; the isolate-key release decides its fate.
         mods.iter()
             .copied()
             .filter(|m| {
                 self.mod_refs.get(m).copied().unwrap_or(0) == 0
                     && !self.emitted.values().any(|ks| ks.key == *m)
+                    && !self.is_suppressed(*m)
             })
+            .collect()
+    }
+
+    /// True while any isolate key keeps this key physically released.
+    fn is_suppressed(&self, key: Key) -> bool {
+        self.isolated_holds.values().any(|v| v.contains(&key))
+    }
+
+    /// True when the key is currently held down on the virtual device —
+    /// either refcounted as a chord modifier or held as the main key of
+    /// an emitted stroke (hold rules, passthrough keys).
+    fn is_virtually_held(&self, key: Key) -> bool {
+        self.mod_refs.get(&key).copied().unwrap_or(0) > 0
+            || self
+                .emitted
+                .values()
+                .any(|ks| ks.key == key || ks.mods.contains(&key))
+    }
+
+    /// Subset of `mods` that a fired stroke actually needs to press (and
+    /// later release): modifiers already held elsewhere are excluded.
+    fn mods_not_held(&self, mods: &[Key]) -> Vec<Key> {
+        mods.iter()
+            .copied()
+            .filter(|m| !self.is_virtually_held(*m))
             .collect()
     }
 
@@ -760,10 +799,16 @@ impl Engine {
         out: &mut Vec<Out>,
     ) {
         match action {
-            Some(ActionDef::Stroke(ks)) => out.push(Out::Stroke {
-                ks: ks.clone(),
-                mod_delay,
-            }),
+            Some(ActionDef::Stroke(ks)) => {
+                // Don't press — and above all don't release — modifiers that
+                // are already virtually held (hold rules, active chords):
+                // the stroke's trailing mod-release would break the hold.
+                let ks = Keystroke {
+                    mods: self.mods_not_held(&ks.mods),
+                    key: ks.key,
+                };
+                out.push(Out::Stroke { ks, mod_delay });
+            }
             Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
             Some(ActionDef::Macro(md)) if !md.steps.is_empty() => {
                 self.abort_active_macro(out);
@@ -826,11 +871,12 @@ impl Engine {
     /// Generic shutdown helper — release everything that is currently held.
     pub fn shutdown(&mut self, out: &mut Vec<Out>) {
         self.abort_active_macro(out);
-        for (_, ks) in self.emitted.drain() {
-            out.push(Out::KeyRaw {
-                key: ks.key,
-                down: false,
-            });
+        // HashMap drain order is arbitrary; release plain keys before
+        // modifier keys so a chord's main key never outlives its modifier.
+        let mut held: Vec<Key> = self.emitted.drain().map(|(_, ks)| ks.key).collect();
+        held.sort_by_key(|k| is_modifier_key(*k));
+        for key in held {
+            out.push(Out::KeyRaw { key, down: false });
         }
         let mods: Vec<Key> = self
             .mod_refs
@@ -914,6 +960,20 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
         return true;
     }
     let aw = crate::active_window::cached_active_window();
+    if aw.is_none() {
+        // Without active-window detection (e.g. KDE Wayland missing
+        // `kdotool`) app-conditioned rules silently never fire (whitelist)
+        // or are always blocked (blacklist) — say so once, loudly.
+        use std::sync::atomic::{AtomicBool, Ordering};
+        static WARNED: AtomicBool = AtomicBool::new(false);
+        if !WARNED.swap(true, Ordering::Relaxed) {
+            log::warn!(
+                "[mapper] rules have app conditions but the active window is unknown \
+                 (active-window detection unavailable on this desktop?); \
+                 whitelist rules will not fire and blacklist rules stay blocked"
+            );
+        }
+    }
     if let Some(bl) = bl {
         match &aw {
             Some(aw) if matches_active_window(bl, aw) => return false,
@@ -973,6 +1033,20 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
 
 fn is_primary_mouse_button(key: Key) -> bool {
     matches!(key, Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE)
+}
+
+fn is_modifier_key(key: Key) -> bool {
+    matches!(
+        key,
+        Key::KEY_LEFTCTRL
+            | Key::KEY_RIGHTCTRL
+            | Key::KEY_LEFTSHIFT
+            | Key::KEY_RIGHTSHIFT
+            | Key::KEY_LEFTALT
+            | Key::KEY_RIGHTALT
+            | Key::KEY_LEFTMETA
+            | Key::KEY_RIGHTMETA
+    )
 }
 
 fn next_macro_wake(now: Instant, am: &self::model::ActiveMacro) -> Instant {
@@ -1113,7 +1187,8 @@ mod tests {
         cfg.settings.command_trust.insert(
             "custom".into(),
             CommandTrustEntry {
-                fingerprint: "4b1e677e".into(),
+                fingerprint: "3f37f286618ea990d440a2cf7c669ec4999b224a2035279ddfcff72b6b3e687e"
+                    .into(),
             },
         );
         let mut engine = Engine::new(&cfg);

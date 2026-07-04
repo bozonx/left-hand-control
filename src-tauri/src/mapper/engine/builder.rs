@@ -137,7 +137,8 @@ impl Engine {
                     if !found {
                         log::debug!(
                             "[mapper] macro {}: unknown nested macro ref {:?}",
-                            id, nested_id
+                            id,
+                            nested_id
                         );
                     }
                     continue;
@@ -148,7 +149,8 @@ impl Engine {
                         Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
                         None => log::debug!(
                             "[mapper] macro {} step: unknown command ref {:?}",
-                            id, cmd_id
+                            id,
+                            cmd_id
                         ),
                     }
                     continue;
@@ -245,7 +247,8 @@ impl Engine {
                     None => {
                         log::debug!(
                             "[mapper] system fn {:?} not available on this OS/DE ({})",
-                            name, where_
+                            name,
+                            where_
                         );
                         return None;
                     }
@@ -256,11 +259,7 @@ impl Engine {
                 match system::resolve_app(name) {
                     Some(cmd) => return Some(ActionDef::System(cmd)),
                     None => {
-                        log::debug!(
-                            "[mapper] app action {:?} not available ({})",
-                            name,
-                            where_
-                        );
+                        log::debug!("[mapper] app action {:?} not available ({})", name, where_);
                         return None;
                     }
                 }

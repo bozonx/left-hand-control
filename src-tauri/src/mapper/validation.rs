@@ -444,7 +444,8 @@ mod tests {
         cfg.settings.command_trust.insert(
             "custom".into(),
             CommandTrustEntry {
-                fingerprint: "3823d099".into(),
+                fingerprint: "06ccbafa4b07e12f95e16c382f2df1b81452abc13946e27bdff4635279943a9f"
+                    .into(),
             },
         );
         cfg.macros.push(Macro {

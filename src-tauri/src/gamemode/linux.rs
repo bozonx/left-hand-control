@@ -1,42 +1,12 @@
 use std::collections::HashSet;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
 
+use crate::exec::run_cmd_with_timeout;
 use crate::mapper::config::GameModeProcessMatcher;
 use crate::platform::linux::{Desktop, Session, SessionType};
 
 pub static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
-
-/// Run a command with a timeout. The timeout thread sends SIGKILL to the child
-/// process if it has not yet exited. The `done` flag prevents a kill after the
-/// process has already been reaped and its PID potentially recycled.
-fn run_cmd_with_timeout(cmd: &mut Command, timeout_ms: u64) -> Option<std::process::Output> {
-    let child = cmd
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .ok()?;
-
-    let pid = child.id() as libc::pid_t;
-    let done = Arc::new(AtomicBool::new(false));
-    let done_clone = Arc::clone(&done);
-
-    std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(timeout_ms));
-        // Only kill if wait_with_output hasn't returned yet. While
-        // wait_with_output is blocked the process is still alive (or a
-        // zombie whose PID cannot be recycled), so the kill is safe.
-        if !done_clone.load(Ordering::SeqCst) {
-            unsafe { libc::kill(pid, libc::SIGKILL) };
-        }
-    });
-
-    let output = child.wait_with_output().ok();
-    done.store(true, Ordering::SeqCst);
-    output
-}
 
 pub fn is_gamemoded_active() -> bool {
     run_cmd_with_timeout(Command::new("gamemoded").arg("-s"), 3000)

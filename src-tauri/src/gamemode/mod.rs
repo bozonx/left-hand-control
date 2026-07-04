@@ -5,6 +5,8 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
+const WATCH_INTERVAL: Duration = Duration::from_millis(1000);
+
 use crate::mapper::config::GameModeSettings;
 
 #[cfg(target_os = "linux")]
@@ -110,7 +112,7 @@ pub fn start_watcher(app: AppHandle) {
                     last_status = status;
                 }
 
-                thread::sleep(Duration::from_millis(200));
+                thread::sleep(WATCH_INTERVAL);
             }
         })
     {

@@ -11,7 +11,7 @@ describe('command trust', () => {
   it('fingerprints shell scripts deterministically', () => {
     expect(commandFingerprint([
       { id: 'play', name: 'Play', linux: 'playerctl play-pause' },
-    ])).toBe('4b1e677e')
+    ])).toBe('3f37f286618ea990d440a2cf7c669ec4999b224a2035279ddfcff72b6b3e687e')
   })
 
   it('requires a matching per-layout fingerprint', () => {
@@ -42,7 +42,7 @@ describe('command trust', () => {
     ]
     const fingerprint = commandFingerprint(config.commands)
 
-    expect(fingerprint).toBe('950c50f2')
+    expect(fingerprint).toBe('eae4d412bc0fcf62bb6a539b88826dabf5182ba53a7403a42e10a1052b57de73')
 
     config.settings.commandTrust[commandTrustKey('user:custom')] = {
       fingerprint,

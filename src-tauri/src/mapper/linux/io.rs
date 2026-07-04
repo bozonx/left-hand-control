@@ -144,7 +144,11 @@ impl MultiDeviceLoopDriver {
         let mut buf = [0u8; 64];
         loop {
             let n = unsafe {
-                libc::read(fd.as_raw_fd(), buf.as_mut_ptr() as *mut libc::c_void, buf.len())
+                libc::read(
+                    fd.as_raw_fd(),
+                    buf.as_mut_ptr() as *mut libc::c_void,
+                    buf.len(),
+                )
             };
             if n <= 0 {
                 break;
@@ -180,9 +184,15 @@ impl LoopDriver for MultiDeviceLoopDriver {
         }
         match poll(&mut pfds, PollTimeout::from(timeout_ms)) {
             Ok(_) => {
+                // POLLERR / POLLHUP fire when the device disappears
+                // (keyboard unplugged). They must count as "ready" so the
+                // subsequent read surfaces the error and the loop exits —
+                // checking POLLIN alone makes poll() return instantly
+                // forever without ever reading, i.e. a silent busy-loop.
+                let ready_flags = PollFlags::POLLIN | PollFlags::POLLERR | PollFlags::POLLHUP;
                 let device_ready = pfds[..self.devices.len()].iter().any(|p| {
                     p.revents()
-                        .map(|r| r.contains(PollFlags::POLLIN))
+                        .map(|r| r.intersects(ready_flags))
                         .unwrap_or(false)
                 });
                 // A wake-pipe byte just means "return to the loop so the
@@ -450,7 +460,8 @@ fn spawn_system(cmd: &SysCommand) {
             let pid = child.id();
             log::debug!(
                 "[mapper] spawned side-effect pid={pid}: {} {:?}",
-                cmd.program, cmd.args
+                cmd.program,
+                cmd.args
             );
             // Detach the wait so a hung child cannot stall the side-effect worker.
             std::thread::spawn(move || match child.wait() {
@@ -471,82 +482,125 @@ fn spawn_system(cmd: &SysCommand) {
     }
 }
 
+/// Enqueue a DBus call on the dedicated `lhc-dbus` worker. Calls stay
+/// ordered among themselves (macros rely on that) but never block the
+/// side-effect worker, so a hung DBus service cannot stall text
+/// injection or shell commands queued after it.
 fn call_dbus(call: &DbusCall) {
-    use std::sync::mpsc;
-    use std::time::Duration;
-    use zbus::zvariant::StructureBuilder;
+    if dbus_tx().send(call.clone()).is_err() {
+        log::debug!(
+            "[mapper] dbus {}.{} dropped (worker unavailable)",
+            call.destination,
+            call.method
+        );
+    }
+}
 
-    let (tx, rx) = mpsc::channel();
-    let call_clone = call.clone();
+fn dbus_tx() -> &'static mpsc::Sender<DbusCall> {
+    static TX: OnceLock<mpsc::Sender<DbusCall>> = OnceLock::new();
+    TX.get_or_init(|| {
+        let (tx, rx) = mpsc::channel();
+        match thread::Builder::new()
+            .name("lhc-dbus".into())
+            .spawn(move || run_dbus_worker(rx))
+        {
+            Ok(_) => {}
+            Err(e) => log::debug!("[mapper] could not spawn dbus worker: {e}"),
+        }
+        tx
+    })
+}
 
-    std::thread::spawn(move || {
-        let conn = match zbus::blocking::Connection::session() {
-            Ok(c) => c,
-            Err(e) => {
-                let _ = tx.send(Err(format!("connect session bus: {e}")));
-                return;
-            }
-        };
-        let result = if call_clone.args.is_empty() {
-            conn.call_method(
-                Some(call_clone.destination.as_str()),
-                call_clone.path.as_str(),
-                call_clone.interface.as_deref(),
-                call_clone.method.as_str(),
-                &(),
-            )
-        } else {
-            let mut b = StructureBuilder::new();
-            for a in &call_clone.args {
-                b = match a {
-                    DbusArg::U32(v) => b.add_field(*v),
-                    DbusArg::I32(v) => b.add_field(*v),
-                    DbusArg::Bool(v) => b.add_field(*v),
-                    DbusArg::Str(s) => b.add_field(s.clone()),
-                };
-            }
-            let body = match b.build() {
-                Ok(s) => s,
-                Err(e) => {
-                    let _ = tx.send(Err(format!("build body: {e}")));
-                    return;
+fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
+    // One long-lived session connection instead of a connection per call.
+    let mut conn: Option<zbus::blocking::Connection> = None;
+    for call in rx {
+        let c = match &conn {
+            Some(c) => c.clone(),
+            None => match zbus::blocking::Connection::session() {
+                Ok(c) => {
+                    conn = Some(c.clone());
+                    c
                 }
-            };
-            conn.call_method(
-                Some(call_clone.destination.as_str()),
-                call_clone.path.as_str(),
-                call_clone.interface.as_deref(),
-                call_clone.method.as_str(),
-                &body,
-            )
+                Err(e) => {
+                    log::debug!("[mapper] dbus connect session bus failed: {e}");
+                    continue;
+                }
+            },
         };
-        let _ = tx.send(result.map_err(|e| format!("{e}")));
-    });
+        let (tx, done) = mpsc::channel();
+        let call_clone = call.clone();
+        thread::spawn(move || {
+            let _ = tx.send(dispatch_dbus_call(&c, &call_clone));
+        });
 
-    match rx.recv_timeout(Duration::from_secs(5)) {
-        Ok(Ok(_)) => {
-            if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
-                let _ = crate::layout::refresh_cache();
+        match done.recv_timeout(Duration::from_secs(5)) {
+            Ok(Ok(())) => {
+                if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
+                    let _ = crate::layout::refresh_cache();
+                }
+                log::debug!(
+                    "[mapper] dbus {} {} {}.{}",
+                    call.destination,
+                    call.path,
+                    call.interface.as_deref().unwrap_or(""),
+                    call.method,
+                );
             }
-            log::debug!(
-                "[mapper] dbus {} {} {}.{}",
-                call.destination,
-                call.path,
-                call.interface.as_deref().unwrap_or(""),
-                call.method,
-            );
-        }
-        Ok(Err(e)) => {
-            log::debug!(
-                "[mapper] dbus {}.{} failed: {}",
-                call.destination, call.method, e
-            );
-        }
-        Err(_) => {
-            log::debug!(
-                "[mapper] dbus {}.{} timed out after 5s",
-                call.destination, call.method
-            );
+            Ok(Err(e)) => {
+                log::debug!(
+                    "[mapper] dbus {}.{} failed: {}",
+                    call.destination,
+                    call.method,
+                    e
+                );
+                // Method-level errors keep the connection; anything else
+                // (transport, serialization) forces a reconnect next call.
+                if !matches!(e, zbus::Error::MethodError(..)) {
+                    conn = None;
+                }
+            }
+            Err(_) => {
+                log::debug!(
+                    "[mapper] dbus {}.{} timed out after 5s",
+                    call.destination,
+                    call.method
+                );
+                conn = None;
+            }
         }
     }
+}
+
+fn dispatch_dbus_call(conn: &zbus::blocking::Connection, call: &DbusCall) -> zbus::Result<()> {
+    use zbus::zvariant::StructureBuilder;
+
+    if call.args.is_empty() {
+        conn.call_method(
+            Some(call.destination.as_str()),
+            call.path.as_str(),
+            call.interface.as_deref(),
+            call.method.as_str(),
+            &(),
+        )?;
+        return Ok(());
+    }
+    let mut b = StructureBuilder::new();
+    for a in &call.args {
+        b = match a {
+            DbusArg::U32(v) => b.add_field(*v),
+            DbusArg::I32(v) => b.add_field(*v),
+            DbusArg::Bool(v) => b.add_field(*v),
+            DbusArg::Str(s) => b.add_field(s.clone()),
+        };
+    }
+    let body = b.build()?;
+    conn.call_method(
+        Some(call.destination.as_str()),
+        call.path.as_str(),
+        call.interface.as_deref(),
+        call.method.as_str(),
+        &body,
+    )?;
+    Ok(())
 }
