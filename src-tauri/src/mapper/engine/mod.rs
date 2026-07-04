@@ -385,18 +385,40 @@ impl Engine {
 
     fn on_press(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
         // Second press of a rule key that is currently waiting for a
-        // double-tap → fire it immediately.
-        if matches!(
-            self.pending.get(&key).map(|p| &p.phase),
-            Some(Phase::WaitingSecond { .. })
-        ) {
-            let pending = self.pending.remove(&key);
-            log::debug!("[mapper] double-tap fired (key={:?})", key);
-            let dtap = pending.and_then(|p| p.rule.double_tap);
-            self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
-            // The matching release must not emit anything (fire-and-forget).
-            self.oneshot_consumed.insert(key);
-            return;
+        // double-tap. Compare the *event* time against the window deadline
+        // rather than trusting the phase alone: a live press can arrive
+        // after the deadline but before the next `tick` fires the tap, and a
+        // permissive-hold replay carries an old timestamp. Only a press that
+        // actually lands inside the window is a double-tap.
+        let waiting_second_deadline = match self.pending.get(&key).map(|p| &p.phase) {
+            Some(Phase::WaitingSecond { deadline }) => Some(*deadline),
+            _ => None,
+        };
+        if let Some(deadline) = waiting_second_deadline {
+            if now <= deadline {
+                let pending = self.pending.remove(&key);
+                // Other keys' deferred taps happened physically before this
+                // second press — flush them first so output stays in order.
+                self.flush_waiting_second(now, out);
+                // Legacy mode: any rule still deciding must commit its hold
+                // before this key-down's action (same as the normal path).
+                if matches!(self.decision_mode, DecisionMode::HoldOnOtherKeyPress) {
+                    self.commit_waiting_decisions(out);
+                }
+                log::debug!("[mapper] double-tap fired (key={:?})", key);
+                let dtap = pending.and_then(|p| p.rule.double_tap);
+                self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
+                // The matching release must not emit anything (fire-and-forget).
+                self.oneshot_consumed.insert(key);
+                return;
+            }
+            // Window elapsed: emit the deferred first tap now, then fall
+            // through and treat this key-down as a brand-new press (which may
+            // itself open a fresh tap/hold/double-tap sequence).
+            if let Some(pending) = self.pending.remove(&key) {
+                log::debug!("[mapper] dtap-window elapsed on 2nd press -> tap (key={:?})", key);
+                self.fire_tap(key, &pending.rule.tap, now, out);
+            }
         }
 
         // Any new key-down first commits currently deferred taps so
@@ -818,8 +840,21 @@ impl Engine {
             // buffer (which re-pressed `key`).
             return false;
         }
-        // Release of a key held *before* the decision started — it does not
-        // decide anything; process it normally.
+        // Release of a key held *before* the decision started does not
+        // resolve the decision. But if presses are already buffered behind
+        // the decision, this release must stay ordered behind them: a key
+        // buffered while this one was still physically down has to replay in
+        // that same state. With an empty buffer nothing can be reordered, so
+        // let the release flow through immediately.
+        if !self.decision_buffer.is_empty() {
+            log::debug!(
+                "[mapper] permissive: buffer prior-key release {:?} (deciding={:?})",
+                key,
+                deciding
+            );
+            self.decision_buffer.push(BufferedEvent { key, down, at: now });
+            return true;
+        }
         false
     }
 
@@ -2359,6 +2394,93 @@ mod tests {
             out[1],
             Out::KeyRaw { key, down: true } if key == Key::KEY_W
         ));
+    }
+
+    #[test]
+    fn double_tap_late_second_press_is_tap_not_double_tap() {
+        // The second press lands after the double-tap window has closed but
+        // before any `tick` fires the deferred tap (`handle` runs before
+        // `tick` in the loop). It must resolve the first tap and be treated
+        // as a fresh press, never as a double-tap.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "KeyQ".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Action("KeyA".into()),
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: "KeyB".into(),
+            double_tap_timeout_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_Q, true, now, &mut out);
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
+        assert!(out.is_empty()); // WaitingSecond, deadline = now + 210ms
+
+        // Second press well past the 200 ms window.
+        engine.handle(Key::KEY_Q, true, now + Duration::from_millis(500), &mut out);
+        assert!(
+            matches!(
+                out.as_slice(),
+                [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_A
+            ),
+            "late second press must fire the first tap (KeyA), not the double-tap"
+        );
+    }
+
+    #[test]
+    fn permissive_prior_key_release_replays_after_buffer() {
+        // Shift↓ (held, passthrough), F↓ (rule, deciding), J↓ (buffered),
+        // Shift↑. The Shift release must not overtake the buffered J: when the
+        // buffer drains, J is pressed before Shift is released, preserving the
+        // modifier state J was physically pressed under.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(tap_hold_rule(
+            "KeyF",
+            ActionSpec::Action("Escape".into()),
+            ActionSpec::Action("ControlLeft".into()),
+        ));
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw { key, down: true }] if *key == Key::KEY_LEFTSHIFT
+        ));
+        out.clear();
+
+        engine.handle(Key::KEY_F, true, now + Duration::from_millis(5), &mut out);
+        engine.handle(Key::KEY_J, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(15), &mut out);
+        // Everything deferred behind F's decision.
+        assert!(out.is_empty());
+
+        // F released first → F is a tap; the buffer replays in physical order.
+        engine.handle(Key::KEY_F, false, now + Duration::from_millis(20), &mut out);
+        assert!(
+            matches!(
+                out.as_slice(),
+                [
+                    Out::Stroke { ks, .. },
+                    Out::KeyRaw { key: j, down: true },
+                    Out::KeyRaw { key: sh, down: false },
+                ] if ks.key == Key::KEY_ESC
+                    && *j == Key::KEY_J
+                    && *sh == Key::KEY_LEFTSHIFT
+            ),
+            "expected Esc tap, then J down, then Shift up ordered last"
+        );
     }
 
     #[test]

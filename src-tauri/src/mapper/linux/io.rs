@@ -165,11 +165,15 @@ impl LoopDriver for MultiDeviceLoopDriver {
     fn wait(&mut self, timeout: Duration) -> Result<bool, String> {
         use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
 
+        // Round *up* to whole milliseconds. `poll` takes millisecond
+        // granularity; truncating a sub-millisecond remainder to 0 makes
+        // `poll` return instantly while the deadline it was meant to wait
+        // for has not elapsed, so `tick` does nothing and the loop spins.
+        // A genuine zero timeout (deadline already passed) stays 0.
         let timeout_ms: u16 = timeout
-            .as_millis()
-            .min(u16::MAX as u128)
-            .try_into()
-            .unwrap_or(u16::MAX);
+            .as_nanos()
+            .div_ceil(1_000_000)
+            .min(u16::MAX as u128) as u16;
         let mut pfds: Vec<PollFd> = self
             .devices
             .iter()
