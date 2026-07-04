@@ -276,6 +276,57 @@ macros:
     expect(reparsed?.rules[0]?.id).toMatch(/^r_[a-z0-9]{8}$/)
   })
 
+  it('round-trips rule conditions and enabled flag', () => {
+    const preset = {
+      layers: [],
+      rules: [
+        {
+          id: 'rule-cond',
+          enabled: false,
+          conditionGameMode: 'off' as const,
+          conditionLayouts: ['us'],
+          conditionAppsWhitelist: ['firefox'],
+          conditionAppsBlacklist: ['krita', 'gimp'],
+          key: 'Semicolon',
+          layerId: '',
+          tapAction: 'Quote',
+          holdAction: '',
+          doubleTapAction: '',
+        },
+        {
+          id: 'rule-uncond',
+          key: 'Quote',
+          layerId: '',
+          tapAction: 'Semicolon',
+          holdAction: '',
+          doubleTapAction: '',
+        },
+      ],
+      layerKeymaps: {},
+      macros: [],
+      commands: [],
+      quickActions: [],
+    }
+
+    const yaml = serializeLayoutYaml(preset)
+    const reparsed = parseLayoutYaml(yaml)
+
+    expect(reparsed?.rules[0]).toMatchObject({
+      enabled: false,
+      conditionGameMode: 'off',
+      conditionLayouts: ['us'],
+      conditionAppsWhitelist: ['firefox'],
+      conditionAppsBlacklist: ['krita', 'gimp'],
+      key: 'Semicolon',
+      tapAction: 'Quote',
+    })
+    // Unconditional rule stays clean: no condition keys leak into yaml.
+    expect(yaml).not.toContain('rule-uncond')
+    expect(reparsed?.rules[1]?.enabled).toBeUndefined()
+    expect(reparsed?.rules[1]?.conditionGameMode).toBeUndefined()
+    expect(reparsed?.rules[1]?.conditionLayouts).toBeUndefined()
+  })
+
   it('extracts and applies presets while preserving settings and cloning layout data', () => {
     const config = createDefaultConfig()
     config.layers.push({ id: 'nav', name: 'Navigation' })

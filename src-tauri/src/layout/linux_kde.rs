@@ -105,9 +105,13 @@ pub fn set_layout(index: u32) -> Result<(), String> {
 }
 
 pub fn start_watcher(app: AppHandle) {
+    let poll_app = app.clone();
     let _ = thread::Builder::new()
         .name("layout-kde-watcher".into())
-        .spawn(move || run_watcher(app));
+        .spawn(move || run_watcher(poll_app));
+    let _ = thread::Builder::new()
+        .name("layout-kde-signal".into())
+        .spawn(move || run_signal_watcher(app));
 }
 
 fn run_watcher(app: AppHandle) {
@@ -120,6 +124,39 @@ fn run_watcher(app: AppHandle) {
             }
         }
     }
+}
+
+fn run_signal_watcher(app: AppHandle) {
+    while !super::watcher_stop_requested() {
+        match signal_watch_once(&app) {
+            Ok(()) => return,
+            Err(e) => {
+                log::debug!("[layout/kde] signal watcher error: {e}; retrying in 2s");
+                thread::sleep(Duration::from_secs(2));
+            }
+        }
+    }
+}
+
+// The 500 ms poll loop leaves a window where key presses right after a
+// layout switch are evaluated against the previous layout, so rules with a
+// layout condition fire (or stay silent) wrongly. Subscribing to KDE's
+// `layoutChanged` signal refreshes the cache the moment the layout changes;
+// the poll loop stays as a fallback.
+fn signal_watch_once(app: &AppHandle) -> Result<(), String> {
+    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
+        .map_err(|e| format!("create keyboard proxy: {e}"))?;
+    let signals = proxy
+        .receive_signal("layoutChanged")
+        .map_err(|e| format!("subscribe to layoutChanged: {e}"))?;
+    for _msg in signals {
+        if super::watcher_stop_requested() {
+            return Ok(());
+        }
+        emit_current(app, &proxy);
+    }
+    Err("layoutChanged signal stream ended".to_string())
 }
 
 fn watch_once(app: &AppHandle) -> Result<(), String> {

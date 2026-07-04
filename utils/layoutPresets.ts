@@ -42,6 +42,12 @@ interface LayoutYaml {
   rules?: Array<{
     key?: string
     layer?: string | null
+    enabled?: boolean
+    // Rule conditions. Absent => unconditional.
+    gameMode?: string | null
+    layouts?: Array<string | null>
+    appsWhitelist?: Array<string | null>
+    appsBlacklist?: Array<string | null>
     // tap / hold follow a three-state convention:
     //   field absent                          -> native passthrough
     //   field present but null / ~            -> explicit swallow
@@ -121,6 +127,12 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
   }
 
   const rules: LayerRule[] = []
+  const stringList = (list: Array<string | null> | undefined) => {
+    const items = (list ?? []).filter(
+      (s): s is string => typeof s === 'string' && s !== '',
+    )
+    return items.length > 0 ? items : undefined
+  }
   for (const r of doc.rules ?? []) {
     if (!r?.key) continue
     // Three-state tap/hold: absent => '' (native), explicit null => null
@@ -142,6 +154,13 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
         : ''
     rules.push({
       id: r.id ?? genId('r_'),
+      ...(r.enabled === false ? { enabled: false } : {}),
+      ...(r.gameMode === 'on' || r.gameMode === 'off'
+        ? { conditionGameMode: r.gameMode }
+        : {}),
+      conditionLayouts: stringList(r.layouts),
+      conditionAppsWhitelist: stringList(r.appsWhitelist),
+      conditionAppsBlacklist: stringList(r.appsBlacklist),
       key: r.key,
       layerId: r.layer ?? '',
       tapAction,
@@ -281,6 +300,19 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
     }),
     rules: preset.rules.map((r) => ({
       key: r.key,
+      ...(r.enabled === false ? { enabled: false } : {}),
+      ...(r.conditionGameMode === 'on' || r.conditionGameMode === 'off'
+        ? { gameMode: r.conditionGameMode }
+        : {}),
+      ...(r.conditionLayouts && r.conditionLayouts.length > 0
+        ? { layouts: r.conditionLayouts }
+        : {}),
+      ...(r.conditionAppsWhitelist && r.conditionAppsWhitelist.length > 0
+        ? { appsWhitelist: r.conditionAppsWhitelist }
+        : {}),
+      ...(r.conditionAppsBlacklist && r.conditionAppsBlacklist.length > 0
+        ? { appsBlacklist: r.conditionAppsBlacklist }
+        : {}),
       ...(r.layerId ? { layer: r.layerId } : {}),
       // tap/hold: '' => native (omit field); null => explicit swallow
       // (emit `null`); non-empty string => action / action.
