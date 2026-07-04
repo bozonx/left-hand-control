@@ -54,7 +54,10 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn type_text(&mut self, text: &str) {
-        portal::type_text(text);
+        // portal::type_text can block for seconds on its first call (libei
+        // handshake / consent dialog) — never run it on the mapper thread
+        // while the keyboard is grabbed.
+        enqueue_side_effect(SideEffectJob::Text(text.to_string()));
     }
 
     fn run_system(&mut self, action: &SysAction) {
@@ -69,6 +72,7 @@ impl SideEffects for RuntimeSideEffects {
 enum SideEffectJob {
     System(SysAction),
     Command(SysCommand),
+    Text(String),
 }
 
 fn side_effect_tx() -> &'static mpsc::Sender<SideEffectJob> {
@@ -97,16 +101,24 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
         match job {
             SideEffectJob::System(action) => run_sys_action(&action),
             SideEffectJob::Command(command) => spawn_system(&command),
+            SideEffectJob::Text(text) => portal::type_text(&text),
         }
     }
 }
 
 pub(super) struct MultiDeviceLoopDriver {
     devices: Vec<Device>,
+    /// Read end of the control wake pipe. The `Handle` writes a byte after
+    /// queuing a control message so the poll below returns immediately
+    /// instead of sleeping out its full timeout.
+    wake_rx: Option<std::os::fd::OwnedFd>,
 }
 
 impl MultiDeviceLoopDriver {
-    pub(super) fn new(devices: Vec<Device>) -> Result<Self, String> {
+    pub(super) fn new(
+        devices: Vec<Device>,
+        wake_rx: Option<std::os::fd::OwnedFd>,
+    ) -> Result<Self, String> {
         for device in &devices {
             let fd = device.as_raw_fd();
             // SAFETY: `fd` is a valid raw file descriptor obtained from an
@@ -122,7 +134,22 @@ impl MultiDeviceLoopDriver {
                 }
             }
         }
-        Ok(Self { devices })
+        Ok(Self { devices, wake_rx })
+    }
+
+    fn drain_wake_pipe(&self) {
+        let Some(fd) = self.wake_rx.as_ref() else {
+            return;
+        };
+        let mut buf = [0u8; 64];
+        loop {
+            let n = unsafe {
+                libc::read(fd.as_raw_fd(), buf.as_mut_ptr() as *mut libc::c_void, buf.len())
+            };
+            if n <= 0 {
+                break;
+            }
+        }
     }
 }
 
@@ -147,12 +174,22 @@ impl LoopDriver for MultiDeviceLoopDriver {
                 PollFd::new(borrowed, PollFlags::POLLIN)
             })
             .collect();
+        if let Some(wake) = self.wake_rx.as_ref() {
+            let borrowed = unsafe { BorrowedFd::borrow_raw(wake.as_raw_fd()) };
+            pfds.push(PollFd::new(borrowed, PollFlags::POLLIN));
+        }
         match poll(&mut pfds, PollTimeout::from(timeout_ms)) {
-            Ok(_) => Ok(pfds.iter().any(|p| {
-                p.revents()
-                    .map(|r| r.contains(PollFlags::POLLIN))
-                    .unwrap_or(false)
-            })),
+            Ok(_) => {
+                let device_ready = pfds[..self.devices.len()].iter().any(|p| {
+                    p.revents()
+                        .map(|r| r.contains(PollFlags::POLLIN))
+                        .unwrap_or(false)
+                });
+                // A wake-pipe byte just means "return to the loop so the
+                // control channel gets drained" — it is not device input.
+                self.drain_wake_pipe();
+                Ok(device_ready)
+            }
             Err(nix::errno::Errno::EINTR) => Ok(false),
             Err(e) => Err(format!("poll: {e}")),
         }
@@ -361,7 +398,13 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
             }
             Out::ReleaseMods(mods) => {
                 for m in mods {
-                    events.push(InputEvent::new(EventType::KEY, m.code(), 0));
+                    let code = m.code();
+                    // Same rule as KeyRaw: two transitions of one key must
+                    // not share an `EV_SYN` frame or they may coalesce.
+                    if events.iter().any(|ev| ev.code() == code) {
+                        flush_events(sink, &mut events)?;
+                    }
+                    events.push(InputEvent::new(EventType::KEY, code, 0));
                 }
             }
             Out::RunSystem(action) => {

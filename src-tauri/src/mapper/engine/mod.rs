@@ -91,8 +91,8 @@ pub struct Engine {
     active_macro: Option<self::model::ActiveMacro>,
 }
 impl Engine {
-    /// Time until the nearest pending deadline (hold-decision or
-    /// waiting-for-second-press), or None.
+    /// Time until the nearest pending deadline (hold-decision,
+    /// waiting-for-second-press, or the next macro step wake-up), or None.
     pub fn next_deadline(&self, now: Instant) -> Option<Duration> {
         self.pending
             .values()
@@ -102,6 +102,11 @@ impl Engine {
                 }
                 Phase::HoldActive => None,
             })
+            .chain(
+                self.active_macro
+                    .as_ref()
+                    .map(|am| am.next_wake.saturating_duration_since(now)),
+            )
             .min()
     }
 
@@ -259,8 +264,29 @@ impl Engine {
             let pending = self.pending.remove(&k);
             log::debug!("[mapper] dtap-window expired -> tap (key={:?})", k);
             if let Some(pending) = pending {
-                self.fire_tap(k, &pending.rule.tap, Instant::now(), out);
+                self.fire_tap(k, &pending.rule.tap, now, out);
             }
+        }
+    }
+
+    /// Abort the in-flight macro (if any). A stroke step presses its
+    /// modifiers first and releases them only in a later phase, so an
+    /// abort mid-stroke must release them here or they stay stuck down.
+    fn abort_active_macro(&mut self, out: &mut Vec<Out>) {
+        let Some(am) = self.active_macro.take() else {
+            return;
+        };
+        match am.phase {
+            self::model::MacroPhase::StrokeModDelayPress(ks)
+            | self::model::MacroPhase::StrokeModDelayRelease(ks) => {
+                for m in ks.mods.iter().rev() {
+                    out.push(Out::KeyRaw {
+                        key: *m,
+                        down: false,
+                    });
+                }
+            }
+            self::model::MacroPhase::NextStep => {}
         }
     }
 
@@ -274,8 +300,8 @@ impl Engine {
                 //     before the physical mouse click arrives at the OS.
                 // (b) Layer triggers activate so that layer keymaps are
                 //     consulted when should_handle_mouse_button runs below.
+                self.flush_waiting_second(now, out);
                 self.commit_waiting_decisions(out);
-                self.flush_waiting_second(out);
             }
             if !self.should_handle_mouse_button(key, down) {
                 out.push(Out::KeyRaw { key, down });
@@ -322,15 +348,16 @@ impl Engine {
             return;
         }
 
+        // Any new key-down first commits currently deferred taps so
+        // emitted events stay in natural press order (the deferred tap's
+        // press happened before everything below).
+        self.flush_waiting_second(now, out);
+
         // Interrupt-on-other-key-press: any pending rule still in
         // WaitingDecision must resolve as hold before we let this new
         // event through. This is what makes Shift+KeyA, MetaLeft(hold=ControlLeft)+KeyC
         // and similar mod-tap patterns feel natural.
         self.commit_waiting_decisions(out);
-
-        // Any new key-down must also commit any currently deferred taps so
-        // emitted events stay in natural press order.
-        self.flush_waiting_second(out);
 
         if self.active_layers.is_empty() {
             if let Some(rule) = self.active_rule_for_key(key) {
@@ -380,15 +407,25 @@ impl Engine {
                             if let Some(ks) = self.emitted.get(&trigger.key).cloned() {
                                 let mut suppressed = Vec::new();
                                 for target_key in ks.mods.iter().chain(std::iter::once(&ks.key)) {
+                                    // Another isolate key may already have
+                                    // suppressed this target — record the
+                                    // entry (so release bookkeeping stays
+                                    // balanced) but don't emit a second up.
+                                    let already_suppressed =
+                                        self.isolated_holds.values().any(|v| {
+                                            v.iter().any(|(k, _)| k == target_key)
+                                        });
                                     let old_count =
                                         self.mod_refs.get(target_key).copied().unwrap_or(0);
                                     if let Some(count) = self.mod_refs.get_mut(target_key) {
                                         *count = 0;
                                     }
-                                    out.push(Out::KeyRaw {
-                                        key: *target_key,
-                                        down: false,
-                                    });
+                                    if !already_suppressed {
+                                        out.push(Out::KeyRaw {
+                                            key: *target_key,
+                                            down: false,
+                                        });
+                                    }
                                     suppressed.push((*target_key, old_count));
                                     log::debug!(
                                         "[mapper] isolate+ {:?} suppress hold {:?}",
@@ -425,6 +462,7 @@ impl Engine {
                                 md.steps.len()
                             );
                             if !md.steps.is_empty() {
+                                self.abort_active_macro(out);
                                 self.active_macro = Some(self::model::ActiveMacro {
                                     steps: md.steps,
                                     step_pause: md.step_pause,
@@ -465,6 +503,15 @@ impl Engine {
     fn on_release(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
         if let Some(suppressed) = self.isolated_holds.remove(&key) {
             for (target_key, old_count) in suppressed {
+                // Don't restore while another isolate key still suppresses
+                // the same target — its own release will handle it.
+                if self
+                    .isolated_holds
+                    .values()
+                    .any(|v| v.iter().any(|(k, _)| *k == target_key))
+                {
+                    continue;
+                }
                 let still_held = self
                     .emitted
                     .values()
@@ -569,9 +616,15 @@ impl Engine {
                 *r = r.saturating_sub(1);
             }
         }
+        // A modifier stays down while another chord still references it
+        // (refcount) or while some mapping holds it as its *main* key
+        // (e.g. a rule with `hold: ControlLeft`).
         mods.iter()
             .copied()
-            .filter(|m| self.mod_refs.get(m).copied().unwrap_or(0) == 0)
+            .filter(|m| {
+                self.mod_refs.get(m).copied().unwrap_or(0) == 0
+                    && !self.emitted.values().any(|ks| ks.key == *m)
+            })
             .collect()
     }
 
@@ -713,6 +766,7 @@ impl Engine {
             }),
             Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
             Some(ActionDef::Macro(md)) if !md.steps.is_empty() => {
+                self.abort_active_macro(out);
                 self.active_macro = Some(self::model::ActiveMacro {
                     steps: md.steps.clone(),
                     step_pause: md.step_pause,
@@ -753,7 +807,7 @@ impl Engine {
     /// Fire all pending taps whose double-tap window is still open — used
     /// when another key is pressed, so the deferred tap is committed
     /// before the new key's action. Preserves ordering.
-    fn flush_waiting_second(&mut self, out: &mut Vec<Out>) {
+    fn flush_waiting_second(&mut self, now: Instant, out: &mut Vec<Out>) {
         let keys: Vec<Key> = self
             .pending
             .iter()
@@ -764,13 +818,14 @@ impl Engine {
             let pending = self.pending.remove(&k);
             log::debug!("[mapper] dtap-window flushed -> tap (key={:?})", k);
             if let Some(pending) = pending {
-                self.fire_tap(k, &pending.rule.tap, Instant::now(), out);
+                self.fire_tap(k, &pending.rule.tap, now, out);
             }
         }
     }
 
     /// Generic shutdown helper — release everything that is currently held.
     pub fn shutdown(&mut self, out: &mut Vec<Out>) {
+        self.abort_active_macro(out);
         for (_, ks) in self.emitted.drain() {
             out.push(Out::KeyRaw {
                 key: ks.key,
@@ -2413,6 +2468,235 @@ mod tests {
         engine.handle(Key::KEY_Q, false, now + Duration::from_millis(10), &mut out);
         // Macro should now be active
         assert!(engine.active_macro.is_some());
+    }
+
+    #[test]
+    fn starting_macro_mid_stroke_releases_pending_mods() {
+        // A macro interrupted between its mod-press and mod-release phases
+        // must release the pressed modifiers before the new macro starts.
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "a".into(),
+            steps: vec![MacroStep {
+                action: "Ctrl+KeyC".into(),
+            }],
+            step_pause_ms: Some(1),
+            modifier_delay_ms: Some(5),
+        });
+        cfg.macros.push(Macro {
+            id: "b".into(),
+            steps: vec![MacroStep {
+                action: "KeyH".into(),
+            }],
+            step_pause_ms: Some(1),
+            modifier_delay_ms: Some(5),
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.execute_remote("macro:a", &mut out);
+        // First tick presses Ctrl and enters the mod-delay phase.
+        engine.tick(now + Duration::from_millis(1), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw {
+                key: Key::KEY_LEFTCTRL,
+                down: true
+            }]
+        ));
+        out.clear();
+
+        // Starting another macro mid-stroke must release Ctrl.
+        engine.execute_remote("macro:b", &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw {
+                key: Key::KEY_LEFTCTRL,
+                down: false
+            }]
+        ));
+    }
+
+    #[test]
+    fn shutdown_releases_mods_of_in_flight_macro() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "a".into(),
+            steps: vec![MacroStep {
+                action: "Ctrl+KeyC".into(),
+            }],
+            step_pause_ms: Some(1),
+            modifier_delay_ms: Some(5),
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.execute_remote("macro:a", &mut out);
+        engine.tick(now + Duration::from_millis(1), &mut out);
+        out.clear();
+
+        engine.shutdown(&mut out);
+        assert!(out.iter().any(|o| matches!(
+            o,
+            Out::KeyRaw {
+                key: Key::KEY_LEFTCTRL,
+                down: false
+            }
+        )));
+        assert!(engine.active_macro.is_none());
+    }
+
+    #[test]
+    fn next_deadline_includes_macro_wake() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "a".into(),
+            steps: vec![
+                MacroStep {
+                    action: "KeyH".into(),
+                },
+                MacroStep {
+                    action: "KeyI".into(),
+                },
+            ],
+            step_pause_ms: Some(20),
+            modifier_delay_ms: None,
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.execute_remote("macro:a", &mut out);
+        // First step fires; the next step is scheduled step_pause later —
+        // the loop must be able to sleep exactly until then.
+        engine.tick(now, &mut out);
+        let deadline = engine.next_deadline(now).expect("macro wake deadline");
+        assert!(deadline <= Duration::from_millis(20));
+    }
+
+    #[test]
+    fn chord_release_keeps_mod_held_as_main_key() {
+        // KeyA holds ControlLeft as its *main* key; releasing the Ctrl+KeyC
+        // chord on KeyB must not release Ctrl while KeyA is still down.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "Space".into(),
+            layer_id: "sp".into(),
+            tap_action: ActionSpec::Native,
+            hold_action: ActionSpec::Native,
+            isolate: String::new(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut sp = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        sp.keys.insert("KeyA".into(), Some("ControlLeft".into()));
+        sp.keys.insert("KeyB".into(), Some("Ctrl+KeyC".into()));
+        cfg.layer_keymaps.insert("sp".into(), sp);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        engine.tick(now + Duration::from_millis(260), &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(270), &mut out);
+        engine.handle(Key::KEY_B, true, now + Duration::from_millis(280), &mut out);
+        out.clear();
+
+        // Release the chord: Ctrl must stay down (KeyA still holds it).
+        engine.handle(
+            Key::KEY_B,
+            false,
+            now + Duration::from_millis(290),
+            &mut out,
+        );
+        assert!(matches!(
+            out.as_slice(),
+            [Out::ChordRelease { key, mods, .. }]
+                if *key == Key::KEY_C && mods.is_empty()
+        ));
+
+        out.clear();
+        // Now releasing KeyA releases Ctrl.
+        engine.handle(
+            Key::KEY_A,
+            false,
+            now + Duration::from_millis(300),
+            &mut out,
+        );
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw {
+                key: Key::KEY_LEFTCTRL,
+                down: false
+            }]
+        ));
+    }
+
+    #[test]
+    fn overlapping_isolate_keys_restore_only_after_last_release() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "AltLeft".into(),
+            layer_id: "win".into(),
+            tap_action: ActionSpec::Action("Enter".into()),
+            hold_action: ActionSpec::Action("AltLeft".into()),
+            isolate: "KeyW,KeyE".into(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut win = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        win.keys.insert("KeyW".into(), Some("Ctrl+KeyA".into()));
+        win.keys.insert("KeyE".into(), Some("Ctrl+KeyB".into()));
+        cfg.layer_keymaps.insert("win".into(), win);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
+        engine.handle(Key::KEY_W, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_E, true, now + Duration::from_millis(20), &mut out);
+        out.clear();
+
+        // Releasing W must NOT restore Alt — E still isolates it.
+        engine.handle(Key::KEY_W, false, now + Duration::from_millis(30), &mut out);
+        assert!(!out.iter().any(|o| matches!(
+            o,
+            Out::KeyRaw {
+                key: Key::KEY_LEFTALT,
+                down: true
+            }
+        )));
+
+        out.clear();
+        // Releasing E (last isolate key) restores Alt.
+        engine.handle(Key::KEY_E, false, now + Duration::from_millis(40), &mut out);
+        assert!(out.iter().any(|o| matches!(
+            o,
+            Out::KeyRaw {
+                key: Key::KEY_LEFTALT,
+                down: true
+            }
+        )));
     }
 
     #[test]

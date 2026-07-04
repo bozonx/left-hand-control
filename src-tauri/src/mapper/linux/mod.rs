@@ -10,6 +10,7 @@ use evdev::{AttributeSet, BusType, Device, InputId, Key};
 use io::{flush_out, process_iteration, LoopDriver, MultiDeviceLoopDriver};
 #[cfg(test)]
 use io::{flush_out_with, process_iteration_with, EventSink, SideEffects};
+use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -28,13 +29,24 @@ pub enum MapperControl {
 pub struct Handle {
     stop: Arc<AtomicBool>,
     control_tx: mpsc::Sender<MapperControl>,
+    /// Write end of the wake pipe: one byte per control message so the
+    /// mapper's poll loop reacts immediately instead of after its timeout.
+    wake_tx: OwnedFd,
     join: Option<thread::JoinHandle<()>>,
     error: Arc<Mutex<Option<String>>>,
 }
 
 impl Handle {
+    fn wake(&self) {
+        let buf = [1u8];
+        unsafe {
+            libc::write(self.wake_tx.as_raw_fd(), buf.as_ptr() as *const libc::c_void, 1);
+        }
+    }
+
     pub fn stop(mut self) {
         self.stop.store(true, Ordering::SeqCst);
+        self.wake();
         if let Some(j) = self.join.take() {
             let _ = j.join();
         }
@@ -54,13 +66,17 @@ impl Handle {
     pub fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
         self.control_tx
             .send(MapperControl::Config(Box::new(cfg)))
-            .map_err(|e| format!("mapper update channel closed: {e}"))
+            .map_err(|e| format!("mapper update channel closed: {e}"))?;
+        self.wake();
+        Ok(())
     }
 
     pub fn execute_action(&self, action: String) -> Result<(), String> {
         self.control_tx
             .send(MapperControl::Execute(action))
-            .map_err(|e| format!("mapper update channel closed: {e}"))
+            .map_err(|e| format!("mapper update channel closed: {e}"))?;
+        self.wake();
+        Ok(())
     }
 
     pub fn reap_if_finished(&mut self) -> bool {
@@ -117,6 +133,7 @@ pub fn spawn(
     let err_thread = error.clone();
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
     let (control_tx, control_rx) = mpsc::channel::<MapperControl>();
+    let (wake_rx, wake_tx) = make_wake_pipe()?;
 
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
@@ -130,6 +147,7 @@ pub fn spawn(
                     stop_thread,
                     ready_tx,
                     control_rx,
+                    wake_rx,
                 )
             }));
             match result {
@@ -185,9 +203,23 @@ pub fn spawn(
     Ok(Handle {
         stop,
         control_tx,
+        wake_tx,
         join: Some(join),
         error,
     })
+}
+
+fn make_wake_pipe() -> Result<(OwnedFd, OwnedFd), String> {
+    let mut fds = [0i32; 2];
+    let rc = unsafe { libc::pipe2(fds.as_mut_ptr(), libc::O_NONBLOCK | libc::O_CLOEXEC) };
+    if rc != 0 {
+        return Err(format!(
+            "pipe2: {}",
+            std::io::Error::last_os_error()
+        ));
+    }
+    // SAFETY: pipe2 just returned these fds and nothing else owns them.
+    Ok(unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) })
 }
 
 fn run(
@@ -197,6 +229,7 @@ fn run(
     stop: Arc<AtomicBool>,
     ready_tx: mpsc::Sender<Result<(), String>>,
     control_rx: mpsc::Receiver<MapperControl>,
+    wake_rx: OwnedFd,
 ) -> Result<(), String> {
     let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
     device
@@ -209,6 +242,12 @@ fn run(
         // Mouse is opened without grab: only KEY events are read to interact
         // with modifier tap-hold decisions. REL/ABS (movement) stays
         // untouched so the cursor continues to work.
+        //
+        // Known limitation: because the mouse is not grabbed, the physical
+        // button event always reaches the OS. Layer remaps of mouse buttons
+        // emit the mapped action *in addition to* the physical click, and
+        // `Swallow` cannot suppress the physical click. Fixing this would
+        // require grabbing the mouse and re-emitting REL/ABS ourselves.
         devices.push(mouse);
     }
 
@@ -225,7 +264,7 @@ fn run(
         .build()
         .map_err(|e| format!("uinput build: {e}"))?;
 
-    let driver = MultiDeviceLoopDriver::new(devices)?;
+    let driver = MultiDeviceLoopDriver::new(devices, Some(wake_rx))?;
     let _ = ready_tx.send(Ok(()));
     run_loop(driver, virt, cfg, stop, control_rx)
 }
