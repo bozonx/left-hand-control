@@ -136,6 +136,10 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
         steps: &["Home", "Shift+End"],
     },
     SysMacro {
+        id: "selectWordRightCenter",
+        steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft"],
+    },
+    SysMacro {
         id: "replaceToStartWithBuffer",
         steps: &["Shift+Home", "Ctrl+KeyV"],
     },

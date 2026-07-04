@@ -131,6 +131,11 @@ export const SYSTEM_MACROS: SystemMacro[] = [
     steps: s("Home", "Shift+End"),
   },
   {
+    id: "selectWordRightCenter",
+    name: "Select word right from center",
+    steps: s("Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft"),
+  },
+  {
     id: "replaceToStartWithBuffer",
     name: "Replace to start with buffer",
     steps: s("Shift+Home", "Ctrl+KeyV"),
