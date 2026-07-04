@@ -2763,6 +2763,94 @@ mod tests {
     }
 
     #[test]
+    fn permissive_native_hold_shift_roll_still_taps() {
+        // Mirrors the user's real rule: ShiftLeft tap=Ctrl+KeyC with an
+        // implicit native hold. A rolling overlap with a letter must fire
+        // the Ctrl+C tap, not commit the native Shift hold.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(tap_hold_rule(
+            "ShiftLeft",
+            ActionSpec::Action("Ctrl+KeyC".into()),
+            ActionSpec::Native,
+        ));
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(30), &mut out);
+        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(60), &mut out);
+
+        assert!(
+            matches!(
+                out.as_slice(),
+                [
+                    Out::Stroke { ks: copy, .. },
+                    Out::KeyRaw { key: a, down: true },
+                ] if copy.mods == vec![Key::KEY_LEFTCTRL]
+                    && copy.key == Key::KEY_C
+                    && *a == Key::KEY_A
+            ),
+            "expected Ctrl+C tap then replayed A"
+        );
+    }
+
+    #[test]
+    fn permissive_layer_rule_quick_tap_fires_paste() {
+        // Mirrors the user's real rule: CapsLock layer=nav tap=Ctrl+KeyV.
+        // A quick solo tap fires the paste; a nested layer use holds.
+        let mut cfg = empty_cfg();
+        let mut caps = tap_hold_rule(
+            "CapsLock",
+            ActionSpec::Action("Ctrl+KeyV".into()),
+            ActionSpec::Native,
+        );
+        caps.layer_id = "nav".into();
+        cfg.rules.push(caps);
+        let mut nav = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        nav.keys.insert("KeyJ".into(), Some("ArrowLeft".into()));
+        cfg.layer_keymaps.insert("nav".into(), nav);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        // Solo tap within the timeout → paste.
+        engine.handle(Key::KEY_CAPSLOCK, true, now, &mut out);
+        engine.handle(Key::KEY_CAPSLOCK, false, now + Duration::from_millis(150), &mut out);
+        assert!(
+            matches!(
+                out.as_slice(),
+                [Out::Stroke { ks, .. }]
+                    if ks.mods == vec![Key::KEY_LEFTCTRL] && ks.key == Key::KEY_V
+            ),
+            "expected Ctrl+V tap"
+        );
+
+        // Nested layer use (J pressed and released while Caps held) → layer.
+        out.clear();
+        let t2 = now + Duration::from_millis(500);
+        engine.handle(Key::KEY_CAPSLOCK, true, t2, &mut out);
+        engine.handle(Key::KEY_J, true, t2 + Duration::from_millis(30), &mut out);
+        engine.handle(Key::KEY_J, false, t2 + Duration::from_millis(60), &mut out);
+        engine.handle(Key::KEY_CAPSLOCK, false, t2 + Duration::from_millis(90), &mut out);
+        assert!(
+            matches!(
+                out.as_slice(),
+                [
+                    Out::ChordPress { ks: left, .. },
+                    Out::KeyRaw { key: up, down: false },
+                ] if left.mods.is_empty()
+                    && left.key == Key::KEY_LEFT
+                    && *up == Key::KEY_LEFT
+            ),
+            "expected ArrowLeft press+release from the nav layer"
+        );
+    }
+
+    #[test]
     fn builder_skips_unknown_rule_key() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
