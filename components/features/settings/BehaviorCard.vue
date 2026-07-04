@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AppConfig } from '~/types/config'
+import type { AppConfig, TapDecision } from '~/types/config'
 import NumericInput from '~/components/shared/NumericInput.vue'
 
 const props = defineProps<{
@@ -9,6 +9,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:config': [config: AppConfig]
 }>()
+
+const { t } = useI18n()
+
+const tapDecisionItems = computed<Array<{ label: string, value: TapDecision }>>(() => [
+  { label: t('settings.tapDecisionPermissive'), value: 'permissiveHold' },
+  { label: t('settings.tapDecisionHoldOnPress'), value: 'holdOnOtherKeyPress' },
+])
 
 function setNonNegativeInt(
   key:
@@ -28,6 +35,16 @@ function setNonNegativeInt(
     },
   })
 }
+
+function setTapDecision(value: TapDecision) {
+  emit('update:config', {
+    ...props.config,
+    settings: {
+      ...props.config.settings,
+      tapDecision: value,
+    },
+  })
+}
 </script>
 
 <template>
@@ -37,7 +54,23 @@ function setNonNegativeInt(
     </template>
 
     <div class="space-y-4">
-      <div class="grid gap-4 md:grid-cols-2">
+      <UFormField>
+        <template #label>
+          <FieldLabel
+            :label="$t('settings.tapDecision')"
+            :hint="$t('settings.tapDecisionHint')"
+          />
+        </template>
+        <USelectMenu
+          :model-value="props.config.settings.tapDecision"
+          :items="tapDecisionItems"
+          value-key="value"
+          class="w-full md:w-80"
+          @update:model-value="(value: TapDecision) => setTapDecision(value)"
+        />
+      </UFormField>
+
+      <div class="grid gap-4 pt-2 border-t border-(--ui-border) md:grid-cols-2">
         <UFormField>
           <template #label>
             <FieldLabel

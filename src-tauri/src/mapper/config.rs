@@ -132,11 +132,26 @@ pub struct LayerKeymap {
     pub extras: Vec<ExtraKey>,
 }
 
+/// How the mapper resolves tap vs hold when another key is pressed while a
+/// tap/hold rule key is still held and undecided.
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum TapDecision {
+    /// QMK-style permissive hold: buffer the interrupting key and only
+    /// commit the hold on a nested release or timeout.
+    #[default]
+    PermissiveHold,
+    /// Legacy behaviour: any other key press commits the hold immediately.
+    HoldOnOtherKeyPress,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     #[serde(default = "default_hold")]
     pub default_hold_timeout_ms: u64,
+    #[serde(default)]
+    pub tap_decision: TapDecision,
     #[serde(default = "default_step_pause")]
     pub default_macro_step_pause_ms: u64,
     #[serde(default = "default_mod_delay")]
@@ -202,6 +217,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             default_hold_timeout_ms: default_hold(),
+            tap_decision: TapDecision::default(),
             default_macro_step_pause_ms: default_step_pause(),
             default_macro_modifier_delay_ms: default_mod_delay(),
             default_double_tap_timeout_ms: default_double_tap(),
@@ -321,6 +337,7 @@ mod tests {
         assert_eq!(s.default_macro_step_pause_ms, 20);
         assert_eq!(s.default_macro_modifier_delay_ms, 5);
         assert_eq!(s.default_double_tap_timeout_ms, 200);
+        assert_eq!(s.tap_decision, TapDecision::PermissiveHold);
         assert_eq!(s.linux_wayland_text_mode.as_deref(), Some("libei"));
         assert!(s.linux_ydotool_path.is_none());
     }

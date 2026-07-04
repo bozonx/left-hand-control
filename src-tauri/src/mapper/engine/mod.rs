@@ -29,11 +29,18 @@
 //       - release before deadline, double_tap configured  → enter
 //         WaitingSecond (delay the tap by double_tap_window).
 //       - deadline expires while still held                → commit hold.
-//       - another key is pressed while we're still in this phase
-//         ("interrupt on other key press") → commit hold immediately and
-//         then let the new key flow through; this is required for
-//         modifier-tap rules (Shift-tap-letter, MetaLeft hold=Ctrl, …)
-//         to feel natural.
+//       - another key is pressed while we're still in this phase — behaviour
+//         depends on `decision_mode`:
+//           * PermissiveHold (default, QMK-style): the interrupting key is
+//             buffered (see `permissive_intercept`). The hold commits only
+//             if that key is *released* before the rule key (nested
+//             press+release) or the hold timeout elapses; the buffered
+//             events then replay in order. If the rule key is released
+//             first, it is a tap and the buffer replays after it. This lets
+//             fast rolling overlaps during typing resolve as taps instead of
+//             swallowing them into a hold.
+//           * HoldOnOtherKeyPress (legacy): any other key press commits the
+//             hold immediately, then the new key flows through.
 //   * HoldActive — hold has been committed (layer pushed, native key or
 //     keystroke held). On release: undo the hold.
 //   * WaitingSecond — short press finished; waiting for a possible
@@ -46,7 +53,10 @@ mod builder;
 mod model;
 
 pub use self::model::Out;
-use self::model::{ActionDef, HoldMode, LayerTrigger, Pending, Phase, RuleEntry, TapMode};
+use self::model::{
+    ActionDef, BufferedEvent, DecisionMode, HoldMode, LayerTrigger, Pending, Phase, RuleEntry,
+    TapMode,
+};
 use super::action::Keystroke;
 use super::config::GameModeCondition;
 use super::system::SysCommand;
@@ -62,6 +72,14 @@ pub struct Engine {
     layer_maps: HashMap<String, HashMap<Key, ActionDef>>,
     default_hold: Duration,
     default_mod_delay: Duration,
+
+    /// Tap-vs-hold resolution strategy (permissive hold vs the legacy
+    /// commit-on-other-key-press).
+    decision_mode: DecisionMode,
+    /// Events deferred while a rule key is in `WaitingDecision`
+    /// (permissive-hold mode only). Replayed in order once the decision
+    /// resolves. Always empty in `HoldOnOtherKeyPress` mode.
+    decision_buffer: Vec<BufferedEvent>,
 
     /// Stack of currently active layers (top = highest priority).
     active_layers: Vec<String>,
@@ -282,6 +300,9 @@ impl Engine {
         for k in expired_hold {
             log::debug!("[mapper] hold-timeout -> commit hold (key={:?})", k);
             self.commit_hold(k, out);
+            // A hold that timed out while presses were buffered behind it
+            // (permissive-hold mode) must now replay them in the held context.
+            self.drain_decision_buffer(out);
         }
         for k in expired_second {
             let pending = self.pending.remove(&k);
@@ -323,14 +344,21 @@ impl Engine {
                 //     before the physical mouse click arrives at the OS.
                 // (b) Layer triggers activate so that layer keymaps are
                 //     consulted when should_handle_mouse_button runs below.
+                //
+                // A mouse click never buffers (permissive hold applies to keys
+                // only), so any deferred presses are flushed here too, before
+                // the click, preserving press order.
                 self.flush_waiting_second(now, out);
                 self.commit_waiting_decisions(out);
+                self.drain_decision_buffer(out);
             }
             if !self.should_handle_mouse_button(key, down) {
                 out.push(Out::KeyRaw { key, down });
                 return;
             }
             // Fall through to normal key handling below.
+        } else if self.permissive_intercept(key, down, now, out) {
+            return;
         }
 
         if !down
@@ -380,7 +408,13 @@ impl Engine {
         // WaitingDecision must resolve as hold before we let this new
         // event through. This is what makes Shift+KeyA, MetaLeft(hold=ControlLeft)+KeyC
         // and similar mod-tap patterns feel natural.
-        self.commit_waiting_decisions(out);
+        //
+        // In permissive-hold mode this is a no-op: interrupting presses are
+        // buffered in `handle` before ever reaching `on_press`, so no rule is
+        // in WaitingDecision here. Skipping keeps the intent explicit.
+        if matches!(self.decision_mode, DecisionMode::HoldOnOtherKeyPress) {
+            self.commit_waiting_decisions(out);
+        }
 
         if self.active_layers.is_empty() {
             if let Some(rule) = self.active_rule_for_key(key) {
@@ -567,6 +601,10 @@ impl Engine {
                     // Shouldn't happen (we already released once); stay safe.
                 }
             }
+            // The deciding key resolved as a tap (permissive-hold mode) —
+            // replay any presses that were deferred behind its decision.
+            // No-op in eager mode and for HoldActive/WaitingSecond releases.
+            self.drain_decision_buffer(out);
             return;
         }
 
@@ -730,6 +768,84 @@ impl Engine {
         }
     }
 
+    /// The rule key currently in `WaitingDecision`, if any. In permissive
+    /// mode there is at most one (further rule keys are buffered).
+    fn deciding_key(&self) -> Option<Key> {
+        self.pending.iter().find_map(|(k, p)| {
+            matches!(p.phase, Phase::WaitingDecision { .. }).then_some(*k)
+        })
+    }
+
+    /// Permissive-hold interception. While a rule key is deciding, other key
+    /// events are deferred: a press is buffered; a release whose press is in
+    /// the buffer (a nested press+release) resolves the decision as a hold
+    /// and lets the buffered events — and this release — replay in order.
+    ///
+    /// Returns true when the event was consumed (buffered) and `handle`
+    /// should return; false to continue normal processing.
+    fn permissive_intercept(
+        &mut self,
+        key: Key,
+        down: bool,
+        now: Instant,
+        out: &mut Vec<Out>,
+    ) -> bool {
+        if !matches!(self.decision_mode, DecisionMode::PermissiveHold) {
+            return false;
+        }
+        let Some(deciding) = self.deciding_key() else {
+            return false;
+        };
+        // The deciding key's own events (its release / repeat) flow normally.
+        if key == deciding {
+            return false;
+        }
+        if down {
+            log::debug!("[mapper] permissive: buffer {:?} (deciding={:?})", key, deciding);
+            self.decision_buffer.push(BufferedEvent { key, down, at: now });
+            return true;
+        }
+        // Release of a key pressed *after* the deciding key → nested
+        // press+release → the deciding key is a hold.
+        if self.decision_buffer.iter().any(|e| e.key == key && e.down) {
+            log::debug!(
+                "[mapper] permissive: nested release {:?} -> commit hold {:?}",
+                key,
+                deciding
+            );
+            self.resolve_deciding_as_hold(out);
+            // Fall through so this release is processed after the replayed
+            // buffer (which re-pressed `key`).
+            return false;
+        }
+        // Release of a key held *before* the decision started — it does not
+        // decide anything; process it normally.
+        false
+    }
+
+    /// Commit the current deciding key as a hold, then replay any buffered
+    /// events in order.
+    fn resolve_deciding_as_hold(&mut self, out: &mut Vec<Out>) {
+        if let Some(key) = self.deciding_key() {
+            self.commit_hold(key, out);
+        }
+        self.drain_decision_buffer(out);
+    }
+
+    /// Replay all deferred presses/releases in order once a decision has
+    /// resolved. Each event carries its original timestamp so downstream
+    /// deadlines (a replayed rule key opening its own decision) stay
+    /// anchored to when the key was physically pressed.
+    fn drain_decision_buffer(&mut self, out: &mut Vec<Out>) {
+        if self.decision_buffer.is_empty() {
+            return;
+        }
+        let buffered = std::mem::take(&mut self.decision_buffer);
+        for ev in buffered {
+            self.handle(ev.key, ev.down, ev.at, out);
+        }
+    }
+
     /// Commit a pending rule to HoldActive and emit the corresponding
     /// press side-effect (layer push, native key-down, keystroke-down).
     fn commit_hold(&mut self, key: Key, out: &mut Vec<Out>) {
@@ -889,6 +1005,10 @@ impl Engine {
         }
         self.active_layers.clear();
         self.pending.clear();
+        // Buffered presses were never emitted to uinput, so there is nothing
+        // to release — drop them rather than replaying into a tearing-down
+        // engine.
+        self.decision_buffer.clear();
         self.oneshot_consumed.clear();
         self.layer_triggers.clear();
         self.isolated_holds.clear();
@@ -1068,7 +1188,7 @@ mod tests {
     use super::*;
     use crate::mapper::config::{
         ActionSpec, AppConfig, Command, CommandTrustEntry, ExtraKey, LayerKeymap, Macro, MacroStep,
-        Rule, Settings,
+        Rule, Settings, TapDecision,
     };
     use evdev::Key;
     use std::collections::HashMap;
@@ -1229,6 +1349,8 @@ mod tests {
         };
         sel.keys.insert("KeyQ".into(), Some("Ctrl+KeyZ".into()));
         cfg.layer_keymaps.insert("sel".into(), sel);
+        // Asserts the legacy interrupt-on-press semantics.
+        cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -1283,6 +1405,8 @@ mod tests {
         };
         space.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("space".into(), space);
+        // Asserts the legacy interrupt-on-press semantics.
+        cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -1410,6 +1534,8 @@ mod tests {
         };
         win.keys.insert("Tab".into(), Some("Tab".into()));
         cfg.layer_keymaps.insert("win".into(), win);
+        // Asserts the legacy interrupt-on-press semantics.
+        cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -1459,6 +1585,8 @@ mod tests {
         };
         win.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("win".into(), win);
+        // Asserts the legacy interrupt-on-press semantics.
+        cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -2421,6 +2549,8 @@ mod tests {
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
+        // Asserts the legacy interrupt-on-press semantics.
+        cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         let now = Instant::now();
@@ -2437,6 +2567,199 @@ mod tests {
                 Out::KeyRaw { key: k1, down: true },
             ] if ks.mods.is_empty() && ks.key == Key::KEY_LEFTCTRL && *k1 == Key::KEY_A
         ));
+    }
+
+    /// A permissive-mode mod-tap rule with a 200 ms hold timeout.
+    fn tap_hold_rule(key: &str, tap: ActionSpec, hold: ActionSpec) -> Rule {
+        Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: key.into(),
+            layer_id: String::new(),
+            tap_action: tap,
+            hold_action: hold,
+            isolate: String::new(),
+            hold_timeout_ms: Some(200),
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        }
+    }
+
+    #[test]
+    fn permissive_roll_fires_tap_not_hold() {
+        // Shift↓, A↓, Shift↑ (A still held): rolling overlap while the
+        // deciding key is released first → Shift is a tap, then A replays.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(tap_hold_rule(
+            "ShiftLeft",
+            ActionSpec::Action("Escape".into()),
+            ActionSpec::Action("ControlLeft".into()),
+        ));
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(10), &mut out);
+        // Nothing emitted yet — A is buffered behind Shift's decision.
+        assert!(out.is_empty());
+
+        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+        assert!(
+            matches!(
+                out.as_slice(),
+                [
+                    Out::Stroke { ks: esc, .. },
+                    Out::KeyRaw { key: a, down: true },
+                ] if esc.mods.is_empty()
+                    && esc.key == Key::KEY_ESC
+                    && *a == Key::KEY_A
+            ),
+            "expected tap Escape then replayed A"
+        );
+    }
+
+    #[test]
+    fn permissive_nested_release_commits_hold() {
+        // Shift↓, A↓, A↑ (A pressed and released fully inside the decision
+        // window) → Shift is a hold; A is typed under the held modifier.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(tap_hold_rule(
+            "ShiftLeft",
+            ActionSpec::Action("Escape".into()),
+            ActionSpec::Action("ControlLeft".into()),
+        ));
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_A, false, now + Duration::from_millis(20), &mut out);
+
+        assert!(
+            matches!(
+                out.as_slice(),
+                [
+                    Out::ChordPress { ks: ctrl, .. },
+                    Out::KeyRaw { key: a_down, down: true },
+                    Out::KeyRaw { key: a_up, down: false },
+                ] if ctrl.mods.is_empty()
+                    && ctrl.key == Key::KEY_LEFTCTRL
+                    && *a_down == Key::KEY_A
+                    && *a_up == Key::KEY_A
+            ),
+            "expected Ctrl hold then A press+release"
+        );
+    }
+
+    #[test]
+    fn permissive_timeout_commits_hold_with_buffer() {
+        // Caps↓ (layer rule), J↓ buffered, then the hold timeout elapses via
+        // tick → layer commits and the buffered J replays in the layer.
+        let mut cfg = empty_cfg();
+        let mut caps = tap_hold_rule("CapsLock", ActionSpec::Native, ActionSpec::Native);
+        caps.layer_id = "nav".into();
+        cfg.rules.push(caps);
+        let mut nav = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        nav.keys.insert("KeyJ".into(), Some("ArrowLeft".into()));
+        cfg.layer_keymaps.insert("nav".into(), nav);
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_CAPSLOCK, true, now, &mut out);
+        engine.handle(Key::KEY_J, true, now + Duration::from_millis(10), &mut out);
+        assert!(out.is_empty());
+
+        engine.tick(now + Duration::from_millis(250), &mut out);
+        assert!(
+            matches!(
+                out.as_slice(),
+                [Out::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_LEFT
+            ),
+            "expected buffered J to resolve as Left in the nav layer"
+        );
+    }
+
+    #[test]
+    fn permissive_release_of_prior_key_does_not_commit() {
+        // A is pressed *before* Shift starts deciding. A's release must not
+        // commit Shift's hold; releasing Shift first still fires its tap.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(tap_hold_rule(
+            "ShiftLeft",
+            ActionSpec::Action("Escape".into()),
+            ActionSpec::Action("ControlLeft".into()),
+        ));
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_A, true, now, &mut out);
+        engine.handle(Key::KEY_LEFTSHIFT, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_A, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(30), &mut out);
+
+        // No ControlLeft hold anywhere; Shift resolved as a tap (Escape).
+        assert!(
+            !out.iter().any(|o| matches!(o, Out::ChordPress { .. })),
+            "hold must not commit"
+        );
+        assert!(
+            out.iter().any(
+                |o| matches!(o, Out::Stroke { ks, .. } if ks.key == Key::KEY_ESC)
+            ),
+            "Shift tap (Escape) must fire"
+        );
+    }
+
+    #[test]
+    fn permissive_chain_of_two_rule_keys_both_tap() {
+        // Shift↓, Caps↓ (buffered behind Shift), Shift↑ → Shift taps and Caps
+        // replays into its own decision; Caps↑ → Caps taps.
+        let mut cfg = empty_cfg();
+        cfg.rules.push(tap_hold_rule(
+            "ShiftLeft",
+            ActionSpec::Action("Escape".into()),
+            ActionSpec::Action("ControlLeft".into()),
+        ));
+        cfg.rules.push(tap_hold_rule(
+            "CapsLock",
+            ActionSpec::Action("Tab".into()),
+            ActionSpec::Action("AltLeft".into()),
+        ));
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(Key::KEY_CAPSLOCK, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+        // Shift tapped; Caps now deciding after replay.
+        assert!(
+            matches!(
+                out.as_slice(),
+                [Out::Stroke { ks, .. }] if ks.key == Key::KEY_ESC
+            ),
+            "expected only Shift's Escape tap so far"
+        );
+
+        out.clear();
+        engine.handle(Key::KEY_CAPSLOCK, false, now + Duration::from_millis(30), &mut out);
+        assert!(
+            matches!(
+                out.as_slice(),
+                [Out::Stroke { ks, .. }] if ks.key == Key::KEY_TAB
+            ),
+            "expected Caps's Tab tap"
+        );
     }
 
     #[test]

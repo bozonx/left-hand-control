@@ -93,6 +93,29 @@ pub(super) struct Pending {
     pub(super) phase: Phase,
 }
 
+/// How the engine decides tap vs hold when another key is pressed while a
+/// rule key is still waiting for its decision.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum DecisionMode {
+    /// QMK-style "permissive hold": an interrupting key press is buffered
+    /// and only commits the hold if that key is released before the rule
+    /// key (nested press+release) or the hold timeout elapses. Rolling
+    /// overlaps during fast typing resolve as taps.
+    PermissiveHold,
+    /// Legacy behaviour: any other key press commits the hold immediately.
+    HoldOnOtherKeyPress,
+}
+
+/// A key event deferred while a rule key is in `WaitingDecision`
+/// (permissive-hold mode). Replayed in order once the decision resolves,
+/// carrying its original timestamp so downstream deadlines stay accurate.
+#[derive(Clone)]
+pub(super) struct BufferedEvent {
+    pub(super) key: Key,
+    pub(super) down: bool,
+    pub(super) at: Instant,
+}
+
 /// Outgoing action the engine asks the I/O layer to perform.
 pub enum Out {
     /// Press or release a single key (no modifiers).

@@ -627,6 +627,11 @@ export default {
       systemActionsUnavailableBody:
         'System actions should work on {desktop}, but the runtime check failed.',
     },
+    tapDecision: 'Tap vs hold decision',
+    tapDecisionHint:
+      'How a tap/hold rule resolves when another key is pressed while it is still held. Permissive hold buffers the other key and only holds if that key is released before the rule key (or the timeout elapses), so fast typing rolls resolve as taps. Hold on other key press activates the hold immediately.',
+    tapDecisionPermissive: 'Permissive hold (recommended)',
+    tapDecisionHoldOnPress: 'Hold on other key press',
     holdTimeout: 'Default hold timeout, ms',
     holdTimeoutHint:
       'Used by rules without their own value. Release before this timeout to run the tap action; hold longer to activate the hold behavior.',

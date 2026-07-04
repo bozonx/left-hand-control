@@ -111,6 +111,13 @@ export interface Command {
 
 export type AppearancePreference = 'system' | 'light' | 'dark'
 
+// How the mapper resolves tap vs hold when another key is pressed while a
+// tap/hold rule key is still held and undecided.
+//   'permissiveHold'      — QMK-style: buffer the other key; commit the
+//     hold only on a nested release or when the hold timeout elapses.
+//   'holdOnOtherKeyPress' — legacy: any other key press commits the hold.
+export type TapDecision = 'permissiveHold' | 'holdOnOtherKeyPress'
+
 // UI locale preference. 'auto' picks a language close to the OS one,
 // falling back to English.
 export type LocalePreference = 'auto' | 'en-US' | 'ru-RU'
@@ -186,6 +193,12 @@ export interface AppSettings {
   locale: LocalePreference
   // Default hold timeout used when a rule does not specify one.
   defaultHoldTimeoutMs: number
+  // How tap vs hold is resolved when another key is pressed while a rule
+  // key is still undecided. 'permissiveHold' (QMK-style) buffers the other
+  // key and only commits the hold on a nested release or timeout, so fast
+  // rolling overlaps resolve as taps. 'holdOnOtherKeyPress' (legacy)
+  // commits the hold immediately on any other key press.
+  tapDecision: TapDecision
   // Default double-tap window (ms between first release and second
   // key-down) used when a rule does not specify one.
   defaultDoubleTapTimeoutMs: number
@@ -442,6 +455,7 @@ export function createDefaultConfig(): AppConfig {
       appearance: 'system',
       locale: 'auto',
       defaultHoldTimeoutMs: 200,
+      tapDecision: 'permissiveHold',
       defaultDoubleTapTimeoutMs: 200,
       defaultMacroStepPauseMs: 20,
       defaultMacroModifierDelayMs: 5,

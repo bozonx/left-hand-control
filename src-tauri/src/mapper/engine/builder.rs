@@ -1,4 +1,4 @@
-use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
+use super::model::{ActionDef, DecisionMode, HoldMode, MacroDef, RuleEntry, TapMode};
 use super::Engine;
 use crate::mapper::action::{explicit_pause, explicit_text, parse_action, MacroStepItem};
 use crate::mapper::config::{ActionSpec, AppConfig};
@@ -431,6 +431,13 @@ impl Engine {
             layer_maps,
             default_hold,
             default_mod_delay,
+            decision_mode: match cfg.settings.tap_decision {
+                crate::mapper::config::TapDecision::PermissiveHold => DecisionMode::PermissiveHold,
+                crate::mapper::config::TapDecision::HoldOnOtherKeyPress => {
+                    DecisionMode::HoldOnOtherKeyPress
+                }
+            },
+            decision_buffer: Vec::new(),
             active_layers: Vec::new(),
             pending: HashMap::new(),
             emitted: HashMap::new(),
