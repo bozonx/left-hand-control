@@ -148,7 +148,7 @@ layers:
       KeyE: 'text:]'
       KeyR: 'text:)'
       KeyT: 'text:TODO: '
-      KeyY: F12
+      KeyY: null
       KeyU: F7
       KeyI: F8
       KeyO: F9
@@ -162,11 +162,11 @@ layers:
       KeyD: 'text:‼️'
       KeyF: 'text:❓'
       KeyG: 'text:❌'
-      KeyH: F11
+      KeyH: null
       KeyJ: F4
       KeyK: F5
       KeyL: F6
-      Semicolon: null
+      Semicolon: F12
       Quote: 'text:☝️'
 
       KeyZ: "text:\\"
@@ -178,7 +178,7 @@ layers:
       KeyM: F1
       Comma: F2
       Period: F3
-      Slash: null
+      Slash: F11
   - id: win
     keys:
       F4: F4
