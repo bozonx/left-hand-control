@@ -224,9 +224,9 @@ layers:
       Semicolon: sys:windowMaximizeVertical
       Quote: sys:windowMaximizeHorizontal
 
-      ShiftLeft: sys:switchLayout1
+      ShiftLeft: sys:switchLayout3
       KeyZ: sys:switchLayout2
-      KeyX: sys:switchLayout3
+      KeyX: sys:switchLayout1
       KeyC: PrintScreen
       #KeyV: sys:showClipboardHistory
       KeyV: Meta+KeyV
