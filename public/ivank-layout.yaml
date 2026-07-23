@@ -68,7 +68,7 @@ layers:
       KeyQ: Ctrl+KeyZ
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
-      KeyR: macro:cutAndRemoveLine
+      KeyR: null
       KeyT: null
       KeyY: Shift+Home
       KeyU: PageDown
@@ -83,7 +83,7 @@ layers:
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
       KeyF: macro:copyLine
-      KeyG: null
+      KeyG: macro:cutAndRemoveLine
       KeyH: Shift+ArrowLeft
       KeyJ: Shift+ArrowDown
       KeyK: Shift+ArrowUp
