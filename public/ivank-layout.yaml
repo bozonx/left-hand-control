@@ -3,13 +3,13 @@ layers:
     keys:
       Tab: CapsLock
 
-      AltLeft: macro:pasteAtLineBottom
+      AltLeft: macro:replaceWordWidthBuffer
       MetaLeft: Ctrl+KeyX
       Space: Delete
-      KeyQ: macro:moveLineDown
+      KeyQ: macro:pasteAtLineAbove
       KeyW: Ctrl+Backspace
       KeyE: Ctrl+Delete
-      KeyR: macro:cutLineContent
+      KeyR: macro:moveLineDown
       KeyT: Ctrl+Home
       KeyY: Home
       KeyU: macro:downEnd
@@ -23,8 +23,8 @@ layers:
       KeyA: app:showEmojiMenu1
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
-      #KeyF: PageDown
-      KeyG: Ctrl+End
+      KeyF: macro:copyLine
+      KeyG: macro:cutLineContent
       KeyH: ArrowLeft
       KeyJ: ArrowDown
       KeyK: ArrowUp
@@ -32,11 +32,11 @@ layers:
       Semicolon: macro:rightSpace
       Quote: null
 
-      KeyZ: macro:emptyLineBelow
+      KeyZ: macro:pasteAtLineBottom
       KeyX: macro:cutWordRightCenter
       KeyC: macro:copyWordAfterCenter
-      KeyV: macro:pasteAtLineAbove
-      KeyB: macro:replaceWordWidthBuffer
+      KeyV: macro:emptyLineBelow
+      KeyB: Ctrl+End
       KeyN: Ctrl+ArrowLeft
       KeyM: macro:downHome
       Comma: macro:upHome
