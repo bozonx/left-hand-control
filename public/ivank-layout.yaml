@@ -97,8 +97,8 @@ layers:
       KeyV: null
       KeyB: macro:replaceLineWidthBuffer
       KeyN: Ctrl+Shift+ArrowLeft
-      KeyM: null
-      Comma: null
+      KeyM: Shift+PageDown
+      Comma: Shift+PageUp
       Period: Ctrl+Shift+ArrowRight
       Slash: macro:select5LinesDown
   - id: sym
