@@ -224,15 +224,16 @@ layers:
       Semicolon: sys:windowMaximizeVertical
       Quote: sys:windowMaximizeHorizontal
 
-      ShiftLeft: sys:switchLayout3
-      KeyZ: sys:switchLayout2
-      KeyX: sys:switchLayout1
-      KeyC: PrintScreen
+      ShiftLeft: sys:switchLayout4
+      KeyZ: sys:switchLayout3
+      KeyX: sys:switchLayout2
+      KeyC: sys:switchLayout1
       #KeyV: sys:showClipboardHistory
       KeyV: Meta+KeyV
       # use alt+F4
       #KeyB: sys:windowClose
-      KeyB: F4
+      # KeyB: F4
+      KeyB: PrintScreen
       KeyN: sys:brightnessDown
       KeyM: sys:brightnessUp
       #Comma: sys:volumeDown
@@ -270,7 +271,7 @@ rules:
     tap: Enter
     layer: win
     hold: AltLeft
-    isolate: KeyW, ShiftLeft, KeyZ, KeyX, KeyC, KeyV, Comma, Period, Slash
+    isolate: KeyW, ShiftLeft, KeyZ, KeyX, KeyC, KeyV, KeyB, Comma, Period, Slash
   # - key: Space
   #   layer: space
   - key: AltRight
