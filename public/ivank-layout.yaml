@@ -23,8 +23,8 @@ layers:
       KeyA: app:showEmojiMenu1
       KeyS: macro:duplicateLine
       KeyD: Ctrl+KeyD
-      KeyF: macro:copyLine
-      KeyG: macro:cutLineContent
+      KeyF: macro:cutLineContent
+      KeyG: macro:copyLine
       KeyH: ArrowLeft
       KeyJ: ArrowDown
       KeyK: ArrowUp
@@ -82,8 +82,8 @@ layers:
       KeyA: Ctrl+Slash
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
-      KeyF: macro:copyLine
-      KeyG: macro:cutAndRemoveLine
+      KeyF: macro:cutAndRemoveLine
+      KeyG: macro:selectWordRightCenter
       KeyH: Shift+ArrowLeft
       KeyJ: Shift+ArrowDown
       KeyK: Shift+ArrowUp
