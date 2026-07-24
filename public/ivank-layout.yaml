@@ -83,13 +83,13 @@ layers:
       KeyS: macro:copyToStart
       KeyD: macro:copyToEnd
       KeyF: macro:cutAndRemoveLine
-      KeyG: null
+      KeyG: macro:selectWholeLine
       KeyH: Shift+ArrowLeft
       KeyJ: Shift+ArrowDown
       KeyK: Shift+ArrowUp
       KeyL: Shift+ArrowRight
-      Semicolon: macro:selectWholeLine
-      Quote: macro:selectWordRightCenter
+      Semicolon: macro:selectWordRightCenter
+      Quote: null
 
       KeyZ: null
       KeyX: macro:replaceToStartWithBuffer
