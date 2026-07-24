@@ -276,6 +276,37 @@ macros:
     expect(reparsed?.rules[0]?.id).toMatch(/^r_[a-z0-9]{8}$/)
   })
 
+  it('round-trips isolate and holdFor (lazy hold) on a layer rule', () => {
+    const preset = {
+      layers: [],
+      rules: [
+        {
+          id: 'rule-win',
+          key: 'AltLeft',
+          layerId: 'win',
+          tapAction: 'Enter',
+          holdAction: 'AltLeft',
+          isolate: 'KeyW, KeyV',
+          holdFor: 'Tab',
+          doubleTapAction: '',
+        },
+      ],
+      layerKeymaps: {},
+      macros: [],
+      commands: [],
+      quickActions: [],
+    }
+
+    const yaml = serializeLayoutYaml(preset)
+    expect(yaml).toContain('holdFor: Tab')
+    const reparsed = parseLayoutYaml(yaml)
+
+    expect(reparsed?.rules[0]).toMatchObject({
+      isolate: 'KeyW, KeyV',
+      holdFor: 'Tab',
+    })
+  })
+
   it('round-trips rule conditions and enabled flag', () => {
     const preset = {
       layers: [],

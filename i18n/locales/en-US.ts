@@ -228,6 +228,10 @@ export default {
     isolateHint:
       'Keys in the active layer that temporarily release the held key. Separate multiple keys with commas.',
     isolatePh: 'KeyW, KeyC, Slash',
+    holdForLabel: 'Hold only for',
+    holdForHint:
+      'Lazy hold: the held key is applied only when one of these layer keys is pressed (e.g. Alt only for Tab), never on its own. Separate multiple keys with commas.',
+    holdForPh: 'Tab',
     doubleTapLabel: 'Double-tap action',
     doubleTapHint:
       'Runs when the trigger key is pressed twice quickly. It fires on the second key-down, before the second release.',

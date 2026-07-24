@@ -75,6 +75,7 @@ function updateHoldAction(value: string | null) {
     rule.value.holdAction = value
     if (!rule.value.holdAction) {
         rule.value.isolate = ''
+        rule.value.holdFor = ''
     }
 }
 </script>
@@ -340,6 +341,20 @@ function updateHoldAction(value: string | null) {
                             v-model="rule.isolate"
                             size="sm"
                             :placeholder="$t('rules.isolatePh')"
+                        />
+                    </UFormField>
+                    <UFormField v-if="rule.holdAction && rule.layerId">
+                        <template #label>
+                            <FieldLabel
+                                :label="$t('rules.holdForLabel')"
+                                :hint="$t('rules.holdForHint')"
+                                hint-visible-on="group-hover-rule"
+                            />
+                        </template>
+                        <UInput
+                            v-model="rule.holdFor"
+                            size="sm"
+                            :placeholder="$t('rules.holdForPh')"
                         />
                     </UFormField>
                 </div>

@@ -107,6 +107,12 @@ pub struct Rule {
     pub hold_action: ActionSpec,
     #[serde(default)]
     pub isolate: String,
+    /// Lazy-hold whitelist (comma-separated key codes). When set on a layer
+    /// rule with a keystroke `hold`, the held key is emitted to the app only
+    /// once one of these keys is pressed inside the layer — never as a lone
+    /// tap. Inverse of `isolate`.
+    #[serde(default)]
+    pub hold_for: String,
     #[serde(default)]
     pub hold_timeout_ms: Option<u64>,
     #[serde(default)]
@@ -128,6 +134,8 @@ pub struct LayerKeymap {
     pub keys: HashMap<String, Option<String>>,
     #[serde(default)]
     pub isolate: Vec<String>,
+    #[serde(default)]
+    pub hold_for: Vec<String>,
     #[serde(default)]
     pub extras: Vec<ExtraKey>,
 }

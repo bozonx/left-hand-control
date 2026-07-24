@@ -480,6 +480,31 @@ impl Engine {
             let mapped = self.lookup_mapping(key);
             match mapped {
                 Some((layer_id, def)) => {
+                    // Lazy hold: the first whitelisted key press inside the
+                    // layer materialises the deferred modifier (e.g. Alt for
+                    // the task switcher appears only with Tab, never alone).
+                    let materialize = self
+                        .layer_triggers
+                        .get(&layer_id)
+                        .and_then(|v| v.last())
+                        .filter(|t| {
+                            t.hold_ks.is_some() && t.whitelist.contains(&key)
+                        })
+                        .map(|t| (t.key, t.hold_ks.clone().unwrap()));
+                    if let Some((owner, ks)) = materialize {
+                        log::debug!(
+                            "[mapper] lazy-hold materialize {:?} for {:?}",
+                            ks.key,
+                            key
+                        );
+                        self.emit_stroke_press(owner, ks, out);
+                        if let Some(t) =
+                            self.layer_triggers.get_mut(&layer_id).and_then(|v| v.last_mut())
+                        {
+                            t.hold_ks = None;
+                        }
+                    }
+
                     if let Some(trigger) = self.layer_triggers.get(&layer_id).and_then(|v| v.last())
                     {
                         if trigger.isolate_keys.contains(&key) {
@@ -895,6 +920,17 @@ impl Engine {
     }
 
     fn commit_hold_with(&mut self, rule: &RuleEntry, key: Key, out: &mut Vec<Out>) {
+        // A lazy hold defers its keystroke: the modifier is materialised later,
+        // on the first whitelisted key press inside the layer (see `on_press`),
+        // so it never reaches the app as a lone tap.
+        let lazy_hold_ks = match &rule.hold {
+            HoldMode::Keystroke(ks)
+                if rule.layer_id.is_some() && !rule.whitelist_keys.is_empty() =>
+            {
+                Some(ks.clone())
+            }
+            _ => None,
+        };
         if let Some(id) = &rule.layer_id {
             log::debug!("[mapper] layer+ {id} (key={:?})", key);
             self.push_layer(id.clone());
@@ -904,6 +940,8 @@ impl Engine {
                 .push(LayerTrigger {
                     key,
                     isolate_keys: rule.isolate_keys.clone(),
+                    whitelist: rule.whitelist_keys.clone(),
+                    hold_ks: lazy_hold_ks.clone(),
                 });
         }
         match &rule.hold {
@@ -915,7 +953,10 @@ impl Engine {
                 // Nothing — physical key is eaten.
             }
             HoldMode::Keystroke(ks) => {
-                self.emit_stroke_press(key, ks.clone(), out);
+                // Eager hold emits now; a lazy hold waits for a whitelist key.
+                if lazy_hold_ks.is_none() {
+                    self.emit_stroke_press(key, ks.clone(), out);
+                }
             }
         }
     }
@@ -1373,6 +1414,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1414,6 +1456,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1429,6 +1472,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1475,6 +1519,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1523,6 +1568,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1558,6 +1604,7 @@ mod tests {
             tap_action: ActionSpec::Action("Enter".into()),
             hold_action: ActionSpec::Action("AltLeft".into()),
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1595,6 +1642,100 @@ mod tests {
         ));
     }
 
+    /// Builds a `win` layer whose trigger uses a lazy hold: Alt is only
+    /// materialised for `Tab`. Every other layer key must run without Alt.
+    fn lazy_alt_win_cfg() -> AppConfig {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "AltLeft".into(),
+            layer_id: "win".into(),
+            tap_action: ActionSpec::Action("Enter".into()),
+            hold_action: ActionSpec::Action("AltLeft".into()),
+            isolate: String::new(),
+            hold_for: "Tab".into(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        let mut win = LayerKeymap {
+            keys: HashMap::new(),
+            ..Default::default()
+        };
+        win.keys.insert("Tab".into(), Some("Tab".into()));
+        // A non-whitelisted key that emits a visible stroke.
+        win.keys.insert("KeyC".into(), Some("Escape".into()));
+        cfg.layer_keymaps.insert("win".into(), win);
+        cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
+        cfg
+    }
+
+    #[test]
+    fn lazy_hold_does_not_materialize_alt_for_non_whitelist_key() {
+        // Pressing a non-whitelisted layer key (KeyC) must never leak Alt to
+        // the app — no lone Alt tap, so GTK/Firefox never opens its menu bar.
+        let mut engine = Engine::new(&lazy_alt_win_cfg());
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
+        engine.handle(Key::KEY_C, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_C, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(Key::KEY_LEFTALT, false, now + Duration::from_millis(30), &mut out);
+
+        let touches_alt = out.iter().any(|o| match o {
+            Out::KeyRaw { key, .. } => *key == Key::KEY_LEFTALT,
+            Out::ChordPress { ks, .. } => {
+                ks.key == Key::KEY_LEFTALT || ks.mods.contains(&Key::KEY_LEFTALT)
+            }
+            Out::ChordRelease { key, mods, .. } => {
+                *key == Key::KEY_LEFTALT || mods.contains(&Key::KEY_LEFTALT)
+            }
+            _ => false,
+        });
+        assert!(!touches_alt, "Alt must never reach the app");
+    }
+
+    #[test]
+    fn lazy_hold_materializes_alt_for_whitelist_key() {
+        // Tab is whitelisted → Alt materialises just in time (Alt+Tab) and is
+        // released when the layer ends.
+        let mut engine = Engine::new(&lazy_alt_win_cfg());
+        let mut out = Vec::new();
+        let now = Instant::now();
+
+        engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
+        engine.handle(Key::KEY_TAB, true, now + Duration::from_millis(10), &mut out);
+
+        assert!(
+            matches!(
+                out.as_slice(),
+                [
+                    Out::ChordPress { ks: alt, .. },
+                    Out::ChordPress { ks: tab, .. },
+                ] if alt.mods.is_empty()
+                    && alt.key == Key::KEY_LEFTALT
+                    && tab.mods.is_empty()
+                    && tab.key == Key::KEY_TAB
+            )
+        );
+
+        out.clear();
+        engine.handle(Key::KEY_TAB, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(Key::KEY_LEFTALT, false, now + Duration::from_millis(30), &mut out);
+
+        // Alt is released exactly once when the layer ends.
+        let alt_releases = out
+            .iter()
+            .filter(|o| matches!(o, Out::KeyRaw { key, down: false } if *key == Key::KEY_LEFTALT))
+            .count();
+        assert_eq!(alt_releases, 1, "Alt must be released once");
+    }
+
     #[test]
     fn layer_only_rule_is_not_treated_as_passthrough() {
         let mut cfg = empty_cfg();
@@ -1609,6 +1750,7 @@ mod tests {
             tap_action: ActionSpec::Action("Enter".into()),
             hold_action: ActionSpec::Native,
             isolate: "KeyW".into(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1651,6 +1793,7 @@ mod tests {
             layer_id: None,
             hold: HoldMode::Swallow,
             isolate_keys: Vec::new(),
+            whitelist_keys: Vec::new(),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1722,6 +1865,7 @@ mod tests {
             layer_id: None,
             hold: HoldMode::Swallow,
             isolate_keys: Vec::new(),
+            whitelist_keys: Vec::new(),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1752,6 +1896,7 @@ mod tests {
             layer_id: None,
             hold: HoldMode::Swallow,
             isolate_keys: Vec::new(),
+            whitelist_keys: Vec::new(),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1782,6 +1927,7 @@ mod tests {
             tap_action: ActionSpec::Action("KeyA".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1797,6 +1943,7 @@ mod tests {
             tap_action: ActionSpec::Action("KeyB".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1831,6 +1978,7 @@ mod tests {
             tap_action: ActionSpec::Action("Escape".into()),
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1894,6 +2042,7 @@ mod tests {
             tap_action: ActionSpec::Action("Escape".into()),
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -1956,6 +2105,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Swallow,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2026,6 +2176,7 @@ mod tests {
             tap_action: ActionSpec::Action("BrowserBack".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2062,6 +2213,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2120,6 +2272,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2170,6 +2323,7 @@ mod tests {
             tap_action: ActionSpec::Action("Enter".into()),
             hold_action: ActionSpec::Action("AltLeft".into()),
             isolate: "KeyW".into(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2229,6 +2383,7 @@ mod tests {
             tap_action: ActionSpec::Action("Escape".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: Some(200),
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2266,6 +2421,7 @@ mod tests {
             tap_action: ActionSpec::Action("Escape".into()),
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: Some(50),
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2298,6 +2454,7 @@ mod tests {
             tap_action: ActionSpec::Action("KeyA".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: "KeyB".into(),
             double_tap_timeout_ms: None,
@@ -2338,6 +2495,7 @@ mod tests {
             tap_action: ActionSpec::Action("KeyA".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: "KeyB".into(),
             double_tap_timeout_ms: None,
@@ -2371,6 +2529,7 @@ mod tests {
             tap_action: ActionSpec::Action("KeyA".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: "KeyB".into(),
             double_tap_timeout_ms: None,
@@ -2414,6 +2573,7 @@ mod tests {
             tap_action: ActionSpec::Action("KeyA".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: "KeyB".into(),
             double_tap_timeout_ms: None,
@@ -2497,6 +2657,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2542,6 +2703,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2587,6 +2749,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2667,6 +2830,7 @@ mod tests {
             tap_action: ActionSpec::Action("Escape".into()),
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: Some(200),
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2704,6 +2868,7 @@ mod tests {
             tap_action: tap,
             hold_action: hold,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: Some(200),
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -2986,6 +3151,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -3009,6 +3175,7 @@ mod tests {
                 tap_action: ActionSpec::Action("Escape".into()),
                 hold_action: ActionSpec::Native,
                 isolate: String::new(),
+                hold_for: String::new(),
                 hold_timeout_ms: None,
                 double_tap_action: String::new(),
                 double_tap_timeout_ms: None,
@@ -3034,6 +3201,7 @@ mod tests {
             tap_action: ActionSpec::Action("BadActionSyntax!!!".into()),
             hold_action: ActionSpec::Swallow,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -3062,6 +3230,7 @@ mod tests {
             tap_action: ActionSpec::Action("macro:copyLine".into()),
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -3200,6 +3369,7 @@ mod tests {
             tap_action: ActionSpec::Native,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -3265,6 +3435,7 @@ mod tests {
             tap_action: ActionSpec::Action("Enter".into()),
             hold_action: ActionSpec::Action("AltLeft".into()),
             isolate: "KeyW,KeyE".into(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
@@ -3327,6 +3498,7 @@ mod tests {
             tap_action: ActionSpec::Action("macro:empty".into()),
             hold_action: ActionSpec::Swallow,
             isolate: String::new(),
+            hold_for: String::new(),
             hold_timeout_ms: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,

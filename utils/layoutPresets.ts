@@ -58,6 +58,7 @@ interface LayoutYaml {
     holdMs?: number | null
     dtapMs?: number | null
     isolate?: string | string[] | null
+    holdFor?: string | string[] | null
     id?: string
   }>
   macros?: Array<{
@@ -152,6 +153,11 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       : typeof r.isolate === 'string'
         ? r.isolate
         : ''
+    const ownHoldFor = Array.isArray(r.holdFor)
+      ? r.holdFor.filter((s): s is string => typeof s === 'string').join(', ')
+      : typeof r.holdFor === 'string'
+        ? r.holdFor
+        : ''
     rules.push({
       id: r.id ?? genId('r_'),
       ...(r.enabled === false ? { enabled: false } : {}),
@@ -166,6 +172,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       tapAction,
       holdAction,
       isolate: ownIsolate || undefined,
+      holdFor: ownHoldFor || undefined,
       doubleTapAction: r.dtap ?? '',
       holdTimeoutMs:
         typeof r.holdMs === 'number' && r.holdMs >= 0 ? r.holdMs : undefined,
@@ -319,6 +326,7 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       ...(r.tapAction === '' ? {} : { tap: r.tapAction }),
       ...(r.holdAction === '' ? {} : { hold: r.holdAction }),
       ...(r.isolate && r.isolate.trim() ? { isolate: r.isolate.trim() } : {}),
+      ...(r.holdFor && r.holdFor.trim() ? { holdFor: r.holdFor.trim() } : {}),
       ...(r.doubleTapAction ? { dtap: r.doubleTapAction } : {}),
       ...(typeof r.holdTimeoutMs === 'number'
         ? { holdMs: r.holdTimeoutMs }

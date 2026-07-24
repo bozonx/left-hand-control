@@ -244,6 +244,7 @@ export function normalizeConfig(raw: unknown): AppConfig {
               )
             : undefined,
           isolate: typeof rule.isolate === 'string' ? rule.isolate : undefined,
+          holdFor: typeof rule.holdFor === 'string' ? rule.holdFor : undefined,
         }))
       : [],
     layerKeymaps:

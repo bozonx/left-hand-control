@@ -9,14 +9,14 @@ use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
-fn parse_isolate_keys(raw: &str) -> Vec<Key> {
+fn parse_key_list(raw: &str) -> Vec<Key> {
     raw.split(',')
         .map(str::trim)
         .filter(|code| !code.is_empty())
         .filter_map(|code| {
             let key = code_to_key(code);
             if key.is_none() {
-                log::debug!("[mapper] unknown isolate key code: {code}");
+                log::debug!("[mapper] unknown key code in list: {code}");
             }
             key
         })
@@ -354,12 +354,24 @@ impl Engine {
                 .double_tap_timeout_ms
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_double_tap);
-            let mut isolate_keys = parse_isolate_keys(&r.isolate);
+            let mut isolate_keys = parse_key_list(&r.isolate);
             if isolate_keys.is_empty() {
                 if let Some(layer_id) = &layer_id {
                     if let Some(km) = cfg.layer_keymaps.get(layer_id) {
                         isolate_keys = km
                             .isolate
+                            .iter()
+                            .filter_map(|code| code_to_key(code))
+                            .collect();
+                    }
+                }
+            }
+            let mut whitelist_keys = parse_key_list(&r.hold_for);
+            if whitelist_keys.is_empty() {
+                if let Some(layer_id) = &layer_id {
+                    if let Some(km) = cfg.layer_keymaps.get(layer_id) {
+                        whitelist_keys = km
+                            .hold_for
                             .iter()
                             .filter_map(|code| code_to_key(code))
                             .collect();
@@ -372,6 +384,7 @@ impl Engine {
                 layer_id,
                 hold,
                 isolate_keys,
+                whitelist_keys,
                 double_tap,
                 hold_timeout,
                 double_tap_window,

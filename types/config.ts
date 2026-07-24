@@ -48,7 +48,15 @@ export interface LayerRule {
   // semantics above. May be combined with `layerId`, so one key can both
   // activate a layer and hold a modifier.
   holdAction: string | null
+  // Comma-separated keys for which the (keystroke) `holdAction` is suppressed
+  // while inside `layerId` — the held modifier is lifted for those keys.
   isolate?: string
+  // Lazy-hold whitelist (comma-separated keys). Inverse of `isolate`: the
+  // keystroke `holdAction` is NOT applied on layer entry and is materialised
+  // to the app only once one of these keys is pressed inside `layerId`, then
+  // held until the layer ends. Keeps a held modifier (e.g. Alt for Alt+Tab)
+  // from ever reaching the app as a lone tap.
+  holdFor?: string
   // Action fired on double tap (second key-down within the double-tap
   // window after a short press). Empty string = no double-tap action.
   // Note: when set, a single tap is delayed by `doubleTapTimeoutMs` to
@@ -77,6 +85,7 @@ export interface LayerKeymap {
   // Missing entry means transparent passthrough to the base layout.
   keys: Record<string, string | null>
   isolate?: string[]
+  holdFor?: string[]
   // Extra user-defined key bindings (e.g. mouse buttons, media keys, ...).
   extras: ExtraKey[]
 }

@@ -271,7 +271,11 @@ rules:
     tap: Enter
     layer: win
     hold: AltLeft
-    isolate: KeyW, ShiftLeft, KeyZ, KeyX, KeyC, KeyV, KeyB, Comma, Period, Slash
+    # Lazy hold: Alt is materialised to the app only when Tab is pressed
+    # (native Alt+Tab switcher). Every other win-layer key runs without Alt,
+    # so language switching (KeyC/KeyX/KeyZ/ShiftLeft) never leaks a lone Alt
+    # release → no more Firefox menu bar popping open.
+    holdFor: Tab
   # - key: Space
   #   layer: space
   - key: AltRight

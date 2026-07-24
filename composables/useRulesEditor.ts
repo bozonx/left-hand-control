@@ -26,6 +26,7 @@ export function useRulesEditor() {
       tapAction: '',
       holdAction: '',
       isolate: '',
+      holdFor: '',
       doubleTapAction: '',
       holdTimeoutMs: undefined,
       doubleTapTimeoutMs: undefined,
