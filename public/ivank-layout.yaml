@@ -2,10 +2,10 @@ layers:
   - id: nav
     keys:
       Tab: CapsLock
-
       AltLeft: macro:replaceWordWidthBuffer
       MetaLeft: Ctrl+KeyX
       Space: Delete
+
       KeyQ: macro:pasteAtLineAbove
       KeyW: Ctrl+Backspace
       KeyE: Ctrl+Delete
@@ -50,6 +50,8 @@ layers:
   - id: sel
     keys:
       CapsLock: null
+      AltLeft: Ctrl+Enter
+      Space: Backspace
 
       Digit1: sys:switchLayout1
       Digit2: sys:switchLayout2
@@ -61,9 +63,6 @@ layers:
       Digit8: sys:switchLayout8
       Digit9: sys:switchLayout9
       Digit0: sys:switchLayout10
-
-      AltLeft: Ctrl+Enter
-      Space: Backspace
 
       KeyQ: Ctrl+KeyZ
       KeyW: macro:cutToStart
@@ -183,10 +182,10 @@ layers:
     keys:
       F4: F4
       Backspace: sys:screenOff
-
       Tab: Tab
       CapsLock: sys:walkThroughWindowsAlternative
       #ShiftLeft: sys:walkThroughWindowsCurrentApp
+
       Digit1: sys:taskEntry1
       Digit2: sys:taskEntry2
       Digit3: sys:taskEntry3
