@@ -2,9 +2,9 @@ layers:
   - id: nav
     keys:
       Tab: CapsLock
-      AltLeft: macro:replaceWordWidthBuffer
       MetaLeft: Ctrl+KeyX
-      Space: Delete
+      AltLeft: Delete
+      Space: Backspace
 
       KeyQ: macro:pasteAtLineAbove
       KeyW: Ctrl+Backspace
@@ -51,7 +51,8 @@ layers:
     keys:
       CapsLock: null
       AltLeft: Ctrl+Enter
-      Space: Backspace
+      # ❓
+      Space: macro:replaceWordWidthBuffer
 
       Digit1: sys:switchLayout1
       Digit2: sys:switchLayout2
@@ -181,8 +182,8 @@ layers:
   - id: win
     keys:
       F4: F4
-      Backspace: sys:screenOff
       Tab: Tab
+      Backspace: sys:screenOff
       CapsLock: sys:walkThroughWindowsAlternative
       #ShiftLeft: sys:walkThroughWindowsCurrentApp
 
