@@ -6,10 +6,10 @@ layers:
       AltLeft: Delete
       Space: Backspace
 
-      KeyQ: macro:pasteAtLineAbove
+      KeyQ: macro:moveLineDown
       KeyW: Ctrl+Backspace
       KeyE: Ctrl+Delete
-      KeyR: macro:moveLineDown
+      KeyR: macro:pasteAtLineAbove
       KeyT: Ctrl+Home
       KeyY: Home
       KeyU: macro:downEnd
@@ -32,10 +32,10 @@ layers:
       Semicolon: macro:rightSpace
       Quote: null
 
-      KeyZ: macro:pasteAtLineBottom
+      KeyZ: macro:emptyLineBelow
       KeyX: macro:cutWordRightCenter
       KeyC: macro:copyWordAfterCenter
-      KeyV: macro:emptyLineBelow
+      KeyV: macro:pasteAtLineBottom
       KeyB: Ctrl+End
       KeyN: Ctrl+ArrowLeft
       KeyM: macro:downHome
