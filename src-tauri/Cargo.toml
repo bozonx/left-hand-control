@@ -21,7 +21,7 @@ log = "0.4"
 sha2 = "0.10"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-evdev = "0.12"
+evdev = "0.13"
 nix = { version = "0.29", features = ["poll", "event"] }
 libc = "0.2"
 zbus = "5"
