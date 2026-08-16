@@ -16,13 +16,21 @@ Currently, only **Linux** is supported.
 - Rust toolchain (`rustup`) — see [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS
 - Linux-only system packages (Debian/Ubuntu example):
   ```bash
+  # Build & runtime dependencies:
   sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev \
-    libssl-dev libayatana-appindicator3-dev librsvg2-dev
+    libssl-dev libayatana-appindicator3-dev libayatana-appindicator3-1 librsvg2-dev \
+    xdotool x11-utils wl-clipboard qdbus-qt5
   ```
 - Linux-only system packages (Arch/Manjaro example):
   ```bash
-  sudo pacman -S webkit2gtk-4.1 base-devel curl wget file libxdo \
-    openssl libappindicator-gtk3 librsvg fuse2
+  sudo pacman -S webkit2gtk-4.1 base-devel curl wget file \
+    openssl libappindicator-gtk3 librsvg xdotool xorg-xprop wl-clipboard qt6-tools
+  ```
+- Linux-only system packages (Fedora example):
+  ```bash
+  sudo dnf install webkit2gtk4.1-devel gcc-c++ curl wget file libxdo-devel \
+    openssl-devel libayatana-appindicator-gtk3-devel librsvg2-devel \
+    xdotool xprop wl-clipboard qt5-qttools-devel
   ```
 
 ## Install
@@ -176,9 +184,9 @@ The mapper reads events from a grabbed `/dev/input/eventX` device and emits rema
    sudo modprobe uinput
    ```
 
-3. Restart the app. Pick your keyboard in **Settings → Key-mapper → Клавиатура** and press **Запустить**.
+3. Restart the app (or log out and back in). Pick your keyboard in **Settings → Key-mapper → Клавиатура** and press **Запустить**.
 
-If the start button returns a permissions error, verify that the user is in `input` (`id -nG | tr ' ' '\n' | grep input`) and that `ls -l /dev/uinput` shows group `input` with `rw`.
+> **Note on Device List:** If the list of input devices is empty or missing devices, it is usually because your user lacks read permissions for `/dev/input/event*`. Adding your user to the `input` group (step 1) resolves this. Verify with `id -nG | grep input`. If the start button returns a permissions error, verify `ls -l /dev/uinput` shows group `input` with `rw`.
 
 ### Activation conditions
 
