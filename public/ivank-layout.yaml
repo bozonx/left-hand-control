@@ -279,10 +279,11 @@ rules:
   # - key: Space
   #   layer: space
   - key: AltRight
-    tap: 'text:.'
+    tap: 'text:,'
+    dtap: 'text:.'
     layer: sym
   - key: ControlRight
-    tap: 'text:,'
+    tap: 'text:.'
     layer: fkeys
   - key: ShiftRight
     tap: 'text:-'
