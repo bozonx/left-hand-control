@@ -112,7 +112,7 @@ layers:
       KeyU: Digit7
       KeyI: Digit8
       KeyO: Digit9
-      KeyP: 'text:='
+      KeyP: 'text:+'
       BracketLeft: null
       BracketRight: null
       Backslash: null
@@ -126,7 +126,7 @@ layers:
       KeyJ: Digit4
       KeyK: Digit5
       KeyL: Digit6
-      Semicolon: 'text:+'
+      Semicolon: 'text:='
       Quote: 'text:%'
 
       KeyZ: 'text:$'
@@ -152,7 +152,7 @@ layers:
       KeyU: F7
       KeyI: F8
       KeyO: F9
-      KeyP: 'text:≠'
+      KeyP: null
       BracketLeft: 'text:ℹ️'
       BracketRight: null
       Backslash: null
@@ -166,7 +166,7 @@ layers:
       KeyJ: F4
       KeyK: F5
       KeyL: F6
-      Semicolon: null
+      Semicolon: 'text:≠'
       Quote: 'text:☝️'
 
       KeyZ: 'text:€'
