@@ -1,0 +1,48 @@
+import { LineEdit, VerticalBox, HorizontalBox, Button, ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+export component QuickPopup inherits Window {
+    title: "Slint Shell — Quick";
+    width: 520px; height: 500px;
+    no-frame: true; always-on-top: true; background: transparent;
+    in property <[string]> items;
+    in-out property <string> query;
+    in-out property <int> selected;
+    callback filter(string);
+    callback key(string);
+    callback choose(int);
+    callback dismiss();
+    public function prepare() { search.focus(); }
+    Rectangle {
+        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+        background: Theme.surface; border-radius: 16px;
+        VerticalBox {
+            padding: 16px;
+            HorizontalBox {
+                Text { text: "Быстрые действия"; color: Theme.text; font-size: 22px; }
+                Button { text: "×"; clicked => { root.dismiss(); } }
+            }
+            search := LineEdit {
+                text <=> root.query;
+                placeholder-text: "Фильтр / Filter";
+                edited => { root.filter(self.text); }
+                accepted => { root.choose(root.selected); }
+            }
+            ScrollView {
+                content-height: root.items.length * 42px;
+                content-y: -max(0, root.selected - 6) * 42px;
+                for item[index] in root.items: Rectangle {
+                    y: index * 42px; height: 40px;
+                    background: index == root.selected ? Theme.accent : transparent;
+                    border-radius: 8px;
+                    HorizontalLayout {
+                        padding: 8px;
+                        Text { text: "◆"; color: Theme.text; width: 28px; }
+                        Text { text: item; color: Theme.text; }
+                        Text { text: "Alt+" + (index + 1); color: #aab3c4; }
+                    }
+                    TouchArea { clicked => { root.choose(index); } }
+                }
+            }
+        }
+    }
+}

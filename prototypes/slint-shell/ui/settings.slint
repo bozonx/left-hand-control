@@ -1,0 +1,16 @@
+import { Button, VerticalBox } from "std-widgets.slint";
+export component SettingsWindow inherits Window {
+    title: "Slint Shell — Settings";
+    width: 480px;
+    height: 280px;
+    callback show-popup(string);
+    callback toggle-mapper();
+    VerticalBox {
+        padding: 24px;
+        Text { text: "Slint: этапы 0–3"; font-size: 24px; }
+        Text { text: "F13 — эмодзи · ScrollLock — быстрые действия"; }
+        Button { text: "Эмодзи"; clicked => { root.show-popup("emoji"); } }
+        Button { text: "Быстрые действия"; clicked => { root.show-popup("quick"); } }
+        Button { text: "Mapper вкл / выкл (трей)"; clicked => { root.toggle-mapper(); } }
+    }
+}

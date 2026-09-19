@@ -1,0 +1,56 @@
+import { Button, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+export component EmojiPopup inherits Window {
+    title: "Slint Shell — Emoji";
+    width: 520px;
+    height: 460px;
+    no-frame: true;
+    always-on-top: true;
+    background: transparent;
+    in property <[string]> emojis;
+    in-out property <int> page: 0;
+    in-out property <int> selected: 0;
+    callback key(string);
+    callback choose(int);
+    callback dismiss();
+    public function prepare() { keys.focus(); }
+    Rectangle {
+        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+        background: Theme.surface; border-radius: 16px;
+        VerticalBox {
+            padding: 16px;
+            HorizontalBox {
+                Text { text: root.page == 5 ? "1500 emoji — stress" : "Эмодзи · " + (root.page + 1) + "/5"; color: Theme.text; }
+                Button { text: "×"; clicked => { root.dismiss(); } }
+            }
+            HorizontalBox {
+                for p in 6: Button {
+                    text: p == 5 ? "Stress" : "" + (p + 1);
+                    clicked => { root.page = p; root.selected = 0; keys.focus(); }
+                }
+            }
+            keys := FocusScope {
+                key-pressed(event) => { root.key(event.text); return accept; }
+                ScrollView {
+                    content-y: root.page == 5 ? -max(0, floor(root.selected / 8) - 5) * 48px : 0px;
+                    content-height: root.page == 5 ? 188 * 48px : 6 * 48px;
+                    for row in (root.page == 5 ? 188 : 6): HorizontalLayout {
+                        y: row * 48px; height: 48px;
+                        for col in 8: Rectangle {
+                            visible: root.page != 5 || row * 8 + col < 1500;
+                            background: root.selected == row * 8 + col ? Theme.accent : transparent;
+                            border-radius: 8px;
+                            Text {
+                                text: root.emojis[mod(root.page == 5 ? row * 8 + col : root.page * 48 + row * 8 + col, 240)];
+                                font-family: "Noto Color Emoji"; font-size: 28px;
+                                horizontal-alignment: center; vertical-alignment: center;
+                            }
+                            TouchArea { clicked => { root.choose(row * 8 + col); } }
+                        }
+                    }
+                }
+            }
+            Text { text: "← ↑ ↓ → · Enter · Esc · 1–5"; color: Theme.text; }
+        }
+    }
+}
