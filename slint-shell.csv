@@ -1,0 +1,14 @@
+trial,window,source,event,elapsed_ms,process_ms
+0,settings,startup,ready,1053.773,1053.773
+0,emoji,startup,ready,1070.998,1070.998
+0,quick,startup,ready,1075.584,1075.584
+0,tray,startup,ready,1082.981,1082.981
+1,settings,tray,t0_trigger,0.000,8327.123
+1,settings,tray,t1_on_ui_thread,0.825,8327.186
+1,settings,tray,t2_shown,16.550,8342.912
+1,settings,tray,hidden,1215.295,9541.657
+2,settings,tray,t0_trigger,0.000,11012.833
+2,settings,tray,t1_on_ui_thread,0.353,11012.875
+2,settings,tray,t2_shown,4.409,11016.932
+2,settings,tray,t4_focused,54.810,11067.332
+2,settings,tray,hidden,15012.685,26025.207
