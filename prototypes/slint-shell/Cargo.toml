@@ -7,7 +7,7 @@ publish = false
 [workspace]
 
 [dependencies]
-slint = { version = "=1.18.0", default-features = false, features = ["std", "accessibility", "compat-1-18", "backend-winit", "renderer-software", "renderer-femtovg", "renderer-skia", "unstable-winit-030"] }
+slint = { version = "=1.17.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-software", "renderer-femtovg", "renderer-skia", "unstable-winit-030"] }
 ksni = { version = "0.3.6", features = ["blocking"] }
 evdev = "0.13"
 serde = { version = "1", features = ["derive"] }
@@ -20,8 +20,24 @@ wayland-client = "0.31"
 wayland-backend = { version = "0.3", features = ["client_system"] }
 wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 
+[features]
+spell = ["dep:spell-framework", "dep:tracing", "dep:tracing-subscriber"]
+
+[dependencies.spell-framework]
+git = "https://github.com/VimYoung/Spell"
+rev = "c3139561519cbd78fc5ac8721e1b5a6eb6412f42"
+optional = true
+
+[dependencies.tracing]
+version = "0.1"
+optional = true
+
+[dependencies.tracing-subscriber]
+version = "0.3"
+optional = true
+
 [build-dependencies]
-slint-build = "=1.18.0"
+slint-build = "=1.17.1"
 
 [profile.release]
 lto = true

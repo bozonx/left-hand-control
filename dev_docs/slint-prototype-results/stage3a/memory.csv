@@ -1,0 +1,6 @@
+label,processes,rss_kib,pss_kib
+idle,2,99352,55974
+emoji-visible-requested,2,126636,81222
+quick-visible-requested,2,126864,81318
+warm-hidden,2,126868,81322
+after-500-cycles,2,126212,80729

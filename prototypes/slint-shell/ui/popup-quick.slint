@@ -9,10 +9,12 @@ export component QuickPopup inherits Window {
     in-out property <int> selected;
     callback filter(string);
     callback key(string);
+    in property <bool> presented: true;
     callback choose(int);
     callback dismiss();
     public function prepare() { search.focus(); }
     Rectangle {
+        visible: root.presented;
         x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
         background: Theme.surface; border-radius: 16px;
         VerticalBox {
@@ -25,11 +27,21 @@ export component QuickPopup inherits Window {
                 text <=> root.query;
                 placeholder-text: "Фильтр / Filter";
                 edited => { root.filter(self.text); }
-                accepted => { root.choose(root.selected); }
+                key-pressed(event) => {
+                    if event.modifiers.alt && event.text >= "1" && event.text <= "9" {
+                        root.choose(event.text.to-float() - 1);
+                        return accept;
+                    }
+                    if event.text == Key.UpArrow || event.text == Key.DownArrow || event.text == Key.Escape || event.text == Key.Return {
+                        root.key(event.text);
+                        return accept;
+                    }
+                    return reject;
+                }
             }
             ScrollView {
-                content-height: root.items.length * 42px;
-                content-y: -max(0, root.selected - 6) * 42px;
+                viewport-height: root.items.length * 42px;
+                viewport-y: -max(0, root.selected - 6) * 42px;
                 for item[index] in root.items: Rectangle {
                     y: index * 42px; height: 40px;
                     background: index == root.selected ? Theme.accent : transparent;
@@ -38,7 +50,7 @@ export component QuickPopup inherits Window {
                         padding: 8px;
                         Text { text: "◆"; color: Theme.text; width: 28px; }
                         Text { text: item; color: Theme.text; }
-                        Text { text: "Alt+" + (index + 1); color: #aab3c4; }
+                        Text { text: index < 9 ? "Alt+" + (index + 1) : ""; color: #aab3c4; }
                     }
                     TouchArea { clicked => { root.choose(index); } }
                 }

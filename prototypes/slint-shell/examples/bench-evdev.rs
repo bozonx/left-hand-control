@@ -3,7 +3,7 @@ use std::{
     path::PathBuf,
     process::{Child, Command},
     thread::sleep,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 struct Server(Child);
@@ -64,14 +64,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if server.0.try_wait()?.is_some() {
         return Err("server failed to start".into());
     }
+    let spell_csv = PathBuf::from(format!("{}.spell.csv", csv.display()));
+    let csv = if std::env::var("SLINT_SHELL_POPUPS").is_ok_and(|mode| mode != "winit")
+        && spell_csv.exists()
+    {
+        spell_csv
+    } else {
+        csv
+    };
+    let mut failures = 0;
     for (name, key) in [
         ("emoji", KeyCode::KEY_F13),
         ("quick", KeyCode::KEY_SCROLLLOCK),
     ] {
         for _ in 0..20 {
+            let before = std::fs::read_to_string(&csv)?;
+            let previous = before
+                .lines()
+                .rev()
+                .find(|line| line.contains(",t0_trigger,"))
+                .and_then(|line| line.split(',').next())
+                .unwrap_or("0");
             press(&mut device, key)?;
-            sleep(Duration::from_millis(400));
-            let data = std::fs::read_to_string(&csv)?;
+            let deadline = Instant::now() + Duration::from_secs(2);
+            let data = loop {
+                let data = std::fs::read_to_string(&csv)?;
+                if let Some(latest) = data
+                    .lines()
+                    .rev()
+                    .find(|line| line.contains(",t0_trigger,"))
+                {
+                    let id = latest.split(',').next().unwrap();
+                    let prefix = format!("{id},{name},evdev,");
+                    if id != previous
+                        && latest.starts_with(&prefix)
+                        && data
+                            .lines()
+                            .any(|line| line.starts_with(&format!("{prefix}t4_focused,")))
+                    {
+                        break data;
+                    }
+                }
+                if Instant::now() >= deadline {
+                    break data;
+                }
+                sleep(Duration::from_millis(5));
+            };
             let latest = data
                 .lines()
                 .rev()
@@ -79,7 +117,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .ok_or("evdev trigger was not received")?;
             let id = latest.split(',').next().unwrap();
             let prefix = format!("{id},{name},evdev,");
-            if !latest.starts_with(&prefix) {
+            if id == previous || !latest.starts_with(&prefix) {
                 return Err("wrong trigger source or target".into());
             }
             let focused = data
@@ -95,8 +133,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let handled = data
                     .lines()
                     .any(|line| line.starts_with(&format!("{prefix}navigation_handled,")));
+                if !handled {
+                    failures += 1;
+                }
                 println!("{name} trial {id}: focused, first arrow handled={handled}");
             } else {
+                failures += 1;
                 println!(
                     "{name} trial {id}: no current focus (never focused or already hidden); arrow skipped"
                 );
@@ -111,5 +153,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("quit failed".into());
     }
     server.0.wait()?;
+    if failures > 0 {
+        return Err(format!("{failures}/40 trials failed focus/navigation").into());
+    }
     Ok(())
 }

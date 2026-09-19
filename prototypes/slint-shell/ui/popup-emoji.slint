@@ -11,10 +11,12 @@ export component EmojiPopup inherits Window {
     in-out property <int> page: 0;
     in-out property <int> selected: 0;
     callback key(string);
+    in property <bool> presented: true;
     callback choose(int);
     callback dismiss();
     public function prepare() { keys.focus(); }
     Rectangle {
+        visible: root.presented;
         x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
         background: Theme.surface; border-radius: 16px;
         VerticalBox {
@@ -32,8 +34,8 @@ export component EmojiPopup inherits Window {
             keys := FocusScope {
                 key-pressed(event) => { root.key(event.text); return accept; }
                 ScrollView {
-                    content-y: root.page == 5 ? -max(0, floor(root.selected / 8) - 5) * 48px : 0px;
-                    content-height: root.page == 5 ? 188 * 48px : 6 * 48px;
+                    viewport-y: root.page == 5 ? -max(0, floor(root.selected / 8) - 5) * 48px : 0px;
+                    viewport-height: root.page == 5 ? 188 * 48px : 6 * 48px;
                     for row in (root.page == 5 ? 188 : 6): HorizontalLayout {
                         y: row * 48px; height: 48px;
                         for col in 8: Rectangle {

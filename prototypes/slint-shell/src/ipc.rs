@@ -12,6 +12,10 @@ use std::{
 
 #[derive(Serialize, Deserialize)]
 struct Request {
+    #[serde(default)]
+    source: Option<String>,
+    #[serde(default)]
+    trigger_ns: Option<u128>,
     command: String,
     token: Option<String>,
 }
@@ -19,7 +23,8 @@ struct Request {
 fn path() -> std::io::Result<PathBuf> {
     let dir = std::env::var_os("XDG_RUNTIME_DIR")
         .ok_or_else(|| std::io::Error::other("XDG_RUNTIME_DIR is required"))?;
-    Ok(PathBuf::from(dir).join("lhc-slint-shell.sock"))
+    Ok(PathBuf::from(dir)
+        .join(std::env::var("SLINT_SHELL_SOCKET").unwrap_or("lhc-slint-shell.sock".into())))
 }
 
 pub struct Server(UnixListener, PathBuf);
@@ -53,7 +58,24 @@ impl Server {
                     let start = Instant::now();
                     let req: Request = serde_json::from_str(&line)?;
                     let command = Command::parse(&req.command)?;
-                    dispatch(command, "ipc", start, req.token);
+                    let source = match req.source.as_deref() {
+                        Some("button") => "button",
+                        Some("tray") => "tray",
+                        Some("evdev") => "evdev",
+                        _ => "ipc",
+                    };
+                    let start = req
+                        .trigger_ns
+                        .and_then(|ns| {
+                            let now = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .ok()?
+                                .as_nanos();
+                            let age = u64::try_from(now.checked_sub(ns)?).ok()?;
+                            Instant::now().checked_sub(Duration::from_nanos(age))
+                        })
+                        .unwrap_or(start);
+                    dispatch(command, source, start, req.token);
                     Ok(())
                 })();
                 let reply = match result {
@@ -74,12 +96,33 @@ impl Drop for Server {
 }
 
 pub fn client(command: String) -> Result<(), Box<dyn std::error::Error>> {
+    send(
+        &path()?,
+        command,
+        "ipc",
+        Instant::now(),
+        std::env::var("XDG_ACTIVATION_TOKEN").ok(),
+    )
+}
+
+pub fn send(
+    path: &std::path::Path,
+    command: String,
+    source: &str,
+    start: Instant,
+    token: Option<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
     Command::parse(&command)?;
-    let mut stream = UnixStream::connect(path()?)?;
+    let mut stream = UnixStream::connect(path)?;
     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
     let request = Request {
         command,
-        token: std::env::var("XDG_ACTIVATION_TOKEN").ok(),
+        token,
+        source: Some(source.into()),
+        trigger_ns: std::time::SystemTime::now()
+            .checked_sub(start.elapsed())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_nanos()),
     };
     writeln!(stream, "{}", serde_json::to_string(&request)?)?;
     let mut reply = String::new();
@@ -87,6 +130,6 @@ pub fn client(command: String) -> Result<(), Box<dyn std::error::Error>> {
     if reply != "queued\n" {
         return Err(reply.into());
     }
-    print!("{reply}");
+
     Ok(())
 }

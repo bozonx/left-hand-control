@@ -1,17 +1,16 @@
+mod backend;
 mod focus;
 mod hotkey;
 mod ipc;
 mod metrics;
+#[cfg(feature = "spell")]
+mod spell;
 mod tray;
 
 use slint::winit_030::{WinitWindowAccessor, winit};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
-use winit::{
-    event::{ElementState, WindowEvent},
-    keyboard::{Key, NamedKey},
-    platform::startup_notify::WindowExtStartupNotify,
-};
+use winit::{event::WindowEvent, platform::startup_notify::WindowExtStartupNotify};
 
 slint::include_modules!();
 
@@ -22,6 +21,7 @@ enum Command {
     ToggleSettings,
     ToggleMapper,
     Quit,
+    Ping,
 }
 
 impl Command {
@@ -33,8 +33,9 @@ impl Command {
             "hide" => Ok(Self::Hide),
             "toggle-mapper" => Ok(Self::ToggleMapper),
             "quit" => Ok(Self::Quit),
+            "ping" => Ok(Self::Ping),
             _ => Err(
-                "usage: slint-shell [show emoji|quick|settings | hide | toggle-mapper | quit]"
+                "usage: slint-shell [show emoji|quick|settings | hide | toggle-mapper | ping | quit]"
                     .into(),
             ),
         }
@@ -52,6 +53,7 @@ struct App {
     tray: RefCell<Option<ksni::blocking::Handle<tray::Tray>>>,
     pending: RefCell<Option<(&'static str, Instant, winit::event_loop::AsyncRequestSerial)>>,
     actions: Vec<String>,
+    worker: Option<backend::Worker>,
 }
 
 thread_local! { static APP: RefCell<Option<Rc<App>>> = const { RefCell::new(None) }; }
@@ -98,6 +100,14 @@ impl App {
         start: Instant,
         token: Option<String>,
     ) {
+        if name != "settings"
+            && let Some(worker) = &self.worker
+        {
+            if let Err(error) = worker.send(format!("show {name}"), source, start, token) {
+                log::error!("Spell worker: {error}");
+            }
+            return;
+        }
         if name != "settings" {
             self.hide(if name == "emoji" { "quick" } else { "emoji" });
         }
@@ -158,6 +168,11 @@ impl App {
         match command {
             Command::Show(name) => self.show(name, source, start, token),
             Command::Hide => {
+                if let Some(worker) = &self.worker
+                    && let Err(error) = worker.send("hide".into(), source, start, token)
+                {
+                    log::error!("Spell worker: {error}");
+                }
                 self.hide("emoji");
                 self.hide("quick");
             }
@@ -173,6 +188,7 @@ impl App {
                     tray.update(|tray| tray.enabled = !tray.enabled);
                 }
             }
+            Command::Ping => {}
             Command::Quit => {
                 let _ = slint::quit_event_loop();
             }
@@ -293,35 +309,6 @@ fn observe(app: &Rc<App>, name: &'static str) {
                     app.show(target, "button", start, Some(token.clone().into_raw()));
                 }
             }
-            WindowEvent::KeyboardInput { event, .. }
-                if name == "quick" && event.state == ElementState::Pressed =>
-            {
-                let count = app.quick.get_items().row_count() as i32;
-                let delta = match event.logical_key {
-                    Key::Named(NamedKey::Enter) => {
-                        app.metrics.borrow_mut().mark(name, "t5_first_key");
-                        app.choose_quick(app.quick.get_selected());
-                        return slint::winit_030::EventResult::PreventDefault;
-                    }
-                    Key::Named(NamedKey::ArrowUp) => -1,
-                    Key::Named(NamedKey::ArrowDown) => 1,
-                    Key::Named(NamedKey::Escape) => {
-                        app.metrics.borrow_mut().mark(name, "t5_first_key");
-                        app.defer_hide(name);
-                        return slint::winit_030::EventResult::PreventDefault;
-                    }
-                    _ => 0,
-                };
-                if delta != 0 {
-                    app.metrics.borrow_mut().mark(name, "t5_first_key");
-                    if count > 0 {
-                        app.quick
-                            .set_selected((app.quick.get_selected() + delta).rem_euclid(count));
-                    }
-                    app.metrics.borrow_mut().mark(name, "navigation_handled");
-                    return slint::winit_030::EventResult::PreventDefault;
-                }
-            }
             _ => {}
         }
         slint::winit_030::EventResult::Propagate
@@ -332,10 +319,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     let args: Vec<_> = std::env::args().skip(1).collect();
+    #[cfg(feature = "spell")]
+    if args == ["--spell-worker"] {
+        return spell::run(start);
+    }
     if !args.is_empty() {
         return ipc::client(args.join(" "));
     }
     let server = ipc::Server::bind()?;
+    let worker = backend::start()?;
     let popup_attributes = Rc::new(std::cell::Cell::new(false));
     let hook_popup = popup_attributes.clone();
     slint::BackendSelector::new()
@@ -376,6 +368,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         tray: RefCell::new(None),
         pending: RefCell::new(None),
         actions,
+        worker,
     });
     app.filter("");
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
@@ -385,6 +378,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     app.settings.on_show_popup(|name| {
         with_app(|app| {
             let target = if name == "emoji" { "emoji" } else { "quick" };
+            if app.worker.is_some() {
+                app.show(target, "button", Instant::now(), None);
+                return;
+            }
             if app.pending.borrow().is_some() {
                 return;
             }
@@ -425,6 +422,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .on_choose(|index| with_app(|app| app.choose_emoji(index)));
     app.emoji
         .on_dismiss(|| with_app(|app| app.defer_hide("emoji")));
+    app.quick.on_key(|key| {
+        with_app(|app| {
+            app.metrics.borrow_mut().mark("quick", "t5_first_key");
+            let is = |k: slint::platform::Key| key == slint::SharedString::from(k);
+            if is(slint::platform::Key::Escape) {
+                app.defer_hide("quick");
+            } else if is(slint::platform::Key::Return) {
+                app.choose_quick(app.quick.get_selected());
+            } else {
+                let count = app.quick.get_items().row_count() as i32;
+                let delta = if is(slint::platform::Key::UpArrow) {
+                    -1
+                } else {
+                    1
+                };
+                if count > 0 {
+                    app.quick
+                        .set_selected((app.quick.get_selected() + delta).rem_euclid(count));
+                }
+                app.metrics.borrow_mut().mark("quick", "navigation_handled");
+            }
+        })
+    });
     app.quick
         .on_filter(|query| with_app(|app| app.filter(&query)));
     app.quick

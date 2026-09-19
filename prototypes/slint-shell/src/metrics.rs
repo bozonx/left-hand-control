@@ -67,7 +67,7 @@ impl Metrics {
         } else {
             trial.start.elapsed().as_secs_f64() * 1000.
         };
-        let process_ms = (trial.start - self.start).as_secs_f64() * 1000. + ms;
+        let process_ms = self.start.elapsed().as_secs_f64() * 1000.;
         let line = format!(
             "{},{window},{},{event},{ms:.3},{:.3}",
             trial.id, trial.source, process_ms
@@ -88,6 +88,37 @@ impl Metrics {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn forwarded_trigger_before_worker_start_does_not_underflow() {
+        let path = std::env::temp_dir().join(format!(
+            "slint-metrics-forwarded-{}.csv",
+            std::process::id()
+        ));
+        let start = Instant::now();
+        let mut metrics = Metrics {
+            file: File::create(&path).unwrap(),
+            start,
+            next: 0,
+            active: Default::default(),
+        };
+        metrics.begin(
+            "emoji",
+            "evdev",
+            start - std::time::Duration::from_millis(10),
+        );
+        metrics.mark("emoji", "t4_focused");
+        drop(metrics);
+        let rows = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(path).unwrap();
+        let focus = rows
+            .lines()
+            .find(|line| line.contains(",t4_focused,"))
+            .unwrap();
+        let fields: Vec<_> = focus.split(',').collect();
+        assert!(fields[4].parse::<f64>().unwrap() >= 10.0);
+        assert!(fields[5].parse::<f64>().unwrap() >= 0.0);
+    }
 
     #[test]
     fn repeated_frames_and_late_focus_do_not_contaminate_next_trial() {
