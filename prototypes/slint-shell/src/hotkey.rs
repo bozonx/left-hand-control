@@ -3,6 +3,9 @@ use evdev::{Device, KeyCode};
 use std::time::Instant;
 
 pub fn start(dispatch: Dispatch) {
+    if std::env::var("SLINT_SHELL_HOTKEYS").as_deref() == Ok("off") {
+        return;
+    }
     let devices: Vec<_> = if let Some(path) = std::env::var_os("SLINT_SHELL_INPUT") {
         match Device::open(&path) {
             Ok(device) => vec![(path.into(), device)],

@@ -4,7 +4,11 @@ mod hotkey;
 mod ipc;
 mod metrics;
 #[cfg(feature = "spell")]
+mod return_input;
+#[cfg(feature = "spell")]
 mod spell;
+#[cfg(feature = "spell")]
+mod test_keyboard;
 mod tray;
 
 use slint::winit_030::{WinitWindowAccessor, winit};
@@ -199,7 +203,7 @@ impl App {
         self.metrics.borrow_mut().mark("emoji", "t5_first_key");
         let max = if self.emoji.get_page() == 5 { 1500 } else { 48 };
         let index = self.emoji.get_selected();
-        if let Ok(page @ 1..=5) = key.parse::<i32>() {
+        if let Ok(page @ 1..=6) = key.parse::<i32>() {
             self.emoji.set_page(page - 1);
             self.emoji.set_selected(0);
         } else if key == slint::SharedString::from(slint::platform::Key::Escape).as_str() {

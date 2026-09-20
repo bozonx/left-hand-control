@@ -21,19 +21,18 @@ wayland-backend = { version = "0.3", features = ["client_system"] }
 wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 
 [features]
-spell = ["dep:spell-framework", "dep:tracing", "dep:tracing-subscriber"]
+spell = ["dep:spell-framework", "dep:zbus", "dep:tempfile", "dep:wayland-protocols-plasma"]
 
 [dependencies.spell-framework]
-git = "https://github.com/VimYoung/Spell"
-rev = "c3139561519cbd78fc5ac8721e1b5a6eb6412f42"
+path = "vendor/spell-framework"
 optional = true
 
-[dependencies.tracing]
-version = "0.1"
+[dependencies.zbus]
+version = "5"
 optional = true
 
-[dependencies.tracing-subscriber]
-version = "0.3"
+[dependencies.tempfile]
+version = "3"
 optional = true
 
 [build-dependencies]
@@ -43,3 +42,20 @@ slint-build = "=1.17.1"
 lto = true
 opt-level = "s"
 strip = true
+
+[[example]]
+name = "bench-return"
+required-features = ["spell"]
+
+[[example]]
+name = "inspect-geometry"
+required-features = ["spell"]
+
+[[example]]
+name = "panel-fixture"
+required-features = ["spell"]
+
+[dependencies.wayland-protocols-plasma]
+version = "0.3"
+features = ["client"]
+optional = true

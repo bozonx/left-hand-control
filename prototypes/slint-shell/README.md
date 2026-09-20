@@ -157,71 +157,74 @@ Spell использует **Skia software surface + Wayland SHM**, а не wini
 
 Параметры слоёв: Emoji 520×460, Quick 520×500, overlay, anchor bottom, margin bottom
 24, exclusive zone 0. `SLINT_SHELL_OUTPUT=<имя>` передаёт выбранный монитор в Spell.
-Не считайте сам факт передачи имени подтверждением корректного выбора: результаты
-и ограничения приведены в отчёте. Margin относительно work area, fullscreen,
-второй монитор и fractional scaling требуют проверки соответствующего композитора.
+В приватном KWin проверены второй монитор, масштабы 1/1,25/1,5, отключение
+выбранного выхода, панель и fullscreen. Для других композиторов проверка остаётся открытой.
 
 Fallback GNOME использует те же окна без рамки и размеры. Центрирование и активация
 определяются Mutter; код не утверждает, что они обеспечены. В этой сессии GNOME не
 проверен, поэтому требование центрирования fallback **не принято**.
 
-### Два режима жизненного цикла
+### Исправленный lifecycle (2026-09-20)
 
-`SLINT_SHELL_SPELL_LIFECYCLE=unmap` использует исходные `SpellWin::hide/show_again`.
-На KDE показ предварительно скрытых поверхностей не привёл к кадру/фокусу: 0/20
-для каждого попапа. Режим сохранён для воспроизведения upstream-проблемы.
+Используется локальная копия Spell из `vendor/spell-framework`; исходная ревизия,
+лицензия и изменения перечислены в `vendor/spell-framework/PATCHES.md`.
+По умолчанию `SLINT_SHELL_SPELL_LIFECYCLE=unmap`: скрытие немедленно коммитит пустой
+буфер, повторный показ запускает кадр независимо от остановленного frame callback.
+Число ожидающих frame callbacks ограничено одним; скрытое окно не делает поздних
+коммитов. Закрытый композитором слой пересоздаётся, например при отключении монитора.
+`transparent` сохранён только как диагностический режим.
 
-По умолчанию используется экспериментальный `transparent`: слой остаётся mapped,
-содержимое скрывается, область мышиного ввода очищается, keyboard interactivity
-переключается в None. При показе возвращаются содержимое, область ввода и Exclusive.
-Это обход unmapped lifecycle, с постоянно существующими прозрачными поверхностями
-и дополнительной работой event loop. **Стабильность 20/20 также не достигнута.**
-
-`SLINT_SHELL_SPELL_INITIAL=emoji` или `quick` — диагностический показ при старте,
-обходящий начальное скрытие. Для измерения обычного запуска переменную не задавайте.
+Фокус передаётся напрямую через callback конкретного окна, без разбора логов.
+Исправлены автоповтор, отпускание клавиш при потере фокуса и модификаторы,
+зажатые до открытия. Размеры при смене масштаба вычисляются из логических размеров.
+Клавиша `6` открывает тяжёлую страницу из 1500 эмодзи.
 
 ### Метрики и воспроизведение
 
-Родитель пишет `/tmp/slint-stage3a.csv`, worker — `/tmp/slint-stage3a.csv.spell.csv`.
-В worker t4 берётся из событий enter/leave клавиатуры, которые логирует закреплённая
-версия Spell. Прототип пересылает их в Slint как WindowActiveChanged и фиксирует
-доставку. Winit accessor не используется. Этот адаптер зависит от формата сообщений
-данной ревизии Spell. t5/navigation_handled возникают только при обработке клавиши.
-`t2_shown` — отправка запроса показа. Rendering notifier подключён, но в измерениях
-Spell не выдавал AfterRendering: отсутствие t3 не заменяется значением t2.
+Родитель пишет CSV по `SLINT_SHELL_METRICS`, worker — тот же путь с `.spell.csv`.
+`t3_first_frame` означает отрисовку и commit буфера, **не presentation композитора**.
+`t4_focused` — доставленный keyboard enter, `t5_first_key` — обработанная клавиша.
+Evdev-стенд ждёт событие навигации до 500 мс; t5 включает опрос и эмуляцию.
+
+Из корня репозитория:
 
 ```sh
-# Остановите предыдущий экземпляр перед evdev-тестом.
+cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --examples --bin slint-shell
+cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell
+cargo check --locked --manifest-path prototypes/slint-shell/Cargo.toml --no-default-features
+cargo clippy --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --all-targets --no-deps -- -D warnings
+
+# Изолированный KWin: не переключает фокус рабочего стола пользователя.
+prototypes/slint-shell/scripts/bench-virtual.sh /tmp/slint-geometry geometry
+prototypes/slint-shell/scripts/bench-virtual.sh /tmp/slint-input input
+prototypes/slint-shell/scripts/bench-virtual.sh /tmp/slint-lifecycle lifecycle
+python3 prototypes/slint-shell/scripts/summarize.py /tmp/slint-lifecycle/parent.csv.spell.csv
+
+# Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
 SLINT_SHELL_POPUPS=spell SLINT_BACKEND=winit-software \
   prototypes/slint-shell/target/debug/examples/bench-evdev \
-  prototypes/slint-shell/target/debug/slint-shell /tmp/spell-evdev.csv
-python3 prototypes/slint-shell/scripts/summarize.py /tmp/spell-evdev.csv.spell.csv
-
-# Исходный lifecycle Spell, отдельная серия:
-SLINT_SHELL_SPELL_LIFECYCLE=unmap SLINT_SHELL_POPUPS=spell SLINT_BACKEND=winit-software \
-  prototypes/slint-shell/target/debug/examples/bench-evdev \
-  prototypes/slint-shell/target/debug/slint-shell /tmp/spell-unmap.csv
-
-# 500 чередующихся циклов, отдельный экземпляр и сокет, результаты + дерево памяти:
-prototypes/slint-shell/scripts/bench-lifecycle.py /tmp/spell-500 500
-python3 prototypes/slint-shell/scripts/summarize.py /tmp/spell-500/parent.csv.spell.csv
-
-# Для уже работающего экземпляра:
-prototypes/slint-shell/scripts/mem.sh <PID-родителя> idle
+  prototypes/slint-shell/target/debug/slint-shell /tmp/slint-evdev.csv
+SLINT_BACKEND=winit-software \
+  prototypes/slint-shell/target/debug/examples/bench-return \
+  prototypes/slint-shell/target/debug/slint-shell /tmp/slint-return.csv
 ```
 
-Evdev-тест теперь ждёт новый trial и t4 с опросом каждые 5 мс, максимум 2 с, затем
-сразу посылает стрелку. При отсутствующем фокусе или уже скрытом окне стрелка не
-посылается. Потеря фокуса между проверкой и синтетической клавишей всё ещё возможна;
-проверяйте на тестовом исходном окне. Любой неуспешный вызов даёт ненулевой exit code.
-Метрики t5 включают задержку опроса и эмуляции. Старые серии с ожиданием 400 мс
-не эквивалентны новому тесту.
+Виртуальные проверки требуют `kwin_wayland`, `kscreen-doctor`, `dbus-run-session`
+и Python 3. Они создают отдельные D-Bus, runtime/config/cache/data-каталоги и два
+выхода 1920×1080. Только режим `input` включает `KWIN_WAYLAND_NO_PERMISSION_CHECKS=1`
+в приватном композиторе для тестового fake-input. Рабочая сессия эту настройку не
+получает. Открытие в этом режиме идёт через IPC, клавиатура — через fake-input;
+это не заменяет проверку evdev на реальном рабочем столе.
 
-Lifecycle-скрипт доказывает прохождение команд, но сам не доказывает отображение
-каждого кадра, ввод или отсутствие утечек в полном рабочем сценарии. Проверяйте
-число t4/t5/t3 перед интерпретацией памяти. Оба теста меняют фокус в текущей сессии;
-не запускайте их одновременно.
+`bench-return` создаёт собственное окно-получатель и включает только для тестового
+процесса `SLINT_SHELL_TEST_INJECT=1`. KDE-проба запоминает исходное окно, после выбора
+ждёт освобождения клавиатуры, восстанавливает и подтверждает фокус, затем отправляет
+одну клавишу A (а не выбранный эмодзи). В реальной сессии ждёт также отпускания
+физических модификаторов. Esc ничего не вводит. Это проверка возврата ввода, а не
+готовая реализация вставки в продукте; без переменной инжект отключён.
 
-Выбор по Enter остаётся заглушкой. Возврат фокуса с инжектом в исходное приложение,
-автоповтор, модификаторы при уже зажатой клавише, полный набор DE/мониторов и
-визуальная приёмка пока не приняты; этап 3а целиком не закрыт.
+Итог: 500 циклов плюс два прогрева получили кадр и фокус каждый; 16 проверок
+геометрии и расширенная серия ввода прошли в приватном KWin. Тяжёлая страница
+задерживает ввод примерно на 2,6 с в debug. Полная матрица приложений/способов
+вызова, GNOME fallback и Hyprland ещё требуют приёмки. Подробности и исходные
+CSV — в [отчёте](../../dev_docs/slint-prototype-report.md#результаты-доработки-3а-2026-09-20).

@@ -1,18 +1,14 @@
 use crate::{Command, Dispatch, EmojiPopup, QuickPopup, ipc, metrics};
-use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use slint::{Model, ModelRc, VecModel};
 use spell_framework::{
     SpellAssociatedNew,
     layer_properties::{BoardType, LayerAnchor, LayerType, WindowConf},
     wayland_adapter::SpellWin,
 };
 use std::{
-    cell::Cell,
     sync::{Arc, mpsc},
     time::Instant,
 };
-use tracing_subscriber::prelude::*;
-
-thread_local! { static CURRENT: Cell<&'static str> = const { Cell::new("emoji") }; }
 
 enum Event {
     Command(Command, &'static str, Instant),
@@ -22,35 +18,6 @@ enum Event {
     Filter(String),
     Focus(&'static str, bool),
     Frame(&'static str),
-}
-
-struct FocusEvents(mpsc::Sender<Event>);
-impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for FocusEvents {
-    fn on_event(&self, event: &tracing::Event<'_>, _: tracing_subscriber::layer::Context<'_, S>) {
-        struct Message(String);
-        impl tracing::field::Visit for Message {
-            fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
-                if field.name() == "message" {
-                    self.0 = format!("{value:?}");
-                }
-            }
-        }
-        if !event
-            .metadata()
-            .target()
-            .starts_with("spell_framework::wayland_adapter::window::input")
-        {
-            return;
-        }
-        let mut message = Message(String::new());
-        event.record(&mut message);
-        let focused = match message.0.as_str() {
-            "Keyboard focus entered" => true,
-            "Keyboard focus left" => false,
-            _ => return,
-        };
-        let _ = self.0.send(Event::Focus(CURRENT.with(Cell::get), focused));
-    }
 }
 
 fn configuration(height: u32) -> Result<WindowConf, Box<dyn std::error::Error>> {
@@ -74,8 +41,8 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         return Err("layer-shell unavailable".into());
     }
     let unmap = match std::env::var("SLINT_SHELL_SPELL_LIFECYCLE").as_deref() {
-        Ok("unmap") => true,
-        Ok("transparent") | Err(_) => false,
+        Ok("unmap") | Err(_) => true,
+        Ok("transparent") => false,
         _ => return Err("SLINT_SHELL_SPELL_LIFECYCLE must be transparent or unmap".into()),
     };
     let initial = match std::env::var("SLINT_SHELL_SPELL_INITIAL").as_deref() {
@@ -85,16 +52,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         _ => return Err("SLINT_SHELL_SPELL_INITIAL must be emoji or quick".into()),
     };
     let (tx, rx) = mpsc::channel();
-    tracing::subscriber::set_global_default(
-        tracing_subscriber::registry()
-            .with(FocusEvents(tx.clone()))
-            .with(
-                tracing_subscriber::fmt::layer()
-                    .with_filter(tracing_subscriber::filter::LevelFilter::WARN),
-            ),
-    )?;
     let mut metrics = metrics::Metrics::new(start)?;
-    CURRENT.with(|c| c.set("emoji"));
     let mut emoji_way = SpellWin::invoke_spell("lhc-slint-emoji", configuration(460)?);
     let emoji = EmojiPopup::new()?;
     emoji.set_presented(initial == Some("emoji"));
@@ -113,7 +71,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<slint::SharedString>>(),
     )));
     metrics.ready("emoji");
-    CURRENT.with(|c| c.set("quick"));
     let mut quick_way = SpellWin::invoke_spell("lhc-slint-quick", configuration(500)?);
     let quick = QuickPopup::new()?;
     quick.set_presented(initial == Some("quick"));
@@ -128,15 +85,17 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         .collect();
     quick.set_items(ModelRc::new(VecModel::from(actions.clone())));
     metrics.ready("quick");
-    for (name, window) in [("emoji", emoji.window()), ("quick", quick.window())] {
+    for (name, way) in [("emoji", &mut emoji_way), ("quick", &mut quick_way)] {
         let sender = tx.clone();
-        if let Err(error) = window.set_rendering_notifier(move |state, _| {
-            if matches!(state, slint::RenderingState::AfterRendering) {
-                let _ = sender.send(Event::Frame(name));
-            }
-        }) {
-            log::warn!("Spell {name}: t3 unavailable: {error:?}");
-        }
+        way.set_event_handler(move |event| {
+            use spell_framework::wayland_adapter::WindowEvent;
+            let event = match event {
+                WindowEvent::Focus(active) => Event::Focus(name, active),
+                WindowEvent::Frame => Event::Frame(name),
+                WindowEvent::Closed => Event::Hide(name),
+            };
+            let _ = sender.send(event);
+        });
     }
     let sender = tx.clone();
     emoji.on_key(move |key| {
@@ -183,8 +142,12 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     });
     let server = ipc::Server::bind()?;
     server.start(dispatch)?;
+    let mut return_input = crate::return_input::ReturnInput::new()?;
+    let mut pending_return = None;
+    let mut keyboard_owner = None;
     let mut visible = initial;
     let mut focused = None;
+    let mut navigation_count = 0;
     if let Some(name) = initial {
         metrics.begin(name, "diagnostic", start);
         if name == "emoji" {
@@ -201,12 +164,12 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         std::env::var("SLINT_SHELL_OUTPUT")
     );
     loop {
-        for (name, way) in [("emoji", &mut emoji_way), ("quick", &mut quick_way)] {
-            CURRENT.with(|c| c.set(name));
+        for way in [&mut emoji_way, &mut quick_way] {
             way.on_call()?;
         }
         while let Ok(event) = rx.try_recv() {
             let mut dismiss = None;
+            let mut selected = false;
             match event {
                 Event::Command(Command::Quit, _, _) => {
                     emoji_way.hide();
@@ -214,6 +177,16 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
                 Event::Command(Command::Show(name @ ("emoji" | "quick")), source, start) => {
+                    if let Some(input) = &mut return_input {
+                        if visible.is_none() {
+                            input.capture();
+                        } else {
+                            input.cancel();
+                        }
+                    }
+                    if let Some(previous) = pending_return.take() {
+                        metrics.end(previous);
+                    }
                     if let Some(previous) = visible.take() {
                         if previous == "emoji" {
                             emoji_way.remove_focus();
@@ -236,6 +209,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     metrics.begin(name, source, start);
+                    navigation_count = 0;
                     focused = None;
                     visible = Some(name);
                     if name == "emoji" {
@@ -260,13 +234,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 Event::Command(Command::Hide, _, _) => dismiss = visible,
                 Event::Command(_, _, _) => {}
                 Event::Focus(name, active) => {
-                    let window = if name == "emoji" {
-                        emoji.window()
-                    } else {
-                        quick.window()
-                    };
-                    window
-                        .dispatch_event(slint::platform::WindowEvent::WindowActiveChanged(active));
+                    if active {
+                        keyboard_owner = Some(name);
+                    } else if keyboard_owner == Some(name) {
+                        keyboard_owner = None;
+                    }
+                    if !active && pending_return == Some(name) {
+                        metrics.mark(name, "keyboard_released");
+                    }
                     if visible == Some(name) {
                         if active {
                             focused = Some(name);
@@ -287,10 +262,17 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     log::info!("Spell selected {name} index={index} (stub)");
                     metrics.mark(name, "selected");
+                    selected = true;
                     dismiss = Some(name);
                 }
                 Event::Choose(_, _) => {}
                 Event::Filter(query) => {
+                    if query
+                        .chars()
+                        .any(|c| ('\u{0400}'..='\u{04ff}').contains(&c))
+                    {
+                        metrics.mark("quick", "filter_cyrillic");
+                    }
                     quick.set_items(ModelRc::new(VecModel::from(
                         actions
                             .iter()
@@ -300,6 +282,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     )));
                     quick.set_selected(0);
                     metrics.mark("quick", "t5_first_key");
+                    metrics.mark("quick", "filter_changed");
                 }
                 Event::Key(name, key) if visible == Some(name) => {
                     metrics.mark(name, "t5_first_key");
@@ -314,8 +297,12 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         };
                         let _ = tx.send(Event::Choose(name, index));
                     } else if name == "emoji"
-                        && let Ok(page @ 1..=5) = key.parse::<i32>()
+                        && let Ok(page @ 1..=6) = key.parse::<i32>()
                     {
+                        metrics.mark(name, "page_changed");
+                        if page == 6 {
+                            metrics.mark(name, "stress_page");
+                        }
                         emoji.set_page(page - 1);
                         emoji.set_selected(0);
                     } else {
@@ -345,6 +332,10 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                                 }
                             }
                             metrics.mark(name, "navigation_handled");
+                            navigation_count += 1;
+                            if navigation_count > 1 {
+                                metrics.mark(name, "navigation_repeated");
+                            }
                         }
                     }
                 }
@@ -370,8 +361,28 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 }
                 visible = None;
                 focused = None;
-                metrics.end(name);
+                if selected && let Some(input) = &mut return_input {
+                    metrics.mark(name, "hidden");
+                    pending_return = Some(name);
+                    if !input.selected() {
+                        metrics.mark(name, "return_target_missing");
+                        metrics.end(name);
+                        pending_return = None;
+                    }
+                } else {
+                    if let Some(input) = &mut return_input {
+                        input.cancel();
+                    }
+                    metrics.end(name);
+                }
             }
+        }
+        if let (Some(name), Some(input)) = (pending_return, &mut return_input)
+            && let Some(event) = input.poll(keyboard_owner.is_none())
+        {
+            metrics.mark(name, event);
+            metrics.end(name);
+            pending_return = None;
         }
     }
 }

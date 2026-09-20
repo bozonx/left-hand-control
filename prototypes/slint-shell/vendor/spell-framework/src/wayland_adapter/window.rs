@@ -1,0 +1,707 @@
+use crate::{
+    PopupSlint, SpellAssociatedNew,
+    configure::{Dimension, HomeHandle, PopupConf, WindowConf, set_up_tracing},
+    slint_adapter::{ADAPTERS, SpellLayerShell, SpellSkiaWinAdapter},
+    wayland_adapter::{
+        common::PointerState,
+        fractional_scaling::{FractionalScaleState, delegate_fractional_scale},
+        viewporter::{Viewport, ViewporterState, delegate_viewporter},
+        window,
+    },
+};
+use i_slint_core::items::MouseCursor;
+use smithay_client_toolkit::{
+    self as sctk,
+    compositor::{CompositorState, Region},
+    output::OutputState,
+    reexports::{
+        calloop::{self, EventLoop, LoopHandle, LoopSignal},
+        calloop_wayland_source::WaylandSource,
+        client::{
+            Connection, QueueHandle,
+            globals::registry_queue_init,
+            protocol::{
+                wl_keyboard::WlKeyboard,
+                wl_output::WlOutput,
+                wl_shm,
+                wl_surface::WlSurface,
+                wl_touch::WlTouch,
+            },
+        },
+    },
+    registry::RegistryState,
+    seat::{SeatState, pointer::cursor_shape::CursorShapeManager},
+    shell::{
+        WaylandSurface,
+        wlr_layer::{KeyboardInteractivity, LayerShell, LayerSurface},
+        xdg::XdgShell,
+    },
+    shm::{
+        Shm,
+        slot::{Buffer, SlotPool},
+    },
+};
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+    os::{fd::AsFd, unix::net::UnixListener},
+    rc::Rc,
+    sync::Once,
+};
+use tracing::{Level, info, span, trace, warn};
+
+mod input;
+mod internal;
+mod popup;
+mod wayland;
+pub use popup::SpellXDGPopup;
+
+#[allow(clippy::type_complexity)]
+static SET_SLINT_PLATFORM: Once = Once::new();
+
+#[derive(Debug)]
+struct States {
+    registry_state: RegistryState,
+    seat_state: SeatState,
+    output_state: OutputState,
+    compositor_state: CompositorState,
+    pointer_state: PointerState,
+    keyboard_state: Option<WlKeyboard>,
+    touch_state: Option<WlTouch>,
+    shm: Shm,
+    viewporter_state: ViewporterState,
+    fractional_scale_state: FractionalScaleState,
+}
+
+#[allow(missing_docs)]
+#[derive(Clone, Copy, Debug)]
+pub enum WindowEvent {
+    Focus(bool),
+    Frame,
+    Closed,
+}
+
+/// `SpellWin` is the main type for implementing widgets, it covers various properties
+/// and trait implementation, thus providing various features.
+pub struct SpellWin {
+    event_handler: Option<Box<dyn FnMut(WindowEvent)>>,
+    modifiers: smithay_client_toolkit::seat::keyboard::Modifiers,
+    pressed: HashMap<u32, slint::SharedString>,
+    adapter: Option<Rc<SpellSkiaWinAdapter>>,
+    loop_handle: LoopHandle<'static, SpellWin>,
+    signal: LoopSignal,
+    /// UnixListener storing remote instructions from CLI.
+    pub ipc_handler: Option<UnixListener>,
+    /// Name of widget's layer.
+    pub layer_name: String,
+    /// Span required for proper logging.
+    pub span: span::Span,
+    queue: QueueHandle<SpellWin>,
+    buffer: Option<Buffer>,
+    states: States,
+    layer: Option<LayerSurface>,
+    layer_shell: LayerShell,
+    first_configure: Cell<bool>,
+    configured: Cell<bool>,
+    frame_pending: Cell<bool>,
+    natural_scroll: bool,
+    is_hidden: Cell<bool>,
+    config: WindowConf,
+    input_region: Region,
+    opaque_region: Region,
+    viewport: Option<Viewport>,
+    xdg_shell: XdgShell,
+    popup_manager: window::popup::PopupManager,
+    event_loop: Rc<RefCell<EventLoop<'static, SpellWin>>>,
+}
+
+impl std::fmt::Debug for SpellWin {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SpellWin")
+            .field("adapter", &self.adapter)
+            .field("first_configure", &self.first_configure)
+            .field("is_hidden", &self.is_hidden)
+            .field("config", &self.config)
+            .finish()
+    }
+}
+
+impl SpellWin {
+    #[allow(missing_docs)]
+    pub fn set_event_handler(&mut self, handler: impl FnMut(WindowEvent) + 'static) {
+        self.event_handler = Some(Box::new(handler));
+    }
+
+    fn emit(&mut self, event: WindowEvent) {
+        if let Some(handler) = &mut self.event_handler {
+            handler(event);
+        }
+    }
+
+    fn recreate_layer(&mut self) {
+        self.viewport.take();
+        self.layer.take();
+        self.configured.set(false);
+        self.first_configure.set(true);
+        self.frame_pending.set(false);
+        self.config.board_interactivity.set(KeyboardInteractivity::None);
+        let output = self.config.monitor_name.as_ref().and_then(|name| {
+            self.states.output_state.outputs().find(|output| {
+                self.states.output_state.info(output).and_then(|info| info.name).as_ref() == Some(name)
+            })
+        });
+        let surface = self.states.compositor_state.create_surface(&self.queue);
+        self.layer = Some(self.layer_shell.create_layer_surface(
+            &self.queue, surface.clone(), self.config.layer_type,
+            Some(self.layer_name.clone()), output.as_ref(),
+        ));
+        let fractional_scale = self.states.fractional_scale_state.get_scale(&surface, &self.queue);
+        self.viewport = Some(self.states.viewporter_state.get_viewport(&surface, &self.queue, fractional_scale));
+        self.set_config_internal();
+        self.layer.as_ref().unwrap().commit();
+        self.adapter.as_ref().unwrap().needs_redraw.set(true);
+    }
+
+    fn create_window(
+        conn: &Connection,
+        mut window_conf: WindowConf,
+        layer_name: String,
+        handle: HomeHandle,
+    ) -> Self {
+        let (globals, mut event_queue) = registry_queue_init(conn).unwrap();
+        let qh: QueueHandle<SpellWin> = event_queue.handle();
+        let compositor =
+            CompositorState::bind(&globals, &qh).expect("wl_compositor is not available");
+        let event_loop: EventLoop<'static, SpellWin> =
+            EventLoop::try_new().expect("Failed to initialize the event loop!");
+        let layer_shell = LayerShell::bind(&globals, &qh).expect("layer shell is not available");
+        let shm = Shm::bind(&globals, &qh).expect("wl_shm is not available");
+        let cursor_manager =
+            CursorShapeManager::bind(&globals, &qh).expect("cursor shape is not available");
+        let surface = compositor.create_surface(&qh);
+        let viewporter_state =
+            ViewporterState::bind(&globals, &qh).expect("Couldn't set viewporter");
+        let fractional_scale_state: FractionalScaleState =
+            FractionalScaleState::bind(&globals, &qh).expect("Fractional Scale couldn't be set");
+        let xdg_shell = XdgShell::bind(&globals, &qh).expect("Couldn't bind xdg_shell");
+        let pointer_state = PointerState {
+            pointer: None,
+            pointer_data: None,
+            cursor_shape: cursor_manager,
+            current_wayland_cursor: MouseCursor::Default,
+            last_cursor_enter_serial: None,
+        };
+        let input_region = Region::new(&compositor).expect("Couldn't create region");
+        let opaque_region = Region::new(&compositor).expect("Couldn't create opaque region");
+
+        let mut win = SpellWin {
+            event_handler: None,
+            modifiers: Default::default(),
+            pressed: HashMap::new(),
+            adapter: None,
+            loop_handle: event_loop.handle(),
+            signal: event_loop.get_signal(),
+            ipc_handler: None,
+            queue: qh.clone(),
+            buffer: None,
+            states: States {
+                registry_state: RegistryState::new(&globals),
+                seat_state: SeatState::new(&globals, &qh),
+                output_state: OutputState::new(&globals, &qh),
+                compositor_state: compositor,
+                pointer_state,
+                keyboard_state: None,
+                touch_state: None,
+                shm,
+                viewporter_state,
+                fractional_scale_state,
+            },
+            layer: None,
+            layer_shell,
+            first_configure: Cell::new(true),
+            configured: Cell::new(false),
+            frame_pending: Cell::new(false),
+            natural_scroll: window_conf.natural_scroll,
+            is_hidden: Cell::new(false),
+            config: window_conf.clone(),
+            layer_name: layer_name.clone(),
+            input_region,
+            opaque_region,
+            viewport: None,
+            xdg_shell,
+            popup_manager: window::popup::PopupManager::new(),
+            event_loop: Rc::new(RefCell::new(event_loop)),
+            span: span!(Level::INFO, "widget", name = layer_name.as_str(),),
+        };
+
+        let monitors = Self::get_available_monitors(&mut event_queue, &mut win)
+            .unwrap_or_default();
+        let mut output_info = window_conf.monitor_name.as_ref()
+            .and_then(|name| monitors.get(name).cloned());
+        if window_conf.monitor_name.is_some() && output_info.is_none() {
+            warn!("Requested output unavailable; using compositor default");
+        }
+
+        match window_conf.width {
+            Dimension::Pixel(x) => window_conf.evaluated_width = x,
+            Dimension::Full => {
+                window_conf.evaluated_width = output_info
+                    .as_ref()
+                    .expect("Output info couldn't be retrieved")
+                    .1 as u32
+            }
+            Dimension::Percentage(y) => {
+                window_conf.evaluated_width = output_info
+                    .as_mut()
+                    .expect("Output info couldn't be retrieved")
+                    .1 as u32
+                    / y;
+            }
+        }
+
+        match window_conf.height {
+            Dimension::Pixel(x) => window_conf.evaluated_height = x,
+            Dimension::Full => {
+                window_conf.evaluated_height = output_info
+                    .as_ref()
+                    .expect("Output info couldn't be retrieved")
+                    .1 as u32
+            }
+            Dimension::Percentage(y) => {
+                window_conf.evaluated_height = output_info
+                    .as_ref()
+                    .expect("Output info couldn't be retrieved")
+                    .1 as u32
+                    / y;
+            }
+        }
+        win.config = window_conf.clone();
+
+        info!(
+            "Evaluated width: {}, evaluated_height: {}",
+            window_conf.evaluated_width, window_conf.evaluated_height
+        );
+
+        let mut pool = SlotPool::new(
+            (window_conf.evaluated_width * window_conf.evaluated_height * 4) as usize,
+            &win.states.shm,
+        )
+        .expect("Failed to create pool");
+        win.input_region.add(
+            0,
+            0,
+            window_conf.evaluated_width as i32,
+            window_conf.evaluated_height as i32,
+        );
+
+        let stride = window_conf.evaluated_width as i32 * 4;
+        let (way_pri_buffer, _) = pool
+            .create_buffer(
+                window_conf.evaluated_width as i32,
+                window_conf.evaluated_height as i32,
+                stride,
+                wl_shm::Format::Argb8888,
+            )
+            .expect("Creating Buffer");
+
+        let primary_slot = way_pri_buffer.slot();
+        let adapter_value: Rc<SpellSkiaWinAdapter> = SpellSkiaWinAdapter::new(
+            Rc::new(RefCell::new(pool)),
+            RefCell::new(primary_slot),
+            window_conf.evaluated_width,
+            window_conf.evaluated_height,
+        );
+        // win.popup_manager.set_pool(pool_mut.clone());
+        win.adapter = Some(adapter_value.clone());
+        win.buffer = Some(way_pri_buffer);
+
+        let (slint_event_sender, slint_event_receiver) =
+            calloop::channel::channel::<Box<dyn FnOnce() + Send>>();
+
+        ADAPTERS.with_borrow_mut(|v| v.push(adapter_value.clone()));
+        SET_SLINT_PLATFORM.call_once(|| {
+            trace!("Slint platform set");
+            if let Err(err) =
+                slint::platform::set_platform(Box::new(SpellLayerShell::new(slint_event_sender)))
+            {
+                warn!("Error setting slint platform: {err}");
+            }
+        });
+        win.adapter = Some(adapter_value);
+        let target_output: Option<&WlOutput> = output_info.as_ref().map(|(a, _, _)| a);
+        let layer = win.layer_shell.create_layer_surface(
+            &qh,
+            surface,
+            window_conf.layer_type,
+            Some(layer_name.clone()),
+            target_output,
+        );
+
+        win.layer = Some(layer);
+        win.set_config_internal();
+
+        if let Err(err) = event_queue.roundtrip(&mut win) {
+            warn!("Received roundtrip error: {}", err);
+        }
+        let surface: &WlSurface = win.layer.as_ref().unwrap().wl_surface();
+
+        // This needs to occur after layer creation so as to ensure that layer
+        // used in window is not null during use to scale. Details in issue 34.
+        let fractional_scale = win.states.fractional_scale_state.get_scale(surface, &qh);
+        let viewport = win
+            .states
+            .viewporter_state
+            .get_viewport(surface, &qh, fractional_scale);
+        win.viewport = Some(viewport);
+
+        win.layer.as_ref().unwrap().commit();
+        win.set_event_sources(handle, slint_event_receiver);
+
+        info!("Win: {} layer created successfully.", layer_name);
+
+        WaylandSource::new(conn.clone(), event_queue)
+            .insert(win.loop_handle.clone())
+            .unwrap();
+        win
+    }
+
+    /// Returns a handle of [`WinHandle`] to invoke wayland specific features.
+    pub fn get_handler(&self) -> WinHandle {
+        info!("Win: Handle provided.");
+        WinHandle(
+            self.loop_handle.clone(),
+            self.event_loop.borrow().get_signal(),
+        )
+    }
+
+    /// This function is called to create a instance of window. This window is then
+    /// finally called by [`cast_spell`](crate::cast_spell) event loop.
+    ///
+    /// # Panics
+    ///
+    /// This function needs to be called "before" initialising your slint window to avoid
+    /// panicing of this function.
+    pub fn invoke_spell(name: &str, window_conf: WindowConf) -> Self {
+        let handle = set_up_tracing(name);
+        let conn = Connection::connect_to_env().unwrap();
+        SpellWin::create_window(&conn, window_conf.clone(), name.to_string(), handle)
+    }
+
+    /// Hides the layer (aka the widget) if it is visible in screen.
+    pub fn hide(&self) {
+        if !self.is_hidden.replace(true) {
+            info!("Win: Hiding window");
+            self.configured.set(false);
+            self.layer.as_ref().unwrap().wl_surface().attach(None, 0, 0);
+            self.layer.as_ref().unwrap().commit();
+            self.signal.wakeup();
+        }
+    }
+
+    /// Brings back the layer (aka the widget) back on screen if it is hidden.
+    pub fn show_again(&self) {
+        if self.is_hidden.replace(false) {
+            info!("Win: Showing window again");
+            self.set_config_internal();
+            self.first_configure.set(true);
+            self.frame_pending.set(false);
+            self.adapter.as_ref().unwrap().needs_redraw.set(true);
+            self.layer.as_ref().unwrap().commit();
+            self.signal.wakeup();
+        }
+    }
+
+    /// Hides the widget if visible or shows the widget back if hidden.
+    pub fn toggle(&self) {
+        info!("Win: view toggled");
+        if self.is_hidden.get() {
+            self.show_again();
+        } else {
+            self.hide();
+        }
+    }
+
+    /// This function adds specific rectangular regions of your complete layer to receive
+    /// input events from pointer and/or touch. The coordinates are in surface local
+    /// format from top left corener. By default, The whole layer is considered for input
+    /// events. Adding existing areas again as input region has no effect. This function
+    /// combined with transparent base widgets can be used to mimic resizable widgets.
+    pub fn add_input_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        info!(
+            "Win: input region added: [x: {}, y: {}, width: {}, height: {}]",
+            x, y, width, height
+        );
+        self.input_region.add(x, y, width, height);
+        self.set_config_internal();
+        self.layer.as_ref().unwrap().commit();
+        self.signal.wakeup();
+    }
+
+    /// This function subtracts specific rectangular regions of your complete layer from receiving
+    /// input events from pointer and/or touch. The coordinates are in surface local
+    /// format from top left corener. By default, The whole layer is considered for input
+    /// events. Substracting input areas which are already not input regions has no effect.
+    pub fn subtract_input_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        info!(
+            "Win: input region removed: [x: {}, y: {}, width: {}, height: {}]",
+            x, y, width, height
+        );
+        self.input_region.subtract(x, y, width, height);
+        self.set_config_internal();
+        self.layer.as_ref().unwrap().commit();
+        self.signal.wakeup();
+    }
+
+    /// This function marks specific rectangular regions of your complete layer as opaque.
+    /// This can result in specific optimisations from your wayland compositor, setting
+    /// this property is optional. The coordinates are in surface local format from top
+    /// left corener. Not adding opaque regions in it has no isuues but adding transparent
+    /// regions of layer as opaque can cause weird behaviour and glitches.
+    pub fn add_opaque_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        info!(
+            "Win: opaque region added: [x: {}, y: {}, width: {}, height: {}]",
+            x, y, width, height
+        );
+        self.opaque_region.add(x, y, width, height);
+        self.set_config_internal();
+        self.layer.as_ref().unwrap().commit();
+        self.signal.wakeup();
+    }
+
+    /// This function removes specific rectangular regions of your complete layer from being opaque.
+    /// This can result in specific optimisations from your wayland compositor, setting
+    /// this property is optional. The coordinates are in surface local format from top
+    /// left corener.
+    pub fn subtract_opaque_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        info!(
+            "Win: opaque region removed: [x: {}, y: {}, width: {}, height: {}]",
+            x, y, width, height
+        );
+        self.opaque_region.subtract(x, y, width, height);
+        self.set_config_internal();
+        self.layer.as_ref().unwrap().commit();
+        self.signal.wakeup();
+    }
+
+    /// Grabs the focus of keyboard. Can be used in combination with other functions
+    /// to make the widgets keyboard navigable.
+    pub fn grab_focus(&self) {
+        if !self.is_hidden.get()
+            && self.config.board_interactivity.get() != KeyboardInteractivity::Exclusive
+        {
+            self.config
+                .board_interactivity
+                .set(KeyboardInteractivity::Exclusive);
+            self.layer
+                .as_ref()
+                .unwrap()
+                .set_keyboard_interactivity(KeyboardInteractivity::Exclusive);
+            self.layer.as_ref().unwrap().commit();
+            self.signal.wakeup();
+        }
+    }
+
+    /// Removes the focus of keyboard from window if it currently has it.
+    pub fn remove_focus(&self) {
+        if !self.is_hidden.get()
+            && self.config.board_interactivity.get() != KeyboardInteractivity::None
+        {
+            self.config
+                .board_interactivity
+                .set(KeyboardInteractivity::None);
+            self.layer
+                .as_ref()
+                .unwrap()
+                .set_keyboard_interactivity(KeyboardInteractivity::None);
+            self.layer.as_ref().unwrap().commit();
+            self.signal.wakeup();
+        }
+    }
+
+    /// This method is used to set exclusive zone. Generally, useful when
+    /// dimensions of width are different than exclusive zone you want.
+    // self.set_config_internal();
+    pub fn set_exclusive_zone(&mut self, val: i32) {
+        self.config.exclusive_zone = Some(val);
+        self.layer.as_ref().unwrap().set_exclusive_zone(val);
+        self.layer.as_ref().unwrap().commit();
+        self.signal.wakeup();
+    }
+
+    /// Opens a popup given the [`PopupConf`]. It returns the ID of the popup if
+    /// created successfully. The method fails if the concerned compositor fails
+    /// to create a popup instance or doesn't support the protocol.
+    pub fn open_popup<T: PopupSlint + 'static>(
+        &mut self,
+        popup_conf: PopupConf,
+    ) -> Result<u32, Box<dyn std::error::Error>> {
+        if let Some(core) = self.create_popup_core(popup_conf) {
+            let popup = T::create_new(core);
+            let id = self.popup_manager.add_popup(popup);
+            info!("Popup created with id: {}", id);
+            self.signal.wakeup();
+            Ok(id)
+        } else {
+            warn!("couldn't create a popup");
+            Err("Couldn't create Popup".into())
+        }
+    }
+
+    /// WIP method not to be used.
+    pub fn open_popup_with_instance<T: PopupSlint + 'static>(
+        &mut self,
+        popup_conf: PopupConf,
+    ) -> Result<T, Box<dyn std::error::Error>> {
+        if let Some(core) = self.create_popup_core(popup_conf) {
+            info!("Popup created without id");
+            Ok(T::create_new(core))
+        } else {
+            warn!("couldn't create a popup");
+            Err("Couldn't create Popup".into())
+        }
+    }
+
+    /// WIP method not to be used.
+    pub fn add_popup<T: PopupSlint + 'static>(&mut self, popup_instance: T) -> u32 {
+        self.popup_manager.add_popup(popup_instance)
+    }
+
+    /// Closes a popup given its ID.
+    pub fn close_popup(&mut self, id: u32) {
+        self.popup_manager.close_popup(&id);
+    }
+}
+
+// delegates compositor, xdg_shell, xdg_popup, output, shm, seat, keyboard, pointer
+// touch, layer.
+sctk::delegate_dispatch2!(SpellWin);
+sctk::delegate_registry!(SpellWin);
+delegate_fractional_scale!(SpellWin);
+delegate_viewporter!(SpellWin);
+
+impl SpellAssociatedNew for SpellWin {
+    fn on_call(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let event_loop = self.event_loop.clone();
+        event_loop
+            .borrow_mut()
+            .dispatch(std::time::Duration::from_millis(1), self)?;
+        slint::platform::update_timers_and_animations();
+        if self.configured.get() && !self.is_hidden.get()
+            && !self.frame_pending.get()
+            && self.adapter.as_ref().unwrap().needs_redraw.get()
+        {
+            self.converter(&self.queue.clone());
+        }
+        Ok(())
+    }
+
+    fn get_fd_owned(&self) -> std::os::unix::prelude::OwnedFd {
+        self.event_loop
+            .borrow()
+            .as_fd()
+            .try_clone_to_owned()
+            .unwrap()
+    }
+
+    fn get_span(&self) -> tracing::span::Span {
+        self.span.clone()
+    }
+}
+
+/// This is a wrapper around calloop's [loop_handle](https://docs.rs/calloop/latest/calloop/struct.LoopHandle.html)
+/// for calling wayland specific features of `SpellWin`. It can be accessed from
+/// [`crate::wayland_adapter::SpellWin::get_handler`].
+#[derive(Clone, Debug)]
+pub struct WinHandle(pub LoopHandle<'static, SpellWin>, LoopSignal);
+
+impl WinHandle {
+    /// Internally calls [`crate::wayland_adapter::SpellWin::hide`]
+    pub fn hide(&self) {
+        self.0.insert_idle(|win| win.hide());
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::show_again`]
+    pub fn show_again(&self) {
+        self.0.insert_idle(|win| win.show_again());
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::toggle`]
+    pub fn toggle(&self) {
+        self.0.insert_idle(|win| win.toggle());
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::grab_focus`]
+    pub fn grab_focus(&self) {
+        self.0.insert_idle(|win| win.grab_focus());
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::remove_focus`]
+    pub fn remove_focus(&self) {
+        self.0.insert_idle(|win| win.remove_focus());
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::add_input_region`]
+    pub fn add_input_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        self.0
+            .insert_idle(move |win| win.add_input_region(x, y, width, height));
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::subtract_input_region`]
+    pub fn subtract_input_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        self.0
+            .insert_idle(move |win| win.subtract_input_region(x, y, width, height));
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::add_opaque_region`]
+    pub fn add_opaque_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        self.0
+            .insert_idle(move |win| win.add_opaque_region(x, y, width, height));
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::subtract_opaque_region`]
+    pub fn subtract_opaque_region(&self, x: i32, y: i32, width: i32, height: i32) {
+        self.0
+            .insert_idle(move |win| win.subtract_opaque_region(x, y, width, height));
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::set_exclusive_zone`]
+    pub fn set_exclusive_zone(&self, val: i32) {
+        self.0.insert_idle(move |win| win.set_exclusive_zone(val));
+        self.1.wakeup();
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::open_popup`]. Since,
+    /// the handler can't be tuned to return anything(in this case the id), a callback
+    /// is instead taken with ID as input, this is called after receiving the ID.
+    /// It can be used to used to save the ID and perform actions with it.
+    pub fn open_popup<T: PopupSlint + 'static>(
+        &mut self,
+        popup_conf: PopupConf,
+        callback: Box<dyn FnOnce(u32)>,
+    ) -> Result<u32, Box<dyn std::error::Error>> {
+        self.0.insert_idle(|win| {
+            if let Ok(id) = win.open_popup::<T>(popup_conf) {
+                callback(id);
+            }
+        });
+        self.1.wakeup();
+        Ok(0)
+    }
+
+    /// Internally calls [`crate::wayland_adapter::SpellWin::close_popup`].
+    pub fn close_popup(&self, id: u32) {
+        self.0.insert_idle(move |win| {
+            win.close_popup(id);
+        });
+        self.1.wakeup();
+    }
+}

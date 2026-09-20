@@ -1,0 +1,196 @@
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/VimYoung/Spell/main/spell-framework/assets/spell_trans.png"
+)]
+#![doc(
+    html_favicon_url = "https://raw.githubusercontent.com/VimYoung/Spell/main/spell-framework/assets/spell_trans.ico"
+)]
+#![doc = include_str!("../docs/entry.md")]
+#![warn(missing_docs)]
+
+mod configure;
+#[cfg(docsrs)]
+mod dummy_skia_docs;
+mod event_macros;
+pub mod forge;
+#[cfg(feature = "i-slint-renderer-skia")]
+#[cfg(not(docsrs))]
+#[doc(hidden)]
+mod skia_non_docs;
+pub mod slint_adapter;
+pub mod vault;
+pub mod wayland_adapter;
+
+/// It contains related enums and struct which are used to manage,
+/// define and update various properties of a widget(viz a viz layer). You can import necessary
+/// types from this module to implement relevant features. See docs of related objects for
+/// their overview.
+pub mod layer_properties {
+    pub use crate::configure::{Dimension, WindowConf, WindowConfBuilder};
+    pub mod internal {
+        //! It is an internal trait required for the implementation of [`PopupSlint`](crate::PopupSlint)
+        //!  .It is not to be used directly and contains internal types which are
+        //! reluctantly exposed due to trait implementation. This module will probably
+        //! be removed for a better alternative.
+        pub use smithay_client_toolkit::{
+            reexports::client::{QueueHandle, protocol::wl_surface::WlSurface},
+            shell::xdg::popup::Popup,
+        };
+    }
+    pub use smithay_client_toolkit::shell::wlr_layer::{
+        Anchor as LayerAnchor, KeyboardInteractivity as BoardType, Layer as LayerType,
+    };
+    pub mod popup {
+        //! This module holds all the related objects for creating and configuring
+        //1 the XDG popup.
+        pub use crate::configure::{PopupConf, PopupCore};
+        pub use smithay_client_toolkit::reexports::protocols::xdg::shell::client::xdg_positioner::{
+            Anchor as PopupAnchor,
+            Gravity as PopupGravity
+        };
+    }
+}
+/// Components of this module are not be used by end user directly. This module contains
+/// certain reexports used by public facing macros like [cast_spell] and [generate_widgets]
+/// internally.
+pub mod macro_internal {
+    pub use crate::vault::set_notification;
+    pub use paste::paste;
+    pub use smithay_client_toolkit::reexports::calloop::{
+        Interest, Mode, PostAction, generic::Generic,
+    };
+    pub use tracing::{info, span::Span, warn};
+}
+use smithay_client_toolkit::{
+    reexports::{
+        calloop::{EventLoop, Mode, PostAction, generic::Generic},
+        client::{QueueHandle, protocol::wl_surface::WlSurface},
+    },
+    shell::xdg::popup::Popup,
+};
+use std::{error::Error, os::fd::OwnedFd};
+use tracing::{Level, span, trace, warn};
+
+use crate::{configure::PopupCore, slint_adapter::SpellSkiaWinAdapter, wayland_adapter::SpellWin};
+
+/// This trait is implemented upon slint generated windows to enable IPC handling
+pub trait IpcController {
+    /// On calling `spell-cli -l layer_name look
+    /// var_name`, the cli calls `get_type` method of the trait with `var_name` as input.
+    fn get_type(&self, key: &str) -> String;
+    /// It is called on `spell-cli -l layer_name update key value`. `as_any` is for syncing the changes
+    /// internally for now and need not be implemented by the end user.
+    fn change_val(&self, key: &str, val: &str);
+
+    /// This method is invoked is neither update nor look is called. Can be used to perform custom
+    /// operations.
+    fn custom_command(&self, _command: &str) {}
+}
+
+/// This is an internal trait implemented by objects generated from [`generate_widgets`].
+/// It helps in running every SpellWidget (like [SpellWin](`wayland_adapter::SpellWin`),
+/// [SpellLock](`wayland_adapter::SpellLock`)) through the same event_loop function.
+pub trait SpellAssociatedNew: std::fmt::Debug {
+    /// Internal method used to call to update UI in a loop.
+    fn on_call(&mut self) -> Result<(), Box<dyn Error>>;
+
+    /// Internal method to receive handle
+    fn get_fd_owned(&self) -> OwnedFd;
+
+    /// Internal method used to retrive logging span of a window.
+    fn get_span(&self) -> span::Span {
+        span!(Level::INFO, "unnamed-widget")
+    }
+
+    /// Internal method used to specify when to eliminate the event loop.
+    fn is_locked(&self) -> bool {
+        true
+    }
+}
+
+/// Trait necessary to be implemented for an UI object to become a popup. It is
+/// not the cleanest implementation and can be removed for a better/lighter alternative
+/// or design pattern. To see an implementation, check the popup example from
+/// spell-demo.
+pub trait PopupSlint {
+    /// Creates a new Instance of a slint frontend, wayland backend XDG popup.
+    fn create_new(settings: PopupCore) -> Self
+    where
+        Self: Sized;
+
+    /// Internal method not to be called directly.
+    fn converter_popup(&self, wl_surface: &WlSurface, qh: &QueueHandle<SpellWin>);
+
+    /// Internal method not to be called directly.
+    fn inner(&self) -> &Popup;
+
+    /// Internal method not to be called directly.
+    fn first_configure(&self) -> bool;
+
+    /// Internal method not to be called directly.
+    fn adapter(&self) -> &std::rc::Rc<SpellSkiaWinAdapter>;
+}
+
+/// event loop function internally used by [`cast_spell`] for single widget setups.
+/// Not to be used by end user,
+pub fn cast_spell_inner<S: SpellAssociatedNew>(mut waywindow: S) -> Result<(), Box<dyn Error>> {
+    let span = waywindow.get_span();
+    let _gaurd = span.enter();
+    trace!("{:?}", &waywindow);
+    while waywindow.is_locked() {
+        waywindow.on_call()?
+    }
+    Ok(())
+}
+
+/// event loop function internally used by [`cast_spell`] for multiple widget setups.
+/// Not to be used by end user.
+pub fn cast_spells_new(
+    mut windows: Vec<Box<dyn SpellAssociatedNew>>,
+) -> Result<(), Box<dyn Error>> {
+    let mut event_loop = EventLoop::try_new().unwrap();
+    let handle = event_loop.handle();
+    for (id, win) in windows.iter().enumerate() {
+        let inner_handle = win.get_fd_owned();
+        let span = win.get_span().clone();
+        let _ = handle.insert_source(
+            Generic::new(
+                inner_handle,
+                smithay_client_toolkit::reexports::calloop::Interest::READ,
+                Mode::Level,
+            ),
+            move |_, _, shared_data: &mut Vec<Box<dyn SpellAssociatedNew>>| {
+                span.in_scope(|| {
+                    if let Err(error) = shared_data[id].on_call() {
+                        warn!("Error executing dispatch: {}", error);
+                    };
+                });
+                Ok(PostAction::Continue)
+            },
+        );
+    }
+    event_loop.run(None, &mut windows, |_| {})?;
+    Ok(())
+}
+
+// TODO: Various functions can be sufficed with pub(super) and not pub(crate), reevaluate every
+// function.
+// TODO: make the converter back to non mut reference if possible.
+// TODO: Update docs of spellock and spellwin to justify their use being purely internal.
+// TODO: update the blog with latest API changes in spell-framework.
+// TODO: update the constant vals so that the new APIs are used.
+// TODO: and configuration file to ensure that a single widget is open for a single layer name.
+// TODO: IMPORTANT LOGGING SUBSCRIBER LOGIC NEEDS TO BE UNIFIED AND NOT WINDOW SPECIFIC.
+// TODO: it is necessary to call join unwrap on spawned threads to ensure
+// that they are closed when main thread closes.
+// TODO: linux's DNF Buffers needs to be used to improve rendering and avoid conversions
+// from CPU to GPU and vice versa.
+// TO REMEMBER I removed dirty region from spellskiawinadapter but it can be added
+// if I want to make use of the dirty region information to strengthen my rendering.
+// TODO: lock screen behaviour in a multi-monitor setup needs to be tested.
+// Provide a method in the macro to disable tracing_subsriber completely for some project
+// which want's to do it themselves.
+// cast spell macro should be having following values.
+// 1. Disable log: should disable setting subscriber, generally for the project to use or for
+// someone to set their own.
+// 2. forge: provide a forge instance to run independently.
+// Build a consistent error type to deal with CLI, dbus and window creation errors

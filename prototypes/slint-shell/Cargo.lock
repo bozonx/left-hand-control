@@ -4815,11 +4815,12 @@ dependencies = [
  "slint",
  "slint-build",
  "spell-framework",
- "tracing",
- "tracing-subscriber",
+ "tempfile",
  "wayland-backend",
  "wayland-client",
  "wayland-protocols",
+ "wayland-protocols-plasma",
+ "zbus",
 ]
 
 [[package]]
@@ -5013,7 +5014,6 @@ dependencies = [
 [[package]]
 name = "spell-framework"
 version = "1.0.6"
-source = "git+https://github.com/VimYoung/Spell?rev=c3139561519cbd78fc5ac8721e1b5a6eb6412f42#c3139561519cbd78fc5ac8721e1b5a6eb6412f42"
 dependencies = [
  "event-listener",
  "futures-util",

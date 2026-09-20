@@ -27,11 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .ok_or("expected binary path and output CSV path")?,
     );
     let csv = PathBuf::from(args.next().ok_or("expected output CSV path")?);
-    let runtime =
-        PathBuf::from(std::env::var_os("XDG_RUNTIME_DIR").ok_or("XDG_RUNTIME_DIR missing")?);
-    if runtime.join("lhc-slint-shell.sock").exists() {
-        return Err("Stop slint-shell first (remove its socket only if stale)".into());
-    }
+    let socket = format!("lhc-evdev-bench-{}.sock", std::process::id());
     let keys: AttributeSet<KeyCode> = [
         KeyCode::KEY_F13,
         KeyCode::KEY_SCROLLLOCK,
@@ -56,6 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut server = Server(
         Command::new(&binary)
             .env("SLINT_SHELL_INPUT", input)
+            .env("SLINT_SHELL_SOCKET", &socket)
             .env("SLINT_SHELL_METRICS", &csv)
             .env_remove("XDG_ACTIVATION_TOKEN")
             .spawn()?,
@@ -128,11 +125,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .any(|line| line.starts_with(&format!("{prefix}hidden,")));
             if focused && !hidden {
                 press(&mut device, KeyCode::KEY_DOWN)?;
-                sleep(Duration::from_millis(50));
-                let data = std::fs::read_to_string(&csv)?;
-                let handled = data
-                    .lines()
-                    .any(|line| line.starts_with(&format!("{prefix}navigation_handled,")));
+                let deadline = Instant::now() + Duration::from_millis(500);
+                let handled = loop {
+                    let data = std::fs::read_to_string(&csv)?;
+                    if data
+                        .lines()
+                        .any(|line| line.starts_with(&format!("{prefix}navigation_handled,")))
+                    {
+                        break true;
+                    }
+                    if Instant::now() >= deadline {
+                        break false;
+                    }
+                    sleep(Duration::from_millis(5));
+                };
                 if !handled {
                     failures += 1;
                 }
@@ -143,13 +149,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "{name} trial {id}: no current focus (never focused or already hidden); arrow skipped"
                 );
             }
-            if !Command::new(&binary).arg("hide").status()?.success() {
+            if !Command::new(&binary)
+                .env("SLINT_SHELL_SOCKET", &socket)
+                .arg("hide")
+                .status()?
+                .success()
+            {
                 return Err("hide failed".into());
             }
             sleep(Duration::from_millis(200));
         }
     }
-    if !Command::new(&binary).arg("quit").status()?.success() {
+    if !Command::new(&binary)
+        .env("SLINT_SHELL_SOCKET", &socket)
+        .arg("quit")
+        .status()?
+        .success()
+    {
         return Err("quit failed".into());
     }
     server.0.wait()?;
