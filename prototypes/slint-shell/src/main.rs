@@ -1,4 +1,5 @@
 mod backend;
+mod editor;
 mod focus;
 mod hotkey;
 mod ipc;
@@ -347,6 +348,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .select()?;
     let mut metrics = metrics::Metrics::new(start)?;
     let settings = SettingsWindow::new()?;
+    editor::bind(&settings);
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;

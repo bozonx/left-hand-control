@@ -1,16 +1,148 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView } from "std-widgets.slint";
+
+export struct ActionRow { id: int, label: string }
 export component SettingsWindow inherits Window {
-    title: "Slint Shell — Settings";
-    width: 480px;
-    height: 280px;
+    title: "Slint Shell — редактор клавиш";
+    preferred-width: 1060px;
+    preferred-height: 760px;
+    min-width: 940px;
+    min-height: 700px;
+    in property <[string]> keys;
+    in property <[string]> assignments;
+    in property <[ActionRow]> actions;
+    in-out property <int> selected-key: -1;
+    in-out property <bool> editing: false;
+    in-out property <int> kind: 0;
+    in-out property <string> value;
+    in-out property <string> query;
+    in-out property <int> category: 0;
+    in-out property <int> selected-action: -1;
+    in-out property <bool> capturing: false;
+    in-out property <length> catalog-scroll-y;
+    in property <string> validation;
+    in property <string> status;
     callback show-popup(string);
     callback toggle-mapper();
+    callback edit-key(int);
+    callback change-kind(int);
+    callback validate();
+    callback filter();
+    callback pick-action(int);
+    callback update-action();
+    callback capture(string, bool, bool, bool, bool);
+    callback save();
+    callback cancel();
+    public function begin-capture() { root.capturing = true; capture-scope.focus(); }
+
+    capture-scope := FocusScope {
+        height: 0px;
+        key-pressed(event) => {
+            if root.capturing {
+                root.capture(event.text, event.modifiers.control, event.modifiers.alt, event.modifiers.shift, event.modifiers.meta);
+                return accept;
+            }
+            return reject;
+        }
+        key-released(event) => { return accept; }
+    }
     VerticalBox {
         padding: 24px;
-        Text { text: "Slint: этапы 0–3"; font-size: 24px; }
-        Text { text: "F13 — эмодзи · ScrollLock — быстрые действия"; }
-        Button { text: "Эмодзи"; clicked => { root.show-popup("emoji"); } }
-        Button { text: "Быстрые действия"; clicked => { root.show-popup("quick"); } }
-        Button { text: "Mapper вкл / выкл (трей)"; clicked => { root.toggle-mapper(); } }
+        spacing: 16px;
+        Text { text: "Раскладка клавиатуры"; font-size: 26px; font-weight: 700; }
+        Text { text: "Выберите клавишу, чтобы назначить действие. Изменения хранятся в памяти."; }
+        VerticalLayout {
+            spacing: 6px;
+            for row in 5: HorizontalLayout {
+                spacing: 5px;
+                for col in 16: Rectangle {
+                    height: 66px;
+                    border-radius: 6px;
+                    border-width: root.selected-key == row * 16 + col ? 2px : 1px;
+                    border-color: root.selected-key == row * 16 + col ? #7daaff : #626b7b;
+                    background: key-touch.has-hover ? #3e526e : #242d3c;
+                    VerticalLayout {
+                        padding: 5px;
+                        Text { text: root.keys[row * 16 + col]; color: #ffffff; font-size: 12px; }
+                        Text { text: root.assignments[row * 16 + col]; color: #a7c5f5; font-size: 10px; overflow: elide; }
+                    }
+                    key-touch := TouchArea { clicked => { root.edit-key(row * 16 + col); } }
+                }
+            }
+        }
+        Text { text: root.status; }
+        Rectangle { vertical-stretch: 1; }
+        HorizontalBox {
+            Button { text: "Эмодзи"; clicked => { root.show-popup("emoji"); } }
+            Button { text: "Быстрые действия"; clicked => { root.show-popup("quick"); } }
+            Button { text: "Mapper вкл / выкл"; clicked => { root.toggle-mapper(); } }
+        }
+    }
+    if root.editing: Rectangle {
+        background: #00000099;
+        TouchArea { }
+        Rectangle {
+            x: 32px; y: 24px;
+            width: parent.width - 64px; height: parent.height - 48px;
+            background: #202531;
+            border-radius: 12px;
+            VerticalBox {
+                padding: 24px; spacing: 12px;
+                Text { text: "Клавиша «" + root.keys[root.selected-key] + "»"; color: #f0f3fa; font-size: 24px; }
+                Text { text: "Черновик — сохранение применит действие только к этой клавише"; color: #c2c9d6; }
+                ComboBox {
+                    enabled: !root.capturing;
+                    model: ["Текст", "Пауза (мс)", "Системное действие", "Сочетание клавиш"];
+                    current-index <=> root.kind;
+                    selected(value) => { root.change-kind(self.current-index); }
+                }
+                if root.kind == 0 || root.kind == 1: LineEdit {
+                    text <=> root.value;
+                    placeholder-text: root.kind == 0 ? "Введите текст, например Привет 👋" : "Целое число от 1 до 10000";
+                    edited => { root.validate(); }
+                }
+                if root.kind == 2: ComboBox {
+                    model: ["Копировать", "Вставить", "Следующее окно"];
+                    current-index: root.value == "Вставить" ? 1 : root.value == "Следующее окно" ? 2 : 0;
+                    selected(value) => { root.value = value; root.validate(); }
+                }
+                if root.kind == 3: HorizontalBox {
+                    Text { text: root.value == "" ? "Сочетание не задано" : root.value; color: #f0f3fa; }
+                    Button {
+                        text: root.capturing ? "Нажмите сочетание…" : "Захватить сочетание";
+                        clicked => { root.begin-capture(); }
+                    }
+                    Button { text: "Остановить захват"; enabled: root.capturing; clicked => { root.capturing = false; } }
+                }
+                Text { text: root.validation; color: #ffb4ab; height: 22px; }
+                HorizontalBox {
+                    LineEdit { enabled: !root.capturing; text <=> root.query; placeholder-text: "Поиск по 500 действиям…"; edited => { root.filter(); } }
+                    ComboBox {
+                        enabled: !root.capturing;
+                        model: ["Все категории", "Текст", "Пауза", "Система", "Сочетания"];
+                        current-index <=> root.category;
+                        selected(value) => { root.filter(); }
+                    }
+                }
+                Text { text: "Найдено: " + root.actions.length + " · выбор записи заполняет черновик"; color: #c2c9d6; }
+                ListView {
+                    vertical-stretch: 1;
+                    enabled: !root.capturing;
+                    viewport-width: self.visible-width;
+                    viewport-y <=> root.catalog-scroll-y;
+                        for action in root.actions: Rectangle {
+                            height: 36px;
+                            background: root.selected-action == action.id ? #385785 : action-touch.has-hover ? #303c50 : #252c39;
+                            Text { x: 12px; text: action.label; color: #f0f3fa; vertical-alignment: center; }
+                            action-touch := TouchArea { clicked => { root.pick-action(action.id); } }
+                        }
+                }
+                HorizontalBox {
+                    Button { text: "Обновить выбранную запись"; enabled: root.selected-action >= 0 && !root.capturing; clicked => { root.update-action(); } }
+                    Rectangle { horizontal-stretch: 1; }
+                    Button { text: "Отмена"; clicked => { root.cancel(); } }
+                    Button { text: "Сохранить"; enabled: root.validation == "" && !root.capturing; clicked => { root.save(); } }
+                }
+            }
+        }
     }
 }
