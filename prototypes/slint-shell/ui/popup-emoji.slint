@@ -22,12 +22,12 @@ export component EmojiPopup inherits Window {
         VerticalBox {
             padding: 16px;
             HorizontalBox {
-                Text { text: root.page == 5 ? "1500 emoji — stress" : "Эмодзи · " + (root.page + 1) + "/5"; color: Theme.text; }
+                Text { text: root.page == 5 ? @tr("1500 emoji — stress") : @tr("Emoji · ") + (root.page + 1) + "/5"; color: Theme.text; }
                 Button { text: "×"; clicked => { root.dismiss(); } }
             }
             HorizontalBox {
                 for p in 6: Button {
-                    text: p == 5 ? "Stress" : "" + (p + 1);
+                    text: p == 5 ? @tr("Stress") : "" + (p + 1);
                     clicked => { root.page = p; root.selected = 0; keys.focus(); }
                 }
             }

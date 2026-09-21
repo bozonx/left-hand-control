@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
             let ui = weak.unwrap();
             snapshot(&ui, "keyboard");
-            let position = slint::LogicalPosition::new(120.0, 280.0);
+            let position = slint::LogicalPosition::new(120.0, 340.0);
             ui.window()
                 .dispatch_event(slint::platform::WindowEvent::PointerPressed {
                     position,

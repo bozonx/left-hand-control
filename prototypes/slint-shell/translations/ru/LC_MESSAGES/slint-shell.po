@@ -1,0 +1,134 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+msgid " · select an entry to fill the draft"
+msgstr " · выбор записи заполняет черновик"
+
+msgid "1500 emoji — stress"
+msgstr "1500 emoji — stress"
+
+msgid "Action grid"
+msgstr "Сетка действий"
+
+msgid "Action saved. Reopening shows the saved value."
+msgstr "Действие сохранено. Повторное открытие покажет сохранённое значение."
+
+msgid "All categories"
+msgstr "Все категории"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Capture a keyboard shortcut"
+msgstr "Захватите сочетание клавиш"
+
+msgid "Capture shortcut"
+msgstr "Захватить сочетание"
+
+msgid "Copy"
+msgstr "Копировать"
+
+msgid "Delay"
+msgstr "Пауза"
+
+msgid "Delay (ms)"
+msgstr "Пауза (мс)"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Пауза: целое число от 1 до 10000 мс"
+
+msgid "Draft — saving applies the action to this key only"
+msgstr "Черновик — сохранение применит действие только к этой клавише"
+
+msgid "Drag by ⠿ · Esc cancels · click a label to edit"
+msgstr "Переносите за ⠿ · Esc — отмена · нажмите подпись для изменения"
+
+msgid "Emoji"
+msgstr "Эмодзи"
+
+msgid "Emoji · "
+msgstr "Эмодзи · "
+
+msgid "Enter non-empty text"
+msgstr "Введите непустой текст"
+
+msgid "Enter text, for example Привет 👋"
+msgstr "Введите текст, например Привет 👋"
+
+msgid "Filter"
+msgstr "Фильтр / Filter"
+
+msgid "Found: "
+msgstr "Найдено: "
+
+msgid "Integer from 1 to 10000"
+msgstr "Целое число от 1 до 10000"
+
+msgid "Key «"
+msgstr "Клавиша «"
+
+msgid "Keyboard"
+msgstr "Клавиатура"
+
+msgid "Keyboard layout"
+msgstr "Раскладка клавиатуры"
+
+msgid "Keyboard shortcut"
+msgstr "Сочетание клавиш"
+
+msgid "Next window"
+msgstr "Следующее окно"
+
+msgid "No shortcut assigned"
+msgstr "Сочетание не задано"
+
+msgid "Paste"
+msgstr "Вставить"
+
+msgid "Press a shortcut…"
+msgstr "Нажмите сочетание…"
+
+msgid "Quick actions"
+msgstr "Быстрые действия"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Search 500 actions…"
+msgstr "Поиск по 500 действиям…"
+
+msgid "Select a key to assign an action. Changes are kept in memory."
+msgstr "Выберите клавишу, чтобы назначить действие. Изменения хранятся в памяти."
+
+msgid "Select a system action"
+msgstr "Выберите системное действие"
+
+msgid "Shortcuts"
+msgstr "Сочетания"
+
+msgid "Slint Shell — key editor"
+msgstr "Slint Shell — редактор клавиш"
+
+msgid "Stop capture"
+msgstr "Остановить захват"
+
+msgid "Stress"
+msgstr "Stress"
+
+msgid "System"
+msgstr "Система"
+
+msgid "System action"
+msgstr "Системное действие"
+
+msgid "Text"
+msgstr "Текст"
+
+msgid "Toggle mapper"
+msgstr "Mapper вкл / выкл"
+
+msgid "Update the selected catalog entry"
+msgstr "Обновить выбранную запись"

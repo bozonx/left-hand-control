@@ -1,0 +1,107 @@
+import { ScrollView, VerticalBox, HorizontalBox, Button, LineEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+export component QuickGrid inherits FocusScope {
+    in property <[string]> items;
+    callback move-item(int, int);
+    callback rename-item(int, string);
+    property <int> dragging: -1;
+    property <int> target: -1;
+    property <length> pointer-y;
+    property <length> pointer-x;
+    property <bool> dragged: false;
+    property <int> editing: -1;
+    property <string> draft;
+    function update-target() {
+        root.target = clamp(floor((root.pointer-y - grid.viewport-y) / 64px) * 3 + clamp(floor(root.pointer-x / (grid.visible-width / 3)), 0, 2), 0, root.items.length);
+    }
+    key-pressed(event) => {
+        if event.text == Key.Escape { root.dragging = -1; root.editing = -1; return accept; }
+        return reject;
+    }
+    VerticalBox {
+        Text { text: @tr("Drag by ⠿ · Esc cancels · click a label to edit"); color: Theme.muted; wrap: word-wrap; }
+        grid := ScrollView {
+            min-height: 180px;
+            viewport-width: self.visible-width;
+            mouse-drag-pan-enabled: false;
+            viewport-height: ceil(root.items.length / 3) * 64px;
+            for item[index] in root.items: Rectangle {
+                x: mod(index, 3) * grid.visible-width / 3;
+                y: floor(index / 3) * 64px;
+                width: grid.visible-width / 3 - 8px;
+                height: 56px;
+                border-radius: 6px;
+                background: root.dragging == index ? Theme.accent : Theme.card;
+                border-color: Theme.border;
+                border-width: 1px;
+                Rectangle {
+                    visible: root.dragging >= 0 && root.target == index;
+                    width: 4px; background: Theme.text;
+                }
+                Text { x: 4px; width: 30px; text: "⠿"; color: Theme.text; vertical-alignment: center; }
+                Text { x: 38px; width: parent.width - 44px; text: item; color: Theme.text; overflow: elide; vertical-alignment: center; }
+            }
+            Rectangle { visible: root.dragging >= 0 && root.target == root.items.length; x: 0px; y: ceil(root.items.length / 3) * 64px - 4px; height: 4px; width: grid.visible-width; background: Theme.text; }
+        }
+        if root.editing >= 0: HorizontalBox {
+            LineEdit { text <=> root.draft; }
+            Button { text: @tr("Save"); enabled: root.draft != ""; clicked => { root.rename-item(root.editing, root.draft); root.editing = -1; } }
+            Button { text: @tr("Cancel"); clicked => { root.editing = -1; } }
+        }
+    }
+    pointer := TouchArea {
+        x: grid.x; y: grid.y;
+        width: grid.visible-width - 16px; height: grid.visible-height;
+        mouse-cursor: root.dragging >= 0 ? grabbing : default;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                root.dragged = false;
+                root.pointer-x = self.mouse-x;
+                root.pointer-y = self.mouse-y;
+                root.update-target();
+                if mod(self.mouse-x / 1px, grid.visible-width / 3px) < 36 && root.target < root.items.length {
+                    root.dragged = true;
+                    root.editing = -1;
+                    root.dragging = root.target;
+                    root.focus();
+                }
+            }
+            if event.kind == PointerEventKind.cancel { root.dragging = -1; }
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.dragging >= 0 {
+                root.move-item(root.dragging, root.target);
+                root.dragging = -1;
+            }
+        }
+        moved => {
+            if root.dragging >= 0 {
+                root.pointer-x = self.mouse-x;
+                root.pointer-y = self.mouse-y;
+                root.update-target();
+            }
+        }
+        clicked => {
+            if !root.dragged && mod(self.mouse-x / 1px, grid.visible-width / 3px) >= 36 {
+                root.pointer-x = self.mouse-x;
+                root.pointer-y = self.mouse-y;
+                root.update-target();
+                if root.target < root.items.length {
+                    root.editing = root.target;
+                    root.draft = root.items[root.editing];
+                }
+            }
+        }
+        scroll-event(event) => {
+            if root.dragging < 0 { grid.viewport-y = clamp(grid.viewport-y + event.delta-y, min(0px, grid.visible-height - grid.viewport-height), 0px); }
+            return accept;
+        }
+    }
+    Timer {
+        interval: 30ms;
+        running: root.dragging >= 0;
+        triggered => {
+            if root.pointer-y < 32px { grid.viewport-y = min(0px, grid.viewport-y + 12px); }
+            if root.pointer-y > grid.visible-height - 32px { grid.viewport-y = max(min(0px, grid.visible-height - grid.viewport-height), grid.viewport-y - 12px); }
+            root.update-target();
+        }
+    }
+}

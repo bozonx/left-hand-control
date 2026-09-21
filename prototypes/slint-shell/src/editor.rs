@@ -78,6 +78,23 @@ impl Editor {
         let category = ["Текст", "Пауза", "Система", "Сочетание"][action.kind as usize];
         ActionRow {
             id: id as i32,
+            label_en: format!(
+                "{:03} · {} · {}{}",
+                id + 1,
+                ["Text", "Delay", "System", "Shortcut"][action.kind as usize],
+                match action.value.as_str() {
+                    "Копировать" => "Copy",
+                    "Вставить" => "Paste",
+                    "Следующее окно" => "Next window",
+                    other => other,
+                },
+                if self.revisions[id] == 0 {
+                    String::new()
+                } else {
+                    format!(" · updated {}", self.revisions[id])
+                }
+            )
+            .into(),
             label: format!(
                 "{:03} · {category} · {}{}",
                 id + 1,
@@ -98,7 +115,8 @@ impl Editor {
             (0..self.catalog.len())
                 .filter(|&id| {
                     (category == 0 || self.catalog[id].kind == category - 1)
-                        && self.row(id).label.to_lowercase().contains(&query)
+                        && (self.row(id).label.to_lowercase().contains(&query)
+                            || self.row(id).label_en.to_lowercase().contains(&query))
                 })
                 .map(|id| self.row(id))
                 .collect::<Vec<_>>(),
@@ -127,6 +145,35 @@ impl Editor {
 }
 
 pub fn bind(ui: &SettingsWindow) {
+    ui.global::<crate::Theme>().invoke_apply();
+    slint::select_bundled_translation("ru").unwrap();
+    let weak = ui.as_weak();
+    ui.on_preferences(move |dark, english| {
+        if let Some(ui) = weak.upgrade() {
+            ui.global::<crate::Theme>().set_dark(dark);
+            ui.global::<crate::Theme>().invoke_apply();
+            ui.global::<crate::Locale>().set_english(english);
+            slint::select_bundled_translation(if english { "en" } else { "ru" }).unwrap();
+        }
+    });
+    let quick = Rc::new(VecModel::from(
+        (1..=60)
+            .map(|i| SharedString::from(format!("{i:02} · Привет 👋")))
+            .collect::<Vec<_>>(),
+    ));
+    ui.set_quick_items(quick.clone().into());
+    let items = quick.clone();
+    ui.on_move_quick(move |from, to| {
+        let mut values: Vec<_> = items.iter().collect();
+        if reorder(&mut values, from, to) {
+            items.set_vec(values);
+        }
+    });
+    ui.on_rename_quick(move |index, value| {
+        if index >= 0 && (index as usize) < quick.row_count() && !value.trim().is_empty() {
+            quick.set_row_data(index as usize, value);
+        }
+    });
     let labels = "Esc F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 PrtSc ScrL Pause ` 1 2 3 4 5 6 7 8 9 0 - = Back Ins Home Tab Q W E R T Y U I O P [ ] \\ Del End Caps A S D F G H J K L ; ' Enter PgUp PgDn ↑ Shift Z X C V B N M , . / Alt Space ← ↓ →";
     let keys: Vec<SharedString> = labels.split_whitespace().map(Into::into).collect();
     assert_eq!(keys.len(), 80);
@@ -155,6 +202,7 @@ pub fn bind(ui: &SettingsWindow) {
             }),
         );
         ui.set_editing(true);
+        ui.invoke_focus_editor();
     });
     let weak = ui.as_weak();
     ui.on_change_kind(move |kind| {
@@ -197,6 +245,28 @@ pub fn bind(ui: &SettingsWindow) {
                 present(&ui, action);
                 ui.set_selected_action(id);
             }
+        }
+    });
+    let weak = ui.as_weak();
+    let state_copy = state.clone();
+    ui.on_navigate_action(move |delta| {
+        if let Some(ui) = weak.upgrade() {
+            let state = state_copy.borrow();
+            let count = state.rows.row_count();
+            if count == 0 {
+                return;
+            }
+            let index = state
+                .rows
+                .iter()
+                .position(|row| row.id == ui.get_selected_action());
+            let index = index.map_or(0, |i| {
+                (i as i32 + delta).clamp(0, count as i32 - 1) as usize
+            });
+            let row = state.rows.row_data(index).unwrap();
+            present(&ui, &state.catalog[row.id as usize]);
+            ui.set_selected_action(row.id);
+            ui.set_catalog_scroll_y(-(index as f32 * 36.0));
         }
     });
     let weak = ui.as_weak();
@@ -283,6 +353,7 @@ pub fn bind(ui: &SettingsWindow) {
                     "Действие сохранено. Повторное открытие покажет сохранённое значение.".into(),
                 );
                 ui.set_editing(false);
+                ui.invoke_restore_focus();
             }
         }
     });
@@ -291,13 +362,34 @@ pub fn bind(ui: &SettingsWindow) {
         if let Some(ui) = weak.upgrade() {
             ui.set_capturing(false);
             ui.set_editing(false);
+            ui.invoke_restore_focus();
         }
     });
+}
+
+fn reorder<T>(items: &mut Vec<T>, from: i32, to: i32) -> bool {
+    if from < 0 || to < 0 || from as usize >= items.len() || to as usize > items.len() {
+        return false;
+    }
+    let item = items.remove(from as usize);
+    items.insert(if to > from { to - 1 } else { to } as usize, item);
+    true
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reorder_uses_insertion_boundaries() {
+        let mut items = vec![0, 1, 2, 3];
+        assert!(reorder(&mut items, 0, 4));
+        assert_eq!(items, vec![1, 2, 3, 0]);
+        assert!(reorder(&mut items, 3, 0));
+        assert_eq!(items, vec![0, 1, 2, 3]);
+        assert!(!reorder(&mut items, -1, 0));
+        assert!(!reorder(&mut items, 0, 5));
+    }
 
     #[test]
     fn draft_cancel_save_and_invalid_values() {

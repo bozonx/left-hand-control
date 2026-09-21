@@ -27,6 +27,7 @@ enum Command {
     ToggleMapper,
     Quit,
     Ping,
+    Preferences(bool, bool),
 }
 
 impl Command {
@@ -38,6 +39,10 @@ impl Command {
             "hide" => Ok(Self::Hide),
             "toggle-mapper" => Ok(Self::ToggleMapper),
             "quit" => Ok(Self::Quit),
+            "preferences dark ru" => Ok(Self::Preferences(true, false)),
+            "preferences dark en" => Ok(Self::Preferences(true, true)),
+            "preferences light ru" => Ok(Self::Preferences(false, false)),
+            "preferences light en" => Ok(Self::Preferences(false, true)),
             "ping" => Ok(Self::Ping),
             _ => Err(
                 "usage: slint-shell [show emoji|quick|settings | hide | toggle-mapper | ping | quit]"
@@ -191,6 +196,32 @@ impl App {
             Command::ToggleMapper => {
                 if let Some(tray) = self.tray.borrow().as_ref() {
                     tray.update(|tray| tray.enabled = !tray.enabled);
+                }
+            }
+            Command::Preferences(dark, english) => {
+                slint::select_bundled_translation(if english { "en" } else { "ru" }).unwrap();
+                self.settings.global::<Theme>().set_dark(dark);
+                self.settings.global::<Theme>().invoke_apply();
+                self.settings.global::<Locale>().set_english(english);
+                self.emoji.global::<Theme>().set_dark(dark);
+                self.emoji.global::<Theme>().invoke_apply();
+                self.emoji.global::<Locale>().set_english(english);
+                self.quick.global::<Theme>().set_dark(dark);
+                self.quick.global::<Theme>().invoke_apply();
+                self.quick.global::<Locale>().set_english(english);
+                if let Some(worker) = &self.worker {
+                    if let Err(error) = worker.send(
+                        format!(
+                            "preferences {} {}",
+                            if dark { "dark" } else { "light" },
+                            if english { "en" } else { "ru" }
+                        ),
+                        source,
+                        start,
+                        None,
+                    ) {
+                        log::error!("Spell preferences: {error}");
+                    }
                 }
             }
             Command::Ping => {}
@@ -376,6 +407,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         actions,
         worker,
     });
+    app.settings.on_preferences(|dark, english| {
+        with_app(|app| {
+            app.command(
+                Command::Preferences(dark, english),
+                "button",
+                Instant::now(),
+                None,
+            )
+        })
+    });
+    app.command(
+        Command::Preferences(true, false),
+        "button",
+        Instant::now(),
+        None,
+    );
     app.filter("");
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
     for name in ["settings", "emoji", "quick"] {

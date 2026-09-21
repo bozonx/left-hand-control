@@ -1,4 +1,5 @@
 use crate::{Command, Dispatch, EmojiPopup, QuickPopup, ipc, metrics};
+use slint::ComponentHandle;
 use slint::{Model, ModelRc, VecModel};
 use spell_framework::{
     SpellAssociatedNew,
@@ -171,6 +172,18 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             let mut dismiss = None;
             let mut selected = false;
             match event {
+                Event::Command(Command::Preferences(dark, english), _, _) => {
+                    slint::select_bundled_translation(if english { "en" } else { "ru" }).unwrap();
+                    emoji.global::<crate::Theme>().set_dark(dark);
+                    emoji.global::<crate::Theme>().invoke_apply();
+                    emoji.global::<crate::Locale>().set_english(english);
+                    quick.global::<crate::Theme>().set_dark(dark);
+                    quick.global::<crate::Theme>().invoke_apply();
+                    quick.global::<crate::Locale>().set_english(english);
+                    log::info!(
+                        "preferences applied: dark={dark}, english={english}, visible={visible:?}"
+                    );
+                }
                 Event::Command(Command::Quit, _, _) => {
                     emoji_way.hide();
                     quick_way.hide();

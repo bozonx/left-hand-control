@@ -1,0 +1,6 @@
+[2026-09-21T01:57:59Z INFO  slint_shell::spell] preferences applied: dark=true, english=false, visible=None
+[2026-09-21T01:57:59Z INFO  slint_shell::spell] preferences applied: dark=false, english=true, visible=None
+[2026-09-21T01:58:00Z INFO  slint_shell::spell] preferences applied: dark=true, english=false, visible=Some("emoji")
+[2026-09-21T01:58:01Z INFO  slint_shell::spell] preferences applied: dark=false, english=true, visible=None
+[2026-09-21T01:58:02Z INFO  slint_shell::spell] preferences applied: dark=true, english=false, visible=Some("quick")
+[2026-09-21T01:58:02Z INFO  slint_shell::spell] preferences applied: dark=false, english=true, visible=None

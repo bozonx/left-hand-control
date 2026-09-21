@@ -20,12 +20,12 @@ export component QuickPopup inherits Window {
         VerticalBox {
             padding: 16px;
             HorizontalBox {
-                Text { text: "Быстрые действия"; color: Theme.text; font-size: 22px; }
+                Text { text: @tr("Quick actions"); color: Theme.text; font-size: 22px; }
                 Button { text: "×"; clicked => { root.dismiss(); } }
             }
             search := LineEdit {
                 text <=> root.query;
-                placeholder-text: "Фильтр / Filter";
+                placeholder-text: @tr("Filter");
                 edited => { root.filter(self.text); }
                 key-pressed(event) => {
                     if event.modifiers.alt && event.text >= "1" && event.text <= "9" {
@@ -50,7 +50,7 @@ export component QuickPopup inherits Window {
                         padding: 8px;
                         Text { text: "◆"; color: Theme.text; width: 28px; }
                         Text { text: item; color: Theme.text; }
-                        Text { text: index < 9 ? "Alt+" + (index + 1) : ""; color: #aab3c4; }
+                        Text { text: index < 9 ? "Alt+" + (index + 1) : ""; color: Theme.muted; }
                     }
                     TouchArea { clicked => { root.choose(index); } }
                 }

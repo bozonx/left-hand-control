@@ -1,0 +1,6 @@
+3B interactions: passed (clipboard, keyboard, modal, DnD, cancellation, edge scrolling, theme, locale, hidden popups)
+Scale 1 passed
+3B interactions: passed (clipboard, keyboard, modal, DnD, cancellation, edge scrolling, theme, locale, hidden popups)
+Scale 1.25 passed
+3B interactions: passed (clipboard, keyboard, modal, DnD, cancellation, edge scrolling, theme, locale, hidden popups)
+Scale 1.5 passed
