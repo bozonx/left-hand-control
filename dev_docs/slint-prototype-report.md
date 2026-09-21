@@ -4,6 +4,35 @@
 Для 3C основной Tauri-процесс получил отключённый по умолчанию локальный
 benchmark-канал; пользовательское поведение приложения не меняется.
 
+## Подготовка этапа 4 — 2026-09-21
+
+Linux-зависимости прототипа перенесены в target-specific секции Cargo, а Spell,
+Wayland, evdev/uinput, ksni, zbus и тестовая клавиатура ограничены
+`target_os = "linux"`. Общий `main.rs` использует платформенные интерфейсы backend,
+focus, hotkey, tray, IPC и return-input; Slint UI и модель редактора не разделяются
+по ОС.
+
+Для Windows подготовлены loopback IPC на `127.0.0.1` с настраиваемым
+`SLINT_SHELL_PORT`, `global-hotkey`, `tray-icon`, Win32 foreground window и
+отложенный возврат Unicode-текста через `enigo`. macOS использует тот же native
+hotkey/tray/input слой, восстанавливает процесс через System Events и использует
+Unix socket в `XDG_RUNTIME_DIR` либо системном temporary directory. Метрики
+остаются общими и не зависят от `/proc`; `/proc` используется только внешними
+Linux-скриптами измерения.
+
+В CI добавлена матрица сборки и unit-тестов отдельного Slint-прототипа на Linux,
+Windows и macOS, включая release-check на Windows/macOS. Локально подтверждены
+Linux test/check/clippy и Cargo dependency graph для Windows/macOS: Linux-пакеты
+не входят в их normal dependency path. Полная cross-компиляция локально недоступна,
+так как системный Rust установлен без foreign std targets; окончательный сигнал
+дают native CI runners.
+
+Подготовительные пункты не являются результатом минимальной платформенной
+проверки. На Windows/macOS ещё требуется подтвердить требования event loop у tray
+и global hotkey, возврат фокуса в ранее активное приложение и реальные Unicode/
+clipboard циклы. На macOS отдельно нужны Accessibility permissions. Hyprland и
+GNOME по-прежнему требуют реальных сессий.
+
 ## Стоимость сопровождения — 2026-09-21
 
 Выбранная архитектура требует сопровождать два UI-процесса: настройки на winit и

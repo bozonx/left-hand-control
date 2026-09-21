@@ -1,21 +1,42 @@
+#[cfg(target_os = "linux")]
+mod backend;
+#[cfg(not(target_os = "linux"))]
+#[path = "platform/backend.rs"]
 mod backend;
 mod editor;
+#[cfg(target_os = "linux")]
 mod focus;
+#[cfg(not(target_os = "linux"))]
+#[path = "platform/focus.rs"]
+mod focus;
+#[cfg(target_os = "linux")]
+mod hotkey;
+#[cfg(not(target_os = "linux"))]
+#[path = "platform/hotkey.rs"]
 mod hotkey;
 mod ipc;
 mod metrics;
-#[cfg(feature = "spell")]
+#[cfg(not(target_os = "linux"))]
+#[path = "platform/return_input.rs"]
 mod return_input;
-#[cfg(feature = "spell")]
+#[cfg(all(feature = "spell", target_os = "linux"))]
+mod return_input;
+#[cfg(all(feature = "spell", target_os = "linux"))]
 mod spell;
-#[cfg(feature = "spell")]
+#[cfg(all(feature = "spell", target_os = "linux"))]
 mod test_keyboard;
+#[cfg(target_os = "linux")]
+mod tray;
+#[cfg(not(target_os = "linux"))]
+#[path = "platform/tray.rs"]
 mod tray;
 
 use slint::winit_030::{WinitWindowAccessor, winit};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
-use winit::{event::WindowEvent, platform::startup_notify::WindowExtStartupNotify};
+use winit::event::WindowEvent;
+#[cfg(target_os = "linux")]
+use winit::platform::startup_notify::WindowExtStartupNotify;
 
 slint::include_modules!();
 
@@ -60,10 +81,13 @@ struct App {
     quick: QuickPopup,
     metrics: RefCell<metrics::Metrics>,
     focus: RefCell<focus::Activation>,
-    tray: RefCell<Option<ksni::blocking::Handle<tray::Tray>>>,
+    tray: RefCell<Option<tray::Handle>>,
+    #[cfg(target_os = "linux")]
     pending: RefCell<Option<(&'static str, Instant, winit::event_loop::AsyncRequestSerial)>>,
     actions: Vec<String>,
     worker: Option<backend::Worker>,
+    #[cfg(not(target_os = "linux"))]
+    return_input: RefCell<return_input::ReturnInput>,
 }
 
 thread_local! { static APP: RefCell<Option<Rc<App>>> = const { RefCell::new(None) }; }
@@ -116,6 +140,10 @@ impl App {
         start: Instant,
         token: Option<String>,
     ) {
+        #[cfg(not(target_os = "linux"))]
+        if name != "settings" {
+            self.return_input.borrow_mut().capture();
+        }
         if name != "settings"
             && let Some(worker) = &self.worker
         {
@@ -201,7 +229,7 @@ impl App {
             }
             Command::ToggleMapper => {
                 if let Some(tray) = self.tray.borrow().as_ref() {
-                    tray.update(|tray| tray.enabled = !tray.enabled);
+                    tray.toggle_enabled();
                 }
             }
             Command::Preferences(dark, english) => {
@@ -285,6 +313,8 @@ impl App {
             .row_data(((offset + index) % 240) as usize)
         {
             log::info!("selected emoji: {value}");
+            #[cfg(not(target_os = "linux"))]
+            self.return_input.borrow_mut().selected(value.to_string());
         }
         self.defer_hide("emoji");
     }
@@ -305,6 +335,8 @@ impl App {
     fn choose_quick(&self, index: i32) {
         if let Some(value) = self.quick.get_items().row_data(index as usize) {
             log::info!("selected action (stub): {value}");
+            #[cfg(not(target_os = "linux"))]
+            self.return_input.borrow_mut().selected(value.to_string());
             self.defer_hide("quick");
         }
     }
@@ -336,6 +368,7 @@ fn observe(app: &Rc<App>, name: &'static str) {
         match event {
             WindowEvent::Focused(true) => app.metrics.borrow_mut().mark(name, "t4_focused"),
             WindowEvent::Focused(false) if name != "settings" => app.defer_hide(name),
+            #[cfg(target_os = "linux")]
             WindowEvent::ActivationTokenDone { token, serial } if name == "settings" => {
                 let pending = if app
                     .pending
@@ -361,7 +394,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     let args: Vec<_> = std::env::args().skip(1).collect();
-    #[cfg(feature = "spell")]
+    #[cfg(all(feature = "spell", target_os = "linux"))]
     if args == ["--spell-worker"] {
         return spell::run(start);
     }
@@ -371,18 +404,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let server = ipc::Server::bind()?;
     let worker = backend::start()?;
     let popup_attributes = Rc::new(std::cell::Cell::new(false));
-    let hook_popup = popup_attributes.clone();
-    slint::BackendSelector::new()
-        .backend_name("winit".into())
-        .with_winit_window_attributes_hook(move |attrs| {
-            use winit::platform::x11::{WindowAttributesExtX11, WindowType};
-            if hook_popup.get() {
-                attrs.with_x11_window_type(vec![WindowType::Utility])
-            } else {
-                attrs
-            }
-        })
-        .select()?;
+    select_backend(popup_attributes.clone())?;
     let mut metrics = metrics::Metrics::new(start)?;
     let settings = SettingsWindow::new()?;
     editor::bind(&settings);
@@ -409,9 +431,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         metrics: RefCell::new(metrics),
         focus: RefCell::new(focus::Activation::default()),
         tray: RefCell::new(None),
+        #[cfg(target_os = "linux")]
         pending: RefCell::new(None),
         actions,
         worker,
+        #[cfg(not(target_os = "linux"))]
+        return_input: RefCell::new(return_input::ReturnInput::default()),
     });
     app.settings.on_preferences(|dark, english| {
         with_app(|app| {
@@ -441,35 +466,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app.show(target, "button", Instant::now(), None);
                 return;
             }
-            if app.pending.borrow().is_some() {
+            #[cfg(not(target_os = "linux"))]
+            {
+                app.show(target, "button", Instant::now(), None);
                 return;
             }
-            let start = Instant::now();
-            app.hide(target);
-            app.metrics.borrow_mut().begin(target, "button", start);
-            let requested = app
-                .settings
-                .window()
-                .with_winit_window(|window| window.request_activation_token().ok())
-                .flatten();
-            if let Some(serial) = requested {
-                *app.pending.borrow_mut() = Some((target, start, serial));
-                slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
-                    with_app(|app| {
-                        let pending =
-                            if app.pending.borrow().as_ref().is_some_and(|p| p.2 == serial) {
-                                app.pending.borrow_mut().take()
-                            } else {
-                                None
-                            };
-                        if let Some((target, start, _)) = pending {
-                            log::warn!("activation token timeout");
-                            app.show(target, "button", start, None);
-                        }
-                    })
-                });
-            } else {
-                app.show(target, "button", start, None);
+            #[cfg(target_os = "linux")]
+            {
+                if app.pending.borrow().is_some() {
+                    return;
+                }
+                let start = Instant::now();
+                app.hide(target);
+                app.metrics.borrow_mut().begin(target, "button", start);
+                let requested = app
+                    .settings
+                    .window()
+                    .with_winit_window(|window| window.request_activation_token().ok())
+                    .flatten();
+                if let Some(serial) = requested {
+                    *app.pending.borrow_mut() = Some((target, start, serial));
+                    slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
+                        with_app(|app| {
+                            let pending =
+                                if app.pending.borrow().as_ref().is_some_and(|p| p.2 == serial) {
+                                    app.pending.borrow_mut().take()
+                                } else {
+                                    None
+                                };
+                            if let Some((target, start, _)) = pending {
+                                log::warn!("activation token timeout");
+                                app.show(target, "button", start, None);
+                            }
+                        })
+                    });
+                } else {
+                    app.show(target, "button", start, None);
+                }
             }
         })
     });
@@ -517,17 +550,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             log::error!("UI dispatch: {error}");
         }
     });
-    match tray::start(dispatch.clone()) {
-        Ok(tray) => {
-            *app.tray.borrow_mut() = Some(tray);
-            app.metrics.borrow_mut().ready("tray");
-        }
-        Err(error) => log::error!("tray unavailable: {error}"),
-    }
     server.start(dispatch.clone())?;
-    hotkey::start(dispatch);
+    slint::Timer::single_shot(std::time::Duration::ZERO, move || {
+        with_app(|app| match tray::start(dispatch.clone()) {
+            Ok(tray) => {
+                *app.tray.borrow_mut() = Some(tray);
+                app.metrics.borrow_mut().ready("tray");
+            }
+            Err(error) => log::error!("tray unavailable: {error}"),
+        });
+        hotkey::start(dispatch);
+    });
     log::info!("ready; backend={:?}", std::env::var("SLINT_BACKEND"));
     slint::run_event_loop_until_quit()?;
     APP.with(|slot| slot.borrow_mut().take());
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn select_backend(popup_attributes: Rc<std::cell::Cell<bool>>) -> Result<(), slint::PlatformError> {
+    slint::BackendSelector::new()
+        .backend_name("winit".into())
+        .with_winit_window_attributes_hook(move |attrs| {
+            use winit::platform::x11::{WindowAttributesExtX11, WindowType};
+            if popup_attributes.get() {
+                attrs.with_x11_window_type(vec![WindowType::Utility])
+            } else {
+                attrs
+            }
+        })
+        .select()
+}
+
+#[cfg(not(target_os = "linux"))]
+fn select_backend(_: Rc<std::cell::Cell<bool>>) -> Result<(), slint::PlatformError> {
+    slint::BackendSelector::new()
+        .backend_name("winit".into())
+        .select()
 }

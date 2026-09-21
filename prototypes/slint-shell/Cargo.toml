@@ -8,30 +8,39 @@ publish = false
 
 [dependencies]
 slint = { version = "=1.17.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-software", "renderer-femtovg", "renderer-skia", "unstable-winit-030"] }
-ksni = { version = "0.3.6", features = ["blocking"] }
-evdev = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 log = "0.4"
 env_logger = "0.11"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+ksni = { version = "0.3.6", features = ["blocking"] }
+evdev = "0.13"
 raw-window-handle = "0.6"
 wayland-client = "0.31"
 wayland-backend = { version = "0.3", features = ["client_system"] }
 wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 
+[target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
+global-hotkey = "0.8"
+tray-icon = "0.25"
+enigo = "0.6"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.61", features = ["Win32_UI_WindowsAndMessaging"] }
+
 [features]
 spell = ["dep:spell-framework", "dep:zbus", "dep:tempfile", "dep:wayland-protocols-plasma"]
 
-[dependencies.spell-framework]
+[target.'cfg(target_os = "linux")'.dependencies.spell-framework]
 path = "vendor/spell-framework"
 optional = true
 
-[dependencies.zbus]
+[target.'cfg(target_os = "linux")'.dependencies.zbus]
 version = "5"
 optional = true
 
-[dependencies.tempfile]
+[target.'cfg(target_os = "linux")'.dependencies.tempfile]
 version = "3"
 optional = true
 
@@ -59,7 +68,7 @@ required-features = ["spell"]
 name = "focus-window"
 required-features = ["spell"]
 
-[dependencies.wayland-protocols-plasma]
+[target.'cfg(target_os = "linux")'.dependencies.wayland-protocols-plasma]
 version = "0.3"
 features = ["client"]
 optional = true

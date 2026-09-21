@@ -4,6 +4,11 @@
 ksni (D-Bus StatusNotifierItem без GTK), evdev. Настройки — только пульт вызова
 попапов; действия и выбор эмодзи пишутся в лог.
 
+Общий Slint UI также компилируется для Windows и macOS. Linux-native код ограничен
+target dependencies и `cfg`; переносимый слой использует `global-hotkey`,
+`tray-icon` и `enigo`. Это минимальные адаптеры для платформенной проверки, а не
+заявление о принятой поддержке Windows/macOS.
+
 ## Запуск
 
 Из корня репозитория:
@@ -17,6 +22,14 @@ SLINT_BACKEND=winit-software SLINT_SHELL_METRICS=/tmp/slint-software.csv prototy
 Одновременно запускается только один экземпляр на `XDG_RUNTIME_DIR`.
 Окна изначально скрыты. Процесс остаётся в трее до команды «Выход».
 Для release используйте `cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml`.
+
+На Windows IPC слушает только `127.0.0.1:43176`; порт можно изменить через
+`SLINT_SHELL_PORT`. macOS использует Unix socket в `XDG_RUNTIME_DIR` или системной
+временной директории. F13 открывает Emoji, ScrollLock — Quick. После выбора на
+Windows/macOS окно скрывается, ранее активное окно восстанавливается через Win32
+или macOS System Events, затем текст отправляется через системный native input.
+На macOS для этого требуется Accessibility permission. Фактический tray, возврат
+фокуса и ввод должны быть проверены в нативной сессии до принятия платформы.
 
 Нужны рабочая графическая сессия, session D-Bus, Noto Color Emoji, системные
 библиотеки Wayland/X11/fontconfig/GL и зависимости сборки Skia (clang, cmake,

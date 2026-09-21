@@ -7,6 +7,14 @@ pub struct Tray {
     dispatch: Dispatch,
 }
 
+pub struct Handle(ksni::blocking::Handle<Tray>);
+
+impl Handle {
+    pub fn toggle_enabled(&self) {
+        self.0.update(|tray| tray.enabled = !tray.enabled);
+    }
+}
+
 impl ksni::Tray for Tray {
     fn id(&self) -> String {
         "lhc-slint-shell".into()
@@ -52,10 +60,11 @@ impl ksni::Tray for Tray {
     }
 }
 
-pub fn start(dispatch: Dispatch) -> Result<ksni::blocking::Handle<Tray>, ksni::Error> {
+pub fn start(dispatch: Dispatch) -> Result<Handle, ksni::Error> {
     Tray {
         enabled: true,
         dispatch,
     }
     .spawn()
+    .map(Handle)
 }
