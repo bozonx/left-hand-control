@@ -1,0 +1,29 @@
+Date: 2026-09-21
+Environment: Manjaro Linux 7.2.3-2, KDE Plasma 6.7.4, Wayland, scale 100%
+Applications: Chromium 153.0.8010.36, Kate 26.08.0, Konsole 26.08.0
+
+Primary evdev hotkeys:
+- Emoji: 5/5 selections in Chromium, 5/5 in Kate, 5/5 in Konsole
+- Quick: 5/5 selections in Chromium, 5/5 in Kate, 5/5 in Konsole
+- Selected values: 😀 and Действие 01 / Action 01
+- Pre-held modifier: Emoji with Shift held before opening and Quick with Alt held before opening both inserted once after release
+
+Cancellation matrix:
+- Esc: Emoji and Quick once in each of Chromium, Kate, and Konsole; 6/6 without insertion
+- Focus loss: Emoji and Quick once in each of Chromium, Kate, and Konsole; 6/6 without insertion into either window
+- No modifier remained pressed; subsequent plain selections completed normally
+
+Other routes:
+- Settings buttons: Emoji and Quick callbacks opened their real popup components in the interactions example
+- Tray menu: Emoji and Quick each reached shown/frame/focused metrics in the live KDE session
+- IPC: Emoji and Quick each reached shown/frame/focused metrics in the live KDE session
+- A separate desktop-environment shortcut is not used; evdev is the primary global activation path
+
+Visual and geometry:
+- The default Skia-backed run renders color emoji, transparent rounded corners, and all 48 items without clipping
+- Existing 16-case KWin geometry data confirms bottom-center placement, 24 px work-area margin, and skipTaskbar=true
+- winit-software does not render the color emoji glyphs; it is not the accepted visual configuration
+
+Excluded setup attempts:
+- The first cold Emoji trigger in Chromium and Kate was selected before focus readiness and was repeated after t4
+- The initial Konsole Ctrl+V implementation produced a control character; the final implementation uses Shift+Insert and the affected Emoji series was repeated 5/5

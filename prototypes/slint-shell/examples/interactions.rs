@@ -87,6 +87,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     quick.set_items(slint::ModelRc::new(slint::VecModel::from(
         vec![slint::SharedString::from("Привет, мир! · A long quick action label"); 30],
     )));
+    let weak_emoji = emoji.as_weak();
+    let weak_quick = quick.as_weak();
+    ui.on_show_popup(move |name| {
+        if name == "emoji" {
+            show_popup(&weak_emoji.unwrap(), 520, 460);
+        } else {
+            show_popup(&weak_quick.unwrap(), 520, 500);
+        }
+    });
     resize(&ui);
     ui.set_grid_open(true);
     ui.show()?;
@@ -214,6 +223,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     key(&ui, slint::platform::Key::UpArrow);
                     key(&ui, slint::platform::Key::Return);
                     assert!(!ui.global::<Locale>().get_english(), "edge dropdown selection");
+                    pointer(&ui, 62.0, 652.0, Some(true));
+                    pointer(&ui, 62.0, 652.0, Some(false));
+                    assert!(emoji.window().is_visible(), "Emoji button opens popup");
+                    emoji.hide().unwrap();
+                    pointer(&ui, 157.0, 652.0, Some(true));
+                    pointer(&ui, 157.0, 652.0, Some(false));
+                    assert!(quick.window().is_visible(), "Quick button opens popup");
+                    quick.hide().unwrap();
                     ui.invoke_preferences(false, true);
                     emoji.global::<Theme>().set_dark(false);
                     emoji.global::<Theme>().invoke_apply();

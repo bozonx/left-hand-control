@@ -55,6 +55,10 @@ required-features = ["spell"]
 name = "panel-fixture"
 required-features = ["spell"]
 
+[[example]]
+name = "focus-window"
+required-features = ["spell"]
+
 [dependencies.wayland-protocols-plasma]
 version = "0.3"
 features = ["client"]

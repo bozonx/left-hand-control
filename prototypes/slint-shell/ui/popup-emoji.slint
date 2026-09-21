@@ -34,10 +34,10 @@ export component EmojiPopup inherits Window {
             keys := FocusScope {
                 key-pressed(event) => { root.key(event.text); return accept; }
                 ScrollView {
-                    viewport-y: root.page == 5 ? -max(0, floor(root.selected / 8) - 5) * 48px : 0px;
-                    viewport-height: root.page == 5 ? 188 * 48px : 6 * 48px;
+                    viewport-y: root.page == 5 ? -max(0, floor(root.selected / 8) - 5) * 44px : 0px;
+                    viewport-height: root.page == 5 ? 188 * 44px : 6 * 44px;
                     for row in (root.page == 5 ? 188 : 6): HorizontalLayout {
-                        y: row * 48px; height: 48px;
+                        y: row * 44px; height: 44px;
                         for col in 8: Rectangle {
                             visible: root.page != 5 || row * 8 + col < 1500;
                             background: root.selected == row * 8 + col ? Theme.accent : transparent;

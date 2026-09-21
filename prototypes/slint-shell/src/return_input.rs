@@ -11,8 +11,8 @@ struct Active(Arc<Mutex<String>>);
 
 #[zbus::interface(name = "org.leftHandControl.SlintProbe")]
 impl Active {
-    fn update(&self, id: String, app: String) {
-        log::info!("probe active window: {id} app={app}");
+    fn update(&self, id: String) {
+        log::info!("probe active window: {id}");
         *self.0.lock().unwrap() = id;
     }
 }
@@ -45,7 +45,7 @@ impl ReturnInput {
         let mut script = tempfile::NamedTempFile::new()?;
         write!(
             script,
-            "function report() {{ let w = workspace.activeWindow; callDBus('{bus_name}', '/Probe', 'org.leftHandControl.SlintProbe', 'Update', w ? String(w.internalId) : '', w ? String(w.resourceClass) : ''); }} workspace.windowActivated.connect(report); report();"
+            "function report() {{ let w = workspace.activeWindow; callDBus('{bus_name}', '/Probe', 'org.leftHandControl.SlintProbe', 'Update', w ? String(w.internalId) : ''); }} workspace.windowActivated.connect(report); report();"
         )?;
         let proxy = zbus::blocking::Proxy::new(
             &connection,
@@ -67,9 +67,10 @@ impl ReturnInput {
             let _: Result<bool, _> = proxy.call("unloadScript", &script_name);
             return Err(error.into());
         }
-        let keys: AttributeSet<KeyCode> = [KeyCode::KEY_A, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_V]
-            .into_iter()
-            .collect();
+        let keys: AttributeSet<KeyCode> =
+            [KeyCode::KEY_A, KeyCode::KEY_LEFTSHIFT, KeyCode::KEY_INSERT]
+                .into_iter()
+                .collect();
         let device = match crate::test_keyboard::Keyboard::new("Slint return-input probe", &keys) {
             Ok(device) => device,
             Err(error) => {
@@ -160,15 +161,17 @@ fn paste(device: &mut crate::test_keyboard::Keyboard, text: &str) -> std::io::Re
         .map(|output| output.stdout);
     set_clipboard(text.as_bytes())?;
     std::thread::sleep(Duration::from_millis(50));
-    device.emit(&[
-        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 1),
-        *KeyEvent::new(KeyCode::KEY_V, 1),
-        *KeyEvent::new(KeyCode::KEY_V, 0),
-        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 0),
-    ])?;
+    device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 1)])?;
+    let insert = device.emit(&[
+        *KeyEvent::new(KeyCode::KEY_INSERT, 1),
+        *KeyEvent::new(KeyCode::KEY_INSERT, 0),
+    ]);
+    let release = device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 0)]);
+    insert?;
+    release?;
     if let Some(previous) = previous {
         std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(120));
+            std::thread::sleep(Duration::from_millis(500));
             if let Err(error) = set_clipboard(&previous) {
                 log::warn!("restore clipboard: {error}");
             }
