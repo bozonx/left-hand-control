@@ -170,7 +170,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         }
         while let Ok(event) = rx.try_recv() {
             let mut dismiss = None;
-            let mut selected = false;
+            let mut selected = None;
             match event {
                 Event::Command(Command::Preferences(dark, english), _, _) => {
                     slint::select_bundled_translation(if english { "en" } else { "ru" }).unwrap();
@@ -270,12 +270,22 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 Event::Frame(name) => metrics.mark(name, "t3_first_frame"),
                 Event::Hide(name) => dismiss = Some(name),
                 Event::Choose(name, index) if visible == Some(name) => {
-                    if name == "quick" && quick.get_items().row_data(index as usize).is_none() {
-                        continue;
-                    }
-                    log::info!("Spell selected {name} index={index} (stub)");
+                    let value = if name == "emoji" {
+                        let offset = if emoji.get_page() == 5 {
+                            0
+                        } else {
+                            emoji.get_page() * 48
+                        };
+                        emoji
+                            .get_emojis()
+                            .row_data(((offset + index) % 240) as usize)
+                    } else {
+                        quick.get_items().row_data(index as usize)
+                    };
+                    let Some(value) = value else { continue };
+                    log::info!("Spell selected {name} index={index}: {value}");
                     metrics.mark(name, "selected");
-                    selected = true;
+                    selected = Some(value.to_string());
                     dismiss = Some(name);
                 }
                 Event::Choose(_, _) => {}
@@ -374,10 +384,10 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 }
                 visible = None;
                 focused = None;
-                if selected && let Some(input) = &mut return_input {
+                if let (Some(value), Some(input)) = (selected, &mut return_input) {
                     metrics.mark(name, "hidden");
                     pending_return = Some(name);
-                    if !input.selected() {
+                    if !input.selected(value) {
                         metrics.mark(name, "return_target_missing");
                         metrics.end(name);
                         pending_return = None;

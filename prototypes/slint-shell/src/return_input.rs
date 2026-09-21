@@ -1,6 +1,7 @@
 use evdev::{AttributeSet, KeyCode, KeyEvent};
 use std::{
     io::Write,
+    process::{Command, Stdio},
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -23,13 +24,15 @@ pub struct ReturnInput {
     active: Active,
     target: Option<String>,
     device: crate::test_keyboard::Keyboard,
-    pending: Option<(Instant, String)>,
+    pending: Option<(Instant, String, String)>,
     restore_requested: bool,
+    test_mode: bool,
 }
 
 impl ReturnInput {
     pub fn new() -> Result<Option<Self>, Box<dyn std::error::Error>> {
-        if std::env::var("SLINT_SHELL_TEST_INJECT").as_deref() != Ok("1") {
+        let test_mode = std::env::var("SLINT_SHELL_TEST_INJECT").as_deref() == Ok("1");
+        if !test_mode && std::env::var("SLINT_SHELL_INSERT").as_deref() != Ok("1") {
             return Ok(None);
         }
         let active = Active::default();
@@ -64,7 +67,9 @@ impl ReturnInput {
             let _: Result<bool, _> = proxy.call("unloadScript", &script_name);
             return Err(error.into());
         }
-        let keys: AttributeSet<KeyCode> = [KeyCode::KEY_A].into_iter().collect();
+        let keys: AttributeSet<KeyCode> = [KeyCode::KEY_A, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_V]
+            .into_iter()
+            .collect();
         let device = match crate::test_keyboard::Keyboard::new("Slint return-input probe", &keys) {
             Ok(device) => device,
             Err(error) => {
@@ -81,6 +86,7 @@ impl ReturnInput {
             device,
             pending: None,
             restore_requested: false,
+            test_mode,
         }))
     }
 
@@ -95,14 +101,14 @@ impl ReturnInput {
         self.pending = None;
     }
 
-    pub fn selected(&mut self) -> bool {
+    pub fn selected(&mut self, text: String) -> bool {
         self.restore_requested = false;
-        self.pending = self.target.take().map(|id| (Instant::now(), id));
+        self.pending = self.target.take().map(|id| (Instant::now(), id, text));
         self.pending.is_some()
     }
 
     pub fn poll(&mut self, keyboard_released: bool) -> Option<&'static str> {
-        let (start, id) = self.pending.as_ref()?;
+        let (start, id, text) = self.pending.as_ref()?;
         if start.elapsed() > Duration::from_secs(2) {
             self.pending = None;
             return Some("return_input_timeout");
@@ -124,16 +130,67 @@ impl ReturnInput {
         {
             return None;
         }
-        self.pending = None;
-        Some(
-            match self.device.emit(&[
+        let result = if self.test_mode {
+            self.device.emit(&[
                 *KeyEvent::new(KeyCode::KEY_A, 1),
                 *KeyEvent::new(KeyCode::KEY_A, 0),
-            ]) {
-                Ok(()) => "test_input_sent",
-                Err(_) => "test_input_failed",
-            },
-        )
+            ])
+        } else {
+            paste(&mut self.device, text)
+        };
+        self.pending = None;
+        Some(match (self.test_mode, result) {
+            (true, Ok(())) => "test_input_sent",
+            (true, Err(_)) => "test_input_failed",
+            (false, Ok(())) => "selected_input_sent",
+            (false, Err(error)) => {
+                log::error!("selected input: {error}");
+                "selected_input_failed"
+            }
+        })
+    }
+}
+
+fn paste(device: &mut crate::test_keyboard::Keyboard, text: &str) -> std::io::Result<()> {
+    let previous = Command::new("wl-paste")
+        .arg("--no-newline")
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| output.stdout);
+    set_clipboard(text.as_bytes())?;
+    std::thread::sleep(Duration::from_millis(50));
+    device.emit(&[
+        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 1),
+        *KeyEvent::new(KeyCode::KEY_V, 1),
+        *KeyEvent::new(KeyCode::KEY_V, 0),
+        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 0),
+    ])?;
+    if let Some(previous) = previous {
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(120));
+            if let Err(error) = set_clipboard(&previous) {
+                log::warn!("restore clipboard: {error}");
+            }
+        });
+    }
+    Ok(())
+}
+
+fn set_clipboard(text: &[u8]) -> std::io::Result<()> {
+    let mut child = Command::new("wl-copy").stdin(Stdio::piped()).spawn()?;
+    child
+        .stdin
+        .take()
+        .ok_or_else(|| std::io::Error::other("wl-copy stdin unavailable"))?
+        .write_all(text)?;
+    let status = child.wait()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::other(format!(
+            "wl-copy exited with {status}"
+        )))
     }
 }
 
