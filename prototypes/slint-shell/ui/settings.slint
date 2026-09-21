@@ -25,6 +25,7 @@ export component SettingsWindow inherits Window {
     in-out property <length> catalog-scroll-y;
     in property <string> validation;
     in property <string> status;
+    in property <string> backend-error;
     callback show-popup(string);
     callback toggle-mapper();
     callback edit-key(int);
@@ -106,6 +107,7 @@ export component SettingsWindow inherits Window {
                 rename-item(index, value) => { root.rename-quick(index, value); }
             }
             Text { text: root.status == "" ? "" : @tr("Action saved. Reopening shows the saved value."); color: Theme.text; }
+            Text { text: root.backend-error; color: Theme.error; wrap: word-wrap; }
             Rectangle { vertical-stretch: 1; }
             HorizontalBox {
                 Button { text: @tr("Emoji"); clicked => { root.show-popup("emoji"); } }

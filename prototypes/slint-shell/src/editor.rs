@@ -240,11 +240,11 @@ pub fn bind(ui: &SettingsWindow) {
     let weak = ui.as_weak();
     let state_copy = state.clone();
     ui.on_pick_action(move |id| {
-        if let Some(ui) = weak.upgrade() {
-            if let Some(action) = state_copy.borrow().catalog.get(id as usize) {
-                present(&ui, action);
-                ui.set_selected_action(id);
-            }
+        if let Some(ui) = weak.upgrade()
+            && let Some(action) = state_copy.borrow().catalog.get(id as usize)
+        {
+            present(&ui, action);
+            ui.set_selected_action(id);
         }
     });
     let weak = ui.as_weak();

@@ -77,6 +77,12 @@ fn with_app(f: impl FnOnce(&Rc<App>)) {
 }
 
 impl App {
+    fn report_worker_error(&self, error: &dyn std::fmt::Display) {
+        let message = format!("Spell popup process unavailable: {error}");
+        log::error!("{message}");
+        self.settings.set_backend_error(message.into());
+    }
+
     fn window(&self, name: &str) -> &slint::Window {
         match name {
             "emoji" => self.emoji.window(),
@@ -114,7 +120,7 @@ impl App {
             && let Some(worker) = &self.worker
         {
             if let Err(error) = worker.send(format!("show {name}"), source, start, token) {
-                log::error!("Spell worker: {error}");
+                self.report_worker_error(error.as_ref());
             }
             return;
         }
@@ -181,7 +187,7 @@ impl App {
                 if let Some(worker) = &self.worker
                     && let Err(error) = worker.send("hide".into(), source, start, token)
                 {
-                    log::error!("Spell worker: {error}");
+                    self.report_worker_error(error.as_ref());
                 }
                 self.hide("emoji");
                 self.hide("quick");
@@ -209,8 +215,8 @@ impl App {
                 self.quick.global::<Theme>().set_dark(dark);
                 self.quick.global::<Theme>().invoke_apply();
                 self.quick.global::<Locale>().set_english(english);
-                if let Some(worker) = &self.worker {
-                    if let Err(error) = worker.send(
+                if let Some(worker) = &self.worker
+                    && let Err(error) = worker.send(
                         format!(
                             "preferences {} {}",
                             if dark { "dark" } else { "light" },
@@ -219,9 +225,9 @@ impl App {
                         source,
                         start,
                         None,
-                    ) {
-                        log::error!("Spell preferences: {error}");
-                    }
+                    )
+                {
+                    self.report_worker_error(error.as_ref());
                 }
             }
             Command::Ping => {}
