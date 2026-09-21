@@ -488,6 +488,8 @@ pub fn run() {
             _ => {}
         })
         .invoke_handler(tauri::generate_handler![
+            benchmark::benchmark_active,
+            benchmark::popup_stage,
             get_settings_dir,
             load_config,
             save_config,

@@ -49,6 +49,7 @@ let menuGeneration = 0
 let pendingHotkeyCode: string | null = null
 let isKeydownListenerAttached = false
 const isReady = ref(false)
+const benchmark = usePopupBenchmark('emoji')
 
 function menuPageFromPayload(payload: unknown): number {
     const page =
@@ -77,6 +78,7 @@ async function prepareMenu(payload: unknown, clearPending = true) {
     if (generation !== menuGeneration) return
     isReady.value = true
     flushPendingHotkey()
+    void benchmark.ready()
 }
 
 async function applyEmoji(emoji: string | undefined) {
@@ -111,6 +113,7 @@ function flushPendingHotkey() {
 }
 
 function onKeydown(e: KeyboardEvent) {
+    benchmark.handleKeydown()
     if (e.key === 'Escape') {
         e.preventDefault()
         void closeMenu()

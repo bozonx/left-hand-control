@@ -34,8 +34,9 @@ def command(value):
             client.connect(str(socket_path))
             client.sendall((value + "\n").encode())
             response = client.makefile().readline().strip()
-            if response != "ok":
+            if not response.startswith("ok"):
                 raise RuntimeError(response)
+            return response
 
 def memory(label, process):
     raw = subprocess.check_output([root / "prototypes/slint-shell/scripts/mem.sh", str(process.pid), label], text=True)
@@ -66,7 +67,9 @@ def cpu_ticks(root_pid):
 
 samples = []
 latencies = []
+readiness = []
 first = []
+first_readiness = []
 with (output / "process.log").open("w") as log:
     process = subprocess.Popen([binary], env=env, stdout=log, stderr=log)
     try:
@@ -80,8 +83,12 @@ with (output / "process.log").open("w") as log:
         time.sleep(1)
         samples.append(memory("start-hidden", process))
         for name in ("emoji", "quick"):
-            start = time.perf_counter_ns(); command(name)
+            request = f"probe-{name}" if kind == "tauri" else name
+            start = time.perf_counter_ns(); response = command(request)
             first.append({"window": name, "milliseconds": f"{(time.perf_counter_ns() - start) / 1e6:.3f}"})
+            if kind == "tauri":
+                values = dict(item.split("=", 1) for item in response.split()[1:])
+                first_readiness.append({"window": name, **values})
             time.sleep(.5); command("hide"); time.sleep(.3)
         samples.append(memory("popups-warm-hidden", process))
         start = time.perf_counter_ns(); command("settings")
@@ -97,8 +104,12 @@ with (output / "process.log").open("w") as log:
         cpu_percent = cpu_seconds / (time.monotonic() - cpu_start) * 100
         for name in ("emoji", "quick", "settings"):
             for _ in range(100):
-                start = time.perf_counter_ns(); command(name); elapsed = (time.perf_counter_ns() - start) / 1e6
+                request = f"probe-{name}" if kind == "tauri" and name != "settings" else name
+                start = time.perf_counter_ns(); response = command(request); elapsed = (time.perf_counter_ns() - start) / 1e6
                 latencies.append({"window": name, "milliseconds": f"{elapsed:.3f}"})
+                if kind == "tauri" and name != "settings":
+                    values = dict(item.split("=", 1) for item in response.split()[1:])
+                    readiness.append({"window": name, **values})
                 command("hide"); time.sleep(.02)
     finally:
         if process.poll() is None:
@@ -120,6 +131,14 @@ with (output / "command-latency.csv").open("w", newline="") as target:
 with (output / "first-command-latency.csv").open("w", newline="") as target:
     writer = csv.DictWriter(target, fieldnames=["window", "milliseconds"])
     writer.writeheader(); writer.writerows(first)
+if readiness:
+    with (output / "readiness.csv").open("w", newline="") as target:
+        writer = csv.DictWriter(target, fieldnames=["window", "t3", "t4", "t5"])
+        writer.writeheader(); writer.writerows(readiness)
+if first_readiness:
+    with (output / "first-readiness.csv").open("w", newline="") as target:
+        writer = csv.DictWriter(target, fieldnames=["window", "t3", "t4", "t5"])
+        writer.writeheader(); writer.writerows(first_readiness)
 with (output / "idle-cpu.csv").open("w", newline="") as target:
     writer = csv.DictWriter(target, fieldnames=["interval_seconds", "cpu_seconds", "cpu_percent"])
     writer.writeheader(); writer.writerow({"interval_seconds": "5", "cpu_seconds": f"{cpu_seconds:.3f}", "cpu_percent": f"{cpu_percent:.3f}"})
