@@ -1,7 +1,86 @@
 # Slint: отчёт по этапам 0–3
 
 Дата: 2026-09-19. Реализован отдельный крейт `prototypes/slint-shell`.
-Исходники и сборка основного Tauri/Nuxt-приложения не изменены.
+Для 3C основной Tauri-процесс получил отключённый по умолчанию локальный
+benchmark-канал; пользовательское поведение приложения не меняется.
+
+## Release-сравнение 3C — 2026-09-21
+
+**Текущий вывод:** на этой KDE Wayland-машине связка Slint + Spell после прогрева
+занимает примерно 52 МиБ PSS против 448–450 МиБ у текущего Tauri. Экономия около
+396–398 МиБ, или 88%. Slint прошёл 100/100 повторных открытий каждого попапа с
+первой стрелкой; p95 готовности к вводу составил 17,8 мс. Это сильный результат в
+пользу продолжения пилота, но не окончательное решение о переносе: Tauri содержит
+больше продукта, а сопоставимая метрика готовности Tauri пока не встроена.
+
+Условия: Manjaro Linux 7.2.3, KDE Plasma/KWin 6.7.4, Wayland, Rust 1.98.1,
+pnpm 9.12.0. Slint 1.17.1 + локальный Spell 1.0.6, `winit-software` для настроек
+и Skia software/SHM в Spell. Tauri 2.11.1 + Nuxt 4.4.2/WebKitGTK. Обе сборки
+release получены на одной машине; во время измерений сборка не шла. PSS/RSS —
+сумма корневого процесса и всех потомков из `/proc/*/smaps_rollup`. Приведена
+медиана трёх независимых запусков, в скобках — весь диапазон.
+
+| Состояние | Slint PSS, МиБ | Tauri PSS, МиБ | Разница Slint − Tauri |
+| --- | ---: | ---: | ---: |
+| После запуска и скрытия | 24,8 (24,5–25,1) | 303,6 (289,7–303,6) | −278,8 МиБ / −91,8% |
+| Оба попапа показаны и скрыты | 52,0 (52,0–52,3) | 450,0 (408,8–453,5) | −398,0 МиБ / −88,4% |
+| Настройки открыты | 52,0 (51,9–52,3) | 448,4 (408,8–452,8) | −396,4 МиБ / −88,4% |
+| Настройки снова скрыты | 52,0 (51,7–52,3) | 447,1 (407,6–451,6) | −395,1 МиБ / −88,4% |
+
+Slint использует два процесса, Tauri — шесть до создания попапов и восемь после.
+Точка настроек не симметрична: Slint показывает пилотный редактор с каталогом из
+500 записей, Tauri — существующий более функциональный продукт. У Tauri каждый
+попап создаёт отдельное WebKit-дерево и остаётся прогретым после hide. GPU-память
+в PSS не учтена.
+
+Release-серия реального evdev-вызова Slint/Spell:
+
+| Попап | Успех | t3 first frame p50/p95/max | t4 focus p50/p95/max | t5 first key p50/p95/max |
+| --- | ---: | ---: | ---: | ---: |
+| Emoji | 100/100 | 4,8 / 7,1 / 63,7 мс | 6,3 / 10,8 / 66,0 мс | 12,7 / 17,8 / 73,9 мс |
+| Quick | 100/100 | 4,7 / 6,3 / 18,3 мс | 6,4 / 10,3 / 20,6 мс | 12,4 / 17,8 / 23,1 мс |
+
+`t3` у Spell означает render + commit, не presentation. Стенд посылает стрелку
+только после наблюдения `t4`, поэтому `t5` включает 5-миллисекундный опрос и
+эмуляцию; пропусков нет. Максимум Emoji 73,9 мс — единичный выброс, ниже порога
+150 мс. В изолированном KWin release-страница 1500 emoji приняла следующую стрелку
+через 11,6 мс после `stress_page`; полный input/return smoke завершился успешно.
+Это подтверждает устранение debug-задержки около 2,6 с в проверенном сценарии,
+но не является метрикой presentation всего тяжёлого кадра.
+
+Управляющий harness также сделал по 100 повторных show/hide. Его p95 ответа
+команды у Slint: Emoji 8,4 мс, Quick 9,9 мс, настройки 15,0 мс; у Tauri: 3,1,
+3,8 и 3,1 мс. Эти числа фиксируют только возврат из show/focus API и **не**
+сравниваются как готовность UI: у Tauri нет эквивалентных `t3/t4/t5`. Первые
+команды попапов занимали 4,9–7,2 мс у Slint и 20,0–41,5 мс у Tauri, но имеют то
+же ограничение. В вывод о latency вошла только инструментированная серия Slint.
+
+За короткое 5-секундное окно прогретого скрытого простоя суммарный CPU составил
+2,6–3,0% одного ядра у Slint и 1,8–3,0% у Tauri. Постоянной загрузки ядра нет,
+но это короткий и шумный замер; для исследования фоновых wakeup нужен отдельный
+длительный профиль. Сырые CSV сохранены в
+[`slint-prototype-results/release-3c`](slint-prototype-results/release-3c/).
+
+### Воспроизведение
+
+```sh
+cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --examples --bin slint-shell
+pnpm install --frozen-lockfile
+pnpm generate
+pnpm exec tauri build --no-bundle
+for kind in slint tauri; do
+  for run in 1 2 3; do
+    scripts/release-compare.py "$kind" "/tmp/lhc-release/$kind-$run"
+  done
+done
+SLINT_SHELL_POPUPS=spell SLINT_BACKEND=winit-software SLINT_SHELL_BENCH_COUNT=100 \
+  prototypes/slint-shell/target/release/examples/bench-evdev \
+  prototypes/slint-shell/target/release/slint-shell /tmp/slint-release.csv
+python3 prototypes/slint-shell/scripts/summarize.py /tmp/slint-release.csv.spell.csv
+SLINT_SHELL_BIN="$PWD/prototypes/slint-shell/target/release/slint-shell" \
+SLINT_SHELL_BENCH_RETURN_BIN="$PWD/prototypes/slint-shell/target/release/examples/bench-return" \
+  prototypes/slint-shell/scripts/bench-virtual.sh /tmp/slint-stress-release input
+```
 
 ## Взаимодействия 3B — 2026-09-20
 

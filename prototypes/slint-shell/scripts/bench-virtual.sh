@@ -3,6 +3,8 @@ set -euo pipefail
 export LHC_PROTOTYPE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export LHC_PROTOTYPE_RESULTS="$(realpath -m "${1:?output directory required}")"
 export LHC_VIRTUAL_TASK="${2:-geometry}"
+export LHC_SLINT_SHELL_BIN="${SLINT_SHELL_BIN:-$LHC_PROTOTYPE_ROOT/target/debug/slint-shell}"
+export LHC_BENCH_RETURN_BIN="${SLINT_SHELL_BENCH_RETURN_BIN:-$LHC_PROTOTYPE_ROOT/target/debug/examples/bench-return}"
 case "$LHC_VIRTUAL_TASK" in geometry|lifecycle|input) ;; *) exit 2 ;; esac
 lhc_test_root="$(mktemp -d)"
 cleanup() {
@@ -38,7 +40,7 @@ elif [[ "$LHC_VIRTUAL_TASK" == input ]]; then
     mkdir -p "$LHC_PROTOTYPE_RESULTS"
     export SLINT_SHELL_ISOLATED_INPUT=1
     export SLINT_BACKEND=winit-software
-    exec "$LHC_PROTOTYPE_ROOT/target/debug/examples/bench-return" "$LHC_PROTOTYPE_ROOT/target/debug/slint-shell" "$LHC_PROTOTYPE_RESULTS/parent.csv"
+    exec "$LHC_BENCH_RETURN_BIN" "$LHC_SLINT_SHELL_BIN" "$LHC_PROTOTYPE_RESULTS/parent.csv"
 else
     exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench-lifecycle.py" "$LHC_PROTOTYPE_RESULTS" 500
 fi

@@ -5,6 +5,8 @@ use tauri::{Emitter, Listener, Manager, RunEvent, WebviewUrl, WebviewWindowBuild
 
 mod active_window;
 #[cfg(target_os = "linux")]
+mod benchmark;
+#[cfg(target_os = "linux")]
 mod exec;
 mod gamemode;
 mod layout;
@@ -459,6 +461,8 @@ pub fn run() {
             layout::start_watcher(app.handle().clone());
             gamemode::start_watcher(app.handle().clone());
             active_window::start_watcher(app.handle().clone());
+            #[cfg(target_os = "linux")]
+            benchmark::start(app.handle().clone());
             listen_menu_pages(app, "show_quick_menu", "quick-menu", show_quick_menu_window);
             listen_menu_pages(app, "show_emoji_menu", "emoji-menu", show_emoji_menu_window);
             if let Some(window) = app.get_webview_window("main") {

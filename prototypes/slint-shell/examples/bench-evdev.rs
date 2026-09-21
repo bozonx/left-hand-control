@@ -27,6 +27,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .ok_or("expected binary path and output CSV path")?,
     );
     let csv = PathBuf::from(args.next().ok_or("expected output CSV path")?);
+    let count = std::env::var("SLINT_SHELL_BENCH_COUNT")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(20);
     let socket = format!("lhc-evdev-bench-{}.sock", std::process::id());
     let keys: AttributeSet<KeyCode> = [
         KeyCode::KEY_F13,
@@ -74,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("emoji", KeyCode::KEY_F13),
         ("quick", KeyCode::KEY_SCROLLLOCK),
     ] {
-        for _ in 0..20 {
+        for _ in 0..count {
             let before = std::fs::read_to_string(&csv)?;
             let previous = before
                 .lines()
@@ -170,7 +175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     server.0.wait()?;
     if failures > 0 {
-        return Err(format!("{failures}/40 trials failed focus/navigation").into());
+        return Err(format!("{failures}/{} trials failed focus/navigation", count * 2).into());
     }
     Ok(())
 }
