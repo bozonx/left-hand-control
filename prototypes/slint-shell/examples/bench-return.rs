@@ -102,6 +102,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let handle = std::thread::spawn(move || -> Result<(), String> {
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+            sleep(Duration::from_millis(250));
+            activate_receiver()?;
             wait(|| focused.load(Ordering::SeqCst), "receiver initial focus")?;
             let keys: AttributeSet<KeyCode> = [KeyCode::KEY_F13, KeyCode::KEY_SCROLLLOCK, KeyCode::KEY_DOWN, KeyCode::KEY_ENTER, KeyCode::KEY_ESC, KeyCode::KEY_A, KeyCode::KEY_LEFTALT, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_BACKSPACE, KeyCode::KEY_L, KeyCode::KEY_T, KeyCode::KEY_6, KeyCode::KEY_1].into_iter().collect();
             let mut device = test_keyboard::Keyboard::new("Slint return benchmark trigger", &keys)?;
