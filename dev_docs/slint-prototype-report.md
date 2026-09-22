@@ -14,7 +14,8 @@ focus, hotkey, tray, IPC и return-input; Slint UI и модель редакт�
 
 Для Windows подготовлены loopback IPC на `127.0.0.1` с настраиваемым
 `SLINT_SHELL_PORT`, `global-hotkey`, `tray-icon`, Win32 foreground window и
-отложенный возврат Unicode-текста через `enigo`. macOS использует тот же native
+отложенный возврат Unicode-текста. После native-проверки Windows переведён с
+`enigo` на clipboard + `Ctrl+V`; macOS продолжает использовать `enigo` и тот же native
 hotkey/tray/input слой, восстанавливает процесс через System Events и использует
 Unix socket в `XDG_RUNTIME_DIR` либо системном temporary directory. Метрики
 остаются общими и не зависят от `/proc`; `/proc` используется только внешними
@@ -32,6 +33,48 @@ Linux test/check/clippy и Cargo dependency graph для Windows/macOS: Linux-п
 и global hotkey, возврат фокуса в ранее активное приложение и реальные Unicode/
 clipboard циклы. На macOS отдельно нужны Accessibility permissions. Hyprland и
 GNOME по-прежнему требуют реальных сессий.
+
+## Частичная проверка Windows — 2026-09-21–22
+
+Нативный проход выполнен в Windows 11 Enterprise Evaluation 25H2 на KVM/QEMU:
+4 vCPU, 6 ГиБ RAM, UEFI Secure Boot, TPM 2.0, Rust/Cargo 1.98.1, Slint 1.17.1.
+Использован snapshot исходников commit `d5a9a87` с локальными Windows-патчами.
+Подробный checklist и оставшаяся матрица находятся в
+[Windows-плане](slint-windows-validation.md), воспроизводимая настройка стенда —
+в [руководстве](../docs/windows-testing.md).
+
+Подтверждены native unit-тесты и release-сборка. Для `global-hotkey` и `tray-icon`
+потребовались явные типы callback-параметров, после чего сборка прошла. Portable
+`interactions` подтвердил clipboard, keyboard, modal, DnD, cancellation, edge
+scrolling, theme, locale и hidden popups. Отдельный harness выполнил 100/100
+чередующихся IPC show/hide и штатный `quit`.
+
+Settings, Emoji и Quick запускаются и интерактивны. `winit-software` показал
+монохромные outline emoji; `winit-skia` показал цветные Windows emoji и выбран
+для дальнейшей Windows-проверки. Квадраты в части stress-каталога связаны с
+генерацией непрерывных диапазонов, включающих невалидные и не-emoji code points;
+каталог нужно заменить списком заведомо валидных последовательностей.
+
+Первоначальный return-input через `enigo 0.6.1`, а затем прямой Unicode
+`SendInput` искажали смешанную строку: `Действие 02 / Action 02` превращалась в
+усечённый текст с повтором последней цифры. Clipboard fallback с `Ctrl+V` через
+задержанный IPC корректно вставил `Действие 03 / Action 03` и отдельный emoji в
+Notepad. После каждого выбора прежний текстовый clipboard `CLIPBOARD_KEEP`
+восстановился. Нетекстовые clipboard formats пока не сохраняются и не проверены.
+
+Блокер: при открытии Emoji из системного tray фокус не возвращается в ранее
+активный Notepad. Эксперимент с отслеживанием последнего внешнего foreground HWND
+через WinEventHook не исправил поведение и не оставлен в исходниках. Задержанный
+IPC работает, но не заменяет tray-критерий. F13/ScrollLock также остаются
+непроверенными: внутригостевой `SendInput` не является аппаратным событием для
+валидной проверки `RegisterHotKey`.
+
+Проход остановлен на этом блокере. Не выполнены серии в Windows Terminal и
+браузере, по пять циклов на получатель, Esc/focus-loss, удерживаемые модификаторы,
+DPI 125/150%, taskbar/fullscreen/второй монитор, lock/sleep и измерения ресурсов.
+Windows-платформа не прошла критерий этапа. Следующий Windows-заход начинается с
+получения корректного return target до открытия tray-меню и повторения разделов
+6–9 Windows-плана.
 
 ## Стоимость сопровождения — 2026-09-21
 

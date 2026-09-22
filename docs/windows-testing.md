@@ -238,6 +238,11 @@ Run this while Notepad, Windows Terminal, and a browser field are foreground. Co
 
 ## Focus return and text insertion
 
+Current pilot status as of 2026-09-22: delayed IPC invocation returned focus to
+Notepad and inserted exact Quick text and one emoji through the clipboard fallback;
+the previous text clipboard was restored. Invocation from the system tray still
+failed to return focus to Notepad. The Windows pass is paused on that blocker.
+
 For Emoji and Quick, repeat the following with Notepad, Windows Terminal, and a browser:
 
 1. Type a unique `BEFORE:` marker and leave the caret at the end.

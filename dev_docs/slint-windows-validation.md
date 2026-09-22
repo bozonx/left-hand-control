@@ -1,6 +1,6 @@
 # Проверка Slint-прототипа на Windows
 
-Статус: подготовка стенда.
+Статус: частичный проход остановлен 2026-09-22 на блокере возврата фокуса при вызове из tray.
 
 Воспроизводимая настройка KVM/QEMU, Windows, toolchain, передача файлов и разбор известных проблем описаны в [руководстве по Windows-тестированию](../docs/windows-testing.md).
 
@@ -18,23 +18,70 @@
 
 Зафиксировать версию Windows, commit, Rust, Slint, renderer и режим масштабирования. Производительность VM не сравнивать напрямую с физическим KDE-стендом.
 
+## Результат прохода 2026-09-21–22
+
+Стенд: Windows 11 Enterprise Evaluation 25H2, KVM/QEMU, 4 vCPU, 6 ГиБ RAM,
+Rust/Cargo 1.98.1, Slint 1.17.1, исходный snapshot commit `d5a9a87` с локальными
+Windows-исправлениями. Для визуальной проверки выбран `winit-skia`.
+
+Подтверждено:
+
+- Windows установлена с UEFI Secure Boot и TPM 2.0; создан snapshot `windows-clean`;
+- установлены MSVC Build Tools и Rust stable MSVC;
+- native `cargo test --locked` и release-сборка `slint-shell` прошли;
+- исправлены Windows E0282 при выводе типов callbacks `global-hotkey` и `tray-icon`;
+- release-процесс стартует скрытым, tray и loopback IPC работают;
+- portable `interactions` прошёл clipboard, keyboard, modal, DnD, cancellation,
+  edge scrolling, theme, locale и hidden popups;
+- автоматическая серия IPC show/hide завершила 100/100 циклов и штатный `quit`;
+- Settings, Emoji и Quick открываются и интерактивны; Quick отображается полностью;
+- `winit-software` показывает монохромные outline emoji, а `winit-skia` — цветные;
+- часть квадратов stress-страницы соответствует невалидным или не-emoji code points
+  из непрерывного тестового диапазона и требует замены тестового каталога;
+- через задержанный IPC-вызов Quick вернул фокус в Notepad и вставил точную строку
+  `Действие 03 / Action 03`;
+- через задержанный IPC-вызов Emoji вернул фокус в Notepad и вставил один emoji;
+- Windows clipboard fallback после обоих выборов восстановил прежний текст
+  `CLIPBOARD_KEEP`.
+
+Не пройдено или не завершено:
+
+- вызов Emoji из tray не возвращает фокус в ранее активный Notepad; попытка хранить
+  последнее внешнее foreground-окно через WinEventHook проблему не решила и удалена;
+- исходный `enigo 0.6.1` и прямой Unicode `SendInput` искажали смешанную строку:
+  появлялись усечённые фрагменты и повтор последней цифры; рабочим оказался только
+  clipboard + `Ctrl+V`, но его полный контракт ещё не принят;
+- сохранение нетекстовых форматов clipboard не реализовано и не проверено;
+- F13/ScrollLock не проверены аппаратным событием: внутригостевой синтетический
+  ScrollLock не считается валидной проверкой `RegisterHotKey`;
+- Windows Terminal, браузер, пять повторов на получатель, Esc/focus-loss и удерживаемые
+  модификаторы не проверены;
+- DPI 125/150%, taskbar positions, fullscreen, второй монитор, lock/unlock,
+  sleep/wake, память и idle CPU не проверены;
+- snapshot `slint-ready` не создан; полная Windows-приёмка не завершена.
+
+Текущий итог: сборка, базовый UI, renderer, IPC/lifecycle и IPC-вставка в Notepad
+подтверждены. Windows-критерий результата не выполнен из-за tray focus return и
+неполной матрицы. Следующий проход начинать с исправления выбора return target до
+открытия tray-меню, затем повторить матрицу разделов 6–9.
+
 ## 2. Подготовка
 
-- [ ] Установить Windows и все обновления, необходимые для воспроизводимого стенда.
-- [ ] Создать snapshot `windows-clean` до установки toolchain.
-- [ ] Установить Git и Rust stable MSVC, клонировать или скопировать репозиторий.
-- [ ] Выполнить `cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell`.
-- [ ] Выполнить `cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell`.
+- [x] Установить Windows 11 Enterprise Evaluation 25H2.
+- [x] Создать snapshot `windows-clean` до установки toolchain.
+- [x] Установить MSVC Build Tools и Rust stable MSVC, скопировать snapshot репозитория.
+- [x] Выполнить `cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell`.
+- [x] Выполнить `cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell`.
 - [ ] Создать snapshot `slint-ready`.
 - [ ] Убедиться, что TCP-порт `127.0.0.1:43176` свободен; тест не должен слушать внешний интерфейс.
 
 ## 3. Запуск и базовый lifecycle
 
-- [ ] Запустить release-бинарник без консольных panic/error.
-- [ ] Настройки изначально скрыты, процесс доступен через tray.
-- [ ] Повторный запуск CLI обращается к существующему процессу, а не создаёт второй UI-сервер.
-- [ ] `show settings`, `show emoji`, `show quick`, `hide`, `toggle-mapper`, `quit` работают через loopback IPC.
-- [ ] После `quit` процесс и listener завершаются; следующий запуск успешен.
+- [x] Запустить release-бинарник без консольных panic/error.
+- [x] Настройки изначально скрыты, процесс доступен через tray.
+- [x] Повторный запуск CLI обращается к существующему процессу, а не создаёт второй UI-сервер.
+- [x] `show settings`, `show emoji`, `show quick`, `hide` и `quit` работают через loopback IPC; `toggle-mapper` отдельно не принят.
+- [x] После `quit` процесс и listener завершаются; следующий запуск успешен.
 - [ ] Некорректный `SLINT_SHELL_POPUPS=spell` завершается с понятной ошибкой; `auto` и `winit` используют переносимые окна.
 - [ ] Завершение процесса с открытым и скрытым окном не оставляет tray icon или listener.
 
@@ -63,7 +110,7 @@
 
 ## 6. Tray и способы вызова
 
-- [ ] Tray icon виден, tooltip корректен, меню открывается правой кнопкой.
+- [x] Tray icon виден, меню открывается правой кнопкой; tooltip отдельно не проверен.
 - [ ] Пункты Settings, Emoji, Quick, Mapper и Quit выполняют правильные действия.
 - [ ] Toggle mapper меняет состояние без падения и зависания меню.
 - [ ] Левый клик ведёт себя согласно выбранному контракту и не создаёт дубликат окна.
@@ -75,7 +122,7 @@
 
 ## 7. Попапы, фокус и геометрия
 
-- [ ] Emoji и Quick открываются поверх исходного приложения.
+- [x] Emoji и Quick открываются через tray и IPC; корректный исходный адресат подтверждён только для задержанного IPC.
 - [ ] Первое нажатие стрелки обрабатывает попап без предварительного клика.
 - [ ] Enter выбирает элемент, Esc закрывает без вставки.
 - [ ] Потеря фокуса скрывает попап.
@@ -85,7 +132,7 @@
 - [ ] Taskbar сверху, снизу, слева и auto-hide не перекрывает критическое содержимое.
 - [ ] Maximized и fullscreen исходные окна проверены отдельно.
 - [ ] На втором мониторе попап появляется на ожидаемом display и остаётся видимым после отключения этого display.
-- [ ] Цветные emoji, прозрачность, скругления и отсутствие обрезания подтверждены скриншотами.
+- [x] Цветные emoji, прозрачность и скругления подтверждены со Skia; stress-каталог содержит отдельные квадраты из-за исходных code points.
 
 ## 8. Возврат фокуса и текста
 
@@ -112,7 +159,7 @@
 - [ ] Отдельно записать наличие `t3`, `t4`, `t5` и пропуски; возврат из `show` не считать готовым кадром.
 - [ ] Измерить private bytes и working set: старт, после прогрева/скрытия, оба попапа, редактор с 500 записями.
 - [ ] Проверить CPU в прогретом простое со скрытыми окнами.
-- [ ] Выполнить 100 циклов show/hide каждого попапа без роста числа окон, потери tray и зависания.
+- [x] Выполнить 100 чередующихся IPC-циклов show/hide без падения, потери tray и зависания; рост ресурсов не измерялся.
 - [ ] Проверить lock/unlock и sleep/wake VM.
 
 ## 10. Критерий результата
