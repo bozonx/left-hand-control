@@ -23,7 +23,7 @@ pub fn start(dispatch: Dispatch) {
         }
     };
     Box::leak(Box::new(manager));
-    GlobalHotKeyEvent::set_event_handler(Some(move |event| {
+    GlobalHotKeyEvent::set_event_handler(Some(move |event: GlobalHotKeyEvent| {
         if event.state != HotKeyState::Pressed {
             return;
         }

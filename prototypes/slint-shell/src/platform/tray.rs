@@ -40,7 +40,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
             .map(|item| item as &dyn tray_icon::menu::IsMenuItem)
             .collect::<Vec<_>>(),
     )?;
-    MenuEvent::set_event_handler(Some(move |event| {
+    MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
         if let Some(command) = commands.get(&event.id) {
             dispatch(command.clone(), "tray", Instant::now(), None);
         }
