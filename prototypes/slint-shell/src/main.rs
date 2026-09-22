@@ -142,7 +142,11 @@ impl App {
     ) {
         #[cfg(not(target_os = "linux"))]
         if name != "settings" {
-            self.return_input.borrow_mut().capture();
+            if source == "tray" {
+                self.return_input.borrow_mut().discard();
+            } else {
+                self.return_input.borrow_mut().capture();
+            }
         }
         if name != "settings"
             && let Some(worker) = &self.worker

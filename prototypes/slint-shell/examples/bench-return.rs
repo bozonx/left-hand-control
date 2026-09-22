@@ -48,7 +48,10 @@ fn wait(mut condition: impl FnMut() -> bool, label: &str) -> Result<(), String> 
     Ok(())
 }
 fn press(device: &mut test_keyboard::Keyboard, key: KeyCode) -> std::io::Result<()> {
-    if test_keyboard::isolated() && [KeyCode::KEY_F13, KeyCode::KEY_SCROLLLOCK].contains(&key) {
+    device.emit(&[*KeyEvent::new(key, 1), *KeyEvent::new(key, 0)])
+}
+fn press_hotkey(device: &mut test_keyboard::Keyboard, key: KeyCode) -> std::io::Result<()> {
+    if test_keyboard::isolated() {
         let args: Vec<_> = std::env::args().collect();
         let status = Command::new(&args[1])
             .env(
@@ -57,7 +60,7 @@ fn press(device: &mut test_keyboard::Keyboard, key: KeyCode) -> std::io::Result<
             )
             .args([
                 "show",
-                if key == KeyCode::KEY_F13 {
+                if key == KeyCode::KEY_F11 {
                     "emoji"
                 } else {
                     "quick"
@@ -69,7 +72,14 @@ fn press(device: &mut test_keyboard::Keyboard, key: KeyCode) -> std::io::Result<
         }
         return Ok(());
     }
-    device.emit(&[*KeyEvent::new(key, 1), *KeyEvent::new(key, 0)])
+    device.emit(&[
+        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 1),
+        *KeyEvent::new(KeyCode::KEY_LEFTALT, 1),
+        *KeyEvent::new(key, 1),
+        *KeyEvent::new(key, 0),
+        *KeyEvent::new(KeyCode::KEY_LEFTALT, 0),
+        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 0),
+    ])
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
@@ -80,12 +90,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let input = received.clone();
     let weak = receiver.as_weak();
     receiver.on_input(move |text| {
-        if [slint::platform::Key::F13, slint::platform::Key::ScrollLock]
-            .into_iter()
-            .any(|k| text == slint::SharedString::from(k))
-        {
-            return;
-        }
         input.lock().unwrap().push(text.to_string());
         if let Some(ui) = weak.upgrade() {
             ui.set_received(format!("{:?}", *input.lock().unwrap()).into());
@@ -105,7 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             sleep(Duration::from_millis(250));
             activate_receiver()?;
             wait(|| focused.load(Ordering::SeqCst), "receiver initial focus")?;
-            let keys: AttributeSet<KeyCode> = [KeyCode::KEY_F13, KeyCode::KEY_SCROLLLOCK, KeyCode::KEY_DOWN, KeyCode::KEY_ENTER, KeyCode::KEY_ESC, KeyCode::KEY_A, KeyCode::KEY_LEFTALT, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_BACKSPACE, KeyCode::KEY_L, KeyCode::KEY_T, KeyCode::KEY_6, KeyCode::KEY_1].into_iter().collect();
+            let keys: AttributeSet<KeyCode> = [KeyCode::KEY_F11, KeyCode::KEY_F12, KeyCode::KEY_DOWN, KeyCode::KEY_ENTER, KeyCode::KEY_ESC, KeyCode::KEY_A, KeyCode::KEY_LEFTALT, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_BACKSPACE, KeyCode::KEY_L, KeyCode::KEY_T, KeyCode::KEY_6, KeyCode::KEY_1].into_iter().collect();
             let mut device = test_keyboard::Keyboard::new("Slint return benchmark trigger", &keys)?;
             let input = match &mut device {
                 test_keyboard::Keyboard::Evdev(device) => device.enumerate_dev_nodes_blocking()?.next().transpose()?,
@@ -119,12 +123,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             sleep(Duration::from_secs(2));
             if server.0.try_wait()?.is_some() { return Err("server startup failed".into()); }
             activate_receiver()?;
-            for (name, hotkey) in [("emoji", KeyCode::KEY_F13), ("quick", KeyCode::KEY_SCROLLLOCK)] {
+            for (name, hotkey) in [("emoji", KeyCode::KEY_F11), ("quick", KeyCode::KEY_F12)] {
                 for trial in 0..20 {
                     wait(|| focused.load(Ordering::SeqCst), "receiver before trigger")?;
                     received.lock().unwrap().clear();
                     let before = std::fs::read_to_string(&worker_csv)?;
-                    press(&mut device, hotkey)?;
+                    press_hotkey(&mut device, hotkey)?;
                     wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "popup focus")?;
                     press(&mut device, KeyCode::KEY_DOWN)?;
                     wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",navigation_handled,")), "first arrow")?;
@@ -137,7 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if !data[before.len()..].contains(",test_input_sent,") { return Err("input was not confirmed by worker".into()); }
                     println!("{name} selection {trial}: focus returned, exactly one test character, no navigation leak");
                     received.lock().unwrap().clear();
-                    press(&mut device, hotkey)?;
+                    press_hotkey(&mut device, hotkey)?;
                     wait(|| !focused.load(Ordering::SeqCst), "cancel popup focus")?;
                     press(&mut device, KeyCode::KEY_ESC)?;
                     wait(|| focused.load(Ordering::SeqCst), "cancel focus return")?;
@@ -145,15 +149,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if !received.lock().unwrap().is_empty() { return Err("cancel injected or leaked a key".into()); }
                 }
             }
-            for (name, hotkey) in [("emoji", KeyCode::KEY_F13), ("quick", KeyCode::KEY_SCROLLLOCK)] {
+            for (name, hotkey) in [("emoji", KeyCode::KEY_F11), ("quick", KeyCode::KEY_F12)] {
                 let before = std::fs::read_to_string(&worker_csv)?;
-                press(&mut device, hotkey)?;
+                press_hotkey(&mut device, hotkey)?;
                 wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "repeat focus")?;
                 device.emit(&[*KeyEvent::new(KeyCode::KEY_DOWN, 1)])?;
                 let repeated = wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",navigation_repeated,")), "held arrow repeat");
                 device.emit(&[*KeyEvent::new(KeyCode::KEY_DOWN, 0)])?;
                 repeated?;
-                press(&mut device, hotkey)?;
+                press_hotkey(&mut device, hotkey)?;
                 wait(|| focused.load(Ordering::SeqCst), "repeat hotkey hides popup")?;
                 println!("{name}: held arrow repeats, second hotkey dismisses");
             }
@@ -161,7 +165,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTALT, 1)])?;
             let alt_result = (|| -> Result<(), Box<dyn std::error::Error>> {
                 let before = std::fs::read_to_string(&worker_csv)?;
-                press(&mut device, KeyCode::KEY_SCROLLLOCK)?;
+                if test_keyboard::isolated() {
+                    press_hotkey(&mut device, KeyCode::KEY_F12)?;
+                } else {
+                    device.emit(&[
+                        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 1),
+                        *KeyEvent::new(KeyCode::KEY_F12, 1),
+                        *KeyEvent::new(KeyCode::KEY_F12, 0),
+                        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 0),
+                    ])?;
+                }
                 wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "Alt-held focus")?;
                 press(&mut device, KeyCode::KEY_1)?;
                 Ok(())
@@ -171,7 +184,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             wait(|| received.lock().unwrap().iter().any(|s| s == "a" || s == "ф"), "Alt+1 choice")?;
             received.lock().unwrap().clear();
             let before = std::fs::read_to_string(&worker_csv)?;
-            press(&mut device, KeyCode::KEY_SCROLLLOCK)?;
+            press_hotkey(&mut device, KeyCode::KEY_F12)?;
             wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "modifier reset focus")?;
             press(&mut device, KeyCode::KEY_A)?;
             wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",filter_changed,")), "filter after modifier reset")?;
@@ -184,7 +197,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let changed: bool = layout.call("setLayout", &(1_u32,))?;
                 if !changed { return Err("Russian layout unavailable in isolated compositor".into()); }
                 let before = std::fs::read_to_string(&worker_csv)?;
-                press(&mut device, KeyCode::KEY_SCROLLLOCK)?;
+                press_hotkey(&mut device, KeyCode::KEY_F12)?;
                 wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "Cyrillic focus")?;
                 device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTCTRL, 1)])?;
                 press(&mut device, KeyCode::KEY_A)?;
@@ -199,7 +212,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("quick: real Cyrillic keyboard input reached filter");
             }
             let before = std::fs::read_to_string(&worker_csv)?;
-            press(&mut device, KeyCode::KEY_F13)?;
+            press_hotkey(&mut device, KeyCode::KEY_F11)?;
             wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "stress focus")?;
             press(&mut device, KeyCode::KEY_6)?;
             wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",stress_page,")), "stress page")?;

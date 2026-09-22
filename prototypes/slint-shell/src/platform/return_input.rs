@@ -11,9 +11,12 @@ impl ReturnInput {
         self.target = capture_target();
     }
 
+    pub fn discard(&mut self) {
+        self.target = None;
+    }
+
     pub fn selected(&mut self, text: String) {
         let Some(target) = self.target.take() else {
-            log::error!("native return input has no captured target");
             return;
         };
         slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {

@@ -20,6 +20,17 @@ fn press(device: &mut VirtualDevice, key: KeyCode) -> std::io::Result<()> {
     device.emit(&[*KeyEvent::new(key, 0)])
 }
 
+fn press_hotkey(device: &mut VirtualDevice, key: KeyCode) -> std::io::Result<()> {
+    device.emit(&[
+        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 1),
+        *KeyEvent::new(KeyCode::KEY_LEFTALT, 1),
+        *KeyEvent::new(key, 1),
+        *KeyEvent::new(key, 0),
+        *KeyEvent::new(KeyCode::KEY_LEFTALT, 0),
+        *KeyEvent::new(KeyCode::KEY_LEFTCTRL, 0),
+    ])
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
     let binary = PathBuf::from(
@@ -34,8 +45,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(20);
     let socket = format!("lhc-evdev-bench-{}.sock", std::process::id());
     let keys: AttributeSet<KeyCode> = [
-        KeyCode::KEY_F13,
-        KeyCode::KEY_SCROLLLOCK,
+        KeyCode::KEY_F11,
+        KeyCode::KEY_F12,
+        KeyCode::KEY_LEFTCTRL,
+        KeyCode::KEY_LEFTALT,
         KeyCode::KEY_DOWN,
         KeyCode::KEY_ESC,
         KeyCode::KEY_A,
@@ -75,10 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         csv
     };
     let mut failures = 0;
-    for (name, key) in [
-        ("emoji", KeyCode::KEY_F13),
-        ("quick", KeyCode::KEY_SCROLLLOCK),
-    ] {
+    for (name, key) in [("emoji", KeyCode::KEY_F11), ("quick", KeyCode::KEY_F12)] {
         for _ in 0..count {
             let before = std::fs::read_to_string(&csv)?;
             let previous = before
@@ -87,7 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .find(|line| line.contains(",t0_trigger,"))
                 .and_then(|line| line.split(',').next())
                 .unwrap_or("0");
-            press(&mut device, key)?;
+            press_hotkey(&mut device, key)?;
             let deadline = Instant::now() + Duration::from_secs(2);
             let data = loop {
                 let data = std::fs::read_to_string(&csv)?;

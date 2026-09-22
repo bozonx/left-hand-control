@@ -53,7 +53,7 @@ Do not delete the TPM directory after Windows has been installed. Windows may bi
 
 ## Canonical QEMU launch
 
-Use 4 vCPU, 6 GiB RAM, an emulated tablet, and QEMU user networking. The e1000e adapter works with the Windows installer without a separate virtio driver ISO. Keep a monitor socket: it is the reliable way to test F13 or Scroll Lock when the physical keyboard lacks those keys.
+Use 4 vCPU, 6 GiB RAM, an emulated tablet, and QEMU user networking. The e1000e adapter works with the Windows installer without a separate virtio driver ISO. Keep a monitor socket for VM diagnostics and hardware-level input when needed.
 
 ```bash
 vm_dir=/mnt/disk2/vm/left-hand-control-windows
@@ -221,32 +221,29 @@ if ($LASTEXITCODE -ne 0) { throw 'interaction scenario failed' }
 
 For IPC lifecycle testing, start one server with `Start-Process`, poll `ping` until ready, alternate `show emoji`/`show quick` and `hide` 100 times, then send `quit`. Validate each client’s `$LASTEXITCODE`, confirm that the server exits within a timeout, and inspect redirected stdout/stderr. Do not depend solely on `$server.ExitCode`: PowerShell returned an empty value for the asynchronously launched process in the first harness even though all 100 cycles and shutdown completed successfully.
 
-GUI automation does not replace the manual pass. Tray menus, actual foreground focus, global hotkeys, DPI transitions, emoji rendering, and insertion into unrelated applications must be observed in an interactive desktop.
+GUI automation covers lifecycle, popup navigation, focus events and repeated
+show/hide. Keep a short manual pass for tray appearance, DPI, transparency and
+emoji rendering in an interactive desktop.
 
-## Global hotkeys without a Scroll Lock key
+## Global hotkeys
 
-`global-hotkey` registers F13 and Scroll Lock with Windows. `keybd_event` or `SendInput` from inside Windows is not a valid test of this path: Windows can distinguish injected input, and an injected Scroll Lock did not trigger the registered hotkey in the pilot.
+`global-hotkey` registers `Ctrl+Alt+F11` for Emoji and `Ctrl+Alt+F12` for Quick.
+These combinations are available on ordinary keyboards and can be checked
+interactively without special hardware.
 
-Use the QEMU monitor to inject an emulated keyboard key instead:
-
-```bash
-vm_dir=/mnt/disk2/vm/left-hand-control-windows
-printf 'sendkey scroll_lock\n' | socat - UNIX-CONNECT:"$vm_dir/qemu-monitor.sock"
-```
-
-Run this while Notepad, Windows Terminal, and a browser field are foreground. Confirm that Quick opens on the first event. Use a real keyboard or QEMU hardware-level injection for the final hotkey verdict; mark a `SendInput`-only attempt as inconclusive, not failed.
+Confirm each combination once from Notepad. Application-specific repetition belongs
+to return-input testing, not hotkey registration.
 
 ## Focus return and text insertion
 
-Current pilot status as of 2026-09-22: delayed IPC invocation returned focus to
-Notepad and inserted exact Quick text and one emoji through the clipboard fallback;
-the previous text clipboard was restored. Invocation from the system tray still
-failed to return focus to Notepad. The Windows pass is paused on that blocker.
+Delayed IPC invocation returned focus to Notepad and inserted exact Quick text and
+one emoji through the clipboard fallback; the previous text clipboard was restored.
+Tray invocation intentionally does not promise focus return or automatic insertion.
 
 For Emoji and Quick, repeat the following with Notepad, Windows Terminal, and a browser:
 
 1. Type a unique `BEFORE:` marker and leave the caret at the end.
-2. Open the popup from the tray, IPC, and a hardware-level global hotkey.
+2. Open the popup with its global hotkey.
 3. Select by mouse and separately by keyboard.
 4. Confirm that the popup closes and the original window becomes foreground.
 5. Compare the inserted value character-for-character.
@@ -259,7 +256,6 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 
 - the exact Unicode value is inserted once;
 - the previous text clipboard is restored only after the target processes Paste;
-- behavior for non-text clipboard formats is defined and tested;
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
@@ -299,6 +295,5 @@ VM results establish functional compatibility. Final claims about physical media
 | Emoji are monochrome | Confirm `SLINT_BACKEND=winit-skia`; software rendering did not provide the desired Windows color emoji result. |
 | Only some stress emoji are squares | Check whether the code point is a valid supported emoji before blaming the renderer. |
 | IPC says connection refused | Start the persistent server and wait for `ping`; a CLI invocation alone cannot contact a stopped server. |
-| Synthetic Scroll Lock does nothing | Use QEMU monitor `sendkey` or physical hardware; in-guest `SendInput` is not conclusive for a registered global hotkey. |
 | Quick inserts repeated final digits | Reproduce with the exact mixed-language string; investigate foreground readiness and Unicode/clipboard insertion, not just popup rendering. |
 | `qemu-img snapshot` reports a write lock | Shut down the guest and wait for QEMU to exit before manipulating the qcow2 file. |

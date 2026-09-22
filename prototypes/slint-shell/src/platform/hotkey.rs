@@ -1,7 +1,7 @@
 use crate::{Command, Dispatch};
 use global_hotkey::{
     GlobalHotKeyEvent, GlobalHotKeyManager, HotKeyState,
-    hotkey::{Code, HotKey},
+    hotkey::{Code, HotKey, Modifiers},
 };
 use std::time::Instant;
 
@@ -9,8 +9,9 @@ pub fn start(dispatch: Dispatch) {
     if std::env::var("SLINT_SHELL_HOTKEYS").as_deref() == Ok("off") {
         return;
     }
-    let emoji = HotKey::new(None, Code::F13);
-    let quick = HotKey::new(None, Code::ScrollLock);
+    let modifiers = Modifiers::CONTROL | Modifiers::ALT;
+    let emoji = HotKey::new(Some(modifiers), Code::F11);
+    let quick = HotKey::new(Some(modifiers), Code::F12);
     let emoji_id = emoji.id();
     let quick_id = quick.id();
     let manager = match GlobalHotKeyManager::new()

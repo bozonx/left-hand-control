@@ -20,7 +20,9 @@ pub fn start(dispatch: Dispatch) {
     let mut count = 0;
     for (path, mut device) in devices {
         if !device.supported_keys().is_some_and(|keys| {
-            keys.contains(KeyCode::KEY_F13) || keys.contains(KeyCode::KEY_SCROLLLOCK)
+            keys.contains(KeyCode::KEY_LEFTCTRL)
+                && keys.contains(KeyCode::KEY_LEFTALT)
+                && (keys.contains(KeyCode::KEY_F11) || keys.contains(KeyCode::KEY_F12))
         }) {
             continue;
         }
@@ -28,16 +30,33 @@ pub fn start(dispatch: Dispatch) {
         let dispatch = dispatch.clone();
         std::thread::spawn(move || {
             log::info!("evdev listening: {}", path.display());
+            let mut control = false;
+            let mut alt = false;
             loop {
                 match device.fetch_events() {
                     Ok(events) => {
                         for event in events {
-                            if event.event_type() != evdev::EventType::KEY || event.value() != 1 {
+                            if event.event_type() != evdev::EventType::KEY {
                                 continue;
                             }
-                            let command = match KeyCode::new(event.code()) {
-                                KeyCode::KEY_F13 => Command::Show("emoji"),
-                                KeyCode::KEY_SCROLLLOCK => Command::Show("quick"),
+                            let key = KeyCode::new(event.code());
+                            match key {
+                                KeyCode::KEY_LEFTCTRL | KeyCode::KEY_RIGHTCTRL => {
+                                    control = event.value() != 0;
+                                    continue;
+                                }
+                                KeyCode::KEY_LEFTALT | KeyCode::KEY_RIGHTALT => {
+                                    alt = event.value() != 0;
+                                    continue;
+                                }
+                                _ => {}
+                            }
+                            if event.value() != 1 || !control || !alt {
+                                continue;
+                            }
+                            let command = match key {
+                                KeyCode::KEY_F11 => Command::Show("emoji"),
+                                KeyCode::KEY_F12 => Command::Show("quick"),
                                 _ => continue,
                             };
                             dispatch(command, "evdev", Instant::now(), None);
@@ -53,7 +72,7 @@ pub fn start(dispatch: Dispatch) {
     }
     if count == 0 {
         log::warn!(
-            "No readable F13/ScrollLock evdev devices; check input permissions or SLINT_SHELL_INPUT"
+            "No readable Ctrl+Alt+F11/F12 evdev devices; check input permissions or SLINT_SHELL_INPUT"
         );
     }
 }
