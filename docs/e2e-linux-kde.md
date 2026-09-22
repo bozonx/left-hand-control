@@ -133,6 +133,9 @@ For repeatability, prefer VM snapshots: restore a clean snapshot, run E2E, colle
 ## Windows VM
 
 Use a Windows 11 VM with an interactive desktop session for the runner user.
+The complete KVM/QEMU setup, Secure Boot and TPM configuration, snapshot workflow,
+toolchain installation, file transfer, hotkey injection, and known failure modes
+are documented in [Windows testing in KVM/QEMU](windows-testing.md).
 
 Install:
 
