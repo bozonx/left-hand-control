@@ -415,7 +415,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;
-    let emojis: Vec<slint::SharedString> = ["☺", "😀", "👩‍💻"]
+    let emojis: Vec<slint::SharedString> = ["☕", "😀", "👩‍💻"]
         .into_iter()
         .map(Into::into)
         .chain(

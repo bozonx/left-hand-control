@@ -51,6 +51,10 @@ VM не сравнивать с Linux-стендом.
   потеря фокуса закрывают popup без вставки;
 - hotkey-flow вернул фокус в Notepad и по Enter ровно один раз вставил выбранные
   смешанные строки `Действие 01 / Action 01` и `Действие 02 / Action 02`.
+- `winit-skia` цветно отрисовал контрольные `☕`, `😀` и `👩‍💻`; каждый из них
+  через hotkey-flow вставился в Notepad ровно один раз.
+- WinForms receiver сохраняет text, UTF-16, Unicode code points и focus events;
+  smoke-проход записал выбранный `☕` как единственную кодовую точку `9749`.
 
 Старый блокер tray focus return снят: вставка после tray-вызова больше не входит в
 контракт. Старые одиночные тестовые клавиши заменены на `Ctrl+Alt+F11` для Emoji и
@@ -97,7 +101,7 @@ focus events и точный Unicode. Notepad оставить одним вне
 
 ### Renderer и DPI
 
-- [ ] `winit-skia` показывает цветные BMP, surrogate-pair и composed emoji.
+- [x] `winit-skia` показывает цветные BMP, surrogate-pair и composed emoji.
 - [ ] На 100%, 125% и 150% окно не обрезано, click areas совпадают с отрисовкой,
   modal/dropdown/popup остаются видимыми.
 - [ ] Popup находится в доступной рабочей области текущего монитора и не создаёт

@@ -193,6 +193,11 @@ Run the release build only for the final validation:
 cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell
 ```
 
+Stop the persistent shell before rebuilding it. Windows does not allow Cargo to replace a
+running executable; compilation can finish and then fail at the final file replacement with
+`Access is denied (os error 5)`. Send `slint-shell.exe quit`, wait for the process to disappear,
+and only then start `cargo build`.
+
 The initial Slint release build took about eleven minutes in the 4-vCPU/6-GiB VM because release LTO and host swapping dominated the link. A quiet linker is not necessarily hung. Check Task Manager or the QEMU process before interrupting it. Do not compare build time or runtime performance from a swapping VM with a physical Linux result.
 
 PowerShell displays output written to stderr in red and may wrap a successful native command as `NativeCommandError`. Cargo writes progress and warnings to stderr, so red `Compiling`, warnings, or Rustup informational lines are not proof of failure. The authoritative signal is `$LASTEXITCODE` and Cargo’s final line:
@@ -233,6 +238,12 @@ $env:RUST_LOG = 'debug'
 ```
 
 `winit-software` built and rendered the UI, but Windows showed monochrome outline emoji. `winit-skia` rendered the normal color Windows emoji and is the Windows candidate renderer. Some squares on the stress page were caused by the prototype generating contiguous Unicode code-point ranges that include unassigned or non-emoji symbols; they are test-data defects unless the same known-valid emoji also fails.
+
+Use explicit, known strings for renderer acceptance. Bare `☺` requests text presentation,
+`☺️` remained an outline, and `❤️` rendered as tofu in the tested Slint/Skia font fallback,
+so none is a reliable positive color oracle here. Use `☕` (`U+2615`, default emoji
+presentation) for the BMP case, `😀` for a surrogate pair, and `👩‍💻` for a composed ZWJ
+sequence. A contiguous code-point range cannot cover the last case.
 
 The server starts hidden and remains accessible from the tray. A second invocation is an IPC client:
 
@@ -288,9 +299,26 @@ desktop accessibility automation. It does not replace the interactive tray, DPI,
 renderer checks.
 
 With `vncdotool`, the Windows key chord is `super-r`, not `meta-r`. On the canonical English
-guest, `type` can emit `;` where `:` is intended. Send the colon explicitly as `key 'shift-;'`
-when entering URLs or drive paths. Prefer a short downloaded `.ps1` over typing a long inline
-PowerShell expression; it avoids keyboard-layout and quoting errors.
+guest, neither `type ':'` nor a synthesized Shift+semicolon reliably produced a colon. Inject
+it through the QEMU monitor while the guest field is focused:
+
+```bash
+printf 'sendkey shift-semicolon\n' | \
+  timeout 1 socat - UNIX-CONNECT:"$vm_dir/qemu-monitor.sock"
+```
+
+Close the monitor client with a timeout as shown; do not send `quit`. `vncdotool` can also
+emit apostrophes for double quotes, turning
+`start "" program.exe` into the invalid `start '' program.exe`. Run the executable directly
+or use a downloaded script instead of typing commands that depend on quotes. Prefer a short
+downloaded `.ps1` over typing a long inline PowerShell expression; it avoids keyboard-layout
+and quoting errors.
+
+Microsoft Defender can block an inline `irm URL | iex` launch and report that
+`powershell.exe` cannot be accessed, even when the same local PowerShell installation worked
+for the build. Treat that as a security-policy result, not as a missing executable. Download
+an inspectable script first and run it normally; for simple launch-only operations, use a
+short `cmd.exe` command without PowerShell. Do not disable Defender for the test VM.
 
 QEMU monitor `quit` terminates the VM immediately and may interrupt Windows Update. Do not
 include it merely to close a monitor client: close the socket client with a timeout instead.
@@ -326,6 +354,23 @@ For Emoji and Quick, repeat the following with Notepad, Windows Terminal, and a 
 5. Compare the inserted value character-for-character.
 
 Test Latin, Cyrillic, punctuation, a BMP emoji, a surrogate-pair emoji, and a composed emoji sequence. Also test Escape and focus loss, which must insert nothing.
+
+Use the committed receiver for the repeatable Unicode and focus matrix:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\prototypes\slint-shell\scripts\windows-receiver.ps1
+```
+
+It opens a native WinForms edit control and writes `snapshot.json` plus append-only
+`events.jsonl` under `windows-runtime\receiver`. Each record contains the received text,
+UTF-16 code units, decoded Unicode code points, form activation, and editor focus. Compare
+these records instead of inferring exact Unicode from console rendering or screenshots.
+
+The popup preserves its selected index across hide/show. Repeated automation must track the
+current selection or move it deliberately; reopening the popup does not imply that selection
+returns to the first item. The renderer fixture keeps `☕`, `😀`, and `👩‍💻` at the start of
+the catalog so those three Unicode classes can be selected deterministically.
 
 The Slint pilot exposed a real Windows defect here: `enigo 0.6.1` has an incorrect UTF-16 key-up value for surrogate pairs, and direct Unicode `SendInput` still raced foreground activation. Results included `Действие 02` becoming a truncated prefix followed by repeated `2` characters. Increasing arbitrary sleeps or treating `SetForegroundWindow` success as proof that the target can already consume input is not a reliable fix. Keep this case in the regression suite.
 
