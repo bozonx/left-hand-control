@@ -58,8 +58,9 @@ VM не сравнивать с Linux-стендом.
 - [x] Release-сборка без Linux-only feature `spell`.
 - [x] Повторный запуск работает как IPC client, а не второй UI server.
 - [x] 100 чередующихся `show emoji` / `show quick` / `hide`, затем `quit`.
-- [ ] Выход с открытым и скрытым окном не оставляет process, listener или tray icon.
-- [ ] Неверный `SLINT_SHELL_POPUPS=spell` завершается с понятной ошибкой.
+- [x] Выход с открытым и скрытым окном не оставляет process или listener.
+- [ ] После такого выхода tray icon не остаётся визуально в системном трее.
+- [x] Неверный `SLINT_SHELL_POPUPS=spell` завершается с понятной ошибкой.
 
 ### Slint UI и окна
 

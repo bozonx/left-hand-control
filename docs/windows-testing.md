@@ -131,6 +131,27 @@ Short `irm ... | iex` endpoints are useful during an interactive debugging sessi
 
 For a source snapshot, archive the exact commit plus intentional uncommitted patches, record both, and extract it to `C:\lhc`. A stale archive was one source of confusing Windows results during the Slint pilot; updating only a helper script does not update the source already extracted in the guest.
 
+For repeatable E2E runs, use a new user-writable directory for each source revision,
+for example `C:\Users\user\lhc-current`. Do not extract test inputs or write logs directly
+under `C:\`; the unprivileged test user cannot reliably create files there. Keep the
+downloaded bootstrap under the user profile or `%TEMP%` as well.
+
+The host-side archive must include intentional uncommitted test harness changes. A plain
+`git archive HEAD` omits them. Either commit the harness first or add the exact files to the
+archive explicitly, then confirm the archive contents before serving it:
+
+```bash
+git archive --format=zip --output="$vm_dir/left-hand-control-current.zip" HEAD
+zip -u "$vm_dir/left-hand-control-current.zip" \
+  prototypes/slint-shell/scripts/check-windows-lifecycle.ps1
+unzip -l "$vm_dir/left-hand-control-current.zip" | \
+  grep check-windows-lifecycle.ps1
+```
+
+When a bootstrap fails after extraction or during Cargo compilation, preserve the extracted
+directory and its `target/` cache. Fix and redownload only the small PowerShell harness when
+possible; deleting the whole directory turns the next attempt into another clean Slint build.
+
 ## Toolchain installation
 
 Open PowerShell as the test user. Install the MSVC build tools and Rust from the `winget` community source explicitly:
@@ -181,6 +202,24 @@ cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin sli
 if ($LASTEXITCODE -ne 0) { throw "cargo failed with exit code $LASTEXITCODE" }
 ```
 
+This also affects automation. In Windows PowerShell 5.1, do not leave
+`$ErrorActionPreference = 'Stop'` around a native command whose stderr is piped through
+`Tee-Object`: normal Cargo progress can terminate the script. Use `Continue` for the native
+command, inspect `$LASTEXITCODE` immediately, and restore `Stop` for PowerShell operations:
+
+```powershell
+$ErrorActionPreference = 'Continue'
+cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell `
+  2>&1 | Tee-Object -FilePath $log -Append
+$cargoExit = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+if ($cargoExit -ne 0) { throw "cargo test failed with exit code $cargoExit" }
+```
+
+Apply the same rule to an expected failing probe. For example, an initial best-effort
+`slint-shell.exe quit` returns connection refused when no server exists; suppress or capture
+that native failure under `Continue` before restoring strict PowerShell error handling.
+
 Use PowerShell 7 where possible for UTF-8 logs. In Windows PowerShell 5.1, Cyrillic and emoji can appear as mojibake even when the application sent the correct UTF-16 text. Verify the resulting text in Notepad and save logs explicitly as UTF-8; do not diagnose Unicode behavior from a mojibake console line alone.
 
 ## Running the Slint prototype
@@ -220,6 +259,44 @@ if ($LASTEXITCODE -ne 0) { throw 'interaction scenario failed' }
 ```
 
 For IPC lifecycle testing, start one server with `Start-Process`, poll `ping` until ready, alternate `show emoji`/`show quick` and `hide` 100 times, then send `quit`. Validate each client’s `$LASTEXITCODE`, confirm that the server exits within a timeout, and inspect redirected stdout/stderr. Do not depend solely on `$server.ExitCode`: PowerShell returned an empty value for the asynchronously launched process in the first harness even though all 100 cycles and shutdown completed successfully.
+
+The committed lifecycle harness covers the acceptance cases that are easy to miss in an
+interactive pass:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\prototypes\slint-shell\scripts\check-windows-lifecycle.ps1
+```
+
+It verifies shutdown from both hidden and visible states, process disappearance, release of
+the loopback listener on `127.0.0.1:43176`, and the non-zero exit plus diagnostic for the
+unsupported Windows setting `SLINT_SHELL_POPUPS=spell`. Logs are written below
+`windows-runtime\lifecycle` in the source checkout.
+
+## Headless host control and recovery
+
+Keep the GTK display for the interactive visual pass, and optionally expose the same QEMU
+display on loopback VNC for repeatable host automation:
+
+```bash
+-display gtk,gl=off -vnc 127.0.0.1:1
+```
+
+Never expose this unauthenticated VNC endpoint beyond loopback. VNC is useful for starting a
+guest-side PowerShell harness and capturing progress while the GTK window is inaccessible to
+desktop accessibility automation. It does not replace the interactive tray, DPI, focus, or
+renderer checks.
+
+With `vncdotool`, the Windows key chord is `super-r`, not `meta-r`. On the canonical English
+guest, `type` can emit `;` where `:` is intended. Send the colon explicitly as `key 'shift-;'`
+when entering URLs or drive paths. Prefer a short downloaded `.ps1` over typing a long inline
+PowerShell expression; it avoids keyboard-layout and quoting errors.
+
+QEMU monitor `quit` terminates the VM immediately and may interrupt Windows Update. Do not
+include it merely to close a monitor client: close the socket client with a timeout instead.
+If Windows Update requests a shutdown, QEMU and the swtpm control socket can both disappear;
+start a fresh swtpm socket before restarting QEMU. Confirm that no QEMU process owns the qcow2
+disk before every restart.
 
 GUI automation covers lifecycle, popup navigation, focus events and repeated
 show/hide. Keep a short manual pass for tray appearance, DPI, transparency and
