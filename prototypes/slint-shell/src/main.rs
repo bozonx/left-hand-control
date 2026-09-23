@@ -415,11 +415,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;
-    let emojis: Vec<slint::SharedString> = (0x1f600..=0x1f64f)
-        .chain(0x1f300..=0x1f5ff)
-        .filter_map(char::from_u32)
+    let emojis: Vec<slint::SharedString> = ["☺", "😀", "👩‍💻"]
+        .into_iter()
+        .map(Into::into)
+        .chain(
+            (0x1f600..=0x1f64f)
+                .chain(0x1f300..=0x1f5ff)
+                .filter_map(char::from_u32)
+                .map(|c| c.to_string().into()),
+        )
         .take(240)
-        .map(|c| c.to_string().into())
         .collect();
     emoji.set_emojis(ModelRc::new(VecModel::from(emojis)));
     metrics.ready("emoji");
