@@ -19,12 +19,17 @@ impl ReturnInput {
         let Some(target) = self.target.take() else {
             return;
         };
+        let selection_context = capture_selection_context();
         slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {
-            if let Err(error) = restore_target(target) {
+            if let Err(error) = restore_target(target, selection_context) {
                 log::error!("native focus restore failed: {error}");
                 return;
             }
             std::thread::sleep(std::time::Duration::from_millis(100));
+            if !target_is_foreground(target) {
+                log::warn!("native return input cancelled: foreground changed before paste");
+                return;
+            }
             if let Err(error) = type_text(&text) {
                 log::error!("native return input unavailable: {error}");
             }
@@ -33,33 +38,112 @@ impl ReturnInput {
 }
 
 #[cfg(target_os = "windows")]
-type Target = isize;
-
-#[cfg(target_os = "windows")]
-fn capture_target() -> Option<Target> {
-    let window = unsafe { windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow() };
-    (!window.0.is_null()).then_some(window.0 as isize)
+#[derive(Clone, Copy)]
+struct Target {
+    window: isize,
+    process_id: u32,
 }
 
 #[cfg(target_os = "windows")]
-fn restore_target(target: Target) -> Result<(), Box<dyn std::error::Error>> {
-    use windows::Win32::{Foundation::HWND, UI::WindowsAndMessaging::SetForegroundWindow};
-    let restored = unsafe { SetForegroundWindow(HWND(target as *mut _)) }.as_bool();
-    restored
-        .then_some(())
-        .ok_or_else(|| "SetForegroundWindow rejected the target".into())
+type SelectionContext = Option<isize>;
+
+#[cfg(target_os = "windows")]
+fn capture_target() -> Option<Target> {
+    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+
+    let window = unsafe { GetForegroundWindow() };
+    if window.0.is_null() {
+        return None;
+    }
+    let mut process_id = 0;
+    unsafe { GetWindowThreadProcessId(window, Some(&mut process_id)) };
+    (process_id != 0).then_some(Target {
+        window: window.0 as isize,
+        process_id,
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn capture_selection_context() -> SelectionContext {
+    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+
+    let window = unsafe { GetForegroundWindow() };
+    if window.0.is_null() {
+        return None;
+    }
+    let mut process_id = 0;
+    unsafe { GetWindowThreadProcessId(window, Some(&mut process_id)) };
+    (process_id == std::process::id()).then_some(window.0 as isize)
+}
+
+#[cfg(target_os = "windows")]
+fn restore_target(
+    target: Target,
+    selection_context: SelectionContext,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use windows::Win32::{
+        Foundation::HWND,
+        UI::WindowsAndMessaging::{GetForegroundWindow, SetForegroundWindow},
+    };
+
+    if !target_is_valid(target) {
+        return Err("target window is no longer valid".into());
+    }
+    let foreground = unsafe { GetForegroundWindow() }.0 as isize;
+    if foreground != target.window && Some(foreground) != selection_context {
+        return Err("foreground changed after selection".into());
+    }
+    if foreground != target.window {
+        let restored = unsafe { SetForegroundWindow(HWND(target.window as *mut _)) }.as_bool();
+        if !restored {
+            return Err("SetForegroundWindow rejected the target".into());
+        }
+    }
+    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+    while std::time::Instant::now() < deadline {
+        if target_is_foreground(target) {
+            return Ok(());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    Err("target did not become foreground".into())
+}
+
+#[cfg(target_os = "windows")]
+fn target_is_valid(target: Target) -> bool {
+    use windows::Win32::{
+        Foundation::HWND,
+        UI::WindowsAndMessaging::{GetWindowThreadProcessId, IsWindow},
+    };
+
+    let window = HWND(target.window as *mut _);
+    if !unsafe { IsWindow(Some(window)) }.as_bool() {
+        return false;
+    }
+    let mut process_id = 0;
+    unsafe { GetWindowThreadProcessId(window, Some(&mut process_id)) };
+    process_id == target.process_id
+}
+
+#[cfg(target_os = "windows")]
+fn target_is_foreground(target: Target) -> bool {
+    use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+
+    target_is_valid(target) && unsafe { GetForegroundWindow() }.0 as isize == target.window
 }
 
 #[cfg(target_os = "windows")]
 fn type_text(text: &str) -> Result<(), Box<dyn std::error::Error>> {
     let previous = clipboard_text();
     set_clipboard_text(text)?;
-    paste()?;
-    std::thread::sleep(std::time::Duration::from_millis(150));
+    let result = paste();
+    if result.is_ok() {
+        std::thread::sleep(std::time::Duration::from_millis(150));
+    }
     if let Some(previous) = previous {
         set_clipboard_text(&previous)?;
     }
-    Ok(())
+    result
 }
 
 #[cfg(target_os = "windows")]
@@ -161,6 +245,9 @@ fn set_clipboard_text(text: &str) -> Result<(), Box<dyn std::error::Error>> {
 type Target = i32;
 
 #[cfg(target_os = "macos")]
+type SelectionContext = ();
+
+#[cfg(target_os = "macos")]
 fn capture_target() -> Option<Target> {
     let output = std::process::Command::new("osascript")
         .args([
@@ -177,7 +264,13 @@ fn capture_target() -> Option<Target> {
 }
 
 #[cfg(target_os = "macos")]
-fn restore_target(target: Target) -> Result<(), Box<dyn std::error::Error>> {
+fn capture_selection_context() -> SelectionContext {}
+
+#[cfg(target_os = "macos")]
+fn restore_target(
+    target: Target,
+    _selection_context: SelectionContext,
+) -> Result<(), Box<dyn std::error::Error>> {
     let script = format!(
         "tell application \"System Events\" to set frontmost of first application process whose unix id is {target} to true"
     );
@@ -188,6 +281,11 @@ fn restore_target(target: Target) -> Result<(), Box<dyn std::error::Error>> {
         .success()
         .then_some(())
         .ok_or_else(|| format!("osascript exited with {status}").into())
+}
+
+#[cfg(target_os = "macos")]
+fn target_is_foreground(_target: Target) -> bool {
+    true
 }
 
 #[cfg(target_os = "macos")]
