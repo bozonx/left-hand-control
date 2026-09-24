@@ -74,6 +74,11 @@ VM не сравнивать с Linux-стендом.
 контракт. Старые одиночные тестовые клавиши заменены на `Ctrl+Alt+F11` для Emoji и
 `Ctrl+Alt+F12` для Quick.
 
+Единый автоматический Windows-suite повторно пройден 2026-09-24 на Windows 11
+build 26200: native tests, release-сборка, portable interactions, 100 циклов
+show/hide, контроль working set/handles, shutdown и отключённые hotkeys успешны.
+[Краткий протокол запуска](slint-prototype-results/windows-2026-09-24.txt).
+
 ## Автоматическая приёмка
 
 ### Сборка и lifecycle
@@ -91,10 +96,10 @@ VM не сравнивать с Linux-стендом.
 - [ ] Settings, Emoji и Quick открываются без дубликатов и невидимого focus trap.
 - [x] Первая стрелка обрабатывается popup без предварительного клика.
 - [x] Enter выбирает; Esc и потеря фокуса закрывают без действия.
-- [ ] Tab/Shift+Tab, modal focus return, Save и Cancel имеют правильную семантику.
-- [ ] DnD, edge scrolling, dropdown у края и каталог из 500 записей работают.
+- [x] Tab/Shift+Tab, modal focus return, Save и Cancel имеют правильную семантику.
+- [x] DnD, edge scrolling, dropdown у края и каталог из 500 записей работают.
 - [ ] Валидный каталог из 1500 emoji прокручивается и остаётся управляемым.
-- [ ] Скрытые popup корректно получают новые theme и locale перед повторным показом.
+- [x] Скрытые popup корректно получают новые theme и locale перед повторным показом.
 
 ### Windows adapters
 
@@ -103,7 +108,7 @@ VM не сравнивать с Linux-стендом.
 - [x] `Ctrl+Alt+F11` открывает Emoji, `Ctrl+Alt+F12` — Quick.
 - [x] Повтор hotkey скрывает уже открытый соответствующий popup без дубликата.
 - [x] Конфликт регистрации даёт диагностическую ошибку.
-- [ ] `SLINT_SHELL_HOTKEYS=off` отключает регистрацию, а сочетания не открывают popup.
+- [x] `SLINT_SHELL_HOTKEYS=off` отключает регистрацию, а сочетания не открывают popup.
 - [x] После hotkey-вызова из Notepad выбор возвращает подтверждённый foreground и
   вставляет Latin, Cyrillic и composed emoji точно один раз.
 - [x] Если foreground изменился или его нельзя подтвердить, ввод отменяется и не

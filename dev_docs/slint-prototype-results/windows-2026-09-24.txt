@@ -1,0 +1,19 @@
+Windows 11 build 26200
+Windows PowerShell 5.1.26100.9444
+Repository commit: 56184e9
+Date: 2026-09-24
+
+Command:
+powershell -ExecutionPolicy Bypass -File .\prototypes\slint-shell\scripts\check-windows-automated.ps1
+
+Result: WINDOWS AUTOMATED ACCEPTANCE PASSED
+
+- cargo test --locked --bin slint-shell: passed
+- release build of slint-shell and interactions: passed
+- portable interactions: passed
+- hidden and visible shutdown: passed
+- 100 alternating Emoji/Quick show-hide cycles: passed
+- working-set and handle bounds after warm-up: passed
+- SLINT_SHELL_HOTKEYS=off: passed
+- process and loopback listener cleanup: passed
+- unsupported Spell backend diagnostic: passed
