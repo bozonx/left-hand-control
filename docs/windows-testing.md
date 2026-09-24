@@ -279,10 +279,22 @@ powershell -ExecutionPolicy Bypass -File `
   .\prototypes\slint-shell\scripts\check-windows-lifecycle.ps1
 ```
 
-It verifies shutdown from both hidden and visible states, process disappearance, release of
-the loopback listener on `127.0.0.1:43176`, and the non-zero exit plus diagnostic for the
-unsupported Windows setting `SLINT_SHELL_POPUPS=spell`. Logs are written below
-`windows-runtime\lifecycle` in the source checkout.
+It verifies shutdown from both hidden and visible states, 100 alternating popup cycles,
+bounded working-set and handle growth after warm-up, disabled global hotkeys, process
+disappearance, release of the loopback listener on `127.0.0.1:43176`, and the non-zero exit
+plus diagnostic for the unsupported Windows setting `SLINT_SHELL_POPUPS=spell`. Logs,
+metrics and resource samples are written below `windows-runtime\lifecycle` in the source
+checkout.
+
+Run the complete non-manual Windows acceptance suite with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\prototypes\slint-shell\scripts\check-windows-automated.ps1
+```
+
+It runs native tests, makes the release build, executes the portable interaction scenario,
+and then runs the lifecycle harness.
 
 ## Headless host control and recovery
 

@@ -86,13 +86,19 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri
+            prototypes/slint-shell
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install tauri-driver
         run: cargo install tauri-driver --locked
+
+      - name: Run Slint Windows automated acceptance
+        shell: powershell
+        run: .\prototypes\slint-shell\scripts\check-windows-automated.ps1
 
       - name: Run Windows E2E smoke tests
         run: pnpm test:e2e:windows
@@ -104,3 +110,4 @@ jobs:
           name: e2e-artifacts-windows
           path: |
             e2e/screenshots/
+            windows-runtime/lifecycle/
