@@ -5,6 +5,7 @@
 //! threads reach it only through `slint::invoke_from_event_loop` +
 //! [`with_app`]; nothing here is shared across threads.
 
+mod layouts;
 mod mapper;
 mod popups;
 mod worker;
@@ -202,6 +203,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let settings = SettingsWindow::new()?;
     let config = load_config(&settings);
     let editor = editor::bind_with_config(&settings, config.clone());
+    layouts::bind(&settings, config.clone(), editor.clone());
     let devices = mapper::bind_devices(&settings, config.as_ref());
     metrics.ready("settings");
     popup_attributes.set(true);

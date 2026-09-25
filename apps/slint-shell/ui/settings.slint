@@ -7,11 +7,23 @@ export struct ActionRow { id: int, label: string, label-en: string }
 export component SettingsWindow inherits Window {
     background: Theme.surface;
     default-font-size: 14px;
-    title: @tr("Slint Shell — key editor");
-    preferred-width: 1060px;
+    title: @tr("Left Hand Control");
+    preferred-width: 1120px;
     preferred-height: 760px;
     min-width: 940px;
     min-height: 700px;
+    in-out property <int> page: 0;
+    in property <[string]> layout-names;
+    in-out property <int> selected-layout: -1;
+    in-out property <string> layout-name;
+    in property <string> layout-description;
+    in property <string> layout-status;
+    callback refresh-layouts();
+    callback select-layout(int);
+    callback create-layout(string);
+    callback save-layout();
+    callback load-layout();
+    callback delete-layout();
     in property <[string]> keys;
     in property <[string]> assignments;
     in property <[ActionRow]> actions;
@@ -80,23 +92,85 @@ export component SettingsWindow inherits Window {
             padding: 24px;
             spacing: 16px;
             HorizontalBox {
-                Button { text: @tr("Keyboard"); clicked => { root.grid-open = false; } }
-                Button { text: @tr("Action grid"); clicked => { root.grid-open = true; } }
+                spacing: 8px;
+                Button { text: @tr("Keyboard"); clicked => { root.page = 0; root.grid-open = false; } }
+                Button { text: @tr("Action grid"); clicked => { root.page = 0; root.grid-open = true; } }
+                Button { text: @tr("Layouts"); clicked => { root.page = 1; root.refresh-layouts(); } }
+                Button { text: @tr("Settings"); clicked => { root.page = 2; } }
+                Rectangle { horizontal-stretch: 1; }
                 Button { text: Theme.dark ? @tr("☀ Light") : @tr("☾ Dark"); clicked => { root.preferences(!Theme.dark, Locale.english); } }
                 Button { text: Locale.english ? "Русский" : "English"; clicked => { root.preferences(Theme.dark, !Locale.english); } }
             }
-            Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: 26px; font-weight: 700; }
-            Text { color: Theme.muted; text: @tr("Select a key to assign an action."); }
-            Text { color: Theme.muted; text: Locale.text(root.config-status); }
-            HorizontalBox {
-                Text { text: @tr("Keyboard device"); color: Theme.text; vertical-alignment: center; }
-                ComboBox {
-                    model: root.input-devices;
-                    current-index: root.selected-device;
-                    selected(value) => { root.select-device(self.current-index); }
-                }
+            Rectangle { height: 1px; background: Theme.border; }
+            if root.page == 0: VerticalBox {
+                spacing: 8px;
+                Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: 26px; font-weight: 700; }
+                Text { color: Theme.muted; text: @tr("Select a key to assign an action."); }
+                Text { color: Theme.muted; text: Locale.text(root.config-status); }
             }
-            if !root.grid-open: VerticalLayout {
+            if root.page == 1: VerticalBox {
+                spacing: 12px;
+                Text { color: Theme.text; text: @tr("Layouts"); font-size: 26px; font-weight: 700; }
+                Text { color: Theme.muted; text: @tr("Save the current layout or select a file from your library."); }
+                HorizontalBox {
+                    spacing: 8px;
+                    LineEdit { text <=> root.layout-name; placeholder-text: @tr("New layout name"); }
+                    Button { text: @tr("Create empty"); clicked => { root.create-layout(root.layout-name); } }
+                    Button { text: @tr("Save current"); clicked => { root.save-layout(); } }
+                    Button { text: @tr("Refresh"); clicked => { root.refresh-layouts(); } }
+                }
+                Rectangle {
+                    background: Theme.card;
+                    border-color: Theme.border;
+                    border-width: 1px;
+                    border-radius: 8px;
+                    vertical-stretch: 1;
+                    ListView {
+                        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+                        for name[index] in root.layout-names: Rectangle {
+                            height: 42px;
+                            background: root.selected-layout == index ? Theme.accent : row-touch.has-hover ? Theme.hover : Theme.card;
+                            Text { x: 12px; text: name; color: Theme.text; vertical-alignment: center; }
+                            row-touch := TouchArea { clicked => { root.select-layout(index); } }
+                        }
+                    }
+                }
+                Text { text: root.layout-description; color: Theme.muted; wrap: word-wrap; }
+                HorizontalBox {
+                    spacing: 8px;
+                    Button { text: @tr("Load selected"); enabled: root.selected-layout >= 0; clicked => { root.load-layout(); } }
+                    Button { text: @tr("Save current to selected"); enabled: root.selected-layout >= 0; clicked => { root.save-layout(); } }
+                    Button { text: @tr("Delete selected"); enabled: root.selected-layout >= 0; clicked => { root.delete-layout(); } }
+                }
+                Text { text: root.layout-status; color: Theme.muted; wrap: word-wrap; }
+            }
+            if root.page == 2: VerticalBox {
+                spacing: 14px;
+                Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
+                Rectangle { background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px; height: 150px;
+                    VerticalBox { padding: 16px; spacing: 10px;
+                        Text { text: @tr("Mapper"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                        Text { text: Locale.text(root.config-status); color: Theme.muted; }
+                        HorizontalBox {
+                            Text { text: @tr("Keyboard device"); color: Theme.text; vertical-alignment: center; }
+                            ComboBox { model: root.input-devices; current-index: root.selected-device; selected(value) => { root.select-device(self.current-index); } }
+                            Button { text: @tr("Toggle mapper"); clicked => { root.toggle-mapper(); } }
+                        }
+                    }
+                }
+                Rectangle { background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px; height: 110px;
+                    VerticalBox { padding: 16px; spacing: 10px;
+                        Text { text: @tr("Appearance and language"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                        HorizontalBox {
+                            Button { text: Theme.dark ? @tr("Dark") : @tr("Light"); clicked => { root.preferences(!Theme.dark, Locale.english); } }
+                            ComboBox { model: ["Русский", "English"]; current-index: Locale.english ? 1 : 0; selected(value) => { root.preferences(Theme.dark, self.current-index == 1); } }
+                        }
+                    }
+                }
+                Text { text: Locale.text(root.backend-error); color: Theme.error; wrap: word-wrap; }
+                Rectangle { vertical-stretch: 1; }
+            }
+            if root.page == 0 && !root.grid-open: VerticalLayout {
                 spacing: 6px;
                 for row in 5: HorizontalLayout {
                     spacing: 5px;
@@ -115,7 +189,7 @@ export component SettingsWindow inherits Window {
                     }
                 }
             }
-            if root.grid-open: QuickGrid {
+            if root.page == 0 && root.grid-open: QuickGrid {
                 items: root.quick-items;
                 move-item(from, to) => { root.move-quick(from, to); }
                 rename-item(index, value) => { root.rename-quick(index, value); }
