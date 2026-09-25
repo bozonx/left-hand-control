@@ -30,6 +30,9 @@ export global Locale {
         if m.id == "worker-not-started" { return @tr("Spell worker is not running"); }
         if m.id == "worker-error" { return @tr("Spell worker: {}", m.arg); }
         if m.id == "action-saved" { return @tr("Action saved"); }
+        if m.id == "settings-saved" { return @tr("Settings saved"); }
+        if m.id == "process-name-required" { return @tr("Enter a process name"); }
+        if m.id == "timeout-invalid" { return @tr("Enter a non-negative integer for each timeout"); }
         if m.id == "saved-mapper-not-updated" { return @tr("Saved, but the mapper was not updated: {}", m.arg); }
         if m.id == "text-empty" { return @tr("Enter non-empty text"); }
         if m.id == "delay-range" { return @tr("Delay: an integer from 1 to 10000 ms"); }

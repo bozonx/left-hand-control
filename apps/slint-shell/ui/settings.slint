@@ -1,9 +1,10 @@
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { QuickGrid } from "quick-grid.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, CheckBox, ScrollView } from "std-widgets.slint";
 
 export struct ActionRow { id: int, label: string, label-en: string }
+export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
 export component SettingsWindow inherits Window {
     background: Theme.surface;
     default-font-size: 14px;
@@ -24,6 +25,39 @@ export component SettingsWindow inherits Window {
     callback save-layout();
     callback load-layout();
     callback delete-layout();
+    in-out property <int> appearance-index: 0;
+    in-out property <int> locale-index: 0;
+    in-out property <bool> launch-on-startup: false;
+    in-out property <int> tap-decision-index: 0;
+    in-out property <string> hold-timeout;
+    in-out property <string> double-tap-timeout;
+    in-out property <string> macro-pause;
+    in-out property <string> modifier-delay;
+    in-out property <bool> use-gamemoded: true;
+    in-out property <bool> use-fullscreen: false;
+    in property <[ProcessRow]> process-matchers;
+    in-out property <string> process-name;
+    in-out property <bool> process-only-active: false;
+    in-out property <bool> process-blacklist: false;
+    in-out property <int> selected-process: -1;
+    in-out property <int> text-mode-index: 0;
+    in-out property <string> ydotool-path;
+    in-out property <string> xdotool-path;
+    in-out property <string> mouse-device-path;
+    in property <[string]> mouse-devices;
+    in property <[string]> mouse-paths;
+    in-out property <int> selected-mouse: 0;
+    in property <string> settings-dir;
+    in property <string> layouts-dir;
+    in property <string> platform-summary;
+    in property <Message> settings-message;
+    callback save-settings();
+    callback settings-saved(bool, bool);
+    callback refresh-devices();
+    callback add-process();
+    callback select-process(int);
+    callback update-process();
+    callback delete-process();
     in property <[string]> keys;
     in property <[string]> assignments;
     in property <[ActionRow]> actions;
@@ -145,30 +179,116 @@ export component SettingsWindow inherits Window {
                 Text { text: root.layout-status; color: Theme.muted; wrap: word-wrap; }
             }
             if root.page == 2: VerticalBox {
-                spacing: 14px;
+                spacing: 10px;
                 Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
-                Rectangle { background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px; height: 150px;
-                    VerticalBox { padding: 16px; spacing: 10px;
-                        Text { text: @tr("Mapper"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                        Text { text: Locale.text(root.config-status); color: Theme.muted; }
-                        HorizontalBox {
-                            Text { text: @tr("Keyboard device"); color: Theme.text; vertical-alignment: center; }
-                            ComboBox { model: root.input-devices; current-index: root.selected-device; selected(value) => { root.select-device(self.current-index); } }
-                            Button { text: @tr("Toggle mapper"); clicked => { root.toggle-mapper(); } }
+                ScrollView {
+                    vertical-stretch: 1;
+                    VerticalLayout {
+                        spacing: 12px;
+                        Rectangle {
+                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 16px; spacing: 10px;
+                                Text { text: @tr("Mapper"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                Text { text: Locale.text(root.config-status); color: Theme.muted; }
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Keyboard device"); color: Theme.text; vertical-alignment: center; }
+                                    ComboBox { model: root.input-devices; current-index: root.selected-device; selected(value) => { root.select-device(self.current-index); } }
+                                    Button { text: @tr("Refresh devices"); clicked => { root.refresh-devices(); } }
+                                    Button { text: @tr("Toggle mapper"); clicked => { root.toggle-mapper(); } }
+                                }
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Mouse device path"); color: Theme.text; vertical-alignment: center; }
+                                    ComboBox { model: root.mouse-devices; current-index <=> root.selected-mouse; selected(value) => { root.mouse-device-path = root.mouse-paths[self.current-index]; } }
+                                    LineEdit { text <=> root.mouse-device-path; placeholder-text: @tr("Optional device path"); }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 16px; spacing: 10px;
+                                Text { text: @tr("General"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Appearance"); color: Theme.text; vertical-alignment: center; }
+                                    ComboBox { model: [@tr("System"), @tr("Light"), @tr("Dark")]; current-index <=> root.appearance-index; }
+                                    Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
+                                    ComboBox { model: [@tr("Automatic"), "English", "Русский"]; current-index <=> root.locale-index; }
+                                }
+                                CheckBox { text: @tr("Launch on startup"); checked <=> root.launch-on-startup; }
+                            }
+                        }
+                        Rectangle {
+                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 16px; spacing: 10px;
+                                Text { text: @tr("Key behavior"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
+                                    ComboBox { model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index <=> root.tap-decision-index; }
+                                }
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> root.hold-timeout; }
+                                    Text { text: @tr("Double tap timeout (ms)"); color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> root.double-tap-timeout; }
+                                }
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Macro step pause (ms)"); color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> root.macro-pause; }
+                                    Text { text: @tr("Modifier delay (ms)"); color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> root.modifier-delay; }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 16px; spacing: 10px;
+                                Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                HorizontalBox { spacing: 8px;
+                                    CheckBox { text: @tr("Use GameMode daemon"); checked <=> root.use-gamemoded; }
+                                    CheckBox { text: @tr("Detect fullscreen"); checked <=> root.use-fullscreen; }
+                                }
+                                Text { text: @tr("Process rules"); color: Theme.text; font-weight: 600; }
+                                for item[index] in root.process-matchers: Rectangle {
+                                    height: 30px; background: root.selected-process == index ? Theme.accent : Theme.card;
+                                    Text { x: 8px; text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: Theme.text; vertical-alignment: center; }
+                                    TouchArea { clicked => { root.select-process(index); } }
+                                }
+                                HorizontalBox { spacing: 8px;
+                                    LineEdit { text <=> root.process-name; placeholder-text: @tr("Process name"); }
+                                    CheckBox { text: @tr("Active window only"); checked <=> root.process-only-active; }
+                                    CheckBox { text: @tr("Exclude"); checked <=> root.process-blacklist; }
+                                }
+                                HorizontalBox { spacing: 8px;
+                                    Button { text: @tr("Add process"); clicked => { root.add-process(); } }
+                                    Button { text: @tr("Update selected"); enabled: root.selected-process >= 0; clicked => { root.update-process(); } }
+                                    Button { text: @tr("Remove selected"); enabled: root.selected-process >= 0; clicked => { root.delete-process(); } }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 16px; spacing: 10px;
+                                Text { text: @tr("Linux text injection"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                ComboBox { model: ["libei", "libei-pure", "keycode", "clipboard", "ydotool", "xdotool"]; current-index <=> root.text-mode-index; }
+                                if root.text-mode-index == 4: LineEdit { text <=> root.ydotool-path; placeholder-text: @tr("ydotool path"); }
+                                if root.text-mode-index == 5: LineEdit { text <=> root.xdotool-path; placeholder-text: @tr("xdotool path"); }
+                            }
+                        }
+                        Rectangle {
+                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 16px; spacing: 8px;
+                                Text { text: @tr("Configuration and system"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                Text { text: root.platform-summary; color: Theme.muted; }
+                                Text { text: @tr("Settings directory: ") + root.settings-dir; color: Theme.muted; wrap: word-wrap; }
+                                Text { text: @tr("Layouts directory: ") + root.layouts-dir; color: Theme.muted; wrap: word-wrap; }
+                            }
                         }
                     }
                 }
-                Rectangle { background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px; height: 110px;
-                    VerticalBox { padding: 16px; spacing: 10px;
-                        Text { text: @tr("Appearance and language"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                        HorizontalBox {
-                            Button { text: Theme.dark ? @tr("Dark") : @tr("Light"); clicked => { root.preferences(!Theme.dark, Locale.english); } }
-                            ComboBox { model: ["Русский", "English"]; current-index: Locale.english ? 1 : 0; selected(value) => { root.preferences(Theme.dark, self.current-index == 1); } }
-                        }
-                    }
+                HorizontalBox { spacing: 8px;
+                    Text { text: Locale.text(root.settings-message); color: Theme.muted; vertical-alignment: center; }
+                    Rectangle { horizontal-stretch: 1; }
+                    Button { text: @tr("Save settings"); clicked => { root.save-settings(); } }
                 }
-                Text { text: Locale.text(root.backend-error); color: Theme.error; wrap: word-wrap; }
-                Rectangle { vertical-stretch: 1; }
             }
             if root.page == 0 && !root.grid-open: VerticalLayout {
                 spacing: 6px;

@@ -141,14 +141,14 @@ impl App {
     pub(super) fn select_device(&self, index: i32) {
         let Some(path) = usize::try_from(index)
             .ok()
-            .and_then(|index| self.devices.get(index))
+            .and_then(|index| self.devices.borrow().get(index).cloned())
         else {
             return;
         };
         let Some(config) = &self.config else {
             return;
         };
-        match config.borrow_mut().set_input_device(path) {
+        match config.borrow_mut().set_input_device(&path) {
             Ok(()) => self
                 .settings
                 .set_config_status(Msg::DeviceSaved(path.clone()).to_ui()),

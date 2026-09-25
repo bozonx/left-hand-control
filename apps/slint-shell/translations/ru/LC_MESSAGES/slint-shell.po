@@ -267,3 +267,117 @@ msgstr "Тёмная"
 
 msgid "Light"
 msgstr "Светлая"
+
+msgid "Refresh devices"
+msgstr "Обновить устройства"
+
+msgid "Mouse device path"
+msgstr "Путь к мыши"
+
+msgid "Optional device path"
+msgstr "Необязательный путь к устройству"
+
+msgid "General"
+msgstr "Общие"
+
+msgid "Appearance"
+msgstr "Оформление"
+
+msgid "Language"
+msgstr "Язык"
+
+msgid "Automatic"
+msgstr "Автоматически"
+
+msgid "Launch on startup"
+msgstr "Запускать при входе"
+
+msgid "Key behavior"
+msgstr "Поведение клавиш"
+
+msgid "Tap decision"
+msgstr "Распознавание нажатия"
+
+msgid "Permissive hold"
+msgstr "Удержание при сочетании"
+
+msgid "Hold on other key press"
+msgstr "Удержание при нажатии другой клавиши"
+
+msgid "Hold timeout (ms)"
+msgstr "Задержка удержания (мс)"
+
+msgid "Double tap timeout (ms)"
+msgstr "Задержка двойного нажатия (мс)"
+
+msgid "Macro step pause (ms)"
+msgstr "Пауза между шагами макроса (мс)"
+
+msgid "Modifier delay (ms)"
+msgstr "Задержка модификатора (мс)"
+
+msgid "Game mode"
+msgstr "Игровой режим"
+
+msgid "Use GameMode daemon"
+msgstr "Использовать GameMode"
+
+msgid "Detect fullscreen"
+msgstr "Определять полноэкранный режим"
+
+msgid "Process rules"
+msgstr "Правила процессов"
+
+msgid "Include: "
+msgstr "Включить: "
+
+msgid "Exclude: "
+msgstr "Исключить: "
+
+msgid "Process name"
+msgstr "Имя процесса"
+
+msgid "Active window only"
+msgstr "Только активное окно"
+
+msgid "Exclude"
+msgstr "Исключить"
+
+msgid "Add process"
+msgstr "Добавить процесс"
+
+msgid "Update selected"
+msgstr "Изменить выбранный"
+
+msgid "Remove selected"
+msgstr "Удалить выбранный"
+
+msgid "Linux text injection"
+msgstr "Ввод текста в Linux"
+
+msgid "ydotool path"
+msgstr "Путь к ydotool"
+
+msgid "xdotool path"
+msgstr "Путь к xdotool"
+
+msgid "Configuration and system"
+msgstr "Конфигурация и система"
+
+msgid "Settings directory: "
+msgstr "Каталог настроек: "
+
+msgid "Layouts directory: "
+msgstr "Каталог раскладок: "
+
+msgid "Save settings"
+msgstr "Сохранить настройки"
+
+msgid "Settings saved"
+msgstr "Настройки сохранены"
+
+msgid "Enter a process name"
+msgstr "Введите имя процесса"
+
+msgid "Enter a non-negative integer for each timeout"
+msgstr "Введите неотрицательное целое число для каждой задержки"

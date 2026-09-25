@@ -8,6 +8,7 @@
 mod layouts;
 mod mapper;
 mod popups;
+mod settings_page;
 mod worker;
 
 use crate::{
@@ -54,7 +55,7 @@ pub(crate) struct App {
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
     config: Option<Rc<RefCell<ConfigDocument>>>,
     editor: EditorHandle,
-    devices: Vec<String>,
+    devices: RefCell<Vec<String>>,
 }
 
 thread_local! { static APP: RefCell<Option<Rc<App>>> = const { RefCell::new(None) }; }
@@ -204,6 +205,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let config = load_config(&settings);
     let editor = editor::bind_with_config(&settings, config.clone());
     layouts::bind(&settings, config.clone(), editor.clone());
+    settings_page::bind(&settings, config.clone());
     let devices = mapper::bind_devices(&settings, config.as_ref());
     metrics.ready("settings");
     popup_attributes.set(true);
@@ -235,11 +237,18 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         last_mapper_status: RefCell::new(None),
         config,
         editor,
-        devices,
+        devices: RefCell::new(devices),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
+    let initial_preferences = app.config.as_ref().map_or(Preferences::default(), |config| {
+        let config = config.borrow();
+        Preferences {
+            theme: if config.settings().appearance == lhc_core::profile::model::Appearance::Light { ThemeMode::Light } else { ThemeMode::Dark },
+            language: Language::resolve(config.settings().locale),
+        }
+    });
     app.command(
-        Command::Preferences(Preferences::default()),
+        Command::Preferences(initial_preferences),
         Source::Button,
         Instant::now(),
         None,
@@ -305,6 +314,25 @@ fn bind_settings(app: &App) {
                 None,
             )
         })
+    });
+    app.settings.on_settings_saved(|dark, english| {
+        with_app(|app| {
+            app.command(
+                Command::Preferences(Preferences {
+                    theme: if dark { ThemeMode::Dark } else { ThemeMode::Light },
+                    language: if english { Language::English } else { Language::Russian },
+                }),
+                Source::Button,
+                Instant::now(),
+                None,
+            );
+        });
+    });
+    app.settings.on_refresh_devices(|| {
+        with_app(|app| {
+            *app.devices.borrow_mut() = mapper::bind_devices(&app.settings, app.config.as_ref());
+            settings_page::refresh_mouse_devices(&app.settings);
+        });
     });
     app.settings.on_toggle_mapper(|| {
         with_app(|app| app.command(Command::ToggleMapper, Source::Button, Instant::now(), None))

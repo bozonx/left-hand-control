@@ -160,6 +160,36 @@ impl ConfigDocument {
         self.set_setting("locale", json!(locale.as_str()))
     }
 
+    pub fn update_settings(
+        &mut self,
+        edit: impl FnOnce(&mut AppSettings),
+    ) -> Result<(), ConfigError> {
+        let mut updated = self.settings.clone();
+        edit(&mut updated);
+        let values = serde_json::to_value(&updated)
+            .map_err(|error| ConfigError::Parse(error.to_string()))?;
+        let mut candidate = self.settings_raw.clone();
+        let object = candidate
+            .as_object_mut()
+            .ok_or_else(|| ConfigError::Invalid("config.json must contain an object".into()))?;
+        object.entry("version").or_insert(json!(1));
+        let settings = object
+            .entry("settings")
+            .or_insert_with(|| json!({}))
+            .as_object_mut()
+            .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?;
+        for (name, value) in values.as_object().into_iter().flatten() {
+            settings.insert(name.clone(), value.clone());
+        }
+        let text = serde_json::to_string_pretty(&candidate)
+            .map_err(|error| ConfigError::Parse(error.to_string()))?;
+        self.settings_file.write(&text)?;
+        crate::gamemode::update_settings_from_config_json(&text);
+        self.settings = updated;
+        self.settings_raw = candidate;
+        Ok(())
+    }
+
     pub fn base_tap_action(&self, key: &str) -> Option<&str> {
         self.layout
             .rules
@@ -456,6 +486,24 @@ mod tests {
             fs::read_to_string(document.paths.current_layout_path()).unwrap(),
             layout_before
         );
+    }
+
+    #[test]
+    fn settings_batch_keeps_unknown_fields_and_refuses_external_changes() {
+        let (_dir, mut document) = document(
+            json!({"version": 1, "settings": {"futureOption": 7}}),
+            LAYOUT,
+        );
+        document.update_settings(|settings| {
+            settings.default_hold_timeout_ms = 350;
+            settings.game_mode.use_fullscreen = true;
+        }).unwrap();
+        let saved: Value = serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap()).unwrap();
+        assert_eq!(saved["settings"]["futureOption"], 7);
+        assert_eq!(saved["settings"]["defaultHoldTimeoutMs"], 350);
+        assert_eq!(saved["settings"]["gameMode"]["useFullscreen"], true);
+        fs::write(document.paths.config_path(), "{}").unwrap();
+        assert_eq!(document.update_settings(|settings| settings.launch_on_startup = true), Err(ConfigError::ExternalChange));
     }
 
     #[test]
