@@ -116,7 +116,8 @@ fn parse_po(text: &str) -> HashMap<String, String> {
 }
 
 fn unquote(value: &str) -> String {
-    let inner = value.trim().trim_start_matches('"').trim_end_matches('"');
+    let inner = value.trim().strip_prefix('"').unwrap_or(value);
+    let inner = inner.strip_suffix('"').unwrap_or(inner);
     let mut out = String::new();
     let mut chars = inner.chars();
     while let Some(c) = chars.next() {
@@ -141,7 +142,7 @@ pub enum Msg {
     MapperStopped(Option<String>),
     MapperStarting,
     ConfigLoaded(usize),
-    ConfigSaved,
+    ConfigSaved(usize),
     ConfigReloaded(usize),
     ConfigUnavailable(String),
     ConfigExternalChange,
@@ -154,7 +155,11 @@ pub enum Msg {
     WorkerNotStarted,
     WorkerError(String),
     SavedMapperNotUpdated(String),
-    ValueRequired,
+    ActionSaved,
+    TextEmpty,
+    DelayRange,
+    SystemActionRequired,
+    UnknownKind,
     ShortcutRequired,
     InvalidAction(ActionIssue),
     Rule(RuleIssue),
@@ -176,7 +181,7 @@ impl Msg {
             Self::MapperStopped(error) => ("mapper-stopped", error.clone().unwrap_or_default(), 0),
             Self::MapperStarting => ("mapper-starting", empty(), 0),
             Self::ConfigLoaded(rules) => ("config-loaded", empty(), *rules),
-            Self::ConfigSaved => ("config-saved", empty(), 0),
+            Self::ConfigSaved(rules) => ("config-saved", empty(), *rules),
             Self::ConfigReloaded(rules) => ("config-reloaded", empty(), *rules),
             Self::ConfigUnavailable(error) => ("config-unavailable", error.clone(), 0),
             Self::ConfigExternalChange => ("config-external-change", empty(), 0),
@@ -189,7 +194,11 @@ impl Msg {
             Self::WorkerNotStarted => ("worker-not-started", empty(), 0),
             Self::WorkerError(error) => ("worker-error", error.clone(), 0),
             Self::SavedMapperNotUpdated(error) => ("saved-mapper-not-updated", error.clone(), 0),
-            Self::ValueRequired => ("value-required", empty(), 0),
+            Self::ActionSaved => ("action-saved", empty(), 0),
+            Self::TextEmpty => ("text-empty", empty(), 0),
+            Self::DelayRange => ("delay-range", empty(), 0),
+            Self::SystemActionRequired => ("system-action-required", empty(), 0),
+            Self::UnknownKind => ("unknown-kind", empty(), 0),
             Self::ShortcutRequired => ("shortcut-required", empty(), 0),
             Self::InvalidAction(issue) => (
                 match issue {

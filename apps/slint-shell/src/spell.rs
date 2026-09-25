@@ -5,7 +5,8 @@
 //! exits when the parent closes its stdin.
 
 use crate::{
-    command::{Command, Dispatch, Popup, Preferences, Source},
+    command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode},
+    i18n::Language,
     ipc, metrics, popup_model,
     ui::{EmojiPopup, Locale, QuickPopup, Theme},
 };
@@ -112,16 +113,16 @@ impl Layers {
     }
 
     fn apply(&self, preferences: Preferences) {
-        if let Err(error) = slint::select_bundled_translation(preferences.language()) {
+        if let Err(error) = slint::select_bundled_translation(preferences.language.code()) {
             log::error!("select translation: {error}");
         }
         for (theme, locale) in [
             (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
         ] {
-            theme.set_dark(preferences.dark);
+            theme.set_dark(preferences.theme == ThemeMode::Dark);
             theme.invoke_apply();
-            locale.set_english(preferences.english);
+            locale.set_english(preferences.language == Language::English);
         }
     }
 
@@ -296,8 +297,8 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     // Format parsed by scripts/check-preferences.py.
                     log::info!(
                         "preferences applied: dark={}, english={}, visible={:?}",
-                        preferences.dark,
-                        preferences.english,
+                        preferences.theme == ThemeMode::Dark,
+                        preferences.language == Language::English,
                         visible.map(Popup::name)
                     );
                 }

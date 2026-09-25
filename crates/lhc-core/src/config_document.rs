@@ -14,7 +14,7 @@ use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::auto_switch::{self, AutoSwitchContext};
 use crate::profile::diagnostics::{self, RuleIssue};
 use crate::profile::model::{
-    AppConfig, AppSettings, Appearance, LayoutMode, LayoutPreset, LocalePreference,
+    AppConfig, AppSettings, Appearance, LayerRule, LayoutMode, LayoutPreset, LocalePreference,
     USER_LAYOUT_PREFIX,
 };
 use crate::profile::{layout_file, settings};
@@ -158,6 +158,64 @@ impl ConfigDocument {
 
     pub fn set_locale(&mut self, locale: LocalePreference) -> Result<(), ConfigError> {
         self.set_setting("locale", json!(locale.as_str()))
+    }
+
+    pub fn base_tap_action(&self, key: &str) -> Option<&str> {
+        self.layout
+            .rules
+            .iter()
+            .find(|rule| rule.key == key && rule.layer_id.is_empty() && rule.is_enabled())
+            .and_then(|rule| rule.tap_action.as_deref())
+    }
+
+    pub fn set_base_tap_action(&mut self, key: &str, action: &str) -> Result<(), ConfigError> {
+        if let Some(issue) = actions::validate(&Action::parse(Some(action)), &self.config()) {
+            return Err(ConfigError::InvalidAction(issue));
+        }
+        let matching: Vec<_> = self
+            .layout
+            .rules
+            .iter()
+            .filter(|rule| rule.key == key && rule.is_enabled())
+            .collect();
+        if matching.iter().any(|rule| {
+            !rule.layer_id.is_empty()
+                || rule.condition_game_mode.is_some()
+                || rule.condition_layouts.is_some()
+                || rule.condition_apps_whitelist.is_some()
+                || rule.condition_apps_blacklist.is_some()
+                || rule
+                    .hold_action
+                    .as_deref()
+                    .is_some_and(|value| !value.is_empty())
+                || !rule.double_tap_action.is_empty()
+        }) || matching.len() > 1
+        {
+            return Err(ConfigError::Invalid(format!(
+                "key {key} has a rule that requires the full editor"
+            )));
+        }
+        self.update_layout(|layout| {
+            if let Some(rule) = layout
+                .rules
+                .iter_mut()
+                .find(|rule| rule.key == key && rule.is_enabled())
+            {
+                rule.tap_action = Some(action.into());
+            } else {
+                let mut index = 1;
+                let id = loop {
+                    let id = format!("slint-key-{index}");
+                    if layout.rules.iter().all(|rule| rule.id != id) {
+                        break id;
+                    }
+                    index += 1;
+                };
+                let mut rule = LayerRule::new(id, key);
+                rule.tap_action = Some(action.into());
+                layout.rules.push(rule);
+            }
+        })
     }
 
     /// Entry of `key` in the keymap of `layer_id`.
@@ -398,6 +456,21 @@ mod tests {
             fs::read_to_string(document.paths.current_layout_path()).unwrap(),
             layout_before
         );
+    }
+
+    #[test]
+    fn base_tap_edit_preserves_other_rules_and_rejects_complex_rules() {
+        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        document.set_base_tap_action("KeyA", "Ctrl+KeyC").unwrap();
+        assert_eq!(document.base_tap_action("KeyA"), Some("Ctrl+KeyC"));
+        assert_eq!(document.layout().rules.len(), 2);
+        document.set_base_tap_action("KeyA", "Ctrl+KeyV").unwrap();
+        assert_eq!(document.base_tap_action("KeyA"), Some("Ctrl+KeyV"));
+        assert_eq!(document.layout().rules.len(), 2);
+        assert!(document.set_base_tap_action("CapsLock", "KeyB").is_err());
+        assert_eq!(document.layout().rules.len(), 2);
+        let reloaded = ConfigDocument::load(document.paths().clone()).unwrap();
+        assert_eq!(reloaded.base_tap_action("KeyA"), Some("Ctrl+KeyV"));
     }
 
     #[test]

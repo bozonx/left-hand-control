@@ -7,7 +7,9 @@ use crate::{
     i18n::Msg,
     ui::SettingsWindow,
 };
-use lhc_core::{CoreEvent, config_document::ConfigDocument};
+use lhc_core::{
+    CoreEvent, config_document::ConfigDocument, profile::auto_switch::AutoSwitchContext,
+};
 use slint::{ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc, time::Instant};
 
@@ -119,7 +121,13 @@ impl App {
             return;
         };
         let mouse = config.mouse_device().map(str::to_owned);
-        let raw = config.raw();
+        let raw = match config.runtime_config(&AutoSwitchContext::current()) {
+            Ok(runtime) => runtime.json,
+            Err(error) => {
+                self.set_error(Msg::from(&error));
+                return;
+            }
+        };
         self.settings.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {
             let result = lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &raw);
@@ -144,7 +152,9 @@ impl App {
             Ok(()) => self
                 .settings
                 .set_config_status(Msg::DeviceSaved(path.clone()).to_ui()),
-            Err(error) => self.settings.set_backend_error((&error).into()),
+            Err(error) => self
+                .settings
+                .set_backend_error(Msg::from(&error).to_ui()),
         }
     }
 
@@ -159,11 +169,16 @@ impl App {
             Ok(true) => {
                 self.editor.reload(&document);
                 self.settings
-                    .set_config_status(Msg::ConfigReloaded(document.rule_count()).to_ui());
-                if let Err(error) =
-                    lhc_core::mapper::runtime::update_config_if_running(&document.raw())
-                {
-                    self.set_error(Msg::Error(error));
+                    .set_config_status(Msg::ConfigReloaded(document.layout().rules.len()).to_ui());
+                match document.runtime_config(&AutoSwitchContext::current()) {
+                    Ok(runtime) => {
+                        if let Err(error) =
+                            lhc_core::mapper::runtime::update_config_if_running(&runtime.json)
+                        {
+                            self.set_error(Msg::Error(error));
+                        }
+                    }
+                    Err(error) => self.set_error(Msg::from(&error)),
                 }
             }
             Err(error) => {

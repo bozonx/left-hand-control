@@ -1,6 +1,6 @@
 use crate::{
     command::{Command, Dispatch, Source},
-    i18n::TrayItem,
+    i18n::{Language, TrayItem},
 };
 use ksni::{blocking::TrayMethods, menu::StandardItem};
 use std::time::Instant;
@@ -50,7 +50,13 @@ impl ksni::Tray for Tray {
             .into_iter()
             .map(|item| {
                 StandardItem {
-                    label: item.label(self.english).into(),
+                    label: item
+                        .label(if self.english {
+                            Language::English
+                        } else {
+                            Language::Russian
+                        })
+                        .into(),
                     activate: Box::new(move |tray: &mut Self| {
                         (tray.dispatch)(item.command(), Source::Tray, Instant::now(), None)
                     }),

@@ -10,9 +10,9 @@ mod popups;
 mod worker;
 
 use crate::{
-    command::{Command, Dispatch, Preferences, Source, Window},
+    command::{Command, Dispatch, Preferences, Source, ThemeMode, Window},
     editor::{self, EditorHandle},
-    i18n::Msg,
+    i18n::{Language, Msg},
     ipc, metrics,
     platform::{backend, focus, hotkey, tray},
     popup_model,
@@ -121,6 +121,11 @@ impl App {
                 self.send_worker(&command, source, start, None);
             }
             Command::Ping => {}
+            Command::Execute(action) => {
+                if let Err(error) = lhc_core::mapper::runtime::execute_action(action) {
+                    self.set_error(Msg::ActionFailed(error));
+                }
+            }
             Command::Quit => {
                 let _ = lhc_core::mapper::runtime::stop();
                 let _ = slint::quit_event_loop();
@@ -130,7 +135,7 @@ impl App {
 
     fn apply_preferences(&self, preferences: Preferences) {
         self.preferences.set(preferences);
-        if let Err(error) = slint::select_bundled_translation(preferences.language()) {
+        if let Err(error) = slint::select_bundled_translation(preferences.language.code()) {
             log::error!("select translation: {error}");
         }
         for (theme, locale) in [
@@ -141,12 +146,12 @@ impl App {
             (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
         ] {
-            theme.set_dark(preferences.dark);
+            theme.set_dark(preferences.theme == ThemeMode::Dark);
             theme.invoke_apply();
-            locale.set_english(preferences.english);
+            locale.set_english(preferences.language == Language::English);
         }
         if let Some(tray) = self.tray.borrow().as_ref() {
-            tray.set_english(preferences.english);
+            tray.set_english(preferences.language == Language::English);
         }
     }
 }
@@ -157,7 +162,7 @@ fn load_config(settings: &SettingsWindow) -> Option<Rc<RefCell<ConfigDocument>>>
         .and_then(ConfigDocument::load)
     {
         Ok(config) => {
-            settings.set_config_status(Msg::ConfigLoaded(config.rule_count()).to_ui());
+            settings.set_config_status(Msg::ConfigLoaded(config.layout().rules.len()).to_ui());
             Some(Rc::new(RefCell::new(config)))
         }
         Err(error) => {
@@ -261,7 +266,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     slint::Timer::single_shot(Duration::ZERO, move || {
         with_app(|app| match tray::start(dispatch.clone()) {
             Ok(tray) => {
-                tray.set_english(app.preferences.get().english);
+                tray.set_english(app.preferences.get().language == Language::English);
                 *app.tray.borrow_mut() = Some(tray);
                 app.refresh_mapper_status();
                 app.metrics.borrow_mut().ready("tray");
@@ -281,7 +286,18 @@ fn bind_settings(app: &App) {
     app.settings.on_preferences(|dark, english| {
         with_app(|app| {
             app.command(
-                Command::Preferences(Preferences { dark, english }),
+                Command::Preferences(Preferences {
+                    theme: if dark {
+                        ThemeMode::Dark
+                    } else {
+                        ThemeMode::Light
+                    },
+                    language: if english {
+                        Language::English
+                    } else {
+                        Language::Russian
+                    },
+                }),
                 Source::Button,
                 Instant::now(),
                 None,

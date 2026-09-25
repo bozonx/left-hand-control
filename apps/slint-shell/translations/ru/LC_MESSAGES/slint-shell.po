@@ -142,6 +142,18 @@ msgstr "Нажмите сочетание…"
 msgid "Quick actions"
 msgstr "Быстрые действия"
 
+msgid "Quit"
+msgstr "Выход"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Mapper on / off"
+msgstr "Mapper вкл / выкл"
+
+msgid "Switch to desktop {n}"
+msgstr "Переключиться на рабочий стол {n}"
+
 msgid "Save"
 msgstr "Сохранить"
 

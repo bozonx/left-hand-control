@@ -1,6 +1,6 @@
 use crate::{
     command::{Dispatch, Source},
-    i18n::TrayItem,
+    i18n::{Language, TrayItem},
 };
 use std::{collections::HashMap, time::Instant};
 use tray_icon::{
@@ -18,7 +18,11 @@ impl Handle {
 
     pub fn set_english(&self, english: bool) {
         for (entry, item) in &self.items {
-            item.set_text(entry.label(english));
+            item.set_text(entry.label(if english {
+                Language::English
+            } else {
+                Language::Russian
+            }));
         }
     }
 }
@@ -28,7 +32,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
     let mut commands = HashMap::new();
     let mut items = Vec::new();
     for entry in TrayItem::ALL {
-        let item = MenuItem::new(entry.label(false), true, None);
+        let item = MenuItem::new(entry.label(Language::Russian), true, None);
         commands.insert(item.id().clone(), entry.command());
         items.push((entry, item));
     }

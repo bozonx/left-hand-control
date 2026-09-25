@@ -6,7 +6,10 @@ use crate::{
     i18n::Msg,
     ui::{ActionRow, Locale, Message, SettingsWindow, Theme},
 };
-use lhc_core::config_document::{ConfigDocument, ConfigError};
+use lhc_core::{
+    config_document::{ConfigDocument, ConfigError},
+    profile::auto_switch::AutoSwitchContext,
+};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
@@ -318,7 +321,7 @@ fn apply_preferences(ui: &SettingsWindow, dark: bool, english: bool) {
 }
 
 fn config_message(error: &ConfigError) -> Message {
-    error.into()
+    Msg::from(error).to_ui()
 }
 
 /// Bind the editor to `ui`. The standalone examples use the built-in
@@ -487,11 +490,17 @@ pub fn bind_with_config(
                 ui.set_validation(config_message(&error));
                 return;
             }
-            if let Err(error) = lhc_core::mapper::runtime::update_config_if_running(&document.raw())
-            {
-                status = Msg::SavedMapperNotUpdated(error);
+            match document.runtime_config(&AutoSwitchContext::current()) {
+                Ok(runtime) => {
+                    if let Err(error) =
+                        lhc_core::mapper::runtime::update_config_if_running(&runtime.json)
+                    {
+                        status = Msg::SavedMapperNotUpdated(error);
+                    }
+                }
+                Err(error) => status = Msg::SavedMapperNotUpdated(error.to_string()),
             }
-            ui.set_config_status(Msg::ConfigSaved(document.rule_count()).to_ui());
+            ui.set_config_status(Msg::ConfigSaved(document.layout().rules.len()).to_ui());
         }
         if state_copy.borrow_mut().save(key, action) {
             ui.set_status(status.to_ui());
