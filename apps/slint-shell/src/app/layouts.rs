@@ -176,6 +176,7 @@ pub(super) fn bind(
                 .update_layout(|current| *current = layout)
                 .map_err(|error| error.to_string())?;
             editor.reload(&config.borrow());
+            ui.invoke_refresh_rules();
             let runtime = config.borrow().runtime_config(&AutoSwitchContext::current()).map_err(|error| error.to_string())?;
             lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
             ui.set_config_status(

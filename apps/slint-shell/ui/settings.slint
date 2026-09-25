@@ -5,6 +5,7 @@ import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, Check
 
 export struct ActionRow { id: int, label: string, label-en: string }
 export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
+export struct RuleRow { key: string, action: string, enabled: bool }
 export component SettingsWindow inherits Window {
     background: Theme.surface;
     default-font-size: 14px;
@@ -25,6 +26,33 @@ export component SettingsWindow inherits Window {
     callback save-layout();
     callback load-layout();
     callback delete-layout();
+    in property <[RuleRow]> rule-rows;
+    in-out property <int> selected-rule: -1;
+    in-out property <string> rule-key;
+    in-out property <string> rule-layer;
+    in-out property <string> new-rule-layer-name;
+    callback create-rule-layer(string);
+    in-out property <string> rule-tap;
+    in-out property <string> rule-hold;
+    in-out property <bool> rule-swallow-tap: false;
+    in-out property <bool> rule-swallow-hold: false;
+    in-out property <string> rule-double-tap;
+    in-out property <string> rule-game-mode;
+    in-out property <string> rule-layouts;
+    in-out property <string> rule-apps-include;
+    in-out property <string> rule-apps-exclude;
+    in-out property <string> rule-isolate;
+    in-out property <string> rule-hold-for;
+    in-out property <string> rule-hold-timeout;
+    in-out property <string> rule-double-timeout;
+    in-out property <bool> rule-enabled: true;
+    in property <string> rule-status;
+    callback refresh-rules();
+    callback select-rule(int);
+    callback add-rule();
+    callback remove-rule();
+    callback move-rule(int);
+    callback edit-rule(int, string);
     in-out property <int> appearance-index: 0;
     in-out property <int> locale-index: 0;
     in-out property <bool> launch-on-startup: false;
@@ -130,6 +158,7 @@ export component SettingsWindow inherits Window {
                 Button { text: @tr("Keyboard"); clicked => { root.page = 0; root.grid-open = false; } }
                 Button { text: @tr("Action grid"); clicked => { root.page = 0; root.grid-open = true; } }
                 Button { text: @tr("Layouts"); clicked => { root.page = 1; root.refresh-layouts(); } }
+                Button { text: @tr("Rules"); clicked => { root.page = 3; root.refresh-rules(); } }
                 Button { text: @tr("Settings"); clicked => { root.page = 2; } }
                 Rectangle { horizontal-stretch: 1; }
                 Button { text: Theme.dark ? @tr("☀ Light") : @tr("☾ Dark"); clicked => { root.preferences(!Theme.dark, Locale.english); } }
@@ -289,6 +318,66 @@ export component SettingsWindow inherits Window {
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Save settings"); clicked => { root.save-settings(); } }
                 }
+            }
+            if root.page == 3: VerticalBox {
+                spacing: 10px;
+                Text { text: @tr("Rules"); color: Theme.text; font-size: 26px; font-weight: 700; }
+                Text { text: @tr("Changes are saved automatically to the current layout."); color: Theme.muted; }
+                HorizontalBox { spacing: 8px;
+                    Button { text: @tr("Add rule"); clicked => { root.add-rule(); } }
+                    Button { text: @tr("Remove"); enabled: root.selected-rule >= 0; clicked => { root.remove-rule(); } }
+                    Button { text: @tr("Move up"); enabled: root.selected-rule > 0; clicked => { root.move-rule(-1); } }
+                    Button { text: @tr("Move down"); enabled: root.selected-rule >= 0 && root.selected-rule < root.rule-rows.length - 1; clicked => { root.move-rule(1); } }
+                }
+                HorizontalBox { spacing: 12px;
+                    Rectangle { width: 290px; background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                        ListView { x: 4px; y: 4px; width: parent.width - 8px; height: parent.height - 8px;
+                            for rule[index] in root.rule-rows: Rectangle { height: 40px;
+                                background: root.selected-rule == index ? Theme.accent : rule-touch.has-hover ? Theme.hover : Theme.card;
+                                Text { x: 8px; width: parent.width - 16px; text: (rule.enabled ? "" : "○ ") + (rule.key == "" ? @tr("Draft") : rule.key) + " → " + rule.action; color: Theme.text; overflow: elide; vertical-alignment: center; }
+                                rule-touch := TouchArea { clicked => { root.select-rule(index); } }
+                            }
+                        }
+                    }
+                    if root.selected-rule >= 0: ScrollView { horizontal-stretch: 1;
+                        VerticalLayout { padding: 12px; spacing: 8px;
+                            CheckBox { text: @tr("Enabled"); checked <=> root.rule-enabled; toggled => { root.edit-rule(0, root.rule-enabled ? "true" : "false"); } }
+                            Text { text: @tr("Trigger key"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-key; edited => { root.edit-rule(1, root.rule-key); } }
+                            Text { text: @tr("Layer ID (empty for base layer)"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-layer; edited => { root.edit-rule(2, root.rule-layer); } }
+                            HorizontalBox { spacing: 8px;
+                                LineEdit { text <=> root.new-rule-layer-name; placeholder-text: @tr("New layer name"); }
+                                Button { text: @tr("Create layer"); clicked => { root.create-rule-layer(root.new-rule-layer-name); } }
+                            }
+                            Text { text: @tr("Tap action"); color: Theme.text; }
+                            CheckBox { text: @tr("Swallow tap"); checked <=> root.rule-swallow-tap; toggled => { root.edit-rule(14, root.rule-swallow-tap ? "true" : "false"); } }
+                            LineEdit { enabled: !root.rule-swallow-tap; text <=> root.rule-tap; edited => { root.edit-rule(3, root.rule-tap); } }
+                            Text { text: @tr("Hold action"); color: Theme.text; }
+                            CheckBox { text: @tr("Swallow hold"); checked <=> root.rule-swallow-hold; toggled => { root.edit-rule(15, root.rule-swallow-hold ? "true" : "false"); } }
+                            LineEdit { enabled: !root.rule-swallow-hold; text <=> root.rule-hold; edited => { root.edit-rule(4, root.rule-hold); } }
+                            Text { text: @tr("Double tap action"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-double-tap; edited => { root.edit-rule(5, root.rule-double-tap); } }
+                            Text { text: @tr("Game mode condition"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-game-mode; edited => { root.edit-rule(6, root.rule-game-mode); } }
+                            Text { text: @tr("Layout conditions (comma separated)"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-layouts; edited => { root.edit-rule(7, root.rule-layouts); } }
+                            Text { text: @tr("App whitelist (comma separated)"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-apps-include; edited => { root.edit-rule(8, root.rule-apps-include); } }
+                            Text { text: @tr("App blacklist (comma separated)"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-apps-exclude; edited => { root.edit-rule(9, root.rule-apps-exclude); } }
+                            Text { text: @tr("Isolate"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-isolate; edited => { root.edit-rule(10, root.rule-isolate); } }
+                            Text { text: @tr("Hold for"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-hold-for; edited => { root.edit-rule(11, root.rule-hold-for); } }
+                            Text { text: @tr("Hold timeout (ms)"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-hold-timeout; edited => { root.edit-rule(12, root.rule-hold-timeout); } }
+                            Text { text: @tr("Double tap timeout (ms)"); color: Theme.text; }
+                            LineEdit { text <=> root.rule-double-timeout; edited => { root.edit-rule(13, root.rule-double-timeout); } }
+                        }
+                    }
+                }
+                Text { text: root.rule-status; color: Theme.muted; wrap: word-wrap; }
             }
             if root.page == 0 && !root.grid-open: VerticalLayout {
                 spacing: 6px;

@@ -381,3 +381,78 @@ msgstr "Введите имя процесса"
 
 msgid "Enter a non-negative integer for each timeout"
 msgstr "Введите неотрицательное целое число для каждой задержки"
+
+msgid "Rules"
+msgstr "Правила"
+
+msgid "Changes are saved automatically to the current layout."
+msgstr "Изменения автоматически сохраняются в текущую раскладку."
+
+msgid "Add rule"
+msgstr "Добавить правило"
+
+msgid "Remove"
+msgstr "Удалить"
+
+msgid "Move up"
+msgstr "Вверх"
+
+msgid "Move down"
+msgstr "Вниз"
+
+msgid "Draft"
+msgstr "Черновик"
+
+msgid "Enabled"
+msgstr "Включено"
+
+msgid "Trigger key"
+msgstr "Клавиша срабатывания"
+
+msgid "Layer ID (empty for base layer)"
+msgstr "ID слоя (пусто для базового слоя)"
+
+msgid "Tap action"
+msgstr "Действие при нажатии"
+
+msgid "Hold action"
+msgstr "Действие при удержании"
+
+msgid "Double tap action"
+msgstr "Действие при двойном нажатии"
+
+msgid "Game mode condition"
+msgstr "Условие игрового режима"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Условия раскладок (через запятую)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Разрешённые приложения (через запятую)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Исключённые приложения (через запятую)"
+
+msgid "Isolate"
+msgstr "Изоляция"
+
+msgid "Hold for"
+msgstr "Удерживать для"
+
+msgid "Hold timeout (ms)"
+msgstr "Порог удержания (мс)"
+
+msgid "Double tap timeout (ms)"
+msgstr "Порог двойного нажатия (мс)"
+
+msgid "Swallow tap"
+msgstr "Подавлять нажатие"
+
+msgid "Swallow hold"
+msgstr "Подавлять удержание"
+
+msgid "New layer name"
+msgstr "Имя нового слоя"
+
+msgid "Create layer"
+msgstr "Создать слой"

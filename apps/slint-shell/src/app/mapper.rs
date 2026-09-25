@@ -10,7 +10,7 @@ use crate::{
 use lhc_core::{
     CoreEvent, config_document::ConfigDocument, profile::auto_switch::AutoSwitchContext,
 };
-use slint::{ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc, time::Instant};
 
 /// Forward core events to the UI thread. Subscribed once at startup.
@@ -168,6 +168,12 @@ impl App {
             Ok(false) => {}
             Ok(true) => {
                 self.editor.reload(&document);
+                let weak = self.settings.as_weak();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(settings) = weak.upgrade() {
+                        settings.invoke_refresh_rules();
+                    }
+                });
                 self.settings
                     .set_config_status(Msg::ConfigReloaded(document.layout().rules.len()).to_ui());
                 match document.runtime_config(&AutoSwitchContext::current()) {

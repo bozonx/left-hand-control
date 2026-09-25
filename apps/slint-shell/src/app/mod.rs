@@ -8,6 +8,7 @@
 mod layouts;
 mod mapper;
 mod popups;
+mod rules;
 mod settings_page;
 mod worker;
 
@@ -205,6 +206,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let config = load_config(&settings);
     let editor = editor::bind_with_config(&settings, config.clone());
     layouts::bind(&settings, config.clone(), editor.clone());
+    rules::bind(&settings, config.clone(), editor.clone());
     settings_page::bind(&settings, config.clone());
     let devices = mapper::bind_devices(&settings, config.as_ref());
     metrics.ready("settings");
