@@ -399,7 +399,7 @@ mod tests {
                     args,
                     ..
                 }) => format!("dbus:{destination}:{method}:{}", args.len()),
-                SysAction::TauriEvent(event) => format!("tauri:{event}"),
+                SysAction::AppEvent(event) => format!("app:{event}"),
             };
             self.systems.push(label);
         }

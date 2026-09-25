@@ -4,6 +4,7 @@ mod backend;
 #[path = "platform/backend.rs"]
 mod backend;
 mod editor;
+mod app_storage;
 #[cfg(target_os = "linux")]
 mod focus;
 #[cfg(not(target_os = "linux"))]
@@ -412,6 +413,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut metrics = metrics::Metrics::new(start)?;
     let settings = SettingsWindow::new()?;
     editor::bind(&settings);
+    match app_storage::config_status() {
+        Ok(status) => settings.set_config_status(status.into()),
+        Err(error) => {
+            log::warn!("configuration unavailable: {error}");
+            settings.set_config_status(format!("Конфигурация: {error}").into());
+        }
+    }
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;

@@ -46,7 +46,7 @@ pnpm install
 cargo run -p slint-shell
 ```
 
-The Slint shell and the Tauri application are intentionally buildable in parallel. Do not enable keyboard interception in both processes at the same time.
+The Slint shell and the Tauri application are intentionally buildable in parallel. Slint now reads the shared `config.json` and reports parse or validation errors in Settings. Its keyboard editor and mapper toggle still use prototype data and behavior. Do not enable keyboard interception in both processes at the same time.
 
 ## Run in development (desktop window)
 

@@ -26,6 +26,7 @@ export component SettingsWindow inherits Window {
     in property <string> validation;
     in property <string> status;
     in property <string> backend-error;
+    in property <string> config-status;
     callback show-popup(string);
     callback toggle-mapper();
     callback edit-key(int);
@@ -82,6 +83,7 @@ export component SettingsWindow inherits Window {
             }
             Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: 26px; font-weight: 700; }
             Text { color: Theme.muted; text: @tr("Select a key to assign an action. Changes are kept in memory."); }
+            Text { color: Theme.muted; text: root.config-status; }
             if !root.grid-open: VerticalLayout {
                 spacing: 6px;
                 for row in 5: HorizontalLayout {

@@ -6,7 +6,7 @@ Guidance for AI coding agents working in this repository. Read this first before
 
 **Left Hand Control** is a desktop keyboard layout/mapper. The accepted application shell uses Slint and targets Linux/Wayland and Windows. The Tauri 2 + Nuxt 4 application remains operational during migration.
 
-Framework-independent Rust code belongs in `crates/lhc-core`. Tauri and Slint are adapters over this core and must not duplicate domain or platform logic.
+Framework-independent Rust code belongs in `crates/lhc-core`. Tauri and Slint are adapters over this core and must not duplicate domain or platform logic. The shared crate currently owns config types, storage operations, platform detection, Linux action parsing, key mapping, system action resolution, built-in macros, and config validation. The mapper engine, device I/O, and Tauri watchers are still in `src-tauri/`.
 
 ## Tech stack (authoritative)
 
