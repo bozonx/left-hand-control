@@ -3,9 +3,8 @@ resolver = "2"
 members = [
     "crates/lhc-core",
     "src-tauri",
-    "prototypes/slint-shell",
+    "apps/slint-shell",
 ]
-exclude = ["prototypes/slint-shell/vendor/spell-framework"]
 
 [workspace.package]
 version = "0.3.0"
@@ -13,6 +12,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [workspace.dependencies]
+dirs = "6"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm install          # install deps + run nuxt prepare (generates types)
 pnpm dev              # Nuxt dev server only (browser, no native window)
 pnpm tauri:dev        # full desktop dev: Nuxt + Rust compiled + native window
-pnpm tauri:build      # production native bundle → src-tauri/target/release/bundle/
+pnpm tauri:build      # production native bundle → target/release/bundle/
 pnpm lint             # ESLint check
 pnpm lint:fix         # ESLint autofix
 pnpm typecheck        # tsc --noEmit
@@ -19,6 +19,15 @@ pnpm test:unit        # fast unit tests (no Nuxt runtime)
 pnpm test:components  # component tests (Nuxt test environment)
 pnpm test:unit:watch  # unit tests in watch mode
 pnpm test:components:watch  # component tests in watch mode
+```
+
+Rust workspace (from the repo root):
+```bash
+cargo run -p slint-shell                                   # Slint shell (see docs/slint-dev-linux.md)
+cargo test --locked --workspace --features slint-shell/spell
+cargo clippy --locked -p lhc-core -p slint-shell -p left-hand-control \
+  --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo run -p slint-shell --example editor -- --smoke       # Slint UI smoke (needs a graphical session)
 ```
 
 Run a single test file:
@@ -79,12 +88,23 @@ All user-visible strings live in `i18n/locales/en-US.ts` (source of truth) and `
 
 ### Rust module layout
 
+The app is migrating from Tauri to Slint. Both shells are thin adapters over the shared `crates/lhc-core`; domain and platform logic must go there, not into a shell.
+
 ```
-src-tauri/src/
-├── lib.rs           # Tauri command handlers + plugin registration
-├── platform/        # OS/DE detection — always dispatch through here, never raw env vars
-├── mapper/          # key interception (evdev+uinput), system actions, portal text injection
-└── layout/          # keyboard layout detection + watcher (KDE DBus, stubs for others)
+crates/lhc-core/src/
+├── config_document.rs  # editable config.json (validation, external-change guard, reload)
+├── storage.rs          # StoragePaths::resolve() — dev (.dev-files / LHC_DEV_DIR) vs release dirs
+├── events.rs           # CoreEvent bus — the only core → shell notification channel
+├── platform/           # OS/DE detection — always dispatch through here, never raw env vars
+├── mapper/             # key interception (evdev+uinput), system actions, portal text injection
+├── layout/             # keyboard layout detection + watcher (KDE DBus, stubs for others)
+└── gamemode/, active_window/   # watchers feeding mapper rule conditions
+
+src-tauri/src/          # Tauri commands, windows, tray; core_events.rs forwards CoreEvents
+apps/slint-shell/src/   # Slint shell: app/ (settings process), spell.rs (layer-shell worker),
+                        # platform/{linux,portable}/, command.rs (typed IPC), i18n.rs
 ```
 
 The `mapper/` evdev+uinput engine is DE-agnostic. Only `mapper/system.rs` (system actions like `switchDesktopN`) dispatches per-DE via `platform::linux::detect()`.
+
+In Slint, all user-visible text goes through `@tr`: Rust sends `i18n::Msg` ids and `Locale.text()` in `ui/i18n.slint` translates them (Russian PO in `translations/ru/`).

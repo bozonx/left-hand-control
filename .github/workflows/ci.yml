@@ -12,13 +12,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  slint-prototype:
+  slint:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
-    name: Slint prototype / ${{ matrix.os }}
+    name: Slint / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -27,11 +27,13 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: prototypes/slint-shell
+          key: slint
 
       - name: Install Linux system deps
         if: matrix.os == 'ubuntu-latest'
@@ -39,17 +41,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build libdbus-1-dev libfontconfig1-dev libwayland-dev libxkbcommon-dev
 
-      - name: Test Linux prototype
+      - name: Test Linux shell (Spell)
         if: matrix.os == 'ubuntu-latest'
-        run: cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --bin slint-shell
+        run: cargo test --locked -p slint-shell --features spell --all-targets
 
-      - name: Test portable prototype
+      - name: Clippy Linux shell (Spell)
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo clippy --locked -p slint-shell --features spell --all-targets --no-deps -- -D warnings
+
+      - name: Check Linux shell without Spell
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo check --locked -p slint-shell --all-targets
+
+      - name: Test portable shell
         if: matrix.os != 'ubuntu-latest'
-        run: cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell
+        run: cargo test --locked -p slint-shell --all-targets
+
+      - name: Clippy portable shell
+        if: matrix.os != 'ubuntu-latest'
+        run: cargo clippy --locked -p slint-shell --all-targets --no-deps -- -D warnings
 
       - name: Check portable release
         if: matrix.os != 'ubuntu-latest'
-        run: cargo check --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell
+        run: cargo check --release --locked -p slint-shell
 
   frontend:
     strategy:
@@ -132,7 +146,7 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          key: core-tauri
 
       - name: Install Linux system deps
         if: matrix.os == 'ubuntu-latest'
@@ -140,20 +154,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev librsvg2-dev libssl-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
 
+      # lhc-core is shared by both shells; test and lint it with Tauri.
       - name: Run cargo test
-        working-directory: src-tauri
-        run: cargo test --all-features
+        run: cargo test --locked -p lhc-core -p left-hand-control --all-features
 
       - name: Run cargo clippy
-        working-directory: src-tauri
-        run: cargo clippy --all-features -- -D warnings
+        run: cargo clippy --locked -p lhc-core -p left-hand-control --all-features --all-targets --no-deps -- -D warnings
 
       - name: Audit Rust dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: src-tauri
 
   tauri-smoke:
     strategy:
@@ -183,8 +195,6 @@ jobs:
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
 
       - name: Install Linux system deps
         if: matrix.os == 'ubuntu-latest'

@@ -253,7 +253,7 @@ fn lock_mapper_file(path: &std::path::Path) -> Result<std::fs::File, String> {
         .create(true)
         .mode(0o600)
         .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-        .open(&path)
+        .open(path)
         .map_err(|error| format!("open mapper lock {}: {error}", path.display()))?;
     let result = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
     if result != 0 {

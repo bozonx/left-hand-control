@@ -1,8 +1,39 @@
 # Slint: отчёт по этапам 0–3
 
-Дата: 2026-09-19. Реализован отдельный крейт `prototypes/slint-shell`.
+Дата: 2026-09-19. Реализован отдельный крейт `apps/slint-shell`.
 Для 3C основной Tauri-процесс получил отключённый по умолчанию локальный
 benchmark-канал; пользовательское поведение приложения не меняется.
+
+## Подготовка к переносу функционала — 2026-09-25
+
+Крейт перенесён из `prototypes/slint-shell` в `apps/slint-shell`; пакет и бинарник
+по-прежнему называются `slint-shell`, поэтому скрипты стендов не менялись, кроме путей.
+Руководство по повседневному запуску — [docs/slint-dev-linux.md](../docs/slint-dev-linux.md).
+
+- `lhc-core` теперь содержит наблюдатели раскладки, game mode и активного окна.
+  До переноса они запускались только в Tauri, поэтому mapper, запущенный из Slint,
+  не выполнял правила с условиями по раскладке и активному окну.
+- Единственный канал «ядро → оболочка» — `lhc_core::events` (`CoreEvent`); прежний
+  `MapperHost` удалён. Tauri пересылает события под прежними именами.
+- `StoragePaths::resolve()` и `ConfigDocument` в ядре заменили дублирующие
+  `app_storage`/`config_state` Slint. Внешние изменения конфига перечитываются раз в
+  секунду; сохранение поверх непрочитанного изменения отклоняется типизированной ошибкой.
+- Slint разделён на библиотеку и тонкий `main.rs`: `app/` (процесс настроек),
+  `spell.rs`, `platform/{linux,portable}`, типизированные `command::{Window, Popup,
+  Source, Command}` вместо строк. Примеры используют библиотеку вместо `#[path]`.
+- Видимый текст из Rust переведён на `Msg` → `Locale.text()` с `@tr` и формами
+  множественного числа; значения системных действий редактора хранятся как сочетания
+  (`Ctrl+KeyC`), а не как русские подписи. Трей переключает язык вместе с UI.
+- Метрики пишутся только при заданном `SLINT_SHELL_METRICS` (раньше по умолчанию
+  создавался `slint-shell.csv` в текущем каталоге).
+- CI тестирует и проверяет clippy для `lhc-core` и всех целей `slint-shell`; doctest
+  вендорного Spell отключён (`PATCHES.md`). Windows-скрипты используют корневой `target/`.
+- Примеры `editor --smoke` и `interactions` снова проходят: координаты кликов и ожидания
+  отставали от изменений UI и формата захвата клавиш в предыдущем коммите.
+
+Не изменено: демонстрационные данные Quick/Emoji и каталог редактора, версии пакетов,
+список целевых платформ. Нативная сборка Windows/macOS после рефакторинга
+подтверждается только CI.
 
 ## Подготовка этапа 4 — 2026-09-21
 
@@ -179,9 +210,9 @@ KDE/Wayland на Hyprland, GNOME, Windows или macOS. Краткий прот�
 Для запуска:
 
 ```sh
-cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --bin slint-shell
+cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml --features spell --bin slint-shell
 SLINT_SHELL_POPUPS=spell SLINT_SHELL_INSERT=1 SLINT_BACKEND=winit-software \
-  prototypes/slint-shell/target/release/slint-shell
+  apps/slint-shell/target/release/slint-shell
 ```
 
 Итоговая проверка: `cargo fmt --check`, 5/5 unit-тестов с feature `spell`,
@@ -275,7 +306,7 @@ Tauri до добавления WebView-маркеров: 3,1, 3,8 и 3,1 мс. 
 ### Воспроизведение
 
 ```sh
-cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --examples --bin slint-shell
+cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml --features spell --examples --bin slint-shell
 pnpm install --frozen-lockfile
 pnpm generate
 pnpm exec tauri build --no-bundle
@@ -289,12 +320,12 @@ for run in 1 2 3; do
   scripts/release-compare.py tauri "/tmp/lhc-tauri-ready-$run"
 done
 SLINT_SHELL_POPUPS=spell SLINT_BACKEND=winit-software SLINT_SHELL_BENCH_COUNT=100 \
-  prototypes/slint-shell/target/release/examples/bench-evdev \
-  prototypes/slint-shell/target/release/slint-shell /tmp/slint-release.csv
-python3 prototypes/slint-shell/scripts/summarize.py /tmp/slint-release.csv.spell.csv
-SLINT_SHELL_BIN="$PWD/prototypes/slint-shell/target/release/slint-shell" \
-SLINT_SHELL_BENCH_RETURN_BIN="$PWD/prototypes/slint-shell/target/release/examples/bench-return" \
-  prototypes/slint-shell/scripts/bench-virtual.sh /tmp/slint-stress-release input
+  apps/slint-shell/target/release/examples/bench-evdev \
+  apps/slint-shell/target/release/slint-shell /tmp/slint-release.csv
+python3 apps/slint-shell/scripts/summarize.py /tmp/slint-release.csv.spell.csv
+SLINT_SHELL_BIN="$PWD/apps/slint-shell/target/release/slint-shell" \
+SLINT_SHELL_BENCH_RETURN_BIN="$PWD/apps/slint-shell/target/release/examples/bench-return" \
+  apps/slint-shell/scripts/bench-virtual.sh /tmp/slint-stress-release input
 ```
 
 ## Взаимодействия 3B — 2026-09-20
@@ -346,13 +377,13 @@ IME не проверен: работающие `fcitx5`/`ibus-daemon` не об
 ### Воспроизведение из корня репозитория
 
 ```sh
-cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --bin slint-shell
-cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --bin slint-shell --example editor --example interactions
-xvfb-run -a env -u WAYLAND_DISPLAY SLINT_BACKEND=winit-software prototypes/slint-shell/target/debug/examples/editor --smoke
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --features spell --bin slint-shell
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --features spell --bin slint-shell --example editor --example interactions
+xvfb-run -a env -u WAYLAND_DISPLAY SLINT_BACKEND=winit-software apps/slint-shell/target/debug/examples/editor --smoke
 for scale in 1 1.25 1.5; do
-  xvfb-run -a -s '-screen 0 1920x1200x24' env -u WAYLAND_DISPLAY SLINT_BACKEND=winit-software SLINT_SCALE_FACTOR="$scale" prototypes/slint-shell/target/debug/examples/interactions
+  xvfb-run -a -s '-screen 0 1920x1200x24' env -u WAYLAND_DISPLAY SLINT_BACKEND=winit-software SLINT_SCALE_FACTOR="$scale" apps/slint-shell/target/debug/examples/interactions
 done
-python prototypes/slint-shell/scripts/check-preferences.py
+python apps/slint-shell/scripts/check-preferences.py
 pnpm install --frozen-lockfile
 pnpm dev
 ```
@@ -362,7 +393,7 @@ pnpm dev
 Для ручного просмотра редактора:
 
 ```sh
-SLINT_BACKEND=winit-software prototypes/slint-shell/target/debug/examples/editor
+SLINT_BACKEND=winit-software apps/slint-shell/target/debug/examples/editor
 ```
 
 
@@ -392,9 +423,9 @@ SLINT_BACKEND=winit-software prototypes/slint-shell/target/debug/examples/editor
 Воспроизведение из корня репозитория:
 
 ```sh
-cargo test --manifest-path prototypes/slint-shell/Cargo.toml --features spell --bin slint-shell
-SLINT_BACKEND=winit-software cargo run --manifest-path prototypes/slint-shell/Cargo.toml --features spell --example editor -- --smoke
-SLINT_BACKEND=winit-software cargo run --manifest-path prototypes/slint-shell/Cargo.toml --features spell --example editor
+cargo test --manifest-path apps/slint-shell/Cargo.toml --features spell --bin slint-shell
+SLINT_BACKEND=winit-software cargo run --manifest-path apps/slint-shell/Cargo.toml --features spell --example editor -- --smoke
+SLINT_BACKEND=winit-software cargo run --manifest-path apps/slint-shell/Cargo.toml --features spell --example editor
 ```
 
 Для снимков создать каталог и передать его через `LHC_EDITOR_SNAPSHOTS`; smoke сохранит `keyboard.ppm` и `editor.ppm`. В полном shell редактор открывается прежней командой `show settings`.
@@ -537,15 +568,15 @@ AT-SPI подтвердил наличие сетки 48 эмодзи и эле�
 ## Проверки и воспроизведение
 
 ```sh
-cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml
-cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml
-cargo clippy --locked --manifest-path prototypes/slint-shell/Cargo.toml --all-targets -- -D warnings
-cargo fmt --manifest-path prototypes/slint-shell/Cargo.toml --check
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml
+cargo clippy --locked --manifest-path apps/slint-shell/Cargo.toml --all-targets -- -D warnings
+cargo fmt --manifest-path apps/slint-shell/Cargo.toml --check
 pnpm install --frozen-lockfile
 ```
 
 Build, тест изоляции CSV trials, clippy прошли. Команды запуска/замеров и требования
-к input/uinput: [README прототипа](../prototypes/slint-shell/README.md).
+к input/uinput: [README прототипа](../apps/slint-shell/README.md).
 
 `pnpm install --frozen-lockfile` прошёл. `pnpm dev` корректно отказался запускать
 второй сервер: порт 3010 уже занят Nuxt из этого же репозитория.
@@ -698,11 +729,11 @@ update_modifiers пуст. Нельзя засчитать удержание и
 ### Проверки и запуск
 
 ```sh
-cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --examples --bin slint-shell
-cargo check --locked --manifest-path prototypes/slint-shell/Cargo.toml
-cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell
-cargo clippy --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --all-targets -- -D warnings
-cargo fmt --manifest-path prototypes/slint-shell/Cargo.toml --check
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --features spell --examples --bin slint-shell
+cargo check --locked --manifest-path apps/slint-shell/Cargo.toml
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --features spell
+cargo clippy --locked --manifest-path apps/slint-shell/Cargo.toml --features spell --all-targets -- -D warnings
+cargo fmt --manifest-path apps/slint-shell/Cargo.toml --check
 pnpm install --frozen-lockfile
 ```
 
@@ -711,7 +742,7 @@ pnpm install --frozen-lockfile
 Python-скрипты проверены на синтаксис, bash-скрипты — через `bash -n`.
 `pnpm install --frozen-lockfile` прошёл; `pnpm dev` отказался занимать уже занятый
 3010, существующий Nuxt ответил HTTP 200. Tauri/production build не затрагивались.
-Команды режимов и стендов: [README](../prototypes/slint-shell/README.md#этап-3а-spell--layer-shell).
+Команды режимов и стендов: [README](../apps/slint-shell/README.md#этап-3а-spell--layer-shell).
 
 
 ## Результаты доработки 3а — 2026-09-20
@@ -762,7 +793,7 @@ RSS после прогрева 130 756 KiB, после серии 130 908 KiB. 
 - [Расширенный ввод, 86 открытий](slint-prototype-results/stage3a/2026-09-20/input.csv).
 - [16 проверок геометрии](slint-prototype-results/stage3a/2026-09-20/geometry.json).
 
-Команды сборки и воспроизведения — в [README прототипа](../prototypes/slint-shell/README.md#метрики-и-воспроизведение).
+Команды сборки и воспроизведения — в [README прототипа](../apps/slint-shell/README.md#метрики-и-воспроизведение).
 Windows/macOS остаются обязательной отдельной частью этапа 3б; текущий Linux-прототип
 ещё не доказывает их сборку или работу. Исправления Spell не затрагивают сборку
 основного Tauri-приложения. Этап 3а остаётся открытым до оставшейся приёмки.

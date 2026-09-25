@@ -143,7 +143,7 @@ archive explicitly, then confirm the archive contents before serving it:
 ```bash
 git archive --format=zip --output="$vm_dir/left-hand-control-current.zip" HEAD
 zip -u "$vm_dir/left-hand-control-current.zip" \
-  prototypes/slint-shell/scripts/check-windows-lifecycle.ps1
+  apps/slint-shell/scripts/check-windows-lifecycle.ps1
 unzip -l "$vm_dir/left-hand-control-current.zip" | \
   grep check-windows-lifecycle.ps1
 ```
@@ -183,14 +183,14 @@ Use debug builds while iterating on Windows-only code:
 
 ```powershell
 Set-Location C:\lhc
-cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell
-cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
 ```
 
 Run the release build only for the final validation:
 
 ```powershell
-cargo build --release --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell
+cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
 ```
 
 Stop the persistent shell before rebuilding it. Windows does not allow Cargo to replace a
@@ -203,7 +203,7 @@ The initial Slint release build took about eleven minutes in the 4-vCPU/6-GiB VM
 PowerShell displays output written to stderr in red and may wrap a successful native command as `NativeCommandError`. Cargo writes progress and warnings to stderr, so red `Compiling`, warnings, or Rustup informational lines are not proof of failure. The authoritative signal is `$LASTEXITCODE` and Cargo’s final line:
 
 ```powershell
-cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
 if ($LASTEXITCODE -ne 0) { throw "cargo failed with exit code $LASTEXITCODE" }
 ```
 
@@ -214,7 +214,7 @@ command, inspect `$LASTEXITCODE` immediately, and restore `Stop` for PowerShell 
 
 ```powershell
 $ErrorActionPreference = 'Continue'
-cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell `
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell `
   2>&1 | Tee-Object -FilePath $log -Append
 $cargoExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
@@ -234,7 +234,7 @@ Use Skia for the Windows visual pass:
 ```powershell
 $env:SLINT_BACKEND = 'winit-skia'
 $env:RUST_LOG = 'debug'
-& C:\lhc\prototypes\slint-shell\target\release\slint-shell.exe
+& C:\lhc\target\release\slint-shell.exe
 ```
 
 `winit-software` built and rendered the UI, but Windows showed monochrome outline emoji. `winit-skia` rendered the normal color Windows emoji and is the Windows candidate renderer. Some squares on the stress page were caused by the prototype generating contiguous Unicode code-point ranges that include unassigned or non-emoji symbols; they are test-data defects unless the same known-valid emoji also fails.
@@ -248,7 +248,7 @@ sequence. A contiguous code-point range cannot cover the last case.
 The server starts hidden and remains accessible from the tray. A second invocation is an IPC client:
 
 ```powershell
-$exe = 'C:\lhc\prototypes\slint-shell\target\release\slint-shell.exe'
+$exe = 'C:\lhc\target\release\slint-shell.exe'
 & $exe ping
 & $exe show settings
 & $exe show emoji
@@ -265,7 +265,7 @@ The portable `interactions` example exercises clipboard, keyboard input, modal b
 
 ```powershell
 $env:SLINT_BACKEND = 'winit-software'
-cargo run --locked --manifest-path prototypes/slint-shell/Cargo.toml --example interactions
+cargo run --locked --manifest-path apps/slint-shell/Cargo.toml --example interactions
 if ($LASTEXITCODE -ne 0) { throw 'interaction scenario failed' }
 ```
 
@@ -276,7 +276,7 @@ interactive pass:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
-  .\prototypes\slint-shell\scripts\check-windows-lifecycle.ps1
+  .\apps\slint-shell\scripts\check-windows-lifecycle.ps1
 ```
 
 It verifies shutdown from both hidden and visible states, 100 alternating popup cycles,
@@ -290,7 +290,7 @@ Run the complete non-manual Windows acceptance suite with:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
-  .\prototypes\slint-shell\scripts\check-windows-automated.ps1
+  .\apps\slint-shell\scripts\check-windows-automated.ps1
 ```
 
 It runs native tests, makes the release build, executes the portable interaction scenario,
@@ -371,7 +371,7 @@ Use the committed receiver for the repeatable Unicode and focus matrix:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
-  .\prototypes\slint-shell\scripts\windows-receiver.ps1
+  .\apps\slint-shell\scripts\windows-receiver.ps1
 ```
 
 It opens a native WinForms edit control and writes `snapshot.json` plus append-only

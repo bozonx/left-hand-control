@@ -27,3 +27,4 @@ src-tauri/target
 # clean checkouts and CI can build native bundles without regenerating them.
 !src-tauri/icons/
 !src-tauri/icons/**
+/slint-shell*.csv

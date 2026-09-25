@@ -16,41 +16,23 @@ pub mod system_macros;
 #[cfg(target_os = "linux")]
 pub mod validation;
 
-use std::sync::{Arc, Mutex};
-
 pub use crate::mapper_types::{InputDevice, KeyboardDevice};
 
-pub trait MapperHost: Send + Sync {
-    fn mapper_stopped(&self, error: &str);
-    fn app_event(&self, name: &str);
-    fn refresh_layout(&self);
-}
-
-static HOST: Mutex<Option<Arc<dyn MapperHost>>> = Mutex::new(None);
-
-pub fn set_host(host: Arc<dyn MapperHost>) {
-    if let Ok(mut current) = HOST.lock() {
-        *current = Some(host);
-    }
-}
-
-fn with_host(f: impl FnOnce(&dyn MapperHost)) {
-    let host = HOST.lock().ok().and_then(|value| value.clone());
-    if let Some(host) = host {
-        f(host.as_ref());
-    }
-}
-
+#[cfg(target_os = "linux")]
 pub(crate) fn notify_mapper_stopped(error: &str) {
-    with_host(|host| host.mapper_stopped(error));
+    crate::events::emit(crate::events::CoreEvent::MapperStopped(error.to_string()));
 }
 
+#[cfg(target_os = "linux")]
 pub(crate) fn emit_app_event(name: &str) {
-    with_host(|host| host.app_event(name));
+    crate::events::emit(crate::events::CoreEvent::AppAction(name.to_string()));
 }
 
+/// Layout-switching actions refresh the cached layout immediately so the
+/// next key is evaluated against the new layout.
+#[cfg(target_os = "linux")]
 pub(crate) fn refresh_layout() {
-    with_host(|host| host.refresh_layout());
+    let _ = crate::layout::refresh_cache();
 }
 
 pub mod config {

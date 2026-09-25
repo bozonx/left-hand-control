@@ -9,7 +9,9 @@ fn main() {
         // Disabling it forces the legacy renderer which respects sub-pixel layout.
         // https://github.com/tauri-apps/tauri/issues/14590
         if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
-            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            // SAFETY: runs first in `main`, before Tauri or any other thread
+            // starts, so nothing can read the environment concurrently.
+            unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1") };
         }
     }
     left_hand_control_lib::run()

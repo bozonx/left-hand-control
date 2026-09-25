@@ -6,11 +6,13 @@ Guidance for AI coding agents working in this repository. Read this first before
 
 **Left Hand Control** is a desktop keyboard layout/mapper. The accepted application shell uses Slint and targets Linux/Wayland and Windows. The Tauri 2 + Nuxt 4 application remains operational during migration.
 
-Framework-independent Rust code belongs in `crates/lhc-core`. Tauri and Slint are adapters over this core and must not duplicate domain or platform logic. The shared crate owns config types, storage operations, platform detection, mapper lifecycle, the Linux engine, evdev/uinput device I/O, portal text injection, and config validation. Tauri commands and watchers remain in `src-tauri/`; the Slint mapper UI is not wired yet. The Linux backend holds a process lock while mapper is active so both shells cannot grab keyboards concurrently.
+Framework-independent Rust code belongs in `crates/lhc-core`. Tauri and Slint are adapters over this core and must not duplicate domain or platform logic. The shared crate owns config types and the editable `ConfigDocument`, storage path resolution (`StoragePaths::resolve()`), platform detection, the keyboard-layout / game-mode / active-window watchers, the core event bus (`lhc_core::events`), mapper lifecycle, the Linux engine, evdev/uinput device I/O, portal text injection, and config validation. `src-tauri/` keeps only Tauri commands, windows, tray and event forwarding; `apps/slint-shell/` is the Slint shell, which already loads and saves simple key assignments and runs the mapper through the core. The Linux backend holds a process lock while mapper is active so both shells cannot grab keyboards concurrently.
+
+Slint development on Linux (build, run, env vars, checks) is documented in [`docs/slint-dev-linux.md`](docs/slint-dev-linux.md).
 
 ## Tech stack (authoritative)
 
-- **Slint 1.17.1** — primary native UI under `prototypes/slint-shell/` during promotion
+- **Slint 1.17.1** — primary native UI under `apps/slint-shell/` during migration
 - **Cargo workspace** — root `Cargo.toml`, shared library under `crates/lhc-core/`
 - **Tauri 2.11+** — native shell (Rust). Source: `src-tauri/`
 - **Nuxt 4.4+** in **SPA mode** (`ssr: false`, `nitro.preset: 'static'`). Source: repo root
@@ -28,7 +30,7 @@ Do **not** introduce alternative UI libraries, CSS frameworks, or state managers
 .
 ├── Cargo.toml                 # Rust workspace
 ├── crates/lhc-core/           # UI-independent Rust code
-├── prototypes/slint-shell/    # accepted Slint application during migration
+├── apps/slint-shell/          # Slint application (see docs/slint-dev-linux.md)
 ├── app.vue                    # Root component, wrap everything in <UApp>
 ├── app.config.ts              # Nuxt UI theme (colors, etc.)
 ├── assets/css/main.css        # Tailwind v4 + Nuxt UI entry (do not rename)
@@ -85,7 +87,7 @@ First-time prerequisites on the host (not auto-installed):
 
 ## Cross-platform architecture (Rust side)
 
-Native code is split between `crates/lhc-core/src/` and the Tauri adapter in `src-tauri/src/`:
+Native code lives in `crates/lhc-core/src/`; `src-tauri/src/` and `apps/slint-shell/src/` are thin shells over it. The core never calls into a UI framework: it emits `CoreEvent`s on `lhc_core::events::bus()`, and each shell subscribes once at startup (`src-tauri/src/core_events.rs` forwards them to the webview under the historical event names, `apps/slint-shell/src/app/mapper.rs` posts them to the Slint event loop).
 
 - **`platform/`** — OS detection + Linux session detection (DE, session type,
   IPC sockets). Exposes `platform::info()` (Tauri command `get_platform_info`)
@@ -101,8 +103,9 @@ Native code is split between `crates/lhc-core/src/` and the Tauri adapter in `sr
   backend (`mapper/portal.rs`) — one implementation, works on KDE / GNOME /
   Sway-wlroots (needs `xdg-desktop-portal` + a matching backend package
   installed).
-- **`layout/`** — keyboard-layout detection + watcher. Dispatcher in
-  `layout/mod.rs` picks `linux_kde` / `linux_gnome` / `linux_sway` /
+- **`crates/lhc-core/src/layout/`**, **`gamemode/`**, **`active_window/`** —
+  watchers that cache state in `runtime_state` for the mapper and emit
+  `CoreEvent`s. The layout dispatcher in `layout/mod.rs` picks `linux_kde` / `linux_gnome` / `linux_sway` /
   `linux_x11` based on `platform::linux::detect().desktop`, and `windows`
   / `macos` by `#[cfg]`.
 
@@ -123,8 +126,8 @@ Native code is split between `crates/lhc-core/src/` and the Tauri adapter in `sr
 
 1. Add a variant to `platform::linux::Desktop` and the matching string
    match in `classify_desktop()`.
-2. Create `layout/linux_<de>.rs` with `pub fn current() -> Result<Option<LayoutInfo>, String>`
-   and `pub fn start_watcher(app: AppHandle)`.
+2. Create `crates/lhc-core/src/layout/linux_<de>.rs` with `pub fn current() -> Result<Option<LayoutInfo>, String>`
+   and `pub fn start_watcher()`; report every detected layout through `super::publish(&info)`.
 3. Wire it into the `match` inside `layout/mod.rs::current()` and
    `start_watcher()`.
 4. Add a per-DE sub-module inside `mapper/system.rs` (`mod <de>`) with
@@ -190,7 +193,8 @@ For OS-level capabilities (fs, shell, dialog, clipboard, global shortcuts, ...),
 - **Styling**: Tailwind v4 utility classes. Use Nuxt UI design tokens (e.g. `text-(--ui-text-muted)`, `bg-(--ui-bg)`) instead of hardcoded colors where possible. Configure palette via `app.config.ts` → `ui.colors`.
 - **Icons**: use Iconify names in Nuxt UI props, e.g. `icon="i-lucide-plus"`. Do not add a separate icon library.
 - **TypeScript**: strict-friendly; rely on generated types from `.nuxt/`. If types are missing, run `pnpm install` (triggers `nuxt prepare`) or `pnpm exec nuxt prepare`.
-- **Rust**: keep platform-specific code behind `cfg` attributes; use `tauri::command` for anything exposed to JS.
+- **Rust**: keep platform-specific code behind `cfg` attributes; use `tauri::command` for anything exposed to JS. Domain logic goes into `lhc-core`, not into a shell. Core-to-shell notifications go through `lhc_core::events`, never through shell-specific callbacks.
+- **Slint**: user-visible text goes through `@tr`. Rust sends `i18n::Msg` values (`Message { id, arg, count }`) that `Locale.text()` in `ui/i18n.slint` translates; add new ids to `src/i18n.rs`, `ui/i18n.slint` and the Russian PO file together. Windows and popups are addressed with `command::Window` / `Popup`, not strings.
 - **Do not** add comments or docstrings unless the user asks. Keep diffs minimal and focused.
 
 ## Common pitfalls (seen in this repo)
@@ -207,7 +211,7 @@ For OS-level capabilities (fs, shell, dialog, clipboard, global shortcuts, ...),
 - Do not enable SSR or add `server/` API routes — there is no Node runtime in the shipped binary.
 - Do not switch package managers (no `npm i` / `yarn` — lockfile is pnpm).
 - Do not commit `.nuxt/`, `.output/`, `node_modules/`, or `target/` (all git-ignored). Do commit `src-tauri/icons/` output; Tauri needs these files for reproducible clean-checkout builds.
-- Do not hardcode absolute filesystem paths in Rust or TS; use Tauri path APIs (`@tauri-apps/api/path`) or `app_handle.path()`.
+- Do not hardcode absolute filesystem paths in Rust or TS; use `lhc_core::storage::StoragePaths::resolve()` in Rust and Tauri path APIs (`@tauri-apps/api/path`) in TS.
 - Do not bypass Tauri capabilities by widening CSP or loosening permissions without an explicit reason.
 
 ## Verifying a change
@@ -218,5 +222,6 @@ Minimum signal before declaring done:
 2. `pnpm dev` serves on `http://localhost:3010` with no Vite/Nuxt errors.
 3. For changes touching `src-tauri/` or the bridge: `pnpm tauri:dev` opens the window and the UI is interactive.
 4. For production-affecting changes: `pnpm generate` produces `.output/public` and `pnpm tauri:build` succeeds.
+5. For Rust changes: `cargo test --locked --workspace --features slint-shell/spell` and `cargo clippy --locked -p lhc-core -p slint-shell -p left-hand-control --features slint-shell/spell --all-targets --no-deps -- -D warnings`. For Slint UI changes also run `cargo run -p slint-shell --example editor -- --smoke` and `cargo run -p slint-shell --example interactions` in a graphical session.
 
 Share exact commands the user can copy-paste to reproduce verification.

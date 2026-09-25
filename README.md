@@ -46,7 +46,9 @@ pnpm install
 cargo run -p slint-shell
 ```
 
-The Slint shell and the Tauri application are intentionally buildable in parallel. Slint reads the shared `config.json` and reports parse or validation errors in Settings. The Rust mapper engine and Linux evdev/uinput backend now live in `lhc-core`; Tauri uses them through an adapter. Slint's keyboard editor and mapper toggle still use prototype data and behavior. A process lock prevents both shells from running the Linux mapper at once.
+The Slint shell and the Tauri application are intentionally buildable in parallel and share the same `config.json` (debug builds use `.dev-files/` in the repository). The mapper engine, Linux evdev/uinput backend, layout / game-mode / active-window watchers and config editing live in `lhc-core`; both shells are adapters over it. The Slint keyboard editor saves simple base-layer key assignments and can start the mapper; the Quick and Emoji popups still show fixture data. A process lock prevents both shells from running the Linux mapper at once.
+
+Linux development setup, environment variables and checks for the Slint shell: [docs/slint-dev-linux.md](docs/slint-dev-linux.md).
 
 ## Run in development (desktop window)
 
@@ -128,9 +130,9 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
 ```
 .
 ├── Cargo.toml            # Shared Rust workspace
-├── crates/lhc-core/      # Shared config, mapper engine, Linux backend and storage
-├── prototypes/slint-shell/
-│   ├── src/              # Accepted Slint shell, being promoted to the main app
+├── crates/lhc-core/      # Shared config, storage, watchers, events, mapper engine and Linux backend
+├── apps/slint-shell/
+│   ├── src/              # Slint shell: app/, platform/, editor, Spell worker
 │   └── ui/               # Slint components
 ├── app.vue               # Root Vue component (uses Nuxt UI <UApp>)
 ├── app.config.ts         # Nuxt UI theme config

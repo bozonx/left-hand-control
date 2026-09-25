@@ -756,15 +756,14 @@ impl LibeiBackend {
                     self.start_keyboard_emulation(e.device.device());
                 }
             }
-            EiEvent::DeviceRemoved(e) => {
+            EiEvent::DeviceRemoved(e)
                 if self
                     .keyboard_device
                     .as_ref()
-                    .is_some_and(|(device, _)| device == e.device.device())
-                {
-                    self.keyboard_device = None;
-                    self.keyboard_emulating = false;
-                }
+                    .is_some_and(|(device, _)| device == e.device.device()) =>
+            {
+                self.keyboard_device = None;
+                self.keyboard_emulating = false;
             }
             _ => {}
         }

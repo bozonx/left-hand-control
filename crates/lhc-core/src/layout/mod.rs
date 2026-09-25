@@ -1,0 +1,223 @@
+// Current keyboard layout detection.
+//
+// Current product support is Linux/KDE. The facade keeps the other backends
+// visible as explicit stubs/skeletons so unsupported platforms and desktop
+// environments fail predictably instead of silently diverging.
+//
+// Backends:
+//   * Linux + KDE Plasma     — DBus `org.kde.keyboard`            (implemented)
+//   * Linux + GNOME          — GSettings `input-sources`           (skeleton)
+//   * Linux + Sway / wlroots — `swaymsg -t get_inputs`             (skeleton)
+//   * Linux + generic X11    — `setxkbmap -query`                  (skeleton,
+//                                                                   also used
+//                                                                   as fallback
+//                                                                   for unknown
+//                                                                   DEs)
+//   * Windows                — GetKeyboardLayoutName               (stub)
+//   * macOS                  — TISCopyCurrentKeyboardInputSource   (stub)
+//
+// Shell contract:
+//   * `current()` / `available_layouts()` / `set()` for one-shot calls
+//   * `CoreEvent::LayoutChanged(LayoutInfo)` from the watcher
+
+use serde::Serialize;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+#[cfg(target_os = "linux")]
+mod linux_gnome;
+#[cfg(target_os = "linux")]
+mod linux_kde;
+#[cfg(target_os = "linux")]
+mod linux_sway;
+#[cfg(target_os = "linux")]
+mod linux_x11;
+#[cfg(target_os = "macos")]
+mod macos;
+#[cfg(target_os = "windows")]
+mod windows;
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LayoutInfo {
+    /// Short code, e.g. "us", "ru".
+    pub short: String,
+    /// Optional display/variant name, e.g. "lat".
+    pub display: String,
+    /// Long human-readable name, e.g. "English (US)".
+    pub long: String,
+    /// Zero-based index among the configured layouts.
+    pub index: u32,
+    /// Which backend produced this info.
+    pub backend: &'static str,
+}
+
+static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+static LAST_PUBLISHED: Mutex<Option<(String, String)>> = Mutex::new(None);
+
+pub fn stop_watcher() {
+    WATCHER_STOP.store(true, Ordering::SeqCst);
+}
+
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn watcher_stop_requested() -> bool {
+    WATCHER_STOP.load(Ordering::SeqCst)
+}
+
+/// Cache the layout for the mapper and emit `LayoutChanged` when the
+/// short code or variant differs from the last published value.
+/// Only the KDE backend produces layouts so far.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn publish(info: &LayoutInfo) {
+    crate::runtime_state::set_layout(Some(crate::runtime_state::LayoutSelection {
+        short: info.short.clone(),
+        variant: info.display.clone(),
+    }));
+    if should_publish(info) {
+        crate::events::emit(crate::events::CoreEvent::LayoutChanged(info.clone()));
+    }
+}
+
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn should_publish(info: &LayoutInfo) -> bool {
+    let key = (info.short.clone(), info.display.clone());
+    match LAST_PUBLISHED.lock() {
+        Ok(mut last) => {
+            if last.as_ref() == Some(&key) {
+                return false;
+            }
+            *last = Some(key);
+            true
+        }
+        Err(_) => true,
+    }
+}
+
+pub fn current() -> Result<Option<LayoutInfo>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{Desktop, detect};
+        match detect().desktop {
+            Desktop::Kde => linux_kde::current(),
+            Desktop::Gnome => linux_gnome::current(),
+            Desktop::Sway => linux_sway::current(),
+            // Everything else — Hyprland, Xfce, MATE, Unknown, … — falls
+            // through to the generic X11 backend. It is still a skeleton
+            // but is the correct catch-all once implemented.
+            _ => linux_x11::current(),
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        windows::current()
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos::current()
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    {
+        Ok(None)
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+    use crate::platform::linux::{Desktop, detect};
+    match detect().desktop {
+        Desktop::Kde => linux_kde::refresh_cache(),
+        _ => current(),
+    }
+}
+
+pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{Desktop, detect};
+        match detect().desktop {
+            Desktop::Kde => linux_kde::available_layouts(),
+            _ => Ok(vec![]),
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Ok(vec![])
+    }
+}
+
+/// Switch the active OS keyboard layout to the given zero-based index.
+/// Currently implemented for KDE Plasma; other desktops/OSes return an
+/// explicit error so the frontend can disable the control.
+pub fn set(index: u32) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{Desktop, detect};
+        match detect().desktop {
+            Desktop::Kde => linux_kde::set_layout(index),
+            d => Err(format!(
+                "Switching layout is not implemented for desktop '{}'",
+                d.label()
+            )),
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = index;
+        Err("Switching layout is not implemented on this OS".to_string())
+    }
+}
+
+/// Start a background watcher that emits `CoreEvent::LayoutChanged`.
+/// Safe to call once at app startup. No-op if no backend is available.
+pub fn start_watcher() {
+    WATCHER_STOP.store(false, Ordering::SeqCst);
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{Desktop, detect};
+        let s = detect();
+        log::debug!(
+            "[layout] linux session: desktop={} session_type={} xdg={:?}",
+            s.desktop.label(),
+            s.session_type.label(),
+            s.xdg_current_desktop,
+        );
+        match s.desktop {
+            Desktop::Kde => linux_kde::start_watcher(),
+            Desktop::Gnome => linux_gnome::start_watcher(),
+            Desktop::Sway => linux_sway::start_watcher(),
+            _ => linux_x11::start_watcher(),
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        windows::start_watcher();
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos::start_watcher();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn info(short: &str, display: &str) -> LayoutInfo {
+        LayoutInfo {
+            short: short.into(),
+            display: display.into(),
+            long: String::new(),
+            index: 0,
+            backend: "test",
+        }
+    }
+
+    #[test]
+    fn publishes_only_changed_layouts() {
+        *LAST_PUBLISHED.lock().unwrap() = None;
+        assert!(should_publish(&info("us", "")));
+        assert!(!should_publish(&info("us", "")));
+        assert!(should_publish(&info("ru", "")));
+        assert!(should_publish(&info("ru", "phonetic")));
+    }
+}

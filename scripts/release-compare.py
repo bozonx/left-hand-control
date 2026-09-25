@@ -13,13 +13,13 @@ kind = sys.argv[1]
 output = Path(sys.argv[2]).resolve()
 output.mkdir(parents=True, exist_ok=True)
 if kind == "slint":
-    binary = root / "prototypes/slint-shell/target/release/slint-shell"
+    binary = root / "target/release/slint-shell"
     env = dict(os.environ, SLINT_SHELL_POPUPS="spell", SLINT_BACKEND="winit-software",
                SLINT_SHELL_SOCKET=f"lhc-release-{os.getpid()}.sock",
                SLINT_SHELL_METRICS=str(output / "metrics.csv"))
     socket_path = Path(env["XDG_RUNTIME_DIR"]) / env["SLINT_SHELL_SOCKET"]
 elif kind == "tauri":
-    binary = root / "src-tauri/target/release/left-hand-control"
+    binary = root / "target/release/left-hand-control"
     socket_path = output / "tauri.sock"
     env = dict(os.environ, LHC_BENCH_SOCKET=str(socket_path))
 else:
@@ -39,7 +39,7 @@ def command(value):
             return response
 
 def memory(label, process):
-    raw = subprocess.check_output([root / "prototypes/slint-shell/scripts/mem.sh", str(process.pid), label], text=True)
+    raw = subprocess.check_output([root / "apps/slint-shell/scripts/mem.sh", str(process.pid), label], text=True)
     return next(csv.DictReader(raw.splitlines()))
 
 def descendants(root_pid):

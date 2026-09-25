@@ -2,12 +2,38 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+/// Application identifier; must match `identifier` in `src-tauri/tauri.conf.json`
+/// so both shells share the same config and data directories.
+pub const APP_ID: &str = "dev.bozonx.left-hand-control";
+
+#[derive(Debug, Clone)]
 pub struct StoragePaths {
     config_dir: PathBuf,
     data_dir: PathBuf,
 }
 
 impl StoragePaths {
+    /// Resolve the storage location shared by every shell.
+    ///
+    /// Debug builds use `$LHC_DEV_DIR` (relative paths resolve against the
+    /// current directory) or `<repo>/.dev-files`, so development never
+    /// touches the user's real configuration. Release builds use the
+    /// platform config/data directories under [`APP_ID`], which are the
+    /// same directories Tauri's `app_config_dir()` / `app_data_dir()` return.
+    pub fn resolve() -> Result<Self, String> {
+        if cfg!(debug_assertions) {
+            let base = dev_base_dir(std::env::var_os("LHC_DEV_DIR").map(PathBuf::from))?;
+            return Ok(Self::new(base.join("config"), base.join("data")));
+        }
+        let config_dir = dirs::config_dir()
+            .ok_or_else(|| "resolve configuration directory".to_string())?
+            .join(APP_ID);
+        let data_dir = dirs::data_dir()
+            .ok_or_else(|| "resolve data directory".to_string())?
+            .join(APP_ID);
+        Ok(Self::new(config_dir, data_dir))
+    }
+
     pub fn new(config_dir: PathBuf, data_dir: PathBuf) -> Self {
         Self {
             config_dir,
@@ -231,6 +257,20 @@ fn unique_tmp_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
+fn dev_base_dir(override_dir: Option<PathBuf>) -> Result<PathBuf, String> {
+    match override_dir {
+        Some(path) if path.is_absolute() => Ok(path),
+        Some(path) => Ok(std::env::current_dir()
+            .map_err(|e| format!("resolve current_dir: {e}"))?
+            .join(path)),
+        None => Ok(Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .ok_or_else(|| "resolve repository root".to_string())?
+            .join(".dev-files")),
+    }
+}
+
 fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
     let tmp = unique_tmp_path(path);
     write_tmp_synced(&tmp, contents)?;
@@ -259,6 +299,19 @@ fn sync_parent_dir(path: &Path) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn dev_base_dir_defaults_to_repo_dev_files() {
+        let base = super::dev_base_dir(None).unwrap();
+        assert!(base.ends_with(".dev-files"));
+        assert!(base.parent().unwrap().join("Cargo.toml").exists());
+    }
+
+    #[test]
+    fn dev_base_dir_keeps_absolute_override() {
+        let base = super::dev_base_dir(Some("/tmp/lhc-dev".into())).unwrap();
+        assert_eq!(base, std::path::PathBuf::from("/tmp/lhc-dev"));
+    }
+
     use super::{StoragePaths, validate_layout_name};
     use std::fs;
     use std::path::PathBuf;

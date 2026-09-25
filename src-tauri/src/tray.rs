@@ -1,7 +1,7 @@
 use tauri::{
+    Manager, WebviewWindow,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WebviewWindow,
 };
 
 pub fn hide_main_window(window: &WebviewWindow) {

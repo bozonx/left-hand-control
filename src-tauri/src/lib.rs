@@ -1,15 +1,11 @@
-use crate::gamemode::get_gamemode_status;
+use lhc_core::{active_window, gamemode, layout};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::{Emitter, Listener, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
-mod active_window;
 #[cfg(target_os = "linux")]
 mod benchmark;
-#[cfg(target_os = "linux")]
-mod exec;
-mod gamemode;
-mod layout;
+mod core_events;
 mod mapper;
 mod platform;
 mod storage;
@@ -19,8 +15,8 @@ mod window_controls;
 static LAST_QUICK_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
 static LAST_EMOJI_MENU_TARGET: Mutex<Option<active_window::ActiveWindow>> = Mutex::new(None);
 
-fn app_storage(app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
-    storage::resolve_storage_paths(app)
+fn app_storage(_app: &tauri::AppHandle) -> Result<storage::StoragePaths, String> {
+    storage::resolve_storage_paths()
 }
 
 #[tauri::command]
@@ -211,6 +207,16 @@ fn mapper_status() -> mapper::MapperStatus {
 }
 
 #[tauri::command]
+fn get_gamemode_status() -> Result<gamemode::GameModeStatus, String> {
+    Ok(gamemode::status())
+}
+
+#[tauri::command]
+fn get_active_window() -> Option<active_window::ActiveWindow> {
+    active_window::cached_active_window()
+}
+
+#[tauri::command]
 fn get_current_layout() -> Result<Option<layout::LayoutInfo>, String> {
     layout::current()
 }
@@ -296,10 +302,10 @@ fn can_detect_focus_after_menu_hide() -> bool {
     {
         use crate::platform::linux::{Desktop, SessionType};
         let session = crate::platform::linux::detect();
-        return matches!(
+        matches!(
             (session.desktop, session.session_type),
             (Desktop::Hyprland, _) | (Desktop::Kde, SessionType::Wayland) | (_, SessionType::X11)
-        );
+        )
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -452,15 +458,16 @@ fn listen_menu_pages(
 pub fn run() {
     let app = tauri::Builder::default()
         .setup(|app| {
-            mapper::set_app_handle(app.handle().clone());
+            core_events::forward(app.handle().clone());
             tray::build_tray(app.handle())?;
-            if let Ok(storage) = app_storage(app.handle()) {
+            let storage = app_storage(app.handle()).ok();
+            if let Some(storage) = &storage {
                 let _ = storage.ensure();
                 mapper::set_portal_token_dir(storage.data_dir().clone());
             }
-            layout::start_watcher(app.handle().clone());
-            gamemode::start_watcher(app.handle().clone());
-            active_window::start_watcher(app.handle().clone());
+            layout::start_watcher();
+            gamemode::start_watcher(storage);
+            active_window::start_watcher();
             #[cfg(target_os = "linux")]
             benchmark::start(app.handle().clone());
             listen_menu_pages(app, "show_quick_menu", "quick-menu", show_quick_menu_window);
@@ -480,10 +487,10 @@ pub fn run() {
                     tray::hide_main_window(&w);
                 }
             }
-            WindowEvent::Focused(false) => {
-                if window.label() == "quick-menu" || window.label() == "emoji-menu" {
-                    let _ = window.hide();
-                }
+            WindowEvent::Focused(false)
+                if window.label() == "quick-menu" || window.label() == "emoji-menu" =>
+            {
+                let _ = window.hide();
             }
             _ => {}
         })
@@ -516,7 +523,7 @@ pub fn run() {
             get_gamemode_status,
             get_platform_info,
             window_controls::get_window_controls_layout,
-            active_window::get_active_window,
+            get_active_window,
             tray::show_main_window_command,
             tray::hide_main_window_command,
             tray::toggle_main_window_maximized_command,

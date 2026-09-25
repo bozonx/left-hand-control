@@ -1,0 +1,215 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+msgid " · select an entry to fill the draft"
+msgstr " · выбор записи заполняет черновик"
+
+msgid "1500 emoji — stress"
+msgstr "1500 emoji — stress"
+
+msgid "Action grid"
+msgstr "Сетка действий"
+
+msgid "Action saved"
+msgstr "Действие сохранено"
+
+msgid "All categories"
+msgstr "Все категории"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Capture a keyboard shortcut"
+msgstr "Захватите сочетание клавиш"
+
+msgid "Capture shortcut"
+msgstr "Захватить сочетание"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Конфигурация загружена: {n} правило"
+msgstr[1] "Конфигурация загружена: {n} правила"
+msgstr[2] "Конфигурация загружена: {n} правил"
+
+msgid "Configuration reloaded from disk: {n} rule"
+msgid_plural "Configuration reloaded from disk: {n} rules"
+msgstr[0] "Конфигурация перечитана с диска: {n} правило"
+msgstr[1] "Конфигурация перечитана с диска: {n} правила"
+msgstr[2] "Конфигурация перечитана с диска: {n} правил"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Конфигурация сохранена: {n} правило"
+msgstr[1] "Конфигурация сохранена: {n} правила"
+msgstr[2] "Конфигурация сохранена: {n} правил"
+
+msgid "Configuration unavailable: {}"
+msgstr "Конфигурация недоступна: {}"
+
+msgid "Copy"
+msgstr "Копировать"
+
+msgid "Delay"
+msgstr "Пауза"
+
+msgid "Delay (ms)"
+msgstr "Пауза (мс)"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Пауза: целое число от 1 до 10000 мс"
+
+msgid "Device saved: {}"
+msgstr "Устройство сохранено: {}"
+
+msgid "Draft — saving applies the action to this key only"
+msgstr "Черновик — сохранение применит действие только к этой клавише"
+
+msgid "Drag by ⠿ · Esc cancels · click a label to edit"
+msgstr "Переносите за ⠿ · Esc — отмена · нажмите подпись для изменения"
+
+msgid "Emoji"
+msgstr "Эмодзи"
+
+msgid "Emoji · "
+msgstr "Эмодзи · "
+
+msgid "Enter non-empty text"
+msgstr "Введите непустой текст"
+
+msgid "Enter text, for example Привет 👋"
+msgstr "Введите текст, например Привет 👋"
+
+msgid "Filter"
+msgstr "Фильтр / Filter"
+
+msgid "Found: "
+msgstr "Найдено: "
+
+msgid "Integer from 1 to 10000"
+msgstr "Целое число от 1 до 10000"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr "Клавиша {} имеет только условные или послойные правила; отредактируйте её в полном редакторе"
+
+msgid "Key «"
+msgstr "Клавиша «"
+
+msgid "Keyboard"
+msgstr "Клавиатура"
+
+msgid "Keyboard device"
+msgstr "Устройство клавиатуры"
+
+msgid "Keyboard layout"
+msgstr "Раскладка клавиатуры"
+
+msgid "Keyboard shortcut"
+msgstr "Сочетание клавиш"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "Загрузите корректную конфигурацию перед запуском mapper"
+
+msgid "Mapper is running"
+msgstr "Mapper работает"
+
+msgid "Mapper is running: {}"
+msgstr "Mapper работает: {}"
+
+msgid "Mapper is starting…"
+msgstr "Mapper запускается…"
+
+msgid "Mapper is stopped"
+msgstr "Mapper остановлен"
+
+msgid "Mapper is stopped: {}"
+msgstr "Mapper остановлен: {}"
+
+msgid "Next window"
+msgstr "Следующее окно"
+
+msgid "No shortcut assigned"
+msgstr "Сочетание не задано"
+
+msgid "Paste"
+msgstr "Вставить"
+
+msgid "Press a shortcut…"
+msgstr "Нажмите сочетание…"
+
+msgid "Quick actions"
+msgstr "Быстрые действия"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Saved, but the mapper was not updated: {}"
+msgstr "Сохранено, но mapper не обновился: {}"
+
+msgid "Search 500 actions…"
+msgstr "Поиск по 500 действиям…"
+
+msgid "Select a key to assign an action."
+msgstr "Выберите клавишу, чтобы назначить действие."
+
+msgid "Select a keyboard device in the settings"
+msgstr "Выберите устройство клавиатуры в настройках"
+
+msgid "Select a system action"
+msgstr "Выберите системное действие"
+
+msgid "Shortcuts"
+msgstr "Сочетания"
+
+msgid "Slint Shell — key editor"
+msgstr "Slint Shell — редактор клавиш"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "Процесс Spell-попапов недоступен: {}"
+
+msgid "Spell worker is not running"
+msgstr "Spell worker не запущен"
+
+msgid "Spell worker is restarting"
+msgstr "Spell worker перезапускается"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "Spell worker: превышен лимит перезапусков (3 за минуту)"
+
+msgid "Spell worker: {}"
+msgstr "Spell worker: {}"
+
+msgid "Stop capture"
+msgstr "Остановить захват"
+
+msgid "Stress"
+msgstr "Stress"
+
+msgid "System"
+msgstr "Система"
+
+msgid "System action"
+msgstr "Системное действие"
+
+msgid "Text"
+msgstr "Текст"
+
+msgid "The configuration was changed by another application and has been reloaded; repeat the change"
+msgstr "Конфигурация изменена другим приложением и перечитана; повторите изменение"
+
+msgid "Toggle mapper"
+msgstr "Mapper вкл / выкл"
+
+msgid "Unknown action type"
+msgstr "Неизвестный тип действия"
+
+msgid "Update the selected catalog entry"
+msgstr "Обновить выбранную запись"
+
+msgid "☀ Light"
+msgstr "☀ Светлая"
+
+msgid "☾ Dark"
+msgstr "☾ Тёмная"

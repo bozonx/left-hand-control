@@ -28,7 +28,7 @@ Tray нужен для открытия интерактивного UI, Setting
 - Windows 11 x64 в интерактивной KVM/QEMU VM.
 - Один монитор 1920×1080; DPI 100%, 125% и 150%.
 - English (US) и Russian.
-- Release-сборка `prototypes/slint-shell` с `winit-skia`.
+- Release-сборка `apps/slint-shell` с `winit-skia`.
 - Notepad для одного внешнего smoke-сценария вставки.
 
 Зафиксировать Windows build, commit, Rust, Slint, renderer и DPI. Производительность
@@ -83,7 +83,7 @@ show/hide, контроль working set/handles, shutdown и отключённ�
 
 ### Сборка и lifecycle
 
-- [x] `cargo test --locked --manifest-path prototypes/slint-shell/Cargo.toml --bin slint-shell`.
+- [x] `cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell`.
 - [x] Release-сборка без Linux-only feature `spell`.
 - [x] Повторный запуск работает как IPC client, а не второй UI server.
 - [x] 100 чередующихся `show emoji` / `show quick` / `hide`, затем `quit`.

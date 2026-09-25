@@ -350,6 +350,14 @@ pub fn update_config(config_json: &str) -> Result<(), String> {
     lock_state().update_config(cfg)
 }
 
+/// Push a saved config to the mapper when it is running; no-op otherwise.
+pub fn update_config_if_running(config_json: &str) -> Result<(), String> {
+    if !status().running {
+        return Ok(());
+    }
+    update_config(config_json)
+}
+
 pub fn execute_action(action: String) -> Result<(), String> {
     lock_state().execute_action(action)
 }
