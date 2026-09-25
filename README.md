@@ -1,8 +1,9 @@
-Built as a desktop application on top of **Tauri 2.11+**, **Nuxt 4.4+**, **Nuxt UI v4**, **Vue 3** and **Tailwind CSS v4**.
-Currently, only **Linux** is supported.
+Left Hand Control is migrating to a native **Slint 1.17** application for Linux/Wayland and Windows. The existing **Tauri 2 + Nuxt 4** application remains available during the migration. Both shells share framework-independent Rust code through `lhc-core`.
 
 ## Stack
 
+- [Slint 1.17](https://slint.dev) for the new native UI
+- Rust workspace with the shared `lhc-core` library
 - [Nuxt 4](https://nuxt.com) (SPA mode, `ssr: false`)
 - [Nuxt UI v4](https://ui.nuxt.com) — components + theming
 - [Tailwind CSS v4](https://tailwindcss.com) (bundled via Nuxt UI)
@@ -38,6 +39,14 @@ Currently, only **Linux** is supported.
 ```bash
 pnpm install
 ```
+
+## Run the Slint application
+
+```bash
+cargo run -p slint-shell
+```
+
+The Slint shell and the Tauri application are intentionally buildable in parallel. Do not enable keyboard interception in both processes at the same time.
 
 ## Run in development (desktop window)
 
@@ -118,12 +127,17 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
 
 ```
 .
+├── Cargo.toml            # Shared Rust workspace
+├── crates/lhc-core/      # UI-independent config, storage and platform APIs
+├── prototypes/slint-shell/
+│   ├── src/              # Accepted Slint shell, being promoted to the main app
+│   └── ui/               # Slint components
 ├── app.vue               # Root Vue component (uses Nuxt UI <UApp>)
 ├── app.config.ts         # Nuxt UI theme config
 ├── assets/css/main.css   # Tailwind + Nuxt UI entry
 ├── nuxt.config.ts        # Nuxt config (SPA + static + Vite tuning for Tauri)
 ├── package.json
-└── src-tauri/            # Rust / Tauri side
+└── src-tauri/            # Legacy shell and Tauri adapters during migration
     ├── Cargo.toml
     ├── tauri.conf.json
     ├── capabilities/default.json

@@ -4,12 +4,14 @@ Guidance for AI coding agents working in this repository. Read this first before
 
 ## Project summary
 
-**Left Hand Control** is a **desktop application** (not a web app) — a keyboard layout/mapper that proposes ergonomic layouts biased toward left-hand control for professionals.
+**Left Hand Control** is a desktop keyboard layout/mapper. The accepted application shell uses Slint and targets Linux/Wayland and Windows. The Tauri 2 + Nuxt 4 application remains operational during migration.
 
-It is shipped as a **Tauri 2** native binary with a **Nuxt 4 SPA** frontend.
+Framework-independent Rust code belongs in `crates/lhc-core`. Tauri and Slint are adapters over this core and must not duplicate domain or platform logic.
 
 ## Tech stack (authoritative)
 
+- **Slint 1.17.1** — primary native UI under `prototypes/slint-shell/` during promotion
+- **Cargo workspace** — root `Cargo.toml`, shared library under `crates/lhc-core/`
 - **Tauri 2.11+** — native shell (Rust). Source: `src-tauri/`
 - **Nuxt 4.4+** in **SPA mode** (`ssr: false`, `nitro.preset: 'static'`). Source: repo root
 - **Vue 3** with `<script setup>` and Composition API
@@ -24,6 +26,9 @@ Do **not** introduce alternative UI libraries, CSS frameworks, or state managers
 
 ```
 .
+├── Cargo.toml                 # Rust workspace
+├── crates/lhc-core/           # UI-independent Rust code
+├── prototypes/slint-shell/    # accepted Slint application during migration
 ├── app.vue                    # Root component, wrap everything in <UApp>
 ├── app.config.ts              # Nuxt UI theme (colors, etc.)
 ├── assets/css/main.css        # Tailwind v4 + Nuxt UI entry (do not rename)

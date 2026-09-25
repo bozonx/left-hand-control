@@ -20,6 +20,7 @@ node_modules
 .idea
 
 # Tauri build artefacts
+/target/
 src-tauri/target
 
 # Tauri application icons are generated assets, but they are committed so
