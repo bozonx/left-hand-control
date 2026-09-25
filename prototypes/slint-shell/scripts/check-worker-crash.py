@@ -47,15 +47,27 @@ with tempfile.TemporaryDirectory() as directory:
                 raise RuntimeError("parent IPC did not become ready")
             worker = int(children[0])
             os.kill(worker, signal.SIGKILL)
-            time.sleep(0.2)
+            deadline = time.monotonic() + 20
+            replacement = None
+            while time.monotonic() < deadline:
+                children = child_file.read_text().split() if child_file.exists() else []
+                replacement = next((int(child) for child in children if int(child) != worker), None)
+                if replacement is not None:
+                    break
+                time.sleep(0.1)
+            if replacement is None:
+                raise RuntimeError("Spell worker did not restart")
             subprocess.run([binary, "show", "emoji"], env=env, check=True, timeout=5)
-            time.sleep(0.2)
             if server.poll() is not None:
                 raise RuntimeError("parent exited after worker crash")
-            log.flush()
-            if "Spell popup process unavailable:" not in log_path.read_text():
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                if "Spell popup process unavailable:" in log_path.read_text():
+                    break
+                time.sleep(0.1)
+            else:
                 raise RuntimeError("worker failure was not reported")
-            print("worker crash reported; parent remained responsive")
+            print("worker crash reported; replacement started; parent remained responsive")
         finally:
             subprocess.run([binary, "quit"], env=env, timeout=5, check=False)
             try:

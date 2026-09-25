@@ -11,9 +11,9 @@ pub struct Handle {
 }
 
 impl Handle {
-    pub fn toggle_enabled(&self) {
+    pub fn set_enabled(&self, value: bool) {
         if let Ok(mut enabled) = self.enabled.lock() {
-            *enabled = !*enabled;
+            *enabled = value;
         }
     }
 }

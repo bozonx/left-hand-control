@@ -1,3 +1,9 @@
+#[path = "../src/app_storage.rs"]
+#[allow(dead_code)]
+mod app_storage;
+#[path = "../src/config_state.rs"]
+#[allow(dead_code)]
+mod config_state;
 #[path = "../src/editor.rs"]
 mod editor;
 use slint::{ComponentHandle, Model};
@@ -5,7 +11,7 @@ slint::include_modules!();
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = SettingsWindow::new()?;
-    editor::bind(&ui);
+    editor::bind_with_config(&ui, None);
     if std::env::args().any(|arg| arg == "--smoke") {
         assert_eq!(ui.get_keys().row_count(), 80);
         assert_eq!(ui.get_actions().row_count(), 500);

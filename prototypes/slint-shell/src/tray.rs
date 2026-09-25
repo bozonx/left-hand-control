@@ -10,8 +10,8 @@ pub struct Tray {
 pub struct Handle(ksni::blocking::Handle<Tray>);
 
 impl Handle {
-    pub fn toggle_enabled(&self) {
-        self.0.update(|tray| tray.enabled = !tray.enabled);
+    pub fn set_enabled(&self, enabled: bool) {
+        self.0.update(|tray| tray.enabled = enabled);
     }
 }
 

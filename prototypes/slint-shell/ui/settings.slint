@@ -27,6 +27,9 @@ export component SettingsWindow inherits Window {
     in property <string> status;
     in property <string> backend-error;
     in property <string> config-status;
+    in property <[string]> input-devices;
+    in-out property <int> selected-device: -1;
+    callback select-device(int);
     callback show-popup(string);
     callback toggle-mapper();
     callback edit-key(int);
@@ -82,8 +85,16 @@ export component SettingsWindow inherits Window {
                 Button { text: Locale.english ? "Русский" : "English"; clicked => { root.preferences(Theme.dark, !Locale.english); } }
             }
             Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: 26px; font-weight: 700; }
-            Text { color: Theme.muted; text: @tr("Select a key to assign an action. Changes are kept in memory."); }
+            Text { color: Theme.muted; text: @tr("Select a key to assign an action."); }
             Text { color: Theme.muted; text: root.config-status; }
+            HorizontalBox {
+                Text { text: @tr("Keyboard device"); color: Theme.text; vertical-alignment: center; }
+                ComboBox {
+                    model: root.input-devices;
+                    current-index: root.selected-device;
+                    selected(value) => { root.select-device(self.current-index); }
+                }
+            }
             if !root.grid-open: VerticalLayout {
                 spacing: 6px;
                 for row in 5: HorizontalLayout {
@@ -108,7 +119,7 @@ export component SettingsWindow inherits Window {
                 move-item(from, to) => { root.move-quick(from, to); }
                 rename-item(index, value) => { root.rename-quick(index, value); }
             }
-            Text { text: root.status == "" ? "" : @tr("Action saved. Reopening shows the saved value."); color: Theme.text; }
+            Text { text: root.status; color: Theme.text; }
             Text { text: root.backend-error; color: Theme.error; wrap: word-wrap; }
             Rectangle { vertical-stretch: 1; }
             HorizontalBox {

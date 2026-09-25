@@ -1,3 +1,9 @@
+#[path = "../src/app_storage.rs"]
+#[allow(dead_code)]
+mod app_storage;
+#[path = "../src/config_state.rs"]
+#[allow(dead_code)]
+mod config_state;
 #[path = "../src/editor.rs"]
 mod editor;
 use slint::{ComponentHandle, Model};
@@ -78,7 +84,7 @@ fn snapshot(ui: &impl ComponentHandle, name: &str) {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = SettingsWindow::new()?;
-    editor::bind(&ui);
+    editor::bind_with_config(&ui, None);
     let emoji = EmojiPopup::new()?;
     emoji.set_emojis(slint::ModelRc::new(slint::VecModel::from(
         vec![slint::SharedString::from("😀"); 240],

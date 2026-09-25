@@ -36,6 +36,9 @@ pub struct Worker {
 }
 
 impl Worker {
+    pub fn is_alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
+    }
     pub fn send(
         &self,
         command: String,

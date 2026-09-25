@@ -1,10 +1,11 @@
+mod app_storage;
 #[cfg(target_os = "linux")]
 mod backend;
 #[cfg(not(target_os = "linux"))]
 #[path = "platform/backend.rs"]
 mod backend;
+mod config_state;
 mod editor;
-mod app_storage;
 #[cfg(target_os = "linux")]
 mod focus;
 #[cfg(not(target_os = "linux"))]
@@ -17,6 +18,7 @@ mod hotkey;
 mod hotkey;
 mod ipc;
 mod metrics;
+mod popup_model;
 #[cfg(not(target_os = "linux"))]
 #[path = "platform/return_input.rs"]
 mod return_input;
@@ -34,7 +36,12 @@ mod tray;
 
 use slint::winit_030::{WinitWindowAccessor, winit};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use winit::event::WindowEvent;
 #[cfg(target_os = "linux")]
 use winit::platform::startup_notify::WindowExtStartupNotify;
@@ -76,6 +83,39 @@ impl Command {
 
 type Dispatch = Arc<dyn Fn(Command, &'static str, Instant, Option<String>) + Send + Sync>;
 
+struct SlintMapperHost;
+
+impl lhc_core::mapper::MapperHost for SlintMapperHost {
+    fn mapper_stopped(&self, error: &str) {
+        let error = error.to_owned();
+        let _ = slint::invoke_from_event_loop(move || {
+            with_app(|app| {
+                app.settings.set_backend_error(error.into());
+                app.refresh_mapper_status();
+            })
+        });
+    }
+
+    fn app_event(&self, name: &str) {
+        let target = if name.starts_with("show_quick_menu_") {
+            Some("quick")
+        } else if name.starts_with("show_emoji_menu_") {
+            Some("emoji")
+        } else {
+            None
+        };
+        if let Some(target) = target {
+            let _ = slint::invoke_from_event_loop(move || {
+                with_app(|app| {
+                    app.show(target, "mapper", Instant::now(), None);
+                })
+            });
+        }
+    }
+
+    fn refresh_layout(&self) {}
+}
+
 struct App {
     settings: SettingsWindow,
     emoji: EmojiPopup,
@@ -86,7 +126,16 @@ struct App {
     #[cfg(target_os = "linux")]
     pending: RefCell<Option<(&'static str, Instant, winit::event_loop::AsyncRequestSerial)>>,
     actions: Vec<String>,
-    worker: Option<backend::Worker>,
+    worker: RefCell<Option<backend::Worker>>,
+    use_spell: bool,
+    restart_pending: Cell<bool>,
+    restart_history: RefCell<Vec<Instant>>,
+    preferences: Cell<(bool, bool)>,
+    worker_watch: slint::Timer,
+    status_watch: slint::Timer,
+    last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
+    config: Option<Rc<RefCell<config_state::ConfigState>>>,
+    devices: Vec<String>,
     #[cfg(not(target_os = "linux"))]
     return_input: RefCell<return_input::ReturnInput>,
 }
@@ -102,10 +151,149 @@ fn with_app(f: impl FnOnce(&Rc<App>)) {
 }
 
 impl App {
+    fn send_worker(
+        &self,
+        command: String,
+        source: &'static str,
+        start: Instant,
+        token: Option<String>,
+    ) -> bool {
+        let result = self.worker.borrow().as_ref().map(|worker| {
+            worker
+                .send(command, source, start, token)
+                .map_err(|error| error.to_string())
+        });
+        if let Some(Err(error)) = result.as_ref() {
+            self.report_worker_error(error);
+        }
+        result.is_some()
+    }
+
+    fn refresh_mapper_status(&self) {
+        let status = lhc_core::mapper::runtime::status();
+        if let Some(tray) = self.tray.borrow().as_ref() {
+            tray.set_enabled(status.running);
+        }
+        let current = (status.running, status.last_error.clone());
+        if self.last_mapper_status.borrow().as_ref() == Some(&current) {
+            return;
+        }
+        *self.last_mapper_status.borrow_mut() = Some(current);
+        let label = if status.running {
+            "Mapper работает"
+        } else {
+            "Mapper остановлен"
+        };
+        self.settings.set_status(
+            status
+                .last_error
+                .map_or(label.to_owned(), |error| format!("{label}: {error}"))
+                .into(),
+        );
+    }
+
+    fn toggle_mapper(&self) {
+        if lhc_core::mapper::runtime::status().running {
+            std::thread::spawn(|| {
+                let result = lhc_core::mapper::runtime::stop();
+                let _ = slint::invoke_from_event_loop(move || {
+                    with_app(|app| {
+                        if let Err(error) = result {
+                            app.settings.set_backend_error(error.into());
+                        }
+                        app.refresh_mapper_status();
+                    })
+                });
+            });
+            return;
+        }
+        let Some(config) = &self.config else {
+            self.settings.set_backend_error(
+                "Загрузите корректную конфигурацию перед запуском mapper".into(),
+            );
+            return;
+        };
+        let config = config.borrow();
+        let Some(device) = config.input_device().map(str::to_owned) else {
+            self.settings
+                .set_backend_error("Выберите inputDevicePath в настройках".into());
+            return;
+        };
+        let mouse = config.mouse_device().map(str::to_owned);
+        let Ok(raw) = config.raw() else {
+            return;
+        };
+        self.settings.set_status("Mapper запускается…".into());
+        std::thread::spawn(move || {
+            let result = lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &raw);
+            let _ = slint::invoke_from_event_loop(move || {
+                with_app(|app| {
+                    if let Err(error) = result {
+                        app.settings.set_backend_error(error.into());
+                    } else {
+                        app.settings.set_backend_error("".into());
+                    }
+                    app.refresh_mapper_status();
+                })
+            });
+        });
+    }
     fn report_worker_error(&self, error: &dyn std::fmt::Display) {
         let message = format!("Spell popup process unavailable: {error}");
         log::error!("{message}");
         self.settings.set_backend_error(message.into());
+        self.restart_worker();
+    }
+
+    fn restart_worker(&self) {
+        if self.restart_pending.replace(true) {
+            return;
+        }
+        let now = Instant::now();
+        let mut history = self.restart_history.borrow_mut();
+        history.retain(|attempt| now.duration_since(*attempt) < Duration::from_secs(60));
+        if history.len() >= 3 {
+            self.settings.set_backend_error(
+                "Spell worker: превышен лимит перезапусков (3 за минуту)".into(),
+            );
+            self.restart_pending.set(false);
+            return;
+        }
+        history.push(now);
+        drop(history);
+        self.worker.borrow_mut().take();
+        std::thread::spawn(|| {
+            let result = backend::start().map_err(|error| error.to_string());
+            let _ = slint::invoke_from_event_loop(move || {
+                with_app(|app| {
+                    app.restart_pending.set(false);
+                    match result {
+                        Ok(Some(worker)) => {
+                            let (dark, english) = app.preferences.get();
+                            let preference = format!(
+                                "preferences {} {}",
+                                if dark { "dark" } else { "light" },
+                                if english { "en" } else { "ru" }
+                            );
+                            if let Err(error) = worker.send(preference, "ipc", Instant::now(), None)
+                            {
+                                app.settings
+                                    .set_backend_error(format!("Spell worker: {error}").into());
+                            } else {
+                                app.settings.set_backend_error("".into());
+                            }
+                            *app.worker.borrow_mut() = Some(worker);
+                        }
+                        Ok(None) => app
+                            .settings
+                            .set_backend_error("Spell worker не запущен".into()),
+                        Err(error) => app
+                            .settings
+                            .set_backend_error(format!("Spell worker: {error}").into()),
+                    }
+                })
+            });
+        });
     }
 
     fn window(&self, name: &str) -> &slint::Window {
@@ -149,11 +337,10 @@ impl App {
                 self.return_input.borrow_mut().capture();
             }
         }
-        if name != "settings"
-            && let Some(worker) = &self.worker
-        {
-            if let Err(error) = worker.send(format!("show {name}"), source, start, token) {
-                self.report_worker_error(error.as_ref());
+        if name != "settings" && self.use_spell {
+            if !self.send_worker(format!("show {name}"), source, start, token.clone()) {
+                self.settings
+                    .set_backend_error("Spell worker перезапускается".into());
             }
             return;
         }
@@ -217,11 +404,7 @@ impl App {
         match command {
             Command::Show(name) => self.show(name, source, start, token),
             Command::Hide => {
-                if let Some(worker) = &self.worker
-                    && let Err(error) = worker.send("hide".into(), source, start, token)
-                {
-                    self.report_worker_error(error.as_ref());
-                }
+                self.send_worker("hide".into(), source, start, token);
                 self.hide("emoji");
                 self.hide("quick");
             }
@@ -233,11 +416,10 @@ impl App {
                 }
             }
             Command::ToggleMapper => {
-                if let Some(tray) = self.tray.borrow().as_ref() {
-                    tray.toggle_enabled();
-                }
+                self.toggle_mapper();
             }
             Command::Preferences(dark, english) => {
+                self.preferences.set((dark, english));
                 slint::select_bundled_translation(if english { "en" } else { "ru" }).unwrap();
                 self.settings.global::<Theme>().set_dark(dark);
                 self.settings.global::<Theme>().invoke_apply();
@@ -248,23 +430,20 @@ impl App {
                 self.quick.global::<Theme>().set_dark(dark);
                 self.quick.global::<Theme>().invoke_apply();
                 self.quick.global::<Locale>().set_english(english);
-                if let Some(worker) = &self.worker
-                    && let Err(error) = worker.send(
-                        format!(
-                            "preferences {} {}",
-                            if dark { "dark" } else { "light" },
-                            if english { "en" } else { "ru" }
-                        ),
-                        source,
-                        start,
-                        None,
-                    )
-                {
-                    self.report_worker_error(error.as_ref());
-                }
+                self.send_worker(
+                    format!(
+                        "preferences {} {}",
+                        if dark { "dark" } else { "light" },
+                        if english { "en" } else { "ru" }
+                    ),
+                    source,
+                    start,
+                    None,
+                );
             }
             Command::Ping => {}
             Command::Quit => {
+                let _ = lhc_core::mapper::runtime::stop();
                 let _ = slint::quit_event_loop();
             }
         }
@@ -284,21 +463,9 @@ impl App {
         {
             self.choose_emoji(index);
         } else {
-            let delta = if key
-                == slint::SharedString::from(slint::platform::Key::LeftArrow).as_str()
-            {
-                -1
-            } else if key == slint::SharedString::from(slint::platform::Key::RightArrow).as_str() {
-                1
-            } else if key == slint::SharedString::from(slint::platform::Key::UpArrow).as_str() {
-                -8
-            } else if key == slint::SharedString::from(slint::platform::Key::DownArrow).as_str() {
-                8
-            } else {
-                0
-            };
-            if delta != 0 {
-                self.emoji.set_selected((index + delta).rem_euclid(max));
+            if let Some(delta) = popup_model::key_delta("emoji", key) {
+                self.emoji
+                    .set_selected(popup_model::advance(index, delta, max as usize));
                 self.metrics
                     .borrow_mut()
                     .mark("emoji", "navigation_handled");
@@ -307,15 +474,8 @@ impl App {
     }
 
     fn choose_emoji(&self, index: i32) {
-        let offset = if self.emoji.get_page() == 5 {
-            0
-        } else {
-            self.emoji.get_page() * 48
-        };
-        if let Some(value) = self
-            .emoji
-            .get_emojis()
-            .row_data(((offset + index) % 240) as usize)
+        if let Some(value) = popup_model::emoji_index(self.emoji.get_page(), index)
+            .and_then(|index| self.emoji.get_emojis().row_data(index % 240))
         {
             log::info!("selected emoji: {value}");
             #[cfg(not(target_os = "linux"))]
@@ -325,13 +485,7 @@ impl App {
     }
 
     fn filter(&self, query: &str) {
-        let query = query.to_lowercase();
-        let values: Vec<slint::SharedString> = self
-            .actions
-            .iter()
-            .filter(|s| s.to_lowercase().contains(&query))
-            .map(|s| s.into())
-            .collect();
+        let values = popup_model::filter(&self.actions, query);
         self.quick.set_items(ModelRc::new(VecModel::from(values)));
         self.quick.set_selected(0);
         self.metrics.borrow_mut().mark("quick", "t5_first_key");
@@ -398,6 +552,12 @@ fn observe(app: &Rc<App>, name: &'static str) {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    lhc_core::mapper::set_host(Arc::new(SlintMapperHost));
+    #[cfg(target_os = "linux")]
+    if let Ok(paths) = app_storage::paths() {
+        let _ = paths.ensure();
+        lhc_core::mapper::runtime::set_portal_token_dir(paths.data_dir().clone());
+    }
     let args: Vec<_> = std::env::args().skip(1).collect();
     #[cfg(all(feature = "spell", target_os = "linux"))]
     if args == ["--spell-worker"] {
@@ -412,35 +572,62 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     select_backend(popup_attributes.clone())?;
     let mut metrics = metrics::Metrics::new(start)?;
     let settings = SettingsWindow::new()?;
-    editor::bind(&settings);
-    match app_storage::config_status() {
-        Ok(status) => settings.set_config_status(status.into()),
+    let config = match config_state::ConfigState::load() {
+        Ok(config) => {
+            settings.set_config_status(
+                format!("Конфигурация загружена: {} правил", config.rule_count()).into(),
+            );
+            Some(Rc::new(RefCell::new(config)))
+        }
         Err(error) => {
             log::warn!("configuration unavailable: {error}");
             settings.set_config_status(format!("Конфигурация: {error}").into());
+            None
         }
+    };
+    editor::bind_with_config(&settings, config.clone());
+    let mut devices = match lhc_core::mapper::runtime::list_keyboards() {
+        Ok(devices) => devices,
+        Err(error) => {
+            log::warn!("keyboard discovery: {error}");
+            Vec::new()
+        }
+    };
+    if let Some(path) = config
+        .as_ref()
+        .and_then(|config| config.borrow().input_device().map(str::to_owned))
+        && !devices.iter().any(|device| device.path == path)
+    {
+        devices.insert(
+            0,
+            lhc_core::mapper_types::KeyboardDevice {
+                path,
+                name: "Сохранённое устройство".into(),
+            },
+        );
     }
+    let selected_device = config
+        .as_ref()
+        .and_then(|config| config.borrow().input_device().map(str::to_owned))
+        .and_then(|path| devices.iter().position(|device| device.path == path))
+        .map_or(-1, |index| index as i32);
+    settings.set_input_devices(ModelRc::new(VecModel::from(
+        devices
+            .iter()
+            .map(|device| format!("{} · {}", device.name, device.path).into())
+            .collect::<Vec<slint::SharedString>>(),
+    )));
+    settings.set_selected_device(selected_device);
+    let device_paths: Vec<String> = devices.into_iter().map(|device| device.path).collect();
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;
-    let emojis: Vec<slint::SharedString> = ["☕", "😀", "👩‍💻"]
-        .into_iter()
-        .map(Into::into)
-        .chain(
-            (0x1f600..=0x1f64f)
-                .chain(0x1f300..=0x1f5ff)
-                .filter_map(char::from_u32)
-                .map(|c| c.to_string().into()),
-        )
-        .take(240)
-        .collect();
+    let emojis = popup_model::emoji_items();
     emoji.set_emojis(ModelRc::new(VecModel::from(emojis)));
     metrics.ready("emoji");
     let quick = QuickPopup::new()?;
     metrics.ready("quick");
-    let actions = (1..=30)
-        .map(|i| format!("Действие {i:02} / Action {i:02}"))
-        .collect();
+    let actions = popup_model::quick_items();
     let app = Rc::new(App {
         settings,
         emoji,
@@ -451,7 +638,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(target_os = "linux")]
         pending: RefCell::new(None),
         actions,
-        worker,
+        use_spell: worker.is_some(),
+        worker: RefCell::new(worker),
+        restart_pending: Cell::new(false),
+        restart_history: RefCell::new(Vec::new()),
+        preferences: Cell::new((true, false)),
+        worker_watch: slint::Timer::default(),
+        status_watch: slint::Timer::default(),
+        last_mapper_status: RefCell::new(None),
+        config,
+        devices: device_paths,
         #[cfg(not(target_os = "linux"))]
         return_input: RefCell::new(return_input::ReturnInput::default()),
     });
@@ -472,14 +668,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     );
     app.filter("");
+    app.refresh_mapper_status();
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
+    app.status_watch
+        .start(slint::TimerMode::Repeated, Duration::from_secs(1), || {
+            with_app(|app| app.refresh_mapper_status());
+        });
+    if app.use_spell {
+        app.worker_watch
+            .start(slint::TimerMode::Repeated, Duration::from_secs(1), || {
+                with_app(|app| {
+                    let dead = app
+                        .worker
+                        .borrow_mut()
+                        .as_mut()
+                        .is_some_and(|worker| !worker.is_alive());
+                    if dead {
+                        app.report_worker_error(&"worker exited");
+                    } else if app.worker.borrow().is_none() && !app.restart_pending.get() {
+                        app.restart_worker();
+                    }
+                });
+            });
+    }
     for name in ["settings", "emoji", "quick"] {
         observe(&app, name);
     }
     app.settings.on_show_popup(|name| {
         with_app(|app| {
             let target = if name == "emoji" { "emoji" } else { "quick" };
-            if app.worker.is_some() {
+            if app.use_spell {
                 app.show(target, "button", Instant::now(), None);
                 return;
             }
@@ -526,6 +744,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     app.settings.on_toggle_mapper(|| {
         with_app(|app| app.command(Command::ToggleMapper, "button", Instant::now(), None))
     });
+    app.settings.on_select_device(|index| {
+        with_app(|app| {
+            let Some(path) = app.devices.get(index as usize) else {
+                return;
+            };
+            let Some(config) = &app.config else {
+                return;
+            };
+            match config.borrow_mut().save_device(path) {
+                Ok(()) => app
+                    .settings
+                    .set_config_status(format!("Устройство сохранено: {path}").into()),
+                Err(error) => app.settings.set_backend_error(error.into()),
+            }
+        })
+    });
     app.emoji.on_key(|key| with_app(|app| app.emoji_key(&key)));
     app.emoji
         .on_choose(|index| with_app(|app| app.choose_emoji(index)));
@@ -540,17 +774,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else if is(slint::platform::Key::Return) {
                 app.choose_quick(app.quick.get_selected());
             } else {
-                let count = app.quick.get_items().row_count() as i32;
-                let delta = if is(slint::platform::Key::UpArrow) {
-                    -1
-                } else {
-                    1
-                };
-                if count > 0 {
-                    app.quick
-                        .set_selected((app.quick.get_selected() + delta).rem_euclid(count));
+                if let Some(delta) = popup_model::key_delta("quick", &key) {
+                    app.quick.set_selected(popup_model::advance(
+                        app.quick.get_selected(),
+                        delta,
+                        app.quick.get_items().row_count(),
+                    ));
+                    app.metrics.borrow_mut().mark("quick", "navigation_handled");
                 }
-                app.metrics.borrow_mut().mark("quick", "navigation_handled");
             }
         })
     });
@@ -572,6 +803,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         with_app(|app| match tray::start(dispatch.clone()) {
             Ok(tray) => {
                 *app.tray.borrow_mut() = Some(tray);
+                app.refresh_mapper_status();
                 app.metrics.borrow_mut().ready("tray");
             }
             Err(error) => log::error!("tray unavailable: {error}"),
@@ -580,6 +812,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     log::info!("ready; backend={:?}", std::env::var("SLINT_BACKEND"));
     slint::run_event_loop_until_quit()?;
+    let _ = lhc_core::mapper::runtime::stop();
     APP.with(|slot| slot.borrow_mut().take());
     Ok(())
 }

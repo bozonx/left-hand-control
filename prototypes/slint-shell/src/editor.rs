@@ -1,4 +1,7 @@
-use crate::{ActionRow, SettingsWindow};
+use crate::{
+    ActionRow, SettingsWindow,
+    config_state::{ConfigState, KEY_CODES},
+};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
@@ -73,6 +76,17 @@ impl Editor {
         }
     }
 
+    fn load_assignments(&mut self, config: &ConfigState) {
+        for (index, key) in KEY_CODES.iter().enumerate() {
+            if let Some(value) = config.action(key) {
+                let action = Action::from_config(&value);
+                self.assignments
+                    .set_row_data(index, action.value.clone().into());
+                self.saved[index] = Some(action);
+            }
+        }
+    }
+
     fn row(&self, id: usize) -> ActionRow {
         let action = &self.catalog[id];
         let category = ["Текст", "Пауза", "Система", "Сочетание"][action.kind as usize];
@@ -144,7 +158,52 @@ impl Editor {
     }
 }
 
-pub fn bind(ui: &SettingsWindow) {
+impl Action {
+    fn from_config(value: &str) -> Self {
+        if let Some(text) = value.strip_prefix("text:") {
+            Self {
+                kind: 0,
+                value: text.into(),
+            }
+        } else if let Some(delay) = value.strip_prefix("pause:") {
+            Self {
+                kind: 1,
+                value: delay.into(),
+            }
+        } else if let Some(label) = match value {
+            "Ctrl+KeyC" => Some("Копировать"),
+            "Ctrl+KeyV" => Some("Вставить"),
+            "Alt+Tab" => Some("Следующее окно"),
+            _ => None,
+        } {
+            Self {
+                kind: 2,
+                value: label.into(),
+            }
+        } else {
+            Self {
+                kind: 3,
+                value: value.into(),
+            }
+        }
+    }
+
+    fn to_config(&self) -> String {
+        match self.kind {
+            0 => format!("text:{}", self.value),
+            1 => format!("pause:{}", self.value),
+            2 => match self.value.as_str() {
+                "Копировать" => "Ctrl+KeyC".into(),
+                "Вставить" => "Ctrl+KeyV".into(),
+                "Следующее окно" => "Alt+Tab".into(),
+                _ => self.value.clone(),
+            },
+            _ => self.value.clone(),
+        }
+    }
+}
+
+pub fn bind_with_config(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigState>>>) {
     ui.global::<crate::Theme>().invoke_apply();
     slint::select_bundled_translation("ru").unwrap();
     let weak = ui.as_weak();
@@ -178,7 +237,11 @@ pub fn bind(ui: &SettingsWindow) {
     let keys: Vec<SharedString> = labels.split_whitespace().map(Into::into).collect();
     assert_eq!(keys.len(), 80);
     ui.set_keys(ModelRc::new(VecModel::from(keys)));
-    let state = Rc::new(RefCell::new(Editor::new()));
+    let mut editor = Editor::new();
+    if let Some(config) = config.as_ref() {
+        editor.load_assignments(&config.borrow());
+    }
+    let state = Rc::new(RefCell::new(editor));
     ui.set_actions(state.borrow().rows.clone().into());
     ui.set_assignments(state.borrow().assignments.clone().into());
     state.borrow().filter("", 0);
@@ -291,13 +354,13 @@ pub fn bind(ui: &SettingsWindow) {
                     return;
                 }
                 Some(c) if c == char::from(slint::platform::Key::Return) => "Enter".into(),
-                Some(c) if c == char::from(slint::platform::Key::Escape) => "Esc".into(),
+                Some(c) if c == char::from(slint::platform::Key::Escape) => "Escape".into(),
                 Some(c) if c == char::from(slint::platform::Key::Tab) => "Tab".into(),
                 Some(c) if c == char::from(slint::platform::Key::Backspace) => "Backspace".into(),
-                Some(c) if c == char::from(slint::platform::Key::LeftArrow) => "Left".into(),
-                Some(c) if c == char::from(slint::platform::Key::RightArrow) => "Right".into(),
-                Some(c) if c == char::from(slint::platform::Key::UpArrow) => "Up".into(),
-                Some(c) if c == char::from(slint::platform::Key::DownArrow) => "Down".into(),
+                Some(c) if c == char::from(slint::platform::Key::LeftArrow) => "ArrowLeft".into(),
+                Some(c) if c == char::from(slint::platform::Key::RightArrow) => "ArrowRight".into(),
+                Some(c) if c == char::from(slint::platform::Key::UpArrow) => "ArrowUp".into(),
+                Some(c) if c == char::from(slint::platform::Key::DownArrow) => "ArrowDown".into(),
                 Some(c)
                     if (char::from(slint::platform::Key::F1)
                         ..=char::from(slint::platform::Key::F24))
@@ -315,6 +378,8 @@ pub fn bind(ui: &SettingsWindow) {
                 Some(c) if c == char::from(slint::platform::Key::PageUp) => "PageUp".into(),
                 Some(c) if c == char::from(slint::platform::Key::PageDown) => "PageDown".into(),
                 Some(' ') => "Space".into(),
+                Some(c) if c.is_ascii_alphabetic() => format!("Key{}", c.to_ascii_uppercase()),
+                Some(c) if c.is_ascii_digit() => format!("Digit{c}"),
                 Some(c) if !c.is_control() && !(0xe000..=0xf8ff).contains(&(c as u32)) => {
                     text.to_uppercase()
                 }
@@ -344,14 +409,44 @@ pub fn bind(ui: &SettingsWindow) {
         if let Some(ui) = weak.upgrade() {
             let action = draft(&ui);
             ui.set_validation(action.error().into());
-            if !ui.get_capturing()
-                && state
+            if ui.get_capturing() || !action.error().is_empty() {
+                return;
+            }
+            let key = ui.get_selected_key() as usize;
+            if key >= KEY_CODES.len() {
+                return;
+            }
+            let mut status = "Действие сохранено".to_owned();
+            if let Some(config) = &config {
+                if let Err(error) = config
                     .borrow_mut()
-                    .save(ui.get_selected_key() as usize, action)
-            {
-                ui.set_status(
-                    "Действие сохранено. Повторное открытие покажет сохранённое значение.".into(),
+                    .save_action(KEY_CODES[key], &action.to_config())
+                {
+                    ui.set_validation(error.into());
+                    return;
+                }
+                if lhc_core::mapper::runtime::status().running {
+                    match config
+                        .borrow()
+                        .raw()
+                        .and_then(|raw| lhc_core::mapper::runtime::update_config(&raw))
+                    {
+                        Ok(()) => {}
+                        Err(error) => {
+                            status = format!("Сохранено, но mapper не обновился: {error}")
+                        }
+                    }
+                }
+                ui.set_config_status(
+                    format!(
+                        "Конфигурация сохранена: {} правил",
+                        config.borrow().rule_count()
+                    )
+                    .into(),
                 );
+            }
+            if state.borrow_mut().save(key, action) {
+                ui.set_status(status.into());
                 ui.set_editing(false);
                 ui.invoke_restore_focus();
             }

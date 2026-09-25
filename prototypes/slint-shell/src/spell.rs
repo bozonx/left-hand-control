@@ -1,4 +1,4 @@
-use crate::{Command, Dispatch, EmojiPopup, QuickPopup, ipc, metrics};
+use crate::{Command, Dispatch, EmojiPopup, QuickPopup, ipc, metrics, popup_model};
 use slint::ComponentHandle;
 use slint::{Model, ModelRc, VecModel};
 use spell_framework::{
@@ -63,14 +63,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             emoji_way.hide();
         }
     }
-    emoji.set_emojis(ModelRc::new(VecModel::from(
-        (0x1f600..=0x1f64f)
-            .chain(0x1f300..=0x1f5ff)
-            .filter_map(char::from_u32)
-            .take(240)
-            .map(|c| c.to_string().into())
-            .collect::<Vec<slint::SharedString>>(),
-    )));
+    emoji.set_emojis(ModelRc::new(VecModel::from(popup_model::emoji_items())));
     metrics.ready("emoji");
     let mut quick_way = SpellWin::invoke_spell("lhc-slint-quick", configuration(500)?);
     let quick = QuickPopup::new()?;
@@ -81,10 +74,10 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             quick_way.hide();
         }
     }
-    let actions: Vec<slint::SharedString> = (1..=30)
-        .map(|i| format!("Действие {i:02} / Action {i:02}").into())
-        .collect();
-    quick.set_items(ModelRc::new(VecModel::from(actions.clone())));
+    let actions = popup_model::quick_items();
+    quick.set_items(ModelRc::new(VecModel::from(popup_model::filter(
+        &actions, "",
+    ))));
     metrics.ready("quick");
     for (name, way) in [("emoji", &mut emoji_way), ("quick", &mut quick_way)] {
         let sender = tx.clone();
@@ -271,14 +264,8 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 Event::Hide(name) => dismiss = Some(name),
                 Event::Choose(name, index) if visible == Some(name) => {
                     let value = if name == "emoji" {
-                        let offset = if emoji.get_page() == 5 {
-                            0
-                        } else {
-                            emoji.get_page() * 48
-                        };
-                        emoji
-                            .get_emojis()
-                            .row_data(((offset + index) % 240) as usize)
+                        popup_model::emoji_index(emoji.get_page(), index)
+                            .and_then(|index| emoji.get_emojis().row_data(index % 240))
                     } else {
                         quick.get_items().row_data(index as usize)
                     };
@@ -296,13 +283,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     {
                         metrics.mark("quick", "filter_cyrillic");
                     }
-                    quick.set_items(ModelRc::new(VecModel::from(
-                        actions
-                            .iter()
-                            .filter(|s| s.to_lowercase().contains(&query.to_lowercase()))
-                            .cloned()
-                            .collect::<Vec<_>>(),
-                    )));
+                    quick.set_items(ModelRc::new(VecModel::from(popup_model::filter(
+                        &actions, &query,
+                    ))));
                     quick.set_selected(0);
                     metrics.mark("quick", "t5_first_key");
                     metrics.mark("quick", "filter_changed");
@@ -329,30 +312,19 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         emoji.set_page(page - 1);
                         emoji.set_selected(0);
                     } else {
-                        let delta = if is(slint::platform::Key::DownArrow) {
-                            if name == "emoji" { 8 } else { 1 }
-                        } else if is(slint::platform::Key::UpArrow) {
-                            if name == "emoji" { -8 } else { -1 }
-                        } else if name == "emoji" && is(slint::platform::Key::LeftArrow) {
-                            -1
-                        } else if name == "emoji" && is(slint::platform::Key::RightArrow) {
-                            1
-                        } else {
-                            0
-                        };
-                        if delta != 0 {
+                        if let Some(delta) = popup_model::key_delta(name, &key) {
                             if name == "emoji" {
-                                emoji.set_selected(
-                                    (emoji.get_selected() + delta)
-                                        .rem_euclid(if emoji.get_page() == 5 { 1500 } else { 48 }),
-                                );
+                                emoji.set_selected(popup_model::advance(
+                                    emoji.get_selected(),
+                                    delta,
+                                    if emoji.get_page() == 5 { 1500 } else { 48 },
+                                ));
                             } else {
-                                let count = quick.get_items().row_count() as i32;
-                                if count > 0 {
-                                    quick.set_selected(
-                                        (quick.get_selected() + delta).rem_euclid(count),
-                                    );
-                                }
+                                quick.set_selected(popup_model::advance(
+                                    quick.get_selected(),
+                                    delta,
+                                    quick.get_items().row_count(),
+                                ));
                             }
                             metrics.mark(name, "navigation_handled");
                             navigation_count += 1;

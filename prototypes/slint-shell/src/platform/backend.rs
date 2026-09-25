@@ -1,5 +1,11 @@
 pub struct Worker;
 
+impl Worker {
+    pub fn is_alive(&mut self) -> bool {
+        true
+    }
+}
+
 pub fn start() -> Result<Option<Worker>, Box<dyn std::error::Error>> {
     match std::env::var("SLINT_SHELL_POPUPS").as_deref() {
         Ok("spell") => Err("Spell popups are available only on Linux Wayland".into()),
