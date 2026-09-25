@@ -11,7 +11,6 @@ pub mod portal;
 pub mod runtime;
 #[cfg(target_os = "linux")]
 pub mod system;
-#[cfg(target_os = "linux")]
 pub mod system_macros;
 #[cfg(target_os = "linux")]
 pub mod validation;

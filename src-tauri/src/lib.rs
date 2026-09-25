@@ -28,24 +28,36 @@ fn get_settings_dir(app: tauri::AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 fn load_config(app: tauri::AppHandle) -> Result<String, String> {
-    app_storage(&app)?.load_config()
+    let paths = app_storage(&app)?;
+    paths.ensure()?;
+    storage::read_tracked(&paths.config_path())
 }
 
 #[tauri::command]
 fn save_config(app: tauri::AppHandle, contents: String) -> Result<(), String> {
-    app_storage(&app)?.save_config(&contents)?;
+    storage::write_tracked(&app_storage(&app)?.config_path(), &contents)?;
     gamemode::update_settings_from_config_json(&contents);
     Ok(())
 }
 
 #[tauri::command]
 fn load_current_layout(app: tauri::AppHandle) -> Result<String, String> {
-    app_storage(&app)?.load_current_layout()
+    let paths = app_storage(&app)?;
+    paths.ensure()?;
+    storage::read_tracked(&paths.current_layout_path())
 }
 
 #[tauri::command]
 fn save_current_layout(app: tauri::AppHandle, contents: String) -> Result<(), String> {
-    app_storage(&app)?.save_current_layout(&contents)
+    storage::write_tracked(&app_storage(&app)?.current_layout_path(), &contents)
+}
+
+/// True when the Slint shell or a user changed the config files since the
+/// frontend loaded them.
+#[tauri::command]
+fn config_changed_on_disk(app: tauri::AppHandle) -> Result<bool, String> {
+    let paths = app_storage(&app)?;
+    storage::changed_on_disk(&[paths.config_path(), paths.current_layout_path()])
 }
 
 #[tauri::command]
@@ -502,6 +514,7 @@ pub fn run() {
             save_config,
             load_current_layout,
             save_current_layout,
+            config_changed_on_disk,
             load_ui_state,
             save_ui_state,
             get_layouts_dir,

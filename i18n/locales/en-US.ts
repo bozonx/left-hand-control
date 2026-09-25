@@ -6,6 +6,9 @@ export default {
     loading: 'Loading…',
     saved: 'Saved',
     saveFailedTitle: 'Failed to save changes',
+    externalChangeTitle: 'Configuration changed outside the app',
+    externalChangeDescription:
+      'The configuration was changed by another application and has been reloaded. Repeat your last change if it is missing.',
     loadFailedBody:
       'The app could not load its configuration. Check the error below, then try again.',
     notSavedBadge: '• unsaved',

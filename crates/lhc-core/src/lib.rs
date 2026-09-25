@@ -10,6 +10,7 @@ pub mod mapper;
 pub mod mapper_config;
 pub mod mapper_types;
 pub mod platform;
+pub mod profile;
 pub mod runtime_state;
 pub mod storage;
 

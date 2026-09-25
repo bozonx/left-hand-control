@@ -16,14 +16,16 @@ impl StoragePaths {
     /// Resolve the storage location shared by every shell.
     ///
     /// Debug builds use `$LHC_DEV_DIR` (relative paths resolve against the
-    /// current directory) or `<repo>/.dev-files`, so development never
-    /// touches the user's real configuration. Release builds use the
-    /// platform config/data directories under [`APP_ID`], which are the
-    /// same directories Tauri's `app_config_dir()` / `app_data_dir()` return.
+    /// current directory) or `<repo>/dev-files`, so development never
+    /// touches the user's real configuration. Inside it `<os>/` mirrors the
+    /// user's home directory, e.g. `dev-files/linux/.config/<APP_ID>/`.
+    /// Release builds use the platform config/data directories under
+    /// [`APP_ID`], which are the same directories Tauri's
+    /// `app_config_dir()` / `app_data_dir()` return.
     pub fn resolve() -> Result<Self, String> {
         if cfg!(debug_assertions) {
             let base = dev_base_dir(std::env::var_os("LHC_DEV_DIR").map(PathBuf::from))?;
-            return Ok(Self::new(base.join("config"), base.join("data")));
+            return Ok(Self::dev(&base, std::env::consts::OS));
         }
         let config_dir = dirs::config_dir()
             .ok_or_else(|| "resolve configuration directory".to_string())?
@@ -32,6 +34,13 @@ impl StoragePaths {
             .ok_or_else(|| "resolve data directory".to_string())?
             .join(APP_ID);
         Ok(Self::new(config_dir, data_dir))
+    }
+
+    /// Development layout for `os` under `base`: the per-OS home mirror.
+    pub fn dev(base: &Path, os: &str) -> Self {
+        let (folder, config, data) = dev_home_layout(os);
+        let home = base.join(folder);
+        Self::new(home.join(config).join(APP_ID), home.join(data).join(APP_ID))
     }
 
     pub fn new(config_dir: PathBuf, data_dir: PathBuf) -> Self {
@@ -216,6 +225,88 @@ impl StoragePaths {
     }
 }
 
+/// Why [`TrackedFile::write`] refused to write.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WriteError {
+    /// Another process changed the file after it was last read or written.
+    ExternalChange,
+    Io(String),
+}
+
+impl std::fmt::Display for WriteError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ExternalChange => write!(f, "{EXTERNAL_CHANGE}: file was changed by another process"),
+            Self::Io(error) => f.write_str(error),
+        }
+    }
+}
+
+/// Marker at the start of errors returned to the frontend when a save was
+/// refused because the file changed on disk.
+pub const EXTERNAL_CHANGE: &str = "EXTERNAL_CHANGE";
+
+/// A file that remembers the contents it was last read or written with and
+/// refuses to overwrite contents another process wrote since then. Both
+/// shells edit the same files, so every save goes through this check.
+#[derive(Debug, Clone)]
+pub struct TrackedFile {
+    path: PathBuf,
+    known: String,
+}
+
+impl TrackedFile {
+    /// Read `path`; a missing file reads as an empty string.
+    pub fn open(path: PathBuf) -> Result<(Self, String), String> {
+        let contents = read_or_empty(&path)?;
+        Ok((
+            Self {
+                path,
+                known: contents.clone(),
+            },
+            contents,
+        ))
+    }
+
+    /// Contents on disk when they differ from the last known ones.
+    pub fn changed(&self) -> Result<Option<String>, String> {
+        let current = read_or_empty(&self.path)?;
+        Ok((current != self.known).then_some(current))
+    }
+
+    /// Accept `contents` (as returned by [`Self::changed`]) as read.
+    pub fn mark_read(&mut self, contents: String) {
+        self.known = contents;
+    }
+
+    /// Write unless the file changed since it was last read or written.
+    /// Writing the contents that are already on disk is a no-op.
+    pub fn write(&mut self, contents: &str) -> Result<(), WriteError> {
+        let current = read_or_empty(&self.path).map_err(WriteError::Io)?;
+        if current == contents {
+            self.known = current;
+            return Ok(());
+        }
+        if current != self.known {
+            return Err(WriteError::ExternalChange);
+        }
+        if let Some(parent) = self.path.parent() {
+            fs::create_dir_all(parent).map_err(|e| WriteError::Io(format!("create_dir_all: {e}")))?;
+        }
+        write_atomic(&self.path, contents.as_bytes()).map_err(WriteError::Io)?;
+        self.known = contents.to_owned();
+        Ok(())
+    }
+}
+
+fn read_or_empty(path: &Path) -> Result<String, String> {
+    match fs::read_to_string(path) {
+        Ok(contents) => Ok(contents),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
+        Err(error) => Err(format!("read {}: {error}", path.display())),
+    }
+}
+
 pub fn validate_layout_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
@@ -257,6 +348,20 @@ fn unique_tmp_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
+/// Home-relative config and data directories per OS, matching `dirs`.
+fn dev_home_layout(os: &str) -> (&str, &str, &str) {
+    match os {
+        "windows" => ("windows", "AppData/Roaming", "AppData/Roaming"),
+        "macos" => (
+            "macos",
+            "Library/Application Support",
+            "Library/Application Support",
+        ),
+        "linux" => ("linux", ".config", ".local/share"),
+        other => (other, ".config", ".local/share"),
+    }
+}
+
 fn dev_base_dir(override_dir: Option<PathBuf>) -> Result<PathBuf, String> {
     match override_dir {
         Some(path) if path.is_absolute() => Ok(path),
@@ -267,7 +372,7 @@ fn dev_base_dir(override_dir: Option<PathBuf>) -> Result<PathBuf, String> {
             .parent()
             .and_then(Path::parent)
             .ok_or_else(|| "resolve repository root".to_string())?
-            .join(".dev-files")),
+            .join("dev-files")),
     }
 }
 
@@ -302,8 +407,31 @@ mod tests {
     #[test]
     fn dev_base_dir_defaults_to_repo_dev_files() {
         let base = super::dev_base_dir(None).unwrap();
-        assert!(base.ends_with(".dev-files"));
+        assert!(base.ends_with("dev-files"));
         assert!(base.parent().unwrap().join("Cargo.toml").exists());
+    }
+
+    #[test]
+    fn dev_paths_mirror_home_per_os() {
+        let base = std::path::Path::new("/repo/dev-files");
+        let linux = StoragePaths::dev(base, "linux");
+        assert_eq!(
+            linux.config_path(),
+            PathBuf::from("/repo/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json")
+        );
+        assert_eq!(
+            linux.current_layout_path(),
+            PathBuf::from(
+                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/current-layout.yaml"
+            )
+        );
+        let windows = StoragePaths::dev(base, "windows");
+        assert_eq!(
+            windows.layouts_dir(),
+            PathBuf::from("/repo/dev-files/windows/AppData/Roaming/dev.bozonx.left-hand-control/layouts")
+        );
+        let macos = StoragePaths::dev(base, "macos");
+        assert!(macos.config_path().starts_with("/repo/dev-files/macos/Library/Application Support"));
     }
 
     #[test]
@@ -342,6 +470,26 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.path);
         }
+    }
+
+    #[test]
+    fn tracked_file_refuses_to_overwrite_external_changes() {
+        use super::{TrackedFile, WriteError};
+        let temp = TempDir::new("tracked");
+        let path = temp.path().join("nested/config.json");
+        let (mut file, contents) = TrackedFile::open(path.clone()).unwrap();
+        assert_eq!(contents, "");
+        file.write("one").unwrap();
+        assert_eq!(file.changed().unwrap(), None);
+        fs::write(&path, "two").unwrap();
+        assert_eq!(file.write("three"), Err(WriteError::ExternalChange));
+        assert_eq!(file.write("two"), Ok(()), "identical contents are accepted");
+        file.write("three").unwrap();
+        fs::write(&path, "four").unwrap();
+        let changed = file.changed().unwrap().unwrap();
+        file.mark_read(changed);
+        file.write("five").unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "five");
     }
 
     #[test]

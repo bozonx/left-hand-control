@@ -1,0 +1,124 @@
+{
+  "description": "Parity fixture",
+  "layers": [
+    {
+      "id": "nav",
+      "name": "Navigation",
+      "description": "Arrows"
+    },
+    {
+      "id": "sym",
+      "name": "sym"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r1",
+      "key": "CapsLock",
+      "layerId": "nav",
+      "tapAction": "Escape",
+      "holdAction": "",
+      "doubleTapAction": ""
+    },
+    {
+      "id": "r2",
+      "enabled": false,
+      "conditionGameMode": "on",
+      "conditionLayouts": [
+        "us"
+      ],
+      "conditionAppsWhitelist": [
+        "code"
+      ],
+      "key": "Space",
+      "layerId": "",
+      "tapAction": null,
+      "holdAction": null,
+      "isolate": "KeyA, KeyB",
+      "holdFor": "KeyTab",
+      "doubleTapAction": "Enter",
+      "holdTimeoutMs": 250,
+      "doubleTapTimeoutMs": 150
+    }
+  ],
+  "layerKeymaps": {
+    "nav": {
+      "keys": {
+        "KeyH": "ArrowLeft",
+        "KeyQ": null,
+        "KeyW": null,
+        "Digit1": "5"
+      },
+      "extras": [
+        {
+          "id": "x1",
+          "key": "MouseForward",
+          "action": "Ctrl+KeyC"
+        },
+        {
+          "id": "x2",
+          "key": "MouseBack",
+          "action": null
+        }
+      ]
+    },
+    "sym": {
+      "keys": {},
+      "extras": []
+    }
+  },
+  "macros": [
+    {
+      "id": "copyLine",
+      "name": "Copy line",
+      "steps": [
+        {
+          "id": "<generated>",
+          "action": "Home"
+        },
+        {
+          "id": "<generated>",
+          "action": "Shift+End"
+        },
+        {
+          "id": "s3",
+          "action": "Ctrl+KeyC"
+        }
+      ],
+      "stepPauseMs": 10
+    }
+  ],
+  "commands": [
+    {
+      "id": "music",
+      "name": "music",
+      "linux": "playerctl play-pause"
+    }
+  ],
+  "quickActions": [
+    {
+      "id": "qa1",
+      "name": "Lock",
+      "action": "sys:lockSession"
+    }
+  ],
+  "quickActionPages": [
+    {
+      "id": "qap1",
+      "name": "First"
+    },
+    {
+      "id": "qap2",
+      "name": "Page 2"
+    }
+  ],
+  "emojiPages": [
+    {
+      "id": "e1",
+      "name": "Faces",
+      "cells": {
+        "KeyQ": "😀"
+      }
+    }
+  ]
+}

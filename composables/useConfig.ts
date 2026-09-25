@@ -18,7 +18,9 @@ import {
   serializePersistedSettings,
 } from '~/composables/config/normalization'
 import {
+  configChangedOnDisk,
   getSettingsDir,
+  isExternalChangeError,
   readConfigRaw,
   readCurrentLayoutRaw,
   writeConfigRaw,
@@ -54,10 +56,12 @@ interface ConfigState {
     layoutId: string,
   ) => Promise<void>
   resetCurrentLayout: () => Promise<void>
+  reloadIfChangedOnDisk: () => Promise<boolean>
 }
 
 let singleton: ConfigState | null = null
 let loadGeneration = 0
+let focusListenerAttached = false
 
 export function resetConfigStateForTests() {
   singleton = null
@@ -134,6 +138,16 @@ export function useConfig(): ConfigState {
       lastNotifiedSaveError = null
     },
     onError(e) {
+      if (isExternalChangeError(e)) {
+        toast.add({
+          title: t('app.externalChangeTitle'),
+          description: t('app.externalChangeDescription'),
+          color: 'warning',
+          icon: 'i-lucide-refresh-cw',
+        })
+        void load()
+        return
+      }
       const message = saveErrorMessage(e)
       lastError.value = message
       notifySaveError(message)
@@ -143,7 +157,21 @@ export function useConfig(): ConfigState {
     },
   })
 
-  const { saving, scheduleSave, flush, persistNow } = persistence
+  const { saving, scheduleSave, flush, persistNow, hasPendingSave } =
+    persistence
+
+  // Pick up edits made outside this window (the Slint shell edits the same
+  // files). Skipped while a save is pending so local edits are not lost.
+  async function reloadIfChangedOnDisk(): Promise<boolean> {
+    if (!loaded.value || hasPendingSave()) return false
+    try {
+      if (!(await configChangedOnDisk())) return false
+    } catch {
+      return false
+    }
+    await load()
+    return true
+  }
 
   async function applyPreset(
     preset: LayoutPreset,
@@ -282,6 +310,13 @@ export function useConfig(): ConfigState {
     markLayoutSavedAs,
     replaceCurrentLayoutSnapshot,
     resetCurrentLayout,
+    reloadIfChangedOnDisk,
+  }
+  if (typeof window !== 'undefined' && !focusListenerAttached) {
+    focusListenerAttached = true
+    window.addEventListener('focus', () => {
+      void singleton?.reloadIfChangedOnDisk()
+    })
   }
   return singleton
 }

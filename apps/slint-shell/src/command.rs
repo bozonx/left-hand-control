@@ -3,6 +3,8 @@
 //! The wire format stays plain text (`show emoji`, `preferences dark ru`, …)
 //! because the CLI, benchmark scripts and the Spell worker all speak it.
 
+use crate::i18n::Language;
+use lhc_core::profile::model::Appearance;
 use std::{fmt, sync::Arc, time::Instant};
 
 /// Thread-safe entry point that forwards a command to the UI thread.
@@ -97,25 +99,57 @@ impl Source {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Preferences {
-    pub dark: bool,
-    pub english: bool,
+/// Theme of every window; `System` follows the desktop color scheme.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ThemeMode {
+    #[default]
+    System,
+    Light,
+    Dark,
 }
 
-impl Default for Preferences {
-    fn default() -> Self {
-        Self {
-            dark: true,
-            english: false,
+impl ThemeMode {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::Light => "light",
+            Self::Dark => "dark",
+        }
+    }
+
+    /// Index used by `Theme.mode` in `ui/theme.slint`.
+    pub fn index(self) -> i32 {
+        match self {
+            Self::System => 0,
+            Self::Light => 1,
+            Self::Dark => 2,
+        }
+    }
+
+    pub fn from_index(index: i32) -> Self {
+        match index {
+            1 => Self::Light,
+            2 => Self::Dark,
+            _ => Self::System,
         }
     }
 }
 
-impl Preferences {
-    pub fn language(self) -> &'static str {
-        if self.english { "en" } else { "ru" }
+impl From<Appearance> for ThemeMode {
+    fn from(appearance: Appearance) -> Self {
+        match appearance {
+            Appearance::System => Self::System,
+            Appearance::Light => Self::Light,
+            Appearance::Dark => Self::Dark,
+        }
     }
+}
+
+/// Resolved appearance shared with the Spell worker.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Preferences {
+    pub theme: ThemeMode,
+    pub language: Language,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -127,13 +161,19 @@ pub enum Command {
     Quit,
     Ping,
     Preferences(Preferences),
+    /// Run an action (`text:…`, `Ctrl+KeyC`, `macro:id`, …) in the focused
+    /// window; the Spell worker sends this after a popup selection.
+    Execute(String),
 }
 
-pub const USAGE: &str =
-    "usage: slint-shell [show emoji|quick|settings | hide | toggle-mapper | ping | quit]";
+pub const USAGE: &str = "usage: slint-shell [show emoji|quick|settings | hide | toggle-mapper | \
+preferences system|light|dark en|ru | execute <action> | ping | quit]";
 
 impl Command {
     pub fn parse(value: &str) -> Result<Self, String> {
+        if let Some(action) = value.strip_prefix("execute ") {
+            return Ok(Self::Execute(action.into()));
+        }
         let words: Vec<&str> = value.split_whitespace().collect();
         let command = match words.as_slice() {
             ["show", "emoji"] => Self::Show(Window::EMOJI),
@@ -144,13 +184,14 @@ impl Command {
             ["toggle-mapper"] => Self::ToggleMapper,
             ["quit"] => Self::Quit,
             ["ping"] => Self::Ping,
-            [
-                "preferences",
-                theme @ ("dark" | "light"),
-                language @ ("ru" | "en"),
-            ] => Self::Preferences(Preferences {
-                dark: *theme == "dark",
-                english: *language == "en",
+            ["preferences", theme, language] => Self::Preferences(Preferences {
+                theme: match *theme {
+                    "system" => ThemeMode::System,
+                    "light" => ThemeMode::Light,
+                    "dark" => ThemeMode::Dark,
+                    _ => return Err(USAGE.into()),
+                },
+                language: Language::from_code(language).ok_or(USAGE)?,
             }),
             _ => return Err(USAGE.into()),
         };
@@ -170,9 +211,10 @@ impl fmt::Display for Command {
             Self::Preferences(preferences) => write!(
                 f,
                 "preferences {} {}",
-                if preferences.dark { "dark" } else { "light" },
-                preferences.language()
+                preferences.theme.name(),
+                preferences.language.code()
             ),
+            Self::Execute(action) => write!(f, "execute {action}"),
         }
     }
 }
@@ -193,10 +235,12 @@ mod tests {
             Command::Quit,
             Command::Ping,
             Command::Preferences(Preferences {
-                dark: false,
-                english: true,
+                theme: ThemeMode::Light,
+                language: Language::English,
             }),
             Command::Preferences(Preferences::default()),
+            Command::Execute("text:  Привет 👋 ".into()),
+            Command::Execute("Ctrl+KeyC".into()),
         ];
         for command in commands {
             assert_eq!(Command::parse(&command.to_string()), Ok(command));
@@ -208,8 +252,8 @@ mod tests {
         assert_eq!(
             Command::parse("preferences light ru"),
             Ok(Command::Preferences(Preferences {
-                dark: false,
-                english: false
+                theme: ThemeMode::Light,
+                language: Language::Russian
             }))
         );
         assert!(Command::parse("show nothing").is_err());

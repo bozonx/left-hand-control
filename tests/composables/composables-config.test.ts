@@ -1,4 +1,4 @@
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -143,5 +143,56 @@ describe('useConfig', () => {
 
     expect(api.loaded.value).toBe(true)
     expect(api.loadError.value).toContain('disk full')
+  })
+
+  it('reloads instead of overwriting when a save hits an external change', async () => {
+    const persisted = JSON.stringify({ version: 1, settings: {} })
+    const changed = JSON.stringify({ version: 1, settings: { locale: 'ru-RU' } })
+    invokeMock.mockResolvedValueOnce(persisted).mockResolvedValueOnce('')
+
+    const api = await getApi()
+    await api.load()
+
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'save_config') {
+        throw new Error('EXTERNAL_CHANGE: file was changed by another process')
+      }
+      if (command === 'load_config') return changed
+      return ''
+    })
+    api.config.value.settings.locale = 'en-US'
+    await nextTick()
+    await expect(api.flush()).rejects.toThrow('EXTERNAL_CHANGE')
+    await vi.waitFor(() => expect(api.config.value.settings.locale).toBe('ru-RU'))
+    expect(toastAddMock).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'app.externalChangeTitle' }),
+    )
+    expect(toastAddMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'app.saveFailedTitle' }),
+    )
+  })
+
+  it('reloads when files changed on disk and no save is pending', async () => {
+    const persisted = JSON.stringify({ version: 1, settings: {} })
+    invokeMock.mockResolvedValueOnce(persisted).mockResolvedValueOnce('')
+
+    const api = await getApi()
+    await api.load()
+
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'config_changed_on_disk') return false
+      return ''
+    })
+    expect(await api.reloadIfChangedOnDisk()).toBe(false)
+
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'config_changed_on_disk') return true
+      if (command === 'load_config') {
+        return JSON.stringify({ version: 1, settings: { locale: 'ru-RU' } })
+      }
+      return ''
+    })
+    expect(await api.reloadIfChangedOnDisk()).toBe(true)
+    expect(api.config.value.settings.locale).toBe('ru-RU')
   })
 })

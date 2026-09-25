@@ -54,5 +54,9 @@ export function usePersistedState(options: PersistedStateOptions) {
     }
   }
 
-  return { saving, scheduleSave, flush, persistNow }
+  function hasPendingSave() {
+    return saving.value || saveTimer !== null
+  }
+
+  return { saving, scheduleSave, flush, persistNow, hasPendingSave }
 }

@@ -1,0 +1,68 @@
+description: "  Parity fixture  "
+layers:
+  - id: nav
+    name: Navigation
+    description: Arrows
+    keys:
+      KeyH: ArrowLeft
+      KeyQ: null
+      KeyW: ""
+      Digit1: 5
+    extras:
+      - id: x1
+        key: MouseForward
+        action: Ctrl+KeyC
+      - id: x2
+        name: MouseBack
+        action: null
+      - id: x3
+        key: MouseExtra
+        action: ""
+  - id: sym
+rules:
+  - id: r1
+    key: CapsLock
+    layer: nav
+    tap: Escape
+  - id: r2
+    key: Space
+    hold: null
+    tap: null
+    layouts: [us, ""]
+    appsWhitelist: [code]
+    gameMode: "on"
+    isolate: [KeyA, KeyB]
+    holdFor: KeyTab
+    holdMs: 250
+    dtap: Enter
+    dtapMs: 150
+    enabled: false
+  - id: r3
+    key: ""
+    tap: KeyA
+macros:
+  - id: copyLine
+    name: Copy line
+    stepPauseMs: 10
+    steps:
+      - Home
+      - "Shift+End"
+      - { id: s3, action: Ctrl+KeyC }
+      - "   "
+  - name: no id
+commands:
+  - id: music
+    linux: " playerctl play-pause "
+quickActions:
+  - id: qa1
+    name: " Lock "
+    action: sys:lockSession
+    icon: " "
+quickActionPages:
+  - id: qap1
+    name: First
+  - id: qap2
+emojiPages:
+  - id: e1
+    name: Faces
+    cells: { KeyQ: "😀", Other: "x", KeyW: 5 }

@@ -5,10 +5,10 @@
 // config (same id → user wins). Keep this catalog in sync with
 // `utils/systemMacros.ts` on the frontend.
 
-#![cfg(target_os = "linux")]
-
 pub struct SysMacro {
     pub id: &'static str,
+    /// English display name.
+    pub name: &'static str,
     pub steps: &'static [&'static str],
 }
 
@@ -16,22 +16,27 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     // nav layer
     SysMacro {
         id: "moveLineDown",
+        name: "Move line down",
         steps: &["Home", "Enter", "ArrowUp"],
     },
     SysMacro {
         id: "downEnd",
+        name: "Down + End",
         steps: &["ArrowDown", "End"],
     },
     SysMacro {
         id: "upEnd",
+        name: "Up + End",
         steps: &["ArrowUp", "End"],
     },
     SysMacro {
         id: "up5Times",
+        name: "Up 5 times",
         steps: &["ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"],
     },
     SysMacro {
         id: "duplicateLine",
+        name: "Duplicate line",
         steps: &[
             "End",
             "Shift+Home",
@@ -43,18 +48,22 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "rightSpace",
+        name: "Right + Space",
         steps: &["ArrowRight", "Space"],
     },
     SysMacro {
         id: "emptyLineBelow",
+        name: "Empty line below",
         steps: &["End", "Enter"],
     },
     SysMacro {
         id: "cutWordRightCenter",
+        name: "Cut word right from center",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "copyWordAfterCenter",
+        name: "Copy word right from center",
         steps: &[
             "Ctrl+ArrowRight",
             "Ctrl+Shift+ArrowLeft",
@@ -64,22 +73,27 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "pasteAtLineAbove",
+        name: "Paste at line above",
         steps: &["Home", "Enter", "ArrowUp", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "replaceWordWidthBuffer",
+        name: "Replace word with buffer",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyC"],
     },
     SysMacro {
         id: "downHome",
+        name: "Down + Home",
         steps: &["ArrowDown", "Home"],
     },
     SysMacro {
         id: "upHome",
+        name: "Up + Home",
         steps: &["ArrowUp", "Home"],
     },
     SysMacro {
         id: "down5Times",
+        name: "Down 5 times",
         steps: &[
             "ArrowDown",
             "ArrowDown",
@@ -90,27 +104,33 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "pasteAtLineBottom",
+        name: "Paste at line bottom",
         steps: &["End", "Enter", "Ctrl+KeyV"],
     },
     // select layer
     SysMacro {
         id: "cutToStart",
+        name: "Cut to start",
         steps: &["Shift+Home", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "cutToEnd",
+        name: "Cut to end",
         steps: &["Shift+End", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "cutLineContent",
+        name: "Cut line content",
         steps: &["Home", "Shift+End", "Ctrl+KeyX"],
     },
     SysMacro {
         id: "cutAndRemoveLine",
+        name: "Cut and remove line",
         steps: &["Home", "Shift+End", "Ctrl+KeyX", "Delete"],
     },
     SysMacro {
         id: "select5LinesUp",
+        name: "Select 5 lines up",
         steps: &[
             "Shift+ArrowUp",
             "Shift+ArrowUp",
@@ -121,38 +141,47 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
     },
     SysMacro {
         id: "copyToStart",
+        name: "Copy to start",
         steps: &["Shift+Home", "Ctrl+KeyC", "Home"],
     },
     SysMacro {
         id: "copyToEnd",
+        name: "Copy to end",
         steps: &["Shift+End", "Ctrl+KeyC", "End"],
     },
     SysMacro {
         id: "copyLine",
+        name: "Copy line",
         steps: &["Home", "Shift+End", "Ctrl+KeyC", "Home"],
     },
     SysMacro {
         id: "selectWholeLine",
+        name: "Select whole line",
         steps: &["Home", "Shift+End"],
     },
     SysMacro {
         id: "selectWordRightCenter",
+        name: "Select word right from center",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft"],
     },
     SysMacro {
         id: "replaceToStartWithBuffer",
+        name: "Replace to start with buffer",
         steps: &["Shift+Home", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "replaceToEndWithBuffer",
+        name: "Replace to end with buffer",
         steps: &["Shift+End", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "replaceLineWidthBuffer",
+        name: "Replace line with buffer",
         steps: &["Home", "Shift+End", "Ctrl+KeyV"],
     },
     SysMacro {
         id: "select5LinesDown",
+        name: "Select 5 lines down",
         steps: &[
             "Shift+ArrowDown",
             "Shift+ArrowDown",

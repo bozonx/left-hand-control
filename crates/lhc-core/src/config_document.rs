@@ -1,310 +1,512 @@
-//! Editable `config.json` shared by every shell.
+//! Editable configuration shared by every shell.
 //!
-//! The document keeps the raw JSON value next to the typed [`AppConfig`]:
-//! edits change only the fields they own, so settings and sections that a
-//! shell does not understand yet survive a save unchanged. Every commit is
-//! parsed and validated first, refuses to overwrite a file another process
-//! changed since it was read, and refreshes the game-mode watcher settings.
+//! The configuration lives in two files, exactly as the Tauri frontend
+//! stores it: global settings in `config.json` and the current keyboard
+//! layout in `current-layout.yaml`. Saved layouts live in the user
+//! library (`layouts/<name>.yaml`, id `user:<name>`).
 //!
-//! Editing operations for the rest of the product (layers, macros, commands,
-//! quick actions, …) belong here as well, so UI code only presents them.
+//! Settings keep the raw JSON next to the typed view, so edits change only
+//! the fields they own and settings a shell does not know survive a save.
+//! Every save goes through [`TrackedFile`], which refuses to overwrite a
+//! file another process changed since this document read it.
 
-use crate::mapper_config::AppConfig;
-use crate::storage::StoragePaths;
+use crate::profile::actions::{self, Action, ActionIssue};
+use crate::profile::auto_switch::{self, AutoSwitchContext};
+use crate::profile::diagnostics::{self, RuleIssue};
+use crate::profile::model::{
+    AppConfig, AppSettings, Appearance, LayoutMode, LayoutPreset, LocalePreference,
+    USER_LAYOUT_PREFIX,
+};
+use crate::profile::{layout_file, settings};
+use crate::storage::{StoragePaths, TrackedFile, WriteError};
 use serde_json::{Value, json};
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConfigError {
-    /// Reading or writing the file failed.
+    /// Reading or writing a file failed.
     Io(String),
-    /// The JSON cannot be parsed into the config model.
+    /// A file cannot be parsed.
     Parse(String),
-    /// The config parsed but failed validation.
+    /// The configuration is not usable by the mapper.
     Invalid(String),
-    /// Another process changed the file after this document read it.
+    /// An action cannot be assigned.
+    InvalidAction(ActionIssue),
+    /// Rules have blocking problems; the mapper cannot start.
+    Rules(Vec<RuleIssue>),
+    /// Another process changed a file after this document read it.
     ExternalChange,
-    /// The key only has conditional or per-layer rules, which the simple
-    /// editor must not overwrite.
-    ConditionalRules { key: String },
 }
 
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(error) => write!(f, "config I/O: {error}"),
-            Self::Parse(error) => write!(f, "parse config.json: {error}"),
+            Self::Parse(error) => write!(f, "parse config: {error}"),
             Self::Invalid(error) => write!(f, "invalid config: {error}"),
-            Self::ExternalChange => write!(f, "config.json was changed by another process"),
-            Self::ConditionalRules { key } => write!(
-                f,
-                "key {key} only has conditional or layer rules; edit it in the full editor"
-            ),
+            Self::InvalidAction(issue) => write!(f, "invalid action: {issue:?}"),
+            Self::Rules(issues) => match issues.first() {
+                Some(issue) => write!(f, "{issue}"),
+                None => write!(f, "invalid rules"),
+            },
+            Self::ExternalChange => write!(f, "configuration was changed by another process"),
         }
     }
 }
 
 impl std::error::Error for ConfigError {}
 
+impl From<WriteError> for ConfigError {
+    fn from(error: WriteError) -> Self {
+        match error {
+            WriteError::ExternalChange => Self::ExternalChange,
+            WriteError::Io(error) => Self::Io(error),
+        }
+    }
+}
+
+/// What a key does inside a layer keymap.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum KeyAssignment {
+    /// No entry: the base layout decides.
+    Transparent,
+    /// `null`: the key does nothing.
+    Swallow,
+    Action(String),
+}
+
+/// Mapper input computed from the document for the current system state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuntimeConfig {
+    /// JSON for [`crate::mapper::runtime::start`] / `update_config`.
+    pub json: String,
+    /// Layout the rules come from; `None` means native passthrough.
+    pub layout_id: Option<String>,
+}
+
 pub struct ConfigDocument {
     paths: StoragePaths,
-    value: Value,
-    config: AppConfig,
-    /// File contents this document is based on, for external-change checks.
-    disk: String,
+    settings_file: TrackedFile,
+    settings_raw: Value,
+    settings: AppSettings,
+    layout_file: TrackedFile,
+    layout: LayoutPreset,
 }
 
 impl ConfigDocument {
     pub fn load(paths: StoragePaths) -> Result<Self, ConfigError> {
-        let disk = paths.load_config().map_err(ConfigError::Io)?;
-        let value = parse_raw(&disk)?;
-        let config = parse(&value)?;
-        crate::gamemode::update_settings_from_config_json(&disk);
+        paths.ensure().map_err(ConfigError::Io)?;
+        let (settings_file, settings_text) =
+            TrackedFile::open(paths.config_path()).map_err(ConfigError::Io)?;
+        let (layout_file, layout_text) =
+            TrackedFile::open(paths.current_layout_path()).map_err(ConfigError::Io)?;
+        let settings_raw = parse_settings(&settings_text)?;
+        let layout = parse_layout(&layout_text)?;
+        crate::gamemode::update_settings_from_config_json(&settings_text);
         Ok(Self {
+            settings: settings::from_value(settings_raw.get("settings")),
+            settings_raw,
+            settings_file,
+            layout,
+            layout_file,
             paths,
-            value,
-            config,
-            disk,
         })
     }
 
-    pub fn config(&self) -> &AppConfig {
-        &self.config
+    pub fn paths(&self) -> &StoragePaths {
+        &self.paths
     }
 
-    /// Compact JSON for the mapper runtime.
-    pub fn raw(&self) -> String {
-        self.value.to_string()
+    pub fn settings(&self) -> &AppSettings {
+        &self.settings
     }
 
-    pub fn rule_count(&self) -> usize {
-        self.config.rules.len()
+    pub fn layout(&self) -> &LayoutPreset {
+        &self.layout
+    }
+
+    /// Settings and the current layout combined.
+    pub fn config(&self) -> AppConfig {
+        AppConfig::from_parts(
+            self.settings.clone(),
+            self.layout.clone(),
+            self.settings.current_layout_id.as_deref(),
+        )
     }
 
     pub fn input_device(&self) -> Option<&str> {
-        self.setting_str("inputDevicePath")
+        self.settings
+            .input_device_path
+            .as_deref()
+            .filter(|path| !path.is_empty())
     }
 
     pub fn mouse_device(&self) -> Option<&str> {
-        self.setting_str("inputMouseDevicePath")
-    }
-
-    /// Tap action of the unconditional base-layer rule for `key`.
-    pub fn base_tap_action(&self, key: &str) -> Option<String> {
-        self.value
-            .get("rules")?
-            .as_array()?
-            .iter()
-            .find(|rule| is_base_rule(rule, key))?
-            .get("tapAction")?
-            .as_str()
-            .map(str::to_owned)
-    }
-
-    pub fn set_base_tap_action(&mut self, key: &str, action: &str) -> Result<(), ConfigError> {
-        let candidate = with_base_tap_action(&self.value, key, action)?;
-        self.commit(candidate)
+        self.settings
+            .input_mouse_device_path
+            .as_deref()
+            .filter(|path| !path.is_empty())
     }
 
     pub fn set_input_device(&mut self, path: &str) -> Result<(), ConfigError> {
-        let mut candidate = self.value.clone();
-        let settings = object_entry(&mut candidate, "settings")?;
-        settings.insert("inputDevicePath".into(), json!(path));
-        self.commit(candidate)
+        self.set_setting("inputDevicePath", json!(path))
     }
 
-    /// Re-read the file if another process changed it. Returns `true` when
-    /// the document now reflects new contents.
+    pub fn set_appearance(&mut self, appearance: Appearance) -> Result<(), ConfigError> {
+        self.set_setting("appearance", json!(appearance.as_str()))
+    }
+
+    pub fn set_locale(&mut self, locale: LocalePreference) -> Result<(), ConfigError> {
+        self.set_setting("locale", json!(locale.as_str()))
+    }
+
+    /// Entry of `key` in the keymap of `layer_id`.
+    pub fn layer_key(&self, layer_id: &str, key: &str) -> KeyAssignment {
+        match self
+            .layout
+            .layer_keymaps
+            .get(layer_id)
+            .and_then(|keymap| keymap.keys.get(key))
+        {
+            None => KeyAssignment::Transparent,
+            Some(None) => KeyAssignment::Swallow,
+            Some(Some(action)) => KeyAssignment::Action(action.clone()),
+        }
+    }
+
+    pub fn set_layer_key(
+        &mut self,
+        layer_id: &str,
+        key: &str,
+        assignment: KeyAssignment,
+    ) -> Result<(), ConfigError> {
+        if !self.layout.layers.iter().any(|layer| layer.id == layer_id) {
+            return Err(ConfigError::Invalid(format!("unknown layer \"{layer_id}\"")));
+        }
+        if let KeyAssignment::Action(action) = &assignment {
+            let parsed = Action::parse(Some(action));
+            if matches!(parsed, Action::Native | Action::Swallow) {
+                return Err(ConfigError::InvalidAction(ActionIssue::InvalidSyntax));
+            }
+            if let Some(issue) = actions::validate(&parsed, &self.config()) {
+                return Err(ConfigError::InvalidAction(issue));
+            }
+        }
+        self.update_layout(|layout| {
+            let keys = &mut layout.layer_keymap_mut(layer_id).keys;
+            match assignment {
+                KeyAssignment::Transparent => {
+                    keys.remove(key);
+                }
+                KeyAssignment::Swallow => {
+                    keys.insert(key.into(), None);
+                }
+                KeyAssignment::Action(action) => {
+                    keys.insert(key.into(), Some(action));
+                }
+            }
+        })
+    }
+
+    /// Apply `edit` to a copy of the current layout and save it.
+    pub fn update_layout(&mut self, edit: impl FnOnce(&mut LayoutPreset)) -> Result<(), ConfigError> {
+        let mut candidate = self.layout.clone();
+        edit(&mut candidate);
+        self.layout_file.write(&layout_file::serialize(&candidate))?;
+        self.layout = candidate;
+        Ok(())
+    }
+
+    /// Re-read files other processes changed. Returns `true` when the
+    /// document now reflects new contents.
     pub fn reload_if_changed(&mut self) -> Result<bool, ConfigError> {
-        let disk = self.paths.load_config().map_err(ConfigError::Io)?;
-        if disk == self.disk {
+        let settings_text = self.settings_file.changed().map_err(ConfigError::Io)?;
+        let layout_text = self.layout_file.changed().map_err(ConfigError::Io)?;
+        if settings_text.is_none() && layout_text.is_none() {
             return Ok(false);
         }
-        let value = parse_raw(&disk)?;
-        let config = parse(&value)?;
-        crate::gamemode::update_settings_from_config_json(&disk);
-        self.value = value;
-        self.config = config;
-        self.disk = disk;
+        if let Some(text) = settings_text {
+            let raw = parse_settings(&text)?;
+            crate::gamemode::update_settings_from_config_json(&text);
+            self.settings = settings::from_value(raw.get("settings"));
+            self.settings_raw = raw;
+            self.settings_file.mark_read(text);
+        }
+        if let Some(text) = layout_text {
+            self.layout = parse_layout(&text)?;
+            self.layout_file.mark_read(text);
+        }
         Ok(true)
     }
 
-    fn setting_str(&self, name: &str) -> Option<&str> {
-        self.value
-            .get("settings")?
-            .get(name)?
-            .as_str()
-            .filter(|value| !value.is_empty())
+    /// Ids (`user:<name>`) of the layouts in the user library.
+    pub fn layout_ids(&self) -> Result<Vec<String>, ConfigError> {
+        Ok(self
+            .paths
+            .list_user_layouts()
+            .map_err(ConfigError::Io)?
+            .into_iter()
+            .map(|name| format!("{USER_LAYOUT_PREFIX}{name}"))
+            .collect())
     }
 
-    fn commit(&mut self, candidate: Value) -> Result<(), ConfigError> {
-        let config = parse(&candidate)?;
-        let current = self.paths.load_config().map_err(ConfigError::Io)?;
-        if current != self.disk {
-            return Err(ConfigError::ExternalChange);
+    pub fn load_layout(&self, id: &str) -> Result<LayoutPreset, ConfigError> {
+        let name = id
+            .strip_prefix(USER_LAYOUT_PREFIX)
+            .ok_or_else(|| ConfigError::Invalid(format!("unknown layout id \"{id}\"")))?;
+        let text = self.paths.load_user_layout(name).map_err(ConfigError::Io)?;
+        parse_layout(&text)
+    }
+
+    /// Layout whose rules should run now: the manual choice, or in auto
+    /// mode the first layout whose conditions match `ctx`.
+    pub fn active_layout_id(&self, ctx: &AutoSwitchContext) -> Result<Option<String>, ConfigError> {
+        Ok(match self.settings.layout_mode {
+            LayoutMode::Manual => self.settings.manual_active_layout_id.clone(),
+            LayoutMode::Auto => {
+                auto_switch::pick_active_layout(&self.layout_ids()?, &self.settings, ctx)
+            }
+        })
+    }
+
+    /// Mapper configuration for the current system state, like
+    /// `computeRuntimeConfig()` in the frontend: picks the active layout,
+    /// refuses blocking rule problems and drops disabled or draft rules.
+    pub fn runtime_config(&self, ctx: &AutoSwitchContext) -> Result<RuntimeConfig, ConfigError> {
+        let layout_id = self.active_layout_id(ctx)?;
+        // In auto mode "no match" means passthrough, never the current layout.
+        let current = layout_id == self.settings.current_layout_id
+            && (layout_id.is_some() || self.settings.layout_mode == LayoutMode::Manual);
+        let mut config = if current {
+            self.config()
+        } else {
+            let preset = match &layout_id {
+                Some(id) => self.load_layout(id)?,
+                None => LayoutPreset::default(),
+            };
+            AppConfig::from_parts(self.settings.clone(), preset, layout_id.as_deref())
+        };
+        let blocking: Vec<RuleIssue> = diagnostics::analyze_rules(&config)
+            .into_iter()
+            .filter(|issue| issue.code.is_error())
+            .collect();
+        if !blocking.is_empty() {
+            return Err(ConfigError::Rules(blocking));
         }
-        let raw = serde_json::to_string_pretty(&candidate)
+        diagnostics::runtime_rules(&mut config);
+        let json = config.to_json();
+        validate_for_mapper(&json)?;
+        Ok(RuntimeConfig { json, layout_id })
+    }
+
+    fn set_setting(&mut self, name: &str, value: Value) -> Result<(), ConfigError> {
+        let mut candidate = self.settings_raw.clone();
+        let object = candidate
+            .as_object_mut()
+            .ok_or_else(|| ConfigError::Invalid("config.json must contain an object".into()))?;
+        object.entry("version").or_insert(json!(1));
+        object
+            .entry("settings")
+            .or_insert_with(|| json!({}))
+            .as_object_mut()
+            .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?
+            .insert(name.into(), value);
+        let text = serde_json::to_string_pretty(&candidate)
             .map_err(|error| ConfigError::Parse(error.to_string()))?;
-        self.paths.save_config(&raw).map_err(ConfigError::Io)?;
-        crate::gamemode::update_settings_from_config_json(&raw);
-        self.value = candidate;
-        self.config = config;
-        self.disk = raw;
+        self.settings_file.write(&text)?;
+        crate::gamemode::update_settings_from_config_json(&text);
+        self.settings = settings::from_value(candidate.get("settings"));
+        self.settings_raw = candidate;
         Ok(())
     }
 }
 
-fn parse_raw(raw: &str) -> Result<Value, ConfigError> {
-    if raw.trim().is_empty() {
-        return Ok(json!({"version": 1, "rules": [], "settings": {}}));
+fn parse_settings(text: &str) -> Result<Value, ConfigError> {
+    if text.trim().is_empty() {
+        return Ok(json!({ "version": 1, "settings": {} }));
     }
-    serde_json::from_str(raw).map_err(|error| ConfigError::Parse(error.to_string()))
+    let value: Value =
+        serde_json::from_str(text).map_err(|error| ConfigError::Parse(format!("config.json: {error}")))?;
+    if !value.is_object() {
+        return Err(ConfigError::Parse("config.json must contain an object".into()));
+    }
+    Ok(value)
 }
 
-/// Parse and validate a config value.
-pub fn parse(value: &Value) -> Result<AppConfig, ConfigError> {
-    let config: AppConfig = serde_json::from_value(value.clone())
-        .map_err(|error| ConfigError::Parse(error.to_string()))?;
+fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
+    Ok(layout_file::parse(text)
+        .map_err(ConfigError::Parse)?
+        .unwrap_or_else(LayoutPreset::initial))
+}
+
+/// Run the mapper's own validation, which also checks key names.
+fn validate_for_mapper(json: &str) -> Result<(), ConfigError> {
+    let config: crate::mapper_config::AppConfig =
+        serde_json::from_str(json).map_err(|error| ConfigError::Invalid(error.to_string()))?;
     #[cfg(target_os = "linux")]
     crate::mapper::validation::validate_config(&config).map_err(ConfigError::Invalid)?;
-    Ok(config)
-}
-
-fn is_base_rule(rule: &Value, key: &str) -> bool {
-    rule.get("key").and_then(Value::as_str) == Some(key)
-        && rule
-            .get("layerId")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .is_empty()
-        && [
-            "conditionGameMode",
-            "conditionLayouts",
-            "conditionAppsWhitelist",
-            "conditionAppsBlacklist",
-        ]
-        .iter()
-        .all(|name| rule.get(*name).is_none_or(Value::is_null))
-}
-
-fn object_entry<'a>(
-    value: &'a mut Value,
-    name: &str,
-) -> Result<&'a mut serde_json::Map<String, Value>, ConfigError> {
-    value
-        .as_object_mut()
-        .ok_or_else(|| ConfigError::Invalid("config.json must contain an object".into()))?
-        .entry(name)
-        .or_insert_with(|| json!({}))
-        .as_object_mut()
-        .ok_or_else(|| ConfigError::Invalid(format!("{name} must be an object")))
-}
-
-fn with_base_tap_action(value: &Value, key: &str, action: &str) -> Result<Value, ConfigError> {
-    let mut candidate = value.clone();
-    let rules = candidate
-        .as_object_mut()
-        .ok_or_else(|| ConfigError::Invalid("config.json must contain an object".into()))?
-        .entry("rules")
-        .or_insert_with(|| json!([]))
-        .as_array_mut()
-        .ok_or_else(|| ConfigError::Invalid("rules must be an array".into()))?;
-    if let Some(rule) = rules.iter_mut().find(|rule| is_base_rule(rule, key)) {
-        rule.as_object_mut()
-            .ok_or_else(|| ConfigError::Invalid("rule must be an object".into()))?
-            .insert("tapAction".into(), json!(action));
-    } else if rules
-        .iter()
-        .any(|rule| rule.get("key").and_then(Value::as_str) == Some(key))
-    {
-        return Err(ConfigError::ConditionalRules { key: key.into() });
-    } else {
-        rules.push(json!({ "enabled": true, "key": key, "tapAction": action }));
-    }
-    Ok(candidate)
+    let _ = config;
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::profile::diagnostics::RuleIssueCode;
+    use std::fs;
 
-    fn document(value: Value) -> (tempfile::TempDir, ConfigDocument) {
+    const LAYOUT: &str = "layers:\n  - id: nav\n    name: Navigation\n    keys:\n      KeyH: ArrowLeft\nrules:\n  - key: CapsLock\n    layer: nav\n    tap: Escape\n";
+
+    fn document(settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        paths
-            .save_config(&serde_json::to_string_pretty(&value).unwrap())
-            .unwrap();
-        let document = ConfigDocument::load(paths).unwrap();
-        (dir, document)
+        paths.save_config(&serde_json::to_string_pretty(&settings).unwrap()).unwrap();
+        paths.save_current_layout(layout).unwrap();
+        (dir, ConfigDocument::load(paths).unwrap())
     }
 
     #[test]
-    fn updating_rule_preserves_other_config_fields() {
-        let value = json!({"version": 1, "settings": {"inputDevicePath": "/dev/input/event3", "appearance": "dark"}, "rules": [{"key": "KeyQ", "tapAction": "Escape", "holdAction": "ControlLeft", "enabled": false}]});
-        let changed = with_base_tap_action(&value, "KeyQ", "text:hello").unwrap();
-        assert_eq!(changed["rules"][0]["tapAction"], "text:hello");
-        assert_eq!(changed["rules"][0]["holdAction"], "ControlLeft");
-        assert_eq!(changed["rules"][0]["enabled"], false);
-        assert_eq!(changed["settings"], value["settings"]);
-        assert!(parse(&changed).is_ok());
+    fn reads_settings_and_layout_from_their_own_files() {
+        let (_dir, document) = document(
+            json!({"version": 1, "settings": {"inputDevicePath": "/dev/input/event3", "appearance": "dark"}}),
+            LAYOUT,
+        );
+        assert_eq!(document.input_device(), Some("/dev/input/event3"));
+        assert_eq!(document.settings().appearance, Appearance::Dark);
+        assert_eq!(document.layout().rules.len(), 1);
+        let config = document.config();
+        assert_eq!(config.layer_keymaps["nav"].keys["KeyH"].as_deref(), Some("ArrowLeft"));
     }
 
     #[test]
-    fn conditional_rule_is_not_overwritten() {
-        let value =
-            json!({"rules": [{"key": "KeyQ", "tapAction": "Escape", "conditionLayouts": ["us"]}]});
+    fn settings_edit_preserves_unknown_fields_and_leaves_layout_alone() {
+        let (_dir, mut document) = document(
+            json!({"version": 1, "settings": {"futureOption": 7}, "extra": true}),
+            LAYOUT,
+        );
+        let layout_before = fs::read_to_string(document.paths.current_layout_path()).unwrap();
+        document.set_input_device("/dev/input/event7").unwrap();
+        document.set_locale(LocalePreference::English).unwrap();
+        let saved: Value =
+            serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap()).unwrap();
+        assert_eq!(saved["settings"]["futureOption"], 7);
+        assert_eq!(saved["extra"], true);
+        assert_eq!(saved["settings"]["inputDevicePath"], "/dev/input/event7");
+        assert_eq!(saved["settings"]["locale"], "en-US");
+        assert!(saved.get("rules").is_none());
         assert_eq!(
-            with_base_tap_action(&value, "KeyQ", "text:hello"),
-            Err(ConfigError::ConditionalRules { key: "KeyQ".into() })
+            fs::read_to_string(document.paths.current_layout_path()).unwrap(),
+            layout_before
         );
     }
 
     #[test]
-    fn base_rule_can_change_beside_layer_rule() {
-        let value = json!({"rules": [
-            {"key": "KeyQ", "tapAction": "Escape"},
-            {"key": "KeyQ", "layerId": "layer-a", "tapAction": "Tab"}
-        ], "layerKeymaps": {"layer-a": {"keys": {}}}});
-        let changed = with_base_tap_action(&value, "KeyQ", "text:hello").unwrap();
-        assert_eq!(changed["rules"][0]["tapAction"], "text:hello");
-        assert_eq!(changed["rules"][1]["tapAction"], "Tab");
-    }
-
-    #[test]
-    fn commit_persists_and_reads_back() {
-        let (_dir, mut document) = document(json!({"rules": [], "settings": {}}));
-        document.set_base_tap_action("KeyA", "text:hi").unwrap();
-        document.set_input_device("/dev/input/event7").unwrap();
+    fn layer_keys_are_saved_to_the_layout_file() {
+        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        document
+            .set_layer_key("nav", "KeyJ", KeyAssignment::Action("ArrowDown".into()))
+            .unwrap();
+        document.set_layer_key("nav", "KeyH", KeyAssignment::Swallow).unwrap();
+        assert_eq!(
+            document.set_layer_key("nav", "KeyK", KeyAssignment::Action("macro:nope".into())),
+            Err(ConfigError::InvalidAction(ActionIssue::UnknownMacro))
+        );
+        assert!(document.set_layer_key("missing", "KeyK", KeyAssignment::Swallow).is_err());
         let reloaded = ConfigDocument::load(document.paths.clone()).unwrap();
-        assert_eq!(reloaded.base_tap_action("KeyA").as_deref(), Some("text:hi"));
-        assert_eq!(reloaded.input_device(), Some("/dev/input/event7"));
-        assert_eq!(reloaded.rule_count(), 1);
+        assert_eq!(
+            reloaded.layer_key("nav", "KeyJ"),
+            KeyAssignment::Action("ArrowDown".into())
+        );
+        assert_eq!(reloaded.layer_key("nav", "KeyH"), KeyAssignment::Swallow);
+        assert_eq!(reloaded.layer_key("nav", "KeyZ"), KeyAssignment::Transparent);
+        assert_eq!(reloaded.layout().rules[0].tap_action.as_deref(), Some("Escape"));
+        assert!(fs::read_to_string(document.paths.config_path()).unwrap().find("rules").is_none());
     }
 
     #[test]
-    fn external_change_blocks_commit_until_reload() {
-        let (_dir, mut document) = document(json!({"rules": []}));
+    fn external_change_blocks_save_until_reload() {
+        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
         document
             .paths
-            .save_config(r#"{"rules": [{"key": "KeyB", "tapAction": "Tab"}]}"#)
+            .save_current_layout("layers:\n  - id: nav\n    name: Changed\n")
             .unwrap();
         assert_eq!(
-            document.set_base_tap_action("KeyA", "text:hi"),
+            document.set_layer_key("nav", "KeyJ", KeyAssignment::Swallow),
             Err(ConfigError::ExternalChange)
         );
         assert!(document.reload_if_changed().unwrap());
         assert!(!document.reload_if_changed().unwrap());
-        assert_eq!(document.base_tap_action("KeyB").as_deref(), Some("Tab"));
-        document.set_base_tap_action("KeyA", "text:hi").unwrap();
-        assert_eq!(document.rule_count(), 2);
+        assert_eq!(document.layout().layers[0].name, "Changed");
+        document.set_layer_key("nav", "KeyJ", KeyAssignment::Swallow).unwrap();
     }
 
     #[test]
-    fn empty_file_loads_as_empty_config() {
+    fn missing_files_load_as_a_new_installation() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let document = ConfigDocument::load(paths).unwrap();
-        assert_eq!(document.rule_count(), 0);
         assert_eq!(document.input_device(), None);
+        assert_eq!(document.layout(), &LayoutPreset::initial());
+    }
+
+    #[test]
+    fn runtime_config_uses_the_active_library_layout() {
+        let (_dir, mut document) = document(
+            json!({"version": 1, "settings": {"currentLayoutId": "user:Main", "manualActiveLayoutId": "user:Other"}}),
+            LAYOUT,
+        );
+        document
+            .paths
+            .save_user_layout("Other", "rules:\n  - key: KeyA\n    tap: KeyB\n  - key: KeyC\n    enabled: false\n    tap: KeyD\n", true)
+            .unwrap();
+        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        assert_eq!(runtime.layout_id.as_deref(), Some("user:Other"));
+        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        assert_eq!(value["rules"].as_array().unwrap().len(), 1);
+        assert_eq!(value["rules"][0]["key"], "KeyA");
+        assert_eq!(value["settings"]["currentLayoutId"], "user:Other");
+
+        document.set_setting("manualActiveLayoutId", json!("user:Main")).unwrap();
+        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        assert_eq!(value["rules"][0]["key"], "CapsLock");
+        assert_eq!(value["rules"][0]["tapAction"], "Escape");
+        assert_eq!(value["rules"][0]["holdAction"], "");
+    }
+
+    #[test]
+    fn auto_mode_without_a_match_is_passthrough() {
+        let (_dir, document) = document(json!({"version": 1, "settings": {"layoutMode": "auto"}}), LAYOUT);
+        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        assert_eq!(runtime.layout_id, None);
+        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        assert!(value["rules"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn bundled_layout_runs_in_the_mapper() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../public/ivank-layout.yaml");
+        let (_dir, document) = document(json!({"version": 1, "settings": {}}), &fs::read_to_string(path).unwrap());
+        assert!(document.layout().layers.len() > 1);
+        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        assert!(!value["rules"].as_array().unwrap().is_empty());
+        let reparsed = layout_file::parse(&layout_file::serialize(document.layout())).unwrap().unwrap();
+        assert_eq!(reparsed.layer_keymaps, document.layout().layer_keymaps);
+        assert_eq!(reparsed.layers, document.layout().layers);
+    }
+
+    #[test]
+    fn blocking_rule_issues_refuse_runtime_config() {
+        let (_dir, document) = document(
+            json!({"version": 1, "settings": {}}),
+            "rules:\n  - key: KeyA\n    tap: KeyB\n  - key: KeyA\n    tap: KeyC\n",
+        );
+        match document.runtime_config(&AutoSwitchContext::default()) {
+            Err(ConfigError::Rules(issues)) => {
+                assert!(issues.iter().all(|issue| issue.code == RuleIssueCode::DuplicateTrigger))
+            }
+            other => panic!("unexpected {other:?}"),
+        }
     }
 }

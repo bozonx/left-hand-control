@@ -45,3 +45,17 @@ export async function getSettingsDir(): Promise<string> {
     return "";
   }
 }
+
+// True when another process (the Slint shell, a text editor) changed
+// config.json or current-layout.yaml since they were loaded.
+export async function configChangedOnDisk(): Promise<boolean> {
+  const tauri = await useTauri();
+  if (!tauri) return false;
+  return await tauri.invoke<boolean>("config_changed_on_disk");
+}
+
+// Saves refused because the file changed on disk carry this marker.
+export function isExternalChangeError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("EXTERNAL_CHANGE");
+}
