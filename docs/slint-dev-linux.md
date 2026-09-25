@@ -1,0 +1,221 @@
+# Разработка Slint-версии под Linux
+
+Как собрать, запустить и проверить Slint-оболочку (`apps/slint-shell`) на Linux при разработке. Tauri-версия описана в корневом `README.md` и в `AGENTS.md`; обе оболочки собираются из одного Cargo workspace и используют общий крейт `crates/lhc-core`.
+
+Основная среда разработки и проверки — KDE Plasma 6 на Wayland. На других окружениях многое работает, но не принято (см. «Что зависит от окружения»).
+
+## Коротко
+
+```sh
+# один раз: системные пакеты (см. ниже), затем из корня репозитория
+cargo run -p slint-shell                                   # обычные окна winit
+SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell   # попапы как layer-shell
+```
+
+Окна при старте скрыты — приложение живёт в трее. Настройки открываются кликом по иконке трея или командой:
+
+```sh
+target/debug/slint-shell show settings
+```
+
+## Требования
+
+Rust stable не ниже `1.85` (edition 2024; см. `rust-version` в корневом `Cargo.toml`).
+
+Системные пакеты. Skia собирается из исходников при первой сборке, поэтому нужны clang, cmake, ninja и Python.
+
+**Manjaro / Arch:**
+
+```sh
+sudo pacman -S --needed base-devel clang cmake ninja python pkgconf \
+  fontconfig freetype2 libxkbcommon wayland dbus noto-fonts-emoji \
+  wl-clipboard
+```
+
+**Debian / Ubuntu:**
+
+```sh
+sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
+  libfontconfig1-dev libfreetype-dev libxkbcommon-dev libwayland-dev \
+  libdbus-1-dev fonts-noto-color-emoji wl-clipboard
+```
+
+Для отдельных функций дополнительно:
+
+| Функция | Что нужно |
+| --- | --- |
+| Mapper (перехват клавиатуры) | Чтение `/dev/input/event*` (группа `input`) и запись в `/dev/uinput` (udev-правило `0660`, группа `input`) |
+| Глобальные хоткеи Ctrl+Alt+F11 / F12 | Чтение `/dev/input/event*`; устройство не захватывается |
+| Вставка выбранного в исходное окно (`SLINT_SHELL_INSERT=1`) | KDE Wayland (KWin), `wl-clipboard`, запись в `/dev/uinput` |
+| Условия правил по активному окну на KDE Wayland | `kdotool` |
+| Ввод литерального текста mapper'ом | `xdg-desktop-portal` и бэкенд окружения (`xdg-desktop-portal-kde` и т. п.) |
+
+Доступ к устройствам ввода (после изменения нужен перезаход в сессию):
+
+```sh
+sudo usermod -aG input "$USER"
+echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' \
+  | sudo tee /etc/udev/rules.d/99-lhc-uinput.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+## Сборка и запуск
+
+Все команды выполняются из корня репозитория. Артефакты лежат в общем `target/` workspace.
+
+```sh
+cargo build -p slint-shell                    # без Spell: попапы — обычные окна winit
+cargo build -p slint-shell --features spell   # с поддержкой layer-shell попапов
+cargo build -p slint-shell --release --features spell
+```
+
+Режим попапов выбирается при запуске переменной `SLINT_SHELL_POPUPS`:
+
+| Значение | Поведение |
+| --- | --- |
+| `winit` (по умолчанию) | Попапы — окна без рамки в том же процессе |
+| `auto` | Если композитор поддерживает `zwlr_layer_shell_v1` (KDE, Hyprland, Sway), попапы запускаются в отдельном процессе Spell; иначе (например GNOME) — fallback на winit |
+| `spell` | Только layer-shell; без протокола запуск завершается ошибкой |
+
+`auto` и `spell` требуют сборки с `--features spell`.
+
+Рендерер окна настроек задаётся стандартной переменной Slint `SLINT_BACKEND`: `winit-software`, `winit-femtovg` или `winit-skia`. На Spell-попапы она не влияет, у них всегда Skia software. Цветные emoji в окнах winit рисует только `winit-skia`.
+
+Одновременно работает один экземпляр на `XDG_RUNTIME_DIR`. Второй запуск без аргументов завершится с ошибкой `slint-shell is already running`.
+
+## Где лежит конфигурация
+
+Debug-сборки никогда не трогают реальный конфиг пользователя:
+
+- по умолчанию — `<repo>/.dev-files/config/config.json` (данные — в `.dev-files/data/`);
+- `LHC_DEV_DIR=/путь` задаёт другой каталог (относительный путь считается от текущего каталога).
+
+Это тот же каталог, что использует `pnpm tauri:dev`. Обе оболочки видят один конфиг. Изменения, сделанные в Tauri, Slint перечитывает автоматически раз в секунду.
+
+Release-сборки используют `~/.config/dev.bozonx.left-hand-control/` и `~/.local/share/dev.bozonx.left-hand-control/`, те же каталоги, что и Tauri.
+
+Пути разрешает `lhc_core::storage::StoragePaths::resolve()`. Не вычисляйте их в оболочке самостоятельно.
+
+## Управление запущенным экземпляром
+
+Бинарник с аргументами работает как клиент: отправляет команду запущенному экземпляру через Unix-сокет и завершается.
+
+```sh
+target/debug/slint-shell show settings
+target/debug/slint-shell show emoji
+target/debug/slint-shell show quick
+target/debug/slint-shell hide
+target/debug/slint-shell toggle-mapper
+target/debug/slint-shell preferences dark ru    # dark|light, ru|en
+target/debug/slint-shell ping
+target/debug/slint-shell quit
+```
+
+Ответ `queued` означает, что команда поставлена в очередь UI, а не что окно уже готово к вводу.
+
+## Mapper
+
+1. Откройте настройки, выберите «Устройство клавиатуры». Путь сохраняется в `settings.inputDevicePath` конфига.
+2. Нажмите «Mapper вкл / выкл» (или `slint-shell toggle-mapper`, или пункт меню трея).
+
+Mapper, раскладка, game mode и активное окно работают через `lhc-core` так же, как в Tauri. Linux-бэкенд держит межпроцессную блокировку: одновременно mapper может работать только в одной оболочке. Сохранение назначения клавиши в редакторе сразу передаётся запущенному mapper.
+
+Редактор пока меняет только безусловные правила базового слоя (`tapAction`). Для клавиш, у которых есть только условные или послойные правила, он откажет и попросит воспользоваться полным редактором.
+
+## Переменные окружения
+
+| Переменная | Назначение |
+| --- | --- |
+| `RUST_LOG` | Фильтр логов `env_logger`; по умолчанию `info,zbus=warn,tracing=warn` |
+| `LHC_DEV_DIR` | Каталог конфигурации для debug-сборок |
+| `SLINT_BACKEND` | Рендерер окна настроек |
+| `SLINT_SHELL_POPUPS` | `winit` / `auto` / `spell` |
+| `SLINT_SHELL_HOTKEYS=off` | Не слушать evdev-хоткеи Ctrl+Alt+F11 / F12 |
+| `SLINT_SHELL_INPUT=/dev/input/eventN` | Слушать хоткеи только с одного устройства |
+| `SLINT_SHELL_INSERT=1` | Spell на KDE: после выбора вернуть фокус и вставить значение |
+| `SLINT_SHELL_OUTPUT=<имя>` | Монитор для Spell-попапов |
+| `SLINT_SHELL_METRICS=/путь.csv` | Писать CSV задержек для скриптов измерений; без переменной метрики выключены |
+| `SLINT_SHELL_SOCKET` | Имя IPC-сокета в `XDG_RUNTIME_DIR`; удобно для параллельного тестового экземпляра |
+
+Диагностические переменные стендов (`SLINT_SHELL_TEST_INJECT`, `SLINT_SHELL_ISOLATED_INPUT`, `SLINT_SHELL_SPELL_LIFECYCLE`, `SLINT_SHELL_SPELL_INITIAL`) описаны в `apps/slint-shell/README.md`.
+
+Второй экземпляр рядом с основным, например для экспериментов:
+
+```sh
+LHC_DEV_DIR=/tmp/lhc-dev SLINT_SHELL_SOCKET=lhc-dev.sock SLINT_SHELL_HOTKEYS=off \
+  cargo run -p slint-shell
+SLINT_SHELL_SOCKET=lhc-dev.sock target/debug/slint-shell quit
+```
+
+Учтите, что трей у второго экземпляра тоже появится, а mapper запустится только в одном из них.
+
+## Проверки перед коммитом
+
+```sh
+cargo fmt -p lhc-core -p slint-shell -p left-hand-control --check
+cargo clippy --locked -p lhc-core -p slint-shell -p left-hand-control \
+  --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo test --locked --workspace --features slint-shell/spell
+cargo check --locked -p slint-shell --all-targets        # сборка без Spell
+```
+
+UI-сценарии запускаются в графической сессии и сами закрываются по завершении:
+
+```sh
+cargo run -p slint-shell --example editor -- --smoke     # редактор клавиш
+cargo run -p slint-shell --example interactions          # формы, DnD, тема, язык, попапы
+```
+
+С `LHC_EDITOR_SNAPSHOTS=<каталог>` пример `interactions` сохраняет снимки экранов (`.ppm`).
+
+Стенды задержек, lifecycle и возврата ввода (`bench-evdev`, `bench-return`, `scripts/bench-virtual.sh` и др.) описаны в `apps/slint-shell/README.md`.
+
+## Структура кода
+
+```
+crates/lhc-core/src/        # общий код обеих оболочек, без UI
+├── config_document.rs      # редактируемый config.json: валидация, защита от внешних изменений
+├── storage.rs              # StoragePaths::resolve() — пути dev/release
+├── events.rs               # шина CoreEvent: единственный канал «ядро → оболочка»
+├── layout/ gamemode/ active_window/   # наблюдатели состояния системы
+├── mapper/                 # движок, Linux evdev/uinput, portal, runtime
+└── platform/               # определение ОС / DE / сессии
+
+apps/slint-shell/
+├── src/lib.rs              # роли процесса: настройки / Spell worker / CLI-клиент
+├── src/command.rs          # типизированные команды и формат IPC
+├── src/app/                # процесс настроек: состояние, попапы, mapper, надзор за worker
+├── src/editor.rs           # пилотный редактор клавиш
+├── src/spell.rs            # процесс Spell-попапов (layer-shell)
+├── src/i18n.rs             # идентификаторы сообщений для Locale.text()
+├── src/platform/linux/     # evdev-хоткеи, ksni-трей, Wayland activation, возврат ввода
+├── src/platform/portable/  # Windows/macOS: global-hotkey, tray-icon, native input
+├── ui/*.slint              # компоненты; ui/i18n.slint — переводы сообщений
+├── translations/ru/        # PO-перевод (исходные строки на английском)
+└── vendor/spell-framework/ # локальная копия Spell с патчами (см. PATCHES.md)
+```
+
+Правила:
+
+- Доменная логика (конфиг, mapper, наблюдатели, пути) живёт в `lhc-core`. Оболочка только отображает её и вызывает операции.
+- Ядро уведомляет оболочки только через `lhc_core::events::bus()`. Подписка выполняется один раз при старте в `app/mapper.rs`.
+- Весь видимый пользователю текст идёт через `@tr`. Rust передаёт `Msg` → `Message { id, arg, count }`, перевод делает `Locale.text()`. Добавляя сообщение, обновите `src/i18n.rs`, `ui/i18n.slint` и `translations/ru/LC_MESSAGES/slint-shell.po`.
+- Платформенные различия держатся в `src/platform/`, общий UI от ОС не зависит.
+
+## Что зависит от окружения
+
+| Окружение | Состояние |
+| --- | --- |
+| KDE Plasma 6, Wayland | Основная среда: Spell-попапы, фокус, вставка, раскладка, системные действия |
+| Hyprland, Sway | Layer-shell есть, Spell должен работать; не принято, вставка (`SLINT_SHELL_INSERT`) использует KWin и там недоступна |
+| GNOME Wayland | Нет layer-shell: `auto` уходит в winit-fallback; трею нужно расширение AppIndicator |
+| X11 | Окна winit; тип окна Utility, поведение зависит от WM |
+
+## Частые проблемы
+
+- **`slint-shell is already running`** — уже запущен экземпляр с тем же сокетом. Выполните `target/debug/slint-shell quit` или задайте другой `SLINT_SHELL_SOCKET`. Устаревший сокет после аварии удаляется при следующем запуске.
+- **Первая сборка очень долгая или падает на Skia** — проверьте clang, cmake, ninja и python.
+- **`No readable Ctrl+Alt+F11/F12 evdev devices`** — нет доступа к `/dev/input`; см. раздел про группу `input`, либо отключите хоткеи `SLINT_SHELL_HOTKEYS=off`.
+- **Emoji монохромные или квадратами** — установите Noto Color Emoji; для окон winit используйте `SLINT_BACKEND=winit-skia`.
+- **`compositor does not advertise zwlr_layer_shell_v1`** — композитор без layer-shell (GNOME); используйте `SLINT_SHELL_POPUPS=auto` или `winit`.
+- **Сохранение отклонено: «конфигурация изменена другим приложением»** — файл изменили параллельно (например, в Tauri). Документ уже перечитан, повторите изменение.
