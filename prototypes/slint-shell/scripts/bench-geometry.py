@@ -9,8 +9,8 @@ import time
 if not os.environ.get('WAYLAND_DISPLAY', '').startswith('lhc-stage3a-'):
     raise SystemExit('Run only inside the dedicated lhc-stage3a-* virtual compositor')
 root = Path(__file__).resolve().parents[1]
-binary = root / 'target/debug/slint-shell'
-probe = root / 'target/debug/examples/inspect-geometry'
+binary = root.parents[1] / 'target/debug/slint-shell'
+probe = root.parents[1] / 'target/debug/examples/inspect-geometry'
 output = Path(sys.argv[1]).resolve()
 output.mkdir(parents=True, exist_ok=True)
 config = json.loads(subprocess.check_output(['kscreen-doctor', '-j'], text=True))
@@ -83,11 +83,11 @@ with (output / 'server.log').open('w') as log:
         command('hide')
         for popup in ('emoji', 'quick'):
             geometry(popup, 'output-disabled', names[0])
-        panel = subprocess.Popen([root / 'target/debug/examples/panel-fixture'], stdout=log, stderr=log)
+        panel = subprocess.Popen([root.parents[1] / 'target/debug/examples/panel-fixture'], stdout=log, stderr=log)
         fixtures.append(panel)
         time.sleep(.3)
         for mode in ('normal', 'maximized', 'fullscreen'):
-            fixture = subprocess.Popen([root / 'target/debug/examples/window-fixture'],
+            fixture = subprocess.Popen([root.parents[1] / 'target/debug/examples/window-fixture'],
                                        env=dict(os.environ, SLINT_BACKEND='winit-software', SLINT_FIXTURE_MODE=mode), stdout=log, stderr=log)
             fixtures.append(fixture)
             time.sleep(.5)

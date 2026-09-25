@@ -27,15 +27,21 @@ use std::sync::Mutex;
 static CACHED_LAYOUT: Mutex<Option<LayoutInfo>> = Mutex::new(None);
 static LAST_EMITTED_LAYOUT: Mutex<Option<String>> = Mutex::new(None);
 
+#[cfg(test)]
 pub fn cached_layout() -> Option<LayoutInfo> {
     CACHED_LAYOUT.lock().ok().and_then(|g| g.clone())
 }
 
+#[cfg(test)]
 pub fn cached_layout_short() -> Option<String> {
     cached_layout().map(|info| info.short)
 }
 
 fn update_cached_layout(info: &LayoutInfo) {
+    lhc_core::runtime_state::set_layout(Some(lhc_core::runtime_state::LayoutSelection {
+        short: info.short.clone(),
+        variant: info.display.clone(),
+    }));
     if let Ok(mut g) = CACHED_LAYOUT.lock() {
         *g = Some(info.clone());
     }

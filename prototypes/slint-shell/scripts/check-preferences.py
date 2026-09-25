@@ -6,7 +6,7 @@ import tempfile
 import time
 
 root = Path(__file__).resolve().parents[1]
-binary = Path(os.environ.get('SLINT_SHELL_BIN', root / 'target/debug/slint-shell')).resolve()
+binary = Path(os.environ.get('SLINT_SHELL_BIN', root.parents[1] / 'target/debug/slint-shell')).resolve()
 output = Path(sys.argv[1] if len(sys.argv) > 1 else tempfile.mkdtemp(prefix='lhc-3b-ipc-'))
 output.mkdir(parents=True, exist_ok=True)
 env = dict(

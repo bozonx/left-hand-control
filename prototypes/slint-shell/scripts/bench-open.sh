@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-bin="${SLINT_SHELL_BIN:-$root/target/debug/slint-shell}"
+workspace="$(cd "$root/../.." && pwd)"
+bin="${SLINT_SHELL_BIN:-$workspace/target/debug/slint-shell}"
 popup="${1:-emoji}"
 count="${2:-20}"
 [[ "$popup" == emoji || "$popup" == quick ]] || exit 2

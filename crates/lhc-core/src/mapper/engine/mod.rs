@@ -416,7 +416,10 @@ impl Engine {
             // through and treat this key-down as a brand-new press (which may
             // itself open a fresh tap/hold/double-tap sequence).
             if let Some(pending) = self.pending.remove(&key) {
-                log::debug!("[mapper] dtap-window elapsed on 2nd press -> tap (key={:?})", key);
+                log::debug!(
+                    "[mapper] dtap-window elapsed on 2nd press -> tap (key={:?})",
+                    key
+                );
                 self.fire_tap(key, &pending.rule.tap, now, out);
             }
         }
@@ -487,19 +490,15 @@ impl Engine {
                         .layer_triggers
                         .get(&layer_id)
                         .and_then(|v| v.last())
-                        .filter(|t| {
-                            t.hold_ks.is_some() && t.whitelist.contains(&key)
-                        })
+                        .filter(|t| t.hold_ks.is_some() && t.whitelist.contains(&key))
                         .map(|t| (t.key, t.hold_ks.clone().unwrap()));
                     if let Some((owner, ks)) = materialize {
-                        log::debug!(
-                            "[mapper] lazy-hold materialize {:?} for {:?}",
-                            ks.key,
-                            key
-                        );
+                        log::debug!("[mapper] lazy-hold materialize {:?} for {:?}", ks.key, key);
                         self.emit_stroke_press(owner, ks, out);
-                        if let Some(t) =
-                            self.layer_triggers.get_mut(&layer_id).and_then(|v| v.last_mut())
+                        if let Some(t) = self
+                            .layer_triggers
+                            .get_mut(&layer_id)
+                            .and_then(|v| v.last_mut())
                         {
                             t.hold_ks = None;
                         }
@@ -818,9 +817,9 @@ impl Engine {
     /// The rule key currently in `WaitingDecision`, if any. In permissive
     /// mode there is at most one (further rule keys are buffered).
     fn deciding_key(&self) -> Option<Key> {
-        self.pending.iter().find_map(|(k, p)| {
-            matches!(p.phase, Phase::WaitingDecision { .. }).then_some(*k)
-        })
+        self.pending
+            .iter()
+            .find_map(|(k, p)| matches!(p.phase, Phase::WaitingDecision { .. }).then_some(*k))
     }
 
     /// Permissive-hold interception. While a rule key is deciding, other key
@@ -848,8 +847,13 @@ impl Engine {
             return false;
         }
         if down {
-            log::debug!("[mapper] permissive: buffer {:?} (deciding={:?})", key, deciding);
-            self.decision_buffer.push(BufferedEvent { key, down, at: now });
+            log::debug!(
+                "[mapper] permissive: buffer {:?} (deciding={:?})",
+                key,
+                deciding
+            );
+            self.decision_buffer
+                .push(BufferedEvent { key, down, at: now });
             return true;
         }
         // Release of a key pressed *after* the deciding key → nested
@@ -877,7 +881,8 @@ impl Engine {
                 key,
                 deciding
             );
-            self.decision_buffer.push(BufferedEvent { key, down, at: now });
+            self.decision_buffer
+                .push(BufferedEvent { key, down, at: now });
             return true;
         }
         false
@@ -1130,7 +1135,7 @@ impl Engine {
 
 /// Returns true when a list of substrings matches the active window's
 /// title or app id (case-insensitive, OR).
-fn matches_active_window(needles: &[String], aw: &crate::active_window::ActiveWindow) -> bool {
+fn matches_active_window(needles: &[String], aw: &crate::runtime_state::ActiveWindow) -> bool {
     let title = aw.title.to_lowercase();
     let app_id = aw.app_id.to_lowercase();
     needles
@@ -1155,7 +1160,7 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
     if bl.is_none() && wl.is_none() {
         return true;
     }
-    let aw = crate::active_window::cached_active_window();
+    let aw = crate::runtime_state::active_window();
     if aw.is_none() {
         // Without active-window detection (e.g. KDE Wayland missing
         // `kdotool`) app-conditioned rules silently never fire (whitelist)
@@ -1200,10 +1205,10 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
         return true;
     }
     if has_gm_cond {
-        if !crate::gamemode::cached_detection_enabled() {
+        if !crate::runtime_state::game_mode_detection_enabled() {
             return false;
         }
-        let gm_active = crate::gamemode::cached_status_active();
+        let gm_active = crate::runtime_state::game_mode_active();
         if !match rule.condition_game_mode {
             Some(GameModeCondition::On) => gm_active,
             Some(GameModeCondition::Off) => !gm_active,
@@ -1213,7 +1218,7 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
         }
     }
     if has_layout_cond {
-        let Some(current) = crate::layout::cached_layout_short() else {
+        let Some(current) = crate::runtime_state::layout_short() else {
             return false;
         };
         if !rule
@@ -1685,7 +1690,12 @@ mod tests {
         engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
         engine.handle(Key::KEY_C, true, now + Duration::from_millis(10), &mut out);
         engine.handle(Key::KEY_C, false, now + Duration::from_millis(20), &mut out);
-        engine.handle(Key::KEY_LEFTALT, false, now + Duration::from_millis(30), &mut out);
+        engine.handle(
+            Key::KEY_LEFTALT,
+            false,
+            now + Duration::from_millis(30),
+            &mut out,
+        );
 
         let touches_alt = out.iter().any(|o| match o {
             Out::KeyRaw { key, .. } => *key == Key::KEY_LEFTALT,
@@ -1709,24 +1719,37 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::KEY_LEFTALT, true, now, &mut out);
-        engine.handle(Key::KEY_TAB, true, now + Duration::from_millis(10), &mut out);
-
-        assert!(
-            matches!(
-                out.as_slice(),
-                [
-                    Out::ChordPress { ks: alt, .. },
-                    Out::ChordPress { ks: tab, .. },
-                ] if alt.mods.is_empty()
-                    && alt.key == Key::KEY_LEFTALT
-                    && tab.mods.is_empty()
-                    && tab.key == Key::KEY_TAB
-            )
+        engine.handle(
+            Key::KEY_TAB,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
         );
 
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::ChordPress { ks: alt, .. },
+                Out::ChordPress { ks: tab, .. },
+            ] if alt.mods.is_empty()
+                && alt.key == Key::KEY_LEFTALT
+                && tab.mods.is_empty()
+                && tab.key == Key::KEY_TAB
+        ));
+
         out.clear();
-        engine.handle(Key::KEY_TAB, false, now + Duration::from_millis(20), &mut out);
-        engine.handle(Key::KEY_LEFTALT, false, now + Duration::from_millis(30), &mut out);
+        engine.handle(
+            Key::KEY_TAB,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTALT,
+            false,
+            now + Duration::from_millis(30),
+            &mut out,
+        );
 
         // Alt is released exactly once when the layer ends.
         let alt_releases = out
@@ -1807,7 +1830,7 @@ mod tests {
     #[test]
     fn apps_whitelist_blocks_when_no_active_window() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
         let rule = rule_with_apps(Some(vec!["firefox".into()]), None);
         assert!(!rule_passes_apps(&rule));
     }
@@ -1815,43 +1838,43 @@ mod tests {
     #[test]
     fn apps_whitelist_passes_when_title_matches() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::active_window::set_cached_for_test(Some(crate::active_window::ActiveWindow {
+        crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
             title: "Mozilla Firefox".into(),
             app_id: "navigator".into(),
         }));
         let rule = rule_with_apps(Some(vec!["firefox".into()]), None);
         assert!(rule_passes_apps(&rule));
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
     }
 
     #[test]
     fn apps_whitelist_passes_when_app_id_matches_case_insensitive() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::active_window::set_cached_for_test(Some(crate::active_window::ActiveWindow {
+        crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
             title: "Library".into(),
             app_id: "Steam".into(),
         }));
         let rule = rule_with_apps(Some(vec!["steam".into()]), None);
         assert!(rule_passes_apps(&rule));
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
     }
 
     #[test]
     fn apps_blacklist_blocks_even_when_whitelist_passes() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::active_window::set_cached_for_test(Some(crate::active_window::ActiveWindow {
+        crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
             title: "Editor — secret".into(),
             app_id: "editor".into(),
         }));
         let rule = rule_with_apps(Some(vec!["editor".into()]), Some(vec!["secret".into()]));
         assert!(!rule_passes_apps(&rule));
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
     }
 
     #[test]
     fn apps_no_lists_always_passes() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
         let rule = rule_with_apps(None, None);
         assert!(rule_passes_apps(&rule));
     }
@@ -1859,7 +1882,7 @@ mod tests {
     #[test]
     fn game_mode_condition_blocks_when_detection_disabled() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::gamemode::set_cached_for_test(true, false);
+        crate::runtime_state::set_game_mode(true, false);
         let rule = RuleEntry {
             tap: TapMode::Native,
             layer_id: None,
@@ -1876,13 +1899,13 @@ mod tests {
         };
 
         assert!(!rule_passes_conditions(&rule));
-        crate::gamemode::set_cached_for_test(false, true);
+        crate::runtime_state::set_game_mode(false, true);
     }
 
     #[test]
     fn apps_blacklist_blocks_when_no_active_window() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
         let rule = rule_with_apps(None, Some(vec!["secret".into()]));
         assert!(!rule_passes_apps(&rule));
     }
@@ -1890,7 +1913,7 @@ mod tests {
     #[test]
     fn game_mode_condition_passes_when_cached_state_matches() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::gamemode::set_cached_for_test(true, true);
+        crate::runtime_state::set_game_mode(true, true);
         let rule = RuleEntry {
             tap: TapMode::Native,
             layer_id: None,
@@ -1907,13 +1930,13 @@ mod tests {
         };
 
         assert!(rule_passes_conditions(&rule));
-        crate::gamemode::set_cached_for_test(false, true);
+        crate::runtime_state::set_game_mode(false, true);
     }
 
     #[test]
     fn duplicate_key_rules_use_first_matching_condition() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
 
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
@@ -1959,7 +1982,7 @@ mod tests {
             out.as_slice(),
             [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_B
         ));
-        crate::active_window::set_cached_for_test(None);
+        crate::runtime_state::set_active_window(None);
     }
 
     #[test]
@@ -2622,7 +2645,12 @@ mod tests {
 
         engine.handle(Key::KEY_F, true, now + Duration::from_millis(5), &mut out);
         engine.handle(Key::KEY_J, true, now + Duration::from_millis(10), &mut out);
-        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(15), &mut out);
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(15),
+            &mut out,
+        );
         // Everything deferred behind F's decision.
         assert!(out.is_empty());
 
@@ -2679,12 +2707,14 @@ mod tests {
 
         engine.shutdown(&mut out);
         // Should emit: KeyC release, Ctrl release (ReleaseMods)
-        assert!(out
-            .iter()
-            .any(|o| matches!(o, Out::KeyRaw { key, down: false } if *key == Key::KEY_C)));
-        assert!(out
-            .iter()
-            .any(|o| matches!(o, Out::ReleaseMods(mods) if mods.contains(&Key::KEY_LEFTCTRL))));
+        assert!(
+            out.iter()
+                .any(|o| matches!(o, Out::KeyRaw { key, down: false } if *key == Key::KEY_C))
+        );
+        assert!(
+            out.iter()
+                .any(|o| matches!(o, Out::ReleaseMods(mods) if mods.contains(&Key::KEY_LEFTCTRL)))
+        );
         assert!(engine.active_layers.is_empty());
         assert!(engine.pending.is_empty());
     }
@@ -2780,9 +2810,10 @@ mod tests {
             now + Duration::from_millis(290),
             &mut out,
         );
-        assert!(out
-            .iter()
-            .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == Key::KEY_C)));
+        assert!(
+            out.iter()
+                .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == Key::KEY_C))
+        );
         assert!(!out.iter().any(
             |o| matches!(o, Out::ChordRelease { mods, .. } if mods.contains(&Key::KEY_LEFTCTRL))
         ));
@@ -2795,9 +2826,10 @@ mod tests {
             now + Duration::from_millis(300),
             &mut out,
         );
-        assert!(out
-            .iter()
-            .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == Key::KEY_V)));
+        assert!(
+            out.iter()
+                .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == Key::KEY_V))
+        );
         assert!(out.iter().any(
             |o| matches!(o, Out::ChordRelease { mods, .. } if mods.contains(&Key::KEY_LEFTCTRL))
         ));
@@ -2894,7 +2926,12 @@ mod tests {
         // Nothing emitted yet — A is buffered behind Shift's decision.
         assert!(out.is_empty());
 
-        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
         assert!(
             matches!(
                 out.as_slice(),
@@ -2990,9 +3027,19 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::KEY_A, true, now, &mut out);
-        engine.handle(Key::KEY_LEFTSHIFT, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
         engine.handle(Key::KEY_A, false, now + Duration::from_millis(20), &mut out);
-        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(30), &mut out);
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(30),
+            &mut out,
+        );
 
         // No ControlLeft hold anywhere; Shift resolved as a tap (Escape).
         assert!(
@@ -3000,9 +3047,8 @@ mod tests {
             "hold must not commit"
         );
         assert!(
-            out.iter().any(
-                |o| matches!(o, Out::Stroke { ks, .. } if ks.key == Key::KEY_ESC)
-            ),
+            out.iter()
+                .any(|o| matches!(o, Out::Stroke { ks, .. } if ks.key == Key::KEY_ESC)),
             "Shift tap (Escape) must fire"
         );
     }
@@ -3027,8 +3073,18 @@ mod tests {
         let now = Instant::now();
 
         engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
-        engine.handle(Key::KEY_CAPSLOCK, true, now + Duration::from_millis(10), &mut out);
-        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(20), &mut out);
+        engine.handle(
+            Key::KEY_CAPSLOCK,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
         // Shift tapped; Caps now deciding after replay.
         assert!(
             matches!(
@@ -3039,7 +3095,12 @@ mod tests {
         );
 
         out.clear();
-        engine.handle(Key::KEY_CAPSLOCK, false, now + Duration::from_millis(30), &mut out);
+        engine.handle(
+            Key::KEY_CAPSLOCK,
+            false,
+            now + Duration::from_millis(30),
+            &mut out,
+        );
         assert!(
             matches!(
                 out.as_slice(),
@@ -3066,7 +3127,12 @@ mod tests {
 
         engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
         engine.handle(Key::KEY_A, true, now + Duration::from_millis(30), &mut out);
-        engine.handle(Key::KEY_LEFTSHIFT, false, now + Duration::from_millis(60), &mut out);
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(60),
+            &mut out,
+        );
 
         assert!(
             matches!(
@@ -3106,7 +3172,12 @@ mod tests {
 
         // Solo tap within the timeout → paste.
         engine.handle(Key::KEY_CAPSLOCK, true, now, &mut out);
-        engine.handle(Key::KEY_CAPSLOCK, false, now + Duration::from_millis(150), &mut out);
+        engine.handle(
+            Key::KEY_CAPSLOCK,
+            false,
+            now + Duration::from_millis(150),
+            &mut out,
+        );
         assert!(
             matches!(
                 out.as_slice(),
@@ -3122,7 +3193,12 @@ mod tests {
         engine.handle(Key::KEY_CAPSLOCK, true, t2, &mut out);
         engine.handle(Key::KEY_J, true, t2 + Duration::from_millis(30), &mut out);
         engine.handle(Key::KEY_J, false, t2 + Duration::from_millis(60), &mut out);
-        engine.handle(Key::KEY_CAPSLOCK, false, t2 + Duration::from_millis(90), &mut out);
+        engine.handle(
+            Key::KEY_CAPSLOCK,
+            false,
+            t2 + Duration::from_millis(90),
+            &mut out,
+        );
         assert!(
             matches!(
                 out.as_slice(),

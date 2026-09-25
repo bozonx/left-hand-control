@@ -5,9 +5,7 @@
 // Tauri command for one-shot reads. The cached value is also consumed
 // directly by the mapper engine to evaluate per-rule app conditions.
 
-use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -15,25 +13,11 @@ use tauri::{AppHandle, Emitter};
 #[cfg(target_os = "linux")]
 mod linux;
 
-#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ActiveWindow {
-    pub title: String,
-    pub app_id: String,
-}
+pub use lhc_core::runtime_state::ActiveWindow;
 
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
-static CACHED: Mutex<Option<ActiveWindow>> = Mutex::new(None);
-
 pub fn cached_active_window() -> Option<ActiveWindow> {
-    CACHED.lock().ok().and_then(|guard| guard.clone())
-}
-
-#[cfg(test)]
-pub fn set_cached_for_test(value: Option<ActiveWindow>) {
-    if let Ok(mut guard) = CACHED.lock() {
-        *guard = value;
-    }
+    lhc_core::runtime_state::active_window()
 }
 
 pub fn stop_watcher() {
@@ -56,9 +40,7 @@ pub fn start_watcher(app: AppHandle) {
                 let current = detect_active_window();
 
                 if current != last {
-                    if let Ok(mut guard) = CACHED.lock() {
-                        *guard = current.clone();
-                    }
+                    lhc_core::runtime_state::set_active_window(current.clone());
                     let payload = current.clone().unwrap_or_default();
                     if let Err(e) = app.emit("active-window-changed", payload) {
                         log::debug!("[active-window] emit error: {e}");
@@ -84,9 +66,7 @@ fn detect_active_window() -> Option<ActiveWindow> {
 
 pub fn detect_active_window_now() -> Option<ActiveWindow> {
     let current = detect_active_window();
-    if let Ok(mut guard) = CACHED.lock() {
-        *guard = current.clone();
-    }
+    lhc_core::runtime_state::set_active_window(current.clone());
     current
 }
 

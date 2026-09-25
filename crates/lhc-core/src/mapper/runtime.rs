@@ -1,0 +1,650 @@
+use super::{InputDevice, KeyboardDevice, config};
+#[cfg(target_os = "linux")]
+use super::{linux, portal, validation};
+use serde::Serialize;
+use std::sync::{Mutex, MutexGuard};
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct MapperStatus {
+    pub running: bool,
+    pub device_path: Option<String>,
+    pub mouse_device_path: Option<String>,
+    pub last_error: Option<String>,
+}
+
+/// Global mapper handle. `None` when stopped.
+static STATE: Mutex<MapperRuntime<OsBackend>> = Mutex::new(MapperRuntime::new(OsBackend::new()));
+
+trait BackendHandle: Send {
+    fn stop(self: Box<Self>);
+    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String>;
+    fn execute_action(&self, action: String) -> Result<(), String>;
+    fn last_error(&self) -> Option<String>;
+    fn reap_if_finished(&mut self) -> bool;
+}
+
+trait MapperBackend: Send + Sync + 'static {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String>;
+    fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String>;
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String>;
+    fn spawn(
+        &self,
+        device_path: String,
+        mouse_path: Option<String>,
+        cfg: config::AppConfig,
+    ) -> Result<Box<dyn BackendHandle>, String>;
+}
+
+struct MapperRuntime<B> {
+    backend: B,
+    handle: Option<Box<dyn BackendHandle>>,
+    status: MapperStatus,
+    /// True while a start is in flight outside the state lock (spawn can
+    /// wait seconds for readiness and must not block status()/stop()).
+    starting: bool,
+}
+
+impl<B> MapperRuntime<B> {
+    const fn new(backend: B) -> Self {
+        Self {
+            backend,
+            handle: None,
+            status: MapperStatus {
+                running: false,
+                device_path: None,
+                mouse_device_path: None,
+                last_error: None,
+            },
+            starting: false,
+        }
+    }
+}
+
+impl<B: MapperBackend> MapperRuntime<B> {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+        self.backend.list_input_devices()
+    }
+
+    fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
+        self.backend.list_keyboards()
+    }
+
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+        self.backend.list_mice()
+    }
+
+    /// Reserve the "starting" slot. Must be paired with `finish_start`.
+    fn begin_start(&mut self) -> Result<(), String> {
+        if let Some(handle) = self.handle.as_mut() {
+            if handle.reap_if_finished() {
+                self.handle = None;
+                self.status.running = false;
+            }
+        }
+        if self.handle.is_some() || self.starting {
+            return Err("mapper already running".into());
+        }
+        self.starting = true;
+        Ok(())
+    }
+
+    /// Commit (or roll back) a spawn attempt made outside the lock.
+    fn finish_start(
+        &mut self,
+        result: Result<Box<dyn BackendHandle>, String>,
+        device_path: &str,
+        mouse_path: Option<&str>,
+    ) -> Result<(), String> {
+        self.starting = false;
+        let handle = result?;
+        self.handle = Some(handle);
+        self.status = MapperStatus {
+            running: true,
+            device_path: Some(device_path.to_string()),
+            mouse_device_path: mouse_path.map(|s| s.to_string()),
+            last_error: None,
+        };
+        Ok(())
+    }
+
+    #[cfg(test)]
+    fn start(
+        &mut self,
+        device_path: &str,
+        mouse_path: Option<&str>,
+        cfg: config::AppConfig,
+    ) -> Result<(), String> {
+        self.begin_start()?;
+        let result = self.backend.spawn(
+            device_path.to_string(),
+            mouse_path.map(|s| s.to_string()),
+            cfg,
+        );
+        self.finish_start(result, device_path, mouse_path)
+    }
+
+    /// Detach the running handle so the caller can join it without
+    /// holding the state lock.
+    fn take_handle(&mut self) -> Result<Box<dyn BackendHandle>, String> {
+        match self.handle.take() {
+            Some(handle) => {
+                self.status.running = false;
+                Ok(handle)
+            }
+            None => Err("mapper is not running".into()),
+        }
+    }
+
+    #[cfg(test)]
+    fn stop(&mut self) -> Result<(), String> {
+        self.take_handle().map(|handle| handle.stop())
+    }
+
+    fn update_config(&mut self, cfg: config::AppConfig) -> Result<(), String> {
+        let Some(handle) = self.handle.as_mut() else {
+            return Err("mapper is not running".into());
+        };
+        if handle.reap_if_finished() {
+            self.handle = None;
+            self.status.running = false;
+            return Err("mapper is not running".into());
+        }
+        handle.update_config(cfg)
+    }
+
+    fn execute_action(&mut self, action: String) -> Result<(), String> {
+        let Some(handle) = self.handle.as_mut() else {
+            return Err("mapper is not running".into());
+        };
+        if handle.reap_if_finished() {
+            self.handle = None;
+            self.status.running = false;
+            return Err("mapper is not running".into());
+        }
+        handle.execute_action(action)
+    }
+
+    fn status(&mut self) -> MapperStatus {
+        if let Some(handle) = self.handle.as_mut() {
+            let err = handle.last_error();
+            let finished = handle.reap_if_finished();
+            if let Some(err) = err {
+                self.status.last_error = Some(err);
+            }
+            if finished {
+                self.handle = None;
+                self.status.running = false;
+            }
+        }
+        self.status.clone()
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl BackendHandle for linux::Handle {
+    fn stop(self: Box<Self>) {
+        (*self).stop();
+    }
+
+    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String> {
+        self.update_config(cfg)
+    }
+
+    fn execute_action(&self, action: String) -> Result<(), String> {
+        self.execute_action(action)
+    }
+
+    fn last_error(&self) -> Option<String> {
+        self.last_error()
+    }
+
+    fn reap_if_finished(&mut self) -> bool {
+        self.reap_if_finished()
+    }
+}
+
+#[cfg(target_os = "linux")]
+struct LinuxBackend;
+
+#[cfg(target_os = "linux")]
+impl LinuxBackend {
+    const fn new() -> Self {
+        Self
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl MapperBackend for LinuxBackend {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+        linux::list_input_devices()
+    }
+
+    fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
+        linux::list_keyboards()
+    }
+
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+        linux::list_mice()
+    }
+
+    fn spawn(
+        &self,
+        device_path: String,
+        mouse_path: Option<String>,
+        cfg: config::AppConfig,
+    ) -> Result<Box<dyn BackendHandle>, String> {
+        linux::spawn(device_path, mouse_path, cfg)
+            .map(|handle| Box::new(handle) as Box<dyn BackendHandle>)
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+struct UnsupportedBackend;
+
+#[cfg(not(target_os = "linux"))]
+impl UnsupportedBackend {
+    const fn new() -> Self {
+        Self
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+impl MapperBackend for UnsupportedBackend {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+        Err(unsupported_os_msg("listing input devices"))
+    }
+
+    fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
+        Err(unsupported_os_msg("listing keyboards"))
+    }
+
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+        Err(unsupported_os_msg("listing mice"))
+    }
+
+    fn spawn(
+        &self,
+        _device_path: String,
+        _mouse_path: Option<String>,
+        _cfg: config::AppConfig,
+    ) -> Result<Box<dyn BackendHandle>, String> {
+        Err(unsupported_os_msg("starting mapper"))
+    }
+}
+
+#[cfg(target_os = "linux")]
+type OsBackend = LinuxBackend;
+
+#[cfg(not(target_os = "linux"))]
+type OsBackend = UnsupportedBackend;
+
+fn lock_state() -> MutexGuard<'static, MapperRuntime<OsBackend>> {
+    STATE.lock().unwrap_or_else(|e| {
+        log::debug!("[mapper] STATE mutex poisoned, recovering");
+        e.into_inner()
+    })
+}
+
+pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
+    lock_state().list_keyboards()
+}
+
+pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
+    lock_state().list_input_devices()
+}
+
+pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
+    lock_state().list_mice()
+}
+
+#[cfg(not(target_os = "linux"))]
+fn unsupported_os_msg(op: &str) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        format!(
+            "{op}: Windows backend not implemented yet (planned: LowLevelKeyboardProc + SendInput)"
+        )
+    }
+    #[cfg(target_os = "macos")]
+    {
+        format!(
+            "{op}: macOS backend not implemented yet (planned: CGEventTap + CGEventPost, requires Accessibility permission)"
+        )
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        format!("{op} is not supported on this operating system")
+    }
+}
+
+pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> Result<(), String> {
+    let cfg: config::AppConfig =
+        serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
+    #[cfg(target_os = "linux")]
+    validation::validate_config(&cfg)?;
+    // Spawn outside the state lock: waiting for the worker to grab the
+    // device and report readiness can take seconds and must not block
+    // concurrent status()/stop() calls from the frontend.
+    lock_state().begin_start()?;
+    let result = OsBackend::new().spawn(
+        device_path.to_string(),
+        mouse_path.map(|s| s.to_string()),
+        cfg,
+    );
+    lock_state().finish_start(result, device_path, mouse_path)
+}
+
+pub fn stop() -> Result<(), String> {
+    // Join the worker thread outside the state lock so status polling
+    // does not freeze while the mapper shuts down.
+    let handle = lock_state().take_handle()?;
+    handle.stop();
+    Ok(())
+}
+
+pub fn update_config(config_json: &str) -> Result<(), String> {
+    let cfg: config::AppConfig =
+        serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
+    #[cfg(target_os = "linux")]
+    validation::validate_config(&cfg)?;
+    lock_state().update_config(cfg)
+}
+
+pub fn execute_action(action: String) -> Result<(), String> {
+    lock_state().execute_action(action)
+}
+
+pub fn status() -> MapperStatus {
+    lock_state().status()
+}
+
+/// Tell the portal singleton where to read/write the saved
+/// `restore_token`. Should be called once at app startup, before any
+/// literal-injection request.
+#[cfg(target_os = "linux")]
+pub fn set_portal_token_dir(dir: std::path::PathBuf) {
+    portal::set_token_dir(dir);
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn set_portal_token_dir(_dir: std::path::PathBuf) {}
+
+#[cfg(test)]
+mod tests {
+    use super::{BackendHandle, InputDevice, KeyboardDevice, MapperBackend, MapperRuntime};
+    use crate::mapper::config::{AppConfig, Settings};
+    use std::collections::VecDeque;
+    use std::sync::{Arc, Mutex};
+
+    struct FakeHandle {
+        stop_called: Arc<Mutex<bool>>,
+        finished: bool,
+        last_error: Option<String>,
+        update_configs: Arc<Mutex<Vec<AppConfig>>>,
+        executed_actions: Arc<Mutex<Vec<String>>>,
+    }
+
+    impl BackendHandle for FakeHandle {
+        fn stop(self: Box<Self>) {
+            if let Ok(mut slot) = self.stop_called.lock() {
+                *slot = true;
+            }
+        }
+
+        fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
+            if let Ok(mut slot) = self.update_configs.lock() {
+                slot.push(cfg);
+            }
+            Ok(())
+        }
+
+        fn execute_action(&self, action: String) -> Result<(), String> {
+            if let Ok(mut slot) = self.executed_actions.lock() {
+                slot.push(action);
+            }
+            Ok(())
+        }
+
+        fn last_error(&self) -> Option<String> {
+            self.last_error.clone()
+        }
+
+        fn reap_if_finished(&mut self) -> bool {
+            self.finished
+        }
+    }
+
+    type HandleQueue = Arc<Mutex<VecDeque<Result<Box<dyn BackendHandle>, String>>>>;
+
+    struct FakeBackend {
+        devices: Vec<KeyboardDevice>,
+        next_handles: HandleQueue,
+    }
+
+    impl FakeBackend {
+        fn new(
+            devices: Vec<KeyboardDevice>,
+            next_handles: Vec<Result<Box<dyn BackendHandle>, String>>,
+        ) -> Self {
+            Self {
+                devices,
+                next_handles: Arc::new(Mutex::new(next_handles.into())),
+            }
+        }
+    }
+
+    impl MapperBackend for FakeBackend {
+        fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+            Ok(self
+                .devices
+                .iter()
+                .map(|device| InputDevice {
+                    path: device.path.clone(),
+                    name: device.name.clone(),
+                    is_keyboard: true,
+                    is_mouse: false,
+                })
+                .collect())
+        }
+
+        fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
+            Ok(self.devices.clone())
+        }
+
+        fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+            Ok(Vec::new())
+        }
+
+        fn spawn(
+            &self,
+            _device_path: String,
+            _mouse_path: Option<String>,
+            _cfg: AppConfig,
+        ) -> Result<Box<dyn BackendHandle>, String> {
+            self.next_handles
+                .lock()
+                .expect("lock handles")
+                .pop_front()
+                .unwrap_or_else(|| Err("no fake handle".into()))
+        }
+    }
+
+    fn empty_cfg() -> AppConfig {
+        AppConfig {
+            rules: Vec::new(),
+            layer_keymaps: Default::default(),
+            macros: Vec::new(),
+            commands: Vec::new(),
+            settings: Settings::default(),
+        }
+    }
+
+    #[test]
+    fn runtime_updates_status_from_finished_handle() {
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![Ok(Box::new(FakeHandle {
+                stop_called: Arc::new(Mutex::new(false)),
+                finished: true,
+                last_error: Some("boom".into()),
+                update_configs: Arc::new(Mutex::new(Vec::new())),
+                executed_actions: Arc::new(Mutex::new(Vec::new())),
+            }))],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event1", None, empty_cfg())
+            .expect("start");
+        let status = runtime.status();
+
+        assert!(!status.running);
+        assert_eq!(status.device_path.as_deref(), Some("/dev/input/event1"));
+        assert_eq!(status.last_error.as_deref(), Some("boom"));
+    }
+
+    #[test]
+    fn runtime_stop_calls_handle_stop() {
+        let stop_called = Arc::new(Mutex::new(false));
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![Ok(Box::new(FakeHandle {
+                stop_called: stop_called.clone(),
+                finished: false,
+                last_error: None,
+                update_configs: Arc::new(Mutex::new(Vec::new())),
+                executed_actions: Arc::new(Mutex::new(Vec::new())),
+            }))],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event2", None, empty_cfg())
+            .expect("start");
+        runtime.stop().expect("stop");
+
+        assert!(*stop_called.lock().expect("lock stop flag"));
+        assert!(!runtime.status().running);
+    }
+
+    #[test]
+    fn runtime_lists_devices_via_backend() {
+        let runtime = MapperRuntime::new(FakeBackend::new(
+            vec![KeyboardDevice {
+                path: "/dev/input/event3".into(),
+                name: "Test Keyboard".into(),
+            }],
+            Vec::new(),
+        ));
+
+        let devices = runtime.list_keyboards().expect("list keyboards");
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].name, "Test Keyboard");
+    }
+
+    #[test]
+    fn runtime_update_config_propagates_to_handle() {
+        let updated = Arc::new(Mutex::new(Vec::new()));
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![Ok(Box::new(FakeHandle {
+                stop_called: Arc::new(Mutex::new(false)),
+                finished: false,
+                last_error: None,
+                update_configs: updated.clone(),
+                executed_actions: Arc::new(Mutex::new(Vec::new())),
+            }))],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event1", None, empty_cfg())
+            .expect("start");
+        let mut cfg = empty_cfg();
+        cfg.macros.push(crate::mapper::config::Macro {
+            id: "test".into(),
+            steps: vec![],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        runtime.update_config(cfg.clone()).expect("update");
+
+        let configs = updated.lock().expect("lock");
+        assert_eq!(configs.len(), 1);
+        assert_eq!(configs[0].macros[0].id, "test");
+    }
+
+    #[test]
+    fn runtime_execute_action_propagates_to_handle() {
+        let executed = Arc::new(Mutex::new(Vec::new()));
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![Ok(Box::new(FakeHandle {
+                stop_called: Arc::new(Mutex::new(false)),
+                finished: false,
+                last_error: None,
+                update_configs: Arc::new(Mutex::new(Vec::new())),
+                executed_actions: executed.clone(),
+            }))],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event1", None, empty_cfg())
+            .expect("start");
+        runtime
+            .execute_action("macro:test".into())
+            .expect("execute");
+
+        let actions = executed.lock().expect("lock");
+        assert_eq!(actions.as_slice(), &["macro:test"]);
+    }
+
+    #[test]
+    fn runtime_update_config_fails_when_not_running() {
+        let mut runtime = MapperRuntime::new(FakeBackend::new(Vec::new(), Vec::new()));
+        let err = runtime.update_config(empty_cfg()).expect_err("should fail");
+        assert!(err.contains("not running"));
+    }
+
+    #[test]
+    fn runtime_execute_action_fails_when_not_running() {
+        let mut runtime = MapperRuntime::new(FakeBackend::new(Vec::new(), Vec::new()));
+        let err = runtime
+            .execute_action("test".into())
+            .expect_err("should fail");
+        assert!(err.contains("not running"));
+    }
+
+    #[test]
+    fn runtime_start_fails_when_already_running() {
+        let runtime_backend = FakeBackend::new(
+            Vec::new(),
+            vec![
+                Ok(Box::new(FakeHandle {
+                    stop_called: Arc::new(Mutex::new(false)),
+                    finished: false,
+                    last_error: None,
+                    update_configs: Arc::new(Mutex::new(Vec::new())),
+                    executed_actions: Arc::new(Mutex::new(Vec::new())),
+                })),
+                Ok(Box::new(FakeHandle {
+                    stop_called: Arc::new(Mutex::new(false)),
+                    finished: false,
+                    last_error: None,
+                    update_configs: Arc::new(Mutex::new(Vec::new())),
+                    executed_actions: Arc::new(Mutex::new(Vec::new())),
+                })),
+            ],
+        );
+        let mut runtime = MapperRuntime::new(runtime_backend);
+
+        runtime
+            .start("/dev/input/event1", None, empty_cfg())
+            .expect("first start");
+        let err = runtime
+            .start("/dev/input/event2", None, empty_cfg())
+            .expect_err("second start");
+        assert!(err.contains("already running"));
+    }
+}

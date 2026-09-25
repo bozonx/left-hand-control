@@ -7,10 +7,11 @@ use super::config::AppConfig;
 use super::engine::{Engine, Out};
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
 use evdev::{AttributeSet, BusType, Device, InputId, Key};
-use io::{flush_out, process_iteration, LoopDriver, MultiDeviceLoopDriver};
 #[cfg(test)]
-use io::{flush_out_with, process_iteration_with, EventSink, SideEffects};
+use io::{EventSink, SideEffects, flush_out_with, process_iteration_with};
+use io::{LoopDriver, MultiDeviceLoopDriver, flush_out, process_iteration};
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+use std::os::unix::fs::OpenOptionsExt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -198,11 +199,15 @@ pub fn spawn(
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => {
             let _ = join.join();
-            let err_msg = "mapper worker exited before reporting readiness";
+            let err_msg = error
+                .lock()
+                .ok()
+                .and_then(|slot| slot.clone())
+                .unwrap_or_else(|| "mapper worker exited before reporting readiness".into());
             if let Ok(mut slot) = error.lock() {
-                *slot = Some(err_msg.into());
+                *slot = Some(err_msg.clone());
             }
-            return Err(err_msg.into());
+            return Err(err_msg);
         }
     }
 
@@ -218,10 +223,7 @@ pub fn spawn(
 /// Tell the frontend the mapper thread died unexpectedly (device gone,
 /// panic, …) so it can update state without waiting for a status poll.
 fn notify_mapper_stopped(error: &str) {
-    if let Some(app) = super::get_app_handle() {
-        use tauri::Emitter;
-        let _ = app.emit("mapper-stopped", error.to_string());
-    }
+    super::notify_mapper_stopped(error);
 }
 
 fn make_wake_pipe() -> Result<(OwnedFd, OwnedFd), String> {
@@ -234,6 +236,32 @@ fn make_wake_pipe() -> Result<(OwnedFd, OwnedFd), String> {
     Ok(unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) })
 }
 
+fn acquire_mapper_lock() -> Result<std::fs::File, String> {
+    let base = std::env::var_os("XDG_RUNTIME_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
+    let path = base.join(format!("left-hand-control-mapper-{}.lock", unsafe {
+        libc::geteuid()
+    }));
+    lock_mapper_file(&path)
+}
+
+fn lock_mapper_file(path: &std::path::Path) -> Result<std::fs::File, String> {
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+        .open(&path)
+        .map_err(|error| format!("open mapper lock {}: {error}", path.display()))?;
+    let result = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
+    if result != 0 {
+        return Err("mapper is already active in another process".into());
+    }
+    Ok(file)
+}
+
 fn run(
     device_path: String,
     mouse_path: Option<String>,
@@ -243,6 +271,7 @@ fn run(
     control_rx: mpsc::Receiver<MapperControl>,
     wake_rx: OwnedFd,
 ) -> Result<(), String> {
+    let _mapper_lock = acquire_mapper_lock()?;
     let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
     device
         .grab()
@@ -339,7 +368,7 @@ fn run_loop<D: LoopDriver>(
 
 #[cfg(test)]
 mod tests {
-    use super::{flush_out_with, process_iteration_with, EventSink, LoopDriver, SideEffects};
+    use super::{EventSink, LoopDriver, SideEffects, flush_out_with, process_iteration_with};
     use crate::mapper::action::Keystroke;
     use crate::mapper::config::{ActionSpec, AppConfig, Rule, Settings};
     use crate::mapper::engine::{Engine, Out};
@@ -348,6 +377,16 @@ mod tests {
     use std::collections::{HashMap, VecDeque};
     use std::time::Duration;
     use std::time::Instant;
+
+    #[test]
+    fn mapper_lock_excludes_another_instance() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("mapper.lock");
+        let first = super::lock_mapper_file(&path).unwrap();
+        assert!(super::lock_mapper_file(&path).is_err());
+        drop(first);
+        assert!(super::lock_mapper_file(&path).is_ok());
+    }
 
     #[derive(Default)]
     struct FakeSink {

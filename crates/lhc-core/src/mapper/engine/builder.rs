@@ -1,6 +1,6 @@
-use super::model::{ActionDef, DecisionMode, HoldMode, MacroDef, RuleEntry, TapMode};
 use super::Engine;
-use crate::mapper::action::{explicit_pause, explicit_text, parse_action, MacroStepItem};
+use super::model::{ActionDef, DecisionMode, HoldMode, MacroDef, RuleEntry, TapMode};
+use crate::mapper::action::{MacroStepItem, explicit_pause, explicit_text, parse_action};
 use crate::mapper::config::{ActionSpec, AppConfig};
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
@@ -320,7 +320,8 @@ impl Engine {
                     None => {
                         log::debug!(
                             "[mapper] rule {:?}: unknown hold keystroke {:?} — falling back to native hold",
-                            r.key, s
+                            r.key,
+                            s
                         );
                         HoldMode::Native
                     }

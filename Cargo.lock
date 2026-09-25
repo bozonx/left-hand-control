@@ -3849,12 +3849,8 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 name = "left-hand-control"
 version = "0.2.0"
 dependencies = [
- "evdev 0.12.2",
  "lhc-core",
- "libc",
  "log",
- "nix 0.29.0",
- "reis",
  "serde",
  "serde_json",
  "tauri",
@@ -3867,7 +3863,10 @@ name = "lhc-core"
 version = "0.3.0"
 dependencies = [
  "evdev 0.12.2",
+ "libc",
  "log",
+ "nix 0.29.0",
+ "reis",
  "serde",
  "serde_json",
  "sha2",

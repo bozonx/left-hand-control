@@ -34,29 +34,12 @@ struct PersistedConfig {
 }
 
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
-static CACHED_GAMEMODE_ACTIVE: AtomicBool = AtomicBool::new(false);
-static CACHED_GAMEMODE_DETECTION_ENABLED: AtomicBool = AtomicBool::new(true);
 static CACHED_SETTINGS: Mutex<Option<GameModeSettings>> = Mutex::new(None);
 // Full status (including method string) cached for get_gamemode_status.
 static CACHED_STATUS_FULL: OnceLock<Mutex<GameModeStatus>> = OnceLock::new();
 
-pub fn cached_status_active() -> bool {
-    CACHED_GAMEMODE_ACTIVE.load(Ordering::SeqCst)
-}
-
-pub fn cached_detection_enabled() -> bool {
-    CACHED_GAMEMODE_DETECTION_ENABLED.load(Ordering::SeqCst)
-}
-
-#[cfg(test)]
-pub fn set_cached_for_test(active: bool, detection_enabled: bool) {
-    CACHED_GAMEMODE_ACTIVE.store(active, Ordering::SeqCst);
-    CACHED_GAMEMODE_DETECTION_ENABLED.store(detection_enabled, Ordering::SeqCst);
-}
-
 fn store_cached_status(status: &GameModeStatus) {
-    CACHED_GAMEMODE_ACTIVE.store(status.active, Ordering::SeqCst);
-    CACHED_GAMEMODE_DETECTION_ENABLED.store(status.detection_enabled, Ordering::SeqCst);
+    lhc_core::runtime_state::set_game_mode(status.active, status.detection_enabled);
     let mutex = CACHED_STATUS_FULL.get_or_init(|| Mutex::new(GameModeStatus::default()));
     if let Ok(mut guard) = mutex.lock() {
         *guard = status.clone();

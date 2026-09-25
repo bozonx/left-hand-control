@@ -44,7 +44,7 @@
 #![cfg(target_os = "linux")]
 
 use std::collections::HashMap;
-use std::ffi::{c_char, CString};
+use std::ffi::{CString, c_char};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -149,7 +149,7 @@ type KeymapCache = Option<(String, Arc<HashMap<u32, KeycodeEntry>>)>;
 static KEYMAP_CACHE: Mutex<KeymapCache> = Mutex::new(None);
 
 fn keymap_table() -> Arc<HashMap<u32, KeycodeEntry>> {
-    let cached = crate::layout::cached_layout();
+    let cached = crate::runtime_state::layout();
     let layout = cached
         .as_ref()
         .map(|info| info.short.clone())
@@ -157,7 +157,7 @@ fn keymap_table() -> Arc<HashMap<u32, KeycodeEntry>> {
         .unwrap_or_else(|| "us".to_string());
     let variant = cached
         .as_ref()
-        .map(|info| info.display.trim().to_string())
+        .map(|info| info.variant.trim().to_string())
         .filter(|v| !v.is_empty())
         .or_else(|| std::env::var("XKB_DEFAULT_VARIANT").ok())
         .filter(|v| !v.is_empty());
@@ -353,7 +353,9 @@ pub fn type_text(text: &str) {
             if type_text_libei(text, clipboard_fallback) {
                 return;
             }
-            log::debug!("[portal] libei backend unavailable; falling back to RemoteDesktop keycode injection");
+            log::debug!(
+                "[portal] libei backend unavailable; falling back to RemoteDesktop keycode injection"
+            );
         }
         TextBackend::Clipboard | TextBackend::Keycode => {}
     }

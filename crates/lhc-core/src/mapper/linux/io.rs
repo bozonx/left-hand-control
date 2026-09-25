@@ -5,8 +5,8 @@ use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
 use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, Key};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
-use std::sync::mpsc;
 use std::sync::OnceLock;
+use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -163,17 +163,14 @@ impl LoopDriver for MultiDeviceLoopDriver {
     }
 
     fn wait(&mut self, timeout: Duration) -> Result<bool, String> {
-        use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
+        use nix::poll::{PollFd, PollFlags, PollTimeout, poll};
 
         // Round *up* to whole milliseconds. `poll` takes millisecond
         // granularity; truncating a sub-millisecond remainder to 0 makes
         // `poll` return instantly while the deadline it was meant to wait
         // for has not elapsed, so `tick` does nothing and the loop spins.
         // A genuine zero timeout (deadline already passed) stays 0.
-        let timeout_ms: u16 = timeout
-            .as_nanos()
-            .div_ceil(1_000_000)
-            .min(u16::MAX as u128) as u16;
+        let timeout_ms: u16 = timeout.as_nanos().div_ceil(1_000_000).min(u16::MAX as u128) as u16;
         let mut pfds: Vec<PollFd> = self
             .devices
             .iter()
@@ -445,10 +442,7 @@ fn run_sys_action(action: &SysAction) {
         SysAction::Spawn(cmd) => spawn_system(cmd),
         SysAction::Dbus(call) => call_dbus(call),
         SysAction::AppEvent(event) => {
-            if let Some(app) = super::super::get_app_handle() {
-                use tauri::Emitter;
-                let _ = app.emit(event, ());
-            }
+            super::super::emit_app_event(event);
         }
     }
 }
@@ -541,7 +535,7 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
         match done.recv_timeout(Duration::from_secs(5)) {
             Ok(Ok(())) => {
                 if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
-                    let _ = crate::layout::refresh_cache();
+                    super::super::refresh_layout();
                 }
                 log::debug!(
                     "[mapper] dbus {} {} {}.{}",

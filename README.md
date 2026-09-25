@@ -46,7 +46,7 @@ pnpm install
 cargo run -p slint-shell
 ```
 
-The Slint shell and the Tauri application are intentionally buildable in parallel. Slint now reads the shared `config.json` and reports parse or validation errors in Settings. Its keyboard editor and mapper toggle still use prototype data and behavior. Do not enable keyboard interception in both processes at the same time.
+The Slint shell and the Tauri application are intentionally buildable in parallel. Slint reads the shared `config.json` and reports parse or validation errors in Settings. The Rust mapper engine and Linux evdev/uinput backend now live in `lhc-core`; Tauri uses them through an adapter. Slint's keyboard editor and mapper toggle still use prototype data and behavior. A process lock prevents both shells from running the Linux mapper at once.
 
 ## Run in development (desktop window)
 
@@ -121,14 +121,14 @@ Each VM is provisioned with the DE, Node, pnpm, Rust, `tauri-driver` and an auto
 pnpm tauri:build
 ```
 
-The Nuxt frontend is statically generated into `.output/public` (via `pnpm generate`) and bundled by Tauri into `src-tauri/target/release/bundle/`. The current Linux build targets are Debian and RPM packages; AppImage is not enabled because it requires a working `linuxdeploy` toolchain on the build host.
+The Nuxt frontend is statically generated into `.output/public` (via `pnpm generate`) and bundled by Tauri into `target/release/bundle/`. The current Linux build targets are Debian and RPM packages; AppImage is not enabled because it requires a working `linuxdeploy` toolchain on the build host.
 
 ## Project layout
 
 ```
 .
 ├── Cargo.toml            # Shared Rust workspace
-├── crates/lhc-core/      # UI-independent config, storage and platform APIs
+├── crates/lhc-core/      # Shared config, mapper engine, Linux backend and storage
 ├── prototypes/slint-shell/
 │   ├── src/              # Accepted Slint shell, being promoted to the main app
 │   └── ui/               # Slint components
@@ -137,7 +137,7 @@ The Nuxt frontend is statically generated into `.output/public` (via `pnpm gener
 ├── assets/css/main.css   # Tailwind + Nuxt UI entry
 ├── nuxt.config.ts        # Nuxt config (SPA + static + Vite tuning for Tauri)
 ├── package.json
-└── src-tauri/            # Legacy shell and Tauri adapters during migration
+└── src-tauri/            # Legacy shell, commands and Tauri event adapters
     ├── Cargo.toml
     ├── tauri.conf.json
     ├── capabilities/default.json

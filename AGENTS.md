@@ -6,7 +6,7 @@ Guidance for AI coding agents working in this repository. Read this first before
 
 **Left Hand Control** is a desktop keyboard layout/mapper. The accepted application shell uses Slint and targets Linux/Wayland and Windows. The Tauri 2 + Nuxt 4 application remains operational during migration.
 
-Framework-independent Rust code belongs in `crates/lhc-core`. Tauri and Slint are adapters over this core and must not duplicate domain or platform logic. The shared crate currently owns config types, storage operations, platform detection, Linux action parsing, key mapping, system action resolution, built-in macros, and config validation. The mapper engine, device I/O, and Tauri watchers are still in `src-tauri/`.
+Framework-independent Rust code belongs in `crates/lhc-core`. Tauri and Slint are adapters over this core and must not duplicate domain or platform logic. The shared crate owns config types, storage operations, platform detection, mapper lifecycle, the Linux engine, evdev/uinput device I/O, portal text injection, and config validation. Tauri commands and watchers remain in `src-tauri/`; the Slint mapper UI is not wired yet. The Linux backend holds a process lock while mapper is active so both shells cannot grab keyboards concurrently.
 
 ## Tech stack (authoritative)
 
@@ -73,7 +73,7 @@ All commands run from the repo root with pnpm.
 | `pnpm dev` | Nuxt dev server only (browser, no native window). |
 | `pnpm generate` | Static build into `.output/public` (used by Tauri for bundling). |
 | `pnpm tauri:dev` | Full desktop dev: spawns Nuxt + compiles Rust + opens native window. |
-| `pnpm tauri:build` | Production native bundle in `src-tauri/target/release/bundle/`. |
+| `pnpm tauri:build` | Production native bundle in `target/release/bundle/`. |
 | `pnpm tauri icon <path.png>` | (Re)generate all platform icons from a >=1024x1024 PNG. |
 
 First-time prerequisites on the host (not auto-installed):
@@ -85,13 +85,13 @@ First-time prerequisites on the host (not auto-installed):
 
 ## Cross-platform architecture (Rust side)
 
-Native code under `src-tauri/src/` is split into three concerns:
+Native code is split between `crates/lhc-core/src/` and the Tauri adapter in `src-tauri/src/`:
 
 - **`platform/`** — OS detection + Linux session detection (DE, session type,
   IPC sockets). Exposes `platform::info()` (Tauri command `get_platform_info`)
   and `platform::linux::detect()` returning a `Session { desktop, session_type,
   … }`. Other modules dispatch on this, never on raw env vars.
-- **`mapper/`** — key interception + remapping engine. On Linux uses
+- **`crates/lhc-core/src/mapper/`** — key interception + remapping engine. On Linux uses
   `evdev` (read) + `uinput` (write) which is **DE-agnostic** — works on KDE,
   GNOME, Sway, Hyprland, Xfce, anything, and on both X11 and Wayland. The
   only per-DE piece is `mapper/system.rs` ("system functions" like
@@ -133,10 +133,10 @@ Native code under `src-tauri/src/` is split into three concerns:
 
 ### When adding Windows or macOS key interception
 
-- Replace the `#[cfg(not(target_os = "linux"))]` stubs in `mapper/mod.rs`
+- Replace the `#[cfg(not(target_os = "linux"))]` stubs in `crates/lhc-core/src/mapper/runtime.rs`
   with a real module (`mapper/windows.rs` / `mapper/macos.rs`) exposing
   `list_keyboards()`, `spawn()`, and a `Handle` type mirroring
-  `mapper::linux`. The engine in `mapper/engine.rs` currently uses
+  `lhc_core::mapper::linux`. The engine in `crates/lhc-core/src/mapper/engine/mod.rs` currently uses
   `evdev::Key`; plan to introduce a generic `Key` abstraction before or
   alongside the Windows/macOS work.
 - Windows: `windows` crate — `SetWindowsHookExW(WH_KEYBOARD_LL, …)` for
@@ -206,7 +206,7 @@ For OS-level capabilities (fs, shell, dialog, clipboard, global shortcuts, ...),
 
 - Do not enable SSR or add `server/` API routes — there is no Node runtime in the shipped binary.
 - Do not switch package managers (no `npm i` / `yarn` — lockfile is pnpm).
-- Do not commit `.nuxt/`, `.output/`, `node_modules/`, or `src-tauri/target/` (all git-ignored). Do commit `src-tauri/icons/` output; Tauri needs these files for reproducible clean-checkout builds.
+- Do not commit `.nuxt/`, `.output/`, `node_modules/`, or `target/` (all git-ignored). Do commit `src-tauri/icons/` output; Tauri needs these files for reproducible clean-checkout builds.
 - Do not hardcode absolute filesystem paths in Rust or TS; use Tauri path APIs (`@tauri-apps/api/path`) or `app_handle.path()`.
 - Do not bypass Tauri capabilities by widening CSP or loosening permissions without an explicit reason.
 

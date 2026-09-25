@@ -1,8 +1,10 @@
-# Slint Shell: этапы 0–3 и проверка 3а
+# Slint Shell: принятое UI и результаты прототипа
 
-Изолированный Linux-прототип, не входит в сборку Tauri. Slint 1.17.1 / winit 0.30,
-ksni (D-Bus StatusNotifierItem без GTK), evdev. Настройки — только пульт вызова
-попапов; действия и выбор эмодзи пишутся в лог.
+Принятая оболочка будущего приложения; Tauri продолжает работать параллельно.
+Обе оболочки входят в Cargo workspace и используют общий `lhc-core`. Slint 1.17.1 /
+winit 0.30, ksni (D-Bus StatusNotifierItem без GTK), evdev. Редактор настроек
+пока использует демонстрационные данные; `config.json` читается и проверяется при
+запуске. Выбор действий и эмодзи по умолчанию пишется в лог.
 
 Общий Slint UI также компилируется для Windows и macOS. Linux-native код ограничен
 target dependencies и `cfg`; переносимый слой использует `global-hotkey`,
@@ -15,7 +17,7 @@ target dependencies и `cfg`; переносимый слой используе
 
 ```sh
 cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml
-SLINT_BACKEND=winit-software SLINT_SHELL_METRICS=/tmp/slint-software.csv prototypes/slint-shell/target/debug/slint-shell
+SLINT_BACKEND=winit-software SLINT_SHELL_METRICS=/tmp/slint-software.csv target/debug/slint-shell
 ```
 
 По очереди замените backend на `winit-femtovg` и `winit-skia`.
@@ -39,12 +41,12 @@ ninja, Python). Возможность сборки не означает нал
 ## Управление
 
 ```sh
-prototypes/slint-shell/target/debug/slint-shell show settings
-prototypes/slint-shell/target/debug/slint-shell show emoji
-prototypes/slint-shell/target/debug/slint-shell show quick
-prototypes/slint-shell/target/debug/slint-shell toggle-mapper
-prototypes/slint-shell/target/debug/slint-shell hide
-prototypes/slint-shell/target/debug/slint-shell quit
+target/debug/slint-shell show settings
+target/debug/slint-shell show emoji
+target/debug/slint-shell show quick
+target/debug/slint-shell toggle-mapper
+target/debug/slint-shell hide
+target/debug/slint-shell quit
 ```
 
 - Трей: клик переключает настройки; меню открывает окна, меняет цвет иконки
@@ -123,7 +125,7 @@ CSV перезаписывается при старте; используйте
 
 ```sh
 python3 prototypes/slint-shell/scripts/check-worker-crash.py \
-  prototypes/slint-shell/target/debug/slint-shell
+  target/debug/slint-shell
 ```
 
 Стенд завершает только дочерний процесс, вызывает попап и проверяет, что родитель
@@ -136,8 +138,8 @@ python3 prototypes/slint-shell/scripts/check-worker-crash.py \
 
 ```sh
 cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --examples
-SLINT_BACKEND=winit-software prototypes/slint-shell/target/debug/examples/bench-evdev \
-  prototypes/slint-shell/target/debug/slint-shell /tmp/slint-evdev.csv
+SLINT_BACKEND=winit-software target/debug/examples/bench-evdev \
+  target/debug/slint-shell /tmp/slint-evdev.csv
 python3 prototypes/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
 ```
 
@@ -159,7 +161,7 @@ python3 prototypes/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
 cargo build --locked --manifest-path prototypes/slint-shell/Cargo.toml --features spell --examples --bin slint-shell
 SLINT_SHELL_POPUPS=auto SLINT_BACKEND=winit-software \
   SLINT_SHELL_METRICS=/tmp/slint-stage3a.csv \
-  prototypes/slint-shell/target/debug/slint-shell
+  target/debug/slint-shell
 ```
 
 `SLINT_SHELL_POPUPS`:
@@ -229,11 +231,11 @@ python3 prototypes/slint-shell/scripts/summarize.py /tmp/slint-lifecycle/parent.
 
 # Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
 SLINT_SHELL_POPUPS=spell SLINT_BACKEND=winit-software \
-  prototypes/slint-shell/target/debug/examples/bench-evdev \
-  prototypes/slint-shell/target/debug/slint-shell /tmp/slint-evdev.csv
+  target/debug/examples/bench-evdev \
+  target/debug/slint-shell /tmp/slint-evdev.csv
 SLINT_BACKEND=winit-software \
-  prototypes/slint-shell/target/debug/examples/bench-return \
-  prototypes/slint-shell/target/debug/slint-shell /tmp/slint-return.csv
+  target/debug/examples/bench-return \
+  target/debug/slint-shell /tmp/slint-return.csv
 ```
 
 Виртуальные проверки требуют `kwin_wayland`, `kscreen-doctor`, `dbus-run-session`

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export LHC_PROTOTYPE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export LHC_WORKSPACE_ROOT="$(cd "$LHC_PROTOTYPE_ROOT/../.." && pwd)"
 export LHC_PROTOTYPE_RESULTS="$(realpath -m "${1:?output directory required}")"
 export LHC_VIRTUAL_TASK="${2:-geometry}"
-export LHC_SLINT_SHELL_BIN="${SLINT_SHELL_BIN:-$LHC_PROTOTYPE_ROOT/target/debug/slint-shell}"
-export LHC_BENCH_RETURN_BIN="${SLINT_SHELL_BENCH_RETURN_BIN:-$LHC_PROTOTYPE_ROOT/target/debug/examples/bench-return}"
+export LHC_SLINT_SHELL_BIN="${SLINT_SHELL_BIN:-$LHC_WORKSPACE_ROOT/target/debug/slint-shell}"
+export LHC_BENCH_RETURN_BIN="${SLINT_SHELL_BENCH_RETURN_BIN:-$LHC_WORKSPACE_ROOT/target/debug/examples/bench-return}"
 case "$LHC_VIRTUAL_TASK" in geometry|lifecycle|input) ;; *) exit 2 ;; esac
 lhc_test_root="$(mktemp -d)"
 cleanup() {
