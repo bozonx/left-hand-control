@@ -864,3 +864,81 @@ msgstr "Ручной"
 
 msgid "Edit selected"
 msgstr "Редактировать выбранную"
+
+msgid "Create layout…"
+msgstr "Создать раскладку…"
+
+msgid "Switching: manual"
+msgstr "Переключение: вручную"
+
+msgid "Switching: automatic"
+msgstr "Переключение: автоматически"
+
+msgid "Change…"
+msgstr "Изменить…"
+
+msgid "Create your first layout to get started."
+msgstr "Создайте первую раскладку."
+
+msgid "Active"
+msgstr "Активна"
+
+msgid "Editing · unsaved"
+msgstr "В редакторе · не сохранено"
+
+msgid "Editing"
+msgstr "В редакторе"
+
+msgid "Conditions…"
+msgstr "Условия…"
+
+msgid "Activate"
+msgstr "Активировать"
+
+msgid "More…"
+msgstr "Ещё…"
+
+msgid "Layout switching"
+msgstr "Переключение раскладок"
+
+msgid "Switching mode is applied immediately. Configure conditions on each layout."
+msgstr "Режим применяется сразу. Условия настраиваются отдельно для каждой раскладки."
+
+msgid "Delete layout?"
+msgstr "Удалить раскладку?"
+
+msgid "Layout details"
+msgstr "Свойства раскладки"
+
+msgid "Rename and describe…"
+msgstr "Название и описание…"
+
+msgid "Use when"
+msgstr "Использовать, когда"
+
+msgid "Do not use when"
+msgstr "Не использовать, когда"
+
+msgid "Empty conditions impose no restrictions. Exclusions take priority."
+msgstr "Пустые условия не ограничивают выбор. Исключения имеют приоритет."
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Файл раскладки будет удалён. Это действие нельзя отменить."
+
+msgid "Included in automatic switching"
+msgstr "Включена в автоподбор"
+
+msgid "Excluded from automatic switching"
+msgstr "Исключена из автоподбора"
+
+msgid "Duplicate…"
+msgstr "Создать копию…"
+
+msgid "Create copy"
+msgstr "Создать копию"
+
+msgid "From current layout"
+msgstr "Из текущей раскладки"
+
+msgid "Edit layout"
+msgstr "Редактировать"

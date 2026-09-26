@@ -16,7 +16,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let document = Rc::new(RefCell::new(ConfigDocument::load(paths.clone())?));
     let ui = SettingsWindow::new()?;
     let _editor = bind_document(&ui, Some(document.clone()));
+    ui.set_library_dialog(1);
     ui.invoke_create_layout("A".into());
+    assert_eq!(ui.get_library_dialog(), 0);
+    ui.set_library_dialog(1);
+    ui.invoke_create_layout("A".into());
+    assert_eq!(ui.get_library_dialog(), 1);
+    ui.set_library_dialog(0);
     ui.invoke_create_layout("B".into());
     assert_eq!(ui.get_layout_names().row_count(), 2);
     ui.invoke_select_layout(0);
@@ -56,6 +62,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(ui.get_layout_white_apps(), "kate, terminal");
     ui.invoke_delete_layout();
     assert_eq!(ui.get_layout_names().row_count(), 1);
+    ui.invoke_select_layout(0);
+    ui.set_layout_name("Copy".into());
+    ui.set_library_dialog(6);
+    ui.invoke_library_action(6);
+    assert_eq!(ui.get_library_dialog(), 0);
+    assert_eq!(
+        paths.load_user_layout("A")?,
+        paths.load_user_layout("Copy")?
+    );
+    assert_eq!(ui.get_layout_names().row_count(), 2);
     let reloaded = ConfigDocument::load(paths)?;
     assert!(reloaded.settings().layout_conditions.is_empty());
     assert!(reloaded.settings().current_layout_id.is_none());
@@ -86,6 +102,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(Command::parse("show emoji 0").is_err());
     assert!(Command::parse("show quick 6").is_err());
     ui.invoke_navigate(1, 0);
+    if let Ok(dialog) = std::env::var("LHC_LIBRARY_DIALOG") {
+        ui.invoke_select_layout(0);
+        ui.set_library_dialog(dialog.parse()?);
+    }
     ui.show()?;
     slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {
         if let Some(path) = std::env::var_os("LHC_LIBRARY_SNAPSHOT") {

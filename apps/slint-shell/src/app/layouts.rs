@@ -26,6 +26,33 @@ fn refresh(
     ui.set_layout_mode_index(i32::from(
         document.settings().layout_mode == lhc_core::profile::model::LayoutMode::Auto,
     ));
+    ui.set_layout_auto_included(ModelRc::new(VecModel::from(
+        names
+            .iter()
+            .map(|name| {
+                document
+                    .settings()
+                    .layout_conditions
+                    .get(&format!("user:{name}"))
+                    .is_some_and(|rule| rule.enabled_in_auto)
+            })
+            .collect::<Vec<bool>>(),
+    )));
+    ui.set_layout_descriptions(ModelRc::new(VecModel::from(
+        names
+            .iter()
+            .map(|name| {
+                document
+                    .paths()
+                    .load_user_layout(name)
+                    .ok()
+                    .and_then(|text| layout_file::parse(&text).ok().flatten())
+                    .and_then(|layout| layout.description)
+                    .unwrap_or_default()
+                    .into()
+            })
+            .collect::<Vec<SharedString>>(),
+    )));
     let selected = state
         .selected
         .as_ref()
@@ -158,7 +185,7 @@ pub(super) fn bind(
                 }
                 Ok(name)
             });
-        report(&ui, result);
+        report(&ui, result.map(|_| String::new()));
     });
     let weak = ui.as_weak();
     let state_copy = state.clone();
@@ -179,6 +206,9 @@ pub(super) fn bind(
                 refresh(&ui, &config.borrow(), &mut state_copy.borrow_mut())?;
                 Ok(format!("Created: {name}"))
             });
+        if result.is_ok() {
+            ui.set_library_dialog(0);
+        }
         report(&ui, result);
     });
     let weak = ui.as_weak();
@@ -253,6 +283,7 @@ pub(super) fn bind(
             ui.set_config_status(
                 crate::i18n::Msg::ConfigSaved(config.borrow().layout().rules.len()).to_ui(),
             );
+            ui.invoke_navigate(3, 0);
             Ok(format!("Loaded: {name}"))
         })();
         report(&ui, result);
@@ -275,6 +306,7 @@ pub(super) fn bind(
             super::mapper::apply_runtime(&config.borrow())?;
             ui.invoke_reset_layout_context();
             refresh(&ui, &config.borrow(), &mut state.borrow_mut())?;
+            ui.set_library_dialog(0);
             Ok(format!("Deleted: {name}"))
         })();
         report(&ui, result);
@@ -499,10 +531,20 @@ fn bind_controls(
                         Some(document.borrow().paths().load_user_layout(&saved)?);
                     ui.invoke_reset_layout_context();
                 }
+                6 => {
+                    let document = document.borrow();
+                    let text = document.paths().load_user_layout(&name)?;
+                    document
+                        .paths()
+                        .save_user_layout(&ui.get_layout_name(), &text, false)?;
+                }
                 _ => return Ok(String::new()),
             }
             super::mapper::apply_runtime(&document.borrow())?;
             refresh(&ui, &document.borrow(), &mut state.borrow_mut())?;
+            if action == 3 || action == 4 || action == 6 {
+                ui.set_library_dialog(0);
+            }
             Ok("saved".into())
         })();
         report(&ui, result);
