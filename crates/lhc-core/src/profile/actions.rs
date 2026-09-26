@@ -31,7 +31,8 @@ impl Action {
             return Self::Text(text.into());
         }
         let value = value.trim();
-        let prefixed: [(&str, fn(String) -> Self); 5] = [
+        type Constructor = fn(String) -> Action;
+        let prefixed: [(&str, Constructor); 5] = [
             ("macro:", Self::Macro),
             ("cmd:", Self::Command),
             ("sys:", Self::System),

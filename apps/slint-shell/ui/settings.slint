@@ -1,3 +1,4 @@
+import { MacrosPage, MacroEditor } from "macros.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { QuickGrid } from "quick-grid.slint";
@@ -194,12 +195,14 @@ export component SettingsWindow inherits Window {
                 Button { text: @tr("Layouts"); clicked => { root.page = 1; root.refresh-layouts(); } }
                 Button { text: @tr("Rules"); clicked => { root.page = 3; root.refresh-rules(); } }
                 Button { text: @tr("Layers"); clicked => { root.page = 4; root.refresh-layers(); } }
+                Button { text: @tr("Macros"); clicked => { root.page = 5; MacroEditor.refresh(); } }
                 Button { text: @tr("Settings"); clicked => { root.page = 2; } }
                 Rectangle { horizontal-stretch: 1; }
                 Button { text: Theme.dark ? @tr("☀ Light") : @tr("☾ Dark"); clicked => { root.preferences(!Theme.dark, Locale.english); } }
                 Button { text: Locale.english ? "Русский" : "English"; clicked => { root.preferences(Theme.dark, !Locale.english); } }
             }
             Rectangle { height: 1px; background: Theme.border; }
+            if root.page == 5: MacrosPage {}
             if root.page == 0: VerticalBox {
                 spacing: 8px;
                 Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: 26px; font-weight: 700; }
@@ -505,7 +508,7 @@ export component SettingsWindow inherits Window {
             }
             Text { text: Locale.text(root.status); color: Theme.text; }
             Text { text: Locale.text(root.backend-error); color: Theme.error; wrap: word-wrap; }
-            if root.page != 3 && root.page != 4: Rectangle { vertical-stretch: 1; }
+            if root.page != 3 && root.page != 4 && root.page != 5: Rectangle { vertical-stretch: 1; }
             HorizontalBox {
                 Button { text: @tr("Emoji"); clicked => { root.show-popup("emoji"); } }
                 Button { text: @tr("Quick actions"); clicked => { root.show-popup("quick"); } }

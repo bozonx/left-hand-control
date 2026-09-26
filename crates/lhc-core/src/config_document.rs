@@ -32,6 +32,7 @@ pub enum ConfigError {
     Invalid(String),
     /// An action cannot be assigned.
     InvalidAction(ActionIssue),
+    Macro(crate::profile::macros::MacroIssue),
     /// Rules have blocking problems; the mapper cannot start.
     Rules(Vec<RuleIssue>),
     /// Another process changed a file after this document read it.
@@ -44,6 +45,7 @@ impl fmt::Display for ConfigError {
             Self::Io(error) => write!(f, "config I/O: {error}"),
             Self::Parse(error) => write!(f, "parse config: {error}"),
             Self::Invalid(error) => write!(f, "invalid config: {error}"),
+            Self::Macro(issue) => write!(f, "invalid macro: {issue:?}"),
             Self::InvalidAction(issue) => write!(f, "invalid action: {issue:?}"),
             Self::Rules(issues) => match issues.first() {
                 Some(issue) => write!(f, "{issue}"),

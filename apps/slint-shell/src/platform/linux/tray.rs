@@ -55,8 +55,7 @@ impl ksni::Tray for Tray {
                             Language::English
                         } else {
                             Language::Russian
-                        })
-                        .into(),
+                        }),
                     activate: Box::new(move |tray: &mut Self| {
                         (tray.dispatch)(item.command(), Source::Tray, Instant::now(), None)
                     }),

@@ -1,0 +1,138 @@
+import { Theme } from "theme.slint";
+import { Locale, Message } from "i18n.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView } from "std-widgets.slint";
+
+export struct MacroRow { id: string, name: string, steps: string }
+export struct MacroStepRow { action: string }
+export global MacroEditor {
+    in property <[MacroRow]> macros;
+    in property <[MacroRow]> system-macros;
+    in-out property <[MacroStepRow]> steps;
+    in-out property <int> selected: -1;
+    in-out property <bool> editing: false;
+    in-out property <string> macro-id;
+    in-out property <string> name;
+    in-out property <string> step-pause;
+    in-out property <string> modifier-delay;
+    in property <string> default-step-pause;
+    in property <string> default-modifier-delay;
+    in property <string> usage;
+    in property <Message> status;
+    in property <[string]> action-choices;
+    callback refresh();
+    callback edit(int);
+    callback clone-system(int);
+    callback save();
+    callback remove(string);
+    callback move(int, int);
+    callback add-step(string);
+    callback move-step(int, int);
+    callback remove-step(int);
+}
+
+export component MacrosPage inherits VerticalBox {
+    vertical-stretch: 1;
+    padding: 0px;
+    spacing: 12px;
+    callback copy-id(string);
+    copy-id(value) => { clipboard.text = value; clipboard.select-all(); clipboard.copy(); }
+    clipboard := TextInput { visible: false; width: 0px; height: 0px; }
+
+    private property <bool> system-open: false;
+    private property <string> delete-id;
+    private property <int> delete-step: -1;
+    HorizontalBox {
+        Text { text: @tr("Macros"); color: Theme.text; font-size: 26px; font-weight: 700; }
+        Rectangle { horizontal-stretch: 1; }
+        Button { text: @tr("Add macro"); enabled: !MacroEditor.editing && root.delete-id == ""; clicked => { MacroEditor.edit(-1); } }
+        Button { text: @tr("System macros"); enabled: !MacroEditor.editing && root.delete-id == ""; clicked => { root.system-open = !root.system-open; } }
+    }
+    if MacroEditor.status.id != "": Text { text: Locale.text(MacroEditor.status); color: Theme.text; wrap: word-wrap; }
+    if root.delete-id != "" || root.delete-step >= 0: HorizontalBox {
+        Text { text: root.delete-step >= 0 ? @tr("Delete this step?") : @tr("Delete this macro? References will stop working."); color: Theme.text; wrap: word-wrap; }
+        Button { text: @tr("Cancel"); clicked => { root.delete-id = ""; root.delete-step = -1; } }
+        Button { text: @tr("Delete"); clicked => {
+            if root.delete-step >= 0 { MacroEditor.remove-step(root.delete-step); }
+            else { MacroEditor.remove(root.delete-id); }
+            root.delete-id = ""; root.delete-step = -1;
+        } }
+    }
+    if MacroEditor.editing: VerticalBox {
+        vertical-stretch: 1;
+        padding: 0px;
+        spacing: 8px;
+        HorizontalBox {
+            Text { text: @tr("Macro ID"); color: Theme.text; vertical-alignment: center; }
+            LineEdit { text <=> MacroEditor.macro-id; }
+            Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy ID"); clicked => { root.copy-id(MacroEditor.macro-id); } }
+            Text { text: @tr("Name"); color: Theme.text; vertical-alignment: center; }
+            LineEdit { text <=> MacroEditor.name; }
+        }
+        Text { text: @tr("Use macro:<id> in key assignments. Renaming an ID does not change existing references."); color: Theme.muted; wrap: word-wrap; }
+        if MacroEditor.usage != "": Text { text: @tr("Used in: {}", MacroEditor.usage); color: Theme.muted; wrap: word-wrap; }
+        HorizontalBox {
+            Text { text: @tr("Step pause (ms)"); color: Theme.text; vertical-alignment: center; }
+            LineEdit { text <=> MacroEditor.step-pause; placeholder-text: MacroEditor.default-step-pause; }
+            Text { text: @tr("Modifier delay (ms)"); color: Theme.text; vertical-alignment: center; }
+            LineEdit { text <=> MacroEditor.modifier-delay; placeholder-text: MacroEditor.default-modifier-delay; }
+        }
+        Text { text: @tr("Leave delays empty to use settings defaults (0–2000 ms)."); color: Theme.muted; }
+        HorizontalBox {
+            Text { text: @tr("Steps"); color: Theme.text; font-weight: 700; }
+            Rectangle { horizontal-stretch: 1; }
+            Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Add step"); clicked => { MacroEditor.add-step(""); } }
+            Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Add pause"); clicked => { MacroEditor.add-step("pause:100"); } }
+        }
+        if MacroEditor.steps.length == 0: Text { text: @tr("No steps yet. Add an action or a pause."); color: Theme.muted; }
+        ListView {
+            vertical-stretch: 1;
+            for step[index] in MacroEditor.steps: VerticalBox {
+                height: step.action == "" ? 70px : 48px;
+                padding: 4px;
+                spacing: 4px;
+                HorizontalBox {
+                    Text { text: "#" + (index + 1); color: Theme.muted; vertical-alignment: center; }
+                    LineEdit { text <=> step.action; placeholder-text: @tr("Key, shortcut, text:…, macro:… or pause:100"); }
+                    ComboBox { width: 190px; model: MacroEditor.action-choices; current-index: -1; current-value: @tr("Choose action"); selected(value) => { step.action = value; } }
+                    Button { text: "↑"; accessible-label: @tr("Move up"); enabled: root.delete-step < 0 && root.delete-id == "" && index > 0; clicked => { MacroEditor.move-step(index, -1); } }
+                    Button { text: "↓"; accessible-label: @tr("Move down"); enabled: root.delete-step < 0 && root.delete-id == "" && index + 1 < MacroEditor.steps.length; clicked => { MacroEditor.move-step(index, 1); } }
+                    Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Delete"); clicked => { root.delete-step = index; } }
+                }
+                if step.action == "": Text { text: @tr("Empty step will be skipped"); color: Theme.muted; }
+            }
+        }
+        HorizontalBox {
+            Rectangle { horizontal-stretch: 1; }
+            Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Cancel"); clicked => { MacroEditor.editing = false; MacroEditor.refresh(); } }
+            Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Save"); clicked => { MacroEditor.save(); } }
+        }
+    }
+    if !MacroEditor.editing && !root.system-open && MacroEditor.macros.length == 0: Text { text: @tr("No macros yet. Add a macro or copy a system macro."); color: Theme.muted; wrap: word-wrap; }
+    if !MacroEditor.editing && !root.system-open: ListView {
+        vertical-stretch: 1;
+        for item[index] in MacroEditor.macros: VerticalBox {
+            HorizontalBox {
+                Text { text: item.name + " · " + item.id; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy ID"); clicked => { root.copy-id(item.id); } }
+                Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Edit"); clicked => { MacroEditor.edit(index); } }
+                Button { text: "↑"; accessible-label: @tr("Move up"); enabled: root.delete-step < 0 && root.delete-id == "" && index > 0; clicked => { MacroEditor.move(index, -1); } }
+                Button { text: "↓"; accessible-label: @tr("Move down"); enabled: root.delete-step < 0 && root.delete-id == "" && index + 1 < MacroEditor.macros.length; clicked => { MacroEditor.move(index, 1); } }
+                Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Delete"); clicked => { root.delete-id = item.id; } }
+            }
+            Text { text: item.steps; color: Theme.muted; wrap: word-wrap; }
+            Rectangle { height: 1px; background: Theme.border; }
+        }
+    }
+    if !MacroEditor.editing && root.system-open: ListView {
+        vertical-stretch: 1;
+        for item[index] in MacroEditor.system-macros: VerticalBox {
+            HorizontalBox {
+                Text { text: item.name + " · " + item.id; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy ID"); clicked => { root.copy-id(item.id); } }
+                Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy to my macros"); clicked => { MacroEditor.clone-system(index); root.system-open = false; } }
+            }
+            Text { text: item.steps; color: Theme.muted; wrap: word-wrap; }
+            Rectangle { height: 1px; background: Theme.border; }
+        }
+    }
+}

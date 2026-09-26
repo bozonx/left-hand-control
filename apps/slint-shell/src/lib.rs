@@ -11,6 +11,7 @@ pub mod ui {
 mod app;
 pub mod command;
 pub mod editor;
+pub mod macro_editor;
 mod i18n;
 mod ipc;
 mod metrics;

@@ -618,3 +618,84 @@ msgstr "Обычное действие"
 
 msgid "Layer saved"
 msgstr "Слой сохранён"
+
+msgid "Macros"
+msgstr "Макросы"
+
+msgid "Add macro"
+msgstr "Добавить макрос"
+
+msgid "System macros"
+msgstr "Системные макросы"
+
+msgid "Delete this step?"
+msgstr "Удалить этот шаг?"
+
+msgid "Delete this macro? References will stop working."
+msgstr "Удалить макрос? Ссылки на него перестанут работать."
+
+msgid "Macro ID"
+msgstr "ID макроса"
+
+msgid "Copy ID"
+msgstr "Копировать ID"
+
+msgid "Use macro:<id> in key assignments. Renaming an ID does not change existing references."
+msgstr "Используйте macro:<id> в назначениях клавиш. Изменение ID не обновляет существующие ссылки."
+
+msgid "Used in: {}"
+msgstr "Используется: {}"
+
+msgid "Step pause (ms)"
+msgstr "Пауза между шагами (мс)"
+
+msgid "Leave delays empty to use settings defaults (0–2000 ms)."
+msgstr "Оставьте задержки пустыми для значений из настроек (0–2000 мс)."
+
+msgid "Steps"
+msgstr "Шаги"
+
+msgid "Add step"
+msgstr "Добавить шаг"
+
+msgid "Add pause"
+msgstr "Добавить паузу"
+
+msgid "No steps yet. Add an action or a pause."
+msgstr "Шагов пока нет. Добавьте действие или паузу."
+
+msgid "Key, shortcut, text:…, macro:… or pause:100"
+msgstr "Клавиша, сочетание, text:…, macro:… или pause:100"
+
+msgid "Empty step will be skipped"
+msgstr "Пустой шаг будет пропущен"
+
+msgid "No macros yet. Add a macro or copy a system macro."
+msgstr "Макросов пока нет. Добавьте макрос или скопируйте системный."
+
+msgid "Copy to my macros"
+msgstr "Скопировать в мои макросы"
+
+msgid "Macro saved"
+msgstr "Макрос сохранён"
+
+msgid "The layout changed while editing. Cancel and reopen the macro before saving."
+msgstr "Раскладка изменилась во время редактирования. Отмените правки и откройте макрос заново."
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr "ID макроса должен содержать 1–64 латинские буквы, цифры, дефисы или подчёркивания"
+
+msgid "Macro ID is already in use"
+msgstr "ID макроса уже используется"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "Задержки макроса должны быть от 0 до 2000 мс"
+
+msgid "Pause must be between 0 and 10000 ms"
+msgstr "Пауза должна быть от 0 до 10000 мс"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Неизвестная клавиша или сочетание в шаге макроса"
+
+msgid "Macro references cannot form a cycle"
+msgstr "Ссылки на макросы не могут образовывать цикл"

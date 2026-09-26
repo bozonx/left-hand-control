@@ -8,4 +8,5 @@ pub mod diagnostics;
 pub mod ids;
 pub mod layout_file;
 pub mod model;
+pub mod macros;
 pub mod settings;

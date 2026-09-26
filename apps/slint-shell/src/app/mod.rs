@@ -209,6 +209,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     layouts::bind(&settings, config.clone(), editor.clone());
     rules::bind(&settings, config.clone(), editor.clone());
     keymap_layers::bind(&settings, config.clone());
+    crate::macro_editor::bind(&settings, config.clone());
     settings_page::bind(&settings, config.clone());
     let devices = mapper::bind_devices(&settings, config.as_ref());
     metrics.ready("settings");

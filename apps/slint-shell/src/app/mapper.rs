@@ -173,6 +173,7 @@ impl App {
                     if let Some(settings) = weak.upgrade() {
                         settings.invoke_refresh_rules();
                         settings.invoke_refresh_layers();
+                        settings.global::<crate::ui::MacroEditor>().invoke_refresh();
                     }
                 });
                 self.settings

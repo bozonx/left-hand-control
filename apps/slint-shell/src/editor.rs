@@ -222,7 +222,7 @@ impl Editor {
         for (index, key) in KEY_CODES.iter().enumerate() {
             let action = config
                 .base_tap_action(key)
-                .map(|value| Action::from_config(&value));
+                .map(Action::from_config);
             let summary = action.as_ref().map_or("—".into(), Action::summary);
             self.assignments.set_row_data(index, summary.into());
             self.saved[index] = action;

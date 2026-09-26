@@ -178,6 +178,7 @@ pub(super) fn bind(
             editor.reload(&config.borrow());
             ui.invoke_refresh_rules();
             ui.invoke_refresh_layers();
+            ui.global::<crate::ui::MacroEditor>().invoke_refresh();
             let runtime = config.borrow().runtime_config(&AutoSwitchContext::current()).map_err(|error| error.to_string())?;
             lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
             ui.set_config_status(

@@ -32,6 +32,14 @@ export global Locale {
         if m.id == "action-saved" { return @tr("Action saved"); }
         if m.id == "settings-saved" { return @tr("Settings saved"); }
         if m.id == "process-name-required" { return @tr("Enter a process name"); }
+        if m.id == "macro-invalid-id" { return @tr("Macro ID must contain 1–64 letters, digits, underscores or hyphens"); }
+        if m.id == "macro-duplicate-id" { return @tr("Macro ID is already in use"); }
+        if m.id == "macro-delay-range" { return @tr("Macro delays must be between 0 and 2000 ms"); }
+        if m.id == "macro-pause-range" { return @tr("Pause must be between 0 and 10000 ms"); }
+        if m.id == "macro-unknown-key" { return @tr("Unknown key or shortcut in macro step"); }
+        if m.id == "macro-cycle" { return @tr("Macro references cannot form a cycle"); }
+        if m.id == "macro-saved" { return @tr("Macro saved"); }
+        if m.id == "macro-draft-changed" { return @tr("The layout changed while editing. Cancel and reopen the macro before saving."); }
         if m.id == "layer-saved" { return @tr("Layer saved"); }
         if m.id == "layer-name-required" { return @tr("Enter a layer name"); }
         if m.id == "key-code-required" { return @tr("Enter a key code"); }
