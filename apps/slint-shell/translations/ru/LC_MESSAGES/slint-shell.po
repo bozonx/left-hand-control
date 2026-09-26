@@ -528,3 +528,93 @@ msgstr "Удалить правило?"
 
 msgid "This rule will be removed from the current layout."
 msgstr "Правило будет удалено из текущей раскладки."
+
+msgid "Layers"
+msgstr "Слои"
+
+msgid "New layer"
+msgstr "Новый слой"
+
+msgid "Rename"
+msgstr "Переименовать"
+
+msgid "Duplicate"
+msgstr "Дублировать"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "Layer keyboard"
+msgstr "Клавиатура слоя"
+
+msgid "Clear keyboard"
+msgstr "Очистить клавиатуру"
+
+msgid "Extra keys"
+msgstr "Дополнительные клавиши"
+
+msgid "Add extra key"
+msgstr "Добавить клавишу"
+
+msgid "Clear extras"
+msgstr "Очистить дополнительные"
+
+msgid "No extra keys"
+msgstr "Дополнительных клавиш нет"
+
+msgid "Edit"
+msgstr "Изменить"
+
+msgid "Rename layer"
+msgstr "Переименовать слой"
+
+msgid "Duplicate layer"
+msgstr "Дублировать слой"
+
+msgid "Delete layer?"
+msgstr "Удалить слой?"
+
+msgid "Edit layer key"
+msgstr "Изменить клавишу слоя"
+
+msgid "Extra key"
+msgstr "Дополнительная клавиша"
+
+msgid "Clear assignments?"
+msgstr "Очистить назначения?"
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "Description"
+msgstr "Описание"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "Правила этого слоя вернутся к базовому слою."
+
+msgid "Key code"
+msgstr "Код клавиши"
+
+msgid "Transparent"
+msgstr "Прозрачное действие"
+
+msgid "Swallow"
+msgstr "Подавить"
+
+msgid "Action"
+msgstr "Действие"
+
+msgid "Action code"
+msgstr "Код действия"
+
+msgid "Enter a layer name"
+msgstr "Введите имя слоя"
+
+msgid "Enter a key code"
+msgstr "Введите код клавиши"
+
+msgid "Native"
+msgstr "Обычное действие"
+
+msgid "Layer saved"
+msgstr "Слой сохранён"

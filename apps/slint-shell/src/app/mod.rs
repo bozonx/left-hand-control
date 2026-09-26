@@ -6,6 +6,7 @@
 //! [`with_app`]; nothing here is shared across threads.
 
 mod layouts;
+mod keymap_layers;
 mod mapper;
 mod popups;
 mod rules;
@@ -207,6 +208,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let editor = editor::bind_with_config(&settings, config.clone());
     layouts::bind(&settings, config.clone(), editor.clone());
     rules::bind(&settings, config.clone(), editor.clone());
+    keymap_layers::bind(&settings, config.clone());
     settings_page::bind(&settings, config.clone());
     let devices = mapper::bind_devices(&settings, config.as_ref());
     metrics.ready("settings");

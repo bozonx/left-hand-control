@@ -271,6 +271,12 @@ pub(super) fn bind(
                         }
                     };
                     ui.set_rule_status(status.into());
+                    let weak = ui.as_weak();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(ui) = weak.upgrade() {
+                            ui.invoke_refresh_layers();
+                        }
+                    });
                 }
                 Err(error) => ui.set_rule_status(format!("Save failed: {error}").into()),
             }

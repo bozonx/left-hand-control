@@ -5,6 +5,7 @@ import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, Check
 
 export struct ActionRow { id: int, label: string, label-en: string }
 export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
+export struct LayerExtraRow { key: string, action: string }
 export struct RuleLayerChoice { id: string, label: string }
 export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, conditions: string, hold-timeout: string, double-timeout: string, enabled: bool }
 export component SettingsWindow inherits Window {
@@ -16,6 +17,28 @@ export component SettingsWindow inherits Window {
     min-width: 940px;
     min-height: 700px;
     in-out property <int> page: 0;
+    in property <[string]> layer-names;
+    in-out property <int> selected-layer: -1;
+    in property <string> layer-description;
+    in property <[string]> layer-actions;
+    in property <[string]> layer-key-codes;
+    in property <[LayerExtraRow]> layer-extras;
+    in property <Message> layer-status;
+    in-out property <bool> layer-dialog-open: false;
+    in-out property <int> layer-dialog-kind: 0;
+    in-out property <int> layer-dialog-index: -1;
+    in-out property <int> layer-assignment-kind: 0;
+    in-out property <string> layer-dialog-name;
+    in-out property <string> layer-dialog-description;
+    in-out property <string> layer-dialog-key;
+    in-out property <string> layer-dialog-action;
+    callback refresh-layers();
+    callback choose-layer(int);
+    callback open-layer-dialog(int, int);
+    callback apply-layer-dialog();
+    callback move-layer-extra(int, int);
+    callback remove-layer-extra(int);
+
     in property <[string]> layout-names;
     in-out property <int> selected-layout: -1;
     in-out property <string> layout-name;
@@ -160,7 +183,7 @@ export component SettingsWindow inherits Window {
     }
     background-scope := FocusScope {
         focus-on-tab-navigation: false;
-        enabled: !root.editing && !root.rule-dialog-open;
+        enabled: !root.editing && !root.rule-dialog-open && !root.layer-dialog-open;
         if !root.editing: VerticalBox {
             padding: 24px;
             spacing: 16px;
@@ -170,6 +193,7 @@ export component SettingsWindow inherits Window {
                 Button { text: @tr("Action grid"); clicked => { root.page = 0; root.grid-open = true; } }
                 Button { text: @tr("Layouts"); clicked => { root.page = 1; root.refresh-layouts(); } }
                 Button { text: @tr("Rules"); clicked => { root.page = 3; root.refresh-rules(); } }
+                Button { text: @tr("Layers"); clicked => { root.page = 4; root.refresh-layers(); } }
                 Button { text: @tr("Settings"); clicked => { root.page = 2; } }
                 Rectangle { horizontal-stretch: 1; }
                 Button { text: Theme.dark ? @tr("☀ Light") : @tr("☾ Dark"); clicked => { root.preferences(!Theme.dark, Locale.english); } }
@@ -401,6 +425,60 @@ export component SettingsWindow inherits Window {
                 }
                 Text { text: root.rule-status; color: Theme.muted; wrap: word-wrap; }
             }
+            if root.page == 4: VerticalBox {
+                vertical-stretch: 1;
+                spacing: 10px;
+                Text { text: @tr("Layers"); color: Theme.text; font-size: 26px; font-weight: 700; }
+                HorizontalBox { spacing: 8px;
+                    ComboBox { model: root.layer-names; current-index: root.selected-layer; selected(value) => { root.choose-layer(self.current-index); } }
+                    Button { text: @tr("New layer"); clicked => { root.open-layer-dialog(1, -1); } }
+                    Button { text: @tr("Rename"); enabled: root.selected-layer >= 0; clicked => { root.open-layer-dialog(2, -1); } }
+                    Button { text: @tr("Duplicate"); enabled: root.selected-layer >= 0; clicked => { root.open-layer-dialog(3, -1); } }
+                    Button { text: @tr("Delete"); enabled: root.selected-layer >= 0; clicked => { root.open-layer-dialog(4, -1); } }
+                }
+                Text { text: root.layer-description; color: Theme.muted; }
+                if root.selected-layer >= 0: ScrollView { vertical-stretch: 1;
+                    VerticalLayout { spacing: 12px;
+                        Rectangle { height: 420px; background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 12px; spacing: 8px;
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Layer keyboard"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Button { text: @tr("Clear keyboard"); clicked => { root.open-layer-dialog(7, -1); } }
+                                }
+                                for row in 5: HorizontalLayout { spacing: 4px;
+                                    for col in 16: Rectangle { height: 64px; min-width: 0px; horizontal-stretch: 1; border-color: Theme.border; border-width: 1px; border-radius: 5px; background: layer-key-touch.has-hover ? Theme.hover : Theme.surface;
+                                        VerticalLayout { padding: 3px;
+                                            Text { min-width: 0px; text: root.keys[row * 16 + col]; color: Theme.text; font-size: 11px; overflow: elide; }
+                                            Text { min-width: 0px; text: root.layer-actions[row * 16 + col]; color: Theme.muted; font-size: 10px; overflow: elide; }
+                                        }
+                                        layer-key-touch := TouchArea { clicked => { root.open-layer-dialog(5, row * 16 + col); } }
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle { background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                            VerticalBox { padding: 12px; spacing: 8px;
+                                HorizontalBox { spacing: 8px;
+                                    Text { text: @tr("Extra keys"); color: Theme.text; font-size: 18px; font-weight: 600; }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Button { text: @tr("Add extra key"); clicked => { root.open-layer-dialog(6, -1); } }
+                                    Button { text: @tr("Clear extras"); enabled: root.layer-extras.length > 0; clicked => { root.open-layer-dialog(8, -1); } }
+                                }
+                                if root.layer-extras.length == 0: Text { text: @tr("No extra keys"); color: Theme.muted; }
+                                for extra[index] in root.layer-extras: HorizontalBox { spacing: 8px;
+                                    Text { text: extra.key + " → " + extra.action; color: Theme.text; horizontal-stretch: 1; }
+                                    Button { text: @tr("Edit"); clicked => { root.open-layer-dialog(6, index); } }
+                                    Button { text: "↑"; clicked => { root.move-layer-extra(index, -1); } }
+                                    Button { text: "↓"; clicked => { root.move-layer-extra(index, 1); } }
+                                    Button { text: @tr("Remove"); clicked => { root.remove-layer-extra(index); } }
+                                }
+                            }
+                        }
+                    }
+                }
+                Text { text: Locale.text(root.layer-status); color: Theme.muted; wrap: word-wrap; }
+            }
             if root.page == 0 && !root.grid-open: VerticalLayout {
                 spacing: 6px;
                 for row in 5: HorizontalLayout {
@@ -427,7 +505,7 @@ export component SettingsWindow inherits Window {
             }
             Text { text: Locale.text(root.status); color: Theme.text; }
             Text { text: Locale.text(root.backend-error); color: Theme.error; wrap: word-wrap; }
-            if root.page != 3: Rectangle { vertical-stretch: 1; }
+            if root.page != 3 && root.page != 4: Rectangle { vertical-stretch: 1; }
             HorizontalBox {
                 Button { text: @tr("Emoji"); clicked => { root.show-popup("emoji"); } }
                 Button { text: @tr("Quick actions"); clicked => { root.show-popup("quick"); } }
@@ -597,6 +675,47 @@ export component SettingsWindow inherits Window {
                         Rectangle { horizontal-stretch: 1; }
                         Button { text: @tr("Cancel"); clicked => { root.rule-dialog-open = false; root.refresh-rules(); } }
                         Button { text: @tr("Apply"); clicked => { if root.rule-dialog-field == 6 { root.apply-rule-conditions(); } else if root.rule-dialog-field == 17 { root.remove-rule(); root.rule-dialog-open = false; } else if root.rule-dialog-field == 16 { root.rule-dialog-open = false; } else { root.choose-rule-value(root.rule-dialog-value); } } }
+                    }
+                }
+            }
+        }
+    }
+
+    layer-dialog-scope := FocusScope {
+        focus-on-tab-navigation: false;
+        enabled: root.layer-dialog-open;
+        key-pressed(event) => { if event.text == Key.Escape { root.layer-dialog-open = false; return accept; } return reject; }
+        if root.layer-dialog-open: Rectangle {
+            background: #00000099;
+            TouchArea { clicked => { root.layer-dialog-open = false; } }
+            Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: 12px;
+                VerticalBox { padding: 20px; spacing: 12px;
+                    Text { text: root.layer-dialog-kind == 1 ? @tr("New layer") : root.layer-dialog-kind == 2 ? @tr("Rename layer") : root.layer-dialog-kind == 3 ? @tr("Duplicate layer") : root.layer-dialog-kind == 4 ? @tr("Delete layer?") : root.layer-dialog-kind == 5 ? @tr("Edit layer key") : root.layer-dialog-kind == 6 ? @tr("Extra key") : @tr("Clear assignments?"); color: Theme.text; font-size: 22px; font-weight: 700; }
+                    if root.layer-dialog-kind == 1 || root.layer-dialog-kind == 2 || root.layer-dialog-kind == 3: VerticalBox { spacing: 8px;
+                        Text { text: @tr("Name"); color: Theme.text; }
+                        LineEdit { text <=> root.layer-dialog-name; }
+                        Text { text: @tr("Description"); color: Theme.text; }
+                        LineEdit { text <=> root.layer-dialog-description; }
+                    }
+                    if root.layer-dialog-kind == 4: Text { text: @tr("Rules using this layer will return to the base layer."); color: Theme.muted; wrap: word-wrap; }
+                    if root.layer-dialog-kind == 5 || root.layer-dialog-kind == 6: VerticalBox { spacing: 8px;
+                        if root.layer-dialog-kind == 6: Text { text: @tr("Key code"); color: Theme.text; }
+                        if root.layer-dialog-kind == 6: HorizontalBox { spacing: 8px;
+                            LineEdit { text <=> root.layer-dialog-key; horizontal-stretch: 1; }
+                            ComboBox { model: ["F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "VolumeUp", "VolumeDown", "VolumeMute"]; selected(value) => { root.layer-dialog-key = value; } }
+                        }
+                        ComboBox { model: root.layer-dialog-kind == 6 ? [@tr("Native"), @tr("Swallow"), @tr("Action")] : [@tr("Transparent"), @tr("Swallow"), @tr("Action")]; current-index <=> root.layer-assignment-kind; }
+                        if root.layer-assignment-kind == 2: HorizontalBox { spacing: 8px;
+                            LineEdit { text <=> root.layer-dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
+                            ComboBox { model: root.layer-key-codes; selected(value) => { root.layer-dialog-action = value; } }
+                        }
+                    }
+                    Text { text: Locale.text(root.layer-status); color: Theme.error; wrap: word-wrap; }
+                    Rectangle { vertical-stretch: 1; }
+                    HorizontalBox { spacing: 8px;
+                        Rectangle { horizontal-stretch: 1; }
+                        Button { text: @tr("Cancel"); clicked => { root.layer-dialog-open = false; } }
+                        Button { text: root.layer-dialog-kind == 4 ? @tr("Delete") : @tr("Apply"); clicked => { root.apply-layer-dialog(); } }
                     }
                 }
             }

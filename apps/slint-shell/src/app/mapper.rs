@@ -172,6 +172,7 @@ impl App {
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(settings) = weak.upgrade() {
                         settings.invoke_refresh_rules();
+                        settings.invoke_refresh_layers();
                     }
                 });
                 self.settings

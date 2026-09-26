@@ -185,23 +185,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 3 => {
                     snapshot(&ui, "grid-reordered");
 
-                    pointer(&ui, 42.0, 340.0, Some(true));
-                    pointer(&ui, 390.0, 405.0, None);
+                    pointer(&ui, 42.0, 293.0, Some(true));
+                    pointer(&ui, 390.0, 340.0, None);
                     snapshot(&ui, "drag-marker");
-                    pointer(&ui, 390.0, 405.0, Some(false));
+                    pointer(&ui, 390.0, 340.0, Some(false));
                     assert!(
                         ui.get_quick_items().row_data(3).unwrap().starts_with("02"),
                         "pointer reorders to insertion boundary"
                     );
-                    pointer(&ui, 42.0, 340.0, Some(true));
-                    pointer(&ui, 390.0, 405.0, None);
+                    pointer(&ui, 42.0, 293.0, Some(true));
+                    pointer(&ui, 390.0, 340.0, None);
                     key(&ui, slint::platform::Key::Escape);
-                    pointer(&ui, 390.0, 405.0, Some(false));
+                    pointer(&ui, 390.0, 340.0, Some(false));
                     assert!(
                         ui.get_quick_items().row_data(0).unwrap().starts_with("03"),
                         "Escape cancels drag"
                     );
-                    pointer(&ui, 42.0, 340.0, Some(true));
+                    pointer(&ui, 42.0, 293.0, Some(true));
                     pointer(&ui, 42.0, 490.0, None);
                 }
                 // Edge autoscroll needs several timer ticks at 12 px / 30 ms.

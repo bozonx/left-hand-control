@@ -14,7 +14,7 @@ use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::auto_switch::{self, AutoSwitchContext};
 use crate::profile::diagnostics::{self, RuleIssue};
 use crate::profile::model::{
-    AppConfig, AppSettings, Appearance, LayerRule, LayoutMode, LayoutPreset, LocalePreference,
+    AppConfig, AppSettings, Appearance, ExtraKey, Layer, LayerRule, LayoutMode, LayoutPreset, LocalePreference,
     USER_LAYOUT_PREFIX,
 };
 use crate::profile::{layout_file, settings};
@@ -248,6 +248,172 @@ impl ConfigDocument {
         })
     }
 
+    pub fn create_layer(&mut self, name: &str, description: &str) -> Result<String, ConfigError> {
+        let name = name.trim();
+        if name.is_empty() {
+            return Err(ConfigError::Invalid("layer name is required".into()));
+        }
+        let id = crate::profile::ids::generate("l_");
+        self.update_layout(|layout| {
+            layout.layers.push(Layer {
+                id: id.clone(),
+                name: name.into(),
+                description: optional_text(description),
+            });
+            layout.layer_keymap_mut(&id);
+        })?;
+        Ok(id)
+    }
+
+    pub fn rename_layer(
+        &mut self,
+        id: &str,
+        name: &str,
+        description: &str,
+    ) -> Result<(), ConfigError> {
+        let name = name.trim();
+        if name.is_empty() {
+            return Err(ConfigError::Invalid("layer name is required".into()));
+        }
+        if !self.layout.layers.iter().any(|layer| layer.id == id) {
+            return Err(ConfigError::Invalid("unknown layer".into()));
+        }
+        self.update_layout(|layout| {
+            let layer = layout
+                .layers
+                .iter_mut()
+                .find(|layer| layer.id == id)
+                .unwrap();
+            layer.name = name.into();
+            layer.description = optional_text(description);
+        })
+    }
+
+    pub fn clone_layer(
+        &mut self,
+        source_id: &str,
+        name: &str,
+        description: &str,
+    ) -> Result<String, ConfigError> {
+        let name = name.trim();
+        if name.is_empty() {
+            return Err(ConfigError::Invalid("layer name is required".into()));
+        }
+        if !self.layout.layers.iter().any(|layer| layer.id == source_id) {
+            return Err(ConfigError::Invalid("unknown layer".into()));
+        }
+        let id = crate::profile::ids::generate("l_");
+        self.update_layout(|layout| {
+            let mut keymap = layout
+                .layer_keymaps
+                .get(source_id)
+                .cloned()
+                .unwrap_or_default();
+            for extra in &mut keymap.extras {
+                extra.id = crate::profile::ids::generate("e_");
+            }
+            layout.layer_keymaps.insert(id.clone(), keymap);
+            layout.layers.push(Layer {
+                id: id.clone(),
+                name: name.into(),
+                description: optional_text(description),
+            });
+        })?;
+        Ok(id)
+    }
+
+    pub fn delete_layer(&mut self, id: &str) -> Result<(), ConfigError> {
+        if !self.layout.layers.iter().any(|layer| layer.id == id) {
+            return Err(ConfigError::Invalid("unknown layer".into()));
+        }
+        self.update_layout(|layout| {
+            layout.layers.retain(|layer| layer.id != id);
+            layout.layer_keymaps.remove(id);
+            for rule in &mut layout.rules {
+                if rule.layer_id == id {
+                    rule.layer_id.clear();
+                }
+            }
+        })
+    }
+
+    pub fn clear_layer_keys(&mut self, id: &str) -> Result<(), ConfigError> {
+        self.require_layer(id)?;
+        self.update_layout(|layout| layout.layer_keymap_mut(id).keys.clear())
+    }
+
+    pub fn set_layer_extra(
+        &mut self,
+        layer_id: &str,
+        index: Option<usize>,
+        key: &str,
+        action: Option<String>,
+    ) -> Result<(), ConfigError> {
+        self.require_layer(layer_id)?;
+        if let Some(index) = index {
+            self.require_extra(layer_id, index)?;
+        }
+        self.update_layout(|layout| {
+            let extras = &mut layout.layer_keymap_mut(layer_id).extras;
+            if let Some(index) = index {
+                let extra = &mut extras[index];
+                extra.key = key.into();
+                extra.action = action;
+            } else {
+                extras.push(ExtraKey {
+                    id: crate::profile::ids::generate("e_"),
+                    key: key.into(),
+                    action,
+                });
+            }
+        })
+    }
+
+    pub fn move_layer_extra(
+        &mut self,
+        layer_id: &str,
+        index: usize,
+        next: usize,
+    ) -> Result<(), ConfigError> {
+        self.require_extra(layer_id, index)?;
+        self.require_extra(layer_id, next)?;
+        self.update_layout(|layout| layout.layer_keymap_mut(layer_id).extras.swap(index, next))
+    }
+
+    pub fn remove_layer_extra(&mut self, layer_id: &str, index: usize) -> Result<(), ConfigError> {
+        self.require_extra(layer_id, index)?;
+        self.update_layout(|layout| {
+            layout.layer_keymap_mut(layer_id).extras.remove(index);
+        })
+    }
+
+    pub fn clear_layer_extras(&mut self, id: &str) -> Result<(), ConfigError> {
+        self.require_layer(id)?;
+        self.update_layout(|layout| layout.layer_keymap_mut(id).extras.clear())
+    }
+
+    fn require_layer(&self, id: &str) -> Result<(), ConfigError> {
+        if self.layout.layers.iter().any(|layer| layer.id == id) {
+            Ok(())
+        } else {
+            Err(ConfigError::Invalid("unknown layer".into()))
+        }
+    }
+
+    fn require_extra(&self, id: &str, index: usize) -> Result<(), ConfigError> {
+        self.require_layer(id)?;
+        if self
+            .layout
+            .layer_keymaps
+            .get(id)
+            .is_some_and(|map| index < map.extras.len())
+        {
+            Ok(())
+        } else {
+            Err(ConfigError::Invalid("unknown extra key".into()))
+        }
+    }
+
     /// Entry of `key` in the keymap of `layer_id`.
     pub fn layer_key(&self, layer_id: &str, key: &str) -> KeyAssignment {
         match self
@@ -407,6 +573,10 @@ impl ConfigDocument {
         self.settings_raw = candidate;
         Ok(())
     }
+}
+
+fn optional_text(value: &str) -> Option<String> {
+    (!value.trim().is_empty()).then(|| value.trim().to_owned())
 }
 
 fn parse_settings(text: &str) -> Result<Value, ConfigError> {
@@ -629,5 +799,23 @@ mod tests {
             }
             other => panic!("unexpected {other:?}"),
         }
+    }    #[test]
+    fn layer_lifecycle_preserves_keymaps_and_detaches_rules() {
+        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        document.set_layer_extra("nav", None, "F13", Some("Escape".into())).unwrap();
+        let copy = document.clone_layer("nav", "Navigation copy", "Copied").unwrap();
+        assert_eq!(document.layout().layer_keymaps[&copy].keys["KeyH"].as_deref(), Some("ArrowLeft"));
+        assert_eq!(document.layout().layer_keymaps[&copy].extras.len(), 1);
+        assert_ne!(document.layout().layer_keymaps[&copy].extras[0].id, document.layout().layer_keymaps["nav"].extras[0].id);
+        document.move_layer_extra("nav", 0, 0).unwrap();
+        document.clear_layer_keys(&copy).unwrap();
+        assert!(document.layout().layer_keymaps[&copy].keys.is_empty());
+        document.delete_layer("nav").unwrap();
+        assert!(document.layout().rules[0].layer_id.is_empty());
+        assert!(!document.layout().layer_keymaps.contains_key("nav"));
+        let loaded = ConfigDocument::load(document.paths().clone()).unwrap();
+        assert_eq!(loaded.layout().layers[0].name, "Navigation copy");
+        assert!(loaded.layout().rules[0].layer_id.is_empty());
     }
+
 }
