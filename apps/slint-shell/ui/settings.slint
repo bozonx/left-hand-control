@@ -1,3 +1,4 @@
+import { ButtonGroup, InfoTip } from "controls.slint";
 import { MenusPage, MenuEditor } from "menus.slint";
 import { MacrosPage, MacroEditor } from "macros.slint";
 import { Theme } from "theme.slint";
@@ -457,20 +458,37 @@ export component SettingsWindow inherits Window {
             }
             if root.page == 1: VerticalBox {
                 spacing: 12px;
-                HorizontalBox { vertical-stretch: 0; padding: 0px; spacing: 8px;
-                    Text { text: @tr("Layouts"); color: Theme.text; font-size: 26px; font-weight: 700; vertical-alignment: center; }
-                    Rectangle { width: 8px; }
-                    Button { text: @tr("Manual"); primary: root.layout-mode-index == 0; clicked => { if root.layout-mode-index != 0 { root.set-layout-mode(0); } } }
-                    Button { text: @tr("Automatic"); primary: root.layout-mode-index == 1; clicked => { if root.layout-mode-index != 1 { root.set-layout-mode(1); } } }
-                    Rectangle { horizontal-stretch: 1; }
-                    Button { text: @tr("Based on Ivan K layout"); clicked => { root.open-create(1, 0); } }
-                    Button { text: @tr("New layout…"); primary: true; clicked => { root.open-create(0, 0); } }
-                }
-                Text {
-                    text: root.layout-mode-index == 0
-                        ? @tr("Manual: the layout you make active works everywhere.")
-                        : @tr("Automatic: the first included layout whose conditions match is used. Order sets priority.");
-                    color: Theme.muted; wrap: word-wrap;
+                HorizontalLayout {
+                    vertical-stretch: 0;
+                    spacing: 32px;
+                    VerticalLayout {
+                        spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 6px; alignment: start;
+                            Text { text: @tr("Layout mode"); color: Theme.text; vertical-alignment: center; }
+                            InfoTip {
+                                text: @tr("Manual: the layout you make active works everywhere.") + "\n\n"
+                                    + @tr("Automatic: the first included layout whose conditions match is used. Order sets priority.");
+                            }
+                        }
+                        HorizontalLayout {
+                            alignment: start;
+                            ButtonGroup {
+                                labels: [@tr("Manual"), @tr("Automatic")];
+                                selected-index: root.layout-mode-index;
+                                selected(index) => { if root.layout-mode-index != index { root.set-layout-mode(index); } }
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: 8px;
+                        Text { text: @tr("Create layout"); color: Theme.text; }
+                        HorizontalLayout {
+                            spacing: 8px; alignment: start;
+                            Button { text: @tr("Empty"); clicked => { root.open-create(0, 0); } }
+                            Button { text: @tr("Based on Ivan K layout"); clicked => { root.open-create(1, 0); } }
+                        }
+                    }
                 }
                 if root.layout-names.length == 0: Rectangle {
                     vertical-stretch: 1;

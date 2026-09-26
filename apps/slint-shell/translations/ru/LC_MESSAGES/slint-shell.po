@@ -935,7 +935,7 @@ msgid "Automatic: the first included layout whose conditions match is used. Orde
 msgstr "Автоматически: работает первая включённая раскладка, чьи условия выполнены. Порядок задаёт приоритет."
 
 msgid "Based on Ivan K layout"
-msgstr "На основе раскладки Ivan K"
+msgstr "На основе раскладки Айвана Кей"
 
 msgid "Based on Ivan K layout (the author's layout)"
 msgstr "На основе раскладки Ivan K (авторская раскладка)"
@@ -1023,3 +1023,12 @@ msgstr "{} (копия)"
 
 msgid "“{}” has unsaved changes. Save them before switching?"
 msgstr "В «{}» есть несохранённые изменения. Сохранить их перед переключением?"
+
+msgid "Layout mode"
+msgstr "Режим раскладок"
+
+msgid "Create layout"
+msgstr "Создать раскладку"
+
+msgid "Empty"
+msgstr "Пустая"
