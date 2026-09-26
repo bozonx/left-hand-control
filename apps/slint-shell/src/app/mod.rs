@@ -142,9 +142,7 @@ impl App {
 
     fn apply_preferences(&self, preferences: Preferences) {
         self.preferences.set(preferences);
-        if let Err(error) = slint::select_bundled_translation(preferences.language.code()) {
-            log::error!("select translation: {error}");
-        }
+        preferences.language.select_bundled();
         for (theme, locale) in [
             (
                 self.settings.global::<Theme>(),
@@ -201,10 +199,12 @@ fn stop_core() {
 
 pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let server = ipc::Server::bind()?;
-    start_core();
     let worker = backend::start()?;
     let popup_attributes = Rc::new(Cell::new(false));
     select_backend(popup_attributes.clone())?;
+    // Core watchers post to the UI via `invoke_from_event_loop`, which fails
+    // until a Slint platform exists.
+    start_core();
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
     let config = load_config(&settings);

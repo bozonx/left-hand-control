@@ -1,5 +1,5 @@
 use crate::{
-    i18n::Msg,
+    i18n::{Language, Msg},
     ui::{ActionRow, Locale, Message, SettingsWindow, Theme},
 };
 use lhc_core::{
@@ -289,9 +289,12 @@ fn apply_preferences(ui: &SettingsWindow, dark: bool, english: bool) {
     ui.global::<Theme>().set_dark(dark);
     ui.global::<Theme>().invoke_apply();
     ui.global::<Locale>().set_english(english);
-    if let Err(error) = slint::select_bundled_translation(if english { "en" } else { "ru" }) {
-        log::error!("select translation: {error}");
+    if english {
+        Language::English
+    } else {
+        Language::Russian
     }
+    .select_bundled();
 }
 
 fn config_message(error: &ConfigError) -> Message {

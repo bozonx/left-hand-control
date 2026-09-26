@@ -32,6 +32,18 @@ impl Language {
         }
     }
 
+    /// Switch Slint's `@tr` bundle. Live Preview builds interpret `.slint`
+    /// at runtime and bundle no translations, so that case is not an error.
+    pub fn select_bundled(self) {
+        match slint::select_bundled_translation(self.code()) {
+            Ok(()) => {}
+            Err(slint::SelectBundledTranslationError::NoTranslationsBundled) => {
+                log::debug!("no bundled translations (live preview?)");
+            }
+            Err(error) => log::error!("select translation: {error}"),
+        }
+    }
+
     pub fn from_code(code: &str) -> Option<Self> {
         match code {
             "en" => Some(Self::English),

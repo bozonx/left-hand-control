@@ -114,9 +114,7 @@ impl Layers {
     }
 
     fn apply(&self, preferences: Preferences) {
-        if let Err(error) = slint::select_bundled_translation(preferences.language.code()) {
-            log::error!("select translation: {error}");
-        }
+        preferences.language.select_bundled();
         for (theme, locale) in [
             (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),

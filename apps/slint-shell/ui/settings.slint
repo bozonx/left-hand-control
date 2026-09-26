@@ -3,7 +3,7 @@ import { MenusPage, MenuEditor } from "menus.slint";
 import { MacrosPage, MacroEditor } from "macros.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit, ComboBox, ListView, CheckBox, ScrollView } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit, ComboBox, ListView, CheckBox, ScrollView, Palette } from "std-widgets.slint";
 
 export struct ActionRow { id: int, label: string, label-en: string }
 export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
@@ -85,7 +85,8 @@ component SaveSplitButton inherits Rectangle {
                     width: 16px;
                     height: 16px;
                     source: @image-url("icons/save.svg");
-                    colorize: root.enabled ? Theme.text : Theme.muted;
+                    // Enabled only with unsaved edits: accent draws attention to it.
+                    colorize: root.enabled ? Palette.accent-background : Theme.muted;
                     opacity: root.enabled ? 1.0 : 0.45;
                 }
                 focus-save := FocusScope {
@@ -223,7 +224,6 @@ export component SettingsWindow inherits Window {
     // 0 empty, 1 author's Ivan K layout, 2 copy of `create-copy-index`
     in-out property <int> create-source: 0;
     in-out property <int> create-copy-index: 0;
-    in-out property <bool> create-name-touched: false;
     in-out property <int> pending-create-source: 0;
     in-out property <int> pending-create-copy-index: 0;
     // What runs once unsaved changes are resolved: 1 edit selected layout, 2 open create
@@ -264,7 +264,6 @@ export component SettingsWindow inherits Window {
         root.create-source = source;
         root.create-copy-index = max(0, copy-index);
         root.create-description = "";
-        root.create-name-touched = false;
         root.create-name = root.suggest-layout-name(root.create-base(source));
         root.library-dialog = 1;
     }
@@ -272,10 +271,6 @@ export component SettingsWindow inherits Window {
         root.pending-create-source = source;
         root.pending-create-copy-index = copy-index;
         root.guard-layout-switch(2);
-    }
-    function choose-create-source(source: int) {
-        root.create-source = source;
-        if !root.create-name-touched { root.create-name = root.suggest-layout-name(root.create-base(source)); }
     }
     public function submit-create() {
         if root.layout-name-issue(root.create-name) != 0 { return; }
@@ -475,7 +470,7 @@ export component SettingsWindow inherits Window {
                 height: 52px;
                 HorizontalLayout {
                     padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
-                    Text { text: (root.current-layout-label == "" ? @tr("Custom layout") : root.current-layout-label) + (root.layout-dirty ? " •" : ""); color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
+                    Text { text: root.current-layout-label == "" ? @tr("Custom layout") : root.current-layout-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
                     SaveSplitButton {
                         enabled: root.layout-dirty;
                         save => { root.save-current-layout(); }
@@ -559,11 +554,12 @@ export component SettingsWindow inherits Window {
                             }
                         }
                     }
+                    Rectangle { horizontal-stretch: 1; }
                     VerticalLayout {
                         spacing: 8px;
-                        Text { text: @tr("Create layout"); color: Theme.text; }
+                        Text { text: @tr("Create layout"); color: Theme.text; horizontal-alignment: right; }
                         HorizontalLayout {
-                            spacing: 8px; alignment: start;
+                            spacing: 8px; alignment: end;
                             Button { text: @tr("Empty"); clicked => { root.open-create(0, 0); } }
                             Button { text: @tr("Based on Ivan K layout"); clicked => { root.open-create(1, 0); } }
                         }
@@ -978,7 +974,6 @@ export component SettingsWindow inherits Window {
                         text <=> root.create-name;
                         placeholder-text: @tr("New layout name");
                         init => { self.focus(); self.select-all(); }
-                        edited => { root.create-name-touched = true; }
                         accepted => { root.submit-create(); }
                     }
                     if root.layout-name-issue(root.create-name) > 1: Text {
