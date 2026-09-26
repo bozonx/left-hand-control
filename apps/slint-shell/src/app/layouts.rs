@@ -1,4 +1,4 @@
-use crate::{editor::EditorHandle, ui::SettingsWindow};
+use crate::{editor::EditorHandle, i18n::Msg, ui::SettingsWindow};
 use lhc_core::{
     config_document::ConfigDocument,
     profile::{auto_switch::AutoSwitchContext, layout_file, model::LayoutPreset},
@@ -17,7 +17,15 @@ fn refresh(
     document: &ConfigDocument,
     state: &mut Library,
 ) -> Result<(), String> {
-    let names = document.paths().list_user_layouts()?;
+    let names: Vec<String> = document
+        .ordered_layout_ids()
+        .map_err(|error| error.to_string())?
+        .into_iter()
+        .map(|id| id.trim_start_matches("user:").to_owned())
+        .collect();
+    ui.set_layout_mode_index(i32::from(
+        document.settings().layout_mode == lhc_core::profile::model::LayoutMode::Auto,
+    ));
     let selected = state
         .selected
         .as_ref()
@@ -30,15 +38,34 @@ fn refresh(
         state.selected = None;
         state.known = None;
         ui.set_layout_description("".into());
+        ui.set_layout_auto_enabled(false);
+        ui.set_layout_white_game(0);
+        ui.set_layout_black_game(0);
+        ui.set_layout_white_layouts("".into());
+        ui.set_layout_black_layouts("".into());
+        ui.set_layout_white_apps("".into());
+        ui.set_layout_black_apps("".into());
     }
     Ok(())
 }
 
 fn report(ui: &SettingsWindow, result: Result<String, String>) {
-    ui.set_layout_status(match result {
-        Ok(message) => message.into(),
-        Err(error) => format!("Error: {error}").into(),
-    });
+    ui.set_layout_status(
+        match result {
+            Ok(message) if message.is_empty() => Msg::None,
+            Ok(_) => Msg::LibrarySaved,
+            Err(error) if error == "Select a layout" => Msg::LibrarySelect,
+            Err(error)
+                if error.starts_with("Layout changed on disk")
+                    || error
+                        == lhc_core::config_document::ConfigError::ExternalChange.to_string() =>
+            {
+                Msg::LibraryChanged
+            }
+            Err(error) => Msg::Error(error),
+        }
+        .to_ui(),
+    );
 }
 
 pub(super) fn bind(
@@ -59,6 +86,7 @@ pub(super) fn bind(
             refresh(ui, &config.borrow(), &mut state.borrow_mut()).map(|_| String::new()),
         );
     }
+    bind_controls(ui, config.clone(), state.clone());
     let weak = ui.as_weak();
     let state_copy = state.clone();
     let config_copy = config.clone();
@@ -96,6 +124,38 @@ pub(super) fn bind(
                 ui.set_selected_layout(index);
                 ui.set_layout_name(name.clone().into());
                 ui.set_layout_description(layout.description.unwrap_or_default().into());
+                let document = config.borrow();
+                let rule = document
+                    .settings()
+                    .layout_conditions
+                    .get(&format!("user:{name}"))
+                    .cloned()
+                    .unwrap_or_default();
+                ui.set_layout_auto_enabled(rule.enabled_in_auto);
+                for (blacklist, set) in [(false, rule.whitelist), (true, rule.blacklist)] {
+                    let (game, layouts, apps) = set
+                        .map(|set| {
+                            (
+                                match set.game_mode.as_deref() {
+                                    Some("on") => 1,
+                                    Some("off") => 2,
+                                    _ => 0,
+                                },
+                                set.layouts.join(", "),
+                                set.apps.join(", "),
+                            )
+                        })
+                        .unwrap_or_default();
+                    if blacklist {
+                        ui.set_layout_black_game(game);
+                        ui.set_layout_black_layouts(layouts.into());
+                        ui.set_layout_black_apps(apps.into());
+                    } else {
+                        ui.set_layout_white_game(game);
+                        ui.set_layout_white_layouts(layouts.into());
+                        ui.set_layout_white_apps(apps.into());
+                    }
+                }
                 Ok(name)
             });
         report(&ui, result);
@@ -158,6 +218,7 @@ pub(super) fn bind(
             {
                 ui.invoke_reset_layout_context();
             }
+            super::mapper::apply_runtime(&config.borrow())?;
             Ok(format!("Saved: {saved}"))
         })();
         report(&ui, result);
@@ -175,18 +236,9 @@ pub(super) fn bind(
                 .selected
                 .clone()
                 .ok_or("Select a layout")?;
-            let text = config.borrow().paths().load_user_layout(&name)?;
-            let layout = layout_file::parse(&text)?.ok_or("Layout is empty")?;
             config
                 .borrow_mut()
-                .update_layout(|current| *current = layout)
-                .map_err(|error| error.to_string())?;
-            config
-                .borrow_mut()
-                .update_settings(|settings| {
-                    settings.current_layout_id = Some(format!("user:{name}"));
-                    settings.manual_active_layout_id = settings.current_layout_id.clone();
-                })
+                .load_library_for_editing(&name)
                 .map_err(|error| error.to_string())?;
             ui.invoke_reset_layout_context();
             editor.reload(&config.borrow());
@@ -213,10 +265,15 @@ pub(super) fn bind(
         let result = (|| {
             let name = state.borrow().selected.clone().ok_or("Select a layout")?;
             let current = config.borrow().paths().load_user_layout(&name)?;
-            if Some(current) != state.borrow().known {
+            if Some(current.as_str()) != state.borrow().known.as_deref() {
                 return Err("Layout changed on disk; select it again".into());
             }
-            config.borrow().paths().delete_user_layout(&name)?;
+            config
+                .borrow_mut()
+                .remove_library_layout(&name, &current)
+                .map_err(|error| error.to_string())?;
+            super::mapper::apply_runtime(&config.borrow())?;
+            ui.invoke_reset_layout_context();
             refresh(&ui, &config.borrow(), &mut state.borrow_mut())?;
             Ok(format!("Deleted: {name}"))
         })();
@@ -294,6 +351,7 @@ fn bind_toolbar(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>
             let text = layout_file::serialize(document.layout());
             document.paths().save_user_layout(&name, &text, true)?;
             *baseline.borrow_mut() = Some((name, text));
+            super::mapper::apply_runtime(&document)?;
             Ok(String::new())
         })();
         if let Err(error) = &result {
@@ -328,6 +386,124 @@ fn bind_toolbar(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>
             ui.invoke_refresh_layouts();
             ui.invoke_refresh_layout_context();
             Ok(String::new())
+        })();
+        report(&ui, result);
+    });
+}
+
+fn condition(
+    game: i32,
+    layouts: &str,
+    apps: &str,
+) -> Option<lhc_core::profile::model::LayoutConditionSet> {
+    let parse = |value: &str| {
+        value
+            .split(',')
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_owned)
+            .collect::<Vec<_>>()
+    };
+    let set = lhc_core::profile::model::LayoutConditionSet {
+        game_mode: match game {
+            1 => Some("on".into()),
+            2 => Some("off".into()),
+            _ => None,
+        },
+        layouts: parse(layouts),
+        apps: parse(apps),
+    };
+    (set.game_mode.is_some() || !set.layouts.is_empty() || !set.apps.is_empty()).then_some(set)
+}
+
+fn bind_controls(
+    ui: &SettingsWindow,
+    config: Option<Rc<RefCell<ConfigDocument>>>,
+    state: Rc<RefCell<Library>>,
+) {
+    let weak = ui.as_weak();
+    let document = config.clone();
+    ui.on_set_layout_mode(move |index| {
+        let (Some(ui), Some(document)) = (weak.upgrade(), &document) else {
+            return;
+        };
+        let result = document
+            .borrow_mut()
+            .update_settings(|settings| {
+                settings.layout_mode = if index == 1 {
+                    lhc_core::profile::model::LayoutMode::Auto
+                } else {
+                    lhc_core::profile::model::LayoutMode::Manual
+                }
+            })
+            .map_err(|error| error.to_string());
+        report(
+            &ui,
+            result
+                .and_then(|_| super::mapper::apply_runtime(&document.borrow()))
+                .map(|_| "saved".into()),
+        );
+        ui.invoke_refresh_layouts();
+    });
+    let weak = ui.as_weak();
+    ui.on_library_action(move |action| {
+        let (Some(ui), Some(document)) = (weak.upgrade(), &config) else {
+            return;
+        };
+        let result = (|| {
+            let name = state.borrow().selected.clone().ok_or("Select a layout")?;
+            let id = format!("user:{name}");
+            match action {
+                0 => document
+                    .borrow_mut()
+                    .update_settings(|settings| settings.manual_active_layout_id = Some(id))
+                    .map_err(|error| error.to_string())?,
+                1 | 2 => document
+                    .borrow_mut()
+                    .move_library_layout(&id, if action == 1 { -1 } else { 1 })
+                    .map_err(|error| error.to_string())?,
+                3 => {
+                    let rule = lhc_core::profile::model::LayoutConditionRule {
+                        enabled_in_auto: ui.get_layout_auto_enabled(),
+                        whitelist: condition(
+                            ui.get_layout_white_game(),
+                            &ui.get_layout_white_layouts(),
+                            &ui.get_layout_white_apps(),
+                        ),
+                        blacklist: condition(
+                            ui.get_layout_black_game(),
+                            &ui.get_layout_black_layouts(),
+                            &ui.get_layout_black_apps(),
+                        ),
+                    };
+                    document
+                        .borrow_mut()
+                        .update_settings(|settings| {
+                            settings.layout_conditions.insert(id, rule);
+                        })
+                        .map_err(|error| error.to_string())?;
+                }
+                4 => {
+                    let expected = state.borrow().known.clone().ok_or("Select a layout")?;
+                    let saved = document
+                        .borrow_mut()
+                        .edit_library_metadata(
+                            &name,
+                            &ui.get_layout_name(),
+                            &ui.get_layout_description(),
+                            &expected,
+                        )
+                        .map_err(|error| error.to_string())?;
+                    state.borrow_mut().selected = Some(saved.clone());
+                    state.borrow_mut().known =
+                        Some(document.borrow().paths().load_user_layout(&saved)?);
+                    ui.invoke_reset_layout_context();
+                }
+                _ => return Ok(String::new()),
+            }
+            super::mapper::apply_runtime(&document.borrow())?;
+            refresh(&ui, &document.borrow(), &mut state.borrow_mut())?;
+            Ok("saved".into())
         })();
         report(&ui, result);
     });

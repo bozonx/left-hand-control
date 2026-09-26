@@ -11,6 +11,9 @@ export global Locale {
     in-out property <bool> english: false;
 
     public pure function text(m: Message) -> string {
+        if m.id == "library-saved" { return @tr("Layout library updated"); }
+        if m.id == "library-select" { return @tr("Select a layout"); }
+        if m.id == "library-changed" { return @tr("Layout changed on disk; select it again"); }
         if m.id == "" { return ""; }
         if m.id == "mapper-running" { return m.arg == "" ? @tr("Mapper is running") : @tr("Mapper is running: {}", m.arg); }
         if m.id == "mapper-stopped" { return m.arg == "" ? @tr("Mapper is stopped") : @tr("Mapper is stopped: {}", m.arg); }

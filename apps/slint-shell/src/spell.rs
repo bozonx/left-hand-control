@@ -5,7 +5,7 @@
 //! exits when the parent closes its stdin.
 
 use crate::{
-    command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode},
+    command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
     i18n::Language,
     ipc, metrics, popup_model,
     ui::{EmojiPopup, Locale, QuickPopup, Theme},
@@ -347,24 +347,34 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     return Ok(());
                 }
-                Event::Command(Command::Show(window), source, start) => {
-                    if std::env::var_os("SLINT_SHELL_PARENT_SOCKET").is_some() {
-                        match popup_model::ConfiguredMenus::load() {
-                            Ok(menus) => {
-                                menus.apply_emoji(&layers.emoji);
-                                menus.apply_quick(&layers.quick);
-                                layers.menus = Some(menus);
-                                layers.filter(&layers.quick.get_query());
-                            }
-                            Err(error) => {
-                                log::error!("load popup configuration: {error}");
-                                continue;
-                            }
-                        }
-                    }
+                Event::Command(Command::PopupLayout(id), _, _) => {
+                    let menus = popup_model::ConfiguredMenus::load_for(id.as_deref())
+                        .unwrap_or_else(|error| {
+                            log::error!("load popup configuration: {error}");
+                            popup_model::ConfiguredMenus::default()
+                        });
+                    menus.apply_emoji(&layers.emoji);
+                    menus.apply_quick(&layers.quick);
+                    layers.menus = Some(menus);
+                    layers.filter(&layers.quick.get_query());
+                }
+                Event::Command(
+                    command @ (Command::Show(_) | Command::ShowPage(_, _)),
+                    source,
+                    start,
+                ) => {
+                    let (window, page) = match command {
+                        Command::Show(window) => (window, None),
+                        Command::ShowPage(popup, page) => (Window::Popup(popup), Some(page)),
+                        _ => unreachable!(),
+                    };
                     let Some(popup) = window.popup() else {
                         continue;
                     };
+                    if let Some(page) = page {
+                        popup_model::select_page(popup, page, &layers.emoji, &layers.quick);
+                        layers.filter(&layers.quick.get_query());
+                    }
                     if let Some(input) = &mut return_input {
                         if visible.is_none() {
                             input.capture();
@@ -378,7 +388,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(previous) = visible.take() {
                         layers.conceal(previous);
                         metrics.end(previous.name());
-                        if previous == popup {
+                        if previous == popup && page.is_none() {
                             continue;
                         }
                     }

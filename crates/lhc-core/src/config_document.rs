@@ -182,6 +182,11 @@ impl ConfigDocument {
             .or_insert_with(|| json!({}))
             .as_object_mut()
             .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?;
+        let previous = serde_json::to_value(&self.settings)
+            .map_err(|error| ConfigError::Parse(error.to_string()))?;
+        for name in previous.as_object().into_iter().flat_map(|values| values.keys()) {
+            settings.remove(name);
+        }
         for (name, value) in values.as_object().into_iter().flatten() {
             settings.insert(name.clone(), value.clone());
         }
@@ -533,17 +538,11 @@ impl ConfigDocument {
     pub fn runtime_config(&self, ctx: &AutoSwitchContext) -> Result<RuntimeConfig, ConfigError> {
         let layout_id = self.active_layout_id(ctx)?;
         // In auto mode "no match" means passthrough, never the current layout.
-        let current = layout_id == self.settings.current_layout_id
-            && (layout_id.is_some() || self.settings.layout_mode == LayoutMode::Manual);
-        let mut config = if current {
-            self.config()
-        } else {
-            let preset = match &layout_id {
-                Some(id) => self.load_layout(id)?,
-                None => LayoutPreset::default(),
-            };
-            AppConfig::from_parts(self.settings.clone(), preset, layout_id.as_deref())
-        };
+        let mut config = AppConfig::from_parts(
+            self.settings.clone(),
+            self.layout_for_activation(layout_id.as_deref())?,
+            layout_id.as_deref(),
+        );
         let blocking: Vec<RuleIssue> = diagnostics::analyze_rules(&config)
             .into_iter()
             .filter(|issue| issue.code.is_error())
@@ -555,6 +554,22 @@ impl ConfigDocument {
         let json = config.to_json();
         validate_for_mapper(&json)?;
         Ok(RuntimeConfig { json, layout_id })
+    }
+
+    pub fn active_layout(&self, ctx: &AutoSwitchContext) -> Result<LayoutPreset, ConfigError> {
+        self.layout_for_activation(self.active_layout_id(ctx)?.as_deref())
+    }
+
+    pub fn layout_for_activation(&self, id: Option<&str>) -> Result<LayoutPreset, ConfigError> {
+        if id == self.settings.current_layout_id.as_deref()
+            && (id.is_some() || self.settings.layout_mode == LayoutMode::Manual)
+        {
+            return Ok(self.layout.clone());
+        }
+        match id {
+            Some(id) => self.load_layout(id),
+            None => Ok(LayoutPreset::default()),
+        }
     }
 
     fn set_setting(&mut self, name: &str, value: Value) -> Result<(), ConfigError> {

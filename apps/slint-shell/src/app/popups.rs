@@ -46,6 +46,17 @@ impl App {
         start: Instant,
         token: Option<String>,
     ) {
+        self.show_page(window, source, start, token, None);
+    }
+
+    pub(super) fn show_page(
+        &self,
+        window: Window,
+        source: Source,
+        start: Instant,
+        token: Option<String>,
+        page: Option<u8>,
+    ) {
         #[cfg(not(target_os = "linux"))]
         if window != Window::Settings {
             // The tray opens interactive UI but never returns input.
@@ -59,8 +70,30 @@ impl App {
             self.refresh_popup_data();
         }
         if let Some(popup) = window.popup() {
+            if let Some(page) = page {
+                popup_model::select_page(popup, page, &self.emoji, &self.quick);
+                self.filter_quick(&self.quick.get_query());
+            }
             if self.use_spell {
-                if !self.send_worker(&Command::Show(window), source, start, token) {
+                let id = self
+                    .config
+                    .as_ref()
+                    .and_then(|config| {
+                        config
+                            .borrow()
+                            .active_layout_id(
+                                &lhc_core::profile::auto_switch::AutoSwitchContext::current(),
+                            )
+                            .ok()
+                    })
+                    .flatten();
+                self.send_worker(&Command::PopupLayout(id), source, start, None);
+                if !self.send_worker(
+                    &page.map_or(Command::Show(window), |page| Command::ShowPage(popup, page)),
+                    source,
+                    start,
+                    token,
+                ) {
                     self.set_error(Msg::WorkerRestarting);
                 }
                 return;
@@ -267,7 +300,10 @@ impl App {
     fn refresh_popup_data(&self) {
         if let Some(config) = &self.config {
             let menus = popup_model::ConfiguredMenus {
-                layout: config.borrow().layout().clone(),
+                layout: config
+                    .borrow()
+                    .active_layout(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
+                    .unwrap_or_default(),
             };
             menus.apply_emoji(&self.emoji);
             menus.apply_quick(&self.quick);
@@ -276,16 +312,21 @@ impl App {
     }
 
     pub(super) fn filter_quick(&self, query: &str) {
-        let values = self
-            .config
-            .as_ref()
-            .map(|config| {
-                popup_model::ConfiguredMenus {
-                    layout: config.borrow().layout().clone(),
-                }
-                .quick_page(query, Some(self.quick.get_page() as usize))
-            })
-            .unwrap_or_default();
+        let values =
+            self.config
+                .as_ref()
+                .map(|config| {
+                    popup_model::ConfiguredMenus {
+                        layout: config
+                            .borrow()
+                            .active_layout(
+                                &lhc_core::profile::auto_switch::AutoSwitchContext::current(),
+                            )
+                            .unwrap_or_default(),
+                    }
+                    .quick_page(query, Some(self.quick.get_page() as usize))
+                })
+                .unwrap_or_default();
         self.quick.set_items(ModelRc::new(VecModel::from(
             values
                 .iter()

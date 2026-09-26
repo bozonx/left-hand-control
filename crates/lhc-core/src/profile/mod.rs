@@ -12,3 +12,5 @@ pub mod model;
 pub mod settings;
 
 pub mod menus;
+
+pub mod library;

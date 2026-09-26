@@ -1,7 +1,7 @@
 //! Popup data and navigation shared by the winit popups and the Spell worker.
 
 use crate::command::Popup;
-use slint::SharedString;
+use slint::{Model, SharedString};
 
 /// Emoji cells per regular page (6 rows × 8 columns).
 pub const EMOJI_PAGE_SIZE: usize = 48;
@@ -146,7 +146,20 @@ impl ConfiguredMenus {
         let document =
             lhc_core::config_document::ConfigDocument::load(paths).map_err(|e| e.to_string())?;
         Ok(Self {
-            layout: document.layout().clone(),
+            layout: document
+                .active_layout(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
+                .map_err(|error| error.to_string())?,
+        })
+    }
+    pub fn load_for(id: Option<&str>) -> Result<Self, String> {
+        let document = lhc_core::config_document::ConfigDocument::load(
+            lhc_core::storage::StoragePaths::resolve()?,
+        )
+        .map_err(|error| error.to_string())?;
+        Ok(Self {
+            layout: document
+                .layout_for_activation(id)
+                .map_err(|error| error.to_string())?,
         })
     }
     pub fn apply_emoji(&self, ui: &crate::ui::EmojiPopup) {
@@ -266,5 +279,25 @@ mod configured_tests {
         assert_eq!(menus.quick_page("ОДИНАКОВОЕ", Some(0)).len(), 2);
         assert_eq!(menus.quick_page("ВТОРАЯ", Some(0))[0].1, "text:second");
         assert!(menus.quick_page("missing", Some(1)).is_empty());
+    }
+}
+
+pub fn select_page(
+    popup: Popup,
+    page: u8,
+    emoji: &crate::ui::EmojiPopup,
+    quick: &crate::ui::QuickPopup,
+) {
+    let index = i32::from(page.saturating_sub(1));
+    match popup {
+        Popup::Emoji => {
+            emoji.set_page(index.min((emoji.get_page_names().row_count() as i32 - 1).max(0)));
+            emoji.set_selected(0);
+        }
+        Popup::Quick => {
+            quick.set_page(index.min((quick.get_page_names().row_count() as i32 - 1).max(0)));
+            quick.set_query("".into());
+            quick.set_selected(0);
+        }
     }
 }

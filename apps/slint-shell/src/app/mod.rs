@@ -53,6 +53,7 @@ pub(crate) struct App {
     preferences: Cell<Preferences>,
     worker_watch: slint::Timer,
     status_watch: slint::Timer,
+    last_auto_layout: RefCell<Option<Option<String>>>,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
     config: Option<Rc<RefCell<ConfigDocument>>>,
     editor: EditorHandle,
@@ -106,6 +107,9 @@ impl App {
     fn command(&self, command: Command, source: Source, start: Instant, token: Option<String>) {
         match command {
             Command::Show(window) => self.show(window, source, start, token),
+            Command::ShowPage(popup, page) => {
+                self.show_page(Window::Popup(popup), source, start, token, Some(page))
+            }
             Command::Hide => {
                 self.send_worker(&Command::Hide, source, start, token);
                 self.hide(Window::EMOJI);
@@ -123,7 +127,7 @@ impl App {
                 self.apply_preferences(preferences);
                 self.send_worker(&command, source, start, None);
             }
-            Command::Ping => {}
+            Command::Ping | Command::PopupLayout(_) => {}
             Command::Execute(action) => {
                 if let Err(error) = lhc_core::mapper::runtime::execute_action(action) {
                     self.set_error(Msg::ActionFailed(error));
@@ -233,6 +237,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         preferences: Cell::new(Preferences::default()),
         worker_watch: slint::Timer::default(),
         status_watch: slint::Timer::default(),
+        last_auto_layout: RefCell::new(None),
         last_mapper_status: RefCell::new(None),
         config,
         editor,

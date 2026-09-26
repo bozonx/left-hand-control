@@ -813,3 +813,54 @@ msgstr "Остановлен"
 
 msgid "No items yet. Click Add to create one."
 msgstr "Список пуст. Нажмите «Добавить», чтобы создать элемент."
+
+msgid "Layout library updated"
+msgstr "Библиотека раскладок обновлена"
+
+msgid "Select a layout"
+msgstr "Выберите раскладку"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Раскладка изменена на диске; выберите её заново"
+
+msgid "Save name and description"
+msgstr "Сохранить имя и описание"
+
+msgid "Activation mode"
+msgstr "Режим активации"
+
+msgid "Activate selected"
+msgstr "Активировать выбранную"
+
+msgid "Include in automatic mode"
+msgstr "Включить в автоматический режим"
+
+msgid "Any game mode"
+msgstr "Любой игровой режим"
+
+msgid "Game mode on"
+msgstr "Игровой режим включён"
+
+msgid "Game mode off"
+msgstr "Игровой режим выключен"
+
+msgid "System layouts (comma separated)"
+msgstr "Языки клавиатуры через запятую"
+
+msgid "Applications (comma separated)"
+msgstr "Приложения через запятую"
+
+msgid "Save conditions"
+msgstr "Сохранить условия"
+
+msgid "Whitelist"
+msgstr "Белый список"
+
+msgid "Blacklist"
+msgstr "Чёрный список"
+
+msgid "Manual"
+msgstr "Ручной"
+
+msgid "Edit selected"
+msgstr "Редактировать выбранную"

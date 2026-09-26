@@ -67,8 +67,18 @@ export component SettingsWindow inherits Window {
     in property <[string]> layout-names;
     in-out property <int> selected-layout: -1;
     in-out property <string> layout-name;
-    in property <string> layout-description;
-    in property <string> layout-status;
+    in-out property <string> layout-description;
+    in property <Message> layout-status;
+    in-out property <int> layout-mode-index;
+    in-out property <bool> layout-auto-enabled;
+    in-out property <int> layout-white-game;
+    in-out property <int> layout-black-game;
+    in-out property <string> layout-white-layouts;
+    in-out property <string> layout-black-layouts;
+    in-out property <string> layout-white-apps;
+    in-out property <string> layout-black-apps;
+    callback set-layout-mode(int);
+    callback library-action(int);
     callback refresh-layouts();
     callback select-layout(int);
     callback create-layout(string);
@@ -299,14 +309,38 @@ export component SettingsWindow inherits Window {
                         }
                     }
                 }
-                Text { text: root.layout-description; color: Theme.muted; wrap: word-wrap; }
+                LineEdit { text <=> root.layout-description; placeholder-text: @tr("Description"); }
+                HorizontalBox {
+                    Button { text: @tr("Save name and description"); enabled: root.selected-layout >= 0; clicked => { root.library-action(4); } }
+                    Button { text: @tr("Move up"); enabled: root.selected-layout > 0; clicked => { root.library-action(1); } }
+                    Button { text: @tr("Move down"); enabled: root.selected-layout >= 0 && root.selected-layout + 1 < root.layout-names.length; clicked => { root.library-action(2); } }
+                }
+                HorizontalBox {
+                    Text { text: @tr("Activation mode"); color: Theme.text; }
+                    ComboBox { model: [@tr("Manual"), @tr("Automatic")]; current-index <=> root.layout-mode-index; selected(index) => { root.set-layout-mode(root.layout-mode-index); } }
+                    Button { text: @tr("Activate selected"); enabled: root.selected-layout >= 0 && root.layout-mode-index == 0; clicked => { root.library-action(0); } }
+                    CheckBox { text: @tr("Include in automatic mode"); checked <=> root.layout-auto-enabled; enabled: root.selected-layout >= 0; }
+                }
+                HorizontalBox {
+                    Text { text: @tr("Whitelist"); color: Theme.text; }
+                    ComboBox { model: [@tr("Any game mode"), @tr("Game mode on"), @tr("Game mode off")]; current-index <=> root.layout-white-game; }
+                    LineEdit { text <=> root.layout-white-layouts; placeholder-text: @tr("System layouts (comma separated)"); }
+                    LineEdit { text <=> root.layout-white-apps; placeholder-text: @tr("Applications (comma separated)"); }
+                }
+                HorizontalBox {
+                    Text { text: @tr("Blacklist"); color: Theme.text; }
+                    ComboBox { model: [@tr("Any game mode"), @tr("Game mode on"), @tr("Game mode off")]; current-index <=> root.layout-black-game; }
+                    LineEdit { text <=> root.layout-black-layouts; placeholder-text: @tr("System layouts (comma separated)"); }
+                    LineEdit { text <=> root.layout-black-apps; placeholder-text: @tr("Applications (comma separated)"); }
+                    Button { text: @tr("Save conditions"); enabled: root.selected-layout >= 0; clicked => { root.library-action(3); } }
+                }
                 HorizontalBox { vertical-stretch: 0;
                     spacing: 8px;
-                    Button { text: @tr("Load selected"); enabled: root.selected-layout >= 0; clicked => { root.load-layout(); } }
+                    Button { text: @tr("Edit selected"); enabled: root.selected-layout >= 0; clicked => { root.load-layout(); } }
                     Button { text: @tr("Save current to selected"); enabled: root.selected-layout >= 0; clicked => { root.save-layout(); } }
                     Button { text: @tr("Delete selected"); enabled: root.selected-layout >= 0; clicked => { root.delete-layout(); } }
                 }
-                Text { text: root.layout-status; color: Theme.muted; wrap: word-wrap; }
+                Text { text: Locale.text(root.layout-status); color: Theme.muted; wrap: word-wrap; }
             }
             if root.page == 2: VerticalBox {
                 spacing: 10px;
@@ -590,7 +624,7 @@ export component SettingsWindow inherits Window {
                 padding: 24px; spacing: 12px;
                 Text { text: @tr("Save layout as…"); color: Theme.text; font-size: 22px; }
                 LineEdit { text <=> root.save-as-name; placeholder-text: @tr("New layout name"); accepted => { root.save-layout-as(root.save-as-name); } }
-                Text { text: root.layout-status; color: Theme.error; wrap: word-wrap; }
+                Text { text: Locale.text(root.layout-status); color: Theme.error; wrap: word-wrap; }
                 HorizontalBox { vertical-stretch: 0;
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { root.save-as-open = false; } }

@@ -2,11 +2,7 @@
 //! loaded config in sync with changes made by other processes.
 
 use super::{App, post};
-use crate::{
-    command::{Source, Window},
-    i18n::Msg,
-    ui::SettingsWindow,
-};
+use crate::{command::Source, i18n::Msg, ui::SettingsWindow};
 use lhc_core::{
     CoreEvent, config_document::ConfigDocument, profile::auto_switch::AutoSwitchContext,
 };
@@ -24,18 +20,17 @@ pub(super) fn forward_core_events() {
             });
         }
         CoreEvent::AppAction(name) => {
-            let window = if name.starts_with("show_quick_menu_") {
-                Window::QUICK
-            } else if name.starts_with("show_emoji_menu_") {
-                Window::EMOJI
-            } else {
+            let Some(command) = crate::command::Command::from_app_action(name) else {
                 return;
             };
-            post(move |app| app.show(window, Source::Mapper, Instant::now(), None));
+            post(move |app| app.command(command, Source::Mapper, Instant::now(), None));
         }
         CoreEvent::LayoutChanged(_)
         | CoreEvent::GameModeChanged(_)
-        | CoreEvent::ActiveWindowChanged(_) => {}
+        | CoreEvent::ActiveWindowChanged(_) => post(|app| {
+            app.sync_runtime();
+            app.refresh_mapper_status();
+        }),
     });
 }
 
@@ -79,7 +74,45 @@ pub(super) fn bind_devices(
     devices.into_iter().map(|device| device.path).collect()
 }
 
+pub(super) fn apply_runtime(document: &ConfigDocument) -> Result<(), String> {
+    if !lhc_core::mapper::runtime::status().running {
+        return Ok(());
+    }
+    let result = document
+        .runtime_config(&AutoSwitchContext::current())
+        .map_err(|error| error.to_string())
+        .and_then(|runtime| lhc_core::mapper::runtime::update_config_if_running(&runtime.json));
+    if result.is_err() {
+        let _ = lhc_core::mapper::runtime::stop();
+    }
+    result
+}
+
 impl App {
+    pub(super) fn sync_runtime(&self) {
+        if !lhc_core::mapper::runtime::status().running {
+            *self.last_auto_layout.borrow_mut() = None;
+            return;
+        }
+        if let Some(document) = &self.config {
+            let document = document.borrow();
+            let result = document
+                .runtime_config(&AutoSwitchContext::current())
+                .map_err(|error| error.to_string())
+                .and_then(|runtime| {
+                    if self.last_auto_layout.borrow().as_ref() != Some(&runtime.layout_id) {
+                        lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
+                        *self.last_auto_layout.borrow_mut() = Some(runtime.layout_id);
+                    }
+                    Ok(())
+                });
+            if let Err(error) = result {
+                let _ = lhc_core::mapper::runtime::stop();
+                self.set_error(Msg::SavedMapperNotUpdated(error));
+            }
+        }
+    }
+
     pub(super) fn refresh_mapper_status(&self) {
         let status = lhc_core::mapper::runtime::status();
         if let Some(tray) = self.tray.borrow().as_ref() {
@@ -164,6 +197,8 @@ impl App {
             post(move |app| {
                 app.settings.set_mapper_busy(false);
                 app.set_error(result.err().map_or(Msg::None, Msg::Error));
+                *app.last_auto_layout.borrow_mut() = None;
+                app.sync_runtime();
                 app.refresh_mapper_status();
             });
         });
@@ -203,23 +238,18 @@ impl App {
                     if let Some(settings) = weak.upgrade() {
                         settings.invoke_refresh_rules();
                         settings.invoke_refresh_layers();
+                        settings.invoke_refresh_layouts();
                         settings.global::<crate::ui::MacroEditor>().invoke_refresh();
                     }
                 });
                 self.settings
                     .set_config_status(Msg::ConfigReloaded(document.layout().rules.len()).to_ui());
-                match document.runtime_config(&AutoSwitchContext::current()) {
-                    Ok(runtime) => {
-                        if let Err(error) =
-                            lhc_core::mapper::runtime::update_config_if_running(&runtime.json)
-                        {
-                            self.set_error(Msg::Error(error));
-                        }
-                    }
-                    Err(error) => self.set_error(Msg::from(&error)),
+                if let Err(error) = apply_runtime(&document) {
+                    self.set_error(Msg::SavedMapperNotUpdated(error));
                 }
             }
             Err(error) => {
+                let _ = lhc_core::mapper::runtime::stop();
                 log::debug!("reload config: {error}");
                 self.settings
                     .set_config_status(Msg::ConfigUnavailable(error.to_string()).to_ui());
