@@ -41,14 +41,14 @@ export component MacrosPage inherits VerticalBox {
     private property <bool> system-open: false;
     private property <string> delete-id;
     private property <int> delete-step: -1;
-    HorizontalBox {
+    HorizontalBox { vertical-stretch: 0;
         Text { text: @tr("Macros"); color: Theme.text; font-size: 26px; font-weight: 700; }
         Rectangle { horizontal-stretch: 1; }
         Button { text: @tr("Add macro"); enabled: !MacroEditor.editing && root.delete-id == ""; clicked => { MacroEditor.edit(-1); } }
         Button { text: @tr("System macros"); enabled: !MacroEditor.editing && root.delete-id == ""; clicked => { root.system-open = !root.system-open; } }
     }
     if MacroEditor.status.id != "": Text { text: Locale.text(MacroEditor.status); color: Theme.text; wrap: word-wrap; }
-    if root.delete-id != "" || root.delete-step >= 0: HorizontalBox {
+    if root.delete-id != "" || root.delete-step >= 0: HorizontalBox { vertical-stretch: 0;
         Text { text: root.delete-step >= 0 ? @tr("Delete this step?") : @tr("Delete this macro? References will stop working."); color: Theme.text; wrap: word-wrap; }
         Button { text: @tr("Cancel"); clicked => { root.delete-id = ""; root.delete-step = -1; } }
         Button { text: @tr("Delete"); clicked => {
@@ -61,7 +61,7 @@ export component MacrosPage inherits VerticalBox {
         vertical-stretch: 1;
         padding: 0px;
         spacing: 8px;
-        HorizontalBox {
+        HorizontalBox { vertical-stretch: 0;
             Text { text: @tr("Macro ID"); color: Theme.text; vertical-alignment: center; }
             LineEdit { text <=> MacroEditor.macro-id; }
             Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy ID"); clicked => { root.copy-id(MacroEditor.macro-id); } }
@@ -70,14 +70,14 @@ export component MacrosPage inherits VerticalBox {
         }
         Text { text: @tr("Use macro:<id> in key assignments. Renaming an ID does not change existing references."); color: Theme.muted; wrap: word-wrap; }
         if MacroEditor.usage != "": Text { text: @tr("Used in: {}", MacroEditor.usage); color: Theme.muted; wrap: word-wrap; }
-        HorizontalBox {
+        HorizontalBox { vertical-stretch: 0;
             Text { text: @tr("Step pause (ms)"); color: Theme.text; vertical-alignment: center; }
             LineEdit { text <=> MacroEditor.step-pause; placeholder-text: MacroEditor.default-step-pause; }
             Text { text: @tr("Modifier delay (ms)"); color: Theme.text; vertical-alignment: center; }
             LineEdit { text <=> MacroEditor.modifier-delay; placeholder-text: MacroEditor.default-modifier-delay; }
         }
         Text { text: @tr("Leave delays empty to use settings defaults (0–2000 ms)."); color: Theme.muted; }
-        HorizontalBox {
+        HorizontalBox { vertical-stretch: 0;
             Text { text: @tr("Steps"); color: Theme.text; font-weight: 700; }
             Rectangle { horizontal-stretch: 1; }
             Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Add step"); clicked => { MacroEditor.add-step(""); } }
@@ -90,7 +90,7 @@ export component MacrosPage inherits VerticalBox {
                 height: step.action == "" ? 70px : 48px;
                 padding: 4px;
                 spacing: 4px;
-                HorizontalBox {
+                HorizontalBox { vertical-stretch: 0;
                     Text { text: "#" + (index + 1); color: Theme.muted; vertical-alignment: center; }
                     LineEdit { text <=> step.action; placeholder-text: @tr("Key, shortcut, text:…, macro:… or pause:100"); }
                     ComboBox { width: 190px; model: MacroEditor.action-choices; current-index: -1; current-value: @tr("Choose action"); selected(value) => { step.action = value; } }
@@ -101,7 +101,7 @@ export component MacrosPage inherits VerticalBox {
                 if step.action == "": Text { text: @tr("Empty step will be skipped"); color: Theme.muted; }
             }
         }
-        HorizontalBox {
+        HorizontalBox { vertical-stretch: 0;
             Rectangle { horizontal-stretch: 1; }
             Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Cancel"); clicked => { MacroEditor.editing = false; MacroEditor.refresh(); } }
             Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Save"); clicked => { MacroEditor.save(); } }
@@ -111,7 +111,7 @@ export component MacrosPage inherits VerticalBox {
     if !MacroEditor.editing && !root.system-open: ListView {
         vertical-stretch: 1;
         for item[index] in MacroEditor.macros: VerticalBox {
-            HorizontalBox {
+            HorizontalBox { vertical-stretch: 0;
                 Text { text: item.name + " · " + item.id; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
                 Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy ID"); clicked => { root.copy-id(item.id); } }
                 Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Edit"); clicked => { MacroEditor.edit(index); } }
@@ -126,7 +126,7 @@ export component MacrosPage inherits VerticalBox {
     if !MacroEditor.editing && root.system-open: ListView {
         vertical-stretch: 1;
         for item[index] in MacroEditor.system-macros: VerticalBox {
-            HorizontalBox {
+            HorizontalBox { vertical-stretch: 0;
                 Text { text: item.name + " · " + item.id; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
                 Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy ID"); clicked => { root.copy-id(item.id); } }
                 Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Copy to my macros"); clicked => { MacroEditor.clone-system(index); root.system-open = false; } }

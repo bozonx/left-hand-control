@@ -762,3 +762,54 @@ msgstr "Сохраните изменения команд перед разре
 
 msgid "More pages"
 msgstr "Другие страницы"
+
+msgid "Save as…"
+msgstr "Сохранить как…"
+
+msgid "Save layout as…"
+msgstr "Сохранить раскладку как…"
+
+msgid "Please wait…"
+msgstr "Подождите…"
+
+msgid "Stop"
+msgstr "Остановить"
+
+msgid "Start"
+msgstr "Запустить"
+
+msgid "Custom layout"
+msgstr "Своя раскладка"
+
+msgid "Base keyboard"
+msgstr "Базовая клавиатура"
+
+msgid "Keyboard device path"
+msgstr "Путь к устройству клавиатуры"
+
+msgid "Search actions…"
+msgstr "Поиск действий…"
+
+msgid "Copy path"
+msgstr "Копировать путь"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr "Создайте слой для назначения клавиш или откройте базовую клавиатуру."
+
+msgid "Action or keyboard shortcut"
+msgstr "Действие или сочетание клавиш"
+
+msgid "Action code; empty passes the key through"
+msgstr "Код действия; пустое поле — обычная клавиша"
+
+msgid "Clear assignment"
+msgstr "Сбросить назначение"
+
+msgid "Running"
+msgstr "Работает"
+
+msgid "Stopped"
+msgstr "Остановлен"
+
+msgid "No items yet. Click Add to create one."
+msgstr "Список пуст. Нажмите «Добавить», чтобы создать элемент."

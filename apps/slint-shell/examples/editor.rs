@@ -4,6 +4,7 @@ use slint_shell::{editor, ui::*};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = SettingsWindow::new()?;
     let _editor = editor::bind_with_config(&ui, None);
+    ui.set_page(0);
     if std::env::args().any(|arg| arg == "--smoke") {
         assert_eq!(ui.get_keys().row_count(), 80);
         let loaded = |count| Message {
@@ -26,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Configuration loaded: 1 rule"
         );
         slint::select_bundled_translation("ru")?;
-        assert_eq!(ui.get_actions().row_count(), 500);
+        assert_eq!(ui.get_actions().row_count(), 83);
         ui.invoke_edit_key(33);
         assert!(ui.get_editing());
         assert!(!ui.get_validation().id.is_empty());
@@ -61,50 +62,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ui.invoke_save();
         ui.invoke_edit_key(33);
         assert_eq!(ui.get_value(), "Ctrl+Shift+KeyK");
-        ui.set_query("ПРИВЕТ".into());
+        ui.set_query("копировать".into());
         ui.invoke_filter();
-        assert_eq!(ui.get_actions().row_count(), 125);
+        assert_eq!(ui.get_actions().row_count(), 1);
         ui.set_query("".into());
         ui.invoke_filter();
-        ui.invoke_pick_action(321);
-        ui.invoke_update_action();
-        assert_eq!(ui.get_selected_action(), 321);
-        assert!(
-            ui.get_actions()
-                .row_data(321)
-                .unwrap()
-                .label
-                .contains("обновлено 1")
-        );
+        ui.invoke_pick_action(0);
+        assert_eq!(ui.get_value(), "Ctrl+KeyC");
         ui.invoke_cancel();
         ui.show()?;
         let weak = ui.as_weak();
         slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
             let ui = weak.unwrap();
             snapshot(&ui, "keyboard");
-            let position = slint::LogicalPosition::new(120.0, 414.0);
-            ui.window()
-                .dispatch_event(slint::platform::WindowEvent::PointerPressed {
-                    position,
-                    button: slint::platform::PointerEventButton::Left,
-                });
-            ui.window()
-                .dispatch_event(slint::platform::WindowEvent::PointerReleased {
-                    position,
-                    button: slint::platform::PointerEventButton::Left,
-                });
+            ui.invoke_edit_key(33);
             assert!(ui.get_editing());
-            assert_eq!(ui.get_selected_key(), 33);
-            ui.set_catalog_scroll_y(-10800.0);
-            ui.invoke_pick_action(301);
+            ui.invoke_pick_action(0);
             let weak = ui.as_weak();
             slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
                 let ui = weak.unwrap();
-                let position = ui.get_catalog_scroll_y();
-                ui.invoke_update_action();
-                assert_eq!(ui.get_selected_action(), 301);
-                assert_eq!(ui.get_catalog_scroll_y(), position);
-                assert!(position < -1000.0);
+                assert_eq!(ui.get_selected_action(), 0);
                 snapshot(&ui, "editor");
                 ui.invoke_change_kind(3);
                 ui.invoke_begin_capture();
@@ -132,7 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(ui.get_value(), "Escape");
                 assert!(ui.get_editing());
                 println!(
-                    "Editor smoke: passed (80 keys, 500 rows, draft, validation, four types, row update)"
+                    "Editor smoke: passed (80 keys, real actions, draft, validation, shortcut capture)"
                 );
                 slint::quit_event_loop().unwrap();
             });

@@ -1,7 +1,3 @@
-//! Pilot key editor (stage 3A): an 80-key keyboard, a draft action form and
-//! a 500-entry demo catalog. Assignments are read from and saved to the
-//! shared [`ConfigDocument`] when one is loaded; the catalog is a fixture.
-
 use crate::{
     i18n::Msg,
     ui::{ActionRow, Locale, Message, SettingsWindow, Theme},
@@ -130,7 +126,6 @@ impl Action {
                 Msg::DelayRange
             }
             KIND_SYSTEM if system_action(&self.value).is_none() => Msg::SystemActionRequired,
-            KIND_SHORTCUT if self.value.is_empty() => Msg::ShortcutRequired,
             KIND_TEXT..=KIND_SHORTCUT => Msg::None,
             _ => Msg::UnknownKind,
         }
@@ -175,7 +170,6 @@ fn system_action(value: &str) -> Option<(&'static str, &'static str, &'static st
 struct Editor {
     saved: Vec<Option<Action>>,
     catalog: Vec<Action>,
-    revisions: Vec<u32>,
     rows: Rc<VecModel<ActionRow>>,
     assignments: Rc<VecModel<SharedString>>,
 }
@@ -198,18 +192,11 @@ impl Editor {
     fn new() -> Self {
         Self {
             saved: vec![None; KEY_CODES.len()],
-            catalog: (0..500)
-                .map(|i| Action {
-                    kind: i % 4,
-                    value: match i % 4 {
-                        KIND_TEXT => format!("Привет! Текст {} 👋", i + 1),
-                        KIND_DELAY => (i + 1).to_string(),
-                        KIND_SYSTEM => SYSTEM_ACTIONS[(i / 4) as usize % 3].0.into(),
-                        _ => format!("Ctrl+{}", (b'A' + (i / 4 % 26) as u8) as char),
-                    },
-                })
+            catalog: SYSTEM_ACTIONS
+                .iter()
+                .map(|(value, _, _)| Action::from_config(value))
+                .chain(KEY_CODES.iter().map(|value| Action::from_config(value)))
                 .collect(),
-            revisions: vec![0; 500],
             rows: Rc::new(VecModel::default()),
             assignments: Rc::new(VecModel::from(vec![
                 SharedString::from("—");
@@ -219,10 +206,20 @@ impl Editor {
     }
 
     fn load_assignments(&mut self, config: &ConfigDocument) {
+        self.catalog = SYSTEM_ACTIONS
+            .iter()
+            .map(|(value, _, _)| Action::from_config(value))
+            .chain(KEY_CODES.iter().map(|value| Action::from_config(value)))
+            .chain(
+                lhc_core::profile::actions::catalog(&config.config())
+                    .iter()
+                    .filter_map(|entry| entry.action.format())
+                    .map(|value| Action::from_config(&value)),
+            )
+            .collect();
+        self.filter("", 0);
         for (index, key) in KEY_CODES.iter().enumerate() {
-            let action = config
-                .base_tap_action(key)
-                .map(Action::from_config);
+            let action = config.base_tap_action(key).map(Action::from_config);
             let summary = action.as_ref().map_or("—".into(), Action::summary);
             self.assignments.set_row_data(index, summary.into());
             self.saved[index] = action;
@@ -236,29 +233,16 @@ impl Editor {
             Some((_, ru, en)) => (ru, en),
             None => (action.value.as_str(), action.value.as_str()),
         };
-        let revision = self.revisions[id];
         ActionRow {
             id: id as i32,
             label_en: format!(
-                "{:03} · {} · {value_en}{}",
-                id + 1,
-                ["Text", "Delay", "System", "Shortcut"][kind],
-                if revision == 0 {
-                    String::new()
-                } else {
-                    format!(" · updated {revision}")
-                }
+                "{} · {value_en}",
+                ["Text", "Delay", "System", "Action"][kind]
             )
             .into(),
             label: format!(
-                "{:03} · {} · {value_ru}{}",
-                id + 1,
-                ["Текст", "Пауза", "Система", "Сочетание"][kind],
-                if revision == 0 {
-                    String::new()
-                } else {
-                    format!(" · обновлено {revision}")
-                }
+                "{} · {value_ru}",
+                ["Текст", "Пауза", "Система", "Действие"][kind]
             )
             .into(),
         }
@@ -287,16 +271,6 @@ impl Editor {
         self.assignments.set_row_data(key, action.summary().into());
         self.saved[key] = Some(action);
         true
-    }
-
-    fn update(&mut self, id: usize) {
-        if id >= self.catalog.len() {
-            return;
-        }
-        self.revisions[id] += 1;
-        if let Some(index) = self.rows.iter().position(|row| row.id == id as i32) {
-            self.rows.set_row_data(index, self.row(id));
-        }
     }
 }
 
@@ -337,7 +311,6 @@ pub fn bind_with_config(
             apply_preferences(&ui, dark, english);
         }
     });
-    bind_quick_grid(ui);
     let keys: Vec<SharedString> = KEY_LABELS.split_whitespace().map(Into::into).collect();
     debug_assert_eq!(keys.len(), KEY_CODES.len());
     ui.set_keys(ModelRc::new(VecModel::from(keys)));
@@ -352,10 +325,14 @@ pub fn bind_with_config(
 
     let weak = ui.as_weak();
     let state_copy = state.clone();
+    let key_config = config.clone();
     ui.on_edit_key(move |key| {
         let Some(ui) = weak.upgrade() else {
             return;
         };
+        if let Some(config) = &key_config {
+            state_copy.borrow_mut().load_assignments(&config.borrow());
+        }
         let Some(saved) = usize::try_from(key)
             .ok()
             .and_then(|key| state_copy.borrow().saved.get(key).cloned())
@@ -442,15 +419,6 @@ pub fn bind_with_config(
         }
     });
     let weak = ui.as_weak();
-    let state_copy = state.clone();
-    ui.on_update_action(move || {
-        if let Some(ui) = weak.upgrade() {
-            state_copy
-                .borrow_mut()
-                .update(ui.get_selected_action() as usize);
-        }
-    });
-    let weak = ui.as_weak();
     ui.on_capture(move |text, ctrl, alt, shift, meta| {
         if let Some(ui) = weak.upgrade()
             && let Some(chord) = capture_chord(&text, ctrl, alt, shift, meta)
@@ -519,28 +487,6 @@ pub fn bind_with_config(
     EditorHandle(state)
 }
 
-/// Demo grid for stage 3B drag and drop; not persisted.
-fn bind_quick_grid(ui: &SettingsWindow) {
-    let quick = Rc::new(VecModel::from(
-        (1..=60)
-            .map(|i| SharedString::from(format!("{i:02} · Привет 👋")))
-            .collect::<Vec<_>>(),
-    ));
-    ui.set_quick_items(quick.clone().into());
-    let items = quick.clone();
-    ui.on_move_quick(move |from, to| {
-        let mut values: Vec<_> = items.iter().collect();
-        if reorder(&mut values, from, to) {
-            items.set_vec(values);
-        }
-    });
-    ui.on_rename_quick(move |index, value| {
-        if index >= 0 && (index as usize) < quick.row_count() && !value.trim().is_empty() {
-            quick.set_row_data(index as usize, value);
-        }
-    });
-}
-
 /// Convert a captured key event into the config chord format.
 fn capture_chord(text: &str, ctrl: bool, alt: bool, shift: bool, meta: bool) -> Option<String> {
     use slint::platform::Key;
@@ -599,29 +545,9 @@ fn capture_chord(text: &str, ctrl: bool, alt: bool, shift: bool, meta: bool) -> 
     Some(parts.join("+"))
 }
 
-fn reorder<T>(items: &mut Vec<T>, from: i32, to: i32) -> bool {
-    if from < 0 || to < 0 || from as usize >= items.len() || to as usize > items.len() {
-        return false;
-    }
-    let item = items.remove(from as usize);
-    items.insert(if to > from { to - 1 } else { to } as usize, item);
-    true
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn reorder_uses_insertion_boundaries() {
-        let mut items = vec![0, 1, 2, 3];
-        assert!(reorder(&mut items, 0, 4));
-        assert_eq!(items, vec![1, 2, 3, 0]);
-        assert!(reorder(&mut items, 3, 0));
-        assert_eq!(items, vec![0, 1, 2, 3]);
-        assert!(!reorder(&mut items, -1, 0));
-        assert!(!reorder(&mut items, 0, 5));
-    }
 
     #[test]
     fn draft_cancel_save_and_invalid_values() {
@@ -672,24 +598,14 @@ mod tests {
     }
 
     #[test]
-    fn catalog_filter_and_update_keep_row_identity() {
-        let mut editor = Editor::new();
-        editor.filter("", 0);
-        assert_eq!(editor.rows.row_count(), 500);
-        let rows = editor.rows.clone();
-        let before: Vec<_> = rows.iter().map(|row| row.id).collect();
-        editor.update(321);
-        assert!(Rc::ptr_eq(&rows, &editor.rows));
-        assert_eq!(before, rows.iter().map(|row| row.id).collect::<Vec<_>>());
-        assert!(rows.row_data(321).unwrap().label.contains("обновлено 1"));
-        editor.filter("ПРИВЕТ", 1);
-        assert_eq!(rows.row_count(), 125);
-        editor.filter("Привет", 2);
-        assert_eq!(rows.row_count(), 0);
+    fn catalog_contains_real_actions() {
+        let editor = Editor::new();
         editor.filter("копировать", 3);
-        assert_eq!(rows.row_count(), 42);
-        editor.filter("500", 0);
-        assert_eq!(rows.row_count(), 1);
+        assert_eq!(editor.rows.row_count(), 1);
+        let id = editor.rows.row_data(0).unwrap().id;
+        assert_eq!(editor.catalog[id as usize].to_config(), "Ctrl+KeyC");
+        editor.filter("KeyQ", 0);
+        assert_eq!(editor.rows.row_count(), 1);
     }
 
     #[test]

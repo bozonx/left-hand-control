@@ -85,6 +85,30 @@ impl App {
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_enabled(status.running);
         }
+        self.settings.set_mapper_running(status.running);
+        self.settings
+            .set_game_active(lhc_core::runtime_state::game_mode_active());
+        self.settings.set_keyboard_language(
+            lhc_core::runtime_state::layout_short()
+                .unwrap_or_default()
+                .into(),
+        );
+        if let Some(config) = &self.config {
+            let document = config.borrow();
+            self.settings.set_commands_need_approval(
+                !document.layout().commands.is_empty() && !document.commands_trusted(),
+            );
+            self.settings.set_active_layout_label(
+                document
+                    .active_layout_id(&AutoSwitchContext::current())
+                    .ok()
+                    .flatten()
+                    .unwrap_or_default()
+                    .trim_start_matches("user:")
+                    .into(),
+            );
+        }
+        self.settings.invoke_refresh_layout_context();
         let current = (status.running, status.last_error.clone());
         if self.last_mapper_status.borrow().as_ref() == Some(&current) {
             return;
@@ -99,10 +123,15 @@ impl App {
     }
 
     pub(super) fn toggle_mapper(&self) {
+        if self.settings.get_mapper_busy() {
+            return;
+        }
         if lhc_core::mapper::runtime::status().running {
+            self.settings.set_mapper_busy(true);
             std::thread::spawn(|| {
                 let result = lhc_core::mapper::runtime::stop();
                 post(move |app| {
+                    app.settings.set_mapper_busy(false);
                     if let Err(error) = result {
                         app.set_error(Msg::Error(error));
                     }
@@ -128,10 +157,12 @@ impl App {
                 return;
             }
         };
+        self.settings.set_mapper_busy(true);
         self.settings.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {
             let result = lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &raw);
             post(move |app| {
+                app.settings.set_mapper_busy(false);
                 app.set_error(result.err().map_or(Msg::None, Msg::Error));
                 app.refresh_mapper_status();
             });
@@ -148,13 +179,12 @@ impl App {
         let Some(config) = &self.config else {
             return;
         };
+        self.settings.set_keyboard_device_path(path.clone().into());
         match config.borrow_mut().set_input_device(&path) {
             Ok(()) => self
                 .settings
                 .set_config_status(Msg::DeviceSaved(path.clone()).to_ui()),
-            Err(error) => self
-                .settings
-                .set_backend_error(Msg::from(&error).to_ui()),
+            Err(error) => self.settings.set_backend_error(Msg::from(&error).to_ui()),
         }
     }
 

@@ -46,6 +46,7 @@ pub(super) fn bind(
     config: Option<Rc<RefCell<ConfigDocument>>>,
     editor: EditorHandle,
 ) {
+    bind_toolbar(ui, config.clone());
     let state = Rc::new(RefCell::new(Library {
         names: Rc::new(VecModel::default()),
         selected: None,
@@ -152,6 +153,11 @@ pub(super) fn bind(
                 refresh(&ui, &config.borrow(), &mut state)?;
             }
             ui.set_layout_name(saved.clone().into());
+            if config.borrow().settings().current_layout_id.as_deref()
+                == Some(format!("user:{saved}").as_str())
+            {
+                ui.invoke_reset_layout_context();
+            }
             Ok(format!("Saved: {saved}"))
         })();
         report(&ui, result);
@@ -175,11 +181,22 @@ pub(super) fn bind(
                 .borrow_mut()
                 .update_layout(|current| *current = layout)
                 .map_err(|error| error.to_string())?;
+            config
+                .borrow_mut()
+                .update_settings(|settings| {
+                    settings.current_layout_id = Some(format!("user:{name}"));
+                    settings.manual_active_layout_id = settings.current_layout_id.clone();
+                })
+                .map_err(|error| error.to_string())?;
+            ui.invoke_reset_layout_context();
             editor.reload(&config.borrow());
             ui.invoke_refresh_rules();
             ui.invoke_refresh_layers();
             ui.global::<crate::ui::MacroEditor>().invoke_refresh();
-            let runtime = config.borrow().runtime_config(&AutoSwitchContext::current()).map_err(|error| error.to_string())?;
+            let runtime = config
+                .borrow()
+                .runtime_config(&AutoSwitchContext::current())
+                .map_err(|error| error.to_string())?;
             lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
             ui.set_config_status(
                 crate::i18n::Msg::ConfigSaved(config.borrow().layout().rules.len()).to_ui(),
@@ -202,6 +219,115 @@ pub(super) fn bind(
             config.borrow().paths().delete_user_layout(&name)?;
             refresh(&ui, &config.borrow(), &mut state.borrow_mut())?;
             Ok(format!("Deleted: {name}"))
+        })();
+        report(&ui, result);
+    });
+}
+
+fn bind_toolbar(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>) {
+    let known = Rc::new(RefCell::new(None::<(String, String)>));
+    let weak = ui.as_weak();
+    let document = config.clone();
+    let baseline = known.clone();
+    ui.on_reset_layout_context(move || {
+        let (Some(ui), Some(document)) = (weak.upgrade(), &document) else {
+            return;
+        };
+        let document = document.borrow();
+        *baseline.borrow_mut() = document
+            .settings()
+            .current_layout_id
+            .as_ref()
+            .and_then(|id| {
+                let name = id.strip_prefix("user:")?;
+                document
+                    .paths()
+                    .load_user_layout(name)
+                    .ok()
+                    .map(|text| (name.to_owned(), text))
+            });
+        drop(document);
+        ui.invoke_refresh_layout_context();
+    });
+    let weak = ui.as_weak();
+    let document = config.clone();
+    ui.on_refresh_layout_context(move || {
+        let (Some(ui), Some(document)) = (weak.upgrade(), &document) else {
+            return;
+        };
+        let document = document.borrow();
+        let id = document.settings().current_layout_id.as_deref();
+        ui.set_current_layout_label(id.unwrap_or("").trim_start_matches("user:").into());
+        ui.set_layout_dirty(
+            id.and_then(|id| document.load_layout(id).ok())
+                .map(|layout| layout_file::serialize(&layout))
+                .as_deref()
+                != Some(layout_file::serialize(document.layout()).as_str()),
+        );
+    });
+    ui.invoke_reset_layout_context();
+    let weak = ui.as_weak();
+    let document = config.clone();
+    let baseline = known.clone();
+    ui.on_save_current_layout(move || {
+        let (Some(ui), Some(document)) = (weak.upgrade(), &document) else {
+            return;
+        };
+        let name = document
+            .borrow()
+            .settings()
+            .current_layout_id
+            .as_deref()
+            .and_then(|id| id.strip_prefix("user:"))
+            .map(str::to_owned);
+        let Some(name) = name else {
+            ui.set_save_as_name("".into());
+            ui.set_save_as_open(true);
+            return;
+        };
+        let result = (|| {
+            let document = document.borrow();
+            let current = document.paths().load_user_layout(&name)?;
+            if baseline.borrow().as_ref() != Some(&(name.clone(), current)) {
+                return Err("Layout changed on disk; reload it before saving".to_owned());
+            }
+            let text = layout_file::serialize(document.layout());
+            document.paths().save_user_layout(&name, &text, true)?;
+            *baseline.borrow_mut() = Some((name, text));
+            Ok(String::new())
+        })();
+        if let Err(error) = &result {
+            ui.set_backend_error(crate::i18n::Msg::Error(error.clone()).to_ui());
+        }
+        report(&ui, result);
+        ui.invoke_refresh_layout_context();
+    });
+    let weak = ui.as_weak();
+    ui.on_save_layout_as(move |name| {
+        let (Some(ui), Some(document)) = (weak.upgrade(), &config) else {
+            return;
+        };
+        let result = (|| {
+            let text = layout_file::serialize(document.borrow().layout());
+            let saved = document
+                .borrow()
+                .paths()
+                .save_user_layout(&name, &text, false)?;
+            document
+                .borrow_mut()
+                .update_settings(|settings| {
+                    let old_id = settings.current_layout_id.clone();
+                    settings.current_layout_id = Some(format!("user:{saved}"));
+                    if settings.manual_active_layout_id == old_id {
+                        settings.manual_active_layout_id = settings.current_layout_id.clone();
+                    }
+                })
+                .map_err(|error| error.to_string())?;
+            *known.borrow_mut() = Some((saved, text));
+            ui.set_save_as_open(false);
+            ui.invoke_refresh_layouts();
+            ui.invoke_refresh_layout_context();
+            Ok(String::new())
         })();
         report(&ui, result);
     });

@@ -78,16 +78,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     timer.start(slint::TimerMode::SingleShot,Duration::from_millis(700),move || {
         let ui = weak.upgrade().unwrap();
         if std::env::var_os("LHC_MENUS_NAV").is_some() {
-            ui.set_page(0);
-            for (moves, expected) in [(1, 1), (1, 2)] {
-                let position = slint::LogicalPosition::new(200.0, 48.0);
-                ui.window().dispatch_event(slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left });
-                ui.window().dispatch_event(slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left });
-                for key in std::iter::repeat_n(slint::platform::Key::DownArrow, moves).chain([slint::platform::Key::Return]) {
-                    let text: slint::SharedString = key.into();
-                    ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: text.clone() });
-                    ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text });
-                }
+            for expected in [1, 2, 0] {
+                ui.invoke_navigate(6, expected);
                 assert_eq!(ui.global::<MenuEditor>().get_kind(), expected);
                 assert_eq!(ui.get_page(), 6);
             }

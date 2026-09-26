@@ -5,8 +5,8 @@
 //! threads reach it only through `slint::invoke_from_event_loop` +
 //! [`with_app`]; nothing here is shared across threads.
 
-mod layouts;
 mod keymap_layers;
+mod layouts;
 mod mapper;
 mod popups;
 mod rules;
@@ -204,13 +204,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
     let config = load_config(&settings);
-    let editor = editor::bind_with_config(&settings, config.clone());
-    layouts::bind(&settings, config.clone(), editor.clone());
-    rules::bind(&settings, config.clone(), editor.clone());
-    keymap_layers::bind(&settings, config.clone());
-    crate::macro_editor::bind(&settings, config.clone());
-    crate::menu_editor::bind(&settings, config.clone());
-    settings_page::bind(&settings, config.clone());
+    let editor = bind_document(&settings, config.clone());
     let devices = mapper::bind_devices(&settings, config.as_ref());
     metrics.ready("settings");
     popup_attributes.set(true);
@@ -245,13 +239,24 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         devices: RefCell::new(devices),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
-    let initial_preferences = app.config.as_ref().map_or(Preferences::default(), |config| {
-        let config = config.borrow();
-        Preferences {
-            theme: if config.settings().appearance == lhc_core::profile::model::Appearance::Light { ThemeMode::Light } else { ThemeMode::Dark },
-            language: Language::resolve(config.settings().locale),
-        }
-    });
+    let initial_preferences = app
+        .config
+        .as_ref()
+        .map_or(Preferences::default(), |config| {
+            let config = config.borrow();
+            Preferences {
+                theme: if match config.settings().appearance {
+                    lhc_core::profile::model::Appearance::Light => false,
+                    lhc_core::profile::model::Appearance::Dark => true,
+                    _ => settings_page::system_dark(&app.settings),
+                } {
+                    ThemeMode::Dark
+                } else {
+                    ThemeMode::Light
+                },
+                language: Language::resolve(config.settings().locale),
+            }
+        });
     app.command(
         Command::Preferences(initial_preferences),
         Source::Button,
@@ -267,6 +272,27 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             with_app(|app| {
                 app.refresh_mapper_status();
                 app.reload_config_if_changed();
+                if app.config.as_ref().is_some_and(|config| {
+                    config.borrow().settings().appearance
+                        == lhc_core::profile::model::Appearance::System
+                }) {
+                    let theme = if settings_page::system_dark(&app.settings) {
+                        ThemeMode::Dark
+                    } else {
+                        ThemeMode::Light
+                    };
+                    if app.preferences.get().theme != theme {
+                        app.command(
+                            Command::Preferences(Preferences {
+                                theme,
+                                ..app.preferences.get()
+                            }),
+                            Source::Button,
+                            Instant::now(),
+                            None,
+                        );
+                    }
+                }
             });
         });
     if app.use_spell {
@@ -298,6 +324,20 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub fn bind_document(
+    settings: &SettingsWindow,
+    config: Option<Rc<RefCell<ConfigDocument>>>,
+) -> EditorHandle {
+    let editor = editor::bind_with_config(settings, config.clone());
+    layouts::bind(settings, config.clone(), editor.clone());
+    rules::bind(settings, config.clone(), editor.clone());
+    keymap_layers::bind(settings, config.clone());
+    crate::macro_editor::bind(settings, config.clone());
+    crate::menu_editor::bind(settings, config.clone());
+    settings_page::bind(settings, config);
+    editor
+}
+
 fn bind_settings(app: &App) {
     app.settings.on_preferences(|dark, english| {
         with_app(|app| {
@@ -324,8 +364,16 @@ fn bind_settings(app: &App) {
         with_app(|app| {
             app.command(
                 Command::Preferences(Preferences {
-                    theme: if dark { ThemeMode::Dark } else { ThemeMode::Light },
-                    language: if english { Language::English } else { Language::Russian },
+                    theme: if dark {
+                        ThemeMode::Dark
+                    } else {
+                        ThemeMode::Light
+                    },
+                    language: if english {
+                        Language::English
+                    } else {
+                        Language::Russian
+                    },
                 }),
                 Source::Button,
                 Instant::now(),

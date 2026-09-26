@@ -171,7 +171,6 @@ pub enum Msg {
     DelayRange,
     SystemActionRequired,
     UnknownKind,
-    ShortcutRequired,
     InvalidAction(ActionIssue),
     Rule(RuleIssue),
     ActionFailed(String),
@@ -245,7 +244,6 @@ impl Msg {
             Self::DelayRange => ("delay-range", empty(), 0),
             Self::SystemActionRequired => ("system-action-required", empty(), 0),
             Self::UnknownKind => ("unknown-kind", empty(), 0),
-            Self::ShortcutRequired => ("shortcut-required", empty(), 0),
             Self::InvalidAction(issue) => (
                 match issue {
                     ActionIssue::InvalidSyntax => "action-invalid-syntax",

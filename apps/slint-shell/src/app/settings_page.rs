@@ -1,6 +1,6 @@
 use crate::{
     i18n::{Language, Msg},
-    ui::{ProcessRow, SettingsWindow, Theme},
+    ui::{ProcessRow, SettingsWindow},
 };
 use lhc_core::{
     config_document::ConfigDocument,
@@ -40,6 +40,11 @@ pub(super) fn refresh_mouse_devices(ui: &SettingsWindow) {
         labels.push(format!("{} · {}", mouse.name, mouse.path).into());
         paths.push(mouse.path.into());
     }
+    let saved = ui.get_mouse_device_path();
+    if !saved.is_empty() && !paths.contains(&saved) {
+        labels.push(saved.clone());
+        paths.push(saved);
+    }
     ui.set_mouse_devices(ModelRc::new(VecModel::from(labels)));
     let selected = paths
         .iter()
@@ -50,6 +55,12 @@ pub(super) fn refresh_mouse_devices(ui: &SettingsWindow) {
 }
 
 pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>) {
+    let weak = ui.as_weak();
+    ui.on_settings_saved(move |dark, english| {
+        if let Some(ui) = weak.upgrade() {
+            ui.invoke_preferences(dark, english);
+        }
+    });
     let mut matchers = Vec::new();
     if let Some(config) = &config {
         let document = config.borrow();
@@ -64,7 +75,13 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
             LocalePreference::English => 1,
             LocalePreference::Russian => 2,
         });
-        ui.set_launch_on_startup(settings.launch_on_startup);
+        ui.set_keyboard_device_path(
+            settings
+                .input_device_path
+                .clone()
+                .unwrap_or_default()
+                .into(),
+        );
         ui.set_tap_decision_index(i32::from(settings.tap_decision == "holdOnOtherKeyPress"));
         ui.set_hold_timeout(settings.default_hold_timeout_ms.to_string().into());
         ui.set_double_tap_timeout(settings.default_double_tap_timeout_ms.to_string().into());
@@ -99,6 +116,7 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
         matchers = settings.game_mode.process_matchers.clone();
     }
     refresh_mouse_devices(ui);
+    ui.set_is_linux(cfg!(target_os = "linux"));
     let platform = lhc_core::platform::info();
     let detail = platform.linux.map_or_else(
         || platform.os.to_owned(),
@@ -195,6 +213,7 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
         let (Some(ui), Some(config)) = (weak.upgrade(), &config) else {
             return;
         };
+        let mut saved = false;
         let result = (|| {
             let hold = parse_ms(&ui.get_hold_timeout())?;
             let double_tap = parse_ms(&ui.get_double_tap_timeout())?;
@@ -224,7 +243,7 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
                         2 => LocalePreference::Russian,
                         _ => LocalePreference::Auto,
                     };
-                    settings.launch_on_startup = ui.get_launch_on_startup();
+                    settings.input_device_path = Some(ui.get_keyboard_device_path().trim().into());
                     settings.tap_decision = if ui.get_tap_decision_index() == 1 {
                         "holdOnOtherKeyPress"
                     } else {
@@ -244,6 +263,7 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
                     settings.input_mouse_device_path = Some(ui.get_mouse_device_path().into());
                 })
                 .map_err(|error| error.to_string())?;
+            saved = true;
             let runtime = config
                 .borrow()
                 .runtime_config(&AutoSwitchContext::current())
@@ -251,11 +271,11 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
             lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
             Ok::<_, String>(())
         })();
-        if result.is_ok() {
+        if saved {
             let dark = match ui.get_appearance_index() {
                 1 => false,
                 2 => true,
-                _ => ui.global::<Theme>().get_dark(),
+                _ => system_dark(&ui),
             };
             let english = match ui.get_locale_index() {
                 1 => true,
@@ -267,7 +287,17 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
         ui.set_settings_message(match result {
             Ok(()) => Msg::SettingsSaved.to_ui(),
             Err(error) if error.starts_with("Enter a non-negative") => Msg::TimeoutInvalid.to_ui(),
+            Err(error) if saved => Msg::SavedMapperNotUpdated(error).to_ui(),
             Err(error) => Msg::Error(error).to_ui(),
         });
     });
+}
+
+pub(super) fn system_dark(ui: &SettingsWindow) -> bool {
+    use slint::winit_030::WinitWindowAccessor;
+    ui.window()
+        .with_winit_window(|window| {
+            window.theme() != Some(slint::winit_030::winit::window::Theme::Light)
+        })
+        .unwrap_or(true)
 }

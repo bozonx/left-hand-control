@@ -9,6 +9,7 @@ pub mod ui {
 }
 
 mod app;
+pub use app::bind_document;
 pub mod command;
 pub mod editor;
 mod i18n;
