@@ -153,7 +153,9 @@ export component SettingsWindow inherits Window {
     in-out property <int> create-source: 0;
     in-out property <int> create-copy-index: 0;
     in-out property <bool> create-name-touched: false;
-    // What runs once unsaved changes are resolved: 1 edit selected layout, 2 create
+    in-out property <int> pending-create-source: 0;
+    in-out property <int> pending-create-copy-index: 0;
+    // What runs once unsaved changes are resolved: 1 edit selected layout, 2 open create
     in-out property <int> pending-layout-action: 0;
     in-out property <int> editing-description: -1;
     in property <[string]> layout-descriptions;
@@ -187,7 +189,7 @@ export component SettingsWindow inherits Window {
         }
         return @tr("New layout");
     }
-    public function open-create(source: int, copy-index: int) {
+    function proceed-open-create(source: int, copy-index: int) {
         root.create-source = source;
         root.create-copy-index = max(0, copy-index);
         root.create-description = "";
@@ -195,21 +197,26 @@ export component SettingsWindow inherits Window {
         root.create-name = root.suggest-layout-name(root.create-base(source));
         root.library-dialog = 1;
     }
+    public function open-create(source: int, copy-index: int) {
+        root.pending-create-source = source;
+        root.pending-create-copy-index = copy-index;
+        root.guard-layout-switch(2);
+    }
     function choose-create-source(source: int) {
         root.create-source = source;
         if !root.create-name-touched { root.create-name = root.suggest-layout-name(root.create-base(source)); }
     }
     public function submit-create() {
         if root.layout-name-issue(root.create-name) != 0 { return; }
-        root.guard-layout-switch(2);
+        root.create-layout(root.create-name, root.create-description, root.create-source, root.create-copy-index);
     }
     function continue-layout-action() {
-        if root.pending-layout-action == 1 { root.library-dialog = 0; root.load-layout(); }
-        if root.pending-layout-action == 2 {
-            root.library-dialog = 1;
-            root.create-layout(root.create-name, root.create-description, root.create-source, root.create-copy-index);
-        }
+        let action = root.pending-layout-action;
         root.pending-layout-action = 0;
+        if action == 1 { root.library-dialog = 0; root.load-layout(); }
+        if action == 2 {
+            root.proceed-open-create(root.pending-create-source, root.pending-create-copy-index);
+        }
     }
     // Replacing the working copy discards its unsaved edits, so ask first.
     function guard-layout-switch(action: int) {
@@ -872,7 +879,7 @@ export component SettingsWindow inherits Window {
             focus-on-tab-navigation: false;
             key-pressed(event) => {
                 if event.text == Key.Escape {
-                    if root.library-dialog == 7 && root.pending-layout-action == 2 { root.library-dialog = 1; } else { root.library-dialog = 0; }
+                    root.library-dialog = 0;
                     root.pending-layout-action = 0;
                     return accept;
                 }
@@ -950,7 +957,7 @@ export component SettingsWindow inherits Window {
                     Button {
                         text: @tr("Cancel");
                         clicked => {
-                            if root.library-dialog == 7 && root.pending-layout-action == 2 { root.library-dialog = 1; } else { root.library-dialog = 0; }
+                            root.library-dialog = 0;
                             root.pending-layout-action = 0;
                         }
                     }
