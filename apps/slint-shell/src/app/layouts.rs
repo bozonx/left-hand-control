@@ -466,10 +466,14 @@ fn bind_toolbar(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>
         let id = document.settings().current_layout_id.as_deref();
         ui.set_current_layout_label(id.unwrap_or("").trim_start_matches("user:").into());
         ui.set_layout_dirty(
-            id.and_then(|id| document.load_layout(id).ok())
-                .map(|layout| layout_file::serialize(&layout))
-                .as_deref()
-                != Some(layout_file::serialize(document.layout()).as_str()),
+            id.is_some_and(|id| {
+                document
+                    .load_layout(id)
+                    .ok()
+                    .map(|layout| layout_file::serialize(&layout))
+                    .as_deref()
+                    != Some(layout_file::serialize(document.layout()).as_str())
+            }),
         );
     });
     ui.invoke_reset_layout_context();
