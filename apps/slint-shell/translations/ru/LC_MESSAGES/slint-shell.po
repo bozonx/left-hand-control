@@ -253,9 +253,6 @@ msgstr "Загрузить выбранную"
 msgid "Save current to selected"
 msgstr "Сохранить в выбранную"
 
-msgid "Delete selected"
-msgstr "Удалить выбранную"
-
 msgid "Mapper"
 msgstr "Маппер"
 
@@ -877,9 +874,6 @@ msgstr "Переключение: автоматически"
 msgid "Change…"
 msgstr "Изменить…"
 
-msgid "Create your first layout to get started."
-msgstr "Создайте первую раскладку."
-
 msgid "Active"
 msgstr "Активна"
 
@@ -898,20 +892,11 @@ msgstr "Активировать"
 msgid "More…"
 msgstr "Ещё…"
 
-msgid "Layout switching"
-msgstr "Переключение раскладок"
-
-msgid "Switching mode is applied immediately. Configure conditions on each layout."
-msgstr "Режим применяется сразу. Условия настраиваются отдельно для каждой раскладки."
-
 msgid "Delete layout?"
 msgstr "Удалить раскладку?"
 
 msgid "Layout details"
 msgstr "Свойства раскладки"
-
-msgid "Rename and describe…"
-msgstr "Название и описание…"
 
 msgid "Use when"
 msgstr "Использовать, когда"
@@ -925,17 +910,8 @@ msgstr "Пустые условия не ограничивают выбор. И
 msgid "The layout file will be deleted. This cannot be undone."
 msgstr "Файл раскладки будет удалён. Это действие нельзя отменить."
 
-msgid "Included in automatic switching"
-msgstr "Включена в автоподбор"
-
-msgid "Excluded from automatic switching"
-msgstr "Исключена из автоподбора"
-
 msgid "Duplicate…"
 msgstr "Создать копию…"
-
-msgid "Create copy"
-msgstr "Создать копию"
 
 msgid "From current layout"
 msgstr "Из текущей раскладки"
@@ -943,11 +919,107 @@ msgstr "Из текущей раскладки"
 msgid "Edit layout"
 msgstr "Редактировать"
 
-msgid "Based on Ivan K"
-msgstr "На основе Ivan K"
-
 msgid "New layout"
 msgstr "Новая раскладка"
 
 msgid "Ivan K layout"
 msgstr "Раскладка Ivan K"
+
+msgid "A layout with this name already exists."
+msgstr "Раскладка с таким именем уже есть."
+
+msgid "Add a description…"
+msgstr "Добавить описание…"
+
+msgid "Automatic: the first included layout whose conditions match is used. Order sets priority."
+msgstr "Автоматически: работает первая включённая раскладка, чьи условия выполнены. Порядок задаёт приоритет."
+
+msgid "Based on Ivan K layout"
+msgstr "На основе раскладки Ivan K"
+
+msgid "Based on Ivan K layout (the author's layout)"
+msgstr "На основе раскладки Ivan K (авторская раскладка)"
+
+msgid "Copy of"
+msgstr "Копия раскладки"
+
+msgid "Create"
+msgstr "Создать"
+
+msgid "Delete…"
+msgstr "Удалить…"
+
+msgid "Description (optional)"
+msgstr "Описание (необязательно)"
+
+msgid "Discard changes"
+msgstr "Не сохранять"
+
+msgid "Empty layout"
+msgstr "Пустая раскладка"
+
+msgid "Except: {}"
+msgstr "Кроме: {}"
+
+msgid "Make active"
+msgstr "Сделать активной"
+
+msgid "Manual: the layout you make active works everywhere."
+msgstr "Вручную: везде работает раскладка, которую вы сделали активной."
+
+msgid "New layout…"
+msgstr "Новая раскладка…"
+
+msgid "No conditions: always matches"
+msgstr "Без условий: подходит всегда"
+
+msgid "No layouts yet"
+msgstr "Раскладок пока нет"
+
+msgid "Not used in automatic mode"
+msgstr "Не участвует в автоматическом режиме"
+
+msgid "Rename…"
+msgstr "Переименовать…"
+
+msgid "Save and continue"
+msgstr "Сохранить и продолжить"
+
+msgid "Start from"
+msgstr "Основа"
+
+msgid "Start from the author's Ivan K layout or from an empty one."
+msgstr "Начните с авторской раскладки Ivan K или с пустой."
+
+msgid "The layout you are editing has not been saved to the library. Its changes will be lost."
+msgstr "Редактируемая раскладка не сохранена в библиотеку. Изменения будут потеряны."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr "Имя содержит символы, недопустимые в имени файла."
+
+msgid "Unsaved changes"
+msgstr "Несохранённые изменения"
+
+msgid "What is this layout for?"
+msgstr "Для чего эта раскладка?"
+
+msgid "When: {}"
+msgstr "Когда: {}"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "Вы редактируете «{}», а активна «{}»."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "Вы редактируете «{}»; активной раскладки нет."
+
+msgid "game mode off"
+msgstr "игровой режим выключен"
+
+msgid "game mode on"
+msgstr "игровой режим включён"
+
+msgid "{} (copy)"
+msgstr "{} (копия)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "В «{}» есть несохранённые изменения. Сохранить их перед переключением?"

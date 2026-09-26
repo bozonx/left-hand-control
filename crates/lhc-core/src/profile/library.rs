@@ -3,24 +3,64 @@ use crate::{
     profile::{auto_switch, layout_file, model::LayoutPreset},
 };
 
+/// What a new library layout starts from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LibrarySource<'a> {
+    Empty,
+    /// The bundled author's layout.
+    IvanK,
+    /// An existing library layout, by name.
+    Copy(&'a str),
+}
+
 impl ConfigDocument {
-    pub fn create_library_preset(&self, base: &str, ivan_k: bool) -> Result<String, ConfigError> {
-        let preset = if ivan_k {
-            layout_file::parse(include_str!("../../../../public/ivank-layout.yaml"))
-                .map_err(ConfigError::Parse)?
-                .ok_or_else(|| ConfigError::Invalid("Bundled layout is empty".into()))?
-        } else {
-            LayoutPreset::default()
-        };
+    /// `base`, or `base (2)`, `base (3)`, … — the first name not taken in the library.
+    pub fn unique_library_name(&self, base: &str) -> Result<String, ConfigError> {
         let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
+        let base = base.trim();
         let mut name = base.to_owned();
         let mut suffix = 2;
         while names.contains(&name) {
             name = format!("{base} ({suffix})");
             suffix += 1;
         }
+        Ok(name)
+    }
+
+    /// Creates `name` in the library; fails if it is already taken.
+    pub fn create_library_layout(
+        &self,
+        name: &str,
+        description: &str,
+        source: LibrarySource,
+    ) -> Result<String, ConfigError> {
+        let description = description.trim();
+        let mut preset = match source {
+            LibrarySource::Empty => LayoutPreset::default(),
+            LibrarySource::IvanK => {
+                layout_file::parse(include_str!("../../../../public/ivank-layout.yaml"))
+                    .map_err(ConfigError::Parse)?
+                    .ok_or_else(|| ConfigError::Invalid("Bundled layout is empty".into()))?
+            }
+            LibrarySource::Copy(from) => {
+                let text = self.paths().load_user_layout(from).map_err(ConfigError::Io)?;
+                if description.is_empty() {
+                    // Byte-for-byte copy keeps whatever the source file holds.
+                    return self
+                        .paths()
+                        .save_user_layout(name, &text, false)
+                        .map_err(ConfigError::Io);
+                }
+                layout_file::parse(&text)
+                    .map_err(ConfigError::Parse)?
+                    .unwrap_or_default()
+            }
+        };
+        if !description.is_empty() {
+            preset.description = Some(description.to_owned());
+        }
         self.paths()
-            .save_user_layout(&name, &layout_file::serialize(&preset), false)
+            .save_user_layout(name, &layout_file::serialize(&preset), false)
             .map_err(ConfigError::Io)
     }
 
@@ -145,6 +185,37 @@ mod tests {
         },
         storage::StoragePaths,
     };
+
+    #[test]
+    fn create_from_sources_keeps_names_unique() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let document = ConfigDocument::load(paths.clone()).unwrap();
+        assert_eq!(document.unique_library_name(" New ").unwrap(), "New");
+        let ivan = document
+            .create_library_layout("Ivan", "", LibrarySource::IvanK)
+            .unwrap();
+        assert!(!document.load_layout("user:Ivan").unwrap().rules.is_empty());
+        assert_eq!(document.unique_library_name("Ivan").unwrap(), "Ivan (2)");
+        assert!(
+            document
+                .create_library_layout(&ivan, "", LibrarySource::Empty)
+                .is_err()
+        );
+        document
+            .create_library_layout("Copy", " mine ", LibrarySource::Copy("Ivan"))
+            .unwrap();
+        let copy = document.load_layout("user:Copy").unwrap();
+        assert_eq!(copy.description.as_deref(), Some("mine"));
+        assert_eq!(
+            copy.rules.len(),
+            document.load_layout("user:Ivan").unwrap().rules.len()
+        );
+        document
+            .create_library_layout("Empty", "", LibrarySource::Empty)
+            .unwrap();
+        assert!(document.load_layout("user:Empty").unwrap().rules.is_empty());
+    }
 
     #[test]
     fn editing_rename_delete_preserve_activation_and_references() {

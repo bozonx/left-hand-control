@@ -1,5 +1,13 @@
-use crate::{editor::EditorHandle, i18n::Msg, ui::SettingsWindow};
-use lhc_core::{config_document::ConfigDocument, profile::layout_file};
+use crate::{
+    editor::EditorHandle,
+    i18n::Msg,
+    ui::{LayoutConditionsView, SettingsWindow},
+};
+use lhc_core::{
+    config_document::ConfigDocument,
+    profile::{layout_file, library::LibrarySource, model::LayoutConditionSet},
+    storage::validate_layout_name,
+};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
@@ -23,17 +31,37 @@ fn refresh(
     ui.set_layout_mode_index(i32::from(
         document.settings().layout_mode == lhc_core::profile::model::LayoutMode::Auto,
     ));
+    let rules: Vec<_> = names
+        .iter()
+        .map(|name| {
+            document
+                .settings()
+                .layout_conditions
+                .get(&format!("user:{name}"))
+                .cloned()
+                .unwrap_or_default()
+        })
+        .collect();
     ui.set_layout_auto_included(ModelRc::new(VecModel::from(
-        names
+        rules
             .iter()
-            .map(|name| {
-                document
-                    .settings()
-                    .layout_conditions
-                    .get(&format!("user:{name}"))
-                    .is_some_and(|rule| rule.enabled_in_auto)
-            })
+            .map(|rule| rule.enabled_in_auto)
             .collect::<Vec<bool>>(),
+    )));
+    ui.set_layout_conditions(ModelRc::new(VecModel::from(
+        rules
+            .into_iter()
+            .map(|rule| {
+                let (when_game, when_list) = summary(rule.whitelist.as_ref());
+                let (unless_game, unless_list) = summary(rule.blacklist.as_ref());
+                LayoutConditionsView {
+                    when_game,
+                    when_list: when_list.into(),
+                    unless_game,
+                    unless_list: unless_list.into(),
+                }
+            })
+            .collect::<Vec<_>>(),
     )));
     ui.set_layout_descriptions(ModelRc::new(VecModel::from(
         names
@@ -71,6 +99,38 @@ fn refresh(
         ui.set_layout_black_apps("".into());
     }
     Ok(())
+}
+
+/// Game-mode index (0 any, 1 on, 2 off) and the comma-joined layouts and apps.
+fn summary(set: Option<&LayoutConditionSet>) -> (i32, String) {
+    let Some(set) = set else {
+        return (0, String::new());
+    };
+    let game = match set.game_mode.as_deref() {
+        Some("on") => 1,
+        Some("off") => 2,
+        _ => 0,
+    };
+    (game, [set.layouts.join(", "), set.apps.join(", ")]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" · "))
+}
+
+/// 0 valid, 1 empty, 2 invalid characters, 3 taken.
+fn name_issue(document: &ConfigDocument, name: &str) -> i32 {
+    if name.trim().is_empty() {
+        return 1;
+    }
+    let Ok(name) = validate_layout_name(name) else {
+        return 2;
+    };
+    let taken = document
+        .paths()
+        .list_user_layouts()
+        .is_ok_and(|names| names.iter().any(|item| item.eq_ignore_ascii_case(&name)));
+    if taken { 3 } else { 0 }
 }
 
 fn report(ui: &SettingsWindow, result: Result<String, String>) {
@@ -184,17 +244,39 @@ pub(super) fn bind(
             });
         report(&ui, result.map(|_| String::new()));
     });
+    let config_copy = config.clone();
+    ui.on_suggest_layout_name(move |base| {
+        config_copy
+            .as_ref()
+            .and_then(|config| config.borrow().unique_library_name(&base).ok())
+            .unwrap_or_else(|| base.to_string())
+            .into()
+    });
+    let config_copy = config.clone();
+    ui.on_layout_name_issue(move |name| {
+        config_copy
+            .as_ref()
+            .map_or(0, |config| name_issue(&config.borrow(), &name))
+    });
     let weak = ui.as_weak();
     let state_copy = state.clone();
     let config_copy = config.clone();
-    ui.on_create_layout_preset(move |base, ivan_k| {
+    ui.on_create_layout(move |name, description, source, copy_index| {
         let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) else {
             return;
         };
         let result = (|| {
+            let copy_from = usize::try_from(copy_index)
+                .ok()
+                .and_then(|index| state_copy.borrow().names.row_data(index));
+            let source = match source {
+                1 => LibrarySource::IvanK,
+                2 => LibrarySource::Copy(copy_from.as_deref().ok_or("Select a layout")?),
+                _ => LibrarySource::Empty,
+            };
             let name = config
                 .borrow()
-                .create_library_preset(&base, ivan_k)
+                .create_library_layout(&name, &description, source)
                 .map_err(|error| error.to_string())?;
             refresh(&ui, &config.borrow(), &mut state_copy.borrow_mut())?;
             let index = state_copy
@@ -203,6 +285,7 @@ pub(super) fn bind(
                 .iter()
                 .position(|item| item == name)
                 .ok_or("Select a layout")?;
+            ui.set_library_dialog(0);
             ui.invoke_select_layout(index as i32);
             ui.invoke_load_layout();
             Ok(String::new())
@@ -210,6 +293,36 @@ pub(super) fn bind(
         if result.is_err() {
             report(&ui, result);
         }
+    });
+    let weak = ui.as_weak();
+    let state_copy = state.clone();
+    let config_copy = config.clone();
+    ui.on_set_layout_description(move |index, description| {
+        let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) else {
+            return;
+        };
+        let result = (|| {
+            let name = usize::try_from(index)
+                .ok()
+                .and_then(|index| state_copy.borrow().names.row_data(index))
+                .ok_or("Select a layout")?
+                .to_string();
+            let text = config.borrow().paths().load_user_layout(&name)?;
+            config
+                .borrow_mut()
+                .edit_library_metadata(&name, &name, &description, &text)
+                .map_err(|error| error.to_string())?;
+            let mut state = state_copy.borrow_mut();
+            if state.selected.as_deref() == Some(name.as_str()) {
+                state.known = Some(config.borrow().paths().load_user_layout(&name)?);
+                ui.set_layout_description(description.trim().into());
+            }
+            refresh(&ui, &config.borrow(), &mut state)?;
+            drop(state);
+            ui.invoke_reset_layout_context();
+            Ok(String::new())
+        })();
+        report(&ui, result);
     });
     let weak = ui.as_weak();
     let state_copy = state.clone();
@@ -266,6 +379,12 @@ pub(super) fn bind(
                 .selected
                 .clone()
                 .ok_or("Select a layout")?;
+            if config.borrow().settings().current_layout_id.as_deref()
+                == Some(format!("user:{name}").as_str())
+            {
+                ui.invoke_navigate(3, 0);
+                return Ok(String::new());
+            }
             config
                 .borrow_mut()
                 .load_library_for_editing(&name)
@@ -280,7 +399,7 @@ pub(super) fn bind(
             );
             ui.invoke_navigate(3, 0);
             super::mapper::apply_runtime(&config.borrow())?;
-            Ok(format!("Loaded: {name}"))
+            Ok(String::new())
         })();
         report(&ui, result);
     });
@@ -474,6 +593,29 @@ fn bind_controls(
         ui.invoke_refresh_layouts();
     });
     let weak = ui.as_weak();
+    let document = config.clone();
+    ui.on_activate_current_layout(move || {
+        let (Some(ui), Some(document)) = (weak.upgrade(), &document) else {
+            return;
+        };
+        let result = (|| {
+            let id = document
+                .borrow()
+                .settings()
+                .current_layout_id
+                .clone()
+                .ok_or("Select a layout")?;
+            document
+                .borrow_mut()
+                .update_settings(|settings| settings.manual_active_layout_id = Some(id.clone()))
+                .map_err(|error| error.to_string())?;
+            super::mapper::apply_runtime(&document.borrow())?;
+            ui.set_active_layout_label(id.trim_start_matches("user:").into());
+            Ok(String::new())
+        })();
+        report(&ui, result);
+    });
+    let weak = ui.as_weak();
     ui.on_library_action(move |action| {
         let (Some(ui), Some(document)) = (weak.upgrade(), &config) else {
             return;
@@ -482,10 +624,13 @@ fn bind_controls(
             let name = state.borrow().selected.clone().ok_or("Select a layout")?;
             let id = format!("user:{name}");
             match action {
-                0 => document
-                    .borrow_mut()
-                    .update_settings(|settings| settings.manual_active_layout_id = Some(id))
-                    .map_err(|error| error.to_string())?,
+                0 => {
+                    document
+                        .borrow_mut()
+                        .update_settings(|settings| settings.manual_active_layout_id = Some(id))
+                        .map_err(|error| error.to_string())?;
+                    ui.set_active_layout_label(name.clone().into());
+                }
                 1 | 2 => document
                     .borrow_mut()
                     .move_library_layout(&id, if action == 1 { -1 } else { 1 })
@@ -527,18 +672,11 @@ fn bind_controls(
                         Some(document.borrow().paths().load_user_layout(&saved)?);
                     ui.invoke_reset_layout_context();
                 }
-                6 => {
-                    let document = document.borrow();
-                    let text = document.paths().load_user_layout(&name)?;
-                    document
-                        .paths()
-                        .save_user_layout(&ui.get_layout_name(), &text, false)?;
-                }
                 _ => return Ok(String::new()),
             }
             super::mapper::apply_runtime(&document.borrow())?;
             refresh(&ui, &document.borrow(), &mut state.borrow_mut())?;
-            if action == 3 || action == 4 || action == 6 {
+            if action == 3 || action == 4 {
                 ui.set_library_dialog(0);
             }
             Ok("saved".into())

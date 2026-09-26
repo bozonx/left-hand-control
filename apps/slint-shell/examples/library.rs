@@ -16,9 +16,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let document = Rc::new(RefCell::new(ConfigDocument::load(paths.clone())?));
     let ui = SettingsWindow::new()?;
     let _editor = bind_document(&ui, Some(document.clone()));
-    ui.invoke_create_layout_preset("A".into(), false);
+    ui.invoke_open_create(0, 0);
+    assert_eq!(ui.get_library_dialog(), 1);
+    assert!(!ui.get_create_name().is_empty());
+    ui.invoke_create_layout("A".into(), "".into(), 0, 0);
     assert_eq!(ui.get_library_dialog(), 0);
-    ui.invoke_create_layout_preset("B".into(), false);
+    assert_eq!(ui.invoke_layout_name_issue("A".into()), 3);
+    assert_eq!(ui.invoke_layout_name_issue("a/b".into()), 2);
+    assert_eq!(ui.invoke_layout_name_issue(" ".into()), 1);
+    ui.invoke_create_layout("B".into(), "".into(), 0, 0);
     assert_eq!(ui.get_layout_names().row_count(), 2);
     ui.invoke_select_layout(0);
     ui.invoke_library_action(0);
@@ -57,25 +63,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(ui.get_layout_white_apps(), "kate, terminal");
     ui.invoke_delete_layout();
     assert_eq!(ui.get_layout_names().row_count(), 1);
-    ui.invoke_select_layout(0);
-    ui.set_layout_name("Copy".into());
-    ui.set_library_dialog(6);
-    ui.invoke_library_action(6);
+    ui.invoke_create_layout("Copy".into(), "".into(), 2, 0);
     assert_eq!(ui.get_library_dialog(), 0);
     assert_eq!(
         paths.load_user_layout("A")?,
         paths.load_user_layout("Copy")?
     );
+    ui.invoke_set_layout_description(0, "Inline".into());
+    assert!(paths.load_user_layout("A")?.contains("Inline"));
     assert_eq!(ui.get_layout_names().row_count(), 2);
-    let reloaded = ConfigDocument::load(paths)?;
+    let reloaded = ConfigDocument::load(paths.clone())?;
     assert!(reloaded.settings().layout_conditions.is_empty());
-    assert!(reloaded.settings().current_layout_id.is_none());
+    assert_eq!(
+        reloaded.settings().current_layout_id.as_deref(),
+        Some("user:Copy")
+    );
     document.borrow_mut().update_settings(|settings| {
         settings.layout_mode = LayoutMode::Manual;
         settings.manual_active_layout_id = Some("user:missing".into());
     })?;
-    ui.invoke_create_layout_preset("Ivan K".into(), true);
-    assert_eq!(ui.get_layout_status().id, "library-saved");
+    ui.invoke_create_layout("Ivan K".into(), "".into(), 1, 0);
     assert_eq!(ui.get_page(), 3);
     assert_eq!(
         ui.get_rule_rows().row_count(),
@@ -86,12 +93,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(ui.get_layer_names().row_count() > 0);
     ui.invoke_navigate(6, 0);
     assert!(ui.global::<MenuEditor>().get_pages().row_count() > 0);
-    ui.invoke_create_layout_preset("Ivan K".into(), true);
+    assert_eq!(
+        ui.invoke_suggest_layout_name("Ivan K".into()),
+        "Ivan K (2)"
+    );
+    // Unsaved edits must survive until the user decides what to do with them.
+    document
+        .borrow_mut()
+        .update_layout(|layout| layout.rules.clear())?;
+    ui.invoke_refresh_layout_context();
+    assert!(ui.get_layout_dirty());
+    ui.invoke_open_create(0, 0);
+    ui.set_create_name("Empty".into());
+    ui.invoke_submit_create();
+    assert_eq!(ui.get_library_dialog(), 7);
+    assert!(paths.load_user_layout("Empty").is_err());
+    ui.invoke_save_and_continue();
+    assert!(document.borrow().load_layout("user:Ivan K")?.rules.is_empty());
     assert_eq!(
         document.borrow().settings().current_layout_id.as_deref(),
-        Some("user:Ivan K (2)")
+        Some("user:Empty")
     );
-    ui.invoke_create_layout_preset("Empty".into(), false);
     assert!(document.borrow().layout().rules.is_empty());
     assert_eq!(ui.get_rule_rows().row_count(), 0);
     let ivan = ui
