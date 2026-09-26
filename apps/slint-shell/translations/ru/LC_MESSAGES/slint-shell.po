@@ -439,12 +439,6 @@ msgstr "Изоляция"
 msgid "Hold for"
 msgstr "Удерживать для"
 
-msgid "Hold timeout (ms)"
-msgstr "Порог удержания (мс)"
-
-msgid "Double tap timeout (ms)"
-msgstr "Порог двойного нажатия (мс)"
-
 msgid "Swallow tap"
 msgstr "Подавлять нажатие"
 
@@ -456,3 +450,81 @@ msgstr "Имя нового слоя"
 
 msgid "Create layer"
 msgstr "Создать слой"
+
+msgid "Rules and triggers"
+msgstr "Правила и триггеры"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr "Настройте, как клавиши включают слои и запускают действия."
+
+msgid "+ Add rule"
+msgstr "+ Добавить правило"
+
+msgid "Not set"
+msgstr "Не задано"
+
+msgid "Layer (hold)"
+msgstr "Слой (удержание)"
+
+msgid "Hold timeout, ms"
+msgstr "Порог удержания, мс"
+
+msgid "Double-tap action"
+msgstr "Двойное нажатие"
+
+msgid "Hold button"
+msgstr "Удержание"
+
+msgid "Double-tap ms"
+msgstr "Двойное нажатие, мс"
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "Advanced"
+msgstr "Дополнительно"
+
+msgid "Choose trigger key"
+msgstr "Выберите клавишу"
+
+msgid "Choose layer"
+msgstr "Выберите слой"
+
+msgid "Conditions"
+msgstr "Условия"
+
+msgid "Advanced rule options"
+msgstr "Дополнительные параметры правила"
+
+msgid "Choose action"
+msgstr "Выберите действие"
+
+msgid "Search or enter a key code"
+msgstr "Найдите или введите код клавиши"
+
+msgid "Search or enter an action"
+msgstr "Найдите или введите действие"
+
+msgid "Ignore"
+msgstr "Не учитывать"
+
+msgid "On"
+msgstr "Включён"
+
+msgid "Off"
+msgstr "Выключен"
+
+msgid "Milliseconds; empty uses default"
+msgstr "Миллисекунды; пусто — значение по умолчанию"
+
+msgid "Clear"
+msgstr "Очистить"
+
+msgid "Apply"
+msgstr "Применить"
+
+msgid "Delete rule?"
+msgstr "Удалить правило?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Правило будет удалено из текущей раскладки."

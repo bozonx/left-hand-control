@@ -1,10 +1,14 @@
 use crate::{
-    editor::EditorHandle,
-    ui::{RuleRow, SettingsWindow},
+    editor::{EditorHandle, KEY_CODES},
+    ui::{RuleLayerChoice, RuleRow, SettingsWindow},
 };
 use lhc_core::{
     config_document::ConfigDocument,
-    profile::{auto_switch::AutoSwitchContext, diagnostics, model::{Layer, LayerRule}},
+    profile::{
+        auto_switch::AutoSwitchContext,
+        diagnostics,
+        model::{Layer, LayerRule},
+    },
 };
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
@@ -45,7 +49,36 @@ fn refresh(ui: &SettingsWindow, document: &ConfigDocument, selected: i32, fields
             .iter()
             .map(|rule| RuleRow {
                 key: rule.key.clone().into(),
-                action: rule.tap_action.clone().unwrap_or_default().into(),
+                tap: rule.tap_action.clone().unwrap_or_default().into(),
+                hold: rule.hold_action.clone().unwrap_or_default().into(),
+                double_tap: rule.double_tap_action.clone().into(),
+                layer: document
+                    .layout()
+                    .layers
+                    .iter()
+                    .find(|layer| layer.id == rule.layer_id)
+                    .map(|layer| layer.name.clone())
+                    .unwrap_or_else(|| rule.layer_id.clone())
+                    .into(),
+                conditions: if rule.condition_game_mode.is_some()
+                    || rule.condition_layouts.is_some()
+                    || rule.condition_apps_whitelist.is_some()
+                    || rule.condition_apps_blacklist.is_some()
+                {
+                    "Set".into()
+                } else {
+                    "".into()
+                },
+                hold_timeout: rule
+                    .hold_timeout_ms
+                    .map(|v| v.to_string())
+                    .unwrap_or_default()
+                    .into(),
+                double_timeout: rule
+                    .double_tap_timeout_ms
+                    .map(|v| v.to_string())
+                    .unwrap_or_default()
+                    .into(),
                 enabled: rule.is_enabled(),
             })
             .collect::<Vec<_>>(),
@@ -56,7 +89,9 @@ fn refresh(ui: &SettingsWindow, document: &ConfigDocument, selected: i32, fields
         -1
     };
     ui.set_selected_rule(selected);
-    if !fields { return; }
+    if !fields {
+        return;
+    }
     if let Some(rule) = rules.get(selected as usize) {
         ui.set_rule_enabled(rule.is_enabled());
         ui.set_rule_key(rule.key.clone().into());
@@ -195,29 +230,212 @@ pub(super) fn bind(
             });
         }
     });
-    let weak = ui.as_weak(); let config_copy = config.clone(); let editor_copy = editor.clone();
-    ui.on_create_rule_layer(move |name| { if let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) {
-        let name = name.trim();
-        if name.is_empty() { ui.set_rule_status("Enter a layer name".into()); return; }
-        let id = lhc_core::profile::ids::generate("l_");
-        let index = ui.get_selected_rule();
-        let result = config.borrow_mut().update_layout(|layout| {
-            layout.layers.push(Layer { id: id.clone(), name: name.into(), description: None });
-            if let Some(rule) = layout.rules.get_mut(index as usize) { rule.layer_id = id.clone(); }
-        });
-        match result {
-            Ok(()) => { let document = config.borrow(); refresh(&ui, &document, index, true); editor_copy.reload(&document); ui.set_new_rule_layer_name("".into());
-                let status = match document.runtime_config(&AutoSwitchContext::current()) {
-                    Ok(runtime) => match lhc_core::mapper::runtime::update_config_if_running(&runtime.json) {
-                        Ok(()) => "Layer saved".to_owned(),
-                        Err(error) => format!("Layer saved, mapper update failed: {error}"),
-                    },
-                    Err(error) => format!("Layer saved; mapper cannot use these rules: {error}"),
-                };
-                ui.set_rule_status(status.into()); }
-            Err(error) => ui.set_rule_status(format!("Save failed: {error}").into()),
+    let weak = ui.as_weak();
+    let config_copy = config.clone();
+    let editor_copy = editor.clone();
+    ui.on_create_rule_layer(move |name| {
+        if let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) {
+            let name = name.trim();
+            if name.is_empty() {
+                ui.set_rule_status("Enter a layer name".into());
+                return;
+            }
+            let id = lhc_core::profile::ids::generate("l_");
+            let index = ui.get_selected_rule();
+            let result = config.borrow_mut().update_layout(|layout| {
+                layout.layers.push(Layer {
+                    id: id.clone(),
+                    name: name.into(),
+                    description: None,
+                });
+                if let Some(rule) = layout.rules.get_mut(index as usize) {
+                    rule.layer_id = id.clone();
+                }
+            });
+            match result {
+                Ok(()) => {
+                    let document = config.borrow();
+                    refresh(&ui, &document, index, true);
+                    editor_copy.reload(&document);
+                    ui.set_new_rule_layer_name("".into());
+                    let status = match document.runtime_config(&AutoSwitchContext::current()) {
+                        Ok(runtime) => {
+                            match lhc_core::mapper::runtime::update_config_if_running(&runtime.json)
+                            {
+                                Ok(()) => "Layer saved".to_owned(),
+                                Err(error) => format!("Layer saved, mapper update failed: {error}"),
+                            }
+                        }
+                        Err(error) => {
+                            format!("Layer saved; mapper cannot use these rules: {error}")
+                        }
+                    };
+                    ui.set_rule_status(status.into());
+                }
+                Err(error) => ui.set_rule_status(format!("Save failed: {error}").into()),
+            }
         }
-    }});
+    });
+    let weak = ui.as_weak();
+    let config_copy = config.clone();
+    ui.on_open_rule_dialog(move |index, field| {
+        if let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) {
+            refresh(&ui, &config.borrow(), index, true);
+            ui.set_rule_dialog_field(field);
+            let value = match field {
+                1 => ui.get_rule_key(),
+                2 => ui.get_rule_layer(),
+                3 => ui.get_rule_tap(),
+                4 => ui.get_rule_hold(),
+                5 => ui.get_rule_double_tap(),
+                12 => ui.get_rule_hold_timeout(),
+                13 => ui.get_rule_double_timeout(),
+                _ => "".into(),
+            };
+            ui.set_rule_dialog_value(value);
+            let choices: Vec<_> = if field == 1 {
+                KEY_CODES.iter().map(|s| (*s).into()).collect()
+            } else if field == 3 || field == 4 || field == 5 {
+                KEY_CODES
+                    .iter()
+                    .map(|s| (*s).into())
+                    .chain(
+                        ["Ctrl+KeyC", "Ctrl+KeyV", "Alt+Tab", "Escape", "Enter"]
+                            .into_iter()
+                            .map(Into::into),
+                    )
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            ui.set_rule_picker_items(ModelRc::new(VecModel::from(choices)));
+            let layers = config
+                .borrow()
+                .layout()
+                .layers
+                .iter()
+                .map(|layer| RuleLayerChoice {
+                    id: layer.id.clone().into(),
+                    label: layer.name.clone().into(),
+                })
+                .collect::<Vec<_>>();
+            ui.set_rule_layer_items(ModelRc::new(VecModel::from(layers)));
+            ui.set_rule_dialog_open(true);
+        }
+    });
+    let weak = ui.as_weak();
+    let config_copy = config.clone();
+    ui.on_filter_rule_choices(move |query| {
+        if let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) {
+            let query = query.to_lowercase();
+            let field = ui.get_rule_dialog_field();
+            if field == 2 {
+                let filtered = config
+                    .borrow()
+                    .layout()
+                    .layers
+                    .iter()
+                    .filter(|layer| {
+                        layer.name.to_lowercase().contains(query.as_str())
+                            || layer.id.to_lowercase().contains(query.as_str())
+                    })
+                    .map(|layer| RuleLayerChoice {
+                        id: layer.id.clone().into(),
+                        label: layer.name.clone().into(),
+                    })
+                    .collect::<Vec<_>>();
+                ui.set_rule_layer_items(ModelRc::new(VecModel::from(filtered)));
+                return;
+            }
+            let choices = if field == 1 {
+                KEY_CODES
+                    .iter()
+                    .map(|key| (*key).to_owned())
+                    .collect::<Vec<_>>()
+            } else {
+                KEY_CODES
+                    .iter()
+                    .copied()
+                    .chain([
+                        "Ctrl+KeyC",
+                        "Ctrl+KeyV",
+                        "Alt+Tab",
+                        "text:Hello",
+                        "delay:100",
+                        "showQuickMenu",
+                        "showEmojiMenu",
+                    ])
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>()
+            };
+            let filtered = choices
+                .into_iter()
+                .filter(|value| value.to_lowercase().contains(query.as_str()))
+                .map(Into::into)
+                .collect::<Vec<_>>();
+            ui.set_rule_picker_items(ModelRc::new(VecModel::from(filtered)));
+        }
+    });
+    let weak = ui.as_weak();
+    let config_copy = config.clone();
+    let editor_copy = editor.clone();
+    ui.on_choose_rule_value(move |value| {
+        if let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) {
+            let index = ui.get_selected_rule();
+            let field = ui.get_rule_dialog_field();
+            if index < 0 {
+                return;
+            }
+            let parsed = if field == 12 || field == 13 {
+                match timeout(&value) {
+                    Ok(v) => v,
+                    Err(error) => {
+                        ui.set_rule_status(error.into());
+                        return;
+                    }
+                }
+            } else {
+                None
+            };
+            change(&ui, config, &editor_copy, index, true, |rules| {
+                let rule = &mut rules[index as usize];
+                match field {
+                    1 => rule.key = value.into(),
+                    2 => rule.layer_id = value.into(),
+                    3 => rule.tap_action = Some(value.into()),
+                    4 => rule.hold_action = Some(value.into()),
+                    5 => rule.double_tap_action = value.into(),
+                    12 => rule.hold_timeout_ms = parsed,
+                    13 => rule.double_tap_timeout_ms = parsed,
+                    _ => {}
+                }
+            });
+            ui.set_rule_dialog_open(false);
+        }
+    });
+    let weak = ui.as_weak();
+    let config_copy = config.clone();
+    let editor_copy = editor.clone();
+    ui.on_apply_rule_conditions(move || {
+        if let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) {
+            let index = ui.get_selected_rule();
+            if index < 0 {
+                return;
+            }
+            let game_mode = ui.get_rule_game_mode();
+            let layouts = ui.get_rule_layouts();
+            let include = ui.get_rule_apps_include();
+            let exclude = ui.get_rule_apps_exclude();
+            change(&ui, config, &editor_copy, index, true, |rules| {
+                let rule = &mut rules[index as usize];
+                rule.condition_game_mode = optional(&game_mode);
+                rule.condition_layouts = parse_list(&layouts);
+                rule.condition_apps_whitelist = parse_list(&include);
+                rule.condition_apps_blacklist = parse_list(&exclude);
+            });
+            ui.set_rule_dialog_open(false);
+        }
+    });
     let weak = ui.as_weak();
     ui.on_edit_rule(move |field, value| {
         if let (Some(ui), Some(config)) = (weak.upgrade(), &config) {
@@ -252,8 +470,13 @@ pub(super) fn bind(
                     11 => rule.hold_for = optional(&value),
                     12 => rule.hold_timeout_ms = parsed,
                     13 => rule.double_tap_timeout_ms = parsed,
-                    14 => rule.tap_action = (value != "true").then(|| String::from(ui.get_rule_tap())),
-                    15 => rule.hold_action = (value != "true").then(|| String::from(ui.get_rule_hold())),
+                    14 => {
+                        rule.tap_action = (value != "true").then(|| String::from(ui.get_rule_tap()))
+                    }
+                    15 => {
+                        rule.hold_action =
+                            (value != "true").then(|| String::from(ui.get_rule_hold()))
+                    }
                     _ => {}
                 }
             });
