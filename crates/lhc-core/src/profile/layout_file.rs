@@ -15,7 +15,8 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
     if text.trim().is_empty() {
         return Ok(None);
     }
-    let doc: Value = serde_yaml::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
+    let doc: Value =
+        serde_yaml::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
     Ok(doc.as_object().map(from_object))
 }
 
@@ -49,7 +50,8 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     Some(value) => Some(scalar(value).filter(|a| !a.is_empty())?),
                 };
                 Some(ExtraKey {
-                    id: str_of(extra, "id").map_or_else(|| super::ids::generate("x_"), str::to_owned),
+                    id: str_of(extra, "id")
+                        .map_or_else(|| super::ids::generate("x_"), str::to_owned),
                     key: key.into(),
                     action,
                 })
@@ -160,7 +162,8 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
 
     let mut emoji_pages: Vec<EmojiPage> = array(doc, "emojiPages")
         .map(|page| {
-            let id = trimmed(page, "id").map_or_else(|| super::ids::generate("emoji_"), str::to_owned);
+            let id =
+                trimmed(page, "id").map_or_else(|| super::ids::generate("emoji_"), str::to_owned);
             EmojiPage {
                 name: trimmed(page, "name").map_or_else(|| id.clone(), str::to_owned),
                 cells: page
@@ -211,7 +214,9 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                     let mut out = Mapping::new();
                     put(&mut out, "id", layer.id.as_str());
                     put(&mut out, "name", layer.name.as_str());
-                    if let Some(description) = layer.description.as_deref().filter(|d| !d.is_empty()) {
+                    if let Some(description) =
+                        layer.description.as_deref().filter(|d| !d.is_empty())
+                    {
                         put(&mut out, "description", description);
                     }
                     if let Some(keymap) = preset.layer_keymaps.get(&layer.id) {
@@ -222,7 +227,9 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                                     keymap
                                         .keys
                                         .iter()
-                                        .map(|(code, action)| (code.as_str().into(), optional(action)))
+                                        .map(|(code, action)| {
+                                            (code.as_str().into(), optional(action))
+                                        })
                                         .collect(),
                                 ),
                             );
@@ -399,7 +406,11 @@ fn rule_yaml(rule: &LayerRule) -> Yaml {
         out.insert("hold".into(), optional(&rule.hold_action));
     }
     for (name, list) in [("isolate", &rule.isolate), ("holdFor", &rule.hold_for)] {
-        if let Some(list) = list.as_deref().map(str::trim).filter(|list| !list.is_empty()) {
+        if let Some(list) = list
+            .as_deref()
+            .map(str::trim)
+            .filter(|list| !list.is_empty())
+        {
             put(&mut out, name, list);
         }
     }
@@ -423,7 +434,10 @@ fn optional(value: &Option<String>) -> Yaml {
     value.as_deref().map_or(Yaml::Null, Into::into)
 }
 
-fn array<'a>(object: &'a Map<String, Value>, name: &str) -> impl Iterator<Item = &'a Map<String, Value>> {
+fn array<'a>(
+    object: &'a Map<String, Value>,
+    name: &str,
+) -> impl Iterator<Item = &'a Map<String, Value>> {
     object
         .get(name)
         .and_then(Value::as_array)
@@ -441,7 +455,9 @@ fn non_empty<'a>(object: &'a Map<String, Value>, name: &str) -> Option<&'a str> 
 }
 
 fn trimmed<'a>(object: &'a Map<String, Value>, name: &str) -> Option<&'a str> {
-    str_of(object, name).map(str::trim).filter(|value| !value.is_empty())
+    str_of(object, name)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
 }
 
 /// YAML scalars as the frontend's `String(value)` sees them.
@@ -564,11 +580,16 @@ emojiPages:
     fn matches_the_frontend_parser_on_the_shared_fixture() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures");
         let text = std::fs::read_to_string(root.join("layout-parity.yaml")).unwrap();
-        let expected: Value =
-            serde_json::from_str(&std::fs::read_to_string(root.join("layout-parity.expected.json")).unwrap())
-                .unwrap();
+        let expected: Value = serde_json::from_str(
+            &std::fs::read_to_string(root.join("layout-parity.expected.json")).unwrap(),
+        )
+        .unwrap();
         let mut preset = parse(&text).unwrap().unwrap();
-        for step in preset.macros.iter_mut().flat_map(|item| item.steps.iter_mut()) {
+        for step in preset
+            .macros
+            .iter_mut()
+            .flat_map(|item| item.steps.iter_mut())
+        {
             if step.id != "s3" {
                 step.id = "<generated>".into();
             }
@@ -582,10 +603,16 @@ emojiPages:
         let text = serialize(&preset);
         let again = parse(&text).unwrap().unwrap();
         assert_eq!(again.layers, preset.layers);
-        assert_eq!(again.layer_keymaps["nav"].keys, preset.layer_keymaps["nav"].keys);
+        assert_eq!(
+            again.layer_keymaps["nav"].keys,
+            preset.layer_keymaps["nav"].keys
+        );
         assert_eq!(again.rules.len(), preset.rules.len());
         for (a, b) in again.rules.iter().zip(&preset.rules) {
-            assert_eq!((&a.key, &a.tap_action, &a.hold_action), (&b.key, &b.tap_action, &b.hold_action));
+            assert_eq!(
+                (&a.key, &a.tap_action, &a.hold_action),
+                (&b.key, &b.tap_action, &b.hold_action)
+            );
             assert_eq!(a.isolate, b.isolate);
         }
         assert_eq!(again.macros[0].steps.len(), 3);

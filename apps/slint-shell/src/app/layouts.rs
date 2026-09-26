@@ -111,11 +111,14 @@ fn summary(set: Option<&LayoutConditionSet>) -> (i32, String) {
         Some("off") => 2,
         _ => 0,
     };
-    (game, [set.layouts.join(", "), set.apps.join(", ")]
-        .into_iter()
-        .filter(|part| !part.is_empty())
-        .collect::<Vec<_>>()
-        .join(" · "))
+    (
+        game,
+        [set.layouts.join(", "), set.apps.join(", ")]
+            .into_iter()
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(" · "),
+    )
 }
 
 /// 0 valid, 1 empty, 2 invalid characters, 3 taken.

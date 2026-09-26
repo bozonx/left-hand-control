@@ -93,10 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(ui.get_layer_names().row_count() > 0);
     ui.invoke_navigate(6, 0);
     assert!(ui.global::<MenuEditor>().get_pages().row_count() > 0);
-    assert_eq!(
-        ui.invoke_suggest_layout_name("Ivan K".into()),
-        "Ivan K (2)"
-    );
+    assert_eq!(ui.invoke_suggest_layout_name("Ivan K".into()), "Ivan K (2)");
     // Unsaved edits must survive until the user decides what to do with them.
     document
         .borrow_mut()
@@ -109,7 +106,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(ui.get_library_dialog(), 7);
     assert!(paths.load_user_layout("Empty").is_err());
     ui.invoke_save_and_continue();
-    assert!(document.borrow().load_layout("user:Ivan K")?.rules.is_empty());
+    assert!(
+        document
+            .borrow()
+            .load_layout("user:Ivan K")?
+            .rules
+            .is_empty()
+    );
     assert_eq!(
         document.borrow().settings().current_layout_id.as_deref(),
         Some("user:Empty")
@@ -150,6 +153,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(Command::parse("show emoji 0").is_err());
     assert!(Command::parse("show quick 6").is_err());
     ui.invoke_navigate(1, 0);
+    if std::env::var_os("LHC_LIBRARY_AUTO").is_some() {
+        ui.invoke_set_layout_mode(1);
+    }
     if let Ok(dialog) = std::env::var("LHC_LIBRARY_DIALOG") {
         ui.invoke_select_layout(0);
         ui.set_library_dialog(dialog.parse()?);

@@ -127,14 +127,32 @@ mod tests {
 
     #[test]
     fn condition_sets_match_like_the_frontend() {
-        assert!(matches_condition_set(&set(None, &[], &[]), &ctx(None, false, "")));
-        assert!(!matches_condition_set(&set(None, &["us"], &[]), &ctx(None, false, "")));
-        assert!(matches_condition_set(&set(Some("on"), &["us"], &[]), &ctx(Some("us"), true, "")));
-        assert!(!matches_condition_set(&set(Some("off"), &[], &[]), &ctx(None, true, "")));
-        assert!(matches_condition_set(&set(None, &[], &[" FIRE"]), &ctx(None, false, "Firefox")));
+        assert!(matches_condition_set(
+            &set(None, &[], &[]),
+            &ctx(None, false, "")
+        ));
+        assert!(!matches_condition_set(
+            &set(None, &["us"], &[]),
+            &ctx(None, false, "")
+        ));
+        assert!(matches_condition_set(
+            &set(Some("on"), &["us"], &[]),
+            &ctx(Some("us"), true, "")
+        ));
+        assert!(!matches_condition_set(
+            &set(Some("off"), &[], &[]),
+            &ctx(None, true, "")
+        ));
+        assert!(matches_condition_set(
+            &set(None, &[], &[" FIRE"]),
+            &ctx(None, false, "Firefox")
+        ));
         let mut no_detection = ctx(None, true, "");
         no_detection.game_mode_detection_enabled = false;
-        assert!(!matches_condition_set(&set(Some("on"), &[], &[]), &no_detection));
+        assert!(!matches_condition_set(
+            &set(Some("on"), &[], &[]),
+            &no_detection
+        ));
     }
 
     #[test]
@@ -160,7 +178,11 @@ mod tests {
             order_layout_ids(&ids, &settings.layout_order),
             vec!["user:C", "user:B", "user:A"]
         );
-        for (id, layouts) in [("user:A", vec![]), ("user:B", vec!["ru"]), ("user:C", vec!["de"])] {
+        for (id, layouts) in [
+            ("user:A", vec![]),
+            ("user:B", vec!["ru"]),
+            ("user:C", vec!["de"]),
+        ] {
             settings.layout_conditions.insert(
                 id.into(),
                 LayoutConditionRule {
@@ -178,7 +200,14 @@ mod tests {
             pick_active_layout(&ids, &settings, &ctx(Some("us"), false, "")).as_deref(),
             Some("user:A")
         );
-        settings.layout_conditions.get_mut("user:A").unwrap().enabled_in_auto = false;
-        assert_eq!(pick_active_layout(&ids, &settings, &ctx(Some("us"), false, "")), None);
+        settings
+            .layout_conditions
+            .get_mut("user:A")
+            .unwrap()
+            .enabled_in_auto = false;
+        assert_eq!(
+            pick_active_layout(&ids, &settings, &ctx(Some("us"), false, "")),
+            None
+        );
     }
 }

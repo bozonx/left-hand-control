@@ -22,6 +22,40 @@ component Pill inherits Rectangle {
     }
 }
 
+component ChoiceRow inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    in property <bool> enabled: true;
+    callback clicked();
+    height: 28px;
+    accessible-role: checkbox;
+    accessible-label: text;
+    accessible-checked: selected;
+    accessible-enabled: enabled;
+    accessible-action-default => { if root.enabled { root.clicked(); } }
+    HorizontalLayout {
+        spacing: 10px;
+        opacity: root.enabled ? 1 : 0.45;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 18px; height: 18px; border-radius: 9px; border-width: 2px;
+                border-color: root.selected || focus.has-focus ? Theme.text : Theme.border;
+                Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Theme.text; visible: root.selected; }
+            }
+        }
+        Text { text: root.text; color: Theme.text; vertical-alignment: center; }
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == " " { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+}
+
 component LayoutMenuItem inherits Rectangle {
     in property <string> text;
     in property <bool> enabled: true;
@@ -508,7 +542,8 @@ export component SettingsWindow inherits Window {
                                     color: Theme.muted; font-size: 12px; overflow: elide;
                                 }
                             }
-                            HorizontalLayout { alignment: center; spacing: 8px;
+                            VerticalLayout { alignment: center;
+                            HorizontalLayout { spacing: 8px;
                                 if card.auto: Button { text: @tr("Conditions…"); clicked => { root.select-layout(index); root.library-dialog = 3; } }
                                 if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { root.select-layout(index); root.library-action(0); } }
                                 Button { text: @tr("Edit layout"); primary: card.current; clicked => { root.edit-layout(index); } }
@@ -532,6 +567,7 @@ export component SettingsWindow inherits Window {
                                         }
                                     }
                                 }
+                            }
                             }
                         }
                         }
@@ -827,7 +863,7 @@ export component SettingsWindow inherits Window {
         Rectangle {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: 620px;
-            height: root.library-dialog == 3 ? 620px : root.library-dialog == 1 ? 470px : root.library-dialog == 7 ? 240px : root.library-dialog == 5 ? 260px : 320px;
+            height: root.library-dialog == 3 ? 620px : root.library-dialog == 1 ? 500px : root.library-dialog == 7 ? 210px : root.library-dialog == 5 ? 260px : 320px;
             background: Theme.card; border-radius: 12px;
             VerticalBox { padding: 24px; spacing: 12px;
                 Text {
@@ -853,10 +889,10 @@ export component SettingsWindow inherits Window {
                         color: Theme.error; wrap: word-wrap;
                     }
                     Text { text: @tr("Start from"); color: Theme.text; }
-                    CheckBox { text: @tr("Empty layout"); checked: root.create-source == 0; toggled => { root.choose-create-source(0); } }
-                    CheckBox { text: @tr("Based on Ivan K layout (the author's layout)"); checked: root.create-source == 1; toggled => { root.choose-create-source(1); } }
+                    ChoiceRow { text: @tr("Empty layout"); selected: root.create-source == 0; clicked => { root.choose-create-source(0); } }
+                    ChoiceRow { text: @tr("Based on Ivan K layout (the author's layout)"); selected: root.create-source == 1; clicked => { root.choose-create-source(1); } }
                     HorizontalBox { padding: 0px; spacing: 8px;
-                        CheckBox { text: @tr("Copy of"); enabled: root.layout-names.length > 0; checked: root.create-source == 2; toggled => { root.choose-create-source(2); } }
+                        ChoiceRow { horizontal-stretch: 0; text: @tr("Copy of"); enabled: root.layout-names.length > 0; selected: root.create-source == 2; clicked => { root.choose-create-source(2); } }
                         ComboBox {
                             horizontal-stretch: 1;
                             enabled: root.layout-names.length > 0;

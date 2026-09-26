@@ -14,8 +14,8 @@ use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::auto_switch::{self, AutoSwitchContext};
 use crate::profile::diagnostics::{self, RuleIssue};
 use crate::profile::model::{
-    AppConfig, AppSettings, Appearance, ExtraKey, Layer, LayerRule, LayoutMode, LayoutPreset, LocalePreference,
-    USER_LAYOUT_PREFIX,
+    AppConfig, AppSettings, Appearance, ExtraKey, Layer, LayerRule, LayoutMode, LayoutPreset,
+    LocalePreference, USER_LAYOUT_PREFIX,
 };
 use crate::profile::{layout_file, settings};
 use crate::storage::{StoragePaths, TrackedFile, WriteError};
@@ -184,7 +184,11 @@ impl ConfigDocument {
             .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?;
         let previous = serde_json::to_value(&self.settings)
             .map_err(|error| ConfigError::Parse(error.to_string()))?;
-        for name in previous.as_object().into_iter().flat_map(|values| values.keys()) {
+        for name in previous
+            .as_object()
+            .into_iter()
+            .flat_map(|values| values.keys())
+        {
             settings.remove(name);
         }
         for (name, value) in values.as_object().into_iter().flatten() {
@@ -444,7 +448,9 @@ impl ConfigDocument {
         assignment: KeyAssignment,
     ) -> Result<(), ConfigError> {
         if !self.layout.layers.iter().any(|layer| layer.id == layer_id) {
-            return Err(ConfigError::Invalid(format!("unknown layer \"{layer_id}\"")));
+            return Err(ConfigError::Invalid(format!(
+                "unknown layer \"{layer_id}\""
+            )));
         }
         if let KeyAssignment::Action(action) = &assignment {
             let parsed = Action::parse(Some(action));
@@ -472,10 +478,14 @@ impl ConfigDocument {
     }
 
     /// Apply `edit` to a copy of the current layout and save it.
-    pub fn update_layout(&mut self, edit: impl FnOnce(&mut LayoutPreset)) -> Result<(), ConfigError> {
+    pub fn update_layout(
+        &mut self,
+        edit: impl FnOnce(&mut LayoutPreset),
+    ) -> Result<(), ConfigError> {
         let mut candidate = self.layout.clone();
         edit(&mut candidate);
-        self.layout_file.write(&layout_file::serialize(&candidate))?;
+        self.layout_file
+            .write(&layout_file::serialize(&candidate))?;
         self.layout = candidate;
         Ok(())
     }
@@ -602,10 +612,12 @@ fn parse_settings(text: &str) -> Result<Value, ConfigError> {
     if text.trim().is_empty() {
         return Ok(json!({ "version": 1, "settings": {} }));
     }
-    let value: Value =
-        serde_json::from_str(text).map_err(|error| ConfigError::Parse(format!("config.json: {error}")))?;
+    let value: Value = serde_json::from_str(text)
+        .map_err(|error| ConfigError::Parse(format!("config.json: {error}")))?;
     if !value.is_object() {
-        return Err(ConfigError::Parse("config.json must contain an object".into()));
+        return Err(ConfigError::Parse(
+            "config.json must contain an object".into(),
+        ));
     }
     Ok(value)
 }
@@ -637,7 +649,9 @@ mod tests {
     fn document(settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        paths.save_config(&serde_json::to_string_pretty(&settings).unwrap()).unwrap();
+        paths
+            .save_config(&serde_json::to_string_pretty(&settings).unwrap())
+            .unwrap();
         paths.save_current_layout(layout).unwrap();
         (dir, ConfigDocument::load(paths).unwrap())
     }
@@ -652,7 +666,10 @@ mod tests {
         assert_eq!(document.settings().appearance, Appearance::Dark);
         assert_eq!(document.layout().rules.len(), 1);
         let config = document.config();
-        assert_eq!(config.layer_keymaps["nav"].keys["KeyH"].as_deref(), Some("ArrowLeft"));
+        assert_eq!(
+            config.layer_keymaps["nav"].keys["KeyH"].as_deref(),
+            Some("ArrowLeft")
+        );
     }
 
     #[test]
@@ -665,7 +682,8 @@ mod tests {
         document.set_input_device("/dev/input/event7").unwrap();
         document.set_locale(LocalePreference::English).unwrap();
         let saved: Value =
-            serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap()).unwrap();
+            serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
+                .unwrap();
         assert_eq!(saved["settings"]["futureOption"], 7);
         assert_eq!(saved["extra"], true);
         assert_eq!(saved["settings"]["inputDevicePath"], "/dev/input/event7");
@@ -683,16 +701,23 @@ mod tests {
             json!({"version": 1, "settings": {"futureOption": 7}}),
             LAYOUT,
         );
-        document.update_settings(|settings| {
-            settings.default_hold_timeout_ms = 350;
-            settings.game_mode.use_fullscreen = true;
-        }).unwrap();
-        let saved: Value = serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap()).unwrap();
+        document
+            .update_settings(|settings| {
+                settings.default_hold_timeout_ms = 350;
+                settings.game_mode.use_fullscreen = true;
+            })
+            .unwrap();
+        let saved: Value =
+            serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
+                .unwrap();
         assert_eq!(saved["settings"]["futureOption"], 7);
         assert_eq!(saved["settings"]["defaultHoldTimeoutMs"], 350);
         assert_eq!(saved["settings"]["gameMode"]["useFullscreen"], true);
         fs::write(document.paths.config_path(), "{}").unwrap();
-        assert_eq!(document.update_settings(|settings| settings.launch_on_startup = true), Err(ConfigError::ExternalChange));
+        assert_eq!(
+            document.update_settings(|settings| settings.launch_on_startup = true),
+            Err(ConfigError::ExternalChange)
+        );
     }
 
     #[test]
@@ -716,21 +741,38 @@ mod tests {
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Action("ArrowDown".into()))
             .unwrap();
-        document.set_layer_key("nav", "KeyH", KeyAssignment::Swallow).unwrap();
+        document
+            .set_layer_key("nav", "KeyH", KeyAssignment::Swallow)
+            .unwrap();
         assert_eq!(
             document.set_layer_key("nav", "KeyK", KeyAssignment::Action("macro:nope".into())),
             Err(ConfigError::InvalidAction(ActionIssue::UnknownMacro))
         );
-        assert!(document.set_layer_key("missing", "KeyK", KeyAssignment::Swallow).is_err());
+        assert!(
+            document
+                .set_layer_key("missing", "KeyK", KeyAssignment::Swallow)
+                .is_err()
+        );
         let reloaded = ConfigDocument::load(document.paths.clone()).unwrap();
         assert_eq!(
             reloaded.layer_key("nav", "KeyJ"),
             KeyAssignment::Action("ArrowDown".into())
         );
         assert_eq!(reloaded.layer_key("nav", "KeyH"), KeyAssignment::Swallow);
-        assert_eq!(reloaded.layer_key("nav", "KeyZ"), KeyAssignment::Transparent);
-        assert_eq!(reloaded.layout().rules[0].tap_action.as_deref(), Some("Escape"));
-        assert!(fs::read_to_string(document.paths.config_path()).unwrap().find("rules").is_none());
+        assert_eq!(
+            reloaded.layer_key("nav", "KeyZ"),
+            KeyAssignment::Transparent
+        );
+        assert_eq!(
+            reloaded.layout().rules[0].tap_action.as_deref(),
+            Some("Escape")
+        );
+        assert!(
+            fs::read_to_string(document.paths.config_path())
+                .unwrap()
+                .find("rules")
+                .is_none()
+        );
     }
 
     #[test]
@@ -747,7 +789,9 @@ mod tests {
         assert!(document.reload_if_changed().unwrap());
         assert!(!document.reload_if_changed().unwrap());
         assert_eq!(document.layout().layers[0].name, "Changed");
-        document.set_layer_key("nav", "KeyJ", KeyAssignment::Swallow).unwrap();
+        document
+            .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
+            .unwrap();
     }
 
     #[test]
@@ -769,15 +813,21 @@ mod tests {
             .paths
             .save_user_layout("Other", "rules:\n  - key: KeyA\n    tap: KeyB\n  - key: KeyC\n    enabled: false\n    tap: KeyD\n", true)
             .unwrap();
-        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        let runtime = document
+            .runtime_config(&AutoSwitchContext::default())
+            .unwrap();
         assert_eq!(runtime.layout_id.as_deref(), Some("user:Other"));
         let value: Value = serde_json::from_str(&runtime.json).unwrap();
         assert_eq!(value["rules"].as_array().unwrap().len(), 1);
         assert_eq!(value["rules"][0]["key"], "KeyA");
         assert_eq!(value["settings"]["currentLayoutId"], "user:Other");
 
-        document.set_setting("manualActiveLayoutId", json!("user:Main")).unwrap();
-        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        document
+            .set_setting("manualActiveLayoutId", json!("user:Main"))
+            .unwrap();
+        let runtime = document
+            .runtime_config(&AutoSwitchContext::default())
+            .unwrap();
         let value: Value = serde_json::from_str(&runtime.json).unwrap();
         assert_eq!(value["rules"][0]["key"], "CapsLock");
         assert_eq!(value["rules"][0]["tapAction"], "Escape");
@@ -786,8 +836,13 @@ mod tests {
 
     #[test]
     fn auto_mode_without_a_match_is_passthrough() {
-        let (_dir, document) = document(json!({"version": 1, "settings": {"layoutMode": "auto"}}), LAYOUT);
-        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        let (_dir, document) = document(
+            json!({"version": 1, "settings": {"layoutMode": "auto"}}),
+            LAYOUT,
+        );
+        let runtime = document
+            .runtime_config(&AutoSwitchContext::default())
+            .unwrap();
         assert_eq!(runtime.layout_id, None);
         let value: Value = serde_json::from_str(&runtime.json).unwrap();
         assert!(value["rules"].as_array().unwrap().is_empty());
@@ -795,13 +850,21 @@ mod tests {
 
     #[test]
     fn bundled_layout_runs_in_the_mapper() {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../public/ivank-layout.yaml");
-        let (_dir, document) = document(json!({"version": 1, "settings": {}}), &fs::read_to_string(path).unwrap());
+        let path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../public/ivank-layout.yaml");
+        let (_dir, document) = document(
+            json!({"version": 1, "settings": {}}),
+            &fs::read_to_string(path).unwrap(),
+        );
         assert!(document.layout().layers.len() > 1);
-        let runtime = document.runtime_config(&AutoSwitchContext::default()).unwrap();
+        let runtime = document
+            .runtime_config(&AutoSwitchContext::default())
+            .unwrap();
         let value: Value = serde_json::from_str(&runtime.json).unwrap();
         assert!(!value["rules"].as_array().unwrap().is_empty());
-        let reparsed = layout_file::parse(&layout_file::serialize(document.layout())).unwrap().unwrap();
+        let reparsed = layout_file::parse(&layout_file::serialize(document.layout()))
+            .unwrap()
+            .unwrap();
         assert_eq!(reparsed.layer_keymaps, document.layout().layer_keymaps);
         assert_eq!(reparsed.layers, document.layout().layers);
     }
@@ -814,18 +877,33 @@ mod tests {
         );
         match document.runtime_config(&AutoSwitchContext::default()) {
             Err(ConfigError::Rules(issues)) => {
-                assert!(issues.iter().all(|issue| issue.code == RuleIssueCode::DuplicateTrigger))
+                assert!(
+                    issues
+                        .iter()
+                        .all(|issue| issue.code == RuleIssueCode::DuplicateTrigger)
+                )
             }
             other => panic!("unexpected {other:?}"),
         }
-    }    #[test]
+    }
+    #[test]
     fn layer_lifecycle_preserves_keymaps_and_detaches_rules() {
         let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
-        document.set_layer_extra("nav", None, "F13", Some("Escape".into())).unwrap();
-        let copy = document.clone_layer("nav", "Navigation copy", "Copied").unwrap();
-        assert_eq!(document.layout().layer_keymaps[&copy].keys["KeyH"].as_deref(), Some("ArrowLeft"));
+        document
+            .set_layer_extra("nav", None, "F13", Some("Escape".into()))
+            .unwrap();
+        let copy = document
+            .clone_layer("nav", "Navigation copy", "Copied")
+            .unwrap();
+        assert_eq!(
+            document.layout().layer_keymaps[&copy].keys["KeyH"].as_deref(),
+            Some("ArrowLeft")
+        );
         assert_eq!(document.layout().layer_keymaps[&copy].extras.len(), 1);
-        assert_ne!(document.layout().layer_keymaps[&copy].extras[0].id, document.layout().layer_keymaps["nav"].extras[0].id);
+        assert_ne!(
+            document.layout().layer_keymaps[&copy].extras[0].id,
+            document.layout().layer_keymaps["nav"].extras[0].id
+        );
         document.move_layer_extra("nav", 0, 0).unwrap();
         document.clear_layer_keys(&copy).unwrap();
         assert!(document.layout().layer_keymaps[&copy].keys.is_empty());
@@ -836,5 +914,4 @@ mod tests {
         assert_eq!(loaded.layout().layers[0].name, "Navigation copy");
         assert!(loaded.layout().rules[0].layer_id.is_empty());
     }
-
 }

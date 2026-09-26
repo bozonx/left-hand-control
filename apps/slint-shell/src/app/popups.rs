@@ -362,30 +362,55 @@ fn observe(app: &Rc<App>, window: Window) {
         );
     }
     let weak = Rc::downgrade(app);
-    app.window(window).on_winit_window_event(move |_, event| {
-        let Some(app) = weak.upgrade() else {
-            return EventResult::Propagate;
-        };
-        match event {
-            WindowEvent::Focused(true) => {
-                app.metrics.borrow_mut().mark(window.name(), "t4_focused")
-            }
-            WindowEvent::Focused(false) if window != Window::Settings => app.defer_hide(window),
+    app.window(window)
+        .on_winit_window_event(move |native, event| {
             #[cfg(target_os = "linux")]
-            WindowEvent::ActivationTokenDone { token, serial } if window == Window::Settings => {
-                if let Some(pending) = app.take_pending_activation(*serial) {
-                    app.show(
-                        Window::Popup(pending.popup),
-                        Source::Button,
-                        pending.start,
-                        Some(token.clone().into_raw()),
-                    );
-                }
+            if !native.is_visible()
+                && native.with_winit_window(|window| {
+                    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+                    window
+                        .window_handle()
+                        .is_ok_and(|handle| matches!(handle.as_raw(), RawWindowHandle::Wayland(_)))
+                }) == Some(true)
+            {
+                super::post(move |app| {
+                    let native = app.window(window);
+                    if !native.is_visible()
+                        && native.has_winit_window()
+                        && let Err(error) = native.show().and_then(|()| native.hide())
+                    {
+                        log::error!("dispose hidden {} window: {error}", window.name());
+                    }
+                });
+                return EventResult::PreventDefault;
             }
-            _ => {}
-        }
-        EventResult::Propagate
-    });
+            #[cfg(not(target_os = "linux"))]
+            let _ = native;
+            let Some(app) = weak.upgrade() else {
+                return EventResult::Propagate;
+            };
+            match event {
+                WindowEvent::Focused(true) => {
+                    app.metrics.borrow_mut().mark(window.name(), "t4_focused")
+                }
+                WindowEvent::Focused(false) if window != Window::Settings => app.defer_hide(window),
+                #[cfg(target_os = "linux")]
+                WindowEvent::ActivationTokenDone { token, serial }
+                    if window == Window::Settings =>
+                {
+                    if let Some(pending) = app.take_pending_activation(*serial) {
+                        app.show(
+                            Window::Popup(pending.popup),
+                            Source::Button,
+                            pending.start,
+                            Some(token.clone().into_raw()),
+                        );
+                    }
+                }
+                _ => {}
+            }
+            EventResult::Propagate
+        });
 }
 
 pub(super) fn bind(app: &Rc<App>) {

@@ -43,7 +43,10 @@ impl ConfigDocument {
                     .ok_or_else(|| ConfigError::Invalid("Bundled layout is empty".into()))?
             }
             LibrarySource::Copy(from) => {
-                let text = self.paths().load_user_layout(from).map_err(ConfigError::Io)?;
+                let text = self
+                    .paths()
+                    .load_user_layout(from)
+                    .map_err(ConfigError::Io)?;
                 if description.is_empty() {
                     // Byte-for-byte copy keeps whatever the source file holds.
                     return self

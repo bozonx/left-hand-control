@@ -309,7 +309,10 @@ mod tests {
         assert_eq!(app_actions().len(), 10);
         assert_eq!(
             system_action_name("switchDesktop10"),
-            Some(ActionName::System { id: "switchDesktop", n: 10 })
+            Some(ActionName::System {
+                id: "switchDesktop",
+                n: 10
+            })
         );
         assert_eq!(system_action_name("switchDesktop11"), None);
         assert_eq!(menu_page("showEmojiMenu3"), Some((true, 3)));
@@ -326,7 +329,10 @@ mod tests {
         assert_eq!(check("macro:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("cmd:nope"), Some(ActionIssue::UnknownCommand));
         assert_eq!(check("sys:lockSession"), None);
-        assert_eq!(check("app:showEmojiMenu9"), Some(ActionIssue::UnknownAppAction));
+        assert_eq!(
+            check("app:showEmojiMenu9"),
+            Some(ActionIssue::UnknownAppAction)
+        );
         assert_eq!(check("pause:10"), Some(ActionIssue::PauseOutsideMacro));
     }
 }

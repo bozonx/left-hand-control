@@ -392,7 +392,11 @@ impl AppConfig {
     /// Combine settings with a preset, as `applyPresetToConfig()` does:
     /// the preset's layout id becomes `currentLayoutId` and every layer
     /// gets a keymap.
-    pub fn from_parts(settings: AppSettings, preset: LayoutPreset, layout_id: Option<&str>) -> Self {
+    pub fn from_parts(
+        settings: AppSettings,
+        preset: LayoutPreset,
+        layout_id: Option<&str>,
+    ) -> Self {
         let mut layer_keymaps = preset.layer_keymaps;
         for layer in &preset.layers {
             layer_keymaps.entry(layer.id.clone()).or_default();

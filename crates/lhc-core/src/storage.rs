@@ -236,7 +236,9 @@ pub enum WriteError {
 impl std::fmt::Display for WriteError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ExternalChange => write!(f, "{EXTERNAL_CHANGE}: file was changed by another process"),
+            Self::ExternalChange => {
+                write!(f, "{EXTERNAL_CHANGE}: file was changed by another process")
+            }
             Self::Io(error) => f.write_str(error),
         }
     }
@@ -291,7 +293,8 @@ impl TrackedFile {
             return Err(WriteError::ExternalChange);
         }
         if let Some(parent) = self.path.parent() {
-            fs::create_dir_all(parent).map_err(|e| WriteError::Io(format!("create_dir_all: {e}")))?;
+            fs::create_dir_all(parent)
+                .map_err(|e| WriteError::Io(format!("create_dir_all: {e}")))?;
         }
         write_atomic(&self.path, contents.as_bytes()).map_err(WriteError::Io)?;
         self.known = contents.to_owned();
@@ -428,10 +431,16 @@ mod tests {
         let windows = StoragePaths::dev(base, "windows");
         assert_eq!(
             windows.layouts_dir(),
-            PathBuf::from("/repo/dev-files/windows/AppData/Roaming/dev.bozonx.left-hand-control/layouts")
+            PathBuf::from(
+                "/repo/dev-files/windows/AppData/Roaming/dev.bozonx.left-hand-control/layouts"
+            )
         );
         let macos = StoragePaths::dev(base, "macos");
-        assert!(macos.config_path().starts_with("/repo/dev-files/macos/Library/Application Support"));
+        assert!(
+            macos
+                .config_path()
+                .starts_with("/repo/dev-files/macos/Library/Application Support")
+        );
     }
 
     #[test]

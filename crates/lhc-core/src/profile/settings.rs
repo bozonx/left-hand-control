@@ -234,7 +234,10 @@ mod tests {
     #[test]
     fn manual_layout_falls_back_to_current_layout() {
         let settings = from_value(Some(&json!({"currentLayoutId": "user:Main"})));
-        assert_eq!(settings.manual_active_layout_id.as_deref(), Some("user:Main"));
+        assert_eq!(
+            settings.manual_active_layout_id.as_deref(),
+            Some("user:Main")
+        );
     }
 
     #[test]

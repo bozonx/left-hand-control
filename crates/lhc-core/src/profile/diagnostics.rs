@@ -34,17 +34,32 @@ impl std::fmt::Display for RuleIssue {
         let trigger = self.trigger.as_deref().unwrap_or("");
         match self.code {
             RuleIssueCode::MissingTrigger => {
-                write!(f, "Rule without a trigger is saved as a draft and will be ignored.")
+                write!(
+                    f,
+                    "Rule without a trigger is saved as a draft and will be ignored."
+                )
             }
-            RuleIssueCode::InvalidTrigger => write!(f, "Trigger \"{trigger}\" cannot be used for a rule."),
+            RuleIssueCode::InvalidTrigger => {
+                write!(f, "Trigger \"{trigger}\" cannot be used for a rule.")
+            }
             RuleIssueCode::DuplicateTrigger => {
-                write!(f, "Trigger \"{trigger}\" is used by more than one active rule.")
+                write!(
+                    f,
+                    "Trigger \"{trigger}\" is used by more than one active rule."
+                )
             }
             RuleIssueCode::UnknownLayer => {
-                write!(f, "Rule \"{trigger}\" points to a layer that no longer exists.")
+                write!(
+                    f,
+                    "Rule \"{trigger}\" points to a layer that no longer exists."
+                )
             }
-            RuleIssueCode::InvalidTapAction => write!(f, "Rule \"{trigger}\" has an invalid tap action."),
-            RuleIssueCode::InvalidHoldAction => write!(f, "Rule \"{trigger}\" has an invalid hold action."),
+            RuleIssueCode::InvalidTapAction => {
+                write!(f, "Rule \"{trigger}\" has an invalid tap action.")
+            }
+            RuleIssueCode::InvalidHoldAction => {
+                write!(f, "Rule \"{trigger}\" has an invalid hold action.")
+            }
             RuleIssueCode::InvalidDoubleTapAction => {
                 write!(f, "Rule \"{trigger}\" has an invalid double-tap action.")
             }
@@ -55,7 +70,11 @@ impl std::fmt::Display for RuleIssue {
 const MOUSE_TRIGGERS: [&str; 3] = ["MouseLeft", "MouseRight", "MouseMiddle"];
 
 pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
-    let layer_ids: HashSet<&str> = config.layers.iter().map(|layer| layer.id.as_str()).collect();
+    let layer_ids: HashSet<&str> = config
+        .layers
+        .iter()
+        .map(|layer| layer.id.as_str())
+        .collect();
     let mut by_trigger: BTreeMap<&str, Vec<&LayerRule>> = BTreeMap::new();
     let mut issues = Vec::new();
     let issue = |code, rule: &LayerRule, trigger: Option<&str>| RuleIssue {
@@ -69,7 +88,9 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
             continue;
         }
         let trigger = rule.key.trim();
-        if MOUSE_TRIGGERS.contains(&trigger) || matches!(Action::parse(Some(trigger)), Action::Keys(ref k) if k.contains('+')) {
+        if MOUSE_TRIGGERS.contains(&trigger)
+            || matches!(Action::parse(Some(trigger)), Action::Keys(ref k) if k.contains('+'))
+        {
             issues.push(issue(RuleIssueCode::InvalidTrigger, rule, Some(trigger)));
         }
         by_trigger.entry(trigger).or_default().push(rule);
@@ -86,7 +107,11 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
             issues.push(issue(RuleIssueCode::InvalidHoldAction, rule, Some(trigger)));
         }
         if actions::validate(&Action::parse(Some(&rule.double_tap_action)), config).is_some() {
-            issues.push(issue(RuleIssueCode::InvalidDoubleTapAction, rule, Some(trigger)));
+            issues.push(issue(
+                RuleIssueCode::InvalidDoubleTapAction,
+                rule,
+                Some(trigger),
+            ));
         }
     }
     for (trigger, rules) in by_trigger.into_iter().filter(|(_, rules)| rules.len() > 1) {
@@ -143,7 +168,10 @@ mod tests {
             hold,
             rule("m", "MouseLeft"),
         ]));
-        let codes: Vec<_> = issues.iter().map(|i| (i.rule_id.as_str(), i.code)).collect();
+        let codes: Vec<_> = issues
+            .iter()
+            .map(|i| (i.rule_id.as_str(), i.code))
+            .collect();
         assert!(codes.contains(&("draft", RuleIssueCode::MissingTrigger)));
         assert!(codes.contains(&("a", RuleIssueCode::DuplicateTrigger)));
         assert!(codes.contains(&("b", RuleIssueCode::DuplicateTrigger)));

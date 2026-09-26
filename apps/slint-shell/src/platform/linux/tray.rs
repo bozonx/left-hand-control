@@ -50,12 +50,11 @@ impl ksni::Tray for Tray {
             .into_iter()
             .map(|item| {
                 StandardItem {
-                    label: item
-                        .label(if self.english {
-                            Language::English
-                        } else {
-                            Language::Russian
-                        }),
+                    label: item.label(if self.english {
+                        Language::English
+                    } else {
+                        Language::Russian
+                    }),
                     activate: Box::new(move |tray: &mut Self| {
                         (tray.dispatch)(item.command(), Source::Tray, Instant::now(), None)
                     }),
