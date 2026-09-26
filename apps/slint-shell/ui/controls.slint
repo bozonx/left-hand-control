@@ -58,8 +58,12 @@ export component InfoTip inherits Rectangle {
         vertical-alignment: center;
     }
     Tooltip {
+        // Slint wraps custom content in its own framed ToolTipImpl and sizes the
+        // popup from the content's layout info. A fixed `width` is ignored there
+        // (it would report the unwrapped text width), so constrain via min/max.
         Rectangle {
-            width: 340px;
+            min-width: 340px;
+            max-width: 340px;
             background: Theme.card;
             border-radius: 4px;
             border-width: 1px;
