@@ -16,14 +16,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let document = Rc::new(RefCell::new(ConfigDocument::load(paths.clone())?));
     let ui = SettingsWindow::new()?;
     let _editor = bind_document(&ui, Some(document.clone()));
-    ui.set_library_dialog(1);
-    ui.invoke_create_layout("A".into());
+    ui.invoke_create_layout_preset("A".into(), false);
     assert_eq!(ui.get_library_dialog(), 0);
-    ui.set_library_dialog(1);
-    ui.invoke_create_layout("A".into());
-    assert_eq!(ui.get_library_dialog(), 1);
-    ui.set_library_dialog(0);
-    ui.invoke_create_layout("B".into());
+    ui.invoke_create_layout_preset("B".into(), false);
     assert_eq!(ui.get_layout_names().row_count(), 2);
     ui.invoke_select_layout(0);
     ui.invoke_library_action(0);
@@ -75,6 +70,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reloaded = ConfigDocument::load(paths)?;
     assert!(reloaded.settings().layout_conditions.is_empty());
     assert!(reloaded.settings().current_layout_id.is_none());
+    document.borrow_mut().update_settings(|settings| {
+        settings.layout_mode = LayoutMode::Manual;
+        settings.manual_active_layout_id = Some("user:missing".into());
+    })?;
+    ui.invoke_create_layout_preset("Ivan K".into(), true);
+    assert_eq!(ui.get_layout_status().id, "library-saved");
+    assert_eq!(ui.get_page(), 3);
+    assert_eq!(
+        ui.get_rule_rows().row_count(),
+        document.borrow().layout().rules.len()
+    );
+    assert!(ui.get_rule_rows().row_count() > 0);
+    ui.invoke_navigate(4, 0);
+    assert!(ui.get_layer_names().row_count() > 0);
+    ui.invoke_navigate(6, 0);
+    assert!(ui.global::<MenuEditor>().get_pages().row_count() > 0);
+    ui.invoke_create_layout_preset("Ivan K".into(), true);
+    assert_eq!(
+        document.borrow().settings().current_layout_id.as_deref(),
+        Some("user:Ivan K (2)")
+    );
+    ui.invoke_create_layout_preset("Empty".into(), false);
+    assert!(document.borrow().layout().rules.is_empty());
+    assert_eq!(ui.get_rule_rows().row_count(), 0);
+    let ivan = ui
+        .get_layout_names()
+        .iter()
+        .position(|name| name == "Ivan K")
+        .unwrap();
+    ui.invoke_select_layout(ivan as i32);
+    ui.invoke_load_layout();
     let emoji = EmojiPopup::new()?;
     let quick = QuickPopup::new()?;
     let mut menus = popup_model::ConfiguredMenus::default();
@@ -105,6 +131,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Ok(dialog) = std::env::var("LHC_LIBRARY_DIALOG") {
         ui.invoke_select_layout(0);
         ui.set_library_dialog(dialog.parse()?);
+    }
+    if let Ok(page) = std::env::var("LHC_LIBRARY_PAGE") {
+        ui.invoke_navigate(page.parse()?, 0);
     }
     ui.show()?;
     slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {

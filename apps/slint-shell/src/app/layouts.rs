@@ -1,8 +1,5 @@
 use crate::{editor::EditorHandle, i18n::Msg, ui::SettingsWindow};
-use lhc_core::{
-    config_document::ConfigDocument,
-    profile::{auto_switch::AutoSwitchContext, layout_file, model::LayoutPreset},
-};
+use lhc_core::{config_document::ConfigDocument, profile::layout_file};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
@@ -190,26 +187,29 @@ pub(super) fn bind(
     let weak = ui.as_weak();
     let state_copy = state.clone();
     let config_copy = config.clone();
-    ui.on_create_layout(move |name| {
+    ui.on_create_layout_preset(move |base, ivan_k| {
         let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) else {
             return;
         };
-        let result = config
-            .borrow()
-            .paths()
-            .save_user_layout(
-                &name,
-                &layout_file::serialize(&LayoutPreset::default()),
-                false,
-            )
-            .and_then(|name| {
-                refresh(&ui, &config.borrow(), &mut state_copy.borrow_mut())?;
-                Ok(format!("Created: {name}"))
-            });
-        if result.is_ok() {
-            ui.set_library_dialog(0);
+        let result = (|| {
+            let name = config
+                .borrow()
+                .create_library_preset(&base, ivan_k)
+                .map_err(|error| error.to_string())?;
+            refresh(&ui, &config.borrow(), &mut state_copy.borrow_mut())?;
+            let index = state_copy
+                .borrow()
+                .names
+                .iter()
+                .position(|item| item == name)
+                .ok_or("Select a layout")?;
+            ui.invoke_select_layout(index as i32);
+            ui.invoke_load_layout();
+            Ok(String::new())
+        })();
+        if result.is_err() {
+            report(&ui, result);
         }
-        report(&ui, result);
     });
     let weak = ui.as_weak();
     let state_copy = state.clone();
@@ -275,15 +275,11 @@ pub(super) fn bind(
             ui.invoke_refresh_rules();
             ui.invoke_refresh_layers();
             ui.global::<crate::ui::MacroEditor>().invoke_refresh();
-            let runtime = config
-                .borrow()
-                .runtime_config(&AutoSwitchContext::current())
-                .map_err(|error| error.to_string())?;
-            lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
             ui.set_config_status(
                 crate::i18n::Msg::ConfigSaved(config.borrow().layout().rules.len()).to_ui(),
             );
             ui.invoke_navigate(3, 0);
+            super::mapper::apply_runtime(&config.borrow())?;
             Ok(format!("Loaded: {name}"))
         })();
         report(&ui, result);

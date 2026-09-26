@@ -4,6 +4,26 @@ use crate::{
 };
 
 impl ConfigDocument {
+    pub fn create_library_preset(&self, base: &str, ivan_k: bool) -> Result<String, ConfigError> {
+        let preset = if ivan_k {
+            layout_file::parse(include_str!("../../../../public/ivank-layout.yaml"))
+                .map_err(ConfigError::Parse)?
+                .ok_or_else(|| ConfigError::Invalid("Bundled layout is empty".into()))?
+        } else {
+            LayoutPreset::default()
+        };
+        let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
+        let mut name = base.to_owned();
+        let mut suffix = 2;
+        while names.contains(&name) {
+            name = format!("{base} ({suffix})");
+            suffix += 1;
+        }
+        self.paths()
+            .save_user_layout(&name, &layout_file::serialize(&preset), false)
+            .map_err(ConfigError::Io)
+    }
+
     pub fn ordered_layout_ids(&self) -> Result<Vec<String>, ConfigError> {
         Ok(auto_switch::order_layout_ids(
             &self.layout_ids()?,

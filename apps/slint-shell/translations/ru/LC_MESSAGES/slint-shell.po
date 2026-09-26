@@ -942,3 +942,12 @@ msgstr "Из текущей раскладки"
 
 msgid "Edit layout"
 msgstr "Редактировать"
+
+msgid "Based on Ivan K"
+msgstr "На основе Ivan K"
+
+msgid "New layout"
+msgstr "Новая раскладка"
+
+msgid "Ivan K layout"
+msgstr "Раскладка Ivan K"
