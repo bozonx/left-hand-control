@@ -1,0 +1,119 @@
+import { Theme } from "theme.slint";
+import { Locale, Message } from "i18n.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, TextEdit } from "std-widgets.slint";
+export struct MenuCell { key: string, value: string }
+export global MenuEditor {
+    in-out property <int> kind;
+    in property <[string]> pages;
+    in property <[MenuCell]> cells;
+    in property <[string]> catalog;
+    in property <[string]> choices;
+    in-out property <int> selected-page;
+    in-out property <int> selected-cell;
+    in-out property <string> page-name;
+    in-out property <string> value;
+    in-out property <string> name;
+    in-out property <string> icon;
+    in-out property <string> command-id;
+    in property <bool> trusted;
+    in property <string> usage;
+    in property <Message> status;
+    callback open(int);
+    callback select-page(int);
+    callback select-cell(int);
+    callback add();
+    callback remove();
+    callback move(int);
+    callback move-cell(int);
+    callback apply();
+    callback save();
+    callback trust(bool);
+}
+export component MenusPage inherits VerticalBox {
+    vertical-stretch: 1;
+    padding: 0px;
+    spacing: 10px;
+    private property <bool> confirming;
+    clipboard := TextInput { visible: false; width: 0px; height: 0px; }
+    HorizontalBox {
+        Text { text: MenuEditor.kind == 0 ? @tr("Emoji") : MenuEditor.kind == 1 ? @tr("Quick actions") : @tr("Commands"); color: Theme.text; font-size: 26px; }
+        Rectangle { horizontal-stretch: 1; }
+        Button { text: @tr("Add"); clicked => { MenuEditor.add(); } }
+        Button { text: @tr("Save"); clicked => { MenuEditor.save(); } }
+        Button { text: @tr("Cancel"); clicked => { root.confirming = false; MenuEditor.open(MenuEditor.kind); } }
+    }
+    if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.text; wrap: word-wrap; }
+    if MenuEditor.kind == 2: HorizontalBox {
+        Text { text: MenuEditor.trusted ? @tr("Commands approved") : @tr("Review shell commands before approving execution."); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+        Button { text: MenuEditor.trusted ? @tr("Revoke approval") : @tr("Approve saved commands"); clicked => { MenuEditor.trust(!MenuEditor.trusted); } }
+    }
+    HorizontalBox {
+        ComboBox { model: MenuEditor.pages; current-index: MenuEditor.selected-page; selected(value) => { MenuEditor.select-page(self.current-index); } horizontal-stretch: 1; }
+        Button { text: "↑"; enabled: MenuEditor.selected-page > 0; clicked => { MenuEditor.move(-1); } }
+        Button { text: "↓"; enabled: MenuEditor.selected-page + 1 < MenuEditor.pages.length; clicked => { MenuEditor.move(1); } }
+        Button { text: @tr("Delete"); enabled: MenuEditor.pages.length > 0; clicked => { root.confirming = true; } }
+    }
+    if root.confirming: HorizontalBox {
+        Text { text: @tr("Delete selected item? References may stop working."); color: Theme.text; }
+        Button { text: @tr("Cancel"); clicked => { root.confirming = false; } }
+        Button { text: @tr("Delete"); clicked => { MenuEditor.remove(); root.confirming = false; } }
+    }
+    if MenuEditor.pages.length > 0: HorizontalBox {
+        if MenuEditor.kind != 2: VerticalBox {
+            horizontal-stretch: 1;
+            for row in 3: HorizontalBox {
+                for col in 5: Rectangle {
+                    horizontal-stretch: 1;
+                    min-width: 48px;
+                    preferred-width: 90px;
+                    height: 72px;
+                    border-radius: 6px;
+                    border-width: 1px;
+                    border-color: MenuEditor.selected-cell == row * 5 + col ? Theme.accent : Theme.border;
+                    background: cell-touch.has-hover ? Theme.hover : Theme.card;
+                    VerticalLayout {
+                        padding: 6px;
+                        Text { text: MenuEditor.cells[row * 5 + col].key; color: Theme.muted; font-size: 12px; }
+                        Text { text: MenuEditor.cells[row * 5 + col].value; color: Theme.text; overflow: elide; horizontal-alignment: center; }
+                    }
+                    cell-touch := TouchArea { clicked => { MenuEditor.select-cell(row * 5 + col); } }
+                }
+            }
+            HorizontalBox {
+                Button { text: "←"; enabled: MenuEditor.selected-cell > 0; clicked => { MenuEditor.move-cell(-1); } }
+                Button { text: "→"; enabled: MenuEditor.selected-cell < 14; clicked => { MenuEditor.move-cell(1); } }
+                Button { text: @tr("Clear cell"); clicked => { MenuEditor.value = ""; MenuEditor.name = ""; MenuEditor.icon = ""; MenuEditor.apply(); } }
+            }
+            Rectangle { vertical-stretch: 1; }
+        }
+        VerticalBox {
+            horizontal-stretch: 1;
+            Text { text: MenuEditor.kind == 2 ? @tr("Name") : @tr("Page name"); color: Theme.text; }
+            LineEdit { text <=> MenuEditor.page-name; }
+            if MenuEditor.kind == 2: VerticalBox {
+                Text { text: @tr("Command ID"); color: Theme.text; }
+                HorizontalBox {
+                    LineEdit { text <=> MenuEditor.command-id; }
+                    Button { text: @tr("Copy ID"); clicked => { clipboard.text = "cmd:" + MenuEditor.command-id; clipboard.select-all(); clipboard.copy(); } }
+                }
+                Text { text: @tr("Used by") + ": " + MenuEditor.usage; color: Theme.muted; wrap: word-wrap; }
+                Text { text: @tr("Shell command (Linux)"); color: Theme.text; }
+            }
+            if MenuEditor.kind == 1: VerticalBox {
+                Text { text: @tr("Name"); color: Theme.text; }
+                LineEdit { text <=> MenuEditor.name; }
+                Text { text: @tr("Icon"); color: Theme.text; }
+                LineEdit { text <=> MenuEditor.icon; }
+                ComboBox { model: MenuEditor.choices; current-index: -1; current-value: @tr("Choose action"); selected(value) => { MenuEditor.value = value; } }
+            }
+            TextEdit { text <=> MenuEditor.value; min-height: 70px; vertical-stretch: 1; }
+            Button { text: @tr("Apply to draft"); clicked => { MenuEditor.apply(); } }
+            if MenuEditor.kind == 0: ListView {
+                height: 180px;
+                for row in ceil(MenuEditor.catalog.length / 6): HorizontalBox {
+                    for col in 6: Button { enabled: row * 6 + col < MenuEditor.catalog.length; text: MenuEditor.catalog[row * 6 + col]; clicked => { MenuEditor.value = self.text; MenuEditor.apply(); } }
+                }
+            }
+        }
+    }
+}

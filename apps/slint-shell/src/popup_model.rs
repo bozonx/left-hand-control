@@ -1,7 +1,4 @@
 //! Popup data and navigation shared by the winit popups and the Spell worker.
-//!
-//! Quick items and the emoji catalog are pilot fixtures; the product port
-//! replaces them with `quickActions` / `emojiPages` from the config.
 
 use crate::command::Popup;
 use slint::SharedString;
@@ -136,5 +133,138 @@ mod tests {
         let items = quick_items();
         assert_eq!(filter(&items, "ДЕЙСТВИЕ 03").len(), 1);
         assert_eq!(filter(&items, "").len(), 30);
+    }
+}
+
+#[derive(Default)]
+pub struct ConfiguredMenus {
+    pub layout: lhc_core::profile::model::LayoutPreset,
+}
+impl ConfiguredMenus {
+    pub fn load() -> Result<Self, String> {
+        let paths = lhc_core::storage::StoragePaths::resolve()?;
+        let document =
+            lhc_core::config_document::ConfigDocument::load(paths).map_err(|e| e.to_string())?;
+        Ok(Self {
+            layout: document.layout().clone(),
+        })
+    }
+    pub fn apply_emoji(&self, ui: &crate::ui::EmojiPopup) {
+        use lhc_core::profile::model::LEFT_HAND_HOTKEYS;
+        ui.set_configured(true);
+        ui.set_page_names(slint::ModelRc::new(slint::VecModel::from(
+            self.layout
+                .emoji_pages
+                .iter()
+                .map(|p| p.name.clone().into())
+                .collect::<Vec<SharedString>>(),
+        )));
+        ui.set_emojis(slint::ModelRc::new(slint::VecModel::from(
+            self.layout
+                .emoji_pages
+                .iter()
+                .flat_map(|p| {
+                    LEFT_HAND_HOTKEYS
+                        .iter()
+                        .map(|k| p.cells.get(*k).cloned().unwrap_or_default().into())
+                })
+                .collect::<Vec<SharedString>>(),
+        )));
+        ui.set_page(
+            ui.get_page()
+                .max(0)
+                .min(self.layout.emoji_pages.len().saturating_sub(1) as i32),
+        );
+        ui.set_selected(0);
+    }
+    pub fn apply_quick(&self, ui: &crate::ui::QuickPopup) {
+        let count = self
+            .layout
+            .quick_actions
+            .len()
+            .div_ceil(15)
+            .max(self.layout.quick_action_pages.len());
+        ui.set_page_names(slint::ModelRc::new(slint::VecModel::from(
+            (0..count)
+                .map(|i| {
+                    self.layout
+                        .quick_action_pages
+                        .get(i)
+                        .map(|p| p.name.clone())
+                        .unwrap_or_else(|| (i + 1).to_string())
+                        .into()
+                })
+                .collect::<Vec<SharedString>>(),
+        )));
+        ui.set_page(ui.get_page().max(0).min(count.saturating_sub(1) as i32));
+    }
+    pub fn quick(&self, query: &str) -> Vec<(String, String)> {
+        self.quick_page(query, None)
+    }
+    pub fn quick_page(&self, query: &str, page: Option<usize>) -> Vec<(String, String)> {
+        let query = query.to_lowercase();
+        self.layout
+            .quick_actions
+            .iter()
+            .enumerate()
+            .filter(|(i, a)| {
+                !a.action.trim().is_empty()
+                    && (page.is_none_or(|p| i / 15 == p) || !query.is_empty())
+            })
+            .map(|(i, a)| {
+                let page = self
+                    .layout
+                    .quick_action_pages
+                    .get(i / 15)
+                    .map(|p| p.name.as_str())
+                    .unwrap_or("");
+                let key =
+                    lhc_core::profile::model::LEFT_HAND_HOTKEYS[i % 15].trim_start_matches("Key");
+                let name = if a.name.is_empty() {
+                    &a.action
+                } else {
+                    &a.name
+                };
+                (format!("{page} · {key} · {name}"), a.action.clone())
+            })
+            .filter(|(name, action)| {
+                name.to_lowercase().contains(&query) || action.to_lowercase().contains(&query)
+            })
+            .collect()
+    }
+}
+
+pub fn configured_emoji_index(ui: &crate::ui::EmojiPopup, index: i32) -> Option<usize> {
+    if ui.get_configured() {
+        (0..15)
+            .contains(&index)
+            .then(|| ui.get_page() as usize * 15 + index as usize)
+    } else {
+        emoji_index(ui.get_page(), index)
+    }
+}
+
+#[cfg(test)]
+mod configured_tests {
+    use super::*;
+    use lhc_core::profile::{menus::empty_quick_action, model::*};
+    #[test]
+    fn filtered_results_keep_their_actions_across_pages_and_empty_slots() {
+        let mut layout = LayoutPreset::initial();
+        layout.quick_action_pages.push(QuickActionPage {
+            id: "second".into(),
+            name: "Вторая".into(),
+        });
+        layout.quick_actions.resize_with(30, empty_quick_action);
+        layout.quick_actions[2].name = "Одинаковое имя".into();
+        layout.quick_actions[2].action = "text:first".into();
+        layout.quick_actions[19].name = "Одинаковое имя".into();
+        layout.quick_actions[19].action = "text:second".into();
+        let menus = ConfiguredMenus { layout };
+        assert_eq!(menus.quick_page("", Some(0))[0].1, "text:first");
+        assert_eq!(menus.quick_page("", Some(1))[0].1, "text:second");
+        assert_eq!(menus.quick_page("ОДИНАКОВОЕ", Some(0)).len(), 2);
+        assert_eq!(menus.quick_page("ВТОРАЯ", Some(0))[0].1, "text:second");
+        assert!(menus.quick_page("missing", Some(1)).is_empty());
     }
 }

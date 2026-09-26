@@ -101,7 +101,10 @@ pub fn validate(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
 }
 
 pub fn usage(config: &AppConfig, id: &str) -> Vec<String> {
-    let action = format!("macro:{id}");
+    action_usage(config, &format!("macro:{id}"))
+}
+
+pub fn action_usage(config: &AppConfig, action: &str) -> Vec<String> {
     let mut places = Vec::new();
     for rule in &config.rules {
         if [
@@ -109,19 +112,19 @@ pub fn usage(config: &AppConfig, id: &str) -> Vec<String> {
             rule.hold_action.as_deref(),
             Some(rule.double_tap_action.as_str()),
         ]
-        .contains(&Some(action.as_str()))
+        .contains(&Some(action))
         {
             places.push(rule.key.clone());
         }
     }
     for (layer, map) in &config.layer_keymaps {
         for (key, value) in &map.keys {
-            if value.as_deref() == Some(&action) {
+            if value.as_deref() == Some(action) {
                 places.push(format!("{layer}: {key}"));
             }
         }
         for extra in &map.extras {
-            if extra.action.as_deref() == Some(&action) {
+            if extra.action.as_deref() == Some(action) {
                 places.push(format!("{layer}: {}", extra.key));
             }
         }
@@ -129,6 +132,11 @@ pub fn usage(config: &AppConfig, id: &str) -> Vec<String> {
     for item in &config.macros {
         if item.steps.iter().any(|s| s.action.trim() == action) {
             places.push(format!("macro:{}", item.id));
+        }
+    }
+    for item in &config.quick_actions {
+        if item.action.trim() == action {
+            places.push(format!("quick:{}", item.name));
         }
     }
     places

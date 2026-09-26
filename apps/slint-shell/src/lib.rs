@@ -11,12 +11,13 @@ pub mod ui {
 mod app;
 pub mod command;
 pub mod editor;
-pub mod macro_editor;
 mod i18n;
 mod ipc;
+pub mod macro_editor;
+pub mod menu_editor;
 mod metrics;
 mod platform;
-mod popup_model;
+pub mod popup_model;
 #[cfg(all(feature = "spell", target_os = "linux"))]
 mod spell;
 #[cfg(all(feature = "spell", target_os = "linux"))]

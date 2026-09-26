@@ -7,6 +7,8 @@ pub mod auto_switch;
 pub mod diagnostics;
 pub mod ids;
 pub mod layout_file;
-pub mod model;
 pub mod macros;
+pub mod model;
 pub mod settings;
+
+pub mod menus;

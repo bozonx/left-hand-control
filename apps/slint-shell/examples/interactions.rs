@@ -202,13 +202,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "Escape cancels drag"
                     );
                     pointer(&ui, 42.0, 293.0, Some(true));
-                    pointer(&ui, 42.0, 490.0, None);
+                    pointer(&ui, 42.0, 470.0, None);
                 }
                 // Edge autoscroll needs several timer ticks at 12 px / 30 ms.
                 4 | 5 => {}
                 6 => {
                     snapshot(&ui, "drag-autoscroll");
-                    pointer(&ui, 42.0, 490.0, Some(false));
+                    pointer(&ui, 42.0, 470.0, Some(false));
                     assert!(
                         ui.get_quick_items().iter().position(|item| item.starts_with("03")).unwrap() > 11,
                         "edge scroll drop"

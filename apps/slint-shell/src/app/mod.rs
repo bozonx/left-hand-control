@@ -45,8 +45,7 @@ pub(crate) struct App {
     pending_activation: RefCell<Option<popups::PendingActivation>>,
     #[cfg(not(target_os = "linux"))]
     return_input: RefCell<crate::platform::return_input::ReturnInput>,
-    /// Quick-action fixture shown by the winit popup.
-    actions: Vec<String>,
+    actions: RefCell<Vec<(String, String)>>,
     worker: RefCell<Option<backend::Worker>>,
     use_spell: bool,
     restart_pending: Cell<bool>,
@@ -210,6 +209,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     rules::bind(&settings, config.clone(), editor.clone());
     keymap_layers::bind(&settings, config.clone());
     crate::macro_editor::bind(&settings, config.clone());
+    crate::menu_editor::bind(&settings, config.clone());
     settings_page::bind(&settings, config.clone());
     let devices = mapper::bind_devices(&settings, config.as_ref());
     metrics.ready("settings");
@@ -231,7 +231,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         pending_activation: RefCell::new(None),
         #[cfg(not(target_os = "linux"))]
         return_input: RefCell::default(),
-        actions: popup_model::quick_items(),
+        actions: RefCell::default(),
         use_spell: worker.is_some(),
         worker: RefCell::new(worker),
         restart_pending: Cell::new(false),

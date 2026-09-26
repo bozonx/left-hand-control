@@ -79,8 +79,8 @@ fn parse_po(text: &str) -> HashMap<String, String> {
     let mut out = HashMap::new();
     let mut id: Option<String> = None;
     let mut current: Option<(bool, String)> = None;
-    let mut finish = |current: &mut Option<(bool, String)>, id: &mut Option<String>| {
-        match current.take() {
+    let mut finish =
+        |current: &mut Option<(bool, String)>, id: &mut Option<String>| match current.take() {
             Some((false, value)) => *id = Some(value),
             Some((true, value)) => {
                 if let Some(id) = id.take()
@@ -91,8 +91,7 @@ fn parse_po(text: &str) -> HashMap<String, String> {
                 }
             }
             None => {}
-        }
-    };
+        };
     for line in text.lines().map(str::trim) {
         if let Some(rest) = line.strip_prefix("msgid ") {
             finish(&mut current, &mut id);
@@ -159,6 +158,9 @@ pub enum Msg {
     SettingsSaved,
     ProcessNameRequired,
     LayerSaved,
+    MenuSaveFirst,
+    MenuSaved,
+    MenuIssue(lhc_core::profile::menus::MenuIssue),
     MacroSaved,
     MacroIssue(lhc_core::profile::macros::MacroIssue),
     MacroDraftChanged,
@@ -206,14 +208,33 @@ impl Msg {
             Self::ActionSaved => ("action-saved", empty(), 0),
             Self::SettingsSaved => ("settings-saved", empty(), 0),
             Self::ProcessNameRequired => ("process-name-required", empty(), 0),
-            Self::MacroIssue(issue) => (match issue {
-                lhc_core::profile::macros::MacroIssue::InvalidId => "macro-invalid-id",
-                lhc_core::profile::macros::MacroIssue::DuplicateId => "macro-duplicate-id",
-                lhc_core::profile::macros::MacroIssue::DelayRange => "macro-delay-range",
-                lhc_core::profile::macros::MacroIssue::PauseRange => "macro-pause-range",
-                lhc_core::profile::macros::MacroIssue::UnknownKey => "macro-unknown-key",
-                lhc_core::profile::macros::MacroIssue::Cycle => "macro-cycle",
-            }, empty(), 0),
+            Self::MacroIssue(issue) => (
+                match issue {
+                    lhc_core::profile::macros::MacroIssue::InvalidId => "macro-invalid-id",
+                    lhc_core::profile::macros::MacroIssue::DuplicateId => "macro-duplicate-id",
+                    lhc_core::profile::macros::MacroIssue::DelayRange => "macro-delay-range",
+                    lhc_core::profile::macros::MacroIssue::PauseRange => "macro-pause-range",
+                    lhc_core::profile::macros::MacroIssue::UnknownKey => "macro-unknown-key",
+                    lhc_core::profile::macros::MacroIssue::Cycle => "macro-cycle",
+                },
+                empty(),
+                0,
+            ),
+            Self::MenuIssue(issue) => (
+                match issue {
+                    lhc_core::profile::menus::MenuIssue::EmojiCell => "menu-emoji-cell",
+                    lhc_core::profile::menus::MenuIssue::UnknownKey => "macro-unknown-key",
+                    lhc_core::profile::menus::MenuIssue::CommandId => "menu-command-id",
+                    lhc_core::profile::menus::MenuIssue::DuplicateCommand => {
+                        "menu-duplicate-command"
+                    }
+                    lhc_core::profile::menus::MenuIssue::EmptyCommand => "menu-empty-command",
+                },
+                empty(),
+                0,
+            ),
+            Self::MenuSaveFirst => ("menu-save-first", empty(), 0),
+            Self::MenuSaved => ("menu-saved", String::new(), 0),
             Self::MacroSaved => ("macro-saved", empty(), 0),
             Self::MacroDraftChanged => ("macro-draft-changed", empty(), 0),
             Self::LayerSaved => ("layer-saved", empty(), 0),
@@ -265,6 +286,7 @@ impl From<&ConfigError> for Msg {
     fn from(error: &ConfigError) -> Self {
         match error {
             ConfigError::ExternalChange => Self::ConfigExternalChange,
+            ConfigError::Menu(issue) => Self::MenuIssue(*issue),
             ConfigError::Macro(issue) => Self::MacroIssue(*issue),
             ConfigError::InvalidAction(issue) => Self::InvalidAction(*issue),
             ConfigError::Rules(issues) if !issues.is_empty() => Self::Rule(issues[0].clone()),
@@ -327,7 +349,10 @@ mod tests {
             tr(Language::Russian, "Switch to desktop {n}", Some(3)),
             "Переключиться на рабочий стол 3"
         );
-        assert_eq!(tr(Language::Russian, "not in the catalog", None), "not in the catalog");
+        assert_eq!(
+            tr(Language::Russian, "not in the catalog", None),
+            "not in the catalog"
+        );
     }
 
     #[test]
@@ -341,7 +366,13 @@ mod tests {
 
     #[test]
     fn auto_language_follows_the_environment_only_for_auto() {
-        assert_eq!(Language::resolve(LocalePreference::Russian), Language::Russian);
-        assert_eq!(Language::resolve(LocalePreference::English), Language::English);
+        assert_eq!(
+            Language::resolve(LocalePreference::Russian),
+            Language::Russian
+        );
+        assert_eq!(
+            Language::resolve(LocalePreference::English),
+            Language::English
+        );
     }
 }

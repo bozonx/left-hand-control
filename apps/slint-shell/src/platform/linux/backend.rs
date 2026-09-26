@@ -99,6 +99,10 @@ pub fn start() -> Result<Option<Worker>, Box<dyn std::error::Error>> {
     command
         .arg("--spell-worker")
         .stdin(std::process::Stdio::piped())
+        .env(
+            "SLINT_SHELL_PARENT_SOCKET",
+            std::env::var("SLINT_SHELL_SOCKET").unwrap_or_else(|_| "lhc-slint-shell.sock".into()),
+        )
         .env("SLINT_SHELL_SOCKET", socket_name)
         .env_remove("XDG_ACTIVATION_TOKEN");
     match std::env::var_os("SLINT_SHELL_METRICS") {

@@ -55,6 +55,9 @@ impl App {
                 self.return_input.borrow_mut().capture();
             }
         }
+        if window.popup().is_some() {
+            self.refresh_popup_data();
+        }
         if let Some(popup) = window.popup() {
             if self.use_spell {
                 if !self.send_worker(&Command::Show(window), source, start, token) {
@@ -173,15 +176,30 @@ impl App {
     fn emoji_key(&self, key: &str) {
         self.metrics.borrow_mut().mark("emoji", "t5_first_key");
         let index = self.emoji.get_selected();
-        if let Ok(page @ 1..=6) = key.parse::<i32>() {
+        if let Ok(page) = key.parse::<i32>()
+            && page > 0
+            && page as usize <= self.emoji.get_page_names().row_count()
+        {
             self.emoji.set_page(page - 1);
             self.emoji.set_selected(0);
+        } else if let Some(index) = "qwertasdfgzxcvb"
+            .chars()
+            .position(|c| key.eq_ignore_ascii_case(&c.to_string()))
+        {
+            self.choose_emoji(index as i32);
         } else if popup_model::is_key(key, slint::platform::Key::Escape) {
             self.defer_hide(Window::EMOJI);
         } else if popup_model::is_enter(key) {
             self.choose_emoji(index);
         } else if let Some(delta) = popup_model::key_delta(Popup::Emoji, key) {
-            let cells = popup_model::emoji_cells(self.emoji.get_page());
+            let cells = 15;
+            let delta = if delta == 8 {
+                5
+            } else if delta == -8 {
+                -5
+            } else {
+                delta
+            };
             self.emoji
                 .set_selected(popup_model::advance(index, delta, cells));
             self.metrics
@@ -209,10 +227,14 @@ impl App {
     }
 
     fn choose_emoji(&self, index: i32) {
-        if let Some(value) = popup_model::emoji_index(self.emoji.get_page(), index)
+        if let Some(value) = popup_model::configured_emoji_index(&self.emoji, index)
             .and_then(|index| self.emoji.get_emojis().row_data(index))
         {
-            log::info!("selected emoji: {value}");
+            if value.is_empty() {
+                return;
+            }
+            #[cfg(target_os = "linux")]
+            self.execute_popup_action(format!("text:{value}"));
             #[cfg(not(target_os = "linux"))]
             self.return_input.borrow_mut().selected(value.to_string());
         }
@@ -220,22 +242,58 @@ impl App {
     }
 
     fn choose_quick(&self, index: i32) {
-        let value = usize::try_from(index)
+        if let Some((_, action)) = usize::try_from(index)
             .ok()
-            .and_then(|index| self.quick.get_items().row_data(index));
-        if let Some(value) = value {
-            log::info!("selected action (stub): {value}");
-            #[cfg(not(target_os = "linux"))]
-            self.return_input.borrow_mut().selected(value.to_string());
+            .and_then(|i| self.actions.borrow().get(i).cloned())
+        {
             self.defer_hide(Window::QUICK);
+            self.execute_popup_action(action);
+        }
+    }
+
+    fn execute_popup_action(&self, action: String) {
+        slint::Timer::single_shot(std::time::Duration::from_millis(150), move || {
+            with_app(|app| {
+                app.command(
+                    Command::Execute(action),
+                    Source::Button,
+                    Instant::now(),
+                    None,
+                )
+            });
+        });
+    }
+
+    fn refresh_popup_data(&self) {
+        if let Some(config) = &self.config {
+            let menus = popup_model::ConfiguredMenus {
+                layout: config.borrow().layout().clone(),
+            };
+            menus.apply_emoji(&self.emoji);
+            menus.apply_quick(&self.quick);
+            self.filter_quick(&self.quick.get_query());
         }
     }
 
     pub(super) fn filter_quick(&self, query: &str) {
-        let values = popup_model::filter(&self.actions, query);
-        self.quick.set_items(ModelRc::new(VecModel::from(values)));
+        let values = self
+            .config
+            .as_ref()
+            .map(|config| {
+                popup_model::ConfiguredMenus {
+                    layout: config.borrow().layout().clone(),
+                }
+                .quick_page(query, Some(self.quick.get_page() as usize))
+            })
+            .unwrap_or_default();
+        self.quick.set_items(ModelRc::new(VecModel::from(
+            values
+                .iter()
+                .map(|(name, _)| name.clone().into())
+                .collect::<Vec<slint::SharedString>>(),
+        )));
+        *self.actions.borrow_mut() = values;
         self.quick.set_selected(0);
-        self.metrics.borrow_mut().mark("quick", "t5_first_key");
     }
 }
 
@@ -308,6 +366,8 @@ pub(super) fn bind(app: &Rc<App>) {
         .on_choose(|index| with_app(|app| app.choose_emoji(index)));
     app.emoji
         .on_dismiss(|| with_app(|app| app.defer_hide(Window::EMOJI)));
+    app.quick
+        .on_change_page(|_| with_app(|app| app.filter_quick(&app.quick.get_query())));
     app.quick.on_key(|key| with_app(|app| app.quick_key(&key)));
     app.quick
         .on_filter(|query| with_app(|app| app.filter_quick(&query)));

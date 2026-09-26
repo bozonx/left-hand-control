@@ -1,3 +1,4 @@
+import { MenusPage, MenuEditor } from "menus.slint";
 import { MacrosPage, MacroEditor } from "macros.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -191,7 +192,12 @@ export component SettingsWindow inherits Window {
             HorizontalBox {
                 spacing: 8px;
                 Button { text: @tr("Keyboard"); clicked => { root.page = 0; root.grid-open = false; } }
-                Button { text: @tr("Action grid"); clicked => { root.page = 0; root.grid-open = true; } }
+                ComboBox {
+                    width: 160px;
+                    model: [@tr("More pages"), @tr("Emoji"), @tr("Quick actions"), @tr("Commands")];
+                    current-index: root.page == 6 ? MenuEditor.kind + 1 : 0;
+                    selected(value) => { if self.current-index > 0 { let kind = self.current-index - 1; MenuEditor.open(kind); root.page = 6; } }
+                }
                 Button { text: @tr("Layouts"); clicked => { root.page = 1; root.refresh-layouts(); } }
                 Button { text: @tr("Rules"); clicked => { root.page = 3; root.refresh-rules(); } }
                 Button { text: @tr("Layers"); clicked => { root.page = 4; root.refresh-layers(); } }
@@ -202,6 +208,10 @@ export component SettingsWindow inherits Window {
                 Button { text: Locale.english ? "Русский" : "English"; clicked => { root.preferences(Theme.dark, !Locale.english); } }
             }
             Rectangle { height: 1px; background: Theme.border; }
+            if root.page == 6: ScrollView {
+                viewport-width: self.width;
+                VerticalLayout { MenusPage {} }
+            }
             if root.page == 5: MacrosPage {}
             if root.page == 0: VerticalBox {
                 spacing: 8px;
@@ -508,7 +518,7 @@ export component SettingsWindow inherits Window {
             }
             Text { text: Locale.text(root.status); color: Theme.text; }
             Text { text: Locale.text(root.backend-error); color: Theme.error; wrap: word-wrap; }
-            if root.page != 3 && root.page != 4 && root.page != 5: Rectangle { vertical-stretch: 1; }
+            if root.page != 3 && root.page != 4 && root.page != 5 && root.page != 6: Rectangle { vertical-stretch: 1; }
             HorizontalBox {
                 Button { text: @tr("Emoji"); clicked => { root.show-popup("emoji"); } }
                 Button { text: @tr("Quick actions"); clicked => { root.show-popup("quick"); } }

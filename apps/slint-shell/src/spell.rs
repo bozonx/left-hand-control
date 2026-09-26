@@ -65,6 +65,7 @@ struct Layers {
     /// `unmap` lifecycle: hidden layers commit an empty buffer.
     unmap: bool,
     actions: Vec<String>,
+    menus: Option<popup_model::ConfiguredMenus>,
 }
 
 impl Layers {
@@ -134,8 +135,19 @@ impl Layers {
     }
 
     fn value(&self, popup: Popup, index: i32) -> Option<String> {
+        if popup == Popup::Quick
+            && let Some(menus) = &self.menus
+        {
+            return menus
+                .quick_page(
+                    &self.quick.get_query(),
+                    Some(self.quick.get_page() as usize),
+                )
+                .get(usize::try_from(index).ok()?)
+                .map(|(_, action)| action.clone());
+        }
         let value = match popup {
-            Popup::Emoji => popup_model::emoji_index(self.emoji.get_page(), index)
+            Popup::Emoji => popup_model::configured_emoji_index(&self.emoji, index)
                 .and_then(|index| self.emoji.get_emojis().row_data(index)),
             Popup::Quick => self
                 .quick
@@ -150,11 +162,26 @@ impl Layers {
         let Some(delta) = popup_model::key_delta(popup, key) else {
             return false;
         };
+        let delta = if self.menus.is_some() && popup == Popup::Emoji {
+            if delta == 8 {
+                5
+            } else if delta == -8 {
+                -5
+            } else {
+                delta
+            }
+        } else {
+            delta
+        };
         match popup {
             Popup::Emoji => self.emoji.set_selected(popup_model::advance(
                 self.emoji.get_selected(),
                 delta,
-                popup_model::emoji_cells(self.emoji.get_page()),
+                if self.menus.is_some() {
+                    15
+                } else {
+                    popup_model::emoji_cells(self.emoji.get_page())
+                },
             )),
             Popup::Quick => self.quick.set_selected(popup_model::advance(
                 self.quick.get_selected(),
@@ -166,6 +193,17 @@ impl Layers {
     }
 
     fn filter(&self, query: &str) {
+        if let Some(menus) = &self.menus {
+            self.quick.set_items(ModelRc::new(VecModel::from(
+                menus
+                    .quick_page(query, Some(self.quick.get_page() as usize))
+                    .into_iter()
+                    .map(|(name, _)| name.into())
+                    .collect::<Vec<slint::SharedString>>(),
+            )));
+            self.quick.set_selected(0);
+            return;
+        }
         self.quick
             .set_items(ModelRc::new(VecModel::from(popup_model::filter(
                 &self.actions,
@@ -235,6 +273,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         quick,
         unmap,
         actions: popup_model::quick_items(),
+        menus: None,
     };
     layers.filter("");
     metrics.ready("quick");
@@ -309,6 +348,20 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
                 Event::Command(Command::Show(window), source, start) => {
+                    if std::env::var_os("SLINT_SHELL_PARENT_SOCKET").is_some() {
+                        match popup_model::ConfiguredMenus::load() {
+                            Ok(menus) => {
+                                menus.apply_emoji(&layers.emoji);
+                                menus.apply_quick(&layers.quick);
+                                layers.menus = Some(menus);
+                                layers.filter(&layers.quick.get_query());
+                            }
+                            Err(error) => {
+                                log::error!("load popup configuration: {error}");
+                                continue;
+                            }
+                        }
+                    }
                     let Some(popup) = window.popup() else {
                         continue;
                     };
@@ -367,7 +420,34 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     };
                     log::info!("Spell selected {} index={index}: {value}", popup.name());
                     metrics.mark(popup.name(), "selected");
-                    selected = Some(value);
+                    if layers.menus.is_some() {
+                        if value.is_empty() {
+                            continue;
+                        }
+                        let action = if popup == Popup::Emoji {
+                            format!("text:{value}")
+                        } else {
+                            value
+                        };
+                        std::thread::spawn(move || {
+                            std::thread::sleep(std::time::Duration::from_millis(150));
+                            let socket = std::path::PathBuf::from(
+                                std::env::var_os("XDG_RUNTIME_DIR").unwrap_or_default(),
+                            )
+                            .join(std::env::var("SLINT_SHELL_PARENT_SOCKET").unwrap_or_default());
+                            if let Err(error) = ipc::send(
+                                &socket,
+                                &Command::Execute(action),
+                                Source::Ipc,
+                                Instant::now(),
+                                None,
+                            ) {
+                                log::error!("execute popup action: {error}");
+                            }
+                        });
+                    } else {
+                        selected = Some(value);
+                    }
                     dismiss = Some(popup);
                 }
                 Event::Choose(_, _) => {}
@@ -389,7 +469,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     } else if popup_model::is_enter(&key) {
                         let _ = tx.send(Event::Choose(popup, layers.selected_index(popup)));
                     } else if popup == Popup::Emoji
-                        && let Ok(page @ 1..=6) = key.parse::<i32>()
+                        && let Ok(page) = key.parse::<i32>()
+                        && page > 0
+                        && page as usize
+                            <= if layers.menus.is_some() {
+                                layers.emoji.get_page_names().row_count()
+                            } else {
+                                6
+                            }
                     {
                         metrics.mark(popup.name(), "page_changed");
                         if page - 1 == popup_model::STRESS_PAGE {
@@ -397,6 +484,13 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         layers.emoji.set_page(page - 1);
                         layers.emoji.set_selected(0);
+                    } else if popup == Popup::Emoji
+                        && layers.menus.is_some()
+                        && let Some(index) = "qwertasdfgzxcvb"
+                            .chars()
+                            .position(|c| key.eq_ignore_ascii_case(&c.to_string()))
+                    {
+                        let _ = tx.send(Event::Choose(popup, index as i32));
                     } else if layers.navigate(popup, &key) {
                         metrics.mark(popup.name(), "navigation_handled");
                         navigation_count += 1;
@@ -465,6 +559,13 @@ fn bind_callbacks(layers: &Layers, tx: &mpsc::Sender<Event>) {
         let _ = sender.send(Event::Hide(Popup::Quick));
     });
     let sender = tx.clone();
+    let page_tx = tx.clone();
+    let quick = layers.quick.as_weak();
+    layers.quick.on_change_page(move |_| {
+        if let Some(quick) = quick.upgrade() {
+            let _ = page_tx.send(Event::Filter(quick.get_query().to_string()));
+        }
+    });
     layers.quick.on_filter(move |query| {
         let _ = sender.send(Event::Filter(query.into()));
     });

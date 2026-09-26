@@ -38,6 +38,12 @@ export global Locale {
         if m.id == "macro-pause-range" { return @tr("Pause must be between 0 and 10000 ms"); }
         if m.id == "macro-unknown-key" { return @tr("Unknown key or shortcut in macro step"); }
         if m.id == "macro-cycle" { return @tr("Macro references cannot form a cycle"); }
+        if m.id == "menu-emoji-cell" { return @tr("Emoji cells accept at most 100 characters."); }
+        if m.id == "menu-command-id" { return @tr("Command ID: 1–64 letters, digits, underscores or hyphens."); }
+        if m.id == "menu-duplicate-command" { return @tr("Command IDs must be unique."); }
+        if m.id == "menu-empty-command" { return @tr("Enter a shell command."); }
+        if m.id == "menu-save-first" { return @tr("Save command changes before approving execution."); }
+        if m.id == "menu-saved" { return @tr("Changes saved"); }
         if m.id == "macro-saved" { return @tr("Macro saved"); }
         if m.id == "macro-draft-changed" { return @tr("The layout changed while editing. Cancel and reopen the macro before saving."); }
         if m.id == "layer-saved" { return @tr("Layer saved"); }

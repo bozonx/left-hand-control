@@ -249,7 +249,7 @@ impl Settings {
     }
 }
 
-fn command_fingerprint(commands: &[Command]) -> String {
+pub(crate) fn command_fingerprint(commands: &[Command]) -> String {
     use sha2::{Digest, Sha256};
 
     let mut entries: Vec<String> = commands

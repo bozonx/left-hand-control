@@ -5,6 +5,9 @@ export component QuickPopup inherits Window {
     width: 520px; height: 500px;
     no-frame: true; always-on-top: true; background: transparent;
     in property <[string]> items;
+    in property <[string]> page-names;
+    in-out property <int> page;
+    callback change-page(int);
     in-out property <string> query;
     in-out property <int> selected;
     callback filter(string);
@@ -22,6 +25,11 @@ export component QuickPopup inherits Window {
             HorizontalBox {
                 Text { text: @tr("Quick actions"); color: Theme.text; font-size: 22px; }
                 Button { text: "×"; clicked => { root.dismiss(); } }
+            }
+            if root.page-names.length > 0: HorizontalBox {
+                Button { text: "←"; enabled: root.page > 0; clicked => { root.page -= 1; root.change-page(root.page); search.focus(); } }
+                Text { text: root.page-names[root.page]; color: Theme.text; horizontal-stretch: 1; }
+                Button { text: "→"; enabled: root.page + 1 < root.page-names.length; clicked => { root.page += 1; root.change-page(root.page); search.focus(); } }
             }
             search := LineEdit {
                 text <=> root.query;

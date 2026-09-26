@@ -699,3 +699,66 @@ msgstr "Неизвестная клавиша или сочетание в ша�
 
 msgid "Macro references cannot form a cycle"
 msgstr "Ссылки на макросы не могут образовывать цикл"
+
+msgid "Commands"
+msgstr "Команды"
+
+msgid "Add"
+msgstr "Добавить"
+
+msgid "Commands approved"
+msgstr "Выполнение команд разрешено"
+
+msgid "Review shell commands before approving execution."
+msgstr "Проверьте команды перед разрешением выполнения."
+
+msgid "Revoke approval"
+msgstr "Отозвать разрешение"
+
+msgid "Approve saved commands"
+msgstr "Разрешить сохранённые команды"
+
+msgid "Delete selected item? References may stop working."
+msgstr "Удалить выбранный элемент? Ссылки на него могут перестать работать."
+
+msgid "Clear cell"
+msgstr "Очистить ячейку"
+
+msgid "Page name"
+msgstr "Название страницы"
+
+msgid "Command ID"
+msgstr "ID команды"
+
+msgid "Shell command (Linux)"
+msgstr "Команда оболочки (Linux)"
+
+msgid "Icon"
+msgstr "Значок"
+
+msgid "Apply to draft"
+msgstr "Применить к черновику"
+
+msgid "Changes saved"
+msgstr "Изменения сохранены"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Ячейка эмоджи вмещает не более 100 символов."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "ID команды: 1–64 латинских буквы, цифры, подчёркивания или дефисы."
+
+msgid "Command IDs must be unique."
+msgstr "ID команд не должны повторяться."
+
+msgid "Enter a shell command."
+msgstr "Введите команду оболочки."
+
+msgid "Used by"
+msgstr "Используется в"
+
+msgid "Save command changes before approving execution."
+msgstr "Сохраните изменения команд перед разрешением выполнения."
+
+msgid "More pages"
+msgstr "Другие страницы"
