@@ -110,13 +110,19 @@ pub fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>) {
             picker.set_opened(true);
             picker.invoke_refresh();
         });
+    let apply_config = config.clone();
     let weak = ui.as_weak();
     ui.global::<ActionPicker>().on_refresh(move || {
         let Some(ui) = weak.upgrade() else { return };
         let picker = ui.global::<ActionPicker>();
         let document = config.as_ref().map(|c| c.borrow());
         let excluded = if picker.get_macro_step() {
-            ui.global::<MacroEditor>().get_macro_id()
+            let editor = ui.global::<MacroEditor>();
+            editor
+                .get_macros()
+                .row_data(editor.get_picker_macro().max(0) as usize)
+                .map(|row| row.id)
+                .unwrap_or_default()
         } else {
             "".into()
         };
@@ -207,13 +213,17 @@ pub fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>) {
                 ui.invoke_validate();
             }
             (2, index) => {
-                let steps = ui.global::<MacroEditor>().get_steps();
-                if let Some(mut step) = steps.row_data(index as usize) {
-                    step.action = value;
-                    steps.set_row_data(index as usize, step);
-                }
+                let editor = ui.global::<MacroEditor>();
+                editor.invoke_set_step(editor.get_picker_macro(), index, value);
             }
-            (3, _) => ui.global::<MenuEditor>().set_value(value),
+            (3, index) => {
+                let label = catalog(&ui, apply_config.as_ref().map(|c| c.borrow()).as_deref())
+                    .into_iter()
+                    .find(|item| item.value == value)
+                    .map(|item| item.label)
+                    .unwrap_or_default();
+                ui.global::<MenuEditor>().invoke_set_action(index, value, label);
+            }
             (4, _) => ui.set_layer_dialog_key(value),
             (5, _) => ui.set_layer_dialog_action(value),
             _ => {}

@@ -57,24 +57,9 @@ impl ConfigDocument {
                 return Err(ConfigError::Menu(MenuIssue::UnknownKey));
             }
         }
-        for (index, command) in candidate.commands.iter().enumerate() {
-            if command.id.is_empty()
-                || command.id.len() > 64
-                || !command
-                    .id
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
-            {
-                return Err(ConfigError::Menu(MenuIssue::CommandId));
-            }
-            if candidate.commands[..index]
-                .iter()
-                .any(|c| c.id == command.id)
-            {
-                return Err(ConfigError::Menu(MenuIssue::DuplicateCommand));
-            }
-            if command.linux.trim().is_empty() {
-                return Err(ConfigError::Menu(MenuIssue::EmptyCommand));
+        for index in 0..candidate.commands.len() {
+            if let Some(issue) = command_issue(&candidate.commands, index) {
+                return Err(ConfigError::Menu(issue));
             }
         }
         self.update_layout(|layout| {
@@ -116,6 +101,27 @@ impl ConfigDocument {
             }
         })
     }
+}
+
+/// First problem of `commands[index]`, checked against the commands before it.
+pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
+    let command = commands.get(index)?;
+    if command.id.is_empty()
+        || command.id.len() > 64
+        || !command
+            .id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    {
+        return Some(MenuIssue::CommandId);
+    }
+    if commands[..index].iter().any(|c| c.id == command.id) {
+        return Some(MenuIssue::DuplicateCommand);
+    }
+    if command.linux.trim().is_empty() {
+        return Some(MenuIssue::EmptyCommand);
+    }
+    None
 }
 
 pub fn empty_quick_action() -> QuickAction {

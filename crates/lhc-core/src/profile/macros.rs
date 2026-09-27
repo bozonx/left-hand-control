@@ -158,6 +158,16 @@ impl ConfigDocument {
         self.update_layout(|layout| layout.macros = candidate.macros)
     }
 
+    /// Replace all user macros at once; every macro must be valid.
+    pub fn save_macros(&mut self, items: Vec<Macro>) -> Result<(), ConfigError> {
+        let mut candidate = self.config();
+        candidate.macros = items.clone();
+        for item in &items {
+            validate(&candidate, item)?;
+        }
+        self.update_layout(|layout| layout.macros = items)
+    }
+
     pub fn remove_macro(&mut self, index: usize) -> Result<(), ConfigError> {
         if index >= self.layout().macros.len() {
             return Err(ConfigError::Invalid("Unknown macro".into()));

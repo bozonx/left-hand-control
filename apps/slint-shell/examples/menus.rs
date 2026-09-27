@@ -14,57 +14,83 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.set_page(6);
     ui.global::<Theme>().invoke_apply();
     let e = ui.global::<MenuEditor>();
+    let loaded = || ConfigDocument::load(paths.clone()).unwrap();
+
     e.invoke_open(0);
     e.set_value("Привет 👋".into());
+    e.invoke_set_cell();
     e.set_page_name("Мои эмоджи".into());
-    e.invoke_save();
-    e.invoke_add();
+    e.invoke_rename_page();
+    assert_eq!(loaded().layout().emoji_pages[0].cells["KeyQ"], "Привет 👋");
+    assert_eq!(loaded().layout().emoji_pages[0].name, "Мои эмоджи");
+    e.invoke_add_page("Страница 2".into());
+    assert_eq!(e.get_selected_page(), 1);
     e.set_value("✨".into());
-    e.invoke_save();
-    e.invoke_move(-1);
-    e.invoke_save();
-    assert_eq!(
-        ConfigDocument::load(paths.clone())?.layout().emoji_pages[0].cells["KeyQ"],
-        "✨"
-    );
+    e.invoke_set_cell();
+    e.invoke_move_cell(0, 2);
+    assert_eq!(loaded().layout().emoji_pages[1].cells["KeyE"], "✨");
+    e.invoke_move_page(-1);
+    assert_eq!(loaded().layout().emoji_pages[0].cells["KeyE"], "✨");
+    e.invoke_select_cell(2);
+    e.invoke_clear_cell();
+    assert!(!loaded().layout().emoji_pages[0].cells.contains_key("KeyE"));
+    e.invoke_remove_page();
+    assert_eq!(loaded().layout().emoji_pages.len(), 1);
+
     e.invoke_open(2);
-    e.invoke_add();
-    e.set_command_id("hello".into());
-    e.set_page_name("Привет".into());
-    e.set_value("printf hello".into());
-    e.invoke_save();
+    e.invoke_add_command("Привет".into());
+    assert!(e.get_has_errors());
+    assert_eq!(e.get_commands().row_data(0).unwrap().error.id, "menu-empty-command");
+    assert!(loaded().layout().commands.is_empty());
+    e.invoke_set_command(0, 0, "hello".into());
+    e.invoke_set_command(0, 2, "printf hello".into());
+    assert!(!e.get_has_errors());
     assert_eq!(document.borrow().layout().commands.len(), 1);
     e.invoke_trust(true);
     assert!(document.borrow().commands_trusted());
-    e.set_value("printf changed".into());
-    e.invoke_save();
+    e.invoke_set_command(0, 2, "printf changed".into());
     assert!(!document.borrow().commands_trusted());
+    assert!(!e.get_trusted());
+    e.invoke_add_command("Второй".into());
+    e.invoke_set_command(0, 0, "hello".into());
+    assert_eq!(e.get_commands().row_data(1).unwrap().error.id, "menu-duplicate-command");
+    e.invoke_trust(true);
+    assert_eq!(e.get_status().id.as_str(), "menu-save-first");
+    e.invoke_remove_command(0);
+    assert!(!e.get_has_errors());
+
     e.invoke_open(1);
-    e.set_value("cmd:hello".into());
+    assert_eq!(e.get_selected_cell(), -1);
+    e.invoke_set_action(0, "cmd:hello".into(), "Привет".into());
+    assert_eq!(e.get_name().as_str(), "Привет");
     e.set_name("Запуск".into());
-    e.invoke_select_cell(1);
-    e.set_value("text:Здравствуйте".into());
-    e.invoke_save();
-    e.invoke_move_cell(1);
-    e.invoke_save();
-    let loaded = ConfigDocument::load(paths.clone())?;
-    assert_eq!(loaded.layout().quick_actions[2].action, "text:Здравствуйте");
-    let menus = slint_shell::popup_model::ConfiguredMenus {
-        layout: loaded.layout().clone(),
-    };
+    e.invoke_set_name();
+    e.invoke_set_action(1, "text:Здравствуйте".into(), "".into());
+    e.invoke_move_cell(1, 2);
+    let layout = loaded().layout().clone();
+    assert_eq!(layout.quick_actions[2].action, "text:Здравствуйте");
+    assert_eq!(layout.quick_actions[2].name, "text:Здравствуйте");
+    let menus = slint_shell::popup_model::ConfiguredMenus { layout };
     assert_eq!(menus.quick("ЗАПУСК")[0].1, "cmd:hello");
-    e.set_value("macro:missing".into());
-    e.invoke_save();
-    assert_ne!(e.get_status().id.as_str(), "menu-saved");
+    e.invoke_set_action(0, "macro:missing".into(), "".into());
+    assert_ne!(e.get_status().id.as_str(), "");
+    assert_eq!(loaded().layout().quick_actions[0].action, "cmd:hello");
     e.invoke_open(1);
     assert_eq!(e.get_cells().row_count(), 15);
-    e.set_value("text:unsaved".into());
-    e.invoke_open(1);
     assert_eq!(e.get_value().as_str(), "cmd:hello");
     paths.save_current_layout("rules: []\n")?;
-    e.set_value("text:conflict".into());
-    e.invoke_save();
-    assert_ne!(e.get_status().id.as_str(), "menu-saved");
+    e.set_name("conflict".into());
+    e.invoke_set_name();
+    assert_ne!(e.get_status().id.as_str(), "");
+    *document.borrow_mut() = ConfigDocument::load(paths.clone())?;
+    e.invoke_open(2);
+    e.invoke_add_command("Плеер".into());
+    e.invoke_set_command(0, 0, "hello".into());
+    e.invoke_set_command(0, 2, "playerctl play-pause".into());
+    e.invoke_open(1);
+    e.invoke_set_action(0, "cmd:hello".into(), "Плеер".into());
+    e.invoke_set_action(6, "Ctrl+KeyC".into(), "Ctrl+KeyC".into());
+    assert_eq!(document.borrow().layout().quick_actions[6].action, "Ctrl+KeyC");
     e.invoke_open(
         std::env::var("LHC_MENUS_PAGE")
             .ok()
@@ -72,6 +98,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or(0),
     );
     slint::select_bundled_translation("ru")?;
+    ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     ui.show()?;
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
@@ -95,7 +122,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for p in pixels.as_slice() { data.extend([p.r,p.g,p.b]); }
             std::fs::write(path,data).unwrap();
         }
-        println!("Menus smoke passed: pages, cells, commands, trust, persistence, filtering, validation, cancel and conflicts");
+        println!("Menus smoke passed: pages, cells, drag moves, commands, trust, auto-save, validation and conflicts");
         slint::quit_event_loop().unwrap();
     });
     slint::run_event_loop()?;

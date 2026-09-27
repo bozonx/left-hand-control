@@ -619,35 +619,14 @@ msgstr "Слой сохранён"
 msgid "Macros"
 msgstr "Макросы"
 
-msgid "Add macro"
-msgstr "Добавить макрос"
-
 msgid "System macros"
 msgstr "Системные макросы"
-
-msgid "Delete this step?"
-msgstr "Удалить этот шаг?"
-
-msgid "Delete this macro? References will stop working."
-msgstr "Удалить макрос? Ссылки на него перестанут работать."
 
 msgid "Macro ID"
 msgstr "ID макроса"
 
 msgid "Copy ID"
 msgstr "Копировать ID"
-
-msgid "Use macro:<id> in key assignments. Renaming an ID does not change existing references."
-msgstr "Используйте macro:<id> в назначениях клавиш. Изменение ID не обновляет существующие ссылки."
-
-msgid "Used in: {}"
-msgstr "Используется: {}"
-
-msgid "Step pause (ms)"
-msgstr "Пауза между шагами (мс)"
-
-msgid "Leave delays empty to use settings defaults (0–2000 ms)."
-msgstr "Оставьте задержки пустыми для значений из настроек (0–2000 мс)."
 
 msgid "Steps"
 msgstr "Шаги"
@@ -657,27 +636,6 @@ msgstr "Добавить шаг"
 
 msgid "Add pause"
 msgstr "Добавить паузу"
-
-msgid "No steps yet. Add an action or a pause."
-msgstr "Шагов пока нет. Добавьте действие или паузу."
-
-msgid "Key, shortcut, text:…, macro:… or pause:100"
-msgstr "Клавиша, сочетание, text:…, macro:… или pause:100"
-
-msgid "Empty step will be skipped"
-msgstr "Пустой шаг будет пропущен"
-
-msgid "No macros yet. Add a macro or copy a system macro."
-msgstr "Макросов пока нет. Добавьте макрос или скопируйте системный."
-
-msgid "Copy to my macros"
-msgstr "Скопировать в мои макросы"
-
-msgid "Macro saved"
-msgstr "Макрос сохранён"
-
-msgid "The layout changed while editing. Cancel and reopen the macro before saving."
-msgstr "Раскладка изменилась во время редактирования. Отмените правки и откройте макрос заново."
 
 msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
 msgstr "ID макроса должен содержать 1–64 латинские буквы, цифры, дефисы или подчёркивания"
@@ -703,21 +661,6 @@ msgstr "Команды"
 msgid "Add"
 msgstr "Добавить"
 
-msgid "Commands approved"
-msgstr "Выполнение команд разрешено"
-
-msgid "Review shell commands before approving execution."
-msgstr "Проверьте команды перед разрешением выполнения."
-
-msgid "Revoke approval"
-msgstr "Отозвать разрешение"
-
-msgid "Approve saved commands"
-msgstr "Разрешить сохранённые команды"
-
-msgid "Delete selected item? References may stop working."
-msgstr "Удалить выбранный элемент? Ссылки на него могут перестать работать."
-
 msgid "Clear cell"
 msgstr "Очистить ячейку"
 
@@ -726,18 +669,6 @@ msgstr "Название страницы"
 
 msgid "Command ID"
 msgstr "ID команды"
-
-msgid "Shell command (Linux)"
-msgstr "Команда оболочки (Linux)"
-
-msgid "Icon"
-msgstr "Значок"
-
-msgid "Apply to draft"
-msgstr "Применить к черновику"
-
-msgid "Changes saved"
-msgstr "Изменения сохранены"
 
 msgid "Emoji cells accept at most 100 characters."
 msgstr "Ячейка эмоджи вмещает не более 100 символов."
@@ -750,12 +681,6 @@ msgstr "ID команд не должны повторяться."
 
 msgid "Enter a shell command."
 msgstr "Введите команду оболочки."
-
-msgid "Used by"
-msgstr "Используется в"
-
-msgid "Save command changes before approving execution."
-msgstr "Сохраните изменения команд перед разрешением выполнения."
 
 msgid "More pages"
 msgstr "Другие страницы"
@@ -807,9 +732,6 @@ msgstr "Работает"
 
 msgid "Stopped"
 msgstr "Остановлен"
-
-msgid "No items yet. Click Add to create one."
-msgstr "Список пуст. Нажмите «Добавить», чтобы создать элемент."
 
 msgid "Layout library updated"
 msgstr "Библиотека раскладок обновлена"
@@ -1314,3 +1236,219 @@ msgstr "Кнопки мыши, медиа-клавиши и другие три�
 
 msgid "Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Internal codes” shows app-specific codes (e.g. KeyA, ArrowLeft). “System codes” shows raw system event codes."
 msgstr "Режим отображения меняет только метку — код клавиши остаётся прежним. «Английская раскладка» показывает буквы для удобства. «Внутренние коды» — коды приложения (например KeyA). «Системные коды» — системные коды событий."
+
+msgid "(copy)"
+msgstr "(копия)"
+
+msgid "Add page"
+msgstr "Добавить страницу"
+
+msgid "Allow commands"
+msgstr "Разрешить команды"
+
+msgid "Animals & Nature"
+msgstr "Природа"
+
+msgid "Build reusable sequences from key chords, text actions, commands, or system actions. Steps run in order with the configured pause between them."
+msgstr "Собирайте переиспользуемые последовательности из сочетаний клавиш, текстовых действий, команд или системных действий. Шаги выполняются по очереди с заданной паузой между ними."
+
+msgid "Built-in macros that cannot be edited. To customize, create a user macro based on one."
+msgstr "Встроенные макросы, которые нельзя изменить. Чтобы настроить такой макрос под себя, создайте на его основе пользовательский."
+
+msgid "Cell {}"
+msgstr "Ячейка {}"
+
+msgid "Command name"
+msgstr "Название команды"
+
+msgid "Create based on"
+msgstr "Создать на основе"
+
+msgid "Delete command"
+msgstr "Удалить команду"
+
+msgid "Delete command?"
+msgstr "Удалить команду?"
+
+msgid "Delete macro"
+msgstr "Удалить макрос"
+
+msgid "Delete macro?"
+msgstr "Удалить макрос?"
+
+msgid "Delete page"
+msgstr "Удалить страницу"
+
+msgid "Delete page?"
+msgstr "Удалить страницу?"
+
+msgid "Delete step"
+msgstr "Удалить шаг"
+
+msgid "Delete step?"
+msgstr "Удалить шаг?"
+
+msgid "Disable"
+msgstr "Отключить"
+
+msgid "Drag"
+msgstr "Перетащить"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji и символы"
+
+msgid "Emoji Symbols"
+msgstr "Emoji-символы"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Эмоджи, символ или любой текст"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Пустой шаг — выберите действие или удалите его."
+
+msgid "Fix command errors before allowing them."
+msgstr "Исправьте ошибки в командах, прежде чем разрешать их."
+
+msgid "Fix the existing command errors first"
+msgstr "Сначала исправьте ошибки в существующих командах"
+
+msgid "Fix the existing macro errors first"
+msgstr "Сначала исправьте ошибки в существующих макросах"
+
+msgid "Food & Drink"
+msgstr "Еда и напитки"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "Человекочитаемое имя макроса, показывается в списках выбора."
+
+msgid "Human-readable name shown in picker lists."
+msgstr "Человекочитаемое имя, показывается в списках выбора."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Клавиша {}"
+
+msgid "Label"
+msgstr "Название"
+
+msgid "Linux shell script"
+msgstr "Shell-скрипт Linux"
+
+msgid "Macro name"
+msgstr "Название макроса"
+
+msgid "Modifier delay"
+msgstr "Задержка модификатора"
+
+msgid "Move page left"
+msgstr "Сдвинуть страницу влево"
+
+msgid "Move page right"
+msgstr "Сдвинуть страницу вправо"
+
+msgid "New command"
+msgstr "Новая команда"
+
+msgid "New macro"
+msgstr "Новый макрос"
+
+msgid "No commands yet. Click \"New command\" to create the first one."
+msgstr "Пока нет ни одной команды. Нажмите «Новая команда», чтобы создать первую."
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "Нет ни одного макроса. Нажмите «Новый макрос», чтобы создать первый."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Пока нет шагов. Каждый шаг — сочетание клавиш или действие."
+
+msgid "Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \")."
+msgstr "Открывается по вызову действий app:showEmojiMenu1...5. В каждую ячейку можно вставить эмоджи, UTF-символ (например ≠), любой другой символ (например №) или короткую фразу (например \"// TODO: \")."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Открывается по вызову действий app:showQuickMenu1...5."
+
+msgid "Page"
+msgstr "Страница"
+
+msgid "Page {}"
+msgstr "Страница {}"
+
+msgid "Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."
+msgstr "Передаётся в sh -lc как есть. Поддерживаются несколько строк, переменные, пайпы, условия и циклы. Внимательно читайте скрипты из чужих раскладок перед разрешением."
+
+msgid "Pause (ms)"
+msgstr "Пауза (мс)"
+
+msgid "Pause between steps"
+msgstr "Пауза между шагами"
+
+msgid "People & Gestures"
+msgstr "Люди и жесты"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr "Индивидуальная пауза между шагами этого макроса. По умолчанию — значение из настроек."
+
+msgid "Pick an action"
+msgstr "Выберите действие"
+
+msgid "Quick Actions"
+msgstr "Быстрые действия"
+
+msgid "Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them."
+msgstr "Переиспользуемые shell-команды текущей раскладки. На Linux они запускаются через sh -lc после явного разрешения."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "Shell-команды разрешены для текущей версии этой раскладки."
+
+msgid "Shell commands require approval"
+msgstr "Shell-команды требуют разрешения"
+
+msgid "Smileys & Emotion"
+msgstr "Смайлы и эмоции"
+
+msgid "The command will be deleted. Keys or macros that reference cmd:{} will stop working."
+msgstr "Команда будет удалена. Клавиши или макросы со ссылкой cmd:{} перестанут работать."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "Макрос будет удалён. Ссылки macro:{} перестанут работать."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Страница будет удалена вместе со всеми назначенными ячейками."
+
+msgid "This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change."
+msgstr "Эта раскладка содержит shell-скрипты. Прочитайте каждый скрипт перед разрешением, особенно если раскладка получена от другого человека. Разрешение применяется к проверенным определениям команд и сбрасывается при изменении набора команд, ID или Linux-скриптов."
+
+msgid "This step will be removed from the macro."
+msgstr "Этот шаг будет удалён из макроса."
+
+msgid "Time between pressing a modifier and the main key within one step. Defaults to the Settings value."
+msgstr "Время между нажатием модификатора и основной клавиши внутри одного шага. По умолчанию — значение из настроек."
+
+msgid "Travel & Places"
+msgstr "Места и транспорт"
+
+msgid "UTF Symbols"
+msgstr "UTF-символы"
+
+msgid "Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab."
+msgstr "Уникальный идентификатор для ссылок вида cmd:<id>. Чтобы назначить команду на клавишу, выберите это действие во вкладках «Слои» или «Правила»."
+
+msgid "Unique identifier used in references like macro:<id>. To bind this macro to a key, choose that action on the Layers or Rules tab. Change the ID only when nothing uses this macro."
+msgstr "Уникальный идентификатор для ссылок вида macro:<id>. Чтобы назначить макрос на клавишу, выберите это действие во вкладках «Слои» или «Правила». Меняйте ID только если макрос нигде не используется."
+
+msgid "Used in:"
+msgstr "Используется в:"
+
+msgid "User macros"
+msgstr "Пользовательские макросы"
+
+msgid "Work & Objects"
+msgstr "Работа и объекты"
+
+msgid "e.g. Next Track"
+msgstr "Например: Следующий трек"
+
+msgid "ms"
+msgstr "мс"

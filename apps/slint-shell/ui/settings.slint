@@ -520,10 +520,7 @@ export component SettingsWindow inherits Window {
                 Button { text: @tr("Layers"); primary: root.page == 4; clicked => { root.navigate(4, 0); } }
                 Rectangle { horizontal-stretch: 1; }
             }
-            if root.page == 6: ScrollView {
-                viewport-width: self.visible-width;
-                VerticalLayout { MenusPage {} }
-            }
+            if root.page == 6: MenusPage {}
             if root.page == 5: MacrosPage {}
             if root.page == 0: VerticalBox {
                 spacing: 8px;

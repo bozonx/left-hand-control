@@ -1,122 +1,569 @@
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, TextEdit } from "std-widgets.slint";
-export struct MenuCell { key: string, value: string }
+import { Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, PageTabs } from "controls.slint";
+import { Button, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+
+export struct MenuCell { key: string, value: string, name: string }
+export struct EmojiCategory { id: string, items: [string] }
+export struct CommandRow { id: string, name: string, linux: string, usage: [string], error: Message }
 export global MenuEditor {
+    /// 0 emoji, 1 quick actions, 2 commands.
     in-out property <int> kind;
     in property <[string]> pages;
     in property <[MenuCell]> cells;
-    in property <[string]> catalog;
-    in property <[string]> choices;
+    in property <[EmojiCategory]> catalog;
+    in property <[CommandRow]> commands;
     in-out property <int> selected-page;
     in-out property <int> selected-cell;
     in-out property <string> page-name;
     in-out property <string> value;
     in-out property <string> name;
-    in-out property <string> icon;
-    in-out property <string> command-id;
     in property <bool> trusted;
-    in property <string> usage;
+    in property <bool> has-errors;
     in property <Message> status;
     callback open(int);
     callback select-page(int);
     callback select-cell(int);
-    callback add();
-    callback remove();
-    callback move(int);
-    callback move-cell(int);
-    callback apply();
-    callback save();
+    callback add-page(string);
+    callback remove-page();
+    callback move-page(int);
+    /// Read `page-name`, `value` and `name` into the selected page and cell.
+    callback rename-page();
+    callback set-cell();
+    callback set-name();
+    callback set-action(int, string, string);
+    callback clear-cell();
+    callback move-cell(int, int);
+    callback add-command(string);
+    callback remove-command(int);
+    callback move-command(int, int);
+    /// Command index, field (0 id, 1 name, 2 Linux script), value.
+    callback set-command(int, int, string);
     callback trust(bool);
 }
-export component MenusPage inherits VerticalBox {
-    vertical-stretch: 1;
-    padding: 0px;
-    spacing: 10px;
-    private property <bool> confirming;
-    clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    HorizontalBox { vertical-stretch: 0;
-        Text { text: MenuEditor.kind == 0 ? @tr("Emoji") : MenuEditor.kind == 1 ? @tr("Quick actions") : @tr("Commands"); color: Theme.text; font-size: 26px; font-weight: 700; }
-        Rectangle { horizontal-stretch: 1; }
-        Button { text: @tr("Add"); clicked => { MenuEditor.add(); } }
-        Button { text: @tr("Save"); clicked => { MenuEditor.save(); } }
-        Button { text: @tr("Cancel"); clicked => { root.confirming = false; MenuEditor.open(MenuEditor.kind); } }
+
+/// 5×3 grid of the left-hand hotkeys; click selects, drag moves a cell.
+component HotkeyGrid inherits Rectangle {
+    in property <bool> emoji;
+    in property <length> cell-height: 96px;
+    callback activate(int);
+    private property <length> pad: 12px;
+    private property <length> gap: 8px;
+    private property <length> cell-width: (self.width - 2 * self.pad - 4 * self.gap) / 5;
+    private property <int> drag-from: -1;
+    private property <int> drag-over: -1;
+    private property <bool> dragging;
+    private property <length> press-x;
+    private property <length> press-y;
+    min-width: 5 * 64px + 2 * self.pad + 4 * self.gap;
+    height: 2 * self.pad + 3 * self.cell-height + 2 * self.gap;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Theme.border;
+    background: Theme.surface;
+    pure function index-at(x: length, y: length) -> int {
+        return max(0, min(2, floor((y - self.pad) / (self.cell-height + self.gap)))) * 5
+            + max(0, min(4, floor((x - self.pad) / (self.cell-width + self.gap))));
     }
-    if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.text; wrap: word-wrap; }
-    if MenuEditor.kind == 2 && MenuEditor.pages.length > 0: HorizontalBox { vertical-stretch: 0;
-        Text { text: MenuEditor.trusted ? @tr("Commands approved") : @tr("Review shell commands before approving execution."); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-        Button { text: MenuEditor.trusted ? @tr("Revoke approval") : @tr("Approve saved commands"); clicked => { MenuEditor.trust(!MenuEditor.trusted); } }
-    }
-    if MenuEditor.pages.length > 0: HorizontalBox { vertical-stretch: 0;
-        ComboBox { model: MenuEditor.pages; current-index: MenuEditor.selected-page; selected(value) => { MenuEditor.select-page(self.current-index); } horizontal-stretch: 1; }
-        Button { text: "↑"; enabled: MenuEditor.selected-page > 0; clicked => { MenuEditor.move(-1); } }
-        Button { text: "↓"; enabled: MenuEditor.selected-page + 1 < MenuEditor.pages.length; clicked => { MenuEditor.move(1); } }
-        Button { text: @tr("Delete"); enabled: MenuEditor.pages.length > 0; clicked => { root.confirming = true; } }
-    }
-    if root.confirming: HorizontalBox { vertical-stretch: 0;
-        Text { text: @tr("Delete selected item? References may stop working."); color: Theme.text; }
-        Button { text: @tr("Cancel"); clicked => { root.confirming = false; } }
-        Button { text: @tr("Delete"); clicked => { MenuEditor.remove(); root.confirming = false; } }
-    }
-    if MenuEditor.pages.length == 0: Text { text: @tr("No items yet. Click Add to create one."); color: Theme.muted; }
-    if MenuEditor.pages.length > 0: HorizontalBox { vertical-stretch: 0;
-        if MenuEditor.kind != 2: VerticalBox {
-            min-width: 0px; preferred-width: 420px; horizontal-stretch: 1;
-            for row in 3: HorizontalBox { vertical-stretch: 0;
-                for col in 5: Rectangle {
+    for cell[index] in MenuEditor.cells: Rectangle {
+        x: root.pad + mod(index, 5) * (root.cell-width + root.gap);
+        y: root.pad + floor(index / 5) * (root.cell-height + root.gap);
+        width: root.cell-width;
+        height: root.cell-height;
+        border-radius: 6px;
+        border-width: index == MenuEditor.selected-cell || (root.dragging && index == root.drag-over) ? 2px : 1px;
+        border-color: index == MenuEditor.selected-cell || (root.dragging && index == root.drag-over) ? Theme.link : Theme.border;
+        background: root.dragging && index == root.drag-over ? Theme.hover : Theme.card;
+        opacity: root.dragging && index == root.drag-from ? 0.5 : 1.0;
+        accessible-role: button;
+        accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
+        accessible-action-default => { root.activate(index); }
+        VerticalLayout {
+            padding: 8px;
+            spacing: 4px;
+            HorizontalLayout {
+                Text { horizontal-stretch: 1; text: cell.key; color: Theme.link; font-family: "monospace"; font-size: 12px; font-weight: 600; }
+                Image { width: 14px; height: 14px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; accessible-label: @tr("Drag"); }
+            }
+            if root.emoji: Text {
+                vertical-stretch: 1;
+                text: cell.value == "" ? "＋" : cell.value;
+                color: cell.value == "" ? Theme.muted : Theme.text;
+                font-size: cell.value.character-count <= 2 ? 26px : cell.value.character-count <= 6 ? 16px : 12px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                wrap: word-wrap;
+                overflow: elide;
+            }
+            if !root.emoji: HorizontalLayout {
+                spacing: 6px;
+                if cell.value != "": Image { width: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
+                Text {
                     horizontal-stretch: 1;
-                    min-width: 48px;
-                    preferred-width: 90px;
-                    height: 72px;
-                    border-radius: 6px;
-                    border-width: 1px;
-                    border-color: MenuEditor.selected-cell == row * 5 + col ? Theme.accent : Theme.border;
-                    background: cell-touch.has-hover ? Theme.hover : Theme.card;
-                    VerticalLayout {
-                        padding: 6px;
-                        Text { text: MenuEditor.cells[row * 5 + col].key; color: Theme.muted; font-size: 12px; }
-                        Text { min-width: 0px; text: MenuEditor.cells[row * 5 + col].value; color: Theme.text; overflow: elide; horizontal-alignment: center; }
-                    }
-                    cell-touch := TouchArea { clicked => { MenuEditor.select-cell(row * 5 + col); } }
+                    text: cell.value == "" ? @tr("Empty") : cell.name;
+                    color: cell.value == "" ? Theme.muted : Theme.text;
+                    font-weight: 600;
+                    overflow: elide;
+                    vertical-alignment: center;
                 }
             }
-            HorizontalBox { vertical-stretch: 0;
-                Button { text: "←"; enabled: MenuEditor.selected-cell > 0; clicked => { MenuEditor.move-cell(-1); } }
-                Button { text: "→"; enabled: MenuEditor.selected-cell < 14; clicked => { MenuEditor.move-cell(1); } }
-                Button { text: @tr("Clear cell"); clicked => { MenuEditor.value = ""; MenuEditor.name = ""; MenuEditor.icon = ""; MenuEditor.apply(); } }
-            }
-            Rectangle { vertical-stretch: 1; }
+            if !root.emoji: Text { text: cell.value == "" ? "—" : cell.value; color: Theme.muted; font-family: "monospace"; font-size: 11px; overflow: elide; }
+            if !root.emoji: Rectangle { vertical-stretch: 1; }
         }
-        VerticalBox {
-            min-width: 0px; preferred-width: 420px; horizontal-stretch: 1;
-            Text { text: MenuEditor.kind == 2 ? @tr("Name") : @tr("Page name"); color: Theme.text; }
-            LineEdit { text <=> MenuEditor.page-name; }
-            if MenuEditor.kind == 2: VerticalBox {
-                Text { text: @tr("Command ID"); color: Theme.text; }
-                HorizontalBox { vertical-stretch: 0;
-                    LineEdit { text <=> MenuEditor.command-id; }
-                    Button { text: @tr("Copy ID"); clicked => { clipboard.text = "cmd:" + MenuEditor.command-id; clipboard.select-all(); clipboard.copy(); } }
+    }
+    TouchArea {
+        mouse-cursor: root.dragging ? grabbing : pointer;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                root.drag-from = root.index-at(self.mouse-x, self.mouse-y);
+                root.drag-over = root.drag-from;
+                root.press-x = self.mouse-x;
+                root.press-y = self.mouse-y;
+                root.dragging = false;
+            }
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
+                if !root.dragging {
+                    root.activate(root.drag-from);
+                } else if root.drag-over != root.drag-from {
+                    MenuEditor.move-cell(root.drag-from, root.drag-over);
                 }
-                Text { text: @tr("Used by") + ": " + MenuEditor.usage; color: Theme.muted; wrap: word-wrap; }
-                Text { text: @tr("Shell command (Linux)"); color: Theme.text; }
+                root.dragging = false;
+                root.drag-from = -1;
+                root.drag-over = -1;
             }
-            if MenuEditor.kind == 1: VerticalBox {
-                Text { text: @tr("Name"); color: Theme.text; }
-                LineEdit { text <=> MenuEditor.name; }
-                Text { text: @tr("Icon"); color: Theme.text; }
-                LineEdit { text <=> MenuEditor.icon; }
-                Button { text: @tr("Choose action"); clicked => { ActionPicker.open(3, 0, MenuEditor.value, false); } }
-            }
-            TextEdit { text <=> MenuEditor.value; height: 100px; }
-            Button { text: @tr("Apply to draft"); clicked => { MenuEditor.apply(); } }
-            if MenuEditor.kind == 0: ListView {
-                height: 180px; viewport-width: self.visible-width;
-                for row in ceil(MenuEditor.catalog.length / 6): HorizontalBox { vertical-stretch: 0; padding: 0px; spacing: 4px;
-                    for col in 6: Button { min-width: 0px; horizontal-stretch: 1; enabled: row * 6 + col < MenuEditor.catalog.length; text: MenuEditor.catalog[row * 6 + col]; clicked => { MenuEditor.value = self.text; MenuEditor.apply(); } }
+        }
+        moved => {
+            if self.pressed && root.drag-from >= 0 {
+                if abs(self.mouse-x - root.press-x) > 6px || abs(self.mouse-y - root.press-y) > 6px {
+                    root.dragging = true;
+                }
+                if root.dragging {
+                    root.drag-over = root.index-at(self.mouse-x, self.mouse-y);
                 }
             }
         }
     }
-    Rectangle { vertical-stretch: 1; }
+}
+
+/// Side card header shared by the emoji and quick action pages.
+component PageEditor inherits VerticalLayout {
+    callback remove();
+    spacing: 4px;
+    FieldLabel { text: @tr("Page"); }
+    HorizontalLayout {
+        spacing: 4px;
+        LineEdit { text <=> MenuEditor.page-name; accessible-label: @tr("Page name"); edited => { MenuEditor.rename-page(); } }
+        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/chevron-left.svg"); label: @tr("Move page left"); enabled: MenuEditor.selected-page > 0; clicked => { MenuEditor.move-page(-1); } } }
+        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/chevron-right.svg"); label: @tr("Move page right"); enabled: MenuEditor.selected-page + 1 < MenuEditor.pages.length; clicked => { MenuEditor.move-page(1); } } }
+        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); danger: true; clicked => { root.remove(); } } }
+    }
+}
+
+component StatusText inherits Text {
+    text: Locale.text(MenuEditor.status);
+    color: Theme.error;
+    wrap: word-wrap;
+}
+
+component EmojiButton inherits Rectangle {
+    in property <string> item;
+    height: 40px;
+    horizontal-stretch: 1;
+    min-width: 0px;
+    preferred-width: 40px;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: focus.has-focus ? Theme.text : touch.has-hover ? Theme.link : Theme.border;
+    background: touch.has-hover ? Theme.hover : Theme.surface;
+    accessible-role: button;
+    accessible-label: root.item;
+    accessible-action-default => { self.pick(); }
+    function pick() { MenuEditor.value = root.item; MenuEditor.set-cell(); }
+    Text { text: root.item; font-size: 20px; color: Theme.text; horizontal-alignment: center; vertical-alignment: center; }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" { root.pick(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.pick(); } }
+}
+
+export component EmojiPage inherits Rectangle {
+    vertical-stretch: 1;
+    private property <bool> confirming;
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        viewport-width: self.visible-width;
+        VerticalLayout {
+            alignment: start;
+            Card {
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 16px;
+                    CardHeader {
+                        title: @tr("Emoji & Symbols");
+                        subtitle: @tr("Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").");
+                        VerticalLayout {
+                            alignment: center;
+                            Button { text: @tr("Add page"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
+                        }
+                    }
+                    if MenuEditor.status.id != "": StatusText {}
+                    HorizontalLayout {
+                        spacing: 16px;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 16px;
+                            alignment: start;
+                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } }
+                            HotkeyGrid { emoji: true; cell-height: 92px; activate(index) => { MenuEditor.select-cell(index); } }
+                        }
+                        Card {
+                            width: 340px;
+                            VerticalLayout {
+                                padding: 14px;
+                                spacing: 12px;
+                                PageEditor { remove => { root.confirming = true; } }
+                                Rectangle { height: 1px; background: Theme.border; }
+                                FieldLabel { text: @tr("Cell {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
+                                HorizontalLayout {
+                                    spacing: 4px;
+                                    LineEdit {
+                                        text <=> MenuEditor.value;
+                                        placeholder-text: @tr("Emoji, symbol, or any text");
+                                        edited => { MenuEditor.set-cell(); }
+                                    }
+                                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
+                                }
+                                ScrollView {
+                                    height: 400px;
+                                    viewport-width: self.visible-width;
+                                    VerticalLayout {
+                                        padding-right: 10px;
+                                        spacing: 6px;
+                                        for category in MenuEditor.catalog: VerticalLayout {
+                                            spacing: 6px;
+                                            padding-bottom: 8px;
+                                            Text {
+                                                text: category.id == "smileys" ? @tr("Smileys & Emotion")
+                                                    : category.id == "people" ? @tr("People & Gestures")
+                                                    : category.id == "symbols" ? @tr("Emoji Symbols")
+                                                    : category.id == "work" ? @tr("Work & Objects")
+                                                    : category.id == "nature" ? @tr("Animals & Nature")
+                                                    : category.id == "food" ? @tr("Food & Drink")
+                                                    : category.id == "travel" ? @tr("Travel & Places")
+                                                    : @tr("UTF Symbols");
+                                                color: Theme.muted;
+                                                font-size: 11px;
+                                                font-weight: 700;
+                                            }
+                                            for row in ceil(category.items.length / 6): HorizontalLayout {
+                                                spacing: 6px;
+                                                for col in 6: EmojiButton {
+                                                    item: category.items[row * 6 + col];
+                                                    visible: row * 6 + col < category.items.length;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if root.confirming: ConfirmDialog {
+        width: 100%;
+        height: 100%;
+        title: @tr("Delete page?");
+        body: @tr("The page and all assigned cells on it will be deleted.");
+        confirm-text: @tr("Delete");
+        cancel => { root.confirming = false; }
+        confirm => { MenuEditor.remove-page(); root.confirming = false; }
+    }
+}
+
+export component QuickActionsPage inherits Rectangle {
+    vertical-stretch: 1;
+    private property <bool> confirming;
+    private property <bool> filled: MenuEditor.selected-cell >= 0 && MenuEditor.cells[MenuEditor.selected-cell].value != "";
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        viewport-width: self.visible-width;
+        VerticalLayout {
+            alignment: start;
+            Card {
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 16px;
+                    CardHeader {
+                        title: @tr("Quick Actions");
+                        subtitle: @tr("Opened by the app:showQuickMenu1...5 actions.");
+                        VerticalLayout {
+                            alignment: center;
+                            Button { text: @tr("Add page"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
+                        }
+                    }
+                    if MenuEditor.status.id != "": StatusText {}
+                    HorizontalLayout {
+                        spacing: 16px;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 16px;
+                            alignment: start;
+                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } }
+                            HotkeyGrid {
+                                emoji: false;
+                                cell-height: 104px;
+                                activate(index) => {
+                                    if MenuEditor.cells[index].value == "" {
+                                        ActionPicker.open(3, index, "", false);
+                                    } else {
+                                        MenuEditor.select-cell(index);
+                                    }
+                                }
+                            }
+                        }
+                        Card {
+                            width: 360px;
+                            VerticalLayout {
+                                padding: 14px;
+                                spacing: 12px;
+                                alignment: start;
+                                PageEditor { remove => { root.confirming = true; } }
+                                if root.filled: Rectangle { height: 1px; background: Theme.border; }
+                                if root.filled: Text { text: @tr("Key {}", MenuEditor.cells[MenuEditor.selected-cell].key); color: Theme.text; font-weight: 700; }
+                                if root.filled: VerticalLayout {
+                                    spacing: 4px;
+                                    FieldLabel { text: @tr("Label"); }
+                                    LineEdit { text <=> MenuEditor.name; placeholder-text: @tr("e.g. Next Track"); edited => { MenuEditor.set-name(); } }
+                                }
+                                if root.filled: VerticalLayout {
+                                    spacing: 4px;
+                                    FieldLabel { text: @tr("Action"); }
+                                    HorizontalLayout {
+                                        spacing: 4px;
+                                        Rectangle {
+                                            height: 34px;
+                                            border-radius: 6px;
+                                            border-width: 1px;
+                                            border-color: action-focus.has-focus ? Theme.text : Theme.border;
+                                            background: action-touch.has-hover ? Theme.hover : Theme.surface;
+                                            accessible-role: button;
+                                            accessible-label: @tr("Action");
+                                            accessible-value: MenuEditor.value;
+                                            accessible-action-default => { self.pick(); }
+                                            function pick() { ActionPicker.open(3, MenuEditor.selected-cell, MenuEditor.value, false); }
+                                            Text {
+                                                x: 10px;
+                                                width: parent.width - 20px;
+                                                text: MenuEditor.value;
+                                                color: Theme.text;
+                                                font-family: "monospace";
+                                                font-size: 12px;
+                                                overflow: elide;
+                                                vertical-alignment: center;
+                                            }
+                                            action-focus := FocusScope {
+                                                key-pressed(event) => {
+                                                    if event.text == " " || event.text == "\n" { parent.pick(); return accept; }
+                                                    return reject;
+                                                }
+                                            }
+                                            action-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
+                                        }
+                                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear"); clicked => { MenuEditor.clear-cell(); } } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if root.confirming: ConfirmDialog {
+        width: 100%;
+        height: 100%;
+        title: @tr("Delete page?");
+        body: @tr("The page and all assigned cells on it will be deleted.");
+        confirm-text: @tr("Delete");
+        cancel => { root.confirming = false; }
+        confirm => { MenuEditor.remove-page(); root.confirming = false; }
+    }
+}
+
+component CommandCard inherits Card {
+    in property <int> index;
+    in property <CommandRow> item;
+    callback remove();
+    callback copy(string);
+    VerticalLayout {
+        padding: 16px;
+        spacing: 12px;
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 4px;
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: start;
+                    FieldLabel { text: @tr("ID"); vertical-alignment: center; }
+                    InfoTip { text: @tr("Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab."); }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    LineEdit { text: root.item.id; placeholder-text: "id"; accessible-label: @tr("Command ID"); edited(value) => { MenuEditor.set-command(root.index, 0, value); } }
+                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
+                }
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 4px;
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: start;
+                    FieldLabel { text: @tr("Name"); vertical-alignment: center; }
+                    InfoTip { text: @tr("Human-readable name shown in picker lists."); }
+                }
+                LineEdit { text: root.item.name; placeholder-text: @tr("Command name"); accessible-label: @tr("Name"); edited(value) => { MenuEditor.set-command(root.index, 1, value); } }
+            }
+            HorizontalLayout {
+                spacing: 2px;
+                alignment: start;
+                IconButton { icon: @image-url("icons/arrow-up.svg"); label: @tr("Move up"); enabled: root.index > 0; clicked => { MenuEditor.move-command(root.index, -1); } }
+                IconButton { icon: @image-url("icons/arrow-down.svg"); label: @tr("Move down"); enabled: root.index + 1 < MenuEditor.commands.length; clicked => { MenuEditor.move-command(root.index, 1); } }
+                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete command"); danger: true; clicked => { root.remove(); } }
+            }
+        }
+        if root.item.usage.length > 0: HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            Text { text: @tr("Used in:"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+            for place in root.item.usage: Badge { text: place; }
+        }
+        VerticalLayout {
+            spacing: 4px;
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: start;
+                FieldLabel { text: @tr("Linux shell script"); vertical-alignment: center; }
+                InfoTip { text: @tr("Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
+            }
+            TextEdit {
+                height: 96px;
+                text: root.item.linux;
+                placeholder-text: "playerctl play-pause\nnotify-send 'Playback toggled'";
+                accessible-label: @tr("Linux shell script");
+                edited(value) => { MenuEditor.set-command(root.index, 2, value); }
+            }
+        }
+        if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
+    }
+}
+
+component ApprovalNotice inherits Rectangle {
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Theme.warning.transparentize(0.5);
+    background: Theme.warning.transparentize(0.88);
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 10px;
+        VerticalLayout { alignment: start; Image { width: 18px; height: 18px; source: @image-url("icons/triangle-alert.svg"); colorize: Theme.warning; } }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 4px;
+            Text { text: @tr("Shell commands require approval"); color: Theme.text; font-weight: 700; wrap: word-wrap; }
+            Text { text: @tr("This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change."); color: Theme.muted; wrap: word-wrap; }
+        }
+        VerticalLayout {
+            alignment: start;
+            Button { text: @tr("Allow commands"); primary: true; icon: @image-url("icons/shield-check.svg"); colorize-icon: true; clicked => { MenuEditor.trust(true); } }
+        }
+    }
+}
+
+component ApprovedNotice inherits Rectangle {
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Theme.border;
+    background: Theme.surface;
+    HorizontalLayout {
+        padding: 10px;
+        spacing: 8px;
+        VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/shield-check.svg"); colorize: Theme.success; } }
+        Text { horizontal-stretch: 1; text: @tr("Shell commands are allowed for this version of the current layout."); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+        Button { text: @tr("Disable"); clicked => { MenuEditor.trust(false); } }
+    }
+}
+
+export component CommandsPage inherits Rectangle {
+    vertical-stretch: 1;
+    private property <int> deleting: -1;
+    private property <bool> has-shell: MenuEditor.commands.length > 0;
+    clipboard := TextInput { visible: false; width: 0px; height: 0px; }
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        viewport-width: self.visible-width;
+        VerticalLayout {
+            alignment: start;
+            Card {
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 16px;
+                    CardHeader {
+                        title: @tr("Commands");
+                        info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.");
+                        VerticalLayout {
+                            alignment: center;
+                            Button {
+                                text: @tr("New command");
+                                primary: true;
+                                icon: @image-url("icons/plus.svg");
+                                colorize-icon: true;
+                                enabled: !MenuEditor.has-errors;
+                                clicked => { MenuEditor.add-command(@tr("New command")); }
+                            }
+                        }
+                    }
+                    if MenuEditor.has-errors: Text { text: @tr("Fix the existing command errors first"); color: Theme.muted; font-size: 12px; }
+                    if MenuEditor.status.id != "": StatusText {}
+                    if root.has-shell && !MenuEditor.trusted: ApprovalNotice {}
+                    if root.has-shell && MenuEditor.trusted: ApprovedNotice {}
+                    if MenuEditor.commands.length == 0: Text { text: @tr("No commands yet. Click \"New command\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
+                    for item[index] in MenuEditor.commands: CommandCard {
+                        index: index;
+                        item: item;
+                        remove => { root.deleting = index; }
+                        copy(value) => { clipboard.text = value; clipboard.select-all(); clipboard.copy(); }
+                    }
+                }
+            }
+        }
+    }
+    if root.deleting >= 0: ConfirmDialog {
+        width: 100%;
+        height: 100%;
+        title: @tr("Delete command?");
+        body: @tr("The command will be deleted. Keys or macros that reference cmd:{} will stop working.", MenuEditor.commands[root.deleting].id);
+        confirm-text: @tr("Delete");
+        cancel => { root.deleting = -1; }
+        confirm => { MenuEditor.remove-command(root.deleting); root.deleting = -1; }
+    }
+}
+
+export component MenusPage inherits Rectangle {
+    vertical-stretch: 1;
+    if MenuEditor.kind == 0: EmojiPage { width: 100%; height: 100%; }
+    if MenuEditor.kind == 1: QuickActionsPage { width: 100%; height: 100%; }
+    if MenuEditor.kind == 2: CommandsPage { width: 100%; height: 100%; }
 }

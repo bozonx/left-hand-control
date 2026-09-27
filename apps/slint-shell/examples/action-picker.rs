@@ -45,9 +45,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .as_deref(),
         Some("macro:copyLine")
     );
-    ui.global::<MacroEditor>().invoke_edit(-1);
-    ui.global::<MacroEditor>().set_macro_id("self".into());
-    ui.global::<MacroEditor>().invoke_add_step("KeyA".into());
+    let macros = ui.global::<MacroEditor>();
+    macros.invoke_add("Self".into());
+    macros.invoke_set_field(0, 0, "self".into());
+    macros.invoke_add_step(0, "KeyA".into());
+    macros.set_picker_macro(0);
     picker.invoke_open(2, 0, "KeyA".into(), false);
     picker.set_value("macro:self".into());
     picker.invoke_apply();
@@ -55,18 +57,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("pause:250".into());
     picker.invoke_apply();
     assert_eq!(
-        ui.global::<MacroEditor>()
-            .get_steps()
-            .row_data(0)
-            .unwrap()
-            .action,
+        macros.get_macros().row_data(0).unwrap().steps.row_data(0).unwrap().action,
         "pause:250"
     );
-    ui.global::<MenuEditor>().set_value("KeyA".into());
-    picker.invoke_open(3, 0, "KeyA".into(), false);
+    assert_eq!(document.borrow().layout().macros[0].steps[0].action, "pause:250");
+    ui.invoke_navigate(6, 1);
+    picker.invoke_open(3, 1, "".into(), false);
     picker.set_value("text:Привет\nмир".into());
     picker.invoke_apply();
     assert_eq!(ui.global::<MenuEditor>().get_value(), "text:Привет\nмир");
+    assert_eq!(ui.global::<MenuEditor>().get_selected_cell(), 1);
+    assert_eq!(document.borrow().layout().quick_actions[1].action, "text:Привет\nмир");
     ui.set_layer_dialog_key("F13".into());
     picker.invoke_open(4, 0, "F13".into(), true);
     picker.set_value("NumpadEnter".into());

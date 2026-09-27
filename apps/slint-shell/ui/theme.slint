@@ -11,5 +11,7 @@ export global Theme {
     /// Foreground for assigned actions on key caps.
     out property <color> link: dark ? #7fb3ff : #1f5fbf;
     out property <color> error: dark ? #ffb4ab : #a52222;
+    out property <color> warning: dark ? #f5c26b : #8a5300;
+    out property <color> success: dark ? #7fd6a0 : #1d7a45;
     public function apply() { Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light; }
 }
