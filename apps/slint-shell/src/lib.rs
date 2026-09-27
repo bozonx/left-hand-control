@@ -8,6 +8,7 @@ pub mod ui {
     slint::include_modules!();
 }
 
+mod action_picker;
 mod app;
 pub use app::bind_document;
 pub mod command;

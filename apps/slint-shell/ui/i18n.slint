@@ -11,6 +11,63 @@ export global Locale {
     in-out property <bool> english: false;
 
     public pure function text(m: Message) -> string {
+        if m.id == "picker-action" && m.arg == "showQuickMenu" { return @tr("Show Quick Action Menu page {}", m.count); }
+        if m.id == "picker-action" && m.arg == "showEmojiMenu" { return @tr("Show Emoji & Symbols menu page {}", m.count); }
+        if m.id == "picker-action" && m.arg == "switchDesktop" { return @tr("Switch to desktop {}", m.count); }
+        if m.id == "picker-action" && m.arg == "switchLayout" { return @tr("Switch to layout {}", m.count); }
+        if m.id == "picker-action" && m.arg == "taskEntry" { return @tr("Activate task manager entry {}", m.count); }
+        if m.id == "picker-action" && m.arg == "walkThroughWindowsAlternative" { return @tr("Walk Through Windows Alternative"); }
+        if m.id == "picker-action" && m.arg == "walkThroughWindowsCurrentApp" { return @tr("Walk through windows of current application"); }
+        if m.id == "picker-action" && m.arg == "showClipboardHistory" { return @tr("Show clipboard history"); }
+        if m.id == "picker-action" && m.arg == "volumeDown" { return @tr("Decrease volume"); }
+        if m.id == "picker-action" && m.arg == "volumeUp" { return @tr("Increase volume"); }
+        if m.id == "picker-action" && m.arg == "muteAudio" { return @tr("Toggle mute"); }
+        if m.id == "picker-action" && m.arg == "brightnessDown" { return @tr("Decrease screen brightness"); }
+        if m.id == "picker-action" && m.arg == "brightnessUp" { return @tr("Increase screen brightness"); }
+        if m.id == "picker-action" && m.arg == "windowClose" { return @tr("Close active window"); }
+        if m.id == "picker-action" && m.arg == "windowToNextDesktop" { return @tr("Move window to next desktop"); }
+        if m.id == "picker-action" && m.arg == "windowToPreviousDesktop" { return @tr("Move window to previous desktop"); }
+        if m.id == "picker-action" && m.arg == "windowKeepAbove" { return @tr("Keep window above others"); }
+        if m.id == "picker-action" && m.arg == "windowMaximizeVertical" { return @tr("Maximize window vertically"); }
+        if m.id == "picker-action" && m.arg == "windowMaximizeHorizontal" { return @tr("Maximize window horizontally"); }
+        if m.id == "picker-action" && m.arg == "screenOff" { return @tr("Turn off screen"); }
+        if m.id == "picker-action" && m.arg == "launchKrunner" { return @tr("Launch KRunner"); }
+        if m.id == "picker-action" && m.arg == "launchSystemMonitor" { return @tr("Launch System Monitor"); }
+        if m.id == "picker-action" && m.arg == "manageActivities" { return @tr("Manage activities"); }
+        if m.id == "picker-action" && m.arg == "nextActivity" { return @tr("Next activity"); }
+        if m.id == "picker-action" && m.arg == "previousActivity" { return @tr("Previous activity"); }
+        if m.id == "picker-action" && m.arg == "muteMicrophone" { return @tr("Mute microphone"); }
+        if m.id == "picker-action" && m.arg == "showDisplayConfig" { return @tr("Show display configuration"); }
+        if m.id == "picker-action" && m.arg == "toggleTouchpad" { return @tr("Toggle touchpad"); }
+        if m.id == "picker-action" && m.arg == "lockSession" { return @tr("Lock session"); }
+        if m.id == "picker-action" && m.arg == "logout" { return @tr("Log out"); }
+        if m.id == "picker-action" && m.arg == "logoutWithoutConfirmation" { return @tr("Log out without confirmation"); }
+        if m.id == "picker-action" && m.arg == "increaseKeyboardBrightness" { return @tr("Increase keyboard brightness"); }
+        if m.id == "picker-action" && m.arg == "decreaseKeyboardBrightness" { return @tr("Decrease keyboard brightness"); }
+        if m.id == "picker-action" && m.arg == "toggleKeyboardBacklight" { return @tr("Toggle keyboard backlight"); }
+        if m.id == "picker-action" && m.arg == "activateApplicationLauncher" { return @tr("Activate application launcher"); }
+        if m.id == "picker-action" && m.arg == "showDesktop" { return @tr("Show desktop"); }
+        if m.id == "picker-action" && m.arg == "maximizeWindow" { return @tr("Maximize window"); }
+        if m.id == "picker-action" && m.arg == "minimizeWindow" { return @tr("Minimize window"); }
+        if m.id == "picker-action" && m.arg == "moveWindow" { return @tr("Move window"); }
+        if m.id == "picker-action" && m.arg == "windowToNextScreen" { return @tr("Move window to next screen"); }
+        if m.id == "picker-action" && m.arg == "windowToPreviousScreen" { return @tr("Move window to previous screen"); }
+        if m.id == "picker-action" && m.arg == "quickTileWindowTop" { return @tr("Quick tile window to top"); }
+        if m.id == "picker-action" && m.arg == "quickTileWindowBottom" { return @tr("Quick tile window to bottom"); }
+        if m.id == "picker-action" && m.arg == "quickTileWindowLeft" { return @tr("Quick tile window to left"); }
+        if m.id == "picker-action" && m.arg == "quickTileWindowRight" { return @tr("Quick tile window to right"); }
+        if m.id == "picker-action" && m.arg == "toggleNightColor" { return @tr("Toggle night color"); }
+        if m.id == "picker-action" && m.arg == "toggleGridView" { return @tr("Toggle grid view"); }
+        if m.id == "picker-action" && m.arg == "toggleOverview" { return @tr("Toggle overview"); }
+        if m.id == "picker-action" && m.arg == "togglePresentWindowsAllDesktops" { return @tr("Toggle present windows (all desktops)"); }
+        if m.id == "picker-action" && m.arg == "togglePresentWindowsCurrentDesktop" { return @tr("Toggle present windows (current desktop)"); }
+        if m.id == "picker-action" && m.arg == "windowMenu" { return @tr("Window operations menu"); }
+        if m.id == "picker-action" && m.arg == "zoomIn" { return @tr("Zoom in"); }
+        if m.id == "picker-action" && m.arg == "zoomOut" { return @tr("Zoom out"); }
+        if m.id == "picker-action" && m.arg == "zoomActualSize" { return @tr("Zoom to actual size"); }
+        if m.id == "picker-action" && m.arg == "killWindow" { return @tr("Force close window"); }
+        if m.id == "picker-action" && m.arg == "windowFullscreen" { return @tr("Make window fullscreen"); }
+        if m.id == "picker-action" && m.arg == "windowOnAllDesktops" { return @tr("Keep window on all desktops"); }
         if m.id == "library-saved" { return @tr("Layout library updated"); }
         if m.id == "library-select" { return @tr("Select a layout"); }
         if m.id == "library-changed" { return @tr("Layout changed on disk; select it again"); }

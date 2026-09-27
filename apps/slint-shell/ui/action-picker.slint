@@ -1,0 +1,114 @@
+import { Locale, Message } from "i18n.slint";
+import { Theme } from "theme.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit, ListView } from "std-widgets.slint";
+export struct PickerItem { value: string, label: string, category: int }
+export global ActionPicker {
+    in-out property <bool> opened;
+    in-out property <Message> error;
+    in-out property <bool> key-only;
+    in-out property <bool> capturing;
+    in-out property <bool> valid;
+    in-out property <string> value;
+    in-out property <string> original;
+    in-out property <string> text-content;
+    in-out property <string> pause-content;
+    callback begin-capture();
+    in-out property <string> query;
+    in-out property <int> category;
+    in-out property <[PickerItem]> items;
+    in-out property <[int]> counts;
+    in-out property <bool> macro-step;
+    callback open(int, int, string, bool);
+    callback refresh();
+    callback apply();
+    callback close();
+}
+
+component PickerCell inherits Rectangle {
+    in property <PickerItem> item;
+    in property <bool> compact;
+    min-width: 0px; preferred-width: 0px; horizontal-stretch: 1; height: compact ? 38px : 76px;
+    border-width: 1px; border-radius: 5px;
+    border-color: ActionPicker.value == item.value || item-focus.has-focus ? Theme.accent : Theme.border;
+    background: item-touch.has-hover ? Theme.hover : Theme.card;
+    accessible-role: button;
+    accessible-label: item.label;
+    accessible-action-default => { root.pick(); }
+    function pick() { ActionPicker.value = root.item.value; ActionPicker.refresh(); }
+    VerticalLayout { padding: 8px; spacing: 2px;
+        Text { text: root.item.label; color: Theme.text; wrap: word-wrap; overflow: elide; vertical-alignment: center; }
+        if root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
+    }
+    item-focus := FocusScope { key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.pick(); return accept; } return reject; } }
+    item-touch := TouchArea { clicked => { root.pick(); item-focus.focus(); } }
+}
+
+export component PickerOverlay inherits Rectangle {
+    background: #00000099;
+    TouchArea { clicked => { ActionPicker.close(); } }
+    focus := FocusScope {
+        init => { self.focus(); }
+        key-pressed(event) => {
+            if ActionPicker.capturing { return accept; }
+            if event.text == Key.Escape { ActionPicker.close(); return accept; }
+            return reject;
+        }
+        Rectangle {
+            x: 24px; y: 24px; width: parent.width - 48px; height: parent.height - 48px;
+            background: Theme.surface; border-radius: 10px; border-width: 1px; border-color: Theme.border;
+            TouchArea {}
+            VerticalBox { padding: 18px; spacing: 10px;
+                HorizontalBox { vertical-stretch: 0;
+                    VerticalBox { padding: 0px; spacing: 4px; horizontal-stretch: 1;
+                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
+                        Text { text: @tr("Previously selected: {}", ActionPicker.original); color: Theme.muted; overflow: elide; }
+                    }
+                    Button { width: 110px; height: 34px; horizontal-stretch: 0; text: @tr("Cancel"); clicked => { ActionPicker.close(); } }
+                    Button { width: 125px; height: 34px; horizontal-stretch: 0; primary: true; text: @tr("Apply"); enabled: ActionPicker.valid && !ActionPicker.capturing; clicked => { ActionPicker.apply(); } }
+                }
+                Text { text: @tr("Current value"); color: Theme.muted; }
+                HorizontalBox { vertical-stretch: 0;
+                    LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.refresh(); } }
+                    Button { text: @tr("Clear"); clicked => { ActionPicker.value = ""; ActionPicker.refresh(); } }
+                    Button { text: ActionPicker.capturing ? @tr("Stop capture") : @tr("Capture key"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
+                }
+                if ActionPicker.capturing: Text { text: ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
+                if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
+                if !ActionPicker.valid: Text { text: @tr("Choose a valid key or action."); color: Theme.error; }
+                LineEdit { text <=> ActionPicker.query; placeholder-text: @tr("Search keys and actions"); edited => { if ActionPicker.query != "" && ActionPicker.category >= 11 { ActionPicker.category = 0; } ActionPicker.refresh(); } }
+                HorizontalBox { spacing: 12px;
+                    ListView { width: 195px;
+                        for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
+                            padding: 0px; padding-bottom: 4px;
+                            if index < 6 || (!ActionPicker.key-only && (index < 12 || ActionPicker.macro-step)): Button {
+                                text: title + (index < 11 ? "  " + ActionPicker.counts[index] : "");
+                                primary: ActionPicker.category == index;
+                                clicked => { ActionPicker.category = index; ActionPicker.query = ""; ActionPicker.refresh(); }
+                            }
+                        }
+                    }
+                    VerticalBox { padding: 0px;
+                        if ActionPicker.category == 11: VerticalBox { padding: 0px;
+                            Text { text: @tr("Literal text (text: prefix is added automatically)"); color: Theme.muted; wrap: word-wrap; }
+                            TextEdit { text: ActionPicker.text-content; edited => { ActionPicker.value = "text:" + self.text; ActionPicker.refresh(); } }
+                        }
+                        if ActionPicker.category == 12: VerticalBox { padding: 0px;
+                            Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
+                            LineEdit { text: ActionPicker.pause-content; edited => { ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
+                        }
+                        if ActionPicker.category < 11: ListView { viewport-width: self.visible-width;
+                            for row in ceil(ActionPicker.items.length / (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2)): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
+                                for col in (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2): PickerCell {
+                                    item: ActionPicker.items[row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col];
+                                    visible: row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col < ActionPicker.items.length;
+                                    compact: ActionPicker.category < 6 && ActionPicker.query == "";
+                                }
+                            }
+                        }
+                        if ActionPicker.category < 11 && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
+                    }
+                }
+            }
+        }
+    }
+}

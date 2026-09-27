@@ -1,3 +1,4 @@
+import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, TextEdit } from "std-widgets.slint";
@@ -105,7 +106,7 @@ export component MenusPage inherits VerticalBox {
                 LineEdit { text <=> MenuEditor.name; }
                 Text { text: @tr("Icon"); color: Theme.text; }
                 LineEdit { text <=> MenuEditor.icon; }
-                ComboBox { model: MenuEditor.choices; current-index: -1; current-value: @tr("Choose action"); selected(value) => { MenuEditor.value = value; } }
+                Button { text: @tr("Choose action"); clicked => { ActionPicker.open(3, 0, MenuEditor.value, false); } }
             }
             TextEdit { text <=> MenuEditor.value; height: 100px; }
             Button { text: @tr("Apply to draft"); clicked => { MenuEditor.apply(); } }

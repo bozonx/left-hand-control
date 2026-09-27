@@ -1032,3 +1032,231 @@ msgstr "Создать раскладку"
 
 msgid "Empty"
 msgstr "Пустая"
+
+msgid "Previously selected: {}"
+msgstr "Было выбрано: {}"
+
+msgid "Current value"
+msgstr "Текущее значение"
+
+msgid "Capture key"
+msgstr "Захватить клавишу"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "Нажмите клавишу (включая модификаторы или Escape)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr "Нажмите клавишу или сочетание. Чтобы выбрать отдельный модификатор, отпустите его."
+
+msgid "Choose a valid key or action."
+msgstr "Выберите допустимую клавишу или действие."
+
+msgid "Search keys and actions"
+msgstr "Поиск клавиш и действий"
+
+msgid "Special keys"
+msgstr "Специальные"
+
+msgid "Letters and symbols"
+msgstr "Буквы и символы"
+
+msgid "Digits and numpad"
+msgstr "Цифры и numpad"
+
+msgid "Media"
+msgstr "Медиа"
+
+msgid "Mouse"
+msgstr "Мышь"
+
+msgid "Other keys"
+msgstr "Остальное"
+
+msgid "Application"
+msgstr "Приложение"
+
+msgid "System actions"
+msgstr "Системные действия"
+
+msgid "Pause"
+msgstr "Пауза"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Текст для ввода (префикс text: добавляется автоматически)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Пауза в миллисекундах (1–10000)"
+
+msgid "No matching items"
+msgstr "Ничего не найдено"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Показать страницу {} быстрого меню действий"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Показать страницу {} меню emoji и символов"
+
+msgid "Switch to desktop {}"
+msgstr "Переключиться на рабочий стол {}"
+
+msgid "Switch to layout {}"
+msgstr "Переключить раскладку на {}"
+
+msgid "Activate task manager entry {}"
+msgstr "Активировать запись панели задач {}"
+
+msgid "Walk Through Windows Alternative"
+msgstr "Переключение между окнами: альтернативный режим"
+
+msgid "Walk through windows of current application"
+msgstr "Переключение между окнами текущего приложения"
+
+msgid "Show clipboard history"
+msgstr "Показать историю буфера обмена"
+
+msgid "Decrease volume"
+msgstr "Уменьшить громкость"
+
+msgid "Increase volume"
+msgstr "Увеличить громкость"
+
+msgid "Toggle mute"
+msgstr "Выключить или включить звук"
+
+msgid "Decrease screen brightness"
+msgstr "Уменьшить яркость экрана"
+
+msgid "Increase screen brightness"
+msgstr "Увеличить яркость экрана"
+
+msgid "Close active window"
+msgstr "Закрыть активное окно"
+
+msgid "Move window to next desktop"
+msgstr "Переместить окно на следующий рабочий стол"
+
+msgid "Move window to previous desktop"
+msgstr "Переместить окно на предыдущий рабочий стол"
+
+msgid "Keep window above others"
+msgstr "Сделать окно поверх остальных"
+
+msgid "Maximize window vertically"
+msgstr "Развернуть окно по вертикали"
+
+msgid "Maximize window horizontally"
+msgstr "Развернуть окно по горизонтали"
+
+msgid "Turn off screen"
+msgstr "Выключить экран"
+
+msgid "Launch KRunner"
+msgstr "Запустить KRunner"
+
+msgid "Launch System Monitor"
+msgstr "Запустить системный монитор"
+
+msgid "Manage activities"
+msgstr "Управление Activity"
+
+msgid "Next activity"
+msgstr "Следующая Activity"
+
+msgid "Previous activity"
+msgstr "Предыдущая Activity"
+
+msgid "Mute microphone"
+msgstr "Выключить микрофон"
+
+msgid "Show display configuration"
+msgstr "Показать конфигурацию дисплеев"
+
+msgid "Toggle touchpad"
+msgstr "Переключить тачпад"
+
+msgid "Lock session"
+msgstr "Заблокировать сессию"
+
+msgid "Log out"
+msgstr "Выйти из системы"
+
+msgid "Log out without confirmation"
+msgstr "Выйти без подтверждения"
+
+msgid "Increase keyboard brightness"
+msgstr "Увеличить яркость клавиатуры"
+
+msgid "Decrease keyboard brightness"
+msgstr "Уменьшить яркость клавиатуры"
+
+msgid "Toggle keyboard backlight"
+msgstr "Переключить подсветку клавиатуры"
+
+msgid "Activate application launcher"
+msgstr "Активировать меню запуска приложений"
+
+msgid "Show desktop"
+msgstr "Показать рабочий стол"
+
+msgid "Maximize window"
+msgstr "Развернуть окно"
+
+msgid "Minimize window"
+msgstr "Свернуть окно"
+
+msgid "Move window"
+msgstr "Переместить окно"
+
+msgid "Move window to next screen"
+msgstr "Переместить окно на следующий экран"
+
+msgid "Move window to previous screen"
+msgstr "Переместить окно на предыдущий экран"
+
+msgid "Quick tile window to top"
+msgstr "Прижать окно к верху"
+
+msgid "Quick tile window to bottom"
+msgstr "Прижать окно к низу"
+
+msgid "Quick tile window to left"
+msgstr "Прижать окно к левому краю"
+
+msgid "Quick tile window to right"
+msgstr "Прижать окно к правому краю"
+
+msgid "Toggle night color"
+msgstr "Переключить Night Color"
+
+msgid "Toggle grid view"
+msgstr "Переключить сетку окон"
+
+msgid "Toggle overview"
+msgstr "Переключить обзор"
+
+msgid "Toggle present windows (all desktops)"
+msgstr "Показать окна (все рабочие столы)"
+
+msgid "Toggle present windows (current desktop)"
+msgstr "Показать окна (текущий рабочий стол)"
+
+msgid "Window operations menu"
+msgstr "Меню окна"
+
+msgid "Zoom in"
+msgstr "Приблизить"
+
+msgid "Zoom out"
+msgstr "Отдалить"
+
+msgid "Zoom to actual size"
+msgstr "Реальный размер"
+
+msgid "Force close window"
+msgstr "Принудительно закрыть окно"
+
+msgid "Make window fullscreen"
+msgstr "Развернуть окно на весь экран"
+
+msgid "Keep window on all desktops"
+msgstr "Показывать окно на всех рабочих столах"

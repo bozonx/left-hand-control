@@ -1,3 +1,4 @@
+import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView } from "std-widgets.slint";
@@ -93,7 +94,7 @@ export component MacrosPage inherits VerticalBox {
                 HorizontalBox { vertical-stretch: 0;
                     Text { text: "#" + (index + 1); color: Theme.muted; vertical-alignment: center; }
                     LineEdit { text <=> step.action; placeholder-text: @tr("Key, shortcut, text:…, macro:… or pause:100"); }
-                    ComboBox { width: 190px; model: MacroEditor.action-choices; current-index: -1; current-value: @tr("Choose action"); selected(value) => { step.action = value; } }
+                    Button { text: @tr("Choose action"); clicked => { ActionPicker.open(2, index, step.action, false); } }
                     Button { text: "↑"; accessible-label: @tr("Move up"); enabled: root.delete-step < 0 && root.delete-id == "" && index > 0; clicked => { MacroEditor.move-step(index, -1); } }
                     Button { text: "↓"; accessible-label: @tr("Move down"); enabled: root.delete-step < 0 && root.delete-id == "" && index + 1 < MacroEditor.steps.length; clicked => { MacroEditor.move-step(index, 1); } }
                     Button { enabled: root.delete-step < 0 && root.delete-id == ""; text: @tr("Delete"); clicked => { root.delete-step = index; } }

@@ -1,5 +1,5 @@
 use crate::{
-    editor::{EditorHandle, KEY_CODES},
+    editor::EditorHandle,
     ui::{RuleLayerChoice, RuleRow, SettingsWindow},
 };
 use lhc_core::{
@@ -156,7 +156,11 @@ fn change(
                 crate::i18n::Msg::ConfigSaved(document.layout().rules.len()).to_ui(),
             );
         }
-        Err(error) => ui.set_rule_status(format!("Save failed: {error}").into()),
+        Err(error) => {
+            ui.set_rule_status(format!("Save failed: {error}").into());
+            ui.global::<crate::ui::ActionPicker>()
+                .set_error(crate::i18n::Msg::from(&error).to_ui());
+        }
     }
 }
 pub(super) fn bind(
@@ -298,23 +302,12 @@ pub(super) fn bind(
                 13 => ui.get_rule_double_timeout(),
                 _ => "".into(),
             };
-            ui.set_rule_dialog_value(value);
-            let choices: Vec<_> = if field == 1 {
-                KEY_CODES.iter().map(|s| (*s).into()).collect()
-            } else if field == 3 || field == 4 || field == 5 {
-                KEY_CODES
-                    .iter()
-                    .map(|s| (*s).into())
-                    .chain(
-                        ["Ctrl+KeyC", "Ctrl+KeyV", "Alt+Tab", "Escape", "Enter"]
-                            .into_iter()
-                            .map(Into::into),
-                    )
-                    .collect()
-            } else {
-                Vec::new()
-            };
-            ui.set_rule_picker_items(ModelRc::new(VecModel::from(choices)));
+            ui.set_rule_dialog_value(value.clone());
+            if matches!(field, 1 | 3 | 4 | 5) {
+                ui.global::<crate::ui::ActionPicker>()
+                    .invoke_open(0, index, value, field == 1);
+                return;
+            }
             let layers = config
                 .borrow()
                 .layout()
@@ -351,35 +344,7 @@ pub(super) fn bind(
                     })
                     .collect::<Vec<_>>();
                 ui.set_rule_layer_items(ModelRc::new(VecModel::from(filtered)));
-                return;
             }
-            let choices = if field == 1 {
-                KEY_CODES
-                    .iter()
-                    .map(|key| (*key).to_owned())
-                    .collect::<Vec<_>>()
-            } else {
-                KEY_CODES
-                    .iter()
-                    .copied()
-                    .chain([
-                        "Ctrl+KeyC",
-                        "Ctrl+KeyV",
-                        "Alt+Tab",
-                        "text:Hello",
-                        "delay:100",
-                        "showQuickMenu",
-                        "showEmojiMenu",
-                    ])
-                    .map(str::to_owned)
-                    .collect::<Vec<_>>()
-            };
-            let filtered = choices
-                .into_iter()
-                .filter(|value| value.to_lowercase().contains(query.as_str()))
-                .map(Into::into)
-                .collect::<Vec<_>>();
-            ui.set_rule_picker_items(ModelRc::new(VecModel::from(filtered)));
         }
     });
     let weak = ui.as_weak();

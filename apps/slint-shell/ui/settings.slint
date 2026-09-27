@@ -1,3 +1,4 @@
+import { ActionPicker, PickerOverlay } from "action-picker.slint";
 import { ButtonGroup, InfoTip } from "controls.slint";
 import { MenusPage, MenuEditor } from "menus.slint";
 import { MacrosPage, MacroEditor } from "macros.slint";
@@ -349,7 +350,6 @@ export component SettingsWindow inherits Window {
     in-out property <int> rule-dialog-field: -1;
     in-out property <string> rule-dialog-value;
     in-out property <string> rule-dialog-query;
-    in property <[string]> rule-picker-items;
     in property <[RuleLayerChoice]> rule-layer-items;
     callback open-rule-dialog(int, int);
     callback choose-rule-value(string);
@@ -437,9 +437,9 @@ export component SettingsWindow inherits Window {
         key-released(event) => { if !root.capturing { modal-focus.focus(); } return accept; }
     }
     keyboard-focus := FocusScope {
-        enabled: !root.editing && root.page == 0;
+        enabled: !ActionPicker.opened && !root.editing && root.page == 0;
         key-pressed(event) => {
-            if event.text == Key.Return { root.edit-key(max(0, root.selected-key)); return accept; }
+            if event.text == Key.Return { root.edit-key(max(0, root.selected-key)); ActionPicker.open(6, 0, root.kind == 0 ? "text:" + root.value : root.value, false); return accept; }
             if event.text == Key.RightArrow { root.selected-key = mod(root.selected-key + 1, 80); return accept; }
             if event.text == Key.LeftArrow { root.selected-key = mod(root.selected-key + 79, 80); return accept; }
             return reject;
@@ -447,7 +447,7 @@ export component SettingsWindow inherits Window {
     }
     background-scope := FocusScope {
         focus-on-tab-navigation: false;
-        enabled: !root.editing && !root.rule-dialog-open && !root.layer-dialog-open && !root.save-as-open && root.library-dialog == 0;
+        enabled: !ActionPicker.opened && !root.editing && !root.rule-dialog-open && !root.layer-dialog-open && !root.save-as-open && root.library-dialog == 0;
         if !root.editing: VerticalBox {
             padding: 0px;
             spacing: 0px;
@@ -930,7 +930,7 @@ export component SettingsWindow inherits Window {
                             Text { min-width: 0px; overflow: elide; text: root.keys[row * 16 + col]; color: Theme.text; font-size: 12px; }
                             Text { min-width: 0px; text: root.assignments[row * 16 + col]; color: Theme.muted; font-size: 10px; overflow: elide; }
                         }
-                        key-touch := TouchArea { clicked => { root.edit-key(row * 16 + col); } }
+                        key-touch := TouchArea { clicked => { root.edit-key(row * 16 + col); ActionPicker.open(6, 0, root.kind == 0 ? "text:" + root.value : root.kind == 1 ? "pause:" + root.value : root.value, false); } }
                     }
                 }
             }
@@ -1049,7 +1049,7 @@ export component SettingsWindow inherits Window {
     }
     modal-focus := FocusScope {
         focus-on-tab-navigation: false;
-        enabled: root.editing;
+        enabled: root.editing && !ActionPicker.opened;
         key-pressed(event) => {
             if root.capturing { return reject; }
             if event.text == Key.Escape { root.cancel(); return accept; }
@@ -1127,6 +1127,7 @@ export component SettingsWindow inherits Window {
                         }
                     }
                     HorizontalBox { vertical-stretch: 0;
+                        Button { text: @tr("Choose action"); clicked => { ActionPicker.open(1, 0, root.kind == 0 ? "text:" + root.value : root.kind == 1 ? "pause:" + root.value : root.value, false); } }
                         Button { text: @tr("Clear assignment"); clicked => { root.change-kind(3); root.value = ""; root.save(); } }
                         Rectangle { horizontal-stretch: 1; }
                         Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
@@ -1138,7 +1139,7 @@ export component SettingsWindow inherits Window {
     }
     rule-dialog-scope := FocusScope {
         focus-on-tab-navigation: false;
-        enabled: root.rule-dialog-open;
+        enabled: root.rule-dialog-open && !ActionPicker.opened;
         key-pressed(event) => { if event.text == Key.Escape { root.rule-dialog-open = false; return accept; } return reject; }
         if root.rule-dialog-open: Rectangle {
             background: #00000099;
@@ -1154,15 +1155,9 @@ export component SettingsWindow inherits Window {
                 border-radius: 12px;
                 VerticalBox { padding: 22px; spacing: 10px;
                     Text { text: root.rule-dialog-field == 1 ? @tr("Choose trigger key") : root.rule-dialog-field == 2 ? @tr("Choose layer") : root.rule-dialog-field == 6 ? @tr("Conditions") : root.rule-dialog-field == 16 ? @tr("Advanced rule options") : root.rule-dialog-field == 17 ? @tr("Delete rule?") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
-                    if root.rule-dialog-field == 1 || root.rule-dialog-field == 2 || root.rule-dialog-field == 3 || root.rule-dialog-field == 4 || root.rule-dialog-field == 5: VerticalBox {
+                    if root.rule-dialog-field == 2: VerticalBox {
                         spacing: 8px;
                         LineEdit { text <=> root.rule-dialog-value; placeholder-text: root.rule-dialog-field == 1 ? @tr("Search or enter a key code") : @tr("Search or enter an action"); edited => { root.filter-rule-choices(root.rule-dialog-value); } }
-                        if root.rule-dialog-field != 2: ListView { vertical-stretch: 1;
-                            for item in root.rule-picker-items: Rectangle { height: 36px; background: item-touch.has-hover ? Theme.hover : Theme.card;
-                                Text { x: 10px; width: parent.width - 20px; text: item; color: Theme.text; vertical-alignment: center; }
-                                item-touch := TouchArea { clicked => { root.choose-rule-value(item); } }
-                            }
-                        }
                         if root.rule-dialog-field == 2: ListView { vertical-stretch: 1;
                             for item in root.rule-layer-items: Rectangle { height: 36px; background: layer-touch.has-hover ? Theme.hover : Theme.card;
                                 Text { x: 10px; text: item.label; color: Theme.text; vertical-alignment: center; }
@@ -1212,7 +1207,7 @@ export component SettingsWindow inherits Window {
 
     layer-dialog-scope := FocusScope {
         focus-on-tab-navigation: false;
-        enabled: root.layer-dialog-open;
+        enabled: root.layer-dialog-open && !ActionPicker.opened;
         key-pressed(event) => { if event.text == Key.Escape { root.layer-dialog-open = false; return accept; } return reject; }
         if root.layer-dialog-open: Rectangle {
             background: #00000099;
@@ -1231,12 +1226,12 @@ export component SettingsWindow inherits Window {
                         if root.layer-dialog-kind == 6: Text { text: @tr("Key code"); color: Theme.text; }
                         if root.layer-dialog-kind == 6: HorizontalBox { vertical-stretch: 0; spacing: 8px;
                             LineEdit { text <=> root.layer-dialog-key; horizontal-stretch: 1; }
-                            ComboBox { model: ["F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "VolumeUp", "VolumeDown", "VolumeMute"]; selected(value) => { root.layer-dialog-key = value; } }
+                            Button { text: @tr("Choose trigger key"); clicked => { ActionPicker.open(4, 0, root.layer-dialog-key, true); } }
                         }
                         ComboBox { model: root.layer-dialog-kind == 6 ? [@tr("Native"), @tr("Swallow"), @tr("Action")] : [@tr("Transparent"), @tr("Swallow"), @tr("Action")]; current-index <=> root.layer-assignment-kind; }
                         if root.layer-assignment-kind == 2: HorizontalBox { vertical-stretch: 0; spacing: 8px;
                             LineEdit { text <=> root.layer-dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
-                            ComboBox { model: root.layer-key-codes; selected(value) => { root.layer-dialog-action = value; } }
+                            Button { text: @tr("Choose action"); clicked => { ActionPicker.open(5, 0, root.layer-dialog-action, false); } }
                         }
                     }
                     Text { text: Locale.text(root.layer-status); color: Theme.error; wrap: word-wrap; }
@@ -1251,4 +1246,5 @@ export component SettingsWindow inherits Window {
         }
     }
 
+    if ActionPicker.opened: PickerOverlay {}
 }

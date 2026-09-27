@@ -14,3 +14,5 @@ pub mod settings;
 pub mod menus;
 
 pub mod library;
+
+pub mod key_catalog;

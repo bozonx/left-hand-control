@@ -185,6 +185,7 @@ pub enum Msg {
     TextEmpty,
     DelayRange,
     SystemActionRequired,
+    PickerAction(String, u32),
     UnknownKind,
     InvalidAction(ActionIssue),
     Rule(RuleIssue),
@@ -260,6 +261,7 @@ impl Msg {
             Self::TimeoutInvalid => ("timeout-invalid", empty(), 0),
             Self::TextEmpty => ("text-empty", empty(), 0),
             Self::DelayRange => ("delay-range", empty(), 0),
+            Self::PickerAction(id, n) => ("picker-action", id.clone(), *n as usize),
             Self::SystemActionRequired => ("system-action-required", empty(), 0),
             Self::UnknownKind => ("unknown-kind", empty(), 0),
             Self::InvalidAction(issue) => (

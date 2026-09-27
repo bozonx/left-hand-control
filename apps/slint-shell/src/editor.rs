@@ -307,6 +307,19 @@ pub fn bind_with_config(
     ui: &SettingsWindow,
     config: Option<Rc<RefCell<ConfigDocument>>>,
 ) -> EditorHandle {
+    crate::action_picker::bind(ui, config.clone());
+    use slint::winit_030::{EventResult, WinitWindowAccessor};
+    let weak = ui.as_weak();
+    ui.window().on_winit_window_event(move |_, event| {
+        if weak
+            .upgrade()
+            .is_some_and(|ui| crate::action_picker::capture(&ui, event))
+        {
+            EventResult::PreventDefault
+        } else {
+            EventResult::Propagate
+        }
+    });
     apply_preferences(ui, true, false);
     let weak = ui.as_weak();
     ui.on_preferences(move |dark, english| {

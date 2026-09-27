@@ -389,6 +389,9 @@ fn observe(app: &Rc<App>, window: Window) {
             let Some(app) = weak.upgrade() else {
                 return EventResult::Propagate;
             };
+            if window == Window::Settings && crate::action_picker::capture(&app.settings, event) {
+                return EventResult::PreventDefault;
+            }
             match event {
                 WindowEvent::Focused(true) => {
                     app.metrics.borrow_mut().mark(window.name(), "t4_focused")
