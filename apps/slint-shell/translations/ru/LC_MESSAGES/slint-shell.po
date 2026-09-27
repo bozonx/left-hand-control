@@ -1260,3 +1260,57 @@ msgstr "Развернуть окно на весь экран"
 
 msgid "Keep window on all desktops"
 msgstr "Показывать окно на всех рабочих столах"
+
+msgid "Layer"
+msgstr "Слой"
+
+msgid "Delete layer"
+msgstr "Удалить слой"
+
+msgid "Create new layer"
+msgstr "Создать новый слой"
+
+msgid "Layer description"
+msgstr "Описание слоя"
+
+msgid "Add description"
+msgstr "Добавить описание"
+
+msgid "Type to test..."
+msgstr "Проверка печати..."
+
+msgid "Ignore key"
+msgstr "Игнорировать"
+
+msgid "No layers yet"
+msgstr "Слоёв пока нет"
+
+msgid "Left hand"
+msgstr "Левая рука"
+
+msgid "Right hand"
+msgstr "Правая рука"
+
+msgid "Key"
+msgstr "Клавиша"
+
+msgid "US layout"
+msgstr "Английская раскладка"
+
+msgid "Internal codes"
+msgstr "Внутренние коды"
+
+msgid "System codes"
+msgstr "Системные коды"
+
+msgid "No extra keys for this layer yet."
+msgstr "Ещё нет дополнительных клавиш для этого слоя."
+
+msgid "Clears key bindings only. Extra keys are not affected."
+msgstr "Очищает назначения клавиш. Дополнительные клавиши не затрагиваются."
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid."
+msgstr "Кнопки мыши, медиа-клавиши и другие триггеры вне основной сетки клавиатуры."
+
+msgid "Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Internal codes” shows app-specific codes (e.g. KeyA, ArrowLeft). “System codes” shows raw system event codes."
+msgstr "Режим отображения меняет только метку — код клавиши остаётся прежним. «Английская раскладка» показывает буквы для удобства. «Внутренние коды» — коды приложения (например KeyA). «Системные коды» — системные коды событий."

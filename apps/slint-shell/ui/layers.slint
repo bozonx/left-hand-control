@@ -1,0 +1,543 @@
+import { InfoTip } from "controls.slint";
+import { Theme } from "theme.slint";
+import { Palette, ComboBox, LineEdit, ScrollView } from "std-widgets.slint";
+
+/// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
+/// layer key index passed back to `open-dialog(5, index)`.
+/// `kind`: 0 transparent, 1 swallow, 2 action. `icon`: see `ActionIcon`.
+export struct LayerKeyCell { index: int, label: string, code: string, numeric: string, kind: int, action: string, icon: int }
+export struct LayerExtraRow { key: string, kind: int, action: string, icon: int }
+
+/// Action type icon: 1 keys, 2 macro, 3 command, 4 system, 5 app, 6 text.
+component ActionIcon inherits Image {
+    in property <int> kind;
+    width: 12px;
+    height: 12px;
+    source: kind == 1 ? @image-url("icons/keyboard.svg")
+        : kind == 2 ? @image-url("icons/zap.svg")
+        : kind == 3 ? @image-url("icons/terminal.svg")
+        : kind == 4 ? @image-url("icons/settings-2.svg")
+        : kind == 5 ? @image-url("icons/app-window.svg")
+        : @image-url("icons/text-cursor-input.svg");
+}
+
+component Card inherits Rectangle {
+    background: Theme.card;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Theme.border;
+}
+
+component Divider inherits Rectangle {
+    height: 1px;
+    background: Theme.border;
+}
+
+/// Ghost (or primary) button with a Lucide icon and optional text.
+component IconButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> text;
+    in property <string> tooltip;
+    in property <bool> enabled: true;
+    in property <bool> primary: false;
+    in property <bool> danger: false;
+    callback clicked();
+    height: 32px;
+    min-width: 32px;
+    border-radius: 6px;
+    background: root.primary
+        ? (touch.has-hover && root.enabled ? Palette.accent-background.brighter(0.15) : Palette.accent-background)
+        : (touch.has-hover || focus.has-focus) && root.enabled ? Theme.hover : transparent;
+    border-width: focus.has-focus ? 1px : 0px;
+    border-color: Theme.text;
+    opacity: root.enabled ? 1.0 : 0.45;
+    accessible-role: button;
+    accessible-label: root.text != "" ? root.text : root.tooltip;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if root.enabled { root.clicked(); } }
+    HorizontalLayout {
+        padding-left: root.text == "" ? 8px : 10px;
+        padding-right: root.text == "" ? 8px : 12px;
+        spacing: 6px;
+        alignment: center;
+        VerticalLayout {
+            alignment: center;
+            Image {
+                width: 16px; height: 16px;
+                source: root.icon;
+                colorize: root.primary ? Palette.accent-foreground : root.danger ? Theme.error : Theme.text;
+            }
+        }
+        if root.text != "": Text {
+            text: root.text;
+            color: root.primary ? Palette.accent-foreground : Theme.text;
+            font-weight: 600;
+            font-size: 13px;
+            vertical-alignment: center;
+        }
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+    if root.tooltip != "": Tooltip {
+        Rectangle {
+            background: Theme.card;
+            border-radius: 4px;
+            border-width: 1px;
+            border-color: Theme.border;
+            HorizontalLayout {
+                padding: 6px;
+                Text { text: root.tooltip; color: Theme.text; font-size: 12px; }
+            }
+        }
+    }
+}
+
+/// Segmented switch in the style of the Tauri keyboard view selector.
+component Segmented inherits Rectangle {
+    in property <[string]> labels;
+    in property <int> selected-index;
+    callback selected(int);
+    background: Theme.surface;
+    border-radius: 6px;
+    HorizontalLayout {
+        padding: 2px;
+        spacing: 2px;
+        for label[index] in root.labels: Rectangle {
+            height: 28px;
+            border-radius: 4px;
+            background: root.selected-index == index ? Theme.text : seg-touch.has-hover || seg-focus.has-focus ? Theme.hover : transparent;
+            accessible-role: radio-button;
+            accessible-label: label;
+            accessible-checked: root.selected-index == index;
+            accessible-action-default => { root.selected(index); }
+            HorizontalLayout {
+                padding-left: 10px; padding-right: 10px;
+                Text {
+                    text: label;
+                    color: root.selected-index == index ? Theme.surface : Theme.text;
+                    font-size: 13px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+            }
+            seg-focus := FocusScope {
+                key-pressed(event) => {
+                    if event.text == " " || event.text == "\n" { root.selected(index); return accept; }
+                    if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
+                    if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
+                    return reject;
+                }
+            }
+            seg-touch := TouchArea { mouse-cursor: pointer; clicked => { root.selected(index); } }
+        }
+    }
+}
+
+component ActionText inherits HorizontalLayout {
+    in property <int> kind;
+    in property <string> action;
+    in property <int> icon;
+    in property <length> text-size: 10px;
+    in property <TextHorizontalAlignment> text-alignment: center;
+    spacing: 3px;
+    if root.kind != 0 && root.icon > 0: VerticalLayout {
+        alignment: center;
+        ActionIcon { kind: root.icon; colorize: Theme.link; }
+    }
+    Text {
+        min-width: 0px;
+        horizontal-stretch: 1;
+        text: root.kind == 0 ? "—" : root.kind == 1 ? @tr("Ignore key") : root.action;
+        color: root.kind == 0 ? Theme.muted : Theme.link;
+        font-size: root.text-size;
+        font-weight: root.kind == 0 ? 400 : 500;
+        horizontal-alignment: root.text-alignment;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+}
+
+component KeyCap inherits Rectangle {
+    in property <LayerKeyCell> cell;
+    in property <int> label-mode;
+    callback clicked();
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: touch.has-hover || focus.has-focus ? Theme.muted : Theme.border;
+    background: Theme.surface;
+    accessible-role: button;
+    accessible-label: root.cell.label;
+    accessible-description: root.cell.kind == 0 ? "" : root.cell.kind == 1 ? @tr("Ignore key") : root.cell.action;
+    accessible-action-default => { root.clicked(); }
+    VerticalLayout {
+        padding: 4px;
+        spacing: 3px;
+        alignment: center;
+        Text {
+            min-width: 0px;
+            text: root.label-mode == 0 ? root.cell.label : root.label-mode == 1 ? root.cell.code : root.cell.numeric;
+            color: Theme.text;
+            font-size: 13px;
+            font-weight: 600;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        HorizontalLayout {
+            alignment: center;
+            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; icon: root.cell.icon; }
+        }
+    }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+component HandGrid inherits VerticalLayout {
+    in property <string> title;
+    in property <[LayerKeyCell]> cells;
+    in property <int> columns;
+    in property <int> label-mode;
+    callback edit(int);
+    horizontal-stretch: 1;
+    min-width: 0px;
+    spacing: 6px;
+    Text {
+        text: root.title.to-uppercase();
+        color: Theme.muted;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+    for row in root.cells.length / root.columns: HorizontalLayout {
+        spacing: 6px;
+        for col in root.columns: Rectangle {
+            height: 46px;
+            min-width: 0px;
+            horizontal-stretch: 1;
+            if root.cells[row * root.columns + col].index >= 0: KeyCap {
+                width: parent.width;
+                height: parent.height;
+                cell: root.cells[row * root.columns + col];
+                label-mode: root.label-mode;
+                clicked => { root.edit(self.cell.index); }
+            }
+        }
+    }
+}
+
+export component LayersPage inherits VerticalLayout {
+    in property <[string]> layer-names;
+    in property <int> selected-layer;
+    in property <string> layer-description;
+    in property <[LayerKeyCell]> left-cells;
+    in property <[LayerKeyCell]> right-cells;
+    in property <[LayerExtraRow]> extras;
+    in-out property <int> label-mode: 0;
+    /// Same kinds as the layer dialog in `settings.slint`.
+    callback open-dialog(int, int);
+    callback choose-layer(int);
+    callback update-description(string);
+    callback move-extra(int, int);
+    callback remove-extra(int);
+
+    private property <bool> description-editing: false;
+    private property <string> test-text;
+
+    function commit-description(text: string) {
+        if root.description-editing {
+            root.description-editing = false;
+            if text != root.layer-description { root.update-description(text); }
+        }
+    }
+
+    vertical-stretch: 1;
+    ScrollView {
+        viewport-width: self.visible-width;
+        vertical-stretch: 1;
+        VerticalLayout {
+            spacing: 16px;
+            // Layer toolbar
+            Card {
+                VerticalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            min-width: 0px;
+                            spacing: 6px;
+                            Text { text: @tr("Layer"); color: Theme.text; font-size: 13px; }
+                            HorizontalLayout {
+                                spacing: 4px;
+                                ComboBox {
+                                    horizontal-stretch: 1;
+                                    model: root.layer-names;
+                                    current-index: root.selected-layer;
+                                    enabled: root.layer-names.length > 0;
+                                    selected(value) => { root.choose-layer(self.current-index); }
+                                }
+                                IconButton {
+                                    icon: @image-url("icons/pencil.svg");
+                                    tooltip: @tr("Rename layer");
+                                    enabled: root.selected-layer >= 0;
+                                    clicked => { root.open-dialog(2, -1); }
+                                }
+                                IconButton {
+                                    icon: @image-url("icons/trash-2.svg");
+                                    tooltip: @tr("Delete layer");
+                                    enabled: root.selected-layer >= 0;
+                                    clicked => { root.open-dialog(4, -1); }
+                                }
+                                IconButton {
+                                    icon: @image-url("icons/copy.svg");
+                                    text: @tr("Duplicate");
+                                    enabled: root.selected-layer >= 0;
+                                    clicked => { root.open-dialog(3, -1); }
+                                }
+                            }
+                        }
+                        HorizontalLayout {
+                            horizontal-stretch: 1;
+                            alignment: end;
+                            spacing: 4px;
+                            VerticalLayout {
+                                alignment: end;
+                                LineEdit {
+                                    width: 200px;
+                                    text <=> root.test-text;
+                                    placeholder-text: @tr("Type to test...");
+                                }
+                            }
+                            VerticalLayout {
+                                alignment: end;
+                                IconButton {
+                                    icon: @image-url("icons/x.svg");
+                                    tooltip: @tr("Clear");
+                                    enabled: root.test-text != "";
+                                    clicked => { root.test-text = ""; }
+                                }
+                            }
+                            Rectangle { width: 4px; }
+                            VerticalLayout {
+                                alignment: end;
+                                IconButton {
+                                    icon: @image-url("icons/plus.svg");
+                                    text: @tr("New layer");
+                                    tooltip: @tr("Create new layer");
+                                    primary: true;
+                                    clicked => { root.open-dialog(1, -1); }
+                                }
+                            }
+                        }
+                    }
+                    if root.selected-layer >= 0 && root.description-editing: description-edit := LineEdit {
+                        text: root.layer-description;
+                        placeholder-text: @tr("Layer description");
+                        init => { self.focus(); }
+                        accepted(text) => { root.commit-description(text); }
+                        changed has-focus => { if !self.has-focus { root.commit-description(self.text); } }
+                    }
+                    if root.selected-layer >= 0 && !root.description-editing && root.layer-description == "": HorizontalLayout {
+                        alignment: start;
+                        IconButton {
+                            icon: @image-url("icons/plus.svg");
+                            text: @tr("Add description");
+                            height: 28px;
+                            clicked => { root.description-editing = true; }
+                        }
+                    }
+                    if root.selected-layer >= 0 && !root.description-editing && root.layer-description != "": Rectangle {
+                        background: Theme.surface;
+                        border-radius: 6px;
+                        border-width: 1px;
+                        border-color: description-touch.has-hover ? Theme.muted : Theme.border;
+                        accessible-role: button;
+                        accessible-label: root.layer-description;
+                        accessible-action-default => { root.description-editing = true; }
+                        HorizontalLayout {
+                            padding: 12px;
+                            spacing: 8px;
+                            VerticalLayout {
+                                alignment: start;
+                                padding-top: 2px;
+                                Image { width: 14px; height: 14px; source: @image-url("icons/info.svg"); colorize: Theme.muted; }
+                            }
+                            Text {
+                                horizontal-stretch: 1;
+                                text: root.layer-description;
+                                color: Theme.muted;
+                                wrap: word-wrap;
+                            }
+                        }
+                        description-touch := TouchArea { mouse-cursor: text; clicked => { root.description-editing = true; } }
+                    }
+                }
+            }
+
+            if root.selected-layer < 0: Card {
+                HorizontalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 4px;
+                        Text { text: @tr("No layers yet"); color: Theme.text; font-size: 14px; font-weight: 600; }
+                        Text { text: @tr("Create a layer to assign its keys, or edit the base keyboard."); color: Theme.muted; wrap: word-wrap; }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        IconButton {
+                            icon: @image-url("icons/plus.svg");
+                            text: @tr("New layer");
+                            primary: true;
+                            clicked => { root.open-dialog(1, -1); }
+                        }
+                    }
+                }
+            }
+
+            // Keyboard
+            if root.selected-layer >= 0: Card {
+                VerticalLayout {
+                    HorizontalLayout {
+                        padding-left: 20px; padding-right: 20px; padding-top: 14px; padding-bottom: 14px;
+                        spacing: 8px;
+                        Text { text: @tr("Keyboard"); color: Theme.text; font-size: 15px; font-weight: 700; vertical-alignment: center; }
+                        VerticalLayout {
+                            alignment: center;
+                            InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Internal codes” shows app-specific codes (e.g. KeyA, ArrowLeft). “System codes” shows raw system event codes."); }
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                        VerticalLayout {
+                            alignment: center;
+                            IconButton {
+                                icon: @image-url("icons/eraser.svg");
+                                text: @tr("Clear");
+                                tooltip: @tr("Clears key bindings only. Extra keys are not affected.");
+                                clicked => { root.open-dialog(7, -1); }
+                            }
+                        }
+                        Segmented {
+                            labels: [@tr("US layout"), @tr("Internal codes"), @tr("System codes")];
+                            selected-index: root.label-mode;
+                            selected(index) => { root.label-mode = index; }
+                        }
+                    }
+                    Divider {}
+                    HorizontalLayout {
+                        padding: 20px;
+                        spacing: 24px;
+                        HandGrid {
+                            title: @tr("Left hand");
+                            cells: root.left-cells;
+                            columns: 6;
+                            label-mode: root.label-mode;
+                            edit(index) => { root.open-dialog(5, index); }
+                        }
+                        HandGrid {
+                            title: @tr("Right hand");
+                            cells: root.right-cells;
+                            columns: 8;
+                            label-mode: root.label-mode;
+                            edit(index) => { root.open-dialog(5, index); }
+                        }
+                    }
+                }
+            }
+
+            // Extra keys
+            if root.selected-layer >= 0: Card {
+                VerticalLayout {
+                    HorizontalLayout {
+                        padding-left: 20px; padding-right: 20px; padding-top: 14px; padding-bottom: 14px;
+                        spacing: 8px;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 2px;
+                            Text { text: @tr("Extra keys"); color: Theme.text; font-size: 15px; font-weight: 700; }
+                            Text { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                        }
+                        if root.extras.length > 0: VerticalLayout {
+                            alignment: center;
+                            IconButton {
+                                icon: @image-url("icons/eraser.svg");
+                                text: @tr("Clear");
+                                clicked => { root.open-dialog(8, -1); }
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            IconButton {
+                                icon: @image-url("icons/plus.svg");
+                                text: @tr("Add");
+                                primary: true;
+                                clicked => { root.open-dialog(6, -1); }
+                            }
+                        }
+                    }
+                    Divider {}
+                    VerticalLayout {
+                        padding: 20px;
+                        spacing: 8px;
+                        if root.extras.length == 0: Text { text: @tr("No extra keys for this layer yet."); color: Theme.muted; }
+                        for extra[index] in root.extras: Rectangle {
+                            background: extra-touch.has-hover ? Theme.hover : Theme.surface;
+                            border-radius: 6px;
+                            border-width: 1px;
+                            border-color: Theme.border;
+                            extra-touch := TouchArea { mouse-cursor: pointer; clicked => { root.open-dialog(6, index); } }
+                            HorizontalLayout {
+                                padding: 10px;
+                                padding-left: 14px;
+                                spacing: 16px;
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    min-width: 0px;
+                                    spacing: 2px;
+                                    Text { text: @tr("Key"); color: Theme.muted; font-size: 11px; }
+                                    Text { text: extra.key; color: Theme.text; font-weight: 600; overflow: elide; }
+                                }
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    min-width: 0px;
+                                    spacing: 2px;
+                                    Text { text: @tr("Action"); color: Theme.muted; font-size: 11px; }
+                                    ActionText { kind: extra.kind; action: extra.action; icon: extra.icon; text-size: 13px; text-alignment: left; }
+                                }
+                                HorizontalLayout {
+                                    spacing: 2px;
+                                    VerticalLayout { alignment: center;
+                                        IconButton { icon: @image-url("icons/pencil.svg"); tooltip: @tr("Edit"); clicked => { root.open-dialog(6, index); } }
+                                    }
+                                    VerticalLayout { alignment: center;
+                                        IconButton { icon: @image-url("icons/arrow-up.svg"); tooltip: @tr("Move up"); enabled: index > 0; clicked => { root.move-extra(index, -1); } }
+                                    }
+                                    VerticalLayout { alignment: center;
+                                        IconButton { icon: @image-url("icons/arrow-down.svg"); tooltip: @tr("Move down"); enabled: index < root.extras.length - 1; clicked => { root.move-extra(index, 1); } }
+                                    }
+                                    VerticalLayout { alignment: center;
+                                        IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); danger: true; clicked => { root.remove-extra(index); } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

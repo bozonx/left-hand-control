@@ -1,14 +1,238 @@
 use crate::{
-    editor::KEY_CODES,
     i18n::Msg,
-    ui::{LayerExtraRow, SettingsWindow},
+    ui::{LayerExtraRow, LayerKeyCell, Locale, SettingsWindow},
 };
 use lhc_core::{
     config_document::{ConfigDocument, KeyAssignment},
-    profile::auto_switch::AutoSwitchContext,
+    profile::{
+        actions::{self, Action, ActionName},
+        auto_switch::AutoSwitchContext,
+    },
 };
 use slint::{ComponentHandle, ModelRc, VecModel};
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+
+/// Layer key: code, US label, Linux evdev code (mirrors `utils/keys.ts`).
+type KeyDef = (&'static str, &'static str, u16);
+
+const LEFT_COLUMNS: usize = 6;
+const RIGHT_COLUMNS: usize = 8;
+
+const LEFT_HAND: [&[KeyDef]; 6] = [
+    &[
+        ("Escape", "Esc", 1),
+        ("F1", "F1", 59),
+        ("F2", "F2", 60),
+        ("F3", "F3", 61),
+        ("F4", "F4", 62),
+        ("F5", "F5", 63),
+    ],
+    &[
+        ("Backquote", "`", 41),
+        ("Digit1", "1", 2),
+        ("Digit2", "2", 3),
+        ("Digit3", "3", 4),
+        ("Digit4", "4", 5),
+        ("Digit5", "5", 6),
+    ],
+    &[
+        ("Tab", "Tab", 15),
+        ("KeyQ", "Q", 16),
+        ("KeyW", "W", 17),
+        ("KeyE", "E", 18),
+        ("KeyR", "R", 19),
+        ("KeyT", "T", 20),
+    ],
+    &[
+        ("CapsLock", "Caps", 58),
+        ("KeyA", "A", 30),
+        ("KeyS", "S", 31),
+        ("KeyD", "D", 32),
+        ("KeyF", "F", 33),
+        ("KeyG", "G", 34),
+    ],
+    &[
+        ("ShiftLeft", "Shift", 42),
+        ("KeyZ", "Z", 44),
+        ("KeyX", "X", 45),
+        ("KeyC", "C", 46),
+        ("KeyV", "V", 47),
+        ("KeyB", "B", 48),
+    ],
+    &[
+        ("ControlLeft", "Ctrl", 29),
+        ("MetaLeft", "Meta", 125),
+        ("AltLeft", "Alt", 56),
+        ("Space", "Space", 57),
+    ],
+];
+
+const RIGHT_HAND: [&[KeyDef]; 6] = [
+    &[
+        ("F6", "F6", 64),
+        ("F7", "F7", 65),
+        ("F8", "F8", 66),
+        ("F9", "F9", 67),
+        ("F10", "F10", 68),
+        ("F11", "F11", 87),
+        ("F12", "F12", 88),
+        ("PrintScreen", "PrtSc", 210),
+    ],
+    &[
+        ("Digit6", "6", 7),
+        ("Digit7", "7", 8),
+        ("Digit8", "8", 9),
+        ("Digit9", "9", 10),
+        ("Digit0", "0", 11),
+        ("Minus", "-", 12),
+        ("Equal", "=", 13),
+        ("Backspace", "Bksp", 14),
+    ],
+    &[
+        ("KeyY", "Y", 21),
+        ("KeyU", "U", 22),
+        ("KeyI", "I", 23),
+        ("KeyO", "O", 24),
+        ("KeyP", "P", 25),
+        ("BracketLeft", "[", 26),
+        ("BracketRight", "]", 27),
+        ("Backslash", "\\", 43),
+    ],
+    &[
+        ("KeyH", "H", 35),
+        ("KeyJ", "J", 36),
+        ("KeyK", "K", 37),
+        ("KeyL", "L", 38),
+        ("Semicolon", ";", 39),
+        ("Quote", "'", 40),
+        ("Enter", "Enter", 28),
+    ],
+    &[
+        ("KeyN", "N", 49),
+        ("KeyM", "M", 50),
+        ("Comma", ",", 51),
+        ("Period", ".", 52),
+        ("Slash", "/", 53),
+        ("ShiftRight", "Shift", 54),
+    ],
+    &[
+        ("AltRight", "Alt", 100),
+        ("MetaRight", "Meta", 126),
+        ("ContextMenu", "Menu", 127),
+        ("ControlRight", "Ctrl", 97),
+    ],
+];
+
+/// Every layer key in index order: left hand rows, then right hand rows.
+fn layer_keys() -> impl Iterator<Item = &'static KeyDef> {
+    LEFT_HAND
+        .iter()
+        .chain(RIGHT_HAND.iter())
+        .flat_map(|row| row.iter())
+}
+
+fn layer_key(index: i32) -> Option<&'static str> {
+    usize::try_from(index)
+        .ok()
+        .and_then(|index| layer_keys().nth(index))
+        .map(|key| key.0)
+}
+
+/// Display text and icon for an assigned action (see `ActionIcon` in `layers.slint`).
+fn describe(action: &str, names: &HashMap<String, String>) -> (String, i32) {
+    let icon = match Action::parse(Some(action)) {
+        Action::Keys(_) => 1,
+        Action::Macro(_) => 2,
+        Action::Command(_) => 3,
+        Action::System(_) => 4,
+        Action::App(_) => 5,
+        Action::Text(text) => return (text, 6),
+        Action::Native | Action::Swallow | Action::Pause(_) => 0,
+    };
+    let label = names
+        .get(action)
+        .cloned()
+        .unwrap_or_else(|| action.to_owned());
+    (label, icon)
+}
+
+/// Display names of the catalog actions (macros, commands, built-ins).
+fn action_names(ui: &SettingsWindow, document: &ConfigDocument) -> HashMap<String, String> {
+    actions::catalog(&document.config())
+        .into_iter()
+        .filter_map(|entry| {
+            let value = entry.action.format()?;
+            let label = match entry.name {
+                ActionName::Verbatim(name) if !name.is_empty() => name,
+                ActionName::System { id, n } | ActionName::App { id, n } => ui
+                    .global::<Locale>()
+                    .invoke_text(Msg::PickerAction(id.into(), n).to_ui())
+                    .to_string(),
+                _ => return None,
+            };
+            Some((value, label))
+        })
+        .collect()
+}
+
+/// `(kind, label, icon)` of a layer assignment: 0 transparent, 1 swallow, 2 action.
+fn assignment(
+    value: Option<&Option<String>>,
+    names: &HashMap<String, String>,
+) -> (i32, String, i32) {
+    match value {
+        None => (0, String::new(), 0),
+        Some(None) => (1, String::new(), 0),
+        Some(Some(action)) if action.is_empty() => (0, String::new(), 0),
+        Some(Some(action)) => {
+            let (label, icon) = describe(action, names);
+            (2, label, icon)
+        }
+    }
+}
+
+/// Grid slots of one hand; `first` is the index of its first key and
+/// `offset` shifts the last row right (the left thumb row).
+fn hand_cells(
+    rows: &[&[KeyDef]],
+    columns: usize,
+    first: usize,
+    offset: usize,
+    lookup: &dyn Fn(&str) -> (i32, String, i32),
+) -> Vec<LayerKeyCell> {
+    let empty = LayerKeyCell {
+        index: -1,
+        ..Default::default()
+    };
+    let mut cells = Vec::with_capacity(rows.len() * columns);
+    let mut index = first;
+    for (row_index, row) in rows.iter().enumerate() {
+        let skip = if row_index + 1 == rows.len() {
+            offset
+        } else {
+            0
+        };
+        cells.extend(std::iter::repeat_n(empty.clone(), skip));
+        for (code, label, numeric) in row.iter() {
+            let (kind, action, icon) = lookup(code);
+            cells.push(LayerKeyCell {
+                index: index as i32,
+                label: (*label).into(),
+                code: (*code).into(),
+                numeric: numeric.to_string().into(),
+                kind,
+                action: action.into(),
+                icon,
+            });
+            index += 1;
+        }
+        cells.extend(std::iter::repeat_n(
+            empty.clone(),
+            columns - skip - row.len(),
+        ));
+    }
+    cells
+}
 
 fn refresh(ui: &SettingsWindow, document: &ConfigDocument, selected: i32) {
     let layout = document.layout();
@@ -27,35 +251,44 @@ fn refresh(ui: &SettingsWindow, document: &ConfigDocument, selected: i32) {
         0
     };
     ui.set_selected_layer(selected);
-    let Some(layer) = layout.layers.get(selected as usize) else {
-        ui.set_layer_description("".into());
-        ui.set_layer_actions(ModelRc::new(VecModel::from(vec![
-            slint::SharedString::new();
-            KEY_CODES.len()
-        ])));
-        ui.set_layer_extras(ModelRc::new(VecModel::<LayerExtraRow>::default()));
-        return;
-    };
-    ui.set_layer_description(layer.description.clone().unwrap_or_default().into());
-    let keymap = layout.layer_keymaps.get(&layer.id);
-    ui.set_layer_actions(ModelRc::new(VecModel::from(
-        KEY_CODES
-            .iter()
-            .map(|key| match keymap.and_then(|map| map.keys.get(*key)) {
-                None => "".into(),
-                Some(None) => "∅".into(),
-                Some(Some(value)) => value.clone().into(),
-            })
-            .collect::<Vec<_>>(),
-    )));
+    let layer = layout.layers.get(selected as usize);
+    ui.set_layer_description(
+        layer
+            .and_then(|layer| layer.description.clone())
+            .unwrap_or_default()
+            .into(),
+    );
+    let keymap = layer.and_then(|layer| layout.layer_keymaps.get(&layer.id));
+    let names = action_names(ui, document);
+    let lookup = |code: &str| assignment(keymap.and_then(|map| map.keys.get(code)), &names);
+    let left_len: usize = LEFT_HAND.iter().map(|row| row.len()).sum();
+    ui.set_layer_left_cells(ModelRc::new(VecModel::from(hand_cells(
+        &LEFT_HAND,
+        LEFT_COLUMNS,
+        0,
+        2,
+        &lookup,
+    ))));
+    ui.set_layer_right_cells(ModelRc::new(VecModel::from(hand_cells(
+        &RIGHT_HAND,
+        RIGHT_COLUMNS,
+        left_len,
+        0,
+        &lookup,
+    ))));
     ui.set_layer_extras(ModelRc::new(VecModel::from(
         keymap
             .map(|map| {
                 map.extras
                     .iter()
-                    .map(|extra| LayerExtraRow {
-                        key: extra.key.clone().into(),
-                        action: extra.action.clone().unwrap_or_else(|| "∅".into()).into(),
+                    .map(|extra| {
+                        let (kind, action, icon) = assignment(Some(&extra.action), &names);
+                        LayerExtraRow {
+                            key: extra.key.clone().into(),
+                            kind,
+                            action: action.into(),
+                            icon,
+                        }
                     })
                     .collect::<Vec<_>>()
             })
@@ -82,12 +315,6 @@ fn failure(ui: &SettingsWindow, error: lhc_core::config_document::ConfigError) {
 }
 
 pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument>>>) {
-    ui.set_layer_key_codes(ModelRc::new(VecModel::from(
-        KEY_CODES
-            .iter()
-            .map(|key| (*key).into())
-            .collect::<Vec<_>>(),
-    )));
     if let Some(config) = &config {
         refresh(ui, &config.borrow(), 0);
     }
@@ -137,7 +364,7 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
             ui.set_layer_dialog_action("".into());
             ui.set_layer_assignment_kind(0);
             if kind == 5 {
-                if let (Some(layer), Some(key)) = (layer, KEY_CODES.get(index as usize)) {
+                if let (Some(layer), Some(key)) = (layer, layer_key(index)) {
                     match document.layer_key(&layer.id, key) {
                         KeyAssignment::Transparent => {}
                         KeyAssignment::Swallow => ui.set_layer_assignment_kind(1),
@@ -221,7 +448,7 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
                     let Some(id) = layer_id else {
                         return;
                     };
-                    let Some(key) = KEY_CODES.get(index as usize) else {
+                    let Some(key) = layer_key(index) else {
                         return;
                     };
                     let value = match assignment_kind {
@@ -301,6 +528,29 @@ pub(super) fn bind(ui: &SettingsWindow, config: Option<Rc<RefCell<ConfigDocument
             let result = config
                 .borrow_mut()
                 .move_layer_extra(&id, index as usize, next as usize);
+            match result {
+                Ok(()) => changed(&ui, config, selected),
+                Err(error) => failure(&ui, error),
+            }
+        }
+    });
+    let weak = ui.as_weak();
+    let config_copy = config.clone();
+    ui.on_update_layer_description(move |description| {
+        if let (Some(ui), Some(config)) = (weak.upgrade(), &config_copy) {
+            let selected = ui.get_selected_layer();
+            let Some((id, name)) = config
+                .borrow()
+                .layout()
+                .layers
+                .get(selected as usize)
+                .map(|layer| (layer.id.clone(), layer.name.clone()))
+            else {
+                return;
+            };
+            let result = config
+                .borrow_mut()
+                .rename_layer(&id, &name, description.trim());
             match result {
                 Ok(()) => changed(&ui, config, selected),
                 Err(error) => failure(&ui, error),

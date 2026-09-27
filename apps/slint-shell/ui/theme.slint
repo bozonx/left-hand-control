@@ -8,6 +8,8 @@ export global Theme {
     out property <color> hover: dark ? #3e526e : #dbe6f7;
     out property <color> card: dark ? #242d3c : #ffffff;
     out property <color> border: dark ? #626b7b : #8794a8;
+    /// Foreground for assigned actions on key caps.
+    out property <color> link: dark ? #7fb3ff : #1f5fbf;
     out property <color> error: dark ? #ffb4ab : #a52222;
     public function apply() { Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light; }
 }
