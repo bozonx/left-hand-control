@@ -19,7 +19,7 @@ env = dict(os.environ, SLINT_SHELL_SOCKET=f'lhc-lifecycle-{os.getpid()}.sock',
 env.setdefault('SLINT_SHELL_POPUPS', 'spell')
 env.setdefault('SLINT_BACKEND', 'winit-software')
 env.pop('XDG_ACTIVATION_TOKEN', None)
-socket = Path(env['XDG_RUNTIME_DIR']) / env['SLINT_SHELL_SOCKET']
+socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['SLINT_SHELL_SOCKET']
 samples = []
 
 def command(*args):

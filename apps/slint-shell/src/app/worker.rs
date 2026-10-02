@@ -13,6 +13,8 @@ use std::time::{Duration, Instant};
 
 const RESTART_LIMIT: usize = 3;
 const RESTART_WINDOW: Duration = Duration::from_secs(60);
+/// Pause before retrying a worker that failed to start.
+const RETRY_DELAY: Duration = Duration::from_secs(1);
 
 /// Allows at most `RESTART_LIMIT` starts within `RESTART_WINDOW`.
 #[derive(Default)]
@@ -138,6 +140,10 @@ impl App {
             Err(error) => {
                 log::error!("Spell worker: {error}");
                 self.set_error(Msg::WorkerError(error));
+                // A start that failed counts against the restart limit too.
+                slint::Timer::single_shot(RETRY_DELAY, || {
+                    super::with_app(|app| app.start_worker(false))
+                });
             }
         }
     }

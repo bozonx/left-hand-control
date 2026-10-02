@@ -150,27 +150,23 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
         state.known = None;
     }
     drop(config);
-    refresh_context(ui, document, state);
+    refresh_context(ui, document);
     refresh_active(ui, document);
     Ok(())
 }
 
-/// Label and dirty flag of the working copy.
-fn refresh_context(ui: &SettingsWindow, document: &Document, state: &State) {
+/// Label and dirty flag of the working copy: it differs from its library
+/// file. Both sides go through the same parser, so formatting differences
+/// in the file do not count as changes.
+fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
     let library = ui.global::<LayoutLibrary>();
     let name = current_name(&config);
     library.set_current_label(name.clone().unwrap_or_default().into());
-    let saved = state
-        .baseline
-        .as_ref()
-        .filter(|(baseline, _)| Some(baseline) == name.as_ref())
-        .map(|(_, text)| text.clone())
-        .or_else(|| name.and_then(|name| config.paths().load_user_layout(&name).ok()));
-    let dirty = saved.is_some_and(|text| {
-        layout_file::parse(&text)
+    let dirty = name.is_some_and(|name| {
+        config
+            .load_layout(&user_layout_id(&name))
             .ok()
-            .flatten()
             .map(|layout| layout_file::serialize(&layout))
             != Some(layout_file::serialize(config.layout()))
     });
@@ -197,7 +193,7 @@ fn reset_context(ui: &SettingsWindow, document: &Document, state: &mut State) {
         Some((name, text))
     });
     drop(config);
-    refresh_context(ui, document, state);
+    refresh_context(ui, document);
 }
 
 fn report(ui: &SettingsWindow, result: Result<Msg, Msg>) {
@@ -412,7 +408,7 @@ fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Res
             .map_err(ConfigError::Io)
     })?;
     state.borrow_mut().baseline = Some((name, text));
-    refresh_context(ui, document, &state.borrow());
+    refresh_context(ui, document);
     Ok(Msg::LibrarySaved)
 }
 
@@ -481,12 +477,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let library = ui.global::<LayoutLibrary>();
 
     let weak = ui.as_weak();
-    let shared = state.clone();
     // Other pages change the working copy: only the toolbar depends on it.
     // The list itself is re-read when the library page is opened.
     document.subscribe(View::Library, move |document| {
         if let Some(ui) = weak.upgrade() {
-            refresh_context(&ui, document, &shared.borrow());
+            refresh_context(&ui, document);
             refresh_active(&ui, document);
         }
     });
@@ -563,11 +558,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         doc,
         &mut state.borrow_mut()
     ));
-    on!(on_refresh_context, |ui, doc, state| refresh_context(
-        &ui,
-        doc,
-        &state.borrow()
-    ));
+    on!(on_refresh_context, |ui, doc, _state| refresh_context(&ui, doc));
     on!(on_save_current, |ui, doc, state| report(
         &ui,
         save_current(&ui, doc, state)

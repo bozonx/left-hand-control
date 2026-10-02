@@ -1,32 +1,39 @@
 use lhc_core::{config_document::ConfigDocument, storage::StoragePaths};
 use slint::{ComponentHandle, Model};
 use slint_shell::{
-    macro_editor,
-    ui::{Locale, MacroEditor, SettingsWindow, Theme},
+    Document, bind_document,
+    ui::{Locale, MacroEditor, MacroField, Page, SettingsWindow, Theme},
 };
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::{rc::Rc, time::Duration};
+
+/// Let the delayed save of typed fields run.
+fn settle() {
+    std::thread::sleep(Duration::from_millis(450));
+    slint::platform::update_timers_and_animations();
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-    let document = Rc::new(RefCell::new(ConfigDocument::load(paths.clone())?));
+    let document = Document::load(paths.clone())?;
     let ui = SettingsWindow::new()?;
-    macro_editor::bind(&ui, Some(document.clone()));
-    ui.set_page(5);
+    bind_document(&ui, &document);
+    ui.set_page(Page::Macros);
     ui.global::<Theme>().invoke_apply();
     slint::select_bundled_translation("ru")?;
     ui.global::<Locale>().set_english(false);
     let editor = ui.global::<MacroEditor>();
     editor.invoke_clone_system(0, "(копия)".into());
-    let first = |document: &Rc<RefCell<ConfigDocument>>| document.borrow().layout().macros[0].clone();
+    let first = |document: &Rc<Document>| document.read().layout().macros[0].clone();
     assert_eq!(first(&document).steps.len(), 3);
     assert_eq!(first(&document).id, "moveLineDownCopy");
-    editor.invoke_set_field(0, 0, "testMacro".into());
-    editor.invoke_set_field(0, 1, "Тестовый макрос".into());
+    editor.invoke_set_field(0, MacroField::Id, "testMacro".into());
+    editor.invoke_set_field(0, MacroField::Name, "Тестовый макрос".into());
     editor.invoke_add_step(0, "pause:100".into());
     editor.invoke_add_step(0, "text: hello ".into());
     editor.invoke_move_step(0, 4, -1);
-    editor.invoke_set_field(0, 2, "0".into());
+    editor.invoke_set_field(0, MacroField::StepPause, "0".into());
+    settle();
     assert!(!editor.get_has_errors());
     assert_eq!(first(&document).id, "testMacro");
     assert_eq!(first(&document).steps[3].action, "text: hello ");
@@ -39,12 +46,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(first(&document).steps.len(), 5);
     editor.invoke_remove_step(0, 5);
     assert!(!editor.get_has_errors());
-    editor.invoke_set_field(0, 3, "abc".into());
+    editor.invoke_set_field(0, MacroField::ModifierDelay, "abc".into());
+    settle();
     assert!(editor.get_has_errors());
-    editor.invoke_set_field(0, 3, "".into());
+    editor.invoke_set_field(0, MacroField::ModifierDelay, "".into());
+    settle();
     editor.invoke_add("Второй".into());
     editor.invoke_move(0, 1);
-    assert_eq!(document.borrow().layout().macros[0].id, "testMacro");
+    assert_eq!(document.read().layout().macros[0].id, "testMacro");
     editor.invoke_remove(1);
     let loaded = ConfigDocument::load(paths)?;
     assert_eq!(loaded.layout().macros.len(), 1);
@@ -67,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for p in pixels.as_slice() { data.extend([p.r, p.g, p.b]); }
             std::fs::write(path, data).unwrap();
         }
-        println!("Macros smoke: passed (system copy, steps, pauses, order, cycle validation, auto-save and reload)");
+        println!("Macros smoke: passed (system copy, steps, pauses, order, cycle validation, delayed save and reload)");
         slint::quit_event_loop().unwrap();
     });
     slint::run_event_loop()?;

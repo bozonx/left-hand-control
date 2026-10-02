@@ -101,7 +101,8 @@ crates/lhc-core/src/
 └── gamemode/, active_window/   # watchers feeding mapper rule conditions
 
 src-tauri/src/          # Tauri commands, windows, tray; core_events.rs forwards CoreEvents
-apps/slint-shell/src/   # Slint shell: app/ (settings process), spell.rs (layer-shell worker),
+apps/slint-shell/src/   # Slint shell: app/ (settings process), pages/ (settings pages),
+                        # document.rs (single write path), spell.rs (layer-shell worker),
                         # platform/{linux,portable}/, command.rs (typed IPC), i18n.rs
 ```
 

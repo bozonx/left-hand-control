@@ -108,10 +108,6 @@ impl ReturnInput {
         self.target = (!id.is_empty()).then_some(id);
     }
 
-    pub fn cancel(&mut self) {
-        self.pending = None;
-    }
-
     pub fn selected(&mut self, text: String) -> bool {
         self.restore_requested = false;
         self.pending = self.target.take().map(|id| (Instant::now(), id, text));

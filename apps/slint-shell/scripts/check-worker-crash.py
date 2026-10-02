@@ -8,6 +8,21 @@ import time
 from pathlib import Path
 
 binary = Path(sys.argv[1]).resolve()
+
+
+def workers(pid):
+    """Spell worker children of `pid`; any thread may have started them."""
+    found = []
+    for children in Path(f"/proc/{pid}/task").glob("*/children"):
+        for child in children.read_text().split():
+            try:
+                cmdline = Path(f"/proc/{child}/cmdline").read_bytes()
+            except OSError:
+                continue
+            if b"--spell-worker" in cmdline:
+                found.append(int(child))
+    return found
+
 socket = f"lhc-worker-crash-{os.getpid()}.sock"
 with tempfile.TemporaryDirectory() as directory:
     log_path = Path(directory) / "server.log"
@@ -25,8 +40,7 @@ with tempfile.TemporaryDirectory() as directory:
             while time.monotonic() < deadline:
                 if server.poll() is not None:
                     raise RuntimeError("parent exited during startup")
-                child_file = Path(f"/proc/{server.pid}/task/{server.pid}/children")
-                children = child_file.read_text().split() if child_file.exists() else []
+                children = workers(server.pid)
                 if children:
                     break
                 time.sleep(0.05)
@@ -50,8 +64,7 @@ with tempfile.TemporaryDirectory() as directory:
             deadline = time.monotonic() + 20
             replacement = None
             while time.monotonic() < deadline:
-                children = child_file.read_text().split() if child_file.exists() else []
-                replacement = next((int(child) for child in children if int(child) != worker), None)
+                replacement = next((child for child in workers(server.pid) if child != worker), None)
                 if replacement is not None:
                     break
                 time.sleep(0.1)
@@ -62,7 +75,9 @@ with tempfile.TemporaryDirectory() as directory:
                 raise RuntimeError("parent exited after worker crash")
             deadline = time.monotonic() + 5
             while time.monotonic() < deadline:
-                if "Spell popup process unavailable:" in log_path.read_text():
+                # Killed while running, or while still starting up.
+                text = log_path.read_text()
+                if "Spell popup process exited" in text or "Spell worker exited" in text:
                     break
                 time.sleep(0.1)
             else:

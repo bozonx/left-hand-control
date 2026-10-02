@@ -87,7 +87,7 @@ First-time prerequisites on the host (not auto-installed):
 
 ## Cross-platform architecture (Rust side)
 
-Native code lives in `crates/lhc-core/src/`; `src-tauri/src/` and `apps/slint-shell/src/` are thin shells over it. The core never calls into a UI framework: it emits `CoreEvent`s on `lhc_core::events::bus()`, and each shell subscribes once at startup (`src-tauri/src/core_events.rs` forwards them to the webview under the historical event names, `apps/slint-shell/src/app/mapper.rs` posts them to the Slint event loop).
+Native code lives in `crates/lhc-core/src/`; `src-tauri/src/` and `apps/slint-shell/src/` are thin shells over it. The core never calls into a UI framework: it emits `CoreEvent`s on `lhc_core::events::bus()`, and each shell subscribes once at startup (`src-tauri/src/core_events.rs` forwards them to the webview under the historical event names, `apps/slint-shell/src/app/mapper.rs` posts them to the Slint event loop). Slint pages edit the configuration only through `apps/slint-shell/src/document.rs` (`Document::edit`), which saves, updates a running mapper and refreshes the other pages.
 
 - **`platform/`** — OS detection + Linux session detection (DE, session type,
   IPC sockets). Exposes `platform::info()` (Tauri command `get_platform_info`)

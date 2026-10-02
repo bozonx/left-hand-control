@@ -108,10 +108,12 @@ pub fn start(dispatch: Dispatch) {
         // Devices that are not keyboards or cannot be opened; forgotten now
         // and then because event numbers are reused after unplugging.
         let mut ignored = HashSet::new();
-        for scan in 0u64.. {
+        let mut scan = 0u64;
+        loop {
             if scan % 30 == 0 {
                 ignored.clear();
             }
+            scan += 1;
             let mut found = !watched.lock().unwrap_or_else(|p| p.into_inner()).is_empty();
             let paths = std::fs::read_dir("/dev/input")
                 .into_iter()

@@ -4,29 +4,11 @@ msgstr ""
 "Language: ru\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 
-msgid " · select an entry to fill the draft"
-msgstr " · выбор записи заполняет черновик"
-
-msgid "1500 emoji — stress"
-msgstr "1500 emoji — stress"
-
-msgid "Action grid"
-msgstr "Сетка действий"
-
 msgid "Action saved"
 msgstr "Действие сохранено"
 
-msgid "All categories"
-msgstr "Все категории"
-
 msgid "Cancel"
 msgstr "Отмена"
-
-msgid "Capture a keyboard shortcut"
-msgstr "Захватите сочетание клавиш"
-
-msgid "Capture shortcut"
-msgstr "Захватить сочетание"
 
 msgid "Configuration loaded: {n} rule"
 msgid_plural "Configuration loaded: {n} rules"
@@ -49,53 +31,23 @@ msgstr[2] "Конфигурация сохранена: {n} правил"
 msgid "Configuration unavailable: {}"
 msgstr "Конфигурация недоступна: {}"
 
-msgid "Copy"
-msgstr "Копировать"
-
-msgid "Delay"
-msgstr "Пауза"
-
-msgid "Delay (ms)"
-msgstr "Пауза (мс)"
-
 msgid "Delay: an integer from 1 to 10000 ms"
 msgstr "Пауза: целое число от 1 до 10000 мс"
 
 msgid "Device saved: {}"
 msgstr "Устройство сохранено: {}"
 
-msgid "Draft — saving applies the action to this key only"
-msgstr "Черновик — сохранение применит действие только к этой клавише"
-
-msgid "Drag by ⠿ · Esc cancels · click a label to edit"
-msgstr "Переносите за ⠿ · Esc — отмена · нажмите подпись для изменения"
-
 msgid "Emoji"
 msgstr "Эмодзи"
-
-msgid "Emoji · "
-msgstr "Эмодзи · "
 
 msgid "Enter non-empty text"
 msgstr "Введите непустой текст"
 
-msgid "Enter text, for example Привет 👋"
-msgstr "Введите текст, например Привет 👋"
-
 msgid "Filter"
 msgstr "Фильтр / Filter"
 
-msgid "Found: "
-msgstr "Найдено: "
-
-msgid "Integer from 1 to 10000"
-msgstr "Целое число от 1 до 10000"
-
 msgid "Key {} only has conditional or layer rules; edit it in the full editor"
 msgstr "Клавиша {} имеет только условные или послойные правила; отредактируйте её в полном редакторе"
-
-msgid "Key «"
-msgstr "Клавиша «"
 
 msgid "Keyboard"
 msgstr "Клавиатура"
@@ -105,9 +57,6 @@ msgstr "Устройство клавиатуры"
 
 msgid "Keyboard layout"
 msgstr "Раскладка клавиатуры"
-
-msgid "Keyboard shortcut"
-msgstr "Сочетание клавиш"
 
 msgid "Load a valid configuration before starting the mapper"
 msgstr "Загрузите корректную конфигурацию перед запуском mapper"
@@ -126,18 +75,6 @@ msgstr "Mapper остановлен"
 
 msgid "Mapper is stopped: {}"
 msgstr "Mapper остановлен: {}"
-
-msgid "Next window"
-msgstr "Следующее окно"
-
-msgid "No shortcut assigned"
-msgstr "Сочетание не задано"
-
-msgid "Paste"
-msgstr "Вставить"
-
-msgid "Press a shortcut…"
-msgstr "Нажмите сочетание…"
 
 msgid "Quick actions"
 msgstr "Быстрые действия"
@@ -160,9 +97,6 @@ msgstr "Сохранить"
 msgid "Saved, but the mapper was not updated: {}"
 msgstr "Сохранено, но mapper не обновился: {}"
 
-msgid "Search 500 actions…"
-msgstr "Поиск по 500 действиям…"
-
 msgid "Select a key to assign an action."
 msgstr "Выберите клавишу, чтобы назначить действие."
 
@@ -171,12 +105,6 @@ msgstr "Выберите устройство клавиатуры в настр
 
 msgid "Select a system action"
 msgstr "Выберите системное действие"
-
-msgid "Shortcuts"
-msgstr "Сочетания"
-
-msgid "Slint Shell — key editor"
-msgstr "Slint Shell — редактор клавиш"
 
 msgid "Spell popup process unavailable: {}"
 msgstr "Процесс Spell-попапов недоступен: {}"
@@ -196,14 +124,8 @@ msgstr "Spell worker: {}"
 msgid "Stop capture"
 msgstr "Остановить захват"
 
-msgid "Stress"
-msgstr "Stress"
-
 msgid "System"
 msgstr "Система"
-
-msgid "System action"
-msgstr "Системное действие"
 
 msgid "Text"
 msgstr "Текст"
@@ -211,20 +133,8 @@ msgstr "Текст"
 msgid "The configuration was changed by another application and has been reloaded; repeat the change"
 msgstr "Конфигурация изменена другим приложением и перечитана; повторите изменение"
 
-msgid "Toggle mapper"
-msgstr "Mapper вкл / выкл"
-
 msgid "Unknown action type"
 msgstr "Неизвестный тип действия"
-
-msgid "Update the selected catalog entry"
-msgstr "Обновить выбранную запись"
-
-msgid "☀ Light"
-msgstr "☀ Светлая"
-
-msgid "☾ Dark"
-msgstr "☾ Тёмная"
 
 msgid "Left Hand Control"
 msgstr "Left Hand Control"
@@ -232,32 +142,14 @@ msgstr "Left Hand Control"
 msgid "Layouts"
 msgstr "Раскладки"
 
-msgid "Save the current layout or select a file from your library."
-msgstr "Сохраните текущую раскладку или выберите файл из библиотеки."
-
 msgid "New layout name"
 msgstr "Имя новой раскладки"
 
 msgid "Create empty"
 msgstr "Создать пустую"
 
-msgid "Save current"
-msgstr "Сохранить текущую как новую"
-
-msgid "Refresh"
-msgstr "Обновить"
-
-msgid "Load selected"
-msgstr "Загрузить выбранную"
-
-msgid "Save current to selected"
-msgstr "Сохранить в выбранную"
-
 msgid "Mapper"
 msgstr "Маппер"
-
-msgid "Appearance and language"
-msgstr "Внешний вид и язык"
 
 msgid "Dark"
 msgstr "Тёмная"
@@ -285,9 +177,6 @@ msgstr "Язык"
 
 msgid "Automatic"
 msgstr "Автоматически"
-
-msgid "Launch on startup"
-msgstr "Запускать при входе"
 
 msgid "Key behavior"
 msgstr "Поведение клавиш"
@@ -382,12 +271,6 @@ msgstr "Введите неотрицательное целое число дл
 msgid "Rules"
 msgstr "Правила"
 
-msgid "Changes are saved automatically to the current layout."
-msgstr "Изменения автоматически сохраняются в текущую раскладку."
-
-msgid "Add rule"
-msgstr "Добавить правило"
-
 msgid "Remove"
 msgstr "Удалить"
 
@@ -397,29 +280,14 @@ msgstr "Вверх"
 msgid "Move down"
 msgstr "Вниз"
 
-msgid "Draft"
-msgstr "Черновик"
-
 msgid "Enabled"
 msgstr "Включено"
 
 msgid "Trigger key"
 msgstr "Клавиша срабатывания"
 
-msgid "Layer ID (empty for base layer)"
-msgstr "ID слоя (пусто для базового слоя)"
-
 msgid "Tap action"
 msgstr "Действие при нажатии"
-
-msgid "Hold action"
-msgstr "Действие при удержании"
-
-msgid "Double tap action"
-msgstr "Действие при двойном нажатии"
-
-msgid "Game mode condition"
-msgstr "Условие игрового режима"
 
 msgid "Layout conditions (comma separated)"
 msgstr "Условия раскладок (через запятую)"
@@ -496,12 +364,6 @@ msgstr "Дополнительные параметры правила"
 msgid "Choose action"
 msgstr "Выберите действие"
 
-msgid "Search or enter a key code"
-msgstr "Найдите или введите код клавиши"
-
-msgid "Search or enter an action"
-msgstr "Найдите или введите действие"
-
 msgid "Ignore"
 msgstr "Не учитывать"
 
@@ -532,32 +394,14 @@ msgstr "Слои"
 msgid "New layer"
 msgstr "Новый слой"
 
-msgid "Rename"
-msgstr "Переименовать"
-
 msgid "Duplicate"
 msgstr "Дублировать"
 
 msgid "Delete"
 msgstr "Удалить"
 
-msgid "Layer keyboard"
-msgstr "Клавиатура слоя"
-
-msgid "Clear keyboard"
-msgstr "Очистить клавиатуру"
-
 msgid "Extra keys"
 msgstr "Дополнительные клавиши"
-
-msgid "Add extra key"
-msgstr "Добавить клавишу"
-
-msgid "Clear extras"
-msgstr "Очистить дополнительные"
-
-msgid "No extra keys"
-msgstr "Дополнительных клавиш нет"
 
 msgid "Edit"
 msgstr "Изменить"
@@ -682,9 +526,6 @@ msgstr "ID команд не должны повторяться."
 msgid "Enter a shell command."
 msgstr "Введите команду оболочки."
 
-msgid "More pages"
-msgstr "Другие страницы"
-
 msgid "Save as…"
 msgstr "Сохранить как…"
 
@@ -709,23 +550,11 @@ msgstr "Базовая клавиатура"
 msgid "Keyboard device path"
 msgstr "Путь к устройству клавиатуры"
 
-msgid "Search actions…"
-msgstr "Поиск действий…"
-
 msgid "Copy path"
 msgstr "Копировать путь"
 
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr "Создайте слой для назначения клавиш или откройте базовую клавиатуру."
-
-msgid "Action or keyboard shortcut"
-msgstr "Действие или сочетание клавиш"
-
-msgid "Action code; empty passes the key through"
-msgstr "Код действия; пустое поле — обычная клавиша"
-
-msgid "Clear assignment"
-msgstr "Сбросить назначение"
 
 msgid "Running"
 msgstr "Работает"
@@ -741,15 +570,6 @@ msgstr "Выберите раскладку"
 
 msgid "Layout changed on disk; select it again"
 msgstr "Раскладка изменена на диске; выберите её заново"
-
-msgid "Save name and description"
-msgstr "Сохранить имя и описание"
-
-msgid "Activation mode"
-msgstr "Режим активации"
-
-msgid "Activate selected"
-msgstr "Активировать выбранную"
 
 msgid "Include in automatic mode"
 msgstr "Включить в автоматический режим"
@@ -769,32 +589,8 @@ msgstr "Языки клавиатуры через запятую"
 msgid "Applications (comma separated)"
 msgstr "Приложения через запятую"
 
-msgid "Save conditions"
-msgstr "Сохранить условия"
-
-msgid "Whitelist"
-msgstr "Белый список"
-
-msgid "Blacklist"
-msgstr "Чёрный список"
-
 msgid "Manual"
 msgstr "Ручной"
-
-msgid "Edit selected"
-msgstr "Редактировать выбранную"
-
-msgid "Create layout…"
-msgstr "Создать раскладку…"
-
-msgid "Switching: manual"
-msgstr "Переключение: вручную"
-
-msgid "Switching: automatic"
-msgstr "Переключение: автоматически"
-
-msgid "Change…"
-msgstr "Изменить…"
 
 msgid "Active"
 msgstr "Активна"
@@ -810,9 +606,6 @@ msgstr "Условия…"
 
 msgid "Activate"
 msgstr "Активировать"
-
-msgid "More…"
-msgstr "Ещё…"
 
 msgid "Delete layout?"
 msgstr "Удалить раскладку?"
@@ -835,9 +628,6 @@ msgstr "Файл раскладки будет удалён. Это действ
 msgid "Duplicate…"
 msgstr "Создать копию…"
 
-msgid "From current layout"
-msgstr "Из текущей раскладки"
-
 msgid "Edit layout"
 msgstr "Редактировать"
 
@@ -859,12 +649,6 @@ msgstr "Автоматически: работает первая включён
 msgid "Based on Ivan K layout"
 msgstr "На основе раскладки Айвана Кей"
 
-msgid "Based on Ivan K layout (the author's layout)"
-msgstr "На основе раскладки Ivan K (авторская раскладка)"
-
-msgid "Copy of"
-msgstr "Копия раскладки"
-
 msgid "Create"
 msgstr "Создать"
 
@@ -877,9 +661,6 @@ msgstr "Описание (необязательно)"
 msgid "Discard changes"
 msgstr "Не сохранять"
 
-msgid "Empty layout"
-msgstr "Пустая раскладка"
-
 msgid "Except: {}"
 msgstr "Кроме: {}"
 
@@ -888,9 +669,6 @@ msgstr "Сделать активной"
 
 msgid "Manual: the layout you make active works everywhere."
 msgstr "Вручную: везде работает раскладка, которую вы сделали активной."
-
-msgid "New layout…"
-msgstr "Новая раскладка…"
 
 msgid "No conditions: always matches"
 msgstr "Без условий: подходит всегда"
@@ -907,9 +685,6 @@ msgstr "Переименовать…"
 msgid "Save and continue"
 msgstr "Сохранить и продолжить"
 
-msgid "Start from"
-msgstr "Основа"
-
 msgid "Start from the author's Ivan K layout or from an empty one."
 msgstr "Начните с авторской раскладки Ivan K или с пустой."
 
@@ -921,9 +696,6 @@ msgstr "Имя содержит символы, недопустимые в им
 
 msgid "Unsaved changes"
 msgstr "Несохранённые изменения"
-
-msgid "What is this layout for?"
-msgstr "Для чего эта раскладка?"
 
 msgid "When: {}"
 msgstr "Когда: {}"
@@ -1452,3 +1224,24 @@ msgstr "Например: Следующий трек"
 
 msgid "ms"
 msgstr "мс"
+
+msgid "Rule saved"
+msgstr "Правило сохранено"
+
+msgid "Search layers"
+msgstr "Поиск слоёв"
+
+msgid "Set"
+msgstr "Задано"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Запустите маппер, чтобы выполнять действия из меню"
+
+msgid "The layout file is empty"
+msgstr "Файл раскладки пуст"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"

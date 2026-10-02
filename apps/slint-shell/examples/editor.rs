@@ -1,118 +1,67 @@
+use lhc_core::storage::StoragePaths;
 use slint::{ComponentHandle, Model};
-use slint_shell::{editor, ui::*};
+use slint_shell::{Document, bind_document, ui::*};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let document = Document::load(StoragePaths::new(
+        dir.path().join("settings"),
+        dir.path().join("data"),
+    ))?;
     let ui = SettingsWindow::new()?;
-    let _editor = editor::bind_with_config(&ui, None);
-    ui.set_page(0);
+    bind_document(&ui, &document);
+    ui.set_page(Page::Keyboard);
     if std::env::args().any(|arg| arg == "--smoke") {
-        assert_eq!(ui.get_keys().row_count(), 80);
+        let keys = ui.global::<KeyEditor>();
+        assert_eq!(keys.get_keys().row_count(), 80);
+        assert_eq!(keys.get_keys().row_data(33).unwrap().label, "Q");
         let loaded = |count| Message {
             id: "config-loaded".into(),
             arg: "".into(),
             count,
         };
         let locale = ui.global::<Locale>();
-        assert_eq!(
-            locale.invoke_text(loaded(5)),
-            "Конфигурация загружена: 5 правил"
-        );
-        assert_eq!(
-            locale.invoke_text(loaded(2)),
-            "Конфигурация загружена: 2 правила"
-        );
-        slint::select_bundled_translation("en")?;
-        assert_eq!(
-            locale.invoke_text(loaded(1)),
-            "Configuration loaded: 1 rule"
-        );
         slint::select_bundled_translation("ru")?;
-        assert_eq!(ui.get_actions().row_count(), 83);
-        ui.invoke_edit_key(33);
-        assert!(ui.get_editing());
-        assert!(!ui.get_validation().id.is_empty());
-        ui.set_value("Привет 👋".into());
-        ui.invoke_validate();
-        ui.invoke_save();
-        assert!(!ui.get_editing());
-        ui.invoke_edit_key(33);
-        assert_eq!(ui.get_value(), "Привет 👋");
-        ui.set_value("Отменить".into());
-        ui.invoke_cancel();
-        ui.invoke_edit_key(33);
-        assert_eq!(ui.get_value(), "Привет 👋");
-        ui.invoke_change_kind(1);
-        ui.set_value("10001".into());
-        ui.invoke_save();
-        assert!(ui.get_editing());
-        assert!(!ui.get_validation().id.is_empty());
-        ui.set_value("250".into());
-        ui.invoke_save();
-        ui.invoke_edit_key(33);
-        assert_eq!(ui.get_value(), "250");
-        ui.invoke_change_kind(2);
-        ui.invoke_save();
-        ui.invoke_edit_key(33);
-        assert_eq!(ui.get_value(), "Ctrl+KeyC");
-        ui.invoke_change_kind(3);
-        ui.set_capturing(true);
-        ui.invoke_capture("k".into(), true, false, true, false);
-        assert_eq!(ui.get_value(), "Ctrl+Shift+KeyK");
-        assert!(!ui.get_capturing());
-        ui.invoke_save();
-        ui.invoke_edit_key(33);
-        assert_eq!(ui.get_value(), "Ctrl+Shift+KeyK");
-        ui.set_query("копировать".into());
-        ui.invoke_filter();
-        assert_eq!(ui.get_actions().row_count(), 1);
-        ui.set_query("".into());
-        ui.invoke_filter();
-        ui.invoke_pick_action(0);
-        assert_eq!(ui.get_value(), "Ctrl+KeyC");
-        ui.invoke_cancel();
+        assert_eq!(locale.invoke_text(loaded(5)), "Конфигурация загружена: 5 правил");
+        assert_eq!(locale.invoke_text(loaded(2)), "Конфигурация загружена: 2 правила");
+        slint::select_bundled_translation("en")?;
+        assert_eq!(locale.invoke_text(loaded(1)), "Configuration loaded: 1 rule");
+
+        // Editing a key opens the picker; applying saves the tap action.
+        let picker = ui.global::<ActionPicker>();
+        keys.invoke_edit(33);
+        assert!(picker.get_opened());
+        assert_eq!(keys.get_selected(), 33);
+        picker.set_value("text:Привет 👋".into());
+        picker.invoke_apply();
+        assert!(!picker.get_opened());
+        assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Привет 👋"));
+        assert_eq!(keys.get_keys().row_data(33).unwrap().action, "text:Привет 👋");
+        assert_eq!(ui.global::<AppState>().get_status().id, "action-saved");
+
+        // Cancel keeps the saved value.
+        keys.invoke_edit(33);
+        assert_eq!(picker.get_value(), "text:Привет 👋");
+        picker.set_value("Ctrl+KeyC".into());
+        picker.invoke_close();
+        assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Привет 👋"));
+
+        // Pauses are only valid inside macros.
+        keys.invoke_edit(33);
+        picker.set_value("pause:250".into());
+        picker.invoke_apply();
+        assert!(picker.get_opened());
+        assert!(!picker.get_valid());
+        picker.set_value("Ctrl+Shift+KeyK".into());
+        picker.invoke_apply();
+        assert_eq!(document.read().base_tap_action("KeyQ"), Some("Ctrl+Shift+KeyK"));
         ui.show()?;
         let weak = ui.as_weak();
         slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
             let ui = weak.unwrap();
             snapshot(&ui, "keyboard");
-            ui.invoke_edit_key(33);
-            assert!(ui.get_editing());
-            ui.invoke_pick_action(0);
-            let weak = ui.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
-                let ui = weak.unwrap();
-                assert_eq!(ui.get_selected_action(), 0);
-                snapshot(&ui, "editor");
-                ui.invoke_change_kind(3);
-                ui.invoke_begin_capture();
-                for text in [
-                    slint::platform::Key::Control.into(),
-                    slint::platform::Key::Return.into(),
-                ] {
-                    ui.window()
-                        .dispatch_event(slint::platform::WindowEvent::KeyPressed { text });
-                }
-                assert_eq!(ui.get_value(), "Ctrl+Enter");
-                assert!(ui.get_editing());
-                for text in [
-                    slint::platform::Key::Return.into(),
-                    slint::platform::Key::Control.into(),
-                ] {
-                    ui.window()
-                        .dispatch_event(slint::platform::WindowEvent::KeyReleased { text });
-                }
-                ui.invoke_begin_capture();
-                ui.window()
-                    .dispatch_event(slint::platform::WindowEvent::KeyPressed {
-                        text: slint::platform::Key::Escape.into(),
-                    });
-                assert_eq!(ui.get_value(), "Escape");
-                assert!(ui.get_editing());
-                println!(
-                    "Editor smoke: passed (80 keys, real actions, draft, validation, shortcut capture)"
-                );
-                slint::quit_event_loop().unwrap();
-            });
+            println!("Editor smoke: passed (80 keys, picker assignment, cancel, validation, translations)");
+            slint::quit_event_loop().unwrap();
         });
     }
     ui.run()?;

@@ -397,4 +397,53 @@ mod tests {
             Language::English
         );
     }
+
+    /// Source strings of `@tr("…")` in the Slint files (plural forms count
+    /// by their singular).
+    fn slint_strings() -> Vec<String> {
+        let mut out = Vec::new();
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.extension().is_none_or(|ext| ext != "slint") {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path).unwrap();
+            for (index, _) in text.match_indices("@tr(\"") {
+                let rest = &text[index + 5..];
+                let mut value = String::new();
+                let mut chars = rest.chars();
+                while let Some(c) = chars.next() {
+                    match c {
+                        '"' => break,
+                        '\\' => {
+                            if let Some(next) = chars.next() {
+                                value.push(if next == 'n' { '\n' } else { next });
+                            }
+                        }
+                        c => value.push(c),
+                    }
+                }
+                out.push(value);
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn every_slint_string_has_a_russian_translation() {
+        let catalog = parse_po(RUSSIAN_PO);
+        // Plural entries are not in the parsed catalog; look for their msgid.
+        let declared = |source: &str| {
+            let escaped = source.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
+            RUSSIAN_PO.contains(&format!("msgid \"{escaped}\""))
+        };
+        let mut missing: Vec<String> = slint_strings()
+            .into_iter()
+            .filter(|source| !catalog.contains_key(source) && !declared(source))
+            .collect();
+        missing.sort();
+        missing.dedup();
+        assert!(missing.is_empty(), "missing in slint-shell.po: {missing:#?}");
+    }
 }

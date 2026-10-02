@@ -108,7 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             sleep(Duration::from_millis(250));
             activate_receiver()?;
             wait(|| focused.load(Ordering::SeqCst), "receiver initial focus")?;
-            let keys: AttributeSet<KeyCode> = [KeyCode::KEY_F11, KeyCode::KEY_F12, KeyCode::KEY_DOWN, KeyCode::KEY_ENTER, KeyCode::KEY_ESC, KeyCode::KEY_A, KeyCode::KEY_LEFTALT, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_BACKSPACE, KeyCode::KEY_L, KeyCode::KEY_T, KeyCode::KEY_6, KeyCode::KEY_1].into_iter().collect();
+            let keys: AttributeSet<KeyCode> = [KeyCode::KEY_F11, KeyCode::KEY_F12, KeyCode::KEY_DOWN, KeyCode::KEY_ENTER, KeyCode::KEY_ESC, KeyCode::KEY_A, KeyCode::KEY_LEFTALT, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_BACKSPACE, KeyCode::KEY_L, KeyCode::KEY_T, KeyCode::KEY_1].into_iter().collect();
             let mut device = test_keyboard::Keyboard::new("Slint return benchmark trigger", &keys)?;
             let input = match &mut device {
                 test_keyboard::Keyboard::Evdev(device) => device.enumerate_dev_nodes_blocking()?.next().transpose()?,
@@ -212,14 +212,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             let before = std::fs::read_to_string(&worker_csv)?;
             press_hotkey(&mut device, KeyCode::KEY_F11)?;
-            wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "stress focus")?;
-            press(&mut device, KeyCode::KEY_6)?;
-            wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",stress_page,")), "stress page")?;
+            wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "emoji focus")?;
+            press(&mut device, KeyCode::KEY_1)?;
+            wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",navigation_handled,")), "page key")?;
             press(&mut device, KeyCode::KEY_DOWN)?;
-            wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",navigation_handled,")), "stress navigation")?;
+            wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",navigation_repeated,")), "emoji navigation")?;
             activate_receiver()?;
             wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",hidden,")), "focus loss hides popup")?;
-            println!("emoji: stress page navigates, focus loss hides popup");
+            println!("emoji: page keys and arrows navigate, focus loss hides popup");
             let status = Command::new(&binary).env("SLINT_SHELL_SOCKET", socket).arg("quit").status()?;
             if !status.success() { return Err("quit failed".into()); }
             server.0.wait()?;

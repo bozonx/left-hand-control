@@ -280,8 +280,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let weak = ui.as_weak();
     let shared = state.clone();
     document.subscribe(View::Settings, move |document| {
-        if let Some(ui) = weak.upgrade() {
-            refresh(&ui, document, &mut shared.borrow_mut(), false);
+        // Busy: this page's own save is running and refreshes by itself.
+        if let (Some(ui), Ok(mut state)) = (weak.upgrade(), shared.try_borrow_mut()) {
+            refresh(&ui, document, &mut state, false);
         }
     });
 

@@ -39,8 +39,10 @@ CSV метрик пишется только при заданном `SLINT_SHEL
 Для release используйте `cargo build --release --locked -p slint-shell`.
 
 На Windows IPC слушает только `127.0.0.1:43176`; порт можно изменить через
-`SLINT_SHELL_PORT`. macOS использует Unix socket в `XDG_RUNTIME_DIR` или системной
-временной директории. Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. После выбора на
+`SLINT_SHELL_PORT`; каждый запрос подписан токеном из `%LOCALAPPDATA%\lhc-slint-shell\ipc-token`,
+который недоступен другим пользователям. Linux и macOS используют Unix socket в приватном
+каталоге `0700`: `$XDG_RUNTIME_DIR/lhc-slint-shell/` или, без `XDG_RUNTIME_DIR`,
+`<temp>/lhc-slint-shell-<uid>/`. Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. После выбора на
 Windows/macOS окно скрывается, ранее активное окно восстанавливается через Win32
 или macOS System Events, затем текст отправляется через системный native input.
 На macOS для этого требуется Accessibility permission. Фактический tray, возврат
@@ -64,15 +66,18 @@ target/debug/slint-shell quit
 
 - Трей: клик переключает настройки; меню открывает окна, меняет цвет иконки
   (зелёный/серый) и завершает процесс.
-- Emoji: 240 символов, 5 страниц по 48, стрелки, Enter, Esc, цифры 1–5.
-  Кнопка Stress: 1500 ячеек, прокрутка и навигация.
-- Quick: 30 заглушек, поиск (включая кириллицу), стрелки, Enter, Esc.
+- Emoji: страницы активной раскладки по 15 ячеек (Q W E R T · A S D F G · Z X C V B),
+  стрелки, Enter, Esc, цифры переключают страницы.
+- Quick: быстрые действия активной раскладки, поиск (включая кириллицу), стрелки,
+  Enter, Esc, Alt+1…9.
+- Выбранное действие выполняет mapper после того, как попап отдал фокус; при
+  остановленном mapper показывается сообщение.
 - Потеря фокуса скрывает попап.
 - Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. Слушаются доступные
   evdev-устройства, поддерживающие эти клавиши. Можно задать
   `SLINT_SHELL_INPUT=/dev/input/eventN`. Устройство не захватывается.
-  Права на input должны быть настроены заранее. Переподключение устройств
-  требует перезапуска прототипа.
+  Права на input должны быть настроены заранее. Новые устройства, в том числе
+  виртуальная клавиатура mapper, подхватываются автоматически в течение 2 с.
 
 ## Три пути вызова
 
@@ -127,8 +132,8 @@ python3 apps/slint-shell/scripts/summarize.py /tmp/slint-software.csv
 появятся только после реальной клавиши. Пропущенные события не заменяются нулями.
 CSV перезаписывается при старте; используйте отдельные пути для разных запусков.
 
-Для реальной вставки выбранного emoji или текста в KDE Wayland запустите Spell с
-`SLINT_SHELL_INSERT=1`. Прототип запоминает исходное окно через KWin, после выбора
+Для диагностической вставки выбранного emoji или текста в KDE Wayland соберите
+с `--features probes` и запустите Spell с `SLINT_SHELL_INSERT=1`. Прототип запоминает исходное окно через KWin, после выбора
 скрывает слой, ждёт отпускания клавиатуры, возвращает фокус и вставляет значение
 через `wl-copy` + uinput Shift+Insert. Нужны `wl-copy`, доступ к `/dev/uinput` и KWin.
 Исходный clipboard восстанавливается после вставки. Без переменной выбор только
@@ -152,7 +157,7 @@ python3 apps/slint-shell/scripts/check-worker-crash.py \
 Остановите прототип. При уже настроенных правах на uinput/input:
 
 ```sh
-cargo build --locked -p slint-shell --features spell --examples
+cargo build --locked -p slint-shell --features probes --examples
 SLINT_BACKEND=winit-software target/debug/examples/bench-evdev \
   target/debug/slint-shell /tmp/slint-evdev.csv
 python3 apps/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
@@ -173,7 +178,7 @@ python3 apps/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
 Старые CSV этапов 0–3 остаются результатами Slint 1.18, сравнивайте версии явно.
 
 ```sh
-cargo build --locked -p slint-shell --features spell --examples --bin slint-shell
+cargo build --locked -p slint-shell --features probes --examples --bin slint-shell
 SLINT_SHELL_POPUPS=auto SLINT_BACKEND=winit-software \
   SLINT_SHELL_METRICS=/tmp/slint-stage3a.csv \
   target/debug/slint-shell
@@ -221,7 +226,6 @@ Fallback GNOME использует те же окна без рамки и ра
 Фокус передаётся напрямую через callback конкретного окна, без разбора логов.
 Исправлены автоповтор, отпускание клавиш при потере фокуса и модификаторы,
 зажатые до открытия. Размеры при смене масштаба вычисляются из логических размеров.
-Клавиша `6` открывает тяжёлую страницу из 1500 эмодзи.
 
 ### Метрики и воспроизведение
 
@@ -233,10 +237,10 @@ Evdev-стенд ждёт событие навигации до 500 мс; t5 в
 Из корня репозитория:
 
 ```sh
-cargo build --locked -p slint-shell --features spell --examples --bin slint-shell
+cargo build --locked -p slint-shell --features probes --examples --bin slint-shell
 cargo test --locked -p slint-shell --features spell
 cargo check --locked -p slint-shell --no-default-features
-cargo clippy --locked -p slint-shell --features spell --all-targets --no-deps -- -D warnings
+cargo clippy --locked -p slint-shell --features probes --all-targets --no-deps -- -D warnings
 
 # Изолированный KWin: не переключает фокус рабочего стола пользователя.
 apps/slint-shell/scripts/bench-virtual.sh /tmp/slint-geometry geometry

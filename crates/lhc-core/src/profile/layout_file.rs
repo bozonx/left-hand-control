@@ -21,6 +21,13 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
 }
 
 fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
+    // Items without an id get one numbered in file order, so parsing the
+    // same text twice yields equal layouts (needed to detect real edits).
+    let counter = std::cell::Cell::new(0u32);
+    let next_id = |prefix: &str| {
+        counter.set(counter.get() + 1);
+        format!("{prefix}auto{}", counter.get())
+    };
     let mut layers = Vec::new();
     let mut layer_keymaps = std::collections::BTreeMap::new();
     for layer in array(doc, "layers") {
@@ -51,7 +58,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                 };
                 Some(ExtraKey {
                     id: str_of(extra, "id")
-                        .map_or_else(|| super::ids::generate("x_"), str::to_owned),
+                        .map_or_else(|| next_id("x_"), str::to_owned),
                     key: key.into(),
                     action,
                 })
@@ -64,7 +71,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
         .filter_map(|rule| {
             let key = non_empty(rule, "key")?;
             Some(LayerRule {
-                id: str_of(rule, "id").map_or_else(|| super::ids::generate("r_"), str::to_owned),
+                id: str_of(rule, "id").map_or_else(|| next_id("r_"), str::to_owned),
                 enabled: (rule.get("enabled") == Some(&Value::Bool(false))).then_some(false),
                 condition_game_mode: str_of(rule, "gameMode")
                     .filter(|mode| matches!(*mode, "on" | "off"))
@@ -95,14 +102,14 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                 .flatten()
                 .filter_map(|step| match step {
                     Value::String(action) if !action.trim().is_empty() => Some(MacroStep {
-                        id: super::ids::generate("s_"),
+                        id: next_id("s_"),
                         action: action.clone(),
                     }),
                     Value::Object(step) => {
                         let action = non_empty(step, "action")?;
                         Some(MacroStep {
                             id: str_of(step, "id")
-                                .map_or_else(|| super::ids::generate("s_"), str::to_owned),
+                                .map_or_else(|| next_id("s_"), str::to_owned),
                             action: action.into(),
                         })
                     }
@@ -132,7 +139,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
 
     let quick_actions: Vec<QuickAction> = array(doc, "quickActions")
         .map(|item| {
-            let id = trimmed(item, "id").map_or_else(|| super::ids::generate("qa_"), str::to_owned);
+            let id = trimmed(item, "id").map_or_else(|| next_id("qa_"), str::to_owned);
             QuickAction {
                 name: trimmed(item, "name").map_or_else(|| id.clone(), str::to_owned),
                 action: str_of(item, "action").unwrap_or("").into(),
@@ -152,7 +159,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
             QuickActionPage {
                 id: page
                     .and_then(|page| trimmed(page, "id"))
-                    .map_or_else(|| super::ids::generate("qap_"), str::to_owned),
+                    .map_or_else(|| next_id("qap_"), str::to_owned),
                 name: page
                     .and_then(|page| trimmed(page, "name"))
                     .map_or_else(|| format!("Page {}", index + 1), str::to_owned),
@@ -163,7 +170,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
     let mut emoji_pages: Vec<EmojiPage> = array(doc, "emojiPages")
         .map(|page| {
             let id =
-                trimmed(page, "id").map_or_else(|| super::ids::generate("emoji_"), str::to_owned);
+                trimmed(page, "id").map_or_else(|| next_id("emoji_"), str::to_owned);
             EmojiPage {
                 name: trimmed(page, "name").map_or_else(|| id.clone(), str::to_owned),
                 cells: page
@@ -502,6 +509,12 @@ fn key_list(value: Option<&Value>) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn parsing_is_deterministic_without_ids() {
+        let text = "rules:\n- key: CapsLock\nquickActions:\n- action: KeyA\n";
+        assert_eq!(super::parse(text), super::parse(text));
+    }
+
     use super::*;
 
     const SAMPLE: &str = r#"

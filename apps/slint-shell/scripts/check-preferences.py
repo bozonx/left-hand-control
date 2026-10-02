@@ -18,7 +18,7 @@ env = dict(
     SLINT_BACKEND='winit-software',
     RUST_LOG='info',
 )
-socket = Path(env['XDG_RUNTIME_DIR']) / env['SLINT_SHELL_SOCKET']
+socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['SLINT_SHELL_SOCKET']
 
 
 def send(command):

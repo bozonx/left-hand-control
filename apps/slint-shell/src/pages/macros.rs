@@ -249,7 +249,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let shared = state.clone();
     document.subscribe(View::Macros, move |document| {
         let Some(ui) = weak.upgrade() else { return };
-        let mut state = shared.borrow_mut();
+        // Busy: this page's own save is running and reloads by itself.
+        let Ok(mut state) = shared.try_borrow_mut() else { return };
         let saved: Vec<Macro> = state.draft.iter().filter_map(Entry::saved).collect();
         let pending = state.timer.is_some() || saved.len() != state.draft.len();
         if !pending && saved != document.read().layout().macros {

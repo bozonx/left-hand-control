@@ -46,7 +46,7 @@ sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
 | --- | --- |
 | Mapper (перехват клавиатуры) | Чтение `/dev/input/event*` (группа `input`) и запись в `/dev/uinput` (udev-правило `0660`, группа `input`) |
 | Глобальные хоткеи Ctrl+Alt+F11 / F12 | Чтение `/dev/input/event*`; устройство не захватывается |
-| Диагностический стенд возврата ввода (`SLINT_SHELL_INSERT=1`) | KDE Wayland (KWin), `wl-clipboard`, запись в `/dev/uinput` |
+| Диагностический стенд возврата ввода (`--features probes`, `SLINT_SHELL_INSERT=1`) | KDE Wayland (KWin), `wl-clipboard`, запись в `/dev/uinput` |
 | Условия правил по активному окну на KDE Wayland | `kdotool` |
 | Ввод литерального текста mapper'ом | `xdg-desktop-portal` и бэкенд окружения (`xdg-desktop-portal-kde` и т. п.) |
 
@@ -183,7 +183,7 @@ LHC_MENUS_NAV=1 cargo run --locked -p slint-shell --example menus
 | `SLINT_SHELL_POPUPS` | `winit` / `auto` / `spell` |
 | `SLINT_SHELL_HOTKEYS=off` | Не слушать evdev-хоткеи Ctrl+Alt+F11 / F12 |
 | `SLINT_SHELL_INPUT=/dev/input/eventN` | Слушать хоткеи только с одного устройства |
-| `SLINT_SHELL_INSERT=1` | Диагностический Spell worker на KDE: возврат фокуса и вставка; меню приложения выполняют назначения через mapper |
+| `SLINT_SHELL_INSERT=1` | Только сборка с `--features probes`: диагностический Spell worker на KDE (возврат фокуса и вставка); в обычной сборке меню выполняют назначения через mapper |
 | `SLINT_SHELL_OUTPUT=<имя>` | Монитор для Spell-попапов |
 | `SLINT_SHELL_METRICS=/путь.csv` | Писать CSV задержек для скриптов измерений; без переменной метрики выключены |
 | `SLINT_SHELL_SOCKET` | Имя IPC-сокета в `XDG_RUNTIME_DIR`; удобно для параллельного тестового экземпляра |
@@ -236,12 +236,15 @@ apps/slint-shell/
 ├── src/lib.rs              # роли процесса: настройки / Spell worker / CLI-клиент
 ├── src/command.rs          # типизированные команды и формат IPC
 ├── src/app/                # процесс настроек: состояние, попапы, mapper, надзор за worker
-├── src/editor.rs           # пилотный редактор клавиш
+├── src/document.rs         # единственный путь записи конфига: сохранение → mapper → обновление страниц
+├── src/pages/              # страницы окна настроек, по одному Slint-глобалу на страницу
+├── src/keyboard.rs         # сетки клавиатуры и подписи клавиш
+├── src/popup_model.rs      # данные и клавиши попапов (общие для winit и Spell)
 ├── src/spell.rs            # процесс Spell-попапов (layer-shell)
 ├── src/i18n.rs             # идентификаторы сообщений для Locale.text()
 ├── src/platform/linux/     # evdev-хоткеи, ksni-трей, Wayland activation, возврат ввода
 ├── src/platform/portable/  # Windows/macOS: global-hotkey, tray-icon, native input
-├── ui/*.slint              # компоненты; ui/i18n.slint — переводы сообщений
+├── ui/*.slint              # страницы и компоненты; ui/types.slint — перечисления; ui/i18n.slint — переводы сообщений
 ├── translations/ru/        # PO-перевод (исходные строки на английском)
 └── vendor/spell-framework/ # локальная копия Spell с патчами (см. PATCHES.md)
 ```
@@ -250,7 +253,9 @@ apps/slint-shell/
 
 - Доменная логика (конфиг, mapper, наблюдатели, пути) живёт в `lhc-core`. Оболочка только отображает её и вызывает операции.
 - Ядро уведомляет оболочки только через `lhc_core::events::bus()`. Подписка выполняется один раз при старте в `app/mapper.rs`.
-- Весь видимый пользователю текст идёт через `@tr`. Rust передаёт `Msg` → `Message { id, arg, count }`, перевод делает `Locale.text()`. Добавляя сообщение, обновите `src/i18n.rs`, `ui/i18n.slint` и `translations/ru/LC_MESSAGES/slint-shell.po`.
+- Страницы меняют конфиг только через `Document::edit`; остальные страницы обновляются подпиской `Document::subscribe`. Не держите `Document::read()` во время вызовов UI, которые могут редактировать.
+- Значения между Rust и Slint передаются перечислениями из `ui/types.slint`, а не числовыми кодами.
+- Весь видимый пользователю текст идёт через `@tr`. Rust передаёт `Msg` → `Message { id, arg, count }`, перевод делает `Locale.text()`. Добавляя сообщение, обновите `src/i18n.rs`, `ui/i18n.slint` и `translations/ru/LC_MESSAGES/slint-shell.po`; тест `every_slint_string_has_a_russian_translation` проверяет, что каждая строка `@tr` переведена.
 - Платформенные различия держатся в `src/platform/`, общий UI от ОС не зависит.
 
 ## Что зависит от окружения

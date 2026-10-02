@@ -314,6 +314,8 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let mut visible = initial;
     let mut focused: Option<Popup> = None;
     let mut last_activity = Instant::now();
+    // Navigation keys handled since the popup opened (metrics only).
+    let mut navigation_count = 0;
     if let Some(popup) = initial {
         metrics.begin(popup.name(), Source::Diagnostic.as_str(), start);
         layers.present(popup);
@@ -371,6 +373,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     {
                         probe.capture();
                     }
+                    navigation_count = 0;
                     show(&mut layers, &mut visible, &mut focused, &mut metrics, popup, page, source, start);
                 }
                 Event::Command(Command::Hide, _, _) => dismiss = visible,
@@ -418,6 +421,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 }
                 Event::Choose(_, _) => {}
                 Event::Filter => {
+                    if layers
+                        .quick
+                        .get_query()
+                        .chars()
+                        .any(|c| ('\u{0400}'..='\u{04ff}').contains(&c))
+                    {
+                        metrics.mark("quick", "filter_cyrillic");
+                    }
                     layers.filter();
                     metrics.mark("quick", "filter_changed");
                 }
@@ -430,7 +441,13 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     match outcome {
                         KeyOutcome::Dismiss => dismiss = Some(popup),
                         KeyOutcome::Choose(index) => waker.send(Event::Choose(popup, index)),
-                        KeyOutcome::Moved => metrics.mark(popup.name(), "navigation_handled"),
+                        KeyOutcome::Moved => {
+                            metrics.mark(popup.name(), "navigation_handled");
+                            navigation_count += 1;
+                            if navigation_count > 1 {
+                                metrics.mark(popup.name(), "navigation_repeated");
+                            }
+                        }
                         KeyOutcome::Ignored => {}
                     }
                 }
@@ -455,6 +472,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             && let Some(event) = probe.poll(focused.is_none())
         {
             log::info!("probe: {event}");
+            for popup in Popup::ALL {
+                metrics.mark(popup.name(), event);
+            }
         }
         if active {
             last_activity = Instant::now();
