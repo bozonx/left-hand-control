@@ -2,6 +2,7 @@
   "name": "left-hand-control",
   "version": "0.3.0",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=.env scripts/nuxt-dev.mjs",

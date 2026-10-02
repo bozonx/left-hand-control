@@ -1,13 +1,11 @@
-//! Mapper lifecycle, input-device selection, core events and keeping the
-//! loaded config in sync with changes made by other processes.
+//! Mapper lifecycle, core events and keeping the loaded configuration in
+//! sync with changes other processes make.
 
 use super::{App, post};
-use crate::{command::Source, i18n::Msg, ui::SettingsWindow};
-use lhc_core::{
-    CoreEvent, config_document::ConfigDocument, profile::auto_switch::AutoSwitchContext,
-};
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, rc::Rc, time::Instant};
+use crate::{command::Source, i18n::Msg, pages, ui::AppState};
+use lhc_core::CoreEvent;
+use slint::ComponentHandle;
+use std::time::Instant;
 
 /// Forward core events to the UI thread. Subscribed once at startup.
 pub(super) fn forward_core_events() {
@@ -27,90 +25,29 @@ pub(super) fn forward_core_events() {
         }
         CoreEvent::LayoutChanged(_)
         | CoreEvent::GameModeChanged(_)
-        | CoreEvent::ActiveWindowChanged(_) => post(|app| {
-            app.sync_runtime();
-            app.refresh_mapper_status();
-        }),
+        | CoreEvent::ActiveWindowChanged(_) => post(|app| app.context_changed()),
     });
-}
-
-/// Fill the device picker; returns device paths in picker order.
-pub(super) fn bind_devices(
-    settings: &SettingsWindow,
-    config: Option<&Rc<RefCell<ConfigDocument>>>,
-) -> Vec<String> {
-    let mut devices = lhc_core::mapper::runtime::list_keyboards().unwrap_or_else(|error| {
-        log::warn!("keyboard discovery: {error}");
-        Vec::new()
-    });
-    let saved = config.and_then(|config| config.borrow().input_device().map(str::to_owned));
-    // Keep a saved device selectable even when it is not currently readable.
-    if let Some(path) = &saved
-        && !devices.iter().any(|device| &device.path == path)
-    {
-        devices.insert(
-            0,
-            lhc_core::mapper_types::KeyboardDevice {
-                path: path.clone(),
-                name: String::new(),
-            },
-        );
-    }
-    let selected = saved
-        .and_then(|path| devices.iter().position(|device| device.path == path))
-        .map_or(-1, |index| index as i32);
-    let labels: Vec<SharedString> = devices
-        .iter()
-        .map(|device| {
-            if device.name.is_empty() {
-                device.path.as_str().into()
-            } else {
-                format!("{} · {}", device.name, device.path).into()
-            }
-        })
-        .collect();
-    settings.set_input_devices(ModelRc::new(VecModel::from(labels)));
-    settings.set_selected_device(selected);
-    devices.into_iter().map(|device| device.path).collect()
-}
-
-pub(super) fn apply_runtime(document: &ConfigDocument) -> Result<(), String> {
-    if !lhc_core::mapper::runtime::status().running {
-        return Ok(());
-    }
-    let result = document
-        .runtime_config(&AutoSwitchContext::current())
-        .map_err(|error| error.to_string())
-        .and_then(|runtime| lhc_core::mapper::runtime::update_config_if_running(&runtime.json));
-    if result.is_err() {
-        let _ = lhc_core::mapper::runtime::stop();
-    }
-    result
 }
 
 impl App {
-    pub(super) fn sync_runtime(&self) {
-        if !lhc_core::mapper::runtime::status().running {
-            *self.last_auto_layout.borrow_mut() = None;
+    /// The system context (layout, game mode, window) changed: the active
+    /// layout may differ now.
+    pub(super) fn context_changed(&self) {
+        let state = self.settings.global::<AppState>();
+        state.set_game_active(lhc_core::runtime_state::game_mode_active());
+        state.set_keyboard_language(
+            lhc_core::runtime_state::layout_short()
+                .unwrap_or_default()
+                .into(),
+        );
+        let Some(document) = &self.document else {
             return;
+        };
+        if let Err(error) = document.sync_runtime(false) {
+            self.set_error(Msg::SavedMapperNotUpdated(error));
         }
-        if let Some(document) = &self.config {
-            let document = document.borrow();
-            let result = document
-                .runtime_config(&AutoSwitchContext::current())
-                .map_err(|error| error.to_string())
-                .and_then(|runtime| {
-                    if self.last_auto_layout.borrow().as_ref() != Some(&runtime.layout_id) {
-                        lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
-                        *self.last_auto_layout.borrow_mut() = Some(runtime.layout_id);
-                    }
-                    Ok(())
-                });
-            if let Err(error) = result {
-                let _ = lhc_core::mapper::runtime::stop();
-                self.set_error(Msg::SavedMapperNotUpdated(error));
-            }
-        }
+        pages::refresh_active(&self.settings, document);
+        self.invalidate_menus();
     }
 
     pub(super) fn refresh_mapper_status(&self) {
@@ -118,30 +55,9 @@ impl App {
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_enabled(status.running);
         }
-        self.settings.set_mapper_running(status.running);
         self.settings
-            .set_game_active(lhc_core::runtime_state::game_mode_active());
-        self.settings.set_keyboard_language(
-            lhc_core::runtime_state::layout_short()
-                .unwrap_or_default()
-                .into(),
-        );
-        if let Some(config) = &self.config {
-            let document = config.borrow();
-            self.settings.set_commands_need_approval(
-                !document.layout().commands.is_empty() && !document.commands_trusted(),
-            );
-            self.settings.set_active_layout_label(
-                document
-                    .active_layout_id(&AutoSwitchContext::current())
-                    .ok()
-                    .flatten()
-                    .unwrap_or_default()
-                    .trim_start_matches("user:")
-                    .into(),
-            );
-        }
-        self.settings.invoke_refresh_layout_context();
+            .global::<AppState>()
+            .set_mapper_running(status.running);
         let current = (status.running, status.last_error.clone());
         if self.last_mapper_status.borrow().as_ref() == Some(&current) {
             return;
@@ -152,19 +68,24 @@ impl App {
         } else {
             Msg::MapperStopped(status.last_error)
         };
-        self.settings.set_status(message.to_ui());
+        self.settings.global::<AppState>().set_status(message.to_ui());
+    }
+
+    fn set_mapper_busy(&self, busy: bool) {
+        self.settings.global::<AppState>().set_mapper_busy(busy);
     }
 
     pub(super) fn toggle_mapper(&self) {
-        if self.settings.get_mapper_busy() {
+        let state = self.settings.global::<AppState>();
+        if state.get_mapper_busy() {
             return;
         }
         if lhc_core::mapper::runtime::status().running {
-            self.settings.set_mapper_busy(true);
+            self.set_mapper_busy(true);
             std::thread::spawn(|| {
                 let result = lhc_core::mapper::runtime::stop();
                 post(move |app| {
-                    app.settings.set_mapper_busy(false);
+                    app.set_mapper_busy(false);
                     if let Err(error) = result {
                         app.set_error(Msg::Error(error));
                     }
@@ -173,86 +94,77 @@ impl App {
             });
             return;
         }
-        let Some(config) = &self.config else {
+        let Some(document) = &self.document else {
             self.set_error(Msg::LoadConfigFirst);
             return;
         };
-        let config = config.borrow();
-        let Some(device) = config.input_device().map(str::to_owned) else {
+        let (device, mouse) = {
+            let config = document.read();
+            (
+                config.input_device().map(str::to_owned),
+                config.mouse_device().map(str::to_owned),
+            )
+        };
+        let Some(device) = device else {
             self.set_error(Msg::SelectInputDevice);
             return;
         };
-        let mouse = config.mouse_device().map(str::to_owned);
-        let raw = match config.runtime_config(&AutoSwitchContext::current()) {
-            Ok(runtime) => runtime.json,
+        let runtime = match document.runtime_config() {
+            Ok(runtime) => runtime,
             Err(error) => {
                 self.set_error(Msg::from(&error));
                 return;
             }
         };
-        self.settings.set_mapper_busy(true);
-        self.settings.set_status(Msg::MapperStarting.to_ui());
+        self.set_mapper_busy(true);
+        state.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {
-            let result = lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &raw);
+            let result =
+                lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &runtime.json);
             post(move |app| {
-                app.settings.set_mapper_busy(false);
-                app.set_error(result.err().map_or(Msg::None, Msg::Error));
-                *app.last_auto_layout.borrow_mut() = None;
-                app.sync_runtime();
+                app.set_mapper_busy(false);
+                match result {
+                    Ok(()) => {
+                        app.set_error(Msg::None);
+                        if let Some(document) = &app.document {
+                            document.mapper_started(runtime.layout_id);
+                            // The context may have changed while starting.
+                            if let Err(error) = document.sync_runtime(false) {
+                                app.set_error(Msg::SavedMapperNotUpdated(error));
+                            }
+                        }
+                    }
+                    Err(error) => app.set_error(Msg::Error(error)),
+                }
                 app.refresh_mapper_status();
             });
         });
     }
 
-    pub(super) fn select_device(&self, index: i32) {
-        let Some(path) = usize::try_from(index)
-            .ok()
-            .and_then(|index| self.devices.borrow().get(index).cloned())
-        else {
+    /// Pick up edits made by the Tauri shell or by hand. A file that cannot
+    /// be read right now (for example mid-write) leaves the mapper running.
+    pub(super) fn reload_config(&self) {
+        let Some(document) = &self.document else {
             return;
         };
-        let Some(config) = &self.config else {
-            return;
-        };
-        self.settings.set_keyboard_device_path(path.clone().into());
-        match config.borrow_mut().set_input_device(&path) {
-            Ok(()) => self
-                .settings
-                .set_config_status(Msg::DeviceSaved(path.clone()).to_ui()),
-            Err(error) => self.settings.set_backend_error(Msg::from(&error).to_ui()),
-        }
-    }
-
-    /// Pick up edits made by the Tauri shell or by hand while running.
-    pub(super) fn reload_config_if_changed(&self) {
-        let Some(config) = &self.config else {
-            return;
-        };
-        let mut document = config.borrow_mut();
-        match document.reload_if_changed() {
-            Ok(false) => {}
-            Ok(true) => {
-                self.editor.reload(&document);
-                let weak = self.settings.as_weak();
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(settings) = weak.upgrade() {
-                        settings.invoke_refresh_rules();
-                        settings.invoke_refresh_layers();
-                        settings.invoke_refresh_layouts();
-                        settings.global::<crate::ui::MacroEditor>().invoke_refresh();
-                    }
-                });
-                self.settings
-                    .set_config_status(Msg::ConfigReloaded(document.layout().rules.len()).to_ui());
-                if let Err(error) = apply_runtime(&document) {
+        let state = self.settings.global::<AppState>();
+        match document.reload() {
+            Ok(None) => {
+                // Readable again after a failed read.
+                if state.get_config_status().id == "config-unavailable" {
+                    state.set_config_status(Msg::None.to_ui());
+                }
+            }
+            Ok(Some(saved)) => {
+                let rules = document.read().layout().rules.len();
+                state.set_config_status(Msg::ConfigReloaded(rules).to_ui());
+                if let Err(error) = saved.runtime {
                     self.set_error(Msg::SavedMapperNotUpdated(error));
                 }
             }
             Err(error) => {
-                let _ = lhc_core::mapper::runtime::stop();
-                log::debug!("reload config: {error}");
-                self.settings
-                    .set_config_status(Msg::ConfigUnavailable(error.to_string()).to_ui());
+                log::warn!("reload config: {error}");
+                state.set_config_status(Msg::ConfigUnavailable(error.to_string()).to_ui());
             }
         }
     }

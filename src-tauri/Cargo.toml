@@ -4,6 +4,7 @@ version = "0.2.0"
 description = "Left Hand Control desktop app"
 authors = ["Ivan Kolesnikov <ivan@bozonx.com>"]
 edition.workspace = true
+license.workspace = true
 rust-version.workspace = true
 
 [lib]

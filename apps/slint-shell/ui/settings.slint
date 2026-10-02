@@ -1,165 +1,16 @@
 import { ActionPicker, PickerOverlay } from "action-picker.slint";
-import { ButtonGroup, InfoTip } from "controls.slint";
-import { MenusPage, MenuEditor } from "menus.slint";
-import { MacrosPage, MacroEditor } from "macros.slint";
-import { LayersPage, LayerKeyCell, LayerExtraRow } from "layers.slint";
+import { AppState } from "app-state.slint";
+import { KeyboardPage } from "keys.slint";
+import { LayerDialogOverlay, LayersEditor, LayersPage } from "layers.slint";
+import { LayoutLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton } from "library.slint";
+import { MacroEditor, MacrosPage } from "macros.slint";
+import { MenuEditor, MenusPage } from "menus.slint";
+import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
+import { SettingsPage } from "settings-page.slint";
 import { Theme } from "theme.slint";
-import { Locale, Message } from "i18n.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit, ComboBox, ListView, CheckBox, ScrollView, Palette } from "std-widgets.slint";
-
-export struct ActionRow { id: int, label: string, label-en: string }
-export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
-export struct RuleLayerChoice { id: string, label: string }
-export struct LayoutConditionsView { when-game: int, when-list: string, unless-game: int, unless-list: string }
-export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, conditions: string, hold-timeout: string, double-timeout: string, enabled: bool }
-component Pill inherits Rectangle {
-    in property <string> text;
-    in property <color> fill: Theme.hover;
-    height: 22px;
-    border-radius: 11px;
-    background: fill;
-    HorizontalLayout {
-        padding-left: 8px; padding-right: 8px;
-        Text { text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
-    }
-}
-
-component LayoutMenuItem inherits Rectangle {
-    in property <string> text;
-    in property <bool> enabled: true;
-    in property <bool> danger: false;
-    callback clicked();
-    height: 32px;
-    border-radius: 4px;
-    background: enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
-    accessible-role: button;
-    accessible-label: text;
-    accessible-enabled: enabled;
-    accessible-action-default => { if root.enabled { root.clicked(); } }
-    Text {
-        x: 12px; width: parent.width - 24px; height: parent.height;
-        text: root.text; color: root.danger ? Theme.error : Theme.text;
-        opacity: root.enabled ? 1 : 0.45;
-        vertical-alignment: center;
-    }
-    focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == "\n" || event.text == " " { root.clicked(); return accept; }
-            return reject;
-        }
-    }
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
-component SaveSplitButton inherits Rectangle {
-    in property <bool> enabled: true;
-    callback save();
-    callback save-as();
-    width: 64px;
-    height: 36px;
-
-    Rectangle {
-        width: 100%;
-        height: 100%;
-        border-radius: 4px;
-        border-width: 1px;
-        border-color: Theme.border;
-        background: Theme.card;
-        clip: true;
-        HorizontalLayout {
-            spacing: 0px;
-            save-btn := Rectangle {
-                horizontal-stretch: 1;
-                height: parent.height;
-                background: root.enabled && (touch-save.has-hover || focus-save.has-focus) ? Theme.hover : transparent;
-                accessible-role: button;
-                accessible-label: @tr("Save");
-                accessible-enabled: root.enabled;
-                accessible-action-default => { if root.enabled { root.save(); } }
-                Image {
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    width: 16px;
-                    height: 16px;
-                    source: @image-url("icons/save.svg");
-                    // Enabled only with unsaved edits: accent draws attention to it.
-                    colorize: root.enabled ? Palette.accent-background : Theme.muted;
-                    opacity: root.enabled ? 1.0 : 0.45;
-                }
-                focus-save := FocusScope {
-                    enabled: root.enabled;
-                    key-pressed(event) => {
-                        if event.text == "\n" || event.text == " " { root.save(); return accept; }
-                        return reject;
-                    }
-                }
-                touch-save := TouchArea {
-                    enabled: root.enabled;
-                    mouse-cursor: root.enabled ? pointer : default;
-                    clicked => { root.save(); }
-                }
-            }
-            Rectangle {
-                width: 1px;
-                height: parent.height;
-                background: Theme.border;
-            }
-            chevron-btn := Rectangle {
-                width: 26px;
-                height: parent.height;
-                background: touch-chevron.has-hover || focus-chevron.has-focus ? Theme.hover : transparent;
-                accessible-role: button;
-                accessible-label: @tr("Save as…");
-                accessible-action-default => { save-menu.show(); }
-                Image {
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    width: 12px;
-                    height: 12px;
-                    source: @image-url("icons/chevron-down.svg");
-                    colorize: Theme.text;
-                }
-                focus-chevron := FocusScope {
-                    key-pressed(event) => {
-                        if event.text == "\n" || event.text == " " { save-menu.show(); return accept; }
-                        return reject;
-                    }
-                }
-                touch-chevron := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => { save-menu.show(); }
-                }
-            }
-        }
-    }
-
-    save-menu := PopupWindow {
-        x: 0px;
-        y: parent.height + 4px;
-        width: 160px;
-        Rectangle {
-            background: Theme.card;
-            border-color: Theme.border;
-            border-width: 1px;
-            border-radius: 8px;
-            VerticalBox {
-                padding: 4px;
-                spacing: 0px;
-                LayoutMenuItem {
-                    text: @tr("Save as…");
-                    clicked => {
-                        save-menu.close();
-                        root.save-as();
-                    }
-                }
-            }
-        }
-    }
-}
+import { Locale } from "i18n.slint";
+import { LayerDialog, LibraryDialog, MenuKind, Page, RuleDialog } from "types.slint";
+import { Button, HorizontalBox, ScrollView, VerticalBox } from "std-widgets.slint";
 
 export component SettingsWindow inherits Window {
     background: Theme.surface;
@@ -169,287 +20,23 @@ export component SettingsWindow inherits Window {
     preferred-height: 760px;
     min-width: 940px;
     min-height: 700px;
-    in-out property <int> page: 1;
-    in property <bool> mapper-running;
-    in property <bool> mapper-busy;
-    in property <bool> game-active;
-    in property <string> keyboard-language;
-    in property <string> current-layout-label;
-    in-out property <string> active-layout-label;
-    in property <bool> layout-dirty;
-    in property <bool> commands-need-approval;
-    in property <bool> is-linux;
-    in-out property <string> keyboard-device-path;
-    in-out property <bool> save-as-open;
-    in-out property <string> save-as-name;
-    callback reset-layout-context();
-    callback refresh-layout-context();
-    callback save-current-layout();
-    callback save-layout-as(string);
-    public function navigate(page: int, kind: int) {
-        if page == 1 { root.refresh-layouts(); }
-        if page == 3 { root.refresh-rules(); }
-        if page == 4 { root.refresh-layers(); }
-        if page == 5 { MacroEditor.refresh(); }
-        if page == 6 { MenuEditor.open(kind); }
+    in-out property <Page> page: Page.layouts;
+
+    public function navigate(page: Page, kind: MenuKind) {
+        if page == Page.layouts { LayoutLibrary.refresh(); }
+        if page == Page.menus { MenuEditor.open(kind); }
         root.page = page;
     }
-    in property <[string]> layer-names;
-    in-out property <int> selected-layer: -1;
-    in property <string> layer-description;
-    in property <[LayerKeyCell]> layer-left-cells;
-    in property <[LayerKeyCell]> layer-right-cells;
-    in property <[LayerExtraRow]> layer-extras;
-    in property <Message> layer-status;
-    in-out property <bool> layer-dialog-open: false;
-    in-out property <int> layer-dialog-kind: 0;
-    in-out property <int> layer-dialog-index: -1;
-    in-out property <int> layer-assignment-kind: 0;
-    in-out property <string> layer-dialog-name;
-    in-out property <string> layer-dialog-description;
-    in-out property <string> layer-dialog-key;
-    in-out property <string> layer-dialog-action;
-    callback refresh-layers();
-    callback choose-layer(int);
-    callback open-layer-dialog(int, int);
-    callback apply-layer-dialog();
-    callback move-layer-extra(int, int);
-    callback remove-layer-extra(int);
-    callback update-layer-description(string);
 
-    // 1 create, 2 rename, 3 conditions, 5 delete, 7 unsaved changes
-    in-out property <int> library-dialog: 0;
-    in property <[bool]> layout-auto-included;
-    in property <[LayoutConditionsView]> layout-conditions;
-    in-out property <string> create-name;
-    in-out property <string> create-description;
-    // 0 empty, 1 author's Ivan K layout, 2 copy of `create-copy-index`
-    in-out property <int> create-source: 0;
-    in-out property <int> create-copy-index: 0;
-    in-out property <int> pending-create-source: 0;
-    in-out property <int> pending-create-copy-index: 0;
-    // What runs once unsaved changes are resolved: 1 edit selected layout, 2 open create
-    in-out property <int> pending-layout-action: 0;
-    in-out property <int> editing-description: -1;
-    in property <[string]> layout-descriptions;
-    in property <[string]> layout-names;
-    in-out property <int> selected-layout: -1;
-    in-out property <string> layout-name;
-    in-out property <string> layout-description;
-    in property <Message> layout-status;
-    in-out property <int> layout-mode-index;
-    in-out property <bool> layout-auto-enabled;
-    in-out property <int> layout-white-game;
-    in-out property <int> layout-black-game;
-    in-out property <string> layout-white-layouts;
-    in-out property <string> layout-black-layouts;
-    in-out property <string> layout-white-apps;
-    in-out property <string> layout-black-apps;
-    callback set-layout-mode(int);
-    callback library-action(int);
-    callback refresh-layouts();
-    callback select-layout(int);
-    pure callback suggest-layout-name(string) -> string;
-    // 0 valid, 1 empty, 2 invalid characters, 3 taken
-    pure callback layout-name-issue(string) -> int;
-    callback create-layout(string, string, int, int);
-    callback set-layout-description(int, string);
-    callback activate-current-layout();
-    function create-base(source: int) -> string {
-        if source == 1 { return @tr("Ivan K layout"); }
-        if source == 2 && root.create-copy-index < root.layout-names.length {
-            return @tr("{} (copy)", root.layout-names[root.create-copy-index]);
-        }
-        return @tr("New layout");
-    }
-    function proceed-open-create(source: int, copy-index: int) {
-        root.create-source = source;
-        root.create-copy-index = max(0, copy-index);
-        root.create-description = "";
-        root.create-name = root.suggest-layout-name(root.create-base(source));
-        root.library-dialog = 1;
-    }
-    public function open-create(source: int, copy-index: int) {
-        root.pending-create-source = source;
-        root.pending-create-copy-index = copy-index;
-        root.guard-layout-switch(2);
-    }
-    public function submit-create() {
-        if root.layout-name-issue(root.create-name) != 0 { return; }
-        root.create-layout(root.create-name, root.create-description, root.create-source, root.create-copy-index);
-    }
-    function continue-layout-action() {
-        let action = root.pending-layout-action;
-        root.pending-layout-action = 0;
-        if action == 1 { root.library-dialog = 0; root.load-layout(); }
-        if action == 2 {
-            root.proceed-open-create(root.pending-create-source, root.pending-create-copy-index);
-        }
-    }
-    // Replacing the working copy discards its unsaved edits, so ask first.
-    function guard-layout-switch(action: int) {
-        root.pending-layout-action = action;
-        if root.layout-dirty && !(action == 1 && root.layout-names[root.selected-layout] == root.current-layout-label) {
-            root.library-dialog = 7;
-        } else {
-            root.continue-layout-action();
-        }
-    }
-    public function save-and-continue() {
-        root.save-current-layout();
-        if !root.layout-dirty { root.continue-layout-action(); }
-    }
-    public function edit-layout(index: int) {
-        root.select-layout(index);
-        root.guard-layout-switch(1);
-    }
-    function game-text(game: int) -> string {
-        return game == 1 ? @tr("game mode on") : game == 2 ? @tr("game mode off") : "";
-    }
-    function join-summary(game: int, list: string) -> string {
-        return root.game-text(game) != "" && list != "" ? root.game-text(game) + " · " + list : root.game-text(game) + list;
-    }
-    function conditions-text(c: LayoutConditionsView) -> string {
-        let when = root.join-summary(c.when-game, c.when-list);
-        let unless = root.join-summary(c.unless-game, c.unless-list);
-        if when == "" && unless == "" { return @tr("No conditions: always matches"); }
-        if unless == "" { return @tr("When: {}", when); }
-        if when == "" { return @tr("Except: {}", unless); }
-        return @tr("When: {}", when) + " — " + @tr("Except: {}", unless);
-    }
-    callback save-layout();
-    callback load-layout();
-    callback delete-layout();
-    in property <[RuleRow]> rule-rows;
-    in-out property <int> selected-rule: -1;
-    in-out property <string> rule-key;
-    in-out property <string> rule-layer;
-    in-out property <string> new-rule-layer-name;
-    callback create-rule-layer(string);
-    in-out property <string> rule-tap;
-    in-out property <string> rule-hold;
-    in-out property <bool> rule-swallow-tap: false;
-    in-out property <bool> rule-swallow-hold: false;
-    in-out property <string> rule-double-tap;
-    in-out property <string> rule-game-mode;
-    in-out property <string> rule-layouts;
-    in-out property <string> rule-apps-include;
-    in-out property <string> rule-apps-exclude;
-    in-out property <string> rule-isolate;
-    in-out property <string> rule-hold-for;
-    in-out property <string> rule-hold-timeout;
-    in-out property <string> rule-double-timeout;
-    in-out property <bool> rule-enabled: true;
-    in property <string> rule-status;
-    callback refresh-rules();
-    callback select-rule(int);
-    callback add-rule();
-    callback remove-rule();
-    callback move-rule(int);
-    callback edit-rule(int, string);
-    in-out property <bool> rule-dialog-open: false;
-    in-out property <int> rule-dialog-field: -1;
-    in-out property <string> rule-dialog-value;
-    in-out property <string> rule-dialog-query;
-    in property <[RuleLayerChoice]> rule-layer-items;
-    callback open-rule-dialog(int, int);
-    callback choose-rule-value(string);
-    callback filter-rule-choices(string);
-    callback apply-rule-conditions();
-    in-out property <int> appearance-index: 0;
-    in-out property <int> locale-index: 0;
-    in-out property <int> tap-decision-index: 0;
-    in-out property <string> hold-timeout;
-    in-out property <string> double-tap-timeout;
-    in-out property <string> macro-pause;
-    in-out property <string> modifier-delay;
-    in-out property <bool> use-gamemoded: true;
-    in-out property <bool> use-fullscreen: false;
-    in property <[ProcessRow]> process-matchers;
-    in-out property <string> process-name;
-    in-out property <bool> process-only-active: false;
-    in-out property <bool> process-blacklist: false;
-    in-out property <int> selected-process: -1;
-    in-out property <int> text-mode-index: 0;
-    in-out property <string> ydotool-path;
-    in-out property <string> xdotool-path;
-    in-out property <string> mouse-device-path;
-    in property <[string]> mouse-devices;
-    in property <[string]> mouse-paths;
-    in-out property <int> selected-mouse: 0;
-    in property <string> settings-dir;
-    in property <string> layouts-dir;
-    in property <string> platform-summary;
-    in property <Message> settings-message;
-    callback save-settings();
-    callback settings-saved(bool, bool);
-    callback refresh-devices();
-    callback add-process();
-    callback select-process(int);
-    callback update-process();
-    callback delete-process();
-    in property <[string]> keys;
-    in property <[string]> assignments;
-    in property <[ActionRow]> actions;
-    in-out property <int> selected-key: -1;
-    in-out property <bool> editing: false;
-    in-out property <int> kind: 0;
-    in-out property <string> value;
-    in-out property <string> query;
-    in-out property <int> category: 0;
-    in-out property <int> selected-action: -1;
-    in-out property <bool> capturing: false;
-    in-out property <length> catalog-scroll-y;
-    in property <Message> validation;
-    in property <Message> status;
-    in property <Message> backend-error;
-    in property <Message> config-status;
-    in property <[string]> input-devices;
-    in-out property <int> selected-device: -1;
-    callback select-device(int);
-    callback show-popup(string);
-    callback toggle-mapper();
-    callback edit-key(int);
-    callback change-kind(int);
-    callback validate();
-    callback filter();
-    callback pick-action(int);
-    callback navigate-action(int);
-    callback capture(string, bool, bool, bool, bool);
-    callback save();
-    callback cancel();
-    callback preferences(bool, bool);
-    public function focus-editor() { modal-focus.focus(); }
-    public function restore-focus() { keyboard-focus.focus(); }
-    public function begin-capture() { root.capturing = true; capture-scope.focus(); }
+    property <bool> modal-open: ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none
+        || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none;
+    property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings && !LayoutLibrary.automatic
+        && LayoutLibrary.current-label != "" && LayoutLibrary.current-label != LayoutLibrary.active-label;
 
-    path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    public function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); }
-    capture-scope := FocusScope {
+    FocusScope {
         focus-on-tab-navigation: false;
-        height: 0px;
-        key-pressed(event) => {
-            if root.capturing {
-                root.capture(event.text, event.modifiers.control, event.modifiers.alt, event.modifiers.shift, event.modifiers.meta);
-                return accept;
-            }
-            return reject;
-        }
-        key-released(event) => { if !root.capturing { modal-focus.focus(); } return accept; }
-    }
-    keyboard-focus := FocusScope {
-        enabled: !ActionPicker.opened && !root.editing && root.page == 0;
-        key-pressed(event) => {
-            if event.text == Key.Return { root.edit-key(max(0, root.selected-key)); ActionPicker.open(6, 0, root.kind == 0 ? "text:" + root.value : root.value, false); return accept; }
-            if event.text == Key.RightArrow { root.selected-key = mod(root.selected-key + 1, 80); return accept; }
-            if event.text == Key.LeftArrow { root.selected-key = mod(root.selected-key + 79, 80); return accept; }
-            return reject;
-        }
-    }
-    background-scope := FocusScope {
-        focus-on-tab-navigation: false;
-        enabled: !ActionPicker.opened && !root.editing && !root.rule-dialog-open && !root.layer-dialog-open && !root.save-as-open && root.library-dialog == 0;
-        if !root.editing: VerticalBox {
+        enabled: !root.modal-open;
+        VerticalBox {
             padding: 0px;
             spacing: 0px;
             Rectangle {
@@ -457,13 +44,17 @@ export component SettingsWindow inherits Window {
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
-                    Button { text: @tr("Layouts"); primary: root.page == 1; clicked => { root.navigate(1, 0); } }
+                    Button { text: @tr("Layouts"); primary: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } }
                     Rectangle { horizontal-stretch: 1; }
-                    Button { text: root.mapper-busy ? @tr("Please wait…") : root.mapper-running ? @tr("Stop") : @tr("Start"); enabled: !root.mapper-busy && (root.mapper-running || root.keyboard-device-path != ""); clicked => { root.toggle-mapper(); } }
-                    Text { text: root.active-layout-label; color: root.mapper-running ? Theme.text : Theme.muted; min-width: 0px; preferred-width: 100px; max-width: 140px; overflow: elide; vertical-alignment: center; }
-                    Text { text: root.keyboard-language; color: Theme.text; vertical-alignment: center; }
-                    Text { text: @tr("Game mode"); color: root.game-active ? Theme.error : Theme.muted; vertical-alignment: center; }
-                    Button { text: @tr("Settings"); primary: root.page == 2; clicked => { root.navigate(2, 0); } }
+                    Button {
+                        text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Stop") : @tr("Start");
+                        enabled: !AppState.mapper-busy;
+                        clicked => { AppState.toggle-mapper(); }
+                    }
+                    Text { text: LayoutLibrary.active-label; color: AppState.mapper-running ? Theme.text : Theme.muted; min-width: 0px; preferred-width: 100px; max-width: 140px; overflow: elide; vertical-alignment: center; }
+                    Text { text: AppState.keyboard-language; color: Theme.text; vertical-alignment: center; }
+                    Text { text: @tr("Game mode"); color: AppState.game-active ? Theme.error : Theme.muted; vertical-alignment: center; }
+                    Button { text: @tr("Settings"); primary: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } }
                 }
             }
             Rectangle { height: 1px; background: Theme.border; }
@@ -471,11 +62,11 @@ export component SettingsWindow inherits Window {
                 height: 52px;
                 HorizontalLayout {
                     padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
-                    Text { text: root.current-layout-label == "" ? @tr("Custom layout") : root.current-layout-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
+                    Text { text: LayoutLibrary.current-label == "" ? @tr("Custom layout") : LayoutLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
                     SaveSplitButton {
-                        enabled: root.layout-dirty;
-                        save => { root.save-current-layout(); }
-                        save-as => { root.save-as-name = ""; root.save-as-open = true; }
+                        enabled: LayoutLibrary.dirty;
+                        save => { LayoutLibrary.save-current(); }
+                        save-as => { LayoutLibrary.save-as-name = ""; LayoutLibrary.save-as-open = true; }
                     }
                     ScrollView {
                         horizontal-stretch: 1;
@@ -483,728 +74,57 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: 6px;
-                    Button { text: @tr("Rules"); primary: root.page == 3; clicked => { root.navigate(3, 0); } }
-                    Button { text: @tr("Keyboard"); primary: root.page == 0 || root.page == 4; clicked => { root.navigate(4, 0); } }
-                    Button { text: @tr("Macros"); primary: root.page == 5; clicked => { root.navigate(5, 0); } }
-                    Button { text: @tr("Quick actions"); primary: root.page == 6 && MenuEditor.kind == 1; clicked => { root.navigate(6, 1); } }
-                    Button { text: @tr("Emoji"); primary: root.page == 6 && MenuEditor.kind == 0; clicked => { root.navigate(6, 0); } }
-                    Button { text: @tr("Commands") + (root.commands-need-approval ? " •" : ""); primary: root.page == 6 && MenuEditor.kind == 2; clicked => { root.navigate(6, 2); } }
+                            Button { text: @tr("Rules"); primary: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            Button { text: @tr("Keyboard"); primary: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                            Button { text: @tr("Macros"); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            Button { text: @tr("Quick actions"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            Button { text: @tr("Emoji"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            Button { text: @tr("Commands") + (AppState.commands-need-approval ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
                         }
                     }
                 }
             }
             Rectangle { height: 1px; background: Theme.border; }
-            if root.page != 1 && root.page != 2 && root.layout-mode-index == 0 && root.current-layout-label != "" && root.current-layout-label != root.active-layout-label: Rectangle {
+            if root.show-active-banner: Rectangle {
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: 16px; padding-right: 16px; padding-top: 6px; padding-bottom: 6px; spacing: 8px;
                     Text {
-                        text: root.active-layout-label == ""
-                            ? @tr("You are editing “{}”; no layout is active.", root.current-layout-label)
-                            : @tr("You are editing “{}”, but “{}” is active.", root.current-layout-label, root.active-layout-label);
+                        text: LayoutLibrary.active-label == ""
+                            ? @tr("You are editing “{}”; no layout is active.", LayoutLibrary.current-label)
+                            : @tr("You are editing “{}”, but “{}” is active.", LayoutLibrary.current-label, LayoutLibrary.active-label);
                         color: Theme.muted; vertical-alignment: center; overflow: elide; horizontal-stretch: 1;
                     }
-                    Button { text: @tr("Make active"); clicked => { root.activate-current-layout(); } }
+                    Button { text: @tr("Make active"); clicked => { LayoutLibrary.activate-current(); } }
                 }
             }
-            if root.page != 1 && root.page != 2 && root.layout-mode-index == 0 && root.current-layout-label != "" && root.current-layout-label != root.active-layout-label: Rectangle { height: 1px; background: Theme.border; }
+            if root.show-active-banner: Rectangle { height: 1px; background: Theme.border; }
             VerticalLayout {
-            vertical-stretch: 1;
-            padding-top: 20px; padding-bottom: 20px;
-            padding-left: root.page == 2 ? max(20px, (root.width - 1040px) / 2) : 20px;
-            padding-right: root.page == 2 ? max(20px, (root.width - 1040px) / 2) : 20px;
-            spacing: 12px;
-            if root.page == 0 || root.page == 4: HorizontalLayout {
-                spacing: 8px;
-                Button { text: @tr("Base keyboard"); primary: root.page == 0; clicked => { root.page = 0; } }
-                Button { text: @tr("Layers"); primary: root.page == 4; clicked => { root.navigate(4, 0); } }
-                Rectangle { horizontal-stretch: 1; }
-            }
-            if root.page == 6: MenusPage {}
-            if root.page == 5: MacrosPage {}
-            if root.page == 0: VerticalBox {
-                spacing: 8px;
-                Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: 26px; font-weight: 700; }
-                Text { color: Theme.muted; text: @tr("Select a key to assign an action."); }
-
-            }
-            if root.page == 1: VerticalBox {
-                spacing: 12px;
-                HorizontalLayout {
-                    vertical-stretch: 0;
-                    spacing: 32px;
-                    VerticalLayout {
-                        spacing: 8px;
-                        HorizontalLayout {
-                            spacing: 6px; alignment: start;
-                            Text { text: @tr("Layout mode"); color: Theme.text; vertical-alignment: center; }
-                            InfoTip {
-                                text: @tr("Manual: the layout you make active works everywhere.") + "\n\n"
-                                    + @tr("Automatic: the first included layout whose conditions match is used. Order sets priority.");
-                            }
-                        }
-                        HorizontalLayout {
-                            alignment: start;
-                            ButtonGroup {
-                                labels: [@tr("Manual"), @tr("Automatic")];
-                                selected-index: root.layout-mode-index;
-                                selected(index) => { if root.layout-mode-index != index { root.set-layout-mode(index); } }
-                            }
-                        }
-                    }
-                    Rectangle { horizontal-stretch: 1; }
-                    VerticalLayout {
-                        spacing: 8px;
-                        Text { text: @tr("Create layout"); color: Theme.text; horizontal-alignment: right; }
-                        HorizontalLayout {
-                            spacing: 8px; alignment: end;
-                            Button { text: @tr("Empty"); clicked => { root.open-create(0, 0); } }
-                            Button { text: @tr("Based on Ivan K layout"); clicked => { root.open-create(1, 0); } }
-                        }
-                    }
-                }
-                if root.layout-names.length == 0: Rectangle {
-                    vertical-stretch: 1;
-                    VerticalLayout {
-                        alignment: center; spacing: 12px;
-                        Text { text: @tr("No layouts yet"); color: Theme.text; font-size: 20px; font-weight: 600; horizontal-alignment: center; }
-                        Text { text: @tr("Start from the author's Ivan K layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
-                        HorizontalLayout { alignment: center; spacing: 8px;
-                            Button { text: @tr("Create empty"); clicked => { root.open-create(0, 0); } }
-                            Button { text: @tr("Based on Ivan K layout"); primary: true; clicked => { root.open-create(1, 0); } }
-                        }
-                    }
-                }
-                if root.layout-names.length > 0: ListView {
-                    vertical-stretch: 1;
-                    for name[index] in root.layout-names: card := Rectangle {
-                        property <bool> active: root.active-layout-label == name;
-                        property <bool> current: root.current-layout-label == name;
-                        property <bool> auto: root.layout-mode-index == 1;
-                        height: self.auto ? 118px : 96px;
-                        Rectangle {
-                        height: parent.height - 10px; width: parent.width;
-                        background: Theme.card;
-                        border-radius: 8px;
-                        border-width: card.active ? 2px : 1px;
-                        border-color: card.active ? Theme.accent : Theme.border;
-                        TouchArea { double-clicked => { root.edit-layout(index); } }
-                        HorizontalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 12px;
-                            if card.auto: VerticalLayout { alignment: center; spacing: 0px; width: 36px;
-                                Button { text: "▲"; height: 26px; enabled: index > 0; clicked => { root.select-layout(index); root.library-action(1); } }
-                                Text { text: "#" + (index + 1); color: Theme.muted; horizontal-alignment: center; font-size: 12px; }
-                                Button { text: "▼"; height: 26px; enabled: index + 1 < root.layout-names.length; clicked => { root.select-layout(index); root.library-action(2); } }
-                            }
-                            VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 6px;
-                                HorizontalLayout { spacing: 8px;
-                                    Text { text: name; color: Theme.text; font-size: 17px; font-weight: 600; overflow: elide; min-width: 0px; vertical-alignment: center; }
-                                    if card.active: Pill { text: @tr("Active"); fill: Theme.accent; }
-                                    if card.current: Pill { text: root.layout-dirty ? @tr("Editing · unsaved") : @tr("Editing"); }
-                                    Rectangle { horizontal-stretch: 1; }
-                                }
-                                if root.editing-description == index: LineEdit {
-                                    text: root.layout-descriptions[index];
-                                    placeholder-text: @tr("Description");
-                                    init => { self.focus(); self.select-all(); }
-                                    accepted(value) => { root.editing-description = -1; root.set-layout-description(index, value); }
-                                    changed has-focus => {
-                                        if !self.has-focus && root.editing-description == index {
-                                            root.editing-description = -1;
-                                            if self.text != root.layout-descriptions[index] { root.set-layout-description(index, self.text); }
-                                        }
-                                    }
-                                }
-                                if root.editing-description != index: Rectangle {
-                                    height: 22px;
-                                    description-text := Text {
-                                        x: 0px; width: parent.width;
-                                        text: root.layout-descriptions[index] != "" ? root.layout-descriptions[index] : @tr("Add a description…");
-                                        color: Theme.muted; overflow: elide; vertical-alignment: center;
-                                        opacity: root.layout-descriptions[index] != "" ? 1 : 0.7;
-                                        font-italic: root.layout-descriptions[index] == "";
-                                    }
-                                    TouchArea {
-                                        mouse-cursor: text;
-                                        clicked => { root.editing-description = index; }
-                                    }
-                                }
-                                if card.auto: Text {
-                                    text: root.layout-auto-included[index] ? root.conditions-text(root.layout-conditions[index]) : @tr("Not used in automatic mode");
-                                    color: Theme.muted; font-size: 12px; overflow: elide;
-                                }
-                            }
-                            VerticalLayout { alignment: center;
-                            HorizontalLayout { spacing: 8px;
-                                if card.auto: Button { text: @tr("Conditions…"); clicked => { root.select-layout(index); root.library-dialog = 3; } }
-                                if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { root.select-layout(index); root.library-action(0); } }
-                                Button { text: @tr("Edit layout"); primary: card.current; clicked => { root.edit-layout(index); } }
-                                Rectangle {
-                                    width: 44px; height: 36px;
-                                    Button {
-                                        width: parent.width; height: parent.height; text: "…";
-                                        clicked => { root.select-layout(index); more-menu.show(); }
-                                    }
-                                    more-menu := PopupWindow {
-                                        x: parent.width - self.width; y: parent.height;
-                                        width: 240px;
-                                        Rectangle {
-                                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                                            VerticalBox { padding: 4px; spacing: 0px;
-                                                LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); root.open-create(2, index); } }
-                                                LayoutMenuItem { text: @tr("Rename…"); clicked => { more-menu.close(); root.library-dialog = 2; } }
-                                                Rectangle { height: 1px; background: Theme.border; }
-                                                LayoutMenuItem { text: @tr("Delete…"); danger: true; clicked => { more-menu.close(); root.library-dialog = 5; } }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            }
-                        }
-                        }
-                    }
-                }
-                if root.library-dialog == 0 && root.layout-status.id != "": Text { text: Locale.text(root.layout-status); color: Theme.muted; wrap: word-wrap; }
-            }
-            if root.page == 2: VerticalBox {
-                spacing: 10px;
-                Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
-                ScrollView {
-                    viewport-width: self.visible-width;
-                    vertical-stretch: 1;
-                    VerticalLayout {
-                        spacing: 12px;
-                        Rectangle {
-                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                            VerticalBox { padding: 16px; spacing: 10px;
-                                Text { text: @tr("Mapper"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                                Text { text: root.mapper-busy ? @tr("Please wait…") : root.mapper-running ? @tr("Running") : @tr("Stopped"); color: Theme.muted; wrap: word-wrap; }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    Text { text: @tr("Keyboard device"); color: Theme.text; vertical-alignment: center; }
-                                    ComboBox { enabled: !root.mapper-running; horizontal-stretch: 1; model: root.input-devices; current-index: root.selected-device; selected(value) => { root.select-device(self.current-index); } }
-                                    Button { text: @tr("Refresh devices"); clicked => { root.refresh-devices(); } }
-                                    Button { text: root.mapper-running ? @tr("Stop") : @tr("Start"); enabled: !root.mapper-busy; clicked => { root.toggle-mapper(); } }
-                                }
-                                LineEdit { enabled: !root.mapper-running; text <=> root.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    Text { text: @tr("Mouse device path"); color: Theme.text; vertical-alignment: center; }
-                                    ComboBox { enabled: !root.mapper-running; model: root.mouse-devices; current-index <=> root.selected-mouse; selected(value) => { root.mouse-device-path = root.mouse-paths[self.current-index]; } }
-                                    LineEdit { enabled: !root.mapper-running; text <=> root.mouse-device-path; placeholder-text: @tr("Optional device path"); }
-                                }
-                            }
-                        }
-                        Rectangle {
-                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                            VerticalBox { padding: 16px; spacing: 10px;
-                                Text { text: @tr("General"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    Text { text: @tr("Appearance"); color: Theme.text; vertical-alignment: center; }
-                                    ComboBox { model: [@tr("System"), @tr("Light"), @tr("Dark")]; current-index <=> root.appearance-index; }
-                                    Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
-                                    ComboBox { model: [@tr("Automatic"), "English", "Русский"]; current-index <=> root.locale-index; }
-                                }
-
-                            }
-                        }
-                        Rectangle {
-                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                            VerticalBox { padding: 16px; spacing: 10px;
-                                Text { text: @tr("Key behavior"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    Text { text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
-                                    ComboBox { model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index <=> root.tap-decision-index; }
-                                }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    Text { text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> root.hold-timeout; }
-                                    Text { text: @tr("Double tap timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> root.double-tap-timeout; }
-                                }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    Text { text: @tr("Macro step pause (ms)"); color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> root.macro-pause; }
-                                    Text { text: @tr("Modifier delay (ms)"); color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> root.modifier-delay; }
-                                }
-                            }
-                        }
-                        Rectangle {
-                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                            VerticalBox { padding: 16px; spacing: 10px;
-                                Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    CheckBox { text: @tr("Use GameMode daemon"); checked <=> root.use-gamemoded; }
-                                    CheckBox { text: @tr("Detect fullscreen"); checked <=> root.use-fullscreen; }
-                                }
-                                Text { text: @tr("Process rules"); color: Theme.text; font-weight: 600; }
-                                for item[index] in root.process-matchers: Rectangle {
-                                    height: 30px; background: root.selected-process == index ? Theme.accent : Theme.card;
-                                    Text { x: 8px; text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: Theme.text; vertical-alignment: center; }
-                                    TouchArea { clicked => { root.select-process(index); } }
-                                }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    LineEdit { text <=> root.process-name; placeholder-text: @tr("Process name"); }
-                                    CheckBox { text: @tr("Active window only"); checked <=> root.process-only-active; }
-                                    CheckBox { text: @tr("Exclude"); checked <=> root.process-blacklist; }
-                                }
-                                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                                    Button { text: @tr("Add process"); clicked => { root.add-process(); } }
-                                    Button { text: @tr("Update selected"); enabled: root.selected-process >= 0; clicked => { root.update-process(); } }
-                                    Button { text: @tr("Remove selected"); enabled: root.selected-process >= 0; clicked => { root.delete-process(); } }
-                                }
-                            }
-                        }
-                        if root.is-linux: Rectangle {
-                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                            VerticalBox { padding: 16px; spacing: 10px;
-                                Text { text: @tr("Linux text injection"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                                ComboBox { model: ["libei", "libei-pure", "keycode", "clipboard", "ydotool", "xdotool"]; current-index <=> root.text-mode-index; }
-                                if root.text-mode-index == 4: LineEdit { text <=> root.ydotool-path; placeholder-text: @tr("ydotool path"); }
-                                if root.text-mode-index == 5: LineEdit { text <=> root.xdotool-path; placeholder-text: @tr("xdotool path"); }
-                            }
-                        }
-                        Rectangle {
-                            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                            VerticalBox { padding: 16px; spacing: 8px;
-                                Text { text: @tr("Configuration and system"); color: Theme.text; font-size: 18px; font-weight: 600; }
-                                Text { text: root.platform-summary; color: Theme.muted; }
-                                HorizontalBox { vertical-stretch: 0;
-                                    Text { text: @tr("Settings directory: ") + root.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                                    Button { text: @tr("Copy path"); clicked => { root.copy-path(root.settings-dir); } }
-                                }
-                                HorizontalBox { vertical-stretch: 0;
-                                    Text { text: @tr("Layouts directory: ") + root.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                                    Button { text: @tr("Copy path"); clicked => { root.copy-path(root.layouts-dir); } }
-                                }
-                            }
-                        }
-                    }
-                }
-                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                    Text { text: Locale.text(root.settings-message); color: Theme.muted; vertical-alignment: center; }
-                    Rectangle { horizontal-stretch: 1; }
-                    Button { text: @tr("Save settings"); clicked => { root.save-settings(); } }
-                }
-            }
-            if root.page == 3: VerticalBox {
                 vertical-stretch: 1;
+                padding-top: 20px; padding-bottom: 20px;
+                padding-left: 20px;
+                padding-right: 20px;
                 spacing: 12px;
-                HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                    VerticalBox { spacing: 2px;
-                        Text { text: @tr("Rules and triggers"); color: Theme.text; font-size: 22px; font-weight: 700; }
-                        Text { text: @tr("Define how physical keys activate layers or run actions."); color: Theme.muted; }
-                    }
+                if root.page == Page.keyboard || root.page == Page.layers: HorizontalLayout {
+                    spacing: 8px;
+                    Button { text: @tr("Base keyboard"); primary: root.page == Page.keyboard; clicked => { root.navigate(Page.keyboard, MenuKind.emoji); } }
+                    Button { text: @tr("Layers"); primary: root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
                     Rectangle { horizontal-stretch: 1; }
-                    Button { max-height: 36px; text: @tr("+ Add rule"); clicked => { root.add-rule(); } }
                 }
-                ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                    VerticalLayout { spacing: 10px;
-                        for rule[index] in root.rule-rows: Rectangle {
-                            min-height: 300px;
-                            background: Theme.card;
-                            border-color: root.selected-rule == index ? Theme.accent : Theme.border;
-                            border-width: 1px;
-                            border-radius: 10px;
-                            VerticalBox { padding: 14px; spacing: 10px;
-                                HorizontalBox { vertical-stretch: 0; spacing: 12px;
-                                    VerticalBox { spacing: 5px; horizontal-stretch: 1;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Trigger key"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.key == "" ? @tr("Not set") : rule.key; clicked => { root.open-rule-dialog(index, 1); } }
-                                    }
-                                    VerticalBox { spacing: 5px; horizontal-stretch: 1;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Conditions"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.conditions == "" ? @tr("Not set") : rule.conditions; clicked => { root.open-rule-dialog(index, 6); } }
-                                    }
-                                    VerticalBox { spacing: 5px; horizontal-stretch: 1;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Layer (hold)"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.layer == "" ? @tr("Not set") : rule.layer; clicked => { root.open-rule-dialog(index, 2); } }
-                                    }
-                                    VerticalBox { spacing: 5px; width: 160px;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Hold timeout, ms"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.hold-timeout == "" ? @tr("Default") : rule.hold-timeout; clicked => { root.open-rule-dialog(index, 12); } }
-                                    }
-                                }
-                                Rectangle { height: 1px; background: Theme.border; }
-                                HorizontalBox { vertical-stretch: 0; spacing: 12px;
-                                    VerticalBox { spacing: 5px; horizontal-stretch: 1;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Tap action"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.tap == "" ? @tr("Not set") : rule.tap; clicked => { root.open-rule-dialog(index, 3); } }
-                                    }
-                                    VerticalBox { spacing: 5px; horizontal-stretch: 1;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Double-tap action"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.double-tap == "" ? @tr("Not set") : rule.double-tap; clicked => { root.open-rule-dialog(index, 5); } }
-                                    }
-                                    VerticalBox { spacing: 5px; horizontal-stretch: 1;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Hold button"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.hold == "" ? @tr("Not set") : rule.hold; clicked => { root.open-rule-dialog(index, 4); } }
-                                    }
-                                    VerticalBox { spacing: 5px; width: 160px;
-                                        Text { min-width: 0px; wrap: word-wrap; text: @tr("Double-tap ms"); color: Theme.muted; }
-                                        Button { min-width: 0px; text: rule.double-timeout == "" ? @tr("Default") : rule.double-timeout; clicked => { root.open-rule-dialog(index, 13); } }
-                                    }
-                                }
-                                HorizontalBox { vertical-stretch: 0; spacing: 7px;
-                                    CheckBox { text: @tr("Enabled"); checked: rule.enabled; toggled => { root.select-rule(index); root.edit-rule(0, self.checked ? "true" : "false"); } }
-                                    Rectangle { horizontal-stretch: 1; }
-                                    Button { text: @tr("↑"); clicked => { root.select-rule(index); root.move-rule(-1); } }
-                                    Button { text: @tr("↓"); clicked => { root.select-rule(index); root.move-rule(1); } }
-                                    Button { text: @tr("Advanced"); clicked => { root.open-rule-dialog(index, 16); } }
-                                    Button { text: @tr("Remove"); clicked => { root.open-rule-dialog(index, 17); } }
-                                }
-                            }
-                        }
-                    }
-                }
-                Text { text: root.rule-status; color: Theme.muted; wrap: word-wrap; }
-            }
-            if root.page == 4: VerticalLayout {
-                vertical-stretch: 1;
-                spacing: 10px;
-                LayersPage {
-                    layer-names: root.layer-names;
-                    selected-layer: root.selected-layer;
-                    layer-description: root.layer-description;
-                    left-cells: root.layer-left-cells;
-                    right-cells: root.layer-right-cells;
-                    extras: root.layer-extras;
-                    open-dialog(kind, index) => { root.open-layer-dialog(kind, index); }
-                    choose-layer(index) => { root.choose-layer(index); }
-                    update-description(text) => { root.update-layer-description(text); }
-                    move-extra(index, direction) => { root.move-layer-extra(index, direction); }
-                    remove-extra(index) => { root.remove-layer-extra(index); }
-                }
-                if Locale.text(root.layer-status) != "": Text { text: Locale.text(root.layer-status); color: Theme.muted; wrap: word-wrap; }
-            }
-            if root.page == 0: VerticalLayout {
-                spacing: 6px;
-                for row in 5: HorizontalLayout {
-                    spacing: 5px;
-                    for col in 16: Rectangle {
-                        height: 66px; min-width: 0px; horizontal-stretch: 1;
-                        border-radius: 6px;
-                        border-width: root.selected-key == row * 16 + col ? 2px : 1px;
-                        border-color: root.selected-key == row * 16 + col ? Theme.accent : Theme.border;
-                        background: key-touch.has-hover ? Theme.hover : Theme.card;
-                        VerticalLayout {
-                            padding: 5px;
-                            Text { min-width: 0px; overflow: elide; text: root.keys[row * 16 + col]; color: Theme.text; font-size: 12px; }
-                            Text { min-width: 0px; text: root.assignments[row * 16 + col]; color: Theme.muted; font-size: 10px; overflow: elide; }
-                        }
-                        key-touch := TouchArea { clicked => { root.edit-key(row * 16 + col); ActionPicker.open(6, 0, root.kind == 0 ? "text:" + root.value : root.kind == 1 ? "pause:" + root.value : root.value, false); } }
-                    }
-                }
-            }
-            if root.page == 0: Rectangle { vertical-stretch: 1; }
-            if root.config-status.id == "config-unavailable": Text { text: Locale.text(root.config-status); color: Theme.error; wrap: word-wrap; }
-            if root.backend-error.id != "": Text { text: Locale.text(root.backend-error); color: Theme.error; wrap: word-wrap; }
+                if root.page == Page.keyboard: KeyboardPage {}
+                if root.page == Page.layouts: LibraryPage {}
+                if root.page == Page.settings: HorizontalLayout { alignment: center; SettingsPage { preferred-width: 1000px; max-width: 1000px; } }
+                if root.page == Page.rules: RulesPage {}
+                if root.page == Page.layers: LayersPage {}
+                if root.page == Page.macros: MacrosPage {}
+                if root.page == Page.menus: MenusPage {}
+                if AppState.config-status.id == "config-unavailable": Text { text: Locale.text(AppState.config-status); color: Theme.error; wrap: word-wrap; }
+                if AppState.backend-error.id != "": Text { text: Locale.text(AppState.backend-error); color: Theme.error; wrap: word-wrap; }
             }
         }
     }
-    if root.library-dialog > 0: Rectangle {
-        background: #00000099;
-        TouchArea { }
-        FocusScope {
-            focus-on-tab-navigation: false;
-            key-pressed(event) => {
-                if event.text == Key.Escape {
-                    root.library-dialog = 0;
-                    root.pending-layout-action = 0;
-                    return accept;
-                }
-                return reject;
-            }
-        Rectangle {
-            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-            width: 620px;
-            height: root.library-dialog == 3 ? 620px : root.library-dialog == 1 ? 420px : root.library-dialog == 7 ? 210px : root.library-dialog == 5 ? 260px : 320px;
-            background: Theme.card; border-radius: 12px;
-            VerticalBox { padding: 24px; spacing: 12px;
-                Text {
-                    text: root.library-dialog == 1 ? @tr("New layout")
-                        : root.library-dialog == 3 ? @tr("Conditions…")
-                        : root.library-dialog == 5 ? @tr("Delete layout?")
-                        : root.library-dialog == 7 ? @tr("Unsaved changes")
-                        : @tr("Layout details");
-                    color: Theme.text; font-size: 22px;
-                }
-                if root.library-dialog == 2 || root.library-dialog == 3 || root.library-dialog == 5: Text { text: root.layout-names[root.selected-layout]; color: Theme.muted; }
-                if root.library-dialog == 1: VerticalBox { padding: 0px; spacing: 10px;
-                    Text { text: @tr("Name"); color: Theme.text; }
-                    create-name-edit := LineEdit {
-                        text <=> root.create-name;
-                        placeholder-text: @tr("New layout name");
-                        init => { self.focus(); self.select-all(); }
-                        accepted => { root.submit-create(); }
-                    }
-                    if root.layout-name-issue(root.create-name) > 1: Text {
-                        text: root.layout-name-issue(root.create-name) == 3 ? @tr("A layout with this name already exists.") : @tr("The name contains characters that cannot be used in a file name.");
-                        color: Theme.error; wrap: word-wrap;
-                    }
-                    Text { text: @tr("Description (optional)"); color: Theme.text; }
-                    TextEdit { text <=> root.create-description; height: 120px; }
-                }
-                if root.library-dialog == 2: LineEdit { text <=> root.layout-name; placeholder-text: @tr("New layout name"); }
-                if root.library-dialog == 2: LineEdit { text <=> root.layout-description; placeholder-text: @tr("Description"); }
-                if root.library-dialog == 3: VerticalBox {
-                    CheckBox { text: @tr("Include in automatic mode"); checked <=> root.layout-auto-enabled; }
-                    Text { text: @tr("Use when"); color: Theme.text; }
-                    ComboBox { model: [@tr("Any game mode"), @tr("Game mode on"), @tr("Game mode off")]; current-index <=> root.layout-white-game; }
-                    LineEdit { text <=> root.layout-white-layouts; placeholder-text: @tr("System layouts (comma separated)"); }
-                    LineEdit { text <=> root.layout-white-apps; placeholder-text: @tr("Applications (comma separated)"); }
-                    Text { text: @tr("Do not use when"); color: Theme.text; }
-                    ComboBox { model: [@tr("Any game mode"), @tr("Game mode on"), @tr("Game mode off")]; current-index <=> root.layout-black-game; }
-                    LineEdit { text <=> root.layout-black-layouts; placeholder-text: @tr("System layouts (comma separated)"); }
-                    LineEdit { text <=> root.layout-black-apps; placeholder-text: @tr("Applications (comma separated)"); }
-                    Text { text: @tr("Empty conditions impose no restrictions. Exclusions take priority."); color: Theme.muted; wrap: word-wrap; }
-                }
-                if root.library-dialog == 5: Text { text: @tr("The layout file will be deleted. This cannot be undone."); color: Theme.text; wrap: word-wrap; }
-                if root.library-dialog == 7: Text {
-                    text: root.current-layout-label == ""
-                        ? @tr("The layout you are editing has not been saved to the library. Its changes will be lost.")
-                        : @tr("“{}” has unsaved changes. Save them before switching?", root.current-layout-label);
-                    color: Theme.text; wrap: word-wrap;
-                }
-                Text { text: Locale.text(root.layout-status); color: root.layout-status.id == "library-saved" ? Theme.muted : Theme.error; wrap: word-wrap; }
-                Rectangle { vertical-stretch: 1; }
-                HorizontalBox {
-                    Rectangle { horizontal-stretch: 1; }
-                    Button {
-                        text: @tr("Cancel");
-                        clicked => {
-                            root.library-dialog = 0;
-                            root.pending-layout-action = 0;
-                        }
-                    }
-                    if root.library-dialog == 1: Button { text: @tr("Create"); primary: true; enabled: root.layout-name-issue(root.create-name) == 0; clicked => { root.submit-create(); } }
-                    if root.library-dialog == 2 || root.library-dialog == 3: Button { text: @tr("Save"); primary: true; clicked => { root.library-action(root.library-dialog == 2 ? 4 : 3); } }
-                    if root.library-dialog == 5: Button { text: @tr("Delete"); clicked => { root.delete-layout(); } }
-                    if root.library-dialog == 7: Button { text: @tr("Discard changes"); clicked => { root.continue-layout-action(); } }
-                    if root.library-dialog == 7 && root.current-layout-label != "": Button {
-                        text: @tr("Save and continue"); primary: true;
-                        clicked => { root.save-and-continue(); }
-                    }
-                }
-            }
-        }
-        }
-    }
-    if root.save-as-open: Rectangle {
-        background: #00000099;
-        TouchArea { }
-        Rectangle {
-            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-            width: 480px; height: 220px; background: Theme.card; border-radius: 12px;
-            VerticalBox {
-                padding: 24px; spacing: 12px;
-                Text { text: @tr("Save layout as…"); color: Theme.text; font-size: 22px; }
-                LineEdit { text <=> root.save-as-name; placeholder-text: @tr("New layout name"); accepted => { root.save-layout-as(root.save-as-name); } }
-                Text { text: Locale.text(root.layout-status); color: Theme.error; wrap: word-wrap; }
-                HorizontalBox { vertical-stretch: 0;
-                    Rectangle { horizontal-stretch: 1; }
-                    Button { text: @tr("Cancel"); clicked => { root.save-as-open = false; } }
-                    Button { text: @tr("Save"); enabled: root.save-as-name != ""; clicked => { root.save-layout-as(root.save-as-name); } }
-                }
-            }
-        }
-    }
-    modal-focus := FocusScope {
-        focus-on-tab-navigation: false;
-        enabled: root.editing && !ActionPicker.opened;
-        key-pressed(event) => {
-            if root.capturing { return reject; }
-            if event.text == Key.Escape { root.cancel(); return accept; }
-            if event.text == Key.Return && root.validation.id == "" { root.save(); return accept; }
-            return reject;
-        }
-        if root.editing: Rectangle {
-            background: #00000099;
-            TouchArea { }
-            Rectangle {
-                x: 32px; y: 24px;
-                width: parent.width - 64px; height: parent.height - 48px;
-                background: Theme.surface;
-                border-radius: 12px;
-                VerticalBox {
-                    padding: 24px; spacing: 12px;
-                    Text { text: @tr("Key «") + root.keys[root.selected-key] + "»"; color: Theme.text; font-size: 24px; }
-                    Text { text: @tr("Draft — saving applies the action to this key only"); color: Theme.muted; }
-                    ComboBox {
-                        enabled: !root.capturing;
-                        model: [@tr("Text"), @tr("System action"), @tr("Action or keyboard shortcut")];
-                        current-index: root.kind == 0 ? 0 : root.kind == 2 ? 1 : 2;
-                        selected(value) => { root.change-kind(self.current-index == 0 ? 0 : self.current-index == 1 ? 2 : 3); }
-                    }
-                    if root.kind == 0 || root.kind == 1: LineEdit {
-                        text <=> root.value;
-                        placeholder-text: root.kind == 0 ? @tr("Enter text, for example Привет 👋") : @tr("Integer from 1 to 10000");
-                        edited => { root.validate(); }
-                        accepted => { if !root.capturing && root.validation.id == "" { root.save(); } }
-                    }
-                    if root.kind == 2: ComboBox {
-                        model: [@tr("Copy"), @tr("Paste"), @tr("Next window")];
-                        current-index: root.value == "Ctrl+KeyV" ? 1 : root.value == "Alt+Tab" ? 2 : 0;
-                        selected(value) => { root.value = self.current-index == 0 ? "Ctrl+KeyC" : self.current-index == 1 ? "Ctrl+KeyV" : "Alt+Tab"; root.validate(); }
-                    }
-                    if root.kind == 3: HorizontalBox { vertical-stretch: 0;
-                        LineEdit { text <=> root.value; placeholder-text: @tr("Action code; empty passes the key through"); edited => { root.validate(); } }
-                        Button {
-                            text: root.capturing ? @tr("Press a shortcut…") : @tr("Capture shortcut");
-                            clicked => { root.begin-capture(); }
-                        }
-                        Button { text: @tr("Stop capture"); enabled: root.capturing; clicked => { root.capturing = false; } }
-                    }
-                    Text { text: Locale.text(root.validation); color: Theme.error; height: 22px; }
-                    HorizontalBox { vertical-stretch: 0;
-                        LineEdit { enabled: !root.capturing; text <=> root.query; placeholder-text: @tr("Search actions…"); edited => { root.filter(); } }
-                        ComboBox {
-                            enabled: !root.capturing;
-                            model: [@tr("All categories"), @tr("Text"), @tr("Delay"), @tr("System"), @tr("Shortcuts")];
-                            current-index <=> root.category;
-                            selected(value) => { root.filter(); }
-                        }
-                    }
-                    Text { text: @tr("Found: ") + root.actions.length + @tr(" · select an entry to fill the draft"); color: Theme.muted; }
-                    catalog-keys := FocusScope {
-                        enabled: !root.capturing;
-                        vertical-stretch: 1;
-                        min-height: 100px;
-                        key-pressed(event) => {
-                            if event.text == Key.UpArrow { root.navigate-action(-1); return accept; }
-                            if event.text == Key.DownArrow { root.navigate-action(1); return accept; }
-                            return reject;
-                        }
-                        ListView {
-                            vertical-stretch: 1;
-                            enabled: !root.capturing;
-                            viewport-width: self.visible-width;
-                            viewport-y <=> root.catalog-scroll-y;
-                            for action in root.actions: Rectangle {
-                                height: 36px;
-                                background: root.selected-action == action.id ? Theme.accent : action-touch.has-hover ? Theme.hover : Theme.card;
-                                Text { x: 12px; text: Locale.english ? action.label-en : action.label; color: Theme.text; vertical-alignment: center; }
-                                action-touch := TouchArea { clicked => { root.pick-action(action.id); catalog-keys.focus(); } }
-                            }
-                        }
-                    }
-                    HorizontalBox { vertical-stretch: 0;
-                        Button { text: @tr("Choose action"); clicked => { ActionPicker.open(1, 0, root.kind == 0 ? "text:" + root.value : root.kind == 1 ? "pause:" + root.value : root.value, false); } }
-                        Button { text: @tr("Clear assignment"); clicked => { root.change-kind(3); root.value = ""; root.save(); } }
-                        Rectangle { horizontal-stretch: 1; }
-                        Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
-                        Button { text: @tr("Save"); enabled: root.validation.id == "" && !root.capturing; clicked => { root.save(); } }
-                    }
-                }
-            }
-        }
-    }
-    rule-dialog-scope := FocusScope {
-        focus-on-tab-navigation: false;
-        enabled: root.rule-dialog-open && !ActionPicker.opened;
-        key-pressed(event) => { if event.text == Key.Escape { root.rule-dialog-open = false; return accept; } return reject; }
-        if root.rule-dialog-open: Rectangle {
-            background: #00000099;
-            TouchArea { clicked => { root.rule-dialog-open = false; } }
-            Rectangle {
-                x: (parent.width - self.width) / 2;
-                y: 32px;
-                width: min(parent.width - 64px, 700px);
-                height: min(parent.height - 64px, 620px);
-                background: Theme.surface;
-                border-color: Theme.border;
-                border-width: 1px;
-                border-radius: 12px;
-                VerticalBox { padding: 22px; spacing: 10px;
-                    Text { text: root.rule-dialog-field == 1 ? @tr("Choose trigger key") : root.rule-dialog-field == 2 ? @tr("Choose layer") : root.rule-dialog-field == 6 ? @tr("Conditions") : root.rule-dialog-field == 16 ? @tr("Advanced rule options") : root.rule-dialog-field == 17 ? @tr("Delete rule?") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
-                    if root.rule-dialog-field == 2: VerticalBox {
-                        spacing: 8px;
-                        LineEdit { text <=> root.rule-dialog-value; placeholder-text: root.rule-dialog-field == 1 ? @tr("Search or enter a key code") : @tr("Search or enter an action"); edited => { root.filter-rule-choices(root.rule-dialog-value); } }
-                        if root.rule-dialog-field == 2: ListView { vertical-stretch: 1;
-                            for item in root.rule-layer-items: Rectangle { height: 36px; background: layer-touch.has-hover ? Theme.hover : Theme.card;
-                                Text { x: 10px; text: item.label; color: Theme.text; vertical-alignment: center; }
-                                layer-touch := TouchArea { clicked => { root.choose-rule-value(item.id); } }
-                            }
-                        }
-                        if root.rule-dialog-field == 2: HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                            LineEdit { text <=> root.new-rule-layer-name; placeholder-text: @tr("New layer name"); }
-                            Button { text: @tr("Create layer"); clicked => { root.create-rule-layer(root.new-rule-layer-name); root.rule-dialog-open = false; } }
-                        }
-                    }
-                    if root.rule-dialog-field == 6: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                        VerticalLayout { spacing: 8px;
-                            Text { text: @tr("Game mode"); color: Theme.text; }
-                            ComboBox { model: [@tr("Ignore"), @tr("On"), @tr("Off")]; current-index: root.rule-game-mode == "on" ? 1 : root.rule-game-mode == "off" ? 2 : 0; selected(value) => { root.rule-game-mode = self.current-index == 1 ? "on" : self.current-index == 2 ? "off" : ""; } }
-                            Text { text: @tr("Layout conditions (comma separated)"); color: Theme.text; }
-                            LineEdit { text <=> root.rule-layouts; }
-                            Text { text: @tr("App whitelist (comma separated)"); color: Theme.text; }
-                            LineEdit { text <=> root.rule-apps-include; }
-                            Text { text: @tr("App blacklist (comma separated)"); color: Theme.text; }
-                            LineEdit { text <=> root.rule-apps-exclude; }
-                        }
-                    }
-                    if root.rule-dialog-field == 16: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                        VerticalLayout { spacing: 8px;
-                            CheckBox { text: @tr("Swallow tap"); checked <=> root.rule-swallow-tap; toggled => { root.edit-rule(14, self.checked ? "true" : "false"); } }
-                            CheckBox { text: @tr("Swallow hold"); checked <=> root.rule-swallow-hold; toggled => { root.edit-rule(15, self.checked ? "true" : "false"); } }
-                            Text { text: @tr("Isolate"); color: Theme.text; }
-                            LineEdit { text <=> root.rule-isolate; edited => { root.edit-rule(10, root.rule-isolate); } }
-                            Text { text: @tr("Hold for"); color: Theme.text; }
-                            LineEdit { text <=> root.rule-hold-for; edited => { root.edit-rule(11, root.rule-hold-for); } }
-                        }
-                    }
-                    if root.rule-dialog-field == 17: Text { text: @tr("This rule will be removed from the current layout."); color: Theme.muted; }
-                    if root.rule-dialog-field == 12 || root.rule-dialog-field == 13: LineEdit { text <=> root.rule-dialog-value; placeholder-text: @tr("Milliseconds; empty uses default"); }
-                    Rectangle { vertical-stretch: 1; }
-                    HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                        Button { text: @tr("Clear"); enabled: root.rule-dialog-field != 16 && root.rule-dialog-field != 6 && root.rule-dialog-field != 17; clicked => { root.choose-rule-value(""); } }
-                        Rectangle { horizontal-stretch: 1; }
-                        Button { text: @tr("Cancel"); clicked => { root.rule-dialog-open = false; root.refresh-rules(); } }
-                        Button { text: @tr("Apply"); clicked => { if root.rule-dialog-field == 6 { root.apply-rule-conditions(); } else if root.rule-dialog-field == 17 { root.remove-rule(); root.rule-dialog-open = false; } else if root.rule-dialog-field == 16 { root.rule-dialog-open = false; } else { root.choose-rule-value(root.rule-dialog-value); } } }
-                    }
-                }
-            }
-        }
-    }
-
-    layer-dialog-scope := FocusScope {
-        focus-on-tab-navigation: false;
-        enabled: root.layer-dialog-open && !ActionPicker.opened;
-        key-pressed(event) => { if event.text == Key.Escape { root.layer-dialog-open = false; return accept; } return reject; }
-        if root.layer-dialog-open: Rectangle {
-            background: #00000099;
-            TouchArea { clicked => { root.layer-dialog-open = false; } }
-            Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: 12px;
-                VerticalBox { padding: 20px; spacing: 12px;
-                    Text { text: root.layer-dialog-kind == 1 ? @tr("New layer") : root.layer-dialog-kind == 2 ? @tr("Rename layer") : root.layer-dialog-kind == 3 ? @tr("Duplicate layer") : root.layer-dialog-kind == 4 ? @tr("Delete layer?") : root.layer-dialog-kind == 5 ? @tr("Edit layer key") : root.layer-dialog-kind == 6 ? @tr("Extra key") : @tr("Clear assignments?"); color: Theme.text; font-size: 22px; font-weight: 700; }
-                    if root.layer-dialog-kind == 1 || root.layer-dialog-kind == 2 || root.layer-dialog-kind == 3: VerticalBox { spacing: 8px;
-                        Text { text: @tr("Name"); color: Theme.text; }
-                        LineEdit { text <=> root.layer-dialog-name; }
-                        Text { text: @tr("Description"); color: Theme.text; }
-                        LineEdit { text <=> root.layer-dialog-description; }
-                    }
-                    if root.layer-dialog-kind == 4: Text { text: @tr("Rules using this layer will return to the base layer."); color: Theme.muted; wrap: word-wrap; }
-                    if root.layer-dialog-kind == 5 || root.layer-dialog-kind == 6: VerticalBox { spacing: 8px;
-                        if root.layer-dialog-kind == 6: Text { text: @tr("Key code"); color: Theme.text; }
-                        if root.layer-dialog-kind == 6: HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                            LineEdit { text <=> root.layer-dialog-key; horizontal-stretch: 1; }
-                            Button { text: @tr("Choose trigger key"); clicked => { ActionPicker.open(4, 0, root.layer-dialog-key, true); } }
-                        }
-                        ComboBox { model: root.layer-dialog-kind == 6 ? [@tr("Native"), @tr("Swallow"), @tr("Action")] : [@tr("Transparent"), @tr("Swallow"), @tr("Action")]; current-index <=> root.layer-assignment-kind; }
-                        if root.layer-assignment-kind == 2: HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                            LineEdit { text <=> root.layer-dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
-                            Button { text: @tr("Choose action"); clicked => { ActionPicker.open(5, 0, root.layer-dialog-action, false); } }
-                        }
-                    }
-                    Text { text: Locale.text(root.layer-status); color: Theme.error; wrap: word-wrap; }
-                    Rectangle { vertical-stretch: 1; }
-                    HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                        Rectangle { horizontal-stretch: 1; }
-                        Button { text: @tr("Cancel"); clicked => { root.layer-dialog-open = false; } }
-                        Button { text: root.layer-dialog-kind == 4 ? @tr("Delete") : @tr("Apply"); clicked => { root.apply-layer-dialog(); } }
-                    }
-                }
-            }
-        }
-    }
-
+    LibraryDialogOverlay {}
+    RuleDialogOverlay {}
+    LayerDialogOverlay {}
     if ActionPicker.opened: PickerOverlay {}
 }

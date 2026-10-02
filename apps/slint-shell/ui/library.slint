@@ -1,0 +1,530 @@
+import { ButtonGroup, InfoTip } from "controls.slint";
+import { Theme } from "theme.slint";
+import { Locale, Message } from "i18n.slint";
+import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, NameIssue, PendingLayoutAction } from "types.slint";
+import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, ListView, Palette, TextEdit, VerticalBox } from "std-widgets.slint";
+
+export struct LayoutConditionsView { when-game: GameCondition, when-list: string, unless-game: GameCondition, unless-list: string }
+
+/// The layout library and the working copy being edited.
+export global LayoutLibrary {
+    in property <[string]> names;
+    in property <[string]> descriptions;
+    in property <[bool]> auto-included;
+    in property <[LayoutConditionsView]> conditions;
+    in-out property <int> selected: -1;
+    in property <Message> status;
+    in-out property <bool> automatic;
+    /// Fields of the selected layout (details and conditions dialogs).
+    in-out property <string> name;
+    in-out property <string> description;
+    in-out property <bool> auto-enabled;
+    in-out property <GameCondition> white-game;
+    in-out property <GameCondition> black-game;
+    in-out property <string> white-layouts;
+    in-out property <string> black-layouts;
+    in-out property <string> white-apps;
+    in-out property <string> black-apps;
+    in-out property <LibraryDialog> dialog: LibraryDialog.none;
+    in-out property <string> create-name;
+    in-out property <string> create-description;
+    in-out property <LayoutSource> create-source: LayoutSource.empty;
+    in-out property <int> create-copy-index: 0;
+    in-out property <LayoutSource> pending-create-source: LayoutSource.empty;
+    in-out property <int> pending-create-copy-index: 0;
+    in-out property <PendingLayoutAction> pending-action: PendingLayoutAction.none;
+    in-out property <int> editing-description: -1;
+    /// Working copy: the library layout it came from and whether it changed.
+    in property <string> current-label;
+    in-out property <string> active-label;
+    in property <bool> dirty;
+    in-out property <bool> save-as-open;
+    in-out property <string> save-as-name;
+
+    callback refresh();
+    callback select(int);
+    callback set-automatic(bool);
+    callback action(LibraryAction);
+    pure callback suggest-name(string) -> string;
+    pure callback name-issue(string) -> NameIssue;
+    callback create(string, string, LayoutSource, int);
+    callback set-description(int, string);
+    callback activate-current();
+    /// Replace the working copy with the selected layout.
+    callback load();
+    callback delete();
+    /// Remember the library file of the working copy as its saved state.
+    callback reset-context();
+    /// Recompute `current-label` and `dirty`.
+    callback refresh-context();
+    callback save-current();
+    callback save-as(string);
+
+    pure function create-base(source: LayoutSource) -> string {
+        if source == LayoutSource.author { return @tr("Ivan K layout"); }
+        if source == LayoutSource.copy && self.create-copy-index < self.names.length {
+            return @tr("{} (copy)", self.names[self.create-copy-index]);
+        }
+        return @tr("New layout");
+    }
+    function proceed-open-create(source: LayoutSource, copy-index: int) {
+        self.create-source = source;
+        self.create-copy-index = max(0, copy-index);
+        self.create-description = "";
+        self.create-name = self.suggest-name(self.create-base(source));
+        self.dialog = LibraryDialog.create;
+    }
+    public function open-create(source: LayoutSource, copy-index: int) {
+        self.pending-create-source = source;
+        self.pending-create-copy-index = copy-index;
+        self.guard-switch(PendingLayoutAction.create);
+    }
+    public function submit-create() {
+        if self.name-issue(self.create-name) != NameIssue.ok { return; }
+        self.create(self.create-name, self.create-description, self.create-source, self.create-copy-index);
+    }
+    public function continue-pending() {
+        let action = self.pending-action;
+        self.pending-action = PendingLayoutAction.none;
+        if action == PendingLayoutAction.edit { self.dialog = LibraryDialog.none; self.load(); }
+        if action == PendingLayoutAction.create {
+            self.proceed-open-create(self.pending-create-source, self.pending-create-copy-index);
+        }
+    }
+    // Replacing the working copy discards its unsaved edits, so ask first.
+    function guard-switch(action: PendingLayoutAction) {
+        self.pending-action = action;
+        if self.dirty && !(action == PendingLayoutAction.edit && self.names[self.selected] == self.current-label) {
+            self.dialog = LibraryDialog.unsaved;
+        } else {
+            self.continue-pending();
+        }
+    }
+    public function save-and-continue() {
+        self.save-current();
+        if !self.dirty { self.continue-pending(); }
+    }
+    public function edit(index: int) {
+        self.select(index);
+        self.guard-switch(PendingLayoutAction.edit);
+    }
+    public function cancel-dialog() {
+        self.dialog = LibraryDialog.none;
+        self.pending-action = PendingLayoutAction.none;
+    }
+    pure function game-text(game: GameCondition) -> string {
+        return game == GameCondition.on ? @tr("game mode on") : game == GameCondition.off ? @tr("game mode off") : "";
+    }
+    pure function join-summary(game: GameCondition, list: string) -> string {
+        return self.game-text(game) != "" && list != "" ? self.game-text(game) + " · " + list : self.game-text(game) + list;
+    }
+    public pure function conditions-text(c: LayoutConditionsView) -> string {
+        let when = self.join-summary(c.when-game, c.when-list);
+        let unless = self.join-summary(c.unless-game, c.unless-list);
+        if when == "" && unless == "" { return @tr("No conditions: always matches"); }
+        if unless == "" { return @tr("When: {}", when); }
+        if when == "" { return @tr("Except: {}", unless); }
+        return @tr("When: {}", when) + " — " + @tr("Except: {}", unless);
+    }
+}
+
+component Pill inherits Rectangle {
+    in property <string> text;
+    in property <color> fill: Theme.hover;
+    height: 22px;
+    border-radius: 11px;
+    background: fill;
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 8px;
+        Text { text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+    }
+}
+
+component LayoutMenuItem inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <bool> danger: false;
+    callback clicked();
+    height: 32px;
+    border-radius: 4px;
+    background: enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
+    accessible-role: button;
+    accessible-label: text;
+    accessible-enabled: enabled;
+    accessible-action-default => { if root.enabled { root.clicked(); } }
+    Text {
+        x: 12px; width: parent.width - 24px; height: parent.height;
+        text: root.text; color: root.danger ? Theme.error : Theme.text;
+        opacity: root.enabled ? 1 : 0.45;
+        vertical-alignment: center;
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == "\n" || event.text == " " { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component SaveSplitButton inherits Rectangle {
+    in property <bool> enabled: true;
+    callback save();
+    callback save-as();
+    width: 64px;
+    height: 36px;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: 4px;
+        border-width: 1px;
+        border-color: Theme.border;
+        background: Theme.card;
+        clip: true;
+        HorizontalLayout {
+            spacing: 0px;
+            save-btn := Rectangle {
+                horizontal-stretch: 1;
+                height: parent.height;
+                background: root.enabled && (touch-save.has-hover || focus-save.has-focus) ? Theme.hover : transparent;
+                accessible-role: button;
+                accessible-label: @tr("Save");
+                accessible-enabled: root.enabled;
+                accessible-action-default => { if root.enabled { root.save(); } }
+                Image {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: 16px;
+                    height: 16px;
+                    source: @image-url("icons/save.svg");
+                    // Enabled only with unsaved edits: accent draws attention to it.
+                    colorize: root.enabled ? Palette.accent-background : Theme.muted;
+                    opacity: root.enabled ? 1.0 : 0.45;
+                }
+                focus-save := FocusScope {
+                    enabled: root.enabled;
+                    key-pressed(event) => {
+                        if event.text == "\n" || event.text == " " { root.save(); return accept; }
+                        return reject;
+                    }
+                }
+                touch-save := TouchArea {
+                    enabled: root.enabled;
+                    mouse-cursor: root.enabled ? pointer : default;
+                    clicked => { root.save(); }
+                }
+            }
+            Rectangle {
+                width: 1px;
+                height: parent.height;
+                background: Theme.border;
+            }
+            chevron-btn := Rectangle {
+                width: 26px;
+                height: parent.height;
+                background: touch-chevron.has-hover || focus-chevron.has-focus ? Theme.hover : transparent;
+                accessible-role: button;
+                accessible-label: @tr("Save as…");
+                accessible-action-default => { save-menu.show(); }
+                Image {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: 12px;
+                    height: 12px;
+                    source: @image-url("icons/chevron-down.svg");
+                    colorize: Theme.text;
+                }
+                focus-chevron := FocusScope {
+                    key-pressed(event) => {
+                        if event.text == "\n" || event.text == " " { save-menu.show(); return accept; }
+                        return reject;
+                    }
+                }
+                touch-chevron := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { save-menu.show(); }
+                }
+            }
+        }
+    }
+
+    save-menu := PopupWindow {
+        x: 0px;
+        y: parent.height + 4px;
+        width: 160px;
+        Rectangle {
+            background: Theme.card;
+            border-color: Theme.border;
+            border-width: 1px;
+            border-radius: 8px;
+            VerticalBox {
+                padding: 4px;
+                spacing: 0px;
+                LayoutMenuItem {
+                    text: @tr("Save as…");
+                    clicked => {
+                        save-menu.close();
+                        root.save-as();
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component LibraryPage inherits VerticalBox {
+    spacing: 12px;
+    HorizontalLayout {
+        vertical-stretch: 0;
+        spacing: 32px;
+        VerticalLayout {
+            spacing: 8px;
+            HorizontalLayout {
+                spacing: 6px; alignment: start;
+                Text { text: @tr("Layout mode"); color: Theme.text; vertical-alignment: center; }
+                InfoTip {
+                    text: @tr("Manual: the layout you make active works everywhere.") + "\n\n"
+                        + @tr("Automatic: the first included layout whose conditions match is used. Order sets priority.");
+                }
+            }
+            HorizontalLayout {
+                alignment: start;
+                ButtonGroup {
+                    labels: [@tr("Manual"), @tr("Automatic")];
+                    selected-index: LayoutLibrary.automatic ? 1 : 0;
+                    selected(index) => { if (index == 1) != LayoutLibrary.automatic { LayoutLibrary.set-automatic(index == 1); } }
+                }
+            }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        VerticalLayout {
+            spacing: 8px;
+            Text { text: @tr("Create layout"); color: Theme.text; horizontal-alignment: right; }
+            HorizontalLayout {
+                spacing: 8px; alignment: end;
+                Button { text: @tr("Empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+                Button { text: @tr("Based on Ivan K layout"); clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+            }
+        }
+    }
+    if LayoutLibrary.names.length == 0: Rectangle {
+        vertical-stretch: 1;
+        VerticalLayout {
+            alignment: center; spacing: 12px;
+            Text { text: @tr("No layouts yet"); color: Theme.text; font-size: 20px; font-weight: 600; horizontal-alignment: center; }
+            Text { text: @tr("Start from the author's Ivan K layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
+            HorizontalLayout { alignment: center; spacing: 8px;
+                Button { text: @tr("Create empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+                Button { text: @tr("Based on Ivan K layout"); primary: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+            }
+        }
+    }
+    if LayoutLibrary.names.length > 0: ListView {
+        vertical-stretch: 1;
+        for name[index] in LayoutLibrary.names: card := Rectangle {
+            property <bool> active: LayoutLibrary.active-label == name;
+            property <bool> current: LayoutLibrary.current-label == name;
+            property <bool> auto: LayoutLibrary.automatic;
+            height: self.auto ? 118px : 96px;
+            Rectangle {
+            height: parent.height - 10px; width: parent.width;
+            background: Theme.card;
+            border-radius: 8px;
+            border-width: card.active ? 2px : 1px;
+            border-color: card.active ? Theme.accent : Theme.border;
+            TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
+            HorizontalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 12px;
+                if card.auto: VerticalLayout { alignment: center; spacing: 0px; width: 36px;
+                    Button { text: "▲"; height: 26px; enabled: index > 0; clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.move-up); } }
+                    Text { text: "#" + (index + 1); color: Theme.muted; horizontal-alignment: center; font-size: 12px; }
+                    Button { text: "▼"; height: 26px; enabled: index + 1 < LayoutLibrary.names.length; clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.move-down); } }
+                }
+                VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 6px;
+                    HorizontalLayout { spacing: 8px;
+                        Text { text: name; color: Theme.text; font-size: 17px; font-weight: 600; overflow: elide; min-width: 0px; vertical-alignment: center; }
+                        if card.active: Pill { text: @tr("Active"); fill: Theme.accent; }
+                        if card.current: Pill { text: LayoutLibrary.dirty ? @tr("Editing · unsaved") : @tr("Editing"); }
+                        Rectangle { horizontal-stretch: 1; }
+                    }
+                    if LayoutLibrary.editing-description == index: LineEdit {
+                        text: LayoutLibrary.descriptions[index];
+                        placeholder-text: @tr("Description");
+                        init => { self.focus(); self.select-all(); }
+                        accepted(value) => { LayoutLibrary.editing-description = -1; LayoutLibrary.set-description(index, value); }
+                        changed has-focus => {
+                            if !self.has-focus && LayoutLibrary.editing-description == index {
+                                LayoutLibrary.editing-description = -1;
+                                if self.text != LayoutLibrary.descriptions[index] { LayoutLibrary.set-description(index, self.text); }
+                            }
+                        }
+                    }
+                    if LayoutLibrary.editing-description != index: Rectangle {
+                        height: 22px;
+                        Text {
+                            x: 0px; width: parent.width;
+                            text: LayoutLibrary.descriptions[index] != "" ? LayoutLibrary.descriptions[index] : @tr("Add a description…");
+                            color: Theme.muted; overflow: elide; vertical-alignment: center;
+                            opacity: LayoutLibrary.descriptions[index] != "" ? 1 : 0.7;
+                            font-italic: LayoutLibrary.descriptions[index] == "";
+                        }
+                        TouchArea {
+                            mouse-cursor: text;
+                            clicked => { LayoutLibrary.editing-description = index; }
+                        }
+                    }
+                    if card.auto: Text {
+                        text: LayoutLibrary.auto-included[index] ? LayoutLibrary.conditions-text(LayoutLibrary.conditions[index]) : @tr("Not used in automatic mode");
+                        color: Theme.muted; font-size: 12px; overflow: elide;
+                    }
+                }
+                VerticalLayout { alignment: center;
+                HorizontalLayout { spacing: 8px;
+                    if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); LayoutLibrary.dialog = LibraryDialog.conditions; } }
+                    if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
+                    Button { text: @tr("Edit layout"); primary: card.current; clicked => { LayoutLibrary.edit(index); } }
+                    Rectangle {
+                        width: 44px; height: 36px;
+                        Button {
+                            width: parent.width; height: parent.height; text: "…";
+                            clicked => { LayoutLibrary.select(index); more-menu.show(); }
+                        }
+                        more-menu := PopupWindow {
+                            x: parent.width - self.width; y: parent.height;
+                            width: 240px;
+                            Rectangle {
+                                background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                                VerticalBox { padding: 4px; spacing: 0px;
+                                    LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
+                                    LayoutMenuItem { text: @tr("Rename…"); clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.details; } }
+                                    Rectangle { height: 1px; background: Theme.border; }
+                                    LayoutMenuItem { text: @tr("Delete…"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+            }
+            }
+        }
+    }
+    if LayoutLibrary.dialog == LibraryDialog.none && LayoutLibrary.status.id != "": Text { text: Locale.text(LayoutLibrary.status); color: Theme.muted; wrap: word-wrap; }
+}
+
+component GameConditionBox inherits ComboBox {
+    in-out property <GameCondition> value;
+    model: [@tr("Any game mode"), @tr("Game mode on"), @tr("Game mode off")];
+    current-index: root.value == GameCondition.on ? 1 : root.value == GameCondition.off ? 2 : 0;
+    selected(text) => { root.value = self.current-index == 1 ? GameCondition.on : self.current-index == 2 ? GameCondition.off : GameCondition.any; }
+}
+
+export component LibraryDialogOverlay inherits Rectangle {
+    if LayoutLibrary.dialog != LibraryDialog.none: Rectangle {
+        background: #00000099;
+        TouchArea { }
+        FocusScope {
+            focus-on-tab-navigation: false;
+            key-pressed(event) => {
+                if event.text == Key.Escape { LayoutLibrary.cancel-dialog(); return accept; }
+                return reject;
+            }
+        Rectangle {
+            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+            width: 620px;
+            height: LayoutLibrary.dialog == LibraryDialog.conditions ? 620px
+                : LayoutLibrary.dialog == LibraryDialog.create ? 420px
+                : LayoutLibrary.dialog == LibraryDialog.unsaved ? 210px
+                : LayoutLibrary.dialog == LibraryDialog.delete ? 260px : 320px;
+            background: Theme.card; border-radius: 12px;
+            VerticalBox { padding: 24px; spacing: 12px;
+                Text {
+                    text: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
+                        : LayoutLibrary.dialog == LibraryDialog.conditions ? @tr("Conditions…")
+                        : LayoutLibrary.dialog == LibraryDialog.delete ? @tr("Delete layout?")
+                        : LayoutLibrary.dialog == LibraryDialog.unsaved ? @tr("Unsaved changes")
+                        : @tr("Layout details");
+                    color: Theme.text; font-size: 22px;
+                }
+                if (LayoutLibrary.dialog == LibraryDialog.details || LayoutLibrary.dialog == LibraryDialog.conditions || LayoutLibrary.dialog == LibraryDialog.delete) && LayoutLibrary.selected >= 0: Text {
+                    text: LayoutLibrary.names[LayoutLibrary.selected]; color: Theme.muted;
+                }
+                if LayoutLibrary.dialog == LibraryDialog.create: VerticalBox { padding: 0px; spacing: 10px;
+                    Text { text: @tr("Name"); color: Theme.text; }
+                    LineEdit {
+                        text <=> LayoutLibrary.create-name;
+                        placeholder-text: @tr("New layout name");
+                        init => { self.focus(); self.select-all(); }
+                        accepted => { LayoutLibrary.submit-create(); }
+                    }
+                    if LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.taken || LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.invalid: Text {
+                        text: LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.taken ? @tr("A layout with this name already exists.") : @tr("The name contains characters that cannot be used in a file name.");
+                        color: Theme.error; wrap: word-wrap;
+                    }
+                    Text { text: @tr("Description (optional)"); color: Theme.text; }
+                    TextEdit { text <=> LayoutLibrary.create-description; height: 120px; }
+                }
+                if LayoutLibrary.dialog == LibraryDialog.details: LineEdit { text <=> LayoutLibrary.name; placeholder-text: @tr("New layout name"); }
+                if LayoutLibrary.dialog == LibraryDialog.details: LineEdit { text <=> LayoutLibrary.description; placeholder-text: @tr("Description"); }
+                if LayoutLibrary.dialog == LibraryDialog.conditions: VerticalBox {
+                    CheckBox { text: @tr("Include in automatic mode"); checked <=> LayoutLibrary.auto-enabled; }
+                    Text { text: @tr("Use when"); color: Theme.text; }
+                    GameConditionBox { value <=> LayoutLibrary.white-game; }
+                    LineEdit { text <=> LayoutLibrary.white-layouts; placeholder-text: @tr("System layouts (comma separated)"); }
+                    LineEdit { text <=> LayoutLibrary.white-apps; placeholder-text: @tr("Applications (comma separated)"); }
+                    Text { text: @tr("Do not use when"); color: Theme.text; }
+                    GameConditionBox { value <=> LayoutLibrary.black-game; }
+                    LineEdit { text <=> LayoutLibrary.black-layouts; placeholder-text: @tr("System layouts (comma separated)"); }
+                    LineEdit { text <=> LayoutLibrary.black-apps; placeholder-text: @tr("Applications (comma separated)"); }
+                    Text { text: @tr("Empty conditions impose no restrictions. Exclusions take priority."); color: Theme.muted; wrap: word-wrap; }
+                }
+                if LayoutLibrary.dialog == LibraryDialog.delete: Text { text: @tr("The layout file will be deleted. This cannot be undone."); color: Theme.text; wrap: word-wrap; }
+                if LayoutLibrary.dialog == LibraryDialog.unsaved: Text {
+                    text: LayoutLibrary.current-label == ""
+                        ? @tr("The layout you are editing has not been saved to the library. Its changes will be lost.")
+                        : @tr("“{}” has unsaved changes. Save them before switching?", LayoutLibrary.current-label);
+                    color: Theme.text; wrap: word-wrap;
+                }
+                Text { text: Locale.text(LayoutLibrary.status); color: LayoutLibrary.status.id == "library-saved" ? Theme.muted : Theme.error; wrap: word-wrap; }
+                Rectangle { vertical-stretch: 1; }
+                HorizontalBox {
+                    Rectangle { horizontal-stretch: 1; }
+                    Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
+                    if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.ok; clicked => { LayoutLibrary.submit-create(); } }
+                    if LayoutLibrary.dialog == LibraryDialog.details: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.action(LibraryAction.save-details); } }
+                    if LayoutLibrary.dialog == LibraryDialog.conditions: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.action(LibraryAction.save-conditions); } }
+                    if LayoutLibrary.dialog == LibraryDialog.delete: Button { text: @tr("Delete"); clicked => { LayoutLibrary.delete(); } }
+                    if LayoutLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { LayoutLibrary.continue-pending(); } }
+                    if LayoutLibrary.dialog == LibraryDialog.unsaved && LayoutLibrary.current-label != "": Button {
+                        text: @tr("Save and continue"); primary: true;
+                        clicked => { LayoutLibrary.save-and-continue(); }
+                    }
+                }
+            }
+        }
+        }
+    }
+    if LayoutLibrary.save-as-open: Rectangle {
+        background: #00000099;
+        TouchArea { }
+        Rectangle {
+            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+            width: 480px; height: 220px; background: Theme.card; border-radius: 12px;
+            VerticalBox {
+                padding: 24px; spacing: 12px;
+                Text { text: @tr("Save layout as…"); color: Theme.text; font-size: 22px; }
+                LineEdit { text <=> LayoutLibrary.save-as-name; placeholder-text: @tr("New layout name"); accepted => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+                Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
+                HorizontalBox { vertical-stretch: 0;
+                    Rectangle { horizontal-stretch: 1; }
+                    Button { text: @tr("Cancel"); clicked => { LayoutLibrary.save-as-open = false; } }
+                    Button { text: @tr("Save"); enabled: LayoutLibrary.save-as-name != ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+                }
+            }
+        }
+    }
+}

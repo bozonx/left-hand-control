@@ -76,26 +76,53 @@ export component InfoTip inherits Rectangle {
     }
 }
 
+/// Icon button; with `text` it grows into an icon + label button.
 export component IconButton inherits Rectangle {
     in property <image> icon;
+    /// Accessible name when there is no visible text.
     in property <string> label;
+    in property <string> text;
+    in property <string> tooltip;
     in property <bool> enabled: true;
+    in property <bool> primary: false;
     in property <bool> danger: false;
     in property <length> size: 28px;
     callback clicked();
-    width: root.size; height: root.size;
+    min-width: root.size;
+    height: root.text == "" ? root.size : 32px;
+    max-width: root.text == "" ? root.size : 100000px;
     border-radius: 6px;
-    background: root.enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
+    background: root.primary
+        ? (touch.has-hover && root.enabled ? Palette.accent-background.brighter(0.15) : Palette.accent-background)
+        : root.enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
+    border-width: root.text != "" && focus.has-focus ? 1px : 0px;
+    border-color: Theme.text;
+    opacity: root.enabled || root.text == "" ? 1.0 : 0.45;
     accessible-role: button;
-    accessible-label: root.label;
+    accessible-label: root.text != "" ? root.text : root.label != "" ? root.label : root.tooltip;
     accessible-enabled: root.enabled;
     accessible-action-default => { if root.enabled { root.clicked(); } }
-    Image {
-        x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-        width: root.size * 0.55; height: self.width;
-        source: root.icon;
-        colorize: !root.enabled ? Theme.muted : root.danger ? Theme.error : Theme.text;
-        opacity: root.enabled ? 1.0 : 0.4;
+    HorizontalLayout {
+        padding-left: root.text == "" ? 0px : 10px;
+        padding-right: root.text == "" ? 0px : 12px;
+        spacing: 6px;
+        alignment: center;
+        VerticalLayout {
+            alignment: center;
+            Image {
+                width: root.text == "" ? root.size * 0.55 : 16px; height: self.width;
+                source: root.icon;
+                colorize: !root.enabled ? Theme.muted : root.primary ? Palette.accent-foreground : root.danger ? Theme.error : Theme.text;
+                opacity: root.enabled ? 1.0 : 0.4;
+            }
+        }
+        if root.text != "": Text {
+            text: root.text;
+            color: root.primary ? Palette.accent-foreground : Theme.text;
+            font-weight: 600;
+            font-size: 13px;
+            vertical-alignment: center;
+        }
     }
     focus := FocusScope {
         enabled: root.enabled;
@@ -109,13 +136,26 @@ export component IconButton inherits Rectangle {
         mouse-cursor: root.enabled ? pointer : default;
         clicked => { root.clicked(); }
     }
+    if root.tooltip != "": Tooltip {
+        Rectangle {
+            background: Theme.card;
+            border-radius: 4px;
+            border-width: 1px;
+            border-color: Theme.border;
+            HorizontalLayout {
+                padding: 6px;
+                Text { text: root.tooltip; color: Theme.text; font-size: 12px; }
+            }
+        }
+    }
 }
 
 export component Card inherits Rectangle {
     in property <bool> highlighted: false;
+    in property <length> radius: 10px;
     background: Theme.card;
     border-width: 1px;
-    border-radius: 10px;
+    border-radius: root.radius;
     border-color: root.highlighted ? Palette.accent-background : Theme.border;
 }
 
@@ -188,6 +228,11 @@ export component PageTabs inherits HorizontalLayout {
         }
         touch := TouchArea { mouse-cursor: pointer; clicked => { root.select(index); } }
     }
+}
+
+export component Divider inherits Rectangle {
+    height: 1px;
+    background: Theme.border;
 }
 
 export component ConfirmDialog inherits Rectangle {

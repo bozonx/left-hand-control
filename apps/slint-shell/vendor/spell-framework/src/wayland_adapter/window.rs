@@ -584,7 +584,8 @@ impl SpellAssociatedNew for SpellWin {
         let event_loop = self.event_loop.clone();
         event_loop
             .borrow_mut()
-            .dispatch(std::time::Duration::from_millis(1), self)?;
+            // Local change: never block here; the host waits on `get_fd_owned`.
+            .dispatch(std::time::Duration::ZERO, self)?;
         slint::platform::update_timers_and_animations();
         if self.configured.get() && !self.is_hidden.get()
             && !self.frame_pending.get()

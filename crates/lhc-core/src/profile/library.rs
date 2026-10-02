@@ -1,6 +1,9 @@
 use crate::{
     config_document::{ConfigDocument, ConfigError},
-    profile::{auto_switch, layout_file, model::LayoutPreset},
+    profile::{
+        auto_switch, layout_file,
+        model::{LayoutPreset, user_layout_id},
+    },
 };
 
 /// What a new library layout starts from.
@@ -110,8 +113,8 @@ impl ConfigDocument {
             .paths()
             .rename_user_layout(name, new_name, &text, false)
             .map_err(ConfigError::Io)?;
-        let old = format!("user:{name}");
-        let new = format!("user:{saved}");
+        let old = user_layout_id(name);
+        let new = user_layout_id(&saved);
         let result = self.update_settings(|settings| {
             if settings.current_layout_id.as_ref() == Some(&old) {
                 settings.current_layout_id = Some(new.clone());
@@ -152,7 +155,7 @@ impl ConfigDocument {
         self.paths()
             .delete_user_layout(name)
             .map_err(ConfigError::Io)?;
-        let id = format!("user:{name}");
+        let id = user_layout_id(name);
         let result = self.update_settings(|settings| {
             settings.layout_order.retain(|item| item != &id);
             settings.layout_conditions.remove(&id);
@@ -172,9 +175,9 @@ impl ConfigDocument {
     }
 
     pub fn load_library_for_editing(&mut self, name: &str) -> Result<(), ConfigError> {
-        let preset: LayoutPreset = self.load_layout(&format!("user:{name}"))?;
+        let preset: LayoutPreset = self.load_layout(&user_layout_id(name))?;
         self.update_layout(|layout| *layout = preset)?;
-        self.update_settings(|settings| settings.current_layout_id = Some(format!("user:{name}")))
+        self.update_settings(|settings| settings.current_layout_id = Some(user_layout_id(name)))
     }
 }
 

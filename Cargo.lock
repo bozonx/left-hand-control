@@ -6477,13 +6477,16 @@ dependencies = [
 name = "slint-shell"
 version = "0.1.0"
 dependencies = [
+ "dirs 6.0.0",
  "enigo",
  "env_logger",
  "evdev 0.13.2",
  "global-hotkey",
  "ksni",
  "lhc-core",
+ "libc",
  "log",
+ "png 0.17.16",
  "raw-window-handle",
  "serde",
  "serde_json",

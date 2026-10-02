@@ -173,6 +173,12 @@ pub enum Msg {
     LibraryChanged,
     ProcessNameRequired,
     LayerSaved,
+    RuleSaved,
+    LayoutEmpty,
+    /// Default name of a copy of the named item.
+    CopyName(String),
+    /// Menu actions run through the mapper, which is stopped.
+    MapperRequired,
     MenuSaveFirst,
     MenuIssue(lhc_core::profile::menus::MenuIssue),
     MacroIssue(lhc_core::profile::macros::MacroIssue),
@@ -250,6 +256,10 @@ impl Msg {
             ),
             Self::MenuSaveFirst => ("menu-save-first", empty(), 0),
             Self::LayerSaved => ("layer-saved", empty(), 0),
+            Self::RuleSaved => ("rule-saved", empty(), 0),
+            Self::LayoutEmpty => ("layout-empty", empty(), 0),
+            Self::CopyName(name) => ("copy-name", name.clone(), 0),
+            Self::MapperRequired => ("mapper-required", empty(), 0),
             Self::LayerNameRequired => ("layer-name-required", empty(), 0),
             Self::KeyCodeRequired => ("key-code-required", empty(), 0),
             Self::TimeoutInvalid => ("timeout-invalid", empty(), 0),

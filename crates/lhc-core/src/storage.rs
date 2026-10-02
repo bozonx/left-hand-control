@@ -255,29 +255,56 @@ pub const EXTERNAL_CHANGE: &str = "EXTERNAL_CHANGE";
 pub struct TrackedFile {
     path: PathBuf,
     known: String,
+    /// Metadata of the file taken no later than reading `known`, or `None`
+    /// when unknown; lets [`Self::changed`] skip reading an untouched file.
+    stamp: Option<Stamp>,
+}
+
+/// Modification time and size of a file; `None` when it does not exist.
+type Stamp = Option<(std::time::SystemTime, u64)>;
+
+fn stamp(path: &Path) -> Option<Stamp> {
+    match fs::metadata(path) {
+        Ok(meta) => meta.modified().ok().map(|time| Some((time, meta.len()))),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Some(None),
+        Err(_) => None,
+    }
 }
 
 impl TrackedFile {
     /// Read `path`; a missing file reads as an empty string.
     pub fn open(path: PathBuf) -> Result<(Self, String), String> {
+        let stamp = stamp(&path);
         let contents = read_or_empty(&path)?;
         Ok((
             Self {
                 path,
                 known: contents.clone(),
+                stamp,
             },
             contents,
         ))
     }
 
-    /// Contents on disk when they differ from the last known ones.
-    pub fn changed(&self) -> Result<Option<String>, String> {
+    /// Contents on disk when they differ from the last known ones. A file
+    /// whose modification time and size did not change is not read.
+    pub fn changed(&mut self) -> Result<Option<String>, String> {
+        let before = stamp(&self.path);
+        if before.is_some() && before == self.stamp {
+            return Ok(None);
+        }
         let current = read_or_empty(&self.path)?;
-        Ok((current != self.known).then_some(current))
+        if current == self.known {
+            // Taken before the read, so a write after it changes the stamp.
+            self.stamp = before;
+            return Ok(None);
+        }
+        Ok(Some(current))
     }
 
     /// Accept `contents` (as returned by [`Self::changed`]) as read.
     pub fn mark_read(&mut self, contents: String) {
+        self.stamp = None;
         self.known = contents;
     }
 
@@ -286,6 +313,7 @@ impl TrackedFile {
     pub fn write(&mut self, contents: &str) -> Result<(), WriteError> {
         let current = read_or_empty(&self.path).map_err(WriteError::Io)?;
         if current == contents {
+            self.stamp = None;
             self.known = current;
             return Ok(());
         }
@@ -297,6 +325,7 @@ impl TrackedFile {
                 .map_err(|e| WriteError::Io(format!("create_dir_all: {e}")))?;
         }
         write_atomic(&self.path, contents.as_bytes()).map_err(WriteError::Io)?;
+        self.stamp = None;
         self.known = contents.to_owned();
         Ok(())
     }
@@ -499,6 +528,24 @@ mod tests {
         file.mark_read(changed);
         file.write("five").unwrap();
         assert_eq!(fs::read_to_string(&path).unwrap(), "five");
+    }
+
+    #[test]
+    fn tracked_file_notices_changes_after_unchanged_polls() {
+        use super::TrackedFile;
+        let temp = TempDir::new("tracked-stamp");
+        let path = temp.path().join("config.json");
+        fs::write(&path, "one").unwrap();
+        let (mut file, _) = TrackedFile::open(path.clone()).unwrap();
+        assert_eq!(file.changed().unwrap(), None);
+        assert_eq!(file.changed().unwrap(), None, "untouched file is skipped");
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(&path, "two").unwrap();
+        assert_eq!(file.changed().unwrap().as_deref(), Some("two"));
+        file.mark_read("two".into());
+        assert_eq!(file.changed().unwrap(), None);
+        fs::remove_file(&path).unwrap();
+        assert_eq!(file.changed().unwrap().as_deref(), Some(""));
     }
 
     #[test]

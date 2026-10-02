@@ -1,6 +1,11 @@
-use crate::command::{Command, Source};
+//! Popup backend on Linux: winit windows, or the Spell worker process with
+//! layer-shell surfaces (`SLINT_SHELL_POPUPS=auto|spell`).
+
+use crate::{
+    command::{Command, Source},
+    ipc,
+};
 use std::{
-    path::PathBuf,
     process::Child,
     time::{Duration, Instant},
 };
@@ -9,6 +14,11 @@ use wayland_client::{
     globals::{GlobalListContents, registry_queue_init},
     protocol::wl_registry,
 };
+
+/// How long a starting worker may take to answer on its socket.
+const STARTUP_TIMEOUT: Duration = Duration::from_secs(15);
+/// How long a quitting worker may take before it is killed.
+const QUIT_TIMEOUT: Duration = Duration::from_secs(1);
 
 struct Probe;
 impl Dispatch<wl_registry::WlRegistry, GlobalListContents> for Probe {
@@ -32,14 +42,18 @@ pub fn layer_shell_available() -> Result<bool, Box<dyn std::error::Error>> {
 }
 
 pub struct Worker {
-    child: Child,
-    socket: PathBuf,
+    child: Option<Child>,
+    /// Socket name in [`ipc::socket_dir`].
+    socket: String,
 }
 
 impl Worker {
     pub fn is_alive(&mut self) -> bool {
-        matches!(self.child.try_wait(), Ok(None))
+        self.child
+            .as_mut()
+            .is_some_and(|child| matches!(child.try_wait(), Ok(None)))
     }
+
     pub fn send(
         &self,
         command: &Command,
@@ -47,38 +61,47 @@ impl Worker {
         start: Instant,
         token: Option<String>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        crate::ipc::send(&self.socket, command, source, start, token)
+        ipc::send(&self.socket, command, source, start, token)
     }
 }
 
 impl Drop for Worker {
+    /// Ask the worker to quit and reap it on a background thread, so the UI
+    /// never waits for it.
     fn drop(&mut self) {
-        let _ = self.send(&Command::Quit, Source::Ipc, Instant::now(), None);
-        for _ in 0..100 {
-            if self.child.try_wait().ok().flatten().is_some() {
-                break;
+        let Some(mut child) = self.child.take() else {
+            return;
+        };
+        let socket = std::mem::take(&mut self.socket);
+        std::thread::spawn(move || {
+            let _ = ipc::send(&socket, &Command::Quit, Source::Ipc, Instant::now(), None);
+            let deadline = Instant::now() + QUIT_TIMEOUT;
+            while Instant::now() < deadline {
+                if child.try_wait().ok().flatten().is_some() {
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(10));
             }
-            std::thread::sleep(Duration::from_millis(10));
-        }
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-        let _ = std::fs::remove_file(&self.socket);
+            let _ = child.kill();
+            let _ = child.wait();
+            if let Ok(path) = ipc::socket_path(&socket) {
+                let _ = std::fs::remove_file(path);
+            }
+        });
     }
 }
 
-pub fn start() -> Result<Option<Worker>, Box<dyn std::error::Error>> {
-    let mode = std::env::var("SLINT_SHELL_POPUPS").unwrap_or("winit".into());
+/// Whether popups should run in the Spell worker. Quick: only checks the
+/// environment and asks the compositor for layer-shell.
+pub fn spell_requested() -> Result<bool, Box<dyn std::error::Error>> {
+    let mode = std::env::var("SLINT_SHELL_POPUPS").unwrap_or_else(|_| "winit".into());
     if mode == "winit" {
-        return Ok(None);
+        return Ok(false);
     }
     if mode != "auto" && mode != "spell" {
         return Err("SLINT_SHELL_POPUPS must be winit, auto or spell".into());
     }
-    let available = if std::env::var_os("WAYLAND_DISPLAY").is_some() {
-        layer_shell_available()?
-    } else {
-        false
-    };
+    let available = std::env::var_os("WAYLAND_DISPLAY").is_some() && layer_shell_available()?;
     if !available {
         if mode == "spell" {
             return Err("compositor does not advertise zwlr_layer_shell_v1".into());
@@ -86,24 +109,27 @@ pub fn start() -> Result<Option<Worker>, Box<dyn std::error::Error>> {
         log::info!(
             "popup backend=winit-fallback; layer-shell unavailable; compositor controls centering and activation"
         );
-        return Ok(None);
+        return Ok(false);
     }
     if !cfg!(feature = "spell") {
         return Err("build with --features spell to use layer-shell".into());
     }
-    let socket_name = format!("lhc-slint-spell-{}.sock", std::process::id());
-    let socket =
-        PathBuf::from(std::env::var_os("XDG_RUNTIME_DIR").ok_or("XDG_RUNTIME_DIR missing")?)
-            .join(&socket_name);
+    Ok(true)
+}
+
+/// Start the worker and wait until it answers. Blocks; call it off the UI
+/// thread.
+pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {
+    let socket = format!("lhc-slint-spell-{}.sock", std::process::id());
     let mut command = std::process::Command::new(std::env::current_exe()?);
     command
         .arg("--spell-worker")
         .stdin(std::process::Stdio::piped())
         .env(
             "SLINT_SHELL_PARENT_SOCKET",
-            std::env::var("SLINT_SHELL_SOCKET").unwrap_or_else(|_| "lhc-slint-shell.sock".into()),
+            std::env::var("SLINT_SHELL_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into()),
         )
-        .env("SLINT_SHELL_SOCKET", socket_name)
+        .env("SLINT_SHELL_SOCKET", &socket)
         .env_remove("XDG_ACTIVATION_TOKEN");
     match std::env::var_os("SLINT_SHELL_METRICS") {
         Some(metrics) => {
@@ -113,17 +139,18 @@ pub fn start() -> Result<Option<Worker>, Box<dyn std::error::Error>> {
         }
         None => command.env_remove("SLINT_SHELL_METRICS"),
     };
-    let child = command.spawn()?;
-    let mut worker = Worker { child, socket };
-    let deadline = Instant::now() + Duration::from_secs(15);
+    let mut worker = Worker {
+        child: Some(command.spawn()?),
+        socket,
+    };
+    let deadline = Instant::now() + STARTUP_TIMEOUT;
     loop {
-        if let Some(status) = worker.child.try_wait()? {
+        if let Some(status) = worker.child.as_mut().and_then(|child| child.try_wait().ok().flatten()) {
             return Err(format!("Spell worker exited: {status}").into());
         }
-        if worker.socket.exists()
-            && worker
-                .send(&Command::Ping, Source::Ipc, Instant::now(), None)
-                .is_ok()
+        if worker
+            .send(&Command::Ping, Source::Ipc, Instant::now(), None)
+            .is_ok()
         {
             break;
         }
@@ -134,7 +161,7 @@ pub fn start() -> Result<Option<Worker>, Box<dyn std::error::Error>> {
     }
     log::info!(
         "popup backend=spell/skia-software; worker pid={}",
-        worker.child.id()
+        worker.child.as_ref().map_or(0, Child::id)
     );
-    Ok(Some(worker))
+    Ok(worker)
 }

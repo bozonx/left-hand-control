@@ -15,7 +15,7 @@ use crate::profile::auto_switch::{self, AutoSwitchContext};
 use crate::profile::diagnostics::{self, RuleIssue};
 use crate::profile::model::{
     AppConfig, AppSettings, Appearance, ExtraKey, Layer, LayerRule, LayoutMode, LayoutPreset,
-    LocalePreference, USER_LAYOUT_PREFIX,
+    LocalePreference,
 };
 use crate::profile::{layout_file, settings};
 use crate::storage::{StoragePaths, TrackedFile, WriteError};
@@ -519,13 +519,12 @@ impl ConfigDocument {
             .list_user_layouts()
             .map_err(ConfigError::Io)?
             .into_iter()
-            .map(|name| format!("{USER_LAYOUT_PREFIX}{name}"))
+            .map(|name| crate::profile::model::user_layout_id(&name))
             .collect())
     }
 
     pub fn load_layout(&self, id: &str) -> Result<LayoutPreset, ConfigError> {
-        let name = id
-            .strip_prefix(USER_LAYOUT_PREFIX)
+        let name = crate::profile::model::user_layout_name(id)
             .ok_or_else(|| ConfigError::Invalid(format!("unknown layout id \"{id}\"")))?;
         let text = self.paths.load_user_layout(name).map_err(ConfigError::Io)?;
         parse_layout(&text)

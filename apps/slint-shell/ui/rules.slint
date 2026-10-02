@@ -1,0 +1,218 @@
+import { ActionPicker } from "action-picker.slint";
+import { Theme } from "theme.slint";
+import { Locale, Message } from "i18n.slint";
+import { RuleDialog, RuleField, GameCondition } from "types.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, CheckBox, ScrollView } from "std-widgets.slint";
+
+export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, hold-timeout: string, double-timeout: string, enabled: bool }
+export struct RuleLayerChoice { id: string, label: string }
+
+/// Rules of the layout being edited.
+export global RulesEditor {
+    in property <[RuleRow]> rows;
+    in-out property <int> selected: -1;
+    in property <Message> status;
+    /// Fields of the selected rule, filled by `select`.
+    in-out property <string> key;
+    in-out property <string> layer;
+    in-out property <string> tap;
+    in-out property <string> hold;
+    in-out property <string> double-tap;
+    in-out property <GameCondition> game-mode;
+    in-out property <string> layouts;
+    in-out property <string> apps-include;
+    in-out property <string> apps-exclude;
+    in-out property <string> isolate;
+    in-out property <string> hold-for;
+    in-out property <string> hold-timeout;
+    in-out property <string> double-timeout;
+    in-out property <bool> enabled: true;
+    in-out property <bool> swallow-tap;
+    in-out property <bool> swallow-hold;
+    /// Open dialog; `none` while the action picker edits `field`.
+    in-out property <RuleDialog> dialog: RuleDialog.none;
+    /// Rule property that `choose` changes.
+    in-out property <RuleDialog> field: RuleDialog.none;
+    in-out property <string> dialog-value;
+    in-out property <string> new-layer-name;
+    in property <[RuleLayerChoice]> layer-items;
+    callback refresh();
+    callback select(int);
+    callback add();
+    callback remove();
+    callback move(int);
+    /// Change a property of the selected rule in place.
+    callback edit(RuleField, string);
+    /// Open `dialog` for rule `index`.
+    callback open-dialog(int, RuleDialog);
+    /// Apply `value` to `field` of the selected rule.
+    callback choose(string);
+    callback filter-layers(string);
+    callback apply-conditions();
+    callback create-layer(string);
+}
+
+component RuleCell inherits VerticalBox {
+    in property <string> title;
+    in property <string> value;
+    in property <string> empty-text: @tr("Not set");
+    callback clicked();
+    spacing: 5px;
+    horizontal-stretch: 1;
+    Text { min-width: 0px; wrap: word-wrap; text: root.title; color: Theme.muted; }
+    Button { min-width: 0px; text: root.value == "" ? root.empty-text : root.value; clicked => { root.clicked(); } }
+}
+
+export component RulesPage inherits VerticalBox {
+    vertical-stretch: 1;
+    spacing: 12px;
+    HorizontalBox { vertical-stretch: 0; spacing: 8px;
+        VerticalBox { spacing: 2px;
+            Text { text: @tr("Rules and triggers"); color: Theme.text; font-size: 22px; font-weight: 700; }
+            Text { text: @tr("Define how physical keys activate layers or run actions."); color: Theme.muted; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Button { max-height: 36px; text: @tr("+ Add rule"); clicked => { RulesEditor.add(); } }
+    }
+    ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
+        VerticalLayout { spacing: 10px;
+            for rule[index] in RulesEditor.rows: Rectangle {
+                min-height: 300px;
+                background: Theme.card;
+                border-color: RulesEditor.selected == index ? Theme.accent : Theme.border;
+                border-width: 1px;
+                border-radius: 10px;
+                VerticalBox { padding: 14px; spacing: 10px;
+                    HorizontalBox { vertical-stretch: 0; spacing: 12px;
+                        RuleCell { title: @tr("Trigger key"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
+                        RuleCell { title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { RulesEditor.open-dialog(index, RuleDialog.conditions); } }
+                        RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
+                        RuleCell { width: 160px; horizontal-stretch: 0; title: @tr("Hold timeout, ms"); value: rule.hold-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold-timeout); } }
+                    }
+                    Rectangle { height: 1px; background: Theme.border; }
+                    HorizontalBox { vertical-stretch: 0; spacing: 12px;
+                        RuleCell { title: @tr("Tap action"); value: rule.tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
+                        RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                        RuleCell { title: @tr("Hold button"); value: rule.hold; clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
+                        RuleCell { width: 160px; horizontal-stretch: 0; title: @tr("Double-tap ms"); value: rule.double-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-timeout); } }
+                    }
+                    HorizontalBox { vertical-stretch: 0; spacing: 7px;
+                        CheckBox { text: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
+                        Rectangle { horizontal-stretch: 1; }
+                        Button { text: @tr("↑"); enabled: index > 0; clicked => { RulesEditor.select(index); RulesEditor.move(-1); } }
+                        Button { text: @tr("↓"); enabled: index + 1 < RulesEditor.rows.length; clicked => { RulesEditor.select(index); RulesEditor.move(1); } }
+                        Button { text: @tr("Advanced"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
+                        Button { text: @tr("Remove"); clicked => { RulesEditor.open-dialog(index, RuleDialog.remove); } }
+                    }
+                }
+            }
+        }
+    }
+    Text { text: Locale.text(RulesEditor.status); color: Theme.muted; wrap: word-wrap; }
+}
+
+export component RuleDialogOverlay inherits FocusScope {
+    focus-on-tab-navigation: false;
+    enabled: RulesEditor.dialog != RuleDialog.none && !ActionPicker.opened;
+    key-pressed(event) => { if event.text == Key.Escape { RulesEditor.dialog = RuleDialog.none; return accept; } return reject; }
+    if RulesEditor.dialog != RuleDialog.none: Rectangle {
+        background: #00000099;
+        TouchArea { clicked => { RulesEditor.dialog = RuleDialog.none; } }
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: 32px;
+            width: min(parent.width - 64px, 700px);
+            height: min(parent.height - 64px, 620px);
+            background: Theme.surface;
+            border-color: Theme.border;
+            border-width: 1px;
+            border-radius: 12px;
+            TouchArea {}
+            VerticalBox { padding: 22px; spacing: 10px;
+                Text {
+                    text: RulesEditor.dialog == RuleDialog.key ? @tr("Choose trigger key")
+                        : RulesEditor.dialog == RuleDialog.layer ? @tr("Choose layer")
+                        : RulesEditor.dialog == RuleDialog.conditions ? @tr("Conditions")
+                        : RulesEditor.dialog == RuleDialog.advanced ? @tr("Advanced rule options")
+                        : RulesEditor.dialog == RuleDialog.remove ? @tr("Delete rule?")
+                        : @tr("Choose action");
+                    color: Theme.text; font-size: 22px; font-weight: 700;
+                }
+                if RulesEditor.dialog == RuleDialog.layer: VerticalBox {
+                    spacing: 8px;
+                    LineEdit { text <=> RulesEditor.dialog-value; placeholder-text: @tr("Search layers"); edited => { RulesEditor.filter-layers(RulesEditor.dialog-value); } }
+                    ListView { vertical-stretch: 1;
+                        for item in RulesEditor.layer-items: Rectangle { height: 36px; background: layer-touch.has-hover ? Theme.hover : Theme.card;
+                            Text { x: 10px; text: item.label; color: Theme.text; vertical-alignment: center; }
+                            layer-touch := TouchArea { clicked => { RulesEditor.choose(item.id); } }
+                        }
+                    }
+                    HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                        LineEdit { text <=> RulesEditor.new-layer-name; placeholder-text: @tr("New layer name"); }
+                        Button { text: @tr("Create layer"); clicked => { RulesEditor.create-layer(RulesEditor.new-layer-name); } }
+                    }
+                }
+                if RulesEditor.dialog == RuleDialog.conditions: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
+                    VerticalLayout { spacing: 8px;
+                        Text { text: @tr("Game mode"); color: Theme.text; }
+                        ComboBox {
+                            model: [@tr("Ignore"), @tr("On"), @tr("Off")];
+                            current-index: RulesEditor.game-mode == GameCondition.on ? 1 : RulesEditor.game-mode == GameCondition.off ? 2 : 0;
+                            selected(value) => { RulesEditor.game-mode = self.current-index == 1 ? GameCondition.on : self.current-index == 2 ? GameCondition.off : GameCondition.any; }
+                        }
+                        Text { text: @tr("Layout conditions (comma separated)"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.layouts; }
+                        Text { text: @tr("App whitelist (comma separated)"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.apps-include; }
+                        Text { text: @tr("App blacklist (comma separated)"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.apps-exclude; }
+                    }
+                }
+                if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
+                    VerticalLayout { spacing: 8px;
+                        CheckBox { text: @tr("Swallow tap"); checked <=> RulesEditor.swallow-tap; toggled => { RulesEditor.edit(RuleField.swallow-tap, self.checked ? "true" : "false"); } }
+                        CheckBox { text: @tr("Swallow hold"); checked <=> RulesEditor.swallow-hold; toggled => { RulesEditor.edit(RuleField.swallow-hold, self.checked ? "true" : "false"); } }
+                        Text { text: @tr("Isolate"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.isolate; accepted => { RulesEditor.edit(RuleField.isolate, RulesEditor.isolate); } }
+                        Text { text: @tr("Hold for"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.hold-for; accepted => { RulesEditor.edit(RuleField.hold-for, RulesEditor.hold-for); } }
+                    }
+                }
+                if RulesEditor.dialog == RuleDialog.remove: Text { text: @tr("This rule will be removed from the current layout."); color: Theme.muted; }
+                if RulesEditor.dialog == RuleDialog.hold-timeout || RulesEditor.dialog == RuleDialog.double-timeout: LineEdit {
+                    text <=> RulesEditor.dialog-value;
+                    placeholder-text: @tr("Milliseconds; empty uses default");
+                    accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
+                }
+                Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
+                Rectangle { vertical-stretch: 1; }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Button {
+                        text: @tr("Clear");
+                        enabled: RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.remove;
+                        clicked => { RulesEditor.choose(""); }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Button { text: @tr("Cancel"); clicked => { RulesEditor.dialog = RuleDialog.none; RulesEditor.refresh(); } }
+                    Button {
+                        text: RulesEditor.dialog == RuleDialog.remove ? @tr("Delete") : @tr("Apply");
+                        primary: true;
+                        clicked => {
+                            if RulesEditor.dialog == RuleDialog.conditions {
+                                RulesEditor.apply-conditions();
+                            } else if RulesEditor.dialog == RuleDialog.remove {
+                                RulesEditor.remove();
+                            } else if RulesEditor.dialog == RuleDialog.advanced {
+                                RulesEditor.edit(RuleField.isolate, RulesEditor.isolate);
+                                RulesEditor.edit(RuleField.hold-for, RulesEditor.hold-for);
+                                RulesEditor.dialog = RuleDialog.none;
+                            } else {
+                                RulesEditor.choose(RulesEditor.dialog-value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

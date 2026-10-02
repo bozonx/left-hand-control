@@ -1,0 +1,16 @@
+import { Message } from "i18n.slint";
+
+/// Shell state shown on several pages: mapper, runtime context and the
+/// messages that are not tied to one page.
+export global AppState {
+    in property <bool> mapper-running;
+    in property <bool> mapper-busy;
+    in property <bool> game-active;
+    in property <string> keyboard-language;
+    in property <bool> commands-need-approval;
+    in property <bool> is-linux;
+    in property <Message> status;
+    in property <Message> backend-error;
+    in property <Message> config-status;
+    callback toggle-mapper();
+}

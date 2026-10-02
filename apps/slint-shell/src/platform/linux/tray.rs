@@ -28,18 +28,19 @@ impl ksni::Tray for Tray {
         "lhc-slint-shell".into()
     }
     fn title(&self) -> String {
-        "Slint Shell".into()
+        "Left Hand Control".into()
     }
     fn icon_pixmap(&self) -> Vec<ksni::Icon> {
-        let color = if self.enabled {
-            [255, 70, 180, 110]
-        } else {
-            [255, 130, 130, 130]
-        };
+        let (rgba, width, height) = super::super::icon::rgba(self.enabled);
+        // StatusNotifierItem pixmaps are ARGB32 in network byte order.
+        let data = rgba
+            .chunks_exact(4)
+            .flat_map(|p| [p[3], p[0], p[1], p[2]])
+            .collect();
         vec![ksni::Icon {
-            width: 22,
-            height: 22,
-            data: color.repeat(22 * 22),
+            width: width as i32,
+            height: height as i32,
+            data,
         }]
     }
     fn activate(&mut self, _: i32, _: i32) {
@@ -68,7 +69,7 @@ impl ksni::Tray for Tray {
 
 pub fn start(dispatch: Dispatch) -> Result<Handle, ksni::Error> {
     Tray {
-        enabled: true,
+        enabled: false,
         english: false,
         dispatch,
     }

@@ -5,6 +5,7 @@
 //! Linux keeps the evdev/ksni/Wayland implementations; Windows and macOS use
 //! the portable `global-hotkey` / `tray-icon` / native input adapters.
 
+mod icon;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]

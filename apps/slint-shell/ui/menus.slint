@@ -1,6 +1,7 @@
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
+import { CommandField, MenuKind, PickerTarget } from "types.slint";
 import { Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, PageTabs } from "controls.slint";
 import { Button, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
 
@@ -8,8 +9,7 @@ export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
 export struct CommandRow { id: string, name: string, linux: string, usage: [string], error: Message }
 export global MenuEditor {
-    /// 0 emoji, 1 quick actions, 2 commands.
-    in-out property <int> kind;
+    in-out property <MenuKind> kind;
     in property <[string]> pages;
     in property <[MenuCell]> cells;
     in property <[EmojiCategory]> catalog;
@@ -22,7 +22,7 @@ export global MenuEditor {
     in property <bool> trusted;
     in property <bool> has-errors;
     in property <Message> status;
-    callback open(int);
+    callback open(MenuKind);
     callback select-page(int);
     callback select-cell(int);
     callback add-page(string);
@@ -38,8 +38,7 @@ export global MenuEditor {
     callback add-command(string);
     callback remove-command(int);
     callback move-command(int, int);
-    /// Command index, field (0 id, 1 name, 2 Linux script), value.
-    callback set-command(int, int, string);
+    callback set-command(int, CommandField, string);
     callback trust(bool);
 }
 
@@ -323,7 +322,7 @@ export component QuickActionsPage inherits Rectangle {
                                 cell-height: 104px;
                                 activate(index) => {
                                     if MenuEditor.cells[index].value == "" {
-                                        ActionPicker.open(3, index, "", false);
+                                        ActionPicker.open(PickerTarget.quick-action, index, "", false);
                                     } else {
                                         MenuEditor.select-cell(index);
                                     }
@@ -359,7 +358,7 @@ export component QuickActionsPage inherits Rectangle {
                                             accessible-label: @tr("Action");
                                             accessible-value: MenuEditor.value;
                                             accessible-action-default => { self.pick(); }
-                                            function pick() { ActionPicker.open(3, MenuEditor.selected-cell, MenuEditor.value, false); }
+                                            function pick() { ActionPicker.open(PickerTarget.quick-action, MenuEditor.selected-cell, MenuEditor.value, false); }
                                             Text {
                                                 x: 10px;
                                                 width: parent.width - 20px;
@@ -420,7 +419,7 @@ component CommandCard inherits Card {
                 }
                 HorizontalLayout {
                     spacing: 6px;
-                    LineEdit { text: root.item.id; placeholder-text: "id"; accessible-label: @tr("Command ID"); edited(value) => { MenuEditor.set-command(root.index, 0, value); } }
+                    LineEdit { text: root.item.id; placeholder-text: "id"; accessible-label: @tr("Command ID"); edited(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
                 }
             }
@@ -433,7 +432,7 @@ component CommandCard inherits Card {
                     FieldLabel { text: @tr("Name"); vertical-alignment: center; }
                     InfoTip { text: @tr("Human-readable name shown in picker lists."); }
                 }
-                LineEdit { text: root.item.name; placeholder-text: @tr("Command name"); accessible-label: @tr("Name"); edited(value) => { MenuEditor.set-command(root.index, 1, value); } }
+                LineEdit { text: root.item.name; placeholder-text: @tr("Command name"); accessible-label: @tr("Name"); edited(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
             }
             HorizontalLayout {
                 spacing: 2px;
@@ -462,7 +461,7 @@ component CommandCard inherits Card {
                 text: root.item.linux;
                 placeholder-text: "playerctl play-pause\nnotify-send 'Playback toggled'";
                 accessible-label: @tr("Linux shell script");
-                edited(value) => { MenuEditor.set-command(root.index, 2, value); }
+                edited(value) => { MenuEditor.set-command(root.index, CommandField.linux, value); }
             }
         }
         if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
@@ -563,7 +562,7 @@ export component CommandsPage inherits Rectangle {
 
 export component MenusPage inherits Rectangle {
     vertical-stretch: 1;
-    if MenuEditor.kind == 0: EmojiPage { width: 100%; height: 100%; }
-    if MenuEditor.kind == 1: QuickActionsPage { width: 100%; height: 100%; }
-    if MenuEditor.kind == 2: CommandsPage { width: 100%; height: 100%; }
+    if MenuEditor.kind == MenuKind.emoji: EmojiPage { width: 100%; height: 100%; }
+    if MenuEditor.kind == MenuKind.quick: QuickActionsPage { width: 100%; height: 100%; }
+    if MenuEditor.kind == MenuKind.commands: CommandsPage { width: 100%; height: 100%; }
 }

@@ -8,22 +8,23 @@ pub mod ui {
     slint::include_modules!();
 }
 
-mod action_picker;
 mod app;
-pub use app::bind_document;
 pub mod command;
-pub mod editor;
+pub mod document;
 mod i18n;
 mod ipc;
-pub mod macro_editor;
-pub mod menu_editor;
+pub mod keyboard;
 mod metrics;
+pub mod pages;
 mod platform;
 pub mod popup_model;
 #[cfg(all(feature = "spell", target_os = "linux"))]
 mod spell;
-#[cfg(all(feature = "spell", target_os = "linux"))]
+#[cfg(all(feature = "probes", target_os = "linux"))]
 pub mod test_keyboard;
+
+pub use document::Document;
+pub use pages::bind_document;
 
 use std::time::Instant;
 
@@ -39,7 +40,7 @@ pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         return spell::run(start);
     }
     if !args.is_empty() {
-        let command = command::Command::parse(&args.join(" "))?;
+        let command = command::Command::parse_args(&args)?;
         return ipc::client(&command);
     }
     app::run(start)

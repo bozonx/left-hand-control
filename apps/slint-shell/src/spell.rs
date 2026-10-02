@@ -1,36 +1,68 @@
 //! Spell worker process: both popups as wlr layer-shell surfaces.
 //!
 //! Runs as `slint-shell --spell-worker`, started and supervised by the
-//! settings process. It owns its own IPC socket (`SLINT_SHELL_SOCKET`) and
-//! exits when the parent closes its stdin.
+//! settings process. It owns its own IPC socket (`SLINT_SHELL_SOCKET`),
+//! sends chosen actions back to the parent (`SLINT_SHELL_PARENT_SOCKET`)
+//! and exits when the parent closes its stdin.
 
 use crate::{
     command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
     i18n::Language,
-    ipc, metrics, popup_model,
+    ipc, metrics,
+    popup_model::{self, ConfiguredMenus, KeyOutcome},
     ui::{EmojiPopup, Locale, QuickPopup, Theme},
 };
-use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use slint::ComponentHandle;
 use spell_framework::{
     SpellAssociatedNew,
     layer_properties::{BoardType, LayerAnchor, LayerType, WindowConf},
     wayland_adapter::SpellWin,
 };
 use std::{
+    io::{Read, Write},
+    os::{
+        fd::{AsRawFd, RawFd},
+        unix::net::UnixStream,
+    },
     sync::{Arc, mpsc},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 const WIDTH: u32 = 520;
+/// Poll interval while a popup is visible or was just used: pending
+/// Wayland requests are flushed by the next dispatch.
+const ACTIVE_POLL: Duration = Duration::from_millis(4);
+/// How long the loop stays responsive after the last activity.
+const ACTIVE_GRACE: Duration = Duration::from_millis(250);
+/// Idle wake-up while everything is hidden; IPC wakes the loop at once.
+const IDLE_POLL: Duration = Duration::from_millis(500);
+/// Run a chosen action at the latest this long after the popup hid, even
+/// if the compositor did not report the keyboard focus leaving it.
+const FOCUS_RETURN_TIMEOUT: Duration = Duration::from_millis(300);
 
 enum Event {
     Command(Command, Source, Instant),
     Key(Popup, String),
     Choose(Popup, i32),
     Hide(Popup),
-    Filter(String),
+    Filter,
     Focus(Popup, bool),
     Frame(Popup),
+}
+
+/// Sends events to the loop from any thread and wakes it.
+#[derive(Clone)]
+struct Waker {
+    sender: mpsc::Sender<Event>,
+    pipe: Arc<UnixStream>,
+}
+
+impl Waker {
+    fn send(&self, event: Event) {
+        if self.sender.send(event).is_ok() {
+            let _ = (&*self.pipe).write(&[0]);
+        }
+    }
 }
 
 fn height(popup: Popup) -> u32 {
@@ -56,7 +88,7 @@ fn configuration(popup: Popup) -> Result<WindowConf, Box<dyn std::error::Error>>
     builder.build()
 }
 
-/// The two layer surfaces and their Slint components.
+/// The two layer surfaces, their Slint components and the menus they show.
 struct Layers {
     emoji_way: SpellWin,
     quick_way: SpellWin,
@@ -64,8 +96,9 @@ struct Layers {
     quick: QuickPopup,
     /// `unmap` lifecycle: hidden layers commit an empty buffer.
     unmap: bool,
-    actions: Vec<String>,
-    menus: Option<popup_model::ConfiguredMenus>,
+    menus: ConfiguredMenus,
+    /// Actions of the quick items in display order.
+    quick_actions: Vec<String>,
 }
 
 impl Layers {
@@ -83,13 +116,6 @@ impl Layers {
         }
     }
 
-    fn prepare(&self, popup: Popup) {
-        match popup {
-            Popup::Emoji => self.emoji.invoke_prepare(),
-            Popup::Quick => self.quick.invoke_prepare(),
-        }
-    }
-
     fn conceal(&mut self, popup: Popup) {
         let unmap = self.unmap;
         self.set_presented(popup, false);
@@ -104,7 +130,10 @@ impl Layers {
     fn present(&mut self, popup: Popup) {
         let unmap = self.unmap;
         self.set_presented(popup, true);
-        self.prepare(popup);
+        match popup {
+            Popup::Emoji => self.emoji.invoke_prepare(),
+            Popup::Quick => self.quick.invoke_prepare(),
+        }
         let way = self.way(popup);
         way.add_input_region(0, 0, WIDTH as i32, height(popup) as i32);
         if unmap {
@@ -125,89 +154,28 @@ impl Layers {
         }
     }
 
-    fn selected_index(&self, popup: Popup) -> i32 {
+    fn set_menus(&mut self, menus: ConfiguredMenus) {
+        menus.apply_emoji(&self.emoji);
+        menus.apply_quick(&self.quick);
+        self.menus = menus;
+        self.filter();
+    }
+
+    fn filter(&mut self) {
+        self.quick_actions = self.menus.filter_quick(&self.quick);
+    }
+
+    /// Action of item `index` of `popup`.
+    fn action(&self, popup: Popup, index: i32) -> Option<String> {
         match popup {
-            Popup::Emoji => self.emoji.get_selected(),
-            Popup::Quick => self.quick.get_selected(),
+            Popup::Emoji => self
+                .menus
+                .emoji(&self.emoji, index)
+                .map(|emoji| format!("text:{emoji}")),
+            Popup::Quick => usize::try_from(index)
+                .ok()
+                .and_then(|index| self.quick_actions.get(index).cloned()),
         }
-    }
-
-    fn value(&self, popup: Popup, index: i32) -> Option<String> {
-        if popup == Popup::Quick
-            && let Some(menus) = &self.menus
-        {
-            return menus
-                .quick_page(
-                    &self.quick.get_query(),
-                    Some(self.quick.get_page() as usize),
-                )
-                .get(usize::try_from(index).ok()?)
-                .map(|(_, action)| action.clone());
-        }
-        let value = match popup {
-            Popup::Emoji => popup_model::configured_emoji_index(&self.emoji, index)
-                .and_then(|index| self.emoji.get_emojis().row_data(index)),
-            Popup::Quick => self
-                .quick
-                .get_items()
-                .row_data(usize::try_from(index).ok()?),
-        };
-        value.map(|value| value.to_string())
-    }
-
-    /// Move the selection; returns `true` when the key was an arrow.
-    fn navigate(&self, popup: Popup, key: &str) -> bool {
-        let Some(delta) = popup_model::key_delta(popup, key) else {
-            return false;
-        };
-        let delta = if self.menus.is_some() && popup == Popup::Emoji {
-            if delta == 8 {
-                5
-            } else if delta == -8 {
-                -5
-            } else {
-                delta
-            }
-        } else {
-            delta
-        };
-        match popup {
-            Popup::Emoji => self.emoji.set_selected(popup_model::advance(
-                self.emoji.get_selected(),
-                delta,
-                if self.menus.is_some() {
-                    15
-                } else {
-                    popup_model::emoji_cells(self.emoji.get_page())
-                },
-            )),
-            Popup::Quick => self.quick.set_selected(popup_model::advance(
-                self.quick.get_selected(),
-                delta,
-                self.quick.get_items().row_count(),
-            )),
-        }
-        true
-    }
-
-    fn filter(&self, query: &str) {
-        if let Some(menus) = &self.menus {
-            self.quick.set_items(ModelRc::new(VecModel::from(
-                menus
-                    .quick_page(query, Some(self.quick.get_page() as usize))
-                    .into_iter()
-                    .map(|(name, _)| name.into())
-                    .collect::<Vec<slint::SharedString>>(),
-            )));
-            self.quick.set_selected(0);
-            return;
-        }
-        self.quick
-            .set_items(ModelRc::new(VecModel::from(popup_model::filter(
-                &self.actions,
-                query,
-            ))));
-        self.quick.set_selected(0);
     }
 }
 
@@ -234,21 +202,62 @@ fn env_choice(
     }
 }
 
+/// Run `action` in the settings process, which owns the mapper.
+fn execute(action: String) {
+    let parent = std::env::var("SLINT_SHELL_PARENT_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into());
+    std::thread::spawn(move || {
+        if let Err(error) = ipc::send(&parent, &Command::Execute(action), Source::Ipc, Instant::now(), None) {
+            log::error!("execute popup action: {error}");
+        }
+    });
+}
+
+/// Block until a Wayland connection or the waker has input, or `timeout`.
+fn wait(fds: &[RawFd], timeout: Duration) {
+    let mut polls: Vec<libc::pollfd> = fds
+        .iter()
+        .map(|fd| libc::pollfd {
+            fd: *fd,
+            events: libc::POLLIN,
+            revents: 0,
+        })
+        .collect();
+    let timeout = i32::try_from(timeout.as_millis()).unwrap_or(i32::MAX);
+    // SAFETY: `polls` is a valid, exclusively borrowed array of pollfd.
+    let result = unsafe { libc::poll(polls.as_mut_ptr(), polls.len() as libc::nfds_t, timeout) };
+    if result < 0 {
+        let error = std::io::Error::last_os_error();
+        if error.kind() != std::io::ErrorKind::Interrupted {
+            log::warn!("poll: {error}");
+        }
+    }
+}
+
+/// A chosen action waiting for the keyboard focus to return.
+struct PendingAction {
+    popup: Popup,
+    action: String,
+    hidden: Instant,
+}
+
 pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     if !crate::platform::backend::layer_shell_available()? {
         return Err("layer-shell unavailable".into());
     }
-    let unmap = env_choice(
-        "SLINT_SHELL_SPELL_LIFECYCLE",
-        "unmap",
-        &["unmap", "transparent"],
-    )? == "unmap";
+    let unmap = env_choice("SLINT_SHELL_SPELL_LIFECYCLE", "unmap", &["unmap", "transparent"])? == "unmap";
     let initial = match env_choice("SLINT_SHELL_SPELL_INITIAL", "", &["emoji", "quick"])? {
         "emoji" => Some(Popup::Emoji),
         "quick" => Some(Popup::Quick),
         _ => None,
     };
-    let (tx, rx) = mpsc::channel();
+    let (sender, rx) = mpsc::channel();
+    let (wake_read, wake_write) = UnixStream::pair()?;
+    wake_read.set_nonblocking(true)?;
+    wake_write.set_nonblocking(true)?;
+    let waker = Waker {
+        sender,
+        pipe: Arc::new(wake_write),
+    };
     let mut metrics = metrics::Metrics::from_env(start)?;
     let mut emoji_way = SpellWin::invoke_spell("lhc-slint-emoji", configuration(Popup::Emoji)?);
     let emoji = EmojiPopup::new()?;
@@ -256,7 +265,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     if initial != Some(Popup::Emoji) {
         start_hidden(&mut emoji_way, Popup::Emoji, unmap);
     }
-    emoji.set_emojis(ModelRc::new(VecModel::from(popup_model::emoji_items())));
     metrics.ready("emoji");
     let mut quick_way = SpellWin::invoke_spell("lhc-slint-quick", configuration(Popup::Quick)?);
     let quick = QuickPopup::new()?;
@@ -264,57 +272,51 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     if initial != Some(Popup::Quick) {
         start_hidden(&mut quick_way, Popup::Quick, unmap);
     }
+    let wayland = [emoji_way.get_fd_owned(), quick_way.get_fd_owned()];
+    let fds = [wayland[0].as_raw_fd(), wayland[1].as_raw_fd(), wake_read.as_raw_fd()];
     let mut layers = Layers {
         emoji_way,
         quick_way,
         emoji,
         quick,
         unmap,
-        actions: popup_model::quick_items(),
-        menus: None,
+        menus: ConfiguredMenus::default(),
+        quick_actions: Vec::new(),
     };
-    layers.filter("");
+    layers.filter();
     metrics.ready("quick");
     for popup in Popup::ALL {
-        let sender = tx.clone();
+        let waker = waker.clone();
         layers.way(popup).set_event_handler(move |event| {
             use spell_framework::wayland_adapter::WindowEvent;
-            let event = match event {
+            waker.send(match event {
                 WindowEvent::Focus(active) => Event::Focus(popup, active),
                 WindowEvent::Frame => Event::Frame(popup),
                 WindowEvent::Closed => Event::Hide(popup),
-            };
-            let _ = sender.send(event);
+            });
         });
     }
-    bind_callbacks(&layers, &tx);
-    let sender = tx.clone();
+    bind_callbacks(&layers, &waker);
+    let ipc_waker = waker.clone();
     let dispatch: Dispatch = Arc::new(move |command, source, start, _| {
-        let sender = sender.clone();
-        if let Err(error) = slint::invoke_from_event_loop(move || {
-            let _ = sender.send(Event::Command(command, source, start));
-        }) {
-            log::error!("Spell dispatch: {error}");
-        }
+        ipc_waker.send(Event::Command(command, source, start));
     });
-    let parent_sender = tx.clone();
+    let stdin_waker = waker.clone();
     std::thread::spawn(move || {
-        use std::io::Read;
         let _ = std::io::stdin().read(&mut [0u8]);
-        let _ = parent_sender.send(Event::Command(Command::Quit, Source::Ipc, Instant::now()));
+        stdin_waker.send(Event::Command(Command::Quit, Source::Ipc, Instant::now()));
     });
     let server = ipc::Server::bind()?;
     server.start(dispatch)?;
-    let mut return_input = crate::platform::return_input::ReturnInput::new()?;
-    let mut pending_return: Option<Popup> = None;
-    let mut keyboard_owner: Option<Popup> = None;
+    #[cfg(feature = "probes")]
+    let mut probe = crate::platform::return_input::ReturnInput::new()?;
+    let mut pending: Option<PendingAction> = None;
     let mut visible = initial;
     let mut focused: Option<Popup> = None;
-    let mut navigation_count = 0;
+    let mut last_activity = Instant::now();
     if let Some(popup) = initial {
         metrics.begin(popup.name(), Source::Diagnostic.as_str(), start);
-        layers.prepare(popup);
-        layers.way(popup).grab_focus();
+        layers.present(popup);
         metrics.mark(popup.name(), "t2_shown");
     }
     log::info!(
@@ -325,9 +327,10 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         for popup in Popup::ALL {
             layers.way(popup).on_call()?;
         }
+        let mut active = false;
         while let Ok(event) = rx.try_recv() {
+            active = true;
             let mut dismiss = None;
-            let mut selected = None;
             match event {
                 Event::Command(Command::Preferences(preferences), _, _) => {
                     layers.apply(preferences);
@@ -346,74 +349,44 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
                 Event::Command(Command::PopupLayout(id), _, _) => {
-                    let menus = popup_model::ConfiguredMenus::load_for(id.as_deref())
-                        .unwrap_or_else(|error| {
-                            log::error!("load popup configuration: {error}");
-                            popup_model::ConfiguredMenus::default()
-                        });
-                    menus.apply_emoji(&layers.emoji);
-                    menus.apply_quick(&layers.quick);
-                    layers.menus = Some(menus);
-                    layers.filter(&layers.quick.get_query());
+                    let menus = ConfiguredMenus::load_for(id.as_deref()).unwrap_or_else(|error| {
+                        log::error!("load popup configuration: {error}");
+                        ConfiguredMenus::default()
+                    });
+                    layers.set_menus(menus);
                 }
                 Event::Command(
-                    command @ (Command::Show(_) | Command::ShowPage(_, _)),
+                    command @ (Command::Show(Window::Popup(_)) | Command::ShowPage(_, _)),
                     source,
                     start,
                 ) => {
-                    let (window, page) = match command {
-                        Command::Show(window) => (window, None),
-                        Command::ShowPage(popup, page) => (Window::Popup(popup), Some(page)),
-                        _ => unreachable!(),
+                    let (popup, page) = match command {
+                        Command::ShowPage(popup, page) => (popup, Some(page)),
+                        Command::Show(window) => (window.popup().unwrap_or(Popup::Emoji), None),
+                        _ => continue,
                     };
-                    let Some(popup) = window.popup() else {
-                        continue;
-                    };
-                    if let Some(page) = page {
-                        popup_model::select_page(popup, page, &layers.emoji, &layers.quick);
-                        layers.filter(&layers.quick.get_query());
+                    #[cfg(feature = "probes")]
+                    if let Some(probe) = &mut probe
+                        && visible.is_none()
+                    {
+                        probe.capture();
                     }
-                    if let Some(input) = &mut return_input {
-                        if visible.is_none() {
-                            input.capture();
-                        } else {
-                            input.cancel();
-                        }
-                    }
-                    if let Some(previous) = pending_return.take() {
-                        metrics.end(previous.name());
-                    }
-                    if let Some(previous) = visible.take() {
-                        layers.conceal(previous);
-                        metrics.end(previous.name());
-                        if previous == popup && page.is_none() {
-                            continue;
-                        }
-                    }
-                    metrics.begin(popup.name(), source.as_str(), start);
-                    navigation_count = 0;
-                    focused = None;
-                    visible = Some(popup);
-                    layers.present(popup);
-                    metrics.mark(popup.name(), "t2_shown");
+                    show(&mut layers, &mut visible, &mut focused, &mut metrics, popup, page, source, start);
                 }
                 Event::Command(Command::Hide, _, _) => dismiss = visible,
                 Event::Command(_, _, _) => {}
                 Event::Focus(popup, active) => {
-                    if active {
-                        keyboard_owner = Some(popup);
-                    } else if keyboard_owner == Some(popup) {
-                        keyboard_owner = None;
-                    }
-                    if !active && pending_return == Some(popup) {
+                    if !active && pending.as_ref().is_some_and(|p| p.popup == popup) {
                         metrics.mark(popup.name(), "keyboard_released");
+                        if let Some(action) = pending.take() {
+                            execute(action.action);
+                        }
                     }
                     if visible == Some(popup) {
                         if active {
                             focused = Some(popup);
                             metrics.mark(popup.name(), "t4_focused");
                         } else if focused == Some(popup) {
-                            focused = None;
                             dismiss = Some(popup);
                         } else {
                             metrics.mark(popup.name(), "focus_left_before_enter");
@@ -423,88 +396,42 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 Event::Frame(popup) => metrics.mark(popup.name(), "t3_first_frame"),
                 Event::Hide(popup) => dismiss = Some(popup),
                 Event::Choose(popup, index) if visible == Some(popup) => {
-                    let Some(value) = layers.value(popup, index) else {
-                        continue;
-                    };
-                    log::info!("Spell selected {} index={index}: {value}", popup.name());
-                    metrics.mark(popup.name(), "selected");
-                    if layers.menus.is_some() {
-                        if value.is_empty() {
-                            continue;
-                        }
-                        let action = if popup == Popup::Emoji {
-                            format!("text:{value}")
-                        } else {
-                            value
-                        };
-                        std::thread::spawn(move || {
-                            std::thread::sleep(std::time::Duration::from_millis(150));
-                            let socket = std::path::PathBuf::from(
-                                std::env::var_os("XDG_RUNTIME_DIR").unwrap_or_default(),
-                            )
-                            .join(std::env::var("SLINT_SHELL_PARENT_SOCKET").unwrap_or_default());
-                            if let Err(error) = ipc::send(
-                                &socket,
-                                &Command::Execute(action),
-                                Source::Ipc,
-                                Instant::now(),
-                                None,
-                            ) {
-                                log::error!("execute popup action: {error}");
-                            }
+                    if let Some(action) = layers.action(popup, index) {
+                        log::info!("Spell selected {} index={index}: {action}", popup.name());
+                        metrics.mark(popup.name(), "selected");
+                        // Diagnostic stand: the probe returns focus and pastes itself.
+                        #[cfg(feature = "probes")]
+                        let probed = probe.as_mut().is_some_and(|probe| {
+                            probe.selected(action.strip_prefix("text:").unwrap_or(&action).to_owned())
                         });
-                    } else {
-                        selected = Some(value);
+                        #[cfg(not(feature = "probes"))]
+                        let probed = false;
+                        if !probed {
+                            pending = Some(PendingAction {
+                                popup,
+                                action,
+                                hidden: Instant::now(),
+                            });
+                        }
+                        dismiss = Some(popup);
                     }
-                    dismiss = Some(popup);
                 }
                 Event::Choose(_, _) => {}
-                Event::Filter(query) => {
-                    if query
-                        .chars()
-                        .any(|c| ('\u{0400}'..='\u{04ff}').contains(&c))
-                    {
-                        metrics.mark("quick", "filter_cyrillic");
-                    }
-                    layers.filter(&query);
-                    metrics.mark("quick", "t5_first_key");
+                Event::Filter => {
+                    layers.filter();
                     metrics.mark("quick", "filter_changed");
                 }
                 Event::Key(popup, key) if visible == Some(popup) => {
                     metrics.mark(popup.name(), "t5_first_key");
-                    if popup_model::is_key(&key, slint::platform::Key::Escape) {
-                        dismiss = Some(popup);
-                    } else if popup_model::is_enter(&key) {
-                        let _ = tx.send(Event::Choose(popup, layers.selected_index(popup)));
-                    } else if popup == Popup::Emoji
-                        && let Ok(page) = key.parse::<i32>()
-                        && page > 0
-                        && page as usize
-                            <= if layers.menus.is_some() {
-                                layers.emoji.get_page_names().row_count()
-                            } else {
-                                6
-                            }
-                    {
-                        metrics.mark(popup.name(), "page_changed");
-                        if page - 1 == popup_model::STRESS_PAGE {
-                            metrics.mark(popup.name(), "stress_page");
-                        }
-                        layers.emoji.set_page(page - 1);
-                        layers.emoji.set_selected(0);
-                    } else if popup == Popup::Emoji
-                        && layers.menus.is_some()
-                        && let Some(index) = "qwertasdfgzxcvb"
-                            .chars()
-                            .position(|c| key.eq_ignore_ascii_case(&c.to_string()))
-                    {
-                        let _ = tx.send(Event::Choose(popup, index as i32));
-                    } else if layers.navigate(popup, &key) {
-                        metrics.mark(popup.name(), "navigation_handled");
-                        navigation_count += 1;
-                        if navigation_count > 1 {
-                            metrics.mark(popup.name(), "navigation_repeated");
-                        }
+                    let outcome = match popup {
+                        Popup::Emoji => popup_model::emoji_key(&layers.emoji, &key),
+                        Popup::Quick => popup_model::quick_key(&layers.quick, &key),
+                    };
+                    match outcome {
+                        KeyOutcome::Dismiss => dismiss = Some(popup),
+                        KeyOutcome::Choose(index) => waker.send(Event::Choose(popup, index)),
+                        KeyOutcome::Moved => metrics.mark(popup.name(), "navigation_handled"),
+                        KeyOutcome::Ignored => {}
                     }
                 }
                 Event::Key(_, _) => {}
@@ -515,66 +442,77 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 layers.conceal(popup);
                 visible = None;
                 focused = None;
-                if let (Some(value), Some(input)) = (selected, &mut return_input) {
-                    metrics.mark(popup.name(), "hidden");
-                    pending_return = Some(popup);
-                    if !input.selected(value) {
-                        metrics.mark(popup.name(), "return_target_missing");
-                        metrics.end(popup.name());
-                        pending_return = None;
-                    }
-                } else {
-                    if let Some(input) = &mut return_input {
-                        input.cancel();
-                    }
-                    metrics.end(popup.name());
-                }
+                metrics.mark(popup.name(), "hidden");
+                metrics.end(popup.name());
             }
         }
-        if let (Some(popup), Some(input)) = (pending_return, &mut return_input)
-            && let Some(event) = input.poll(keyboard_owner.is_none())
-        {
-            metrics.mark(popup.name(), event);
-            metrics.end(popup.name());
-            pending_return = None;
+        if let Some(action) = pending.take_if(|p| p.hidden.elapsed() >= FOCUS_RETURN_TIMEOUT) {
+            metrics.mark(action.popup.name(), "focus_return_timeout");
+            execute(action.action);
         }
+        #[cfg(feature = "probes")]
+        if let Some(probe) = &mut probe
+            && let Some(event) = probe.poll(focused.is_none())
+        {
+            log::info!("probe: {event}");
+        }
+        if active {
+            last_activity = Instant::now();
+            continue;
+        }
+        let busy = visible.is_some() || pending.is_some() || last_activity.elapsed() < ACTIVE_GRACE;
+        let timeout = slint::platform::duration_until_next_timer_update()
+            .unwrap_or(Duration::MAX)
+            .min(if busy { ACTIVE_POLL } else { IDLE_POLL });
+        wait(&fds, timeout);
+        while (&wake_read).read(&mut [0u8; 64]).is_ok_and(|n| n > 0) {}
     }
 }
 
-fn bind_callbacks(layers: &Layers, tx: &mpsc::Sender<Event>) {
-    let sender = tx.clone();
-    layers.emoji.on_key(move |key| {
-        let _ = sender.send(Event::Key(Popup::Emoji, key.into()));
-    });
-    let sender = tx.clone();
-    layers.emoji.on_choose(move |index| {
-        let _ = sender.send(Event::Choose(Popup::Emoji, index));
-    });
-    let sender = tx.clone();
-    layers.emoji.on_dismiss(move || {
-        let _ = sender.send(Event::Hide(Popup::Emoji));
-    });
-    let sender = tx.clone();
-    layers.quick.on_key(move |key| {
-        let _ = sender.send(Event::Key(Popup::Quick, key.into()));
-    });
-    let sender = tx.clone();
-    layers.quick.on_choose(move |index| {
-        let _ = sender.send(Event::Choose(Popup::Quick, index));
-    });
-    let sender = tx.clone();
-    layers.quick.on_dismiss(move || {
-        let _ = sender.send(Event::Hide(Popup::Quick));
-    });
-    let sender = tx.clone();
-    let page_tx = tx.clone();
-    let quick = layers.quick.as_weak();
-    layers.quick.on_change_page(move |_| {
-        if let Some(quick) = quick.upgrade() {
-            let _ = page_tx.send(Event::Filter(quick.get_query().to_string()));
+#[allow(clippy::too_many_arguments)]
+fn show(
+    layers: &mut Layers,
+    visible: &mut Option<Popup>,
+    focused: &mut Option<Popup>,
+    metrics: &mut metrics::Metrics,
+    popup: Popup,
+    page: Option<u8>,
+    source: Source,
+    start: Instant,
+) {
+    if let Some(page) = page {
+        popup_model::select_page(popup, page, &layers.emoji, &layers.quick);
+        layers.filter();
+    }
+    if let Some(previous) = visible.take() {
+        layers.conceal(previous);
+        metrics.end(previous.name());
+        if previous == popup && page.is_none() {
+            return;
         }
-    });
-    layers.quick.on_filter(move |query| {
-        let _ = sender.send(Event::Filter(query.into()));
-    });
+    }
+    metrics.begin(popup.name(), source.as_str(), start);
+    *focused = None;
+    *visible = Some(popup);
+    layers.present(popup);
+    metrics.mark(popup.name(), "t2_shown");
+}
+
+fn bind_callbacks(layers: &Layers, waker: &Waker) {
+    let w = waker.clone();
+    layers.emoji.on_key(move |key| w.send(Event::Key(Popup::Emoji, key.into())));
+    let w = waker.clone();
+    layers.emoji.on_choose(move |index| w.send(Event::Choose(Popup::Emoji, index)));
+    let w = waker.clone();
+    layers.emoji.on_dismiss(move || w.send(Event::Hide(Popup::Emoji)));
+    let w = waker.clone();
+    layers.quick.on_key(move |key| w.send(Event::Key(Popup::Quick, key.into())));
+    let w = waker.clone();
+    layers.quick.on_choose(move |index| w.send(Event::Choose(Popup::Quick, index)));
+    let w = waker.clone();
+    layers.quick.on_dismiss(move || w.send(Event::Hide(Popup::Quick)));
+    let w = waker.clone();
+    layers.quick.on_change_page(move |_| w.send(Event::Filter));
+    let w = waker.clone();
+    layers.quick.on_filter(move |_| w.send(Event::Filter));
 }

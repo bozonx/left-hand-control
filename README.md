@@ -218,3 +218,7 @@ Active-window detection backends:
 - **KDE Plasma (Wayland)**: `kdotool` (install: `paru -S kdotool`).
 - **Hyprland**: `hyprctl` (ships with Hyprland).
 - Other Wayland sessions (GNOME, Sway, …): not yet implemented — app-based conditions evaluate as "no match".
+
+## License
+
+GPL-3.0-or-later — see [LICENSE](LICENSE).

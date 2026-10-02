@@ -1,0 +1,50 @@
+// Enums shared by the Slint pages and the Rust bindings. They replace the
+// integer codes that used to cross the Rust/Slint boundary.
+
+/// Top-level page of the settings window.
+export enum Page { keyboard, layouts, settings, rules, layers, macros, menus }
+
+/// Which menu `MenusPage` edits.
+export enum MenuKind { emoji, quick, commands }
+
+/// What a key does inside a layer (or an extra key).
+export enum Assignment { transparent, swallow, action }
+
+/// Type of an assigned action, shown as an icon on key caps.
+export enum ActionKind { none, keys, macro, command, system, app, text }
+
+/// Dialog of the rules page; also the rule property being edited.
+export enum RuleDialog { none, key, layer, tap, hold, double-tap, conditions, hold-timeout, double-timeout, advanced, remove }
+
+/// Rule property changed in place (without a dialog).
+export enum RuleField { enabled, swallow-tap, swallow-hold, isolate, hold-for }
+
+/// Dialog of the layers page.
+export enum LayerDialog { none, create, rename, duplicate, delete, edit-key, extra-key, clear-keys, clear-extras }
+
+/// Dialog of the layout library.
+export enum LibraryDialog { none, create, details, conditions, delete, unsaved }
+
+/// Action on the selected library layout.
+export enum LibraryAction { activate, move-up, move-down, save-conditions, save-details }
+
+/// Starting point of a new layout.
+export enum LayoutSource { empty, author, copy }
+
+/// Problem with a proposed layout name.
+export enum NameIssue { ok, empty, invalid, taken }
+
+/// What runs once the unsaved-changes question is answered.
+export enum PendingLayoutAction { none, edit, create }
+
+/// Game-mode part of a condition.
+export enum GameCondition { any, on, off }
+
+/// Who receives the value chosen in the action picker.
+export enum PickerTarget { rule, macro-step, quick-action, layer-key, layer-action, base-key }
+
+/// Editable field of a macro card.
+export enum MacroField { id, name, step-pause, modifier-delay }
+
+/// Editable field of a command card.
+export enum CommandField { id, name, linux }

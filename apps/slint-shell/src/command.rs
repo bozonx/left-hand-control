@@ -4,7 +4,6 @@
 //! because the CLI, benchmark scripts and the Spell worker all speak it.
 
 use crate::i18n::Language;
-use lhc_core::profile::model::Appearance;
 use std::{fmt, sync::Arc, time::Instant};
 
 /// Thread-safe entry point that forwards a command to the UI thread.
@@ -116,33 +115,6 @@ impl ThemeMode {
             Self::Dark => "dark",
         }
     }
-
-    /// Index used by `Theme.mode` in `ui/theme.slint`.
-    pub fn index(self) -> i32 {
-        match self {
-            Self::System => 0,
-            Self::Light => 1,
-            Self::Dark => 2,
-        }
-    }
-
-    pub fn from_index(index: i32) -> Self {
-        match index {
-            1 => Self::Light,
-            2 => Self::Dark,
-            _ => Self::System,
-        }
-    }
-}
-
-impl From<Appearance> for ThemeMode {
-    fn from(appearance: Appearance) -> Self {
-        match appearance {
-            Appearance::System => Self::System,
-            Appearance::Light => Self::Light,
-            Appearance::Dark => Self::Dark,
-        }
-    }
 }
 
 /// Resolved appearance shared with the Spell worker.
@@ -183,6 +155,17 @@ impl Command {
             .ok()
             .filter(|page| (1..=5).contains(page))?;
         Some(Self::ShowPage(popup, page))
+    }
+
+    /// Parse command-line arguments. `execute` takes the rest of the line
+    /// verbatim, so an action may contain spaces.
+    pub fn parse_args(args: &[String]) -> Result<Self, String> {
+        match args {
+            [first, rest @ ..] if first == "execute" && !rest.is_empty() => {
+                Ok(Self::Execute(rest.join(" ")))
+            }
+            _ => Self::parse(&args.join(" ")),
+        }
     }
 
     pub fn parse(value: &str) -> Result<Self, String> {
@@ -325,6 +308,17 @@ mod tests {
         );
         assert!(Command::parse("show nothing").is_err());
         assert!(Command::parse("preferences dim ru").is_err());
+    }
+
+    #[test]
+    fn command_line_arguments() {
+        let args = |values: &[&str]| values.iter().map(|v| v.to_string()).collect::<Vec<_>>();
+        assert_eq!(
+            Command::parse_args(&args(&["execute", "text:a  b"])),
+            Ok(Command::Execute("text:a  b".into()))
+        );
+        assert_eq!(Command::parse_args(&args(&["show", "quick", "2"])), Ok(Command::ShowPage(Popup::Quick, 2)));
+        assert!(Command::parse_args(&args(&["execute"])).is_err());
     }
 
     #[test]

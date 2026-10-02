@@ -22,6 +22,16 @@ pub const STANDARD_EMOJIS: [&str; 15] = [
 /// Prefix of ids of layouts stored in the user library.
 pub const USER_LAYOUT_PREFIX: &str = "user:";
 
+/// Id of the library layout `name`.
+pub fn user_layout_id(name: &str) -> String {
+    format!("{USER_LAYOUT_PREFIX}{name}")
+}
+
+/// Library name of a layout id, or `None` for ids outside the library.
+pub fn user_layout_name(id: &str) -> Option<&str> {
+    id.strip_prefix(USER_LAYOUT_PREFIX)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Layer {

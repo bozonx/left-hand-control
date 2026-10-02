@@ -1,7 +1,7 @@
 import { LineEdit, VerticalBox, HorizontalBox, Button, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 export component QuickPopup inherits Window {
-    title: "Slint Shell — Quick";
+    title: @tr("Quick actions");
     width: 520px; height: 500px;
     no-frame: true; always-on-top: true; background: transparent;
     in property <[string]> items;

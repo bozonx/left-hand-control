@@ -41,7 +41,7 @@
     "shortDescription": "Keyboard layout mapper for professionals",
     "longDescription": "Desktop application that proposes ergonomic layouts biased toward left-hand control for professionals.",
     "category": "Utility",
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "linux": {
       "deb": {
         "depends": [

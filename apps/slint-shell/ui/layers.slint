@@ -1,105 +1,51 @@
-import { InfoTip } from "controls.slint";
+import { ActionPicker } from "action-picker.slint";
+import { Card, Divider, IconButton, InfoTip } from "controls.slint";
 import { Theme } from "theme.slint";
-import { Palette, ComboBox, LineEdit, ScrollView } from "std-widgets.slint";
+import { Locale, Message } from "i18n.slint";
+import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
+import { Button, ComboBox, HorizontalBox, LineEdit, Palette, ScrollView, VerticalBox } from "std-widgets.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
-/// layer key index passed back to `open-dialog(5, index)`.
-/// `kind`: 0 transparent, 1 swallow, 2 action. `icon`: see `ActionIcon`.
-export struct LayerKeyCell { index: int, label: string, code: string, numeric: string, kind: int, action: string, icon: int }
-export struct LayerExtraRow { key: string, kind: int, action: string, icon: int }
+/// layer key index passed back with `LayerDialog.edit-key`.
+export struct LayerKeyCell { index: int, label: string, code: string, numeric: string, kind: Assignment, action: string, icon: ActionKind }
+export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind }
 
-/// Action type icon: 1 keys, 2 macro, 3 command, 4 system, 5 app, 6 text.
+/// Layers of the layout being edited and their keymaps.
+export global LayersEditor {
+    in property <[string]> names;
+    in-out property <int> selected: -1;
+    in property <string> description;
+    in property <[LayerKeyCell]> left-cells;
+    in property <[LayerKeyCell]> right-cells;
+    in property <[LayerExtraRow]> extras;
+    in property <Message> status;
+    in-out property <LayerDialog> dialog: LayerDialog.none;
+    in-out property <int> dialog-index: -1;
+    in-out property <Assignment> assignment: Assignment.transparent;
+    in-out property <string> dialog-name;
+    in-out property <string> dialog-description;
+    in-out property <string> dialog-key;
+    in-out property <string> dialog-action;
+    callback refresh();
+    callback choose(int);
+    /// Open `dialog`; `index` is the key or extra row it edits, or -1.
+    callback open-dialog(LayerDialog, int);
+    callback apply-dialog();
+    callback move-extra(int, int);
+    callback remove-extra(int);
+    callback update-description(string);
+}
+
 component ActionIcon inherits Image {
-    in property <int> kind;
+    in property <ActionKind> kind;
     width: 12px;
     height: 12px;
-    source: kind == 1 ? @image-url("icons/keyboard.svg")
-        : kind == 2 ? @image-url("icons/zap.svg")
-        : kind == 3 ? @image-url("icons/terminal.svg")
-        : kind == 4 ? @image-url("icons/settings-2.svg")
-        : kind == 5 ? @image-url("icons/app-window.svg")
+    source: kind == ActionKind.keys ? @image-url("icons/keyboard.svg")
+        : kind == ActionKind.macro ? @image-url("icons/zap.svg")
+        : kind == ActionKind.command ? @image-url("icons/terminal.svg")
+        : kind == ActionKind.system ? @image-url("icons/settings-2.svg")
+        : kind == ActionKind.app ? @image-url("icons/app-window.svg")
         : @image-url("icons/text-cursor-input.svg");
-}
-
-component Card inherits Rectangle {
-    background: Theme.card;
-    border-radius: 8px;
-    border-width: 1px;
-    border-color: Theme.border;
-}
-
-component Divider inherits Rectangle {
-    height: 1px;
-    background: Theme.border;
-}
-
-/// Ghost (or primary) button with a Lucide icon and optional text.
-component IconButton inherits Rectangle {
-    in property <image> icon;
-    in property <string> text;
-    in property <string> tooltip;
-    in property <bool> enabled: true;
-    in property <bool> primary: false;
-    in property <bool> danger: false;
-    callback clicked();
-    height: 32px;
-    min-width: 32px;
-    border-radius: 6px;
-    background: root.primary
-        ? (touch.has-hover && root.enabled ? Palette.accent-background.brighter(0.15) : Palette.accent-background)
-        : (touch.has-hover || focus.has-focus) && root.enabled ? Theme.hover : transparent;
-    border-width: focus.has-focus ? 1px : 0px;
-    border-color: Theme.text;
-    opacity: root.enabled ? 1.0 : 0.45;
-    accessible-role: button;
-    accessible-label: root.text != "" ? root.text : root.tooltip;
-    accessible-enabled: root.enabled;
-    accessible-action-default => { if root.enabled { root.clicked(); } }
-    HorizontalLayout {
-        padding-left: root.text == "" ? 8px : 10px;
-        padding-right: root.text == "" ? 8px : 12px;
-        spacing: 6px;
-        alignment: center;
-        VerticalLayout {
-            alignment: center;
-            Image {
-                width: 16px; height: 16px;
-                source: root.icon;
-                colorize: root.primary ? Palette.accent-foreground : root.danger ? Theme.error : Theme.text;
-            }
-        }
-        if root.text != "": Text {
-            text: root.text;
-            color: root.primary ? Palette.accent-foreground : Theme.text;
-            font-weight: 600;
-            font-size: 13px;
-            vertical-alignment: center;
-        }
-    }
-    focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
-            return reject;
-        }
-    }
-    touch := TouchArea {
-        enabled: root.enabled;
-        mouse-cursor: root.enabled ? pointer : default;
-        clicked => { root.clicked(); }
-    }
-    if root.tooltip != "": Tooltip {
-        Rectangle {
-            background: Theme.card;
-            border-radius: 4px;
-            border-width: 1px;
-            border-color: Theme.border;
-            HorizontalLayout {
-                padding: 6px;
-                Text { text: root.tooltip; color: Theme.text; font-size: 12px; }
-            }
-        }
-    }
 }
 
 /// Segmented switch in the style of the Tauri keyboard view selector.
@@ -144,23 +90,23 @@ component Segmented inherits Rectangle {
 }
 
 component ActionText inherits HorizontalLayout {
-    in property <int> kind;
+    in property <Assignment> kind;
     in property <string> action;
-    in property <int> icon;
+    in property <ActionKind> icon;
     in property <length> text-size: 10px;
     in property <TextHorizontalAlignment> text-alignment: center;
     spacing: 3px;
-    if root.kind != 0 && root.icon > 0: VerticalLayout {
+    if root.kind != Assignment.transparent && root.icon != ActionKind.none: VerticalLayout {
         alignment: center;
         ActionIcon { kind: root.icon; colorize: Theme.link; }
     }
     Text {
         min-width: 0px;
         horizontal-stretch: 1;
-        text: root.kind == 0 ? "—" : root.kind == 1 ? @tr("Ignore key") : root.action;
-        color: root.kind == 0 ? Theme.muted : Theme.link;
+        text: root.kind == Assignment.transparent ? "—" : root.kind == Assignment.swallow ? @tr("Ignore key") : root.action;
+        color: root.kind == Assignment.transparent ? Theme.muted : Theme.link;
         font-size: root.text-size;
-        font-weight: root.kind == 0 ? 400 : 500;
+        font-weight: root.kind == Assignment.transparent ? 400 : 500;
         horizontal-alignment: root.text-alignment;
         vertical-alignment: center;
         overflow: elide;
@@ -177,7 +123,7 @@ component KeyCap inherits Rectangle {
     background: Theme.surface;
     accessible-role: button;
     accessible-label: root.cell.label;
-    accessible-description: root.cell.kind == 0 ? "" : root.cell.kind == 1 ? @tr("Ignore key") : root.cell.action;
+    accessible-description: root.cell.kind == Assignment.transparent ? "" : root.cell.kind == Assignment.swallow ? @tr("Ignore key") : root.cell.action;
     accessible-action-default => { root.clicked(); }
     VerticalLayout {
         padding: 4px;
@@ -239,19 +185,7 @@ component HandGrid inherits VerticalLayout {
 }
 
 export component LayersPage inherits VerticalLayout {
-    in property <[string]> layer-names;
-    in property <int> selected-layer;
-    in property <string> layer-description;
-    in property <[LayerKeyCell]> left-cells;
-    in property <[LayerKeyCell]> right-cells;
-    in property <[LayerExtraRow]> extras;
     in-out property <int> label-mode: 0;
-    /// Same kinds as the layer dialog in `settings.slint`.
-    callback open-dialog(int, int);
-    callback choose-layer(int);
-    callback update-description(string);
-    callback move-extra(int, int);
-    callback remove-extra(int);
 
     private property <bool> description-editing: false;
     private property <string> test-text;
@@ -259,7 +193,7 @@ export component LayersPage inherits VerticalLayout {
     function commit-description(text: string) {
         if root.description-editing {
             root.description-editing = false;
-            if text != root.layer-description { root.update-description(text); }
+            if text != LayersEditor.description { LayersEditor.update-description(text); }
         }
     }
 
@@ -285,28 +219,28 @@ export component LayersPage inherits VerticalLayout {
                                 spacing: 4px;
                                 ComboBox {
                                     horizontal-stretch: 1;
-                                    model: root.layer-names;
-                                    current-index: root.selected-layer;
-                                    enabled: root.layer-names.length > 0;
-                                    selected(value) => { root.choose-layer(self.current-index); }
+                                    model: LayersEditor.names;
+                                    current-index: LayersEditor.selected;
+                                    enabled: LayersEditor.names.length > 0;
+                                    selected(value) => { LayersEditor.choose(self.current-index); }
                                 }
                                 IconButton {
                                     icon: @image-url("icons/pencil.svg");
                                     tooltip: @tr("Rename layer");
-                                    enabled: root.selected-layer >= 0;
-                                    clicked => { root.open-dialog(2, -1); }
+                                    enabled: LayersEditor.selected >= 0;
+                                    clicked => { LayersEditor.open-dialog(LayerDialog.rename, -1); }
                                 }
                                 IconButton {
                                     icon: @image-url("icons/trash-2.svg");
                                     tooltip: @tr("Delete layer");
-                                    enabled: root.selected-layer >= 0;
-                                    clicked => { root.open-dialog(4, -1); }
+                                    enabled: LayersEditor.selected >= 0;
+                                    clicked => { LayersEditor.open-dialog(LayerDialog.delete, -1); }
                                 }
                                 IconButton {
                                     icon: @image-url("icons/copy.svg");
                                     text: @tr("Duplicate");
-                                    enabled: root.selected-layer >= 0;
-                                    clicked => { root.open-dialog(3, -1); }
+                                    enabled: LayersEditor.selected >= 0;
+                                    clicked => { LayersEditor.open-dialog(LayerDialog.duplicate, -1); }
                                 }
                             }
                         }
@@ -339,19 +273,19 @@ export component LayersPage inherits VerticalLayout {
                                     text: @tr("New layer");
                                     tooltip: @tr("Create new layer");
                                     primary: true;
-                                    clicked => { root.open-dialog(1, -1); }
+                                    clicked => { LayersEditor.open-dialog(LayerDialog.create, -1); }
                                 }
                             }
                         }
                     }
-                    if root.selected-layer >= 0 && root.description-editing: description-edit := LineEdit {
-                        text: root.layer-description;
+                    if LayersEditor.selected >= 0 && root.description-editing: description-edit := LineEdit {
+                        text: LayersEditor.description;
                         placeholder-text: @tr("Layer description");
                         init => { self.focus(); }
                         accepted(text) => { root.commit-description(text); }
                         changed has-focus => { if !self.has-focus { root.commit-description(self.text); } }
                     }
-                    if root.selected-layer >= 0 && !root.description-editing && root.layer-description == "": HorizontalLayout {
+                    if LayersEditor.selected >= 0 && !root.description-editing && LayersEditor.description == "": HorizontalLayout {
                         alignment: start;
                         IconButton {
                             icon: @image-url("icons/plus.svg");
@@ -360,13 +294,13 @@ export component LayersPage inherits VerticalLayout {
                             clicked => { root.description-editing = true; }
                         }
                     }
-                    if root.selected-layer >= 0 && !root.description-editing && root.layer-description != "": Rectangle {
+                    if LayersEditor.selected >= 0 && !root.description-editing && LayersEditor.description != "": Rectangle {
                         background: Theme.surface;
                         border-radius: 6px;
                         border-width: 1px;
                         border-color: description-touch.has-hover ? Theme.muted : Theme.border;
                         accessible-role: button;
-                        accessible-label: root.layer-description;
+                        accessible-label: LayersEditor.description;
                         accessible-action-default => { root.description-editing = true; }
                         HorizontalLayout {
                             padding: 12px;
@@ -378,7 +312,7 @@ export component LayersPage inherits VerticalLayout {
                             }
                             Text {
                                 horizontal-stretch: 1;
-                                text: root.layer-description;
+                                text: LayersEditor.description;
                                 color: Theme.muted;
                                 wrap: word-wrap;
                             }
@@ -388,7 +322,7 @@ export component LayersPage inherits VerticalLayout {
                 }
             }
 
-            if root.selected-layer < 0: Card {
+            if LayersEditor.selected < 0: Card {
                 HorizontalLayout {
                     padding: 20px;
                     spacing: 12px;
@@ -404,14 +338,14 @@ export component LayersPage inherits VerticalLayout {
                             icon: @image-url("icons/plus.svg");
                             text: @tr("New layer");
                             primary: true;
-                            clicked => { root.open-dialog(1, -1); }
+                            clicked => { LayersEditor.open-dialog(LayerDialog.create, -1); }
                         }
                     }
                 }
             }
 
             // Keyboard
-            if root.selected-layer >= 0: Card {
+            if LayersEditor.selected >= 0: Card {
                 VerticalLayout {
                     HorizontalLayout {
                         padding-left: 20px; padding-right: 20px; padding-top: 14px; padding-bottom: 14px;
@@ -428,7 +362,7 @@ export component LayersPage inherits VerticalLayout {
                                 icon: @image-url("icons/eraser.svg");
                                 text: @tr("Clear");
                                 tooltip: @tr("Clears key bindings only. Extra keys are not affected.");
-                                clicked => { root.open-dialog(7, -1); }
+                                clicked => { LayersEditor.open-dialog(LayerDialog.clear-keys, -1); }
                             }
                         }
                         Segmented {
@@ -443,24 +377,24 @@ export component LayersPage inherits VerticalLayout {
                         spacing: 24px;
                         HandGrid {
                             title: @tr("Left hand");
-                            cells: root.left-cells;
+                            cells: LayersEditor.left-cells;
                             columns: 6;
                             label-mode: root.label-mode;
-                            edit(index) => { root.open-dialog(5, index); }
+                            edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
                         }
                         HandGrid {
                             title: @tr("Right hand");
-                            cells: root.right-cells;
+                            cells: LayersEditor.right-cells;
                             columns: 8;
                             label-mode: root.label-mode;
-                            edit(index) => { root.open-dialog(5, index); }
+                            edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
                         }
                     }
                 }
             }
 
             // Extra keys
-            if root.selected-layer >= 0: Card {
+            if LayersEditor.selected >= 0: Card {
                 VerticalLayout {
                     HorizontalLayout {
                         padding-left: 20px; padding-right: 20px; padding-top: 14px; padding-bottom: 14px;
@@ -471,12 +405,12 @@ export component LayersPage inherits VerticalLayout {
                             Text { text: @tr("Extra keys"); color: Theme.text; font-size: 15px; font-weight: 700; }
                             Text { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                         }
-                        if root.extras.length > 0: VerticalLayout {
+                        if LayersEditor.extras.length > 0: VerticalLayout {
                             alignment: center;
                             IconButton {
                                 icon: @image-url("icons/eraser.svg");
                                 text: @tr("Clear");
-                                clicked => { root.open-dialog(8, -1); }
+                                clicked => { LayersEditor.open-dialog(LayerDialog.clear-extras, -1); }
                             }
                         }
                         VerticalLayout {
@@ -485,7 +419,7 @@ export component LayersPage inherits VerticalLayout {
                                 icon: @image-url("icons/plus.svg");
                                 text: @tr("Add");
                                 primary: true;
-                                clicked => { root.open-dialog(6, -1); }
+                                clicked => { LayersEditor.open-dialog(LayerDialog.extra-key, -1); }
                             }
                         }
                     }
@@ -493,13 +427,13 @@ export component LayersPage inherits VerticalLayout {
                     VerticalLayout {
                         padding: 20px;
                         spacing: 8px;
-                        if root.extras.length == 0: Text { text: @tr("No extra keys for this layer yet."); color: Theme.muted; }
-                        for extra[index] in root.extras: Rectangle {
+                        if LayersEditor.extras.length == 0: Text { text: @tr("No extra keys for this layer yet."); color: Theme.muted; }
+                        for extra[index] in LayersEditor.extras: Rectangle {
                             background: extra-touch.has-hover ? Theme.hover : Theme.surface;
                             border-radius: 6px;
                             border-width: 1px;
                             border-color: Theme.border;
-                            extra-touch := TouchArea { mouse-cursor: pointer; clicked => { root.open-dialog(6, index); } }
+                            extra-touch := TouchArea { mouse-cursor: pointer; clicked => { LayersEditor.open-dialog(LayerDialog.extra-key, index); } }
                             HorizontalLayout {
                                 padding: 10px;
                                 padding-left: 14px;
@@ -521,21 +455,77 @@ export component LayersPage inherits VerticalLayout {
                                 HorizontalLayout {
                                     spacing: 2px;
                                     VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/pencil.svg"); tooltip: @tr("Edit"); clicked => { root.open-dialog(6, index); } }
+                                        IconButton { icon: @image-url("icons/pencil.svg"); tooltip: @tr("Edit"); clicked => { LayersEditor.open-dialog(LayerDialog.extra-key, index); } }
                                     }
                                     VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/arrow-up.svg"); tooltip: @tr("Move up"); enabled: index > 0; clicked => { root.move-extra(index, -1); } }
+                                        IconButton { icon: @image-url("icons/arrow-up.svg"); tooltip: @tr("Move up"); enabled: index > 0; clicked => { LayersEditor.move-extra(index, -1); } }
                                     }
                                     VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/arrow-down.svg"); tooltip: @tr("Move down"); enabled: index < root.extras.length - 1; clicked => { root.move-extra(index, 1); } }
+                                        IconButton { icon: @image-url("icons/arrow-down.svg"); tooltip: @tr("Move down"); enabled: index < LayersEditor.extras.length - 1; clicked => { LayersEditor.move-extra(index, 1); } }
                                     }
                                     VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); danger: true; clicked => { root.remove-extra(index); } }
+                                        IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); danger: true; clicked => { LayersEditor.remove-extra(index); } }
                                     }
                                 }
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+    if LayersEditor.dialog == LayerDialog.none && Locale.text(LayersEditor.status) != "": Text { text: Locale.text(LayersEditor.status); color: Theme.muted; wrap: word-wrap; }
+}
+
+export component LayerDialogOverlay inherits FocusScope {
+    focus-on-tab-navigation: false;
+    enabled: LayersEditor.dialog != LayerDialog.none && !ActionPicker.opened;
+    key-pressed(event) => { if event.text == Key.Escape { LayersEditor.dialog = LayerDialog.none; return accept; } return reject; }
+    if LayersEditor.dialog != LayerDialog.none: Rectangle {
+        background: #00000099;
+        TouchArea { clicked => { LayersEditor.dialog = LayerDialog.none; } }
+        Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: 12px;
+            TouchArea {}
+            VerticalBox { padding: 20px; spacing: 12px;
+                Text {
+                    text: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
+                        : LayersEditor.dialog == LayerDialog.rename ? @tr("Rename layer")
+                        : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
+                        : LayersEditor.dialog == LayerDialog.delete ? @tr("Delete layer?")
+                        : LayersEditor.dialog == LayerDialog.edit-key ? @tr("Edit layer key")
+                        : LayersEditor.dialog == LayerDialog.extra-key ? @tr("Extra key")
+                        : @tr("Clear assignments?");
+                    color: Theme.text; font-size: 22px; font-weight: 700;
+                }
+                if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.rename || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
+                    Text { text: @tr("Name"); color: Theme.text; }
+                    LineEdit { text <=> LayersEditor.dialog-name; accepted => { LayersEditor.apply-dialog(); } }
+                    Text { text: @tr("Description"); color: Theme.text; }
+                    LineEdit { text <=> LayersEditor.dialog-description; accepted => { LayersEditor.apply-dialog(); } }
+                }
+                if LayersEditor.dialog == LayerDialog.delete: Text { text: @tr("Rules using this layer will return to the base layer."); color: Theme.muted; wrap: word-wrap; }
+                if LayersEditor.dialog == LayerDialog.edit-key || LayersEditor.dialog == LayerDialog.extra-key: VerticalBox { spacing: 8px;
+                    if LayersEditor.dialog == LayerDialog.extra-key: Text { text: @tr("Key code"); color: Theme.text; }
+                    if LayersEditor.dialog == LayerDialog.extra-key: HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                        LineEdit { text <=> LayersEditor.dialog-key; horizontal-stretch: 1; }
+                        Button { text: @tr("Choose trigger key"); clicked => { ActionPicker.open(PickerTarget.layer-key, 0, LayersEditor.dialog-key, true); } }
+                    }
+                    ComboBox {
+                        model: LayersEditor.dialog == LayerDialog.extra-key ? [@tr("Native"), @tr("Swallow"), @tr("Action")] : [@tr("Transparent"), @tr("Swallow"), @tr("Action")];
+                        current-index: LayersEditor.assignment == Assignment.swallow ? 1 : LayersEditor.assignment == Assignment.action ? 2 : 0;
+                        selected(value) => { LayersEditor.assignment = self.current-index == 1 ? Assignment.swallow : self.current-index == 2 ? Assignment.action : Assignment.transparent; }
+                    }
+                    if LayersEditor.assignment == Assignment.action: HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                        LineEdit { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
+                        Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
+                    }
+                }
+                Text { text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
+                Rectangle { vertical-stretch: 1; }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Rectangle { horizontal-stretch: 1; }
+                    Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
+                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; clicked => { LayersEditor.apply-dialog(); } }
                 }
             }
         }

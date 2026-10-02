@@ -9,12 +9,26 @@ use tray_icon::{
 };
 
 pub struct Handle {
-    _icon: TrayIcon,
+    icon: TrayIcon,
     items: Vec<(TrayItem, MenuItem)>,
 }
 
+fn icon(enabled: bool) -> Result<Icon, tray_icon::BadIcon> {
+    let (rgba, width, height) = super::super::icon::rgba(enabled);
+    Icon::from_rgba(rgba, width, height)
+}
+
 impl Handle {
-    pub fn set_enabled(&self, _enabled: bool) {}
+    pub fn set_enabled(&self, enabled: bool) {
+        match icon(enabled) {
+            Ok(icon) => {
+                if let Err(error) = self.icon.set_icon(Some(icon)) {
+                    log::warn!("tray icon: {error}");
+                }
+            }
+            Err(error) => log::warn!("tray icon: {error}"),
+        }
+    }
 
     pub fn set_english(&self, english: bool) {
         for (entry, item) in &self.items {
@@ -47,11 +61,10 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
             dispatch(command.clone(), Source::Tray, Instant::now(), None);
         }
     }));
-    let icon = Icon::from_rgba(vec![70, 180, 110, 255].repeat(22 * 22), 22, 22)?;
     let icon = TrayIconBuilder::new()
-        .with_tooltip("Left Hand Control Slint")
-        .with_icon(icon)
+        .with_tooltip("Left Hand Control")
+        .with_icon(icon(false)?)
         .with_menu(Box::new(menu))
         .build()?;
-    Ok(Handle { _icon: icon, items })
+    Ok(Handle { icon, items })
 }

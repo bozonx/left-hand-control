@@ -5,25 +5,21 @@
 //! threads reach it only through `slint::invoke_from_event_loop` +
 //! [`with_app`]; nothing here is shared across threads.
 
-mod keymap_layers;
-mod layouts;
 mod mapper;
 mod popups;
-mod rules;
-mod settings_page;
 mod worker;
 
 use crate::{
-    command::{Command, Dispatch, Preferences, Source, ThemeMode, Window},
-    editor::{self, EditorHandle},
+    command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
+    document::{Document, View},
     i18n::{Language, Msg},
-    ipc, metrics,
+    ipc, metrics, pages,
     platform::{backend, focus, hotkey, tray},
-    popup_model,
-    ui::{EmojiPopup, Locale, QuickPopup, SettingsWindow, Theme},
+    popup_model::ConfiguredMenus,
+    ui::{AppState, EmojiPopup, Locale, QuickPopup, SettingsWindow, Theme},
 };
-use lhc_core::{config_document::ConfigDocument, storage::StoragePaths};
-use slint::{ComponentHandle, ModelRc, VecModel};
+use lhc_core::{profile::model::Appearance, storage::StoragePaths};
+use slint::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
@@ -32,32 +28,39 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// How often the configuration files are checked for changes made by
+/// other processes. Unchanged files are not read (see `TrackedFile`).
+const CONFIG_POLL: Duration = Duration::from_secs(1);
+/// How often a running Spell worker is checked for crashes.
+const WORKER_POLL: Duration = Duration::from_secs(1);
+
 pub(crate) struct App {
     settings: SettingsWindow,
     emoji: EmojiPopup,
     quick: QuickPopup,
+    document: Option<Rc<Document>>,
     metrics: RefCell<metrics::Metrics>,
     /// Bumped on every show; deferred work checks it to skip stale requests.
     generations: RefCell<HashMap<Window, u64>>,
     focus: RefCell<focus::Activation>,
     tray: RefCell<Option<tray::Handle>>,
-    #[cfg(target_os = "linux")]
-    pending_activation: RefCell<Option<popups::PendingActivation>>,
     #[cfg(not(target_os = "linux"))]
     return_input: RefCell<crate::platform::return_input::ReturnInput>,
-    actions: RefCell<Vec<(String, String)>>,
-    worker: RefCell<Option<backend::Worker>>,
-    use_spell: bool,
-    restart_pending: Cell<bool>,
-    restart_history: RefCell<Vec<Instant>>,
+    /// Menus of the active layout for the winit popups.
+    menus: RefCell<Option<Rc<ConfiguredMenus>>>,
+    /// Bumped whenever the menus may have changed.
+    menu_generation: Cell<u64>,
+    /// Layout and generation last sent to the Spell worker.
+    menus_sent: RefCell<Option<(Option<String>, u64)>>,
+    /// Actions of the quick popup items in display order.
+    quick_actions: RefCell<Vec<String>>,
+    /// Action chosen in a popup, run once the popup lost the focus.
+    pending_action: RefCell<Option<(Popup, String)>>,
+    supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
+    config_watch: slint::Timer,
     worker_watch: slint::Timer,
-    status_watch: slint::Timer,
-    last_auto_layout: RefCell<Option<Option<String>>>,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
-    config: Option<Rc<RefCell<ConfigDocument>>>,
-    editor: EditorHandle,
-    devices: RefCell<Vec<String>>,
 }
 
 thread_local! { static APP: RefCell<Option<Rc<App>>> = const { RefCell::new(None) }; }
@@ -74,6 +77,17 @@ fn post(f: impl FnOnce(&Rc<App>) + Send + 'static) {
     if let Err(error) = slint::invoke_from_event_loop(move || with_app(f)) {
         log::error!("UI dispatch: {error}");
     }
+}
+
+/// Whether the desktop prefers a dark theme; dark when unknown.
+fn system_dark(settings: &SettingsWindow) -> bool {
+    use slint::winit_030::WinitWindowAccessor;
+    settings
+        .window()
+        .with_winit_window(|window| {
+            window.theme() != Some(slint::winit_030::winit::window::Theme::Light)
+        })
+        .unwrap_or(true)
 }
 
 impl App {
@@ -101,17 +115,21 @@ impl App {
     }
 
     fn set_error(&self, message: Msg) {
-        self.settings.set_backend_error(message.to_ui());
+        self.settings
+            .global::<AppState>()
+            .set_backend_error(message.to_ui());
     }
 
     fn command(&self, command: Command, source: Source, start: Instant, token: Option<String>) {
         match command {
-            Command::Show(window) => self.show(window, source, start, token),
+            Command::Show(window) => self.show(window, source, start, token, None),
             Command::ShowPage(popup, page) => {
-                self.show_page(Window::Popup(popup), source, start, token, Some(page))
+                self.show(Window::Popup(popup), source, start, token, Some(page))
             }
             Command::Hide => {
-                self.send_worker(&Command::Hide, source, start, token);
+                if self.supervisor.borrow().enabled {
+                    let _ = self.send_worker(&Command::Hide, source, start, token);
+                }
                 self.hide(Window::EMOJI);
                 self.hide(Window::QUICK);
             }
@@ -119,17 +137,16 @@ impl App {
                 if self.settings.window().is_visible() {
                     self.hide(Window::Settings);
                 } else {
-                    self.show(Window::Settings, source, start, token);
+                    self.show(Window::Settings, source, start, token, None);
                 }
             }
             Command::ToggleMapper => self.toggle_mapper(),
-            Command::Preferences(preferences) => {
-                self.apply_preferences(preferences);
-                self.send_worker(&command, source, start, None);
-            }
+            Command::Preferences(preferences) => self.set_preferences(preferences),
             Command::Ping | Command::PopupLayout(_) => {}
             Command::Execute(action) => {
-                if let Err(error) = lhc_core::mapper::runtime::execute_action(action) {
+                if !lhc_core::mapper::runtime::status().running {
+                    self.set_error(Msg::MapperRequired);
+                } else if let Err(error) = lhc_core::mapper::runtime::execute_action(action) {
                     self.set_error(Msg::ActionFailed(error));
                 }
             }
@@ -140,14 +157,41 @@ impl App {
         }
     }
 
-    fn apply_preferences(&self, preferences: Preferences) {
+    /// Theme and language resolved from the saved settings.
+    fn configured_preferences(&self) -> Preferences {
+        let Some(document) = &self.document else {
+            return Preferences {
+                theme: ThemeMode::Dark,
+                language: Language::resolve(Default::default()),
+            };
+        };
+        let config = document.read();
+        let settings = config.settings();
+        let dark = match settings.appearance {
+            Appearance::Light => false,
+            Appearance::Dark => true,
+            Appearance::System => system_dark(&self.settings),
+        };
+        Preferences {
+            theme: if dark { ThemeMode::Dark } else { ThemeMode::Light },
+            language: Language::resolve(settings.locale),
+        }
+    }
+
+    /// Apply the saved theme and language if they changed.
+    fn apply_preferences(&self) {
+        let preferences = self.configured_preferences();
+        if preferences != self.preferences.get() {
+            self.set_preferences(preferences);
+        }
+    }
+
+    fn set_preferences(&self, preferences: Preferences) {
+        let changed_language = preferences.language != self.preferences.get().language;
         self.preferences.set(preferences);
         preferences.language.select_bundled();
         for (theme, locale) in [
-            (
-                self.settings.global::<Theme>(),
-                self.settings.global::<Locale>(),
-            ),
+            (self.settings.global::<Theme>(), self.settings.global::<Locale>()),
             (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
         ] {
@@ -158,21 +202,46 @@ impl App {
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_english(preferences.language == Language::English);
         }
+        if self.supervisor.borrow().enabled {
+            let _ = self.send_worker(&Command::Preferences(preferences), Source::Ipc, Instant::now(), None);
+        }
+        // Action names on the pages are translated in Rust.
+        if changed_language && let Some(document) = &self.document {
+            document.refresh_all();
+        }
+    }
+
+    /// Shell parts that depend on the document.
+    fn document_changed(&self) {
+        let Some(document) = &self.document else {
+            return;
+        };
+        let need_approval = {
+            let config = document.read();
+            !config.layout().commands.is_empty() && !config.commands_trusted()
+        };
+        self.settings
+            .global::<AppState>()
+            .set_commands_need_approval(need_approval);
+        self.invalidate_menus();
+        self.apply_preferences();
     }
 }
 
-fn load_config(settings: &SettingsWindow) -> Option<Rc<RefCell<ConfigDocument>>> {
+fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
+    let state = settings.global::<AppState>();
     match StoragePaths::resolve()
         .map_err(lhc_core::config_document::ConfigError::Io)
-        .and_then(ConfigDocument::load)
+        .and_then(Document::load)
     {
-        Ok(config) => {
-            settings.set_config_status(Msg::ConfigLoaded(config.layout().rules.len()).to_ui());
-            Some(Rc::new(RefCell::new(config)))
+        Ok(document) => {
+            let rules = document.read().layout().rules.len();
+            state.set_config_status(Msg::ConfigLoaded(rules).to_ui());
+            Some(document)
         }
         Err(error) => {
             log::warn!("configuration unavailable: {error}");
-            settings.set_config_status(Msg::ConfigUnavailable(error.to_string()).to_ui());
+            state.set_config_status(Msg::ConfigUnavailable(error.to_string()).to_ui());
             None
         }
     }
@@ -181,7 +250,9 @@ fn load_config(settings: &SettingsWindow) -> Option<Rc<RefCell<ConfigDocument>>>
 fn start_core() {
     let paths = StoragePaths::resolve();
     if let Ok(paths) = &paths {
-        let _ = paths.ensure();
+        if let Err(error) = paths.ensure() {
+            log::warn!("storage: {error}");
+        }
         lhc_core::mapper::runtime::set_portal_token_dir(paths.data_dir().clone());
     }
     lhc_core::layout::start_watcher();
@@ -199,7 +270,7 @@ fn stop_core() {
 
 pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let server = ipc::Server::bind()?;
-    let worker = backend::start()?;
+    let use_spell = backend::spell_requested()?;
     let popup_attributes = Rc::new(Cell::new(false));
     select_backend(popup_attributes.clone())?;
     // Core watchers post to the UI via `invoke_from_event_loop`, which fails
@@ -207,13 +278,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     start_core();
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
-    let config = load_config(&settings);
-    let editor = bind_document(&settings, config.clone());
-    let devices = mapper::bind_devices(&settings, config.as_ref());
+    settings.global::<AppState>().set_is_linux(cfg!(target_os = "linux"));
+    let document = load_document(&settings);
+    if let Some(document) = &document {
+        pages::bind_document(&settings, document);
+    }
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;
-    emoji.set_emojis(ModelRc::new(VecModel::from(popup_model::emoji_items())));
     metrics.ready("emoji");
     let quick = QuickPopup::new()?;
     metrics.ready("quick");
@@ -221,88 +293,49 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         settings,
         emoji,
         quick,
+        document,
         metrics: RefCell::new(metrics),
         generations: RefCell::default(),
         focus: RefCell::new(focus::Activation::default()),
         tray: RefCell::new(None),
-        #[cfg(target_os = "linux")]
-        pending_activation: RefCell::new(None),
         #[cfg(not(target_os = "linux"))]
         return_input: RefCell::default(),
-        actions: RefCell::default(),
-        use_spell: worker.is_some(),
-        worker: RefCell::new(worker),
-        restart_pending: Cell::new(false),
-        restart_history: RefCell::default(),
+        menus: RefCell::default(),
+        menu_generation: Cell::new(0),
+        menus_sent: RefCell::default(),
+        quick_actions: RefCell::default(),
+        pending_action: RefCell::default(),
+        supervisor: RefCell::new(worker::Supervisor::new(use_spell)),
         preferences: Cell::new(Preferences::default()),
+        config_watch: slint::Timer::default(),
         worker_watch: slint::Timer::default(),
-        status_watch: slint::Timer::default(),
-        last_auto_layout: RefCell::new(None),
         last_mapper_status: RefCell::new(None),
-        config,
-        editor,
-        devices: RefCell::new(devices),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
-    let initial_preferences = app
-        .config
-        .as_ref()
-        .map_or(Preferences::default(), |config| {
-            let config = config.borrow();
-            Preferences {
-                theme: if match config.settings().appearance {
-                    lhc_core::profile::model::Appearance::Light => false,
-                    lhc_core::profile::model::Appearance::Dark => true,
-                    _ => settings_page::system_dark(&app.settings),
-                } {
-                    ThemeMode::Dark
-                } else {
-                    ThemeMode::Light
-                },
-                language: Language::resolve(config.settings().locale),
+    app.set_preferences(app.configured_preferences());
+    if let Some(document) = &app.document {
+        let weak = Rc::downgrade(&app);
+        document.subscribe(View::Shell, move |_| {
+            if let Some(app) = weak.upgrade() {
+                app.document_changed();
             }
         });
-    app.command(
-        Command::Preferences(initial_preferences),
-        Source::Button,
-        Instant::now(),
-        None,
-    );
-    app.filter_quick("");
+    }
+    app.document_changed();
+    app.context_changed();
     app.refresh_mapper_status();
-    bind_settings(&app);
+    app.settings
+        .global::<AppState>()
+        .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));
     popups::bind(&app);
-    app.status_watch
-        .start(slint::TimerMode::Repeated, Duration::from_secs(1), || {
-            with_app(|app| {
-                app.refresh_mapper_status();
-                app.reload_config_if_changed();
-                if app.config.as_ref().is_some_and(|config| {
-                    config.borrow().settings().appearance
-                        == lhc_core::profile::model::Appearance::System
-                }) {
-                    let theme = if settings_page::system_dark(&app.settings) {
-                        ThemeMode::Dark
-                    } else {
-                        ThemeMode::Light
-                    };
-                    if app.preferences.get().theme != theme {
-                        app.command(
-                            Command::Preferences(Preferences {
-                                theme,
-                                ..app.preferences.get()
-                            }),
-                            Source::Button,
-                            Instant::now(),
-                            None,
-                        );
-                    }
-                }
-            });
+    app.config_watch
+        .start(slint::TimerMode::Repeated, CONFIG_POLL, || {
+            with_app(|app| app.reload_config())
         });
-    if app.use_spell {
+    if use_spell {
+        app.start_worker(false);
         app.worker_watch
-            .start(slint::TimerMode::Repeated, Duration::from_secs(1), || {
+            .start(slint::TimerMode::Repeated, WORKER_POLL, || {
                 with_app(|app| app.check_worker())
             });
     }
@@ -315,6 +348,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             Ok(tray) => {
                 tray.set_english(app.preferences.get().language == Language::English);
                 *app.tray.borrow_mut() = Some(tray);
+                app.last_mapper_status.borrow_mut().take();
                 app.refresh_mapper_status();
                 app.metrics.borrow_mut().ready("tray");
             }
@@ -327,76 +361,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     stop_core();
     APP.with(|slot| slot.borrow_mut().take());
     Ok(())
-}
-
-pub fn bind_document(
-    settings: &SettingsWindow,
-    config: Option<Rc<RefCell<ConfigDocument>>>,
-) -> EditorHandle {
-    let editor = editor::bind_with_config(settings, config.clone());
-    layouts::bind(settings, config.clone(), editor.clone());
-    rules::bind(settings, config.clone(), editor.clone());
-    keymap_layers::bind(settings, config.clone());
-    crate::macro_editor::bind(settings, config.clone());
-    crate::menu_editor::bind(settings, config.clone());
-    settings_page::bind(settings, config);
-    editor
-}
-
-fn bind_settings(app: &App) {
-    app.settings.on_preferences(|dark, english| {
-        with_app(|app| {
-            app.command(
-                Command::Preferences(Preferences {
-                    theme: if dark {
-                        ThemeMode::Dark
-                    } else {
-                        ThemeMode::Light
-                    },
-                    language: if english {
-                        Language::English
-                    } else {
-                        Language::Russian
-                    },
-                }),
-                Source::Button,
-                Instant::now(),
-                None,
-            )
-        })
-    });
-    app.settings.on_settings_saved(|dark, english| {
-        with_app(|app| {
-            app.command(
-                Command::Preferences(Preferences {
-                    theme: if dark {
-                        ThemeMode::Dark
-                    } else {
-                        ThemeMode::Light
-                    },
-                    language: if english {
-                        Language::English
-                    } else {
-                        Language::Russian
-                    },
-                }),
-                Source::Button,
-                Instant::now(),
-                None,
-            );
-        });
-    });
-    app.settings.on_refresh_devices(|| {
-        with_app(|app| {
-            *app.devices.borrow_mut() = mapper::bind_devices(&app.settings, app.config.as_ref());
-            settings_page::refresh_mouse_devices(&app.settings);
-        });
-    });
-    app.settings.on_toggle_mapper(|| {
-        with_app(|app| app.command(Command::ToggleMapper, Source::Button, Instant::now(), None))
-    });
-    app.settings
-        .on_select_device(|index| with_app(|app| app.select_device(index)));
 }
 
 #[cfg(target_os = "linux")]

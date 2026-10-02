@@ -1,6 +1,7 @@
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
+import { MacroField, PickerTarget } from "types.slint";
 import { Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip } from "controls.slint";
 import { Button, LineEdit, ScrollView } from "std-widgets.slint";
 
@@ -20,10 +21,11 @@ export global MacroEditor {
     callback clone-system(int, string);
     callback remove(int);
     callback move(int, int);
-    /// Macro index, field (0 id, 1 name, 2 step pause, 3 modifier delay), value.
-    callback set-field(int, int, string);
+    callback set-field(int, MacroField, string);
     callback add-step(int, string);
     callback set-step(int, int, string);
+    /// Pause of a step while it is typed; saved after a short delay.
+    callback set-pause(int, int, string);
     callback move-step(int, int, int);
     callback remove-step(int, int);
 }
@@ -51,7 +53,7 @@ component StepRow inherits HorizontalLayout {
             accessible-action-default => { self.pick(); }
             function pick() {
                 MacroEditor.picker-macro = root.macro-index;
-                ActionPicker.open(2, root.index, root.step.action, false);
+                ActionPicker.open(PickerTarget.macro-step, root.index, root.step.action, false);
             }
             HorizontalLayout {
                 padding-left: 10px; padding-right: 10px; spacing: 6px;
@@ -83,7 +85,7 @@ component StepRow inherits HorizontalLayout {
                 input-type: number;
                 text: root.step.pause-ms;
                 accessible-label: @tr("Pause (ms)");
-                edited(value) => { MacroEditor.set-step(root.macro-index, root.index, "pause:" + value); }
+                edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
             }
             Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
         }
@@ -129,7 +131,7 @@ component MacroCard inherits Card {
                             text: root.item.id;
                             placeholder-text: "id";
                             accessible-label: @tr("Macro ID");
-                            edited(value) => { MacroEditor.set-field(root.index, 0, value); }
+                            edited(value) => { MacroEditor.set-field(root.index, MacroField.id, value); }
                         }
                         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
                     }
@@ -147,7 +149,7 @@ component MacroCard inherits Card {
                         text: root.item.name;
                         placeholder-text: @tr("Macro name");
                         accessible-label: @tr("Name");
-                        edited(value) => { MacroEditor.set-field(root.index, 1, value); }
+                        edited(value) => { MacroEditor.set-field(root.index, MacroField.name, value); }
                     }
                 }
             }
@@ -206,7 +208,7 @@ component MacroCard inherits Card {
                         text: root.item.step-pause;
                         placeholder-text: MacroEditor.default-step-pause;
                         accessible-label: @tr("Pause between steps");
-                        edited(value) => { MacroEditor.set-field(root.index, 2, value); }
+                        edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
                     }
                     Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
                 }
@@ -226,7 +228,7 @@ component MacroCard inherits Card {
                         text: root.item.modifier-delay;
                         placeholder-text: MacroEditor.default-modifier-delay;
                         accessible-label: @tr("Modifier delay");
-                        edited(value) => { MacroEditor.set-field(root.index, 3, value); }
+                        edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
                     }
                     Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
                 }

@@ -1,3 +1,7 @@
+//! Diagnostic stand (feature `probes`, KDE only): remember the window that
+//! had focus before a popup opened, give it the focus back after a choice
+//! and paste the chosen text into it.
+
 use evdev::{AttributeSet, KeyCode, KeyEvent};
 use std::{
     io::Write,
@@ -9,11 +13,17 @@ use std::{
 #[derive(Clone, Default)]
 struct Active(Arc<Mutex<String>>);
 
+impl Active {
+    fn get(&self) -> String {
+        self.0.lock().unwrap_or_else(|poison| poison.into_inner()).clone()
+    }
+}
+
 #[zbus::interface(name = "org.leftHandControl.SlintProbe")]
 impl Active {
     fn update(&self, id: String) {
         log::info!("probe active window: {id}");
-        *self.0.lock().unwrap() = id;
+        *self.0.lock().unwrap_or_else(|poison| poison.into_inner()) = id;
     }
 }
 
@@ -93,7 +103,7 @@ impl ReturnInput {
 
     pub fn capture(&mut self) {
         self.pending = None;
-        let id = self.active.0.lock().unwrap().clone();
+        let id = self.active.get();
         log::info!("probe captured target: {id}");
         self.target = (!id.is_empty()).then_some(id);
     }
@@ -126,7 +136,7 @@ impl ReturnInput {
             }
             return None;
         }
-        if *self.active.0.lock().unwrap() != *id
+        if self.active.get() != *id
             || (!crate::test_keyboard::isolated() && !modifiers_released())
         {
             return None;

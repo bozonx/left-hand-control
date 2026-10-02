@@ -20,19 +20,22 @@ impl ReturnInput {
             return;
         };
         let selection_context = capture_selection_context();
+        // Give the popup time to hide, restore the target, then let it settle
+        // before typing; timers keep the UI thread free meanwhile.
         slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {
             if let Err(error) = restore_target(target, selection_context) {
                 log::error!("native focus restore failed: {error}");
                 return;
             }
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            if !target_is_foreground(target) {
-                log::warn!("native return input cancelled: foreground changed before paste");
-                return;
-            }
-            if let Err(error) = type_text(&text) {
-                log::error!("native return input unavailable: {error}");
-            }
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if !target_is_foreground(target) {
+                    log::warn!("native return input cancelled: foreground changed before paste");
+                    return;
+                }
+                if let Err(error) = type_text(&text) {
+                    log::error!("native return input unavailable: {error}");
+                }
+            });
         });
     }
 }

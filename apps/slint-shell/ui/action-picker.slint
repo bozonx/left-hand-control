@@ -1,5 +1,6 @@
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
+import { PickerTarget } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit, ListView } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: int }
 export global ActionPicker {
@@ -18,7 +19,9 @@ export global ActionPicker {
     in-out property <[PickerItem]> items;
     in-out property <[int]> counts;
     in-out property <bool> macro-step;
-    callback open(int, int, string, bool);
+    /// Open for `target`; `index` is the row it edits, `value` the current
+    /// value and `key-only` limits choices to plain keys.
+    callback open(PickerTarget, int, string, bool);
     callback refresh();
     callback apply();
     callback close();

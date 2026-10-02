@@ -1,0 +1,160 @@
+import { AppState } from "app-state.slint";
+import { Card } from "controls.slint";
+import { Theme } from "theme.slint";
+import { Locale, Message } from "i18n.slint";
+import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, ScrollView, VerticalBox } from "std-widgets.slint";
+
+export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
+
+/// Global application settings (`config.json`). Edits stay in this form
+/// until `save`.
+export global SettingsEditor {
+    in-out property <int> appearance-index;
+    in-out property <int> locale-index;
+    in-out property <int> tap-decision-index;
+    in-out property <string> hold-timeout;
+    in-out property <string> double-tap-timeout;
+    in-out property <string> macro-pause;
+    in-out property <string> modifier-delay;
+    in-out property <bool> use-gamemoded: true;
+    in-out property <bool> use-fullscreen;
+    in property <[ProcessRow]> process-matchers;
+    in-out property <string> process-name;
+    in-out property <bool> process-only-active;
+    in-out property <bool> process-blacklist;
+    in-out property <int> selected-process: -1;
+    in property <[string]> text-modes;
+    in-out property <int> text-mode-index;
+    in-out property <string> ydotool-path;
+    in-out property <string> xdotool-path;
+    in-out property <string> keyboard-device-path;
+    in property <[string]> input-devices;
+    in-out property <int> selected-device: -1;
+    in-out property <string> mouse-device-path;
+    in property <[string]> mouse-devices;
+    in property <[string]> mouse-paths;
+    in-out property <int> selected-mouse;
+    in property <string> settings-dir;
+    in property <string> layouts-dir;
+    in property <string> platform-summary;
+    in property <Message> message;
+    callback save();
+    callback refresh-devices();
+    callback select-device(int);
+    callback add-process();
+    callback select-process(int);
+    callback update-process();
+    callback delete-process();
+}
+
+component Section inherits Card {
+    in property <string> title;
+    VerticalBox { padding: 16px; spacing: 10px;
+        Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: 600; }
+        @children
+    }
+}
+
+export component SettingsPage inherits VerticalBox {
+    spacing: 10px;
+    path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
+    function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); }
+    Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
+    ScrollView {
+        viewport-width: self.visible-width;
+        vertical-stretch: 1;
+        VerticalLayout {
+            spacing: 12px;
+            Section {
+                title: @tr("Mapper");
+                Text { text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Running") : @tr("Stopped"); color: Theme.muted; wrap: word-wrap; }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Text { text: @tr("Keyboard device"); color: Theme.text; vertical-alignment: center; }
+                    ComboBox { enabled: !AppState.mapper-running; horizontal-stretch: 1; model: SettingsEditor.input-devices; current-index: SettingsEditor.selected-device; selected(value) => { SettingsEditor.select-device(self.current-index); } }
+                    Button { text: @tr("Refresh devices"); clicked => { SettingsEditor.refresh-devices(); } }
+                    Button { text: AppState.mapper-running ? @tr("Stop") : @tr("Start"); enabled: !AppState.mapper-busy; clicked => { AppState.toggle-mapper(); } }
+                }
+                LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Text { text: @tr("Mouse device path"); color: Theme.text; vertical-alignment: center; }
+                    ComboBox { enabled: !AppState.mapper-running; model: SettingsEditor.mouse-devices; current-index <=> SettingsEditor.selected-mouse; selected(value) => { SettingsEditor.mouse-device-path = SettingsEditor.mouse-paths[self.current-index]; } }
+                    LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); }
+                }
+            }
+            Section {
+                title: @tr("General");
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Text { text: @tr("Appearance"); color: Theme.text; vertical-alignment: center; }
+                    ComboBox { model: [@tr("System"), @tr("Light"), @tr("Dark")]; current-index <=> SettingsEditor.appearance-index; }
+                    Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
+                    ComboBox { model: [@tr("Automatic"), "English", "Русский"]; current-index <=> SettingsEditor.locale-index; }
+                }
+            }
+            Section {
+                title: @tr("Key behavior");
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Text { text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
+                    ComboBox { model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index <=> SettingsEditor.tap-decision-index; }
+                }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Text { text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }
+                    LineEdit { text <=> SettingsEditor.hold-timeout; }
+                    Text { text: @tr("Double tap timeout (ms)"); color: Theme.text; vertical-alignment: center; }
+                    LineEdit { text <=> SettingsEditor.double-tap-timeout; }
+                }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Text { text: @tr("Macro step pause (ms)"); color: Theme.text; vertical-alignment: center; }
+                    LineEdit { text <=> SettingsEditor.macro-pause; }
+                    Text { text: @tr("Modifier delay (ms)"); color: Theme.text; vertical-alignment: center; }
+                    LineEdit { text <=> SettingsEditor.modifier-delay; }
+                }
+            }
+            Section {
+                title: @tr("Game mode");
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; }
+                    CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; }
+                }
+                Text { text: @tr("Process rules"); color: Theme.text; font-weight: 600; }
+                for item[index] in SettingsEditor.process-matchers: Rectangle {
+                    height: 30px; background: SettingsEditor.selected-process == index ? Theme.accent : Theme.card;
+                    Text { x: 8px; text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: Theme.text; vertical-alignment: center; }
+                    TouchArea { clicked => { SettingsEditor.select-process(index); } }
+                }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    LineEdit { text <=> SettingsEditor.process-name; placeholder-text: @tr("Process name"); }
+                    CheckBox { text: @tr("Active window only"); checked <=> SettingsEditor.process-only-active; }
+                    CheckBox { text: @tr("Exclude"); checked <=> SettingsEditor.process-blacklist; }
+                }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Button { text: @tr("Add process"); clicked => { SettingsEditor.add-process(); } }
+                    Button { text: @tr("Update selected"); enabled: SettingsEditor.selected-process >= 0; clicked => { SettingsEditor.update-process(); } }
+                    Button { text: @tr("Remove selected"); enabled: SettingsEditor.selected-process >= 0; clicked => { SettingsEditor.delete-process(); } }
+                }
+            }
+            if AppState.is-linux: Section {
+                title: @tr("Linux text injection");
+                ComboBox { model: SettingsEditor.text-modes; current-index <=> SettingsEditor.text-mode-index; }
+                if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": LineEdit { text <=> SettingsEditor.ydotool-path; placeholder-text: @tr("ydotool path"); }
+                if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": LineEdit { text <=> SettingsEditor.xdotool-path; placeholder-text: @tr("xdotool path"); }
+            }
+            Section {
+                title: @tr("Configuration and system");
+                Text { text: SettingsEditor.platform-summary; color: Theme.muted; }
+                HorizontalBox { vertical-stretch: 0;
+                    Text { text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                    Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }
+                }
+                HorizontalBox { vertical-stretch: 0;
+                    Text { text: @tr("Layouts directory: ") + SettingsEditor.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                    Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
+                }
+            }
+        }
+    }
+    HorizontalBox { vertical-stretch: 0; spacing: 8px;
+        Text { text: Locale.text(SettingsEditor.message); color: Theme.muted; vertical-alignment: center; }
+        Rectangle { horizontal-stretch: 1; }
+        Button { text: @tr("Save settings"); clicked => { SettingsEditor.save(); } }
+    }
+}
