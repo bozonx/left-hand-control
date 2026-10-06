@@ -1,5 +1,5 @@
 import { ActionPicker } from "action-picker.slint";
-import { Card, Divider, IconButton, InfoTip } from "controls.slint";
+import { Card, Divider, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
@@ -481,7 +481,7 @@ export component LayerDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: LayersEditor.dialog != LayerDialog.none && !ActionPicker.opened;
     key-pressed(event) => { if event.text == Key.Escape { LayersEditor.dialog = LayerDialog.none; return accept; } return reject; }
-    if LayersEditor.dialog != LayerDialog.none: Rectangle {
+    if LayersEditor.dialog != LayerDialog.none && LayersEditor.dialog != LayerDialog.delete && LayersEditor.dialog != LayerDialog.clear-keys && LayersEditor.dialog != LayerDialog.clear-extras: Rectangle {
         background: #00000099;
         TouchArea { clicked => { LayersEditor.dialog = LayerDialog.none; } }
         Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: 12px;
@@ -530,4 +530,14 @@ export component LayerDialogOverlay inherits FocusScope {
             }
         }
     }
+    if LayersEditor.dialog == LayerDialog.delete: ConfirmDialog {
+        title: @tr("Delete layer?"); body: @tr("Rules using this layer will return to the base layer."); confirm-text: @tr("Delete");
+        confirm => { LayersEditor.apply-dialog(); } cancel => { LayersEditor.dialog = LayerDialog.none; }
+    }
+
+    if LayersEditor.dialog == LayerDialog.clear-keys || LayersEditor.dialog == LayerDialog.clear-extras: ConfirmDialog {
+        title: @tr("Clear assignments?"); body: @tr("The selected assignments will be cleared."); confirm-text: @tr("Clear");
+        confirm => { LayersEditor.apply-dialog(); } cancel => { LayersEditor.dialog = LayerDialog.none; }
+    }
+
 }

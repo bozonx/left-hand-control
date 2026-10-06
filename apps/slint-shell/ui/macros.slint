@@ -2,7 +2,7 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerTarget } from "types.slint";
-import { Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip } from "controls.slint";
 import { Button, LineEdit, ScrollView } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string }
@@ -127,11 +127,11 @@ component MacroCard inherits Card {
                     }
                     HorizontalLayout {
                         spacing: 6px;
-                        LineEdit {
+                        InlineTextField {
                             text: root.item.id;
-                            placeholder-text: "id";
-                            accessible-label: @tr("Macro ID");
-                            edited(value) => { MacroEditor.set-field(root.index, MacroField.id, value); }
+                            placeholder: "id";
+                            label: @tr("Macro ID");
+                            saved(value) => { MacroEditor.set-field(root.index, MacroField.id, value); }
                         }
                         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
                     }
@@ -145,11 +145,11 @@ component MacroCard inherits Card {
                         FieldLabel { text: @tr("Name"); vertical-alignment: center; }
                         InfoTip { text: @tr("Human-readable macro name, shown in picker lists."); }
                     }
-                    LineEdit {
+                    InlineTextField {
                         text: root.item.name;
-                        placeholder-text: @tr("Macro name");
-                        accessible-label: @tr("Name");
-                        edited(value) => { MacroEditor.set-field(root.index, MacroField.name, value); }
+                        placeholder: @tr("Macro name");
+                        label: @tr("Name");
+                        saved(value) => { MacroEditor.set-field(root.index, MacroField.name, value); }
                     }
                 }
             }
@@ -350,9 +350,9 @@ export component MacrosPage inherits Rectangle {
         VerticalLayout {
             alignment: start;
             spacing: 16px;
-            Card {
+            Rectangle {
                 VerticalLayout {
-                    padding: 16px;
+                    padding: 0px;
                     spacing: 16px;
                     CardHeader {
                         title: @tr("User macros");

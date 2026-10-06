@@ -14,7 +14,7 @@ use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
 fn join(value: &Option<Vec<String>>) -> String {
-    value.as_ref().map(|items| items.join(", ")).unwrap_or_default()
+    value.as_ref().map(|items| super::condition_list(items)).unwrap_or_default()
 }
 
 fn optional_list(value: &str) -> Option<Vec<String>> {

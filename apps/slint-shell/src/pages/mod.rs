@@ -1,6 +1,7 @@
 //! Pages of the settings window. Each module binds one Slint global to the
 //! shared [`Document`] and refreshes it when the document changes.
 
+mod conditions;
 mod keys;
 mod layers;
 mod library;
@@ -26,6 +27,7 @@ use std::rc::Rc;
 
 /// Bind every page of `ui` to `document`.
 pub fn bind_document(ui: &SettingsWindow, document: &Rc<Document>) {
+    conditions::bind(ui);
     picker::bind(ui, document);
     keys::bind(ui, document);
     library::bind(ui, document);
@@ -44,12 +46,23 @@ pub(crate) fn strings(values: impl IntoIterator<Item = impl Into<SharedString>>)
 
 /// Comma-separated list as typed in the UI; empty items are dropped.
 pub(crate) fn parse_list(value: &str) -> Vec<String> {
+    if let Ok(items) = serde_json::from_str::<Vec<String>>(value) {
+        return items;
+    }
     value
         .split(',')
         .map(str::trim)
         .filter(|item| !item.is_empty())
         .map(str::to_owned)
         .collect()
+}
+
+pub(crate) fn condition_list(items: &[String]) -> String {
+    if items.iter().any(|item| item.contains(',') || item.starts_with('[')) {
+        serde_json::to_string(items).unwrap_or_default()
+    } else {
+        items.join(", ")
+    }
 }
 
 /// Game-mode condition as stored in the config (`"on"`, `"off"` or none).

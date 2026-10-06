@@ -84,7 +84,8 @@ impl ConfigDocument {
             .position(|item| item == id)
             .ok_or_else(|| ConfigError::Invalid("Unknown layout".into()))?;
         let next = (index as i64 + i64::from(delta)).clamp(0, ids.len() as i64 - 1) as usize;
-        ids.swap(index, next);
+        let moved = ids.remove(index);
+        ids.insert(next, moved);
         self.update_settings(|settings| settings.layout_order = ids)
     }
 
@@ -221,6 +222,26 @@ mod tests {
             .create_library_layout("Empty", "", LibrarySource::Empty)
             .unwrap();
         assert!(document.load_layout("user:Empty").unwrap().rules.is_empty());
+    }
+
+    #[test]
+    fn moving_layout_preserves_other_priorities_in_both_modes() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut document = ConfigDocument::load(paths.clone()).unwrap();
+        for name in ["A", "B", "C", "D"] {
+            paths.save_user_layout(name, "rules: []\n", false).unwrap();
+        }
+        document.move_library_layout("user:A", 3).unwrap();
+        assert_eq!(document.ordered_layout_ids().unwrap(), ["user:B", "user:C", "user:D", "user:A"]);
+        document.update_settings(|settings| settings.layout_mode = LayoutMode::Auto).unwrap();
+        assert_eq!(document.ordered_layout_ids().unwrap(), ["user:B", "user:C", "user:D", "user:A"]);
+        document.move_library_layout("user:A", -2).unwrap();
+        assert_eq!(document.ordered_layout_ids().unwrap(), ["user:B", "user:A", "user:C", "user:D"]);
+        document.update_settings(|settings| settings.layout_mode = LayoutMode::Manual).unwrap();
+        assert_eq!(document.ordered_layout_ids().unwrap(), ["user:B", "user:A", "user:C", "user:D"]);
+        let reloaded = ConfigDocument::load(paths).unwrap();
+        assert_eq!(reloaded.ordered_layout_ids().unwrap(), document.ordered_layout_ids().unwrap());
     }
 
     #[test]

@@ -2,7 +2,7 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { CommandField, MenuKind, PickerTarget } from "types.slint";
-import { Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, PageTabs } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, PageTabs } from "controls.slint";
 import { Button, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
@@ -23,6 +23,7 @@ export global MenuEditor {
     in property <bool> has-errors;
     in property <Message> status;
     callback open(MenuKind);
+    callback refresh();
     callback select-page(int);
     callback select-cell(int);
     callback add-page(string);
@@ -152,7 +153,7 @@ component PageEditor inherits VerticalLayout {
     FieldLabel { text: @tr("Page"); }
     HorizontalLayout {
         spacing: 4px;
-        LineEdit { text <=> MenuEditor.page-name; accessible-label: @tr("Page name"); edited => { MenuEditor.rename-page(); } }
+        InlineTextField { text: MenuEditor.page-name; label: @tr("Page name"); saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/chevron-left.svg"); label: @tr("Move page left"); enabled: MenuEditor.selected-page > 0; clicked => { MenuEditor.move-page(-1); } } }
         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/chevron-right.svg"); label: @tr("Move page right"); enabled: MenuEditor.selected-page + 1 < MenuEditor.pages.length; clicked => { MenuEditor.move-page(1); } } }
         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); danger: true; clicked => { root.remove(); } } }
@@ -198,9 +199,9 @@ export component EmojiPage inherits Rectangle {
         viewport-width: self.visible-width;
         VerticalLayout {
             alignment: start;
-            Card {
+            Rectangle {
                 VerticalLayout {
-                    padding: 16px;
+                    padding: 0px;
                     spacing: 16px;
                     CardHeader {
                         title: @tr("Emoji & Symbols");
@@ -297,9 +298,9 @@ export component QuickActionsPage inherits Rectangle {
         viewport-width: self.visible-width;
         VerticalLayout {
             alignment: start;
-            Card {
+            Rectangle {
                 VerticalLayout {
-                    padding: 16px;
+                    padding: 0px;
                     spacing: 16px;
                     CardHeader {
                         title: @tr("Quick Actions");
@@ -419,7 +420,7 @@ component CommandCard inherits Card {
                 }
                 HorizontalLayout {
                     spacing: 6px;
-                    LineEdit { text: root.item.id; placeholder-text: "id"; accessible-label: @tr("Command ID"); edited(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
+                    InlineTextField { text: root.item.id; placeholder: "id"; label: @tr("Command ID"); saved(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
                 }
             }
@@ -432,7 +433,7 @@ component CommandCard inherits Card {
                     FieldLabel { text: @tr("Name"); vertical-alignment: center; }
                     InfoTip { text: @tr("Human-readable name shown in picker lists."); }
                 }
-                LineEdit { text: root.item.name; placeholder-text: @tr("Command name"); accessible-label: @tr("Name"); edited(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
+                InlineTextField { text: root.item.name; placeholder: @tr("Command name"); label: @tr("Name"); saved(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
             }
             HorizontalLayout {
                 spacing: 2px;
@@ -515,9 +516,9 @@ export component CommandsPage inherits Rectangle {
         viewport-width: self.visible-width;
         VerticalLayout {
             alignment: start;
-            Card {
+            Rectangle {
                 VerticalLayout {
-                    padding: 16px;
+                    padding: 0px;
                     spacing: 16px;
                     CardHeader {
                         title: @tr("Commands");

@@ -1,4 +1,6 @@
 import { ActionPicker } from "action-picker.slint";
+import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
+import { ConfirmDialog } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
@@ -85,7 +87,7 @@ export component RulesPage inherits VerticalBox {
                 VerticalBox { padding: 14px; spacing: 10px;
                     HorizontalBox { vertical-stretch: 0; spacing: 12px;
                         RuleCell { title: @tr("Trigger key"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
-                        RuleCell { title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { RulesEditor.open-dialog(index, RuleDialog.conditions); } }
+                        RuleCell { title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
                         RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
                         RuleCell { width: 160px; horizontal-stretch: 0; title: @tr("Hold timeout, ms"); value: rule.hold-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold-timeout); } }
                     }
@@ -115,7 +117,7 @@ export component RuleDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: RulesEditor.dialog != RuleDialog.none && !ActionPicker.opened;
     key-pressed(event) => { if event.text == Key.Escape { RulesEditor.dialog = RuleDialog.none; return accept; } return reject; }
-    if RulesEditor.dialog != RuleDialog.none: Rectangle {
+    if RulesEditor.dialog != RuleDialog.none && RulesEditor.dialog != RuleDialog.remove: Rectangle {
         background: #00000099;
         TouchArea { clicked => { RulesEditor.dialog = RuleDialog.none; } }
         Rectangle {
@@ -153,19 +155,10 @@ export component RuleDialogOverlay inherits FocusScope {
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.conditions: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                    VerticalLayout { spacing: 8px;
-                        Text { text: @tr("Game mode"); color: Theme.text; }
-                        ComboBox {
-                            model: [@tr("Ignore"), @tr("On"), @tr("Off")];
-                            current-index: RulesEditor.game-mode == GameCondition.on ? 1 : RulesEditor.game-mode == GameCondition.off ? 2 : 0;
-                            selected(value) => { RulesEditor.game-mode = self.current-index == 1 ? GameCondition.on : self.current-index == 2 ? GameCondition.off : GameCondition.any; }
-                        }
-                        Text { text: @tr("Layout conditions (comma separated)"); color: Theme.text; }
-                        LineEdit { text <=> RulesEditor.layouts; }
-                        Text { text: @tr("App whitelist (comma separated)"); color: Theme.text; }
-                        LineEdit { text <=> RulesEditor.apps-include; }
-                        Text { text: @tr("App blacklist (comma separated)"); color: Theme.text; }
-                        LineEdit { text <=> RulesEditor.apps-exclude; }
+                    VerticalLayout { spacing: 12px;
+                        ConditionsForm { game <=> RulesEditor.game-mode; languages <=> RulesEditor.layouts; applications <=> RulesEditor.apps-include; }
+                        Text { text: @tr("Do not use when"); color: Theme.text; }
+                        ApplicationsField { value <=> RulesEditor.apps-exclude; }
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
@@ -185,7 +178,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
                 }
                 Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
-                Rectangle { vertical-stretch: 1; }
+                if RulesEditor.dialog != RuleDialog.conditions: Rectangle { vertical-stretch: 1; }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Button {
                         text: @tr("Clear");
@@ -215,4 +208,9 @@ export component RuleDialogOverlay inherits FocusScope {
             }
         }
     }
+    if RulesEditor.dialog == RuleDialog.remove: ConfirmDialog {
+        title: @tr("Delete rule?"); body: @tr("This rule will be removed from the current layout."); confirm-text: @tr("Delete");
+        confirm => { RulesEditor.remove(); } cancel => { RulesEditor.dialog = RuleDialog.none; }
+    }
+
 }

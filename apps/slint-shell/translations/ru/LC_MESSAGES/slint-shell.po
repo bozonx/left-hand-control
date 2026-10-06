@@ -1245,3 +1245,42 @@ msgstr "↑"
 
 msgid "↓"
 msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Не важно"
+
+msgid "Layout activation conditions"
+msgstr "Условия активации раскладки"
+
+msgid "Open for editing (unsaved)"
+msgstr "Открыта на редактирование (не сохранено)"
+
+msgid "Open for editing"
+msgstr "Открыта на редактирование"
+
+msgid "Layout name"
+msgstr "Название раскладки"
+
+msgid "System languages"
+msgstr "Языки системы"
+
+msgid "No system languages detected"
+msgstr "Доступные языки системы не обнаружены"
+
+msgid "Applications"
+msgstr "Приложения"
+
+msgid "Window title or application ID"
+msgstr "Заголовок окна или ID приложения"
+
+msgid "Substrings matched against the active window title and application ID, ignoring case. Any matching item is enough. An empty list imposes no restrictions."
+msgstr "Подстроки для поиска в заголовке активного окна и ID приложения без учёта регистра. Достаточно совпадения с любым элементом. Пустой список не ограничивает приложения."
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "«{}» будет удалена. Это действие нельзя отменить."
+
+msgid "The selected assignments will be cleared."
+msgstr "Выбранные назначения будут очищены."
+
+msgid "Reset current changes"
+msgstr "Сбросить текущие изменения"

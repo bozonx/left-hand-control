@@ -1,0 +1,68 @@
+import { Theme } from "theme.slint";
+import { GameCondition } from "types.slint";
+import { IconButton, InfoTip } from "controls.slint";
+import { CheckBox, ComboBox, LineEdit, ScrollView } from "std-widgets.slint";
+
+export struct LanguageChoice { code: string, label: string }
+
+export global ConditionChoices {
+    in property <[LanguageChoice]> languages;
+    callback refresh();
+    pure callback available(string) -> bool;
+    pure callback contains(string, string) -> bool;
+    pure callback toggle(string, string, bool) -> string;
+    pure callback items(string) -> [string];
+    pure callback remove(string, int) -> string;
+    pure callback add(string, string) -> string;
+}
+
+export component ApplicationsField inherits VerticalLayout {
+    in-out property <string> value;
+    private property <string> draft;
+    spacing: 6px;
+    HorizontalLayout { spacing: 6px; alignment: start;
+        Text { text: @tr("Applications"); color: Theme.text; vertical-alignment: center; }
+        InfoTip { text: @tr("Substrings matched against the active window title and application ID, ignoring case. Any matching item is enough. An empty list imposes no restrictions."); }
+    }
+    HorizontalLayout { spacing: 6px;
+        LineEdit {
+            horizontal-stretch: 1;
+            text <=> root.draft;
+            placeholder-text: @tr("Window title or application ID");
+            accepted => { root.value = ConditionChoices.add(root.value, root.draft); root.draft = ""; }
+        }
+        IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add"); enabled: root.draft != ""; clicked => { root.value = ConditionChoices.add(root.value, root.draft); root.draft = ""; } }
+    }
+    for item[index] in ConditionChoices.items(root.value): HorizontalLayout {
+        spacing: 6px;
+        Text { text: item; color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center; }
+        IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); clicked => { root.value = ConditionChoices.remove(root.value, index); } }
+    }
+}
+
+export component ConditionsForm inherits VerticalLayout {
+    in-out property <GameCondition> game;
+    in-out property <string> languages;
+    in-out property <string> applications;
+    in property <bool> show-applications: true;
+    spacing: 8px;
+    Text { text: @tr("Game mode"); color: Theme.text; }
+    ComboBox {
+        model: [@tr("Does not matter"), @tr("Game mode on"), @tr("Game mode off")];
+        current-index: root.game == GameCondition.on ? 1 : root.game == GameCondition.off ? 2 : 0;
+        selected => { root.game = self.current-index == 1 ? GameCondition.on : self.current-index == 2 ? GameCondition.off : GameCondition.any; }
+    }
+    Text { text: @tr("System languages"); color: Theme.text; }
+    for language in ConditionChoices.languages: CheckBox {
+        text: language.label;
+        checked: ConditionChoices.contains(root.languages, language.code);
+        toggled => { root.languages = ConditionChoices.toggle(root.languages, language.code, self.checked); }
+    }
+    if ConditionChoices.languages.length == 0: Text { text: @tr("No system languages detected"); color: Theme.muted; wrap: word-wrap; }
+    for code in ConditionChoices.items(root.languages): HorizontalLayout {
+        visible: !ConditionChoices.available(code);
+        Text { text: code; color: Theme.muted; vertical-alignment: center; horizontal-stretch: 1; }
+        IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); clicked => { root.languages = ConditionChoices.toggle(root.languages, code, false); } }
+    }
+    if root.show-applications: ApplicationsField { value <=> root.applications; }
+}

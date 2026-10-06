@@ -343,6 +343,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     let weak = ui.as_weak();
+    let (doc, shared) = (document.clone(), state.clone());
+    e.on_refresh(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let mut state = shared.borrow_mut();
+        state.timer = None;
+        reload(&ui, &doc, &mut state);
+        ui.global::<MenuEditor>().set_status(Msg::None.to_ui());
+        refresh(&ui, &state.layout, true);
+    });
+
+    let weak = ui.as_weak();
     let shared = state.clone();
     e.on_select_page(move |index| {
         let Some(ui) = weak.upgrade() else { return };

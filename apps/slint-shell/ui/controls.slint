@@ -1,4 +1,4 @@
-import { Palette, Button } from "std-widgets.slint";
+import { Palette, Button, LineEdit, TextEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 
 export component ButtonGroup inherits HorizontalLayout {
@@ -58,9 +58,6 @@ export component InfoTip inherits Rectangle {
         vertical-alignment: center;
     }
     Tooltip {
-        // Slint wraps custom content in its own framed ToolTipImpl and sizes the
-        // popup from the content's layout info. A fixed `width` is ignored there
-        // (it would report the unwrapped text width), so constrain via min/max.
         Rectangle {
             min-width: 340px;
             max-width: 340px;
@@ -70,7 +67,7 @@ export component InfoTip inherits Rectangle {
             border-color: Theme.border;
             VerticalLayout {
                 padding: 10px;
-                Text { text: root.text; color: Theme.text; wrap: word-wrap; }
+                Text { min-width: 320px; max-width: 320px; text: root.text; color: Theme.text; wrap: word-wrap; }
             }
         }
     }
@@ -95,7 +92,7 @@ export component IconButton inherits Rectangle {
     background: root.primary
         ? (touch.has-hover && root.enabled ? Palette.accent-background.brighter(0.15) : Palette.accent-background)
         : root.enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
-    border-width: root.text != "" && focus.has-focus ? 1px : 0px;
+    border-width: focus.has-focus ? 1px : 0px;
     border-color: Theme.text;
     opacity: root.enabled || root.text == "" ? 1.0 : 0.45;
     accessible-role: button;
@@ -239,36 +236,104 @@ export component ConfirmDialog inherits Rectangle {
     in property <string> title;
     in property <string> body;
     in property <string> confirm-text;
+    in property <string> error;
     callback confirm();
     callback cancel();
     background: #00000099;
     TouchArea { clicked => { root.cancel(); } }
     FocusScope {
-        init => { self.focus(); }
+        focus-on-tab-navigation: false;
         key-pressed(event) => {
             if event.text == Key.Escape { root.cancel(); return accept; }
-            if event.text == Key.Return { root.confirm(); return accept; }
             return reject;
         }
+        Rectangle {
+            width: min(440px, root.width - 32px);
+            x: (root.width - self.width) / 2;
+            y: (root.height - self.height) / 2;
+            height: dialog-layout.preferred-height;
+            background: Theme.surface;
+            border-radius: 10px;
+            border-width: 1px;
+            border-color: Theme.border;
+            TouchArea {}
+            dialog-layout := VerticalLayout {
+                padding: 18px;
+                spacing: 12px;
+                Text { vertical-stretch: 0; text: root.title; color: Theme.text; font-size: 16px; font-weight: 700; wrap: word-wrap; }
+                Text { vertical-stretch: 0; text: root.body; color: Theme.text; wrap: word-wrap; }
+                if root.error != "": Text { vertical-stretch: 0; text: root.error; color: Theme.error; wrap: word-wrap; }
+                HorizontalLayout {
+                    vertical-stretch: 0;
+                    spacing: 8px;
+                    alignment: end;
+                    Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
+                    confirm-button := Button { init => { self.focus(); } text: root.confirm-text; primary: true; icon: @image-url("icons/trash-2.svg"); colorize-icon: true; clicked => { root.confirm(); } }
+                }
+            }
+        }
     }
-    Rectangle {
-        width: min(440px, root.width - 32px);
-        height: dialog-layout.preferred-height;
-        background: Theme.surface;
-        border-radius: 10px;
-        border-width: 1px;
-        border-color: Theme.border;
-        TouchArea {}
-        dialog-layout := VerticalLayout {
-            padding: 18px;
-            spacing: 12px;
-            Text { text: root.title; color: Theme.text; font-size: 16px; font-weight: 700; wrap: word-wrap; }
-            Text { text: root.body; color: Theme.text; wrap: word-wrap; }
-            HorizontalLayout {
-                spacing: 8px;
-                alignment: end;
-                Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
-                Button { text: root.confirm-text; primary: true; icon: @image-url("icons/trash-2.svg"); colorize-icon: true; clicked => { root.confirm(); } }
+}
+
+export global InlineEditors { in-out property <int> revision; }
+
+export component InlineTextField inherits FocusScope {
+    in property <string> text;
+    in property <string> placeholder;
+    in property <string> label;
+    in property <bool> multiline: false;
+    in property <length> text-size: 14px;
+    in property <int> text-weight: 400;
+    in property <color> text-color: Theme.text;
+    in-out property <bool> editing: false;
+    private property <string> draft;
+    private property <int> revision: InlineEditors.revision;
+    changed revision => { root.editing = false; }
+    changed text => { root.editing = false; }
+    callback saved(string);
+    public function begin() { root.draft = root.text; root.editing = true; }
+    function save() { root.saved(root.draft); root.editing = false; }
+    function cancel() { root.draft = root.text; root.editing = false; }
+    vertical-stretch: 0;
+    focus-on-tab-navigation: false;
+    key-pressed(event) => {
+        if root.editing && event.text == Key.Escape { root.cancel(); return accept; }
+        if root.editing && root.multiline && event.modifiers.control && event.text == Key.Return { root.save(); return accept; }
+        return reject;
+    }
+    HorizontalLayout {
+        spacing: 4px;
+        if !root.editing: Text {
+            horizontal-stretch: 1;
+            min-width: 0px;
+            text: root.text == "" ? root.placeholder : root.text;
+            color: root.text == "" ? Theme.muted : root.text-color;
+            font-size: root.text-size;
+            font-weight: root.text-weight;
+            vertical-alignment: center;
+            wrap: root.multiline ? word-wrap : no-wrap;
+            overflow: elide;
+        }
+        if root.editing && !root.multiline: LineEdit {
+            horizontal-stretch: 1;
+            text <=> root.draft;
+            placeholder-text: root.placeholder;
+            accessible-label: root.label;
+            init => { self.focus(); self.select-all(); }
+            accepted => { root.save(); }
+        }
+        if root.editing && root.multiline: TextEdit {
+            horizontal-stretch: 1;
+            height: 80px;
+            text <=> root.draft;
+            accessible-label: root.label;
+            init => { self.focus(); }
+        }
+        VerticalLayout { alignment: start;
+            HorizontalLayout { spacing: 2px;
+                if !root.editing: IconButton { icon: @image-url("icons/pencil.svg"); label: @tr("Edit"); clicked => { root.begin(); } }
+                if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); clicked => { root.save(); } }
+                if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }
             }
         }
     }

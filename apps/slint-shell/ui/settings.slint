@@ -7,6 +7,7 @@ import { MacroEditor, MacrosPage } from "macros.slint";
 import { MenuEditor, MenusPage } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
 import { SettingsPage } from "settings-page.slint";
+import { InlineEditors } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale } from "i18n.slint";
 import { LayerDialog, LibraryDialog, MenuKind, Page, RuleDialog } from "types.slint";
@@ -66,6 +67,7 @@ export component SettingsWindow inherits Window {
                     SaveSplitButton {
                         enabled: LayoutLibrary.dirty;
                         save => { LayoutLibrary.save-current(); }
+                        discard => { InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh(); }
                         save-as => { LayoutLibrary.save-as-name = ""; LayoutLibrary.save-as-open = true; }
                     }
                     ScrollView {
@@ -74,12 +76,12 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: 6px;
-                            Button { text: @tr("Rules"); primary: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
-                            Button { text: @tr("Keyboard"); primary: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                            Button { text: @tr("Macros"); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
-                            Button { text: @tr("Quick actions"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
-                            Button { text: @tr("Emoji"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
-                            Button { text: @tr("Commands") + (AppState.commands-need-approval ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
+                            Button { icon: @image-url("icons/settings-2.svg"); colorize-icon: true; text: @tr("Rules"); primary: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/keyboard.svg"); colorize-icon: true; text: @tr("Layers"); primary: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/clock.svg"); colorize-icon: true; text: @tr("Macros"); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/zap.svg"); colorize-icon: true; text: @tr("Quick actions"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            Button { icon: @image-url("icons/smile.svg"); colorize-icon: true; text: @tr("Emoji"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/terminal.svg"); colorize-icon: true; text: @tr("Commands") + (AppState.commands-need-approval ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
                         }
                     }
                 }

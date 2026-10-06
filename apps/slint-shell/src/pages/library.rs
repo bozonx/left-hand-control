@@ -268,8 +268,8 @@ fn condition_fields(set: Option<LayoutConditionSet>) -> (GameCondition, String, 
     set.map(|set| {
         (
             game_condition(set.game_mode.as_deref()),
-            set.layouts.join(", "),
-            set.apps.join(", "),
+            super::condition_list(&set.layouts),
+            super::condition_list(&set.apps),
         )
     })
     .unwrap_or((GameCondition::Any, String::new(), String::new()))
@@ -470,11 +470,36 @@ fn set_description(
     Ok(Msg::None)
 }
 
+fn drag_target(rows: &[Option<(f32, f32)>], source: usize, offset: f32, count: usize) -> i32 {
+    let Some(Some((y, height))) = rows.get(source) else { return source as i32 };
+    let pointer = y + height / 2.0 + offset;
+    rows.iter().take(count).enumerate().filter_map(|(index, row)| {
+        row.map(|(y, height)| (index, (y + height / 2.0 - pointer).abs()))
+    }).min_by(|left, right| left.1.total_cmp(&right.1))
+        .map_or(source as i32, |(index, _)| index as i32)
+}
+
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state: Shared = Rc::default();
     reset_context(ui, document, &mut state.borrow_mut());
-    report(ui, refresh(ui, document, &mut state.borrow_mut()).map(|()| Msg::None));
     let library = ui.global::<LayoutLibrary>();
+
+    let rows = Rc::new(RefCell::new(Vec::new()));
+    let positions = rows.clone();
+    library.on_row_position(move |index, y, height| {
+        let Ok(index) = usize::try_from(index) else { return };
+        let mut rows = positions.borrow_mut();
+        if rows.len() <= index { rows.resize(index + 1, None); }
+        rows[index] = Some((y, height));
+    });
+    let weak = ui.as_weak();
+    library.on_drag_target(move |source, offset| {
+        let Some(ui) = weak.upgrade() else { return source };
+        let Ok(index) = usize::try_from(source) else { return source };
+        drag_target(&rows.borrow(), index, offset, slint::Model::row_count(&ui.global::<LayoutLibrary>().get_names()))
+    });
+
+    report(ui, refresh(ui, document, &mut state.borrow_mut()).map(|()| Msg::None));
 
     let weak = ui.as_weak();
     // Other pages change the working copy: only the toolbar depends on it.
@@ -537,6 +562,34 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         &ui,
         set_description(&ui, doc, state, index, &description)
     ));
+    on!(on_rename, |ui, doc, state, index, name| {
+        let result = select(&ui, doc, state, index).and_then(|()| {
+            ui.global::<LayoutLibrary>().set_name(name);
+            library_action(&ui, doc, state, LibraryAction::SaveDetails)
+        });
+        report(&ui, result);
+    });
+    on!(on_reorder, |ui, doc, state, from, to| {
+        let result = select(&ui, doc, state, from).and_then(|()| {
+            let id = user_layout_id(&selected_name(state)?);
+            edit(&ui, doc, state, |config| {
+                config.move_library_layout(&id, to - from)
+            })
+            .map(|()| Msg::None)
+        });
+        report(&ui, result);
+    });
+    on!(on_discard_current, |ui, doc, state| {
+        let name = current_name(&doc.read()).ok_or(Msg::LibrarySelect);
+        let result = name.and_then(|name| {
+            edit(&ui, doc, state, |config| {
+                config.load_library_for_editing(&name)
+            })?;
+            reset_context(&ui, doc, &mut state.borrow_mut());
+            Ok(Msg::None)
+        });
+        report(&ui, result);
+    });
     on!(on_activate_current, |ui, doc, state| {
         let result = doc
             .read()
@@ -572,6 +625,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dragging_uses_actual_card_heights() {
+        let rows = [Some((0.0, 200.0)), Some((200.0, 96.0)), Some((296.0, 96.0))];
+        assert_eq!(drag_target(&rows, 0, 244.0, 3), 2);
+        assert_eq!(drag_target(&rows, 2, -244.0, 3), 0);
+        assert_eq!(drag_target(&rows, 0, 244.0, 2), 1);
+    }
 
     #[test]
     fn conditions_round_trip() {

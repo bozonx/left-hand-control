@@ -64,6 +64,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_set_description(0, "Inline".into());
     assert!(paths.load_user_layout("A")?.contains("Inline"));
     assert_eq!(library.get_names().row_count(), 2);
+    library.invoke_rename(0, "Renamed".into());
+    assert!(paths.load_user_layout("A").is_err());
+    assert!(paths.load_user_layout("Renamed")?.contains("Inline"));
+    library.invoke_reorder(0, 1);
+    assert_eq!(library.get_names().row_data(1).unwrap(), "Renamed");
+    library.invoke_set_automatic(true);
+    assert_eq!(library.get_names().row_data(1).unwrap(), "Renamed");
+    library.invoke_set_automatic(false);
+    assert_eq!(library.get_names().row_data(1).unwrap(), "Renamed");
+    let saved = document.read().layout().clone();
+    document.edit(slint_shell::document::View::Rules, |config| {
+        config.update_layout(|layout| layout.description = Some("Discard me".into()))
+    })?;
+    assert!(library.get_dirty());
+    library.invoke_discard_current();
+    assert!(!library.get_dirty());
+    assert_eq!(document.read().layout(), &saved);
+    let choices = ui.global::<ConditionChoices>();
+    let app = choices.invoke_add("kate".into(), "A title, with comma".into());
+    assert_eq!(choices.invoke_items(app.clone()).row_count(), 2);
+    assert!(choices.invoke_contains(app, "A title, with comma".into()));
+    assert_eq!(choices.invoke_add("kate".into(), "kate".into()), "kate");
+    assert_eq!(choices.invoke_toggle("us, ru".into(), "ru".into(), false), "us");
+    assert_eq!(choices.invoke_remove("kate, terminal".into(), 0), "terminal");
     let reloaded = ConfigDocument::load(paths.clone())?;
     assert!(reloaded.settings().layout_conditions.is_empty());
     assert_eq!(reloaded.settings().current_layout_id.as_deref(), Some("user:Copy"));
@@ -143,18 +167,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         library.invoke_set_automatic(true);
     }
     if let Ok(dialog) = std::env::var("LHC_LIBRARY_DIALOG") {
+        ui.global::<ConditionChoices>().invoke_refresh();
         library.invoke_select(0);
         library.set_dialog(match dialog.as_str() {
             "create" => LibraryDialog::Create,
-            "details" => LibraryDialog::Details,
             "conditions" => LibraryDialog::Conditions,
             "delete" => LibraryDialog::Delete,
             "unsaved" => LibraryDialog::Unsaved,
             _ => LibraryDialog::None,
         });
     }
+    if let Ok(locale) = std::env::var("LHC_LIBRARY_LOCALE") {
+        slint::select_bundled_translation(&locale)?;
+    }
     ui.show()?;
     slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {
+        let library = ui.global::<LayoutLibrary>();
+        let row_height = if library.get_automatic() { 118.0 } else { 96.0 };
+        assert_eq!(library.invoke_drag_target(0, row_height * 2.0), 2);
+        if std::env::var_os("LHC_LIBRARY_DRAG").is_some() {
+            let first = library.get_names().row_data(0).unwrap();
+            let start = slint::LogicalPosition::new(50.0, 218.0 + row_height / 2.0);
+            let end = slint::LogicalPosition::new(50.0, start.y + row_height * 2.0);
+            ui.window().dispatch_event(slint::platform::WindowEvent::PointerPressed {
+                position: start, button: slint::platform::PointerEventButton::Left,
+            });
+            ui.window().dispatch_event(slint::platform::WindowEvent::PointerMoved { position: end });
+            ui.window().dispatch_event(slint::platform::WindowEvent::PointerReleased {
+                position: end, button: slint::platform::PointerEventButton::Left,
+            });
+            assert_eq!(library.get_names().row_data(2).unwrap(), first);
+            println!("Library drag-and-drop passed");
+        }
         if let Some(path) = std::env::var_os("LHC_LIBRARY_SNAPSHOT") {
             let pixels = ui.window().take_snapshot().unwrap();
             let mut bytes =
