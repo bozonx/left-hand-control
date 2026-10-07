@@ -6,7 +6,7 @@ import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge } from "controls.s
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, CheckBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, CheckBox } from "std-widgets.slint";
 
 export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
 export struct RuleLayerChoice { id: string, label: string }
@@ -64,7 +64,8 @@ component RuleBadge inherits Rectangle {
     in property <string> text;
     in property <color> fill: Theme.hover;
     private property <string> measure: root.text;
-    width: min(208px, measure-text.preferred-width + 14px);
+    in property <length> available-width: 208px;
+    width: min(root.available-width, measure-text.preferred-width + 14px);
     height: 22px;
     border-radius: 5px;
     background: root.fill;
@@ -115,29 +116,29 @@ export component RulesPage inherits VerticalBox {
                 border-radius: 10px;
                 opacity: ItemStyle.opacity(rule.enabled) * (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index ? 0.6 : 1);
 
-                rule-content := VerticalLayout { padding: 14px; spacing: 10px;
+                rule-content := VerticalLayout { min-width: 0px; padding: 14px; spacing: 10px;
                     HorizontalLayout { spacing: 6px;
                         DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
                         CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
                         Rectangle { horizontal-stretch: 1; }
                         IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                     }
-                    HorizontalLayout { spacing: 16px;
-                        VerticalLayout { width: 220px; horizontal-stretch: 0; spacing: 10px; alignment: start;
+                    HorizontalLayout { min-width: 0px; spacing: 16px;
+                        trigger-column := VerticalLayout { width: max(0px, min(220px, (rule-scroll.visible-width - 61px) * 0.35)); horizontal-stretch: 0; spacing: 10px; alignment: start;
                             RuleCell { title: @tr("Trigger"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                             RuleCell { enabled: rule.key != ""; title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
-                            if rule.game != GameCondition.any: RuleBadge { text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.accent; }
-                            for language in ConditionChoices.items(rule.languages): RuleBadge { text: language; }
-                            for application in ConditionChoices.items(rule.applications): RuleBadge { text: "+ " + application; fill: Theme.success.transparentize(0.8); }
-                            for application in ConditionChoices.items(rule.excluded): RuleBadge { text: "− " + application; fill: Theme.error.transparentize(0.8); }
+                            if rule.game != GameCondition.any: RuleBadge { available-width: trigger-column.width; text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.accent; }
+                            for language in ConditionChoices.items(rule.languages): RuleBadge { available-width: trigger-column.width; text: language; }
+                            for application in ConditionChoices.items(rule.applications): RuleBadge { available-width: trigger-column.width; text: "+ " + application; fill: Theme.success.transparentize(0.8); }
+                            for application in ConditionChoices.items(rule.excluded): RuleBadge { available-width: trigger-column.width; text: "− " + application; fill: Theme.error.transparentize(0.8); }
                         }
                         Rectangle { width: 1px; background: Theme.border; }
                         VerticalLayout { min-width: 0px; spacing: 12px; alignment: start;
-                            HorizontalLayout { spacing: 12px;
+                            HorizontalLayout { min-width: 0px; spacing: 12px;
                                 RuleCell { title: @tr("Tap action"); value: rule.tap; empty-text: rule.swallow-tap ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
                                 RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
                             }
-                            HorizontalLayout { spacing: 12px;
+                            HorizontalLayout { min-width: 0px; spacing: 12px;
                                 RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
                                 RuleCell { title: @tr("Hold action"); value: rule.hold; empty-text: rule.swallow-hold ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
                             }
@@ -187,10 +188,12 @@ export component RuleDialogOverlay inherits FocusScope {
                 if RulesEditor.dialog == RuleDialog.layer: VerticalBox {
                     spacing: 8px;
                     LineEdit { text <=> RulesEditor.dialog-value; placeholder-text: @tr("Search layers"); edited => { RulesEditor.filter-layers(RulesEditor.dialog-value); } }
-                    ListView { vertical-stretch: 1;
-                        for item in RulesEditor.layer-items: Rectangle { height: 36px; background: layer-touch.has-hover ? Theme.hover : Theme.card;
-                            Text { x: 10px; text: item.label; color: Theme.text; vertical-alignment: center; }
-                            layer-touch := TouchArea { clicked => { RulesEditor.choose(item.id); } }
+                    ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
+                        VerticalLayout { spacing: 0px; alignment: start;
+                            for item in RulesEditor.layer-items: Rectangle { height: 36px; background: layer-touch.has-hover ? Theme.hover : Theme.card;
+                                Text { x: 10px; width: max(0px, parent.width - 20px); overflow: elide; text: item.label; color: Theme.text; vertical-alignment: center; }
+                                layer-touch := TouchArea { clicked => { RulesEditor.choose(item.id); } }
+                            }
                         }
                     }
                     HorizontalBox { vertical-stretch: 0; spacing: 8px;
