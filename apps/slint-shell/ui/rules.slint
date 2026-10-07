@@ -57,6 +57,7 @@ export global RulesEditor {
 }
 
 component RuleCell inherits VerticalBox {
+    padding: 0px;
     in property <string> title;
     in property <string> value;
     in property <string> empty-text: @tr("Not set");
@@ -68,10 +69,11 @@ component RuleCell inherits VerticalBox {
 }
 
 export component RulesPage inherits VerticalBox {
+    padding: 0px;
     vertical-stretch: 1;
     spacing: 12px;
-    HorizontalBox { vertical-stretch: 0; spacing: 8px;
-        VerticalBox { spacing: 2px;
+    HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
+        VerticalBox { padding: 0px; spacing: 2px;
             Text { text: @tr("Rules and triggers"); color: Theme.text; font-size: 22px; font-weight: 700; }
             Text { text: @tr("Define how physical keys activate layers or run actions."); color: Theme.muted; }
         }
@@ -81,7 +83,7 @@ export component RulesPage inherits VerticalBox {
     ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
         VerticalLayout { spacing: 10px;
             for rule[index] in RulesEditor.rows: Rectangle {
-                min-height: 210px;
+                min-height: 240px;
                 background: Theme.card;
                 border-color: RulesEditor.selected == index || (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.accent : Theme.border;
                 border-width: 1px;
