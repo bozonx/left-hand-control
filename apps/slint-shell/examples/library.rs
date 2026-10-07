@@ -184,7 +184,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {
         let library = ui.global::<LayoutLibrary>();
         let row_height = if library.get_automatic() { 118.0 } else { 96.0 };
-        assert_eq!(library.invoke_drag_target(0, row_height * 2.0), 2);
+        assert_eq!(library.invoke_drag_target(0, 10_000.0), 2);
         if std::env::var_os("LHC_LIBRARY_DRAG").is_some() {
             let first = library.get_names().row_data(0).unwrap();
             let start = slint::LogicalPosition::new(50.0, 218.0 + row_height / 2.0);

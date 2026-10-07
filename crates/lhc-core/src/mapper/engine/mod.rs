@@ -1458,7 +1458,7 @@ mod tests {
             out.as_slice(),
             [Out::RunCommand(cmd)]
                 if cmd.program == "sh"
-                    && cmd.args == vec!["-c".to_string(), "playerctl play-pause".to_string()]
+                    && cmd.args == vec!["-lc".to_string(), "playerctl play-pause".to_string()]
         ));
     }
 

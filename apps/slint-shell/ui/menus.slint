@@ -464,7 +464,7 @@ component CommandCard inherits Card {
                 alignment: start;
                 FieldLabel { text: @tr("Linux shell script"); vertical-alignment: center; }
                 Button { text: root.expanded ? @tr("Collapse script") : @tr("View full script"); clicked => { root.expanded = !root.expanded; } }
-                InfoTip { text: @tr("Passed to sh -c as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
+                InfoTip { text: @tr("Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
             }
             InlineTextArea {
                 expanded: root.expanded;
@@ -517,7 +517,7 @@ export component CommandsPage inherits Rectangle {
                     spacing: 16px;
                     CardHeader {
                         title: @tr("Commands");
-                        info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -c after you explicitly allow them. Shell commands run one at a time, with a 30-second limit, in your home directory.");
+                        info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them. Shell commands run one at a time, with a 30-second limit, in your home directory.");
                         VerticalLayout {
                             alignment: center;
                             Button {

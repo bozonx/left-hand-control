@@ -53,7 +53,7 @@ impl Engine {
                     id.to_string(),
                     SysCommand {
                         program: "sh".into(),
-                        args: vec!["-c".into(), linux.to_string()],
+                        args: vec!["-lc".into(), linux.to_string()],
                     },
                 );
             }

@@ -9,8 +9,8 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        GameCondition, LayoutConditionsView, LayoutLibrary, LayoutSource, LibraryAction,
-        LibraryDialog, MenuKind, NameIssue, Page, SettingsWindow,
+        GameCondition, LayoutConditionsView, LayoutLibrary, LayoutSource, LayoutSummary,
+        LibraryAction, LibraryDialog, MenuKind, NameIssue, Page, SettingsWindow,
     },
 };
 use lhc_core::{
@@ -149,23 +149,27 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
             .and_then(|layout| layout.description)
             .unwrap_or_default()
     })));
-    library.set_summaries(super::strings(names.iter().map(|name| {
-        let preset = config
-            .paths()
-            .load_user_layout(name)
-            .ok()
-            .and_then(|text| layout_file::parse(&text).ok().flatten())
-            .unwrap_or_default();
-        format!(
-            "{} rules · {} layers · {} emoji pages · {} action pages · {} macros · {} commands",
-            preset.rules.len(),
-            preset.layers.len(),
-            preset.emoji_pages.len(),
-            preset.quick_action_pages.len(),
-            preset.macros.len(),
-            preset.commands.len(),
-        )
-    })));
+    library.set_summaries(ModelRc::new(VecModel::from(
+        names
+            .iter()
+            .map(|name| {
+                let preset = config
+                    .paths()
+                    .load_user_layout(name)
+                    .ok()
+                    .and_then(|text| layout_file::parse(&text).ok().flatten())
+                    .unwrap_or_default();
+                LayoutSummary {
+                    rules: preset.rules.len() as i32,
+                    layers: preset.layers.len() as i32,
+                    emoji_pages: preset.emoji_pages.len() as i32,
+                    action_pages: preset.quick_action_pages.len() as i32,
+                    macros: preset.macros.len() as i32,
+                    commands: preset.commands.len() as i32,
+                }
+            })
+            .collect::<Vec<_>>(),
+    )));
     let selected = state
         .selected
         .as_ref()
