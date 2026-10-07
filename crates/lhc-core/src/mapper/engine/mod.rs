@@ -1205,10 +1205,10 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
         return true;
     }
     if has_gm_cond {
-        if !crate::runtime_state::game_mode_detection_enabled() {
+        let (gm_active, state_available) = crate::runtime_state::game_mode();
+        if !state_available {
             return false;
         }
-        let gm_active = crate::runtime_state::game_mode_active();
         if !match rule.condition_game_mode {
             Some(GameModeCondition::On) => gm_active,
             Some(GameModeCondition::Off) => !gm_active,
@@ -1839,6 +1839,7 @@ mod tests {
     fn apps_whitelist_passes_when_title_matches() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
+            process_name: None,
             title: "Mozilla Firefox".into(),
             app_id: "navigator".into(),
         }));
@@ -1851,6 +1852,7 @@ mod tests {
     fn apps_whitelist_passes_when_app_id_matches_case_insensitive() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
+            process_name: None,
             title: "Library".into(),
             app_id: "Steam".into(),
         }));
@@ -1863,6 +1865,7 @@ mod tests {
     fn apps_blacklist_blocks_even_when_whitelist_passes() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
+            process_name: None,
             title: "Editor — secret".into(),
             app_id: "editor".into(),
         }));

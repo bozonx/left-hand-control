@@ -1,0 +1,86 @@
+import { Button } from "std-widgets.slint";
+import { AppState } from "app-state.slint";
+import { Locale } from "i18n.slint";
+import { Theme } from "theme.slint";
+import { GameModeControl } from "types.slint";
+
+export component GameModeButton inherits Rectangle {
+    private property <int> highlighted: 0;
+    private property <color> state-color: !AppState.game-state-available ? Theme.warning : AppState.game-active ? Theme.success : Theme.muted;
+    private property <string> label: AppState.game-control == GameModeControl.auto ? @tr("Game mode control" => "Auto") : AppState.game-control == GameModeControl.on ? @tr("Game mode control" => "On") : @tr("Game mode control" => "Off");
+    width: 98px; height: 36px; border-radius: 6px;
+    background: AppState.game-active ? Theme.success.transparentize(0.85) : !AppState.game-state-available ? Theme.warning.transparentize(0.9) : touch.has-hover || focus.has-focus || menu.is-open ? Theme.hover : Theme.surface;
+    border-width: 1px;
+    border-color: focus.has-focus ? Theme.text : root.state-color.transparentize(0.35);
+    accessible-role: button;
+    accessible-label: @tr("Game mode") + ": " + root.label + ". " + Locale.text(AppState.game-status);
+    accessible-expandable: true;
+    accessible-expanded: menu.is-open;
+    accessible-action-default => { root.open-menu(); }
+    accessible-action-expand => { root.open-menu(); }
+    public function open-menu() {
+        root.highlighted = AppState.game-control == GameModeControl.auto ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
+        menu.show();
+    }
+    HorizontalLayout {
+        padding-left: 10px; padding-right: 8px; spacing: 6px; alignment: center;
+        Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: root.state-color; }
+        Text { text: root.label; color: root.state-color; font-weight: 600; vertical-alignment: center; }
+        Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: root.state-color; transform-rotation: menu.is-open ? 180deg : 0deg; }
+    }
+    forward-focus: focus;
+    focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" || event.text == Key.DownArrow {
+                root.open-menu(); return accept;
+            }
+            return reject;
+        }
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.open-menu(); } }
+    Tooltip {
+        Rectangle {
+            background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px;
+            HorizontalLayout { padding: 8px; Text { text: Locale.text(AppState.game-status); color: Theme.text; } }
+        }
+    }
+    menu := PopupWindow {
+        x: root.width - self.width; y: root.height + 4px; width: 280px;
+        close-policy: close-on-click-outside;
+        forward-focus: menu-focus;
+        menu-focus := FocusScope {
+            capture-key-pressed(event) => {
+                if event.text == Key.DownArrow { root.highlighted = mod(root.highlighted + 1, 3); return accept; }
+                if event.text == Key.UpArrow { root.highlighted = mod(root.highlighted + 2, 3); return accept; }
+                if event.text == "\n" || event.text == " " {
+                    AppState.set-game-control(root.highlighted == 0 ? GameModeControl.auto : root.highlighted == 1 ? GameModeControl.on : GameModeControl.off);
+                    menu.close(); focus.focus(); return accept;
+                }
+                if event.text == Key.Escape { menu.close(); focus.focus(); return accept; }
+                return reject;
+            }
+            Rectangle {
+                background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 8px;
+                VerticalLayout {
+                    padding: 8px; spacing: 6px;
+                    Text { text: @tr("Game mode"); color: Theme.text; font-weight: 600; }
+                    for label[index] in [@tr("Game mode control" => "Auto"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Off")]: Button {
+                        text: label + (AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off) ? " ✓" : "");
+                        primary: root.highlighted == index;
+                        accessible-role: radio-button;
+                        accessible-checkable: true;
+                        accessible-checked: AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
+                        changed has-focus => { if self.has-focus { root.highlighted = index; } }
+                        clicked => {
+                            AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
+                            menu.close(); focus.focus();
+                        }
+                    }
+                    Rectangle { height: 1px; background: Theme.border; }
+                    Text { text: Locale.text(AppState.game-auto-status); color: Theme.muted; wrap: word-wrap; }
+                    Text { text: @tr("On and Off last until restart. Auto keeps detecting in the background."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                }
+            }
+        }
+    }
+}

@@ -119,11 +119,18 @@ export component SettingsPage inherits VerticalBox {
             }
             Section {
                 title: @tr("Game mode");
+                Text { text: @tr("Choose Auto, On or Off in the top bar. These settings configure Auto."); color: Theme.muted; wrap: word-wrap; }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                    CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; }
-                    CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; }
+                    if AppState.is-linux: CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; }
+                    CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
                 }
+                if AppState.is-linux: Text { text: @tr("GameMode daemon: ") + Locale.text(AppState.game-daemon-availability); color: Theme.muted; }
+                Text { text: @tr("Fullscreen detection: ") + Locale.text(AppState.game-fullscreen-availability); color: Theme.muted; }
+                if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.warning; wrap: word-wrap; }
+                if AppState.game-fullscreen-availability.id == "capability-unavailable": Text { text: @tr("Fullscreen detection tools are missing or could not query the session."); color: Theme.warning; wrap: word-wrap; }
                 Text { text: @tr("Process rules"); color: Theme.text; font-weight: 600; }
+                Text { text: @tr("Exact process name or app ID; use * and ? for patterns. Window titles are not matched."); color: Theme.muted; wrap: word-wrap; }
+                Text { text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                 for item[index] in SettingsEditor.process-matchers: Rectangle {
                     height: 30px; background: SettingsEditor.selected-process == index ? Theme.accent : Theme.card;
                     Text { x: 8px; text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: Theme.text; vertical-alignment: center; }
@@ -131,7 +138,7 @@ export component SettingsPage inherits VerticalBox {
                 }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     LineEdit { text <=> SettingsEditor.process-name; placeholder-text: @tr("Process name"); }
-                    CheckBox { text: @tr("Active window only"); checked <=> SettingsEditor.process-only-active; }
+                    CheckBox { text: @tr("Active window only"); checked <=> SettingsEditor.process-only-active; enabled: AppState.game-window-availability.id != "capability-unsupported"; }
                     CheckBox { text: @tr("Exclude"); checked <=> SettingsEditor.process-blacklist; }
                 }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;

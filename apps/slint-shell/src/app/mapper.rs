@@ -34,7 +34,7 @@ impl App {
     /// layout may differ now.
     pub(super) fn context_changed(&self) {
         let state = self.settings.global::<AppState>();
-        state.set_game_active(lhc_core::runtime_state::game_mode_active());
+        crate::game_mode::refresh(&self.settings, &lhc_core::gamemode::status());
         state.set_keyboard_language(
             lhc_core::runtime_state::layout()
                 .map(|layout| {

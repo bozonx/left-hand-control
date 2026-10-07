@@ -24,6 +24,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let document = Document::load(paths.clone())?;
     let ui = SettingsWindow::new()?;
     bind_document(&ui, &document);
+    slint_shell::bind_game_mode(&ui);
+    let game_mode_config = paths.load_config()?;
+    let game_state = ui.global::<AppState>();
+    for (control, active) in [(GameModeControl::On, true), (GameModeControl::Off, false)] {
+        game_state.invoke_set_game_control(control);
+        assert_eq!(game_state.get_game_control(), control);
+        assert_eq!(game_state.get_game_active(), active);
+        assert!(game_state.get_game_state_available());
+        assert_eq!(lhc_core::runtime_state::game_mode(), (active, true));
+    }
+    game_state.invoke_set_game_control(GameModeControl::Auto);
+    assert_eq!(game_state.get_game_control(), GameModeControl::Auto);
+    assert_eq!(paths.load_config()?, game_mode_config);
     let drag = ui.global::<DragDrop>();
     for (index, y, height) in [(0, 0.0, 80.0), (1, 90.0, 240.0), (2, 340.0, 80.0)] {
         drag.invoke_row(99, index, y, height);
@@ -271,7 +284,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                     assert_eq!(ui.get_page(), expected);
                 }
-                println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state and popup search"); slint::quit_event_loop().unwrap(); }
+                ui.global::<AppState>().invoke_set_game_control(GameModeControl::On); }
+            11 => { snapshot(&ui, "game-mode-on-light"); ui.global::<Theme>().set_dark(true); ui.global::<Theme>().invoke_apply(); }
+            12 => { snapshot(&ui, "game-mode-on-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Off); }
+            13 => { snapshot(&ui, "game-mode-off-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Auto); }
+            14 => { snapshot(&ui, "game-mode-auto-dark"); println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state, popup search and game mode overrides"); slint::quit_event_loop().unwrap(); }
             _ => {}
         }
         step.set(n + 1);

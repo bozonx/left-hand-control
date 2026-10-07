@@ -7,139 +7,210 @@
 //   * everything else -> None (condition will not match)
 
 use std::process::Command;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use crate::exec::run_cmd_with_timeout;
-use crate::platform::linux::{Desktop, SessionType};
+use crate::platform::linux::{Desktop, SessionType, command_available};
 
 use super::ActiveWindow;
 
 static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
-const COMMAND_TIMEOUT_MS: u64 = 3000;
+const COMMAND_TIMEOUT_MS: u64 = 1000;
+static LAST_QUERY: AtomicU8 = AtomicU8::new(0);
+
+pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
+    use crate::gamemode::DetectorAvailability;
+    let session = crate::platform::linux::detect();
+    let available = match (session.desktop, session.session_type) {
+        (_, SessionType::X11) => command_available("xdotool") && command_available("xprop"),
+        (Desktop::Kde, SessionType::Wayland) => command_available("kdotool"),
+        (Desktop::Hyprland, SessionType::Wayland) => command_available("hyprctl"),
+        (Desktop::Sway, SessionType::Wayland) => command_available("swaymsg"),
+        _ => return DetectorAvailability::Unsupported,
+    };
+    if available && LAST_QUERY.load(Ordering::Relaxed) != 2 {
+        DetectorAvailability::Available
+    } else {
+        DetectorAvailability::Unavailable
+    }
+}
 
 pub fn detect() -> Option<ActiveWindow> {
     let session = crate::platform::linux::detect();
 
-    match (session.desktop.clone(), session.session_type) {
-        (Desktop::Hyprland, _) => detect_hyprland(),
+    let result = match (session.desktop.clone(), session.session_type) {
+        (Desktop::Hyprland, SessionType::Wayland) => detect_hyprland(),
         (Desktop::Kde, SessionType::Wayland) => detect_kde_wayland(),
+        (Desktop::Sway, SessionType::Wayland) => detect_sway(),
         (_, SessionType::X11) => detect_x11(),
-        _ => None,
-    }
+        _ => Err(()),
+    };
+    LAST_QUERY.store(if result.is_ok() { 1 } else { 2 }, Ordering::Relaxed);
+    result.ok().flatten()
 }
 
-fn detect_hyprland() -> Option<ActiveWindow> {
+fn detect_hyprland() -> Result<Option<ActiveWindow>, ()> {
     let output = run_cmd_with_timeout(
         Command::new("hyprctl").args(["activewindow", "-j"]),
         COMMAND_TIMEOUT_MS,
-    )?;
+    )
+    .ok_or(())?;
     if !output.status.success() {
-        return None;
+        return Err(());
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
-    parse_hyprctl_json(&stdout)
+    serde_json::from_str::<serde_json::Value>(&stdout).map_err(|_| ())?;
+    Ok(parse_hyprctl_json(&stdout))
 }
 
-fn detect_kde_wayland() -> Option<ActiveWindow> {
-    let id_output = run_cmd_with_timeout(
-        Command::new("kdotool").arg("getactivewindow"),
+fn detect_kde_wayland() -> Result<Option<ActiveWindow>, ()> {
+    let output = run_cmd_with_timeout(
+        Command::new("kdotool").args([
+            "kwinscript", "--inline",
+            "var w=workspace.activeWindow;output_result(w ? JSON.stringify({title:w.caption,appId:String(w.resourceClass),pid:w.pid}) : '{}');",
+        ]),
         COMMAND_TIMEOUT_MS,
     );
-    let Some(id_output) = id_output else {
+    let Some(output) = output else {
         if !KDOTOOL_WARN_ONCE.swap(true, Ordering::SeqCst) {
             log::debug!("[active-window] KDE Wayland active-window detection requires 'kdotool'");
         }
-        return None;
+        return Err(());
     };
-    if !id_output.status.success() {
-        return None;
+    if !output.status.success() {
+        return Err(());
     }
-    let window_id = String::from_utf8_lossy(&id_output.stdout)
-        .trim()
-        .to_string();
-    if window_id.is_empty() {
-        return None;
-    }
-
-    let title = run_cmd_with_timeout(
-        Command::new("kdotool").args(["getwindowname", &window_id]),
-        COMMAND_TIMEOUT_MS,
-    )
-    .and_then(|o| {
-        if o.status.success() {
-            Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
-        } else {
-            None
-        }
-    })
-    .unwrap_or_default();
-
-    let app_id = run_cmd_with_timeout(
-        Command::new("kdotool").args(["getwindowclassname", &window_id]),
-        COMMAND_TIMEOUT_MS,
-    )
-    .and_then(|o| {
-        if o.status.success() {
-            Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
-        } else {
-            None
-        }
-    })
-    .unwrap_or_default();
-
-    if title.is_empty() && app_id.is_empty() {
-        return None;
-    }
-    Some(ActiveWindow { title, app_id })
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).map_err(|_| ())?;
+    Ok(window_from_json(&value, "title", "appId"))
 }
 
-fn detect_x11() -> Option<ActiveWindow> {
-    let id_output = run_cmd_with_timeout(
-        Command::new("xdotool").arg("getactivewindow"),
-        COMMAND_TIMEOUT_MS,
-    )?;
-    if !id_output.status.success() {
-        return None;
-    }
-    let window_id = String::from_utf8_lossy(&id_output.stdout)
-        .trim()
-        .to_string();
-    if window_id.is_empty() {
-        return None;
-    }
-
-    let title = run_cmd_with_timeout(
-        Command::new("xdotool").args(["getwindowname", &window_id]),
+fn detect_sway() -> Result<Option<ActiveWindow>, ()> {
+    let output = run_cmd_with_timeout(
+        Command::new("swaymsg").args(["-t", "get_tree", "-r"]),
         COMMAND_TIMEOUT_MS,
     )
-    .and_then(|o| {
-        if o.status.success() {
-            Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
-        } else {
-            None
+    .ok_or(())?;
+    if !output.status.success() {
+        return Err(());
+    }
+    let tree: serde_json::Value = serde_json::from_slice(&output.stdout).map_err(|_| ())?;
+    Ok(find_focused_window(&tree))
+}
+
+fn find_focused_window(node: &serde_json::Value) -> Option<ActiveWindow> {
+    if node.get("focused").and_then(serde_json::Value::as_bool) == Some(true) {
+        let title = node
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+        let app_id = node
+            .get("app_id")
+            .and_then(serde_json::Value::as_str)
+            .or_else(|| node.get("window_properties")?.get("class")?.as_str())
+            .unwrap_or_default()
+            .to_string();
+        if !title.is_empty() || !app_id.is_empty() {
+            return Some(ActiveWindow {
+                title,
+                app_id,
+                process_name: process_name(node.get("pid").and_then(serde_json::Value::as_u64)),
+            });
         }
+    }
+    ["nodes", "floating_nodes"].iter().find_map(|key| {
+        node.get(key)?
+            .as_array()?
+            .iter()
+            .find_map(find_focused_window)
     })
-    .unwrap_or_default();
+}
 
-    let class_output = run_cmd_with_timeout(
-        Command::new("xprop").args(["-id", &window_id, "WM_CLASS"]),
-        COMMAND_TIMEOUT_MS,
-    );
-    let app_id = class_output
-        .and_then(|o| {
-            if o.status.success() {
-                Some(String::from_utf8_lossy(&o.stdout).into_owned())
-            } else {
-                None
-            }
-        })
-        .map(|s| parse_wm_class(&s))
-        .unwrap_or_default();
+fn process_name(pid: Option<u64>) -> Option<String> {
+    let pid = pid.filter(|pid| *pid > 0)?;
+    if let Ok(exe) = std::fs::read_link(format!("/proc/{pid}/exe")) {
+        return exe.file_name()?.to_str().map(str::to_owned);
+    }
+    std::fs::read_to_string(format!("/proc/{pid}/comm"))
+        .ok()
+        .map(|name| name.trim().to_string())
+        .filter(|name| !name.is_empty())
+}
 
+fn window_from_json(
+    value: &serde_json::Value,
+    title_key: &str,
+    app_key: &str,
+) -> Option<ActiveWindow> {
+    let title = value
+        .get(title_key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let app_id = value
+        .get(app_key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default()
+        .to_string();
     if title.is_empty() && app_id.is_empty() {
         return None;
     }
-    Some(ActiveWindow { title, app_id })
+    Some(ActiveWindow {
+        title,
+        app_id,
+        process_name: process_name(value.get("pid").and_then(serde_json::Value::as_u64)),
+    })
+}
+
+fn detect_x11() -> Result<Option<ActiveWindow>, ()> {
+    let output = run_cmd_with_timeout(
+        Command::new("xprop").args(["-root", "_NET_ACTIVE_WINDOW"]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .ok_or(())?;
+    if !output.status.success() {
+        return Err(());
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let window_id = stdout.split_whitespace().last().ok_or(())?;
+    if window_id == "0x0" {
+        return Ok(None);
+    }
+    if !window_id.starts_with("0x") {
+        return Err(());
+    }
+    let title_output = run_cmd_with_timeout(
+        Command::new("xdotool").args(["getwindowname", window_id]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .ok_or(())?;
+    let class_output = run_cmd_with_timeout(
+        Command::new("xprop").args(["-id", window_id, "WM_CLASS", "_NET_WM_PID"]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .ok_or(())?;
+    if !title_output.status.success() || !class_output.status.success() {
+        return Err(());
+    }
+    let title = String::from_utf8_lossy(&title_output.stdout)
+        .trim()
+        .to_string();
+    let stdout = String::from_utf8_lossy(&class_output.stdout);
+    let app_id = parse_wm_class(&stdout);
+    let pid = stdout
+        .lines()
+        .find(|line| line.starts_with("_NET_WM_PID"))
+        .and_then(|line| line.split_once('='))
+        .and_then(|(_, value)| value.trim().parse().ok());
+    let process_name = process_name(pid);
+    if title.is_empty() && app_id.is_empty() && process_name.is_none() {
+        return Ok(None);
+    }
+    Ok(Some(ActiveWindow {
+        title,
+        app_id,
+        process_name,
+    }))
 }
 
 // Parses `xprop WM_CLASS` output of the form:
@@ -169,26 +240,22 @@ pub(crate) fn parse_wm_class(stdout: &str) -> String {
 }
 
 pub(crate) fn parse_hyprctl_json(stdout: &str) -> Option<ActiveWindow> {
-    #[derive(serde::Deserialize)]
-    struct HyprWindow {
-        #[serde(default)]
-        title: String,
-        #[serde(default, rename = "class")]
-        app_id: String,
-    }
-
-    let parsed: HyprWindow = serde_json::from_str(stdout).ok()?;
-    let title = parsed.title;
-    let app_id = parsed.app_id;
-    if title.is_empty() && app_id.is_empty() {
-        return None;
-    }
-    Some(ActiveWindow { title, app_id })
+    let value: serde_json::Value = serde_json::from_str(stdout).ok()?;
+    window_from_json(&value, "title", "class")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sway_finds_native_and_xwayland_focused_windows() {
+        let native = serde_json::json!({"nodes": [{"nodes": [{"focused": true, "name": "Game", "app_id": "game"}]}]});
+        assert_eq!(find_focused_window(&native).unwrap().app_id, "game");
+        let xwayland = serde_json::json!({"floating_nodes": [{"focused": true, "name": "Game", "app_id": null, "window_properties": {"class": "Game.exe"}}]});
+        assert_eq!(find_focused_window(&xwayland).unwrap().app_id, "Game.exe");
+        assert!(find_focused_window(&serde_json::json!({"focused": true, "name": null})).is_none());
+    }
 
     #[test]
     fn parses_wm_class_class_value() {

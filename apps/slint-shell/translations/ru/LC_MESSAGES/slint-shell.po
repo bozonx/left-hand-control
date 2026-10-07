@@ -1383,3 +1383,69 @@ msgstr "По умолчанию: {} мс"
 
 msgid "Clear restores normal key behavior. Swallow prevents the key from reaching the application."
 msgstr "Очистка возвращает обычное поведение клавиши. Поглощение не передаёт клавишу приложению."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Auto"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "On"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Off"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Auto: источники автоопределения выключены"
+
+msgid "Auto: detection unavailable"
+msgstr "Auto: автоопределение недоступно"
+
+msgid "Auto: game mode inactive"
+msgstr "Auto: игровой режим неактивен"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Auto: служба GameMode активна"
+
+msgid "Auto: matched {}"
+msgstr "Auto: совпадение с {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Auto: активно полноэкранное окно"
+
+msgid "Auto: excluded by {}"
+msgstr "Auto: исключён правилом {}"
+
+msgid "Game mode manually on until restart"
+msgstr "Игровой режим включён вручную до перезапуска"
+
+msgid "Game mode manually off until restart"
+msgstr "Игровой режим выключен вручную до перезапуска"
+
+msgid "On and Off last until restart. Auto keeps detecting in the background."
+msgstr "On и Off действуют до перезапуска. Auto продолжает определение в фоне."
+
+msgid "Choose Auto, On or Off in the top bar. These settings configure Auto."
+msgstr "Выберите Auto, On или Off в верхней панели. Эти настройки управляют автоопределением."
+
+msgid "GameMode daemon: "
+msgstr "Служба GameMode: "
+
+msgid "Fullscreen detection: "
+msgstr "Определение полноэкранного окна: "
+
+msgid "Fullscreen detection is not supported in this session. Use process rules or On/Off."
+msgstr "Определение полноэкранного окна не поддерживается в этой сессии. Используйте правила процессов или On/Off."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr "Инструменты определения полноэкранного окна отсутствуют или не смогли получить данные сессии."
+
+msgid "Exact process name or app ID; use * and ? for patterns. Window titles are not matched."
+msgstr "Точное имя процесса или ID приложения; для шаблонов используйте * и ?. Заголовки окон не проверяются."
+
+msgid "Running processes: "
+msgstr "Запущенные процессы: "
+
+msgid "Active window: "
+msgstr "Активное окно: "

@@ -14,6 +14,21 @@ mod linux;
 
 pub use crate::runtime_state::ActiveWindow;
 
+pub(crate) fn availability() -> crate::gamemode::DetectorAvailability {
+    #[cfg(target_os = "linux")]
+    {
+        linux::availability()
+    }
+    #[cfg(target_os = "windows")]
+    {
+        crate::gamemode::DetectorAvailability::Available
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        crate::gamemode::DetectorAvailability::Unsupported
+    }
+}
+
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
 
 pub fn cached_active_window() -> Option<ActiveWindow> {
@@ -57,7 +72,11 @@ fn detect_active_window() -> Option<ActiveWindow> {
     {
         linux::detect()
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "windows")]
+    {
+        crate::platform::windows::active_window()
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     {
         None
     }

@@ -224,6 +224,11 @@ fn get_gamemode_status() -> Result<gamemode::GameModeStatus, String> {
 }
 
 #[tauri::command]
+fn set_gamemode_control(control: gamemode::GameModeControl) -> gamemode::GameModeStatus {
+    gamemode::set_control(control)
+}
+
+#[tauri::command]
 fn get_active_window() -> Option<active_window::ActiveWindow> {
     active_window::cached_active_window()
 }
@@ -534,6 +539,7 @@ pub fn run() {
             get_system_layouts,
             set_current_layout,
             get_gamemode_status,
+            set_gamemode_control,
             get_platform_info,
             window_controls::get_window_controls_layout,
             get_active_window,

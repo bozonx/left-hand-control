@@ -17,10 +17,11 @@ impl AutoSwitchContext {
     /// Snapshot of the state cached by the core watchers.
     pub fn current() -> Self {
         let window = crate::runtime_state::active_window();
+        let (game_mode_active, game_mode_detection_enabled) = crate::runtime_state::game_mode();
         Self {
             system_layout: crate::runtime_state::layout_short(),
-            game_mode_active: crate::runtime_state::game_mode_active(),
-            game_mode_detection_enabled: crate::runtime_state::game_mode_detection_enabled(),
+            game_mode_active,
+            game_mode_detection_enabled,
             window_title: window.as_ref().map(|window| window.title.clone()),
             window_app_id: window.map(|window| window.app_id),
         }

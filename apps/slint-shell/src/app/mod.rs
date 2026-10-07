@@ -350,6 +350,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         app.install_document(document);
     }
     app.refresh_mapper_status();
+    crate::game_mode::bind(&app.settings);
     app.settings
         .global::<AppState>()
         .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));

@@ -1,4 +1,5 @@
 import { Message } from "i18n.slint";
+import { GameModeControl } from "types.slint";
 
 /// Shell state shown on several pages: mapper, runtime context and the
 /// messages that are not tied to one page.
@@ -6,6 +7,14 @@ export global AppState {
     in property <bool> mapper-running;
     in property <bool> mapper-busy;
     in property <bool> game-active;
+    in property <bool> game-state-available;
+    in property <GameModeControl> game-control: GameModeControl.auto;
+    in property <Message> game-status;
+    in property <Message> game-auto-status;
+    in property <Message> game-daemon-availability;
+    in property <Message> game-fullscreen-availability;
+    in property <Message> game-processes-availability;
+    in property <Message> game-window-availability;
     in property <string> keyboard-language;
     in property <bool> commands-need-approval;
     in property <bool> is-linux;
@@ -13,4 +22,5 @@ export global AppState {
     in property <Message> backend-error;
     in property <Message> config-status;
     callback toggle-mapper();
+    callback set-game-control(GameModeControl);
 }

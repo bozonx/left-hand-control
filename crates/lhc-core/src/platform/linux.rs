@@ -114,6 +114,17 @@ pub fn detect() -> Session {
     }
 }
 
+pub(crate) fn command_available(name: &str) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    std::env::var_os("PATH").is_some_and(|paths| {
+        std::env::split_paths(&paths).any(|path| {
+            std::fs::metadata(path.join(name)).is_ok_and(|metadata| {
+                metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+            })
+        })
+    })
+}
+
 fn classify_desktop(xdg: &str, session: &str, has_swaysock: bool) -> Desktop {
     classify_desktop_impl(
         xdg,

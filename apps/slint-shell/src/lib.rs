@@ -12,6 +12,7 @@ mod app;
 pub mod command;
 pub mod document;
 mod i18n;
+mod game_mode;
 mod ipc;
 pub mod keyboard;
 mod metrics;
@@ -26,6 +27,7 @@ pub mod test_keyboard;
 pub use document::Document;
 pub use i18n::select_ui_language;
 pub use pages::bind_document;
+pub use game_mode::bind as bind_game_mode;
 
 use std::time::Instant;
 

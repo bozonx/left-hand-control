@@ -114,6 +114,7 @@ fn parse_po(text: &str) -> HashMap<String, String> {
     let mut out = HashMap::new();
     let mut id: Option<String> = None;
     let mut current: Option<(bool, String)> = None;
+    let mut contextual = false;
     let mut finish =
         |current: &mut Option<(bool, String)>, id: &mut Option<String>| match current.take() {
             Some((false, value)) => *id = Some(value),
@@ -128,6 +129,17 @@ fn parse_po(text: &str) -> HashMap<String, String> {
             None => {}
         };
     for line in text.lines().map(str::trim) {
+        if line.starts_with("msgctxt ") {
+            finish(&mut current, &mut id);
+            contextual = true;
+            continue;
+        }
+        if line.is_empty() {
+            contextual = false;
+        }
+        if contextual {
+            continue;
+        }
         if let Some(rest) = line.strip_prefix("msgid ") {
             finish(&mut current, &mut id);
             current = Some((false, unquote(rest)));
@@ -194,6 +206,15 @@ pub enum Msg {
     CapabilityAvailable,
     CapabilityUnavailable,
     CapabilityUnsupported,
+    GameModeAutoDisabled,
+    GameModeAutoUnavailable,
+    GameModeAutoInactive,
+    GameModeDaemonActive,
+    GameModeProcessActive(String),
+    GameModeFullscreenActive,
+    GameModeExcluded(String),
+    GameModeManualOn,
+    GameModeManualOff,
     LibrarySaved,
     LibrarySelect,
     LibraryChanged,
@@ -256,6 +277,15 @@ impl Msg {
             Self::CapabilityAvailable => ("capability-available", empty(), 0),
             Self::CapabilityUnavailable => ("capability-unavailable", empty(), 0),
             Self::CapabilityUnsupported => ("capability-unsupported", empty(), 0),
+            Self::GameModeAutoDisabled => ("game-mode-auto-disabled", empty(), 0),
+            Self::GameModeAutoUnavailable => ("game-mode-auto-unavailable", empty(), 0),
+            Self::GameModeAutoInactive => ("game-mode-auto-inactive", empty(), 0),
+            Self::GameModeDaemonActive => ("game-mode-daemon-active", empty(), 0),
+            Self::GameModeProcessActive(name) => ("game-mode-process-active", name.clone(), 0),
+            Self::GameModeFullscreenActive => ("game-mode-fullscreen-active", empty(), 0),
+            Self::GameModeExcluded(name) => ("game-mode-excluded", name.clone(), 0),
+            Self::GameModeManualOn => ("game-mode-manual-on", empty(), 0),
+            Self::GameModeManualOff => ("game-mode-manual-off", empty(), 0),
             Self::SettingsSaved => ("settings-saved", empty(), 0),
             Self::ProcessNameRequired => ("process-name-required", empty(), 0),
             Self::MacroIssue(issue) => (
@@ -430,6 +460,12 @@ mod tests {
     }
 
     #[test]
+    fn contextual_game_mode_labels_do_not_replace_other_translations() {
+        let po = "msgid \"On\"\nmsgstr \"Вкл\"\n\nmsgctxt \"Game mode control\"\nmsgid \"On\"\nmsgstr \"On\"\n";
+        assert_eq!(parse_po(po).get("On").map(String::as_str), Some("Вкл"));
+    }
+
+    #[test]
     fn auto_language_follows_the_environment_only_for_auto() {
         assert_eq!(
             Language::resolve(LocalePreference::Russian),
@@ -453,7 +489,12 @@ mod tests {
             }
             let text = std::fs::read_to_string(&path).unwrap();
             for (index, _) in text.match_indices("@tr(\"") {
-                let rest = &text[index + 5..];
+                let mut rest = &text[index + 5..];
+                if let Some(quote) = rest.find('"')
+                    && let Some(source) = rest[quote..].strip_prefix("\" => \"")
+                {
+                    rest = source;
+                }
                 let mut value = String::new();
                 let mut chars = rest.chars();
                 while let Some(c) = chars.next() {

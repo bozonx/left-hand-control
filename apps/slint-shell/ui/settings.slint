@@ -1,6 +1,7 @@
 import { ScrollView } from "scroll.slint";
 import { ActionPicker, PickerOverlay } from "action-picker.slint";
 import { AppState } from "app-state.slint";
+import { GameModeButton } from "game-mode.slint";
 import { KeyboardPage } from "keys.slint";
 import { LayerDialogOverlay, LayersEditor, LayersPage } from "layers.slint";
 import { LayoutLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton } from "library.slint";
@@ -73,13 +74,7 @@ export component SettingsWindow inherits Window {
                         Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system"); color: Theme.text; } } } }
                     }
                     }
-                    Rectangle {
-                        width: 36px; height: 36px; border-radius: 6px;
-                        background: AppState.game-active ? Theme.error.transparentize(0.85) : Theme.surface;
-                        Image { x: 8px; y: 8px; width: 20px; height: 20px; source: @image-url("icons/gamepad-2.svg"); colorize: AppState.game-active ? Theme.error : Theme.muted; }
-                        Rectangle { x: 27px; y: 3px; width: 6px; height: 6px; border-radius: 3px; background: AppState.game-active ? Theme.error : Theme.muted.transparentize(0.6); }
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: AppState.game-active ? @tr("Game mode: active") : @tr("Game mode: inactive"); color: Theme.text; } } } }
-                    }
+                    GameModeButton {}
                     Button { text: @tr("Settings"); primary: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } }
                 }
             }

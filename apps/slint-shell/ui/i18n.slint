@@ -14,6 +14,15 @@ export global Locale {
         if m.id == "capability-available" { return @tr("Available"); }
         if m.id == "capability-unavailable" { return @tr("Unavailable"); }
         if m.id == "capability-unsupported" { return @tr("Not implemented"); }
+        if m.id == "game-mode-auto-disabled" { return @tr("Auto: no detection sources enabled"); }
+        if m.id == "game-mode-auto-unavailable" { return @tr("Auto: detection unavailable"); }
+        if m.id == "game-mode-auto-inactive" { return @tr("Auto: game mode inactive"); }
+        if m.id == "game-mode-daemon-active" { return @tr("Auto: GameMode daemon active"); }
+        if m.id == "game-mode-process-active" { return @tr("Auto: matched {}", m.arg); }
+        if m.id == "game-mode-fullscreen-active" { return @tr("Auto: fullscreen window active"); }
+        if m.id == "game-mode-excluded" { return @tr("Auto: excluded by {}", m.arg); }
+        if m.id == "game-mode-manual-on" { return @tr("Game mode manually on until restart"); }
+        if m.id == "game-mode-manual-off" { return @tr("Game mode manually off until restart"); }
         if m.id == "picker-action" && m.arg == "showQuickMenu" { return @tr("Show Quick Action Menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "showEmojiMenu" { return @tr("Show Emoji & Symbols menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "switchDesktop" { return @tr("Switch to desktop {}", m.count); }
