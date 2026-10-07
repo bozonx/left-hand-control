@@ -72,6 +72,7 @@ interface LayoutYaml {
     id?: string
     name?: string
     linux?: string
+    workingDirectory?: string
   }>
   quickActions?: Array<{
     id?: string
@@ -214,6 +215,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       id: c.id,
       name: c.name ?? c.id,
       linux: c.linux?.trim() ?? '',
+      workingDirectory: c.workingDirectory?.trim() || undefined,
     })
   }
 
@@ -350,6 +352,7 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
       id: c.id,
       name: c.name,
       linux: c.linux,
+      ...(c.workingDirectory ? { workingDirectory: c.workingDirectory } : {}),
     })),
     quickActions: preset.quickActions.map((action) => ({
       id: action.id,

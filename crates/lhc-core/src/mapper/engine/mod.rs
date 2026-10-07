@@ -1412,6 +1412,7 @@ mod tests {
         cfg.commands.push(Command {
             id: "blocked".into(),
             linux: "printf hello".into(),
+            working_directory: None,
         });
         cfg.macros.push(Macro {
             id: "sequence".into(),
@@ -1436,11 +1437,29 @@ mod tests {
     }
 
     #[test]
+    fn command_invocations_use_configured_directory_and_timeout() {
+        let mut cfg = empty_cfg();
+        cfg.commands.push(Command {
+            id: "hello".into(), linux: "pwd".into(), working_directory: Some("~/Documents".into()),
+        });
+        cfg.settings.command_timeout_secs = 7;
+        cfg.settings.command_trust.insert("custom".into(), CommandTrustEntry {
+            fingerprint: crate::mapper_config::command_fingerprint(&cfg.commands),
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        engine.execute_remote("cmd:hello", &mut out);
+        assert!(matches!(out.as_slice(), [Out::RunCommand(cmd)]
+            if cmd.working_directory.as_deref() == Some("~/Documents") && cmd.timeout == Duration::from_secs(7)));
+    }
+
+    #[test]
     fn remote_execute_command_uses_current_command_table() {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "play".into(),
             linux: "playerctl play-pause".into(),
+            working_directory: None,
         });
         cfg.settings.command_trust.insert(
             "custom".into(),

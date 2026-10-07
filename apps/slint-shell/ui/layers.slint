@@ -221,6 +221,7 @@ component HandGrid inherits VerticalLayout {
 }
 
 export component LayersPage inherits VerticalLayout {
+    padding: 0px;
     in-out property <int> label-mode <=> LayersEditor.label-mode;
 
     private property <string> test-text;
@@ -229,7 +230,7 @@ export component LayersPage inherits VerticalLayout {
     ScrollView {
         viewport-width: self.visible-width;
         vertical-stretch: 1;
-        VerticalLayout {
+        VerticalLayout { padding: 0px;
             spacing: 16px;
             ScrollView { height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed;
                 HorizontalLayout { spacing: 6px; alignment: start;

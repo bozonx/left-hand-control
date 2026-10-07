@@ -53,10 +53,19 @@ describe('command trust', () => {
     expect(commandsTrusted(config)).toBe(true)
   })
 
-  it('empty command list is always trusted', () => {
+  it('empty layouts require explicit permission before creating commands', () => {
     const config = createDefaultConfig()
     config.commands = []
+    expect(commandsTrusted(config)).toBe(false)
+    config.settings.commandTrust.custom = { fingerprint: commandFingerprint([]), trustedAt: '' }
     expect(commandsTrusted(config)).toBe(true)
+  })
+
+  it('includes the working directory in the fingerprint', () => {
+    const commands = [{ id: 'hello', name: 'Hello', linux: 'pwd', workingDirectory: '' }]
+    const original = commandFingerprint(commands)
+    commands[0]!.workingDirectory = '~/Documents'
+    expect(commandFingerprint(commands)).not.toBe(original)
   })
 
   it('rejects wrong fingerprint', () => {

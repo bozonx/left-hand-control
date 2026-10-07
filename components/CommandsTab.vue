@@ -14,8 +14,7 @@ const {
   usage,
 } = useCommandEditor()
 const {
-  hasShellCommands,
-  needsApproval,
+  isTrusted,
   approve,
   revoke,
 } = useCommandTrust()
@@ -23,6 +22,7 @@ const platform = usePlatformInfo()
 const { t } = useI18n()
 
 const confirmOpen = ref(false)
+const createOpen = ref(false)
 const pendingDeleteKey = ref<string | null>(null)
 const pendingDeleteLabel = ref<string | null>(null)
 const focusCommandKey = ref<string | null>(null)
@@ -43,7 +43,15 @@ function clearFocusCommandKey(uiKey: string) {
   if (focusCommandKey.value === uiKey) focusCommandKey.value = null
 }
 
-async function createCommand() {
+async function createCommand(allow = false) {
+  if (config.value.commands.length === 0 && !isTrusted.value) {
+    if (!allow) {
+      createOpen.value = true
+      return
+    }
+    await approve()
+  }
+  createOpen.value = false
   const command = addCommand()
   const uiKey = uiKeyOf(command)
   focusCommandKey.value = uiKey
@@ -95,7 +103,7 @@ function cancelRemove() {
               size="sm"
               class="whitespace-nowrap"
               :disabled="hasErrors"
-              @click="createCommand"
+              @click="createCommand()"
             >
               {{ $t('commands.addBtn') }}
             </UButton>
@@ -105,7 +113,7 @@ function cancelRemove() {
 
       <div class="space-y-4">
         <div
-          v-if="needsApproval"
+          v-if="!isTrusted"
           class="flex items-start justify-between gap-3 rounded-lg border border-(--ui-warning)/40 bg-(--ui-warning)/10 p-3"
         >
           <div class="flex min-w-0 items-start gap-2 text-sm">
@@ -127,6 +135,7 @@ function cancelRemove() {
             color="warning"
             variant="solid"
             class="shrink-0"
+            :disabled="hasErrors"
             @click="approve"
           >
             {{ $t('commands.approveBtn') }}
@@ -134,7 +143,7 @@ function cancelRemove() {
         </div>
 
         <div
-          v-else-if="hasShellCommands"
+          v-else
           class="flex items-center justify-between gap-3 rounded-lg border border-(--ui-border) bg-(--ui-bg-muted)/40 p-3 text-sm"
         >
           <div class="flex min-w-0 items-center gap-2">
@@ -182,6 +191,17 @@ function cancelRemove() {
       </div>
     </UCard>
 
+    <UModal v-model:open="createOpen" :title="$t('commands.createTitle')">
+      <template #body>
+        <p class="text-sm">{{ $t('commands.createBody') }}</p>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton variant="ghost" color="neutral" @click="createOpen = false">{{ $t('common.cancel') }}</UButton>
+          <UButton icon="i-lucide-shield-check" @click="createCommand(true)">{{ $t('commands.createAllow') }}</UButton>
+        </div>
+      </template>
+    </UModal>
     <UModal v-model:open="confirmOpen" :title="$t('commands.confirmDeleteTitle')">
       <template #body>
         <p class="text-sm">

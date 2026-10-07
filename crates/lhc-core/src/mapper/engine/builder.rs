@@ -54,6 +54,10 @@ impl Engine {
                     SysCommand {
                         program: "sh".into(),
                         args: vec!["-lc".into(), linux.to_string()],
+                        working_directory: c.working_directory.clone(),
+                        timeout: Duration::from_secs(
+                            cfg.settings.command_timeout_secs.clamp(1, i32::MAX as u64),
+                        ),
                     },
                 );
             }

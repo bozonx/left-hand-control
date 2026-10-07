@@ -104,6 +104,8 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
                     .collect()
             })
             .unwrap_or_default(),
+        command_timeout_secs: u64_or(raw, "commandTimeoutSecs", base.command_timeout_secs)
+            .clamp(1, i32::MAX as u64),
         game_mode: base.game_mode.clone(),
         linux_wayland_text_mode: str_of(raw, "linuxWaylandTextMode")
             .filter(|mode| TEXT_MODES.contains(mode))

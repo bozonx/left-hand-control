@@ -150,6 +150,9 @@ async function copyCommandId() {
             </UBadge>
         </div>
 
+        <UFormField class="mt-4" :label="$t('commands.workingDirectory')" :help="$t('commands.workingDirectoryHint')">
+            <UInput v-model="command.workingDirectory" class="w-full" :placeholder="$t('commands.homeDirectory')" />
+        </UFormField>
         <UFormField class="mt-4" :error="linuxError">
             <template #label>
                 <FieldLabel

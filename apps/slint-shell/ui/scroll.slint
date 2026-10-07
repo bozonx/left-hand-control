@@ -61,8 +61,8 @@ export component ScrollView {
     in property <ScrollBarPolicy> vertical-scrollbar-policy: as-needed;
     in property <ScrollBarPolicy> horizontal-scrollbar-policy: always-off;
     in property <bool> mouse-drag-pan-enabled: false;
-    private property <length> scrollbar-size: 12px;
-    private property <length> scrollbar-gap: 4px;
+    private property <length> scrollbar-size: Theme.scrollbar-size;
+    private property <length> scrollbar-gap: Theme.scrollbar-gap;
     private property <bool> vertical: root.vertical-scrollbar-policy == ScrollBarPolicy.always-on || (root.vertical-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-height > root.visible-height);
     private property <bool> horizontal: root.horizontal-scrollbar-policy == ScrollBarPolicy.always-on || (root.horizontal-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-width > root.visible-width);
     callback scrolled();

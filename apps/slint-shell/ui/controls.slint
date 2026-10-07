@@ -244,6 +244,7 @@ export component ConfirmDialog inherits Rectangle {
     in property <string> title;
     in property <string> body;
     in property <string> confirm-text;
+    in property <image> confirm-icon: @image-url("icons/trash-2.svg");
     in property <string> error;
     callback confirm();
     callback cancel();
@@ -276,7 +277,7 @@ export component ConfirmDialog inherits Rectangle {
                     spacing: 8px;
                     alignment: end;
                     Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
-                    confirm-button := Button { init => { self.focus(); } text: root.confirm-text; primary: true; icon: @image-url("icons/trash-2.svg"); colorize-icon: true; clicked => { root.confirm(); } }
+                    confirm-button := Button { init => { self.focus(); } text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
                 }
             }
         }

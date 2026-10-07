@@ -1,5 +1,8 @@
 import { Palette } from "std-widgets.slint";
 export global Theme {
+    out property <length> page-padding: 20px;
+    out property <length> scrollbar-size: 12px;
+    out property <length> scrollbar-gap: 4px;
     in-out property <bool> dark: true;
     in-out property <bool> eink: false;
     out property <color> surface: eink ? #ffffff : dark ? #202531 : #f5f7fc;

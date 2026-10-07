@@ -46,6 +46,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded().layout().emoji_pages.len(), 1);
 
     e.invoke_open(MenuKind::Commands);
+    assert!(!e.get_trusted());
+    e.invoke_trust(true);
     e.invoke_add_command("Привет".into());
     assert!(e.get_has_errors());
     assert_eq!(
@@ -77,10 +79,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         e.get_commands().row_data(0).unwrap().linux,
         "printf changed"
     );
-    assert!(!e.get_trusted());
+    assert!(e.get_trusted());
     settle();
-    assert!(!document.read().commands_trusted());
+    assert!(document.read().commands_trusted());
+    assert!(e.get_trusted());
+    e.invoke_set_command(0, CommandField::WorkingDirectory, "~/Documents".into());
+    settle();
+    assert_eq!(
+        loaded().layout().commands[0].working_directory.as_deref(),
+        Some("~/Documents")
+    );
+    assert!(e.get_trusted());
+    e.invoke_trust(false);
     assert!(!e.get_trusted());
+    e.invoke_set_command(0, CommandField::Linux, "printf blocked".into());
+    settle();
+    assert!(!loaded().commands_trusted());
+    e.invoke_trust(true);
     e.invoke_add_command("Второй".into());
     e.invoke_set_command(0, CommandField::Id, "hello".into());
     settle();

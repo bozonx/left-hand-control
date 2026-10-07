@@ -117,7 +117,8 @@ export global Locale {
         if m.id == "menu-draft" { return @tr("Unsaved draft. Fix command errors to save; the draft is kept while switching tabs."); }
         if m.id == "command-completed" { return @tr("Command completed: {}", m.arg); }
         if m.id == "action-unavailable" { return @tr("Unavailable on this platform or desktop"); }
-        if m.id == "command-approval-required" { return @tr("Approve commands on the Commands tab before running this action"); }
+        if m.id == "command-timeout-invalid" { return @tr("Enter a command execution time between 1 and 2147483647 seconds"); }
+        if m.id == "command-approval-required" { return @tr("Unblock commands on the Commands tab before running this action"); }
         if m.id == "menu-save-first" { return @tr("Fix command errors before allowing them."); }
         if m.id == "layer-saved" { return @tr("Layer saved"); }
         if m.id == "rule-saved" { return @tr("Rule saved"); }

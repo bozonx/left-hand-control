@@ -93,7 +93,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.invoke_refresh_devices();
     assert!(settings.get_keyboard_manual());
     assert!(settings.get_mouse_manual());
-    assert_eq!(settings.get_keyboard_device_path(), "/dev/input/test-keyboard");
+    assert_eq!(
+        settings.get_keyboard_device_path(),
+        "/dev/input/test-keyboard"
+    );
     assert_eq!(settings.get_mouse_device_path(), "/dev/input/test-mouse");
 
     // Another process changes a setting while the form has an unsaved edit:
@@ -213,6 +216,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     id: format!("dragCommand{index}"),
                     name: format!("Command {index}"),
                     linux: "printf test".into(),
+                    working_directory: None,
                 })
                 .collect();
         })

@@ -1599,3 +1599,51 @@ msgid_plural "{n} commands"
 msgstr[0] "{n} команда"
 msgstr[1] "{n} команды"
 msgstr[2] "{n} команд"
+
+msgid "Command execution is blocked"
+msgstr "Запуск команд заблокирован"
+
+msgid "Review commands from shared layouts before unblocking them. Commands run with your permissions and can modify files and send data. Edits in this application keep them allowed; external changes block execution again."
+msgstr "Проверьте команды из чужих раскладок перед разблокировкой. Команды выполняются с вашими правами и могут изменять файлы и передавать данные. Правки в приложении сохраняют разрешение; внешние изменения снова блокируют запуск."
+
+msgid "Unblock commands"
+msgstr "Разблокировать команды"
+
+msgid "Command execution is allowed for this layout."
+msgstr "Запуск команд разрешён для этой раскладки."
+
+msgid "Block commands"
+msgstr "Заблокировать команды"
+
+msgid "Create and allow commands?"
+msgstr "Создать и разрешить команды?"
+
+msgid "Commands in this layout will run with your permissions. They can modify files and send data. You can block execution again on the Commands page."
+msgstr "Команды этой раскладки будут выполняться с вашими правами. Они могут изменять файлы и передавать данные. Вы сможете снова заблокировать запуск на странице «Команды»."
+
+msgid "Create and allow commands"
+msgstr "Создать и разрешить команды"
+
+msgid "Working directory"
+msgstr "Рабочая папка"
+
+msgid "Leave empty to use your home directory. Absolute paths, ~/ paths, and paths relative to your home directory are supported."
+msgstr "Оставьте пустым, чтобы использовать домашнюю папку. Поддерживаются абсолютные пути, пути с ~/ и пути относительно домашней папки."
+
+msgid "Home directory"
+msgstr "Домашняя папка"
+
+msgid "Maximum command execution time (seconds)"
+msgstr "Максимальное время выполнения команды (секунды)"
+
+msgid "Commands exceeding this time are stopped. Default: 30 seconds."
+msgstr "По истечении этого времени команда останавливается. По умолчанию: 30 секунд."
+
+msgid "Enter a command execution time between 1 and 2147483647 seconds"
+msgstr "Укажите время выполнения команды от 1 до 2147483647 секунд"
+
+msgid "Reusable shell commands for the current layout. On Linux they run through sh -lc, one at a time. Set the maximum execution time in Settings and a working directory for each command."
+msgstr "Shell-команды текущей раскладки. В Linux выполняются через sh -lc по очереди. Максимальное время выполнения задаётся в настройках, рабочая папка — для каждой команды."
+
+msgid "Unblock commands on the Commands tab before running this action"
+msgstr "Разблокируйте команды на странице «Команды» перед запуском этого действия"

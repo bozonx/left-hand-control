@@ -416,6 +416,7 @@ mod tests {
         cfg.commands.push(Command {
             id: "music".into(),
             linux: "playerctl play-pause".into(),
+            working_directory: None,
         });
         cfg.macros.push(Macro {
             id: "m".into(),
@@ -435,6 +436,7 @@ mod tests {
         cfg.commands.push(Command {
             id: "music".into(),
             linux: "playerctl play-pause".into(),
+            working_directory: None,
         });
         cfg.settings.current_layout_id = Some("custom".into());
         cfg.settings.command_trust.insert(
@@ -638,10 +640,12 @@ mod tests {
         cfg.commands.push(Command {
             id: "dup".into(),
             linux: "echo 1".into(),
+            working_directory: None,
         });
         cfg.commands.push(Command {
             id: "dup".into(),
             linux: "echo 2".into(),
+            working_directory: None,
         });
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("Duplicate command ID \"dup\""));
@@ -653,6 +657,7 @@ mod tests {
         cfg.commands.push(Command {
             id: "empty".into(),
             linux: "   ".into(),
+            working_directory: None,
         });
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("Command \"empty\" has an empty Linux script"));

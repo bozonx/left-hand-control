@@ -173,12 +173,33 @@ export function useConfig(): ConfigState {
     return true
   }
 
+  let replacingLayout = false
+
+  function replacePreset(preset: LayoutPreset, layoutId: string | undefined) {
+    replacingLayout = true
+    try {
+      config.value = applyPresetToConfig(config.value, preset, layoutId)
+    } finally {
+      replacingLayout = false
+    }
+  }
+
+  watch(
+    () => [commandTrustKey(config.value.settings.currentLayoutId), commandFingerprint(config.value.commands)] as const,
+    ([key, fingerprint], [oldKey, oldFingerprint]) => {
+      if (!loaded.value || replacingLayout || key !== oldKey || fingerprint === oldFingerprint) return
+      const trust = config.value.settings.commandTrust[key]
+      if (trust?.fingerprint === oldFingerprint) trust.fingerprint = fingerprint
+    },
+    { flush: 'sync' },
+  )
+
   async function applyPreset(
     preset: LayoutPreset,
     layoutId: string | undefined,
   ) {
     notifyShellCommandsNeedApproval(preset, layoutId)
-    config.value = applyPresetToConfig(config.value, preset, layoutId)
+    replacePreset(preset, layoutId)
     if (config.value.settings.layoutMode === 'manual') {
       config.value.settings.manualActiveLayoutId = layoutId
     }
@@ -215,7 +236,7 @@ export function useConfig(): ConfigState {
     layoutId: string,
   ) {
     notifyShellCommandsNeedApproval(preset, layoutId)
-    config.value = applyPresetToConfig(config.value, preset, layoutId)
+    replacePreset(preset, layoutId)
     config.value.settings.layoutMode = 'manual'
     config.value.settings.manualActiveLayoutId = layoutId
     savedLayoutPreset.value = clonePreset(preset)
@@ -226,11 +247,7 @@ export function useConfig(): ConfigState {
   }
 
   async function resetCurrentLayout() {
-    config.value = applyPresetToConfig(
-      config.value,
-      clonePreset(savedLayoutPreset.value),
-      currentLayoutId.value,
-    )
+    replacePreset(clonePreset(savedLayoutPreset.value), currentLayoutId.value)
     layoutSnapshot.value = layoutSnapshotOf(config.value)
     await flush()
     await persistNow()

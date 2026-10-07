@@ -512,6 +512,13 @@ export default {
       'The text could not be inserted. Start the mapper and check that xdg-desktop-portal is available.',
   },
   commands: {
+    createTitle: "Create and allow commands?",
+    createBody: "Commands in this layout will run with your permissions. They can modify files and send data. You can block execution again on the Commands page.",
+    createAllow: "Create and allow commands",
+    workingDirectory: "Working directory",
+    workingDirectoryHint: "Leave empty to use your home directory. Absolute paths, ~/ paths, and paths relative to your home directory are supported.",
+    homeDirectory: "Home directory",
+
     title: 'Commands',
     subtitle:
       'Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.',
@@ -539,13 +546,11 @@ export default {
     linuxHint:
       'Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them.',
     linuxPh: "playerctl play-pause\nnotify-send 'Playback toggled'",
-    approvalTitle: 'Shell commands require approval',
-    approvalBody:
-      'This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change.',
-    approveBtn: 'Allow commands',
-    approved:
-      'Shell commands are allowed for this version of the current layout.',
-    revokeBtn: 'Disable',
+    approvalTitle: "Command execution is blocked",
+    approvalBody: "Review commands from shared layouts before unblocking them. Commands run with your permissions and can modify files and send data. Edits in this application keep them allowed; external changes block execution again.",
+    approveBtn: "Unblock commands",
+    approved: "Command execution is allowed for this layout.",
+    revokeBtn: "Block commands",
     approvalToast:
       'Shell commands are blocked until you review and allow them on the Commands tab.',
     usedIn: 'Used in:',
@@ -565,6 +570,9 @@ export default {
       'The command will be deleted. Keys or macros that reference {ref} will stop working.',
   },
   settings: {
+    commandTimeout: "Maximum command execution time (seconds)",
+    commandTimeoutHint: "Commands exceeding this time are stopped. Default: 30 seconds.",
+
     mapperTitle: 'Key-mapper',
     mapperInfo: 'Key-mapper information',
     keyboardLabel: 'Keyboard',

@@ -431,7 +431,7 @@ mod tests {
 
         fn run_system(&mut self, action: &SysAction) {
             let label = match action {
-                SysAction::Spawn(SysCommand { program, args }) => {
+                SysAction::Spawn(SysCommand { program, args, .. }) => {
                     format!("spawn:{program}:{args:?}")
                 }
                 SysAction::Dbus(DbusCall {
@@ -529,6 +529,8 @@ mod tests {
             })),
             Out::RunCommand(SysCommand {
                 program: "sh".into(),
+                working_directory: None,
+                timeout: std::time::Duration::from_secs(30),
                 args: vec!["-lc".into(), "notify-send done".into()],
             }),
         ];

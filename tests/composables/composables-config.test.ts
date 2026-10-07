@@ -4,6 +4,7 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createDefaultConfig } from '~/types/config'
+import { commandFingerprint, commandsTrusted } from '~/utils/commandTrust'
 
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }))
 
@@ -86,6 +87,24 @@ describe('useConfig', () => {
     api.config.value.commands.push({ id: 'test', name: 'Test', linux: 'echo hi' })
     await nextTick()
     expect(api.isLayoutDirty.value).toBe(true)
+  })
+
+  it('retains permission for local edits but blocks replacement and revoked commands', async () => {
+    invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
+    const api = await getApi()
+    await api.load()
+    api.config.value.settings.currentLayoutId = 'user:test'
+    api.config.value.settings.commandTrust['user:test'] = { fingerprint: commandFingerprint([]), trustedAt: '' }
+    api.config.value.commands.push({ id: 'hello', name: 'Hello', linux: 'printf hello' })
+    expect(commandsTrusted(api.config.value)).toBe(true)
+    api.config.value.commands[0]!.workingDirectory = '~/Documents'
+    expect(commandsTrusted(api.config.value)).toBe(true)
+    const replacement = createDefaultConfig()
+    replacement.commands.push({ id: 'hello', name: 'Hello', linux: 'printf replaced' })
+    await api.replaceCurrentLayoutSnapshot(replacement, 'user:test')
+    expect(commandsTrusted(api.config.value)).toBe(false)
+    api.config.value.commands[0]!.linux = 'printf blocked'
+    expect(commandsTrusted(api.config.value)).toBe(false)
   })
 
   it('applyPreset updates config and clears dirty', async () => {

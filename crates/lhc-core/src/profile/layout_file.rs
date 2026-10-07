@@ -57,8 +57,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     Some(value) => Some(scalar(value).filter(|a| !a.is_empty())?),
                 };
                 Some(ExtraKey {
-                    id: str_of(extra, "id")
-                        .map_or_else(|| next_id("x_"), str::to_owned),
+                    id: str_of(extra, "id").map_or_else(|| next_id("x_"), str::to_owned),
                     key: key.into(),
                     action,
                 })
@@ -108,8 +107,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     Value::Object(step) => {
                         let action = non_empty(step, "action")?;
                         Some(MacroStep {
-                            id: str_of(step, "id")
-                                .map_or_else(|| next_id("s_"), str::to_owned),
+                            id: str_of(step, "id").map_or_else(|| next_id("s_"), str::to_owned),
                             action: action.into(),
                         })
                     }
@@ -133,6 +131,8 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                 id: id.into(),
                 name: str_of(item, "name").unwrap_or(id).into(),
                 linux: str_of(item, "linux").unwrap_or("").trim().into(),
+                working_directory: non_empty(item, "workingDirectory")
+                    .map(|value| value.trim().to_owned()),
             })
         })
         .collect::<Vec<_>>();
@@ -169,8 +169,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
 
     let mut emoji_pages: Vec<EmojiPage> = array(doc, "emojiPages")
         .map(|page| {
-            let id =
-                trimmed(page, "id").map_or_else(|| next_id("emoji_"), str::to_owned);
+            let id = trimmed(page, "id").map_or_else(|| next_id("emoji_"), str::to_owned);
             EmojiPage {
                 name: trimmed(page, "name").map_or_else(|| id.clone(), str::to_owned),
                 cells: page
@@ -309,6 +308,9 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                     put(&mut out, "id", command.id.as_str());
                     put(&mut out, "name", command.name.as_str());
                     put(&mut out, "linux", command.linux.as_str());
+                    if let Some(directory) = &command.working_directory {
+                        put(&mut out, "workingDirectory", directory.as_str());
+                    }
                     Yaml::Mapping(out)
                 })
                 .collect(),

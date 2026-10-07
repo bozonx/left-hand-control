@@ -180,13 +180,13 @@ export component SaveSplitButton inherits Rectangle {
     callback save();
     callback save-as();
     callback discard();
-    width: 148px;
-    height: 36px;
+    width: 72px;
+    height: 38px;
 
     Rectangle {
         width: 100%;
         height: 100%;
-        border-radius: 4px;
+        border-radius: 6px;
         border-width: 1px;
         border-color: Theme.border;
         background: Theme.card;
@@ -202,8 +202,7 @@ export component SaveSplitButton inherits Rectangle {
                 accessible-enabled: root.enabled;
                 accessible-action-default => { if root.enabled { root.save(); } }
                 HorizontalLayout { padding-left: 10px; padding-right: 8px; spacing: 6px; alignment: center;
-                    VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: @image-url("icons/save.svg"); colorize: root.enabled ? Theme.link : Theme.muted; } }
-                    Text { text: @tr("Save"); color: root.enabled ? Theme.link : Theme.muted; font-weight: 600; vertical-alignment: center; }
+                    VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/save.svg"); colorize: root.enabled ? Theme.link : Theme.muted; } }
                     VerticalLayout { alignment: center; Rectangle { width: 6px; height: 6px; border-radius: 3px; background: root.enabled ? Theme.link : transparent; } }
                 }
                 focus-save := FocusScope {
@@ -279,6 +278,7 @@ export component SaveSplitButton inherits Rectangle {
 }
 
 export component LibraryPage inherits VerticalBox {
+    padding: 0px;
     spacing: 12px;
     private property <int> drag-from: -1;
     private property <int> drag-over: -1;
@@ -323,7 +323,7 @@ export component LibraryPage inherits VerticalBox {
     }
     if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width;
         vertical-stretch: 1;
-        VerticalLayout { spacing: 0px;
+        VerticalLayout { padding: 0px; spacing: 0px;
             for name[index] in LayoutLibrary.names: card := Rectangle {
                 property <bool> active: LayoutLibrary.active-label == name;
                 property <bool> current: LayoutLibrary.current-label == name;
@@ -340,48 +340,51 @@ export component LibraryPage inherits VerticalBox {
                 border-width: DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index ? 2px : card.active ? 2px : 1px;
                 border-color: card.active || (DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index) ? Theme.accent : Theme.border;
                 TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
-                card-content := VerticalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 6px;
-                    HorizontalLayout { spacing: 8px; vertical-stretch: 0;
-                        InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
-                        Rectangle { horizontal-stretch: 1; }
-                        Text {
-                            text: @tr("{n} rule" | "{n} rules" % LayoutLibrary.summaries[index].rules)
-                                + " · " + @tr("{n} layer" | "{n} layers" % LayoutLibrary.summaries[index].layers)
-                                + " · " + @tr("{n} emoji page" | "{n} emoji pages" % LayoutLibrary.summaries[index].emoji-pages)
-                                + " · " + @tr("{n} action page" | "{n} action pages" % LayoutLibrary.summaries[index].action-pages)
-                                + " · " + @tr("{n} macro" | "{n} macros" % LayoutLibrary.summaries[index].macros)
-                                + " · " + @tr("{n} command" | "{n} commands" % LayoutLibrary.summaries[index].commands);
-                            color: Theme.muted; font-size: 12px; vertical-alignment: center;
+                card-content := HorizontalLayout { padding: 16px; spacing: 20px;
+                    VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 10px;
+                        HorizontalLayout { spacing: 8px; vertical-stretch: 0;
+                            InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
+                            Rectangle { horizontal-stretch: 1; }
                         }
-                        DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
-                        Rectangle {
-                            width: 44px; height: 36px;
-                            Button {
-                                width: parent.width; height: parent.height; text: "…";
-                                clicked => { LayoutLibrary.select(index); more-menu.show(); }
-                            }
-                            more-menu := PopupWindow {
-                                x: parent.width - self.width; y: parent.height;
-                                width: 240px;
-                                Rectangle {
-                                    background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                                    VerticalBox { padding: 4px; spacing: 0px;
-                                        LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
-                                        Rectangle { height: 1px; background: Theme.border; }
-                                        LayoutMenuItem { text: @tr("Delete…"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                        InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
+                        Rectangle { vertical-stretch: 1; }
+                        HorizontalLayout { spacing: 8px; alignment: start; vertical-stretch: 0;
+                            if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: 600; vertical-alignment: center; }
+                            if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
+                            if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
+                            if !card.current: Button { text: @tr("Edit layout"); clicked => { LayoutLibrary.edit(index); } }
+                            if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
+                        }
+                    }
+                    VerticalLayout { width: 220px; spacing: 8px; alignment: start;
+                        HorizontalLayout { alignment: end; spacing: 8px;
+                            DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
+                            Rectangle {
+                                width: 44px; height: 36px;
+                                Button {
+                                    width: parent.width; height: parent.height; text: "…";
+                                    clicked => { LayoutLibrary.select(index); more-menu.show(); }
+                                }
+                                more-menu := PopupWindow {
+                                    x: parent.width - self.width; y: parent.height;
+                                    width: 240px;
+                                    Rectangle {
+                                        background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                                        VerticalBox { padding: 4px; spacing: 0px;
+                                            LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
+                                            Rectangle { height: 1px; background: Theme.border; }
+                                            LayoutMenuItem { text: @tr("Delete…"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
-                    HorizontalLayout { spacing: 8px; alignment: end;
-                        Rectangle { horizontal-stretch: 1; }
-                        if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: 600; vertical-alignment: center; }
-                        if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
-                        if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
-                        if !card.current: Button { text: @tr("Edit layout"); clicked => { LayoutLibrary.edit(index); } }
-                        if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
+                        Text { text: @tr("{n} rule" | "{n} rules" % LayoutLibrary.summaries[index].rules); color: Theme.muted; font-size: 13px; }
+                        Text { text: @tr("{n} layer" | "{n} layers" % LayoutLibrary.summaries[index].layers); color: Theme.muted; font-size: 13px; }
+                        Text { text: @tr("{n} emoji page" | "{n} emoji pages" % LayoutLibrary.summaries[index].emoji-pages); color: Theme.muted; font-size: 13px; }
+                        Text { text: @tr("{n} action page" | "{n} action pages" % LayoutLibrary.summaries[index].action-pages); color: Theme.muted; font-size: 13px; }
+                        Text { text: @tr("{n} macro" | "{n} macros" % LayoutLibrary.summaries[index].macros); color: Theme.muted; font-size: 13px; }
+                        Text { text: @tr("{n} command" | "{n} commands" % LayoutLibrary.summaries[index].commands); color: Theme.muted; font-size: 13px; }
                     }
                 }
                 }

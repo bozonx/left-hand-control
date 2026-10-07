@@ -114,6 +114,7 @@ export interface Command {
   id: string
   name: string
   linux: string
+  workingDirectory?: string
   windows?: string
   macos?: string
 }
@@ -238,6 +239,7 @@ export interface AppSettings {
   // stay portable across machines.
   layoutConditions: Record<string, LayoutConditionRule>
   commandTrust: Record<string, CommandTrustEntry>
+  commandTimeoutSecs: number
   gameMode: {
     useGamemoded: boolean
     useFullscreen: boolean
@@ -474,6 +476,7 @@ export function createDefaultConfig(): AppConfig {
       layoutOrder: [],
       layoutConditions: {},
       commandTrust: {},
+      commandTimeoutSecs: 30,
       gameMode: {
         useGamemoded: true,
         useFullscreen: false,

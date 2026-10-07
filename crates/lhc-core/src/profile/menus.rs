@@ -62,6 +62,8 @@ impl ConfigDocument {
                 return Err(ConfigError::Menu(issue));
             }
         }
+        self.ensure_files_unchanged()?;
+        let retain_trust = self.commands_trusted() && baseline.commands != candidate.commands;
         self.update_layout(|layout| {
             layout.emoji_pages = candidate.emoji_pages.clone();
             layout.quick_actions = candidate.quick_actions.clone();
@@ -70,7 +72,11 @@ impl ConfigDocument {
             layout.rules = candidate.rules.clone();
             layout.layer_keymaps = candidate.layer_keymaps.clone();
             layout.macros = candidate.macros.clone();
-        })
+        })?;
+        if retain_trust {
+            self.trust_commands(true)?;
+        }
+        Ok(())
     }
 
     pub fn commands_trusted(&self) -> bool {
@@ -80,6 +86,7 @@ impl ConfigDocument {
     }
 
     pub fn trust_commands(&mut self, approve: bool) -> Result<(), ConfigError> {
+        self.ensure_files_unchanged()?;
         let config: crate::mapper_config::AppConfig =
             serde_json::from_str(&self.config().to_json())
                 .map_err(|e| ConfigError::Parse(e.to_string()))?;
@@ -183,6 +190,56 @@ mod tests {
     use super::*;
     use crate::storage::StoragePaths;
     #[test]
+    fn first_command_permission_external_changes_and_reblocking() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        assert!(!doc.commands_trusted());
+        doc.trust_commands(true).unwrap();
+        let baseline = doc.layout().clone();
+        let mut next = baseline.clone();
+        next.commands.push(Command {
+            id: "hello".into(),
+            name: "Hello".into(),
+            linux: "printf hello".into(),
+            working_directory: Some("~/Documents".into()),
+        });
+        doc.save_menu_pages(&baseline, &next).unwrap();
+        assert!(
+            ConfigDocument::load(paths.clone())
+                .unwrap()
+                .commands_trusted()
+        );
+        let exported = super::super::layout_file::serialize(doc.layout());
+        assert!(!exported.contains("commandTrust"));
+        let imported_dir = tempfile::tempdir().unwrap();
+        let imported_paths = StoragePaths::new(
+            imported_dir.path().join("config"),
+            imported_dir.path().join("data"),
+        );
+        imported_paths.save_current_layout(&exported).unwrap();
+        assert!(
+            !ConfigDocument::load(imported_paths)
+                .unwrap()
+                .commands_trusted()
+        );
+        next.commands[0].working_directory = Some("~/Downloads".into());
+        paths
+            .save_current_layout(&super::super::layout_file::serialize(&next))
+            .unwrap();
+        assert_eq!(doc.trust_commands(true), Err(ConfigError::ExternalChange));
+        assert!(doc.reload_if_changed().unwrap());
+        assert!(!doc.commands_trusted());
+        doc.trust_commands(true).unwrap();
+        assert!(doc.commands_trusted());
+        doc.trust_commands(false).unwrap();
+        let baseline = doc.layout().clone();
+        next.commands[0].linux = "printf changed".into();
+        doc.save_menu_pages(&baseline, &next).unwrap();
+        assert!(!ConfigDocument::load(paths).unwrap().commands_trusted());
+    }
+
+    #[test]
     fn renames_and_removes_command_dependencies_atomically() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
@@ -238,7 +295,7 @@ quickActions:
     }
 
     #[test]
-    fn menus_roundtrip_and_trust_invalidation() {
+    fn menus_roundtrip_and_local_edits_retain_trust() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
@@ -248,6 +305,7 @@ quickActions:
             id: "hello".into(),
             name: "Привет".into(),
             linux: "printf hello".into(),
+            working_directory: None,
         });
         next.quick_actions.push(QuickAction {
             id: "q".into(),
@@ -267,7 +325,12 @@ quickActions:
         let baseline = doc.layout().clone();
         next.commands[0].linux = "printf changed".into();
         doc.save_menu_pages(&baseline, &next).unwrap();
-        assert!(!doc.commands_trusted());
+        assert!(doc.commands_trusted());
+        assert!(
+            ConfigDocument::load(paths.clone())
+                .unwrap()
+                .commands_trusted()
+        );
         assert_eq!(ConfigDocument::load(paths.clone()).unwrap().layout(), &next);
         let before = doc.layout().clone();
         next.commands[0].id = "bad id".into();

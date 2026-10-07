@@ -9,7 +9,6 @@ use std::sync::{OnceLock, mpsc};
 use std::time::{Duration, Instant};
 
 static GENERATION: AtomicU64 = AtomicU64::new(0);
-const TIMEOUT: Duration = Duration::from_secs(30);
 const OUTPUT_LIMIT: usize = 4096;
 
 struct Job {
@@ -41,7 +40,10 @@ pub(super) fn enqueue(command: SysCommand) {
             .spawn(move || {
                 for job in rx {
                     if job.generation == GENERATION.load(Ordering::SeqCst) {
-                        report(&job.command, run(&job.command, job.generation, TIMEOUT));
+                        report(
+                            &job.command,
+                            run(&job.command, job.generation, job.command.timeout),
+                        );
                     }
                 }
             })
@@ -66,6 +68,30 @@ pub(super) fn enqueue(command: SysCommand) {
     }
 }
 
+fn working_directory(value: Option<&str>) -> Result<std::path::PathBuf, String> {
+    let home = dirs::home_dir().ok_or("Home directory is unavailable")?;
+    let value = value.unwrap_or("").trim();
+    let directory = if value.is_empty() || value == "~" {
+        home
+    } else if let Some(relative) = value.strip_prefix("~/") {
+        home.join(relative)
+    } else {
+        let path = std::path::PathBuf::from(value);
+        if path.is_absolute() {
+            path
+        } else {
+            home.join(path)
+        }
+    };
+    if !directory.is_dir() {
+        return Err(format!(
+            "Working directory does not exist: {}",
+            directory.display()
+        ));
+    }
+    Ok(directory)
+}
+
 fn run(command: &SysCommand, generation: u64, timeout: Duration) -> Result<(), String> {
     let mut invocation = Command::new(&command.program);
     invocation
@@ -74,7 +100,7 @@ fn run(command: &SysCommand, generation: u64, timeout: Duration) -> Result<(), S
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
         .process_group(0);
-    invocation.current_dir(dirs::home_dir().ok_or("Home directory is unavailable")?);
+    invocation.current_dir(working_directory(command.working_directory.as_deref())?);
     let mut child = invocation
         .spawn()
         .map_err(|error| format!("Cannot start command: {error}"))?;
@@ -166,11 +192,50 @@ mod tests {
     use super::*;
 
     #[test]
+    fn runs_in_selected_directory_and_rejects_missing_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let folder = dir.path().join("folder with spaces");
+        std::fs::create_dir(&folder).unwrap();
+        let mut command = SysCommand {
+            program: "sh".into(),
+            args: vec!["-lc".into(), "printf hello > marker".into()],
+            working_directory: Some(folder.to_string_lossy().into()),
+            timeout: Duration::from_secs(2),
+        };
+        run(&command, GENERATION.load(Ordering::SeqCst), command.timeout).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(folder.join("marker")).unwrap(),
+            "hello"
+        );
+        assert_eq!(working_directory(None).unwrap(), dirs::home_dir().unwrap());
+        assert_eq!(
+            working_directory(Some("~")).unwrap(),
+            dirs::home_dir().unwrap()
+        );
+        assert_eq!(
+            working_directory(Some("~/.")).unwrap(),
+            dirs::home_dir().unwrap().join(".")
+        );
+        assert_eq!(
+            working_directory(Some(".")).unwrap(),
+            dirs::home_dir().unwrap().join(".")
+        );
+        command.working_directory = Some(dir.path().join("missing").to_string_lossy().into());
+        assert!(
+            run(&command, GENERATION.load(Ordering::SeqCst), command.timeout)
+                .unwrap_err()
+                .contains("Working directory does not exist")
+        );
+    }
+
+    #[test]
     fn stops_background_children_and_bounds_error_output() {
         let dir = tempfile::tempdir().unwrap();
         let marker = dir.path().join("late");
         let command = SysCommand {
             program: "sh".into(),
+            working_directory: None,
+            timeout: Duration::from_secs(30),
             args: vec![
                 "-c".into(),
                 format!("(sleep 0.2; touch '{}') &", marker.display()),
@@ -186,6 +251,8 @@ mod tests {
         assert!(!marker.exists());
         let command = SysCommand {
             program: "sh".into(),
+            working_directory: None,
+            timeout: Duration::from_secs(30),
             args: vec!["-c".into(), "head -c 20000 /dev/zero >&2; exit 1".into()],
         };
         let error = run(
@@ -201,6 +268,8 @@ mod tests {
     fn captures_failure_and_limits_runtime() {
         let command = SysCommand {
             program: "sh".into(),
+            working_directory: None,
+            timeout: Duration::from_secs(30),
             args: vec!["-c".into(), "printf 'failure details' >&2; exit 7".into()],
         };
         let error = run(
@@ -213,6 +282,8 @@ mod tests {
         assert!(error.contains('7'));
         let command = SysCommand {
             program: "sh".into(),
+            working_directory: None,
+            timeout: Duration::from_secs(30),
             args: vec!["-c".into(), "sleep 10".into()],
         };
         let start = Instant::now();

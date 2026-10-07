@@ -33,6 +33,7 @@ struct Form {
     double_tap: String,
     macro_pause: String,
     modifier_delay: String,
+    command_timeout: String,
     use_gamemoded: bool,
     use_fullscreen: bool,
     matchers: Vec<GameModeProcessMatcher>,
@@ -63,6 +64,7 @@ impl Form {
             double_tap: settings.default_double_tap_timeout_ms.to_string(),
             macro_pause: settings.default_macro_step_pause_ms.to_string(),
             modifier_delay: settings.default_macro_modifier_delay_ms.to_string(),
+            command_timeout: settings.command_timeout_secs.to_string(),
             use_gamemoded: settings.game_mode.use_gamemoded,
             use_fullscreen: settings.game_mode.use_fullscreen,
             matchers: settings.game_mode.process_matchers.clone(),
@@ -91,6 +93,7 @@ impl Form {
             double_tap: e.get_double_tap_timeout().into(),
             macro_pause: e.get_macro_pause().into(),
             modifier_delay: e.get_modifier_delay().into(),
+            command_timeout: e.get_command_timeout().into(),
             use_gamemoded: e.get_use_gamemoded(),
             use_fullscreen: e.get_use_fullscreen(),
             matchers: matchers.to_vec(),
@@ -112,6 +115,7 @@ impl Form {
         e.set_double_tap_timeout(self.double_tap.clone().into());
         e.set_macro_pause(self.macro_pause.clone().into());
         e.set_modifier_delay(self.modifier_delay.clone().into());
+        e.set_command_timeout(self.command_timeout.clone().into());
         e.set_use_gamemoded(self.use_gamemoded);
         e.set_use_fullscreen(self.use_fullscreen);
         e.set_process_matchers(rows(&self.matchers));
@@ -136,6 +140,10 @@ impl Form {
             parse_ms(&self.macro_pause)?,
             parse_ms(&self.modifier_delay)?,
         ];
+        let command_timeout = parse_ms(&self.command_timeout).map_err(|_| Msg::CommandTimeoutInvalid)?;
+        if !(1..=i32::MAX as u64).contains(&command_timeout) {
+            return Err(Msg::CommandTimeoutInvalid);
+        }
         macro_rules! changed {
             ($field:ident => $apply:expr) => {
                 if self.$field != base.$field {
@@ -151,6 +159,7 @@ impl Form {
         changed!(double_tap => settings.default_double_tap_timeout_ms = numbers[1]);
         changed!(macro_pause => settings.default_macro_step_pause_ms = numbers[2]);
         changed!(modifier_delay => settings.default_macro_modifier_delay_ms = numbers[3]);
+        changed!(command_timeout => settings.command_timeout_secs = command_timeout);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
@@ -658,6 +667,20 @@ mod tests {
         let mut form = base.clone();
         form.macro_pause = "-5".into();
         assert_eq!(form.apply(&base, &mut settings), Err(Msg::TimeoutInvalid));
+    }
+
+    #[test]
+    fn command_timeout_must_be_positive_and_is_saved_in_seconds() {
+        let mut settings = AppSettings::default();
+        let base = Form::from_settings(&settings);
+        let mut form = base.clone();
+        for value in ["0", "-1", "invalid", "2147483648"] {
+            form.command_timeout = value.into();
+            assert_eq!(form.apply(&base, &mut settings), Err(Msg::CommandTimeoutInvalid));
+        }
+        form.command_timeout = "7".into();
+        form.apply(&base, &mut settings).unwrap();
+        assert_eq!(settings.command_timeout_secs, 7);
     }
 
     #[test]

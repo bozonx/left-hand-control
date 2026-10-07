@@ -146,6 +146,8 @@ pub struct Command {
     pub id: String,
     pub name: String,
     pub linux: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub working_directory: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -350,6 +352,7 @@ pub struct AppSettings {
     pub layout_order: Vec<String>,
     pub layout_conditions: BTreeMap<String, LayoutConditionRule>,
     pub command_trust: BTreeMap<String, CommandTrustEntry>,
+    pub command_timeout_secs: u64,
     pub game_mode: GameModeSettings,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub linux_wayland_text_mode: Option<String>,
@@ -376,6 +379,7 @@ impl Default for AppSettings {
             layout_order: Vec::new(),
             layout_conditions: BTreeMap::new(),
             command_trust: BTreeMap::new(),
+            command_timeout_secs: 30,
             game_mode: GameModeSettings {
                 use_gamemoded: true,
                 use_fullscreen: false,

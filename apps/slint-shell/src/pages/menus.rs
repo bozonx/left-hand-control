@@ -91,6 +91,7 @@ fn command_row(config: &AppConfig, commands: &[Command], index: usize) -> Comman
         id: item.id.clone().into(),
         name: item.name.clone().into(),
         linux: item.linux.clone().into(),
+        working_directory: item.working_directory.clone().unwrap_or_default().into(),
         usage: super::strings(lhc_core::profile::macros::action_usage(
             config,
             &format!("cmd:{}", item.id),
@@ -203,6 +204,7 @@ fn annotate_commands(ui: &SettingsWindow, layout: &LayoutPreset) {
             row.id = fresh.id;
             row.name = fresh.name;
             row.linux = fresh.linux;
+            row.working_directory = fresh.working_directory;
             row.usage = fresh.usage;
             row.error = fresh.error;
             rows.set_row_data(index, row);
@@ -379,10 +381,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                         save(&ui, &doc, &mut state);
                     }
                     refresh(&ui, &state.layout, !typing);
-                    ui.global::<MenuEditor>().set_trusted(
-                        doc.read().commands_trusted()
-                            && state.layout.commands == doc.read().layout().commands,
-                    );
+                    ui.global::<MenuEditor>()
+                        .set_trusted(doc.read().commands_trusted());
                 }
                 if typing {
                     save_later(&ui, &doc, &shared);
@@ -419,9 +419,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             0
         });
-        e.set_trusted(
-            doc.read().commands_trusted() && state.layout.commands == doc.read().layout().commands,
-        );
+        e.set_trusted(doc.read().commands_trusted());
         e.set_has_errors(false);
         refresh(&ui, &state.layout, true);
     });
@@ -661,6 +659,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     id,
                     name: name.to_string(),
                     linux: String::new(),
+                    working_directory: None,
                 },
             );
         });
@@ -721,12 +720,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 }
                 CommandField::Name => state.layout.commands[index].name = value.to_string(),
                 CommandField::Linux => state.layout.commands[index].linux = value.to_string(),
+                CommandField::WorkingDirectory => {
+                    state.layout.commands[index].working_directory =
+                        (!value.trim().is_empty()).then(|| value.trim().to_owned());
+                }
             }
             annotate_commands(&ui, &state.layout);
-            ui.global::<MenuEditor>().set_trusted(
-                doc.read().commands_trusted()
-                    && state.layout.commands == doc.read().layout().commands,
-            );
+            ui.global::<MenuEditor>()
+                .set_trusted(doc.read().commands_trusted());
         }
         save_later(&ui, &doc, &shared);
     });

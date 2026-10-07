@@ -511,6 +511,23 @@ impl ConfigDocument {
         })
     }
 
+    pub(crate) fn ensure_files_unchanged(&mut self) -> Result<(), ConfigError> {
+        if self
+            .layout_file
+            .changed()
+            .map_err(ConfigError::Io)?
+            .is_some()
+            || self
+                .settings_file
+                .changed()
+                .map_err(ConfigError::Io)?
+                .is_some()
+        {
+            return Err(ConfigError::ExternalChange);
+        }
+        Ok(())
+    }
+
     /// Apply `edit` to a copy of the current layout and save it.
     pub fn update_layout(
         &mut self,

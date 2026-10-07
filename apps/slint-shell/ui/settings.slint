@@ -9,7 +9,7 @@ import { MenuEditor, MenusPage } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
 import { DragDrop } from "reorder.slint";
 import { SettingsPage, SettingsEditor } from "settings-page.slint";
-import { Badge, InlineEditors } from "controls.slint";
+import { Badge, InlineEditors, IconButton } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
@@ -80,7 +80,7 @@ export component SettingsWindow inherits Window {
             }
             Rectangle { height: 1px; background: Theme.border; }
             Rectangle {
-                height: 52px;
+                height: 58px;
                 HorizontalLayout {
                     padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
                     Text { text: LayoutLibrary.current-label == "" ? @tr("Custom layout") : LayoutLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
@@ -95,15 +95,16 @@ export component SettingsWindow inherits Window {
                         horizontal-scrollbar-policy: as-needed;
                         horizontal-stretch: 1;
                         min-width: 0px;
+                        min-height: 0px;
                         viewport-height: self.visible-height;
                         HorizontalLayout {
-                            spacing: 6px;
-                            Button { icon: @image-url("icons/settings-2.svg"); colorize-icon: true; text: @tr("Rules") + (LayoutLibrary.rules-dirty ? " •" : ""); primary: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/keyboard.svg"); colorize-icon: true; text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); primary: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/smile.svg"); colorize-icon: true; text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/zap.svg"); colorize-icon: true; text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
-                            Button { icon: @image-url("icons/clock.svg"); colorize-icon: true; text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/terminal.svg"); colorize-icon: true; text: @tr("Commands") + ((LayoutLibrary.commands-dirty || (MenuEditor.has-errors && MenuEditor.kind == MenuKind.commands)) ? " •" : "") + (AppState.commands-need-approval ? " !" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
+                            spacing: 8px; alignment: center;
+                            IconButton { height: 38px; icon: @image-url("icons/settings-2.svg"); text: @tr("Rules") + (LayoutLibrary.rules-dirty ? " •" : ""); primary: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            IconButton { height: 38px; icon: @image-url("icons/keyboard.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); primary: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                            IconButton { height: 38px; icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            IconButton { height: 38px; icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            IconButton { height: 38px; icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            IconButton { height: 38px; icon: @image-url("icons/terminal.svg"); text: @tr("Commands") + ((LayoutLibrary.commands-dirty || (MenuEditor.has-errors && MenuEditor.kind == MenuKind.commands)) ? " •" : "") + (AppState.commands-need-approval ? " !" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
                         }
                     }
                 }
@@ -125,9 +126,7 @@ export component SettingsWindow inherits Window {
             if root.show-active-banner: Rectangle { height: 1px; background: Theme.border; }
             VerticalLayout {
                 vertical-stretch: 1;
-                padding-top: 20px; padding-bottom: 0px;
-                padding-left: 20px;
-                padding-right: 20px;
+                padding: Theme.page-padding;
                 spacing: 12px;
                 if root.page == Page.layouts: LibraryPage {}
                 if root.page == Page.settings: SettingsPage {}

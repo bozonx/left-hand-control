@@ -9,7 +9,7 @@ export function commandTrustKey(layoutId: string | undefined): string {
 export function commandFingerprint(commands: Command[]): string {
   const encoder = new TextEncoder()
   const entries = commands
-    .map((command) => `${command.id}\u0000${command.linux}`)
+    .map((command) => `${command.id}\u0000${command.linux}${command.workingDirectory?.trim() ? `\u0000${command.workingDirectory.trim()}` : ''}`)
     .sort()
   const bytes: number[] = []
   for (const entry of entries) {
@@ -85,7 +85,6 @@ function sha256Hex(input: ArrayLike<number>): string {
 }
 
 export function commandsTrusted(config: AppConfig): boolean {
-  if (config.commands.length === 0) return true
   const key = commandTrustKey(config.settings.currentLayoutId)
   return config.settings.commandTrust[key]?.fingerprint === commandFingerprint(config.commands)
 }

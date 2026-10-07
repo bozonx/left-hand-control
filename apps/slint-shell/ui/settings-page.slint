@@ -21,6 +21,7 @@ export global SettingsEditor {
     in-out property <string> double-tap-timeout;
     in-out property <string> macro-pause;
     in-out property <string> modifier-delay;
+    in-out property <string> command-timeout;
     in-out property <bool> use-gamemoded: true;
     in-out property <bool> use-fullscreen;
     in property <[ProcessRow]> process-matchers;
@@ -66,6 +67,7 @@ component Section inherits Card {
 }
 
 export component SettingsPage inherits VerticalBox {
+    padding: 0px;
     spacing: 10px;
     horizontal-stretch: 1;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
@@ -74,7 +76,7 @@ export component SettingsPage inherits VerticalBox {
     ScrollView {
         viewport-width: self.visible-width;
         vertical-stretch: 1;
-        VerticalLayout {
+        VerticalLayout { padding: 0px;
             width: parent.width;
             spacing: 12px;
             Section {
@@ -118,6 +120,14 @@ export component SettingsPage inherits VerticalBox {
                     ComboBox { model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                     }
                 }
+            }
+            Section {
+                title: @tr("Commands");
+                HorizontalBox { vertical-stretch: 0; spacing: 24px;
+                    Text { text: @tr("Maximum command execution time (seconds)"); color: Theme.text; vertical-alignment: center; }
+                    SpinBox { minimum: 1; maximum: 2147483647; value: SettingsEditor.command-timeout.to-float(); edited(value) => { SettingsEditor.command-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                }
+                Text { text: @tr("Commands exceeding this time are stopped. Default: 30 seconds."); color: Theme.muted; wrap: word-wrap; }
             }
             Section {
                 title: @tr("Key behavior");

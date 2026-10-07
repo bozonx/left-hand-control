@@ -514,18 +514,7 @@ fn save_as(
 ) -> Result<Msg, Msg> {
     let text = layout_file::serialize(document.read().layout());
     let saved = edit(ui, document, state, |config| {
-        let saved = config
-            .paths()
-            .save_user_layout(name, &text, false)
-            .map_err(ConfigError::Io)?;
-        config.update_settings(|settings| {
-            let old = settings.current_layout_id.clone();
-            settings.current_layout_id = Some(user_layout_id(&saved));
-            if settings.manual_active_layout_id == old {
-                settings.manual_active_layout_id = settings.current_layout_id.clone();
-            }
-        })?;
-        Ok(saved)
+        config.save_current_layout_as(name)
     })?;
     state.borrow_mut().baseline = Some((saved, text));
     ui.global::<LayoutLibrary>().set_save_as_open(false);

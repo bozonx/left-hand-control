@@ -87,7 +87,7 @@ describe('CommandsTab', () => {
 
   it('shows empty state when no commands', async () => {
     const { config } = makeConfigState([])
-    useConfigMock.mockReturnValue({ config })
+    useConfigMock.mockReturnValue({ config, flush: vi.fn().mockResolvedValue(undefined) })
     useCommandEditorMock.mockReturnValue(makeEditorApi([]))
 
     const wrapper = await mountSuspended(CommandsTab, {
@@ -111,7 +111,7 @@ describe('CommandsTab', () => {
     ]
     const { config } = makeConfigState(commands)
     const editorApi = makeEditorApi(commands)
-    useConfigMock.mockReturnValue({ config })
+    useConfigMock.mockReturnValue({ config, flush: vi.fn().mockResolvedValue(undefined) })
     useCommandEditorMock.mockReturnValue(editorApi)
 
     const wrapper = await mountSuspended(CommandsTab, {
@@ -143,7 +143,7 @@ describe('CommandsTab', () => {
     const commands = [{ id: 'term', name: 'Terminal', linux: 'kitty' }]
     const { config } = makeConfigState(commands)
     const editorApi = makeEditorApi(commands)
-    useConfigMock.mockReturnValue({ config })
+    useConfigMock.mockReturnValue({ config, flush: vi.fn().mockResolvedValue(undefined) })
     useCommandEditorMock.mockReturnValue(editorApi)
 
     const wrapper = await mountSuspended(CommandsTab, {
@@ -168,11 +168,11 @@ describe('CommandsTab', () => {
     expect(wrapper.find('[data-testid="modal"]').exists()).toBe(false)
   })
 
-  it('calls addCommand when add button is clicked', async () => {
+  it('requires permission in the first command modal before creating a command', async () => {
     const commands: any[] = []
     const { config } = makeConfigState(commands)
     const editorApi = makeEditorApi(commands)
-    useConfigMock.mockReturnValue({ config })
+    useConfigMock.mockReturnValue({ config, flush: vi.fn().mockResolvedValue(undefined) })
     useCommandEditorMock.mockReturnValue(editorApi)
 
     const wrapper = await mountSuspended(CommandsTab, {
@@ -189,6 +189,12 @@ describe('CommandsTab', () => {
     expect(addBtn).toBeTruthy()
     expect(addBtn!.text()).toContain('New command')
     await addBtn!.trigger('click')
+    expect(editorApi.addCommand).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="modal"]').exists()).toBe(true)
+    const allow = wrapper.findAll('button').find((button) => button.text().includes('Create and allow commands'))
+    expect(allow).toBeTruthy()
+    await allow!.trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(editorApi.addCommand).toHaveBeenCalledTimes(1)
   })
 })

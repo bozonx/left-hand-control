@@ -71,6 +71,9 @@ function normalizeSettings(
           }))
       : base.gameMode.processMatchers,
   }
+  merged.commandTimeoutSecs = typeof merged.commandTimeoutSecs === 'number' && Number.isFinite(merged.commandTimeoutSecs)
+    ? Math.min(2147483647, Math.max(1, Math.round(merged.commandTimeoutSecs)))
+    : base.commandTimeoutSecs
   merged.layoutMode = merged.layoutMode === 'auto' ? 'auto' : 'manual'
   if (
     typeof merged.manualActiveLayoutId !== 'string' ||

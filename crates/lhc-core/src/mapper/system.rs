@@ -25,6 +25,8 @@
 pub struct SysCommand {
     pub program: String,
     pub args: Vec<String>,
+    pub working_directory: Option<String>,
+    pub timeout: std::time::Duration,
 }
 
 /// Arguments for a DBus method call. Only the shapes we actually need

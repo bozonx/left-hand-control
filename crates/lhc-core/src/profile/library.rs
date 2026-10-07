@@ -70,6 +70,39 @@ impl ConfigDocument {
             .map_err(ConfigError::Io)
     }
 
+    pub fn save_current_layout_as(&mut self, name: &str) -> Result<String, ConfigError> {
+        self.ensure_files_unchanged()?;
+        let trusted = self.commands_trusted();
+        let saved = self
+            .paths()
+            .save_user_layout(name, &layout_file::serialize(self.layout()), false)
+            .map_err(ConfigError::Io)?;
+        let result = self.update_settings(|settings| {
+            let old = settings.current_layout_id.clone();
+            let new = user_layout_id(&saved);
+            let key = old
+                .as_deref()
+                .filter(|id| !id.is_empty())
+                .unwrap_or("custom");
+            if trusted && let Some(entry) = settings.command_trust.get(key).cloned() {
+                settings.command_trust.insert(new.clone(), entry);
+            } else {
+                settings.command_trust.remove(&new);
+            }
+            settings.current_layout_id = Some(new);
+            if settings.manual_active_layout_id == old {
+                settings.manual_active_layout_id = settings.current_layout_id.clone();
+            }
+        });
+        if let Err(error) = result {
+            self.paths()
+                .delete_user_layout(&saved)
+                .map_err(ConfigError::Io)?;
+            return Err(error);
+        }
+        Ok(saved)
+    }
+
     pub fn ordered_layout_ids(&self) -> Result<Vec<String>, ConfigError> {
         Ok(auto_switch::order_layout_ids(
             &self.layout_ids()?,
@@ -128,6 +161,11 @@ impl ConfigDocument {
                     *id = new.clone();
                 }
             }
+            if old != new
+                && let Some(entry) = settings.command_trust.remove(&old)
+            {
+                settings.command_trust.insert(new.clone(), entry);
+            }
             if let Some(rule) = settings.layout_conditions.remove(&old) {
                 settings.layout_conditions.insert(new.clone(), rule);
             }
@@ -160,6 +198,7 @@ impl ConfigDocument {
         let result = self.update_settings(|settings| {
             settings.layout_order.retain(|item| item != &id);
             settings.layout_conditions.remove(&id);
+            settings.command_trust.remove(&id);
             if settings.current_layout_id.as_ref() == Some(&id) {
                 settings.current_layout_id = None;
             }
@@ -192,6 +231,24 @@ mod tests {
         },
         storage::StoragePaths,
     };
+
+    #[test]
+    fn saving_renaming_and_deleting_keep_permission_local_to_the_layout() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        paths.save_current_layout("commands:\n  - id: hello\n    linux: printf hello\n").unwrap();
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.trust_commands(true).unwrap();
+        doc.save_current_layout_as("Hello").unwrap();
+        assert!(doc.commands_trusted());
+        let text = paths.load_user_layout("Hello").unwrap();
+        doc.edit_library_metadata("Hello", "Renamed", "", &text).unwrap();
+        assert!(doc.commands_trusted());
+        let text = paths.load_user_layout("Renamed").unwrap();
+        doc.remove_library_layout("Renamed", &text).unwrap();
+        assert!(!doc.settings().command_trust.contains_key("user:Renamed"));
+        assert!(!doc.settings().command_trust.contains_key("user:Hello"));
+    }
 
     #[test]
     fn create_from_sources_keeps_names_unique() {
