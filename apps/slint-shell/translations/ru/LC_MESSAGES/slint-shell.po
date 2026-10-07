@@ -1524,3 +1524,39 @@ msgstr "Показать весь скрипт"
 
 msgid "The command will be deleted. References to cmd:{} will be cleared from keys, rules, macros, and quick actions. Keys will return to normal behavior."
 msgstr "Команда будет удалена. Ссылки на cmd:{} будут очищены в клавишах, правилах, макросах и быстрых действиях. Клавиши вернутся к обычному поведению."
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr "Выберите физическое устройство, события которого нужно перехватывать."
+
+msgid "Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected."
+msgstr "Выберите мышь, чтобы маппер видел дополнительные кнопки и клики. Движение курсора не затрагивается."
+
+msgid "The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings."
+msgstr "Сейчас мышь не перехватывается полностью: переназначенная дополнительная кнопка может выполнить новое действие, но её исходное действие в системе или приложении тоже может сработать. Если это мешает, отключите исходное действие этой кнопки в настройках системы, браузера или драйвера."
+
+msgid "The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput."
+msgstr "Маппер читает события с /dev/input/eventX и отправляет их через uinput. Если запуск не удаётся, выдайте доступ к этим устройствам: обычно нужна группа input и udev-правило для /dev/uinput."
+
+msgid "Refresh device list"
+msgstr "Обновить список устройств"
+
+msgid "Mouse (optional)"
+msgstr "Мышь (необязательно)"
+
+msgid "Not selected"
+msgstr "Не выбрано"
+
+msgid "Not selected (no mouse support)"
+msgstr "Не выбрано (без поддержки мыши)"
+
+msgid "Looks like a keyboard"
+msgstr "Похоже на клавиатуру"
+
+msgid "Looks like a mouse"
+msgstr "Похоже на мышь"
+
+msgid "Other devices"
+msgstr "Остальные устройства"
+
+msgid "Search devices"
+msgstr "Поиск устройств"

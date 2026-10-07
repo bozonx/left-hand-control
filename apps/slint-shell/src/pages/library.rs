@@ -19,7 +19,10 @@ use lhc_core::{
         auto_switch::AutoSwitchContext,
         layout_file,
         library::LibrarySource,
-        model::{LayoutConditionRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id, user_layout_name},
+        model::{
+            LayoutConditionRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id,
+            user_layout_name,
+        },
     },
     storage::validate_layout_name,
 };
@@ -87,7 +90,11 @@ fn name_issue(config: &ConfigDocument, name: &str) -> NameIssue {
         .paths()
         .list_user_layouts()
         .is_ok_and(|names| names.iter().any(|item| item.eq_ignore_ascii_case(&name)));
-    if taken { NameIssue::Taken } else { NameIssue::Ok }
+    if taken {
+        NameIssue::Taken
+    } else {
+        NameIssue::Ok
+    }
 }
 
 /// Show the library. Descriptions are read from the layout files.
@@ -113,7 +120,10 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
         })
         .collect();
     library.set_auto_included(ModelRc::new(VecModel::from(
-        rules.iter().map(|rule| rule.enabled_in_auto).collect::<Vec<_>>(),
+        rules
+            .iter()
+            .map(|rule| rule.enabled_in_auto)
+            .collect::<Vec<_>>(),
     )));
     library.set_conditions(ModelRc::new(VecModel::from(
         rules
@@ -138,6 +148,23 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
             .and_then(|text| layout_file::parse(&text).ok().flatten())
             .and_then(|layout| layout.description)
             .unwrap_or_default()
+    })));
+    library.set_summaries(super::strings(names.iter().map(|name| {
+        let preset = config
+            .paths()
+            .load_user_layout(name)
+            .ok()
+            .and_then(|text| layout_file::parse(&text).ok().flatten())
+            .unwrap_or_default();
+        format!(
+            "{} rules · {} layers · {} emoji pages · {} action pages · {} macros · {} commands",
+            preset.rules.len(),
+            preset.layers.len(),
+            preset.emoji_pages.len(),
+            preset.quick_action_pages.len(),
+            preset.macros.len(),
+            preset.commands.len(),
+        )
     })));
     let selected = state
         .selected
@@ -166,11 +193,14 @@ fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let named = name.is_some();
     let saved = name.and_then(|name| config.load_layout(&user_layout_id(&name)).ok());
     let current = config.layout();
-    let normalized = layout_file::parse(&layout_file::serialize(current)).ok().flatten();
+    let normalized = layout_file::parse(&layout_file::serialize(current))
+        .ok()
+        .flatten();
     let current = normalized.as_ref().unwrap_or(current);
-    let dirty = named && saved.as_ref().is_none_or(|saved| {
-        layout_file::serialize(saved) != layout_file::serialize(current)
-    });
+    let dirty = named
+        && saved
+            .as_ref()
+            .is_none_or(|saved| layout_file::serialize(saved) != layout_file::serialize(current));
     library.set_dirty(dirty);
     let changed = |section: fn(&LayoutPreset) -> LayoutPreset| {
         saved.as_ref().map_or(dirty, |saved| {
@@ -182,15 +212,18 @@ fn refresh_context(ui: &SettingsWindow, document: &Document) {
         ..Default::default()
     }));
     let base_dirty = saved.as_ref().map_or(dirty, |saved| {
-        crate::keyboard::BASE.iter().any(|key| {
-            saved.base_tap_action(key) != current.base_tap_action(key)
-        })
+        crate::keyboard::BASE
+            .iter()
+            .any(|key| saved.base_tap_action(key) != current.base_tap_action(key))
     });
-    library.set_layers_dirty(base_dirty || changed(|layout| LayoutPreset {
-        layers: layout.layers.clone(),
-        layer_keymaps: layout.layer_keymaps.clone(),
-        ..Default::default()
-    }));
+    library.set_layers_dirty(
+        base_dirty
+            || changed(|layout| LayoutPreset {
+                layers: layout.layers.clone(),
+                layer_keymaps: layout.layer_keymaps.clone(),
+                ..Default::default()
+            }),
+    );
     library.set_macros_dirty(changed(|layout| LayoutPreset {
         macros: layout.macros.clone(),
         ..Default::default()
@@ -337,8 +370,14 @@ fn library_action(
             })?;
         }
         LibraryAction::MoveUp | LibraryAction::MoveDown => {
-            let delta = if action == LibraryAction::MoveUp { -1 } else { 1 };
-            edit(ui, document, state, |config| config.move_library_layout(&id, delta))?;
+            let delta = if action == LibraryAction::MoveUp {
+                -1
+            } else {
+                1
+            };
+            edit(ui, document, state, |config| {
+                config.move_library_layout(&id, delta)
+            })?;
         }
         LibraryAction::SaveConditions => {
             let rule = LayoutConditionRule {
@@ -367,7 +406,11 @@ fn library_action(
             let saved = edit(ui, document, state, |config| {
                 config.edit_library_metadata(&name, &new_name, &description, &expected)
             })?;
-            let text = document.read().paths().load_user_layout(&saved).map_err(io)?;
+            let text = document
+                .read()
+                .paths()
+                .load_user_layout(&saved)
+                .map_err(io)?;
             {
                 let mut state = state.borrow_mut();
                 state.selected = Some(saved);
@@ -377,7 +420,10 @@ fn library_action(
             reset_context(ui, document, &mut state.borrow_mut());
         }
     }
-    if matches!(action, LibraryAction::SaveConditions | LibraryAction::SaveDetails) {
+    if matches!(
+        action,
+        LibraryAction::SaveConditions | LibraryAction::SaveDetails
+    ) {
         library.set_dialog(LibraryDialog::None);
     }
     Ok(Msg::None)
@@ -388,7 +434,9 @@ fn load(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg,
     let name = selected_name(state)?;
     let is_current = current_name(&document.read()).as_deref() == Some(name.as_str());
     if !is_current {
-        edit(ui, document, state, |config| config.load_library_for_editing(&name))?;
+        edit(ui, document, state, |config| {
+            config.load_library_for_editing(&name)
+        })?;
         reset_context(ui, document, &mut state.borrow_mut());
     }
     ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
@@ -433,7 +481,11 @@ fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Res
         library.set_save_as_open(true);
         return Ok(Msg::None);
     };
-    let current = document.read().paths().load_user_layout(&name).map_err(io)?;
+    let current = document
+        .read()
+        .paths()
+        .load_user_layout(&name)
+        .map_err(io)?;
     if state.borrow().baseline.as_ref() != Some(&(name.clone(), current)) {
         return Err(Msg::LibraryChanged);
     }
@@ -450,7 +502,12 @@ fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Res
 }
 
 /// Save the working copy as a new library layout and continue editing it.
-fn save_as(ui: &SettingsWindow, document: &Document, state: &Shared, name: &str) -> Result<Msg, Msg> {
+fn save_as(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    name: &str,
+) -> Result<Msg, Msg> {
     let text = layout_file::serialize(document.read().layout());
     let saved = edit(ui, document, state, |config| {
         let saved = config
@@ -475,7 +532,9 @@ fn save_as(ui: &SettingsWindow, document: &Document, state: &Shared, name: &str)
 fn delete(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
     let name = selected_name(state)?;
     let current = check_unchanged(document, state, &name)?;
-    edit(ui, document, state, |config| config.remove_library_layout(&name, &current))?;
+    edit(ui, document, state, |config| {
+        config.remove_library_layout(&name, &current)
+    })?;
     reset_context(ui, document, &mut state.borrow_mut());
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
     Ok(Msg::None)
@@ -494,12 +553,20 @@ fn set_description(
         .and_then(|index| slint::Model::row_data(&library.get_names(), index))
         .ok_or(Msg::LibrarySelect)?
         .to_string();
-    let text = document.read().paths().load_user_layout(&name).map_err(io)?;
+    let text = document
+        .read()
+        .paths()
+        .load_user_layout(&name)
+        .map_err(io)?;
     edit(ui, document, state, |config| {
         config.edit_library_metadata(&name, &name, description, &text)
     })?;
     if state.borrow().selected.as_deref() == Some(name.as_str()) {
-        let text = document.read().paths().load_user_layout(&name).map_err(io)?;
+        let text = document
+            .read()
+            .paths()
+            .load_user_layout(&name)
+            .map_err(io)?;
         state.borrow_mut().known = Some(text);
         library.set_description(description.trim().into());
     }
@@ -508,11 +575,17 @@ fn set_description(
 }
 
 fn drag_target(rows: &[Option<(f32, f32)>], source: usize, offset: f32, count: usize) -> i32 {
-    let Some(Some((y, height))) = rows.get(source) else { return source as i32 };
+    let Some(Some((y, height))) = rows.get(source) else {
+        return source as i32;
+    };
     let pointer = y + height / 2.0 + offset;
-    rows.iter().take(count).enumerate().filter_map(|(index, row)| {
-        row.map(|(y, height)| (index, (y + height / 2.0 - pointer).abs()))
-    }).min_by(|left, right| left.1.total_cmp(&right.1))
+    rows.iter()
+        .take(count)
+        .enumerate()
+        .filter_map(|(index, row)| {
+            row.map(|(y, height)| (index, (y + height / 2.0 - pointer).abs()))
+        })
+        .min_by(|left, right| left.1.total_cmp(&right.1))
         .map_or(source as i32, |(index, _)| index as i32)
 }
 
@@ -524,19 +597,35 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let rows = Rc::new(RefCell::new(Vec::new()));
     let positions = rows.clone();
     library.on_row_position(move |index, y, height| {
-        let Ok(index) = usize::try_from(index) else { return };
+        let Ok(index) = usize::try_from(index) else {
+            return;
+        };
         let mut rows = positions.borrow_mut();
-        if rows.len() <= index { rows.resize(index + 1, None); }
+        if rows.len() <= index {
+            rows.resize(index + 1, None);
+        }
         rows[index] = Some((y, height));
     });
     let weak = ui.as_weak();
     library.on_drag_target(move |source, offset| {
-        let Some(ui) = weak.upgrade() else { return source };
-        let Ok(index) = usize::try_from(source) else { return source };
-        drag_target(&rows.borrow(), index, offset, slint::Model::row_count(&ui.global::<LayoutLibrary>().get_names()))
+        let Some(ui) = weak.upgrade() else {
+            return source;
+        };
+        let Ok(index) = usize::try_from(source) else {
+            return source;
+        };
+        drag_target(
+            &rows.borrow(),
+            index,
+            offset,
+            slint::Model::row_count(&ui.global::<LayoutLibrary>().get_names()),
+        )
     });
 
-    report(ui, refresh(ui, document, &mut state.borrow_mut()).map(|()| Msg::None));
+    report(
+        ui,
+        refresh(ui, document, &mut state.borrow_mut()).map(|()| Msg::None),
+    );
 
     let weak = ui.as_weak();
     // Other pages change the working copy: only the toolbar depends on it.
@@ -571,7 +660,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
     on!(on_set_automatic, |ui, doc, state, automatic| {
-        let mode = if automatic { LayoutMode::Auto } else { LayoutMode::Manual };
+        let mode = if automatic {
+            LayoutMode::Auto
+        } else {
+            LayoutMode::Manual
+        };
         report(
             &ui,
             edit(&ui, doc, state, |config| {
@@ -589,16 +682,24 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         .unique_library_name(&base)
         .unwrap_or_else(|_| base.to_string())
         .into());
-    on!(on_name_issue, |_ui, doc, _state, name| name_issue(&doc.read(), &name));
-    on!(on_create, |ui, doc, state, name, description, source, copy_index| {
+    on!(on_name_issue, |_ui, doc, _state, name| name_issue(
+        &doc.read(),
+        &name
+    ));
+    on!(on_create, |ui,
+                    doc,
+                    state,
+                    name,
+                    description,
+                    source,
+                    copy_index| {
         if let Err(error) = create(&ui, doc, state, &name, &description, source, copy_index) {
             report(&ui, Err(error));
         }
     });
-    on!(on_set_description, |ui, doc, state, index, description| report(
-        &ui,
-        set_description(&ui, doc, state, index, &description)
-    ));
+    on!(on_set_description, |ui, doc, state, index, description| {
+        report(&ui, set_description(&ui, doc, state, index, &description))
+    });
     on!(on_rename, |ui, doc, state, index, name| {
         let result = select(&ui, doc, state, index).and_then(|()| {
             ui.global::<LayoutLibrary>().set_name(name);
@@ -642,13 +743,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         report(&ui, result.map(|()| Msg::None));
     });
     on!(on_load, |ui, doc, state| report(&ui, load(&ui, doc, state)));
-    on!(on_delete, |ui, doc, state| report(&ui, delete(&ui, doc, state)));
+    on!(on_delete, |ui, doc, state| report(
+        &ui,
+        delete(&ui, doc, state)
+    ));
     on!(on_reset_context, |ui, doc, state| reset_context(
         &ui,
         doc,
         &mut state.borrow_mut()
     ));
-    on!(on_refresh_context, |ui, doc, _state| refresh_context(&ui, doc));
+    on!(on_refresh_context, |ui, doc, _state| refresh_context(
+        &ui, doc
+    ));
     on!(on_save_current, |ui, doc, state| report(
         &ui,
         save_current(&ui, doc, state)
@@ -675,7 +781,10 @@ mod tests {
     fn conditions_round_trip() {
         let set = condition(GameCondition::On, "us, ru", "").unwrap();
         assert_eq!(set.layouts, ["us", "ru"]);
-        assert_eq!(condition_fields(Some(set.clone())), (GameCondition::On, "us, ru".into(), String::new()));
+        assert_eq!(
+            condition_fields(Some(set.clone())),
+            (GameCondition::On, "us, ru".into(), String::new())
+        );
         assert_eq!(summary(Some(&set)), (GameCondition::On, "us, ru".into()));
         assert!(condition(GameCondition::Any, " ", "").is_none());
     }

@@ -71,7 +71,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded.settings(), document.read().settings());
     assert_eq!(loaded.settings().default_hold_timeout_ms, 310);
     assert_eq!(loaded.settings().game_mode.process_matchers.len(), 1);
-    assert_eq!(loaded.settings().linux_wayland_text_mode.as_deref(), Some("ydotool"));
+    assert_eq!(
+        loaded.settings().linux_wayland_text_mode.as_deref(),
+        Some("ydotool")
+    );
+    assert!(settings.get_keyboard_manual());
+    assert!(settings.get_mouse_manual());
+    settings.invoke_select_device(0);
+    settings.invoke_select_mouse(0);
+    assert!(!settings.get_keyboard_manual());
+    assert!(!settings.get_mouse_manual());
+    assert!(document.read().settings().input_device_path.is_none());
+    assert!(document.read().settings().input_mouse_device_path.is_none());
+    settings.invoke_select_device(settings.get_input_devices().row_count() as i32 - 1);
+    settings.invoke_select_mouse(settings.get_mouse_devices().row_count() as i32 - 1);
+    assert!(settings.get_keyboard_manual());
+    assert!(settings.get_mouse_manual());
+    settings.set_keyboard_device_path("/dev/input/test-keyboard".into());
+    settings.set_mouse_device_path("/dev/input/test-mouse".into());
+    settings.invoke_save();
+    settings.invoke_refresh_devices();
+    assert!(settings.get_keyboard_manual());
+    assert!(settings.get_mouse_manual());
+    assert_eq!(settings.get_keyboard_device_path(), "/dev/input/test-keyboard");
+    assert_eq!(settings.get_mouse_device_path(), "/dev/input/test-mouse");
 
     // Another process changes a setting while the form has an unsaved edit:
     // saving keeps the other change.
@@ -138,14 +161,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_dirty());
     assert!(!library.get_rules_dirty());
     assert_eq!(
-        lhc_core::profile::layout_file::serialize(&document.read().load_layout("user:Test layout")?),
+        lhc_core::profile::layout_file::serialize(
+            &document.read().load_layout("user:Test layout")?
+        ),
         lhc_core::profile::layout_file::serialize(document.read().layout())
     );
     ui.global::<KeyEditor>().invoke_edit(33);
     assert!(picker.get_opened());
     picker.invoke_dismiss_picker();
     assert!(!picker.get_opened());
-    assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Changed"));
+    assert_eq!(
+        document.read().base_tap_action("KeyQ"),
+        Some("text:Changed")
+    );
     ui.invoke_navigate(Page::Menus, MenuKind::Emoji);
     assert_eq!(ui.global::<MenuEditor>().get_cells().row_count(), 15);
     for kind in [MenuKind::Quick, MenuKind::Commands, MenuKind::Emoji] {
@@ -155,37 +183,98 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     document.edit(slint_shell::document::View::Library, |config| {
         config.update_layout(|layout| {
             use lhc_core::profile::model::{Command, LayerRule, Macro, MacroStep};
-            layout.rules = ["F13", "F14", "F15"].into_iter().enumerate().map(|(index, key)| {
-                let mut rule = LayerRule::new(format!("drag-rule-{index}"), key);
-                rule.tap_action = Some("Escape".into());
-                rule
-            }).collect();
-            layout.macros = (0..3).map(|index| Macro {
-                id: format!("dragMacro{index}"), name: format!("Macro {index}"),
-                steps: ["KeyA", "KeyB", "KeyC"].into_iter().enumerate().map(|(step, action)| MacroStep {
-                    id: format!("drag-step-{index}-{step}"), action: action.into(),
-                }).collect(), step_pause_ms: None, modifier_delay_ms: None,
-            }).collect();
-            layout.commands = (0..3).map(|index| Command {
-                id: format!("dragCommand{index}"), name: format!("Command {index}"), linux: "printf test".into(),
-            }).collect();
+            layout.rules = ["F13", "F14", "F15"]
+                .into_iter()
+                .enumerate()
+                .map(|(index, key)| {
+                    let mut rule = LayerRule::new(format!("drag-rule-{index}"), key);
+                    rule.tap_action = Some("Escape".into());
+                    rule
+                })
+                .collect();
+            layout.macros = (0..3)
+                .map(|index| Macro {
+                    id: format!("dragMacro{index}"),
+                    name: format!("Macro {index}"),
+                    steps: ["KeyA", "KeyB", "KeyC"]
+                        .into_iter()
+                        .enumerate()
+                        .map(|(step, action)| MacroStep {
+                            id: format!("drag-step-{index}-{step}"),
+                            action: action.into(),
+                        })
+                        .collect(),
+                    step_pause_ms: None,
+                    modifier_delay_ms: None,
+                })
+                .collect();
+            layout.commands = (0..3)
+                .map(|index| Command {
+                    id: format!("dragCommand{index}"),
+                    name: format!("Command {index}"),
+                    linux: "printf test".into(),
+                })
+                .collect();
         })
     })?;
     ui.global::<RulesEditor>().invoke_move(0, 2);
-    assert_eq!(document.read().layout().rules.iter().map(|row| row.key.as_str()).collect::<Vec<_>>(), ["F14", "F15", "F13"]);
+    assert_eq!(
+        document
+            .read()
+            .layout()
+            .rules
+            .iter()
+            .map(|row| row.key.as_str())
+            .collect::<Vec<_>>(),
+        ["F14", "F15", "F13"]
+    );
     assert_eq!(ui.global::<RulesEditor>().get_selected(), 2);
     ui.global::<MacroEditor>().invoke_move(0, 2);
-    assert_eq!(document.read().layout().macros.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(), ["dragMacro1", "dragMacro2", "dragMacro0"]);
+    assert_eq!(
+        document
+            .read()
+            .layout()
+            .macros
+            .iter()
+            .map(|row| row.id.as_str())
+            .collect::<Vec<_>>(),
+        ["dragMacro1", "dragMacro2", "dragMacro0"]
+    );
     ui.global::<MacroEditor>().invoke_move_step(0, 0, 2);
-    assert_eq!(document.read().layout().macros[0].steps.iter().map(|row| row.action.as_str()).collect::<Vec<_>>(), ["KeyB", "KeyC", "KeyA"]);
+    assert_eq!(
+        document.read().layout().macros[0]
+            .steps
+            .iter()
+            .map(|row| row.action.as_str())
+            .collect::<Vec<_>>(),
+        ["KeyB", "KeyC", "KeyA"]
+    );
     ui.global::<MenuEditor>().invoke_open(MenuKind::Commands);
     ui.global::<MenuEditor>().invoke_move_command(0, 2);
-    assert_eq!(document.read().layout().commands.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(), ["dragCommand1", "dragCommand2", "dragCommand0"]);
+    assert_eq!(
+        document
+            .read()
+            .layout()
+            .commands
+            .iter()
+            .map(|row| row.id.as_str())
+            .collect::<Vec<_>>(),
+        ["dragCommand1", "dragCommand2", "dragCommand0"]
+    );
     for key in ["F13", "F14", "F15"] {
-        document.edit(slint_shell::document::View::Library, |config| config.set_layer_extra(&second, None, key, Some("Escape".into())))?;
+        document.edit(slint_shell::document::View::Library, |config| {
+            config.set_layer_extra(&second, None, key, Some("Escape".into()))
+        })?;
     }
     ui.global::<LayersEditor>().invoke_move_extra(0, 2);
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras.iter().map(|row| row.key.as_str()).collect::<Vec<_>>(), ["F14", "F15", "F13"]);
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second]
+            .extras
+            .iter()
+            .map(|row| row.key.as_str())
+            .collect::<Vec<_>>(),
+        ["F14", "F15", "F13"]
+    );
     let rules = ui.global::<RulesEditor>();
     let count = document.read().layout().rules.len();
     rules.invoke_add();
@@ -208,40 +297,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_ignore_key(false);
     picker.set_value("".into());
     picker.invoke_apply();
-    assert_eq!(document.read().layout().rules[0].tap_action.as_deref(), Some(""));
+    assert_eq!(
+        document.read().layout().rules[0].tap_action.as_deref(),
+        Some("")
+    );
     rules.invoke_open_dialog(0, RuleDialog::Advanced);
     rules.set_hold_timeout("invalid".into());
     rules.set_double_timeout("300".into());
     rules.invoke_apply_advanced();
-    assert_eq!(document.read().layout().rules[0].double_tap_timeout_ms, None);
+    assert_eq!(
+        document.read().layout().rules[0].double_tap_timeout_ms,
+        None
+    );
     rules.set_hold_timeout("250".into());
     rules.invoke_apply_advanced();
     assert_eq!(document.read().layout().rules[0].hold_timeout_ms, Some(250));
-    assert_eq!(document.read().layout().rules[0].double_tap_timeout_ms, Some(300));
+    assert_eq!(
+        document.read().layout().rules[0].double_tap_timeout_ms,
+        Some(300)
+    );
     rules.invoke_remove();
     let layers = ui.global::<LayersEditor>();
     layers.invoke_add_extra();
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras.len(), 3);
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].extras.len(),
+        3
+    );
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());
     picker.invoke_dismiss_picker();
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras.len(), 3);
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].extras.len(),
+        3
+    );
     layers.invoke_add_extra();
     picker.set_value("F16".into());
     picker.invoke_apply();
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras.len(), 4);
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras[3].key, "F16");
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].extras.len(),
+        4
+    );
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].extras[3].key,
+        "F16"
+    );
     layers.invoke_pick_extra(3, false);
     assert!(picker.get_layer_action());
     picker.set_ignore_key(true);
     picker.set_value("".into());
     picker.invoke_apply();
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras[3].action, None);
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].extras[3].action,
+        None
+    );
     layers.invoke_pick_extra(3, true);
     picker.set_value("F17".into());
     picker.invoke_apply();
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras[3].key, "F17");
-    assert_eq!(document.read().layout().layer_keymaps[&second].extras[3].action, None);
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].extras[3].key,
+        "F17"
+    );
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].extras[3].action,
+        None
+    );
     layers.invoke_remove_extra(3);
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
     let picker = ui.global::<ActionPicker>();
@@ -252,20 +371,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
-    assert_eq!(document.read().layer_key(&second, "Escape"), lhc_core::config_document::KeyAssignment::Swallow);
+    assert_eq!(
+        document.read().layer_key(&second, "Escape"),
+        lhc_core::config_document::KeyAssignment::Swallow
+    );
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
     assert!(picker.get_ignore_key());
     picker.set_ignore_key(false);
     picker.invoke_apply();
-    assert_eq!(document.read().layer_key(&second, "Escape"), lhc_core::config_document::KeyAssignment::Transparent);
+    assert_eq!(
+        document.read().layer_key(&second, "Escape"),
+        lhc_core::config_document::KeyAssignment::Transparent
+    );
     assert!(library.get_rules_dirty());
     assert!(library.get_layers_dirty());
     assert!(library.get_macros_dirty());
     assert!(library.get_commands_dirty());
     library.invoke_save_current();
-    assert!(!library.get_dirty(), "status {}; saved:\n{}current:\n{}", library.get_status().id,
-        lhc_core::profile::layout_file::serialize(&document.read().load_layout("user:Test layout")?),
-        lhc_core::profile::layout_file::serialize(document.read().layout()));
+    assert!(
+        !library.get_dirty(),
+        "status {}; saved:\n{}current:\n{}",
+        library.get_status().id,
+        lhc_core::profile::layout_file::serialize(
+            &document.read().load_layout("user:Test layout")?
+        ),
+        lhc_core::profile::layout_file::serialize(document.read().layout())
+    );
     assert!(!library.get_rules_dirty());
     assert!(!library.get_layers_dirty());
     assert!(!library.get_macros_dirty());
@@ -274,7 +405,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_appearance_index(2);
     settings.set_locale_index(2);
     settings.invoke_save();
-    assert_eq!(document.read().settings().appearance, lhc_core::profile::model::Appearance::Dark);
+    assert_eq!(
+        document.read().settings().appearance,
+        lhc_core::profile::model::Appearance::Dark
+    );
     library.set_active_label("Test layout".into());
     ui.global::<AppState>().set_keyboard_language("EN".into());
     ui.show()?;

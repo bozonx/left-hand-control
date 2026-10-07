@@ -11,16 +11,24 @@ pub mod ui {
         thread_local! {
             static ACCENT: std::cell::Cell<Option<slint::Color>> = const { std::cell::Cell::new(None) };
         }
-        i_slint_core::context::with_global_context(|| Err(slint::PlatformError::NoPlatform), |context| {
-            ACCENT.with(|accent| {
-                let original = accent.get().unwrap_or_else(|| {
-                    let color = context.accent_color();
-                    accent.set(Some(color));
-                    color
+        i_slint_core::context::with_global_context(
+            || Err(slint::PlatformError::NoPlatform),
+            |context| {
+                ACCENT.with(|accent| {
+                    let original = accent.get().unwrap_or_else(|| {
+                        let color = context.accent_color();
+                        accent.set(Some(color));
+                        color
+                    });
+                    context.set_accent_color(if theme.get_eink() {
+                        slint::Color::from_rgb_u8(0, 0, 0)
+                    } else {
+                        original
+                    });
                 });
-                context.set_accent_color(if theme.get_eink() { slint::Color::from_rgb_u8(0, 0, 0) } else { original });
-            });
-        }).expect("Slint theme requires an initialized platform");
+            },
+        )
+        .expect("Slint theme requires an initialized platform");
         theme.invoke_apply();
     }
 }
@@ -28,8 +36,8 @@ pub mod ui {
 mod app;
 pub mod command;
 pub mod document;
-mod i18n;
 mod game_mode;
+mod i18n;
 mod ipc;
 pub mod keyboard;
 mod metrics;
@@ -42,9 +50,9 @@ mod spell;
 pub mod test_keyboard;
 
 pub use document::Document;
+pub use game_mode::bind as bind_game_mode;
 pub use i18n::select_ui_language;
 pub use pages::bind_document;
-pub use game_mode::bind as bind_game_mode;
 
 use std::time::Instant;
 

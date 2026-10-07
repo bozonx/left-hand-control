@@ -13,6 +13,7 @@ export struct LayoutConditionsView { when-game: GameCondition, when-list: string
 export global LayoutLibrary {
     in property <[string]> names;
     in property <[string]> descriptions;
+    in property <[string]> summaries;
     in property <[bool]> auto-included;
     in property <[LayoutConditionsView]> conditions;
     in-out property <int> selected: -1;
@@ -138,18 +139,6 @@ export global LayoutLibrary {
         if unless == "" { return @tr("When: {}", when); }
         if when == "" { return @tr("Except: {}", unless); }
         return @tr("When: {}", when) + " — " + @tr("Except: {}", unless);
-    }
-}
-
-component Pill inherits Rectangle {
-    in property <string> text;
-    in property <color> fill: Theme.hover;
-    height: 22px;
-    border-radius: 11px;
-    background: fill;
-    HorizontalLayout {
-        padding-left: 8px; padding-right: 8px;
-        Text { text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
     }
 }
 
@@ -337,7 +326,7 @@ export component LibraryPage inherits VerticalBox {
                 property <bool> active: LayoutLibrary.active-label == name;
                 property <bool> current: LayoutLibrary.current-label == name;
                 property <bool> auto: LayoutLibrary.automatic;
-                height: max(self.auto ? 118px : 96px, card-content.preferred-height + 10px);
+                height: max(132px, card-content.preferred-height + 10px);
                 init => { LayoutLibrary.row-position(index, self.y, self.height); }
                 changed y => { LayoutLibrary.row-position(index, self.y, self.height); }
                 changed height => { LayoutLibrary.row-position(index, self.y, self.height); }
@@ -349,27 +338,21 @@ export component LibraryPage inherits VerticalBox {
                 border-width: DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index ? 2px : card.active ? 2px : 1px;
                 border-color: card.active || (DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index) ? Theme.accent : Theme.border;
                 TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
-                card-content := VerticalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 12px;
-                    VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 6px;
-                        HorizontalLayout { spacing: 8px;
-                            InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
-                            Rectangle { horizontal-stretch: 1; }
-                            if card.active: Pill { text: @tr("Active"); fill: Theme.accent; }
-                            if card.current: Pill { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); }
-                        }
-                        InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
-                        if card.auto: Text {
-                            text: LayoutLibrary.auto-included[index] ? LayoutLibrary.conditions-text(LayoutLibrary.conditions[index]) : @tr("Not used in automatic mode");
-                            color: Theme.muted; font-size: 12px; overflow: elide;
-                        }
+                card-content := VerticalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 6px;
+                    HorizontalLayout { spacing: 8px; vertical-stretch: 0;
+                        InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
+                        Rectangle { horizontal-stretch: 1; }
                     }
-                    VerticalLayout { alignment: center;
+                    InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
+                    Text { text: LayoutLibrary.summaries[index]; color: Theme.muted; font-size: 12px; }
                     HorizontalLayout { spacing: 8px; alignment: end;
                         DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
                         Rectangle { horizontal-stretch: 1; }
-                        if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
+                        if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: 600; vertical-alignment: center; }
                         if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
-                        if !card.current: Button { text: @tr("Edit layout"); primary: card.current; clicked => { LayoutLibrary.edit(index); } }
+                        if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
+                        if !card.current: Button { text: @tr("Edit layout"); clicked => { LayoutLibrary.edit(index); } }
+                        if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
                         Rectangle {
                             width: 44px; height: 36px;
                             Button {
@@ -389,7 +372,6 @@ export component LibraryPage inherits VerticalBox {
                                 }
                             }
                         }
-                    }
                     }
                 }
                 }

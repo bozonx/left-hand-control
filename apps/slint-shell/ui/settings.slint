@@ -130,7 +130,7 @@ export component SettingsWindow inherits Window {
                 padding-right: 20px;
                 spacing: 12px;
                 if root.page == Page.layouts: LibraryPage {}
-                if root.page == Page.settings: HorizontalLayout { alignment: center; SettingsPage { preferred-width: 1000px; max-width: 1000px; } }
+                if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
                 if root.page == Page.layers || root.page == Page.keyboard: LayersPage {}
                 if root.page == Page.macros: MacrosPage {}

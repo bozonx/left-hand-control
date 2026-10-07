@@ -203,8 +203,9 @@ fn save_later(ui: &SettingsWindow, document: &Rc<Document>, state: &Shared) {
 }
 
 fn unique_id(draft: &[Entry], base: &str) -> String {
-    let taken =
-        |id: &str| draft.iter().any(|e| e.item.id == id) || SYSTEM_MACROS.iter().any(|m| m.id == id);
+    let taken = |id: &str| {
+        draft.iter().any(|e| e.item.id == id) || SYSTEM_MACROS.iter().any(|m| m.id == id)
+    };
     if !taken(base) {
         return base.into();
     }
@@ -250,7 +251,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     document.subscribe(View::Macros, move |document| {
         let Some(ui) = weak.upgrade() else { return };
         // Busy: this page's own save is running and reloads by itself.
-        let Ok(mut state) = shared.try_borrow_mut() else { return };
+        let Ok(mut state) = shared.try_borrow_mut() else {
+            return;
+        };
         let saved: Vec<Macro> = state.draft.iter().filter_map(Entry::saved).collect();
         let pending = state.timer.is_some() || saved.len() != state.draft.len();
         if !pending && saved != document.read().layout().macros {
@@ -305,7 +308,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     let s = structural.clone();
     editor.on_clone_system(move |index, suffix| {
-        let Some(system) = usize::try_from(index).ok().and_then(|i| SYSTEM_MACROS.get(i)) else {
+        let Some(system) = usize::try_from(index)
+            .ok()
+            .and_then(|i| SYSTEM_MACROS.get(i))
+        else {
             return;
         };
         s(&|draft| {
@@ -345,7 +351,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         if action.trim().is_empty() {
             if let Some(ui) = weak.upgrade() {
                 ui.global::<crate::ui::MacroEditor>().set_picker_macro(at);
-                ui.global::<crate::ui::ActionPicker>().invoke_open(crate::ui::PickerTarget::MacroStep, -1, "".into(), false);
+                ui.global::<crate::ui::ActionPicker>().invoke_open(
+                    crate::ui::PickerTarget::MacroStep,
+                    -1,
+                    "".into(),
+                    false,
+                );
             }
             return;
         }
@@ -379,9 +390,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     let s = structural.clone();
     editor.on_set_step(move |at, step_index, action| {
-        if action.trim().is_empty() { return; }
+        if action.trim().is_empty() {
+            return;
+        }
         s(&|draft| {
-            let Some(at) = index(at, draft.len()) else { return };
+            let Some(at) = index(at, draft.len()) else {
+                return;
+            };
             if step_index == -1 {
                 draft[at].item.steps.push(step(action.as_str()));
             } else if let Some(step) = draft[at].item.steps.get_mut(step_index.max(0) as usize) {
@@ -399,7 +414,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             let mut state = shared.borrow_mut();
             let len = state.draft.len();
             let Some(step) = index(at, len)
-                .and_then(|at| state.draft[at].item.steps.get_mut(step_index.max(0) as usize))
+                .and_then(|at| {
+                    state.draft[at]
+                        .item
+                        .steps
+                        .get_mut(step_index.max(0) as usize)
+                })
                 .filter(|_| step_index >= 0)
             else {
                 return;

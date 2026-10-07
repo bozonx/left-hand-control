@@ -1,6 +1,7 @@
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
-import { Card } from "controls.slint";
+import { Badge, Card, CardHeader } from "controls.slint";
+import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, SpinBox, VerticalBox } from "std-widgets.slint";
@@ -12,7 +13,6 @@ export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
 export global SettingsEditor {
     in-out property <bool> keyboard-manual;
     in-out property <bool> mouse-manual;
-    out property <string> manual-label: @tr("Enter device path manually");
     in-out property <bool> launch-on-startup;
     in-out property <int> appearance-index;
     in-out property <int> locale-index;
@@ -33,11 +33,10 @@ export global SettingsEditor {
     in-out property <string> ydotool-path;
     in-out property <string> xdotool-path;
     in-out property <string> keyboard-device-path;
-    in property <[string]> input-devices;
+    in property <[DeviceChoice]> input-devices;
     in-out property <int> selected-device: -1;
     in-out property <string> mouse-device-path;
-    in property <[string]> mouse-devices;
-    in property <[string]> mouse-paths;
+    in property <[DeviceChoice]> mouse-devices;
     in-out property <int> selected-mouse;
     in property <string> settings-dir;
     in property <string> layouts-dir;
@@ -50,6 +49,7 @@ export global SettingsEditor {
     callback schedule-save();
     callback refresh-devices();
     callback select-device(int);
+    callback select-mouse(int);
     callback add-process();
     callback select-process(int);
     callback update-process();
@@ -58,14 +58,16 @@ export global SettingsEditor {
 
 component Section inherits Card {
     in property <string> title;
+    vertical-stretch: 0;
     VerticalBox { padding: 16px; spacing: 10px;
-        Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: 600; }
+        if root.title != "": Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: 600; }
         @children
     }
 }
 
 export component SettingsPage inherits VerticalBox {
     spacing: 10px;
+    horizontal-stretch: 1;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
     function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); }
     Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
@@ -73,21 +75,35 @@ export component SettingsPage inherits VerticalBox {
         viewport-width: self.visible-width;
         vertical-stretch: 1;
         VerticalLayout {
+            width: parent.width;
             spacing: 12px;
             Section {
-                title: @tr("Mapper");
-                HorizontalBox { vertical-stretch: 0;
-                    Text { text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Running") : @tr("Stopped"); color: Theme.muted; horizontal-stretch: 1; }
-                    Button { text: @tr("Refresh devices"); enabled: !AppState.mapper-running; clicked => { SettingsEditor.refresh-devices(); } }
+                title: "";
+                VerticalBox { spacing: 14px;
+                    CardHeader { vertical-stretch: 0;
+                        title: @tr("Mapper");
+                        info: @tr("Pick the physical device whose events should be intercepted.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.") + "\n\n" + @tr("The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput.");
+                        VerticalLayout { alignment: center;
+                            Badge { text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Running") : @tr("Stopped"); fill: AppState.mapper-running ? Theme.success.transparentize(0.85) : Theme.hover; }
+                        }
+                        Button { text: @tr("Refresh device list"); enabled: !AppState.mapper-running && !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
+                    }
+                    HorizontalBox { vertical-stretch: 0; spacing: 16px;
+                        VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 6px;
+                            Text { text: @tr("Keyboard device"); color: Theme.text; }
+                            DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); suggested-label: @tr("Looks like a keyboard"); enabled: !AppState.mapper-running && !AppState.mapper-busy; choices: SettingsEditor.input-devices; selected-index: SettingsEditor.selected-device; selected(index) => { SettingsEditor.select-device(index); } }
+                            if SettingsEditor.keyboard-manual: LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        }
+                        VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 6px;
+                            Text { text: @tr("Mouse (optional)"); color: Theme.text; }
+                            DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); suggested-label: @tr("Looks like a mouse"); enabled: !AppState.mapper-running && !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; selected-index: SettingsEditor.selected-mouse; selected(index) => { SettingsEditor.select-mouse(index); } }
+                            if SettingsEditor.mouse-manual: LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        }
+                    }
+                    HorizontalBox { vertical-stretch: 0; alignment: end;
+                        Button { text: AppState.mapper-running ? @tr("Stop") : @tr("Start"); primary: !AppState.mapper-running; icon: AppState.mapper-running ? @image-url("icons/square.svg") : @image-url("icons/play.svg"); colorize-icon: true; enabled: !AppState.mapper-busy && (AppState.mapper-running || SettingsEditor.keyboard-device-path != ""); clicked => { if AppState.mapper-running { AppState.toggle-mapper(); } else { SettingsEditor.save(); if SettingsEditor.message.id == "" { AppState.toggle-mapper(); } } } }
+                    }
                 }
-                Text { text: @tr("Keyboard device"); color: Theme.text; }
-                ComboBox { enabled: !AppState.mapper-running; model: SettingsEditor.input-devices; current-index: SettingsEditor.selected-device; selected(value) => { SettingsEditor.select-device(self.current-index); } }
-                if SettingsEditor.keyboard-manual: LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
-                Text { text: @tr("Mouse device path"); color: Theme.text; }
-                ComboBox { enabled: !AppState.mapper-running; model: SettingsEditor.mouse-devices; current-index: SettingsEditor.selected-mouse; selected(value) => { SettingsEditor.selected-mouse = self.current-index; SettingsEditor.mouse-manual = self.current-index == SettingsEditor.mouse-devices.length - 1; if self.current-index < SettingsEditor.mouse-paths.length { SettingsEditor.mouse-device-path = SettingsEditor.mouse-paths[self.current-index]; SettingsEditor.save(); } } }
-                if SettingsEditor.mouse-manual: LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
-                Button { text: AppState.mapper-running ? @tr("Stop") : @tr("Start"); enabled: !AppState.mapper-busy && (AppState.mapper-running || SettingsEditor.keyboard-device-path != ""); clicked => { AppState.toggle-mapper(); } }
-
             }
             Section {
                 title: @tr("General");

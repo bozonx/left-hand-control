@@ -171,16 +171,30 @@ impl Engine {
             steps
         }
 
-        fn blocked_command(id: &str, macros: &HashMap<String, &crate::mapper::config::Macro>, commands: &HashMap<String, SysCommand>, depth: usize) -> Option<String> {
-            if depth > 10 { return Some("Macro nesting exceeds the limit".into()); }
+        fn blocked_command(
+            id: &str,
+            macros: &HashMap<String, &crate::mapper::config::Macro>,
+            commands: &HashMap<String, SysCommand>,
+            depth: usize,
+        ) -> Option<String> {
+            if depth > 10 {
+                return Some("Macro nesting exceeds the limit".into());
+            }
             let item = macros.get(id)?;
             item.steps.iter().find_map(|step| {
                 let raw = step.action.trim();
                 if let Some(command) = raw.strip_prefix("cmd:") {
-                    (!commands.contains_key(command.trim())).then(|| format!("Command is unavailable or requires approval: {}", command.trim()))
+                    (!commands.contains_key(command.trim())).then(|| {
+                        format!(
+                            "Command is unavailable or requires approval: {}",
+                            command.trim()
+                        )
+                    })
                 } else if let Some(nested) = raw.strip_prefix("macro:") {
                     blocked_command(nested.trim(), macros, commands, depth + 1)
-                } else { None }
+                } else {
+                    None
+                }
             })
         }
 
@@ -243,7 +257,10 @@ impl Engine {
             if let Some(rest) = trimmed.strip_prefix("macro:") {
                 let id = rest.trim();
                 if let Some(md) = macros.get(id) {
-                    return Some(md.blocked.as_ref().map_or_else(|| ActionDef::Macro(md.clone()), |error| ActionDef::Blocked(error.clone())));
+                    return Some(md.blocked.as_ref().map_or_else(
+                        || ActionDef::Macro(md.clone()),
+                        |error| ActionDef::Blocked(error.clone()),
+                    ));
                 }
                 log::debug!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
                 return None;
@@ -253,7 +270,9 @@ impl Engine {
                 if let Some(cmd) = commands.get(id) {
                     return Some(ActionDef::Command(cmd.clone()));
                 }
-                return Some(ActionDef::Blocked(format!("Command is unavailable or requires approval: {id}")));
+                return Some(ActionDef::Blocked(format!(
+                    "Command is unavailable or requires approval: {id}"
+                )));
             }
             if let Some(rest) = trimmed.strip_prefix("sys:") {
                 let name = rest.trim();

@@ -13,26 +13,39 @@ pub fn resolve_storage_paths() -> Result<StoragePaths, String> {
 /// `EXTERNAL_CHANGE` error instead of overwriting its changes.
 static TRACKED: Mutex<Option<HashMap<PathBuf, TrackedFile>>> = Mutex::new(None);
 
-fn with_tracked<T>(path: &Path, f: impl FnOnce(&mut TrackedFile) -> Result<T, String>) -> Result<T, String> {
-    let mut guard = TRACKED.lock().map_err(|_| "storage lock poisoned".to_string())?;
+fn with_tracked<T>(
+    path: &Path,
+    f: impl FnOnce(&mut TrackedFile) -> Result<T, String>,
+) -> Result<T, String> {
+    let mut guard = TRACKED
+        .lock()
+        .map_err(|_| "storage lock poisoned".to_string())?;
     let files = guard.get_or_insert_with(HashMap::new);
     if !files.contains_key(path) {
         let (file, _) = TrackedFile::open(path.to_path_buf())?;
         files.insert(path.to_path_buf(), file);
     }
-    let file = files.get_mut(path).ok_or_else(|| "tracked file missing".to_string())?;
+    let file = files
+        .get_mut(path)
+        .ok_or_else(|| "tracked file missing".to_string())?;
     f(file)
 }
 
 pub fn read_tracked(path: &Path) -> Result<String, String> {
     let (file, contents) = TrackedFile::open(path.to_path_buf())?;
-    let mut guard = TRACKED.lock().map_err(|_| "storage lock poisoned".to_string())?;
-    guard.get_or_insert_with(HashMap::new).insert(path.to_path_buf(), file);
+    let mut guard = TRACKED
+        .lock()
+        .map_err(|_| "storage lock poisoned".to_string())?;
+    guard
+        .get_or_insert_with(HashMap::new)
+        .insert(path.to_path_buf(), file);
     Ok(contents)
 }
 
 pub fn write_tracked(path: &Path, contents: &str) -> Result<(), String> {
-    with_tracked(path, |file| file.write(contents).map_err(|error| error.to_string()))
+    with_tracked(path, |file| {
+        file.write(contents).map_err(|error| error.to_string())
+    })
 }
 
 /// Whether any of `paths` changed on disk since the frontend read them.

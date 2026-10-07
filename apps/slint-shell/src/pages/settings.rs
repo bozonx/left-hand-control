@@ -2,10 +2,13 @@ use super::{APPEARANCES, LOCALES, choice, choice_index, strings};
 use crate::{
     document::{Document, View},
     i18n::Msg,
-    ui::{CapabilityRow, ProcessRow, SettingsEditor, SettingsWindow},
+    ui::{
+        CapabilityRow, DeviceChoice, DeviceChoices, DeviceGroup, ProcessRow, SettingsEditor,
+        SettingsWindow,
+    },
 };
 use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher};
-use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
 /// Linux text injection backends, in the order the page lists them.
@@ -115,6 +118,12 @@ impl Form {
         e.set_text_mode_index(self.text_mode);
         e.set_ydotool_path(self.ydotool.clone().into());
         e.set_xdotool_path(self.xdotool.clone().into());
+        if e.get_keyboard_device_path() != self.keyboard {
+            e.set_keyboard_manual(false);
+        }
+        if e.get_mouse_device_path() != self.mouse {
+            e.set_mouse_manual(false);
+        }
         e.set_keyboard_device_path(self.keyboard.clone().into());
         e.set_mouse_device_path(self.mouse.clone().into());
     }
@@ -172,8 +181,6 @@ fn rows(items: &[GameModeProcessMatcher]) -> ModelRc<ProcessRow> {
 struct State {
     base: Option<Form>,
     matchers: Vec<GameModeProcessMatcher>,
-    /// Device paths in picker order.
-    devices: Vec<String>,
     autosave: slint::Timer,
 }
 
@@ -189,67 +196,104 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
     loaded.show(ui);
     state.matchers = loaded.matchers.clone();
     state.base = Some(loaded);
-    refresh_devices(ui, document, state);
+    refresh_devices(ui);
 }
 
-/// Fill the keyboard and mouse pickers; the saved devices stay listed even
-/// when they are not readable right now.
-fn refresh_devices(ui: &SettingsWindow, document: &Document, state: &mut State) {
-    let e = ui.global::<SettingsEditor>();
-    let mut devices = lhc_core::mapper::runtime::list_keyboards().unwrap_or_else(|error| {
-        log::warn!("keyboard discovery: {error}");
-        Vec::new()
-    });
-    let saved = document.read().input_device().map(str::to_owned);
-    if let Some(path) = &saved
-        && !devices.iter().any(|device| &device.path == path)
-    {
-        devices.insert(
-            0,
-            lhc_core::mapper_types::KeyboardDevice {
-                path: path.clone(),
-                name: String::new(),
-            },
-        );
-    }
-    let selected = saved
-        .and_then(|path| devices.iter().position(|device| device.path == path))
-        .map_or(-1, |index| index as i32);
-    let mut labels: Vec<String> = devices
-        .iter()
-        .map(|device| {
-            if device.name.is_empty() {
-                device.path.clone()
+fn device_choices(
+    devices: &[lhc_core::mapper_types::InputDevice],
+    mouse: bool,
+) -> Vec<DeviceChoice> {
+    let mut choices = vec![DeviceChoice {
+        group: DeviceGroup::Unselected,
+        ..Default::default()
+    }];
+    for group in [DeviceGroup::Suggested, DeviceGroup::Other] {
+        for device in devices {
+            let suggested = if mouse {
+                device.is_mouse
             } else {
-                format!("{} · {}", device.name, device.path)
+                device.is_keyboard
+            };
+            if suggested != (group == DeviceGroup::Suggested) {
+                continue;
             }
-        })
-        .collect();
-    labels.push(e.get_manual_label().into());
-    e.set_input_devices(strings(labels));
-    e.set_selected_device(selected);
-    state.devices = devices.into_iter().map(|device| device.path).collect();
+            choices.push(DeviceChoice {
+                label: if device.name.is_empty() {
+                    device.path.clone()
+                } else {
+                    format!("{} · {}", device.name, device.path)
+                }
+                .into(),
+                path: device.path.clone().into(),
+                group,
+                source_index: choices.len() as i32,
+            });
+        }
+    }
+    choices.push(DeviceChoice {
+        group: DeviceGroup::Manual,
+        source_index: choices.len() as i32,
+        ..Default::default()
+    });
+    choices
+}
 
-    let mice = lhc_core::mapper::runtime::list_mice().unwrap_or_else(|error| {
-        log::warn!("mouse discovery: {error}");
+fn device_selection(choices: &[DeviceChoice], path: &str, manual: bool) -> (i32, bool) {
+    if !manual && let Some(index) = choices.iter().position(|choice| choice.path == path) {
+        (index as i32, false)
+    } else {
+        (choices.len() as i32 - 1, true)
+    }
+}
+
+fn filtered_devices(choices: ModelRc<DeviceChoice>, query: &str) -> ModelRc<DeviceChoice> {
+    let query = query.trim().to_lowercase();
+    ModelRc::new(VecModel::from(
+        choices
+            .iter()
+            .filter(|choice| {
+                matches!(choice.group, DeviceGroup::Manual | DeviceGroup::Unselected)
+                    || choice.label.to_lowercase().contains(&query)
+                    || choice.path.to_lowercase().contains(&query)
+            })
+            .collect::<Vec<_>>(),
+    ))
+}
+
+fn device_offset(choices: ModelRc<DeviceChoice>, index: i32) -> i32 {
+    let mut group = DeviceGroup::Unselected;
+    choices
+        .iter()
+        .take(index.max(0) as usize)
+        .map(|choice| {
+            let heading = choice.group != DeviceGroup::Unselected && choice.group != group;
+            group = choice.group;
+            36 + if heading { 28 } else { 0 }
+        })
+        .sum()
+}
+
+fn refresh_devices(ui: &SettingsWindow) {
+    let e = ui.global::<SettingsEditor>();
+    let devices = lhc_core::mapper::runtime::list_input_devices().unwrap_or_else(|error| {
+        log::warn!("input device discovery: {error}");
         Vec::new()
     });
-    let mut labels = vec![SharedString::from("—")];
-    let mut paths = vec![SharedString::new()];
-    for mouse in mice {
-        labels.push(format!("{} · {}", mouse.name, mouse.path).into());
-        paths.push(mouse.path.into());
-    }
-    let current = e.get_mouse_device_path();
-    if !current.is_empty() && !paths.contains(&current) {
-        labels.push(current.clone());
-        paths.push(current.clone());
-    }
-    let selected = paths.iter().position(|path| *path == current).unwrap_or(0);
-    labels.push(e.get_manual_label());
-    e.set_mouse_devices(ModelRc::new(VecModel::from(labels)));
-    e.set_mouse_paths(ModelRc::new(VecModel::from(paths)));
-    e.set_selected_mouse(selected as i32);
+    let keyboards = device_choices(&devices, false);
+    let (selected, manual) = device_selection(
+        &keyboards,
+        &e.get_keyboard_device_path(),
+        e.get_keyboard_manual(),
+    );
+    e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
+    e.set_selected_device(selected);
+    e.set_keyboard_manual(manual);
+    let mice = device_choices(&devices, true);
+    let (selected, manual) =
+        device_selection(&mice, &e.get_mouse_device_path(), e.get_mouse_manual());
+    e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
+    e.set_selected_mouse(selected);
+    e.set_mouse_manual(manual);
 }
 
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
@@ -336,6 +380,9 @@ fn refresh_platform(ui: &SettingsWindow) {
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state = Rc::new(RefCell::new(State::default()));
     let e = ui.global::<SettingsEditor>();
+    let choices = ui.global::<DeviceChoices>();
+    choices.on_filter(|choices, query| filtered_devices(choices, &query));
+    choices.on_offset(device_offset);
     e.set_text_modes(strings(TEXT_MODES));
     {
         let config = document.read();
@@ -386,47 +433,46 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
     e.on_refresh_devices(move || {
         if let Some(ui) = weak.upgrade() {
-            refresh_devices(&ui, &doc, &mut shared.borrow_mut());
+            refresh_devices(&ui);
         }
     });
 
     let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
     e.on_select_device(move |index| {
         let Some(ui) = weak.upgrade() else { return };
-        if index
-            == ui
-                .global::<SettingsEditor>()
-                .get_input_devices()
-                .row_count() as i32
-                - 1
-        {
-            ui.global::<SettingsEditor>().set_keyboard_manual(true);
-            ui.global::<SettingsEditor>().set_selected_device(index);
-            return;
-        }
-        ui.global::<SettingsEditor>().set_keyboard_manual(false);
-        let Some(path) = usize::try_from(index)
+        let e = ui.global::<SettingsEditor>();
+        let Some(choice) = usize::try_from(index)
             .ok()
-            .and_then(|index| shared.borrow().devices.get(index).cloned())
+            .and_then(|index| e.get_input_devices().row_data(index))
         else {
             return;
         };
+        e.set_selected_device(index);
+        e.set_keyboard_manual(choice.group == DeviceGroup::Manual);
+        if choice.group != DeviceGroup::Manual {
+            e.set_keyboard_device_path(choice.path);
+            e.invoke_save();
+        }
+    });
+
+    let weak = ui.as_weak();
+    e.on_select_mouse(move |index| {
+        let Some(ui) = weak.upgrade() else { return };
         let e = ui.global::<SettingsEditor>();
-        e.set_keyboard_device_path(path.clone().into());
-        let message = match doc.edit(View::Settings, |config| config.set_input_device(&path)) {
-            Ok(saved) => {
-                if let Some(base) = shared.borrow_mut().base.as_mut() {
-                    base.keyboard = path.clone();
-                }
-                saved.message(Msg::None)
-            }
-            Err(error) => Msg::from(&error),
+        let Some(choice) = usize::try_from(index)
+            .ok()
+            .and_then(|index| e.get_mouse_devices().row_data(index))
+        else {
+            return;
         };
-        e.set_message(message.to_ui());
+        e.set_selected_mouse(index);
+        e.set_mouse_manual(choice.group == DeviceGroup::Manual);
+        if choice.group != DeviceGroup::Manual {
+            e.set_mouse_device_path(choice.path);
+            e.invoke_save();
+        }
     });
 
     let weak = ui.as_weak();
@@ -517,6 +563,80 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn input_devices() -> Vec<lhc_core::mapper_types::InputDevice> {
+        [
+            ("Power button", "/dev/input/event0", false, false),
+            ("Mouse", "/dev/input/event1", false, true),
+            ("Клавиатура", "/dev/input/event2", true, false),
+        ]
+        .into_iter()
+        .map(
+            |(name, path, is_keyboard, is_mouse)| lhc_core::mapper_types::InputDevice {
+                name: name.into(),
+                path: path.into(),
+                is_keyboard,
+                is_mouse,
+            },
+        )
+        .collect()
+    }
+
+    #[test]
+    fn pickers_suggest_matching_devices_and_keep_other_inputs_available() {
+        let devices = input_devices();
+        for (mouse, expected_path) in [(false, "/dev/input/event2"), (true, "/dev/input/event1")] {
+            let choices = device_choices(&devices, mouse);
+            assert_eq!(choices[0].group, DeviceGroup::Unselected);
+            assert_eq!(choices[1].group, DeviceGroup::Suggested);
+            assert_eq!(choices[1].path, expected_path);
+            assert_eq!(choices[2].group, DeviceGroup::Other);
+            assert_eq!(choices[3].group, DeviceGroup::Other);
+            assert_eq!(choices[4].group, DeviceGroup::Manual);
+            assert!(
+                devices
+                    .iter()
+                    .all(|device| choices.iter().any(|choice| choice.path == device.path))
+            );
+        }
+    }
+
+    #[test]
+    fn search_keeps_original_selection_indices_and_matches_names_and_paths() {
+        let choices = device_choices(&input_devices(), false);
+        let model = ModelRc::new(VecModel::from(choices.clone()));
+        for query in [" КЛАВИАТУРА ", "event2"] {
+            let filtered = filtered_devices(model.clone(), query);
+            assert_eq!(filtered.row_count(), 3);
+            assert_eq!(filtered.row_data(1), Some(choices[1].clone()));
+        }
+        let filtered = filtered_devices(model.clone(), "mouse");
+        assert_eq!(filtered.row_data(1), Some(choices[3].clone()));
+        let filtered = filtered_devices(model, "no matching device");
+        assert_eq!(filtered.row_count(), 2);
+        assert_eq!(filtered.row_data(0).unwrap().group, DeviceGroup::Unselected);
+        assert_eq!(filtered.row_data(1).unwrap().group, DeviceGroup::Manual);
+    }
+
+    #[test]
+    fn saved_unavailable_paths_use_manual_input_and_explicit_manual_mode_survives_refresh() {
+        let choices = device_choices(&input_devices(), false);
+        let manual = choices.len() as i32 - 1;
+        assert_eq!(device_selection(&choices, "", false), (0, false));
+        assert_eq!(
+            device_selection(&choices, "/dev/input/event2", false),
+            (1, false)
+        );
+        assert_eq!(
+            device_selection(&choices, "/dev/input/missing", false),
+            (manual, true)
+        );
+        assert_eq!(device_selection(&choices, "", true), (manual, true));
+        assert_eq!(
+            device_selection(&choices, "/dev/input/event2", true),
+            (manual, true)
+        );
+    }
 
     #[test]
     fn saving_keeps_fields_changed_elsewhere() {

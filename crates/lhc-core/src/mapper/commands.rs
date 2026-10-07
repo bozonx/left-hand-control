@@ -112,32 +112,50 @@ fn run(command: &SysCommand, generation: u64, timeout: Duration) -> Result<(), S
             break Err("Command exceeded its time limit".into());
         }
         let mut info: libc::siginfo_t = unsafe { std::mem::zeroed() };
-        let waited = unsafe { libc::waitid(libc::P_PID, pid as libc::id_t, &mut info, libc::WEXITED | libc::WNOHANG | libc::WNOWAIT) };
-        if waited < 0 { break Err(format!("Cannot wait for command: {}", std::io::Error::last_os_error())); }
+        let waited = unsafe {
+            libc::waitid(
+                libc::P_PID,
+                pid as libc::id_t,
+                &mut info,
+                libc::WEXITED | libc::WNOHANG | libc::WNOWAIT,
+            )
+        };
+        if waited < 0 {
+            break Err(format!(
+                "Cannot wait for command: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
         if unsafe { info.si_pid() } != 0 {
-                unsafe { libc::kill(-pid, libc::SIGKILL); }
-                let status = child.wait().map_err(|error| format!("Cannot wait for command: {error}"))?;
-                for _ in 0..16 {
-                    match stderr.read(&mut buffer) {
-                        Ok(0) | Err(_) => break,
-                        Ok(count) => output.extend_from_slice(
-                            &buffer[..count.min(OUTPUT_LIMIT.saturating_sub(output.len()))],
-                        ),
-                    }
+            unsafe {
+                libc::kill(-pid, libc::SIGKILL);
+            }
+            let status = child
+                .wait()
+                .map_err(|error| format!("Cannot wait for command: {error}"))?;
+            for _ in 0..16 {
+                match stderr.read(&mut buffer) {
+                    Ok(0) | Err(_) => break,
+                    Ok(count) => output.extend_from_slice(
+                        &buffer[..count.min(OUTPUT_LIMIT.saturating_sub(output.len()))],
+                    ),
                 }
-                break if status.success() {
-                    Ok(())
-                } else {
-                    Err(format!(
-                        "Command exited with {status}: {}",
-                        String::from_utf8_lossy(&output).trim()
-                    ))
-                };
+            }
+            break if status.success() {
+                Ok(())
+            } else {
+                Err(format!(
+                    "Command exited with {status}: {}",
+                    String::from_utf8_lossy(&output).trim()
+                ))
+            };
         }
         std::thread::sleep(Duration::from_millis(10));
     };
     if child.try_wait().is_ok_and(|status| status.is_none()) {
-        unsafe { libc::kill(-pid, libc::SIGKILL); }
+        unsafe {
+            libc::kill(-pid, libc::SIGKILL);
+        }
         let _ = child.wait();
     }
     result
@@ -151,12 +169,31 @@ mod tests {
     fn stops_background_children_and_bounds_error_output() {
         let dir = tempfile::tempdir().unwrap();
         let marker = dir.path().join("late");
-        let command = SysCommand { program: "sh".into(), args: vec!["-c".into(), format!("(sleep 0.2; touch '{}') &", marker.display())] };
-        run(&command, GENERATION.load(Ordering::SeqCst), Duration::from_secs(2)).unwrap();
+        let command = SysCommand {
+            program: "sh".into(),
+            args: vec![
+                "-c".into(),
+                format!("(sleep 0.2; touch '{}') &", marker.display()),
+            ],
+        };
+        run(
+            &command,
+            GENERATION.load(Ordering::SeqCst),
+            Duration::from_secs(2),
+        )
+        .unwrap();
         std::thread::sleep(Duration::from_millis(250));
         assert!(!marker.exists());
-        let command = SysCommand { program: "sh".into(), args: vec!["-c".into(), "head -c 20000 /dev/zero >&2; exit 1".into()] };
-        let error = run(&command, GENERATION.load(Ordering::SeqCst), Duration::from_secs(2)).unwrap_err();
+        let command = SysCommand {
+            program: "sh".into(),
+            args: vec!["-c".into(), "head -c 20000 /dev/zero >&2; exit 1".into()],
+        };
+        let error = run(
+            &command,
+            GENERATION.load(Ordering::SeqCst),
+            Duration::from_secs(2),
+        )
+        .unwrap_err();
         assert!(error.len() < OUTPUT_LIMIT + 100);
     }
 

@@ -128,7 +128,8 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
 }
 
 pub fn replace_command_references(layout: &mut LayoutPreset, old: &str, new: Option<&str>) {
-    let is_source = |value: &str| matches!(Action::parse(Some(value)), Action::Command(id) if id == old);
+    let is_source =
+        |value: &str| matches!(Action::parse(Some(value)), Action::Command(id) if id == old);
     let target = new.map(|id| format!("cmd:{id}")).unwrap_or_default();
     let replace = |value: &mut String| {
         if is_source(value) {
@@ -158,7 +159,9 @@ pub fn replace_command_references(layout: &mut LayoutPreset, old: &str, new: Opt
         if new.is_none() {
             item.steps.retain(|step| !is_source(&step.action));
         } else {
-            for step in &mut item.steps { replace(&mut step.action); }
+            for step in &mut item.steps {
+                replace(&mut step.action);
+            }
         }
     }
     for item in &mut layout.quick_actions {
@@ -183,7 +186,9 @@ mod tests {
     fn renames_and_removes_command_dependencies_atomically() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        paths.save_current_layout(r#"
+        paths
+            .save_current_layout(
+                r#"
 commands:
   - id: old
     linux: printf hello
@@ -207,7 +212,9 @@ macros:
 quickActions:
   - id: quick
     action: cmd:old
-"#).unwrap();
+"#,
+            )
+            .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         let baseline = doc.layout().clone();
         let mut candidate = baseline.clone();
@@ -217,7 +224,10 @@ quickActions:
         replace_command_references(&mut candidate, "old", Some("new"));
         doc.save_menu_pages(&baseline, &candidate).unwrap();
         assert!(super::super::macros::action_usage(&doc.config(), "cmd:old").is_empty());
-        assert_eq!(super::super::macros::action_usage(&doc.config(), "cmd:new").len(), before);
+        assert_eq!(
+            super::super::macros::action_usage(&doc.config(), "cmd:new").len(),
+            before
+        );
         assert_eq!(ConfigDocument::load(paths).unwrap().layout(), &candidate);
         let baseline = candidate.clone();
         candidate.commands.clear();

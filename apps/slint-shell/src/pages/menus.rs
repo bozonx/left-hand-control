@@ -226,7 +226,11 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
             let old = state.reference_ids[index].clone();
             let new = state.layout.commands[index].id.clone();
             if old != new {
-                lhc_core::profile::menus::replace_command_references(&mut state.layout, &old, Some(&new));
+                lhc_core::profile::menus::replace_command_references(
+                    &mut state.layout,
+                    &old,
+                    Some(&new),
+                );
                 state.reference_ids[index] = new;
             }
         }
@@ -240,7 +244,14 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         candidate.macros = baseline.macros.clone();
     }
     if candidate == baseline {
-        e.set_status(if commands_valid { Msg::None } else { Msg::MenuDraft }.to_ui());
+        e.set_status(
+            if commands_valid {
+                Msg::None
+            } else {
+                Msg::MenuDraft
+            }
+            .to_ui(),
+        );
         return;
     }
     let result = document.edit(View::Menus, |config| {
@@ -250,7 +261,11 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         Ok(saved) => {
             state.baseline = document.read().layout().clone();
             show_trust(ui, document);
-            saved.message(if commands_valid { Msg::None } else { Msg::MenuDraft })
+            saved.message(if commands_valid {
+                Msg::None
+            } else {
+                Msg::MenuDraft
+            })
         }
         Err(error) => {
             if error == ConfigError::ExternalChange {
@@ -364,7 +379,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                         save(&ui, &doc, &mut state);
                     }
                     refresh(&ui, &state.layout, !typing);
-                    ui.global::<MenuEditor>().set_trusted(doc.read().commands_trusted() && state.layout.commands == doc.read().layout().commands);
+                    ui.global::<MenuEditor>().set_trusted(
+                        doc.read().commands_trusted()
+                            && state.layout.commands == doc.read().layout().commands,
+                    );
                 }
                 if typing {
                     save_later(&ui, &doc, &shared);
@@ -385,11 +403,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_editing_count(0);
         e.set_kind(kind);
         e.set_selected_page(0);
-        if state.layout == state.baseline {
+        if state.layout.commands == state.baseline.commands {
             reload(&ui, &doc, &mut state);
         }
         e.set_status(
-            if state.layout != state.baseline {
+            if state.layout.commands != state.baseline.commands {
                 Msg::MenuDraft
             } else {
                 Msg::None
@@ -401,7 +419,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             0
         });
-        e.set_trusted(doc.read().commands_trusted() && state.layout.commands == doc.read().layout().commands);
+        e.set_trusted(
+            doc.read().commands_trusted() && state.layout.commands == doc.read().layout().commands,
+        );
         e.set_has_errors(false);
         refresh(&ui, &state.layout, true);
     });
@@ -648,12 +668,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let c = change.clone();
     let shared = state.clone();
     e.on_remove_command(move |index| {
-        let source = usize::try_from(index).ok().and_then(|index| shared.borrow().reference_ids.get(index).cloned());
+        let source = usize::try_from(index)
+            .ok()
+            .and_then(|index| shared.borrow().reference_ids.get(index).cloned());
         c(false, &|_, layout| {
             if let Ok(index) = usize::try_from(index)
                 && index < layout.commands.len()
             {
-                let id = source.clone().unwrap_or_else(|| layout.commands[index].id.clone());
+                let id = source
+                    .clone()
+                    .unwrap_or_else(|| layout.commands[index].id.clone());
                 layout.commands.remove(index);
                 lhc_core::profile::menus::replace_command_references(layout, &id, None);
             }
@@ -699,7 +723,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 CommandField::Linux => state.layout.commands[index].linux = value.to_string(),
             }
             annotate_commands(&ui, &state.layout);
-            ui.global::<MenuEditor>().set_trusted(doc.read().commands_trusted() && state.layout.commands == doc.read().layout().commands);
+            ui.global::<MenuEditor>().set_trusted(
+                doc.read().commands_trusted()
+                    && state.layout.commands == doc.read().layout().commands,
+            );
         }
         save_later(&ui, &doc, &shared);
     });

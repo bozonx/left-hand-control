@@ -211,7 +211,12 @@ impl ConfigDocument {
         let autostart_changed = cfg!(target_os = "linux")
             && updated.launch_on_startup != self.settings.launch_on_startup;
         if autostart_changed {
-            if self.settings_file.changed().map_err(ConfigError::Io)?.is_some() {
+            if self
+                .settings_file
+                .changed()
+                .map_err(ConfigError::Io)?
+                .is_some()
+            {
                 return Err(ConfigError::ExternalChange);
             }
             crate::autostart::set_enabled(&self.paths, updated.launch_on_startup)
@@ -940,7 +945,10 @@ mod tests {
             .unwrap();
         let value: Value = serde_json::from_str(&runtime.json).unwrap();
         assert_eq!(
-            value["layerKeymaps"]["nav"]["extras"].as_array().unwrap().len(),
+            value["layerKeymaps"]["nav"]["extras"]
+                .as_array()
+                .unwrap()
+                .len(),
             1
         );
         assert_eq!(value["layerKeymaps"]["nav"]["extras"][0]["key"], "F13");
@@ -1012,13 +1020,28 @@ mod tests {
     fn moving_extra_inserts_without_swapping_intermediate_keys() {
         let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
         for key in ["F13", "F14", "F15"] {
-            document.set_layer_extra("nav", None, key, Some("Escape".into())).unwrap();
+            document
+                .set_layer_extra("nav", None, key, Some("Escape".into()))
+                .unwrap();
         }
         document.move_layer_extra("nav", 0, 2).unwrap();
-        let keys = || document.layout().layer_keymaps["nav"].extras.iter().map(|row| row.key.as_str()).collect::<Vec<_>>();
+        let keys = || {
+            document.layout().layer_keymaps["nav"]
+                .extras
+                .iter()
+                .map(|row| row.key.as_str())
+                .collect::<Vec<_>>()
+        };
         assert_eq!(keys(), ["F14", "F15", "F13"]);
         document.move_layer_extra("nav", 2, 0).unwrap();
-        assert_eq!(document.layout().layer_keymaps["nav"].extras.iter().map(|row| row.key.as_str()).collect::<Vec<_>>(), ["F13", "F14", "F15"]);
+        assert_eq!(
+            document.layout().layer_keymaps["nav"]
+                .extras
+                .iter()
+                .map(|row| row.key.as_str())
+                .collect::<Vec<_>>(),
+            ["F13", "F14", "F15"]
+        );
     }
 
     #[test]

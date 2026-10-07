@@ -64,7 +64,11 @@ fn hand_cells(
     let mut cells = Vec::with_capacity(rows.len() * columns);
     let mut index = first;
     for (row_index, row) in rows.iter().enumerate() {
-        let skip = if row_index + 1 == rows.len() { offset } else { 0 };
+        let skip = if row_index + 1 == rows.len() {
+            offset
+        } else {
+            0
+        };
         cells.extend(std::iter::repeat_n(empty.clone(), skip));
         for code in row.iter() {
             let (kind, action, icon) = lookup(code);
@@ -100,7 +104,12 @@ fn selected_id(ui: &SettingsWindow, document: &Document) -> Option<String> {
 }
 
 fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
-    let id = document.read().layout().layers.get(index as usize).map(|layer| layer.id.clone());
+    let id = document
+        .read()
+        .layout()
+        .layers
+        .get(index as usize)
+        .map(|layer| layer.id.clone());
     let editor = ui.global::<LayersEditor>();
     editor.set_selected(index);
     editor.set_selected_id(id.clone().unwrap_or_default().into());
@@ -128,7 +137,11 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
         .or((!layout.layers.is_empty()).then_some(0));
     editor.set_selected(index.map_or(-1, |index| index as i32));
     let layer = index.map(|index| &layout.layers[index]);
-    editor.set_selected_id(layer.map_or_else(String::new, |layer| layer.id.clone()).into());
+    editor.set_selected_id(
+        layer
+            .map_or_else(String::new, |layer| layer.id.clone())
+            .into(),
+    );
     editor.set_description(
         layer
             .and_then(|layer| layer.description.clone())
@@ -265,7 +278,12 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
     }
     if dialog == LayerDialog::EditKey {
         editor.set_dialog(LayerDialog::None);
-        ui.global::<ActionPicker>().invoke_open(PickerTarget::LayerAction, index, editor.get_dialog_action(), false);
+        ui.global::<ActionPicker>().invoke_open(
+            PickerTarget::LayerAction,
+            index,
+            editor.get_dialog_action(),
+            false,
+        );
     } else {
         editor.set_dialog(dialog);
     }
@@ -353,15 +371,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     ui.global::<LayersEditor>().on_reorder(move |from, to| {
         let Some(ui) = weak.upgrade() else { return };
-        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else { return };
+        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+            return;
+        };
         let len = doc.read().layout().layers.len();
-        if from >= len || to >= len { return; }
-        let _ = change(&ui, &doc, |config| config.update_layout(|layout| {
-            let item = layout.layers.remove(from);
-            layout.layers.insert(to, item);
-        }));
+        if from >= len || to >= len {
+            return;
+        }
+        let _ = change(&ui, &doc, |config| {
+            config.update_layout(|layout| {
+                let item = layout.layers.remove(from);
+                layout.layers.insert(to, item);
+            })
+        });
     });
-    ui.global::<LayersEditor>().set_selected_id(document.selected_layer_id().into());
+    ui.global::<LayersEditor>()
+        .set_selected_id(document.selected_layer_id().into());
     refresh(ui, document);
     let weak = ui.as_weak();
     document.subscribe(View::Layers, move |document| {
@@ -374,14 +399,19 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_update_name(move |name| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(id) = selected_id(&ui, &doc) else { return };
+        let Some(id) = selected_id(&ui, &doc) else {
+            return;
+        };
         let description = ui.global::<LayersEditor>().get_description();
-        let _ = change(&ui, &doc, |config| config.rename_layer(&id, name.trim(), &description));
+        let _ = change(&ui, &doc, |config| {
+            config.rename_layer(&id, name.trim(), &description)
+        });
     });
     let weak = ui.as_weak();
     editor.on_add_extra(move || {
         if let Some(ui) = weak.upgrade() {
-            ui.global::<ActionPicker>().invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
+            ui.global::<ActionPicker>()
+                .invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
         }
     });
     let weak = ui.as_weak();
@@ -392,9 +422,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let editor = ui.global::<LayersEditor>();
         editor.set_dialog(LayerDialog::None);
         ui.global::<ActionPicker>().invoke_open(
-            if key_only { PickerTarget::ExtraKey } else { PickerTarget::ExtraAction },
+            if key_only {
+                PickerTarget::ExtraKey
+            } else {
+                PickerTarget::ExtraAction
+            },
             index,
-            if key_only { editor.get_dialog_key() } else { editor.get_dialog_action() },
+            if key_only {
+                editor.get_dialog_key()
+            } else {
+                editor.get_dialog_action()
+            },
             key_only,
         );
     });
@@ -402,11 +440,23 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_update_extra_key(move |index, key| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(id) = selected_id(&ui, &doc) else { return };
-        let Ok(index) = usize::try_from(index) else { return };
-        let action = doc.read().layout().layer_keymaps.get(&id).and_then(|map| map.extras.get(index)).map(|extra| extra.action.clone());
+        let Some(id) = selected_id(&ui, &doc) else {
+            return;
+        };
+        let Ok(index) = usize::try_from(index) else {
+            return;
+        };
+        let action = doc
+            .read()
+            .layout()
+            .layer_keymaps
+            .get(&id)
+            .and_then(|map| map.extras.get(index))
+            .map(|extra| extra.action.clone());
         if let Some(action) = action {
-            let _ = change(&ui, &doc, |config| config.set_layer_extra(&id, Some(index), key.trim(), action));
+            let _ = change(&ui, &doc, |config| {
+                config.set_layer_extra(&id, Some(index), key.trim(), action)
+            });
         }
     });
     editor.set_label_mode(document.label_mode());
@@ -531,23 +581,49 @@ pub(super) fn assign(
     } else {
         KeyAssignment::Action(value.to_owned())
     };
-    change(ui, document, |config| config.set_layer_key(&id, key, assignment))
+    change(ui, document, |config| {
+        config.set_layer_key(&id, key, assignment)
+    })
 }
 
-pub(super) fn assign_extra(ui: &SettingsWindow, document: &Document, index: i32, value: &str, key_only: bool, ignore: bool) -> Result<(), Msg> {
+pub(super) fn assign_extra(
+    ui: &SettingsWindow,
+    document: &Document,
+    index: i32,
+    value: &str,
+    key_only: bool,
+    ignore: bool,
+) -> Result<(), Msg> {
     let id = selected_id(ui, document).ok_or(Msg::None)?;
     let row = usize::try_from(index).ok();
-    let existing = document.read().layout().layer_keymaps.get(&id)
-        .and_then(|map| row.and_then(|row| map.extras.get(row))).cloned();
+    let existing = document
+        .read()
+        .layout()
+        .layer_keymaps
+        .get(&id)
+        .and_then(|map| row.and_then(|row| map.extras.get(row)))
+        .cloned();
     let (key, action) = if key_only {
-        if value.trim().is_empty() { return Err(Msg::KeyCodeRequired); }
-        (value.to_owned(), existing.map_or(Some(String::new()), |extra| extra.action))
+        if value.trim().is_empty() {
+            return Err(Msg::KeyCodeRequired);
+        }
+        (
+            value.to_owned(),
+            existing.map_or(Some(String::new()), |extra| extra.action),
+        )
     } else {
         let extra = existing.ok_or(Msg::KeyCodeRequired)?;
-        if extra.key.is_empty() { return Err(Msg::KeyCodeRequired); }
-        (extra.key, if ignore { None } else { Some(value.to_owned()) })
+        if extra.key.is_empty() {
+            return Err(Msg::KeyCodeRequired);
+        }
+        (
+            extra.key,
+            if ignore { None } else { Some(value.to_owned()) },
+        )
     };
-    change(ui, document, |config| config.set_layer_extra(&id, row, &key, action))
+    change(ui, document, |config| {
+        config.set_layer_extra(&id, row, &key, action)
+    })
 }
 
 #[cfg(test)]
@@ -578,7 +654,10 @@ mod tests {
         assert_eq!(thumb[0].index, -1);
         assert_eq!(thumb[2].code, "ControlLeft");
         let indexed: Vec<_> = left.iter().filter(|cell| cell.index >= 0).collect();
-        assert_eq!(indexed.len(), keyboard::LEFT_HAND.iter().map(|r| r.len()).sum::<usize>());
+        assert_eq!(
+            indexed.len(),
+            keyboard::LEFT_HAND.iter().map(|r| r.len()).sum::<usize>()
+        );
         assert_eq!(keyboard::layer_key(indexed[7].index), Some("Digit1"));
     }
 }

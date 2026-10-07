@@ -525,7 +525,6 @@ export component CommandsPage inherits Rectangle {
                                 primary: true;
                                 icon: @image-url("icons/plus.svg");
                                 colorize-icon: true;
-                                enabled: !MenuEditor.has-errors;
                                 clicked => { MenuEditor.add-command(@tr("New command")); }
                             }
                         }

@@ -9,9 +9,9 @@ mod lock;
 mod viewporter;
 mod window;
 
-pub use window::{SpellWin, WindowEvent};
 pub use window::SpellXDGPopup;
 pub use window::WinHandle;
+pub use window::{SpellWin, WindowEvent};
 
 pub use lock::LockHandle;
 pub use lock::SpellLock;

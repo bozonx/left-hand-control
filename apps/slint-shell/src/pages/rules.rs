@@ -4,7 +4,10 @@ use super::{game_condition, game_condition_value, parse_list};
 use crate::{
     document::{Document, Saved, View},
     i18n::Msg,
-    ui::{ActionPicker, PickerTarget, RuleDialog, RuleField, RuleLayerChoice, RuleRow, RulesEditor, SettingsWindow},
+    ui::{
+        ActionPicker, PickerTarget, RuleDialog, RuleField, RuleLayerChoice, RuleRow, RulesEditor,
+        SettingsWindow,
+    },
 };
 use lhc_core::profile::{
     diagnostics, ids,
@@ -14,7 +17,10 @@ use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
 fn join(value: &Option<Vec<String>>) -> String {
-    value.as_ref().map(|items| super::condition_list(items)).unwrap_or_default()
+    value
+        .as_ref()
+        .map(|items| super::condition_list(items))
+        .unwrap_or_default()
 }
 
 fn optional_list(value: &str) -> Option<Vec<String>> {
@@ -69,7 +75,13 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     let layout = config.layout();
     let editor = ui.global::<RulesEditor>();
     editor.set_default_hold_timeout(config.settings().default_hold_timeout_ms.to_string().into());
-    editor.set_default_double_timeout(config.settings().default_double_tap_timeout_ms.to_string().into());
+    editor.set_default_double_timeout(
+        config
+            .settings()
+            .default_double_tap_timeout_ms
+            .to_string()
+            .into(),
+    );
     editor.set_rows(ModelRc::new(VecModel::from(
         layout
             .rules
@@ -180,10 +192,7 @@ fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Resu
         RuleDialog::DoubleTap => rule.double_tap_action = value.into(),
         RuleDialog::HoldTimeout => rule.hold_timeout_ms = parse_timeout(value)?,
         RuleDialog::DoubleTimeout => rule.double_tap_timeout_ms = parse_timeout(value)?,
-        RuleDialog::None
-        | RuleDialog::Conditions
-        | RuleDialog::Advanced
-        | RuleDialog::Remove => {}
+        RuleDialog::None | RuleDialog::Conditions | RuleDialog::Advanced | RuleDialog::Remove => {}
     }
     Ok(())
 }
@@ -206,7 +215,9 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
     let editor = ui.global::<RulesEditor>();
     let property = editor.get_field();
     if property == RuleDialog::Key && editor.get_selected() == -1 {
-        if value.trim().is_empty() { return Err(Msg::None); }
+        if value.trim().is_empty() {
+            return Err(Msg::None);
+        }
         change(ui, document, true, |layout| {
             let id = unique_rule_id(&layout.rules);
             layout.rules.insert(0, LayerRule::new(id, value));
@@ -215,7 +226,9 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
         editor.set_created(0);
         let weak = ui.as_weak();
         slint::Timer::single_shot(std::time::Duration::from_millis(1400), move || {
-            if let Some(ui) = weak.upgrade() { ui.global::<RulesEditor>().set_created(-1); }
+            if let Some(ui) = weak.upgrade() {
+                ui.global::<RulesEditor>().set_created(-1);
+            }
         });
         refresh(ui, document, true);
         editor.set_field(RuleDialog::None);
@@ -293,14 +306,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         editor.set_selected(-1);
         editor.set_field(RuleDialog::Key);
         editor.set_dialog(RuleDialog::None);
-        ui.global::<ActionPicker>().invoke_open(PickerTarget::Rule, -1, "".into(), true);
+        ui.global::<ActionPicker>()
+            .invoke_open(PickerTarget::Rule, -1, "".into(), true);
     });
 
     let weak = ui.as_weak();
     let doc = document.clone();
     editor.on_remove(move || {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(index) = selected(&ui, &doc) else { return };
+        let Some(index) = selected(&ui, &doc) else {
+            return;
+        };
         let result = change(&ui, &doc, true, |layout| {
             if index < layout.rules.len() {
                 layout.rules.remove(index);
@@ -309,7 +325,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         if result.is_ok() {
             let editor = ui.global::<RulesEditor>();
             let remaining = doc.read().layout().rules.len();
-            let next = if remaining == 0 { -1 } else { index.min(remaining - 1) as i32 };
+            let next = if remaining == 0 {
+                -1
+            } else {
+                index.min(remaining - 1) as i32
+            };
             editor.set_selected(next);
             editor.set_dialog(RuleDialog::None);
             refresh(&ui, &doc, true);
@@ -321,12 +341,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     editor.on_move(move |from, to| {
         let Some(ui) = weak.upgrade() else { return };
         let len = doc.read().layout().rules.len();
-        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else { return };
-        if from >= len || to >= len { return; }
+        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+            return;
+        };
+        if from >= len || to >= len {
+            return;
+        }
         if change(&ui, &doc, true, |layout| {
             let item = layout.rules.remove(from);
             layout.rules.insert(to, item);
-        }).is_ok() {
+        })
+        .is_ok()
+        {
             ui.global::<RulesEditor>().set_selected(to as i32);
             refresh(&ui, &doc, true);
         }
@@ -412,7 +438,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let config = doc.read();
         ui.global::<RulesEditor>().set_layer_items(layer_choices(
             config.layout().layers.iter().filter(|layer| {
-                layer.name.to_lowercase().contains(&query) || layer.id.to_lowercase().contains(&query)
+                layer.name.to_lowercase().contains(&query)
+                    || layer.id.to_lowercase().contains(&query)
             }),
         ));
     });
@@ -429,7 +456,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_apply_conditions(move || {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(index) = selected(&ui, &doc) else { return };
+        let Some(index) = selected(&ui, &doc) else {
+            return;
+        };
         let editor = ui.global::<RulesEditor>();
         let game_mode = game_condition_value(editor.get_game_mode());
         let layouts = optional_list(&editor.get_layouts());
@@ -450,13 +479,19 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_apply_advanced(move || {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(index) = selected(&ui, &doc) else { return };
+        let Some(index) = selected(&ui, &doc) else {
+            return;
+        };
         let editor = ui.global::<RulesEditor>();
-        let timeouts = parse_timeout(&editor.get_hold_timeout())
-            .and_then(|hold| parse_timeout(&editor.get_double_timeout()).map(|double| (hold, double)));
+        let timeouts = parse_timeout(&editor.get_hold_timeout()).and_then(|hold| {
+            parse_timeout(&editor.get_double_timeout()).map(|double| (hold, double))
+        });
         let (hold, double) = match timeouts {
             Ok(values) => values,
-            Err(error) => { editor.set_status(error.to_ui()); return; }
+            Err(error) => {
+                editor.set_status(error.to_ui());
+                return;
+            }
         };
         let isolate = optional(&editor.get_isolate());
         let hold_for = optional(&editor.get_hold_for());
@@ -465,14 +500,20 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             rule.double_tap_timeout_ms = double;
             rule.isolate = isolate;
             rule.hold_for = hold_for;
-        }).is_ok() { editor.set_dialog(RuleDialog::None); }
+        })
+        .is_ok()
+        {
+            editor.set_dialog(RuleDialog::None);
+        }
     });
 
     let weak = ui.as_weak();
     let doc = document.clone();
     editor.on_edit(move |field, value| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(index) = selected(&ui, &doc) else { return };
+        let Some(index) = selected(&ui, &doc) else {
+            return;
+        };
         let editor = ui.global::<RulesEditor>();
         let current = match field {
             RuleField::SwallowTap => editor.get_tap(),
@@ -494,7 +535,10 @@ mod tests {
         let mut rule = LayerRule::new("r".into(), "");
         set_property(&mut rule, RuleDialog::Key, "CapsLock").unwrap();
         set_property(&mut rule, RuleDialog::HoldTimeout, " 250 ").unwrap();
-        assert_eq!((rule.key.as_str(), rule.hold_timeout_ms), ("CapsLock", Some(250)));
+        assert_eq!(
+            (rule.key.as_str(), rule.hold_timeout_ms),
+            ("CapsLock", Some(250))
+        );
         assert_eq!(
             set_property(&mut rule, RuleDialog::DoubleTimeout, "-1"),
             Err(Msg::TimeoutInvalid)

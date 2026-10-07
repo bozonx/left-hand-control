@@ -584,7 +584,10 @@ impl Engine {
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Blocked(error) => {
-                            crate::events::emit(crate::events::CoreEvent::CommandFinished { script: String::new(), result: Err(error) });
+                            crate::events::emit(crate::events::CoreEvent::CommandFinished {
+                                script: String::new(),
+                                result: Err(error),
+                            });
                         }
                         ActionDef::Swallow => {
                             log::debug!("[mapper]   press {:?} -> swallow", key);
@@ -1025,7 +1028,12 @@ impl Engine {
             Some(ActionDef::Macro(_)) => {}
             Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
             Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
-            Some(ActionDef::Blocked(error)) => crate::events::emit(crate::events::CoreEvent::CommandFinished { script: String::new(), result: Err(error.clone()) }),
+            Some(ActionDef::Blocked(error)) => {
+                crate::events::emit(crate::events::CoreEvent::CommandFinished {
+                    script: String::new(),
+                    result: Err(error.clone()),
+                })
+            }
             Some(ActionDef::Swallow) => {}
             None => {}
         }
@@ -1111,7 +1119,10 @@ impl Engine {
         }
         let resolved = if let Some(rest) = trimmed.strip_prefix("macro:") {
             self.macros.get(rest.trim()).cloned().map(|definition| {
-                definition.blocked.clone().map_or(ActionDef::Macro(definition), ActionDef::Blocked)
+                definition
+                    .blocked
+                    .clone()
+                    .map_or(ActionDef::Macro(definition), ActionDef::Blocked)
             })
         } else if let Some(rest) = trimmed.strip_prefix("cmd:") {
             self.commands
@@ -1398,8 +1409,23 @@ mod tests {
     #[test]
     fn unapproved_commands_block_whole_macros_and_preserve_other_keys() {
         let mut cfg = empty_cfg();
-        cfg.commands.push(Command { id: "blocked".into(), linux: "printf hello".into() });
-        cfg.macros.push(Macro { id: "sequence".into(), steps: vec![MacroStep { action: "KeyA".into() }, MacroStep { action: "cmd:blocked".into() }], step_pause_ms: None, modifier_delay_ms: None });
+        cfg.commands.push(Command {
+            id: "blocked".into(),
+            linux: "printf hello".into(),
+        });
+        cfg.macros.push(Macro {
+            id: "sequence".into(),
+            steps: vec![
+                MacroStep {
+                    action: "KeyA".into(),
+                },
+                MacroStep {
+                    action: "cmd:blocked".into(),
+                },
+            ],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         engine.execute_remote("macro:sequence", &mut out);

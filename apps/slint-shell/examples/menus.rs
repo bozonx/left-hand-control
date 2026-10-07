@@ -48,12 +48,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_open(MenuKind::Commands);
     e.invoke_add_command("Привет".into());
     assert!(e.get_has_errors());
-    assert_eq!(e.get_commands().row_data(0).unwrap().error.id, "menu-empty-command");
+    assert_eq!(
+        e.get_commands().row_data(0).unwrap().error.id,
+        "menu-empty-command"
+    );
     assert!(loaded().layout().commands.is_empty());
     e.invoke_open(MenuKind::Emoji);
     e.set_value("Черновик сохранён".into());
     e.invoke_set_cell();
-    assert_eq!(loaded().layout().emoji_pages[0].cells["KeyQ"], "Черновик сохранён");
+    settle();
+    assert_eq!(
+        loaded().layout().emoji_pages[0].cells["KeyQ"],
+        "Черновик сохранён"
+    );
     e.invoke_open(MenuKind::Commands);
     assert_eq!(e.get_commands().row_count(), 1);
     e.invoke_set_command(0, CommandField::Id, "hello".into());
@@ -66,7 +73,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_trust(true);
     assert!(document.read().commands_trusted());
     e.invoke_set_command(0, CommandField::Linux, "printf changed".into());
-    assert_eq!(e.get_commands().row_data(0).unwrap().linux, "printf changed");
+    assert_eq!(
+        e.get_commands().row_data(0).unwrap().linux,
+        "printf changed"
+    );
     assert!(!e.get_trusted());
     settle();
     assert!(!document.read().commands_trusted());
@@ -74,7 +84,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_add_command("Второй".into());
     e.invoke_set_command(0, CommandField::Id, "hello".into());
     settle();
-    assert_eq!(e.get_commands().row_data(1).unwrap().error.id, "menu-duplicate-command");
+    assert_eq!(
+        e.get_commands().row_data(1).unwrap().error.id,
+        "menu-duplicate-command"
+    );
     e.invoke_trust(true);
     assert_eq!(e.get_status().id.as_str(), "menu-save-first");
     e.invoke_remove_command(0);
@@ -115,7 +128,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_open(MenuKind::Quick);
     e.invoke_set_action(0, "cmd:hello".into(), "Плеер".into());
     e.invoke_set_action(6, "Ctrl+KeyC".into(), "Ctrl+KeyC".into());
-    assert_eq!(document.read().layout().quick_actions[6].action, "Ctrl+KeyC");
+    assert_eq!(
+        document.read().layout().quick_actions[6].action,
+        "Ctrl+KeyC"
+    );
     e.invoke_open(match std::env::var("LHC_MENUS_PAGE").as_deref() {
         Ok("1") => MenuKind::Quick,
         Ok("2") => MenuKind::Commands,

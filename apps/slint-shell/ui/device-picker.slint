@@ -1,0 +1,147 @@
+import { ScrollView } from "scroll.slint";
+import { Theme } from "theme.slint";
+import { LineEdit } from "std-widgets.slint";
+
+export enum DeviceGroup { unselected, suggested, other, manual }
+export struct DeviceChoice { label: string, path: string, group: DeviceGroup, source-index: int }
+
+export global DeviceChoices {
+    pure callback filter([DeviceChoice], string) -> [DeviceChoice];
+    pure callback offset([DeviceChoice], int) -> int;
+}
+
+export component DevicePicker inherits Rectangle {
+    in property <[DeviceChoice]> choices;
+    in property <int> selected-index;
+    in property <string> placeholder;
+    in property <string> suggested-label;
+    in property <string> label;
+    in property <bool> enabled: true;
+    callback selected(int);
+    private property <string> query;
+    private property <[DeviceChoice]> filtered: DeviceChoices.filter(root.choices, root.query);
+    private property <int> highlighted;
+    private property <string> selected-text: root.selected-index >= 0 && root.selected-index < root.choices.length ? root.choice-label(root.choices[root.selected-index]) : root.placeholder;
+    private property <length> scroll-y;
+    private property <length> content-height: DeviceChoices.offset(root.filtered, root.filtered.length) * 1px;
+    private property <length> popup-height: min(360px, 60px + root.content-height);
+    min-width: 0px;
+    height: 36px;
+    horizontal-stretch: 1;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: focus.has-focus || menu.is-open ? Theme.link : Theme.border;
+    background: root.enabled && touch.has-hover ? Theme.hover : Theme.surface;
+    opacity: root.enabled ? 1.0 : 0.45;
+    accessible-role: combobox;
+    accessible-label: root.label;
+    accessible-value: root.selected-text;
+    accessible-enabled: root.enabled;
+    accessible-expandable: true;
+    accessible-expanded: menu.is-open;
+    accessible-action-expand => { root.open-menu(); }
+    accessible-action-default => { root.open-menu(); }
+    forward-focus: focus;
+
+    pure function choice-label(choice: DeviceChoice) -> string {
+        return choice.group == DeviceGroup.manual ? @tr("Enter device path manually") : choice.group == DeviceGroup.unselected ? root.placeholder : choice.label;
+    }
+    public function open-menu() {
+        if !root.enabled { return; }
+        root.query = "";
+        root.highlighted = max(0, root.selected-index);
+        menu.show();
+        root.scroll-to-highlight();
+    }
+    function scroll-to-highlight() {
+        let top = DeviceChoices.offset(root.filtered, root.highlighted) * 1px;
+        let bottom = DeviceChoices.offset(root.filtered, root.highlighted + 1) * 1px;
+        let visible-height = root.popup-height - 60px;
+        root.scroll-y = clamp(root.scroll-y, -max(0px, root.content-height - visible-height), 0px);
+        if top < -root.scroll-y { root.scroll-y = -top; }
+        if bottom > -root.scroll-y + visible-height { root.scroll-y = -(bottom - visible-height); }
+    }
+    function choose(index: int) {
+        if index >= 0 && index < root.filtered.length {
+            root.selected(root.filtered[index].source-index);
+            menu.close();
+            focus.focus();
+        }
+    }
+    changed enabled => { if !root.enabled { menu.close(); } }
+    changed query => { root.highlighted = 0; root.scroll-y = 0px; }
+    HorizontalLayout {
+        padding-left: 10px; padding-right: 10px; spacing: 8px;
+        Text {
+            min-width: 0px; horizontal-stretch: 1; overflow: elide;
+            text: root.selected-text;
+            color: root.selected-index > 0 ? Theme.text : Theme.muted;
+            vertical-alignment: center;
+        }
+        VerticalLayout { alignment: center;
+            Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
+        }
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" || event.text == Key.DownArrow || event.text == Key.UpArrow {
+                root.open-menu(); return accept;
+            }
+            return reject;
+        }
+    }
+    touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.open-menu(); } }
+    menu := PopupWindow {
+        x: 0px; y: root.height + 4px; width: root.width;
+        height: root.popup-height;
+        close-policy: close-on-click-outside;
+        forward-focus: search;
+        FocusScope {
+            capture-key-pressed(event) => {
+                if event.text == Key.DownArrow || event.text == Key.UpArrow {
+                    root.highlighted = mod(root.highlighted + root.filtered.length + (event.text == Key.DownArrow ? 1 : -1), root.filtered.length);
+                    root.scroll-to-highlight();
+                                return accept;
+                }
+                if event.text == "\n" { root.choose(root.highlighted); return accept; }
+                if event.text == Key.Escape { menu.close(); focus.focus(); return accept; }
+                return reject;
+            }
+            Rectangle {
+                background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 6px;
+                VerticalLayout { padding: 8px; spacing: 8px;
+                    search := LineEdit { text <=> root.query; placeholder-text: @tr("Search devices"); }
+                    list := ScrollView {
+                        viewport-width: self.visible-width;
+                        viewport-y <=> root.scroll-y;
+                        VerticalLayout { width: parent.width; spacing: 0px;
+                            for choice[index] in root.filtered: Rectangle {
+                                private property <bool> heading: choice.group != DeviceGroup.unselected && (index == 0 || root.filtered[index - 1].group != choice.group);
+                                height: 36px + (self.heading ? 28px : 0px);
+                                if self.heading: Text {
+                                    x: 8px; height: 28px; width: parent.width - 16px;
+                                    text: choice.group == DeviceGroup.suggested ? root.suggested-label : choice.group == DeviceGroup.other ? @tr("Other devices") : @tr("Manual");
+                                    color: Theme.muted; font-size: 12px; font-weight: 600; vertical-alignment: center;
+                                }
+                                Rectangle {
+                                    y: parent.heading ? 28px : 0px; height: 36px; width: parent.width;
+                                    border-radius: 4px;
+                                    background: row-touch.has-hover || root.highlighted == index ? Theme.hover : transparent;
+                                    accessible-role: button;
+                                    accessible-label: root.choice-label(choice);
+                                    accessible-action-default => { root.choose(index); }
+                                    HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 6px;
+                                        Text { min-width: 0px; horizontal-stretch: 1; text: root.choice-label(choice); overflow: elide; color: Theme.text; vertical-alignment: center; }
+                                        if root.selected-index == choice.source-index: VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: @image-url("icons/check.svg"); colorize: Theme.link; } }
+                                    }
+                                    row-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(index); } }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
