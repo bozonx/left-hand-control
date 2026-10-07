@@ -8,7 +8,7 @@ import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, CheckBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, hold-timeout: string, double-timeout: string, enabled: bool }
+export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, hold-timeout: string, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -16,6 +16,8 @@ export global RulesEditor {
     in property <[RuleRow]> rows;
     in-out property <int> selected: -1;
     in property <Message> status;
+    in property <string> default-hold-timeout;
+    in property <string> default-double-timeout;
     /// Fields of the selected rule, filled by `select`.
     in-out property <string> key;
     in-out property <string> layer;
@@ -53,6 +55,7 @@ export global RulesEditor {
     callback choose(string);
     callback filter-layers(string);
     callback apply-conditions();
+    callback apply-advanced();
     callback create-layer(string);
 }
 
@@ -61,11 +64,14 @@ component RuleCell inherits VerticalBox {
     in property <string> title;
     in property <string> value;
     in property <string> empty-text: @tr("Not set");
+    in property <bool> enabled: true;
     callback clicked();
     spacing: 5px;
     horizontal-stretch: 1;
+    min-width: 0px;
+    preferred-width: 0px;
     Text { min-width: 0px; wrap: word-wrap; text: root.title; color: Theme.muted; }
-    Button { min-width: 0px; text: root.value == "" ? root.empty-text : root.value; clicked => { root.clicked(); } }
+    Button { enabled: root.enabled; min-width: 0px; text: root.value == "" ? root.empty-text : root.value; clicked => { root.clicked(); } }
 }
 
 export component RulesPage inherits VerticalBox {
@@ -81,11 +87,12 @@ export component RulesPage inherits VerticalBox {
         Button { max-height: 36px; text: @tr("+ Add rule"); clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
     }
     rule-scroll := ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-        VerticalLayout { spacing: 10px;
+        VerticalLayout { width: rule-scroll.visible-width; spacing: 10px;
             for rule[index] in RulesEditor.rows: Rectangle {
-                min-height: 240px;
+                min-height: 180px;
+                min-width: 0px;
                 background: Theme.card;
-                border-color: RulesEditor.selected == index || (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.accent : Theme.border;
+                border-color: (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.accent : Theme.border;
                 border-width: 1px;
                 border-radius: 10px;
                 opacity: ItemStyle.opacity(rule.enabled) * (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index ? 0.6 : 1);
@@ -99,24 +106,28 @@ export component RulesPage inherits VerticalBox {
                         if rule.key == "": Text { text: @tr("New rule: choose a trigger"); color: Theme.warning; font-size: 12px; wrap: word-wrap; }
                         RuleCell { title: @tr("Trigger"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                         HorizontalLayout { spacing: 6px; alignment: start;
-                            IconButton { icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
-                            IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); danger: true; clicked => { RulesEditor.open-dialog(index, RuleDialog.remove); } }
+                            IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                         }
                     }
                     Rectangle { width: 1px; background: Theme.border; }
-                    VerticalLayout { spacing: 12px;
+                    VerticalLayout { min-width: 0px; spacing: 12px; opacity: rule.key == "" ? 0.5 : 1;
                         HorizontalLayout { spacing: 12px;
-                            RuleCell { title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
-                            RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
-                            RuleCell { title: @tr("Hold timeout, ms"); value: rule.hold-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold-timeout); } }
+                            RuleCell { enabled: rule.key != ""; title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
+                            RuleCell { enabled: rule.key != ""; title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
                         }
                         Rectangle { height: 1px; background: Theme.border; }
                         HorizontalLayout { spacing: 12px;
-                            RuleCell { title: @tr("Tap action"); value: rule.tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
-                            RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
-                            RuleCell { title: @tr("Hold button"); value: rule.hold; clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
+                            RuleCell { enabled: rule.key != ""; title: @tr("Tap action"); value: rule.tap; empty-text: rule.swallow-tap ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
+                            RuleCell { enabled: rule.key != ""; title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                            RuleCell { enabled: rule.key != ""; title: @tr("Hold button"); value: rule.hold; empty-text: rule.swallow-hold ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
                         }
-                        RuleCell { title: @tr("Double-tap ms"); value: rule.double-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-timeout); } }
+                        if rule.hold-timeout != "" || rule.double-timeout != "" || rule.advanced: Text {
+                            text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
+                                + (rule.hold-timeout != "" && rule.double-timeout != "" ? " · " : "")
+                                + (rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "")
+                                + (rule.advanced ? (rule.hold-timeout != "" || rule.double-timeout != "" ? " · " : "") + @tr("Custom hold options") : "");
+                            color: Theme.muted; wrap: word-wrap;
+                        }
                     }
                 }
                 DropMarker { width: parent.width; group: 1; index: index; row-y: parent.y; row-height: parent.height; }
@@ -176,12 +187,18 @@ export component RuleDialogOverlay inherits FocusScope {
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     VerticalLayout { spacing: 8px;
-                        CheckBox { text: @tr("Swallow tap"); checked <=> RulesEditor.swallow-tap; toggled => { RulesEditor.edit(RuleField.swallow-tap, self.checked ? "true" : "false"); } }
-                        CheckBox { text: @tr("Swallow hold"); checked <=> RulesEditor.swallow-hold; toggled => { RulesEditor.edit(RuleField.swallow-hold, self.checked ? "true" : "false"); } }
-                        Text { text: @tr("Isolate"); color: Theme.text; }
-                        LineEdit { text <=> RulesEditor.isolate; accepted => { RulesEditor.edit(RuleField.isolate, RulesEditor.isolate); } }
-                        Text { text: @tr("Hold for"); color: Theme.text; }
-                        LineEdit { text <=> RulesEditor.hold-for; accepted => { RulesEditor.edit(RuleField.hold-for, RulesEditor.hold-for); } }
+                        Text { text: @tr("Hold timeout, ms"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.hold-timeout; placeholder-text: @tr("Default: {} ms", RulesEditor.default-hold-timeout); }
+                        Text { text: @tr("Double-tap ms"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.double-timeout; placeholder-text: @tr("Default: {} ms", RulesEditor.default-double-timeout); }
+                        Text { text: @tr("Leave empty to use the global timing settings."); color: Theme.muted; wrap: word-wrap; }
+                        Text { text: @tr("Release held action for these keys"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.isolate; enabled: RulesEditor.hold != "" && !RulesEditor.swallow-hold; placeholder-text: @tr("For example: KeyW, KeyE"); }
+                        Text { text: @tr("Temporarily releases the held key or modifier while these keys are pressed in the layer."); color: Theme.muted; wrap: word-wrap; }
+                        Text { text: @tr("Activate held action only with these keys"); color: Theme.text; }
+                        LineEdit { text <=> RulesEditor.hold-for; enabled: RulesEditor.hold != "" && !RulesEditor.swallow-hold && RulesEditor.layer != ""; placeholder-text: @tr("For example: Tab"); }
+                        Text { text: @tr("Defers the held action until one of these keys is pressed in the layer. Requires a hold action and a layer."); color: Theme.muted; wrap: word-wrap; }
+                        Button { text: @tr("Delete rule"); clicked => { RulesEditor.dialog = RuleDialog.remove; } }
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.remove: Text { text: @tr("This rule will be removed from the current layout."); color: Theme.muted; }
@@ -194,6 +211,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 if RulesEditor.dialog != RuleDialog.conditions: Rectangle { vertical-stretch: 1; }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Button {
+                        visible: RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions;
                         text: @tr("Clear");
                         enabled: RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.remove;
                         clicked => { RulesEditor.choose(""); }
@@ -209,9 +227,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             } else if RulesEditor.dialog == RuleDialog.remove {
                                 RulesEditor.remove();
                             } else if RulesEditor.dialog == RuleDialog.advanced {
-                                RulesEditor.edit(RuleField.isolate, RulesEditor.isolate);
-                                RulesEditor.edit(RuleField.hold-for, RulesEditor.hold-for);
-                                RulesEditor.dialog = RuleDialog.none;
+                                RulesEditor.apply-advanced();
                             } else {
                                 RulesEditor.choose(RulesEditor.dialog-value);
                             }

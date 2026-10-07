@@ -151,7 +151,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         let picker = ui.global::<ActionPicker>();
         picker.set_layer_action(target == PickerTarget::LayerAction && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None);
-        picker.set_ignore_key(picker.get_layer_action() && ui.global::<LayersEditor>().get_assignment() == crate::ui::Assignment::Swallow);
+        let rule_field = ui.global::<crate::ui::RulesEditor>().get_field();
+        let rule_action = target == PickerTarget::Rule && matches!(rule_field, crate::ui::RuleDialog::Tap | crate::ui::RuleDialog::Hold);
+        picker.set_rule_action(rule_action);
+        picker.set_ignore_key((picker.get_layer_action() && ui.global::<LayersEditor>().get_assignment() == crate::ui::Assignment::Swallow)
+            || (rule_action && if rule_field == crate::ui::RuleDialog::Tap { ui.global::<crate::ui::RulesEditor>().get_swallow_tap() } else { ui.global::<crate::ui::RulesEditor>().get_swallow_hold() }));
         picker.set_error(Msg::None.to_ui());
         picker.set_key_only(key_only);
         picker.set_macro_step(target == PickerTarget::MacroStep);

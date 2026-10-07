@@ -7,6 +7,7 @@ export struct PickerItem { value: string, label: string, category: int }
 export global ActionPicker {
     in-out property <bool> opened;
     in-out property <bool> layer-action;
+    in-out property <bool> rule-action;
     in-out property <bool> ignore-key;
     in-out property <Message> error;
     in-out property <bool> key-only;
@@ -75,10 +76,11 @@ export component PickerOverlay inherits Rectangle {
                 Text { text: @tr("Current value"); color: Theme.muted; }
                 HorizontalBox { vertical-stretch: 0;
                     LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.refresh(); } }
-                    if ActionPicker.layer-action: Button { text: @tr("Ignore key"); primary: ActionPicker.ignore-key; clicked => { ActionPicker.ignore-key = true; ActionPicker.value = ""; ActionPicker.refresh(); } }
-                    Button { text: @tr("Clear"); clicked => { ActionPicker.ignore-key = false; ActionPicker.value = ""; ActionPicker.refresh(); } }
+                    if ActionPicker.layer-action || ActionPicker.rule-action: Button { text: ActionPicker.rule-action ? @tr("Swallow key") : @tr("Ignore key"); primary: ActionPicker.ignore-key; clicked => { ActionPicker.ignore-key = true; ActionPicker.value = ""; ActionPicker.refresh(); } }
+                    Button { text: @tr("Clear"); enabled: !ActionPicker.key-only; clicked => { ActionPicker.ignore-key = false; ActionPicker.value = ""; ActionPicker.refresh(); } }
                     Button { text: ActionPicker.capturing ? @tr("Stop capture") : @tr("Capture key"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
                 }
+                if ActionPicker.rule-action: Text { text: @tr("Clear restores normal key behavior. Swallow prevents the key from reaching the application."); color: Theme.muted; wrap: word-wrap; }
                 if ActionPicker.capturing: Text { text: ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
                 if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
                 if !ActionPicker.valid: Text { text: @tr("Choose a valid key or action."); color: Theme.error; }

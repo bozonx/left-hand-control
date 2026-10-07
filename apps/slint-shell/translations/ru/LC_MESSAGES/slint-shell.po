@@ -1338,3 +1338,48 @@ msgstr "Триггер"
 
 msgid "New rule: choose a trigger"
 msgstr "Новое правило: укажите триггер"
+
+msgid "Swallow key"
+msgstr "Поглощать клавишу"
+
+msgid "Pass through"
+msgstr "Обычное поведение"
+
+msgid "Hold: {} ms"
+msgstr "Удержание: {} мс"
+
+msgid "Double tap: {} ms"
+msgstr "Двойное нажатие: {} мс"
+
+msgid "Custom hold options"
+msgstr "Особые параметры удержания"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "Оставьте пустым, чтобы использовать общие настройки времени."
+
+msgid "Release held action for these keys"
+msgstr "Отпускать удерживаемую клавишу для"
+
+msgid "For example: KeyW, KeyE"
+msgstr "Например: KeyW, KeyE"
+
+msgid "Temporarily releases the held key or modifier while these keys are pressed in the layer."
+msgstr "Временно отпускает удерживаемую клавишу или модификатор, пока эти клавиши нажаты в слое."
+
+msgid "Activate held action only with these keys"
+msgstr "Активировать удержание только вместе с"
+
+msgid "For example: Tab"
+msgstr "Например: Tab"
+
+msgid "Defers the held action until one of these keys is pressed in the layer. Requires a hold action and a layer."
+msgstr "Откладывает удержание до нажатия одной из этих клавиш в слое. Нужны действие удержания и слой."
+
+msgid "Delete rule"
+msgstr "Удалить правило"
+
+msgid "Default: {} ms"
+msgstr "По умолчанию: {} мс"
+
+msgid "Clear restores normal key behavior. Swallow prevents the key from reaching the application."
+msgstr "Очистка возвращает обычное поведение клавиши. Поглощение не передаёт клавишу приложению."

@@ -68,6 +68,8 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     let config = document.read();
     let layout = config.layout();
     let editor = ui.global::<RulesEditor>();
+    editor.set_default_hold_timeout(config.settings().default_hold_timeout_ms.to_string().into());
+    editor.set_default_double_timeout(config.settings().default_double_tap_timeout_ms.to_string().into());
     editor.set_rows(ModelRc::new(VecModel::from(
         layout
             .rules
@@ -82,6 +84,9 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 hold_timeout: timeout_text(rule.hold_timeout_ms).into(),
                 double_timeout: timeout_text(rule.double_tap_timeout_ms).into(),
                 enabled: rule.is_enabled(),
+                swallow_tap: rule.tap_action.is_none(),
+                swallow_hold: rule.hold_action.is_none(),
+                advanced: rule.isolate.is_some() || rule.hold_for.is_some(),
             })
             .collect::<Vec<_>>(),
     )));
@@ -196,6 +201,17 @@ fn set_field(rule: &mut LayerRule, field: RuleField, value: &str, current: &str)
 pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> Result<(), Msg> {
     let editor = ui.global::<RulesEditor>();
     let property = editor.get_field();
+    if property == RuleDialog::Key && editor.get_selected() == -1 {
+        if value.trim().is_empty() { return Err(Msg::None); }
+        change(ui, document, true, |layout| {
+            let id = unique_rule_id(&layout.rules);
+            layout.rules.insert(0, LayerRule::new(id, value));
+        })?;
+        editor.set_selected(0);
+        refresh(ui, document, true);
+        editor.set_field(RuleDialog::None);
+        return Ok(());
+    }
     let index = selected(ui, document).ok_or(Msg::None)?;
     // Validate before saving so a bad value leaves the rule untouched.
     set_property(&mut LayerRule::new(String::new(), ""), property, value).inspect_err(|error| {
@@ -203,6 +219,13 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
     })?;
     change_rule(ui, document, index, true, |rule| {
         let _ = set_property(rule, property, value);
+        if ui.global::<ActionPicker>().get_ignore_key() && value.is_empty() {
+            match property {
+                RuleDialog::Tap => rule.tap_action = None,
+                RuleDialog::Hold => rule.hold_action = None,
+                _ => {}
+            }
+        }
     })?;
     editor.set_dialog(RuleDialog::None);
     editor.set_field(RuleDialog::None);
@@ -255,17 +278,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     let weak = ui.as_weak();
-    let doc = document.clone();
     editor.on_add(move || {
         let Some(ui) = weak.upgrade() else { return };
-        let result = change(&ui, &doc, true, |layout| {
-            let id = unique_rule_id(&layout.rules);
-            layout.rules.insert(0, LayerRule::new(id, ""));
-        });
-        if result.is_ok() {
-            ui.global::<RulesEditor>().set_selected(0);
-            refresh(&ui, &doc, true);
-        }
+        let editor = ui.global::<RulesEditor>();
+        editor.set_selected(-1);
+        editor.set_field(RuleDialog::Key);
+        editor.set_dialog(RuleDialog::None);
+        ui.global::<ActionPicker>().invoke_open(PickerTarget::Rule, -1, "".into(), true);
     });
 
     let weak = ui.as_weak();
@@ -416,6 +435,28 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         if result.is_ok() {
             editor.set_dialog(RuleDialog::None);
         }
+    });
+
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    editor.on_apply_advanced(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let Some(index) = selected(&ui, &doc) else { return };
+        let editor = ui.global::<RulesEditor>();
+        let timeouts = parse_timeout(&editor.get_hold_timeout())
+            .and_then(|hold| parse_timeout(&editor.get_double_timeout()).map(|double| (hold, double)));
+        let (hold, double) = match timeouts {
+            Ok(values) => values,
+            Err(error) => { editor.set_status(error.to_ui()); return; }
+        };
+        let isolate = optional(&editor.get_isolate());
+        let hold_for = optional(&editor.get_hold_for());
+        if change_rule(&ui, &doc, index, true, |rule| {
+            rule.hold_timeout_ms = hold;
+            rule.double_tap_timeout_ms = double;
+            rule.isolate = isolate;
+            rule.hold_for = hold_for;
+        }).is_ok() { editor.set_dialog(RuleDialog::None); }
     });
 
     let weak = ui.as_weak();
