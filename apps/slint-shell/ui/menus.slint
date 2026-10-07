@@ -413,52 +413,63 @@ component CommandCard inherits Card {
 
     callback remove();
     callback copy(string);
-    VerticalLayout {
+    HorizontalLayout {
         padding: 16px;
-        spacing: 12px;
-        HorizontalLayout {
-            spacing: 12px;
-            VerticalLayout {
-                horizontal-stretch: 1;
-                spacing: 4px;
-                HorizontalLayout {
-                    spacing: 6px;
-                    alignment: start;
-                    FieldLabel { text: @tr("ID"); vertical-alignment: center; }
-                    InfoTip { text: @tr("Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab."); }
-                }
-                HorizontalLayout {
-                    spacing: 6px;
-                    InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.id; placeholder: "id"; label: @tr("Command ID"); saved(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
-                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
-                }
-            }
-            VerticalLayout {
-                horizontal-stretch: 1;
-                spacing: 4px;
-                HorizontalLayout {
-                    spacing: 6px;
-                    alignment: start;
-                    FieldLabel { text: @tr("Name"); vertical-alignment: center; }
-                    InfoTip { text: @tr("Human-readable name shown in picker lists."); }
-                }
-                InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.name; placeholder: @tr("Command name"); label: @tr("Name"); saved(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
-            }
+        spacing: 20px;
+        VerticalLayout {
+            width: 360px;
+            horizontal-stretch: 0;
+            spacing: 14px;
+            alignment: start;
             HorizontalLayout {
                 spacing: 2px;
-                alignment: start;
                 DragHandle { group: 5; index: root.index; count: MenuEditor.commands.length; dropped(from, to) => { MenuEditor.move-command(from, to); } }
+                Rectangle { horizontal-stretch: 1; }
                 IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete command"); danger: true; clicked => { root.remove(); } }
             }
+            VerticalLayout {
+                spacing: 12px;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: start;
+                        FieldLabel { text: @tr("ID"); vertical-alignment: center; }
+                        InfoTip { text: @tr("Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab."); }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.id; placeholder: "id"; label: @tr("Command ID"); saved(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
+                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
+                    }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: start;
+                        FieldLabel { text: @tr("Name"); vertical-alignment: center; }
+                        InfoTip { text: @tr("Human-readable name shown in picker lists."); }
+                    }
+                    InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.name; placeholder: @tr("Command name"); label: @tr("Name"); saved(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
+                }
+            }
+            if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
+            if root.item.usage.length > 0: HorizontalLayout {
+                spacing: 4px;
+                alignment: start;
+                Text { text: @tr("Used in:"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+                for place in root.item.usage: Badge { text: place; }
+            }
         }
-        if root.item.usage.length > 0: HorizontalLayout {
-            spacing: 4px;
-            alignment: start;
-            Text { text: @tr("Used in:"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
-            for place in root.item.usage: Badge { text: place; }
-        }
+        Rectangle { width: 1px; background: Theme.border; }
         VerticalLayout {
-            spacing: 4px;
+            horizontal-stretch: 1;
+            min-width: 0px;
+            spacing: 12px;
+            alignment: start;
             HorizontalLayout {
                 spacing: 6px;
                 alignment: start;
@@ -475,7 +486,6 @@ component CommandCard inherits Card {
                 saved(value) => { MenuEditor.set-command(root.index, CommandField.linux, value); }
             }
         }
-        if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
     }
     DropMarker { width: parent.width; group: 5; index: root.index; row-y: root.y; row-height: root.height; }
 }
