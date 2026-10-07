@@ -224,69 +224,72 @@ export component LayersPage inherits VerticalLayout {
     padding: 0px;
     in-out property <int> label-mode <=> LayersEditor.label-mode;
 
-    private property <string> test-text;
 
     vertical-stretch: 1;
+    spacing: 16px;
+    HorizontalLayout {
+        padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+        ScrollView { height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed;
+            HorizontalLayout { spacing: 6px; alignment: start;
+                for name[index] in LayersEditor.names: Rectangle {
+                    height: 36px; border-radius: 6px; border-width: 1px;
+                    border-color: DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index ? Theme.link : Theme.border;
+                    background: index == LayersEditor.selected ? Theme.accent : layer-touch.has-hover ? Theme.hover : Theme.card;
+                    opacity: DragDrop.dragging && DragDrop.group == 2 && DragDrop.source == index ? 0.6 : 1;
+                    init => { DragDrop.row(2, index, self.x, self.width); }
+                    changed x => { DragDrop.row(2, index, self.x, self.width); }
+                    changed width => { DragDrop.row(2, index, self.x, self.width); }
+                    accessible-role: button;
+                    accessible-label: name;
+                    accessible-action-default => { LayersEditor.choose(index); }
+                    HorizontalLayout {
+                        padding-left: 12px; padding-right: 12px;
+                        Text { text: name; color: Theme.text; font-size: 13px; font-weight: 600; vertical-alignment: center; }
+                    }
+                    FocusScope {
+                        key-pressed(event) => {
+                            if event.text == " " || event.text == "\n" { LayersEditor.choose(index); return accept; }
+                            return reject;
+                        }
+                    }
+                    layer-touch := TouchArea {
+                        mouse-cursor: DragDrop.dragging && self.pressed ? grabbing : pointer;
+                        pointer-event(event) => {
+                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                                DragDrop.group = 2; DragDrop.source = index; DragDrop.target = index;
+                            }
+                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == 2 {
+                                let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
+                                DragDrop.reset();
+                                if moved { if from != to { LayersEditor.reorder(from, to); } }
+                                else { LayersEditor.choose(index); }
+                            }
+                            if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
+                        }
+                        moved => {
+                            if self.pressed && DragDrop.group == 2 {
+                                DragDrop.offset = self.mouse-x - self.pressed-x;
+                                if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
+                                if DragDrop.dragging { DragDrop.target = DragDrop.locate(2, index, DragDrop.offset, LayersEditor.names.length); }
+                            }
+                        }
+                    }
+                    if DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index && DragDrop.target != DragDrop.source: Rectangle {
+                        x: DragDrop.target > DragDrop.source ? parent.width + 1px : -4px;
+                        width: 3px; height: parent.height; background: Theme.link;
+                    }
+                }
+                VerticalLayout { alignment: center;
+                    IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Create new layer"); primary: true; clicked => { LayersEditor.open-dialog(LayerDialog.create, -1); } }
+                }
+            }
+        }
+    }
     ScrollView {
         viewport-width: self.visible-width;
         vertical-stretch: 1;
         VerticalLayout { padding: 0px;
             spacing: 16px;
-            ScrollView { height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed;
-                HorizontalLayout { spacing: 6px; alignment: start;
-                    for name[index] in LayersEditor.names: Rectangle {
-                        height: 36px; border-radius: 6px; border-width: 1px;
-                        border-color: DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index ? Theme.link : Theme.border;
-                        background: index == LayersEditor.selected ? Theme.accent : layer-touch.has-hover ? Theme.hover : Theme.card;
-                        opacity: DragDrop.dragging && DragDrop.group == 2 && DragDrop.source == index ? 0.6 : 1;
-                        init => { DragDrop.row(2, index, self.x, self.width); }
-                        changed x => { DragDrop.row(2, index, self.x, self.width); }
-                        changed width => { DragDrop.row(2, index, self.x, self.width); }
-                        accessible-role: button;
-                        accessible-label: name;
-                        accessible-action-default => { LayersEditor.choose(index); }
-                        HorizontalLayout {
-                            padding-left: 12px; padding-right: 12px;
-                            Text { text: name; color: Theme.text; font-size: 13px; font-weight: 600; vertical-alignment: center; }
-                        }
-                        FocusScope {
-                            key-pressed(event) => {
-                                if event.text == " " || event.text == "\n" { LayersEditor.choose(index); return accept; }
-                                return reject;
-                            }
-                        }
-                        layer-touch := TouchArea {
-                            mouse-cursor: DragDrop.dragging && self.pressed ? grabbing : pointer;
-                            pointer-event(event) => {
-                                if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                                    DragDrop.group = 2; DragDrop.source = index; DragDrop.target = index;
-                                }
-                                if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == 2 {
-                                    let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
-                                    DragDrop.reset();
-                                    if moved { if from != to { LayersEditor.reorder(from, to); } }
-                                    else { LayersEditor.choose(index); }
-                                }
-                                if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
-                            }
-                            moved => {
-                                if self.pressed && DragDrop.group == 2 {
-                                    DragDrop.offset = self.mouse-x - self.pressed-x;
-                                    if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
-                                    if DragDrop.dragging { DragDrop.target = DragDrop.locate(2, index, DragDrop.offset, LayersEditor.names.length); }
-                                }
-                            }
-                        }
-                        if DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index && DragDrop.target != DragDrop.source: Rectangle {
-                            x: DragDrop.target > DragDrop.source ? parent.width + 1px : -4px;
-                            width: 3px; height: parent.height; background: Theme.link;
-                        }
-                    }
-                    VerticalLayout { alignment: center;
-                        IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Create new layer"); primary: true; clicked => { LayersEditor.open-dialog(LayerDialog.create, -1); } }
-                    }
-                }
-            }
             // Layer toolbar
             Card {
                 VerticalLayout {
@@ -294,17 +297,33 @@ export component LayersPage inherits VerticalLayout {
                     spacing: 12px;
                     HorizontalLayout {
                         spacing: 12px;
-                        Text { text: @tr("Layer") + ":"; color: Theme.text; font-size: 13px; vertical-alignment: center; }
+                        Text { horizontal-stretch: 0; text: @tr("Layer") + ":"; color: Theme.text; font-size: 13px; vertical-alignment: center; }
                         InlineTextField {
                             horizontal-stretch: 1; min-width: 0px;
                             text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
                             label: @tr("Name"); text-weight: 600;
                             saved(value) => { LayersEditor.update-name(value); }
                         }
-                        LineEdit { width: 200px; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
-                        IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Clear"); enabled: root.test-text != ""; clicked => { root.test-text = ""; } }
-                        IconButton { icon: @image-url("icons/copy.svg"); text: @tr("Duplicate"); tooltip: @tr("Duplicate layer"); enabled: LayersEditor.selected >= 0; clicked => { LayersEditor.open-dialog(LayerDialog.duplicate, -1); } }
-                        IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Delete layer"); enabled: LayersEditor.selected >= 0; clicked => { LayersEditor.open-dialog(LayerDialog.delete, -1); } }
+                        Rectangle { horizontal-stretch: 1; }
+                        Rectangle {
+                            width: 36px; height: 32px;
+                            Button {
+                                width: parent.width; height: parent.height; text: "…";
+                                enabled: LayersEditor.selected >= 0;
+                                clicked => { layer-menu.show(); }
+                            }
+                            layer-menu := PopupWindow {
+                                x: parent.width - self.width; y: parent.height;
+                                width: 180px;
+                                Rectangle {
+                                    background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                                    VerticalLayout { padding: 4px; spacing: 0px;
+                                        IconButton { height: 36px; icon: @image-url("icons/copy.svg"); text: @tr("Duplicate"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.duplicate, -1); } }
+                                        IconButton { height: 36px; icon: @image-url("icons/trash-2.svg"); text: @tr("Delete layer"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.delete, -1); } }
+                                    }
+                                }
+                            }
+                        }
                     }
                     if LayersEditor.selected >= 0: InlineTextArea {
                         text: LayersEditor.description; placeholder: @tr("Add description"); label: @tr("Layer description");

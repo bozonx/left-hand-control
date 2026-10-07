@@ -13,7 +13,7 @@ import { Badge, InlineEditors, IconButton } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
-import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
 
 export component SettingsWindow inherits Window {
     background: Theme.surface;
@@ -24,6 +24,7 @@ export component SettingsWindow inherits Window {
     min-width: 940px;
     min-height: 700px;
     in-out property <Page> page: Page.layouts;
+    private property <string> test-text;
 
     public function navigate(page: Page, kind: MenuKind) {
         InlineEditors.commit-revision += 1;
@@ -51,7 +52,16 @@ export component SettingsWindow inherits Window {
                     padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
                     Button { text: @tr("Layouts"); primary: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } }
                     Button { text: @tr("Settings"); primary: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } }
-                    Rectangle { horizontal-stretch: 1; }
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        min-width: 180px;
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 4px;
+                            LineEdit { preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
+                            IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Clear"); enabled: root.test-text != ""; clicked => { root.test-text = ""; } }
+                        }
+                    }
                     VerticalLayout { alignment: center; Badge {
                         text: AppState.keyboard-language == "" ? "—" : AppState.keyboard-language;
                         Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system"); color: Theme.text; } } } }
@@ -80,7 +90,7 @@ export component SettingsWindow inherits Window {
             }
             Rectangle { height: 1px; background: Theme.border; }
             Rectangle {
-                height: 58px;
+                height: 58px + (editor-tabs.viewport-width > editor-tabs.visible-width ? Theme.scrollbar-size + Theme.scrollbar-gap : 0px);
                 HorizontalLayout {
                     padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
                     Text { text: LayoutLibrary.current-label == "" ? @tr("Custom layout") : LayoutLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
@@ -90,7 +100,7 @@ export component SettingsWindow inherits Window {
                         discard => { InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh(); }
                         save-as => { LayoutLibrary.save-as-name = ""; LayoutLibrary.save-as-open = true; }
                     }
-                    ScrollView {
+                    editor-tabs := ScrollView {
                         vertical-scrollbar-policy: always-off;
                         horizontal-scrollbar-policy: as-needed;
                         horizontal-stretch: 1;

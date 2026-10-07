@@ -72,7 +72,7 @@ export component ScrollView {
     vertical-stretch: 1;
     content := Flickable {
         width: max(0px, root.width - (root.vertical-scrollbar-policy != ScrollBarPolicy.always-off ? root.scrollbar-size + root.scrollbar-gap : 0px));
-        height: max(0px, root.height - (root.horizontal-scrollbar-policy != ScrollBarPolicy.always-off ? root.scrollbar-size + root.scrollbar-gap : 0px));
+        height: max(0px, root.height - (root.horizontal ? root.scrollbar-size + root.scrollbar-gap : 0px));
         interactive: root.mouse-drag-pan-enabled;
         flicked => { root.scrolled(); }
         @children

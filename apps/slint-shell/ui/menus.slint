@@ -233,7 +233,7 @@ export component EmojiPage inherits Rectangle {
                 horizontal-stretch: 1;
                 spacing: 16px;
                 alignment: start;
-                PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
+                    PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
                 HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
             }
             Card {
@@ -306,87 +306,95 @@ export component QuickActionsPage inherits Rectangle {
     vertical-stretch: 1;
     private property <bool> confirming;
     private property <bool> filled: MenuEditor.selected-cell >= 0 && MenuEditor.cells[MenuEditor.selected-cell].value != "";
-    ScrollView {
-        width: 100%;
-        height: 100%;
-        viewport-width: self.visible-width;
-        VerticalLayout { padding: 0px;
-            alignment: start;
-            Rectangle {
-                VerticalLayout {
-                    padding: 0px;
-                    spacing: 16px;
-                    CardHeader {
-                        title: @tr("Quick Actions");
-                        info: @tr("Opened by the app:showQuickMenu1...5 actions.");
-                    }
-                    HorizontalLayout {
+    VerticalLayout {
+        padding: 0px;
+        spacing: 16px;
+        CardHeader {
+            vertical-stretch: 0;
+            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+            title: @tr("Quick Actions");
+            info: @tr("Opened by the app:showQuickMenu1...5 actions.");
+        }
+        HorizontalLayout {
+            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
+        }
+        ScrollView {
+            vertical-stretch: 1;
+            viewport-width: self.visible-width;
+            VerticalLayout { padding: 0px;
+                alignment: start;
+                Rectangle {
+                    VerticalLayout {
+                        padding: 0px;
                         spacing: 16px;
-                        VerticalLayout {
-                            horizontal-stretch: 1;
+                        HorizontalLayout {
                             spacing: 16px;
-                            alignment: start;
-                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
-                            HotkeyGrid {
-                                emoji: false;
-                                activate(index) => {
-                                    if MenuEditor.cells[index].value == "" {
-                                        ActionPicker.open(PickerTarget.quick-action, index, "", false);
-                                    } else {
-                                        MenuEditor.select-cell(index);
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                spacing: 16px;
+                                alignment: start;
+                                HotkeyGrid {
+                                    emoji: false;
+                                    activate(index) => {
+                                        if MenuEditor.cells[index].value == "" {
+                                            ActionPicker.open(PickerTarget.quick-action, index, "", false);
+                                        } else {
+                                            MenuEditor.select-cell(index);
+                                        }
                                     }
                                 }
                             }
-                        }
-                        Card {
-                            width: 360px;
-                            VerticalLayout {
-                                padding: 14px;
-                                spacing: 12px;
-                                alignment: start;
-                                PageEditor { remove => { root.confirming = true; } }
-                                Rectangle { height: 1px; background: Theme.border; }
-                                if MenuEditor.selected-cell >= 0: FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
-                                if root.filled: VerticalLayout {
-                                    spacing: 4px;
-                                    FieldLabel { text: @tr("Label"); }
-                                    LineEdit { text <=> MenuEditor.name; placeholder-text: @tr("e.g. Next Track"); edited => { MenuEditor.set-name(); } }
-                                }
-                                if root.filled: VerticalLayout {
-                                    spacing: 4px;
-                                    FieldLabel { text: @tr("Action"); }
-                                    HorizontalLayout {
+                            Card {
+                                width: 360px;
+                                VerticalLayout {
+                                    padding: 14px;
+                                    spacing: 12px;
+                                    alignment: start;
+                                    PageEditor { remove => { root.confirming = true; } }
+                                    Rectangle { height: 1px; background: Theme.border; }
+                                    if MenuEditor.selected-cell >= 0: FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
+                                    if root.filled: VerticalLayout {
                                         spacing: 4px;
-                                        Rectangle {
-                                            height: 34px;
-                                            border-radius: 6px;
-                                            border-width: 1px;
-                                            border-color: action-focus.has-focus ? Theme.text : Theme.border;
-                                            background: action-touch.has-hover ? Theme.hover : Theme.surface;
-                                            accessible-role: button;
-                                            accessible-label: @tr("Action");
-                                            accessible-value: MenuEditor.value;
-                                            accessible-action-default => { self.pick(); }
-                                            function pick() { ActionPicker.open(PickerTarget.quick-action, MenuEditor.selected-cell, MenuEditor.value, false); }
-                                            Text {
-                                                x: 10px;
-                                                width: parent.width - 20px;
-                                                text: MenuEditor.value;
-                                                color: Theme.text;
-                                                font-family: "monospace";
-                                                font-size: 12px;
-                                                overflow: elide;
-                                                vertical-alignment: center;
-                                            }
-                                            action-focus := FocusScope {
-                                                key-pressed(event) => {
-                                                    if event.text == " " || event.text == "\n" { parent.pick(); return accept; }
-                                                    return reject;
+                                        FieldLabel { text: @tr("Label"); }
+                                        LineEdit { text <=> MenuEditor.name; placeholder-text: @tr("e.g. Next Track"); edited => { MenuEditor.set-name(); } }
+                                    }
+                                    if root.filled: VerticalLayout {
+                                        spacing: 4px;
+                                        FieldLabel { text: @tr("Action"); }
+                                        HorizontalLayout {
+                                            spacing: 4px;
+                                            Rectangle {
+                                                height: 34px;
+                                                border-radius: 6px;
+                                                border-width: 1px;
+                                                border-color: action-focus.has-focus ? Theme.text : Theme.border;
+                                                background: action-touch.has-hover ? Theme.hover : Theme.surface;
+                                                accessible-role: button;
+                                                accessible-label: @tr("Action");
+                                                accessible-value: MenuEditor.value;
+                                                accessible-action-default => { self.pick(); }
+                                                function pick() { ActionPicker.open(PickerTarget.quick-action, MenuEditor.selected-cell, MenuEditor.value, false); }
+                                                Text {
+                                                    x: 10px;
+                                                    width: parent.width - 20px;
+                                                    text: MenuEditor.value;
+                                                    color: Theme.text;
+                                                    font-family: "monospace";
+                                                    font-size: 12px;
+                                                    overflow: elide;
+                                                    vertical-alignment: center;
                                                 }
+                                                action-focus := FocusScope {
+                                                    key-pressed(event) => {
+                                                        if event.text == " " || event.text == "\n" { parent.pick(); return accept; }
+                                                        return reject;
+                                                    }
+                                                }
+                                                action-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
                                             }
-                                            action-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
+                                            VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
                                         }
-                                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
                                     }
                                 }
                             }
@@ -531,44 +539,45 @@ export component CommandsPage inherits Rectangle {
     private property <int> deleting: -1;
     private property <bool> creating: false;
     clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    ScrollView {
-        width: 100%;
-        height: 100%;
-        viewport-width: self.visible-width;
-        VerticalLayout { padding: 0px;
-            alignment: start;
-            Rectangle {
-                VerticalLayout {
-                    padding: 0px;
-                    spacing: 16px;
-                    CardHeader {
-                        title: @tr("Commands");
-                        info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -lc, one at a time. Set the maximum execution time in Settings and a working directory for each command.");
-                        VerticalLayout {
-                            alignment: center;
-                            Button {
-                                text: @tr("New command");
-                                primary: true;
-                                icon: @image-url("icons/plus.svg");
-                                colorize-icon: true;
-                                enabled: !MenuEditor.has-errors;
-                                clicked => {
-                                    if MenuEditor.commands.length == 0 && !MenuEditor.trusted { root.creating = true; }
-                                    else { MenuEditor.add-command(@tr("New command")); }
-                                }
-                            }
-                        }
+    VerticalLayout {
+        padding: 0px;
+        spacing: 16px;
+        CardHeader {
+            vertical-stretch: 0;
+            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+            title: @tr("Commands");
+            info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -lc, one at a time. Set the maximum execution time in Settings and a working directory for each command.");
+            VerticalLayout {
+                alignment: center;
+                Button {
+                    text: @tr("New command");
+                    primary: true;
+                    icon: @image-url("icons/plus.svg");
+                    colorize-icon: true;
+                    enabled: !MenuEditor.has-errors;
+                    clicked => {
+                        if MenuEditor.commands.length == 0 && !MenuEditor.trusted { root.creating = true; }
+                        else { MenuEditor.add-command(@tr("New command")); }
                     }
-                    if MenuEditor.has-errors: Text { text: @tr("Fix the existing command errors first"); color: Theme.muted; font-size: 12px; }
-                    if MenuEditor.commands.length == 0: Text { text: @tr("No commands yet. Click \"New command\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
-                    if !MenuEditor.trusted: ApprovalNotice {}
-                    if MenuEditor.trusted: ApprovedNotice {}
-                    for item[index] in MenuEditor.commands: CommandCard {
-                        index: index;
-                        item: item;
-                        remove => { root.deleting = index; }
-                        copy(value) => { clipboard.text = value; clipboard.select-all(); clipboard.copy(); }
-                    }
+                }
+            }
+        }
+        ScrollView {
+            viewport-width: self.visible-width;
+            vertical-stretch: 1;
+            VerticalLayout {
+                padding: 0px;
+                alignment: start;
+                spacing: 16px;
+                if MenuEditor.has-errors: Text { text: @tr("Fix the existing command errors first"); color: Theme.muted; font-size: 12px; }
+                if MenuEditor.commands.length == 0: Text { text: @tr("No commands yet. Click \"New command\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
+                if !MenuEditor.trusted: ApprovalNotice {}
+                if MenuEditor.trusted: ApprovedNotice {}
+                for item[index] in MenuEditor.commands: CommandCard {
+                    index: index;
+                    item: item;
+                    remove => { root.deleting = index; }
+                    copy(value) => { clipboard.text = value; clipboard.select-all(); clipboard.copy(); }
                 }
             }
         }
