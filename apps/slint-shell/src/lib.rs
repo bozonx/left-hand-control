@@ -24,6 +24,7 @@ mod spell;
 pub mod test_keyboard;
 
 pub use document::Document;
+pub use i18n::select_ui_language;
 pub use pages::bind_document;
 
 use std::time::Instant;

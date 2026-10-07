@@ -14,7 +14,7 @@ use lhc_core::profile::actions::ActionIssue;
 use lhc_core::profile::diagnostics::{RuleIssue, RuleIssueCode};
 use lhc_core::profile::model::LocalePreference;
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Language {
@@ -32,15 +32,9 @@ impl Language {
         }
     }
 
-    /// Switch Slint's `@tr` bundle. Live Preview builds interpret `.slint`
-    /// at runtime and bundle no translations, so that case is not an error.
     pub fn select_bundled(self) {
-        match slint::select_bundled_translation(self.code()) {
-            Ok(()) => {}
-            Err(slint::SelectBundledTranslationError::NoTranslationsBundled) => {
-                log::debug!("no bundled translations (live preview?)");
-            }
-            Err(error) => log::error!("select translation: {error}"),
+        if let Err(error) = select_ui_language(self.code()) {
+            log::error!("select translation: {error}");
         }
     }
 
@@ -69,6 +63,35 @@ impl Language {
 }
 
 const RUSSIAN_PO: &str = include_str!("../translations/ru/LC_MESSAGES/slint-shell.po");
+const RUSSIAN_MO: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ru.mo"));
+
+pub fn select_ui_language(code: &str) -> Result<(), String> {
+    let language = Language::from_code(code).ok_or_else(|| format!("unknown UI language: {code}"))?;
+    static RUSSIAN: OnceLock<Result<Arc<tr::MoTranslator>, String>> = OnceLock::new();
+    let translator: Option<Box<dyn i_slint_core::translations::Translator>> =
+        if language == Language::Russian {
+            let russian = RUSSIAN
+                .get_or_init(|| {
+                    tr::MoTranslator::from_vec_u8(RUSSIAN_MO.to_vec())
+                        .map(Arc::new)
+                        .map_err(|error| error.to_string())
+                })
+                .as_ref()
+                .map_err(Clone::clone)?;
+            Some(Box::new(russian.clone()))
+        } else {
+            None
+        };
+    i_slint_core::context::with_global_context(
+        || Err("initialize a Slint window before selecting the UI language".into()),
+        |context| context.set_external_translator(translator),
+    )
+    .map_err(|error| error.to_string())?;
+    match slint::select_bundled_translation(code) {
+        Ok(()) | Err(slint::SelectBundledTranslationError::NoTranslationsBundled) => Ok(()),
+        Err(error) => Err(error.to_string()),
+    }
+}
 
 /// Translate an English source string. `{n}` is replaced with `n`.
 pub fn tr(language: Language, source: &str, n: Option<u32>) -> String {
@@ -368,6 +391,20 @@ impl TrayItem {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn runtime_catalog_translates_ui_and_russian_plural_forms() {
+        use tr::Translator;
+
+        let translator = tr::MoTranslator::from_vec_u8(RUSSIAN_MO.to_vec()).unwrap();
+        assert_eq!(translator.translate("Settings", None), "Настройки");
+        for (count, suffix) in [(1, "правило"), (2, "правила"), (5, "правил"), (11, "правил"), (21, "правило")] {
+            assert_eq!(
+                translator.ntranslate(count, "Configuration loaded: {n} rule", "Configuration loaded: {n} rules", None),
+                format!("Конфигурация загружена: {{n}} {suffix}"),
+            );
+        }
+    }
 
     #[test]
     fn po_catalog_translates_rust_side_text() {

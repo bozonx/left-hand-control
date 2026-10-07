@@ -99,11 +99,12 @@ SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview
 
 ```sh
 SLINT_LIVE_PREVIEW=1 cargo run --locked -p slint-shell --features slint/live-preview --example interactions
+SLINT_LIVE_PREVIEW=1 cargo run --locked -p slint-shell --features slint/live-preview --example editor -- --smoke
 SLINT_LIVE_PREVIEW=1 cargo build --locked -p slint-shell --features slint/live-preview
 python scripts/check-slint-shell-recovery.py --popups winit --live-preview
 ```
 
-Последняя проверка временно добавляет пустую строку в `settings-page.slint`, проверяет перезагрузку и восстанавливает файл. Slint 1.17.1 в этом режиме не предоставляет встроенные переводы, поэтому проверку переводов `editor -- --smoke` запускайте без Live Preview. Spell вместе с Live Preview отдельно не проверен.
+Последняя проверка временно добавляет пустую строку в `settings-page.slint`, проверяет перезагрузку и восстанавливает файл. В обычной сборке переводы встроены Slint-компилятором, а в Live Preview тот же русский PO-каталог подключается через переводчик времени выполнения. Переключение русского и английского, включая формы множественного числа, проверяется сценарием `editor -- --smoke` в обоих режимах. Выбор языка применяется кнопкой «Сохранить настройки». Spell вместе с Live Preview отдельно не проверен.
 
 ## Где лежит конфигурация
 

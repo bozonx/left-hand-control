@@ -21,11 +21,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             count,
         };
         let locale = ui.global::<Locale>();
-        slint::select_bundled_translation("ru")?;
+        slint_shell::select_ui_language("ru")?;
+        assert_eq!(locale.invoke_text(loaded(1)), "Конфигурация загружена: 1 правило");
         assert_eq!(locale.invoke_text(loaded(5)), "Конфигурация загружена: 5 правил");
         assert_eq!(locale.invoke_text(loaded(2)), "Конфигурация загружена: 2 правила");
-        slint::select_bundled_translation("en")?;
+        slint_shell::select_ui_language("en")?;
         assert_eq!(locale.invoke_text(loaded(1)), "Configuration loaded: 1 rule");
+        slint_shell::select_ui_language("ru")?;
+        assert_eq!(locale.invoke_text(loaded(21)), "Конфигурация загружена: 21 правило");
+        slint_shell::select_ui_language("en")?;
 
         // Editing a key opens the picker; applying saves the tap action.
         let picker = ui.global::<ActionPicker>();

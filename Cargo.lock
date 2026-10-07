@@ -3092,6 +3092,7 @@ dependencies = [
  "swash",
  "sys-locale",
  "taffy",
+ "tr",
  "unicode-linebreak",
  "unicode-script",
  "unicode-segmentation",
@@ -6482,18 +6483,21 @@ dependencies = [
  "env_logger",
  "evdev 0.13.2",
  "global-hotkey",
+ "i-slint-core",
  "ksni",
  "lhc-core",
  "libc",
  "log",
  "png 0.17.16",
  "raw-window-handle",
+ "rspolib",
  "serde",
  "serde_json",
  "slint",
  "slint-build",
  "spell-framework",
  "tempfile",
+ "tr",
  "tray-icon 0.25.1",
  "wayland-backend",
  "wayland-client",
@@ -7643,6 +7647,15 @@ name = "tower-service"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
+
+[[package]]
+name = "tr"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79d30c7e79732253d80e9d619007002c8f3a362b0816e37340af648d4e2c6092"
+dependencies = [
+ "rspolib",
+]
 
 [[package]]
 name = "tracing"
