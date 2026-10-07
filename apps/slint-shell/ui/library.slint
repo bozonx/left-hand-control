@@ -349,16 +349,11 @@ export component LibraryPage inherits VerticalBox {
                         InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
                         Rectangle { vertical-stretch: 1; }
                         HorizontalLayout { spacing: 8px; alignment: start; vertical-stretch: 0;
+                            DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
                             if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: 600; vertical-alignment: center; }
                             if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
                             if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
                             if !card.current: Button { text: @tr("Edit layout"); clicked => { LayoutLibrary.edit(index); } }
-                            if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
-                        }
-                    }
-                    VerticalLayout { width: 220px; spacing: 8px; alignment: start;
-                        HorizontalLayout { alignment: end; spacing: 8px;
-                            DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
                             Rectangle {
                                 width: 44px; height: 36px;
                                 Button {
@@ -378,7 +373,10 @@ export component LibraryPage inherits VerticalBox {
                                     }
                                 }
                             }
+                            if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
                         }
+                    }
+                    VerticalLayout { width: 220px; spacing: 8px; alignment: start;
                         Text { text: @tr("{n} rule" | "{n} rules" % LayoutLibrary.summaries[index].rules); color: Theme.muted; font-size: 13px; }
                         Text { text: @tr("{n} layer" | "{n} layers" % LayoutLibrary.summaries[index].layers); color: Theme.muted; font-size: 13px; }
                         Text { text: @tr("{n} emoji page" | "{n} emoji pages" % LayoutLibrary.summaries[index].emoji-pages); color: Theme.muted; font-size: 13px; }

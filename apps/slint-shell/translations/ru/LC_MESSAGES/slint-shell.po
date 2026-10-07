@@ -1647,3 +1647,6 @@ msgstr "Shell-команды текущей раскладки. В Linux вып�
 
 msgid "Unblock commands on the Commands tab before running this action"
 msgstr "Разблокируйте команды на странице «Команды» перед запуском этого действия"
+
+msgid "Main"
+msgstr "Основное"
