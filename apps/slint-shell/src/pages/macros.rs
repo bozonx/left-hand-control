@@ -340,7 +340,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
     });
     let s = structural.clone();
+    let weak = ui.as_weak();
     editor.on_add_step(move |at, action| {
+        if action.trim().is_empty() {
+            if let Some(ui) = weak.upgrade() {
+                ui.global::<crate::ui::MacroEditor>().set_picker_macro(at);
+                ui.global::<crate::ui::ActionPicker>().invoke_open(crate::ui::PickerTarget::MacroStep, -1, "".into(), false);
+            }
+            return;
+        }
         s(&|draft| {
             if let Some(at) = index(at, draft.len()) {
                 draft[at].item.steps.push(step(action.as_str()));
@@ -371,11 +379,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     let s = structural.clone();
     editor.on_set_step(move |at, step_index, action| {
+        if action.trim().is_empty() { return; }
         s(&|draft| {
-            if let Some(step) = index(at, draft.len())
-                .and_then(|at| draft[at].item.steps.get_mut(step_index.max(0) as usize))
-                .filter(|_| step_index >= 0)
-            {
+            let Some(at) = index(at, draft.len()) else { return };
+            if step_index == -1 {
+                draft[at].item.steps.push(step(action.as_str()));
+            } else if let Some(step) = draft[at].item.steps.get_mut(step_index.max(0) as usize) {
                 step.action = action.to_string();
             }
         })

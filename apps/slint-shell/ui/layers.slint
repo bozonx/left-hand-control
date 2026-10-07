@@ -43,6 +43,7 @@ export global LayersEditor {
     callback update-name(string);
     callback add-extra();
     callback update-extra-key(int, string);
+    callback pick-extra(int, bool);
 }
 
 component ActionIcon inherits Image {
@@ -311,7 +312,7 @@ export component LayersPage inherits VerticalLayout {
                         horizontal-stretch: 1;
                         spacing: 4px;
                         Text { text: @tr("No layers yet"); color: Theme.text; font-size: 14px; font-weight: 600; }
-                        Text { text: @tr("Create a layer to assign its keys, or edit the base keyboard."); color: Theme.muted; wrap: word-wrap; }
+                        Text { text: @tr("Create a layer to assign its keys."); color: Theme.muted; wrap: word-wrap; }
                     }
                     VerticalLayout {
                         alignment: center;
@@ -420,7 +421,7 @@ export component LayersPage inherits VerticalLayout {
                             border-radius: 6px;
                             border-width: 1px;
                             border-color: Theme.border;
-                            extra-touch := TouchArea { mouse-cursor: pointer; clicked => { LayersEditor.open-dialog(LayerDialog.extra-key, index); } }
+                            extra-touch := TouchArea { mouse-cursor: pointer; clicked => { LayersEditor.pick-extra(index, false); } }
                             HorizontalLayout {
                                 padding: 10px;
                                 padding-left: 14px;
@@ -430,19 +431,22 @@ export component LayersPage inherits VerticalLayout {
                                     min-width: 0px;
                                     spacing: 2px;
                                     Text { text: @tr("Key"); color: Theme.muted; font-size: 11px; }
-                                    InlineTextField { text: extra.key; placeholder: @tr("Choose trigger key"); label: @tr("Key"); saved(value) => { LayersEditor.update-extra-key(index, value); } }
+                                    Button { text: extra.key; clicked => { LayersEditor.pick-extra(index, true); } }
                                 }
                                 VerticalLayout {
                                     horizontal-stretch: 1;
                                     min-width: 0px;
                                     spacing: 2px;
                                     Text { text: @tr("Action"); color: Theme.muted; font-size: 11px; }
-                                    ActionText { kind: extra.kind; action: extra.action; icon: extra.icon; text-size: 13px; text-alignment: left; }
+                                    Rectangle {
+                                        ActionText { kind: extra.kind; action: extra.action; icon: extra.icon; text-size: 13px; text-alignment: left; }
+                                        TouchArea { mouse-cursor: pointer; clicked => { LayersEditor.pick-extra(index, false); } }
+                                    }
                                 }
                                 HorizontalLayout {
                                     spacing: 2px;
                                     VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/pencil.svg"); tooltip: @tr("Edit"); clicked => { LayersEditor.open-dialog(LayerDialog.extra-key, index); } }
+                                        IconButton { icon: @image-url("icons/pencil.svg"); tooltip: @tr("Edit"); clicked => { LayersEditor.pick-extra(index, false); } }
                                     }
                                     VerticalLayout { alignment: center;
                                         DragHandle { group: 3; index: index; count: LayersEditor.extras.length; dropped(from, to) => { LayersEditor.move-extra(from, to); } }

@@ -81,6 +81,10 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 double_tap: rule.double_tap_action.clone().into(),
                 layer: layer_name(layout, &rule.layer_id).into(),
                 has_conditions: has_conditions(rule),
+                game: game_condition(rule.condition_game_mode.as_deref()),
+                languages: join(&rule.condition_layouts).into(),
+                applications: join(&rule.condition_apps_whitelist).into(),
+                excluded: join(&rule.condition_apps_blacklist).into(),
                 hold_timeout: timeout_text(rule.hold_timeout_ms).into(),
                 double_timeout: timeout_text(rule.double_tap_timeout_ms).into(),
                 enabled: rule.is_enabled(),
@@ -208,6 +212,11 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
             layout.rules.insert(0, LayerRule::new(id, value));
         })?;
         editor.set_selected(0);
+        editor.set_created(0);
+        let weak = ui.as_weak();
+        slint::Timer::single_shot(std::time::Duration::from_millis(1400), move || {
+            if let Some(ui) = weak.upgrade() { ui.global::<RulesEditor>().set_created(-1); }
+        });
         refresh(ui, document, true);
         editor.set_field(RuleDialog::None);
         return Ok(());

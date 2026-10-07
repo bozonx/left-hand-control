@@ -379,11 +379,24 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let _ = change(&ui, &doc, |config| config.rename_layer(&id, name.trim(), &description));
     });
     let weak = ui.as_weak();
-    let doc = document.clone();
     editor.on_add_extra(move || {
+        if let Some(ui) = weak.upgrade() {
+            ui.global::<ActionPicker>().invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
+        }
+    });
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    editor.on_pick_extra(move |index, key_only| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(id) = selected_id(&ui, &doc) else { return };
-        let _ = change(&ui, &doc, |config| config.set_layer_extra(&id, None, "", Some(String::new())));
+        open_dialog(&ui, &doc, LayerDialog::ExtraKey, index);
+        let editor = ui.global::<LayersEditor>();
+        editor.set_dialog(LayerDialog::None);
+        ui.global::<ActionPicker>().invoke_open(
+            if key_only { PickerTarget::ExtraKey } else { PickerTarget::ExtraAction },
+            index,
+            if key_only { editor.get_dialog_key() } else { editor.get_dialog_action() },
+            key_only,
+        );
     });
     let weak = ui.as_weak();
     let doc = document.clone();
@@ -519,6 +532,22 @@ pub(super) fn assign(
         KeyAssignment::Action(value.to_owned())
     };
     change(ui, document, |config| config.set_layer_key(&id, key, assignment))
+}
+
+pub(super) fn assign_extra(ui: &SettingsWindow, document: &Document, index: i32, value: &str, key_only: bool, ignore: bool) -> Result<(), Msg> {
+    let id = selected_id(ui, document).ok_or(Msg::None)?;
+    let row = usize::try_from(index).ok();
+    let existing = document.read().layout().layer_keymaps.get(&id)
+        .and_then(|map| row.and_then(|row| map.extras.get(row))).cloned();
+    let (key, action) = if key_only {
+        if value.trim().is_empty() { return Err(Msg::KeyCodeRequired); }
+        (value.to_owned(), existing.map_or(Some(String::new()), |extra| extra.action))
+    } else {
+        let extra = existing.ok_or(Msg::KeyCodeRequired)?;
+        if extra.key.is_empty() { return Err(Msg::KeyCodeRequired); }
+        (extra.key, if ignore { None } else { Some(value.to_owned()) })
+    };
+    change(ui, document, |config| config.set_layer_extra(&id, row, &key, action))
 }
 
 #[cfg(test)]

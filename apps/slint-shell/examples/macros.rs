@@ -59,6 +59,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded.layout().macros.len(), 1);
     assert_eq!(loaded.layout().macros[0].name, "Тестовый макрос");
     editor.invoke_add_step(0, "".into());
+    let picker = ui.global::<slint_shell::ui::ActionPicker>();
+    picker.set_value("KeyA".into());
+    picker.invoke_apply();
     ui.show()?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();

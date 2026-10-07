@@ -51,7 +51,7 @@ component StepRow inherits HorizontalLayout {
             border-color: pick-focus.has-focus ? Theme.text : Theme.border;
             background: pick-touch.has-hover ? Theme.hover : Theme.surface;
             accessible-role: button;
-            accessible-label: root.step.action == "" ? @tr("Pick an action") : root.step.action;
+            accessible-label: root.step.action;
             accessible-action-default => { self.pick(); }
             function pick() {
                 MacroEditor.picker-macro = root.macro-index;
@@ -59,11 +59,10 @@ component StepRow inherits HorizontalLayout {
             }
             HorizontalLayout {
                 padding-left: 10px; padding-right: 10px; spacing: 6px;
-                if root.step.action == "": Image { width: 14px; source: @image-url("icons/plus.svg"); colorize: Theme.muted; }
                 Text {
                     horizontal-stretch: 1;
-                    text: root.step.action == "" ? @tr("Pick an action") : root.step.action;
-                    color: root.step.action == "" ? Theme.muted : Theme.text;
+                    text: root.step.action;
+                    color: Theme.text;
                     font-family: "monospace";
                     font-size: 13px;
                     overflow: elide;
@@ -91,12 +90,6 @@ component StepRow inherits HorizontalLayout {
             }
             Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
         }
-        if !root.step.pause && root.step.action == "": Text {
-            text: @tr("Empty step — pick an action or remove it.");
-            color: Theme.warning;
-            font-size: 12px;
-            wrap: word-wrap;
-        }
     }
     DragHandle { group: 100 + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
     IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step"); danger: true; clicked => { root.remove(); } }
@@ -116,8 +109,16 @@ component MacroCard inherits Card {
         spacing: 20px;
         VerticalLayout {
             horizontal-stretch: 1;
+            min-width: 0px;
             spacing: 14px;
+            alignment: start;
             HorizontalLayout {
+                spacing: 2px;
+                DragHandle { group: 4; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
+                Rectangle { horizontal-stretch: 1; }
+                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro"); danger: true; clicked => { root.remove(); } }
+            }
+            VerticalLayout {
                 spacing: 12px;
                 VerticalLayout {
                     horizontal-stretch: 1;
@@ -156,6 +157,51 @@ component MacroCard inherits Card {
                     }
                 }
             }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 12px;
+                alignment: start;
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: start;
+                        FieldLabel { text: @tr("Pause between steps"); vertical-alignment: center; }
+                        InfoTip { text: @tr("Per-macro pause between steps. Defaults to the Settings value."); }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        LineEdit {
+                            input-type: number;
+                            text: root.item.step-pause;
+                            placeholder-text: MacroEditor.default-step-pause;
+                            accessible-label: @tr("Pause between steps");
+                            edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
+                        }
+                        Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+                    }
+                }
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: start;
+                        FieldLabel { text: @tr("Modifier delay"); vertical-alignment: center; }
+                        InfoTip { text: @tr("Time between pressing a modifier and the main key within one step. Defaults to the Settings value."); }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        LineEdit {
+                            input-type: number;
+                            text: root.item.modifier-delay;
+                            placeholder-text: MacroEditor.default-modifier-delay;
+                            accessible-label: @tr("Modifier delay");
+                            edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
+                        }
+                        Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+                    }
+                }
+            }
             if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
             if root.item.usage.length > 0: HorizontalLayout {
                 spacing: 4px;
@@ -163,7 +209,9 @@ component MacroCard inherits Card {
                 Text { text: @tr("Used in:"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
                 for place in root.item.usage: Badge { text: place; }
             }
-            Rectangle { height: 1px; background: Theme.border; }
+        }
+        Rectangle { width: 1px; background: Theme.border; }
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 12px; alignment: start;
             HorizontalLayout {
                 spacing: 6px;
                 FieldLabel { text: @tr("Steps"); vertical-alignment: center; horizontal-stretch: 1; }
@@ -184,60 +232,6 @@ component MacroCard inherits Card {
                     remove => { root.remove-step(step-index); }
                     } }
                     DropMarker { width: parent.width; group: 100 + root.index; index: step-index; row-y: parent.y; row-height: parent.height; }
-                }
-            }
-        }
-        Rectangle { width: 1px; background: Theme.border; }
-        VerticalLayout {
-            min-width: 200px;
-            max-width: 260px;
-            horizontal-stretch: 0;
-            spacing: 12px;
-            alignment: start;
-            HorizontalLayout {
-                spacing: 2px;
-                DragHandle { group: 4; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
-                Rectangle { horizontal-stretch: 1; }
-                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro"); danger: true; clicked => { root.remove(); } }
-            }
-            VerticalLayout {
-                spacing: 4px;
-                HorizontalLayout {
-                    spacing: 6px;
-                    alignment: start;
-                    FieldLabel { text: @tr("Pause between steps"); vertical-alignment: center; }
-                    InfoTip { text: @tr("Per-macro pause between steps. Defaults to the Settings value."); }
-                }
-                HorizontalLayout {
-                    spacing: 6px;
-                    LineEdit {
-                        input-type: number;
-                        text: root.item.step-pause;
-                        placeholder-text: MacroEditor.default-step-pause;
-                        accessible-label: @tr("Pause between steps");
-                        edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
-                    }
-                    Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
-                }
-            }
-            VerticalLayout {
-                spacing: 4px;
-                HorizontalLayout {
-                    spacing: 6px;
-                    alignment: start;
-                    FieldLabel { text: @tr("Modifier delay"); vertical-alignment: center; }
-                    InfoTip { text: @tr("Time between pressing a modifier and the main key within one step. Defaults to the Settings value."); }
-                }
-                HorizontalLayout {
-                    spacing: 6px;
-                    LineEdit {
-                        input-type: number;
-                        text: root.item.modifier-delay;
-                        placeholder-text: MacroEditor.default-modifier-delay;
-                        accessible-label: @tr("Modifier delay");
-                        edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
-                    }
-                    Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
                 }
             }
         }
@@ -306,6 +300,7 @@ component SystemMacroLine inherits Rectangle {
                 width: 170px;
                 alignment: center;
                 Button {
+                    opacity: row-touch.has-hover ? 1 : 0;
                     text: @tr("Create based on");
                     icon: @image-url("icons/copy-plus.svg");
                     colorize-icon: true;
@@ -350,7 +345,9 @@ export component MacrosPage inherits Rectangle {
     private property <int> delete-macro: -1;
     private property <int> delete-step: -1;
     clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); }
+    private property <bool> copied;
+    function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); root.copied = true; toast-timer.restart(); }
+    toast-timer := Timer { interval: 2200ms; running: false; triggered => { root.copied = false; self.stop(); } }
     ScrollView {
         width: 100%;
         height: 100%;
@@ -392,6 +389,11 @@ export component MacrosPage inherits Rectangle {
             }
             SystemMacrosCard { open <=> root.system-open; copy(value) => { root.copy(value); } }
         }
+    }
+    if root.copied: Rectangle {
+        width: 220px; height: 44px; x: (root.width - self.width) / 2; y: root.height - self.height - 20px;
+        background: Theme.accent; border-radius: 8px; border-width: 1px; border-color: Theme.border;
+        Text { text: @tr("Copied to clipboard"); color: Theme.text; horizontal-alignment: center; vertical-alignment: center; }
     }
     if root.delete-macro >= 0 && root.delete-step < 0: ConfirmDialog {
         width: 100%;

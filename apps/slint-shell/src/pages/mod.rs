@@ -23,11 +23,12 @@ use lhc_core::profile::{
     actions::Action,
     model::{Appearance, LocalePreference},
 };
-use slint::{ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
 
 /// Bind every page of `ui` to `document`.
 pub fn bind_document(ui: &SettingsWindow, document: &Rc<Document>) {
+    ui.global::<crate::ui::InlineEditors>().on_nonempty(|value| !value.trim().is_empty());
     reorder::bind(ui);
     conditions::bind(ui);
     picker::bind(ui, document);

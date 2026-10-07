@@ -1,4 +1,5 @@
 import { Palette, Button, LineEdit, TextEdit } from "std-widgets.slint";
+import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 
 export component ButtonGroup inherits HorizontalLayout {
@@ -164,7 +165,7 @@ export component Badge inherits Rectangle {
     background: root.fill;
     HorizontalLayout {
         padding-left: 7px; padding-right: 7px;
-        Text { text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+        Text { min-width: 0px; overflow: elide; text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
     }
 }
 
@@ -195,35 +196,41 @@ export component CardHeader inherits HorizontalLayout {
     @children
 }
 
-export component PageTabs inherits HorizontalLayout {
+export component PageTabs inherits ScrollView {
     in property <[string]> labels;
     in property <int> selected;
     callback select(int);
-    spacing: 6px;
-    alignment: start;
-    Text { text: @tr("Page"); color: Theme.muted; font-size: 12px; font-weight: 600; vertical-alignment: center; }
-    for label[index] in root.labels: Rectangle {
-        height: 30px;
-        min-width: 44px;
-        border-radius: 6px;
-        border-width: 1px;
-        border-color: index == root.selected ? Palette.accent-background : focus.has-focus ? Theme.text : Theme.border;
-        background: index == root.selected ? Theme.accent : touch.has-hover ? Theme.hover : transparent;
-        accessible-role: tab;
-        accessible-label: label;
-        accessible-checked: index == root.selected;
-        accessible-action-default => { root.select(index); }
-        HorizontalLayout {
-            padding-left: 12px; padding-right: 12px;
-            Text { text: label; color: Theme.text; vertical-alignment: center; horizontal-alignment: center; }
-        }
-        focus := FocusScope {
-            key-pressed(event) => {
-                if event.text == " " || event.text == "\n" { root.select(index); return accept; }
-                return reject;
+    callback add();
+    height: 48px;
+    viewport-height: self.visible-height;
+    viewport-width: max(self.visible-width, tabs.preferred-width);
+    vertical-scrollbar-policy: always-off;
+    horizontal-scrollbar-policy: as-needed;
+    tabs := HorizontalLayout { width: root.viewport-width; spacing: 6px; alignment: start;
+        for label[index] in root.labels: Rectangle {
+            height: 30px;
+            min-width: max(44px, tab-label.preferred-width + 24px);
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: index == root.selected ? Palette.accent-background : focus.has-focus ? Theme.text : Theme.border;
+            background: index == root.selected ? Theme.accent : touch.has-hover ? Theme.hover : transparent;
+            accessible-role: tab;
+            accessible-label: label;
+            accessible-checked: index == root.selected;
+            accessible-action-default => { root.select(index); }
+            HorizontalLayout {
+                padding-left: 12px; padding-right: 12px;
+                tab-label := Text { text: label; color: Theme.text; vertical-alignment: center; horizontal-alignment: center; }
             }
+            focus := FocusScope {
+                key-pressed(event) => {
+                    if event.text == " " || event.text == "\n" { root.select(index); return accept; }
+                    return reject;
+                }
+            }
+            touch := TouchArea { mouse-cursor: pointer; clicked => { root.select(index); } }
         }
-        touch := TouchArea { mouse-cursor: pointer; clicked => { root.select(index); } }
+        IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add page"); clicked => { root.add(); } }
     }
 }
 
@@ -275,13 +282,15 @@ export component ConfirmDialog inherits Rectangle {
     }
 }
 
-export global InlineEditors { in-out property <int> revision; }
+export global InlineEditors { in-out property <int> revision; pure callback nonempty(string) -> bool; }
 
 export component InlineTextField inherits FocusScope {
     in property <string> text;
     in property <string> placeholder;
     in property <string> label;
     in property <bool> multiline: false;
+    in property <bool> allow-empty: true;
+    in property <bool> edit-on-click: true;
     in property <length> text-size: 14px;
     in property <int> text-weight: 400;
     in property <color> text-color: Theme.text;
@@ -292,7 +301,7 @@ export component InlineTextField inherits FocusScope {
     changed text => { root.editing = false; }
     callback saved(string);
     public function begin() { root.draft = root.text; root.editing = true; }
-    function save() { root.saved(root.draft); root.editing = false; }
+    function save() { if root.allow-empty || InlineEditors.nonempty(root.draft) { root.saved(root.draft); root.editing = false; } }
     function cancel() { root.draft = root.text; root.editing = false; }
     vertical-stretch: 0;
     focus-on-tab-navigation: false;
@@ -339,7 +348,7 @@ export component InlineTextField inherits FocusScope {
                 wrap: root.multiline ? word-wrap : no-wrap;
                 overflow: elide;
             }
-            edit-touch := TouchArea { mouse-cursor: pointer; clicked => { root.begin(); } }
+            edit-touch := TouchArea { mouse-cursor: pointer; clicked => { if root.edit-on-click { root.begin(); } } }
         }
         if root.editing && !root.multiline: LineEdit {
             horizontal-stretch: 1;
@@ -359,7 +368,7 @@ export component InlineTextField inherits FocusScope {
         VerticalLayout { alignment: start;
             if !root.editing: IconButton { icon: @image-url("icons/pencil.svg"); label: root.label; clicked => { root.begin(); } }
             HorizontalLayout { spacing: 2px;
-                if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); clicked => { root.save(); } }
+                if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); enabled: root.allow-empty || InlineEditors.nonempty(root.draft); clicked => { root.save(); } }
                 if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }
             }
         }

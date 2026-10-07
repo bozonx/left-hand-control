@@ -2,7 +2,6 @@ import { ScrollView } from "scroll.slint";
 import { ActionPicker, PickerOverlay } from "action-picker.slint";
 import { AppState } from "app-state.slint";
 import { GameModeButton } from "game-mode.slint";
-import { KeyboardPage } from "keys.slint";
 import { LayerDialogOverlay, LayersEditor, LayersPage } from "layers.slint";
 import { LayoutLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton } from "library.slint";
 import { MacroEditor, MacrosPage } from "macros.slint";
@@ -129,17 +128,10 @@ export component SettingsWindow inherits Window {
                 padding-left: 20px;
                 padding-right: 20px;
                 spacing: 12px;
-                if root.page == Page.keyboard || root.page == Page.layers: HorizontalLayout {
-                    spacing: 8px;
-                    Button { text: @tr("Base keyboard"); primary: root.page == Page.keyboard; clicked => { root.navigate(Page.keyboard, MenuKind.emoji); } }
-                    Button { text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); primary: root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                    Rectangle { horizontal-stretch: 1; }
-                }
-                if root.page == Page.keyboard: KeyboardPage {}
                 if root.page == Page.layouts: LibraryPage {}
                 if root.page == Page.settings: HorizontalLayout { alignment: center; SettingsPage { preferred-width: 1000px; max-width: 1000px; } }
                 if root.page == Page.rules: RulesPage {}
-                if root.page == Page.layers: LayersPage {}
+                if root.page == Page.layers || root.page == Page.keyboard: LayersPage {}
                 if root.page == Page.macros: MacrosPage {}
                 if root.page == Page.menus: MenusPage {}
                 if AppState.config-status.id == "config-unavailable": Text { text: Locale.text(AppState.config-status); color: Theme.error; wrap: word-wrap; }

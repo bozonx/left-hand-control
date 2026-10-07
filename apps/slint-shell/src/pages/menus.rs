@@ -440,7 +440,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     e.on_rename_page(move || {
         c(true, &|e, layout| {
             let p = e.get_selected_page().max(0) as usize;
-            let name = e.get_page_name().to_string();
+            let name = e.get_page_name().trim().to_owned();
+            if name.is_empty() { return; }
             if e.get_kind() == MenuKind::Emoji {
                 if let Some(page) = layout.emoji_pages.get_mut(p) {
                     page.name = name;

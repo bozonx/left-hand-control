@@ -77,7 +77,7 @@ export component PickerOverlay inherits Rectangle {
                 HorizontalBox { vertical-stretch: 0;
                     LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.refresh(); } }
                     if ActionPicker.layer-action || ActionPicker.rule-action: Button { text: ActionPicker.rule-action ? @tr("Swallow key") : @tr("Ignore key"); primary: ActionPicker.ignore-key; clicked => { ActionPicker.ignore-key = true; ActionPicker.value = ""; ActionPicker.refresh(); } }
-                    Button { text: @tr("Clear"); enabled: !ActionPicker.key-only; clicked => { ActionPicker.ignore-key = false; ActionPicker.value = ""; ActionPicker.refresh(); } }
+                    Button { text: @tr("Clear"); enabled: !ActionPicker.key-only && !ActionPicker.macro-step; clicked => { ActionPicker.ignore-key = false; ActionPicker.value = ""; ActionPicker.refresh(); } }
                     Button { text: ActionPicker.capturing ? @tr("Stop capture") : @tr("Capture key"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
                 }
                 if ActionPicker.rule-action: Text { text: @tr("Clear restores normal key behavior. Swallow prevents the key from reaching the application."); color: Theme.muted; wrap: word-wrap; }

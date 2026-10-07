@@ -180,17 +180,12 @@ component HotkeyGrid inherits Rectangle {
 }
 
 /// Side card header shared by the emoji and quick action pages.
-component PageEditor inherits VerticalLayout {
+component PageEditor inherits HorizontalLayout {
     callback remove();
     spacing: 4px;
-    FieldLabel { text: @tr("Page"); }
-    HorizontalLayout {
-        spacing: 4px;
-        InlineTextField { text: MenuEditor.page-name; label: @tr("Page name"); saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
-        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/chevron-left.svg"); label: @tr("Move page left"); enabled: MenuEditor.selected-page > 0; clicked => { MenuEditor.move-page(-1); } } }
-        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/chevron-right.svg"); label: @tr("Move page right"); enabled: MenuEditor.selected-page + 1 < MenuEditor.pages.length; clicked => { MenuEditor.move-page(1); } } }
-        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); danger: true; clicked => { root.remove(); } } }
-    }
+    FieldLabel { text: @tr("Page"); vertical-alignment: center; }
+    InlineTextField { horizontal-stretch: 1; text: MenuEditor.page-name; label: @tr("Page name"); allow-empty: false; edit-on-click: false; saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
+    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); danger: true; clicked => { root.remove(); } } }
 }
 
 component StatusText inherits Text {
@@ -238,11 +233,7 @@ export component EmojiPage inherits Rectangle {
                     spacing: 16px;
                     CardHeader {
                         title: @tr("Emoji & Symbols");
-                        subtitle: @tr("Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").");
-                        VerticalLayout {
-                            alignment: center;
-                            Button { text: @tr("Add page"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
-                        }
+                        info: @tr("Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").");
                     }
                     if MenuEditor.status.id != "": StatusText {}
                     HorizontalLayout {
@@ -251,7 +242,7 @@ export component EmojiPage inherits Rectangle {
                             horizontal-stretch: 1;
                             spacing: 16px;
                             alignment: start;
-                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } }
+                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
                             HotkeyGrid { emoji: true; cell-height: 92px; activate(index) => { MenuEditor.select-cell(index); } }
                         }
                         Card {
@@ -261,7 +252,7 @@ export component EmojiPage inherits Rectangle {
                                 spacing: 12px;
                                 PageEditor { remove => { root.confirming = true; } }
                                 Rectangle { height: 1px; background: Theme.border; }
-                                FieldLabel { text: @tr("Cell {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
+                                FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                                 HorizontalLayout {
                                     spacing: 4px;
                                     LineEdit {
@@ -337,11 +328,7 @@ export component QuickActionsPage inherits Rectangle {
                     spacing: 16px;
                     CardHeader {
                         title: @tr("Quick Actions");
-                        subtitle: @tr("Opened by the app:showQuickMenu1...5 actions.");
-                        VerticalLayout {
-                            alignment: center;
-                            Button { text: @tr("Add page"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
-                        }
+                        info: @tr("Opened by the app:showQuickMenu1...5 actions.");
                     }
                     if MenuEditor.status.id != "": StatusText {}
                     HorizontalLayout {
@@ -350,7 +337,7 @@ export component QuickActionsPage inherits Rectangle {
                             horizontal-stretch: 1;
                             spacing: 16px;
                             alignment: start;
-                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } }
+                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
                             HotkeyGrid {
                                 emoji: false;
                                 cell-height: 104px;

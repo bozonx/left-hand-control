@@ -96,6 +96,7 @@ fn valid(
     excluded: &str,
     config: Option<&ConfigDocument>,
 ) -> bool {
+    if macro_step && value.trim().is_empty() { return false; }
     if key_only {
         return CATEGORIES.iter().any(|keys| keys.contains(&value));
     }
@@ -150,7 +151,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             catalog,
         };
         let picker = ui.global::<ActionPicker>();
-        picker.set_layer_action(target == PickerTarget::LayerAction && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None);
+        picker.set_layer_action(matches!(target, PickerTarget::LayerAction | PickerTarget::ExtraAction) && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None);
         let rule_field = ui.global::<crate::ui::RulesEditor>().get_field();
         let rule_action = target == PickerTarget::Rule && matches!(rule_field, crate::ui::RuleDialog::Tap | crate::ui::RuleDialog::Hold);
         picker.set_rule_action(rule_action);
@@ -281,6 +282,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     ui.global::<LayersEditor>().set_dialog_action(value);
                 }
             },
+            PickerTarget::ExtraKey | PickerTarget::ExtraAction => {
+                if let Err(error) = layers::assign_extra(&ui, &doc, index, &value, target == PickerTarget::ExtraKey, picker.get_ignore_key() && value.is_empty()) {
+                    picker.set_error(error.to_ui());
+                }
+            }
             PickerTarget::BaseKey => {
                 if let Err(error) = keys::assign(&ui, &doc, index, &value) {
                     picker.set_error(error.to_ui());

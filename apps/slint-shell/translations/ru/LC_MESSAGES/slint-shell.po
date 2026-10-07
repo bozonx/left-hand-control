@@ -1449,3 +1449,15 @@ msgstr "Запущенные процессы: "
 
 msgid "Active window: "
 msgstr "Активное окно: "
+
+msgid "Hold action"
+msgstr "Действие при удержании"
+
+msgid "Create a layer to assign its keys."
+msgstr "Создайте слой, чтобы назначить его клавиши."
+
+msgid "Button {}"
+msgstr "Кнопка {}"
+
+msgid "Copied to clipboard"
+msgstr "Скопировано в буфер обмена"

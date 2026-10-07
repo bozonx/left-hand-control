@@ -2,18 +2,19 @@ import { ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
-import { IconButton, ConfirmDialog, ItemStyle } from "controls.slint";
+import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, CheckBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, hold-timeout: string, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
+export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
 export global RulesEditor {
     in property <[RuleRow]> rows;
+    in property <int> created: -1;
     in-out property <int> selected: -1;
     in property <Message> status;
     in property <string> default-hold-timeout;
@@ -79,54 +80,58 @@ export component RulesPage inherits VerticalBox {
     vertical-stretch: 1;
     spacing: 12px;
     HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
-        VerticalBox { padding: 0px; spacing: 2px;
+        HorizontalBox { padding: 0px; spacing: 6px;
             Text { text: @tr("Rules and triggers"); color: Theme.text; font-size: 22px; font-weight: 700; }
-            Text { text: @tr("Define how physical keys activate layers or run actions."); color: Theme.muted; }
+            InfoTip { text: @tr("Define how physical keys activate layers or run actions."); }
         }
         Rectangle { horizontal-stretch: 1; }
         Button { max-height: 36px; text: @tr("+ Add rule"); clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
     }
     rule-scroll := ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-        VerticalLayout { width: rule-scroll.visible-width; spacing: 10px;
+        VerticalLayout { width: rule-scroll.visible-width; spacing: 10px; alignment: start;
             for rule[index] in RulesEditor.rows: Rectangle {
-                min-height: 180px;
+                min-height: max(180px, rule-content.preferred-height);
                 min-width: 0px;
-                background: Theme.card;
+                background: RulesEditor.created == index ? Theme.accent : Theme.card;
+                animate background { duration: 650ms; }
                 border-color: (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.accent : Theme.border;
                 border-width: 1px;
                 border-radius: 10px;
                 opacity: ItemStyle.opacity(rule.enabled) * (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index ? 0.6 : 1);
 
-                HorizontalLayout { padding: 14px; spacing: 16px;
-                    VerticalLayout { width: 175px; horizontal-stretch: 0; spacing: 10px; alignment: start;
-                        HorizontalLayout { spacing: 6px;
-                            DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
-                            CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
-                        }
-                        if rule.key == "": Text { text: @tr("New rule: choose a trigger"); color: Theme.warning; font-size: 12px; wrap: word-wrap; }
-                        RuleCell { title: @tr("Trigger"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
-                        HorizontalLayout { spacing: 6px; alignment: start;
-                            IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
-                        }
+                rule-content := VerticalLayout { padding: 14px; spacing: 10px;
+                    HorizontalLayout { spacing: 6px;
+                        DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
+                        CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
+                        Rectangle { horizontal-stretch: 1; }
+                        IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                     }
-                    Rectangle { width: 1px; background: Theme.border; }
-                    VerticalLayout { min-width: 0px; spacing: 12px; opacity: rule.key == "" ? 0.5 : 1;
-                        HorizontalLayout { spacing: 12px;
+                    HorizontalLayout { spacing: 16px;
+                        VerticalLayout { width: 220px; horizontal-stretch: 0; spacing: 10px; alignment: start;
+                            RuleCell { title: @tr("Trigger"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                             RuleCell { enabled: rule.key != ""; title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
-                            RuleCell { enabled: rule.key != ""; title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
+                            if rule.game != GameCondition.any: Badge { text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.accent; }
+                            for language in ConditionChoices.items(rule.languages): Badge { text: language; }
+                            for application in ConditionChoices.items(rule.applications): Badge { text: "+ " + application; fill: Theme.success.transparentize(0.8); }
+                            for application in ConditionChoices.items(rule.excluded): Badge { text: "− " + application; fill: Theme.error.transparentize(0.8); }
                         }
-                        Rectangle { height: 1px; background: Theme.border; }
-                        HorizontalLayout { spacing: 12px;
-                            RuleCell { enabled: rule.key != ""; title: @tr("Tap action"); value: rule.tap; empty-text: rule.swallow-tap ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
-                            RuleCell { enabled: rule.key != ""; title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
-                            RuleCell { enabled: rule.key != ""; title: @tr("Hold button"); value: rule.hold; empty-text: rule.swallow-hold ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
-                        }
-                        if rule.hold-timeout != "" || rule.double-timeout != "" || rule.advanced: Text {
-                            text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
-                                + (rule.hold-timeout != "" && rule.double-timeout != "" ? " · " : "")
-                                + (rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "")
-                                + (rule.advanced ? (rule.hold-timeout != "" || rule.double-timeout != "" ? " · " : "") + @tr("Custom hold options") : "");
-                            color: Theme.muted; wrap: word-wrap;
+                        Rectangle { width: 1px; background: Theme.border; }
+                        VerticalLayout { min-width: 0px; spacing: 12px; alignment: start;
+                            HorizontalLayout { spacing: 12px;
+                                RuleCell { title: @tr("Tap action"); value: rule.tap; empty-text: rule.swallow-tap ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
+                                RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                            }
+                            HorizontalLayout { spacing: 12px;
+                                RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
+                                RuleCell { title: @tr("Hold action"); value: rule.hold; empty-text: rule.swallow-hold ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
+                            }
+                            if rule.hold-timeout != "" || rule.double-timeout != "" || rule.advanced: Text {
+                                text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
+                                    + (rule.hold-timeout != "" && rule.double-timeout != "" ? " · " : "")
+                                    + (rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "")
+                                    + (rule.advanced ? (rule.hold-timeout != "" || rule.double-timeout != "" ? " · " : "") + @tr("Custom hold options") : "");
+                                color: Theme.muted; wrap: word-wrap;
+                            }
                         }
                     }
                 }
@@ -186,7 +191,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                    VerticalLayout { spacing: 8px;
+                    VerticalLayout { spacing: 8px; alignment: start;
                         Text { text: @tr("Hold timeout, ms"); color: Theme.text; }
                         LineEdit { text <=> RulesEditor.hold-timeout; placeholder-text: @tr("Default: {} ms", RulesEditor.default-hold-timeout); }
                         Text { text: @tr("Double-tap ms"); color: Theme.text; }
@@ -208,7 +213,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
                 }
                 Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
-                if RulesEditor.dialog != RuleDialog.conditions: Rectangle { vertical-stretch: 1; }
+                if RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.advanced: Rectangle { vertical-stretch: 1; }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Button {
                         visible: RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions;
