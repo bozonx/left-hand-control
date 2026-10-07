@@ -38,6 +38,12 @@ export global LayoutLibrary {
     in property <string> current-label;
     in-out property <string> active-label;
     in property <bool> dirty;
+    in property <bool> rules-dirty;
+    in property <bool> layers-dirty;
+    in property <bool> macros-dirty;
+    in property <bool> quick-dirty;
+    in property <bool> emoji-dirty;
+    in property <bool> commands-dirty;
     in-out property <bool> save-as-open;
     in-out property <string> save-as-name;
 
@@ -181,7 +187,7 @@ export component SaveSplitButton inherits Rectangle {
     callback save();
     callback save-as();
     callback discard();
-    width: 64px;
+    width: 148px;
     height: 36px;
 
     Rectangle {
@@ -197,20 +203,15 @@ export component SaveSplitButton inherits Rectangle {
             save-btn := Rectangle {
                 horizontal-stretch: 1;
                 height: parent.height;
-                background: root.enabled && (touch-save.has-hover || focus-save.has-focus) ? Theme.hover : transparent;
+                background: root.enabled ? Theme.link.transparentize(touch-save.has-hover ? 0.7 : 0.85) : transparent;
                 accessible-role: button;
                 accessible-label: @tr("Save");
                 accessible-enabled: root.enabled;
                 accessible-action-default => { if root.enabled { root.save(); } }
-                Image {
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    width: 16px;
-                    height: 16px;
-                    source: @image-url("icons/save.svg");
-                    // Enabled only with unsaved edits: accent draws attention to it.
-                    colorize: root.enabled ? Palette.accent-background : Theme.muted;
-                    opacity: root.enabled ? 1.0 : 0.45;
+                HorizontalLayout { padding-left: 10px; padding-right: 8px; spacing: 6px; alignment: center;
+                    VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: @image-url("icons/save.svg"); colorize: root.enabled ? Theme.link : Theme.muted; } }
+                    Text { text: @tr("Save"); color: root.enabled ? Theme.link : Theme.muted; font-weight: 600; vertical-alignment: center; }
+                    VerticalLayout { alignment: center; Rectangle { width: 6px; height: 6px; border-radius: 3px; background: root.enabled ? Theme.link : transparent; } }
                 }
                 focus-save := FocusScope {
                     enabled: root.enabled;
@@ -348,6 +349,10 @@ export component LibraryPage inherits VerticalBox {
             opacity: card.auto && !LayoutLibrary.auto-included[index] ? 0.35 : card.auto && !card.active ? 0.65 : 1;
             background: Theme.card;
             border-radius: 8px;
+            if root.drag-from >= 0 && root.drag-over == index && root.drag-from != index: Rectangle {
+                y: root.drag-over > root.drag-from ? parent.height + 2px : -5px;
+                width: parent.width; height: 3px; border-radius: 2px; background: Theme.link;
+            }
             border-width: root.drag-over == index ? 2px : card.active ? 2px : 1px;
             border-color: card.active || root.drag-over == index ? Theme.accent : Theme.border;
             TouchArea { double-clicked => { LayoutLibrary.edit(index); } }

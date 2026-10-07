@@ -6,11 +6,12 @@ import { LayoutLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton } fro
 import { MacroEditor, MacrosPage } from "macros.slint";
 import { MenuEditor, MenusPage } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
+import { DragDrop } from "reorder.slint";
 import { SettingsPage } from "settings-page.slint";
-import { InlineEditors } from "controls.slint";
+import { Badge, InlineEditors } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale } from "i18n.slint";
-import { LayerDialog, LibraryDialog, MenuKind, Page, RuleDialog } from "types.slint";
+import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
 import { Button, HorizontalBox, ScrollView, VerticalBox } from "std-widgets.slint";
 
 export component SettingsWindow inherits Window {
@@ -24,6 +25,7 @@ export component SettingsWindow inherits Window {
     in-out property <Page> page: Page.layouts;
 
     public function navigate(page: Page, kind: MenuKind) {
+        DragDrop.reset();
         if page == Page.layouts { LayoutLibrary.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
         root.page = page;
@@ -49,12 +51,34 @@ export component SettingsWindow inherits Window {
                     Rectangle { horizontal-stretch: 1; }
                     Button {
                         text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Stop") : @tr("Start");
+                        primary: true;
+                        icon: AppState.mapper-running ? @image-url("icons/square.svg") : @image-url("icons/play.svg");
+                        colorize-icon: true;
                         enabled: !AppState.mapper-busy;
                         clicked => { AppState.toggle-mapper(); }
                     }
-                    Text { text: LayoutLibrary.active-label; color: AppState.mapper-running ? Theme.text : Theme.muted; min-width: 0px; preferred-width: 100px; max-width: 140px; overflow: elide; vertical-alignment: center; }
-                    Text { text: AppState.keyboard-language; color: Theme.text; vertical-alignment: center; }
-                    Text { text: @tr("Game mode"); color: AppState.game-active ? Theme.error : Theme.muted; vertical-alignment: center; }
+                    active-layout := Rectangle {
+                        width: 180px; height: 36px; border-radius: 6px; background: Theme.surface; border-width: 1px; border-color: Theme.border;
+                        HorizontalLayout { padding: 8px; spacing: 6px;
+                            Image { width: 14px; source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
+                            Text { text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
+                            if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
+                        }
+                        TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { LayoutLibrary.refresh(); active-menu.show(); } }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (automatic)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
+                    }
+                    VerticalLayout { alignment: center; Badge {
+                        text: AppState.keyboard-language == "" ? "—" : AppState.keyboard-language;
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system"); color: Theme.text; } } } }
+                    }
+                    }
+                    Rectangle {
+                        width: 36px; height: 36px; border-radius: 6px;
+                        background: AppState.game-active ? Theme.error.transparentize(0.85) : Theme.surface;
+                        Image { x: 8px; y: 8px; width: 20px; height: 20px; source: @image-url("icons/gamepad-2.svg"); colorize: AppState.game-active ? Theme.error : Theme.muted; }
+                        Rectangle { x: 27px; y: 3px; width: 6px; height: 6px; border-radius: 3px; background: AppState.game-active ? Theme.error : Theme.muted.transparentize(0.6); }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: AppState.game-active ? @tr("Game mode: active") : @tr("Game mode: inactive"); color: Theme.text; } } } }
+                    }
                     Button { text: @tr("Settings"); primary: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } }
                 }
             }
@@ -76,12 +100,12 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: 6px;
-                            Button { icon: @image-url("icons/settings-2.svg"); colorize-icon: true; text: @tr("Rules"); primary: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/keyboard.svg"); colorize-icon: true; text: @tr("Layers"); primary: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/clock.svg"); colorize-icon: true; text: @tr("Macros"); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/zap.svg"); colorize-icon: true; text: @tr("Quick actions"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
-                            Button { icon: @image-url("icons/smile.svg"); colorize-icon: true; text: @tr("Emoji"); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
-                            Button { icon: @image-url("icons/terminal.svg"); colorize-icon: true; text: @tr("Commands") + (AppState.commands-need-approval ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
+                            Button { icon: @image-url("icons/settings-2.svg"); colorize-icon: true; text: @tr("Rules") + (LayoutLibrary.rules-dirty ? " •" : ""); primary: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/keyboard.svg"); colorize-icon: true; text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); primary: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/clock.svg"); colorize-icon: true; text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/zap.svg"); colorize-icon: true; text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            Button { icon: @image-url("icons/smile.svg"); colorize-icon: true; text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            Button { icon: @image-url("icons/terminal.svg"); colorize-icon: true; text: @tr("Commands") + ((LayoutLibrary.commands-dirty || (MenuEditor.has-errors && MenuEditor.kind == MenuKind.commands)) ? " •" : "") + (AppState.commands-need-approval ? " !" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
                         }
                     }
                 }
@@ -110,7 +134,7 @@ export component SettingsWindow inherits Window {
                 if root.page == Page.keyboard || root.page == Page.layers: HorizontalLayout {
                     spacing: 8px;
                     Button { text: @tr("Base keyboard"); primary: root.page == Page.keyboard; clicked => { root.navigate(Page.keyboard, MenuKind.emoji); } }
-                    Button { text: @tr("Layers"); primary: root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                    Button { text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); primary: root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
                     Rectangle { horizontal-stretch: 1; }
                 }
                 if root.page == Page.keyboard: KeyboardPage {}
@@ -122,6 +146,17 @@ export component SettingsWindow inherits Window {
                 if root.page == Page.menus: MenusPage {}
                 if AppState.config-status.id == "config-unavailable": Text { text: Locale.text(AppState.config-status); color: Theme.error; wrap: word-wrap; }
                 if AppState.backend-error.id != "": Text { text: Locale.text(AppState.backend-error); color: Theme.error; wrap: word-wrap; }
+            }
+        }
+    }
+    active-menu := PopupWindow {
+        x: active-layout.absolute-position.x; y: 52px; width: 240px;
+        Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 8px;
+            VerticalLayout { padding: 6px; spacing: 4px;
+                for name[index] in LayoutLibrary.names: Button {
+                    text: name; primary: name == LayoutLibrary.active-label;
+                    clicked => { active-menu.close(); LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); }
+                }
             }
         }
     }

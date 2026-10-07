@@ -1,3 +1,4 @@
+import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Card, Divider, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
 import { Theme } from "theme.slint";
@@ -35,6 +36,7 @@ export global LayersEditor {
     callback open-dialog(LayerDialog, int);
     callback apply-dialog();
     callback move-extra(int, int);
+    callback reorder(int, int);
     callback remove-extra(int);
     callback update-description(string);
 }
@@ -206,6 +208,27 @@ export component LayersPage inherits VerticalLayout {
         vertical-stretch: 1;
         VerticalLayout {
             spacing: 16px;
+            ScrollView { height: 44px; viewport-height: self.visible-height;
+                HorizontalLayout { spacing: 6px; alignment: start;
+                    for name[index] in LayersEditor.names: Rectangle {
+                        height: 36px; border-radius: 6px; border-width: 1px;
+                        border-color: DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index ? Theme.link : Theme.border;
+                        background: index == LayersEditor.selected ? Theme.accent : Theme.card;
+                        opacity: DragDrop.dragging && DragDrop.group == 2 && DragDrop.source == index ? 0.6 : 1;
+                        init => { DragDrop.row(2, index, self.x, self.width); }
+                        changed x => { DragDrop.row(2, index, self.x, self.width); }
+                        changed width => { DragDrop.row(2, index, self.x, self.width); }
+                        HorizontalLayout { padding: 4px; spacing: 4px;
+                            DragHandle { horizontal: true; group: 2; index: index; count: LayersEditor.names.length; dropped(from, to) => { LayersEditor.reorder(from, to); } }
+                            Button { text: name; primary: index == LayersEditor.selected; clicked => { LayersEditor.choose(index); } }
+                        }
+                        if DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index && DragDrop.target != DragDrop.source: Rectangle {
+                            x: DragDrop.target > DragDrop.source ? parent.width + 1px : -4px;
+                            width: 3px; height: parent.height; background: Theme.link;
+                        }
+                    }
+                }
+            }
             // Layer toolbar
             Card {
                 VerticalLayout {
@@ -220,12 +243,12 @@ export component LayersPage inherits VerticalLayout {
                             Text { text: @tr("Layer"); color: Theme.text; font-size: 13px; }
                             HorizontalLayout {
                                 spacing: 4px;
-                                ComboBox {
+                                Text {
                                     horizontal-stretch: 1;
-                                    model: LayersEditor.names;
-                                    current-index: LayersEditor.selected;
-                                    enabled: LayersEditor.names.length > 0;
-                                    selected(value) => { LayersEditor.choose(self.current-index); }
+                                    text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
+                                    color: Theme.text;
+                                    font-weight: 600;
+                                    vertical-alignment: center;
                                 }
                                 IconButton {
                                     icon: @image-url("icons/pencil.svg");
@@ -432,6 +455,8 @@ export component LayersPage inherits VerticalLayout {
                         spacing: 8px;
                         if LayersEditor.extras.length == 0: Text { text: @tr("No extra keys for this layer yet."); color: Theme.muted; }
                         for extra[index] in LayersEditor.extras: Rectangle {
+                            opacity: DragDrop.dragging && DragDrop.group == 3 && DragDrop.source == index ? 0.6 : 1;
+                            DropMarker { width: parent.width; group: 3; index: index; row-y: parent.y; row-height: parent.height; }
                             background: extra-touch.has-hover ? Theme.hover : Theme.surface;
                             border-radius: 6px;
                             border-width: 1px;
@@ -461,10 +486,7 @@ export component LayersPage inherits VerticalLayout {
                                         IconButton { icon: @image-url("icons/pencil.svg"); tooltip: @tr("Edit"); clicked => { LayersEditor.open-dialog(LayerDialog.extra-key, index); } }
                                     }
                                     VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/arrow-up.svg"); tooltip: @tr("Move up"); enabled: index > 0; clicked => { LayersEditor.move-extra(index, -1); } }
-                                    }
-                                    VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/arrow-down.svg"); tooltip: @tr("Move down"); enabled: index < LayersEditor.extras.length - 1; clicked => { LayersEditor.move-extra(index, 1); } }
+                                        DragHandle { group: 3; index: index; count: LayersEditor.extras.length; dropped(from, to) => { LayersEditor.move-extra(from, to); } }
                                     }
                                     VerticalLayout { alignment: center;
                                         IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); danger: true; clicked => { LayersEditor.remove-extra(index); } }

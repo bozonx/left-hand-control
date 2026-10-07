@@ -1,3 +1,4 @@
+import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -96,8 +97,7 @@ component StepRow inherits HorizontalLayout {
             wrap: word-wrap;
         }
     }
-    IconButton { icon: @image-url("icons/chevron-up.svg"); label: @tr("Move up"); enabled: root.index > 0; clicked => { MacroEditor.move-step(root.macro-index, root.index, -1); } }
-    IconButton { icon: @image-url("icons/chevron-down.svg"); label: @tr("Move down"); enabled: root.index + 1 < root.count; clicked => { MacroEditor.move-step(root.macro-index, root.index, 1); } }
+    DragHandle { group: 100 + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
     IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step"); danger: true; clicked => { root.remove(); } }
 }
 
@@ -105,6 +105,8 @@ component MacroCard inherits Card {
     in property <int> index;
     in property <int> count;
     in property <MacroRow> item;
+    opacity: DragDrop.dragging && DragDrop.group == 4 && DragDrop.source == root.index ? 0.6 : 1;
+    DropMarker { width: parent.width; group: 4; index: root.index; row-y: root.y; row-height: root.height; }
     callback remove();
     callback remove-step(int);
     callback copy(string);
@@ -170,12 +172,16 @@ component MacroCard inherits Card {
             if root.item.steps.length == 0: Text { text: @tr("No steps yet. Each step — one chord or action."); color: Theme.muted; font-italic: true; wrap: word-wrap; }
             VerticalLayout {
                 spacing: 6px;
-                for step[step-index] in root.item.steps: StepRow {
+                for step[step-index] in root.item.steps: Rectangle {
+                    opacity: DragDrop.dragging && DragDrop.group == 100 + root.index && DragDrop.source == step-index ? 0.6 : 1;
+                    DropMarker { width: parent.width; group: 100 + root.index; index: step-index; row-y: parent.y; row-height: parent.height; }
+                    HorizontalLayout { StepRow {
                     macro-index: root.index;
                     index: step-index;
                     count: root.item.steps.length;
                     step: step;
                     remove => { root.remove-step(step-index); }
+                    } }
                 }
             }
         }
@@ -188,8 +194,7 @@ component MacroCard inherits Card {
             alignment: start;
             HorizontalLayout {
                 spacing: 2px;
-                IconButton { icon: @image-url("icons/arrow-up.svg"); label: @tr("Move up"); enabled: root.index > 0; clicked => { MacroEditor.move(root.index, -1); } }
-                IconButton { icon: @image-url("icons/arrow-down.svg"); label: @tr("Move down"); enabled: root.index + 1 < root.count; clicked => { MacroEditor.move(root.index, 1); } }
+                DragHandle { group: 4; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
                 Rectangle { horizontal-stretch: 1; }
                 IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro"); danger: true; clicked => { root.remove(); } }
             }

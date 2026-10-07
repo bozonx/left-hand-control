@@ -205,6 +205,13 @@ pub struct LayoutPreset {
 }
 
 impl LayoutPreset {
+    pub fn base_tap_action(&self, key: &str) -> Option<&str> {
+        self.rules
+            .iter()
+            .find(|rule| rule.key == key && rule.layer_id.is_empty() && rule.is_enabled())
+            .and_then(|rule| rule.tap_action.as_deref())
+    }
+
     /// Preset of a new installation, as `createDefaultConfig()` builds it.
     pub fn initial() -> Self {
         Self {

@@ -233,11 +233,7 @@ impl ConfigDocument {
     }
 
     pub fn base_tap_action(&self, key: &str) -> Option<&str> {
-        self.layout
-            .rules
-            .iter()
-            .find(|rule| rule.key == key && rule.layer_id.is_empty() && rule.is_enabled())
-            .and_then(|rule| rule.tap_action.as_deref())
+        self.layout.base_tap_action(key)
     }
 
     pub fn set_base_tap_action(&mut self, key: &str, action: &str) -> Result<(), ConfigError> {
@@ -419,7 +415,11 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         self.require_extra(layer_id, index)?;
         self.require_extra(layer_id, next)?;
-        self.update_layout(|layout| layout.layer_keymap_mut(layer_id).extras.swap(index, next))
+        self.update_layout(|layout| {
+            let extras = &mut layout.layer_keymap_mut(layer_id).extras;
+            let item = extras.remove(index);
+            extras.insert(next, item);
+        })
     }
 
     pub fn remove_layer_extra(&mut self, layer_id: &str, index: usize) -> Result<(), ConfigError> {
@@ -973,6 +973,19 @@ mod tests {
             other => panic!("unexpected {other:?}"),
         }
     }
+    #[test]
+    fn moving_extra_inserts_without_swapping_intermediate_keys() {
+        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        for key in ["F13", "F14", "F15"] {
+            document.set_layer_extra("nav", None, key, Some("Escape".into())).unwrap();
+        }
+        document.move_layer_extra("nav", 0, 2).unwrap();
+        let keys = || document.layout().layer_keymaps["nav"].extras.iter().map(|row| row.key.as_str()).collect::<Vec<_>>();
+        assert_eq!(keys(), ["F14", "F15", "F13"]);
+        document.move_layer_extra("nav", 2, 0).unwrap();
+        assert_eq!(document.layout().layer_keymaps["nav"].extras.iter().map(|row| row.key.as_str()).collect::<Vec<_>>(), ["F13", "F14", "F15"]);
+    }
+
     #[test]
     fn layer_lifecycle_preserves_keymaps_and_detaches_rules() {
         let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);

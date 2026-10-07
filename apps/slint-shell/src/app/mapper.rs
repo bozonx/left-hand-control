@@ -36,7 +36,11 @@ impl App {
         let state = self.settings.global::<AppState>();
         state.set_game_active(lhc_core::runtime_state::game_mode_active());
         state.set_keyboard_language(
-            lhc_core::runtime_state::layout_short()
+            lhc_core::runtime_state::layout()
+                .map(|layout| {
+                    let variant = if layout.variant.is_empty() { &layout.short } else { &layout.variant };
+                    format!("{}-{variant}", layout.short.to_uppercase())
+                })
                 .unwrap_or_default()
                 .into(),
         );

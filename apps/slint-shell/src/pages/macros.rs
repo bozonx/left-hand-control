@@ -331,10 +331,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
     });
     let s = structural.clone();
-    editor.on_move(move |at, delta| {
+    editor.on_move(move |at, target| {
         s(&|draft| {
-            if let (Some(from), Some(to)) = (index(at, draft.len()), index(at + delta, draft.len())) {
-                draft.swap(from, to);
+            if let (Some(from), Some(to)) = (index(at, draft.len()), index(target, draft.len())) {
+                let item = draft.remove(from);
+                draft.insert(to, item);
             }
         });
     });
@@ -357,12 +358,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         })
     });
     let s = structural.clone();
-    editor.on_move_step(move |at, step_index, delta| {
+    editor.on_move_step(move |at, step_index, target| {
         s(&|draft| {
             if let Some(entry) = index(at, draft.len()).map(|at| &mut draft[at]) {
                 let len = entry.item.steps.len();
-                if let (Some(from), Some(to)) = (index(step_index, len), index(step_index + delta, len)) {
-                    entry.item.steps.swap(from, to);
+                if let (Some(from), Some(to)) = (index(step_index, len), index(target, len)) {
+                    let item = entry.item.steps.remove(from);
+                    entry.item.steps.insert(to, item);
                 }
             }
         })

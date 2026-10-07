@@ -1311,3 +1311,24 @@ msgstr "Поиск"
 
 msgid "Launch on startup"
 msgstr "Запускать вместе с системой"
+
+msgid "No active layout"
+msgstr "Нет активной раскладки"
+
+msgid "Current active layout (automatic)"
+msgstr "Текущая активная раскладка (автоматический режим)"
+
+msgid "Current active layout — click to switch"
+msgstr "Текущая активная раскладка — нажмите для переключения"
+
+msgid "Current keyboard layout in the system"
+msgstr "Текущая раскладка клавиатуры в системе"
+
+msgid "Game mode: active"
+msgstr "Игровой режим: активен"
+
+msgid "Game mode: inactive"
+msgstr "Игровой режим: неактивен"
+
+msgid "Active: {}"
+msgstr "Активна: {}"

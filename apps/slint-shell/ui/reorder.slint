@@ -1,0 +1,64 @@
+import { Theme } from "theme.slint";
+
+export global DragDrop {
+    in-out property <int> group: -1;
+    in-out property <int> source: -1;
+    in-out property <int> target: -1;
+    in-out property <length> offset;
+    in-out property <bool> dragging;
+    callback row(int, int, length, length);
+    callback locate(int, int, length, int) -> int;
+    public function reset() { self.group = -1; self.source = -1; self.target = -1; self.offset = 0px; self.dragging = false; }
+}
+
+export component DragHandle inherits Rectangle {
+    in property <int> group;
+    in property <int> index;
+    in property <int> count;
+    in property <bool> horizontal;
+    callback dropped(int, int);
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    background: touch.has-hover ? Theme.hover : transparent;
+    accessible-role: button;
+    accessible-label: @tr("Drag");
+    Image { x: 6px; y: 6px; width: 16px; height: 16px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; }
+    touch := TouchArea {
+        mouse-cursor: self.pressed ? grabbing : grab;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                DragDrop.group = root.group; DragDrop.source = root.index; DragDrop.target = root.index;
+            }
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == root.group {
+                let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
+                DragDrop.reset();
+                if moved && from != to { root.dropped(from, to); }
+            }
+            if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
+        }
+        moved => {
+            if self.pressed && DragDrop.group == root.group {
+                DragDrop.offset = root.horizontal ? self.mouse-x - self.pressed-x : self.mouse-y - self.pressed-y;
+                if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
+                if DragDrop.dragging { DragDrop.target = DragDrop.locate(root.group, root.index, DragDrop.offset, root.count); }
+            }
+        }
+    }
+}
+
+export component DropMarker inherits Rectangle {
+    in property <int> group;
+    in property <int> index;
+    in property <length> row-y;
+    in property <length> row-height;
+    init => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
+    changed group => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
+    changed index => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
+    changed row-y => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
+    changed row-height => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
+    visible: DragDrop.dragging && DragDrop.group == root.group && DragDrop.target == root.index && DragDrop.target != DragDrop.source;
+    y: DragDrop.target > DragDrop.source ? root.row-height + 2px : -5px;
+    height: 3px;
+    border-radius: 2px;
+    background: Theme.link;
+}

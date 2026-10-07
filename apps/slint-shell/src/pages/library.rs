@@ -19,7 +19,7 @@ use lhc_core::{
         auto_switch::AutoSwitchContext,
         layout_file,
         library::LibrarySource,
-        model::{LayoutConditionRule, LayoutConditionSet, LayoutMode, user_layout_id, user_layout_name},
+        model::{LayoutConditionRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id, user_layout_name},
     },
     storage::validate_layout_name,
 };
@@ -163,14 +163,49 @@ fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let library = ui.global::<LayoutLibrary>();
     let name = current_name(&config);
     library.set_current_label(name.clone().unwrap_or_default().into());
-    let dirty = name.is_some_and(|name| {
-        config
-            .load_layout(&user_layout_id(&name))
-            .ok()
-            .map(|layout| layout_file::serialize(&layout))
-            != Some(layout_file::serialize(config.layout()))
+    let named = name.is_some();
+    let saved = name.and_then(|name| config.load_layout(&user_layout_id(&name)).ok());
+    let current = config.layout();
+    let dirty = named && saved.as_ref().is_none_or(|saved| {
+        layout_file::serialize(saved) != layout_file::serialize(current)
     });
     library.set_dirty(dirty);
+    let changed = |section: fn(&LayoutPreset) -> LayoutPreset| {
+        saved.as_ref().map_or(dirty, |saved| {
+            layout_file::serialize(&section(saved)) != layout_file::serialize(&section(current))
+        })
+    };
+    library.set_rules_dirty(changed(|layout| LayoutPreset {
+        rules: layout.rules.clone(),
+        ..Default::default()
+    }));
+    let base_dirty = saved.as_ref().map_or(dirty, |saved| {
+        crate::keyboard::BASE.iter().any(|key| {
+            saved.base_tap_action(key) != current.base_tap_action(key)
+        })
+    });
+    library.set_layers_dirty(base_dirty || changed(|layout| LayoutPreset {
+        layers: layout.layers.clone(),
+        layer_keymaps: layout.layer_keymaps.clone(),
+        ..Default::default()
+    }));
+    library.set_macros_dirty(changed(|layout| LayoutPreset {
+        macros: layout.macros.clone(),
+        ..Default::default()
+    }));
+    library.set_quick_dirty(changed(|layout| LayoutPreset {
+        quick_actions: layout.quick_actions.clone(),
+        quick_action_pages: layout.quick_action_pages.clone(),
+        ..Default::default()
+    }));
+    library.set_emoji_dirty(changed(|layout| LayoutPreset {
+        emoji_pages: layout.emoji_pages.clone(),
+        ..Default::default()
+    }));
+    library.set_commands_dirty(changed(|layout| LayoutPreset {
+        commands: layout.commands.clone(),
+        ..Default::default()
+    }));
 }
 
 /// Name of the layout the mapper uses now.

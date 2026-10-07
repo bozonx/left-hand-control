@@ -291,17 +291,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     let weak = ui.as_weak();
     let doc = document.clone();
-    editor.on_move(move |direction| {
+    editor.on_move(move |from, to| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(index) = selected(&ui, &doc) else { return };
-        let Some(next) = index
-            .checked_add_signed(direction as isize)
-            .filter(|next| *next < doc.read().layout().rules.len())
-        else {
-            return;
-        };
-        if change(&ui, &doc, true, |layout| layout.rules.swap(index, next)).is_ok() {
-            ui.global::<RulesEditor>().set_selected(next as i32);
+        let len = doc.read().layout().rules.len();
+        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else { return };
+        if from >= len || to >= len { return; }
+        if change(&ui, &doc, true, |layout| {
+            let item = layout.rules.remove(from);
+            layout.rules.insert(to, item);
+        }).is_ok() {
+            ui.global::<RulesEditor>().set_selected(to as i32);
             refresh(&ui, &doc, true);
         }
     });

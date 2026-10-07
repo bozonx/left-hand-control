@@ -344,6 +344,18 @@ fn extras_len(document: &Document, id: &str) -> usize {
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    ui.global::<LayersEditor>().on_reorder(move |from, to| {
+        let Some(ui) = weak.upgrade() else { return };
+        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else { return };
+        let len = doc.read().layout().layers.len();
+        if from >= len || to >= len { return; }
+        let _ = change(&ui, &doc, |config| config.update_layout(|layout| {
+            let item = layout.layers.remove(from);
+            layout.layers.insert(to, item);
+        }));
+    });
     ui.global::<LayersEditor>().set_selected_id(document.selected_layer_id().into());
     refresh(ui, document);
     let weak = ui.as_weak();
@@ -403,7 +415,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     let weak = ui.as_weak();
     let doc = document.clone();
-    editor.on_move_extra(move |index, direction| {
+    editor.on_move_extra(move |index, target| {
         let Some(ui) = weak.upgrade() else { return };
         let Some(id) = selected_id(&ui, &doc) else {
             return;
@@ -411,7 +423,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let len = extras_len(&doc, &id);
         let (Ok(from), Some(to)) = (
             usize::try_from(index),
-            usize::try_from(index + direction).ok().filter(|to| *to < len),
+            usize::try_from(target).ok().filter(|to| *to < len),
         ) else {
             return;
         };

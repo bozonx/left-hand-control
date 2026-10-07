@@ -24,6 +24,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let document = Document::load(paths.clone())?;
     let ui = SettingsWindow::new()?;
     bind_document(&ui, &document);
+    let drag = ui.global::<DragDrop>();
+    for (index, y, height) in [(0, 0.0, 80.0), (1, 90.0, 240.0), (2, 340.0, 80.0)] {
+        drag.invoke_row(99, index, y, height);
+    }
+    assert_eq!(drag.invoke_locate(99, 0, 340.0, 3), 2);
+    assert_eq!(drag.invoke_locate(99, 2, -340.0, 3), 0);
+    assert_eq!(drag.invoke_locate(99, 0, 340.0, 2), 1);
+    assert_eq!(drag.invoke_locate(99, 0, 6.0, 3), 0);
     let settings = ui.global::<SettingsEditor>();
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
     settings.set_hold_timeout("not a number".into());
@@ -81,9 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bind_document(&second_ui, &reloaded);
     assert_eq!(second_ui.global::<LayersEditor>().get_selected(), 1);
     assert_eq!(second_ui.global::<LayersEditor>().get_label_mode(), 2);
-    document.edit(slint_shell::document::View::Library, |config| {
-        config.update_layout(|layout| layout.layers.reverse())
-    })?;
+    ui.global::<LayersEditor>().invoke_reorder(0, 1);
     assert_eq!(ui.global::<LayersEditor>().get_selected(), 0);
     assert_eq!(document.read().layout().layers[0].id, second);
     document.edit(slint_shell::document::View::Library, |config| {
@@ -112,8 +118,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("text:Changed".into());
     picker.invoke_apply();
     assert!(library.get_dirty());
+    assert!(library.get_rules_dirty());
+    assert!(library.get_layers_dirty());
+    assert!(!library.get_macros_dirty());
     library.invoke_save_current();
     assert!(!library.get_dirty());
+    assert!(!library.get_rules_dirty());
     assert_eq!(
         lhc_core::profile::layout_file::serialize(&document.read().load_layout("user:Test layout")?),
         lhc_core::profile::layout_file::serialize(document.read().layout())
@@ -129,6 +139,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ui.invoke_navigate(Page::Menus, kind);
         assert_eq!(ui.global::<MenuEditor>().get_kind(), kind);
     }
+    document.edit(slint_shell::document::View::Library, |config| {
+        config.update_layout(|layout| {
+            use lhc_core::profile::model::{Command, LayerRule, Macro, MacroStep};
+            layout.rules = ["F13", "F14", "F15"].into_iter().enumerate().map(|(index, key)| {
+                let mut rule = LayerRule::new(format!("drag-rule-{index}"), key);
+                rule.tap_action = Some("Escape".into());
+                rule
+            }).collect();
+            layout.macros = (0..3).map(|index| Macro {
+                id: format!("dragMacro{index}"), name: format!("Macro {index}"),
+                steps: ["KeyA", "KeyB", "KeyC"].into_iter().enumerate().map(|(step, action)| MacroStep {
+                    id: format!("drag-step-{index}-{step}"), action: action.into(),
+                }).collect(), step_pause_ms: None, modifier_delay_ms: None,
+            }).collect();
+            layout.commands = (0..3).map(|index| Command {
+                id: format!("dragCommand{index}"), name: format!("Command {index}"), linux: "printf test".into(),
+            }).collect();
+        })
+    })?;
+    ui.global::<RulesEditor>().invoke_move(0, 2);
+    assert_eq!(document.read().layout().rules.iter().map(|row| row.key.as_str()).collect::<Vec<_>>(), ["F14", "F15", "F13"]);
+    assert_eq!(ui.global::<RulesEditor>().get_selected(), 2);
+    ui.global::<MacroEditor>().invoke_move(0, 2);
+    assert_eq!(document.read().layout().macros.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(), ["dragMacro1", "dragMacro2", "dragMacro0"]);
+    ui.global::<MacroEditor>().invoke_move_step(0, 0, 2);
+    assert_eq!(document.read().layout().macros[0].steps.iter().map(|row| row.action.as_str()).collect::<Vec<_>>(), ["KeyB", "KeyC", "KeyA"]);
+    ui.global::<MenuEditor>().invoke_open(MenuKind::Commands);
+    ui.global::<MenuEditor>().invoke_move_command(0, 2);
+    assert_eq!(document.read().layout().commands.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(), ["dragCommand1", "dragCommand2", "dragCommand0"]);
+    for key in ["F13", "F14", "F15"] {
+        document.edit(slint_shell::document::View::Library, |config| config.set_layer_extra(&second, None, key, Some("Escape".into())))?;
+    }
+    ui.global::<LayersEditor>().invoke_move_extra(0, 2);
+    assert_eq!(document.read().layout().layer_keymaps[&second].extras.iter().map(|row| row.key.as_str()).collect::<Vec<_>>(), ["F14", "F15", "F13"]);
+    assert!(library.get_rules_dirty());
+    assert!(library.get_layers_dirty());
+    assert!(library.get_macros_dirty());
+    assert!(library.get_commands_dirty());
+    library.invoke_save_current();
+    assert!(!library.get_dirty(), "status {}; saved:\n{}current:\n{}", library.get_status().id,
+        lhc_core::profile::layout_file::serialize(&document.read().load_layout("user:Test layout")?),
+        lhc_core::profile::layout_file::serialize(document.read().layout()));
+    assert!(!library.get_rules_dirty());
+    assert!(!library.get_layers_dirty());
+    assert!(!library.get_macros_dirty());
+    assert!(!library.get_commands_dirty());
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
     settings.set_appearance_index(2);
     settings.set_locale_index(2);

@@ -2,6 +2,7 @@
 //! shared [`Document`] and refreshes it when the document changes.
 
 mod conditions;
+mod reorder;
 mod keys;
 mod layers;
 mod library;
@@ -27,6 +28,7 @@ use std::rc::Rc;
 
 /// Bind every page of `ui` to `document`.
 pub fn bind_document(ui: &SettingsWindow, document: &Rc<Document>) {
+    reorder::bind(ui);
     conditions::bind(ui);
     picker::bind(ui, document);
     keys::bind(ui, document);

@@ -579,12 +579,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
     });
     let c = change.clone();
-    e.on_move_command(move |index, delta| {
+    e.on_move_command(move |index, target| {
         c(false, &|_, layout| {
             let len = layout.commands.len() as i32;
-            let next = index + delta;
+            let next = target;
             if (0..len).contains(&index) && (0..len).contains(&next) {
-                layout.commands.swap(index as usize, next as usize);
+                let item = layout.commands.remove(index as usize);
+                layout.commands.insert(next as usize, item);
             }
         });
     });

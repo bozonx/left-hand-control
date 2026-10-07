@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_set_field(0, MacroField::Name, "Тестовый макрос".into());
     editor.invoke_add_step(0, "pause:100".into());
     editor.invoke_add_step(0, "text: hello ".into());
-    editor.invoke_move_step(0, 4, -1);
+    editor.invoke_move_step(0, 4, 3);
     editor.invoke_set_field(0, MacroField::StepPause, "0".into());
     settle();
     assert!(!editor.get_has_errors());
@@ -75,6 +75,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut data = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
             for p in pixels.as_slice() { data.extend([p.r, p.g, p.b]); }
             std::fs::write(path, data).unwrap();
+        }
+        if std::env::var_os("SLINT_SHELL_MACROS_SCROLL").is_none() {
+            let editor = ui.global::<MacroEditor>();
+            editor.invoke_remove_step(0, 5);
+            let from = slint::LogicalPosition::new(794.0, 333.0);
+            let to = slint::LogicalPosition::new(794.0, 411.0);
+            ui.window().dispatch_event(slint::platform::WindowEvent::PointerPressed {
+                position: from, button: slint::platform::PointerEventButton::Left,
+            });
+            assert_eq!(ui.global::<slint_shell::ui::DragDrop>().get_source(), 0);
+            ui.window().dispatch_event(slint::platform::WindowEvent::PointerMoved { position: to });
+            assert_eq!(ui.global::<slint_shell::ui::DragDrop>().get_target(), 2);
+            ui.window().dispatch_event(slint::platform::WindowEvent::PointerReleased {
+                position: to, button: slint::platform::PointerEventButton::Left,
+            });
+            assert_eq!(editor.get_macros().row_data(0).unwrap().steps.row_data(0).unwrap().action, "Enter");
+            assert_eq!(editor.get_macros().row_data(0).unwrap().steps.row_data(2).unwrap().action, "Home");
+            assert!(!ui.global::<slint_shell::ui::DragDrop>().get_dragging());
         }
         println!("Macros smoke: passed (system copy, steps, pauses, order, cycle validation, delayed save and reload)");
         slint::quit_event_loop().unwrap();

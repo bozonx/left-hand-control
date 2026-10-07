@@ -1,3 +1,4 @@
+import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -56,6 +57,8 @@ component HotkeyGrid inherits Rectangle {
     private property <bool> dragging;
     private property <length> press-x;
     private property <length> press-y;
+    private property <length> pointer-x;
+    private property <length> pointer-y;
     min-width: 5 * 64px + 2 * self.pad + 4 * self.gap;
     height: 2 * self.pad + 3 * self.cell-height + 2 * self.gap;
     border-radius: 8px;
@@ -66,16 +69,29 @@ component HotkeyGrid inherits Rectangle {
         return max(0, min(2, floor((y - self.pad) / (self.cell-height + self.gap)))) * 5
             + max(0, min(4, floor((x - self.pad) / (self.cell-width + self.gap))));
     }
+    pure function preview(index: int) -> int {
+        if !self.dragging { return index; }
+        if index == self.drag-from { return self.drag-over; }
+        if self.drag-from < self.drag-over && index > self.drag-from && index <= self.drag-over { return index - 1; }
+        if self.drag-from > self.drag-over && index >= self.drag-over && index < self.drag-from { return index + 1; }
+        return index;
+    }
+    if root.dragging: Rectangle {
+        x: root.pad + mod(root.drag-over, 5) * (root.cell-width + root.gap);
+        y: root.pad + floor(root.drag-over / 5) * (root.cell-height + root.gap);
+        width: root.cell-width; height: root.cell-height;
+        border-width: 2px; border-color: Theme.link; border-radius: 6px; background: Theme.hover;
+    }
     for cell[index] in MenuEditor.cells: Rectangle {
-        x: root.pad + mod(index, 5) * (root.cell-width + root.gap);
-        y: root.pad + floor(index / 5) * (root.cell-height + root.gap);
+        x: root.pad + mod(root.preview(index), 5) * (root.cell-width + root.gap);
+        y: root.pad + floor(root.preview(index) / 5) * (root.cell-height + root.gap);
         width: root.cell-width;
         height: root.cell-height;
         border-radius: 6px;
-        border-width: index == MenuEditor.selected-cell || (root.dragging && index == root.drag-over) ? 2px : 1px;
-        border-color: index == MenuEditor.selected-cell || (root.dragging && index == root.drag-over) ? Theme.link : Theme.border;
-        background: root.dragging && index == root.drag-over ? Theme.hover : Theme.card;
-        opacity: root.dragging && index == root.drag-from ? 0.5 : 1.0;
+        border-width: index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
+        border-color: index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
+        background: root.dragging && root.preview(index) == root.drag-over ? Theme.hover : Theme.card;
+        opacity: root.dragging && index == root.drag-from ? 0.0 : 1.0;
         accessible-role: button;
         accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
         accessible-action-default => { root.activate(index); }
@@ -83,7 +99,7 @@ component HotkeyGrid inherits Rectangle {
             padding: 8px;
             spacing: 4px;
             HorizontalLayout {
-                Text { horizontal-stretch: 1; text: cell.key; color: Theme.link; font-family: "monospace"; font-size: 12px; font-weight: 600; }
+                Text { horizontal-stretch: 1; text: MenuEditor.cells[root.preview(index)].key; color: Theme.link; font-family: "monospace"; font-size: 12px; font-weight: 600; }
                 Image { width: 14px; height: 14px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; accessible-label: @tr("Drag"); }
             }
             if root.emoji: Text {
@@ -112,6 +128,17 @@ component HotkeyGrid inherits Rectangle {
             if !root.emoji: Rectangle { vertical-stretch: 1; }
         }
     }
+    if root.dragging: Rectangle {
+        x: max(0px, min(root.width - self.width, root.pad + mod(root.drag-from, 5) * (root.cell-width + root.gap) + root.pointer-x - root.press-x));
+        y: max(0px, min(root.height - self.height, root.pad + floor(root.drag-from / 5) * (root.cell-height + root.gap) + root.pointer-y - root.press-y));
+        width: root.cell-width; height: root.cell-height;
+        border-radius: 6px; border-width: 2px; border-color: Theme.link; background: Theme.card; opacity: 0.92;
+        VerticalLayout { padding: 8px; spacing: 4px;
+            Text { text: MenuEditor.cells[root.drag-from].key; color: Theme.link; }
+            Text { text: root.emoji ? MenuEditor.cells[root.drag-from].value : MenuEditor.cells[root.drag-from].name; color: Theme.text; font-size: root.emoji ? 26px : 14px; wrap: word-wrap; horizontal-alignment: center; vertical-alignment: center; vertical-stretch: 1; }
+            if !root.emoji: Text { text: MenuEditor.cells[root.drag-from].value; color: Theme.muted; overflow: elide; }
+        }
+    }
     TouchArea {
         mouse-cursor: root.dragging ? grabbing : pointer;
         pointer-event(event) => {
@@ -120,6 +147,7 @@ component HotkeyGrid inherits Rectangle {
                 root.drag-over = root.drag-from;
                 root.press-x = self.mouse-x;
                 root.press-y = self.mouse-y;
+                root.pointer-x = self.mouse-x; root.pointer-y = self.mouse-y;
                 root.dragging = false;
             }
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
@@ -132,9 +160,11 @@ component HotkeyGrid inherits Rectangle {
                 root.drag-from = -1;
                 root.drag-over = -1;
             }
+            if event.kind == PointerEventKind.cancel { root.dragging = false; root.drag-from = -1; root.drag-over = -1; }
         }
         moved => {
             if self.pressed && root.drag-from >= 0 {
+                root.pointer-x = self.mouse-x; root.pointer-y = self.mouse-y;
                 if abs(self.mouse-x - root.press-x) > 6px || abs(self.mouse-y - root.press-y) > 6px {
                     root.dragging = true;
                 }
@@ -402,6 +432,8 @@ export component QuickActionsPage inherits Rectangle {
 component CommandCard inherits Card {
     in property <int> index;
     in property <CommandRow> item;
+    opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == root.index ? 0.6 : 1;
+    DropMarker { width: parent.width; group: 5; index: root.index; row-y: root.y; row-height: root.height; }
     callback remove();
     callback copy(string);
     VerticalLayout {
@@ -438,8 +470,7 @@ component CommandCard inherits Card {
             HorizontalLayout {
                 spacing: 2px;
                 alignment: start;
-                IconButton { icon: @image-url("icons/arrow-up.svg"); label: @tr("Move up"); enabled: root.index > 0; clicked => { MenuEditor.move-command(root.index, -1); } }
-                IconButton { icon: @image-url("icons/arrow-down.svg"); label: @tr("Move down"); enabled: root.index + 1 < MenuEditor.commands.length; clicked => { MenuEditor.move-command(root.index, 1); } }
+                DragHandle { group: 5; index: root.index; count: MenuEditor.commands.length; dropped(from, to) => { MenuEditor.move-command(from, to); } }
                 IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete command"); danger: true; clicked => { root.remove(); } }
             }
         }

@@ -1,6 +1,7 @@
 import { ActionPicker } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
-import { ConfirmDialog } from "controls.slint";
+import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
+import { IconButton, ConfirmDialog } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
@@ -42,7 +43,7 @@ export global RulesEditor {
     callback select(int);
     callback add();
     callback remove();
-    callback move(int);
+    callback move(int, int);
     /// Change a property of the selected rule in place.
     callback edit(RuleField, string);
     /// Open `dialog` for rule `index`.
@@ -79,32 +80,39 @@ export component RulesPage inherits VerticalBox {
     ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
         VerticalLayout { spacing: 10px;
             for rule[index] in RulesEditor.rows: Rectangle {
-                min-height: 300px;
+                min-height: 210px;
                 background: Theme.card;
-                border-color: RulesEditor.selected == index ? Theme.accent : Theme.border;
+                border-color: RulesEditor.selected == index || (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.accent : Theme.border;
                 border-width: 1px;
                 border-radius: 10px;
-                VerticalBox { padding: 14px; spacing: 10px;
-                    HorizontalBox { vertical-stretch: 0; spacing: 12px;
+                opacity: DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index ? 0.6 : 1;
+                DropMarker { width: parent.width; group: 1; index: index; row-y: parent.y; row-height: parent.height; }
+                HorizontalLayout { padding: 14px; spacing: 16px;
+                    VerticalLayout { width: 175px; horizontal-stretch: 0; spacing: 10px; alignment: start;
+                        HorizontalLayout { spacing: 6px;
+                            DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
+                            CheckBox { text: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
+                        }
                         RuleCell { title: @tr("Trigger key"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
-                        RuleCell { title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
-                        RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
-                        RuleCell { width: 160px; horizontal-stretch: 0; title: @tr("Hold timeout, ms"); value: rule.hold-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold-timeout); } }
+                        HorizontalLayout { spacing: 6px; alignment: start;
+                            IconButton { icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
+                            IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); danger: true; clicked => { RulesEditor.open-dialog(index, RuleDialog.remove); } }
+                        }
                     }
-                    Rectangle { height: 1px; background: Theme.border; }
-                    HorizontalBox { vertical-stretch: 0; spacing: 12px;
-                        RuleCell { title: @tr("Tap action"); value: rule.tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
-                        RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
-                        RuleCell { title: @tr("Hold button"); value: rule.hold; clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
-                        RuleCell { width: 160px; horizontal-stretch: 0; title: @tr("Double-tap ms"); value: rule.double-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-timeout); } }
-                    }
-                    HorizontalBox { vertical-stretch: 0; spacing: 7px;
-                        CheckBox { text: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
-                        Rectangle { horizontal-stretch: 1; }
-                        Button { text: @tr("↑"); enabled: index > 0; clicked => { RulesEditor.select(index); RulesEditor.move(-1); } }
-                        Button { text: @tr("↓"); enabled: index + 1 < RulesEditor.rows.length; clicked => { RulesEditor.select(index); RulesEditor.move(1); } }
-                        Button { text: @tr("Advanced"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
-                        Button { text: @tr("Remove"); clicked => { RulesEditor.open-dialog(index, RuleDialog.remove); } }
+                    Rectangle { width: 1px; background: Theme.border; }
+                    VerticalLayout { spacing: 12px;
+                        HorizontalLayout { spacing: 12px;
+                            RuleCell { title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
+                            RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
+                            RuleCell { title: @tr("Hold timeout, ms"); value: rule.hold-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold-timeout); } }
+                        }
+                        Rectangle { height: 1px; background: Theme.border; }
+                        HorizontalLayout { spacing: 12px;
+                            RuleCell { title: @tr("Tap action"); value: rule.tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
+                            RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                            RuleCell { title: @tr("Hold button"); value: rule.hold; clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
+                        }
+                        RuleCell { title: @tr("Double-tap ms"); value: rule.double-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-timeout); } }
                     }
                 }
             }
