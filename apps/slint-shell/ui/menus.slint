@@ -215,76 +215,70 @@ component EmojiButton inherits Rectangle {
 export component EmojiPage inherits Rectangle {
     vertical-stretch: 1;
     private property <bool> confirming;
-    ScrollView {
+    VerticalLayout {
         width: 100%;
         height: 100%;
-        viewport-width: self.visible-width;
-        VerticalLayout {
-            alignment: start;
-            Rectangle {
+        padding: 0px;
+        spacing: 16px;
+        CardHeader {
+            title: @tr("Emoji & Symbols");
+            info: @tr("Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").");
+        }
+        HorizontalLayout {
+            spacing: 16px;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 16px;
+                alignment: start;
+                PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
+                HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
+            }
+            Card {
+                width: 360px;
+                vertical-stretch: 1;
                 VerticalLayout {
-                    padding: 0px;
-                    spacing: 16px;
-                    CardHeader {
-                        title: @tr("Emoji & Symbols");
-                        info: @tr("Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").");
-                    }
+                    padding: 14px;
+                    spacing: 12px;
+                    PageEditor { remove => { root.confirming = true; } }
+                    Rectangle { height: 1px; background: Theme.border; }
+                    FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                     HorizontalLayout {
-                        spacing: 16px;
-                        VerticalLayout {
-                            horizontal-stretch: 1;
-                            spacing: 16px;
-                            alignment: start;
-                            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
-                            HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
+                        spacing: 4px;
+                        LineEdit {
+                            text <=> MenuEditor.value;
+                            placeholder-text: @tr("Emoji, symbol, or any text");
+                            edited => { MenuEditor.set-cell(); }
                         }
-                        Card {
-                            width: 360px;
-                            VerticalLayout {
-                                padding: 14px;
-                                spacing: 12px;
-                                PageEditor { remove => { root.confirming = true; } }
-                                Rectangle { height: 1px; background: Theme.border; }
-                                FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
-                                HorizontalLayout {
-                                    spacing: 4px;
-                                    LineEdit {
-                                        text <=> MenuEditor.value;
-                                        placeholder-text: @tr("Emoji, symbol, or any text");
-                                        edited => { MenuEditor.set-cell(); }
-                                    }
-                                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
+                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
+                    }
+                    ScrollView {
+                        min-height: 0px;
+                        vertical-stretch: 1;
+                        viewport-width: self.visible-width;
+                        VerticalLayout {
+                            padding-right: 10px;
+                            spacing: 6px;
+                            for category in MenuEditor.catalog: VerticalLayout {
+                                spacing: 6px;
+                                padding-bottom: 8px;
+                                Text {
+                                    text: category.id == "smileys" ? @tr("Smileys & Emotion")
+                                        : category.id == "people" ? @tr("People & Gestures")
+                                        : category.id == "symbols" ? @tr("Emoji Symbols")
+                                        : category.id == "work" ? @tr("Work & Objects")
+                                        : category.id == "nature" ? @tr("Animals & Nature")
+                                        : category.id == "food" ? @tr("Food & Drink")
+                                        : category.id == "travel" ? @tr("Travel & Places")
+                                        : @tr("UTF Symbols");
+                                    color: Theme.muted;
+                                    font-size: 11px;
+                                    font-weight: 700;
                                 }
-                                ScrollView {
-                                    height: 400px;
-                                    viewport-width: self.visible-width;
-                                    VerticalLayout {
-                                        padding-right: 10px;
-                                        spacing: 6px;
-                                        for category in MenuEditor.catalog: VerticalLayout {
-                                            spacing: 6px;
-                                            padding-bottom: 8px;
-                                            Text {
-                                                text: category.id == "smileys" ? @tr("Smileys & Emotion")
-                                                    : category.id == "people" ? @tr("People & Gestures")
-                                                    : category.id == "symbols" ? @tr("Emoji Symbols")
-                                                    : category.id == "work" ? @tr("Work & Objects")
-                                                    : category.id == "nature" ? @tr("Animals & Nature")
-                                                    : category.id == "food" ? @tr("Food & Drink")
-                                                    : category.id == "travel" ? @tr("Travel & Places")
-                                                    : @tr("UTF Symbols");
-                                                color: Theme.muted;
-                                                font-size: 11px;
-                                                font-weight: 700;
-                                            }
-                                            for row in ceil(category.items.length / 6): HorizontalLayout {
-                                                spacing: 6px;
-                                                for col in 6: EmojiButton {
-                                                    item: category.items[row * 6 + col];
-                                                    visible: row * 6 + col < category.items.length;
-                                                }
-                                            }
-                                        }
+                                for row in ceil(category.items.length / 6): HorizontalLayout {
+                                    spacing: 6px;
+                                    for col in 6: EmojiButton {
+                                        item: category.items[row * 6 + col];
+                                        visible: row * 6 + col < category.items.length;
                                     }
                                 }
                             }
