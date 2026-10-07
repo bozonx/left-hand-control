@@ -614,6 +614,9 @@ impl ConfigDocument {
             return Err(ConfigError::Rules(blocking));
         }
         diagnostics::runtime_rules(&mut config);
+        for keymap in config.layer_keymaps.values_mut() {
+            keymap.extras.retain(|extra| !extra.key.trim().is_empty());
+        }
         let json = config.to_json();
         validate_for_mapper(&json)?;
         Ok(RuntimeConfig { json, layout_id })
@@ -919,6 +922,38 @@ mod tests {
         assert_eq!(value["rules"][0]["key"], "CapsLock");
         assert_eq!(value["rules"][0]["tapAction"], "Escape");
         assert_eq!(value["rules"][0]["holdAction"], "");
+    }
+
+    #[test]
+    fn runtime_config_skips_extra_key_drafts_without_changing_the_document() {
+        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        document
+            .set_layer_extra("nav", None, "", Some(String::new()))
+            .unwrap();
+        document
+            .set_layer_extra("nav", None, "   ", Some("KeyA".into()))
+            .unwrap();
+        document.set_layer_extra("nav", None, "F13", None).unwrap();
+        let saved = document.paths.load_current_layout().unwrap();
+        let runtime = document
+            .runtime_config(&AutoSwitchContext::default())
+            .unwrap();
+        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        assert_eq!(
+            value["layerKeymaps"]["nav"]["extras"].as_array().unwrap().len(),
+            1
+        );
+        assert_eq!(value["layerKeymaps"]["nav"]["extras"][0]["key"], "F13");
+        assert_eq!(document.layout().layer_keymaps["nav"].extras.len(), 3);
+        assert_eq!(document.paths.load_current_layout().unwrap(), saved);
+        document
+            .set_layer_extra("nav", None, "BadKey", Some("KeyA".into()))
+            .unwrap();
+        #[cfg(target_os = "linux")]
+        assert!(matches!(
+            document.runtime_config(&AutoSwitchContext::default()),
+            Err(ConfigError::Invalid(_))
+        ));
     }
 
     #[test]

@@ -284,11 +284,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                     assert_eq!(ui.get_page(), expected);
                 }
+                ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply();
                 ui.global::<AppState>().invoke_set_game_control(GameModeControl::On); }
             11 => { snapshot(&ui, "game-mode-on-light"); ui.global::<Theme>().set_dark(true); ui.global::<Theme>().invoke_apply(); }
             12 => { snapshot(&ui, "game-mode-on-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Off); }
             13 => { snapshot(&ui, "game-mode-off-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Auto); }
-            14 => { snapshot(&ui, "game-mode-auto-dark"); println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state, popup search and game mode overrides"); slint::quit_event_loop().unwrap(); }
+            14 => { snapshot(&ui, "game-mode-auto-dark");
+                let position = slint::LogicalPosition::new(789.0, 27.0);
+                for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+            }
+            15 => { snapshot(&ui, "game-mode-menu-dark");
+                for text in [slint::platform::Key::DownArrow.into(), "\n".into()] {
+                    ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text });
+                }
+                assert_eq!(ui.global::<AppState>().get_game_control(), GameModeControl::On);
+            }
+            16 => { snapshot(&ui, "game-mode-menu-selected"); println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state, popup search and game mode overrides and dropdown keyboard selection"); slint::quit_event_loop().unwrap(); }
             _ => {}
         }
         step.set(n + 1);

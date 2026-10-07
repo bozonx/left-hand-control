@@ -24,9 +24,9 @@ export component GameModeButton inherits Rectangle {
     }
     HorizontalLayout {
         padding-left: 10px; padding-right: 8px; spacing: 6px; alignment: center;
-        Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: root.state-color; }
+        VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: root.state-color; } }
         Text { text: root.label; color: root.state-color; font-weight: 600; vertical-alignment: center; }
-        Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: root.state-color; transform-rotation: menu.is-open ? 180deg : 0deg; }
+        VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: root.state-color; transform-rotation: menu.is-open ? 180deg : 0deg; } }
     }
     forward-focus: focus;
     focus := FocusScope {
