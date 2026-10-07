@@ -9,13 +9,22 @@ export component QuickPopup inherits Window {
     in-out property <int> page;
     callback change-page(int);
     in-out property <string> query;
+    in-out property <bool> searching;
     in-out property <int> selected;
     callback filter(string);
     callback key(string);
     in property <bool> presented: true;
     callback choose(int);
     callback dismiss();
-    public function prepare() { search.focus(); }
+    public function prepare() { root.query = ""; root.searching = false; keys.focus(); }
+    public function begin-search() { root.searching = true; search.focus(); }
+    keys := FocusScope {
+    key-pressed(event) => {
+        if event.modifiers.alt && event.text >= "1" && event.text <= "9" {
+            root.choose(event.text.to-float() - 1);
+        } else { root.key(event.text); }
+        return accept;
+    }
     Rectangle {
         visible: root.presented;
         x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
@@ -24,14 +33,16 @@ export component QuickPopup inherits Window {
             padding: 16px;
             HorizontalBox {
                 Text { text: @tr("Quick actions"); color: Theme.text; font-size: 22px; }
+                Button { text: @tr("Search"); clicked => { root.begin-search(); } }
                 Button { text: "×"; clicked => { root.dismiss(); } }
             }
             if root.page-names.length > 0: HorizontalBox {
-                Button { text: "←"; enabled: root.page > 0; clicked => { root.page -= 1; root.change-page(root.page); search.focus(); } }
+                Button { text: "←"; enabled: root.page > 0; clicked => { root.page -= 1; root.change-page(root.page); if root.searching { search.focus(); } else { keys.focus(); } } }
                 Text { text: root.page-names[root.page]; color: Theme.text; horizontal-stretch: 1; }
-                Button { text: "→"; enabled: root.page + 1 < root.page-names.length; clicked => { root.page += 1; root.change-page(root.page); search.focus(); } }
+                Button { text: "→"; enabled: root.page + 1 < root.page-names.length; clicked => { root.page += 1; root.change-page(root.page); if root.searching { search.focus(); } else { keys.focus(); } } }
             }
             search := LineEdit {
+                visible: root.searching;
                 text <=> root.query;
                 placeholder-text: @tr("Filter");
                 edited => { root.filter(self.text); }
@@ -65,4 +76,5 @@ export component QuickPopup inherits Window {
             }
         }
     }
+}
 }

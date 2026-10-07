@@ -11,6 +11,9 @@ export global Locale {
     in-out property <bool> english: false;
 
     public pure function text(m: Message) -> string {
+        if m.id == "capability-available" { return @tr("Available"); }
+        if m.id == "capability-unavailable" { return @tr("Unavailable"); }
+        if m.id == "capability-unsupported" { return @tr("Not implemented"); }
         if m.id == "picker-action" && m.arg == "showQuickMenu" { return @tr("Show Quick Action Menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "showEmojiMenu" { return @tr("Show Emoji & Symbols menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "switchDesktop" { return @tr("Switch to desktop {}", m.count); }

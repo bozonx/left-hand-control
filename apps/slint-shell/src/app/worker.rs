@@ -35,8 +35,17 @@ impl RestartPolicy {
     }
 }
 
+#[derive(Clone)]
+pub(super) struct PendingShow {
+    pub(super) command: Command,
+    pub(super) source: Source,
+    pub(super) start: Instant,
+    pub(super) token: Option<String>,
+}
+
 #[derive(Default)]
 pub(super) struct Supervisor {
+    pub(super) pending_show: Option<PendingShow>,
     /// Popups run in the worker (layer-shell available and requested).
     pub(super) enabled: bool,
     worker: Option<Worker>,
@@ -56,6 +65,33 @@ impl Supervisor {
 }
 
 impl App {
+    pub(super) fn flush_worker_show(&self) {
+        let pending = {
+            let supervisor = self.supervisor.borrow();
+            if supervisor.worker.is_none() {
+                return;
+            }
+            supervisor.pending_show.clone()
+        };
+        let Some(pending) = pending else { return };
+        let result = self
+            .sync_worker_menus(pending.source, pending.start)
+            .and_then(|()| {
+                self.send_worker(
+                    &pending.command,
+                    pending.source,
+                    pending.start,
+                    pending.token,
+                )
+            });
+        match result {
+            Ok(()) => {
+                self.supervisor.borrow_mut().pending_show.take();
+            }
+            Err(error) => self.set_error(error),
+        }
+    }
+
     /// Forward `command` to the worker.
     pub(super) fn send_worker(
         &self,
@@ -136,6 +172,7 @@ impl App {
                 }
                 self.supervisor.borrow_mut().worker = Some(worker);
                 self.menus_sent.borrow_mut().take();
+                self.flush_worker_show();
             }
             Err(error) => {
                 log::error!("Spell worker: {error}");

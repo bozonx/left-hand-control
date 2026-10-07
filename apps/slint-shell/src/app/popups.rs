@@ -39,7 +39,7 @@ impl App {
             return menus.clone();
         }
         let layout = self
-            .document
+            .document()
             .as_ref()
             .and_then(|document| {
                 document
@@ -61,8 +61,12 @@ impl App {
     }
 
     /// Tell the worker which layout's menus to show, when that changed.
-    fn sync_worker_menus(&self, source: Source, start: Instant) {
-        let id = self.document.as_ref().and_then(|document| {
+    pub(super) fn sync_worker_menus(
+        &self,
+        source: Source,
+        start: Instant,
+    ) -> Result<(), crate::i18n::Msg> {
+        let id = self.document().as_ref().and_then(|document| {
             document
                 .read()
                 .active_layout_id(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
@@ -71,11 +75,11 @@ impl App {
         });
         let current = (id.clone(), self.menu_generation.get());
         if self.menus_sent.borrow().as_ref() == Some(&current) {
-            return;
+            return Ok(());
         }
-        if self.send_worker(&Command::PopupLayout(id), source, start, None).is_ok() {
-            *self.menus_sent.borrow_mut() = Some(current);
-        }
+        self.send_worker(&Command::PopupLayout(id), source, start, None)?;
+        *self.menus_sent.borrow_mut() = Some(current);
+        Ok(())
     }
 
     pub(super) fn show(
@@ -88,12 +92,17 @@ impl App {
     ) {
         if let Some(popup) = window.popup() {
             if self.supervisor.borrow().enabled {
+                let command =
+                    page.map_or(Command::Show(window), |page| Command::ShowPage(popup, page));
+                self.supervisor.borrow_mut().pending_show = Some(super::worker::PendingShow {
+                    command,
+                    source,
+                    start,
+                    token,
+                });
+                self.check_worker();
                 self.start_worker(true);
-                self.sync_worker_menus(source, start);
-                let command = page.map_or(Command::Show(window), |page| Command::ShowPage(popup, page));
-                if let Err(error) = self.send_worker(&command, source, start, token) {
-                    self.set_error(error);
-                }
+                self.flush_worker_show();
                 return;
             }
             #[cfg(not(target_os = "linux"))]
@@ -105,6 +114,8 @@ impl App {
                     self.return_input.borrow_mut().capture();
                 }
             }
+            self.quick.set_query("".into());
+            self.quick.set_searching(false);
             self.refresh_popup_data();
             if let Some(page) = page {
                 popup_model::select_page(popup, page, &self.emoji, &self.quick);
@@ -164,9 +175,21 @@ impl App {
             Popup::Emoji => popup_model::emoji_key(&self.emoji, key),
             Popup::Quick => popup_model::quick_key(&self.quick, key),
         };
+        self.popup_outcome(popup, outcome);
+    }
+
+    fn popup_outcome(&self, popup: Popup, outcome: KeyOutcome) {
         match outcome {
             KeyOutcome::Dismiss => self.defer_hide(Window::Popup(popup)),
             KeyOutcome::Choose(index) => self.choose(popup, index),
+            KeyOutcome::ChooseCell(index) => {
+                if popup == Popup::Emoji {
+                    self.choose(popup, index);
+                } else if let Some(action) = self.menus().quick_cell(self.quick.get_page(), index) {
+                    self.choose_action(popup, action);
+                }
+            }
+            KeyOutcome::PageChanged => self.filter_quick(),
             KeyOutcome::Moved => self
                 .metrics
                 .borrow_mut()
@@ -183,6 +206,10 @@ impl App {
                 .and_then(|index| self.quick_actions.borrow().get(index).cloned()),
         };
         let Some(action) = action else { return };
+        self.choose_action(popup, action);
+    }
+
+    fn choose_action(&self, popup: Popup, action: String) {
         self.defer_hide(Window::Popup(popup));
         #[cfg(not(target_os = "linux"))]
         if let Some(text) = action.strip_prefix("text:") {
@@ -203,7 +230,12 @@ impl App {
             .take_if(|(pending, _)| *pending == popup)
             .map(|(_, action)| action);
         if let Some(action) = action {
-            self.command(Command::Execute(action), Source::Button, Instant::now(), None);
+            self.command(
+                Command::Execute(action),
+                Source::Button,
+                Instant::now(),
+                None,
+            );
         }
     }
 
@@ -240,50 +272,83 @@ fn observe(app: &Rc<App>, window: Window) {
         log::warn!("{} rendering notifier unavailable: {error:?}", window.name());
     }
     let weak = Rc::downgrade(app);
-    app.window(window).on_winit_window_event(move |native, event| {
-        // winit keeps delivering events to a hidden Wayland window until its
-        // surface is recreated; show and hide it once to release it.
-        #[cfg(target_os = "linux")]
-        if !native.is_visible()
-            && native.with_winit_window(|window| {
-                use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-                window
-                    .window_handle()
-                    .is_ok_and(|handle| matches!(handle.as_raw(), RawWindowHandle::Wayland(_)))
-            }) == Some(true)
-        {
-            super::post(move |app| {
-                let native = app.window(window);
-                if !native.is_visible()
-                    && native.has_winit_window()
-                    && let Err(error) = native.show().and_then(|()| native.hide())
-                {
-                    log::error!("dispose hidden {} window: {error}", window.name());
-                }
-            });
-            return EventResult::PreventDefault;
-        }
-        #[cfg(not(target_os = "linux"))]
-        let _ = native;
-        let Some(app) = weak.upgrade() else {
-            return EventResult::Propagate;
-        };
-        if window == Window::Settings && crate::pages::capture(&app.settings, event) {
-            return EventResult::PreventDefault;
-        }
-        match event {
-            WindowEvent::Focused(true) => app.metrics.borrow_mut().mark(window.name(), "t4_focused"),
-            WindowEvent::Focused(false) => {
-                if let Some(popup) = window.popup() {
-                    app.defer_hide(window);
-                    app.run_pending_action(popup);
-                }
+    let modifiers =
+        std::cell::Cell::new(slint::winit_030::winit::keyboard::ModifiersState::empty());
+    app.window(window)
+        .on_winit_window_event(move |native, event| {
+            // winit keeps delivering events to a hidden Wayland window until its
+            // surface is recreated; show and hide it once to release it.
+            #[cfg(target_os = "linux")]
+            if !native.is_visible()
+                && native.with_winit_window(|window| {
+                    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+                    window
+                        .window_handle()
+                        .is_ok_and(|handle| matches!(handle.as_raw(), RawWindowHandle::Wayland(_)))
+                }) == Some(true)
+            {
+                super::post(move |app| {
+                    let native = app.window(window);
+                    if !native.is_visible()
+                        && native.has_winit_window()
+                        && let Err(error) = native.show().and_then(|()| native.hide())
+                    {
+                        log::error!("dispose hidden {} window: {error}", window.name());
+                    }
+                });
+                return EventResult::PreventDefault;
             }
-            WindowEvent::ThemeChanged(_) if window == Window::Settings => app.apply_preferences(),
-            _ => {}
-        }
-        EventResult::Propagate
-    });
+            #[cfg(not(target_os = "linux"))]
+            let _ = native;
+            let Some(app) = weak.upgrade() else {
+                return EventResult::Propagate;
+            };
+            if window == Window::Settings && crate::pages::capture(&app.settings, event) {
+                return EventResult::PreventDefault;
+            }
+            if let WindowEvent::ModifiersChanged(next) = event {
+                modifiers.set(next.state());
+            }
+            if let Some(popup) = window.popup()
+                && app.window(window).is_visible()
+                && let WindowEvent::KeyboardInput { event, .. } = event
+                && let slint::winit_030::winit::keyboard::PhysicalKey::Code(code) =
+                    event.physical_key
+                && let Some(shortcut) = popup_model::shortcut(
+                    popup,
+                    &format!("{code:?}"),
+                    modifiers.get().shift_key(),
+                    modifiers.get().control_key(),
+                    app.quick.get_searching(),
+                )
+            {
+                if event.state == slint::winit_030::winit::event::ElementState::Pressed
+                    && !event.repeat
+                {
+                    app.metrics.borrow_mut().mark(popup.name(), "t5_first_key");
+                    let outcome =
+                        popup_model::apply_shortcut(popup, shortcut, &app.emoji, &app.quick);
+                    app.popup_outcome(popup, outcome);
+                }
+                return EventResult::PreventDefault;
+            }
+            match event {
+                WindowEvent::Focused(true) => {
+                    app.metrics.borrow_mut().mark(window.name(), "t4_focused")
+                }
+                WindowEvent::Focused(false) => {
+                    if let Some(popup) = window.popup() {
+                        app.defer_hide(window);
+                        app.run_pending_action(popup);
+                    }
+                }
+                WindowEvent::ThemeChanged(_) if window == Window::Settings => {
+                    app.apply_preferences()
+                }
+                _ => {}
+            }
+            EventResult::Propagate
+        });
 }
 
 pub(super) fn bind(app: &Rc<App>) {

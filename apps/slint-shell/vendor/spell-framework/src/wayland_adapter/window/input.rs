@@ -255,6 +255,7 @@ impl KeyboardHandler for SpellWin {
         _serial: u32,
     ) {
         if _surface != self.layer.as_ref().unwrap().wl_surface() { return; }
+        self.consumed_keys.clear();
         for (_, text) in self.pressed.drain() {
             self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyReleased { text });
         }
@@ -272,6 +273,10 @@ impl KeyboardHandler for SpellWin {
         event: smithay_client_toolkit::seat::keyboard::KeyEvent,
     ) {
         let code = event.raw_code;
+        if self.key_handler.as_mut().is_some_and(|handler| handler(code, self.modifiers.shift, self.modifiers.ctrl)) {
+            self.consumed_keys.insert(code);
+            return;
+        }
         let text = get_string(event);
         if is_modifier(&text) { return; }
         self.pressed.insert(code, text.clone());
@@ -286,6 +291,7 @@ impl KeyboardHandler for SpellWin {
         _serial: u32,
         /*mut*/ event: smithay_client_toolkit::seat::keyboard::KeyEvent,
     ) {
+        if self.consumed_keys.remove(&event.raw_code) { return; }
         if let Some(text) = self.pressed.remove(&event.raw_code) {
             self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyReleased { text });
         }
@@ -333,7 +339,7 @@ fn is_modifier(text: &SharedString) -> bool {
 
 impl SpellWin {
     pub(super) fn repeat_input(&mut self, event: smithay_client_toolkit::seat::keyboard::KeyEvent) {
-        if self.is_hidden.get() { return; }
+        if self.is_hidden.get() || self.consumed_keys.contains(&event.raw_code) { return; }
         let text = get_string(event);
         if !is_modifier(&text) {
             self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyPressRepeated { text });

@@ -38,7 +38,7 @@ pub(crate) struct App {
     settings: SettingsWindow,
     emoji: EmojiPopup,
     quick: QuickPopup,
-    document: Option<Rc<Document>>,
+    document: RefCell<Option<Rc<Document>>>,
     metrics: RefCell<metrics::Metrics>,
     /// Bumped on every show; deferred work checks it to skip stale requests.
     generations: RefCell<HashMap<Window, u64>>,
@@ -58,6 +58,7 @@ pub(crate) struct App {
     pending_action: RefCell<Option<(Popup, String)>>,
     supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
+    last_autostart: Cell<Option<bool>>,
     config_watch: slint::Timer,
     worker_watch: slint::Timer,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
@@ -91,6 +92,23 @@ fn system_dark(settings: &SettingsWindow) -> bool {
 }
 
 impl App {
+    fn document(&self) -> Option<Rc<Document>> {
+        self.document.borrow().clone()
+    }
+
+    fn install_document(self: &Rc<Self>, document: Rc<Document>) {
+        *self.document.borrow_mut() = Some(document.clone());
+        pages::bind_document(&self.settings, &document);
+        let weak = Rc::downgrade(self);
+        document.subscribe(View::Shell, move |_| {
+            if let Some(app) = weak.upgrade() {
+                app.document_changed();
+            }
+        });
+        self.document_changed();
+        self.context_changed();
+    }
+
     fn window(&self, window: Window) -> &slint::Window {
         match window {
             Window::Settings => self.settings.window(),
@@ -127,6 +145,7 @@ impl App {
                 self.show(Window::Popup(popup), source, start, token, Some(page))
             }
             Command::Hide => {
+                self.supervisor.borrow_mut().pending_show.take();
                 if self.supervisor.borrow().enabled {
                     let _ = self.send_worker(&Command::Hide, source, start, token);
                 }
@@ -159,7 +178,7 @@ impl App {
 
     /// Theme and language resolved from the saved settings.
     fn configured_preferences(&self) -> Preferences {
-        let Some(document) = &self.document else {
+        let Some(document) = self.document() else {
             return Preferences {
                 theme: ThemeMode::Dark,
                 language: Language::resolve(Default::default()),
@@ -191,7 +210,10 @@ impl App {
         self.preferences.set(preferences);
         preferences.language.select_bundled();
         for (theme, locale) in [
-            (self.settings.global::<Theme>(), self.settings.global::<Locale>()),
+            (
+                self.settings.global::<Theme>(),
+                self.settings.global::<Locale>(),
+            ),
             (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
         ] {
@@ -203,19 +225,32 @@ impl App {
             tray.set_english(preferences.language == Language::English);
         }
         if self.supervisor.borrow().enabled {
-            let _ = self.send_worker(&Command::Preferences(preferences), Source::Ipc, Instant::now(), None);
+            let _ = self.send_worker(
+                &Command::Preferences(preferences),
+                Source::Ipc,
+                Instant::now(),
+                None,
+            );
         }
         // Action names on the pages are translated in Rust.
-        if changed_language && let Some(document) = &self.document {
+        if changed_language && let Some(document) = self.document() {
             document.refresh_all();
         }
     }
 
     /// Shell parts that depend on the document.
     fn document_changed(&self) {
-        let Some(document) = &self.document else {
+        self.refresh_mapper_status();
+        let Some(document) = self.document() else {
             return;
         };
+        let launch_on_startup = document.read().settings().launch_on_startup;
+        if cfg!(target_os = "linux") && self.last_autostart.get() != Some(launch_on_startup) {
+            match lhc_core::autostart::set_enabled(document.read().paths(), launch_on_startup) {
+                Ok(()) => self.last_autostart.set(Some(launch_on_startup)),
+                Err(error) => self.set_error(Msg::Error(error)),
+            }
+        }
         let need_approval = {
             let config = document.read();
             !config.layout().commands.is_empty() && !config.commands_trusted()
@@ -280,9 +315,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let settings = SettingsWindow::new()?;
     settings.global::<AppState>().set_is_linux(cfg!(target_os = "linux"));
     let document = load_document(&settings);
-    if let Some(document) = &document {
-        pages::bind_document(&settings, document);
-    }
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;
@@ -293,7 +325,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         settings,
         emoji,
         quick,
-        document,
+        document: RefCell::new(None),
         metrics: RefCell::new(metrics),
         generations: RefCell::default(),
         focus: RefCell::new(focus::Activation::default()),
@@ -307,22 +339,16 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         pending_action: RefCell::default(),
         supervisor: RefCell::new(worker::Supervisor::new(use_spell)),
         preferences: Cell::new(Preferences::default()),
+        last_autostart: Cell::new(None),
         config_watch: slint::Timer::default(),
         worker_watch: slint::Timer::default(),
         last_mapper_status: RefCell::new(None),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
     app.set_preferences(app.configured_preferences());
-    if let Some(document) = &app.document {
-        let weak = Rc::downgrade(&app);
-        document.subscribe(View::Shell, move |_| {
-            if let Some(app) = weak.upgrade() {
-                app.document_changed();
-            }
-        });
+    if let Some(document) = document {
+        app.install_document(document);
     }
-    app.document_changed();
-    app.context_changed();
     app.refresh_mapper_status();
     app.settings
         .global::<AppState>()

@@ -67,7 +67,7 @@ describe('system macro catalog', () => {
 
   it('stays in sync with the Rust runtime catalog', () => {
     const rust = readFileSync(
-      join(process.cwd(), 'src-tauri/src/mapper/system_macros.rs'),
+      join(process.cwd(), 'crates/lhc-core/src/mapper/system_macros.rs'),
       'utf8',
     )
 

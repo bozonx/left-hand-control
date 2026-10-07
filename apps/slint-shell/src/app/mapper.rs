@@ -40,13 +40,14 @@ impl App {
                 .unwrap_or_default()
                 .into(),
         );
-        let Some(document) = &self.document else {
+        let Some(document) = self.document() else {
             return;
         };
         if let Err(error) = document.sync_runtime(false) {
             self.set_error(Msg::SavedMapperNotUpdated(error));
         }
-        pages::refresh_active(&self.settings, document);
+        self.refresh_mapper_status();
+        pages::refresh_active(&self.settings, &document);
         self.invalidate_menus();
     }
 
@@ -94,7 +95,7 @@ impl App {
             });
             return;
         }
-        let Some(document) = &self.document else {
+        let Some(document) = self.document() else {
             self.set_error(Msg::LoadConfigFirst);
             return;
         };
@@ -126,7 +127,7 @@ impl App {
                 match result {
                     Ok(()) => {
                         app.set_error(Msg::None);
-                        if let Some(document) = &app.document {
+                        if let Some(document) = app.document() {
                             document.mapper_started(runtime.layout_id);
                             // The context may have changed while starting.
                             if let Err(error) = document.sync_runtime(false) {
@@ -143,8 +144,12 @@ impl App {
 
     /// Pick up edits made by the Tauri shell or by hand. A file that cannot
     /// be read right now (for example mid-write) leaves the mapper running.
-    pub(super) fn reload_config(&self) {
-        let Some(document) = &self.document else {
+    pub(super) fn reload_config(self: &std::rc::Rc<Self>) {
+        let Some(document) = self.document() else {
+            if let Some(document) = super::load_document(&self.settings) {
+                self.install_document(document);
+                log::info!("configuration recovered");
+            }
             return;
         };
         let state = self.settings.global::<AppState>();

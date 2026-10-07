@@ -43,7 +43,7 @@ use smithay_client_toolkit::{
 };
 use std::{
     cell::{Cell, RefCell},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     os::{fd::AsFd, unix::net::UnixListener},
     rc::Rc,
     sync::Once,
@@ -81,9 +81,13 @@ pub enum WindowEvent {
     Closed,
 }
 
+type KeyHandler = Box<dyn FnMut(u32, bool, bool) -> bool>;
+
 /// `SpellWin` is the main type for implementing widgets, it covers various properties
 /// and trait implementation, thus providing various features.
 pub struct SpellWin {
+    key_handler: Option<KeyHandler>,
+    consumed_keys: HashSet<u32>,
     event_handler: Option<Box<dyn FnMut(WindowEvent)>>,
     modifiers: smithay_client_toolkit::seat::keyboard::Modifiers,
     pressed: HashMap<u32, slint::SharedString>,
@@ -127,6 +131,11 @@ impl std::fmt::Debug for SpellWin {
 }
 
 impl SpellWin {
+    #[allow(missing_docs)]
+    pub fn set_key_handler(&mut self, handler: impl FnMut(u32, bool, bool) -> bool + 'static) {
+        self.key_handler = Some(Box::new(handler));
+    }
+
     #[allow(missing_docs)]
     pub fn set_event_handler(&mut self, handler: impl FnMut(WindowEvent) + 'static) {
         self.event_handler = Some(Box::new(handler));
@@ -196,6 +205,8 @@ impl SpellWin {
 
         let mut win = SpellWin {
             event_handler: None,
+            key_handler: None,
+            consumed_keys: HashSet::new(),
             modifiers: Default::default(),
             pressed: HashMap::new(),
             adapter: None,

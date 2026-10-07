@@ -1284,3 +1284,30 @@ msgstr "Выбранные назначения будут очищены."
 
 msgid "Reset current changes"
 msgstr "Сбросить текущие изменения"
+
+msgid "Available"
+msgstr "Доступно"
+
+msgid "Unavailable"
+msgstr "Недоступно"
+
+msgid "Not implemented"
+msgstr "Не реализовано"
+
+msgid "Refresh status"
+msgstr "Обновить статус"
+
+msgid "Key interception"
+msgstr "Перехват клавиш"
+
+msgid "Text injection"
+msgstr "Ввод текста"
+
+msgid "Layout detection"
+msgstr "Определение раскладки"
+
+msgid "Search"
+msgstr "Поиск"
+
+msgid "Launch on startup"
+msgstr "Запускать вместе с системой"

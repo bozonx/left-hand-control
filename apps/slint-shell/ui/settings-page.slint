@@ -4,11 +4,14 @@ import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, ScrollView, VerticalBox } from "std-widgets.slint";
 
+export struct CapabilityRow { supported: bool, available: bool, status: Message, detail: string }
+
 export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
 
 /// Global application settings (`config.json`). Edits stay in this form
 /// until `save`.
 export global SettingsEditor {
+    in-out property <bool> launch-on-startup;
     in-out property <int> appearance-index;
     in-out property <int> locale-index;
     in-out property <int> tap-decision-index;
@@ -37,6 +40,9 @@ export global SettingsEditor {
     in property <string> settings-dir;
     in property <string> layouts-dir;
     in property <string> platform-summary;
+    in property <[CapabilityRow]> capabilities;
+    in property <bool> platform-busy;
+    callback refresh-platform();
     in property <Message> message;
     callback save();
     callback refresh-devices();
@@ -83,6 +89,7 @@ export component SettingsPage inherits VerticalBox {
             }
             Section {
                 title: @tr("General");
+                if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Text { text: @tr("Appearance"); color: Theme.text; vertical-alignment: center; }
                     ComboBox { model: [@tr("System"), @tr("Light"), @tr("Dark")]; current-index <=> SettingsEditor.appearance-index; }
@@ -140,7 +147,17 @@ export component SettingsPage inherits VerticalBox {
             }
             Section {
                 title: @tr("Configuration and system");
-                Text { text: SettingsEditor.platform-summary; color: Theme.muted; }
+                HorizontalBox {
+                    Text { text: SettingsEditor.platform-summary; color: Theme.muted; horizontal-stretch: 1; }
+                    Button { text: @tr("Refresh status"); enabled: !SettingsEditor.platform-busy; clicked => { SettingsEditor.refresh-platform(); } }
+                }
+                for capability[index] in SettingsEditor.capabilities: VerticalBox {
+                    HorizontalBox {
+                        Text { text: [@tr("Key interception"), @tr("Text injection"), @tr("Layout detection"), @tr("System actions")][index]; color: Theme.text; horizontal-stretch: 1; }
+                        Text { text: Locale.text(capability.status); color: capability.available ? Theme.link : Theme.muted; }
+                    }
+                    if capability.detail != "": Text { text: capability.detail; color: Theme.muted; wrap: word-wrap; }
+                }
                 HorizontalBox { vertical-stretch: 0;
                     Text { text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
                     Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }

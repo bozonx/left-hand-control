@@ -18,9 +18,106 @@ pub enum KeyOutcome {
     Dismiss,
     /// Run the item at this index of the current page.
     Choose(i32),
+    ChooseCell(i32),
+    PageChanged,
     /// The selection or page changed.
     Moved,
     Ignored,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Shortcut {
+    ChooseCell(i32),
+    ChangePage(i32),
+    Search,
+}
+
+pub(crate) fn shortcut(
+    popup: Popup,
+    code: &str,
+    shift: bool,
+    control: bool,
+    searching: bool,
+) -> Option<Shortcut> {
+    if code == "Tab" {
+        return Some(Shortcut::ChangePage(if shift { -1 } else { 1 }));
+    }
+    if popup == Popup::Quick {
+        if code == "KeyF" && control || code == "Slash" && !searching {
+            return Some(Shortcut::Search);
+        }
+        if searching {
+            return None;
+        }
+    }
+    LEFT_HAND_HOTKEYS
+        .iter()
+        .position(|key| *key == code)
+        .map(|index| Shortcut::ChooseCell(index as i32))
+}
+
+#[cfg(all(feature = "spell", target_os = "linux"))]
+pub(crate) fn evdev_shortcut(
+    popup: Popup,
+    code: u32,
+    shift: bool,
+    control: bool,
+    searching: bool,
+) -> Option<Shortcut> {
+    let name = match code {
+        15 => "Tab",
+        20 => "KeyT",
+        16 => "KeyQ",
+        17 => "KeyW",
+        18 => "KeyE",
+        19 => "KeyR",
+        30 => "KeyA",
+        31 => "KeyS",
+        32 => "KeyD",
+        33 => "KeyF",
+        34 => "KeyG",
+        44 => "KeyZ",
+        45 => "KeyX",
+        46 => "KeyC",
+        47 => "KeyV",
+        48 => "KeyB",
+        53 => "Slash",
+        _ => return None,
+    };
+    shortcut(popup, name, shift, control, searching)
+}
+
+pub(crate) fn apply_shortcut(
+    popup: Popup,
+    shortcut: Shortcut,
+    emoji: &EmojiPopup,
+    quick: &QuickPopup,
+) -> KeyOutcome {
+    match shortcut {
+        Shortcut::ChooseCell(index) => KeyOutcome::ChooseCell(index),
+        Shortcut::ChangePage(delta) => {
+            match popup {
+                Popup::Emoji => {
+                    emoji.set_page(advance(
+                        emoji.get_page(),
+                        delta,
+                        emoji.get_page_names().row_count(),
+                    ));
+                    emoji.set_selected(0);
+                }
+                Popup::Quick => quick.set_page(advance(
+                    quick.get_page(),
+                    delta,
+                    quick.get_page_names().row_count(),
+                )),
+            }
+            KeyOutcome::PageChanged
+        }
+        Shortcut::Search => {
+            quick.invoke_begin_search();
+            KeyOutcome::Moved
+        }
+    }
 }
 
 pub fn is_key(key: &str, expected: slint::platform::Key) -> bool {
@@ -102,7 +199,11 @@ pub fn quick_key(ui: &QuickPopup, key: &str) -> KeyOutcome {
         return KeyOutcome::Choose(ui.get_selected());
     }
     if let Some(delta) = key_delta(Popup::Quick, key) {
-        ui.set_selected(advance(ui.get_selected(), delta, ui.get_items().row_count()));
+        ui.set_selected(advance(
+            ui.get_selected(),
+            delta,
+            ui.get_items().row_count(),
+        ));
         return KeyOutcome::Moved;
     }
     KeyOutcome::Ignored
@@ -176,7 +277,22 @@ impl ConfiguredMenus {
     pub fn emoji(&self, ui: &EmojiPopup, index: i32) -> Option<String> {
         let page = self.layout.emoji_pages.get(usize::try_from(ui.get_page()).ok()?)?;
         let key = LEFT_HAND_HOTKEYS.get(usize::try_from(index).ok()?)?;
-        page.cells.get(*key).filter(|value| !value.is_empty()).cloned()
+        page.cells
+            .get(*key)
+            .filter(|value| !value.is_empty())
+            .cloned()
+    }
+
+    pub fn quick_cell(&self, page: i32, index: i32) -> Option<String> {
+        let page = usize::try_from(page).ok()?;
+        let index = usize::try_from(index)
+            .ok()
+            .filter(|index| *index < PAGE_CELLS)?;
+        self.layout
+            .quick_actions
+            .get(page.checked_mul(PAGE_CELLS)?.checked_add(index)?)
+            .filter(|item| !item.action.trim().is_empty())
+            .map(|item| item.action.clone())
     }
 
     /// `(label, action)` of the quick actions on `page`; a query searches
@@ -245,6 +361,59 @@ mod tests {
     use lhc_core::profile::{menus::empty_quick_action, model::*};
 
     #[test]
+    fn physical_shortcuts_preserve_cells_and_page_navigation() {
+        for popup in Popup::ALL {
+            for (index, code) in LEFT_HAND_HOTKEYS.iter().enumerate() {
+                assert_eq!(
+                    shortcut(popup, code, false, false, false),
+                    Some(Shortcut::ChooseCell(index as i32))
+                );
+            }
+            assert_eq!(
+                shortcut(popup, "Tab", false, false, false),
+                Some(Shortcut::ChangePage(1))
+            );
+            assert_eq!(
+                shortcut(popup, "Tab", true, false, false),
+                Some(Shortcut::ChangePage(-1))
+            );
+        }
+        assert_eq!(
+            shortcut(Popup::Quick, "KeyF", false, true, false),
+            Some(Shortcut::Search)
+        );
+        assert_eq!(
+            shortcut(Popup::Quick, "Slash", false, false, false),
+            Some(Shortcut::Search)
+        );
+        assert_eq!(shortcut(Popup::Quick, "KeyQ", false, false, true), None);
+        assert_eq!(
+            shortcut(Popup::Emoji, "KeyQ", false, false, true),
+            Some(Shortcut::ChooseCell(0))
+        );
+    }
+
+    #[cfg(all(feature = "spell", target_os = "linux"))]
+    #[test]
+    fn spell_evdev_codes_match_the_winit_shortcuts() {
+        for popup in Popup::ALL {
+            for (index, code) in [16, 17, 18, 19, 20, 30, 31, 32, 33, 34, 44, 45, 46, 47, 48]
+                .into_iter()
+                .enumerate()
+            {
+                assert_eq!(
+                    evdev_shortcut(popup, code, false, false, false),
+                    Some(Shortcut::ChooseCell(index as i32))
+                );
+            }
+            assert_eq!(
+                evdev_shortcut(popup, 15, true, false, false),
+                Some(Shortcut::ChangePage(-1))
+            );
+        }
+    }
+
+    #[test]
     fn navigation_wraps() {
         assert_eq!(advance(0, -1, 15), 14);
         assert_eq!(advance(12, 5, 15), 2);
@@ -277,5 +446,10 @@ mod tests {
         assert_eq!(menus.quick_page("ОДИНАКОВОЕ", Some(0)).len(), 2);
         assert_eq!(menus.quick_page("ВТОРАЯ", Some(0))[0].1, "text:second");
         assert!(menus.quick_page("missing", Some(1)).is_empty());
+        assert_eq!(menus.quick_cell(0, 2).as_deref(), Some("text:first"));
+        assert_eq!(menus.quick_cell(1, 4).as_deref(), Some("text:second"));
+        assert_eq!(menus.quick_cell(0, 0), None);
+        assert_eq!(menus.quick_cell(0, 15), None);
+        assert_eq!(menus.quick_cell(-1, 0), None);
     }
 }

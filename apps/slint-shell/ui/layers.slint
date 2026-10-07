@@ -12,8 +12,11 @@ export struct LayerExtraRow { key: string, kind: Assignment, action: string, ico
 
 /// Layers of the layout being edited and their keymaps.
 export global LayersEditor {
+    in-out property <int> label-mode;
+    callback set-label-mode(int);
     in property <[string]> names;
     in-out property <int> selected: -1;
+    in-out property <string> selected-id;
     in property <string> description;
     in property <[LayerKeyCell]> left-cells;
     in property <[LayerKeyCell]> right-cells;
@@ -185,7 +188,7 @@ component HandGrid inherits VerticalLayout {
 }
 
 export component LayersPage inherits VerticalLayout {
-    in-out property <int> label-mode: 0;
+    in-out property <int> label-mode <=> LayersEditor.label-mode;
 
     private property <bool> description-editing: false;
     private property <string> test-text;
@@ -368,7 +371,7 @@ export component LayersPage inherits VerticalLayout {
                         Segmented {
                             labels: [@tr("US layout"), @tr("Internal codes"), @tr("System codes")];
                             selected-index: root.label-mode;
-                            selected(index) => { root.label-mode = index; }
+                            selected(index) => { LayersEditor.set-label-mode(index); }
                         }
                     }
                     Divider {}

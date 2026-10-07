@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'fs';
 
 const TS_PATH = 'utils/systemMacros.ts';
-const RS_PATH = 'src-tauri/src/mapper/system_macros.rs';
+const RS_PATH = 'crates/lhc-core/src/mapper/system_macros.rs';
 
 function exit(msg) {
   console.error(msg);

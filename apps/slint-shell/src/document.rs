@@ -35,6 +35,7 @@ type Listener = Rc<dyn Fn(&Document)>;
 
 pub struct Document {
     config: RefCell<ConfigDocument>,
+    ui_state: RefCell<lhc_core::ui_state::UiState>,
     listeners: RefCell<Vec<(View, Listener)>>,
     /// Layout last given to the running mapper; `None` before the first push.
     pushed_layout: RefCell<Option<Option<String>>>,
@@ -60,7 +61,9 @@ impl<T> Saved<T> {
 
 impl Document {
     pub fn new(config: ConfigDocument) -> Rc<Self> {
+        let ui_state = lhc_core::ui_state::UiState::load(config.paths().clone());
         Rc::new(Self {
+            ui_state: RefCell::new(ui_state),
             config: RefCell::new(config),
             listeners: RefCell::default(),
             pushed_layout: RefCell::default(),
@@ -69,6 +72,18 @@ impl Document {
 
     pub fn load(paths: StoragePaths) -> Result<Rc<Self>, ConfigError> {
         ConfigDocument::load(paths).map(Self::new)
+    }
+
+    pub fn selected_layer_id(&self) -> String {
+        self.ui_state.borrow().selected_layer_id().to_owned()
+    }
+
+    pub fn label_mode(&self) -> i32 {
+        self.ui_state.borrow().label_mode()
+    }
+
+    pub fn save_ui_state(&self, layer: Option<&str>, mode: Option<i32>) -> Result<(), String> {
+        self.ui_state.borrow_mut().update(layer, mode)
     }
 
     /// Read access. Do not keep the guard across UI calls that may edit.
@@ -132,13 +147,22 @@ impl Document {
             self.pushed_layout.borrow_mut().take();
             return Ok(());
         }
-        let runtime = self.runtime_config().map_err(|error| error.to_string())?;
-        if !force && self.pushed_layout.borrow().as_ref() == Some(&runtime.layout_id) {
-            return Ok(());
+        let result = (|| {
+            let runtime = self.runtime_config().map_err(|error| error.to_string())?;
+            if !force && self.pushed_layout.borrow().as_ref() == Some(&runtime.layout_id) {
+                return Ok(());
+            }
+            lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
+            *self.pushed_layout.borrow_mut() = Some(runtime.layout_id);
+            Ok(())
+        })();
+        if result.is_err() {
+            self.pushed_layout.borrow_mut().take();
+            if let Err(error) = lhc_core::mapper::runtime::stop() {
+                log::warn!("stop outdated mapper: {error}");
+            }
         }
-        lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
-        *self.pushed_layout.borrow_mut() = Some(runtime.layout_id);
-        Ok(())
+        result
     }
 
     /// Record the layout a freshly started mapper runs.
@@ -227,6 +251,34 @@ mod tests {
         assert_eq!(error, ConfigError::ExternalChange);
         assert_eq!(refreshed.get(), 1);
         assert_eq!(document.read().layout().layers[0].name, "Elsewhere");
+    }
+
+    #[test]
+    fn external_library_edits_refresh_views_and_runtime_configuration() {
+        let (_dir, document) = document();
+        let paths = document.read().paths().clone();
+        let layout = "layers: []\nrules:\n  - key: KeyQ\n    tap: Escape\n";
+        paths.save_user_layout("Nav", layout, false).unwrap();
+        document
+            .edit(View::Library, |config| {
+                config.update_settings(|settings| {
+                    settings.manual_active_layout_id = Some("user:Nav".into());
+                })
+            })
+            .unwrap();
+        document.reload().unwrap();
+        let refreshed = Rc::new(Cell::new(0));
+        let count = refreshed.clone();
+        document.subscribe(View::Shell, move |_| count.set(count.get() + 1));
+        paths
+            .save_user_layout("Nav", &layout.replace("Escape", "Enter"), true)
+            .unwrap();
+        assert!(document.reload().unwrap().unwrap().runtime.is_ok());
+        assert_eq!(refreshed.get(), 1);
+        let config: serde_json::Value =
+            serde_json::from_str(&document.runtime_config().unwrap().json).unwrap();
+        assert_eq!(config["rules"][0]["tapAction"], "Enter");
+        assert!(document.reload().unwrap().is_none());
     }
 
     #[test]

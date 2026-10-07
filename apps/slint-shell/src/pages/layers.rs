@@ -79,7 +79,10 @@ fn hand_cells(
             });
             index += 1;
         }
-        cells.extend(std::iter::repeat_n(empty.clone(), columns - skip - row.len()));
+        cells.extend(std::iter::repeat_n(
+            empty.clone(),
+            columns - skip - row.len(),
+        ));
     }
     cells
 }
@@ -96,14 +99,36 @@ fn selected_id(ui: &SettingsWindow, document: &Document) -> Option<String> {
     selected(ui, &config).map(|index| config.layout().layers[index].id.clone())
 }
 
+fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
+    let id = document.read().layout().layers.get(index as usize).map(|layer| layer.id.clone());
+    let editor = ui.global::<LayersEditor>();
+    editor.set_selected(index);
+    editor.set_selected_id(id.clone().unwrap_or_default().into());
+    if let Some(id) = id
+        && let Err(error) = document.save_ui_state(Some(&id), None)
+    {
+        editor.set_status(Msg::Error(error).to_ui());
+    }
+    refresh(ui, document);
+}
+
 fn refresh(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
     let layout = config.layout();
     let editor = ui.global::<LayersEditor>();
-    editor.set_names(super::strings(layout.layers.iter().map(|layer| layer.name.clone())));
-    let index = selected(ui, &config).or((!layout.layers.is_empty()).then_some(0));
+    editor.set_names(super::strings(
+        layout.layers.iter().map(|layer| layer.name.clone()),
+    ));
+    let saved = editor.get_selected_id();
+    let index = layout
+        .layers
+        .iter()
+        .position(|layer| layer.id == saved.as_str())
+        .or_else(|| selected(ui, &config))
+        .or((!layout.layers.is_empty()).then_some(0));
     editor.set_selected(index.map_or(-1, |index| index as i32));
     let layer = index.map(|index| &layout.layers[index]);
+    editor.set_selected_id(layer.map_or_else(String::new, |layer| layer.id.clone()).into());
     editor.set_description(
         layer
             .and_then(|layer| layer.description.clone())
@@ -259,22 +284,24 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
         return Err(Msg::LayerNameRequired);
     }
     if dialog == LayerDialog::Create {
-        change(ui, document, |config| config.create_layer(&name, &description))?;
+        change(ui, document, |config| {
+            config.create_layer(&name, &description)
+        })?;
         let last = document.read().layout().layers.len() as i32 - 1;
-        editor.set_selected(last);
-        refresh(ui, document);
+        select_layer(ui, document, last);
         return Ok(());
     }
     let id = selected_id(ui, document).ok_or(Msg::None)?;
     match dialog {
-        LayerDialog::Rename => {
-            change(ui, document, |config| config.rename_layer(&id, &name, &description))?
-        }
+        LayerDialog::Rename => change(ui, document, |config| {
+            config.rename_layer(&id, &name, &description)
+        })?,
         LayerDialog::Duplicate => {
-            change(ui, document, |config| config.clone_layer(&id, &name, &description))?;
+            change(ui, document, |config| {
+                config.clone_layer(&id, &name, &description)
+            })?;
             let last = document.read().layout().layers.len() as i32 - 1;
-            editor.set_selected(last);
-            refresh(ui, document);
+            select_layer(ui, document, last);
         }
         LayerDialog::Delete => change(ui, document, |config| config.delete_layer(&id))?,
         LayerDialog::EditKey => {
@@ -296,12 +323,12 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
                 Assignment::Action => Some(action),
             };
             let row = usize::try_from(index).ok();
-            change(ui, document, |config| config.set_layer_extra(&id, row, &key, value))?
+            change(ui, document, |config| {
+                config.set_layer_extra(&id, row, &key, value)
+            })?
         }
         LayerDialog::ClearKeys => change(ui, document, |config| config.clear_layer_keys(&id))?,
-        LayerDialog::ClearExtras => {
-            change(ui, document, |config| config.clear_layer_extras(&id))?
-        }
+        LayerDialog::ClearExtras => change(ui, document, |config| config.clear_layer_extras(&id))?,
         LayerDialog::Create | LayerDialog::None => {}
     }
     Ok(())
@@ -317,6 +344,7 @@ fn extras_len(document: &Document, id: &str) -> usize {
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
+    ui.global::<LayersEditor>().set_selected_id(document.selected_layer_id().into());
     refresh(ui, document);
     let weak = ui.as_weak();
     document.subscribe(View::Layers, move |document| {
@@ -325,6 +353,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
     let editor = ui.global::<LayersEditor>();
+    editor.set_label_mode(document.label_mode());
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    editor.on_set_label_mode(move |mode| {
+        if let Some(ui) = weak.upgrade() {
+            let editor = ui.global::<LayersEditor>();
+            match doc.save_ui_state(None, Some(mode)) {
+                Ok(()) => editor.set_label_mode(mode),
+                Err(error) => editor.set_status(Msg::Error(error).to_ui()),
+            }
+        }
+    });
 
     let weak = ui.as_weak();
     let doc = document.clone();
@@ -338,8 +378,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_choose(move |index| {
         if let Some(ui) = weak.upgrade() {
-            ui.global::<LayersEditor>().set_selected(index);
-            refresh(&ui, &doc);
+            select_layer(&ui, &doc, index);
         }
     });
 
@@ -366,7 +405,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_move_extra(move |index, direction| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(id) = selected_id(&ui, &doc) else { return };
+        let Some(id) = selected_id(&ui, &doc) else {
+            return;
+        };
         let len = extras_len(&doc, &id);
         let (Ok(from), Some(to)) = (
             usize::try_from(index),
@@ -383,7 +424,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_update_description(move |description| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(id) = selected_id(&ui, &doc) else { return };
+        let Some(id) = selected_id(&ui, &doc) else {
+            return;
+        };
         let name = {
             let config = doc.read();
             config
@@ -403,7 +446,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_remove_extra(move |index| {
         let Some(ui) = weak.upgrade() else { return };
-        let Some(id) = selected_id(&ui, &doc) else { return };
+        let Some(id) = selected_id(&ui, &doc) else {
+            return;
+        };
         let Some(row) = usize::try_from(index)
             .ok()
             .filter(|row| *row < extras_len(&doc, &id))

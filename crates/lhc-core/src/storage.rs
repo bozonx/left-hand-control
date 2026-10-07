@@ -408,7 +408,7 @@ fn dev_base_dir(override_dir: Option<PathBuf>) -> Result<PathBuf, String> {
     }
 }
 
-fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
+pub(crate) fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
     let tmp = unique_tmp_path(path);
     write_tmp_synced(&tmp, contents)?;
     if let Err(e) = fs::rename(&tmp, path) {

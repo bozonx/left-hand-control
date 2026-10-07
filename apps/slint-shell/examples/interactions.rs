@@ -64,6 +64,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded.settings().default_double_tap_timeout_ms, 999);
     assert_eq!(loaded.settings().default_macro_step_pause_ms, 40);
 
+    let first = document
+        .edit(slint_shell::document::View::Library, |config| {
+            config.create_layer("First", "")
+        })?
+        .value;
+    let second = document
+        .edit(slint_shell::document::View::Library, |config| {
+            config.create_layer("Second", "")
+        })?
+        .value;
+    ui.global::<LayersEditor>().invoke_choose(1);
+    ui.global::<LayersEditor>().invoke_set_label_mode(2);
+    let reloaded = Document::load(paths.clone())?;
+    let second_ui = SettingsWindow::new()?;
+    bind_document(&second_ui, &reloaded);
+    assert_eq!(second_ui.global::<LayersEditor>().get_selected(), 1);
+    assert_eq!(second_ui.global::<LayersEditor>().get_label_mode(), 2);
+    document.edit(slint_shell::document::View::Library, |config| {
+        config.update_layout(|layout| layout.layers.reverse())
+    })?;
+    assert_eq!(ui.global::<LayersEditor>().get_selected(), 0);
+    assert_eq!(document.read().layout().layers[0].id, second);
+    document.edit(slint_shell::document::View::Library, |config| {
+        config.delete_layer(&first)
+    })?;
+
+    let quick_popup = QuickPopup::new()?;
+    quick_popup.set_query("old query".into());
+    quick_popup.invoke_begin_search();
+    assert!(quick_popup.get_searching());
+    quick_popup.invoke_prepare();
+    assert!(!quick_popup.get_searching());
+    assert!(quick_popup.get_query().is_empty());
+
     let picker = ui.global::<ActionPicker>();
     let library = ui.global::<LayoutLibrary>();
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
@@ -127,7 +161,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                     assert_eq!(ui.get_page(), expected);
                 }
-                println!("Interactions passed: settings persistence and merge, validation, navigation, library save and key editing"); slint::quit_event_loop().unwrap(); }
+                println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state and popup search"); slint::quit_event_loop().unwrap(); }
             _ => {}
         }
         step.set(n + 1);

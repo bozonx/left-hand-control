@@ -6,19 +6,27 @@ use super::{APPEARANCES, LOCALES, choice, choice_index, strings};
 use crate::{
     document::{Document, View},
     i18n::Msg,
-    ui::{ProcessRow, SettingsEditor, SettingsWindow},
+    ui::{CapabilityRow, ProcessRow, SettingsEditor, SettingsWindow},
 };
 use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
 /// Linux text injection backends, in the order the page lists them.
-const TEXT_MODES: [&str; 6] = ["libei", "libei-pure", "keycode", "clipboard", "ydotool", "xdotool"];
+const TEXT_MODES: [&str; 6] = [
+    "libei",
+    "libei-pure",
+    "keycode",
+    "clipboard",
+    "ydotool",
+    "xdotool",
+];
 const TAP_DECISIONS: [&str; 2] = ["permissiveHold", "holdOnOtherKeyPress"];
 
 /// The form as the user sees it. Numbers stay text until saved.
 #[derive(Clone, Debug, PartialEq)]
 struct Form {
+    launch_on_startup: bool,
     appearance: i32,
     locale: i32,
     tap_decision: i32,
@@ -48,6 +56,7 @@ fn path(value: &str) -> Option<String> {
 impl Form {
     fn from_settings(settings: &AppSettings) -> Self {
         Self {
+            launch_on_startup: settings.launch_on_startup,
             appearance: choice_index(&APPEARANCES, &settings.appearance),
             locale: choice_index(&LOCALES, &settings.locale),
             tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision.as_str()),
@@ -72,6 +81,7 @@ impl Form {
     fn read(ui: &SettingsWindow, matchers: &[GameModeProcessMatcher]) -> Self {
         let e = ui.global::<SettingsEditor>();
         Self {
+            launch_on_startup: e.get_launch_on_startup(),
             appearance: e.get_appearance_index(),
             locale: e.get_locale_index(),
             tap_decision: e.get_tap_decision_index(),
@@ -92,6 +102,7 @@ impl Form {
 
     fn show(&self, ui: &SettingsWindow) {
         let e = ui.global::<SettingsEditor>();
+        e.set_launch_on_startup(self.launch_on_startup);
         e.set_appearance_index(self.appearance);
         e.set_locale_index(self.locale);
         e.set_tap_decision_index(self.tap_decision);
@@ -124,6 +135,7 @@ impl Form {
                 }
             };
         }
+        changed!(launch_on_startup => settings.launch_on_startup = self.launch_on_startup);
         changed!(appearance => settings.appearance = choice(&APPEARANCES, self.appearance));
         changed!(locale => settings.locale = choice(&LOCALES, self.locale));
         changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision).into());
@@ -256,6 +268,62 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     }
 }
 
+fn refresh_platform(ui: &SettingsWindow) {
+    let editor = ui.global::<SettingsEditor>();
+    if editor.get_platform_busy() {
+        return;
+    }
+    editor.set_platform_busy(true);
+    let weak = ui.as_weak();
+    std::thread::spawn(move || {
+        let platform = lhc_core::platform::info();
+        if let Err(error) = weak.upgrade_in_event_loop(move |ui| {
+            let editor = ui.global::<SettingsEditor>();
+            editor.set_platform_summary(
+                platform
+                    .linux
+                    .map_or_else(
+                        || platform.os.to_owned(),
+                        |linux| {
+                            format!(
+                                "{} · {} · {}",
+                                platform.os, linux.desktop, linux.session_type
+                            )
+                        },
+                    )
+                    .into(),
+            );
+            let capabilities = platform.capabilities;
+            editor.set_capabilities(ModelRc::new(VecModel::from(
+                [
+                    capabilities.key_interception,
+                    capabilities.literal_injection,
+                    capabilities.layout_detection,
+                    capabilities.system_actions,
+                ]
+                .into_iter()
+                .map(|capability| CapabilityRow {
+                    supported: capability.supported,
+                    available: capability.available,
+                    status: if !capability.supported {
+                        Msg::CapabilityUnsupported
+                    } else if capability.available {
+                        Msg::CapabilityAvailable
+                    } else {
+                        Msg::CapabilityUnavailable
+                    }
+                    .to_ui(),
+                    detail: capability.detail.unwrap_or_default().into(),
+                })
+                .collect::<Vec<_>>(),
+            )));
+            editor.set_platform_busy(false);
+        }) {
+            log::warn!("platform status: {error}");
+        }
+    });
+}
+
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state = Rc::new(RefCell::new(State::default()));
     let e = ui.global::<SettingsEditor>();
@@ -265,16 +333,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());
         e.set_layouts_dir(config.paths().layouts_dir().display().to_string().into());
     }
-    let platform = lhc_core::platform::info();
-    e.set_platform_summary(
-        platform
-            .linux
-            .map_or_else(
-                || platform.os.to_owned(),
-                |linux| format!("{} · {} · {}", platform.os, linux.desktop, linux.session_type),
-            )
-            .into(),
-    );
+    refresh_platform(ui);
+    let weak = ui.as_weak();
+    e.on_refresh_platform(move || {
+        if let Some(ui) = weak.upgrade() {
+            refresh_platform(&ui);
+        }
+    });
     refresh(ui, document, &mut state.borrow_mut(), true);
 
     let weak = ui.as_weak();

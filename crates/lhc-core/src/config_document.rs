@@ -20,7 +20,7 @@ use crate::profile::model::{
 use crate::profile::{layout_file, settings};
 use crate::storage::{StoragePaths, TrackedFile, WriteError};
 use serde_json::{Value, json};
-use std::fmt;
+use std::{collections::BTreeMap, fmt};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConfigError {
@@ -95,6 +95,7 @@ pub struct ConfigDocument {
     settings: AppSettings,
     layout_file: TrackedFile,
     layout: LayoutPreset,
+    library_files: BTreeMap<String, TrackedFile>,
 }
 
 impl ConfigDocument {
@@ -107,7 +108,18 @@ impl ConfigDocument {
         let settings_raw = parse_settings(&settings_text)?;
         let layout = parse_layout(&layout_text)?;
         crate::gamemode::update_settings_from_config_json(&settings_text);
+        let library_files = paths
+            .list_user_layouts()
+            .map_err(ConfigError::Io)?
+            .into_iter()
+            .map(|name| {
+                TrackedFile::open(paths.layouts_dir().join(format!("{name}.yaml")))
+                    .map(|(file, _)| (name, file))
+            })
+            .collect::<Result<_, _>>()
+            .map_err(ConfigError::Io)?;
         Ok(Self {
+            library_files,
             settings: settings::from_value(settings_raw.get("settings")),
             settings_raw,
             settings_file,
@@ -196,7 +208,24 @@ impl ConfigDocument {
         }
         let text = serde_json::to_string_pretty(&candidate)
             .map_err(|error| ConfigError::Parse(error.to_string()))?;
-        self.settings_file.write(&text)?;
+        let autostart_changed = cfg!(target_os = "linux")
+            && updated.launch_on_startup != self.settings.launch_on_startup;
+        if autostart_changed {
+            if self.settings_file.changed().map_err(ConfigError::Io)?.is_some() {
+                return Err(ConfigError::ExternalChange);
+            }
+            crate::autostart::set_enabled(&self.paths, updated.launch_on_startup)
+                .map_err(ConfigError::Io)?;
+        }
+        if let Err(error) = self.settings_file.write(&text) {
+            if autostart_changed
+                && let Err(rollback) =
+                    crate::autostart::set_enabled(&self.paths, self.settings.launch_on_startup)
+            {
+                log::error!("restore autostart registration: {rollback}");
+            }
+            return Err(error.into());
+        }
         crate::gamemode::update_settings_from_config_json(&text);
         self.settings = updated;
         self.settings_raw = candidate;
@@ -495,21 +524,46 @@ impl ConfigDocument {
     pub fn reload_if_changed(&mut self) -> Result<bool, ConfigError> {
         let settings_text = self.settings_file.changed().map_err(ConfigError::Io)?;
         let layout_text = self.layout_file.changed().map_err(ConfigError::Io)?;
-        if settings_text.is_none() && layout_text.is_none() {
-            return Ok(false);
+        let settings_raw = settings_text.as_deref().map(parse_settings).transpose()?;
+        let layout = layout_text.as_deref().map(parse_layout).transpose()?;
+        let names = self.paths.list_user_layouts().map_err(ConfigError::Io)?;
+        let mut added = BTreeMap::new();
+        let mut updates = Vec::new();
+        for name in &names {
+            if let Some(file) = self.library_files.get_mut(name) {
+                if let Some(text) = file.changed().map_err(ConfigError::Io)? {
+                    parse_layout(&text)?;
+                    updates.push((name.clone(), text));
+                }
+            } else {
+                let (file, text) =
+                    TrackedFile::open(self.paths.layouts_dir().join(format!("{name}.yaml")))
+                        .map_err(ConfigError::Io)?;
+                parse_layout(&text)?;
+                added.insert(name.clone(), file);
+            }
         }
-        if let Some(text) = settings_text {
-            let raw = parse_settings(&text)?;
+        let changed = settings_text.is_some()
+            || layout_text.is_some()
+            || !added.is_empty()
+            || !updates.is_empty()
+            || self.library_files.keys().any(|name| !names.contains(name));
+        if let (Some(text), Some(raw)) = (settings_text, settings_raw) {
             crate::gamemode::update_settings_from_config_json(&text);
             self.settings = settings::from_value(raw.get("settings"));
             self.settings_raw = raw;
             self.settings_file.mark_read(text);
         }
-        if let Some(text) = layout_text {
-            self.layout = parse_layout(&text)?;
+        if let (Some(text), Some(layout)) = (layout_text, layout) {
+            self.layout = layout;
             self.layout_file.mark_read(text);
         }
-        Ok(true)
+        self.library_files.retain(|name, _| names.contains(name));
+        self.library_files.extend(added);
+        for (name, text) in updates {
+            self.library_files.get_mut(&name).unwrap().mark_read(text);
+        }
+        Ok(changed)
     }
 
     /// Ids (`user:<name>`) of the layouts in the user library.
@@ -653,6 +707,40 @@ mod tests {
             .unwrap();
         paths.save_current_layout(layout).unwrap();
         (dir, ConfigDocument::load(paths).unwrap())
+    }
+
+    #[test]
+    fn reload_detects_library_additions_edits_and_deletions() {
+        let (_dir, mut doc) = document(json!({"settings": {}}), LAYOUT);
+        assert!(!doc.reload_if_changed().unwrap());
+        doc.paths.save_user_layout("Nav", LAYOUT, false).unwrap();
+        assert!(doc.reload_if_changed().unwrap());
+        assert!(!doc.reload_if_changed().unwrap());
+        doc.paths
+            .save_user_layout("Nav", &LAYOUT.replace("Escape", "Enter"), true)
+            .unwrap();
+        assert!(doc.reload_if_changed().unwrap());
+        assert!(!doc.reload_if_changed().unwrap());
+        doc.paths.delete_user_layout("Nav").unwrap();
+        assert!(doc.reload_if_changed().unwrap());
+        assert!(!doc.reload_if_changed().unwrap());
+    }
+
+    #[test]
+    fn failed_reload_does_not_accept_only_part_of_the_changes() {
+        let (_dir, mut doc) = document(json!({"settings": {"appearance": "dark"}}), LAYOUT);
+        doc.paths
+            .save_config(r#"{"settings":{"appearance":"light"}}"#)
+            .unwrap();
+        doc.paths.save_current_layout("layers: [").unwrap();
+        assert!(doc.reload_if_changed().is_err());
+        assert_eq!(doc.settings().appearance, Appearance::Dark);
+        doc.paths
+            .save_current_layout(&LAYOUT.replace("Escape", "Enter"))
+            .unwrap();
+        assert!(doc.reload_if_changed().unwrap());
+        assert_eq!(doc.settings().appearance, Appearance::Light);
+        assert_eq!(doc.layout().rules[0].tap_action.as_deref(), Some("Enter"));
     }
 
     #[test]
