@@ -1,8 +1,9 @@
+import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
 import { Card } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, ScrollView, VerticalBox } from "std-widgets.slint";
+import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
 
 export struct CapabilityRow { supported: bool, available: bool, status: Message, detail: string }
 

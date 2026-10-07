@@ -166,6 +166,8 @@ fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let named = name.is_some();
     let saved = name.and_then(|name| config.load_layout(&user_layout_id(&name)).ok());
     let current = config.layout();
+    let normalized = layout_file::parse(&layout_file::serialize(current)).ok().flatten();
+    let current = normalized.as_ref().unwrap_or(current);
     let dirty = named && saved.as_ref().is_none_or(|saved| {
         layout_file::serialize(saved) != layout_file::serialize(current)
     });

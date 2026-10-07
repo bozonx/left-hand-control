@@ -1,10 +1,11 @@
+import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { CommandField, MenuKind, PickerTarget } from "types.slint";
 import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, PageTabs } from "controls.slint";
-import { Button, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+import { Button, LineEdit, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
@@ -103,6 +104,7 @@ component HotkeyGrid inherits Rectangle {
                 Image { width: 14px; height: 14px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; accessible-label: @tr("Drag"); }
             }
             if root.emoji: Text {
+                font-family: "Noto Color Emoji";
                 vertical-stretch: 1;
                 text: cell.value == "" ? "＋" : cell.value;
                 color: cell.value == "" ? Theme.muted : Theme.text;
@@ -135,7 +137,7 @@ component HotkeyGrid inherits Rectangle {
         border-radius: 6px; border-width: 2px; border-color: Theme.link; background: Theme.card; opacity: 0.92;
         VerticalLayout { padding: 8px; spacing: 4px;
             Text { text: MenuEditor.cells[root.drag-from].key; color: Theme.link; }
-            Text { text: root.emoji ? MenuEditor.cells[root.drag-from].value : MenuEditor.cells[root.drag-from].name; color: Theme.text; font-size: root.emoji ? 26px : 14px; wrap: word-wrap; horizontal-alignment: center; vertical-alignment: center; vertical-stretch: 1; }
+            Text { font-family: root.emoji ? "Noto Color Emoji" : ""; text: root.emoji ? MenuEditor.cells[root.drag-from].value : MenuEditor.cells[root.drag-from].name; color: Theme.text; font-size: root.emoji ? 26px : 14px; wrap: word-wrap; horizontal-alignment: center; vertical-alignment: center; vertical-stretch: 1; }
             if !root.emoji: Text { text: MenuEditor.cells[root.drag-from].value; color: Theme.muted; overflow: elide; }
         }
     }
@@ -210,7 +212,7 @@ component EmojiButton inherits Rectangle {
     accessible-label: root.item;
     accessible-action-default => { self.pick(); }
     function pick() { MenuEditor.value = root.item; MenuEditor.set-cell(); }
-    Text { text: root.item; font-size: 20px; color: Theme.text; horizontal-alignment: center; vertical-alignment: center; }
+    Text { text: root.item; font-family: "Noto Color Emoji"; font-size: 20px; color: Theme.text; horizontal-alignment: center; vertical-alignment: center; }
     focus := FocusScope {
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.pick(); return accept; }

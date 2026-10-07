@@ -1,0 +1,99 @@
+import { Theme } from "theme.slint";
+
+component ScrollBar inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <bool> horizontal;
+    in property <length> maximum;
+    in property <length> page-size;
+    in-out property <length> value;
+    callback scrolled();
+    private property <length> track: root.horizontal ? root.width : root.height;
+    private property <length> thumb-size: min(root.track, max(24px, root.track * root.page-size / (root.maximum + root.page-size)));
+    private property <length> travel: root.track - root.thumb-size;
+    background: Theme.surface;
+    border-radius: 6px;
+    Rectangle {
+        x: root.horizontal ? (-root.value / max(1px, root.maximum)) * root.travel : 3px;
+        y: root.horizontal ? 3px : (-root.value / max(1px, root.maximum)) * root.travel;
+        width: root.horizontal ? root.thumb-size : 6px;
+        height: root.horizontal ? 6px : root.thumb-size;
+        border-radius: 3px;
+        background: touch.has-hover || touch.pressed ? Theme.muted : Theme.border;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        private property <length> pressed-position;
+        private property <length> pressed-value;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                self.pressed-position = root.horizontal ? self.mouse-x : self.mouse-y;
+                self.pressed-value = root.value;
+                if self.pressed-position < -root.value / max(1px, root.maximum) * root.travel || self.pressed-position > -root.value / max(1px, root.maximum) * root.travel + root.thumb-size {
+                    root.value = -clamp((self.pressed-position - root.thumb-size / 2) / max(1px, root.travel) * root.maximum, 0px, root.maximum);
+                    self.pressed-value = root.value;
+                    root.scrolled();
+                }
+            }
+        }
+        moved => {
+            if self.pressed {
+                root.value = clamp(self.pressed-value - ((root.horizontal ? self.mouse-x : self.mouse-y) - self.pressed-position) * root.maximum / max(1px, root.travel), -root.maximum, 0px);
+                root.scrolled();
+            }
+        }
+        scroll-event(event) => {
+            root.value = clamp(root.value + (root.horizontal ? event.delta-x : event.delta-y), -root.maximum, 0px);
+            root.scrolled();
+            return accept;
+        }
+    }
+}
+
+export component ScrollView {
+    in property <bool> enabled: true;
+    out property <length> visible-width <=> content.width;
+    out property <length> visible-height <=> content.height;
+    in-out property <length> viewport-width <=> content.viewport-width;
+    in-out property <length> viewport-height <=> content.viewport-height;
+    in-out property <length> viewport-x <=> content.viewport-x;
+    in-out property <length> viewport-y <=> content.viewport-y;
+    in property <ScrollBarPolicy> vertical-scrollbar-policy: as-needed;
+    in property <ScrollBarPolicy> horizontal-scrollbar-policy: always-off;
+    in property <bool> mouse-drag-pan-enabled: false;
+    private property <bool> vertical: root.vertical-scrollbar-policy == ScrollBarPolicy.always-on || (root.vertical-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-height > root.visible-height);
+    private property <bool> horizontal: root.horizontal-scrollbar-policy == ScrollBarPolicy.always-on || (root.horizontal-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-width > root.visible-width);
+    callback scrolled();
+    min-width: 50px;
+    min-height: 50px;
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    content := Flickable {
+        width: root.width - (root.vertical-scrollbar-policy != ScrollBarPolicy.always-off ? 16px : 0px);
+        height: root.height - (root.horizontal-scrollbar-policy != ScrollBarPolicy.always-off ? 16px : 0px);
+        interactive: root.mouse-drag-pan-enabled;
+        flicked => { root.scrolled(); }
+        @children
+    }
+    if root.vertical: ScrollBar {
+        x: root.width - 12px;
+        width: 12px;
+        height: content.height;
+        enabled: root.enabled;
+        maximum: max(0px, root.viewport-height - content.height);
+        page-size: content.height;
+        value <=> root.viewport-y;
+        scrolled => { root.scrolled(); }
+    }
+    if root.horizontal: ScrollBar {
+        y: root.height - 12px;
+        height: 12px;
+        width: content.width;
+        horizontal: true;
+        enabled: root.enabled;
+        maximum: max(0px, root.viewport-width - content.width);
+        page-size: content.width;
+        value <=> root.viewport-x;
+        scrolled => { root.scrolled(); }
+    }
+}

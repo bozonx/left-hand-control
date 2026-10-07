@@ -1,3 +1,4 @@
+import { ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
@@ -5,7 +6,7 @@ import { IconButton, ConfirmDialog } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, CheckBox, ScrollView } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, ListView, CheckBox } from "std-widgets.slint";
 
 export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, hold-timeout: string, double-timeout: string, enabled: bool }
 export struct RuleLayerChoice { id: string, label: string }

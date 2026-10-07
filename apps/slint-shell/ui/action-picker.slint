@@ -1,7 +1,8 @@
+import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { PickerTarget } from "types.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit, ListView } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: int }
 export global ActionPicker {
     in-out property <bool> opened;
@@ -80,13 +81,15 @@ export component PickerOverlay inherits Rectangle {
                 if !ActionPicker.valid: Text { text: @tr("Choose a valid key or action."); color: Theme.error; }
                 LineEdit { text <=> ActionPicker.query; placeholder-text: @tr("Search keys and actions"); edited => { if ActionPicker.query != "" && ActionPicker.category >= 11 { ActionPicker.category = 0; } ActionPicker.refresh(); } }
                 HorizontalBox { spacing: 12px;
-                    ListView { width: 195px;
-                        for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
-                            padding: 0px; padding-bottom: 4px;
-                            if index < 6 || (!ActionPicker.key-only && (index < 12 || ActionPicker.macro-step)): Button {
-                                text: title + (index < 11 ? "  " + ActionPicker.counts[index] : "");
-                                primary: ActionPicker.category == index;
-                                clicked => { ActionPicker.category = index; ActionPicker.query = ""; ActionPicker.refresh(); }
+                    ScrollView { viewport-width: self.visible-width; width: 195px;
+                        VerticalLayout { spacing: 0px;
+                            for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
+                                padding: 0px; padding-bottom: 4px;
+                                if index < 6 || (!ActionPicker.key-only && (index < 12 || ActionPicker.macro-step)): Button {
+                                    text: title + (index < 11 ? "  " + ActionPicker.counts[index] : "");
+                                    primary: ActionPicker.category == index;
+                                    clicked => { ActionPicker.category = index; ActionPicker.query = ""; ActionPicker.refresh(); }
+                                }
                             }
                         }
                     }
@@ -99,12 +102,14 @@ export component PickerOverlay inherits Rectangle {
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
                             LineEdit { text: ActionPicker.pause-content; edited => { ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
                         }
-                        if ActionPicker.category < 11: ListView { viewport-width: self.visible-width;
-                            for row in ceil(ActionPicker.items.length / (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2)): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
-                                for col in (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2): PickerCell {
-                                    item: ActionPicker.items[row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col];
-                                    visible: row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col < ActionPicker.items.length;
-                                    compact: ActionPicker.category < 6 && ActionPicker.query == "";
+                        if ActionPicker.category < 11: ScrollView { viewport-width: self.visible-width;
+                            VerticalLayout { spacing: 0px;
+                                for row in ceil(ActionPicker.items.length / (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2)): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
+                                    for col in (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2): PickerCell {
+                                        item: ActionPicker.items[row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col];
+                                        visible: row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col < ActionPicker.items.length;
+                                        compact: ActionPicker.category < 6 && ActionPicker.query == "";
+                                    }
                                 }
                             }
                         }

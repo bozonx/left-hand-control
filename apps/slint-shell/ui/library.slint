@@ -1,9 +1,10 @@
+import { ScrollView } from "scroll.slint";
 import { ButtonGroup, InfoTip, InlineTextField, IconButton, ConfirmDialog } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, NameIssue, PendingLayoutAction } from "types.slint";
-import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, ListView, ScrollView, Palette, TextEdit, VerticalBox } from "std-widgets.slint";
+import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, Palette, TextEdit, VerticalBox } from "std-widgets.slint";
 
 export struct LayoutConditionsView { when-game: GameCondition, when-list: string, unless-game: GameCondition, unless-list: string }
 
@@ -334,88 +335,90 @@ export component LibraryPage inherits VerticalBox {
             }
         }
     }
-    if LayoutLibrary.names.length > 0: ListView {
+    if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width;
         vertical-stretch: 1;
-        for name[index] in LayoutLibrary.names: card := Rectangle {
-            property <bool> active: LayoutLibrary.active-label == name;
-            property <bool> current: LayoutLibrary.current-label == name;
-            property <bool> auto: LayoutLibrary.automatic;
-            height: max(self.auto ? 118px : 96px, card-content.preferred-height + 10px);
-            init => { LayoutLibrary.row-position(index, self.y, self.height); }
-            changed y => { LayoutLibrary.row-position(index, self.y, self.height); }
-            changed height => { LayoutLibrary.row-position(index, self.y, self.height); }
-            Rectangle {
-            height: parent.height - 10px; width: parent.width;
-            opacity: card.auto && !LayoutLibrary.auto-included[index] ? 0.35 : card.auto && !card.active ? 0.65 : 1;
-            background: Theme.card;
-            border-radius: 8px;
-            if root.drag-from >= 0 && root.drag-over == index && root.drag-from != index: Rectangle {
-                y: root.drag-over > root.drag-from ? parent.height + 2px : -5px;
-                width: parent.width; height: 3px; border-radius: 2px; background: Theme.link;
-            }
-            border-width: root.drag-over == index ? 2px : card.active ? 2px : 1px;
-            border-color: card.active || root.drag-over == index ? Theme.accent : Theme.border;
-            TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
-            card-content := HorizontalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 12px;
+        VerticalLayout { spacing: 0px;
+            for name[index] in LayoutLibrary.names: card := Rectangle {
+                property <bool> active: LayoutLibrary.active-label == name;
+                property <bool> current: LayoutLibrary.current-label == name;
+                property <bool> auto: LayoutLibrary.automatic;
+                height: max(self.auto ? 118px : 96px, card-content.preferred-height + 10px);
+                init => { LayoutLibrary.row-position(index, self.y, self.height); }
+                changed y => { LayoutLibrary.row-position(index, self.y, self.height); }
+                changed height => { LayoutLibrary.row-position(index, self.y, self.height); }
                 Rectangle {
-                    width: 28px;
-                    Image { y: (parent.height - self.height) / 2; width: 20px; height: 20px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; }
-                    drag := TouchArea {
-                        mouse-cursor: self.pressed ? grabbing : grab;
-                        pointer-event(event) => {
-                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down { root.drag-from = index; root.drag-over = index; }
-                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
-                                let target = root.drag-over;
-                                root.drag-from = -1; root.drag-over = -1;
-                                if target != index { LayoutLibrary.reorder(index, target); }
-                            }
-                            if event.kind == PointerEventKind.cancel { root.drag-from = -1; root.drag-over = -1; }
-                        }
-                        moved => {
-                            if self.pressed { root.drag-over = LayoutLibrary.drag-target(index, self.mouse-y - self.pressed-y); }
-                        }
-                    }
+                height: parent.height - 10px; width: parent.width;
+                opacity: card.auto && !LayoutLibrary.auto-included[index] ? 0.35 : card.auto && !card.active ? 0.65 : 1;
+                background: Theme.card;
+                border-radius: 8px;
+                if root.drag-from >= 0 && root.drag-over == index && root.drag-from != index: Rectangle {
+                    y: root.drag-over > root.drag-from ? parent.height + 2px : -5px;
+                    width: parent.width; height: 3px; border-radius: 2px; background: Theme.link;
                 }
-                VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 6px;
-                    HorizontalLayout { spacing: 8px;
-                        InlineTextField { text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
-                        if card.active: Pill { text: @tr("Active"); fill: Theme.accent; }
-                        if card.current: Pill { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); }
-                        Rectangle { horizontal-stretch: 1; }
-                    }
-                    InlineTextField { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); multiline: true; text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
-                    if card.auto: Text {
-                        text: LayoutLibrary.auto-included[index] ? LayoutLibrary.conditions-text(LayoutLibrary.conditions[index]) : @tr("Not used in automatic mode");
-                        color: Theme.muted; font-size: 12px; overflow: elide;
-                    }
-                }
-                VerticalLayout { alignment: center;
-                HorizontalLayout { spacing: 8px;
-                    if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
-                    if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
-                    Button { text: @tr("Edit layout"); primary: card.current; clicked => { LayoutLibrary.edit(index); } }
+                border-width: root.drag-over == index ? 2px : card.active ? 2px : 1px;
+                border-color: card.active || root.drag-over == index ? Theme.accent : Theme.border;
+                TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
+                card-content := HorizontalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 12px;
                     Rectangle {
-                        width: 44px; height: 36px;
-                        Button {
-                            width: parent.width; height: parent.height; text: "…";
-                            clicked => { LayoutLibrary.select(index); more-menu.show(); }
+                        width: 28px;
+                        Image { y: (parent.height - self.height) / 2; width: 20px; height: 20px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; }
+                        drag := TouchArea {
+                            mouse-cursor: self.pressed ? grabbing : grab;
+                            pointer-event(event) => {
+                                if event.button == PointerEventButton.left && event.kind == PointerEventKind.down { root.drag-from = index; root.drag-over = index; }
+                                if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
+                                    let target = root.drag-over;
+                                    root.drag-from = -1; root.drag-over = -1;
+                                    if target != index { LayoutLibrary.reorder(index, target); }
+                                }
+                                if event.kind == PointerEventKind.cancel { root.drag-from = -1; root.drag-over = -1; }
+                            }
+                            moved => {
+                                if self.pressed { root.drag-over = LayoutLibrary.drag-target(index, self.mouse-y - self.pressed-y); }
+                            }
                         }
-                        more-menu := PopupWindow {
-                            x: parent.width - self.width; y: parent.height;
-                            width: 240px;
-                            Rectangle {
-                                background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                                VerticalBox { padding: 4px; spacing: 0px;
-                                    LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
-                                    Rectangle { height: 1px; background: Theme.border; }
-                                    LayoutMenuItem { text: @tr("Delete…"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                    }
+                    VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 6px;
+                        HorizontalLayout { spacing: 8px;
+                            InlineTextField { text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
+                            if card.active: Pill { text: @tr("Active"); fill: Theme.accent; }
+                            if card.current: Pill { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); }
+                            Rectangle { horizontal-stretch: 1; }
+                        }
+                        InlineTextField { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); multiline: true; text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
+                        if card.auto: Text {
+                            text: LayoutLibrary.auto-included[index] ? LayoutLibrary.conditions-text(LayoutLibrary.conditions[index]) : @tr("Not used in automatic mode");
+                            color: Theme.muted; font-size: 12px; overflow: elide;
+                        }
+                    }
+                    VerticalLayout { alignment: center;
+                    HorizontalLayout { spacing: 8px;
+                        if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
+                        if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
+                        Button { text: @tr("Edit layout"); primary: card.current; clicked => { LayoutLibrary.edit(index); } }
+                        Rectangle {
+                            width: 44px; height: 36px;
+                            Button {
+                                width: parent.width; height: parent.height; text: "…";
+                                clicked => { LayoutLibrary.select(index); more-menu.show(); }
+                            }
+                            more-menu := PopupWindow {
+                                x: parent.width - self.width; y: parent.height;
+                                width: 240px;
+                                Rectangle {
+                                    background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                                    VerticalBox { padding: 4px; spacing: 0px;
+                                        LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
+                                        Rectangle { height: 1px; background: Theme.border; }
+                                        LayoutMenuItem { text: @tr("Delete…"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                                    }
                                 }
                             }
                         }
                     }
+                    }
                 }
                 }
-            }
             }
         }
     }

@@ -1,3 +1,4 @@
+import { ScrollView } from "scroll.slint";
 import { ActionPicker, PickerOverlay } from "action-picker.slint";
 import { AppState } from "app-state.slint";
 import { KeyboardPage } from "keys.slint";
@@ -12,7 +13,7 @@ import { Badge, InlineEditors } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale } from "i18n.slint";
 import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
-import { Button, HorizontalBox, ScrollView, VerticalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
 
 export component SettingsWindow inherits Window {
     background: Theme.surface;
@@ -95,6 +96,8 @@ export component SettingsWindow inherits Window {
                         save-as => { LayoutLibrary.save-as-name = ""; LayoutLibrary.save-as-open = true; }
                     }
                     ScrollView {
+                        vertical-scrollbar-policy: always-off;
+                        horizontal-scrollbar-policy: as-needed;
                         horizontal-stretch: 1;
                         min-width: 0px;
                         viewport-height: self.visible-height;
@@ -127,7 +130,7 @@ export component SettingsWindow inherits Window {
             if root.show-active-banner: Rectangle { height: 1px; background: Theme.border; }
             VerticalLayout {
                 vertical-stretch: 1;
-                padding-top: 20px; padding-bottom: 20px;
+                padding-top: 20px; padding-bottom: 0px;
                 padding-left: 20px;
                 padding-right: 20px;
                 spacing: 12px;
