@@ -1497,3 +1497,9 @@ msgstr "Новая"
 
 msgid "Auto"
 msgstr "Авто"
+
+msgid "Delete extra key?"
+msgstr "Удалить дополнительную клавишу?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "Назначение этой клавиши будет удалено из слоя."

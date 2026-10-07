@@ -32,7 +32,7 @@ export component SettingsWindow inherits Window {
         root.page = page;
     }
 
-    property <bool> modal-open: ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none
+    property <bool> modal-open: ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
         || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none;
     property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings && !LayoutLibrary.automatic
         && LayoutLibrary.current-label != "" && LayoutLibrary.current-label != LayoutLibrary.active-label;
