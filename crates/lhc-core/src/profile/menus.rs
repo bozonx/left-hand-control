@@ -67,6 +67,9 @@ impl ConfigDocument {
             layout.quick_actions = candidate.quick_actions.clone();
             layout.quick_action_pages = candidate.quick_action_pages.clone();
             layout.commands = candidate.commands.clone();
+            layout.rules = candidate.rules.clone();
+            layout.layer_keymaps = candidate.layer_keymaps.clone();
+            layout.macros = candidate.macros.clone();
         })
     }
 
@@ -124,6 +127,45 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
     None
 }
 
+pub fn replace_command_references(layout: &mut LayoutPreset, old: &str, new: Option<&str>) {
+    let is_source = |value: &str| matches!(Action::parse(Some(value)), Action::Command(id) if id == old);
+    let target = new.map(|id| format!("cmd:{id}")).unwrap_or_default();
+    let replace = |value: &mut String| {
+        if is_source(value) {
+            *value = target.clone();
+        }
+    };
+    for rule in &mut layout.rules {
+        if let Some(value) = &mut rule.tap_action {
+            replace(value);
+        }
+        if let Some(value) = &mut rule.hold_action {
+            replace(value);
+        }
+        replace(&mut rule.double_tap_action);
+    }
+    for map in layout.layer_keymaps.values_mut() {
+        for value in map.keys.values_mut().flatten() {
+            replace(value);
+        }
+        for extra in &mut map.extras {
+            if let Some(value) = &mut extra.action {
+                replace(value);
+            }
+        }
+    }
+    for item in &mut layout.macros {
+        if new.is_none() {
+            item.steps.retain(|step| !is_source(&step.action));
+        } else {
+            for step in &mut item.steps { replace(&mut step.action); }
+        }
+    }
+    for item in &mut layout.quick_actions {
+        replace(&mut item.action);
+    }
+}
+
 pub fn empty_quick_action() -> QuickAction {
     QuickAction {
         id: ids::generate("quick_"),
@@ -137,6 +179,54 @@ pub fn empty_quick_action() -> QuickAction {
 mod tests {
     use super::*;
     use crate::storage::StoragePaths;
+    #[test]
+    fn renames_and_removes_command_dependencies_atomically() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        paths.save_current_layout(r#"
+commands:
+  - id: old
+    linux: printf hello
+rules:
+  - key: KeyA
+    tap: cmd:old
+    dtap: cmd:old
+layers:
+  - id: nav
+    name: Navigation
+    keys:
+      KeyB: cmd:old
+    extras:
+      - key: F13
+        action: cmd:old
+macros:
+  - id: sequence
+    steps:
+      - action: cmd:old
+      - action: text:hello
+quickActions:
+  - id: quick
+    action: cmd:old
+"#).unwrap();
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        let baseline = doc.layout().clone();
+        let mut candidate = baseline.clone();
+        let before = super::super::macros::action_usage(&doc.config(), "cmd:old").len();
+        assert!(before >= 4);
+        candidate.commands[0].id = "new".into();
+        replace_command_references(&mut candidate, "old", Some("new"));
+        doc.save_menu_pages(&baseline, &candidate).unwrap();
+        assert!(super::super::macros::action_usage(&doc.config(), "cmd:old").is_empty());
+        assert_eq!(super::super::macros::action_usage(&doc.config(), "cmd:new").len(), before);
+        assert_eq!(ConfigDocument::load(paths).unwrap().layout(), &candidate);
+        let baseline = candidate.clone();
+        candidate.commands.clear();
+        replace_command_references(&mut candidate, "new", None);
+        doc.save_menu_pages(&baseline, &candidate).unwrap();
+        assert!(super::super::macros::action_usage(&doc.config(), "cmd:new").is_empty());
+        assert_eq!(doc.layout().macros[0].steps.len(), 1);
+    }
+
     #[test]
     fn menus_roundtrip_and_trust_invalidation() {
         let dir = tempfile::tempdir().unwrap();

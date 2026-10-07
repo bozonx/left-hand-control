@@ -253,7 +253,7 @@ fn validate_action(
     user_macro_ids: &HashSet<String>,
     system_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
-    commands_trusted: bool,
+    _commands_trusted: bool,
     errors: &mut Vec<String>,
 ) {
     let action = action.trim();
@@ -279,10 +279,6 @@ fn validate_action(
         let id = id.trim();
         if !command_ids.contains(id) {
             errors.push(format!("{where_}: unknown command \"{id}\""));
-        } else if !commands_trusted {
-            errors.push(format!(
-                "{where_}: command \"{id}\" is not approved for this layout"
-            ));
         }
         return;
     }
@@ -415,7 +411,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unapproved_command_reference() {
+    fn accepts_unapproved_command_reference_without_enabling_execution() {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "music".into(),
@@ -430,8 +426,7 @@ mod tests {
             modifier_delay_ms: None,
         });
 
-        let err = validate_config(&cfg).expect_err("validation should fail");
-        assert!(err.contains("command \"music\" is not approved"));
+        validate_config(&cfg).expect("unapproved commands remain inert");
     }
 
     #[test]

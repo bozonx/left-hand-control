@@ -23,6 +23,7 @@ export global MenuEditor {
     in-out property <string> value;
     in-out property <string> name;
     in property <bool> trusted;
+    in-out property <int> editing-count: 0;
     in property <bool> has-errors;
     in property <Message> status;
     callback open(MenuKind);
@@ -407,6 +408,7 @@ export component QuickActionsPage inherits Rectangle {
 component CommandCard inherits Card {
     in property <int> index;
     in property <CommandRow> item;
+    private property <bool> expanded: false;
     opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == root.index ? 0.6 : 1;
 
     callback remove();
@@ -427,7 +429,7 @@ component CommandCard inherits Card {
                 }
                 HorizontalLayout {
                     spacing: 6px;
-                    InlineTextField { text: root.item.id; placeholder: "id"; label: @tr("Command ID"); saved(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
+                    InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.id; placeholder: "id"; label: @tr("Command ID"); saved(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
                 }
             }
@@ -440,7 +442,7 @@ component CommandCard inherits Card {
                     FieldLabel { text: @tr("Name"); vertical-alignment: center; }
                     InfoTip { text: @tr("Human-readable name shown in picker lists."); }
                 }
-                InlineTextField { text: root.item.name; placeholder: @tr("Command name"); label: @tr("Name"); saved(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
+                InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.name; placeholder: @tr("Command name"); label: @tr("Name"); saved(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
             }
             HorizontalLayout {
                 spacing: 2px;
@@ -461,9 +463,12 @@ component CommandCard inherits Card {
                 spacing: 6px;
                 alignment: start;
                 FieldLabel { text: @tr("Linux shell script"); vertical-alignment: center; }
-                InfoTip { text: @tr("Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
+                Button { text: root.expanded ? @tr("Collapse script") : @tr("View full script"); clicked => { root.expanded = !root.expanded; } }
+                InfoTip { text: @tr("Passed to sh -c as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
             }
             InlineTextArea {
+                expanded: root.expanded;
+                changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); }
                 text: root.item.linux;
                 placeholder: "playerctl play-pause\nnotify-send 'Playback toggled'";
                 label: @tr("Linux shell script");
@@ -478,7 +483,7 @@ component CommandCard inherits Card {
 component ApprovalNotice inherits Alert {
     title: @tr("Shell commands require approval");
     text: @tr("This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change.");
-    Button { text: @tr("Allow commands"); primary: true; icon: @image-url("icons/shield-check.svg"); colorize-icon: true; clicked => { MenuEditor.trust(true); } }
+    Button { text: @tr("Allow commands"); enabled: !MenuEditor.has-errors && MenuEditor.editing-count == 0; primary: true; icon: @image-url("icons/shield-check.svg"); colorize-icon: true; clicked => { MenuEditor.trust(true); } }
 }
 
 component ApprovedNotice inherits Rectangle {
@@ -512,7 +517,7 @@ export component CommandsPage inherits Rectangle {
                     spacing: 16px;
                     CardHeader {
                         title: @tr("Commands");
-                        info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.");
+                        info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -c after you explicitly allow them. Shell commands run one at a time, with a 30-second limit, in your home directory.");
                         VerticalLayout {
                             alignment: center;
                             Button {
@@ -526,8 +531,6 @@ export component CommandsPage inherits Rectangle {
                         }
                     }
                     if MenuEditor.has-errors: Text { text: @tr("Fix the existing command errors first"); color: Theme.muted; font-size: 12px; }
-                    if root.has-shell && !MenuEditor.trusted: ApprovalNotice {}
-                    if root.has-shell && MenuEditor.trusted: ApprovedNotice {}
                     if MenuEditor.commands.length == 0: Text { text: @tr("No commands yet. Click \"New command\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
                     for item[index] in MenuEditor.commands: CommandCard {
                         index: index;
@@ -535,6 +538,8 @@ export component CommandsPage inherits Rectangle {
                         remove => { root.deleting = index; }
                         copy(value) => { clipboard.text = value; clipboard.select-all(); clipboard.copy(); }
                     }
+                    if root.has-shell && !MenuEditor.trusted: ApprovalNotice {}
+                    if root.has-shell && MenuEditor.trusted: ApprovedNotice {}
                 }
             }
         }
@@ -543,7 +548,7 @@ export component CommandsPage inherits Rectangle {
         width: 100%;
         height: 100%;
         title: @tr("Delete command?");
-        body: @tr("The command will be deleted. Keys or macros that reference cmd:{} will stop working.", MenuEditor.commands[root.deleting].id);
+        body: @tr("The command will be deleted. References to cmd:{} will be cleared from keys, rules, macros, and quick actions. Keys will return to normal behavior.", MenuEditor.commands[root.deleting].id);
         confirm-text: @tr("Delete");
         cancel => { root.deleting = -1; }
         confirm => { MenuEditor.remove-command(root.deleting); root.deleting = -1; }

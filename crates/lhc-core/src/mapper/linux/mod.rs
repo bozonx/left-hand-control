@@ -330,6 +330,7 @@ fn run_loop<D: LoopDriver>(
             while let Ok(ctrl) = control_rx.try_recv() {
                 match ctrl {
                     MapperControl::Config(next_cfg) => {
+                        super::commands::cancel();
                         let next_cfg = *next_cfg;
                         log::debug!(
                             "[mapper] live config update: rules={} layers={}",
@@ -361,6 +362,7 @@ fn run_loop<D: LoopDriver>(
         Ok(())
     })();
 
+    super::commands::cancel();
     engine.shutdown(&mut out_buf);
     let _ = flush_out(&mut virt, &mut out_buf);
     result

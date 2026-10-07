@@ -66,7 +66,8 @@ const RUSSIAN_PO: &str = include_str!("../translations/ru/LC_MESSAGES/slint-shel
 const RUSSIAN_MO: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ru.mo"));
 
 pub fn select_ui_language(code: &str) -> Result<(), String> {
-    let language = Language::from_code(code).ok_or_else(|| format!("unknown UI language: {code}"))?;
+    let language =
+        Language::from_code(code).ok_or_else(|| format!("unknown UI language: {code}"))?;
     static RUSSIAN: OnceLock<Result<Arc<tr::MoTranslator>, String>> = OnceLock::new();
     let translator: Option<Box<dyn i_slint_core::translations::Translator>> =
         if language == Language::Russian {
@@ -227,6 +228,10 @@ pub enum Msg {
     /// Menu actions run through the mapper, which is stopped.
     MapperRequired,
     MenuSaveFirst,
+    MenuDraft,
+    CommandCompleted(String),
+    ActionUnavailable,
+    CommandApprovalRequired,
     MenuIssue(lhc_core::profile::menus::MenuIssue),
     MacroIssue(lhc_core::profile::macros::MacroIssue),
     LayerNameRequired,
@@ -313,6 +318,10 @@ impl Msg {
                 empty(),
                 0,
             ),
+            Self::MenuDraft => ("menu-draft", empty(), 0),
+            Self::CommandCompleted(name) => ("command-completed", name.clone(), 0),
+            Self::ActionUnavailable => ("action-unavailable", empty(), 0),
+            Self::CommandApprovalRequired => ("command-approval-required", empty(), 0),
             Self::MenuSaveFirst => ("menu-save-first", empty(), 0),
             Self::LayerSaved => ("layer-saved", empty(), 0),
             Self::RuleSaved => ("rule-saved", empty(), 0),
@@ -428,9 +437,20 @@ mod tests {
 
         let translator = tr::MoTranslator::from_vec_u8(RUSSIAN_MO.to_vec()).unwrap();
         assert_eq!(translator.translate("Settings", None), "Настройки");
-        for (count, suffix) in [(1, "правило"), (2, "правила"), (5, "правил"), (11, "правил"), (21, "правило")] {
+        for (count, suffix) in [
+            (1, "правило"),
+            (2, "правила"),
+            (5, "правил"),
+            (11, "правил"),
+            (21, "правило"),
+        ] {
             assert_eq!(
-                translator.ntranslate(count, "Configuration loaded: {n} rule", "Configuration loaded: {n} rules", None),
+                translator.ntranslate(
+                    count,
+                    "Configuration loaded: {n} rule",
+                    "Configuration loaded: {n} rules",
+                    None
+                ),
                 format!("Конфигурация загружена: {{n}} {suffix}"),
             );
         }
@@ -519,7 +539,10 @@ mod tests {
         let catalog = parse_po(RUSSIAN_PO);
         // Plural entries are not in the parsed catalog; look for their msgid.
         let declared = |source: &str| {
-            let escaped = source.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
+            let escaped = source
+                .replace('\\', "\\\\")
+                .replace('"', "\\\"")
+                .replace('\n', "\\n");
             RUSSIAN_PO.contains(&format!("msgid \"{escaped}\""))
         };
         let mut missing: Vec<String> = slint_strings()
@@ -528,6 +551,9 @@ mod tests {
             .collect();
         missing.sort();
         missing.dedup();
-        assert!(missing.is_empty(), "missing in slint-shell.po: {missing:#?}");
+        assert!(
+            missing.is_empty(),
+            "missing in slint-shell.po: {missing:#?}"
+        );
     }
 }

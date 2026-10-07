@@ -271,6 +271,66 @@ pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutionIssue {
+    ApprovalRequired,
+    Unavailable,
+}
+
+pub fn execution_issue(
+    action: &Action,
+    config: &AppConfig,
+    trusted: bool,
+) -> Option<ExecutionIssue> {
+    fn check(
+        action: &Action,
+        config: &AppConfig,
+        trusted: bool,
+        depth: usize,
+    ) -> Option<ExecutionIssue> {
+        if depth > 10 {
+            return Some(ExecutionIssue::Unavailable);
+        }
+        match action {
+            Action::Command(_) => {
+                if !cfg!(target_os = "linux") {
+                    Some(ExecutionIssue::Unavailable)
+                } else if !trusted {
+                    Some(ExecutionIssue::ApprovalRequired)
+                } else {
+                    None
+                }
+            }
+            Action::System(id) => {
+                #[cfg(target_os = "linux")]
+                if crate::mapper::system::resolve(id).is_some() {
+                    return None;
+                }
+                #[cfg(not(target_os = "linux"))]
+                let _ = id;
+                Some(ExecutionIssue::Unavailable)
+            }
+            Action::Macro(id) => {
+                let steps: Vec<&str> =
+                    if let Some(item) = config.macros.iter().find(|item| item.id == *id) {
+                        item.steps.iter().map(|step| step.action.as_str()).collect()
+                    } else {
+                        SYSTEM_MACROS
+                            .iter()
+                            .find(|item| item.id == id)
+                            .map(|item| item.steps.to_vec())
+                            .unwrap_or_default()
+                    };
+                steps.into_iter().find_map(|value| {
+                    check(&Action::parse(Some(value)), config, trusted, depth + 1)
+                })
+            }
+            _ => None,
+        }
+    }
+    check(action, config, trusted, 0)
+}
+
 fn is_chord(value: &str) -> bool {
     let tokens: Vec<&str> = value.split('+').map(str::trim).collect();
     !tokens.iter().any(|token| token.is_empty())

@@ -1,6 +1,8 @@
 #[cfg(target_os = "linux")]
 pub mod action;
 #[cfg(target_os = "linux")]
+mod commands;
+#[cfg(target_os = "linux")]
 pub mod engine;
 #[cfg(target_os = "linux")]
 pub mod keys;

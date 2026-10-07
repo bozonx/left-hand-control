@@ -65,13 +65,12 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn run_command(&mut self, command: &SysCommand) {
-        enqueue_side_effect(SideEffectJob::Command(command.clone()));
+        super::super::commands::enqueue(command.clone());
     }
 }
 
 enum SideEffectJob {
     System(SysAction),
-    Command(SysCommand),
     Text(String),
 }
 
@@ -100,7 +99,6 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
     for job in rx {
         match job {
             SideEffectJob::System(action) => run_sys_action(&action),
-            SideEffectJob::Command(command) => spawn_system(&command),
             SideEffectJob::Text(text) => portal::type_text(&text),
         }
     }

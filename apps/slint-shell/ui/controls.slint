@@ -283,7 +283,8 @@ export component ConfirmDialog inherits Rectangle {
     }
 }
 
-export global InlineEditors { in-out property <int> revision; pure callback nonempty(string) -> bool; }
+export global InlineEditors {
+    in-out property <int> commit-revision: 0; in-out property <int> revision; pure callback nonempty(string) -> bool; }
 
 export component InlineTextField inherits FocusScope {
     in property <string> text;
@@ -296,6 +297,8 @@ export component InlineTextField inherits FocusScope {
     in-out property <bool> editing: false;
     private property <string> draft;
     private property <int> revision: InlineEditors.revision;
+    private property <int> commit-revision: InlineEditors.commit-revision;
+    changed commit-revision => { if root.editing { root.save(); } }
     changed revision => { root.editing = false; }
     changed text => { root.editing = false; }
     callback saved(string);
@@ -371,6 +374,7 @@ export component InlineTextField inherits FocusScope {
 }
 
 export component InlineTextArea inherits FocusScope {
+    in property <bool> expanded: false;
     in property <string> text;
     in property <string> placeholder;
     in property <string> label;
@@ -381,6 +385,8 @@ export component InlineTextArea inherits FocusScope {
     in-out property <bool> editing: false;
     private property <string> draft;
     private property <int> revision: InlineEditors.revision;
+    private property <int> commit-revision: InlineEditors.commit-revision;
+    changed commit-revision => { if root.editing { root.save(); } }
     changed revision => { root.editing = false; }
     changed text => { root.editing = false; }
     callback saved(string);
@@ -425,7 +431,7 @@ export component InlineTextArea inherits FocusScope {
             display := Text {
                 x: 4px; y: 4px;
                 width: parent.width - 8px;
-                height: min(measure.preferred-height, line.preferred-height * 5);
+                height: root.expanded ? measure.preferred-height : min(measure.preferred-height, line.preferred-height * 5);
                 text: root.text == "" ? root.placeholder : root.text;
                 color: root.text == "" ? Theme.muted : root.text-color;
                 font-size: root.text-size;
@@ -437,7 +443,7 @@ export component InlineTextArea inherits FocusScope {
             edit-touch := TouchArea { mouse-cursor: MouseCursor.text; clicked => { root.begin(); } }
         }
         if root.editing: TextEdit {
-            height: 80px;
+            height: root.expanded ? 240px : 80px;
             text <=> root.draft;
             accessible-label: root.label;
             init => { self.focus(); }

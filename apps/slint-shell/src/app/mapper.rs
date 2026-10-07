@@ -17,6 +17,23 @@ pub(super) fn forward_core_events() {
                 app.refresh_mapper_status();
             });
         }
+        CoreEvent::CommandFinished { script, result } => {
+            let label = script
+                .lines()
+                .next()
+                .unwrap_or_default()
+                .chars()
+                .take(80)
+                .collect::<String>();
+            let result = result.clone();
+            post(move |app| match result {
+                Ok(()) => app
+                    .settings
+                    .global::<AppState>()
+                    .set_status(Msg::CommandCompleted(label).to_ui()),
+                Err(error) => app.set_error(Msg::ActionFailed(error)),
+            });
+        }
         CoreEvent::AppAction(name) => {
             let Some(command) = crate::command::Command::from_app_action(name) else {
                 return;
@@ -38,7 +55,11 @@ impl App {
         state.set_keyboard_language(
             lhc_core::runtime_state::layout()
                 .map(|layout| {
-                    let variant = if layout.variant.is_empty() { &layout.short } else { &layout.variant };
+                    let variant = if layout.variant.is_empty() {
+                        &layout.short
+                    } else {
+                        &layout.variant
+                    };
                     format!("{}-{variant}", layout.short.to_uppercase())
                 })
                 .unwrap_or_default()
@@ -73,7 +94,9 @@ impl App {
         } else {
             Msg::MapperStopped(status.last_error)
         };
-        self.settings.global::<AppState>().set_status(message.to_ui());
+        self.settings
+            .global::<AppState>()
+            .set_status(message.to_ui());
     }
 
     fn set_mapper_busy(&self, busy: bool) {
@@ -124,8 +147,7 @@ impl App {
         self.set_mapper_busy(true);
         state.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {
-            let result =
-                lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &runtime.json);
+            let result = lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &runtime.json);
             post(move |app| {
                 app.set_mapper_busy(false);
                 match result {

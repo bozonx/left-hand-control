@@ -13,6 +13,9 @@ pub fn forward(app: AppHandle) {
                 app.emit("active-window-changed", window.clone().unwrap_or_default())
             }
             CoreEvent::MapperStopped(error) => app.emit("mapper-stopped", error),
+            CoreEvent::CommandFinished { script, result } => {
+                app.emit("command-finished", (script, result))
+            }
             CoreEvent::AppAction(name) => app.emit(name, ()),
         };
         if let Err(e) = result {

@@ -26,6 +26,7 @@ export component SettingsWindow inherits Window {
     in-out property <Page> page: Page.layouts;
 
     public function navigate(page: Page, kind: MenuKind) {
+        InlineEditors.commit-revision += 1;
         DragDrop.reset();
         if page == Page.layouts { LayoutLibrary.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }

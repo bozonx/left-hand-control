@@ -1,7 +1,7 @@
 //! Action picker: one dialog that chooses a key, shortcut or action for
 //! every page and hands the value to the page that opened it.
 
-use super::{keys, rules, layers};
+use super::{keys, layers, rules};
 use crate::{
     document::Document,
     i18n::Msg,
@@ -65,9 +65,11 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
                 value: (*key).into(),
                 label: (*key).into(),
                 category: category as i32,
+                notice: Msg::None.to_ui(),
             })
         })
         .collect();
+    let trusted = config.commands_trusted();
     let config = config.config();
     items.extend(actions::catalog(&config).into_iter().filter_map(|entry| {
         let category = match &entry.action {
@@ -78,12 +80,18 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             Action::System(_) => SYSTEM_ACTIONS,
             _ => return None,
         };
+        let notice = match actions::execution_issue(&entry.action, &config, trusted) {
+            Some(actions::ExecutionIssue::ApprovalRequired) => Msg::CommandApprovalRequired,
+            Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
+            None => Msg::None,
+        };
         let value = entry.action.format()?;
         let label = action_label(ui, entry.name).unwrap_or_else(|| value.clone());
         Some(PickerItem {
             value: value.into(),
             label: label.into(),
             category,
+            notice: notice.to_ui(),
         })
     }));
     items
@@ -96,7 +104,9 @@ fn valid(
     excluded: &str,
     config: Option<&ConfigDocument>,
 ) -> bool {
-    if macro_step && value.trim().is_empty() { return false; }
+    if macro_step && value.trim().is_empty() {
+        return false;
+    }
     if key_only {
         return CATEGORIES.iter().any(|keys| keys.contains(&value));
     }
@@ -151,12 +161,29 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             catalog,
         };
         let picker = ui.global::<ActionPicker>();
-        picker.set_layer_action(matches!(target, PickerTarget::LayerAction | PickerTarget::ExtraAction) && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None);
+        picker.set_layer_action(
+            matches!(
+                target,
+                PickerTarget::LayerAction | PickerTarget::ExtraAction
+            ) && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None,
+        );
         let rule_field = ui.global::<crate::ui::RulesEditor>().get_field();
-        let rule_action = target == PickerTarget::Rule && matches!(rule_field, crate::ui::RuleDialog::Tap | crate::ui::RuleDialog::Hold);
+        let rule_action = target == PickerTarget::Rule
+            && matches!(
+                rule_field,
+                crate::ui::RuleDialog::Tap | crate::ui::RuleDialog::Hold
+            );
         picker.set_rule_action(rule_action);
-        picker.set_ignore_key((picker.get_layer_action() && ui.global::<LayersEditor>().get_assignment() == crate::ui::Assignment::Swallow)
-            || (rule_action && if rule_field == crate::ui::RuleDialog::Tap { ui.global::<crate::ui::RulesEditor>().get_swallow_tap() } else { ui.global::<crate::ui::RulesEditor>().get_swallow_hold() }));
+        picker.set_ignore_key(
+            (picker.get_layer_action()
+                && ui.global::<LayersEditor>().get_assignment() == crate::ui::Assignment::Swallow)
+                || (rule_action
+                    && if rule_field == crate::ui::RuleDialog::Tap {
+                        ui.global::<crate::ui::RulesEditor>().get_swallow_tap()
+                    } else {
+                        ui.global::<crate::ui::RulesEditor>().get_swallow_hold()
+                    }),
+        );
         picker.set_error(Msg::None.to_ui());
         picker.set_key_only(key_only);
         picker.set_macro_step(target == PickerTarget::MacroStep);
@@ -176,14 +203,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let picker = ui.global::<ActionPicker>();
         let excluded = if picker.get_macro_step() {
             let editor = ui.global::<MacroEditor>();
-            slint::Model::row_data(&editor.get_macros(), editor.get_picker_macro().max(0) as usize)
-                .map(|row| row.id)
-                .unwrap_or_default()
+            slint::Model::row_data(
+                &editor.get_macros(),
+                editor.get_picker_macro().max(0) as usize,
+            )
+            .map(|row| row.id)
+            .unwrap_or_default()
         } else {
             "".into()
         };
         let excluded_value = format!("macro:{excluded}");
         let key_only = picker.get_key_only();
+        state.borrow_mut().catalog = catalog(&ui, &doc.read());
         let state = state.borrow();
         let entries: Vec<&PickerItem> = state
             .catalog
@@ -217,6 +248,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .cloned()
                 .collect::<Vec<_>>(),
         )));
+        let notice = match actions::execution_issue(
+            &Action::parse(Some(&value)),
+            &doc.read().config(),
+            doc.read().commands_trusted(),
+        ) {
+            Some(actions::ExecutionIssue::ApprovalRequired) => Msg::CommandApprovalRequired,
+            Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
+            None => Msg::None,
+        };
+        picker.set_notice(notice.to_ui());
         picker.set_valid(valid(
             &value,
             key_only,
@@ -258,7 +299,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .unwrap_or_default();
             (state.target, label)
         };
-        let Some((target, index)) = target else { return };
+        let Some((target, index)) = target else {
+            return;
+        };
         match target {
             PickerTarget::Rule => {
                 if let Err(error) = rules::choose(&ui, &doc, &value) {
@@ -269,21 +312,34 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 let editor = ui.global::<MacroEditor>();
                 editor.invoke_set_step(editor.get_picker_macro(), index, value);
             }
-            PickerTarget::QuickAction => {
-                ui.global::<MenuEditor>().invoke_set_action(index, value, label)
-            }
+            PickerTarget::QuickAction => ui
+                .global::<MenuEditor>()
+                .invoke_set_action(index, value, label),
             PickerTarget::LayerKey => ui.global::<LayersEditor>().set_dialog_key(value),
             PickerTarget::LayerAction => {
                 if picker.get_layer_action() {
-                    if let Err(error) = layers::assign(&ui, &doc, index, &value, picker.get_ignore_key() && value.is_empty()) {
+                    if let Err(error) = layers::assign(
+                        &ui,
+                        &doc,
+                        index,
+                        &value,
+                        picker.get_ignore_key() && value.is_empty(),
+                    ) {
                         picker.set_error(error.to_ui());
                     }
                 } else {
                     ui.global::<LayersEditor>().set_dialog_action(value);
                 }
-            },
+            }
             PickerTarget::ExtraKey | PickerTarget::ExtraAction => {
-                if let Err(error) = layers::assign_extra(&ui, &doc, index, &value, target == PickerTarget::ExtraKey, picker.get_ignore_key() && value.is_empty()) {
+                if let Err(error) = layers::assign_extra(
+                    &ui,
+                    &doc,
+                    index,
+                    &value,
+                    target == PickerTarget::ExtraKey,
+                    picker.get_ignore_key() && value.is_empty(),
+                ) {
                     picker.set_error(error.to_ui());
                 }
             }
@@ -418,14 +474,23 @@ mod tests {
             captured_key(K::NumpadEnter, Pressed, true, &mut modifiers).as_deref(),
             Some("NumpadEnter")
         );
-        assert_eq!(captured_key(K::ShiftLeft, Pressed, false, &mut modifiers), None);
-        assert_eq!(captured_key(K::ControlRight, Pressed, false, &mut modifiers), None);
+        assert_eq!(
+            captured_key(K::ShiftLeft, Pressed, false, &mut modifiers),
+            None
+        );
+        assert_eq!(
+            captured_key(K::ControlRight, Pressed, false, &mut modifiers),
+            None
+        );
         assert_eq!(
             captured_key(K::KeyK, Pressed, false, &mut modifiers).as_deref(),
             Some("Ctrl+Shift+KeyK")
         );
         assert!(modifiers.is_empty());
-        assert_eq!(captured_key(K::AltRight, Pressed, false, &mut modifiers), None);
+        assert_eq!(
+            captured_key(K::AltRight, Pressed, false, &mut modifiers),
+            None
+        );
         assert_eq!(
             captured_key(K::AltRight, Released, false, &mut modifiers).as_deref(),
             Some("AltRight")

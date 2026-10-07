@@ -22,6 +22,10 @@ pub enum CoreEvent {
     MapperStopped(String),
     /// An `app:` action fired inside the mapper, e.g. `show_quick_menu_1`.
     AppAction(String),
+    CommandFinished {
+        script: String,
+        result: Result<(), String>,
+    },
 }
 
 type Listener = Arc<dyn Fn(&CoreEvent) + Send + Sync>;

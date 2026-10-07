@@ -583,6 +583,9 @@ impl Engine {
                             out.push(Out::RunCommand(command));
                             self.oneshot_consumed.insert(key);
                         }
+                        ActionDef::Blocked(error) => {
+                            crate::events::emit(crate::events::CoreEvent::CommandFinished { script: String::new(), result: Err(error) });
+                        }
                         ActionDef::Swallow => {
                             log::debug!("[mapper]   press {:?} -> swallow", key);
                             self.oneshot_consumed.insert(key);
@@ -1022,6 +1025,7 @@ impl Engine {
             Some(ActionDef::Macro(_)) => {}
             Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
             Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
+            Some(ActionDef::Blocked(error)) => crate::events::emit(crate::events::CoreEvent::CommandFinished { script: String::new(), result: Err(error.clone()) }),
             Some(ActionDef::Swallow) => {}
             None => {}
         }
@@ -1106,7 +1110,9 @@ impl Engine {
             return;
         }
         let resolved = if let Some(rest) = trimmed.strip_prefix("macro:") {
-            self.macros.get(rest.trim()).cloned().map(ActionDef::Macro)
+            self.macros.get(rest.trim()).cloned().map(|definition| {
+                definition.blocked.clone().map_or(ActionDef::Macro(definition), ActionDef::Blocked)
+            })
         } else if let Some(rest) = trimmed.strip_prefix("cmd:") {
             self.commands
                 .get(rest.trim())
@@ -1121,14 +1127,25 @@ impl Engine {
             self.fire_action(Some(&def), self.default_mod_delay, Instant::now(), out);
             return;
         }
+        let mut available = false;
         if let Some(rest) = action.trim().strip_prefix("sys:") {
             if let Some(sys) = super::system::resolve(rest) {
                 out.push(Out::RunSystem(sys));
+                available = true;
             }
         } else if let Some(rest) = action.trim().strip_prefix("app:") {
             if let Some(app) = super::system::resolve_app(rest) {
                 out.push(Out::RunSystem(app));
+                available = true;
             }
+        }
+        if !available {
+            crate::events::emit(crate::events::CoreEvent::CommandFinished {
+                script: action.into(),
+                result: Err(format!(
+                    "Action is unavailable, unknown, or not approved: {action}"
+                )),
+            });
         }
     }
 }
@@ -1376,6 +1393,20 @@ mod tests {
                 },
             ]
         ));
+    }
+
+    #[test]
+    fn unapproved_commands_block_whole_macros_and_preserve_other_keys() {
+        let mut cfg = empty_cfg();
+        cfg.commands.push(Command { id: "blocked".into(), linux: "printf hello".into() });
+        cfg.macros.push(Macro { id: "sequence".into(), steps: vec![MacroStep { action: "KeyA".into() }, MacroStep { action: "cmd:blocked".into() }], step_pause_ms: None, modifier_delay_ms: None });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        engine.execute_remote("macro:sequence", &mut out);
+        engine.execute_remote("cmd:blocked", &mut out);
+        assert!(out.is_empty());
+        engine.execute_remote("KeyB", &mut out);
+        assert!(!out.is_empty());
     }
 
     #[test]

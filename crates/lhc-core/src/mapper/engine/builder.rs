@@ -171,6 +171,19 @@ impl Engine {
             steps
         }
 
+        fn blocked_command(id: &str, macros: &HashMap<String, &crate::mapper::config::Macro>, commands: &HashMap<String, SysCommand>, depth: usize) -> Option<String> {
+            if depth > 10 { return Some("Macro nesting exceeds the limit".into()); }
+            let item = macros.get(id)?;
+            item.steps.iter().find_map(|step| {
+                let raw = step.action.trim();
+                if let Some(command) = raw.strip_prefix("cmd:") {
+                    (!commands.contains_key(command.trim())).then(|| format!("Command is unavailable or requires approval: {}", command.trim()))
+                } else if let Some(nested) = raw.strip_prefix("macro:") {
+                    blocked_command(nested.trim(), macros, commands, depth + 1)
+                } else { None }
+            })
+        }
+
         for sys in SYSTEM_MACROS {
             let steps =
                 resolve_macro_steps(sys.id, sys.steps.to_vec(), &raw_user_macros, &commands, 0);
@@ -184,6 +197,7 @@ impl Engine {
             macros.insert(
                 sys.id.to_string(),
                 MacroDef {
+                    blocked: None,
                     steps,
                     step_pause: default_step_pause,
                     mod_delay: default_mod_delay,
@@ -197,7 +211,8 @@ impl Engine {
             }
             let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.action.as_str()).collect();
             let steps = resolve_macro_steps(&m.id, raw_steps, &raw_user_macros, &commands, 0);
-            if steps.is_empty() {
+            let blocked = blocked_command(&m.id, &raw_user_macros, &commands, 0);
+            if steps.is_empty() && blocked.is_none() {
                 log::debug!("[mapper] macro {} has no usable steps — skipped", m.id);
                 continue;
             }
@@ -212,6 +227,7 @@ impl Engine {
             macros.insert(
                 m.id.clone(),
                 MacroDef {
+                    blocked,
                     steps,
                     step_pause,
                     mod_delay,
@@ -227,7 +243,7 @@ impl Engine {
             if let Some(rest) = trimmed.strip_prefix("macro:") {
                 let id = rest.trim();
                 if let Some(md) = macros.get(id) {
-                    return Some(ActionDef::Macro(md.clone()));
+                    return Some(md.blocked.as_ref().map_or_else(|| ActionDef::Macro(md.clone()), |error| ActionDef::Blocked(error.clone())));
                 }
                 log::debug!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
                 return None;
@@ -237,8 +253,7 @@ impl Engine {
                 if let Some(cmd) = commands.get(id) {
                     return Some(ActionDef::Command(cmd.clone()));
                 }
-                log::debug!("[mapper] unknown command ref {:?} ({})", trimmed, where_);
-                return None;
+                return Some(ActionDef::Blocked(format!("Command is unavailable or requires approval: {id}")));
             }
             if let Some(rest) = trimmed.strip_prefix("sys:") {
                 let name = rest.trim();

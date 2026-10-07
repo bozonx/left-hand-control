@@ -3,13 +3,14 @@ import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { PickerTarget } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit } from "std-widgets.slint";
-export struct PickerItem { value: string, label: string, category: int }
+export struct PickerItem { value: string, label: string, category: int, notice: Message }
 export global ActionPicker {
     in-out property <bool> opened;
     in-out property <bool> layer-action;
     in-out property <bool> rule-action;
     in-out property <bool> ignore-key;
     in-out property <Message> error;
+    in property <Message> notice;
     in-out property <bool> key-only;
     in-out property <bool> capturing;
     in-out property <bool> valid;
@@ -44,6 +45,7 @@ component PickerCell inherits Rectangle {
     function pick() { ActionPicker.value = root.item.value; ActionPicker.refresh(); }
     VerticalLayout { padding: 8px; spacing: 2px;
         Text { text: root.item.label; color: Theme.text; wrap: word-wrap; overflow: elide; vertical-alignment: center; }
+        if root.item.notice.id != "": Text { text: Locale.text(root.item.notice); color: Theme.warning; font-size: 10px; overflow: elide; }
         if root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
     }
     item-focus := FocusScope { key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.pick(); return accept; } return reject; } }
@@ -82,6 +84,7 @@ export component PickerOverlay inherits Rectangle {
                 }
                 if ActionPicker.rule-action: Text { text: @tr("Clear restores normal key behavior. Swallow prevents the key from reaching the application."); color: Theme.muted; wrap: word-wrap; }
                 if ActionPicker.capturing: Text { text: ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
+                if ActionPicker.notice.id != "": Text { text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
                 if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
                 if !ActionPicker.valid: Text { text: @tr("Choose a valid key or action."); color: Theme.error; }
                 LineEdit { text <=> ActionPicker.query; placeholder-text: @tr("Search keys and actions"); edited => { if ActionPicker.query != "" && ActionPicker.category >= 11 { ActionPicker.category = 0; } ActionPicker.refresh(); } }

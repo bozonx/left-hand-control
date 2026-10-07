@@ -1147,8 +1147,8 @@ msgstr "Страница"
 msgid "Page {}"
 msgstr "Страница {}"
 
-msgid "Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."
-msgstr "Передаётся в sh -lc как есть. Поддерживаются несколько строк, переменные, пайпы, условия и циклы. Внимательно читайте скрипты из чужих раскладок перед разрешением."
+msgid "Passed to sh -c as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."
+msgstr "Передаётся в sh -c как есть. Поддерживаются несколько строк, переменные, пайпы, условия и циклы. Внимательно читайте скрипты из чужих раскладок перед разрешением."
 
 msgid "Pause (ms)"
 msgstr "Пауза (мс)"
@@ -1168,8 +1168,8 @@ msgstr "Выберите действие"
 msgid "Quick Actions"
 msgstr "Быстрые действия"
 
-msgid "Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them."
-msgstr "Переиспользуемые shell-команды текущей раскладки. На Linux они запускаются через sh -lc после явного разрешения."
+msgid "Reusable shell commands for the current layout. On Linux they run through sh -c after you explicitly allow them. Shell commands run one at a time, with a 30-second limit, in your home directory."
+msgstr "Переиспользуемые shell-команды текущей раскладки. На Linux они запускаются через sh -c после явного разрешения. Shell-команды выполняются по одной, с лимитом 30 секунд, в домашнем каталоге."
 
 msgid "Shell commands are allowed for this version of the current layout."
 msgstr "Shell-команды разрешены для текущей версии этой раскладки."
@@ -1503,3 +1503,24 @@ msgstr "Удалить дополнительную клавишу?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Назначение этой клавиши будет удалено из слоя."
+
+msgid "Unsaved draft. Fix command errors to save; the draft is kept while switching tabs."
+msgstr "Черновик не сохранён. Исправьте ошибки команд; черновик сохраняется при переключении вкладок."
+
+msgid "Command completed: {}"
+msgstr "Команда выполнена: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Недоступно на этой платформе или в этом окружении"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr "Разрешите команды на вкладке «Команды» перед выполнением этого действия"
+
+msgid "Collapse script"
+msgstr "Свернуть скрипт"
+
+msgid "View full script"
+msgstr "Показать весь скрипт"
+
+msgid "The command will be deleted. References to cmd:{} will be cleared from keys, rules, macros, and quick actions. Keys will return to normal behavior."
+msgstr "Команда будет удалена. Ссылки на cmd:{} будут очищены в клавишах, правилах, макросах и быстрых действиях. Клавиши вернутся к обычному поведению."

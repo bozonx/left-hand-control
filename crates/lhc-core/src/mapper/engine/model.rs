@@ -13,11 +13,13 @@ pub(super) enum ActionDef {
     System(SysAction),
     Command(SysCommand),
     Literal(String),
+    Blocked(String),
     Swallow,
 }
 
 #[derive(Clone)]
 pub(super) struct MacroDef {
+    pub(super) blocked: Option<String>,
     pub(super) steps: Vec<MacroStepItem>,
     pub(super) step_pause: Duration,
     pub(super) mod_delay: Duration,
