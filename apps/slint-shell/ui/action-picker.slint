@@ -24,7 +24,7 @@ export global ActionPicker {
     callback open(PickerTarget, int, string, bool);
     callback refresh();
     callback apply();
-    callback close();
+    callback dismiss-picker();
 }
 
 component PickerCell inherits Rectangle {
@@ -48,12 +48,12 @@ component PickerCell inherits Rectangle {
 
 export component PickerOverlay inherits Rectangle {
     background: #00000099;
-    TouchArea { clicked => { ActionPicker.close(); } }
+    TouchArea { clicked => { ActionPicker.dismiss-picker(); } }
     focus := FocusScope {
         init => { self.focus(); }
         key-pressed(event) => {
             if ActionPicker.capturing { return accept; }
-            if event.text == Key.Escape { ActionPicker.close(); return accept; }
+            if event.text == Key.Escape { ActionPicker.dismiss-picker(); return accept; }
             return reject;
         }
         Rectangle {
@@ -66,7 +66,7 @@ export component PickerOverlay inherits Rectangle {
                         Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
                         Text { text: @tr("Previously selected: {}", ActionPicker.original); color: Theme.muted; overflow: elide; }
                     }
-                    Button { width: 110px; height: 34px; horizontal-stretch: 0; text: @tr("Cancel"); clicked => { ActionPicker.close(); } }
+                    Button { width: 110px; height: 34px; horizontal-stretch: 0; text: @tr("Cancel"); clicked => { ActionPicker.dismiss-picker(); } }
                     Button { width: 125px; height: 34px; horizontal-stretch: 0; primary: true; text: @tr("Apply"); enabled: ActionPicker.valid && !ActionPicker.capturing; clicked => { ActionPicker.apply(); } }
                 }
                 Text { text: @tr("Current value"); color: Theme.muted; }

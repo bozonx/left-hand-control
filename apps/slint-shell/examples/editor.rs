@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         keys.invoke_edit(33);
         assert_eq!(picker.get_value(), "text:Привет 👋");
         picker.set_value("Ctrl+KeyC".into());
-        picker.invoke_close();
+        picker.invoke_dismiss_picker();
         assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Привет 👋"));
 
         // Pauses are only valid inside macros.

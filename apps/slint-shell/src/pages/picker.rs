@@ -221,7 +221,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     let weak = ui.as_weak();
     let state = session.clone();
-    picker.on_close(move || {
+    picker.on_dismiss_picker(move || {
         state.borrow_mut().target = None;
         if let Some(ui) = weak.upgrade() {
             let picker = ui.global::<ActionPicker>();
@@ -274,7 +274,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }
         }
         if picker.get_error().id.is_empty() {
-            picker.invoke_close();
+            picker.invoke_dismiss_picker();
         }
     });
 }

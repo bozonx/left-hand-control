@@ -95,7 +95,15 @@ SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview
 
 Изменения Rust-кода и интерфейса между Slint и Rust (например, переименование используемого свойства или callback) требуют пересборки и перезапуска. Live Preview предназначен только для разработки: включайте `slint/live-preview` через командную строку, не добавляя его в обычные или release-сборки.
 
-Этот режим пока не проверен в приложении; совместимость со Spell-попапами также требует отдельной проверки.
+Запуск, редактирование клавиш, отмена действий и навигация проверяются также в Live Preview:
+
+```sh
+SLINT_LIVE_PREVIEW=1 cargo run --locked -p slint-shell --features slint/live-preview --example interactions
+SLINT_LIVE_PREVIEW=1 cargo build --locked -p slint-shell --features slint/live-preview
+python scripts/check-slint-shell-recovery.py --popups winit --live-preview
+```
+
+Последняя проверка временно добавляет пустую строку в `settings-page.slint`, проверяет перезагрузку и восстанавливает файл. Slint 1.17.1 в этом режиме не предоставляет встроенные переводы, поэтому проверку переводов `editor -- --smoke` запускайте без Live Preview. Spell вместе с Live Preview отдельно не проверен.
 
 ## Где лежит конфигурация
 

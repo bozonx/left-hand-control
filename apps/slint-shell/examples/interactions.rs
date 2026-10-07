@@ -120,7 +120,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     ui.global::<KeyEditor>().invoke_edit(33);
     assert!(picker.get_opened());
-    picker.invoke_close();
+    picker.invoke_dismiss_picker();
     assert!(!picker.get_opened());
     assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Changed"));
     ui.invoke_navigate(Page::Menus, MenuKind::Emoji);

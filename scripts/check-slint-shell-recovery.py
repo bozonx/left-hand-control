@@ -11,8 +11,12 @@ import time
 parser = argparse.ArgumentParser()
 parser.add_argument("--binary", default="target/debug/slint-shell")
 parser.add_argument("--popups", choices=["winit", "spell"], default="spell")
+parser.add_argument("--live-preview", action="store_true")
 args = parser.parse_args()
 binary = str(Path(args.binary).resolve())
+preview_source = Path("apps/slint-shell/ui/settings-page.slint")
+preview_original = None
+preview_modified = None
 
 with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
     root = Path(directory)
@@ -62,6 +66,15 @@ with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
             send("show", "quick", "1")
             wait_for(lambda: shown("quick"), "quick popup")
             send("hide")
+            if args.live_preview:
+                send("show", "settings")
+                preview_original = preview_source.read_bytes()
+                preview_modified = preview_original + b"\n"
+                preview_source.write_bytes(preview_modified)
+                wait_for(lambda: "Reloaded component SettingsWindow" in log_text(), "live UI reload")
+                send("hide")
+                send("show", "quick", "1")
+                send("hide")
             if args.popups == "spell":
                 wait_for(lambda: bool(re.findall(r"worker pid=(\d+)", log_text())), "worker readiness")
                 workers = re.findall(r"worker pid=(\d+)", log_text())
@@ -76,7 +89,11 @@ with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
             assert process.returncode == 0, log_text()
             assert "panicked" not in log_text(), log_text()
             print(f"Slint recovery passed ({args.popups}): configuration retry and popup delivery")
+            if args.live_preview:
+                print("Live Preview passed: UI reload, IPC callbacks and clean shutdown")
         finally:
+            if preview_original is not None and preview_source.read_bytes() == preview_modified:
+                preview_source.write_bytes(preview_original)
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
                 process.wait(timeout=10)

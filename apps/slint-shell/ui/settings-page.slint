@@ -83,7 +83,7 @@ export component SettingsPage inherits VerticalBox {
                 LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Text { text: @tr("Mouse device path"); color: Theme.text; vertical-alignment: center; }
-                    ComboBox { enabled: !AppState.mapper-running; model: SettingsEditor.mouse-devices; current-index <=> SettingsEditor.selected-mouse; selected(value) => { SettingsEditor.mouse-device-path = SettingsEditor.mouse-paths[self.current-index]; } }
+                    ComboBox { enabled: !AppState.mapper-running; model: SettingsEditor.mouse-devices; current-index: SettingsEditor.selected-mouse; selected(value) => { SettingsEditor.selected-mouse = self.current-index; SettingsEditor.mouse-device-path = SettingsEditor.mouse-paths[self.current-index]; } }
                     LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); }
                 }
             }
@@ -92,16 +92,16 @@ export component SettingsPage inherits VerticalBox {
                 if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Text { text: @tr("Appearance"); color: Theme.text; vertical-alignment: center; }
-                    ComboBox { model: [@tr("System"), @tr("Light"), @tr("Dark")]; current-index <=> SettingsEditor.appearance-index; }
+                    ComboBox { model: [@tr("System"), @tr("Light"), @tr("Dark")]; current-index: SettingsEditor.appearance-index; selected(value) => { SettingsEditor.appearance-index = self.current-index; } }
                     Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
-                    ComboBox { model: [@tr("Automatic"), "English", "Русский"]; current-index <=> SettingsEditor.locale-index; }
+                    ComboBox { model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; } }
                 }
             }
             Section {
                 title: @tr("Key behavior");
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Text { text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
-                    ComboBox { model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index <=> SettingsEditor.tap-decision-index; }
+                    ComboBox { model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; } }
                 }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Text { text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }
@@ -141,7 +141,7 @@ export component SettingsPage inherits VerticalBox {
             }
             if AppState.is-linux: Section {
                 title: @tr("Linux text injection");
-                ComboBox { model: SettingsEditor.text-modes; current-index <=> SettingsEditor.text-mode-index; }
+                ComboBox { model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; } }
                 if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": LineEdit { text <=> SettingsEditor.ydotool-path; placeholder-text: @tr("ydotool path"); }
                 if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": LineEdit { text <=> SettingsEditor.xdotool-path; placeholder-text: @tr("xdotool path"); }
             }

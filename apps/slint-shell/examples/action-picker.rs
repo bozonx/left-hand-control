@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         [40, 37, 27, 15, 8, 43, 0, 0, 0, 0, 0]
     );
     picker.set_value("Tab".into());
-    picker.invoke_close();
+    picker.invoke_dismiss_picker();
     assert_eq!(document.read().layout().rules[index as usize].key, "");
     rules.invoke_open_dialog(index, RuleDialog::Key);
     picker.set_value("macro:copyLine".into());
