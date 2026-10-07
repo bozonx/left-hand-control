@@ -60,6 +60,21 @@ export global RulesEditor {
     callback create-layer(string);
 }
 
+component RuleBadge inherits Rectangle {
+    in property <string> text;
+    in property <color> fill: Theme.hover;
+    private property <string> measure: root.text;
+    width: min(208px, measure-text.preferred-width + 14px);
+    height: 22px;
+    border-radius: 5px;
+    background: root.fill;
+    measure-text := Text { text: root.measure; visible: false; }
+    HorizontalLayout {
+        padding-left: 7px; padding-right: 7px;
+        Text { min-width: 0px; horizontal-stretch: 1; overflow: elide; text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+    }
+}
+
 component RuleCell inherits VerticalBox {
     padding: 0px;
     in property <string> title;
@@ -90,6 +105,7 @@ export component RulesPage inherits VerticalBox {
     rule-scroll := ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
         VerticalLayout { width: rule-scroll.visible-width; spacing: 10px; alignment: start;
             for rule[index] in RulesEditor.rows: Rectangle {
+                vertical-stretch: 0;
                 min-height: max(180px, rule-content.preferred-height);
                 min-width: 0px;
                 background: RulesEditor.created == index ? Theme.accent : Theme.card;
@@ -110,10 +126,10 @@ export component RulesPage inherits VerticalBox {
                         VerticalLayout { width: 220px; horizontal-stretch: 0; spacing: 10px; alignment: start;
                             RuleCell { title: @tr("Trigger"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                             RuleCell { enabled: rule.key != ""; title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
-                            if rule.game != GameCondition.any: Badge { text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.accent; }
-                            for language in ConditionChoices.items(rule.languages): Badge { text: language; }
-                            for application in ConditionChoices.items(rule.applications): Badge { text: "+ " + application; fill: Theme.success.transparentize(0.8); }
-                            for application in ConditionChoices.items(rule.excluded): Badge { text: "− " + application; fill: Theme.error.transparentize(0.8); }
+                            if rule.game != GameCondition.any: RuleBadge { text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.accent; }
+                            for language in ConditionChoices.items(rule.languages): RuleBadge { text: language; }
+                            for application in ConditionChoices.items(rule.applications): RuleBadge { text: "+ " + application; fill: Theme.success.transparentize(0.8); }
+                            for application in ConditionChoices.items(rule.excluded): RuleBadge { text: "− " + application; fill: Theme.error.transparentize(0.8); }
                         }
                         Rectangle { width: 1px; background: Theme.border; }
                         VerticalLayout { min-width: 0px; spacing: 12px; alignment: start;

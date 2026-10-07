@@ -206,10 +206,11 @@ export component PageTabs inherits ScrollView {
     viewport-width: max(self.visible-width, tabs.preferred-width);
     vertical-scrollbar-policy: always-off;
     horizontal-scrollbar-policy: as-needed;
-    tabs := HorizontalLayout { width: root.viewport-width; spacing: 6px; alignment: start;
+    tabs := HorizontalLayout { spacing: 6px; alignment: start;
         for label[index] in root.labels: Rectangle {
             height: 30px;
-            min-width: max(44px, tab-label.preferred-width + 24px);
+            width: max(44px, tab-label.preferred-width + 24px);
+            horizontal-stretch: 0;
             border-radius: 6px;
             border-width: 1px;
             border-color: index == root.selected ? Palette.accent-background : focus.has-focus ? Theme.text : Theme.border;
@@ -220,7 +221,7 @@ export component PageTabs inherits ScrollView {
             accessible-action-default => { root.select(index); }
             HorizontalLayout {
                 padding-left: 12px; padding-right: 12px;
-                tab-label := Text { text: label; color: Theme.text; vertical-alignment: center; horizontal-alignment: center; }
+                tab-label := Text { width: parent.width - 24px; wrap: no-wrap; overflow: elide; text: label; color: Theme.text; vertical-alignment: center; horizontal-alignment: center; }
             }
             focus := FocusScope {
                 key-pressed(event) => {
