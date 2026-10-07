@@ -184,14 +184,8 @@ component PageEditor inherits HorizontalLayout {
     callback remove();
     spacing: 4px;
     FieldLabel { text: @tr("Page"); vertical-alignment: center; }
-    InlineTextField { horizontal-stretch: 1; text: MenuEditor.page-name; label: @tr("Page name"); allow-empty: false; edit-on-click: false; saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
+    InlineTextField { horizontal-stretch: 1; text: MenuEditor.page-name; label: @tr("Page name"); allow-empty: false; saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); danger: true; clicked => { root.remove(); } } }
-}
-
-component StatusText inherits Text {
-    text: Locale.text(MenuEditor.status);
-    color: Theme.error;
-    wrap: word-wrap;
 }
 
 component EmojiButton inherits Rectangle {
@@ -235,7 +229,6 @@ export component EmojiPage inherits Rectangle {
                         title: @tr("Emoji & Symbols");
                         info: @tr("Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").");
                     }
-                    if MenuEditor.status.id != "": StatusText {}
                     HorizontalLayout {
                         spacing: 16px;
                         VerticalLayout {
@@ -243,10 +236,10 @@ export component EmojiPage inherits Rectangle {
                             spacing: 16px;
                             alignment: start;
                             PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
-                            HotkeyGrid { emoji: true; cell-height: 92px; activate(index) => { MenuEditor.select-cell(index); } }
+                            HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
                         }
                         Card {
-                            width: 340px;
+                            width: 360px;
                             VerticalLayout {
                                 padding: 14px;
                                 spacing: 12px;
@@ -330,7 +323,6 @@ export component QuickActionsPage inherits Rectangle {
                         title: @tr("Quick Actions");
                         info: @tr("Opened by the app:showQuickMenu1...5 actions.");
                     }
-                    if MenuEditor.status.id != "": StatusText {}
                     HorizontalLayout {
                         spacing: 16px;
                         VerticalLayout {
@@ -340,7 +332,6 @@ export component QuickActionsPage inherits Rectangle {
                             PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
                             HotkeyGrid {
                                 emoji: false;
-                                cell-height: 104px;
                                 activate(index) => {
                                     if MenuEditor.cells[index].value == "" {
                                         ActionPicker.open(PickerTarget.quick-action, index, "", false);
@@ -357,8 +348,8 @@ export component QuickActionsPage inherits Rectangle {
                                 spacing: 12px;
                                 alignment: start;
                                 PageEditor { remove => { root.confirming = true; } }
-                                if root.filled: Rectangle { height: 1px; background: Theme.border; }
-                                if root.filled: Text { text: @tr("Key {}", MenuEditor.cells[MenuEditor.selected-cell].key); color: Theme.text; font-weight: 700; }
+                                Rectangle { height: 1px; background: Theme.border; }
+                                if MenuEditor.selected-cell >= 0: FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                                 if root.filled: VerticalLayout {
                                     spacing: 4px;
                                     FieldLabel { text: @tr("Label"); }
@@ -398,7 +389,7 @@ export component QuickActionsPage inherits Rectangle {
                                             }
                                             action-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
                                         }
-                                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear"); clicked => { MenuEditor.clear-cell(); } } }
+                                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
                                     }
                                 }
                             }
@@ -541,7 +532,6 @@ export component CommandsPage inherits Rectangle {
                         }
                     }
                     if MenuEditor.has-errors: Text { text: @tr("Fix the existing command errors first"); color: Theme.muted; font-size: 12px; }
-                    if MenuEditor.status.id != "": StatusText {}
                     if root.has-shell && !MenuEditor.trusted: ApprovalNotice {}
                     if root.has-shell && MenuEditor.trusted: ApprovedNotice {}
                     if MenuEditor.commands.length == 0: Text { text: @tr("No commands yet. Click \"New command\" to create the first one."); color: Theme.muted; wrap: word-wrap; }

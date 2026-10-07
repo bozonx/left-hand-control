@@ -151,7 +151,8 @@ impl Layers {
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
         ] {
             theme.set_dark(preferences.theme == ThemeMode::Dark);
-            theme.invoke_apply();
+            theme.set_eink(preferences.theme == ThemeMode::EInk);
+            crate::ui::apply_theme(&theme);
             locale.set_english(preferences.language == Language::English);
         }
     }

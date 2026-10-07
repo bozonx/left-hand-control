@@ -2,13 +2,13 @@
 //! shared [`Document`] and refreshes it when the document changes.
 
 mod conditions;
-mod reorder;
 mod keys;
 mod layers;
 mod library;
 mod macros;
 mod menus;
 mod picker;
+mod reorder;
 mod rules;
 mod settings;
 
@@ -28,7 +28,8 @@ use std::rc::Rc;
 
 /// Bind every page of `ui` to `document`.
 pub fn bind_document(ui: &SettingsWindow, document: &Rc<Document>) {
-    ui.global::<crate::ui::InlineEditors>().on_nonempty(|value| !value.trim().is_empty());
+    ui.global::<crate::ui::InlineEditors>()
+        .on_nonempty(|value| !value.trim().is_empty());
     reorder::bind(ui);
     conditions::bind(ui);
     picker::bind(ui, document);
@@ -41,7 +42,9 @@ pub fn bind_document(ui: &SettingsWindow, document: &Rc<Document>) {
     settings::bind(ui, document);
 }
 
-pub(crate) fn strings(values: impl IntoIterator<Item = impl Into<SharedString>>) -> ModelRc<SharedString> {
+pub(crate) fn strings(
+    values: impl IntoIterator<Item = impl Into<SharedString>>,
+) -> ModelRc<SharedString> {
     ModelRc::new(VecModel::from(
         values.into_iter().map(Into::into).collect::<Vec<_>>(),
     ))
@@ -61,7 +64,10 @@ pub(crate) fn parse_list(value: &str) -> Vec<String> {
 }
 
 pub(crate) fn condition_list(items: &[String]) -> String {
-    if items.iter().any(|item| item.contains(',') || item.starts_with('[')) {
+    if items
+        .iter()
+        .any(|item| item.contains(',') || item.starts_with('['))
+    {
         serde_json::to_string(items).unwrap_or_default()
     } else {
         items.join(", ")
@@ -99,8 +105,12 @@ pub(crate) fn action_kind(action: &str) -> ActionKind {
 }
 
 /// Order of the appearance and language choices in the settings page.
-pub(crate) const APPEARANCES: [Appearance; 3] =
-    [Appearance::System, Appearance::Light, Appearance::Dark];
+pub(crate) const APPEARANCES: [Appearance; 4] = [
+    Appearance::System,
+    Appearance::Light,
+    Appearance::Dark,
+    Appearance::EInk,
+];
 pub(crate) const LOCALES: [LocalePreference; 3] = [
     LocalePreference::Auto,
     LocalePreference::English,

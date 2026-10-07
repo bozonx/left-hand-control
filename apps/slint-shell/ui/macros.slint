@@ -375,7 +375,6 @@ export component MacrosPage inherits Rectangle {
                         }
                     }
                     if MacroEditor.has-errors: Text { text: @tr("Fix the existing macro errors first"); color: Theme.muted; font-size: 12px; }
-                    if MacroEditor.status.id != "": Text { text: Locale.text(MacroEditor.status); color: Theme.error; wrap: word-wrap; }
                     if MacroEditor.macros.length == 0: Text { text: @tr("No macros yet. Click \"New macro\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
                     for item[index] in MacroEditor.macros: MacroCard {
                         index: index;

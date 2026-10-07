@@ -30,6 +30,7 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
         appearance: match str_of(raw, "appearance") {
             Some("light") => Appearance::Light,
             Some("dark") => Appearance::Dark,
+            Some("eink") => Appearance::EInk,
             _ => Appearance::System,
         },
         locale: match str_of(raw, "locale") {

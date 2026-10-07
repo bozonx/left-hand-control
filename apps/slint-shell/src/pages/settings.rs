@@ -1,7 +1,3 @@
-//! Settings page. The form is a draft until "Save settings"; saving writes
-//! only the fields the user changed, so changes another process or page
-//! made to other fields meanwhile are kept.
-
 use super::{APPEARANCES, LOCALES, choice, choice_index, strings};
 use crate::{
     document::{Document, View},
@@ -9,7 +5,7 @@ use crate::{
     ui::{CapabilityRow, ProcessRow, SettingsEditor, SettingsWindow},
 };
 use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher};
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
 /// Linux text injection backends, in the order the page lists them.
@@ -69,7 +65,10 @@ impl Form {
             matchers: settings.game_mode.process_matchers.clone(),
             text_mode: choice_index(
                 &TEXT_MODES,
-                &settings.linux_wayland_text_mode.as_deref().unwrap_or(TEXT_MODES[0]),
+                &settings
+                    .linux_wayland_text_mode
+                    .as_deref()
+                    .unwrap_or(TEXT_MODES[0]),
             ),
             ydotool: settings.linux_ydotool_path.clone(),
             xdotool: settings.linux_xdotool_path.clone(),
@@ -175,6 +174,7 @@ struct State {
     matchers: Vec<GameModeProcessMatcher>,
     /// Device paths in picker order.
     devices: Vec<String>,
+    autosave: slint::Timer,
 }
 
 /// Load the form unless the user has unsaved edits in it.
@@ -215,13 +215,18 @@ fn refresh_devices(ui: &SettingsWindow, document: &Document, state: &mut State) 
     let selected = saved
         .and_then(|path| devices.iter().position(|device| device.path == path))
         .map_or(-1, |index| index as i32);
-    e.set_input_devices(strings(devices.iter().map(|device| {
-        if device.name.is_empty() {
-            device.path.clone()
-        } else {
-            format!("{} · {}", device.name, device.path)
-        }
-    })));
+    let mut labels: Vec<String> = devices
+        .iter()
+        .map(|device| {
+            if device.name.is_empty() {
+                device.path.clone()
+            } else {
+                format!("{} · {}", device.name, device.path)
+            }
+        })
+        .collect();
+    labels.push(e.get_manual_label().into());
+    e.set_input_devices(strings(labels));
     e.set_selected_device(selected);
     state.devices = devices.into_iter().map(|device| device.path).collect();
 
@@ -241,6 +246,7 @@ fn refresh_devices(ui: &SettingsWindow, document: &Document, state: &mut State) 
         paths.push(current.clone());
     }
     let selected = paths.iter().position(|path| *path == current).unwrap_or(0);
+    labels.push(e.get_manual_label());
     e.set_mouse_devices(ModelRc::new(VecModel::from(labels)));
     e.set_mouse_paths(ModelRc::new(VecModel::from(paths)));
     e.set_selected_mouse(selected as i32);
@@ -251,18 +257,21 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
         return Msg::LoadConfigFirst;
     };
     let form = Form::read(ui, &state.matchers);
-    let mut result = Ok(());
-    let saved = document.edit(View::Settings, |config| {
-        config.update_settings(|settings| result = form.apply(&base, settings))
-    });
-    if let Err(error) = result {
+    if form == base {
+        return Msg::None;
+    }
+    let mut settings = document.read().settings().clone();
+    if let Err(error) = form.apply(&base, &mut settings) {
         return error;
     }
+    let saved = document.edit(View::Settings, |config| {
+        config.update_settings(|current| *current = settings)
+    });
     match saved {
         Ok(saved) => {
             state.base = None;
             refresh(ui, document, state, true);
-            saved.message(Msg::SettingsSaved)
+            saved.message(Msg::None)
         }
         Err(error) => Msg::from(&error),
     }
@@ -355,9 +364,25 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let (doc, shared) = (document.clone(), state.clone());
     e.on_save(move || {
         if let Some(ui) = weak.upgrade() {
+            shared.borrow().autosave.stop();
             let message = save(&ui, &doc, &mut shared.borrow_mut());
             ui.global::<SettingsEditor>().set_message(message.to_ui());
         }
+    });
+
+    let weak = ui.as_weak();
+    let shared = state.clone();
+    e.on_schedule_save(move || {
+        let weak = weak.clone();
+        shared.borrow().autosave.start(
+            slint::TimerMode::SingleShot,
+            std::time::Duration::from_millis(500),
+            move || {
+                if let Some(ui) = weak.upgrade() {
+                    ui.global::<SettingsEditor>().invoke_save();
+                }
+            },
+        );
     });
 
     let weak = ui.as_weak();
@@ -372,6 +397,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let (doc, shared) = (document.clone(), state.clone());
     e.on_select_device(move |index| {
         let Some(ui) = weak.upgrade() else { return };
+        if index
+            == ui
+                .global::<SettingsEditor>()
+                .get_input_devices()
+                .row_count() as i32
+                - 1
+        {
+            ui.global::<SettingsEditor>().set_keyboard_manual(true);
+            ui.global::<SettingsEditor>().set_selected_device(index);
+            return;
+        }
+        ui.global::<SettingsEditor>().set_keyboard_manual(false);
         let Some(path) = usize::try_from(index)
             .ok()
             .and_then(|index| shared.borrow().devices.get(index).cloned())
@@ -385,7 +422,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 if let Some(base) = shared.borrow_mut().base.as_mut() {
                     base.keyboard = path.clone();
                 }
-                saved.message(Msg::DeviceSaved(path))
+                saved.message(Msg::None)
             }
             Err(error) => Msg::from(&error),
         };
@@ -428,7 +465,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
         e.set_process_matchers(rows(&state.matchers));
         e.set_selected_process(state.matchers.len() as i32 - 1);
-        e.set_message(Msg::None.to_ui());
+        drop(state);
+        e.invoke_save();
     });
 
     let weak = ui.as_weak();
@@ -452,6 +490,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         item.only_active_window = e.get_process_only_active();
         item.is_blacklist = e.get_process_blacklist();
         e.set_process_matchers(rows(&state.matchers));
+        drop(state);
+        e.invoke_save();
     });
 
     let weak = ui.as_weak();
@@ -469,6 +509,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_process_matchers(rows(&state.matchers));
         e.set_selected_process(-1);
         e.set_process_name("".into());
+        drop(state);
+        e.invoke_save();
     });
 }
 
@@ -509,7 +551,10 @@ mod tests {
         form.keyboard = "/dev/input/event3".into();
         form.mouse = " ".into();
         form.apply(&base, &mut settings).unwrap();
-        assert_eq!(settings.input_device_path.as_deref(), Some("/dev/input/event3"));
+        assert_eq!(
+            settings.input_device_path.as_deref(),
+            Some("/dev/input/event3")
+        );
         assert_eq!(settings.input_mouse_device_path, None);
     }
 }

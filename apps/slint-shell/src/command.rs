@@ -105,6 +105,7 @@ pub enum ThemeMode {
     System,
     Light,
     Dark,
+    EInk,
 }
 
 impl ThemeMode {
@@ -113,6 +114,7 @@ impl ThemeMode {
             Self::System => "system",
             Self::Light => "light",
             Self::Dark => "dark",
+            Self::EInk => "eink",
         }
     }
 }
@@ -207,6 +209,7 @@ impl Command {
                     "system" => ThemeMode::System,
                     "light" => ThemeMode::Light,
                     "dark" => ThemeMode::Dark,
+                    "eink" => ThemeMode::EInk,
                     _ => return Err(USAGE.into()),
                 },
                 language: Language::from_code(language).ok_or(USAGE)?,
@@ -266,6 +269,7 @@ mod tests {
                 theme: ThemeMode::Light,
                 language: Language::English,
             }),
+            Command::Preferences(Preferences { theme: ThemeMode::EInk, language: Language::Russian }),
             Command::Preferences(Preferences::default()),
             Command::Execute("text:  Привет 👋 ".into()),
             Command::Execute("Ctrl+KeyC".into()),
@@ -317,7 +321,10 @@ mod tests {
             Command::parse_args(&args(&["execute", "text:a  b"])),
             Ok(Command::Execute("text:a  b".into()))
         );
-        assert_eq!(Command::parse_args(&args(&["show", "quick", "2"])), Ok(Command::ShowPage(Popup::Quick, 2)));
+        assert_eq!(
+            Command::parse_args(&args(&["show", "quick", "2"])),
+            Ok(Command::ShowPage(Popup::Quick, 2))
+        );
         assert!(Command::parse_args(&args(&["execute"])).is_err());
     }
 

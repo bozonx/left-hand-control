@@ -54,9 +54,9 @@ export component GameModeButton inherits Rectangle {
                 if event.text == Key.UpArrow { root.highlighted = mod(root.highlighted + 2, 3); return accept; }
                 if event.text == "\n" || event.text == " " {
                     AppState.set-game-control(root.highlighted == 0 ? GameModeControl.auto : root.highlighted == 1 ? GameModeControl.on : GameModeControl.off);
-                    menu.close(); focus.focus(); return accept;
+                    focus.focus(); menu.close(); return accept;
                 }
-                if event.text == Key.Escape { menu.close(); focus.focus(); return accept; }
+                if event.text == Key.Escape { focus.focus(); menu.close(); return accept; }
                 return reject;
             }
             Rectangle {
@@ -73,7 +73,7 @@ export component GameModeButton inherits Rectangle {
                         changed has-focus => { if self.has-focus { root.highlighted = index; } }
                         clicked => {
                             AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
-                            menu.close(); focus.focus();
+                            focus.focus(); menu.close();
                         }
                     }
                     Rectangle { height: 1px; background: Theme.border; }

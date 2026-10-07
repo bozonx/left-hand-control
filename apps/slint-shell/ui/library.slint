@@ -294,34 +294,28 @@ export component LibraryPage inherits VerticalBox {
     HorizontalLayout {
         vertical-stretch: 0;
         spacing: 32px;
-        VerticalLayout {
-            spacing: 8px;
-            HorizontalLayout {
-                spacing: 6px; alignment: start;
-                Text { text: @tr("Layout mode"); color: Theme.text; vertical-alignment: center; }
+        HorizontalLayout {
+            spacing: 6px;
+            Text { text: @tr("Mode"); color: Theme.text; vertical-alignment: center; }
+            VerticalLayout {
+                alignment: center;
                 InfoTip {
                     text: @tr("Manual: the layout you make active works everywhere.") + "\n\n"
                         + @tr("Automatic: the first included layout whose conditions match is used. Order sets priority.");
                 }
             }
-            HorizontalLayout {
-                alignment: start;
-                ButtonGroup {
-                    labels: [@tr("Manual"), @tr("Automatic")];
-                    selected-index: LayoutLibrary.automatic ? 1 : 0;
-                    selected(index) => { if (index == 1) != LayoutLibrary.automatic { LayoutLibrary.set-automatic(index == 1); } }
-                }
+            ButtonGroup {
+                labels: [@tr("Manual"), @tr("Auto")];
+                selected-index: LayoutLibrary.automatic ? 1 : 0;
+                selected(index) => { if (index == 1) != LayoutLibrary.automatic { LayoutLibrary.set-automatic(index == 1); } }
             }
         }
         Rectangle { horizontal-stretch: 1; }
-        VerticalLayout {
+        HorizontalLayout {
             spacing: 8px;
-            Text { text: @tr("Create layout"); color: Theme.text; horizontal-alignment: right; }
-            HorizontalLayout {
-                spacing: 8px; alignment: end;
-                Button { text: @tr("Empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-                Button { text: @tr("Based on Ivan K layout"); clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
-            }
+            Text { text: @tr("Create layout") + ":"; color: Theme.text; vertical-alignment: center; }
+            Button { text: @tr("New"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+            Button { text: @tr("Based on Ivan K layout"); clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
         }
     }
     if LayoutLibrary.names.length == 0: Rectangle {
@@ -358,7 +352,8 @@ export component LibraryPage inherits VerticalBox {
                 card-content := VerticalLayout { padding-left: 16px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; spacing: 12px;
                     VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 6px;
                         HorizontalLayout { spacing: 8px;
-                            InlineTextField { horizontal-stretch: 1; min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
+                            InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
+                            Rectangle { horizontal-stretch: 1; }
                             if card.active: Pill { text: @tr("Active"); fill: Theme.accent; }
                             if card.current: Pill { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); }
                         }
@@ -402,7 +397,6 @@ export component LibraryPage inherits VerticalBox {
             }
         }
     }
-    if LayoutLibrary.dialog == LibraryDialog.none && LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { text: Locale.text(LayoutLibrary.status); color: Theme.muted; wrap: word-wrap; }
 }
 
 export component LibraryDialogOverlay inherits Rectangle {

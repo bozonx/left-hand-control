@@ -647,7 +647,7 @@ msgid "Automatic: the first included layout whose conditions match is used. Orde
 msgstr "Автоматически: работает первая включённая раскладка, чьи условия выполнены. Порядок задаёт приоритет."
 
 msgid "Based on Ivan K layout"
-msgstr "На основе раскладки Айвана Кей"
+msgstr "На основе раскладки Айвана Кея"
 
 msgid "Create"
 msgstr "Создать"
@@ -1461,3 +1461,39 @@ msgstr "Кнопка {}"
 
 msgid "Copied to clipboard"
 msgstr "Скопировано в буфер обмена"
+
+msgid "Theme"
+msgstr "Тема"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Ввести путь устройства вручную"
+
+msgid "Hold after another key is pressed and released; otherwise tap."
+msgstr "Удержание после нажатия и отпускания другой клавиши; иначе — нажатие."
+
+msgid "Hold as soon as another key is pressed."
+msgstr "Удержание сразу при нажатии другой клавиши."
+
+msgid "Time before a key press becomes a hold."
+msgstr "Время до перехода нажатия в удержание."
+
+msgid "Maximum interval between two taps."
+msgstr "Максимальный интервал между двумя нажатиями."
+
+msgid "Default pause between macro steps."
+msgstr "Пауза между шагами макроса по умолчанию."
+
+msgid "Delay after pressing macro modifiers."
+msgstr "Задержка после нажатия модификаторов макроса."
+
+msgid "Mode"
+msgstr "Режим"
+
+msgid "New"
+msgstr "Новая"
+
+msgid "Auto"
+msgstr "Авто"

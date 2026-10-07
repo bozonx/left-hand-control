@@ -38,7 +38,7 @@ pub(super) fn assign(
         .map_err(|error| Msg::from(&error))?;
     refresh(ui, document);
     ui.global::<AppState>()
-        .set_status(saved.message(Msg::ActionSaved).to_ui());
+        .set_status(saved.message(Msg::None).to_ui());
     Ok(())
 }
 

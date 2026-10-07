@@ -183,7 +183,7 @@ fn change<T>(
     match document.edit(View::Layers, edit) {
         Ok(saved) => {
             refresh(ui, document);
-            editor.set_status(saved.message(Msg::LayerSaved).to_ui());
+            editor.set_status(saved.message(Msg::None).to_ui());
             Ok(saved.value)
         }
         Err(error) => {

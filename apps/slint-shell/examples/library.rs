@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.set_name("Профиль".into());
     library.set_description("Описание профиля".into());
     library.invoke_action(LibraryAction::SaveDetails);
-    assert_eq!(library.get_status().id, "library-saved");
+    assert_eq!(library.get_status().id, "");
     assert!(paths.load_user_layout("B").is_err());
     assert!(paths.load_user_layout("Профиль")?.contains("Описание"));
     assert_eq!(library.get_current_label(), "Профиль");

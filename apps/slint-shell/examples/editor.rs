@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(!picker.get_opened());
         assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Привет 👋"));
         assert_eq!(keys.get_keys().row_data(33).unwrap().action, "text:Привет 👋");
-        assert_eq!(ui.global::<AppState>().get_status().id, "action-saved");
+        assert_eq!(ui.global::<AppState>().get_status().id, "");
 
         // Cancel keeps the saved value.
         keys.invoke_edit(33);

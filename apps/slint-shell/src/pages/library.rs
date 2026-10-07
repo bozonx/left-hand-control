@@ -380,7 +380,7 @@ fn library_action(
     if matches!(action, LibraryAction::SaveConditions | LibraryAction::SaveDetails) {
         library.set_dialog(LibraryDialog::None);
     }
-    Ok(Msg::LibrarySaved)
+    Ok(Msg::None)
 }
 
 /// Replace the working copy with the selected layout and open its rules.
@@ -446,7 +446,7 @@ fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Res
     })?;
     state.borrow_mut().baseline = Some((name, text));
     refresh_context(ui, document);
-    Ok(Msg::LibrarySaved)
+    Ok(Msg::None)
 }
 
 /// Save the working copy as a new library layout and continue editing it.
@@ -469,7 +469,7 @@ fn save_as(ui: &SettingsWindow, document: &Document, state: &Shared, name: &str)
     state.borrow_mut().baseline = Some((saved, text));
     ui.global::<LayoutLibrary>().set_save_as_open(false);
     refresh(ui, document, &mut state.borrow_mut())?;
-    Ok(Msg::LibrarySaved)
+    Ok(Msg::None)
 }
 
 fn delete(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
@@ -478,7 +478,7 @@ fn delete(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Ms
     edit(ui, document, state, |config| config.remove_library_layout(&name, &current))?;
     reset_context(ui, document, &mut state.borrow_mut());
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
-    Ok(Msg::LibrarySaved)
+    Ok(Msg::None)
 }
 
 fn set_description(
@@ -577,7 +577,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             edit(&ui, doc, state, |config| {
                 config.update_settings(|settings| settings.layout_mode = mode)
             })
-            .map(|()| Msg::LibrarySaved),
+            .map(|()| Msg::None),
         );
     });
     on!(on_action, |ui, doc, state, action| report(

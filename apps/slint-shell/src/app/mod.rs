@@ -187,12 +187,18 @@ impl App {
         let config = document.read();
         let settings = config.settings();
         let dark = match settings.appearance {
-            Appearance::Light => false,
+            Appearance::Light | Appearance::EInk => false,
             Appearance::Dark => true,
             Appearance::System => system_dark(&self.settings),
         };
         Preferences {
-            theme: if dark { ThemeMode::Dark } else { ThemeMode::Light },
+            theme: if settings.appearance == Appearance::EInk {
+                ThemeMode::EInk
+            } else if dark {
+                ThemeMode::Dark
+            } else {
+                ThemeMode::Light
+            },
             language: Language::resolve(settings.locale),
         }
     }
@@ -218,7 +224,8 @@ impl App {
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
         ] {
             theme.set_dark(preferences.theme == ThemeMode::Dark);
-            theme.invoke_apply();
+            theme.set_eink(preferences.theme == ThemeMode::EInk);
+            crate::ui::apply_theme(&theme);
             locale.set_english(preferences.language == Language::English);
         }
         if let Some(tray) = self.tray.borrow().as_ref() {
@@ -313,7 +320,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     start_core();
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
-    settings.global::<AppState>().set_is_linux(cfg!(target_os = "linux"));
+    settings
+        .global::<AppState>()
+        .set_is_linux(cfg!(target_os = "linux"));
     let document = load_document(&settings);
     metrics.ready("settings");
     popup_attributes.set(true);

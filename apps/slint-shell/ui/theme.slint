@@ -1,17 +1,20 @@
 import { Palette } from "std-widgets.slint";
 export global Theme {
     in-out property <bool> dark: true;
-    out property <color> surface: dark ? #202531 : #f5f7fc;
-    out property <color> text: dark ? #f0f3fa : #182030;
-    out property <color> muted: dark ? #c2c9d6 : #485568;
-    out property <color> accent: dark ? #476bb0 : #b7d0fa;
-    out property <color> hover: dark ? #3e526e : #dbe6f7;
-    out property <color> card: dark ? #242d3c : #ffffff;
-    out property <color> border: dark ? #626b7b : #8794a8;
+    in-out property <bool> eink: false;
+    out property <color> surface: eink ? #ffffff : dark ? #202531 : #f5f7fc;
+    out property <color> text: eink ? #000000 : dark ? #f0f3fa : #182030;
+    out property <color> muted: eink ? #333333 : dark ? #c2c9d6 : #485568;
+    out property <color> accent: eink ? #cccccc : dark ? #476bb0 : #b7d0fa;
+    out property <color> hover: eink ? #eeeeee : dark ? #3e526e : #dbe6f7;
+    out property <color> card: eink ? #ffffff : dark ? #242d3c : #ffffff;
+    out property <color> border: eink ? #000000 : dark ? #626b7b : #8794a8;
     /// Foreground for assigned actions on key caps.
-    out property <color> link: dark ? #7fb3ff : #1f5fbf;
-    out property <color> error: dark ? #ffb4ab : #a52222;
-    out property <color> warning: dark ? #f5c26b : #8a5300;
-    out property <color> success: dark ? #7fd6a0 : #1d7a45;
-    public function apply() { Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light; }
+    out property <color> link: eink ? #000000 : dark ? #7fb3ff : #1f5fbf;
+    out property <color> error: eink ? #000000 : dark ? #ffb4ab : #a52222;
+    out property <color> warning: eink ? #000000 : dark ? #f5c26b : #8a5300;
+    out property <color> success: eink ? #000000 : dark ? #7fd6a0 : #1d7a45;
+    public function apply() {
+        Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light;
+    }
 }

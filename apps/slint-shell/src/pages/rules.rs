@@ -143,7 +143,7 @@ fn change(
     match document.edit(View::Rules, |config| config.update_layout(edit)) {
         Ok(saved) => {
             refresh(ui, document, fields);
-            report(ui, document, &saved, Msg::RuleSaved);
+            report(ui, document, &saved, Msg::None);
             Ok(())
         }
         Err(error) => {

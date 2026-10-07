@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_process_only_active(true);
     settings.invoke_add_process();
     settings.invoke_save();
-    assert_eq!(settings.get_message().id, "settings-saved");
+    assert_eq!(settings.get_message().id, "");
     let loaded = ConfigDocument::load(paths.clone())?;
     assert_eq!(loaded.settings(), document.read().settings());
     assert_eq!(loaded.settings().default_hold_timeout_ms, 310);
@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     document.reload()?;
     settings.set_macro_pause("40".into());
     settings.invoke_save();
-    assert_eq!(settings.get_message().id, "settings-saved");
+    assert_eq!(settings.get_message().id, "");
     let loaded = ConfigDocument::load(paths.clone())?;
     assert_eq!(loaded.settings().default_double_tap_timeout_ms, 999);
     assert_eq!(loaded.settings().default_macro_step_pause_ms, 40);
@@ -295,9 +295,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             6 => { snapshot(&ui, "macros-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Emoji); }
             7 => { snapshot(&ui, "emoji-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Quick); }
             8 => { snapshot(&ui, "quick-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Commands); }
-            9 => { snapshot(&ui, "commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance_index(1); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
+            9 => { snapshot(&ui, "commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance_index(1); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
             10 => { snapshot(&ui, "settings-light-en-small");
-                for (x, expected) in [(60.0, Page::Layouts), (ui.window().size().width as f32 / ui.window().scale_factor() - 55.0, Page::Settings)] {
+                for (x, expected) in [(60.0, Page::Layouts), (170.0, Page::Settings)] {
                     let position = slint::LogicalPosition::new(x, 27.0);
                     for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                     assert_eq!(ui.get_page(), expected);
@@ -308,7 +308,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             12 => { snapshot(&ui, "game-mode-on-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Off); }
             13 => { snapshot(&ui, "game-mode-off-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Auto); }
             14 => { snapshot(&ui, "game-mode-auto-dark");
-                let position = slint::LogicalPosition::new(789.0, 27.0);
+                let position = slint::LogicalPosition::new(600.0, 27.0);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
             }
             15 => { snapshot(&ui, "game-mode-menu-dark");
@@ -317,7 +317,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 assert_eq!(ui.global::<AppState>().get_game_control(), GameModeControl::On);
             }
-            16 => { snapshot(&ui, "game-mode-menu-selected"); println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state, popup search and game mode overrides and dropdown keyboard selection"); slint::quit_event_loop().unwrap(); }
+            16 => { snapshot(&ui, "game-mode-menu-selected"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_hold_timeout("321".into()); ui.global::<SettingsEditor>().invoke_schedule_save(); }
+            18 => { assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
+            19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
+            20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "timeout-invalid".into(), arg: "".into(), count: 0 }); }
+            21 => { snapshot(&ui, "settings-error-toast"); println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state, popup search and game mode overrides and dropdown keyboard selection"); slint::quit_event_loop().unwrap(); }
             _ => {}
         }
         step.set(n + 1);

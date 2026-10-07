@@ -282,6 +282,7 @@ pub enum Appearance {
     System,
     Light,
     Dark,
+    EInk,
 }
 
 impl Appearance {
@@ -290,6 +291,7 @@ impl Appearance {
             Self::System => "system",
             Self::Light => "light",
             Self::Dark => "dark",
+            Self::EInk => "eink",
         }
     }
 }

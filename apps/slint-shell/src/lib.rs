@@ -6,6 +6,23 @@
 
 pub mod ui {
     slint::include_modules!();
+
+    pub fn apply_theme(theme: &Theme<'_>) {
+        thread_local! {
+            static ACCENT: std::cell::Cell<Option<slint::Color>> = const { std::cell::Cell::new(None) };
+        }
+        i_slint_core::context::with_global_context(|| Err(slint::PlatformError::NoPlatform), |context| {
+            ACCENT.with(|accent| {
+                let original = accent.get().unwrap_or_else(|| {
+                    let color = context.accent_color();
+                    accent.set(Some(color));
+                    color
+                });
+                context.set_accent_color(if theme.get_eink() { slint::Color::from_rgb_u8(0, 0, 0) } else { original });
+            });
+        }).expect("Slint theme requires an initialized platform");
+        theme.invoke_apply();
+    }
 }
 
 mod app;

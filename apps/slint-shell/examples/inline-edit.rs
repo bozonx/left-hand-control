@@ -3,7 +3,7 @@ use slint::{ComponentHandle, SharedString};
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 slint::slint! {
-    import { InlineTextField, ConfirmDialog, InfoTip } from "../ui/controls.slint";
+    import { InlineTextField, InlineTextArea, ConfirmDialog, InfoTip } from "../ui/controls.slint";
     export component ControlsWindow inherits Window {
         width: 520px; height: 320px;
         in-out property <string> value: "Original";
@@ -14,7 +14,7 @@ slint::slint! {
         public function edit-description() { description-field.begin(); }
         VerticalLayout { padding: 20px; spacing: 12px; alignment: start;
             field := InlineTextField { text: root.value; saved(value) => { root.value = value; } }
-            description-field := InlineTextField { multiline: true; text: root.description; saved(value) => { root.description = value; } }
+            description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; } }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }
         if root.confirming: ConfirmDialog {
