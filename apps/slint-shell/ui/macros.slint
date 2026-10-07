@@ -107,7 +107,7 @@ component MacroCard inherits Card {
     in property <int> count;
     in property <MacroRow> item;
     opacity: DragDrop.dragging && DragDrop.group == 4 && DragDrop.source == root.index ? 0.6 : 1;
-    DropMarker { width: parent.width; group: 4; index: root.index; row-y: root.y; row-height: root.height; }
+
     callback remove();
     callback remove-step(int);
     callback copy(string);
@@ -175,7 +175,7 @@ component MacroCard inherits Card {
                 spacing: 6px;
                 for step[step-index] in root.item.steps: Rectangle {
                     opacity: DragDrop.dragging && DragDrop.group == 100 + root.index && DragDrop.source == step-index ? 0.6 : 1;
-                    DropMarker { width: parent.width; group: 100 + root.index; index: step-index; row-y: parent.y; row-height: parent.height; }
+
                     HorizontalLayout { StepRow {
                     macro-index: root.index;
                     index: step-index;
@@ -183,6 +183,7 @@ component MacroCard inherits Card {
                     step: step;
                     remove => { root.remove-step(step-index); }
                     } }
+                    DropMarker { width: parent.width; group: 100 + root.index; index: step-index; row-y: parent.y; row-height: parent.height; }
                 }
             }
         }
@@ -241,6 +242,7 @@ component MacroCard inherits Card {
             }
         }
     }
+    DropMarker { width: parent.width; group: 4; index: root.index; row-y: root.y; row-height: root.height; }
 }
 
 component SystemMacrosHeader inherits Rectangle {

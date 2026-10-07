@@ -258,13 +258,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_add(move || {
         let Some(ui) = weak.upgrade() else { return };
-        let count = doc.read().layout().rules.len();
         let result = change(&ui, &doc, true, |layout| {
             let id = unique_rule_id(&layout.rules);
-            layout.rules.push(LayerRule::new(id, ""));
+            layout.rules.insert(0, LayerRule::new(id, ""));
         });
         if result.is_ok() {
-            ui.global::<RulesEditor>().set_selected(count as i32);
+            ui.global::<RulesEditor>().set_selected(0);
             refresh(&ui, &doc, true);
         }
     });

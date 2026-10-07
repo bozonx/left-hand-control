@@ -306,9 +306,11 @@ export component InlineTextField inherits FocusScope {
         if !root.editing: Rectangle {
             horizontal-stretch: 1;
             min-width: 0px;
-            height: display.height + 8px + (root.multiline && measure.preferred-height > display.height ? line.preferred-height : 0px);
+            height: max(root.multiline ? 56px : 0px, display.height + 8px + (root.multiline && measure.preferred-height > display.height ? line.preferred-height : 0px));
             border-radius: 4px;
-            background: edit-touch.has-hover ? Theme.hover : transparent;
+            background: edit-touch.has-hover ? Theme.hover : root.multiline ? Theme.surface : transparent;
+            border-width: root.multiline ? 1px : 0px;
+            border-color: Theme.border;
             accessible-role: button;
             accessible-label: root.label;
             accessible-action-default => { root.begin(); }
@@ -355,10 +357,43 @@ export component InlineTextField inherits FocusScope {
             init => { self.focus(); }
         }
         VerticalLayout { alignment: start;
+            if !root.editing: IconButton { icon: @image-url("icons/pencil.svg"); label: root.label; clicked => { root.begin(); } }
             HorizontalLayout { spacing: 2px;
                 if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); clicked => { root.save(); } }
                 if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }
             }
         }
+    }
+}
+
+export component InlineTextArea inherits InlineTextField {
+    multiline: true;
+}
+
+export global ItemStyle {
+    public pure function opacity(enabled: bool) -> float { return enabled ? 1.0 : 0.35; }
+}
+
+export component Alert inherits Rectangle {
+    in property <string> title;
+    in property <string> text;
+    vertical-stretch: 0;
+    min-height: content.preferred-height;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Theme.warning.transparentize(0.5);
+    background: Theme.warning.transparentize(0.88);
+    content := HorizontalLayout {
+        padding: 12px;
+        spacing: 10px;
+        VerticalLayout { alignment: start; Image { width: 18px; height: 18px; source: @image-url("icons/triangle-alert.svg"); colorize: Theme.warning; } }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            min-width: 0px;
+            spacing: 4px;
+            Text { text: root.title; color: Theme.text; font-weight: 700; wrap: word-wrap; }
+            Text { text: root.text; color: Theme.muted; wrap: word-wrap; }
+        }
+        VerticalLayout { alignment: start; @children }
     }
 }

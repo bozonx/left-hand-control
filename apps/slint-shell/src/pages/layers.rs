@@ -7,8 +7,8 @@ use crate::{
     i18n::Msg,
     keyboard,
     ui::{
-        ActionKind, Assignment, LayerDialog, LayerExtraRow, LayerKeyCell, LayersEditor, Locale,
-        SettingsWindow,
+        ActionKind, ActionPicker, Assignment, LayerDialog, LayerExtraRow, LayerKeyCell,
+        LayersEditor, Locale, PickerTarget, SettingsWindow,
     },
 };
 use lhc_core::{
@@ -263,7 +263,12 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
         }
         _ => {}
     }
-    editor.set_dialog(dialog);
+    if dialog == LayerDialog::EditKey {
+        editor.set_dialog(LayerDialog::None);
+        ui.global::<ActionPicker>().invoke_open(PickerTarget::LayerAction, index, editor.get_dialog_action(), false);
+    } else {
+        editor.set_dialog(dialog);
+    }
 }
 
 /// Apply the open dialog.
@@ -365,6 +370,32 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
     let editor = ui.global::<LayersEditor>();
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    editor.on_update_name(move |name| {
+        let Some(ui) = weak.upgrade() else { return };
+        let Some(id) = selected_id(&ui, &doc) else { return };
+        let description = ui.global::<LayersEditor>().get_description();
+        let _ = change(&ui, &doc, |config| config.rename_layer(&id, name.trim(), &description));
+    });
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    editor.on_add_extra(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let Some(id) = selected_id(&ui, &doc) else { return };
+        let _ = change(&ui, &doc, |config| config.set_layer_extra(&id, None, "", Some(String::new())));
+    });
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    editor.on_update_extra_key(move |index, key| {
+        let Some(ui) = weak.upgrade() else { return };
+        let Some(id) = selected_id(&ui, &doc) else { return };
+        let Ok(index) = usize::try_from(index) else { return };
+        let action = doc.read().layout().layer_keymaps.get(&id).and_then(|map| map.extras.get(index)).map(|extra| extra.action.clone());
+        if let Some(action) = action {
+            let _ = change(&ui, &doc, |config| config.set_layer_extra(&id, Some(index), key.trim(), action));
+        }
+    });
     editor.set_label_mode(document.label_mode());
     let weak = ui.as_weak();
     let doc = document.clone();
@@ -469,6 +500,25 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         let _ = change(&ui, &doc, |config| config.remove_layer_extra(&id, row));
     });
+}
+
+pub(super) fn assign(
+    ui: &SettingsWindow,
+    document: &Document,
+    index: i32,
+    value: &str,
+    ignore: bool,
+) -> Result<(), Msg> {
+    let id = selected_id(ui, document).ok_or(Msg::None)?;
+    let key = keyboard::layer_key(index).ok_or(Msg::None)?;
+    let assignment = if ignore {
+        KeyAssignment::Swallow
+    } else if value.is_empty() {
+        KeyAssignment::Transparent
+    } else {
+        KeyAssignment::Action(value.to_owned())
+    };
+    change(ui, document, |config| config.set_layer_key(&id, key, assignment))
 }
 
 #[cfg(test)]

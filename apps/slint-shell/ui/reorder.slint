@@ -57,7 +57,7 @@ export component DropMarker inherits Rectangle {
     changed row-y => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
     changed row-height => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
     visible: DragDrop.dragging && DragDrop.group == root.group && DragDrop.target == root.index && DragDrop.target != DragDrop.source;
-    y: DragDrop.target > DragDrop.source ? root.row-height + 2px : -5px;
+    y: DragDrop.target > DragDrop.source ? root.row-height - 3px : 0px;
     height: 3px;
     border-radius: 2px;
     background: Theme.link;

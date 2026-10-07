@@ -1,3 +1,4 @@
+import { Alert, InlineTextArea } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
@@ -435,7 +436,7 @@ component CommandCard inherits Card {
     in property <int> index;
     in property <CommandRow> item;
     opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == root.index ? 0.6 : 1;
-    DropMarker { width: parent.width; group: 5; index: root.index; row-y: root.y; row-height: root.height; }
+
     callback remove();
     callback copy(string);
     VerticalLayout {
@@ -490,38 +491,22 @@ component CommandCard inherits Card {
                 FieldLabel { text: @tr("Linux shell script"); vertical-alignment: center; }
                 InfoTip { text: @tr("Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
             }
-            TextEdit {
-                height: 96px;
+            InlineTextArea {
                 text: root.item.linux;
-                placeholder-text: "playerctl play-pause\nnotify-send 'Playback toggled'";
-                accessible-label: @tr("Linux shell script");
-                edited(value) => { MenuEditor.set-command(root.index, CommandField.linux, value); }
+                placeholder: "playerctl play-pause\nnotify-send 'Playback toggled'";
+                label: @tr("Linux shell script");
+                saved(value) => { MenuEditor.set-command(root.index, CommandField.linux, value); }
             }
         }
         if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
     }
+    DropMarker { width: parent.width; group: 5; index: root.index; row-y: root.y; row-height: root.height; }
 }
 
-component ApprovalNotice inherits Rectangle {
-    border-radius: 8px;
-    border-width: 1px;
-    border-color: Theme.warning.transparentize(0.5);
-    background: Theme.warning.transparentize(0.88);
-    HorizontalLayout {
-        padding: 12px;
-        spacing: 10px;
-        VerticalLayout { alignment: start; Image { width: 18px; height: 18px; source: @image-url("icons/triangle-alert.svg"); colorize: Theme.warning; } }
-        VerticalLayout {
-            horizontal-stretch: 1;
-            spacing: 4px;
-            Text { text: @tr("Shell commands require approval"); color: Theme.text; font-weight: 700; wrap: word-wrap; }
-            Text { text: @tr("This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change."); color: Theme.muted; wrap: word-wrap; }
-        }
-        VerticalLayout {
-            alignment: start;
-            Button { text: @tr("Allow commands"); primary: true; icon: @image-url("icons/shield-check.svg"); colorize-icon: true; clicked => { MenuEditor.trust(true); } }
-        }
-    }
+component ApprovalNotice inherits Alert {
+    title: @tr("Shell commands require approval");
+    text: @tr("This layout contains shell scripts. Read every script before allowing them, especially in layouts from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change.");
+    Button { text: @tr("Allow commands"); primary: true; icon: @image-url("icons/shield-check.svg"); colorize-icon: true; clicked => { MenuEditor.trust(true); } }
 }
 
 component ApprovedNotice inherits Rectangle {

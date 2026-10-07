@@ -1332,3 +1332,9 @@ msgstr "Игровой режим: неактивен"
 
 msgid "Active: {}"
 msgstr "Активна: {}"
+
+msgid "Trigger"
+msgstr "Триггер"
+
+msgid "New rule: choose a trigger"
+msgstr "Новое правило: укажите триггер"

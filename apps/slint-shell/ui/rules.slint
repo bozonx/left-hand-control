@@ -2,7 +2,7 @@ import { ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
-import { IconButton, ConfirmDialog } from "controls.slint";
+import { IconButton, ConfirmDialog, ItemStyle } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
@@ -78,9 +78,9 @@ export component RulesPage inherits VerticalBox {
             Text { text: @tr("Define how physical keys activate layers or run actions."); color: Theme.muted; }
         }
         Rectangle { horizontal-stretch: 1; }
-        Button { max-height: 36px; text: @tr("+ Add rule"); clicked => { RulesEditor.add(); } }
+        Button { max-height: 36px; text: @tr("+ Add rule"); clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
     }
-    ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
+    rule-scroll := ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
         VerticalLayout { spacing: 10px;
             for rule[index] in RulesEditor.rows: Rectangle {
                 min-height: 240px;
@@ -88,15 +88,16 @@ export component RulesPage inherits VerticalBox {
                 border-color: RulesEditor.selected == index || (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.accent : Theme.border;
                 border-width: 1px;
                 border-radius: 10px;
-                opacity: DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index ? 0.6 : 1;
-                DropMarker { width: parent.width; group: 1; index: index; row-y: parent.y; row-height: parent.height; }
+                opacity: ItemStyle.opacity(rule.enabled) * (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index ? 0.6 : 1);
+
                 HorizontalLayout { padding: 14px; spacing: 16px;
                     VerticalLayout { width: 175px; horizontal-stretch: 0; spacing: 10px; alignment: start;
                         HorizontalLayout { spacing: 6px;
                             DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
-                            CheckBox { text: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
+                            CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
                         }
-                        RuleCell { title: @tr("Trigger key"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
+                        if rule.key == "": Text { text: @tr("New rule: choose a trigger"); color: Theme.warning; font-size: 12px; wrap: word-wrap; }
+                        RuleCell { title: @tr("Trigger"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                         HorizontalLayout { spacing: 6px; alignment: start;
                             IconButton { icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                             IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); danger: true; clicked => { RulesEditor.open-dialog(index, RuleDialog.remove); } }
@@ -118,6 +119,7 @@ export component RulesPage inherits VerticalBox {
                         RuleCell { title: @tr("Double-tap ms"); value: rule.double-timeout; empty-text: @tr("Default"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-timeout); } }
                     }
                 }
+                DropMarker { width: parent.width; group: 1; index: index; row-y: parent.y; row-height: parent.height; }
             }
         }
     }

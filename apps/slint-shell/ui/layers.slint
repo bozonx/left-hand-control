@@ -1,7 +1,7 @@
 import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
-import { Card, Divider, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
+import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
@@ -40,6 +40,9 @@ export global LayersEditor {
     callback reorder(int, int);
     callback remove-extra(int);
     callback update-description(string);
+    callback update-name(string);
+    callback add-extra();
+    callback update-extra-key(int, string);
 }
 
 component ActionIcon inherits Image {
@@ -164,7 +167,8 @@ component HandGrid inherits VerticalLayout {
     in property <int> columns;
     in property <int> label-mode;
     callback edit(int);
-    horizontal-stretch: 1;
+    horizontal-stretch: root.columns;
+    preferred-width: 0px;
     min-width: 0px;
     spacing: 6px;
     Text {
@@ -193,15 +197,7 @@ component HandGrid inherits VerticalLayout {
 export component LayersPage inherits VerticalLayout {
     in-out property <int> label-mode <=> LayersEditor.label-mode;
 
-    private property <bool> description-editing: false;
     private property <string> test-text;
-
-    function commit-description(text: string) {
-        if root.description-editing {
-            root.description-editing = false;
-            if text != LayersEditor.description { LayersEditor.update-description(text); }
-        }
-    }
 
     vertical-stretch: 1;
     ScrollView {
@@ -244,18 +240,11 @@ export component LayersPage inherits VerticalLayout {
                             Text { text: @tr("Layer"); color: Theme.text; font-size: 13px; }
                             HorizontalLayout {
                                 spacing: 4px;
-                                Text {
+                                InlineTextField {
                                     horizontal-stretch: 1;
                                     text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
-                                    color: Theme.text;
-                                    font-weight: 600;
-                                    vertical-alignment: center;
-                                }
-                                IconButton {
-                                    icon: @image-url("icons/pencil.svg");
-                                    tooltip: @tr("Rename layer");
-                                    enabled: LayersEditor.selected >= 0;
-                                    clicked => { LayersEditor.open-dialog(LayerDialog.rename, -1); }
+                                    label: @tr("Name"); text-weight: 600;
+                                    saved(value) => { LayersEditor.update-name(value); }
                                 }
                                 IconButton {
                                     icon: @image-url("icons/trash-2.svg");
@@ -305,47 +294,12 @@ export component LayersPage inherits VerticalLayout {
                             }
                         }
                     }
-                    if LayersEditor.selected >= 0 && root.description-editing: description-edit := LineEdit {
-                        text: LayersEditor.description;
-                        placeholder-text: @tr("Layer description");
-                        init => { self.focus(); }
-                        accepted(text) => { root.commit-description(text); }
-                        changed has-focus => { if !self.has-focus { root.commit-description(self.text); } }
+                    if LayersEditor.selected >= 0: InlineTextArea {
+                        text: LayersEditor.description; placeholder: @tr("Add description"); label: @tr("Layer description");
+                        text-color: Theme.muted;
+                        saved(value) => { LayersEditor.update-description(value); }
                     }
-                    if LayersEditor.selected >= 0 && !root.description-editing && LayersEditor.description == "": HorizontalLayout {
-                        alignment: start;
-                        IconButton {
-                            icon: @image-url("icons/plus.svg");
-                            text: @tr("Add description");
-                            height: 28px;
-                            clicked => { root.description-editing = true; }
-                        }
-                    }
-                    if LayersEditor.selected >= 0 && !root.description-editing && LayersEditor.description != "": Rectangle {
-                        background: Theme.surface;
-                        border-radius: 6px;
-                        border-width: 1px;
-                        border-color: description-touch.has-hover ? Theme.muted : Theme.border;
-                        accessible-role: button;
-                        accessible-label: LayersEditor.description;
-                        accessible-action-default => { root.description-editing = true; }
-                        HorizontalLayout {
-                            padding: 12px;
-                            spacing: 8px;
-                            VerticalLayout {
-                                alignment: start;
-                                padding-top: 2px;
-                                Image { width: 14px; height: 14px; source: @image-url("icons/info.svg"); colorize: Theme.muted; }
-                            }
-                            Text {
-                                horizontal-stretch: 1;
-                                text: LayersEditor.description;
-                                color: Theme.muted;
-                                wrap: word-wrap;
-                            }
-                        }
-                        description-touch := TouchArea { mouse-cursor: text; clicked => { root.description-editing = true; } }
-                    }
+
                 }
             }
 
@@ -403,6 +357,8 @@ export component LayersPage inherits VerticalLayout {
                         padding: 20px;
                         spacing: 24px;
                         HandGrid {
+                            width: (root.width - 16px - 40px - 24px - 72px) / 14 * 6 + 30px;
+                            horizontal-stretch: 0;
                             title: @tr("Left hand");
                             cells: LayersEditor.left-cells;
                             columns: 6;
@@ -410,6 +366,8 @@ export component LayersPage inherits VerticalLayout {
                             edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
                         }
                         HandGrid {
+                            width: (root.width - 16px - 40px - 24px - 72px) / 14 * 8 + 42px;
+                            horizontal-stretch: 0;
                             title: @tr("Right hand");
                             cells: LayersEditor.right-cells;
                             columns: 8;
@@ -446,7 +404,7 @@ export component LayersPage inherits VerticalLayout {
                                 icon: @image-url("icons/plus.svg");
                                 text: @tr("Add");
                                 primary: true;
-                                clicked => { LayersEditor.open-dialog(LayerDialog.extra-key, -1); }
+                                clicked => { LayersEditor.add-extra(); }
                             }
                         }
                     }
@@ -457,7 +415,7 @@ export component LayersPage inherits VerticalLayout {
                         if LayersEditor.extras.length == 0: Text { text: @tr("No extra keys for this layer yet."); color: Theme.muted; }
                         for extra[index] in LayersEditor.extras: Rectangle {
                             opacity: DragDrop.dragging && DragDrop.group == 3 && DragDrop.source == index ? 0.6 : 1;
-                            DropMarker { width: parent.width; group: 3; index: index; row-y: parent.y; row-height: parent.height; }
+
                             background: extra-touch.has-hover ? Theme.hover : Theme.surface;
                             border-radius: 6px;
                             border-width: 1px;
@@ -472,7 +430,7 @@ export component LayersPage inherits VerticalLayout {
                                     min-width: 0px;
                                     spacing: 2px;
                                     Text { text: @tr("Key"); color: Theme.muted; font-size: 11px; }
-                                    Text { text: extra.key; color: Theme.text; font-weight: 600; overflow: elide; }
+                                    InlineTextField { text: extra.key; placeholder: @tr("Choose trigger key"); label: @tr("Key"); saved(value) => { LayersEditor.update-extra-key(index, value); } }
                                 }
                                 VerticalLayout {
                                     horizontal-stretch: 1;
@@ -494,6 +452,7 @@ export component LayersPage inherits VerticalLayout {
                                     }
                                 }
                             }
+                            DropMarker { width: parent.width; group: 3; index: index; row-y: parent.y; row-height: parent.height; }
                         }
                     }
                 }
@@ -515,7 +474,6 @@ export component LayerDialogOverlay inherits FocusScope {
             VerticalBox { padding: 20px; spacing: 12px;
                 Text {
                     text: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
-                        : LayersEditor.dialog == LayerDialog.rename ? @tr("Rename layer")
                         : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
                         : LayersEditor.dialog == LayerDialog.delete ? @tr("Delete layer?")
                         : LayersEditor.dialog == LayerDialog.edit-key ? @tr("Edit layer key")
@@ -523,7 +481,7 @@ export component LayerDialogOverlay inherits FocusScope {
                         : @tr("Clear assignments?");
                     color: Theme.text; font-size: 22px; font-weight: 700;
                 }
-                if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.rename || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
+                if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
                     Text { text: @tr("Name"); color: Theme.text; }
                     LineEdit { text <=> LayersEditor.dialog-name; accepted => { LayersEditor.apply-dialog(); } }
                     Text { text: @tr("Description"); color: Theme.text; }

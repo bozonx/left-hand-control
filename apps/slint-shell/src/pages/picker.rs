@@ -1,7 +1,7 @@
 //! Action picker: one dialog that chooses a key, shortcut or action for
 //! every page and hands the value to the page that opened it.
 
-use super::{keys, rules};
+use super::{keys, rules, layers};
 use crate::{
     document::Document,
     i18n::Msg,
@@ -150,6 +150,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             catalog,
         };
         let picker = ui.global::<ActionPicker>();
+        picker.set_layer_action(target == PickerTarget::LayerAction && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None);
+        picker.set_ignore_key(picker.get_layer_action() && ui.global::<LayersEditor>().get_assignment() == crate::ui::Assignment::Swallow);
         picker.set_error(Msg::None.to_ui());
         picker.set_key_only(key_only);
         picker.set_macro_step(target == PickerTarget::MacroStep);
@@ -266,7 +268,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 ui.global::<MenuEditor>().invoke_set_action(index, value, label)
             }
             PickerTarget::LayerKey => ui.global::<LayersEditor>().set_dialog_key(value),
-            PickerTarget::LayerAction => ui.global::<LayersEditor>().set_dialog_action(value),
+            PickerTarget::LayerAction => {
+                if picker.get_layer_action() {
+                    if let Err(error) = layers::assign(&ui, &doc, index, &value, picker.get_ignore_key() && value.is_empty()) {
+                        picker.set_error(error.to_ui());
+                    }
+                } else {
+                    ui.global::<LayersEditor>().set_dialog_action(value);
+                }
+            },
             PickerTarget::BaseKey => {
                 if let Err(error) = keys::assign(&ui, &doc, index, &value) {
                     picker.set_error(error.to_ui());
