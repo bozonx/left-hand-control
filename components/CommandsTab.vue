@@ -78,7 +78,7 @@ function cancelRemove() {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="min-h-0 space-y-4">
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-3">
@@ -116,19 +116,24 @@ function cancelRemove() {
           v-if="!isTrusted"
           class="flex items-start justify-between gap-3 rounded-lg border border-(--ui-warning)/40 bg-(--ui-warning)/10 p-3"
         >
-          <div class="flex min-w-0 items-start gap-2 text-sm">
+          <div class="flex min-w-0 items-center gap-2 text-sm">
             <UIcon
-              name="i-lucide-triangle-alert"
-              class="mt-0.5 shrink-0 text-(--ui-warning)"
+              name="i-lucide-shield-ban"
+              class="shrink-0 text-(--ui-warning)"
             />
-            <div class="space-y-1">
-              <div class="font-semibold">
-                {{ $t('commands.approvalTitle') }}
-              </div>
-              <p class="text-(--ui-text-muted)">
-                {{ $t('commands.approvalBody') }}
-              </p>
+            <div class="font-semibold">
+              {{ $t('commands.approvalTitle') }}
             </div>
+            <AppTooltip :text="$t('commands.approvalBody')" align="start" toggle-on-click>
+              <UButton
+                icon="i-lucide-info"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                square
+                :aria-label="$t('commands.approvalBody')"
+              />
+            </AppTooltip>
           </div>
           <UButton
             icon="i-lucide-shield-check"
@@ -183,6 +188,7 @@ function cancelRemove() {
           :is-first="index === 0"
           :is-last="index === config.commands.length - 1"
           :focus-name="uiKeyOf(command) === focusCommandKey"
+          :locked="!isTrusted"
           @remove="askRemove"
           @move-up="moveCommand($event, -1)"
           @move-down="moveCommand($event, 1)"

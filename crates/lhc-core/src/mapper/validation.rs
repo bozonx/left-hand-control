@@ -40,9 +40,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         if !seen_command_ids.insert(id.to_string()) {
             errors.push(format!("Duplicate command ID \"{id}\""));
         }
-        if c.linux.trim().is_empty() {
-            errors.push(format!("Command \"{id}\" has an empty Linux script"));
-        }
         command_ids.insert(id.to_string());
     }
 
@@ -652,15 +649,14 @@ mod tests {
     }
 
     #[test]
-    fn rejects_empty_command_linux_script() {
+    fn accepts_empty_command_linux_script_as_draft() {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "empty".into(),
             linux: "   ".into(),
             working_directory: None,
         });
-        let err = validate_config(&cfg).expect_err("validation should fail");
-        assert!(err.contains("Command \"empty\" has an empty Linux script"));
+        validate_config(&cfg).expect("empty command scripts are ignored drafts");
     }
 
     #[test]

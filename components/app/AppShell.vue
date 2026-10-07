@@ -47,7 +47,7 @@ provide('app-shell-scroll', {
     <AppHeader />
     <LayoutModals />
 
-    <main ref="mainRef" class="flex-1 overflow-y-auto p-4" @scroll="onScroll">
+    <main ref="mainRef" class="min-h-0 flex-1 overflow-y-auto p-4" @scroll="onScroll">
       <div
         class="w-full space-y-4"
         :class="isFullWidth ? '' : 'mx-auto max-w-7xl'"

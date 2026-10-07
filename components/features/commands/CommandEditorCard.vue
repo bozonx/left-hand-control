@@ -10,6 +10,7 @@ const props = defineProps<{
     isFirst?: boolean
     isLast?: boolean
     focusName?: boolean
+    locked?: boolean
 }>()
 
 const command = defineModel<Command>('command', { required: true })
@@ -45,7 +46,12 @@ async function copyCommandId() {
 <template>
     <div
         class="group relative rounded-xl border border-(--ui-border) bg-(--ui-bg-muted)/40 p-4 transition-all duration-150 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-muted)/60 hover:shadow-lg hover:shadow-(--ui-primary)/5"
+        :class="locked ? 'opacity-75' : ''"
     >
+        <div v-if="locked" class="mb-3 flex items-center gap-1.5 text-xs font-medium text-(--ui-warning)">
+            <UIcon name="i-lucide-lock-keyhole" />
+            {{ $t('commands.approvalTitle') }}
+        </div>
         <div class="flex items-start justify-between gap-4">
             <div class="grid flex-1 grid-cols-2 gap-3 min-w-0">
                 <UFormField :error="idError">

@@ -51,13 +51,13 @@ export function useCommandEditor() {
     return null
   }
 
-  function linuxError(command: Command): string | null {
-    if (command.linux.trim()) return null
-    return t('commands.linuxErrors.empty')
+  function linuxError(): string | null {
+    // Empty scripts are drafts and are ignored by command execution.
+    return null
   }
 
   const hasErrors = computed(() =>
-    config.value.commands.some((command) => idError(command) !== null || linuxError(command) !== null),
+    config.value.commands.some((command) => idError(command) !== null),
   )
 
   return {
