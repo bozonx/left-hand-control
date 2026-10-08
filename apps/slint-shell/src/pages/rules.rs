@@ -131,6 +131,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 .unwrap_or_default()
                 .into(),
             hold_mode: hold_mode(rule),
+            is_chord: rule.key.contains('+'),
             double_tap: rule.double_tap_action.clone().into(),
             layer: layer_name(layout, &rule.layer_id).into(),
             has_conditions: has_conditions(rule),
@@ -144,7 +145,12 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 timeout_text(rule.hold_timeout_ms)
             }
             .into(),
-            double_timeout: timeout_text(rule.double_tap_timeout_ms).into(),
+            double_timeout: timeout_text(if rule.key.contains('+') {
+                None
+            } else {
+                rule.double_tap_timeout_ms
+            })
+            .into(),
             isolate: rule.isolate.clone().unwrap_or_default().into(),
             hold_for: rule.hold_for.clone().unwrap_or_default().into(),
             enabled: rule.is_enabled(),
@@ -193,6 +199,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_long_hold_timeout(long_timeout.clone().into());
     editor.set_original_long_hold_timeout(long_timeout.into());
     editor.set_swallow_hold(rule.hold_action.is_none());
+    editor.set_is_chord(rule.key.contains('+'));
     editor.set_double_tap(rule.double_tap_action.clone().into());
     editor.set_game_mode(game_condition(rule.condition_game_mode.as_deref()));
     editor.set_layouts(join(&rule.condition_layouts).into());

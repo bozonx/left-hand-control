@@ -34,6 +34,7 @@ const emit = defineEmits<{
     keySelected: [id: string]
 }>()
 
+const isChord = computed(() => rule.value.key.includes('+'))
 const isConditionsOpen = ref(false)
 
 const hasConditions = computed(() =>
@@ -294,7 +295,7 @@ function updateHoldAction(value: string | null) {
                     />
                 </UFormField>
 
-                <UFormField>
+                <UFormField v-if="!isChord">
                     <template #label>
                         <FieldLabel
                             :label="$t('rules.doubleTapLabel')"
@@ -438,6 +439,7 @@ function updateHoldAction(value: string | null) {
                 />
 
                 <SettingTimeoutField
+                    v-if="!isChord"
                     v-model="rule.doubleTapTimeoutMs"
                     :label="$t('rules.doubleTapWindowLabel')"
                     :hint="$t('rules.doubleTapWindowHint')"

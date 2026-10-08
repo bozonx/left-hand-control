@@ -9,7 +9,7 @@ import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, CheckBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: int, tap-category: int, hold-category: int, double-category: int }
+export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: int, tap-category: int, hold-category: int, double-category: int }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -23,6 +23,7 @@ export global RulesEditor {
     in property <string> default-double-timeout;
     /// Fields of the selected rule, filled by `select`.
     in-out property <string> key;
+    in property <bool> is-chord;
     in-out property <string> layer;
     in-out property <string> tap;
     in-out property <string> hold;
@@ -268,7 +269,7 @@ export component RulesPage inherits VerticalBox {
                         VerticalLayout { min-width: 0px; horizontal-stretch: 1; preferred-width: 0px; spacing: 12px; alignment: start;
                             HorizontalLayout { min-width: 0px; spacing: 12px;
                                 RuleCell { title: @tr("Tap action"); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
-                                RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                                if !rule.is-chord: RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
                             }
                             HorizontalLayout { min-width: 0px; spacing: 12px;
                                 VerticalLayout { width: 180px; horizontal-stretch: 0; spacing: 5px;
@@ -337,10 +338,12 @@ export component RuleDialogOverlay inherits FocusScope {
                                 Text { text: @tr("Global setting: {} ms", RulesEditor.default-hold-timeout); color: Theme.muted; font-size: 12px; wrap: word-wrap; vertical-alignment: center; }
                         }
                         }
+                        if !RulesEditor.is-chord: VerticalLayout { spacing: 8px;
                         FormLabel { text: @tr("Double-tap ms"); info: @tr("Maximum interval between two taps for this rule. Leave empty to use the global setting: {} ms", RulesEditor.default-double-timeout); }
                         HorizontalLayout { spacing: 12px; alignment: start;
                             NumericInput { text <=> RulesEditor.double-timeout; field-width: 144px; }
                             Text { text: @tr("Global setting: {} ms", RulesEditor.default-double-timeout); color: Theme.muted; font-size: 12px; wrap: word-wrap; vertical-alignment: center; }
+                        }
                         }
                         Text { text: @tr("Leave a timeout empty to use the global setting."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                         if RulesEditor.hold-mode == 1: VerticalLayout { spacing: 8px;

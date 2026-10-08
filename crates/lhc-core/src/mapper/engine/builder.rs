@@ -359,9 +359,10 @@ impl Engine {
                 },
             };
 
-            let double_tap = match &r.double_tap_action.as_str() {
-                &"" => None,
-                s => resolve(s, &format!("double-tap for {}", r.key)),
+            let double_tap = match (keys.len(), r.double_tap_action.as_str()) {
+                (1, "") => None,
+                (1, s) => resolve(s, &format!("double-tap for {}", r.key)),
+                _ => None,
             };
 
             // Fully transparent rule — skip registration so the key passes

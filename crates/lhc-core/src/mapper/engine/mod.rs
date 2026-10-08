@@ -1412,42 +1412,14 @@ mod tests {
     }
 
     #[test]
-    fn unassigned_chord_preserves_normal_keys_and_double_tap_only_preserves_native_hold() {
-        let cfg = config_with_rule(serde_json::json!({"key": "ShiftLeft+ControlLeft"}));
-        let engine = Engine::new(&cfg);
-        assert!(engine.chord_rules.is_empty());
-        let cfg = config_with_rule(
-            serde_json::json!({"key": "ShiftLeft+ControlLeft", "doubleTapAction": "text:double"}),
-        );
-        let mut engine = Engine::new(&cfg);
-        let now = Instant::now();
-        let mut out = Vec::new();
-        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
-        engine.handle(
-            Key::KEY_LEFTCTRL,
-            true,
-            now + Duration::from_millis(10),
-            &mut out,
-        );
-        out.clear();
-        engine.tick(now + Duration::from_millis(250), &mut out);
-        assert!(
-            matches!(out.as_slice(), [Out::ChordPress {ks, ..}] if ks.key == Key::KEY_LEFTCTRL && ks.mods == vec![Key::KEY_LEFTSHIFT])
-        );
-        engine.handle(
-            Key::KEY_LEFTCTRL,
-            false,
-            now + Duration::from_millis(300),
-            &mut out,
-        );
-        engine.handle(
-            Key::KEY_LEFTSHIFT,
-            false,
-            now + Duration::from_millis(310),
-            &mut out,
-        );
-        assert!(engine.emitted.is_empty());
-        assert!(engine.mod_refs.values().all(|count| *count == 0));
+    fn unassigned_chord_ignores_double_tap_and_preserves_normal_keys() {
+        for extra in ["", "text:double"] {
+            let cfg = config_with_rule(
+                serde_json::json!({"key": "ShiftLeft+ControlLeft", "doubleTapAction": extra}),
+            );
+            let engine = Engine::new(&cfg);
+            assert!(engine.chord_rules.is_empty());
+        }
     }
 
     #[test]
@@ -1607,66 +1579,46 @@ mod tests {
     }
 
     #[test]
-    fn chord_double_tap_uses_same_rule_when_press_order_changes() {
+    fn chord_ignores_double_tap_without_delaying_tap() {
         let cfg = config_with_rule(
-            serde_json::json!({"key": "ShiftLeft+ControlLeft", "tapAction": "Escape", "doubleTapAction": "text:double"}),
+            serde_json::json!({"key": "ShiftLeft+ControlLeft", "tapAction": "text:tap", "doubleTapAction": "text:double"}),
         );
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
-        engine.handle(
-            Key::KEY_LEFTCTRL,
-            true,
-            now + Duration::from_millis(10),
-            &mut out,
-        );
-        engine.handle(
-            Key::KEY_LEFTSHIFT,
-            false,
-            now + Duration::from_millis(20),
-            &mut out,
-        );
-        engine.handle(
-            Key::KEY_LEFTCTRL,
-            false,
-            now + Duration::from_millis(30),
-            &mut out,
-        );
-        out.clear();
-        engine.handle(
-            Key::KEY_LEFTCTRL,
-            true,
-            now + Duration::from_millis(40),
-            &mut out,
-        );
-        engine.handle(
-            Key::KEY_LEFTSHIFT,
-            true,
-            now + Duration::from_millis(50),
-            &mut out,
-        );
-        assert!(
-            out.iter()
-                .any(|event| matches!(event, Out::Literal(text) if text == "double"))
-        );
-        assert!(
-            !out.iter()
-                .any(|event| matches!(event, Out::Stroke {ks, ..} if ks.key == Key::KEY_ESC))
-        );
-        engine.handle(
-            Key::KEY_LEFTSHIFT,
-            false,
-            now + Duration::from_millis(60),
-            &mut out,
-        );
-        engine.handle(
-            Key::KEY_LEFTCTRL,
-            false,
-            now + Duration::from_millis(70),
-            &mut out,
-        );
-        assert!(engine.emitted.is_empty());
+        for (offset, first, second) in [
+            (0, Key::KEY_LEFTSHIFT, Key::KEY_LEFTCTRL),
+            (40, Key::KEY_LEFTCTRL, Key::KEY_LEFTSHIFT),
+        ] {
+            engine.handle(first, true, now + Duration::from_millis(offset), &mut out);
+            engine.handle(
+                second,
+                true,
+                now + Duration::from_millis(offset + 10),
+                &mut out,
+            );
+            engine.handle(
+                first,
+                false,
+                now + Duration::from_millis(offset + 20),
+                &mut out,
+            );
+            assert!(
+                out.iter()
+                    .any(|event| matches!(event, Out::Literal(text) if text == "tap"))
+            );
+            assert!(
+                !out.iter()
+                    .any(|event| matches!(event, Out::Literal(text) if text == "double"))
+            );
+            engine.handle(
+                second,
+                false,
+                now + Duration::from_millis(offset + 30),
+                &mut out,
+            );
+            out.clear();
+        }
     }
 
     #[test]
