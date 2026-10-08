@@ -200,7 +200,28 @@ pub fn valid_key(value: &str) -> bool {
 }
 
 pub fn valid_trigger(value: &str) -> bool {
-    valid_key(value) && !matches!(value, "MouseLeft" | "MouseRight" | "MouseMiddle")
+    trigger_keys(value).is_some()
+}
+
+pub fn trigger_keys(value: &str) -> Option<Vec<&str>> {
+    let mut keys = Vec::new();
+    for part in value.split('+').map(str::trim) {
+        let key = match part {
+            "Ctrl" | "Control" => "ControlLeft",
+            "Shift" => "ShiftLeft",
+            "Alt" => "AltLeft",
+            "Meta" | "Super" | "Win" => "MetaLeft",
+            key => key,
+        };
+        if !valid_key(key)
+            || matches!(key, "MouseLeft" | "MouseRight" | "MouseMiddle")
+            || keys.contains(&key)
+        {
+            return None;
+        }
+        keys.push(key);
+    }
+    Some(keys)
 }
 
 #[cfg(test)]
@@ -210,14 +231,11 @@ mod tests {
     fn required_keys_and_rule_triggers() {
         assert!(valid_key("MouseLeft"));
         assert!(valid_trigger("F13"));
-        for value in [
-            "",
-            "NotAKey",
-            "Ctrl+KeyA",
-            "MouseLeft",
-            "MouseRight",
-            "MouseMiddle",
-        ] {
+        assert!(valid_trigger("Ctrl+KeyA"));
+        assert!(valid_trigger("ShiftLeft+ControlRight"));
+        assert!(!valid_trigger("Ctrl+ControlLeft"));
+        assert!(!valid_trigger("KeyA+"));
+        for value in ["", "NotAKey", "MouseLeft", "MouseRight", "MouseMiddle"] {
             assert!(!valid_trigger(value));
         }
     }
@@ -226,7 +244,7 @@ mod tests {
     fn complete_catalog_has_unique_key_codes() {
         assert_eq!(
             CATEGORIES.iter().map(|c| c.len()).collect::<Vec<_>>(),
-            [40, 37, 27, 15, 8, 43]
+            [40, 37, 27, 15, 8, 55]
         );
         let keys: Vec<_> = CATEGORIES
             .iter()

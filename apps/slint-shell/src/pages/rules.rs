@@ -46,6 +46,38 @@ fn parse_timeout(value: &str) -> Result<Option<u64>, Msg> {
     value.parse().map(Some).map_err(|_| Msg::TimeoutInvalid)
 }
 
+pub(super) fn seconds_text(ms: u64) -> String {
+    format!("{}", ms as f64 / 1000.0)
+}
+
+pub(super) fn parse_seconds(value: &str) -> Result<u64, Msg> {
+    let seconds: f64 = value
+        .trim()
+        .replace(',', ".")
+        .parse()
+        .map_err(|_| Msg::HoldSecondsInvalid)?;
+    if !seconds.is_finite() || !(0.001..=86400.0).contains(&seconds) {
+        return Err(Msg::HoldSecondsInvalid);
+    }
+    Ok((seconds * 1000.0).round() as u64)
+}
+
+fn optional_seconds(value: &str) -> Result<Option<u64>, Msg> {
+    if value.trim().is_empty() {
+        Ok(None)
+    } else {
+        parse_seconds(value).map(Some)
+    }
+}
+
+fn hold_mode(rule: &LayerRule) -> i32 {
+    match rule.hold_behavior() {
+        lhc_core::profile::model::HoldBehavior::None => 0,
+        lhc_core::profile::model::HoldBehavior::Layer => 1,
+        lhc_core::profile::model::HoldBehavior::Action => 2,
+    }
+}
+
 fn layer_name(layout: &LayoutPreset, id: &str) -> String {
     layout
         .layers
@@ -74,6 +106,9 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     let config = document.read();
     let layout = config.layout();
     let editor = ui.global::<RulesEditor>();
+    editor.set_default_long_hold_timeout(
+        seconds_text(config.settings().default_long_hold_timeout_ms).into(),
+    );
     editor.set_default_hold_timeout(config.settings().default_hold_timeout_ms.to_string().into());
     editor.set_default_double_timeout(
         config
@@ -89,6 +124,13 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             key: rule.key.clone().into(),
             tap: rule.tap_action.clone().unwrap_or_default().into(),
             hold: rule.hold_action.clone().unwrap_or_default().into(),
+            long_hold: rule.long_hold_action.clone().into(),
+            long_hold_timeout: rule
+                .long_hold_timeout_ms
+                .map(seconds_text)
+                .unwrap_or_default()
+                .into(),
+            hold_mode: hold_mode(rule),
             double_tap: rule.double_tap_action.clone().into(),
             layer: layer_name(layout, &rule.layer_id).into(),
             has_conditions: has_conditions(rule),
@@ -96,7 +138,12 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             languages: join(&rule.condition_layouts).into(),
             applications: join(&rule.condition_apps_whitelist).into(),
             excluded: join(&rule.condition_apps_blacklist).into(),
-            hold_timeout: timeout_text(rule.hold_timeout_ms).into(),
+            hold_timeout: if hold_mode(rule) == 2 {
+                String::new()
+            } else {
+                timeout_text(rule.hold_timeout_ms)
+            }
+            .into(),
             double_timeout: timeout_text(rule.double_tap_timeout_ms).into(),
             isolate: rule.isolate.clone().unwrap_or_default().into(),
             hold_for: rule.hold_for.clone().unwrap_or_default().into(),
@@ -137,6 +184,14 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_tap(rule.tap_action.clone().unwrap_or_default().into());
     editor.set_swallow_tap(rule.tap_action.is_none());
     editor.set_hold(rule.hold_action.clone().unwrap_or_default().into());
+    editor.set_long_hold(rule.long_hold_action.clone().into());
+    editor.set_hold_mode(hold_mode(rule));
+    let long_timeout = rule
+        .long_hold_timeout_ms
+        .map(seconds_text)
+        .unwrap_or_default();
+    editor.set_long_hold_timeout(long_timeout.clone().into());
+    editor.set_original_long_hold_timeout(long_timeout.into());
     editor.set_swallow_hold(rule.hold_action.is_none());
     editor.set_double_tap(rule.double_tap_action.clone().into());
     editor.set_game_mode(game_condition(rule.condition_game_mode.as_deref()));
@@ -211,6 +266,7 @@ fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Resu
         RuleDialog::Layer => rule.layer_id = value.into(),
         RuleDialog::Tap => rule.tap_action = Some(value.into()),
         RuleDialog::Hold => rule.hold_action = Some(value.into()),
+        RuleDialog::LongHold => rule.long_hold_action = value.into(),
         RuleDialog::DoubleTap => rule.double_tap_action = value.into(),
         RuleDialog::HoldTimeout => rule.hold_timeout_ms = parse_timeout(value)?,
         RuleDialog::DoubleTimeout => rule.double_tap_timeout_ms = parse_timeout(value)?,
@@ -224,6 +280,26 @@ fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Resu
 fn set_field(rule: &mut LayerRule, field: RuleField, value: &str, current: &str) {
     let on = value == "true";
     match field {
+        RuleField::HoldMode => {
+            use lhc_core::profile::model::HoldBehavior;
+            let behavior = match value {
+                "1" => HoldBehavior::Layer,
+                "2" => HoldBehavior::Action,
+                _ => HoldBehavior::None,
+            };
+            rule.hold_behavior = Some(behavior);
+            if behavior != HoldBehavior::Layer {
+                rule.layer_id.clear();
+            }
+            if behavior != HoldBehavior::Action {
+                rule.long_hold_action.clear();
+            }
+            if behavior == HoldBehavior::Action {
+                rule.hold_action = Some(String::new());
+                rule.isolate = None;
+                rule.hold_for = None;
+            }
+        }
         RuleField::Enabled => rule.enabled = (!on).then_some(false),
         RuleField::SwallowTap => rule.tap_action = (!on).then(|| current.to_owned()),
         RuleField::SwallowHold => rule.hold_action = (!on).then(|| current.to_owned()),
@@ -433,6 +509,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             RuleDialog::Key => editor.get_key(),
             RuleDialog::Tap => editor.get_tap(),
             RuleDialog::Hold => editor.get_hold(),
+            RuleDialog::LongHold => editor.get_long_hold(),
             RuleDialog::DoubleTap => editor.get_double_tap(),
             RuleDialog::HoldTimeout => editor.get_hold_timeout(),
             RuleDialog::DoubleTimeout => editor.get_double_timeout(),
@@ -440,7 +517,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         if matches!(
             dialog,
-            RuleDialog::Key | RuleDialog::Tap | RuleDialog::Hold | RuleDialog::DoubleTap
+            RuleDialog::Key
+                | RuleDialog::Tap
+                | RuleDialog::Hold
+                | RuleDialog::LongHold
+                | RuleDialog::DoubleTap
         ) {
             ui.global::<ActionPicker>().invoke_open(
                 PickerTarget::Rule,
@@ -534,9 +615,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 return;
             }
         };
+        let long_hold_timeout = match optional_seconds(&editor.get_long_hold_timeout()) {
+            Ok(value) => value,
+            Err(error) => {
+                editor.set_status(error.to_ui());
+                return;
+            }
+        };
         let isolate = optional(&editor.get_isolate());
         let hold_for = optional(&editor.get_hold_for());
         if change_rule(&ui, &doc, index, true, |rule| {
+            rule.long_hold_timeout_ms = long_hold_timeout;
             rule.hold_timeout_ms = hold;
             rule.double_tap_timeout_ms = double;
             rule.isolate = isolate;
@@ -564,12 +653,41 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let _ = change_rule(&ui, &doc, index, false, |rule| {
             set_field(rule, field, &value, &current)
         });
+        if field == RuleField::HoldMode {
+            refresh(&ui, &doc, true);
+        }
     });
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hold_seconds_accept_decimals_and_reject_invalid_values() {
+        assert_eq!(parse_seconds("1,5"), Ok(1500));
+        assert_eq!(optional_seconds(""), Ok(None));
+        for value in ["0", "-1", "NaN", "inf", "86401", "invalid"] {
+            assert_eq!(parse_seconds(value), Err(Msg::HoldSecondsInvalid));
+        }
+    }
+
+    #[test]
+    fn hold_modes_clear_incompatible_options_and_preserve_legacy_layers() {
+        use lhc_core::profile::model::HoldBehavior;
+        let mut rule = LayerRule::new("r".into(), "ShiftLeft+ControlLeft");
+        rule.layer_id = "nav".into();
+        rule.hold_action = Some("AltLeft".into());
+        assert_eq!(hold_mode(&rule), 1);
+        set_field(&mut rule, RuleField::HoldMode, "2", "");
+        assert_eq!(rule.hold_behavior(), HoldBehavior::Action);
+        assert!(rule.layer_id.is_empty());
+        assert_eq!(rule.hold_action.as_deref(), Some(""));
+        rule.long_hold_action = "text:hello".into();
+        set_field(&mut rule, RuleField::HoldMode, "1", "");
+        assert!(rule.long_hold_action.is_empty());
+        assert_eq!(rule.hold_behavior(), HoldBehavior::Layer);
+    }
 
     #[test]
     fn properties_validate_and_apply() {

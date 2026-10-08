@@ -168,6 +168,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let weak = ui.as_weak();
     picker.on_begin_capture(move || {
         CAPTURE_MODIFIERS.with(|state| state.borrow_mut().clear());
+        CAPTURE_TRIGGER.with(|state| state.borrow_mut().clear());
         if let Some(ui) = weak.upgrade() {
             let picker = ui.global::<ActionPicker>();
             picker.set_capturing(!picker.get_capturing());
@@ -232,6 +233,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 crate::ui::RuleDialog::DoubleTap => 1,
                 crate::ui::RuleDialog::Tap => 2,
                 crate::ui::RuleDialog::Hold => 3,
+                crate::ui::RuleDialog::LongHold => 5,
                 _ => 0,
             }
         } else {
@@ -254,8 +256,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     }),
         );
         let standalone_layer = picker.get_layer_action();
-        let double_tap =
-            target == PickerTarget::Rule && rule_field == crate::ui::RuleDialog::DoubleTap;
+        let double_tap = target == PickerTarget::Rule
+            && matches!(
+                rule_field,
+                crate::ui::RuleDialog::DoubleTap | crate::ui::RuleDialog::LongHold
+            );
         let allow_default = !key_only
             && (standalone_layer
                 || rule_action
@@ -283,6 +288,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         picker.set_touched(false);
         picker.set_error(Msg::None.to_ui());
         picker.set_key_only(key_only);
+        picker.set_trigger_chords(key_only && target == PickerTarget::Rule);
         picker.set_macro_step(target == PickerTarget::MacroStep);
         let original = if picker.get_behavior() == 1 {
             ui.global::<Locale>()
@@ -464,13 +470,21 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                         .filter(|command| value == format!("cmd:{}", command.id))
                         .map_or_else(
                             || {
-                                valid(
-                                    &value,
-                                    key_only,
-                                    picker.get_macro_step(),
-                                    &excluded,
-                                    Some(&doc.read()),
-                                )
+                                if key_only
+                                    && state
+                                        .target
+                                        .is_some_and(|(target, _)| target == PickerTarget::Rule)
+                                {
+                                    lhc_core::profile::key_catalog::valid_trigger(&value)
+                                } else {
+                                    valid(
+                                        &value,
+                                        key_only,
+                                        picker.get_macro_step(),
+                                        &excluded,
+                                        Some(&doc.read()),
+                                    )
+                                }
                             },
                             |command| {
                                 doc.read().settings().commands_enabled
@@ -620,14 +634,18 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
     if event.repeat {
         return true;
     }
-    let value = CAPTURE_MODIFIERS.with(|state| {
-        captured_key(
-            code,
-            event.state,
-            picker.get_key_only(),
-            &mut state.borrow_mut(),
-        )
-    });
+    let value = if picker.get_trigger_chords() {
+        CAPTURE_TRIGGER.with(|state| captured_trigger(code, event.state, &mut state.borrow_mut()))
+    } else {
+        CAPTURE_MODIFIERS.with(|state| {
+            captured_key(
+                code,
+                event.state,
+                picker.get_key_only(),
+                &mut state.borrow_mut(),
+            )
+        })
+    };
     if let Some(value) = value {
         picker.set_touched(true);
         picker.set_value(value.into());
@@ -699,11 +717,56 @@ fn captured_key(
     None
 }
 
+fn captured_trigger(
+    code: slint::winit_030::winit::keyboard::KeyCode,
+    state: slint::winit_030::winit::event::ElementState,
+    keys: &mut Vec<String>,
+) -> Option<String> {
+    let key = key_name(code);
+    if !lhc_core::profile::key_catalog::valid_trigger(&key) {
+        return None;
+    }
+    if state == slint::winit_030::winit::event::ElementState::Pressed {
+        if !keys.contains(&key) {
+            keys.push(key);
+        }
+        None
+    } else if keys.contains(&key) {
+        let value = keys.join("+");
+        keys.clear();
+        Some(value)
+    } else {
+        None
+    }
+}
+
+thread_local! { static CAPTURE_TRIGGER: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) }; }
 thread_local! { static CAPTURE_MODIFIERS: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) }; }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn captures_trigger_combinations_including_two_modifiers() {
+        use slint::winit_030::winit::{
+            event::ElementState::{Pressed, Released},
+            keyboard::KeyCode as K,
+        };
+        let mut keys = Vec::new();
+        assert_eq!(captured_trigger(K::ShiftLeft, Pressed, &mut keys), None);
+        assert_eq!(captured_trigger(K::ControlRight, Pressed, &mut keys), None);
+        assert_eq!(
+            captured_trigger(K::ShiftLeft, Released, &mut keys).as_deref(),
+            Some("ShiftLeft+ControlRight")
+        );
+        assert!(keys.is_empty());
+        assert_eq!(captured_trigger(K::F13, Pressed, &mut keys), None);
+        assert_eq!(
+            captured_trigger(K::F13, Released, &mut keys).as_deref(),
+            Some("F13")
+        );
+    }
 
     #[test]
     fn captures_physical_keys_and_chords() {

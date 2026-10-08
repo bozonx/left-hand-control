@@ -101,6 +101,12 @@ pub struct Rule {
     #[serde(default)]
     pub tap_action: ActionSpec,
     #[serde(default)]
+    pub hold_behavior: Option<crate::profile::model::HoldBehavior>,
+    #[serde(default)]
+    pub long_hold_action: String,
+    #[serde(default)]
+    pub long_hold_timeout_ms: Option<u64>,
+    #[serde(default)]
     pub hold_action: ActionSpec,
     #[serde(default)]
     pub isolate: String,
@@ -155,6 +161,8 @@ pub enum TapDecision {
 pub struct Settings {
     #[serde(default = "default_hold")]
     pub default_hold_timeout_ms: u64,
+    #[serde(default = "default_long_hold")]
+    pub default_long_hold_timeout_ms: u64,
     #[serde(default)]
     pub tap_decision: TapDecision,
     #[serde(default = "default_step_pause")]
@@ -215,6 +223,7 @@ fn default_true() -> bool {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            default_long_hold_timeout_ms: 1000,
             default_hold_timeout_ms: default_hold(),
             tap_decision: TapDecision::default(),
             default_macro_step_pause_ms: default_step_pause(),
@@ -227,6 +236,10 @@ impl Default for Settings {
             linux_xdotool_path: None,
         }
     }
+}
+
+fn default_long_hold() -> u64 {
+    1000
 }
 
 fn default_hold() -> u64 {

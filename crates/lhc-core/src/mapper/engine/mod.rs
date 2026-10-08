@@ -66,6 +66,12 @@ use std::time::{Duration, Instant};
 
 pub struct Engine {
     rules: HashMap<Key, Vec<RuleEntry>>,
+    chord_rules: Vec<(Vec<Key>, RuleEntry)>,
+    physical_down: HashSet<Key>,
+    active_chords: HashMap<Key, Vec<Key>>,
+    chord_suppressed: HashMap<Key, Vec<(Key, Keystroke)>>,
+    chord_consumed: HashSet<Key>,
+    long_holds: HashMap<Key, (Instant, ActionDef)>,
     macros: HashMap<String, self::model::MacroDef>,
     commands: HashMap<String, SysCommand>,
     /// layer_id -> (physical_key -> resolved action)
@@ -122,6 +128,11 @@ impl Engine {
                 Phase::HoldActive => None,
             })
             .chain(
+                self.long_holds
+                    .values()
+                    .map(|(deadline, _)| deadline.saturating_duration_since(now)),
+            )
+            .chain(
                 self.active_macro
                     .as_ref()
                     .map(|am| am.next_wake.saturating_duration_since(now)),
@@ -132,6 +143,18 @@ impl Engine {
     /// Tick pending state machines. Commits holds whose decision window
     /// elapsed and fires taps whose double-tap window elapsed.
     pub fn tick(&mut self, now: Instant, out: &mut Vec<Out>) {
+        let expired: Vec<_> = self
+            .long_holds
+            .iter()
+            .filter(|(_, (deadline, _))| now >= *deadline)
+            .map(|(key, _)| *key)
+            .collect();
+        for key in expired {
+            if let Some((_, action)) = self.long_holds.remove(&key) {
+                self.commit_hold(key, out);
+                self.fire_action(Some(&action), self.default_mod_delay, now, out);
+            }
+        }
         if let Some(mut am) = self.active_macro.take() {
             if now >= am.next_wake {
                 use self::model::MacroPhase;
@@ -334,6 +357,32 @@ impl Engine {
 
     /// Handle a raw key event from the grabbed device.
     pub fn handle(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
+        if down {
+            if !self.physical_down.insert(key) {
+                return;
+            }
+        } else {
+            self.physical_down.remove(&key);
+        }
+        if !down
+            && self.long_holds.iter().any(|(owner, (deadline, _))| {
+                now >= *deadline
+                    && (*owner == key
+                        || self
+                            .active_chords
+                            .get(owner)
+                            .is_some_and(|keys| keys.contains(&key)))
+            })
+        {
+            self.tick(now, out);
+        }
+        if self.handle_chord(key, down, now, out) {
+            return;
+        }
+        self.handle_event(key, down, now, out);
+    }
+
+    fn handle_event(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) {
         if is_mouse_button(key) {
             if down {
                 // Commit all pending tap/hold decisions before processing the
@@ -383,7 +432,11 @@ impl Engine {
         // permissive-hold replay carries an old timestamp. Only a press that
         // actually lands inside the window is a double-tap.
         let waiting_second_deadline = match self.pending.get(&key).map(|p| &p.phase) {
-            Some(Phase::WaitingSecond { deadline }) => Some(*deadline),
+            Some(Phase::WaitingSecond { deadline })
+                if self.pending[&key].rule.trigger_keys.len() <= 1 =>
+            {
+                Some(*deadline)
+            }
             _ => None,
         };
         if let Some(deadline) = waiting_second_deadline {
@@ -430,30 +483,7 @@ impl Engine {
 
         if self.active_layers.is_empty() {
             if let Some(rule) = self.active_rule_for_key(key) {
-                // Fast path: no tap action, no double-tap → commit hold
-                // immediately without the decision wait.
-                if matches!(rule.tap, TapMode::Swallow) && rule.double_tap.is_none() {
-                    self.pending.insert(
-                        key,
-                        Pending {
-                            rule: rule.clone(),
-                            phase: Phase::HoldActive,
-                        },
-                    );
-                    self.commit_hold_with(&rule, key, out);
-                    return;
-                }
-                // Otherwise wait to decide between tap and hold.
-                let hold_timeout = rule.hold_timeout;
-                self.pending.insert(
-                    key,
-                    Pending {
-                        rule,
-                        phase: Phase::WaitingDecision {
-                            deadline: now + hold_timeout,
-                        },
-                    },
-                );
+                self.start_rule(key, rule, now, out);
                 return;
             }
             if self.rules.contains_key(&key) {
@@ -564,6 +594,7 @@ impl Engine {
     }
 
     fn on_release(&mut self, key: Key, now: Instant, out: &mut Vec<Out>) {
+        self.long_holds.remove(&key);
         if let Some(suppressed) = self.isolated_holds.remove(&key) {
             for target_key in suppressed {
                 // Don't restore while another isolate key still suppresses
@@ -608,7 +639,7 @@ impl Engine {
                     }
                 }
                 Phase::WaitingSecond { .. } => {
-                    // Shouldn't happen (we already released once); stay safe.
+                    self.release_emitted(key, out);
                 }
             }
             // The deciding key resolved as a tap (permissive-hold mode) —
@@ -726,6 +757,122 @@ impl Engine {
         None
     }
 
+    fn start_rule(&mut self, key: Key, rule: RuleEntry, now: Instant, out: &mut Vec<Out>) {
+        if let Some(action) = rule.long_hold.clone() {
+            self.long_holds
+                .insert(key, (now + rule.long_hold_timeout, action));
+        }
+        if matches!(rule.tap, TapMode::Swallow) && rule.double_tap.is_none() {
+            self.pending.insert(
+                key,
+                Pending {
+                    rule: rule.clone(),
+                    phase: Phase::HoldActive,
+                },
+            );
+            self.commit_hold_with(&rule, key, out);
+        } else {
+            let deadline = now + rule.hold_timeout;
+            self.pending.insert(
+                key,
+                Pending {
+                    rule,
+                    phase: Phase::WaitingDecision { deadline },
+                },
+            );
+        }
+    }
+
+    fn handle_chord(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) -> bool {
+        if !down {
+            let owner = self
+                .active_chords
+                .iter()
+                .find(|(_, keys)| keys.contains(&key))
+                .map(|(owner, _)| *owner);
+            if let Some(owner) = owner {
+                self.active_chords.remove(&owner);
+                self.on_release(owner, now, out);
+                for (member, stroke) in self.chord_suppressed.remove(&owner).unwrap_or_default() {
+                    if self.physical_down.contains(&member) {
+                        self.emit_stroke_press(member, stroke, out);
+                    }
+                }
+                self.release_emitted(key, out);
+                self.chord_consumed.remove(&key);
+                return true;
+            }
+            if self.chord_consumed.remove(&key) {
+                self.release_emitted(key, out);
+                return true;
+            }
+            return false;
+        }
+        if self.chord_consumed.contains(&key) {
+            return true;
+        }
+        let matching = self
+            .chord_rules
+            .iter()
+            .filter(|(keys, rule)| {
+                keys.contains(&key)
+                    && keys.iter().all(|member| {
+                        self.physical_down.contains(member) && !self.chord_consumed.contains(member)
+                    })
+                    && rule_passes_apps(rule)
+                    && rule_passes_conditions(rule)
+            })
+            .max_by_key(|(keys, _)| keys.len())
+            .cloned();
+        let Some((keys, rule)) = matching else {
+            return false;
+        };
+        let owner = keys[0];
+        let previous = self.pending.remove(&owner);
+        let mut suppressed = Vec::new();
+        self.decision_buffer
+            .retain(|event| !keys.contains(&event.key));
+        for member in &keys {
+            self.long_holds.remove(member);
+            let pending = if *member == owner {
+                previous.clone()
+            } else {
+                self.pending.remove(member)
+            };
+            if let Some(pending) = pending {
+                if matches!(pending.phase, Phase::HoldActive) {
+                    self.release_hold_with(&pending.rule, *member, out);
+                }
+            }
+            if let Some(stroke) = self.emitted.get(member).cloned() {
+                suppressed.push((*member, stroke));
+            }
+            self.release_emitted(*member, out);
+            self.oneshot_consumed.remove(member);
+            self.chord_consumed.insert(*member);
+        }
+        self.active_chords.insert(owner, keys);
+        self.chord_suppressed.insert(owner, suppressed);
+        if let Some(previous) = previous {
+            if let Phase::WaitingSecond { deadline } = previous.phase {
+                if now <= deadline {
+                    self.fire_action(
+                        previous.rule.double_tap.as_ref(),
+                        self.default_mod_delay,
+                        now,
+                        out,
+                    );
+                    self.oneshot_consumed.insert(owner);
+                    return true;
+                }
+                self.fire_tap(owner, &previous.rule.tap, now, out);
+            }
+        }
+        self.start_rule(owner, rule, now, out);
+        self.drain_decision_buffer(out);
+        true
+    }
+
     fn active_rule_for_key(&self, key: Key) -> Option<RuleEntry> {
         self.rules.get(&key).and_then(|rules| {
             rules
@@ -769,7 +916,9 @@ impl Engine {
         let keys: Vec<Key> = self
             .pending
             .iter()
-            .filter(|(_, p)| matches!(p.phase, Phase::WaitingDecision { .. }))
+            .filter(|(_, p)| {
+                p.rule.long_hold.is_none() && matches!(p.phase, Phase::WaitingDecision { .. })
+            })
             .map(|(k, _)| *k)
             .collect();
         for k in keys {
@@ -780,9 +929,10 @@ impl Engine {
     /// The rule key currently in `WaitingDecision`, if any. In permissive
     /// mode there is at most one (further rule keys are buffered).
     fn deciding_key(&self) -> Option<Key> {
-        self.pending
-            .iter()
-            .find_map(|(k, p)| matches!(p.phase, Phase::WaitingDecision { .. }).then_some(*k))
+        self.pending.iter().find_map(|(k, p)| {
+            (p.rule.long_hold.is_none() && matches!(p.phase, Phase::WaitingDecision { .. }))
+                .then_some(*k)
+        })
     }
 
     /// Permissive-hold interception. While a rule key is deciding, other key
@@ -855,7 +1005,7 @@ impl Engine {
         }
         let buffered = std::mem::take(&mut self.decision_buffer);
         for ev in buffered {
-            self.handle(ev.key, ev.down, ev.at, out);
+            self.handle_event(ev.key, ev.down, ev.at, out);
         }
     }
 
@@ -865,6 +1015,9 @@ impl Engine {
         let Some(p) = self.pending.get_mut(&key) else {
             return;
         };
+        if !matches!(p.phase, Phase::WaitingDecision { .. }) {
+            return;
+        }
         let rule = p.rule.clone();
         {
             p.phase = Phase::HoldActive;
@@ -985,6 +1138,25 @@ impl Engine {
                     mod_delay: self.default_mod_delay,
                 });
             }
+            TapMode::NativeChord(keys) => {
+                let keys: Vec<_> = keys
+                    .iter()
+                    .filter(|key| !self.is_virtually_held(**key))
+                    .copied()
+                    .collect();
+                for key in &keys {
+                    out.push(Out::KeyRaw {
+                        key: *key,
+                        down: true,
+                    });
+                }
+                for key in keys.iter().rev() {
+                    out.push(Out::KeyRaw {
+                        key: *key,
+                        down: false,
+                    });
+                }
+            }
             TapMode::Swallow => {}
             TapMode::Action(a) => {
                 self.fire_action(Some(a), self.default_mod_delay, now, out);
@@ -999,7 +1171,7 @@ impl Engine {
         let keys: Vec<Key> = self
             .pending
             .iter()
-            .filter(|(_, p)| matches!(p.phase, Phase::WaitingSecond { .. }))
+            .filter(|(_, p)| matches!(p.phase, Phase::WaitingSecond { deadline } if deadline <= now || p.rule.trigger_keys.len() <= 1 || !p.rule.trigger_keys.iter().any(|key| self.physical_down.contains(key))))
             .map(|(k, _)| *k)
             .collect();
         for k in keys {
@@ -1038,6 +1210,11 @@ impl Engine {
         self.oneshot_consumed.clear();
         self.layer_triggers.clear();
         self.isolated_holds.clear();
+        self.long_holds.clear();
+        self.active_chords.clear();
+        self.chord_suppressed.clear();
+        self.chord_consumed.clear();
+        self.physical_down.clear();
     }
 
     #[allow(dead_code)]
@@ -1229,6 +1406,292 @@ mod tests {
     use evdev::Key;
     use std::collections::HashMap;
     use std::time::{Duration, Instant};
+
+    fn config_with_rule(rule: serde_json::Value) -> AppConfig {
+        serde_json::from_value(serde_json::json!({"rules": [rule]})).unwrap()
+    }
+
+    #[test]
+    fn unassigned_chord_preserves_normal_keys_and_double_tap_only_preserves_native_hold() {
+        let cfg = config_with_rule(serde_json::json!({"key": "ShiftLeft+ControlLeft"}));
+        let engine = Engine::new(&cfg);
+        assert!(engine.chord_rules.is_empty());
+        let cfg = config_with_rule(
+            serde_json::json!({"key": "ShiftLeft+ControlLeft", "doubleTapAction": "text:double"}),
+        );
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(
+            Key::KEY_LEFTCTRL,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        out.clear();
+        engine.tick(now + Duration::from_millis(250), &mut out);
+        assert!(
+            matches!(out.as_slice(), [Out::ChordPress {ks, ..}] if ks.key == Key::KEY_LEFTCTRL && ks.mods == vec![Key::KEY_LEFTSHIFT])
+        );
+        engine.handle(
+            Key::KEY_LEFTCTRL,
+            false,
+            now + Duration::from_millis(300),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(310),
+            &mut out,
+        );
+        assert!(engine.emitted.is_empty());
+        assert!(engine.mod_refs.values().all(|count| *count == 0));
+    }
+
+    #[test]
+    fn long_hold_runs_once_at_default_deadline_without_native_key() {
+        let cfg =
+            config_with_rule(serde_json::json!({"key": "KeyA", "longHoldAction": "text:done"}));
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_A, true, now, &mut out);
+        assert_eq!(engine.next_deadline(now), Some(Duration::from_secs(1)));
+        engine.tick(now + Duration::from_millis(999), &mut out);
+        assert!(out.is_empty());
+        engine.tick(now + Duration::from_secs(1), &mut out);
+        assert!(matches!(out.as_slice(), [Out::Literal(text)] if text == "done"));
+        out.clear();
+        engine.handle(Key::KEY_A, true, now + Duration::from_secs(2), &mut out);
+        engine.tick(now + Duration::from_secs(3), &mut out);
+        engine.handle(Key::KEY_A, false, now + Duration::from_secs(4), &mut out);
+        assert!(out.is_empty());
+        assert_eq!(engine.next_deadline(now), None);
+    }
+
+    #[test]
+    fn long_hold_early_release_taps_and_other_keys_do_not_commit_it() {
+        for mode in ["permissiveHold", "holdOnOtherKeyPress"] {
+            let mut cfg = config_with_rule(
+                serde_json::json!({"key": "KeyA", "tapAction": "Escape", "longHoldAction": "text:done", "longHoldTimeoutMs": 600}),
+            );
+            cfg.settings.tap_decision = serde_json::from_value(serde_json::json!(mode)).unwrap();
+            let mut engine = Engine::new(&cfg);
+            let now = Instant::now();
+            let mut out = Vec::new();
+            engine.handle(Key::KEY_A, true, now, &mut out);
+            engine.handle(Key::KEY_B, true, now + Duration::from_millis(50), &mut out);
+            engine.handle(
+                Key::KEY_B,
+                false,
+                now + Duration::from_millis(100),
+                &mut out,
+            );
+            assert!(matches!(
+                out.as_slice(),
+                [
+                    Out::KeyRaw {
+                        key: Key::KEY_B,
+                        down: true
+                    },
+                    Out::KeyRaw {
+                        key: Key::KEY_B,
+                        down: false
+                    }
+                ]
+            ));
+            out.clear();
+            engine.handle(
+                Key::KEY_A,
+                false,
+                now + Duration::from_millis(500),
+                &mut out,
+            );
+            engine.tick(now + Duration::from_secs(2), &mut out);
+            assert!(matches!(out.as_slice(), [Out::Stroke {ks, ..}] if ks.key == Key::KEY_ESC));
+        }
+    }
+
+    #[test]
+    fn long_hold_override_fires_even_when_release_arrives_before_tick() {
+        let cfg = config_with_rule(
+            serde_json::json!({"key": "KeyA", "longHoldAction": "text:done", "longHoldTimeoutMs": 1500}),
+        );
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_A, true, now, &mut out);
+        engine.tick(now + Duration::from_secs(1), &mut out);
+        assert!(out.is_empty());
+        engine.handle(
+            Key::KEY_A,
+            false,
+            now + Duration::from_millis(1500),
+            &mut out,
+        );
+        assert!(matches!(out.as_slice(), [Out::Literal(text)] if text == "done"));
+    }
+
+    #[test]
+    fn chord_layer_works_in_either_order_and_ends_on_any_release() {
+        for (first, second) in [
+            (Key::KEY_LEFTSHIFT, Key::KEY_LEFTCTRL),
+            (Key::KEY_LEFTCTRL, Key::KEY_LEFTSHIFT),
+        ] {
+            for release in [first, second] {
+                let cfg = config_with_rule(
+                    serde_json::json!({"key": "ShiftLeft+ControlLeft", "layerId": "nav", "tapAction": null}),
+                );
+                let mut engine = Engine::new(&cfg);
+                let now = Instant::now();
+                let mut out = Vec::new();
+                engine.handle(first, true, now, &mut out);
+                engine.handle(second, true, now + Duration::from_millis(10), &mut out);
+                assert_eq!(engine.active_layers, vec!["nav"]);
+                engine.handle(release, false, now + Duration::from_millis(20), &mut out);
+                assert!(engine.active_layers.is_empty());
+                let other = if release == first { second } else { first };
+                engine.handle(other, false, now + Duration::from_millis(30), &mut out);
+                assert!(engine.emitted.is_empty());
+                assert!(engine.mod_refs.values().all(|count| *count == 0));
+                assert!(engine.chord_consumed.is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn chord_long_hold_cancels_on_first_release_and_rearms_after_all_keys_are_up() {
+        let cfg = config_with_rule(
+            serde_json::json!({"key": "KeyA+KeyB", "tapAction": null, "longHoldAction": "text:done", "longHoldTimeoutMs": 500}),
+        );
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_B, true, now, &mut out);
+        engine.handle(Key::KEY_A, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(
+            Key::KEY_B,
+            false,
+            now + Duration::from_millis(400),
+            &mut out,
+        );
+        engine.tick(now + Duration::from_secs(1), &mut out);
+        assert!(!out.iter().any(|event| matches!(event, Out::Literal(_))));
+        engine.handle(
+            Key::KEY_A,
+            false,
+            now + Duration::from_millis(1100),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_A,
+            true,
+            now + Duration::from_millis(1200),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_B,
+            true,
+            now + Duration::from_millis(1300),
+            &mut out,
+        );
+        out.clear();
+        engine.tick(now + Duration::from_millis(1800), &mut out);
+        engine.tick(now + Duration::from_secs(3), &mut out);
+        assert!(matches!(out.as_slice(), [Out::Literal(text)] if text == "done"));
+        engine.shutdown(&mut out);
+        assert!(engine.long_holds.is_empty());
+        assert!(engine.active_chords.is_empty());
+    }
+
+    #[test]
+    fn chord_double_tap_uses_same_rule_when_press_order_changes() {
+        let cfg = config_with_rule(
+            serde_json::json!({"key": "ShiftLeft+ControlLeft", "tapAction": "Escape", "doubleTapAction": "text:double"}),
+        );
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(
+            Key::KEY_LEFTCTRL,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTCTRL,
+            false,
+            now + Duration::from_millis(30),
+            &mut out,
+        );
+        out.clear();
+        engine.handle(
+            Key::KEY_LEFTCTRL,
+            true,
+            now + Duration::from_millis(40),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            true,
+            now + Duration::from_millis(50),
+            &mut out,
+        );
+        assert!(
+            out.iter()
+                .any(|event| matches!(event, Out::Literal(text) if text == "double"))
+        );
+        assert!(
+            !out.iter()
+                .any(|event| matches!(event, Out::Stroke {ks, ..} if ks.key == Key::KEY_ESC))
+        );
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(60),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_LEFTCTRL,
+            false,
+            now + Duration::from_millis(70),
+            &mut out,
+        );
+        assert!(engine.emitted.is_empty());
+    }
+
+    #[test]
+    fn explicit_hold_behavior_prevents_layer_and_delayed_action_from_running_together() {
+        for mode in ["none", "layer", "action"] {
+            let cfg = config_with_rule(
+                serde_json::json!({"key": "KeyA", "holdBehavior": mode, "layerId": "nav", "tapAction": null, "longHoldAction": "text:done", "holdAction": "ControlLeft"}),
+            );
+            let mut engine = Engine::new(&cfg);
+            let now = Instant::now();
+            let mut out = Vec::new();
+            engine.handle(Key::KEY_A, true, now, &mut out);
+            engine.tick(now + Duration::from_secs(1), &mut out);
+            assert_eq!(!engine.active_layers.is_empty(), mode == "layer");
+            assert_eq!(
+                out.iter().any(|event| matches!(event, Out::Literal(_))),
+                mode == "action"
+            );
+            if mode == "action" {
+                assert!(engine.emitted.is_empty());
+            }
+            engine.handle(Key::KEY_A, false, now + Duration::from_secs(2), &mut out);
+            assert!(engine.emitted.is_empty());
+        }
+    }
 
     fn empty_cfg() -> AppConfig {
         AppConfig {
@@ -1424,6 +1887,9 @@ mod tests {
             key: "Tab".into(),
             layer_id: "sel".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -1466,6 +1932,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -1482,6 +1951,9 @@ mod tests {
             key: "Tab".into(),
             layer_id: "sel".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -1529,6 +2001,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -1578,6 +2053,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "space".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -1614,6 +2092,9 @@ mod tests {
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("AltLeft".into()),
             isolate: String::new(),
             hold_for: String::new(),
@@ -1667,6 +2148,9 @@ mod tests {
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("AltLeft".into()),
             isolate: String::new(),
             hold_for: "Tab".into(),
@@ -1778,6 +2262,9 @@ mod tests {
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: "KeyW".into(),
             hold_for: String::new(),
@@ -1819,11 +2306,14 @@ mod tests {
 
     fn rule_with_apps(whitelist: Option<Vec<String>>, blacklist: Option<Vec<String>>) -> RuleEntry {
         RuleEntry {
+            trigger_keys: vec![],
             tap: TapMode::Native,
             layer_id: None,
             hold: HoldMode::Swallow,
             isolate_keys: Vec::new(),
             whitelist_keys: Vec::new(),
+            long_hold: None,
+            long_hold_timeout: Duration::from_secs(1),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1894,11 +2384,14 @@ mod tests {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_game_mode(true, false);
         let rule = RuleEntry {
+            trigger_keys: vec![],
             tap: TapMode::Native,
             layer_id: None,
             hold: HoldMode::Swallow,
             isolate_keys: Vec::new(),
             whitelist_keys: Vec::new(),
+            long_hold: None,
+            long_hold_timeout: Duration::from_secs(1),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1925,11 +2418,14 @@ mod tests {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_game_mode(true, true);
         let rule = RuleEntry {
+            trigger_keys: vec![],
             tap: TapMode::Native,
             layer_id: None,
             hold: HoldMode::Swallow,
             isolate_keys: Vec::new(),
             whitelist_keys: Vec::new(),
+            long_hold: None,
+            long_hold_timeout: Duration::from_secs(1),
             double_tap: None,
             hold_timeout: Duration::from_millis(200),
             double_tap_window: Duration::from_millis(200),
@@ -1958,6 +2454,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyA".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -1974,6 +2473,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyB".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2009,6 +2511,9 @@ mod tests {
             key: "ShiftLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
             hold_for: String::new(),
@@ -2073,6 +2578,9 @@ mod tests {
             key: "ShiftLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
             hold_for: String::new(),
@@ -2136,6 +2644,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "sp".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Swallow,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2207,6 +2718,9 @@ mod tests {
             key: "MouseSide".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("BrowserBack".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2244,6 +2758,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "mouse".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2303,6 +2820,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "mouse".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2354,6 +2874,9 @@ mod tests {
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("AltLeft".into()),
             isolate: "KeyW".into(),
             hold_for: String::new(),
@@ -2414,6 +2937,9 @@ mod tests {
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2452,6 +2978,9 @@ mod tests {
             key: "AltLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
             hold_for: String::new(),
@@ -2485,6 +3014,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyA".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2526,6 +3058,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyA".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2560,6 +3095,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyA".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2604,6 +3142,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("KeyA".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2693,6 +3234,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "sp".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2741,6 +3285,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "sp".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2787,6 +3334,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "sp".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -2870,6 +3420,9 @@ mod tests {
             key: "ShiftLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("ControlLeft".into()),
             isolate: String::new(),
             hold_for: String::new(),
@@ -2908,6 +3461,9 @@ mod tests {
             key: key.into(),
             layer_id: String::new(),
             tap_action: tap,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: hold,
             isolate: String::new(),
             hold_for: String::new(),
@@ -3235,6 +3791,9 @@ mod tests {
             key: "UnknownKey".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -3259,6 +3818,9 @@ mod tests {
                 key: key.into(),
                 layer_id: String::new(),
                 tap_action: ActionSpec::Action("Escape".into()),
+                hold_behavior: None,
+                long_hold_action: String::new(),
+                long_hold_timeout_ms: None,
                 hold_action: ActionSpec::Native,
                 isolate: String::new(),
                 hold_for: String::new(),
@@ -3285,6 +3847,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("BadActionSyntax!!!".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Swallow,
             isolate: String::new(),
             hold_for: String::new(),
@@ -3314,6 +3879,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("macro:copyLine".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -3453,6 +4021,9 @@ mod tests {
             key: "Space".into(),
             layer_id: "sp".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -3519,6 +4090,9 @@ mod tests {
             key: "AltLeft".into(),
             layer_id: "win".into(),
             tap_action: ActionSpec::Action("Enter".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("AltLeft".into()),
             isolate: "KeyW,KeyE".into(),
             hold_for: String::new(),
@@ -3582,6 +4156,9 @@ mod tests {
             key: "KeyQ".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("macro:empty".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Swallow,
             isolate: String::new(),
             hold_for: String::new(),

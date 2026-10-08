@@ -51,7 +51,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         } else {
             format!("Rule \"{}\"", r.key)
         };
-        if code_to_key(&r.key).is_none() {
+        if !crate::profile::key_catalog::valid_trigger(&r.key) {
             errors.push(format!("{where_key}: unknown physical key \"{}\"", r.key));
         }
         if !r.layer_id.is_empty() && !layer_ids.contains(r.layer_id.as_str()) {
@@ -70,6 +70,14 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &r.hold_action,
             &format!("{where_key} hold"),
             ActionKind::HoldKeystroke,
+            &user_macro_ids,
+            &system_macro_ids,
+            &command_ids,
+            &mut errors,
+        );
+        validate_optional_action(
+            &r.long_hold_action,
+            &format!("{where_key} long hold"),
             &user_macro_ids,
             &system_macro_ids,
             &command_ids,
@@ -385,6 +393,9 @@ mod tests {
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("macro:missing".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -510,6 +521,9 @@ mod tests {
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("pause:250".into()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -558,6 +572,9 @@ mod tests {
             key: "UnknownKey".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -581,6 +598,9 @@ mod tests {
             key: "CapsLock".into(),
             layer_id: "missing".into(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
             hold_for: String::new(),
@@ -665,6 +685,9 @@ mod tests {
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("macro:copyLine".into()),
             isolate: String::new(),
             hold_for: String::new(),

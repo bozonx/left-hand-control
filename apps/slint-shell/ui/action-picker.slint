@@ -44,6 +44,7 @@ export global ActionPicker {
     in-out property <Message> error;
     in property <Message> notice;
     in-out property <bool> key-only;
+    in property <bool> trigger-chords;
     in-out property <bool> capturing;
     in-out property <bool> valid;
     in-out property <string> value;
@@ -138,7 +139,7 @@ export component PickerOverlay inherits Rectangle {
             VerticalBox { padding: 18px; spacing: 8px;
                 HorizontalBox { vertical-stretch: 0;
                     VerticalBox { padding: 0px; spacing: 4px; horizontal-stretch: 1;
-                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : ActionPicker.title-context == 1 ? @tr("Double-tap action") : ActionPicker.title-context == 2 ? @tr("Tap action") : ActionPicker.title-context == 3 ? @tr("Hold action") : ActionPicker.title-context == 4 ? @tr("Macro step") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
+                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : ActionPicker.title-context == 1 ? @tr("Double-tap action") : ActionPicker.title-context == 2 ? @tr("Tap action") : ActionPicker.title-context == 3 ? @tr("Hold another key / combination") : ActionPicker.title-context == 4 ? @tr("Macro step") : ActionPicker.title-context == 5 ? @tr("Long-hold action") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
                     }
                 }
                 if ActionPicker.allow-default || ActionPicker.allow-swallow: HorizontalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
@@ -169,7 +170,7 @@ export component PickerOverlay inherits Rectangle {
                     InfoTip { text: ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
                 }
                 if ActionPicker.behavior == 2 && ActionPicker.value-category == 8 && !ActionPicker.commands-enabled: Text { text: ActionPicker.command-name != "" ? ActionPicker.command-name : ActionPicker.command-script; color: Theme.text; wrap: word-wrap; }
-                if ActionPicker.capturing: Text { text: ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
+                if ActionPicker.capturing: Text { text: ActionPicker.trigger-chords ? @tr("Press one key or hold a combination, then release a key to capture it.") : ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
                 if ActionPicker.behavior == 2 && ActionPicker.notice.id != "": Text { text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
                 if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
                 if ActionPicker.touched && !ActionPicker.valid: Text { text: ActionPicker.key-only ? @tr("Choose a valid trigger key.") : @tr("Choose a valid action."); color: Theme.error; }

@@ -30,6 +30,7 @@ struct Form {
     locale: i32,
     tap_decision: i32,
     hold: String,
+    long_hold: String,
     double_tap: String,
     macro_pause: String,
     modifier_delay: String,
@@ -61,6 +62,7 @@ impl Form {
             locale: choice_index(&LOCALES, &settings.locale),
             tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision.as_str()),
             hold: settings.default_hold_timeout_ms.to_string(),
+            long_hold: super::rules::seconds_text(settings.default_long_hold_timeout_ms),
             double_tap: settings.default_double_tap_timeout_ms.to_string(),
             macro_pause: settings.default_macro_step_pause_ms.to_string(),
             modifier_delay: settings.default_macro_modifier_delay_ms.to_string(),
@@ -90,6 +92,7 @@ impl Form {
             locale: e.get_locale_index(),
             tap_decision: e.get_tap_decision_index(),
             hold: e.get_hold_timeout().into(),
+            long_hold: e.get_long_hold_timeout().into(),
             double_tap: e.get_double_tap_timeout().into(),
             macro_pause: e.get_macro_pause().into(),
             modifier_delay: e.get_modifier_delay().into(),
@@ -112,6 +115,7 @@ impl Form {
         e.set_locale_index(self.locale);
         e.set_tap_decision_index(self.tap_decision);
         e.set_hold_timeout(self.hold.clone().into());
+        e.set_long_hold_timeout(self.long_hold.clone().into());
         e.set_double_tap_timeout(self.double_tap.clone().into());
         e.set_macro_pause(self.macro_pause.clone().into());
         e.set_modifier_delay(self.modifier_delay.clone().into());
@@ -134,6 +138,7 @@ impl Form {
 
     /// Write the fields that differ from `base` into `settings`.
     fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Msg> {
+        let long_hold = super::rules::parse_seconds(&self.long_hold)?;
         let numbers = [
             parse_ms(&self.hold)?,
             parse_ms(&self.double_tap)?,
@@ -151,6 +156,7 @@ impl Form {
         changed!(appearance => settings.appearance = choice(&APPEARANCES, self.appearance));
         changed!(locale => settings.locale = choice(&LOCALES, self.locale));
         changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision).into());
+        changed!(long_hold => settings.default_long_hold_timeout_ms = long_hold);
         changed!(hold => settings.default_hold_timeout_ms = numbers[0]);
         changed!(double_tap => settings.default_double_tap_timeout_ms = numbers[1]);
         changed!(macro_pause => settings.default_macro_step_pause_ms = numbers[2]);

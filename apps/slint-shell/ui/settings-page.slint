@@ -21,6 +21,7 @@ export global SettingsEditor {
     in-out property <int> locale-index;
     in-out property <int> tap-decision-index;
     in-out property <string> hold-timeout;
+    in-out property <string> long-hold-timeout;
     in-out property <string> double-tap-timeout;
     in-out property <string> macro-pause;
     in-out property <string> modifier-delay;
@@ -197,6 +198,8 @@ export component SettingsPage inherits VerticalBox {
                     }
                     Text { text: SettingsEditor.tap-decision-index == 0 ? @tr("Hold after another key is pressed and released; otherwise tap.") : @tr("Hold as soon as another key is pressed."); color: Theme.muted; wrap: word-wrap; }
                     Rectangle { height: 1px; background: Theme.border; }
+                    FormLabel { text: @tr("Long-hold duration (seconds)"); info: @tr("Default delay before a rule runs its long-hold action once. Each rule can override it in advanced options."); }
+                    LineEdit { text <=> SettingsEditor.long-hold-timeout; edited => { SettingsEditor.schedule-save(); } }
                     HorizontalBox { vertical-stretch: 0; spacing: 24px;
                         VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 8px;
                         Text { text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }

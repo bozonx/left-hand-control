@@ -67,15 +67,13 @@ impl std::fmt::Display for RuleIssue {
     }
 }
 
-const MOUSE_TRIGGERS: [&str; 3] = ["MouseLeft", "MouseRight", "MouseMiddle"];
-
 pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
     let layer_ids: HashSet<&str> = config
         .layers
         .iter()
         .map(|layer| layer.id.as_str())
         .collect();
-    let mut by_trigger: BTreeMap<&str, Vec<&LayerRule>> = BTreeMap::new();
+    let mut by_trigger: BTreeMap<Vec<&str>, Vec<&LayerRule>> = BTreeMap::new();
     let mut issues = Vec::new();
     let issue = |code, rule: &LayerRule, trigger: Option<&str>| RuleIssue {
         code,
@@ -88,12 +86,13 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
             continue;
         }
         let trigger = rule.key.trim();
-        if MOUSE_TRIGGERS.contains(&trigger)
-            || matches!(Action::parse(Some(trigger)), Action::Keys(ref k) if k.contains('+'))
-        {
+        if !super::key_catalog::valid_trigger(trigger) {
             issues.push(issue(RuleIssueCode::InvalidTrigger, rule, Some(trigger)));
         }
-        by_trigger.entry(trigger).or_default().push(rule);
+        if let Some(mut keys) = super::key_catalog::trigger_keys(trigger) {
+            keys.sort_unstable();
+            by_trigger.entry(keys).or_default().push(rule);
+        }
         if !rule.layer_id.is_empty() && !layer_ids.contains(rule.layer_id.as_str()) {
             issues.push(issue(RuleIssueCode::UnknownLayer, rule, Some(trigger)));
         }
@@ -106,6 +105,9 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
         {
             issues.push(issue(RuleIssueCode::InvalidHoldAction, rule, Some(trigger)));
         }
+        if actions::validate(&Action::parse(Some(&rule.long_hold_action)), config).is_some() {
+            issues.push(issue(RuleIssueCode::InvalidHoldAction, rule, Some(trigger)));
+        }
         if actions::validate(&Action::parse(Some(&rule.double_tap_action)), config).is_some() {
             issues.push(issue(
                 RuleIssueCode::InvalidDoubleTapAction,
@@ -116,7 +118,11 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
     }
     for (trigger, rules) in by_trigger.into_iter().filter(|(_, rules)| rules.len() > 1) {
         for rule in rules {
-            issues.push(issue(RuleIssueCode::DuplicateTrigger, rule, Some(trigger)));
+            issues.push(issue(
+                RuleIssueCode::DuplicateTrigger,
+                rule,
+                Some(&trigger.join("+")),
+            ));
         }
     }
     issues

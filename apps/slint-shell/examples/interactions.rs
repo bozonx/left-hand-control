@@ -311,6 +311,71 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().rules[0].double_tap_timeout_ms,
         Some(300)
     );
+    rules.invoke_open_dialog(0, RuleDialog::Key);
+    picker.invoke_select_behavior(2);
+    picker.set_value("ShiftLeft+ControlRight".into());
+    picker.invoke_apply();
+    assert_eq!(
+        document.read().layout().rules[0].key,
+        "ShiftLeft+ControlRight"
+    );
+    rules.invoke_edit(RuleField::HoldMode, "2".into());
+    assert_eq!(rules.get_hold_mode(), 2);
+    rules.invoke_open_dialog(0, RuleDialog::LongHold);
+    assert!(!picker.get_hold_action());
+    picker.invoke_select_behavior(2);
+    picker.set_value("macro:copyLine".into());
+    picker.invoke_apply();
+    assert_eq!(
+        document.read().layout().rules[0].long_hold_action,
+        "macro:copyLine"
+    );
+    assert!(document.read().layout().rules[0].layer_id.is_empty());
+    rules.invoke_open_dialog(0, RuleDialog::Advanced);
+    rules.set_long_hold_timeout("0".into());
+    rules.invoke_apply_advanced();
+    assert_eq!(rules.get_status().id, "hold-seconds-invalid");
+    rules.set_long_hold_timeout("1,5".into());
+    rules.invoke_apply_advanced();
+    assert_eq!(
+        document.read().layout().rules[0].long_hold_timeout_ms,
+        Some(1500)
+    );
+    settings.set_long_hold_timeout("2.5".into());
+    settings.invoke_save();
+    assert_eq!(
+        document.read().settings().default_long_hold_timeout_ms,
+        2500
+    );
+    assert_eq!(
+        ConfigDocument::load(paths.clone())?.layout().rules[0].long_hold_action,
+        "macro:copyLine"
+    );
+    rules.invoke_edit(RuleField::HoldMode, "1".into());
+    assert!(
+        document.read().layout().rules[0]
+            .long_hold_action
+            .is_empty()
+    );
+    rules.invoke_open_dialog(0, RuleDialog::Layer);
+    rules.invoke_choose(second.clone().into());
+    rules.invoke_open_dialog(0, RuleDialog::Advanced);
+    rules.set_double_timeout("350".into());
+    rules.invoke_apply_advanced();
+    rules.invoke_open_dialog(0, RuleDialog::Hold);
+    picker.invoke_select_behavior(2);
+    picker.set_value("AltLeft".into());
+    picker.invoke_apply();
+    assert_eq!(rules.get_dialog(), RuleDialog::None);
+    assert_eq!(rules.get_double_timeout(), "350");
+    assert_eq!(
+        document.read().layout().rules[0].hold_action.as_deref(),
+        Some("AltLeft")
+    );
+    assert_eq!(
+        document.read().layout().rules[0].double_tap_timeout_ms,
+        Some(350)
+    );
     rules.invoke_remove();
     let layers = ui.global::<LayersEditor>();
     layers.invoke_add_extra();
@@ -452,7 +517,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             18 => { assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
             19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
             20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "timeout-invalid".into(), arg: "".into(), count: 0 }); }
-            21 => { snapshot(&ui, "settings-error-toast"); println!("Interactions passed: settings persistence and merge, validation, navigation, library save, key editing, shared UI state, popup search and game mode overrides and dropdown keyboard selection"); slint::quit_event_loop().unwrap(); }
+            21 => {
+                snapshot(&ui, "settings-error-toast");
+                ui.global::<SettingsEditor>().set_message(Message::default());
+                ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
+                ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
+                let rules = ui.global::<RulesEditor>();
+                let picker = ui.global::<ActionPicker>();
+                rules.invoke_add();
+                picker.invoke_select_behavior(2);
+                picker.set_value("ShiftLeft+ControlRight".into());
+                picker.invoke_apply();
+                rules.invoke_edit(RuleField::HoldMode, "2".into());
+                rules.invoke_open_dialog(0, RuleDialog::LongHold);
+                picker.invoke_select_behavior(2);
+                picker.set_value("text:hello".into());
+                picker.invoke_apply();
+            }
+            22 => { snapshot(&ui, "rules-long-hold"); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Advanced); }
+            23 => {
+                snapshot(&ui, "rules-long-hold-advanced");
+                let rules = ui.global::<RulesEditor>();
+                rules.set_dialog(RuleDialog::None);
+                rules.invoke_edit(RuleField::HoldMode, "1".into());
+                rules.invoke_open_dialog(0, RuleDialog::Layer);
+                let id = document.read().layout().layers[0].id.clone();
+                rules.invoke_choose(id.into());
+            }
+            24 => { snapshot(&ui, "rules-layer"); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Advanced); }
+            25 => { snapshot(&ui, "rules-layer-advanced"); println!("Interactions passed: settings, rules, long-hold actions, chord triggers, persistence, validation, navigation and game mode"); slint::quit_event_loop().unwrap(); }
             _ => {}
         }
         step.set(n + 1);

@@ -110,6 +110,7 @@ pub fn action_usage(config: &AppConfig, action: &str) -> Vec<String> {
         if [
             rule.tap_action.as_deref(),
             rule.hold_action.as_deref(),
+            Some(rule.long_hold_action.as_str()),
             Some(rule.double_tap_action.as_str()),
         ]
         .contains(&Some(action))

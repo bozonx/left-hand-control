@@ -41,6 +41,14 @@ pub struct Layer {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HoldBehavior {
+    None,
+    Layer,
+    Action,
+}
+
 /// A rule bound to a physical key. `tap_action` / `hold_action` use the
 /// three-state convention: `Some("")` is native passthrough, `None` swallows
 /// the key and any other value is an action.
@@ -61,6 +69,12 @@ pub struct LayerRule {
     pub key: String,
     pub layer_id: String,
     pub tap_action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hold_behavior: Option<HoldBehavior>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub long_hold_action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub long_hold_timeout_ms: Option<u64>,
     pub hold_action: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub isolate: Option<String>,
@@ -74,6 +88,18 @@ pub struct LayerRule {
 }
 
 impl LayerRule {
+    pub fn hold_behavior(&self) -> HoldBehavior {
+        self.hold_behavior.unwrap_or({
+            if !self.long_hold_action.is_empty() {
+                HoldBehavior::Action
+            } else if !self.layer_id.is_empty() {
+                HoldBehavior::Layer
+            } else {
+                HoldBehavior::None
+            }
+        })
+    }
+
     pub fn new(id: String, key: &str) -> Self {
         Self {
             id,
@@ -85,6 +111,9 @@ impl LayerRule {
             key: key.into(),
             layer_id: String::new(),
             tap_action: Some(String::new()),
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
             hold_action: Some(String::new()),
             isolate: None,
             hold_for: None,
@@ -329,6 +358,7 @@ pub struct AppSettings {
     pub appearance: Appearance,
     pub locale: LocalePreference,
     pub default_hold_timeout_ms: u64,
+    pub default_long_hold_timeout_ms: u64,
     pub tap_decision: String,
     pub default_double_tap_timeout_ms: u64,
     pub default_macro_step_pause_ms: u64,
@@ -358,6 +388,7 @@ impl Default for AppSettings {
             launch_on_startup: false,
             appearance: Appearance::System,
             locale: LocalePreference::Auto,
+            default_long_hold_timeout_ms: 1000,
             default_hold_timeout_ms: 200,
             tap_decision: "permissiveHold".into(),
             default_double_tap_timeout_ms: 200,

@@ -1722,3 +1722,54 @@ msgstr "Создать слой…"
 
 msgid "Create “{}”"
 msgstr "Создать «{}»"
+
+msgid "Enter a hold duration between 0.001 and 86400 seconds."
+msgstr "Введите длительность удержания от 0,001 до 86400 секунд."
+
+msgid "A trigger can be a single key or a combination, such as ShiftLeft+ControlLeft. The combination works in either press order and ends when any key is released."
+msgstr "Триггером может быть клавиша или сочетание, например ShiftLeft+ControlLeft. Порядок нажатия не важен; удержание заканчивается при отпускании любой клавиши."
+
+msgid "When held"
+msgstr "При удержании"
+
+msgid "Choose a layer active until release, or an action performed once after the hold duration."
+msgstr "Выберите слой, активный до отпускания, или действие, выполняемое один раз после заданного времени удержания."
+
+msgid "Nothing"
+msgstr "Ничего"
+
+msgid "Activate layer"
+msgstr "Включить слой"
+
+msgid "Run action"
+msgstr "Выполнить действие"
+
+msgid "Long-hold action"
+msgstr "Действие после удержания"
+
+msgid "Runs once after {} s"
+msgstr "Выполняется один раз через {} с"
+
+msgid "Long-hold duration, seconds"
+msgstr "Длительность удержания, секунды"
+
+msgid "The action runs once after continuous holding. Leave empty to use the global setting: {} s"
+msgstr "Действие выполняется один раз после непрерывного удержания. Оставьте поле пустым, чтобы использовать значение из настроек: {} с"
+
+msgid "Default: {} s"
+msgstr "По умолчанию: {} с"
+
+msgid "Hold another key / combination"
+msgstr "Удерживать другую клавишу / сочетание"
+
+msgid "Long-hold duration (seconds)"
+msgstr "Длительность удержания для действия (секунды)"
+
+msgid "Default delay before a rule runs its long-hold action once. Each rule can override it in advanced options."
+msgstr "Задержка перед однократным выполнением действия после удержания. В дополнительных параметрах правила можно задать своё значение."
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr "Нажмите клавишу или удерживайте сочетание, затем отпустите клавишу для захвата."
+
+msgid "Held key: {}"
+msgstr "Удерживаемая клавиша: {}"

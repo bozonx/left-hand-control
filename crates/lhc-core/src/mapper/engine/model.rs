@@ -26,6 +26,7 @@ pub(super) struct MacroDef {
 #[derive(Clone)]
 pub(super) enum TapMode {
     Native,
+    NativeChord(Vec<Key>),
     Swallow,
     Action(ActionDef),
 }
@@ -39,6 +40,7 @@ pub(super) enum HoldMode {
 
 #[derive(Clone)]
 pub(super) struct RuleEntry {
+    pub(super) trigger_keys: Vec<Key>,
     pub(super) tap: TapMode,
     pub(super) layer_id: Option<String>,
     pub(super) hold: HoldMode,
@@ -49,6 +51,8 @@ pub(super) struct RuleEntry {
     /// held modifier (e.g. Alt for the task switcher) reach the app only
     /// together with its wanted key (Tab), never as a lone tap.
     pub(super) whitelist_keys: Vec<Key>,
+    pub(super) long_hold: Option<ActionDef>,
+    pub(super) long_hold_timeout: Duration,
     pub(super) double_tap: Option<ActionDef>,
     pub(super) hold_timeout: Duration,
     pub(super) double_tap_window: Duration,

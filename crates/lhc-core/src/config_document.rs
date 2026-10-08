@@ -267,6 +267,7 @@ impl ConfigDocument {
                     .hold_action
                     .as_deref()
                     .is_some_and(|value| !value.is_empty())
+                || !rule.long_hold_action.is_empty()
                 || !rule.double_tap_action.is_empty()
         }) || matching.len() > 1
         {

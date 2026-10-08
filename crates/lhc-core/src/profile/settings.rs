@@ -38,6 +38,11 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             Some("ru-RU") => LocalePreference::Russian,
             _ => LocalePreference::Auto,
         },
+        default_long_hold_timeout_ms: u64_or(
+            raw,
+            "defaultLongHoldTimeoutMs",
+            base.default_long_hold_timeout_ms,
+        ),
         default_hold_timeout_ms: u64_or(raw, "defaultHoldTimeoutMs", base.default_hold_timeout_ms),
         tap_decision: match str_of(raw, "tapDecision") {
             Some(value @ ("permissiveHold" | "holdOnOtherKeyPress")) => value.into(),

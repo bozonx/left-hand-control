@@ -82,6 +82,11 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                 layer_id: str_of(rule, "layer").unwrap_or("").into(),
                 tap_action: three_state(rule, "tap"),
                 hold_action: three_state(rule, "hold"),
+                hold_behavior: rule
+                    .get("onHold")
+                    .and_then(|value| serde_json::from_value(value.clone()).ok()),
+                long_hold_action: rule.get("longHold").and_then(scalar).unwrap_or_default(),
+                long_hold_timeout_ms: rule.get("longHoldMs").and_then(Value::as_u64),
                 isolate: key_list(rule.get("isolate")),
                 hold_for: key_list(rule.get("holdFor")),
                 double_tap_action: rule.get("dtap").and_then(scalar).unwrap_or_default(),
@@ -423,6 +428,23 @@ fn rule_yaml(rule: &LayerRule) -> Yaml {
             put(&mut out, name, list);
         }
     }
+    if let Some(behavior) = rule.hold_behavior {
+        put(
+            &mut out,
+            "onHold",
+            match behavior {
+                super::model::HoldBehavior::None => "none",
+                super::model::HoldBehavior::Layer => "layer",
+                super::model::HoldBehavior::Action => "action",
+            },
+        );
+    }
+    if !rule.long_hold_action.is_empty() {
+        put(&mut out, "longHold", rule.long_hold_action.as_str());
+    }
+    if let Some(ms) = rule.long_hold_timeout_ms {
+        out.insert("longHoldMs".into(), ms.into());
+    }
     if !rule.double_tap_action.is_empty() {
         put(&mut out, "dtap", rule.double_tap_action.as_str());
     }
@@ -511,6 +533,19 @@ fn key_list(value: Option<&Value>) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn chord_and_long_hold_options_round_trip() {
+        let preset = parse("rules:\n  - key: ShiftLeft+ControlRight\n    onHold: action\n    longHold: 'text:hello'\n    longHoldMs: 1500\n").unwrap().unwrap();
+        let rule = &preset.rules[0];
+        assert_eq!(
+            rule.hold_behavior(),
+            super::super::model::HoldBehavior::Action
+        );
+        assert_eq!(rule.long_hold_action, "text:hello");
+        assert_eq!(rule.long_hold_timeout_ms, Some(1500));
+        assert_eq!(parse(&serialize(&preset)).unwrap().unwrap(), preset);
+    }
+
     #[test]
     fn parsing_is_deterministic_without_ids() {
         let text = "rules:\n- key: CapsLock\nquickActions:\n- action: KeyA\n";

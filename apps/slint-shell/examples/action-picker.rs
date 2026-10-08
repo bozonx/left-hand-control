@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(rules.get_dialog(), RuleDialog::None, "the picker replaces the dialog");
     assert_eq!(
         picker.get_counts().iter().collect::<Vec<_>>(),
-        [40, 37, 27, 15, 5, 43, 0, 0, 0, 0, 0]
+        [40, 37, 27, 15, 5, 55, 0, 0, 0, 0, 0]
     );
     picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());

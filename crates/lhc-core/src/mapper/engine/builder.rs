@@ -278,14 +278,34 @@ impl Engine {
         };
 
         let mut rules = HashMap::new();
+        let mut chord_rules = Vec::new();
         for r in &cfg.rules {
             if !r.enabled {
                 continue;
             }
 
-            let Some(key) = code_to_key(&r.key) else {
-                log::debug!("[mapper] unknown rule key: {}", r.key);
+            let Some(keys) = crate::profile::key_catalog::trigger_keys(&r.key).and_then(|keys| {
+                keys.into_iter()
+                    .map(code_to_key)
+                    .collect::<Option<Vec<_>>>()
+            }) else {
                 continue;
+            };
+            let key = keys[0];
+            use crate::profile::model::HoldBehavior;
+            let behavior = r.hold_behavior.unwrap_or({
+                if !r.long_hold_action.is_empty() {
+                    HoldBehavior::Action
+                } else if !r.layer_id.is_empty() {
+                    HoldBehavior::Layer
+                } else {
+                    HoldBehavior::None
+                }
+            });
+            let long_hold = if behavior == HoldBehavior::Action {
+                resolve(&r.long_hold_action, &format!("long hold for {}", r.key))
+            } else {
+                None
             };
 
             // Disallow left/right/middle mouse buttons as triggers —
@@ -299,6 +319,7 @@ impl Engine {
             }
 
             let tap = match &r.tap_action {
+                ActionSpec::Native if keys.len() > 1 => TapMode::NativeChord(keys.clone()),
                 ActionSpec::Native => TapMode::Native,
                 ActionSpec::Swallow => TapMode::Swallow,
                 ActionSpec::Action(s) => match resolve(s, &format!("tap for {}", r.key)) {
@@ -307,13 +328,22 @@ impl Engine {
                 },
             };
 
-            let layer_id = if r.layer_id.is_empty() {
+            let layer_id = if r.layer_id.is_empty() || behavior != HoldBehavior::Layer {
                 None
             } else {
                 Some(r.layer_id.clone())
             };
             let hold = match &r.hold_action {
-                ActionSpec::Native if layer_id.is_some() => HoldMode::Swallow,
+                _ if behavior == HoldBehavior::Action => HoldMode::Swallow,
+                ActionSpec::Native if layer_id.is_some() || long_hold.is_some() => {
+                    HoldMode::Swallow
+                }
+                ActionSpec::Native if keys.len() > 1 => {
+                    HoldMode::Keystroke(crate::mapper::action::Keystroke {
+                        mods: keys[..keys.len() - 1].to_vec(),
+                        key: keys[keys.len() - 1],
+                    })
+                }
                 ActionSpec::Native => HoldMode::Native,
                 ActionSpec::Swallow => HoldMode::Swallow,
                 ActionSpec::Action(s) => match parse_action(s) {
@@ -337,9 +367,11 @@ impl Engine {
             // Fully transparent rule — skip registration so the key passes
             // straight through the kernel → uinput grab.
             if layer_id.is_none()
-                && matches!(tap, TapMode::Native)
-                && matches!(hold, HoldMode::Native)
+                && matches!(tap, TapMode::Native | TapMode::NativeChord(_))
+                && (matches!(hold, HoldMode::Native)
+                    || (keys.len() > 1 && matches!(r.hold_action, ActionSpec::Native)))
                 && double_tap.is_none()
+                && long_hold.is_none()
             {
                 log::debug!(
                     "[mapper] rule {:?}: tap=native, hold=native, no double-tap — skipped (passthrough)",
@@ -348,6 +380,11 @@ impl Engine {
                 continue;
             }
 
+            let long_hold_timeout = Duration::from_millis(
+                r.long_hold_timeout_ms
+                    .unwrap_or(cfg.settings.default_long_hold_timeout_ms)
+                    .clamp(1, 86_400_000),
+            );
             let hold_timeout = r
                 .hold_timeout_ms
                 .map(|ms| Duration::from_millis(ms.max(1)))
@@ -381,20 +418,32 @@ impl Engine {
                 }
             }
 
-            rules.entry(key).or_insert_with(Vec::new).push(RuleEntry {
+            let entry = RuleEntry {
+                trigger_keys: keys.clone(),
+                long_hold,
+                long_hold_timeout,
                 tap,
                 layer_id,
                 hold,
                 isolate_keys,
                 whitelist_keys,
                 double_tap,
-                hold_timeout,
+                hold_timeout: if behavior == HoldBehavior::Action {
+                    long_hold_timeout
+                } else {
+                    hold_timeout
+                },
                 double_tap_window,
                 condition_game_mode: r.condition_game_mode.clone(),
                 condition_layouts: r.condition_layouts.clone(),
                 condition_apps_whitelist: r.condition_apps_whitelist.clone(),
                 condition_apps_blacklist: r.condition_apps_blacklist.clone(),
-            });
+            };
+            if keys.len() > 1 {
+                chord_rules.push((keys, entry));
+            } else {
+                rules.entry(key).or_insert_with(Vec::new).push(entry);
+            }
         }
 
         let mut layer_maps: HashMap<String, HashMap<Key, ActionDef>> = HashMap::new();
@@ -441,6 +490,12 @@ impl Engine {
 
         Self {
             rules,
+            chord_rules,
+            physical_down: HashSet::new(),
+            active_chords: HashMap::new(),
+            chord_suppressed: HashMap::new(),
+            chord_consumed: HashSet::new(),
+            long_holds: HashMap::new(),
             macros,
             commands,
             layer_maps,
