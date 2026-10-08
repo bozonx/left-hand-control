@@ -63,14 +63,16 @@ export global SettingsEditor {
     callback delete-process();
 }
 
-component Section inherits Rectangle {
+component Section inherits VerticalBox {
     in property <string> title;
     vertical-stretch: 0;
-    background: transparent;
-    VerticalBox { padding: 0px; padding-top: 16px; padding-bottom: 16px; spacing: 12px;
-        if root.title != "": Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: 600; }
-        @children
-    }
+    horizontal-stretch: 1;
+    padding: 0px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    spacing: 12px;
+    if root.title != "": Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: 600; vertical-stretch: 0; }
+    @children
 }
 
 export component SettingsPage inherits VerticalBox {
