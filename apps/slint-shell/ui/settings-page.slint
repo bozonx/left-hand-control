@@ -7,6 +7,8 @@ import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericField, SelectField } from "controls.slint";
 
+export struct CommandAssignmentRow { layout-id: string, command-id: string, name: string, script: string, usage: [string] }
+
 export struct CapabilityRow { supported: bool, available: bool, status: Message, detail: string }
 
 export struct ProcessRow { name: string, only-active: bool, blacklist: bool }
@@ -22,7 +24,9 @@ export global SettingsEditor {
     in-out property <string> double-tap-timeout;
     in-out property <string> macro-pause;
     in-out property <string> modifier-delay;
-    in-out property <string> command-timeout;
+    in-out property <bool> commands-enabled;
+    in property <[CommandAssignmentRow]> command-assignments;
+    callback edit-command(string, string);
     in-out property <bool> use-gamemoded: true;
     in-out property <bool> use-fullscreen;
     in property <[ProcessRow]> process-matchers;
@@ -85,7 +89,7 @@ export component SettingsPage inherits VerticalBox {
             width: 180px;
             horizontal-stretch: 0;
             alignment: start;
-            for label[index] in [@tr("Main"), @tr("Keyboard"), @tr("Game mode"), @tr("System")]: Rectangle {
+            for label[index] in [@tr("Main"), @tr("Keyboard"), @tr("Game mode"), @tr("System"), @tr("Commands")]: Rectangle {
                 height: 42px;
                 border-radius: 6px;
                 border-width: 1px;
@@ -142,13 +146,20 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if root.selected-tab == 0: Section {
-                    title: @tr("Commands");
-                    HorizontalBox { vertical-stretch: 0; spacing: 24px;
-                        Text { text: @tr("Maximum command execution time (seconds)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 1; maximum: 2147483647; value: SettingsEditor.command-timeout.to-float(); edited(value) => { SettingsEditor.command-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                if root.selected-tab == 4: Section {
+                    title: "";
+                    CheckBox { text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
+                    if SettingsEditor.commands-enabled: VerticalBox { padding: 0px; spacing: 10px;
+                        if SettingsEditor.command-assignments.length == 0: Text { text: @tr("No commands are assigned."); color: Theme.muted; }
+                        for item in SettingsEditor.command-assignments: Card {
+                            VerticalBox { padding: 12px; spacing: 6px;
+                                Text { text: item.name != "" ? item.name : item.script; color: Theme.text; wrap: word-wrap; }
+                                Text { text: item.script; color: Theme.muted; wrap: word-wrap; }
+                                Text { text: item.layout-id != "" ? item.layout-id : @tr("Custom layout"); color: Theme.muted; }
+                                for place in item.usage: Button { text: place; clicked => { SettingsEditor.edit-command(item.layout-id, item.command-id); } }
+                            }
+                        }
                     }
-                    Text { text: @tr("Commands exceeding this time are stopped. Default: 30 seconds."); color: Theme.muted; wrap: word-wrap; }
                 }
                 if root.selected-tab == 1: Section {
                     title: "";

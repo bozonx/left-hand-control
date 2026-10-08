@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppTooltip from '~/components/shared/AppTooltip.vue'
 import FieldResetButton from '~/components/shared/FieldResetButton.vue'
-import { parseTextAction } from '~/types/config'
+import { parseTextAction, parseCommandRef, type Command } from '~/types/config'
 import {
     isCanonicalAction,
     isSingleKeyAction,
@@ -14,6 +14,7 @@ const props = withDefaults(
         allowEmpty?: boolean
         placeholder?: string
         keyOnly?: boolean
+        commandOnly?: boolean
         allowMacros?: boolean
         title?: string
         clearLabel?: string
@@ -54,6 +55,8 @@ const { config } = useConfig()
 
 const uncontrolledOpen = ref(false)
 const draft = ref('')
+const commandDraft = ref<Command | null>(null)
+const pendingCommand = computed(() => commandDraft.value?.id === parseCommandRef(draft.value) ? commandDraft.value : null)
 const originalValue = ref('')
 const closeReason = ref<'apply' | 'clear' | 'cancel' | null>(null)
 
@@ -79,7 +82,9 @@ const draftIssue = computed(() => {
     if (props.singleKeyOnly && !isSingleKeyAction(normalizedDraft.value))
         return 'invalidSyntax'
     if (!isCanonicalAction(normalizedDraft.value)) return 'invalidSyntax'
-    return validateActionValue(normalizedDraft.value, config.value, {
+    if (pendingCommand.value && !pendingCommand.value.linux.trim()) return 'invalidSyntax'
+    const validationConfig = pendingCommand.value ? { ...config.value, commands: [...config.value.commands.filter((command) => command.id !== pendingCommand.value!.id), pendingCommand.value] } : config.value
+    return validateActionValue(normalizedDraft.value, validationConfig, {
         allowMacros: props.allowMacros,
         excludedMacroId: props.excludedMacroId,
     })
@@ -102,6 +107,7 @@ const originalValueLabel = computed(() =>
 
 watch(modalOpen, (isOpen, wasOpen) => {
     if (isOpen && !wasOpen) {
+        commandDraft.value = null
         draft.value = model.value ?? ''
         originalValue.value = model.value ?? ''
         closeReason.value = null
@@ -125,6 +131,15 @@ function apply() {
     if (next === null) return
     if (props.excludedValues.includes(next)) return
     if (props.singleKeyOnly && !isSingleKeyAction(next)) return
+    if (applyDisabled.value) return
+    if (pendingCommand.value) {
+        if (!config.value.settings.commandsEnabled) return
+        const command = { ...pendingCommand.value }
+        command.name = command.name.trim() || command.linux.trim()
+        const index = config.value.commands.findIndex((item) => item.id === command.id)
+        if (index < 0) config.value.commands.push(command)
+        else config.value.commands[index] = command
+    }
     model.value = next
     emit('apply', next)
     closeReason.value = 'apply'
@@ -254,7 +269,9 @@ function cancel() {
             >
                 <ActionPickerBody
                     v-model="draft"
+                    v-model:command="commandDraft"
                     :key-only="keyOnly"
+                    :command-only="commandOnly"
                     :single-key-only="singleKeyOnly"
                     :allow-macros="allowMacros"
                     :excluded-macro-id="excludedMacroId"

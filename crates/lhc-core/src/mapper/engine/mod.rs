@@ -583,12 +583,6 @@ impl Engine {
                             out.push(Out::RunCommand(command));
                             self.oneshot_consumed.insert(key);
                         }
-                        ActionDef::Blocked(error) => {
-                            crate::events::emit(crate::events::CoreEvent::CommandFinished {
-                                script: String::new(),
-                                result: Err(error),
-                            });
-                        }
                         ActionDef::Swallow => {
                             log::debug!("[mapper]   press {:?} -> swallow", key);
                             self.oneshot_consumed.insert(key);
@@ -1028,12 +1022,6 @@ impl Engine {
             Some(ActionDef::Macro(_)) => {}
             Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
             Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
-            Some(ActionDef::Blocked(error)) => {
-                crate::events::emit(crate::events::CoreEvent::CommandFinished {
-                    script: String::new(),
-                    result: Err(error.clone()),
-                })
-            }
             Some(ActionDef::Swallow) => {}
             None => {}
         }
@@ -1118,17 +1106,13 @@ impl Engine {
             return;
         }
         let resolved = if let Some(rest) = trimmed.strip_prefix("macro:") {
-            self.macros.get(rest.trim()).cloned().map(|definition| {
-                definition
-                    .blocked
-                    .clone()
-                    .map_or(ActionDef::Macro(definition), ActionDef::Blocked)
-            })
+            self.macros.get(rest.trim()).cloned().map(ActionDef::Macro)
         } else if let Some(rest) = trimmed.strip_prefix("cmd:") {
             self.commands
                 .get(rest.trim())
                 .cloned()
                 .map(ActionDef::Command)
+                .or(Some(ActionDef::Swallow))
         } else if let Some(text) = super::action::explicit_text(trimmed) {
             Some(ActionDef::Literal(text))
         } else {
@@ -1153,9 +1137,7 @@ impl Engine {
         if !available {
             crate::events::emit(crate::events::CoreEvent::CommandFinished {
                 script: action.into(),
-                result: Err(format!(
-                    "Action is unavailable, unknown, or not approved: {action}"
-                )),
+                result: Err(format!("Action is unavailable or unknown: {action}")),
             });
         }
     }
@@ -1296,8 +1278,8 @@ fn is_mouse_button(key: Key) -> bool {
 mod tests {
     use super::*;
     use crate::mapper::config::{
-        ActionSpec, AppConfig, Command, CommandTrustEntry, ExtraKey, LayerKeymap, Macro, MacroStep,
-        Rule, Settings, TapDecision,
+        ActionSpec, AppConfig, Command, ExtraKey, LayerKeymap, Macro, MacroStep, Rule, Settings,
+        TapDecision,
     };
     use evdev::Key;
     use std::collections::HashMap;
@@ -1407,7 +1389,7 @@ mod tests {
     }
 
     #[test]
-    fn unapproved_commands_block_whole_macros_and_preserve_other_keys() {
+    fn disabled_commands_are_skipped_in_macros_and_preserve_other_keys() {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "blocked".into(),
@@ -1431,6 +1413,17 @@ mod tests {
         let mut out = Vec::new();
         engine.execute_remote("macro:sequence", &mut out);
         engine.execute_remote("cmd:blocked", &mut out);
+        engine.tick(Instant::now() + Duration::from_millis(1), &mut out);
+        assert!(out.iter().all(|item| !matches!(item, Out::RunCommand(_))));
+        assert!(out.iter().any(|item| matches!(
+            item,
+            Out::KeyRaw {
+                key: Key::KEY_A,
+                ..
+            }
+        )));
+        out.clear();
+        engine.execute_remote("cmd:blocked", &mut out);
         assert!(out.is_empty());
         engine.execute_remote("KeyB", &mut out);
         assert!(!out.is_empty());
@@ -1440,17 +1433,16 @@ mod tests {
     fn command_invocations_use_configured_directory_and_timeout() {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
-            id: "hello".into(), linux: "pwd".into(), working_directory: Some("~/Documents".into()),
+            id: "hello".into(),
+            linux: "pwd".into(),
+            working_directory: Some("~/Documents".into()),
         });
-        cfg.settings.command_timeout_secs = 7;
-        cfg.settings.command_trust.insert("custom".into(), CommandTrustEntry {
-            fingerprint: crate::mapper_config::command_fingerprint(&cfg.commands),
-        });
+        cfg.settings.commands_enabled = true;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         engine.execute_remote("cmd:hello", &mut out);
         assert!(matches!(out.as_slice(), [Out::RunCommand(cmd)]
-            if cmd.working_directory.as_deref() == Some("~/Documents") && cmd.timeout == Duration::from_secs(7)));
+            if cmd.working_directory.as_deref() == Some("~/Documents") && cmd.timeout == Duration::from_secs(30)));
     }
 
     #[test]
@@ -1461,13 +1453,7 @@ mod tests {
             linux: "playerctl play-pause".into(),
             working_directory: None,
         });
-        cfg.settings.command_trust.insert(
-            "custom".into(),
-            CommandTrustEntry {
-                fingerprint: "3f37f286618ea990d440a2cf7c669ec4999b224a2035279ddfcff72b6b3e687e"
-                    .into(),
-            },
-        );
+        cfg.settings.commands_enabled = true;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
 

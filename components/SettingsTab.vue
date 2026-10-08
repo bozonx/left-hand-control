@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CommandsCard from '~/components/features/settings/CommandsCard.vue'
 import MapperCard from '~/components/features/settings/MapperCard.vue'
 import GeneralCard from '~/components/features/settings/GeneralCard.vue'
 import BehaviorCard from '~/components/features/settings/BehaviorCard.vue'
@@ -23,6 +24,10 @@ const {
   toggleMapper,
 } = useSettingsScreen()
 
+const tab = ref('general')
+const { t } = useI18n()
+const tabs = computed(() => [{ label: t('settings.generalTitle'), value: 'general' }, { label: t('commands.title'), value: 'commands' }])
+
 function updateConfig(nextConfig: typeof config.value) {
   config.value = nextConfig
 }
@@ -30,6 +35,9 @@ function updateConfig(nextConfig: typeof config.value) {
 
 <template>
   <div data-testid="settings-page" class="mx-auto w-full max-w-5xl space-y-4">
+    <UTabs v-model="tab" :items="tabs" :content="false" />
+    <CommandsCard v-if="tab === 'commands'" />
+    <div v-else class="space-y-4">
     <MapperCard
       v-model:selected-device="selectedDevice"
       v-model:selected-mouse="selectedMouse"
@@ -66,5 +74,6 @@ function updateConfig(nextConfig: typeof config.value) {
       :settings-dir="settingsDir"
       :layouts-dir="library.layoutsDir.value"
     />
+    </div>
   </div>
 </template>

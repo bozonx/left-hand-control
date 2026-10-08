@@ -181,7 +181,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     ui.invoke_navigate(Page::Menus, MenuKind::Emoji);
     assert_eq!(ui.global::<MenuEditor>().get_cells().row_count(), 15);
-    for kind in [MenuKind::Quick, MenuKind::Commands, MenuKind::Emoji] {
+    for kind in [MenuKind::Quick, MenuKind::Emoji] {
         ui.invoke_navigate(Page::Menus, kind);
         assert_eq!(ui.global::<MenuEditor>().get_kind(), kind);
     }
@@ -254,18 +254,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .map(|row| row.action.as_str())
             .collect::<Vec<_>>(),
         ["KeyB", "KeyC", "KeyA"]
-    );
-    ui.global::<MenuEditor>().invoke_open(MenuKind::Commands);
-    ui.global::<MenuEditor>().invoke_move_command(0, 2);
-    assert_eq!(
-        document
-            .read()
-            .layout()
-            .commands
-            .iter()
-            .map(|row| row.id.as_str())
-            .collect::<Vec<_>>(),
-        ["dragCommand1", "dragCommand2", "dragCommand0"]
     );
     for key in ["F13", "F14", "F15"] {
         document.edit(slint_shell::document::View::Library, |config| {
@@ -437,8 +425,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             5 => { snapshot(&ui, "layers-ru"); ui.invoke_navigate(Page::Macros, MenuKind::Emoji); }
             6 => { snapshot(&ui, "macros-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Emoji); }
             7 => { snapshot(&ui, "emoji-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Quick); }
-            8 => { snapshot(&ui, "quick-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Commands); }
-            9 => { snapshot(&ui, "commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance_index(1); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
+            8 => { snapshot(&ui, "quick-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); }
+            9 => { snapshot(&ui, "settings-commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance_index(1); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
             10 => { snapshot(&ui, "settings-light-en-small");
                 for (x, expected) in [(60.0, Page::Layouts), (170.0, Page::Settings)] {
                     let position = slint::LogicalPosition::new(x, 27.0);

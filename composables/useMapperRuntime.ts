@@ -1,7 +1,6 @@
 import { layoutSnapshotOf, emptyLayoutPreset, applyPresetToConfig } from '~/utils/layoutPresets'
 import type { AppConfig } from '~/types/config'
 import type { MapperStatus } from '~/composables/useMapper'
-import { commandsTrusted } from '~/utils/commandTrust'
 import {
   analyzeRules,
   blockingRuleIssues,
@@ -76,11 +75,10 @@ export function useMapperRuntime(
       defaultDoubleTapTimeoutMs: cfg.settings.defaultDoubleTapTimeoutMs,
       defaultMacroStepPauseMs: cfg.settings.defaultMacroStepPauseMs,
       defaultMacroModifierDelayMs: cfg.settings.defaultMacroModifierDelayMs,
-      commandTimeoutSecs: cfg.settings.commandTimeoutSecs,
       linuxWaylandTextMode: cfg.settings.linuxWaylandTextMode ?? 'libei',
       linuxYdotoolPath: cfg.settings.linuxYdotoolPath ?? '',
       linuxXdotoolPath: cfg.settings.linuxXdotoolPath ?? '',
-      commandsTrusted: commandsTrusted(cfg),
+      commandsEnabled: cfg.settings.commandsEnabled,
     })
   }
 
@@ -95,10 +93,9 @@ export function useMapperRuntime(
     defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
     defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
     defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
-    commandTimeoutSecs: config.value.settings.commandTimeoutSecs,
     linuxWaylandTextMode: config.value.settings.linuxWaylandTextMode ?? 'libei',
     linuxYdotoolPath: config.value.settings.linuxYdotoolPath ?? '',
-    commandsTrusted: commandsTrusted(config.value),
+    commandsEnabled: config.value.settings.commandsEnabled,
   })
   void runtimeSnapshot()
     .then((s) => {
@@ -120,10 +117,9 @@ export function useMapperRuntime(
       defaultDoubleTapTimeoutMs: config.value.settings.defaultDoubleTapTimeoutMs,
       defaultMacroStepPauseMs: config.value.settings.defaultMacroStepPauseMs,
       defaultMacroModifierDelayMs: config.value.settings.defaultMacroModifierDelayMs,
-    commandTimeoutSecs: config.value.settings.commandTimeoutSecs,
       linuxWaylandTextMode: config.value.settings.linuxWaylandTextMode ?? 'libei',
       linuxYdotoolPath: config.value.settings.linuxYdotoolPath ?? '',
-      commandsTrusted: commandsTrusted(config.value),
+      commandsEnabled: config.value.settings.commandsEnabled,
     })
     void runtimeSnapshot()
       .then((s) => {

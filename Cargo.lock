@@ -3872,7 +3872,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sha2",
  "tempfile",
  "windows 0.61.3",
  "zbus",

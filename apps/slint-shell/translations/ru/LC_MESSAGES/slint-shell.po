@@ -511,9 +511,6 @@ msgstr "Очистить ячейку"
 msgid "Page name"
 msgstr "Название страницы"
 
-msgid "Command ID"
-msgstr "ID команды"
-
 msgid "Emoji cells accept at most 100 characters."
 msgstr "Ячейка эмоджи вмещает не более 100 символов."
 
@@ -1036,12 +1033,6 @@ msgstr "Название команды"
 msgid "Create based on"
 msgstr "Создать на основе"
 
-msgid "Delete command"
-msgstr "Удалить команду"
-
-msgid "Delete command?"
-msgstr "Удалить команду?"
-
 msgid "Delete macro"
 msgstr "Удалить макрос"
 
@@ -1078,12 +1069,6 @@ msgstr "Эмоджи, символ или любой текст"
 msgid "Empty step — pick an action or remove it."
 msgstr "Пустой шаг — выберите действие или удалите его."
 
-msgid "Fix command errors before allowing them."
-msgstr "Исправьте ошибки в командах, прежде чем разрешать их."
-
-msgid "Fix the existing command errors first"
-msgstr "Сначала исправьте ошибки в существующих командах"
-
 msgid "Fix the existing macro errors first"
 msgstr "Сначала исправьте ошибки в существующих макросах"
 
@@ -1093,9 +1078,6 @@ msgstr "Еда и напитки"
 msgid "Human-readable macro name, shown in picker lists."
 msgstr "Человекочитаемое имя макроса, показывается в списках выбора."
 
-msgid "Human-readable name shown in picker lists."
-msgstr "Человекочитаемое имя, показывается в списках выбора."
-
 msgid "ID"
 msgstr "ID"
 
@@ -1104,9 +1086,6 @@ msgstr "Клавиша {}"
 
 msgid "Label"
 msgstr "Название"
-
-msgid "Linux shell script"
-msgstr "Shell-скрипт Linux"
 
 msgid "Macro name"
 msgstr "Название макроса"
@@ -1126,9 +1105,6 @@ msgstr "Новая команда"
 msgid "New macro"
 msgstr "Новый макрос"
 
-msgid "No commands yet. Click \"New command\" to create the first one."
-msgstr "Пока нет ни одной команды. Нажмите «Новая команда», чтобы создать первую."
-
 msgid "No macros yet. Click \"New macro\" to create the first one."
 msgstr "Нет ни одного макроса. Нажмите «Новый макрос», чтобы создать первый."
 
@@ -1146,9 +1122,6 @@ msgstr "Страница"
 
 msgid "Page {}"
 msgstr "Страница {}"
-
-msgid "Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."
-msgstr "Передаётся в sh -lc как есть. Поддерживаются несколько строк, переменные, пайпы, условия и циклы. Внимательно читайте скрипты из чужих раскладок перед разрешением."
 
 msgid "Pause (ms)"
 msgstr "Пауза (мс)"
@@ -1173,9 +1146,6 @@ msgstr "Переиспользуемые shell-команды текущей р�
 
 msgid "Shell commands are allowed for this version of the current layout."
 msgstr "Shell-команды разрешены для текущей версии этой раскладки."
-
-msgid "Shell commands require approval"
-msgstr "Shell-команды требуют разрешения"
 
 msgid "Smileys & Emotion"
 msgstr "Смайлы и эмоции"
@@ -1203,9 +1173,6 @@ msgstr "Места и транспорт"
 
 msgid "UTF Symbols"
 msgstr "UTF-символы"
-
-msgid "Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab."
-msgstr "Уникальный идентификатор для ссылок вида cmd:<id>. Чтобы назначить команду на клавишу, выберите это действие во вкладках «Слои» или «Правила»."
 
 msgid "Unique identifier used in references like macro:<id>. To bind this macro to a key, choose that action on the Layers or Rules tab. Change the ID only when nothing uses this macro."
 msgstr "Уникальный идентификатор для ссылок вида macro:<id>. Чтобы назначить макрос на клавишу, выберите это действие во вкладках «Слои» или «Правила». Меняйте ID только если макрос нигде не используется."
@@ -1522,9 +1489,6 @@ msgstr "Удалить дополнительную клавишу?"
 msgid "This key assignment will be removed from the layer."
 msgstr "Назначение этой клавиши будет удалено из слоя."
 
-msgid "Unsaved draft. Fix command errors to save; the draft is kept while switching tabs."
-msgstr "Черновик не сохранён. Исправьте ошибки команд; черновик сохраняется при переключении вкладок."
-
 msgid "Command completed: {}"
 msgstr "Команда выполнена: {}"
 
@@ -1533,15 +1497,6 @@ msgstr "Недоступно на этой платформе или в этом
 
 msgid "Approve commands on the Commands tab before running this action"
 msgstr "Разрешите команды на вкладке «Команды» перед выполнением этого действия"
-
-msgid "Collapse script"
-msgstr "Свернуть скрипт"
-
-msgid "View full script"
-msgstr "Показать весь скрипт"
-
-msgid "The command will be deleted. References to cmd:{} will be cleared from keys, rules, macros, and quick actions. Keys will return to normal behavior."
-msgstr "Команда будет удалена. Ссылки на cmd:{} будут очищены в клавишах, правилах, макросах и быстрых действиях. Клавиши вернутся к обычному поведению."
 
 msgid "Pick the physical device whose events should be intercepted."
 msgstr "Выберите физическое устройство, события которого нужно перехватывать."
@@ -1617,54 +1572,6 @@ msgid_plural "{n} commands"
 msgstr[0] "{n} команда"
 msgstr[1] "{n} команды"
 msgstr[2] "{n} команд"
-
-msgid "Command execution is blocked"
-msgstr "Запуск команд заблокирован"
-
-msgid "Review commands from shared layouts before unblocking them. Commands run with your permissions and can modify files and send data. Edits in this application keep them allowed; external changes block execution again."
-msgstr "Проверьте команды из чужих раскладок перед разблокировкой. Команды выполняются с вашими правами и могут изменять файлы и передавать данные. Правки в приложении сохраняют разрешение; внешние изменения снова блокируют запуск."
-
-msgid "Unblock commands"
-msgstr "Разблокировать команды"
-
-msgid "Command execution is allowed for this layout."
-msgstr "Запуск команд разрешён для этой раскладки."
-
-msgid "Block commands"
-msgstr "Заблокировать команды"
-
-msgid "Create and allow commands?"
-msgstr "Создать и разрешить команды?"
-
-msgid "Commands in this layout will run with your permissions. They can modify files and send data. You can block execution again on the Commands page."
-msgstr "Команды этой раскладки будут выполняться с вашими правами. Они могут изменять файлы и передавать данные. Вы сможете снова заблокировать запуск на странице «Команды»."
-
-msgid "Create and allow commands"
-msgstr "Создать и разрешить команды"
-
-msgid "Working directory"
-msgstr "Рабочая папка"
-
-msgid "Leave empty to use your home directory. Absolute paths, ~/ paths, and paths relative to your home directory are supported."
-msgstr "Оставьте пустым, чтобы использовать домашнюю папку. Поддерживаются абсолютные пути, пути с ~/ и пути относительно домашней папки."
-
-msgid "Home directory"
-msgstr "Домашняя папка"
-
-msgid "Maximum command execution time (seconds)"
-msgstr "Максимальное время выполнения команды (секунды)"
-
-msgid "Commands exceeding this time are stopped. Default: 30 seconds."
-msgstr "По истечении этого времени команда останавливается. По умолчанию: 30 секунд."
-
-msgid "Enter a command execution time between 1 and 2147483647 seconds"
-msgstr "Укажите время выполнения команды от 1 до 2147483647 секунд"
-
-msgid "Reusable shell commands for the current layout. On Linux they run through sh -lc, one at a time. Set the maximum execution time in Settings and a working directory for each command."
-msgstr "Shell-команды текущей раскладки. В Linux выполняются через sh -lc по очереди. Максимальное время выполнения задаётся в настройках, рабочая папка — для каждой команды."
-
-msgid "Unblock commands on the Commands tab before running this action"
-msgstr "Разблокируйте команды на странице «Команды» перед запуском этого действия"
 
 msgid "Main"
 msgstr "Основное"
@@ -1758,3 +1665,18 @@ msgstr "Способ ввода текста"
 
 msgid "Leave a delay empty to use the global setting."
 msgstr "Оставьте поле задержки пустым, чтобы использовать значение из общих настроек."
+
+msgid "Allow command execution"
+msgstr "Разрешить выполнение команд"
+
+msgid "No commands are assigned."
+msgstr "Нет назначенных команд."
+
+msgid "Commands are disabled in Settings."
+msgstr "Команды отключены в настройках."
+
+msgid "Working directory (optional)"
+msgstr "Рабочая папка (необязательно)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "Сохраните изменения раскладки перед переходом к другой раскладке."

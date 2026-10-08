@@ -57,59 +57,37 @@ impl ConfigDocument {
                 return Err(ConfigError::Menu(MenuIssue::UnknownKey));
             }
         }
-        for index in 0..candidate.commands.len() {
-            if let Some(issue) = command_issue(&candidate.commands, index) {
-                return Err(ConfigError::Menu(issue));
-            }
-        }
         self.ensure_files_unchanged()?;
-        let retain_trust = self.commands_trusted() && baseline.commands != candidate.commands;
         self.update_layout(|layout| {
             layout.emoji_pages = candidate.emoji_pages.clone();
             layout.quick_actions = candidate.quick_actions.clone();
             layout.quick_action_pages = candidate.quick_action_pages.clone();
-            layout.commands = candidate.commands.clone();
-            layout.rules = candidate.rules.clone();
-            layout.layer_keymaps = candidate.layer_keymaps.clone();
-            layout.macros = candidate.macros.clone();
         })?;
-        if retain_trust {
-            self.trust_commands(true)?;
-        }
         Ok(())
     }
 
-    pub fn commands_trusted(&self) -> bool {
-        let config: crate::mapper_config::AppConfig =
-            serde_json::from_str(&self.config().to_json()).expect("serialized config");
-        config.settings.commands_trusted(&config.commands)
-    }
-
-    pub fn trust_commands(&mut self, approve: bool) -> Result<(), ConfigError> {
+    pub fn save_command(&mut self, mut command: Command) -> Result<(), ConfigError> {
+        if !self.settings().commands_enabled {
+            return Err(ConfigError::Invalid("Commands are disabled".into()));
+        }
+        if command.name.trim().is_empty() {
+            command.name = command.linux.trim().to_owned();
+        }
+        let mut commands = self.layout().commands.clone();
+        let index = commands
+            .iter()
+            .position(|item| item.id == command.id)
+            .unwrap_or(commands.len());
+        if index == commands.len() {
+            commands.push(command);
+        } else {
+            commands[index] = command;
+        }
+        if let Some(issue) = command_issue(&commands, index) {
+            return Err(ConfigError::Menu(issue));
+        }
         self.ensure_files_unchanged()?;
-        let config: crate::mapper_config::AppConfig =
-            serde_json::from_str(&self.config().to_json())
-                .map_err(|e| ConfigError::Parse(e.to_string()))?;
-        let key = self
-            .settings()
-            .current_layout_id
-            .clone()
-            .filter(|v| !v.is_empty())
-            .unwrap_or_else(|| "custom".into());
-        let fingerprint = crate::mapper_config::command_fingerprint(&config.commands);
-        self.update_settings(|settings| {
-            if approve {
-                settings.command_trust.insert(
-                    key,
-                    CommandTrustEntry {
-                        fingerprint,
-                        trusted_at: String::new(),
-                    },
-                );
-            } else {
-                settings.command_trust.remove(&key);
-            }
-        })
+        self.update_layout(|layout| layout.commands = commands)
     }
 }
 
@@ -134,48 +112,6 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
     None
 }
 
-pub fn replace_command_references(layout: &mut LayoutPreset, old: &str, new: Option<&str>) {
-    let is_source =
-        |value: &str| matches!(Action::parse(Some(value)), Action::Command(id) if id == old);
-    let target = new.map(|id| format!("cmd:{id}")).unwrap_or_default();
-    let replace = |value: &mut String| {
-        if is_source(value) {
-            *value = target.clone();
-        }
-    };
-    for rule in &mut layout.rules {
-        if let Some(value) = &mut rule.tap_action {
-            replace(value);
-        }
-        if let Some(value) = &mut rule.hold_action {
-            replace(value);
-        }
-        replace(&mut rule.double_tap_action);
-    }
-    for map in layout.layer_keymaps.values_mut() {
-        for value in map.keys.values_mut().flatten() {
-            replace(value);
-        }
-        for extra in &mut map.extras {
-            if let Some(value) = &mut extra.action {
-                replace(value);
-            }
-        }
-    }
-    for item in &mut layout.macros {
-        if new.is_none() {
-            item.steps.retain(|step| !is_source(&step.action));
-        } else {
-            for step in &mut item.steps {
-                replace(&mut step.action);
-            }
-        }
-    }
-    for item in &mut layout.quick_actions {
-        replace(&mut item.action);
-    }
-}
-
 pub fn empty_quick_action() -> QuickAction {
     QuickAction {
         id: ids::generate("quick_"),
@@ -189,165 +125,109 @@ pub fn empty_quick_action() -> QuickAction {
 mod tests {
     use super::*;
     use crate::storage::StoragePaths;
-    #[test]
-    fn first_command_permission_external_changes_and_reblocking() {
-        let dir = tempfile::tempdir().unwrap();
-        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        assert!(!doc.commands_trusted());
-        doc.trust_commands(true).unwrap();
-        let baseline = doc.layout().clone();
-        let mut next = baseline.clone();
-        next.commands.push(Command {
-            id: "hello".into(),
-            name: "Hello".into(),
-            linux: "printf hello".into(),
-            working_directory: Some("~/Documents".into()),
-        });
-        doc.save_menu_pages(&baseline, &next).unwrap();
-        assert!(
-            ConfigDocument::load(paths.clone())
-                .unwrap()
-                .commands_trusted()
-        );
-        let exported = super::super::layout_file::serialize(doc.layout());
-        assert!(!exported.contains("commandTrust"));
-        let imported_dir = tempfile::tempdir().unwrap();
-        let imported_paths = StoragePaths::new(
-            imported_dir.path().join("config"),
-            imported_dir.path().join("data"),
-        );
-        imported_paths.save_current_layout(&exported).unwrap();
-        assert!(
-            !ConfigDocument::load(imported_paths)
-                .unwrap()
-                .commands_trusted()
-        );
-        next.commands[0].working_directory = Some("~/Downloads".into());
-        paths
-            .save_current_layout(&super::super::layout_file::serialize(&next))
-            .unwrap();
-        assert_eq!(doc.trust_commands(true), Err(ConfigError::ExternalChange));
-        assert!(doc.reload_if_changed().unwrap());
-        assert!(!doc.commands_trusted());
-        doc.trust_commands(true).unwrap();
-        assert!(doc.commands_trusted());
-        doc.trust_commands(false).unwrap();
-        let baseline = doc.layout().clone();
-        next.commands[0].linux = "printf changed".into();
-        doc.save_menu_pages(&baseline, &next).unwrap();
-        assert!(!ConfigDocument::load(paths).unwrap().commands_trusted());
-    }
 
     #[test]
-    fn renames_and_removes_command_dependencies_atomically() {
-        let dir = tempfile::tempdir().unwrap();
-        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        paths
-            .save_current_layout(
-                r#"
-commands:
-  - id: old
-    linux: printf hello
-rules:
-  - key: KeyA
-    tap: cmd:old
-    dtap: cmd:old
-layers:
-  - id: nav
-    name: Navigation
-    keys:
-      KeyB: cmd:old
-    extras:
-      - key: F13
-        action: cmd:old
-macros:
-  - id: sequence
-    steps:
-      - action: cmd:old
-      - action: text:hello
-quickActions:
-  - id: quick
-    action: cmd:old
-"#,
-            )
-            .unwrap();
-        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        let baseline = doc.layout().clone();
-        let mut candidate = baseline.clone();
-        let before = super::super::macros::action_usage(&doc.config(), "cmd:old").len();
-        assert!(before >= 4);
-        candidate.commands[0].id = "new".into();
-        replace_command_references(&mut candidate, "old", Some("new"));
-        doc.save_menu_pages(&baseline, &candidate).unwrap();
-        assert!(super::super::macros::action_usage(&doc.config(), "cmd:old").is_empty());
-        assert_eq!(
-            super::super::macros::action_usage(&doc.config(), "cmd:new").len(),
-            before
-        );
-        assert_eq!(ConfigDocument::load(paths).unwrap().layout(), &candidate);
-        let baseline = candidate.clone();
-        candidate.commands.clear();
-        replace_command_references(&mut candidate, "new", None);
-        doc.save_menu_pages(&baseline, &candidate).unwrap();
-        assert!(super::super::macros::action_usage(&doc.config(), "cmd:new").is_empty());
-        assert_eq!(doc.layout().macros[0].steps.len(), 1);
-    }
-
-    #[test]
-    fn menus_roundtrip_and_local_edits_retain_trust() {
+    fn command_switch_roundtrips_without_changing_assignments() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        let baseline = doc.layout().clone();
-        let mut next = baseline.clone();
-        next.commands.push(Command {
+        assert!(!doc.settings().commands_enabled);
+        let command = Command {
             id: "hello".into(),
-            name: "Привет".into(),
+            name: String::new(),
             linux: "printf hello".into(),
             working_directory: None,
-        });
-        next.quick_actions.push(QuickAction {
-            id: "q".into(),
-            name: "Запуск".into(),
-            action: "cmd:hello".into(),
-            icon: Some("★".into()),
-        });
-        next.emoji_pages[0].cells.insert("KeyQ".into(), "👨‍👩‍👧‍👦".into());
-        doc.save_menu_pages(&baseline, &next).unwrap();
-        assert!(!doc.commands_trusted());
-        doc.trust_commands(true).unwrap();
-        assert!(
-            ConfigDocument::load(paths.clone())
-                .unwrap()
-                .commands_trusted()
-        );
-        let baseline = doc.layout().clone();
-        next.commands[0].linux = "printf changed".into();
-        doc.save_menu_pages(&baseline, &next).unwrap();
-        assert!(doc.commands_trusted());
-        assert!(
-            ConfigDocument::load(paths.clone())
-                .unwrap()
-                .commands_trusted()
-        );
-        assert_eq!(ConfigDocument::load(paths.clone()).unwrap().layout(), &next);
-        let before = doc.layout().clone();
-        next.commands[0].id = "bad id".into();
-        assert!(doc.save_menu_pages(&before, &next).is_err());
-        next = before.clone();
-        next.emoji_pages[0]
-            .cells
-            .insert("KeyQ".into(), "😀".repeat(51));
-        assert!(doc.save_menu_pages(&before, &next).is_err());
-        next = before.clone();
-        next.quick_actions[0].action = "macro:missing".into();
-        assert!(doc.save_menu_pages(&before, &next).is_err());
-        assert_eq!(doc.layout(), &before);
-        paths.save_current_layout("rules: []\n").unwrap();
+        };
+        assert!(doc.save_command(command.clone()).is_err());
+        doc.update_settings(|settings| settings.commands_enabled = true)
+            .unwrap();
+        doc.save_command(command).unwrap();
+        doc.set_base_tap_action("KeyQ", "cmd:hello").unwrap();
+        let layout = doc.layout().clone();
+        doc.update_settings(|settings| settings.commands_enabled = false)
+            .unwrap();
+        let loaded = ConfigDocument::load(paths.clone()).unwrap();
+        assert!(!loaded.settings().commands_enabled);
         assert_eq!(
-            doc.save_menu_pages(&before, &before),
-            Err(ConfigError::ExternalChange)
+            super::super::layout_file::serialize(loaded.layout()),
+            super::super::layout_file::serialize(&layout)
         );
+        assert_eq!(loaded.layout().commands[0].name, "printf hello");
+        assert!(
+            !std::fs::read_to_string(paths.config_path())
+                .unwrap()
+                .contains("commandTrust")
+        );
+    }
+
+    #[test]
+    fn command_overview_lists_only_assignments_across_saved_layouts() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        paths.save_current_layout("commands:\n  - id: hello\n    linux: printf hello\n  - id: unused\n    linux: true\nrules:\n  - key: KeyQ\n    tap: cmd:hello\n").unwrap();
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        assert!(doc.settings().commands_enabled);
+        doc.save_current_layout_as("First").unwrap();
+        doc.save_current_layout_as("Second").unwrap();
+        let rows = doc.command_assignments().unwrap();
+        assert_eq!(rows.len(), 2);
+        assert!(
+            rows.iter()
+                .all(|row| row.command.id == "hello" && row.usage.len() == 1)
+        );
+        assert!(
+            rows.iter()
+                .any(|row| row.layout_id.as_deref() == Some("user:First"))
+        );
+        assert!(
+            rows.iter()
+                .any(|row| row.layout_id.as_deref() == Some("user:Second"))
+        );
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandAssignment {
+    pub layout_id: Option<String>,
+    pub command: Command,
+    pub usage: Vec<String>,
+}
+
+impl ConfigDocument {
+    pub fn command_assignments(&self) -> Result<Vec<CommandAssignment>, ConfigError> {
+        let mut layouts = vec![(
+            self.settings().current_layout_id.clone(),
+            self.layout().clone(),
+        )];
+        for name in self.paths().list_user_layouts().map_err(ConfigError::Io)? {
+            let id = super::model::user_layout_id(&name);
+            if self.settings().current_layout_id.as_ref() == Some(&id) {
+                continue;
+            }
+            let text = self
+                .paths()
+                .load_user_layout(&name)
+                .map_err(ConfigError::Io)?;
+            if let Some(layout) = super::layout_file::parse(&text).map_err(ConfigError::Parse)? {
+                layouts.push((Some(id), layout));
+            }
+        }
+        let mut rows = Vec::new();
+        for (layout_id, layout) in layouts {
+            let config =
+                AppConfig::from_parts(self.settings().clone(), layout, layout_id.as_deref());
+            for command in &config.commands {
+                let usage = super::macros::action_usage(&config, &format!("cmd:{}", command.id));
+                if !usage.is_empty() {
+                    rows.push(CommandAssignment {
+                        layout_id: layout_id.clone(),
+                        command: command.clone(),
+                        usage,
+                    });
+                }
+            }
+        }
+        Ok(rows)
     }
 }

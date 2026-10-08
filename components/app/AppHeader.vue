@@ -16,7 +16,6 @@ const mapper = useMapper()
 const { layout } = useLayout()
 const gameMode = useGameMode()
 const { t } = useI18n()
-const { needsApproval: commandsNeedApproval } = useCommandTrust()
 const { activeAutoLayoutId } = useLayoutSwitcher()
 
 const activeLayoutId = computed<string | null | undefined>(() => {
@@ -62,13 +61,6 @@ const tabItems = computed(() => [
         to: '/emoji',
         label: t('tabs.emoji'),
         icon: 'i-lucide-smile',
-    },
-    {
-        key: 'commands',
-        to: '/commands',
-        label: t('tabs.commands'),
-        icon: 'i-lucide-terminal',
-        attention: commandsNeedApproval.value,
     },
 ])
 

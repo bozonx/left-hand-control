@@ -258,13 +258,6 @@ impl App {
                 Err(error) => self.set_error(Msg::Error(error)),
             }
         }
-        let need_approval = {
-            let config = document.read();
-            !config.layout().commands.is_empty() && !config.commands_trusted()
-        };
-        self.settings
-            .global::<AppState>()
-            .set_commands_need_approval(need_approval);
         self.invalidate_menus();
         self.apply_preferences();
     }

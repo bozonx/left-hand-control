@@ -4,7 +4,6 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createDefaultConfig } from '~/types/config'
-import { commandFingerprint, commandsTrusted } from '~/utils/commandTrust'
 
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }))
 
@@ -89,22 +88,30 @@ describe('useConfig', () => {
     expect(api.isLayoutDirty.value).toBe(true)
   })
 
-  it('retains permission for local edits but blocks replacement and revoked commands', async () => {
+  it('keeps the global command switch across edits and layout replacement', async () => {
     invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
     const api = await getApi()
     await api.load()
-    api.config.value.settings.currentLayoutId = 'user:test'
-    api.config.value.settings.commandTrust['user:test'] = { fingerprint: commandFingerprint([]), trustedAt: '' }
+    expect(api.config.value.settings.commandsEnabled).toBe(false)
+    api.config.value.settings.commandsEnabled = true
     api.config.value.commands.push({ id: 'hello', name: 'Hello', linux: 'printf hello' })
-    expect(commandsTrusted(api.config.value)).toBe(true)
-    api.config.value.commands[0]!.workingDirectory = '~/Documents'
-    expect(commandsTrusted(api.config.value)).toBe(true)
     const replacement = createDefaultConfig()
     replacement.commands.push({ id: 'hello', name: 'Hello', linux: 'printf replaced' })
     await api.replaceCurrentLayoutSnapshot(replacement, 'user:test')
-    expect(commandsTrusted(api.config.value)).toBe(false)
-    api.config.value.commands[0]!.linux = 'printf blocked'
-    expect(commandsTrusted(api.config.value)).toBe(false)
+    expect(api.config.value.settings.commandsEnabled).toBe(true)
+    api.config.value.settings.commandsEnabled = false
+    api.config.value.commands[0]!.linux = 'printf changed'
+    expect(api.config.value.settings.commandsEnabled).toBe(false)
+  })
+
+  it('opens a layout for editing without changing the active layout', async () => {
+    invokeMock.mockResolvedValueOnce('').mockResolvedValueOnce('')
+    const api = await getApi()
+    await api.load()
+    api.config.value.settings.manualActiveLayoutId = 'user:Active'
+    await api.applyPreset(createDefaultConfig(), 'user:Editing', false)
+    expect(api.config.value.settings.currentLayoutId).toBe('user:Editing')
+    expect(api.config.value.settings.manualActiveLayoutId).toBe('user:Active')
   })
 
   it('applyPreset updates config and clears dirty', async () => {

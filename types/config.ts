@@ -166,10 +166,6 @@ export interface LayoutConditionRule {
   blacklist?: LayoutConditionSet
 }
 
-export interface CommandTrustEntry {
-  fingerprint: string
-  trustedAt: string
-}
 
 export interface GameModeProcessMatcher {
   id: string
@@ -238,8 +234,7 @@ export interface AppSettings {
   // layout id (`user:<name>`). Stored here (not in the YAML) so layouts
   // stay portable across machines.
   layoutConditions: Record<string, LayoutConditionRule>
-  commandTrust: Record<string, CommandTrustEntry>
-  commandTimeoutSecs: number
+  commandsEnabled: boolean
   gameMode: {
     useGamemoded: boolean
     useFullscreen: boolean
@@ -475,8 +470,7 @@ export function createDefaultConfig(): AppConfig {
       manualActiveLayoutId: undefined,
       layoutOrder: [],
       layoutConditions: {},
-      commandTrust: {},
-      commandTimeoutSecs: 30,
+      commandsEnabled: false,
       gameMode: {
         useGamemoded: true,
         useFullscreen: false,

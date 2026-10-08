@@ -3,8 +3,8 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        CapabilityRow, DeviceChoice, DeviceChoices, DeviceGroup, ProcessRow, SettingsEditor,
-        SettingsWindow,
+        CapabilityRow, CommandAssignmentRow, DeviceChoice, DeviceChoices, DeviceGroup, ProcessRow,
+        SettingsEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher};
@@ -33,7 +33,7 @@ struct Form {
     double_tap: String,
     macro_pause: String,
     modifier_delay: String,
-    command_timeout: String,
+    commands_enabled: bool,
     use_gamemoded: bool,
     use_fullscreen: bool,
     matchers: Vec<GameModeProcessMatcher>,
@@ -64,7 +64,7 @@ impl Form {
             double_tap: settings.default_double_tap_timeout_ms.to_string(),
             macro_pause: settings.default_macro_step_pause_ms.to_string(),
             modifier_delay: settings.default_macro_modifier_delay_ms.to_string(),
-            command_timeout: settings.command_timeout_secs.to_string(),
+            commands_enabled: settings.commands_enabled,
             use_gamemoded: settings.game_mode.use_gamemoded,
             use_fullscreen: settings.game_mode.use_fullscreen,
             matchers: settings.game_mode.process_matchers.clone(),
@@ -93,7 +93,7 @@ impl Form {
             double_tap: e.get_double_tap_timeout().into(),
             macro_pause: e.get_macro_pause().into(),
             modifier_delay: e.get_modifier_delay().into(),
-            command_timeout: e.get_command_timeout().into(),
+            commands_enabled: e.get_commands_enabled(),
             use_gamemoded: e.get_use_gamemoded(),
             use_fullscreen: e.get_use_fullscreen(),
             matchers: matchers.to_vec(),
@@ -115,7 +115,7 @@ impl Form {
         e.set_double_tap_timeout(self.double_tap.clone().into());
         e.set_macro_pause(self.macro_pause.clone().into());
         e.set_modifier_delay(self.modifier_delay.clone().into());
-        e.set_command_timeout(self.command_timeout.clone().into());
+        e.set_commands_enabled(self.commands_enabled);
         e.set_use_gamemoded(self.use_gamemoded);
         e.set_use_fullscreen(self.use_fullscreen);
         e.set_process_matchers(rows(&self.matchers));
@@ -140,10 +140,6 @@ impl Form {
             parse_ms(&self.macro_pause)?,
             parse_ms(&self.modifier_delay)?,
         ];
-        let command_timeout = parse_ms(&self.command_timeout).map_err(|_| Msg::CommandTimeoutInvalid)?;
-        if !(1..=i32::MAX as u64).contains(&command_timeout) {
-            return Err(Msg::CommandTimeoutInvalid);
-        }
         macro_rules! changed {
             ($field:ident => $apply:expr) => {
                 if self.$field != base.$field {
@@ -159,7 +155,7 @@ impl Form {
         changed!(double_tap => settings.default_double_tap_timeout_ms = numbers[1]);
         changed!(macro_pause => settings.default_macro_step_pause_ms = numbers[2]);
         changed!(modifier_delay => settings.default_macro_modifier_delay_ms = numbers[3]);
-        changed!(command_timeout => settings.command_timeout_secs = command_timeout);
+        changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
@@ -195,6 +191,29 @@ struct State {
 
 /// Load the form unless the user has unsaved edits in it.
 fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: bool) {
+    let assignments = if document.read().settings().commands_enabled {
+        document.read().command_assignments()
+    } else {
+        Ok(Vec::new())
+    };
+    match assignments {
+        Ok(rows) => ui
+            .global::<SettingsEditor>()
+            .set_command_assignments(ModelRc::new(VecModel::from(
+                rows.into_iter()
+                    .map(|row| CommandAssignmentRow {
+                        layout_id: row.layout_id.unwrap_or_default().into(),
+                        command_id: row.command.id.into(),
+                        name: row.command.name.into(),
+                        script: row.command.linux.into(),
+                        usage: super::strings(row.usage),
+                    })
+                    .collect::<Vec<_>>(),
+            ))),
+        Err(error) => ui
+            .global::<SettingsEditor>()
+            .set_message(Msg::from(&error).to_ui()),
+    }
     let loaded = Form::from_settings(document.read().settings());
     if let Some(base) = &state.base {
         let pending = Form::read(ui, &state.matchers) != *base;
@@ -398,6 +417,41 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());
         e.set_layouts_dir(config.paths().layouts_dir().display().to_string().into());
     }
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    e.on_edit_command(move |layout_id, command_id| {
+        let Some(ui) = weak.upgrade() else { return };
+        if doc
+            .read()
+            .settings()
+            .current_layout_id
+            .as_deref()
+            .unwrap_or("")
+            != layout_id.as_str()
+        {
+            if ui.global::<crate::ui::LayoutLibrary>().get_dirty() {
+                ui.global::<SettingsEditor>()
+                    .set_message(Msg::SaveLayoutFirst.to_ui());
+                return;
+            }
+            let Some(name) = layout_id.strip_prefix("user:") else {
+                return;
+            };
+            if let Err(error) =
+                doc.edit(View::Shell, |config| config.load_library_for_editing(name))
+            {
+                ui.global::<SettingsEditor>()
+                    .set_message(Msg::from(&error).to_ui());
+                return;
+            }
+        }
+        ui.global::<crate::ui::ActionPicker>().invoke_open(
+            crate::ui::PickerTarget::Command,
+            0,
+            format!("cmd:{command_id}").into(),
+            false,
+        );
+    });
     refresh_platform(ui);
     let weak = ui.as_weak();
     e.on_refresh_platform(move || {
@@ -667,20 +721,6 @@ mod tests {
         let mut form = base.clone();
         form.macro_pause = "-5".into();
         assert_eq!(form.apply(&base, &mut settings), Err(Msg::TimeoutInvalid));
-    }
-
-    #[test]
-    fn command_timeout_must_be_positive_and_is_saved_in_seconds() {
-        let mut settings = AppSettings::default();
-        let base = Form::from_settings(&settings);
-        let mut form = base.clone();
-        for value in ["0", "-1", "invalid", "2147483648"] {
-            form.command_timeout = value.into();
-            assert_eq!(form.apply(&base, &mut settings), Err(Msg::CommandTimeoutInvalid));
-        }
-        form.command_timeout = "7".into();
-        form.apply(&base, &mut settings).unwrap();
-        assert_eq!(settings.command_timeout_secs, 7);
     }
 
     #[test]

@@ -230,7 +230,11 @@ pub fn catalog(config: &AppConfig) -> Vec<CatalogEntry> {
     );
     out.extend(config.commands.iter().map(|command| CatalogEntry {
         action: Action::Command(command.id.clone()),
-        name: ActionName::Verbatim(command.name.clone()),
+        name: ActionName::Verbatim(if command.name.is_empty() {
+            command.linux.clone()
+        } else {
+            command.name.clone()
+        }),
     }));
     out.extend(system_actions());
     out.extend(app_actions());
@@ -273,21 +277,12 @@ pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExecutionIssue {
-    ApprovalRequired,
+    CommandsDisabled,
     Unavailable,
 }
 
-pub fn execution_issue(
-    action: &Action,
-    config: &AppConfig,
-    trusted: bool,
-) -> Option<ExecutionIssue> {
-    fn check(
-        action: &Action,
-        config: &AppConfig,
-        trusted: bool,
-        depth: usize,
-    ) -> Option<ExecutionIssue> {
+pub fn execution_issue(action: &Action, config: &AppConfig) -> Option<ExecutionIssue> {
+    fn check(action: &Action, config: &AppConfig, depth: usize) -> Option<ExecutionIssue> {
         if depth > 10 {
             return Some(ExecutionIssue::Unavailable);
         }
@@ -295,8 +290,8 @@ pub fn execution_issue(
             Action::Command(_) => {
                 if !cfg!(target_os = "linux") {
                     Some(ExecutionIssue::Unavailable)
-                } else if !trusted {
-                    Some(ExecutionIssue::ApprovalRequired)
+                } else if !config.settings.commands_enabled {
+                    Some(ExecutionIssue::CommandsDisabled)
                 } else {
                     None
                 }
@@ -321,14 +316,14 @@ pub fn execution_issue(
                             .map(|item| item.steps.to_vec())
                             .unwrap_or_default()
                     };
-                steps.into_iter().find_map(|value| {
-                    check(&Action::parse(Some(value)), config, trusted, depth + 1)
-                })
+                steps
+                    .into_iter()
+                    .find_map(|value| check(&Action::parse(Some(value)), config, depth + 1))
             }
             _ => None,
         }
     }
-    check(action, config, trusted, 0)
+    check(action, config, 0)
 }
 
 pub fn valid_held_key(value: &str) -> bool {

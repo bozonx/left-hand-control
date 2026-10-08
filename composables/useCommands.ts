@@ -16,7 +16,8 @@ export function useCommands() {
   })
 
   function commandNameById(id: string): string | undefined {
-    return byId.value[id]?.name
+    const command = byId.value[id]
+    return command ? command.name || command.linux : undefined
   }
 
   function displayCommand(action: string | undefined | null): string {

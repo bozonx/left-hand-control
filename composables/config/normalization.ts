@@ -71,9 +71,6 @@ function normalizeSettings(
           }))
       : base.gameMode.processMatchers,
   }
-  merged.commandTimeoutSecs = typeof merged.commandTimeoutSecs === 'number' && Number.isFinite(merged.commandTimeoutSecs)
-    ? Math.min(2147483647, Math.max(1, Math.round(merged.commandTimeoutSecs)))
-    : base.commandTimeoutSecs
   merged.layoutMode = merged.layoutMode === 'auto' ? 'auto' : 'manual'
   if (
     typeof merged.manualActiveLayoutId !== 'string' ||
@@ -103,21 +100,9 @@ function normalizeSettings(
     }
     merged.layoutConditions = cleaned
   }
-  if (!merged.commandTrust || typeof merged.commandTrust !== 'object') {
-    merged.commandTrust = {}
-  } else {
-    const cleaned: AppConfig['settings']['commandTrust'] = {}
-    for (const [id, value] of Object.entries(merged.commandTrust)) {
-      if (!id || !value || typeof value !== 'object') continue
-      const v = value as Partial<AppConfig['settings']['commandTrust'][string]>
-      if (typeof v.fingerprint !== 'string' || !v.fingerprint) continue
-      cleaned[id] = {
-        fingerprint: v.fingerprint,
-        trustedAt: typeof v.trustedAt === 'string' ? v.trustedAt : '',
-      }
-    }
-    merged.commandTrust = cleaned
-  }
+  merged.commandsEnabled = raw?.commandsEnabled === true
+  delete (merged as unknown as Record<string, unknown>).commandTrust
+  delete (merged as unknown as Record<string, unknown>).commandTimeoutSecs
   if (
     merged.layoutMode === 'manual' &&
     !merged.manualActiveLayoutId &&

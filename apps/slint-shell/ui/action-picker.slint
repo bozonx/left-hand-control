@@ -47,6 +47,12 @@ export global ActionPicker {
     in-out property <string> original;
     in-out property <string> text-content;
     in-out property <string> pause-content;
+    in property <bool> commands-enabled;
+    in property <bool> command-only;
+    in-out property <string> command-name;
+    in-out property <string> command-script;
+    in-out property <string> command-directory;
+    callback edit-command();
     callback begin-capture();
     in-out property <string> query;
     in-out property <int> category;
@@ -78,7 +84,7 @@ component PickerCell inherits Rectangle {
         VerticalLayout { spacing: 2px; alignment: center;
             Text { min-width: 0px; text: root.item.label; color: Theme.text; font-weight: root.selected ? 700 : 400; wrap: root.compact ? no-wrap : word-wrap; overflow: elide; vertical-alignment: center; }
             if root.item.notice.id != "": Text { text: Locale.text(root.item.notice); color: Theme.warning; font-size: 10px; overflow: elide; }
-            if !root.compact && root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
+            if !root.compact && root.item.category != 8 && root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
         }
     }
     item-focus := FocusScope { key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.pick(); return accept; } return reject; } }
@@ -146,12 +152,13 @@ export component PickerOverlay inherits Rectangle {
                     text: ActionPicker.behavior == 1 ? @tr("The key press is consumed: the system and the active application will not receive it.") : ActionPicker.inherit-default ? @tr("Use the assignment from the lower layer or base layout.") : ActionPicker.quick-action ? @tr("Remove the action from this menu cell.") : ActionPicker.empty-default ? @tr("Do not assign a separate action to this gesture.") : ActionPicker.hold-layer ? @tr("Holding activates the selected layer. The original key is not sent.") : @tr("The key press passes through unchanged, as if no assignment were configured.");
                     color: Theme.muted; wrap: word-wrap;
                 }
-                if ActionPicker.behavior == 2: HorizontalBox { vertical-stretch: 0;
+                if ActionPicker.behavior == 2 && ActionPicker.value-category != 8: HorizontalBox { vertical-stretch: 0;
                     Text { text: ActionPicker.key-only ? @tr("Trigger key") : @tr("Action"); color: Theme.muted; vertical-alignment: center; }
                     if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
                     LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
                     Button { text: ActionPicker.capturing ? @tr("Stop") : @tr("Capture"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
                 }
+                if ActionPicker.behavior == 2 && ActionPicker.value-category == 8 && !ActionPicker.commands-enabled: Text { text: ActionPicker.command-name != "" ? ActionPicker.command-name : ActionPicker.command-script; color: Theme.text; wrap: word-wrap; }
                 if ActionPicker.capturing: Text { text: ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
                 if ActionPicker.behavior == 2 && ActionPicker.notice.id != "": Text { text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
                 if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
@@ -164,8 +171,10 @@ export component PickerOverlay inherits Rectangle {
                             VerticalLayout { spacing: 0px;
                                 for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
                                     padding: 0px; padding-bottom: 4px;
+                                    if (!ActionPicker.command-only || index == 8) && (index != 8 || ActionPicker.commands-enabled): VerticalBox { padding: 0px;
                                     if index < 6 || (!ActionPicker.key-only && !ActionPicker.hold-action && (index < 12 || ActionPicker.macro-step)): CategoryButton {
                                         index: index; title: title; count: ActionPicker.counts[index];
+                                    }
                                     }
                                 }
                             }
@@ -177,11 +186,17 @@ export component PickerOverlay inherits Rectangle {
                             Text { text: @tr("Literal text (text: prefix is added automatically)"); color: Theme.muted; wrap: word-wrap; }
                             TextEdit { text: ActionPicker.text-content; edited => { ActionPicker.touched = true; ActionPicker.value = "text:" + self.text; ActionPicker.refresh(); } }
                         }
+                        if ActionPicker.query == "" && ActionPicker.category == 8 && ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
+                            LineEdit { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name"); edited => { ActionPicker.edit-command(); } }
+                            TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; edited => { ActionPicker.edit-command(); } }
+                            LineEdit { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (optional)"); edited => { ActionPicker.edit-command(); } }
+                            if !ActionPicker.command-only: Button { text: @tr("New command"); clicked => { ActionPicker.value = ""; ActionPicker.command-name = ""; ActionPicker.command-script = ""; ActionPicker.command-directory = ""; ActionPicker.edit-command(); } }
+                        }
                         if ActionPicker.query == "" && ActionPicker.category == 12: VerticalBox { padding: 0px;
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
                             LineEdit { text: ActionPicker.pause-content; edited => { ActionPicker.touched = true; ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
                         }
-                        if ActionPicker.query != "" || ActionPicker.category < 11: ScrollView { viewport-width: self.visible-width;
+                        if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.category < 11): ScrollView { viewport-width: self.visible-width;
                             VerticalLayout { spacing: 0px;
                                 for row in ceil(ActionPicker.items.length / catalog.columns): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
                                     for col in catalog.columns: PickerCell {
@@ -192,7 +207,7 @@ export component PickerOverlay inherits Rectangle {
                                 }
                             }
                         }
-                        if (ActionPicker.query != "" || ActionPicker.category < 11) && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
+                        if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.category < 11) && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
                     }
                 }
                 HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;

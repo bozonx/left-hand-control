@@ -95,19 +95,20 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             })
         })
         .collect();
-    let trusted = config.commands_trusted();
+    let enabled = config.settings().commands_enabled;
     let config = config.config();
     items.extend(actions::catalog(&config).into_iter().filter_map(|entry| {
         let category = match &entry.action {
             Action::Macro(id) if config.macros.iter().any(|m| m.id == *id) => MACROS,
             Action::Macro(_) => SYSTEM_MACROS,
-            Action::Command(_) => COMMANDS,
+            Action::Command(_) if enabled => COMMANDS,
+            Action::Command(_) => return None,
             Action::App(_) => APP_ACTIONS,
             Action::System(_) => SYSTEM_ACTIONS,
             _ => return None,
         };
-        let notice = match actions::execution_issue(&entry.action, &config, trusted) {
-            Some(actions::ExecutionIssue::ApprovalRequired) => Msg::CommandApprovalRequired,
+        let notice = match actions::execution_issue(&entry.action, &config) {
+            Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,
             Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
             None => Msg::None,
         };
@@ -157,6 +158,7 @@ fn valid(
 struct Session {
     target: Option<(PickerTarget, i32)>,
     catalog: Vec<PickerItem>,
+    command: Option<lhc_core::profile::model::Command>,
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -208,8 +210,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         *state.borrow_mut() = Session {
             target: Some((target, index)),
             catalog,
+            command: None,
         };
         let picker = ui.global::<ActionPicker>();
+        picker.set_commands_enabled(doc.read().settings().commands_enabled);
+        picker.set_command_only(target == PickerTarget::Command);
+        picker.set_command_name("".into());
+        picker.set_command_script("".into());
+        picker.set_command_directory("".into());
         picker.set_layer_action(
             matches!(
                 target,
@@ -296,12 +304,58 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             original
         };
-        picker.set_original(original);
+        if value.starts_with("cmd:") && original == value {
+            let config = doc.read();
+            if let Some(command) = config
+                .layout()
+                .commands
+                .iter()
+                .find(|command| value == format!("cmd:{}", command.id))
+            {
+                picker.set_original(
+                    if command.name.is_empty() {
+                        command.linux.clone()
+                    } else {
+                        command.name.clone()
+                    }
+                    .into(),
+                );
+            } else {
+                picker.set_original(original);
+            }
+        } else {
+            picker.set_original(original);
+        }
         picker.set_value(value);
         picker.set_query("".into());
         picker.set_capturing(false);
         picker.set_category(category);
         picker.set_opened(true);
+        picker.invoke_refresh();
+    });
+
+    let weak = ui.as_weak();
+    let (doc, state) = (document.clone(), session.clone());
+    picker.on_edit_command(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        if !doc.read().settings().commands_enabled {
+            return;
+        }
+        let picker = ui.global::<ActionPicker>();
+        let value = picker.get_value().to_string();
+        let id = value
+            .strip_prefix("cmd:")
+            .map(str::to_owned)
+            .unwrap_or_else(|| lhc_core::profile::ids::generate("cmd_"));
+        state.borrow_mut().command = Some(lhc_core::profile::model::Command {
+            id: id.clone(),
+            name: picker.get_command_name().to_string(),
+            linux: picker.get_command_script().to_string(),
+            working_directory: (!picker.get_command_directory().trim().is_empty())
+                .then(|| picker.get_command_directory().trim().to_owned()),
+        });
+        picker.set_value(format!("cmd:{id}").into());
+        picker.set_touched(true);
         picker.invoke_refresh();
     });
 
@@ -345,6 +399,23 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .collect::<Vec<_>>(),
         )));
         let value = picker.get_value();
+        if let Some(command) = doc
+            .read()
+            .layout()
+            .commands
+            .iter()
+            .find(|command| value == format!("cmd:{}", command.id))
+            && state
+                .command
+                .as_ref()
+                .is_none_or(|draft| draft.id != command.id)
+        {
+            picker.set_command_name(command.name.clone().into());
+            picker.set_command_script(command.linux.clone().into());
+            picker.set_command_directory(
+                command.working_directory.clone().unwrap_or_default().into(),
+            );
+        }
         picker.set_value_category(category_for_value(&value));
         picker.set_text_content(value.strip_prefix("text:").unwrap_or_default().into());
         picker.set_pause_content(value.strip_prefix("pause:").unwrap_or_default().into());
@@ -364,27 +435,36 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .cloned()
                 .collect::<Vec<_>>(),
         )));
-        let notice = match actions::execution_issue(
-            &Action::parse(Some(&value)),
-            &doc.read().config(),
-            doc.read().commands_trusted(),
-        ) {
-            Some(actions::ExecutionIssue::ApprovalRequired) => Msg::CommandApprovalRequired,
-            Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
-            None => Msg::None,
-        };
+        let notice =
+            match actions::execution_issue(&Action::parse(Some(&value)), &doc.read().config()) {
+                Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,
+                Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
+                None => Msg::None,
+            };
         picker.set_notice(notice.to_ui());
         picker.set_valid(
             ((picker.get_behavior() == 0 && picker.get_allow_default())
                 || (picker.get_behavior() == 1 && picker.get_allow_swallow()))
                 || (picker.get_behavior() == 2
-                    && valid(
-                        &value,
-                        key_only,
-                        picker.get_macro_step(),
-                        &excluded,
-                        Some(&doc.read()),
-                    )
+                    && state
+                        .command
+                        .as_ref()
+                        .filter(|command| value == format!("cmd:{}", command.id))
+                        .map_or_else(
+                            || {
+                                valid(
+                                    &value,
+                                    key_only,
+                                    picker.get_macro_step(),
+                                    &excluded,
+                                    Some(&doc.read()),
+                                )
+                            },
+                            |command| {
+                                doc.read().settings().commands_enabled
+                                    && !command.linux.trim().is_empty()
+                            },
+                        )
                     && (!picker.get_hold_action() || actions::valid_held_key(&value))
                     && (!(key_only
                         && state
@@ -420,6 +500,19 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             "".into()
         };
+        let command = session
+            .borrow()
+            .command
+            .clone()
+            .filter(|command| value == format!("cmd:{}", command.id));
+        if let Some(command) = command {
+            if let Err(error) = doc.edit(crate::document::View::Shell, |config| {
+                config.save_command(command)
+            }) {
+                picker.set_error(Msg::from(&error).to_ui());
+                return;
+            }
+        }
         let (target, label) = {
             let state = session.borrow();
             let label = state
@@ -427,6 +520,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .iter()
                 .find(|item| item.value == value)
                 .map(|item| item.label.clone())
+                .or_else(|| {
+                    doc.read()
+                        .layout()
+                        .commands
+                        .iter()
+                        .find(|command| value == format!("cmd:{}", command.id))
+                        .map(|command| command.name.clone().into())
+                })
                 .unwrap_or_default();
             (state.target, label)
         };
@@ -434,6 +535,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         };
         match target {
+            PickerTarget::Command => {}
             PickerTarget::Rule => {
                 if let Err(error) = rules::choose(&ui, &doc, &value) {
                     picker.set_error(error.to_ui());

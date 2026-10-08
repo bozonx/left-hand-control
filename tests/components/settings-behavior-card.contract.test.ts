@@ -37,9 +37,9 @@ describe('BehaviorCard', () => {
     })
 
     const inputs = wrapper.findAll('input[type="number"]')
-    expect(inputs).toHaveLength(5)
+    expect(inputs).toHaveLength(4)
 
-    const holdInput = inputs[1]!
+    const holdInput = inputs[0]!
     const holdElement = holdInput.element as HTMLInputElement
 
     await nextTick()

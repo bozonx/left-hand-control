@@ -166,21 +166,13 @@ pub struct Settings {
     #[serde(default)]
     pub current_layout_id: Option<String>,
     #[serde(default)]
-    pub command_trust: HashMap<String, CommandTrustEntry>,
-    #[serde(default = "default_command_timeout")]
-    pub command_timeout_secs: u64,
+    pub commands_enabled: bool,
     #[serde(default)]
     pub linux_wayland_text_mode: Option<String>,
     #[serde(default)]
     pub linux_ydotool_path: Option<String>,
     #[serde(default)]
     pub linux_xdotool_path: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct CommandTrustEntry {
-    pub fingerprint: String,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -229,57 +221,12 @@ impl Default for Settings {
             default_macro_modifier_delay_ms: default_mod_delay(),
             default_double_tap_timeout_ms: default_double_tap(),
             current_layout_id: None,
-            command_trust: HashMap::new(),
-            command_timeout_secs: default_command_timeout(),
+            commands_enabled: false,
             linux_wayland_text_mode: Some("libei".into()),
             linux_ydotool_path: None,
             linux_xdotool_path: None,
         }
     }
-}
-
-impl Settings {
-    pub fn commands_trusted(&self, commands: &[Command]) -> bool {
-        let key = self
-            .current_layout_id
-            .as_deref()
-            .filter(|s| !s.is_empty())
-            .unwrap_or("custom");
-        self.command_trust
-            .get(key)
-            .is_some_and(|entry| entry.fingerprint == command_fingerprint(commands))
-    }
-}
-
-pub(crate) fn command_fingerprint(commands: &[Command]) -> String {
-    use sha2::{Digest, Sha256};
-
-    let mut entries: Vec<String> = commands
-        .iter()
-        .map(|command| {
-            let mut entry = format!("{}\0{}", command.id, command.linux);
-            if let Some(directory) = command
-                .working_directory
-                .as_deref()
-                .filter(|v| !v.trim().is_empty())
-            {
-                entry.push('\0');
-                entry.push_str(directory.trim());
-            }
-            entry
-        })
-        .collect();
-    entries.sort();
-    let mut hash = Sha256::new();
-    for entry in entries {
-        hash.update(entry.as_bytes());
-        hash.update([0]);
-    }
-    format!("{:x}", hash.finalize())
-}
-
-fn default_command_timeout() -> u64 {
-    30
 }
 
 fn default_hold() -> u64 {
@@ -360,82 +307,5 @@ mod tests {
         assert_eq!(s.tap_decision, TapDecision::PermissiveHold);
         assert_eq!(s.linux_wayland_text_mode.as_deref(), Some("libei"));
         assert!(s.linux_ydotool_path.is_none());
-    }
-
-    #[test]
-    fn command_trust_requires_matching_fingerprint() {
-        let commands = vec![Command {
-            id: "play".into(),
-            linux: "playerctl play-pause".into(),
-            working_directory: None,
-        }];
-        assert_eq!(
-            command_fingerprint(&commands),
-            "3f37f286618ea990d440a2cf7c669ec4999b224a2035279ddfcff72b6b3e687e"
-        );
-
-        let mut settings = Settings {
-            current_layout_id: Some("user:test".into()),
-            ..Settings::default()
-        };
-        assert!(!settings.commands_trusted(&commands));
-
-        settings.command_trust.insert(
-            "user:test".into(),
-            CommandTrustEntry {
-                fingerprint: command_fingerprint(&commands),
-            },
-        );
-        assert!(settings.commands_trusted(&commands));
-
-        let changed = vec![Command {
-            id: "play".into(),
-            linux: "notify-send changed".into(),
-            working_directory: None,
-        }];
-        assert!(!settings.commands_trusted(&changed));
-    }
-
-    #[test]
-    fn command_fingerprint_regression() {
-        let commands = vec![
-            Command {
-                id: "play".into(),
-                linux: "playerctl play".into(),
-                working_directory: None,
-            },
-            Command {
-                id: "pause".into(),
-                linux: "playerctl pause".into(),
-                working_directory: None,
-            },
-        ];
-        let fp = command_fingerprint(&commands);
-        assert_eq!(
-            fp, "4d61d04170fc9f287ecef6bce976c4f0a9338ac772441dc7487e0761b7307f94",
-            "command_fingerprint changed — update the TS side too"
-        );
-    }
-
-    #[test]
-    fn command_fingerprint_ignores_command_order() {
-        let commands = vec![
-            Command {
-                id: "play".into(),
-                linux: "playerctl play".into(),
-                working_directory: None,
-            },
-            Command {
-                id: "pause".into(),
-                linux: "playerctl pause".into(),
-                working_directory: None,
-            },
-        ];
-        let reordered = vec![commands[1].clone(), commands[0].clone()];
-
-        assert_eq!(
-            command_fingerprint(&commands),
-            command_fingerprint(&reordered)
-        );
     }
 }

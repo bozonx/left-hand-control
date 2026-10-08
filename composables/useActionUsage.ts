@@ -32,6 +32,9 @@ export function useActionUsage(parseRef: (action: string | null | undefined) => 
         }
       }
     }
+    for (const item of config.value.quickActions) {
+      noteIf(item.action, `quick ${item.name || item.id}`)
+    }
     return byId
   })
 

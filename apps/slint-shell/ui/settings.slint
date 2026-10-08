@@ -114,7 +114,6 @@ export component SettingsWindow inherits Window {
                             IconButton { height: 38px; icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
                             IconButton { height: 38px; icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
                             IconButton { height: 38px; icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); primary: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
-                            IconButton { height: 38px; icon: @image-url("icons/terminal.svg"); text: @tr("Commands") + ((LayoutLibrary.commands-dirty || (MenuEditor.has-errors && MenuEditor.kind == MenuKind.commands)) ? " •" : "") + (AppState.commands-need-approval ? " !" : ""); primary: root.page == Page.menus && MenuEditor.kind == MenuKind.commands; clicked => { root.navigate(Page.menus, MenuKind.commands); } }
                         }
                     }
                 }

@@ -512,66 +512,17 @@ export default {
       'The text could not be inserted. Start the mapper and check that xdg-desktop-portal is available.',
   },
   commands: {
-    createTitle: "Create and allow commands?",
-    createBody: "Commands in this layout will run with your permissions. They can modify files and send data. You can block execution again on the Commands page.",
-    createAllow: "Create and allow commands",
-    workingDirectory: "Working directory",
-    workingDirectoryHint: "Leave empty to use your home directory. Absolute paths, ~/ paths, and paths relative to your home directory are supported.",
-    homeDirectory: "Home directory",
-
+    saveLayoutFirst: 'Save layout changes before opening another layout.',
     title: 'Commands',
-    subtitle:
-      'Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.',
-    subtitleLinux:
-      'Reusable shell commands for the current layout. On Linux they run through sh -lc after you explicitly allow them.',
-    subtitleWindows:
-      'Commands are saved in the layout, but shell command execution on Windows is not implemented yet.',
-    subtitleMacos:
-      'Commands are saved in the layout, but shell command execution on macOS is not implemented yet.',
-    subtitleUnknown:
-      'Reusable commands for the current layout. Execution support depends on the current platform.',
-    addBtn: 'New command',
-    addDisabled: 'Fix the existing command errors first',
-    empty: 'No commands yet. Click "New command" to create the first one.',
-    defaultName: 'New command',
-    nameLabel: 'Name',
-    nameHint: 'Human-readable name shown in picker lists.',
+    enabled: 'Allow command execution',
+    disabled: 'Commands are disabled in Settings.',
+    script: 'Command',
+    usedEmpty: 'No commands are assigned.',
     namePh: 'Command name',
-    idLabel: 'ID',
-    idHint:
-      'Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab.',
-    idPh: 'id',
-    copyId: 'Copy ID',
-    linuxLabel: 'Linux shell script',
-    linuxHint:
-      'Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them.',
-    linuxPh: "playerctl play-pause\nnotify-send 'Playback toggled'",
-    approvalTitle: "Command execution is blocked",
-    approvalBody: "Review commands from shared layouts before unblocking them. Commands run with your permissions and can modify files and send data. Edits in this application keep them allowed; external changes block execution again.",
-    approveBtn: "Unblock commands",
-    approved: "Command execution is allowed for this layout.",
-    revokeBtn: "Block commands",
-    approvalToast:
-      'Shell commands are blocked until you review and allow them on the Commands tab.',
-    usedIn: 'Used in:',
-    moveUp: 'Up',
-    moveDown: 'Down',
-    deleteCommand: 'Delete command',
-    idErrors: {
-      empty: 'ID cannot be empty.',
-      format: 'Only Latin letters, digits, "_" and "-", up to 64 chars.',
-      dupUser: 'This ID is already used by another command.',
-    },
-    linuxErrors: {
-      empty: 'Linux command cannot be empty.',
-    },
-    confirmDeleteTitle: 'Delete command?',
-    confirmDeleteBody:
-      'The command will be deleted. Keys or macros that reference {ref} will stop working.',
+    workingDirectory: 'Working directory (optional)',
+    addBtn: 'New command',
   },
   settings: {
-    commandTimeout: "Maximum command execution time (seconds)",
-    commandTimeoutHint: "Commands exceeding this time are stopped. Default: 30 seconds.",
 
     mapperTitle: 'Key-mapper',
     mapperInfo: 'Key-mapper information',
@@ -829,7 +780,7 @@ export default {
     noResults: 'No results',
     chordHint:
       'For a chord, type it manually in the field above. Examples: Ctrl+KeyH, Shift+Space, AltLeft+KeyJ.',
-    commandsHint: 'Commands are defined on the Commands tab.',
+    commandsHint: 'Enter a command here or choose an existing one.',
     macrosHint: 'Macros are defined on the Macros tab.',
     systemMacrosHint:
       'Built-in macros that cannot be edited. To customize, create a user macro based on one.',

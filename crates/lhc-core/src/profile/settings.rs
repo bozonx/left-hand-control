@@ -4,8 +4,8 @@
 //! of the wrong type fall back to defaults instead of failing the load.
 
 use super::model::{
-    AppSettings, Appearance, CommandTrustEntry, GameModeProcessMatcher, LayoutConditionRule,
-    LayoutConditionSet, LayoutMode, LocalePreference,
+    AppSettings, Appearance, GameModeProcessMatcher, LayoutConditionRule, LayoutConditionSet,
+    LayoutMode, LocalePreference,
 };
 use serde_json::{Map, Value};
 
@@ -83,29 +83,7 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
                     .collect()
             })
             .unwrap_or_default(),
-        command_trust: raw
-            .get("commandTrust")
-            .and_then(Value::as_object)
-            .map(|trust| {
-                trust
-                    .iter()
-                    .filter(|(id, _)| !id.is_empty())
-                    .filter_map(|(id, value)| {
-                        let value = value.as_object()?;
-                        let fingerprint = str_of(value, "fingerprint").filter(|f| !f.is_empty())?;
-                        Some((
-                            id.clone(),
-                            CommandTrustEntry {
-                                fingerprint: fingerprint.into(),
-                                trusted_at: str_of(value, "trustedAt").unwrap_or("").into(),
-                            },
-                        ))
-                    })
-                    .collect()
-            })
-            .unwrap_or_default(),
-        command_timeout_secs: u64_or(raw, "commandTimeoutSecs", base.command_timeout_secs)
-            .clamp(1, i32::MAX as u64),
+        commands_enabled: bool_or(raw, "commandsEnabled", base.commands_enabled),
         game_mode: base.game_mode.clone(),
         linux_wayland_text_mode: str_of(raw, "linuxWaylandTextMode")
             .filter(|mode| TEXT_MODES.contains(mode))

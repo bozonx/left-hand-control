@@ -1,30 +1,26 @@
-import { Alert, InlineTextArea } from "controls.slint";
+import { InlineTextArea } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { CommandField, MenuKind, PickerTarget } from "types.slint";
+import { MenuKind, PickerTarget } from "types.slint";
 import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, PageTabs } from "controls.slint";
 import { Button, LineEdit, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
-export struct CommandRow { id: string, name: string, linux: string, working-directory: string, usage: [string], error: Message }
 export global MenuEditor {
     in-out property <MenuKind> kind;
     in property <[string]> pages;
     in property <[MenuCell]> cells;
     in property <[EmojiCategory]> catalog;
-    in property <[CommandRow]> commands;
     in-out property <int> selected-page;
     in-out property <int> selected-cell;
     in-out property <string> page-name;
     in-out property <string> value;
     in-out property <string> name;
-    in property <bool> trusted;
     in-out property <int> editing-count: 0;
-    in property <bool> has-errors;
     in property <Message> status;
     callback open(MenuKind);
     callback refresh();
@@ -40,11 +36,6 @@ export global MenuEditor {
     callback set-action(int, string, string);
     callback clear-cell();
     callback move-cell(int, int);
-    callback add-command(string);
-    callback remove-command(int);
-    callback move-command(int, int);
-    callback set-command(int, CommandField, string);
-    callback trust(bool);
 }
 
 /// 5×3 grid of the left-hand hotkeys; click selects, drag moves a cell.
@@ -415,201 +406,8 @@ export component QuickActionsPage inherits Rectangle {
     }
 }
 
-component CommandCard inherits Card {
-    in property <int> index;
-    in property <CommandRow> item;
-    private property <bool> expanded: false;
-    opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == root.index ? 0.6 : 1;
-
-    callback remove();
-    callback copy(string);
-    HorizontalLayout {
-        padding: 16px;
-        spacing: 20px;
-        VerticalLayout {
-            width: 360px;
-            horizontal-stretch: 0;
-            spacing: 14px;
-            alignment: start;
-            HorizontalLayout {
-                spacing: 2px;
-                DragHandle { group: 5; index: root.index; count: MenuEditor.commands.length; dropped(from, to) => { MenuEditor.move-command(from, to); } }
-                Rectangle { horizontal-stretch: 1; }
-                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete command"); danger: true; clicked => { root.remove(); } }
-            }
-            VerticalLayout {
-                spacing: 12px;
-                VerticalLayout {
-                    horizontal-stretch: 1;
-                    spacing: 4px;
-                    HorizontalLayout {
-                        spacing: 6px;
-                        alignment: start;
-                        FieldLabel { text: @tr("ID"); vertical-alignment: center; }
-                        InfoTip { text: @tr("Unique identifier used in references like cmd:<id>. To bind this command to a key, choose that action on the Layers or Rules tab."); }
-                    }
-                    HorizontalLayout {
-                        spacing: 6px;
-                        InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.id; placeholder: "id"; label: @tr("Command ID"); saved(value) => { MenuEditor.set-command(root.index, CommandField.id, value); } }
-                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
-                    }
-                }
-                VerticalLayout {
-                    horizontal-stretch: 1;
-                    spacing: 4px;
-                    HorizontalLayout {
-                        spacing: 6px;
-                        alignment: start;
-                        FieldLabel { text: @tr("Name"); vertical-alignment: center; }
-                        InfoTip { text: @tr("Human-readable name shown in picker lists."); }
-                    }
-                    InlineTextField { changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); } text: root.item.name; placeholder: @tr("Command name"); label: @tr("Name"); saved(value) => { MenuEditor.set-command(root.index, CommandField.name, value); } }
-                }
-            }
-            if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
-            if root.item.usage.length > 0: HorizontalLayout {
-                spacing: 4px;
-                alignment: start;
-                Text { text: @tr("Used in:"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
-                for place in root.item.usage: Badge { text: place; }
-            }
-        }
-        Rectangle { width: 1px; background: Theme.border; }
-        VerticalLayout {
-            horizontal-stretch: 1;
-            min-width: 0px;
-            spacing: 12px;
-            alignment: start;
-            HorizontalLayout {
-                spacing: 6px;
-                alignment: start;
-                FieldLabel { text: @tr("Linux shell script"); vertical-alignment: center; }
-                InfoTip { text: @tr("Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
-                Rectangle { horizontal-stretch: 1; }
-                Button { text: root.expanded ? @tr("Collapse script") : @tr("View full script"); clicked => { root.expanded = !root.expanded; } }
-            }
-            VerticalLayout {
-                spacing: 4px;
-                HorizontalLayout {
-                    spacing: 6px; alignment: start;
-                    FieldLabel { text: @tr("Working directory"); vertical-alignment: center; }
-                    InfoTip { text: @tr("Leave empty to use your home directory. Absolute paths, ~/ paths, and paths relative to your home directory are supported."); }
-                }
-                InlineTextField {
-                    changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); }
-                    text: root.item.working-directory;
-                    placeholder: @tr("Home directory"); label: @tr("Working directory");
-                    saved(value) => { MenuEditor.set-command(root.index, CommandField.working-directory, value); }
-                }
-            }
-            InlineTextArea {
-                expanded: root.expanded;
-                changed editing => { MenuEditor.editing-count = max(0, MenuEditor.editing-count + (self.editing ? 1 : -1)); }
-                text: root.item.linux;
-                placeholder: "playerctl play-pause\nnotify-send 'Playback toggled'";
-                label: @tr("Linux shell script");
-                saved(value) => { MenuEditor.set-command(root.index, CommandField.linux, value); }
-            }
-        }
-    }
-    DropMarker { width: parent.width; group: 5; index: root.index; row-y: root.y; row-height: root.height; }
-}
-
-component ApprovalNotice inherits Alert {
-    title: @tr("Command execution is blocked");
-    text: @tr("Review commands from shared layouts before unblocking them. Commands run with your permissions and can modify files and send data. Edits in this application keep them allowed; external changes block execution again.");
-    Button { text: @tr("Unblock commands"); enabled: !MenuEditor.has-errors && MenuEditor.editing-count == 0; primary: true; icon: @image-url("icons/shield-check.svg"); colorize-icon: true; clicked => { MenuEditor.trust(true); } }
-}
-
-component ApprovedNotice inherits Rectangle {
-    border-radius: 8px;
-    border-width: 1px;
-    border-color: Theme.border;
-    background: Theme.surface;
-    HorizontalLayout {
-        padding: 10px;
-        spacing: 8px;
-        VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/shield-check.svg"); colorize: Theme.success; } }
-        Text { horizontal-stretch: 1; text: @tr("Command execution is allowed for this layout."); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
-        Button { text: @tr("Block commands"); clicked => { MenuEditor.trust(false); } }
-    }
-}
-
-export component CommandsPage inherits Rectangle {
-    vertical-stretch: 1;
-    private property <int> deleting: -1;
-    private property <bool> creating: false;
-    clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    VerticalLayout {
-        padding: 0px;
-        spacing: 16px;
-        CardHeader {
-            vertical-stretch: 0;
-            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
-            title: @tr("Commands");
-            info: @tr("Reusable shell commands for the current layout. On Linux they run through sh -lc, one at a time. Set the maximum execution time in Settings and a working directory for each command.");
-            VerticalLayout {
-                alignment: center;
-                Button {
-                    text: @tr("New command");
-                    primary: true;
-                    icon: @image-url("icons/plus.svg");
-                    colorize-icon: true;
-                    enabled: !MenuEditor.has-errors;
-                    clicked => {
-                        if MenuEditor.commands.length == 0 && !MenuEditor.trusted { root.creating = true; }
-                        else { MenuEditor.add-command(@tr("New command")); }
-                    }
-                }
-            }
-        }
-        ScrollView {
-            viewport-width: self.visible-width;
-            vertical-stretch: 1;
-            VerticalLayout {
-                padding: 0px;
-                alignment: start;
-                spacing: 16px;
-                if MenuEditor.has-errors: Text { text: @tr("Fix the existing command errors first"); color: Theme.muted; font-size: 12px; }
-                if MenuEditor.commands.length == 0: Text { text: @tr("No commands yet. Click \"New command\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
-                if !MenuEditor.trusted: ApprovalNotice {}
-                if MenuEditor.trusted: ApprovedNotice {}
-                for item[index] in MenuEditor.commands: CommandCard {
-                    index: index;
-                    item: item;
-                    remove => { root.deleting = index; }
-                    copy(value) => { clipboard.text = value; clipboard.select-all(); clipboard.copy(); }
-                }
-            }
-        }
-    }
-    if root.creating: ConfirmDialog {
-        width: 100%; height: 100%;
-        title: @tr("Create and allow commands?");
-        body: @tr("Commands in this layout will run with your permissions. They can modify files and send data. You can block execution again on the Commands page.");
-        error: Locale.text(MenuEditor.status);
-        confirm-text: @tr("Create and allow commands");
-        confirm-icon: @image-url("icons/shield-check.svg");
-        cancel => { root.creating = false; }
-        confirm => {
-            MenuEditor.trust(true);
-            if MenuEditor.trusted { MenuEditor.add-command(@tr("New command")); root.creating = false; }
-        }
-    }
-    if root.deleting >= 0: ConfirmDialog {
-        width: 100%;
-        height: 100%;
-        title: @tr("Delete command?");
-        body: @tr("The command will be deleted. References to cmd:{} will be cleared from keys, rules, macros, and quick actions. Keys will return to normal behavior.", MenuEditor.commands[root.deleting].id);
-        confirm-text: @tr("Delete");
-        cancel => { root.deleting = -1; }
-        confirm => { MenuEditor.remove-command(root.deleting); root.deleting = -1; }
-    }
-}
-
 export component MenusPage inherits Rectangle {
     vertical-stretch: 1;
     if MenuEditor.kind == MenuKind.emoji: EmojiPage { width: 100%; height: 100%; }
     if MenuEditor.kind == MenuKind.quick: QuickActionsPage { width: 100%; height: 100%; }
-    if MenuEditor.kind == MenuKind.commands: CommandsPage { width: 100%; height: 100%; }
 }

@@ -5,13 +5,16 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createDefaultConfig } from '~/types/config'
 import ActionPickerModal from '~/components/ActionPickerModal.vue'
 
-const { useMacrosMock } = vi.hoisted(() => ({
+const { useMacrosMock, useConfigMock } = vi.hoisted(() => ({
   useMacrosMock: vi.fn(),
+  useConfigMock: vi.fn(),
 }))
 
 mockNuxtImport('useMacros', () => useMacrosMock)
+mockNuxtImport('useConfig', () => useConfigMock)
 
 const ActionPickerBodyStub = defineComponent({
   props: {
@@ -32,13 +35,14 @@ const ActionPickerBodyStub = defineComponent({
       default: () => [],
     },
   },
-  emits: ['update:modelValue', 'pick'],
+  emits: ['update:modelValue', 'update:command', 'pick'],
   template: `
     <div data-testid="picker-body">
       {{ modelValue }}
       <span data-testid="allow-macros">{{ allowMacros }}</span>
       <span data-testid="excluded-values">{{ excludedValues.join(',') }}</span>
       <span data-testid="excluded-category-ids">{{ excludedCategoryIds.join(',') }}</span>
+      <button data-testid="command-item" @click="$emit('update:command', { id: 'draft', name: 'Hello', linux: 'printf hello' }); $emit('update:modelValue', 'cmd:draft')">Command</button>
       <button data-testid="picker-item" @click="$emit('pick', 'KeyA')">Pick A</button>
     </div>
   `,
@@ -69,6 +73,7 @@ const defaultStubs = {
 describe('ActionPickerModal', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    useConfigMock.mockReturnValue({ config: ref(createDefaultConfig()) })
     useMacrosMock.mockReset()
     useMacrosMock.mockReturnValue({
       displayAction: (value: string | null | undefined) => value ?? '',
@@ -76,6 +81,30 @@ describe('ActionPickerModal', () => {
         label: value ?? '',
       }),
     })
+  })
+
+  it('commits command drafts only when applying the action', async () => {
+    const config = useConfigMock().config
+    config.value.settings.commandsEnabled = true
+    const open = ref(true)
+    const value = ref<string | null>('')
+    const Harness = defineComponent({
+      components: { ActionPickerModal },
+      setup: () => ({ open, value }),
+      template: '<ActionPickerModal v-model="value" v-model:open="open" />',
+    })
+    const wrapper = await mountSuspended(Harness, { global: { stubs: defaultStubs } })
+    await wrapper.get('[data-testid="command-item"]').trigger('click')
+    expect(config.value.commands).toEqual([])
+    open.value = false
+    await flushPromises()
+    expect(config.value.commands).toEqual([])
+    open.value = true
+    await flushPromises()
+    await wrapper.get('[data-testid="command-item"]').trigger('click')
+    await wrapper.get('[data-testid="action-picker-apply"]').trigger('click')
+    expect(config.value.commands).toEqual([{ id: 'draft', name: 'Hello', linux: 'printf hello' }])
+    expect(value.value).toBe('cmd:draft')
   })
 
   it('renders its picker body when externally opened', async () => {

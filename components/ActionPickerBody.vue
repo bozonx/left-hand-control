@@ -5,6 +5,7 @@ import ActionPickerValueField from '~/components/features/action-picker/ActionPi
 import {
     appActionRef,
     commandActionRef,
+    type Command,
     macroActionRef,
     parseAppRef,
     parseCommandRef,
@@ -25,6 +26,7 @@ import { SYSTEM_MACROS } from '~/utils/systemMacros'
 const props = withDefaults(
     defineProps<{
         keyOnly?: boolean
+        commandOnly?: boolean
         spacious?: boolean
         excludedMacroId?: string
         excludedValues?: string[]
@@ -45,6 +47,19 @@ const emit = defineEmits<{
 }>()
 
 const draft = defineModel<string>({ default: '' })
+const commandDraft = defineModel<Command | null>('command', { default: null })
+const { config } = useConfig()
+const selectedCommand = computed(() => commands.value.find((command) => command.id === parseCommandRef(draft.value)))
+function editCommand(field: 'name' | 'linux' | 'workingDirectory', value: string) {
+    const command = commandDraft.value?.id === parseCommandRef(draft.value) ? commandDraft.value : selectedCommand.value
+    commandDraft.value = { ...(command ?? { id: crypto.randomUUID(), name: '', linux: '' }), [field]: value }
+    draft.value = commandActionRef(commandDraft.value.id)
+}
+function newCommand() {
+    commandDraft.value = { id: crypto.randomUUID(), name: '', linux: '' }
+    draft.value = commandActionRef(commandDraft.value.id)
+}
+const editingCommand = computed(() => commandDraft.value?.id === parseCommandRef(draft.value) ? commandDraft.value : selectedCommand.value)
 const selectionVersion = ref(0)
 
 const { macros } = useMacros()
@@ -57,7 +72,7 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
     )
     const userIds = new Set(userMacros.map((m) => m.id))
     return [
-        ...(commands.value.length === 0
+        ...(!config.value.settings.commandsEnabled
             ? []
             : [
                   {
@@ -67,7 +82,7 @@ const dynamicCategories = computed<StaticCategory[]>(() => {
                       items: commands.value.map((command) => ({
                           label: command.name || command.id,
                           value: commandActionRef(command.id),
-                          hint: command.id,
+                          hint: command.linux,
                       })),
                   },
               ]),
@@ -126,7 +141,7 @@ const allCategories = computed<StaticCategory[]>(() =>
     (props.keyOnly
         ? STATIC_CATEGORIES
         : [...dynamicCategories.value, ...STATIC_CATEGORIES])
-        .filter((category) => !props.excludedCategoryIds.includes(category.id))
+        .filter((category) => (!props.commandOnly || category.id === 'commands') && !props.excludedCategoryIds.includes(category.id))
         .map((category) => ({
             ...category,
             items: category.items.filter(
@@ -137,7 +152,7 @@ const allCategories = computed<StaticCategory[]>(() =>
 
 const activeCategory = ref<string>(allCategories.value[0]?.id ?? 'special')
 const textCategoryAvailable = computed(
-    () => !props.keyOnly && !props.excludedCategoryIds.includes('text'),
+    () => !props.commandOnly && !props.keyOnly && !props.excludedCategoryIds.includes('text'),
 )
 
 function categoryAvailable(id: string, cats = allCategories.value) {
@@ -154,7 +169,7 @@ function detectCategory(value: string): string | null {
 
     const commandId = parseCommandRef(value)
     if (commandId !== null) {
-        return commands.value.length > 0 ? 'commands' : null
+        return config.value.settings.commandsEnabled ? 'commands' : null
     }
 
     const macroId = parseMacroRef(value)
@@ -241,6 +256,7 @@ function pickItem(item: ActionItem) {
         "
     >
         <ActionPickerValueField
+            v-if="activeCategory !== 'commands' && !(parseCommandRef(draft) && !config.settings.commandsEnabled)"
             v-model="draft"
             :active-category="activeCategory"
             :filtered-items="filteredItems"
@@ -257,7 +273,18 @@ function pickItem(item: ActionItem) {
             :show-text-category="textCategoryAvailable"
         />
 
+        <p v-if="parseCommandRef(draft) && !config.settings.commandsEnabled" class="text-sm text-(--ui-text-muted)">
+            {{ selectedCommand?.name || selectedCommand?.linux || draft }} — {{ $t('commands.disabled') }}
+        </p>
+        <div v-if="activeCategory === 'commands' && config.settings.commandsEnabled" class="space-y-3">
+            <UInput :model-value="editingCommand?.name ?? ''" :placeholder="$t('commands.namePh')" class="w-full" @update:model-value="editCommand('name', $event)" />
+            <UTextarea :model-value="editingCommand?.linux ?? ''" :placeholder="$t('commands.script')" class="w-full" :rows="4" @update:model-value="editCommand('linux', $event)" />
+            <UInput :model-value="editingCommand?.workingDirectory ?? ''" :placeholder="$t('commands.workingDirectory')" class="w-full" @update:model-value="editCommand('workingDirectory', $event)" />
+            <UButton v-if="!props.commandOnly" color="neutral" variant="outline" @click="newCommand">{{ $t('commands.addBtn') }}</UButton>
+        </div>
+
         <ActionPickerCategoryPanel
+            v-if="!props.commandOnly"
             :active-category="activeCategory"
             :draft="draft"
             :items="categoryItems"

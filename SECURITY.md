@@ -33,7 +33,7 @@ Left Hand Control is a local-only desktop app (no network server, no cloud).
 - All Tauri commands return `Result<T, String>` — errors never crash the backend silently
 - Layout file names are validated server-side (`validate_layout_name`) to prevent path traversal
 - Device paths validated server-side (`validate_device_path`) to allow only `/dev/input/*` paths
-- Command scripts require explicit user approval per layout fingerprint before they can execute
+- Command scripts are disabled by default and require enabling commands in settings before they can execute
 
 **Known limitations:**
 - CSP `'unsafe-inline'` in `script-src` is required by Nuxt's generated hydration scripts (color mode detection, `window.__NUXT__` config injection). This is standard for Nuxt SSG and the risk is low given the app loads only local files.

@@ -22,8 +22,7 @@ function setNonNegativeInt(
     | 'defaultHoldTimeoutMs'
     | 'defaultDoubleTapTimeoutMs'
     | 'defaultMacroStepPauseMs'
-    | 'defaultMacroModifierDelayMs'
-    | 'commandTimeoutSecs',
+    | 'defaultMacroModifierDelayMs',
   value: string | number,
 ) {
   const parsed = typeof value === 'number' ? value : Number(value)
@@ -32,7 +31,7 @@ function setNonNegativeInt(
     ...props.config,
     settings: {
       ...props.config.settings,
-      [key]: key === 'commandTimeoutSecs' ? Math.min(2147483647, Math.max(1, Math.round(parsed))) : Math.max(0, Math.round(parsed)),
+      [key]: Math.max(0, Math.round(parsed)),
     },
   })
 }
@@ -55,14 +54,6 @@ function setTapDecision(value: TapDecision) {
     </template>
 
     <div class="space-y-4">
-      <UFormField :label="$t('settings.commandTimeout')" :help="$t('settings.commandTimeoutHint')">
-        <NumericInput
-          :model-value="props.config.settings.commandTimeoutSecs"
-          :min="1"
-          class="w-full md:w-40"
-          @update:model-value="(value: string | number) => setNonNegativeInt('commandTimeoutSecs', value)"
-        />
-      </UFormField>
       <UFormField>
         <template #label>
           <FieldLabel

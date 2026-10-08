@@ -118,9 +118,13 @@ impl ConfigDocument {
             })
             .collect::<Result<_, _>>()
             .map_err(ConfigError::Io)?;
+        let mut settings = settings::from_value(settings_raw.get("settings"));
+        if settings_raw.pointer("/settings/commandsEnabled").is_none() {
+            settings.commands_enabled = !layout.commands.is_empty();
+        }
         Ok(Self {
             library_files,
-            settings: settings::from_value(settings_raw.get("settings")),
+            settings,
             settings_raw,
             settings_file,
             layout,
@@ -194,6 +198,8 @@ impl ConfigDocument {
             .or_insert_with(|| json!({}))
             .as_object_mut()
             .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?;
+        settings.remove("commandTrust");
+        settings.remove("commandTimeoutSecs");
         let previous = serde_json::to_value(&self.settings)
             .map_err(|error| ConfigError::Parse(error.to_string()))?;
         for name in previous
@@ -579,6 +585,13 @@ impl ConfigDocument {
         if let (Some(text), Some(layout)) = (layout_text, layout) {
             self.layout = layout;
             self.layout_file.mark_read(text);
+        }
+        if self
+            .settings_raw
+            .pointer("/settings/commandsEnabled")
+            .is_none()
+        {
+            self.settings.commands_enabled = !self.layout.commands.is_empty();
         }
         self.library_files.retain(|name, _| names.contains(name));
         self.library_files.extend(added);

@@ -41,6 +41,15 @@ fn save_config(app: tauri::AppHandle, contents: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_command_assignments(
+    app: tauri::AppHandle,
+) -> Result<Vec<lhc_core::profile::menus::CommandAssignment>, String> {
+    lhc_core::config_document::ConfigDocument::load(app_storage(&app)?)
+        .and_then(|document| document.command_assignments())
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn load_current_layout(app: tauri::AppHandle) -> Result<String, String> {
     let paths = app_storage(&app)?;
     paths.ensure()?;
@@ -518,6 +527,7 @@ pub fn run() {
             load_config,
             save_config,
             load_current_layout,
+            get_command_assignments,
             save_current_layout,
             config_changed_on_disk,
             load_ui_state,

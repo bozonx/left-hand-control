@@ -43,7 +43,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         command_ids.insert(id.to_string());
     }
 
-    let commands_trusted = cfg.settings.commands_trusted(&cfg.commands);
     let layer_ids: HashSet<&str> = cfg.layer_keymaps.keys().map(String::as_str).collect();
 
     for r in &cfg.rules {
@@ -65,7 +64,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &user_macro_ids,
             &system_macro_ids,
             &command_ids,
-            commands_trusted,
             &mut errors,
         );
         validate_action_spec(
@@ -75,7 +73,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &user_macro_ids,
             &system_macro_ids,
             &command_ids,
-            commands_trusted,
             &mut errors,
         );
         validate_optional_action(
@@ -84,7 +81,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &user_macro_ids,
             &system_macro_ids,
             &command_ids,
-            commands_trusted,
             &mut errors,
         );
     }
@@ -102,7 +98,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                     &user_macro_ids,
                     &system_macro_ids,
                     &command_ids,
-                    commands_trusted,
                     &mut errors,
                 );
             }
@@ -122,7 +117,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                     &user_macro_ids,
                     &system_macro_ids,
                     &command_ids,
-                    commands_trusted,
                     &mut errors,
                 );
             }
@@ -137,7 +131,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                 &user_macro_ids,
                 &system_macro_ids,
                 &command_ids,
-                commands_trusted,
                 &mut errors,
             );
         }
@@ -172,7 +165,7 @@ fn validate_action_spec(
     user_macro_ids: &HashSet<String>,
     system_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
-    commands_trusted: bool,
+
     errors: &mut Vec<String>,
 ) {
     if let ActionSpec::Action(action) = spec {
@@ -183,7 +176,6 @@ fn validate_action_spec(
             user_macro_ids,
             system_macro_ids,
             command_ids,
-            commands_trusted,
             errors,
         );
     }
@@ -195,7 +187,7 @@ fn validate_optional_action(
     user_macro_ids: &HashSet<String>,
     system_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
-    commands_trusted: bool,
+
     errors: &mut Vec<String>,
 ) {
     if !action.trim().is_empty() {
@@ -206,7 +198,6 @@ fn validate_optional_action(
             user_macro_ids,
             system_macro_ids,
             command_ids,
-            commands_trusted,
             errors,
         );
     }
@@ -218,7 +209,7 @@ fn validate_macro_step(
     user_macro_ids: &HashSet<String>,
     system_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
-    commands_trusted: bool,
+
     errors: &mut Vec<String>,
 ) {
     let action = action.trim();
@@ -238,7 +229,6 @@ fn validate_macro_step(
         user_macro_ids,
         system_macro_ids,
         command_ids,
-        commands_trusted,
         errors,
     );
 }
@@ -250,7 +240,7 @@ fn validate_action(
     user_macro_ids: &HashSet<String>,
     system_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
-    _commands_trusted: bool,
+
     errors: &mut Vec<String>,
 ) {
     let action = action.trim();
@@ -370,7 +360,7 @@ fn macro_path_reaches(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mapper::config::{Command, CommandTrustEntry, Macro, MacroStep, Rule, Settings};
+    use crate::mapper::config::{Command, Macro, MacroStep, Rule, Settings};
     use std::collections::HashMap;
 
     fn empty_cfg() -> AppConfig {
@@ -408,7 +398,7 @@ mod tests {
     }
 
     #[test]
-    fn accepts_unapproved_command_reference_without_enabling_execution() {
+    fn accepts_disabled_command_reference_without_enabling_execution() {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "music".into(),
@@ -424,11 +414,11 @@ mod tests {
             modifier_delay_ms: None,
         });
 
-        validate_config(&cfg).expect("unapproved commands remain inert");
+        validate_config(&cfg).expect("disabled commands remain inert");
     }
 
     #[test]
-    fn accepts_approved_command_reference() {
+    fn accepts_enabled_command_reference() {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "music".into(),
@@ -436,13 +426,7 @@ mod tests {
             working_directory: None,
         });
         cfg.settings.current_layout_id = Some("custom".into());
-        cfg.settings.command_trust.insert(
-            "custom".into(),
-            CommandTrustEntry {
-                fingerprint: "06ccbafa4b07e12f95e16c382f2df1b81452abc13946e27bdff4635279943a9f"
-                    .into(),
-            },
-        );
+        cfg.settings.commands_enabled = true;
         cfg.macros.push(Macro {
             id: "m".into(),
             steps: vec![MacroStep {

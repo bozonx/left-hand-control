@@ -26,7 +26,6 @@ import {
   writeConfigRaw,
   writeCurrentLayoutRaw,
 } from '~/composables/config/storage'
-import { commandFingerprint, commandTrustKey } from '~/utils/commandTrust'
 
 export { getSettingsDir } from '~/composables/config/storage'
 export {
@@ -49,6 +48,7 @@ interface ConfigState {
   applyPreset: (
     preset: LayoutPreset,
     layoutId: string | undefined,
+    activate?: boolean,
   ) => Promise<void>
   markLayoutSavedAs: (layoutId: string) => Promise<void>
   replaceCurrentLayoutSnapshot: (
@@ -110,23 +110,6 @@ export function useConfig(): ConfigState {
     })
   }
 
-  function notifyShellCommandsNeedApproval(
-    preset: LayoutPreset,
-    layoutId: string | undefined,
-  ) {
-    if (preset.commands.length === 0) return
-    const key = commandTrustKey(layoutId)
-    const trusted =
-      config.value.settings.commandTrust[key]?.fingerprint ===
-      commandFingerprint(preset.commands)
-    if (trusted) return
-    toast.add({
-      title: t('commands.approvalToast'),
-      color: 'warning',
-      icon: 'i-lucide-terminal',
-    })
-  }
-
   const persistence = usePersistedState({
     delayMs: 300,
     async onSave() {
@@ -173,34 +156,17 @@ export function useConfig(): ConfigState {
     return true
   }
 
-  let replacingLayout = false
-
   function replacePreset(preset: LayoutPreset, layoutId: string | undefined) {
-    replacingLayout = true
-    try {
-      config.value = applyPresetToConfig(config.value, preset, layoutId)
-    } finally {
-      replacingLayout = false
-    }
+    config.value = applyPresetToConfig(config.value, preset, layoutId)
   }
-
-  watch(
-    () => [commandTrustKey(config.value.settings.currentLayoutId), commandFingerprint(config.value.commands)] as const,
-    ([key, fingerprint], [oldKey, oldFingerprint]) => {
-      if (!loaded.value || replacingLayout || key !== oldKey || fingerprint === oldFingerprint) return
-      const trust = config.value.settings.commandTrust[key]
-      if (trust?.fingerprint === oldFingerprint) trust.fingerprint = fingerprint
-    },
-    { flush: 'sync' },
-  )
 
   async function applyPreset(
     preset: LayoutPreset,
     layoutId: string | undefined,
+    activate = true,
   ) {
-    notifyShellCommandsNeedApproval(preset, layoutId)
     replacePreset(preset, layoutId)
-    if (config.value.settings.layoutMode === 'manual') {
+    if (activate && config.value.settings.layoutMode === 'manual') {
       config.value.settings.manualActiveLayoutId = layoutId
     }
     savedLayoutPreset.value = clonePreset(preset)
@@ -211,17 +177,6 @@ export function useConfig(): ConfigState {
   }
 
   async function markLayoutSavedAs(layoutId: string) {
-    const oldTrustKey = commandTrustKey(config.value.settings.currentLayoutId)
-    const newTrustKey = commandTrustKey(layoutId)
-    const currentFingerprint = commandFingerprint(config.value.commands)
-    if (
-      config.value.settings.commandTrust[oldTrustKey]?.fingerprint ===
-      currentFingerprint
-    ) {
-      config.value.settings.commandTrust[newTrustKey] = {
-        ...config.value.settings.commandTrust[oldTrustKey],
-      }
-    }
     config.value.settings.currentLayoutId = layoutId
     if (config.value.settings.layoutMode === 'manual') {
       config.value.settings.manualActiveLayoutId = layoutId
@@ -235,7 +190,6 @@ export function useConfig(): ConfigState {
     preset: LayoutPreset,
     layoutId: string,
   ) {
-    notifyShellCommandsNeedApproval(preset, layoutId)
     replacePreset(preset, layoutId)
     config.value.settings.layoutMode = 'manual'
     config.value.settings.manualActiveLayoutId = layoutId
@@ -279,6 +233,9 @@ export function useConfig(): ConfigState {
             persistedLayout,
             config.value.settings.currentLayoutId,
           )
+        }
+        if (!Object.hasOwn(JSON.parse(rawConfig).settings ?? {}, 'commandsEnabled')) {
+          config.value.settings.commandsEnabled = config.value.commands.length > 0
         }
         savedLayoutPreset.value = extractPresetFromConfig(config.value)
         layoutSnapshot.value = layoutSnapshotOf(config.value)

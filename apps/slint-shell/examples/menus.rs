@@ -2,7 +2,10 @@ use lhc_core::{config_document::ConfigDocument, storage::StoragePaths};
 use slint::{ComponentHandle, Model};
 use slint_shell::{
     Document, bind_document,
-    ui::{CommandField, MenuEditor, MenuKind, Page, SettingsWindow, Theme},
+    ui::{
+        ActionPicker, MenuEditor, MenuKind, Page, PickerTarget, SettingsEditor, SettingsWindow,
+        Theme,
+    },
 };
 use std::time::Duration;
 
@@ -45,72 +48,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_remove_page();
     assert_eq!(loaded().layout().emoji_pages.len(), 1);
 
-    e.invoke_open(MenuKind::Commands);
-    assert!(!e.get_trusted());
-    e.invoke_trust(true);
-    e.invoke_add_command("Привет".into());
-    assert!(e.get_has_errors());
-    assert_eq!(
-        e.get_commands().row_data(0).unwrap().error.id,
-        "menu-empty-command"
-    );
+    let settings = ui.global::<SettingsEditor>();
+    assert!(!settings.get_commands_enabled());
+    settings.set_commands_enabled(true);
+    settings.invoke_save();
+    let picker = ui.global::<ActionPicker>();
+    picker.invoke_open(PickerTarget::QuickAction, 0, "".into(), false);
+    picker.invoke_select_behavior(2);
+    picker.set_category(8);
+    picker.set_command_name("Привет".into());
+    picker.set_command_script("printf hello".into());
+    picker.invoke_edit_command();
+    picker.invoke_dismiss_picker();
     assert!(loaded().layout().commands.is_empty());
-    e.invoke_open(MenuKind::Emoji);
-    e.set_value("Черновик сохранён".into());
-    e.invoke_set_cell();
-    settle();
-    assert_eq!(
-        loaded().layout().emoji_pages[0].cells["KeyQ"],
-        "Черновик сохранён"
+    picker.invoke_open(PickerTarget::QuickAction, 0, "".into(), false);
+    picker.invoke_select_behavior(2);
+    picker.set_category(8);
+    picker.set_command_name("Привет".into());
+    picker.set_command_script("printf hello".into());
+    picker.invoke_edit_command();
+    let reference = picker.get_value().to_string();
+    picker.invoke_apply();
+    assert_eq!(loaded().layout().commands.len(), 1);
+    assert_eq!(loaded().layout().quick_actions[0].action, reference);
+    settings.set_commands_enabled(false);
+    settings.invoke_save();
+    picker.invoke_open(
+        PickerTarget::QuickAction,
+        0,
+        reference.clone().into(),
+        false,
     );
-    e.invoke_open(MenuKind::Commands);
-    assert_eq!(e.get_commands().row_count(), 1);
-    e.invoke_set_command(0, CommandField::Id, "hello".into());
-    e.invoke_set_command(0, CommandField::Linux, "printf hello".into());
-    assert_eq!(e.get_commands().row_data(0).unwrap().id, "hello");
-    assert_eq!(e.get_commands().row_data(0).unwrap().linux, "printf hello");
-    settle();
-    assert!(!e.get_has_errors());
-    assert_eq!(document.read().layout().commands.len(), 1);
-    e.invoke_trust(true);
-    assert!(document.read().commands_trusted());
-    e.invoke_set_command(0, CommandField::Linux, "printf changed".into());
-    assert_eq!(
-        e.get_commands().row_data(0).unwrap().linux,
-        "printf changed"
-    );
-    assert!(e.get_trusted());
-    settle();
-    assert!(document.read().commands_trusted());
-    assert!(e.get_trusted());
-    e.invoke_set_command(0, CommandField::WorkingDirectory, "~/Documents".into());
-    settle();
-    assert_eq!(
-        loaded().layout().commands[0].working_directory.as_deref(),
-        Some("~/Documents")
-    );
-    assert!(e.get_trusted());
-    e.invoke_trust(false);
-    assert!(!e.get_trusted());
-    e.invoke_set_command(0, CommandField::Linux, "printf blocked".into());
-    settle();
-    assert!(!loaded().commands_trusted());
-    e.invoke_trust(true);
-    e.invoke_add_command("Второй".into());
-    e.invoke_set_command(0, CommandField::Id, "hello".into());
-    settle();
-    assert_eq!(
-        e.get_commands().row_data(1).unwrap().error.id,
-        "menu-duplicate-command"
-    );
-    e.invoke_trust(true);
-    assert_eq!(e.get_status().id.as_str(), "menu-save-first");
-    e.invoke_remove_command(0);
-    assert!(!e.get_has_errors());
-
+    assert!(!picker.get_commands_enabled());
+    assert_eq!(picker.get_notice().id.as_str(), "commands-disabled");
+    assert_eq!(loaded().layout().commands.len(), 1);
+    picker.invoke_dismiss_picker();
+    settings.set_commands_enabled(true);
+    settings.invoke_save();
     e.invoke_open(MenuKind::Quick);
-    assert_eq!(e.get_selected_cell(), -1);
-    e.invoke_set_action(0, "cmd:hello".into(), "Привет".into());
+    assert_eq!(e.get_selected_cell(), 0);
+    e.invoke_set_action(0, reference.clone().into(), "Привет".into());
     assert_eq!(e.get_name().as_str(), "Привет");
     e.set_name("Запуск".into());
     e.invoke_set_name();
@@ -121,13 +98,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(layout.quick_actions[2].action, "text:Здравствуйте");
     assert_eq!(layout.quick_actions[2].name, "text:Здравствуйте");
     let menus = slint_shell::popup_model::ConfiguredMenus { layout };
-    assert_eq!(menus.quick_page("ЗАПУСК", None)[0].1, "cmd:hello");
+    assert_eq!(menus.quick_page("ЗАПУСК", None)[0].1, reference.as_str());
     e.invoke_set_action(0, "macro:missing".into(), "".into());
     assert_ne!(e.get_status().id.as_str(), "");
-    assert_eq!(loaded().layout().quick_actions[0].action, "cmd:hello");
+    assert_eq!(
+        loaded().layout().quick_actions[0].action,
+        reference.as_str()
+    );
     e.invoke_open(MenuKind::Quick);
     assert_eq!(e.get_cells().row_count(), 15);
-    assert_eq!(e.get_value().as_str(), "cmd:hello");
+    assert_eq!(e.get_value().as_str(), reference.as_str());
     paths.save_current_layout("rules: []\n")?;
     e.set_name("conflict".into());
     e.invoke_set_name();
@@ -135,13 +115,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // The conflicting save reloads the document from disk.
     assert_eq!(e.get_status().id.as_str(), "config-external-change");
     assert!(document.read().layout().rules.is_empty());
-    e.invoke_open(MenuKind::Commands);
-    e.invoke_add_command("Плеер".into());
-    e.invoke_set_command(0, CommandField::Id, "hello".into());
-    e.invoke_set_command(0, CommandField::Linux, "playerctl play-pause".into());
-    settle();
+    document.edit(slint_shell::document::View::Shell, |config| {
+        config.save_command(lhc_core::profile::model::Command {
+            id: reference.trim_start_matches("cmd:").into(),
+            name: "Плеер".into(),
+            linux: "playerctl play-pause".into(),
+            working_directory: None,
+        })
+    })?;
     e.invoke_open(MenuKind::Quick);
-    e.invoke_set_action(0, "cmd:hello".into(), "Плеер".into());
+    e.invoke_set_action(0, reference.clone().into(), "Плеер".into());
     e.invoke_set_action(6, "Ctrl+KeyC".into(), "Ctrl+KeyC".into());
     assert_eq!(
         document.read().layout().quick_actions[6].action,
@@ -149,7 +132,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     e.invoke_open(match std::env::var("LHC_MENUS_PAGE").as_deref() {
         Ok("1") => MenuKind::Quick,
-        Ok("2") => MenuKind::Commands,
         _ => MenuKind::Emoji,
     });
     slint::select_bundled_translation("ru")?;
@@ -160,7 +142,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     timer.start(slint::TimerMode::SingleShot,Duration::from_millis(700),move || {
         let ui = weak.upgrade().unwrap();
         if std::env::var_os("LHC_MENUS_NAV").is_some() {
-            for expected in [MenuKind::Quick, MenuKind::Commands, MenuKind::Emoji] {
+            for expected in [MenuKind::Quick, MenuKind::Emoji] {
                 ui.invoke_navigate(Page::Menus, expected);
                 assert_eq!(ui.global::<MenuEditor>().get_kind(), expected);
                 assert_eq!(ui.get_page(), Page::Menus);
@@ -177,7 +159,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for p in pixels.as_slice() { data.extend([p.r,p.g,p.b]); }
             std::fs::write(path,data).unwrap();
         }
-        println!("Menus smoke passed: pages, cells, drag moves, commands, trust, auto-save, validation and conflicts");
+        println!("Menus smoke passed: pages, cells, drag moves, command picker, auto-save, validation and conflicts");
         slint::quit_event_loop().unwrap();
     });
     slint::run_event_loop()?;

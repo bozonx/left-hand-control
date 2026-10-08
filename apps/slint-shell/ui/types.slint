@@ -5,7 +5,7 @@
 export enum Page { keyboard, layouts, settings, rules, layers, macros, menus }
 
 /// Which menu `MenusPage` edits.
-export enum MenuKind { emoji, quick, commands }
+export enum MenuKind { emoji, quick }
 
 /// What a key does inside a layer (or an extra key).
 export enum Assignment { transparent, swallow, action }
@@ -43,10 +43,7 @@ export enum GameCondition { any, on, off }
 export enum GameModeControl { auto, on, off }
 
 /// Who receives the value chosen in the action picker.
-export enum PickerTarget { rule, macro-step, quick-action, layer-key, layer-action, extra-key, extra-action, base-key }
+export enum PickerTarget { rule, macro-step, quick-action, layer-key, layer-action, extra-key, extra-action, base-key, command }
 
 /// Editable field of a macro card.
 export enum MacroField { id, name, step-pause, modifier-delay }
-
-/// Editable field of a command card.
-export enum CommandField { id, name, linux, working-directory }

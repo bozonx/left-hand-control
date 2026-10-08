@@ -76,7 +76,7 @@ Most feature logic lives in composables under `composables/`. Key ones:
 
 - `useConfig()` — central state singleton (see above)
 - `useMapper()` / `useMapperRuntime()` — mapper start/stop, device list
-- `useLayers()`, `useMacros()`, `useRulesEditor()`, `useCommandEditor()` — feature-specific editors, all reading/writing `useConfig().config`
+- `useLayers()`, `useMacros()`, `useRulesEditor()` — feature-specific editors, all reading/writing `useConfig().config`
 - `useLayoutLibrary()` — reading/writing user YAML layout files via Tauri fs commands
 - `useUiState()` — UI-only ephemeral state (selected layer, etc.), persisted to `ui-state.json`
 

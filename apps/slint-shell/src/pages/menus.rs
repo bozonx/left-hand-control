@@ -1,4 +1,4 @@
-//! Emoji menu, quick action menu and shell commands of the layout.
+//! Emoji menu and quick action menu of the layout.
 //!
 //! The page edits a draft of the menus. Changes save as soon as the draft
 //! is valid; typing saves after a short pause.
@@ -6,17 +6,13 @@
 use crate::{
     document::{Document, View},
     i18n::Msg,
-    ui::{CommandField, CommandRow, EmojiCategory, MenuCell, MenuEditor, MenuKind, SettingsWindow},
+    ui::{EmojiCategory, MenuCell, MenuEditor, MenuKind, SettingsWindow},
 };
 use lhc_core::{
     config_document::ConfigError,
-    profile::{
-        ids,
-        menus::{command_issue, empty_quick_action},
-        model::*,
-    },
+    profile::{ids, menus::empty_quick_action, model::*},
 };
-use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
 const PAGE: usize = LEFT_HAND_HOTKEYS.len();
@@ -31,7 +27,6 @@ struct Category {
 struct State {
     /// The menus as last saved or loaded.
     baseline: LayoutPreset,
-    reference_ids: Vec<String>,
     layout: LayoutPreset,
     timer: Option<slint::Timer>,
 }
@@ -73,7 +68,6 @@ fn page_count(kind: MenuKind, layout: &LayoutPreset) -> usize {
     match kind {
         MenuKind::Emoji => layout.emoji_pages.len(),
         MenuKind::Quick => layout.quick_action_pages.len(),
-        MenuKind::Commands => 0,
     }
 }
 
@@ -85,46 +79,11 @@ fn first_filled(layout: &LayoutPreset, page: usize) -> i32 {
         .map_or(-1, |i| i as i32)
 }
 
-fn command_row(config: &AppConfig, commands: &[Command], index: usize) -> CommandRow {
-    let item = &commands[index];
-    CommandRow {
-        id: item.id.clone().into(),
-        name: item.name.clone().into(),
-        linux: item.linux.clone().into(),
-        working_directory: item.working_directory.clone().unwrap_or_default().into(),
-        usage: super::strings(lhc_core::profile::macros::action_usage(
-            config,
-            &format!("cmd:{}", item.id),
-        )),
-        error: command_issue(commands, index)
-            .map_or(Msg::None, Msg::MenuIssue)
-            .to_ui(),
-    }
-}
-
-fn config_of(layout: &LayoutPreset) -> AppConfig {
-    AppConfig::from_parts(AppSettings::default(), layout.clone(), None)
-}
-
-fn has_command_errors(commands: &[Command]) -> bool {
-    (0..commands.len()).any(|i| command_issue(commands, i).is_some())
-}
-
 /// Push the draft to the UI. `fields` also resets the bound text fields,
 /// which must not happen while the user types into them.
 fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
     let e = ui.global::<MenuEditor>();
     let kind = e.get_kind();
-    if kind == MenuKind::Commands {
-        let config = config_of(layout);
-        e.set_commands(ModelRc::new(VecModel::from(
-            (0..layout.commands.len())
-                .map(|i| command_row(&config, &layout.commands, i))
-                .collect::<Vec<_>>(),
-        )));
-        e.set_has_errors(has_command_errors(&layout.commands));
-        return;
-    }
     let names: Vec<String> = if kind == MenuKind::Emoji {
         layout.emoji_pages.iter().map(|p| p.name.clone()).collect()
     } else {
@@ -192,68 +151,13 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
     e.set_cells(ModelRc::new(VecModel::from(cells)));
 }
 
-/// Refresh command errors and usage in place, keeping focus in the rows.
-fn annotate_commands(ui: &SettingsWindow, layout: &LayoutPreset) {
-    let e = ui.global::<MenuEditor>();
-    let commands = &layout.commands;
-    let config = config_of(layout);
-    let rows = e.get_commands();
-    for index in 0..commands.len() {
-        if let Some(mut row) = rows.row_data(index) {
-            let fresh = command_row(&config, commands, index);
-            row.id = fresh.id;
-            row.name = fresh.name;
-            row.linux = fresh.linux;
-            row.working_directory = fresh.working_directory;
-            row.usage = fresh.usage;
-            row.error = fresh.error;
-            rows.set_row_data(index, row);
-        }
-    }
-    e.set_has_errors(has_command_errors(commands));
-}
-
-fn show_trust(ui: &SettingsWindow, document: &Document) {
-    ui.global::<MenuEditor>()
-        .set_trusted(document.read().commands_trusted());
-}
-
-/// Save the draft unless commands have errors.
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.timer = None;
     let e = ui.global::<MenuEditor>();
-    let commands_valid = !has_command_errors(&state.layout.commands);
-    if commands_valid {
-        for index in 0..state.layout.commands.len() {
-            let old = state.reference_ids[index].clone();
-            let new = state.layout.commands[index].id.clone();
-            if old != new {
-                lhc_core::profile::menus::replace_command_references(
-                    &mut state.layout,
-                    &old,
-                    Some(&new),
-                );
-                state.reference_ids[index] = new;
-            }
-        }
-    }
     let baseline = state.baseline.clone();
-    let mut candidate = state.layout.clone();
-    if !commands_valid {
-        candidate.commands = baseline.commands.clone();
-        candidate.rules = baseline.rules.clone();
-        candidate.layer_keymaps = baseline.layer_keymaps.clone();
-        candidate.macros = baseline.macros.clone();
-    }
+    let candidate = state.layout.clone();
     if candidate == baseline {
-        e.set_status(
-            if commands_valid {
-                Msg::None
-            } else {
-                Msg::MenuDraft
-            }
-            .to_ui(),
-        );
+        e.set_status(Msg::None.to_ui());
         return;
     }
     let result = document.edit(View::Menus, |config| {
@@ -262,12 +166,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let message = match result {
         Ok(saved) => {
             state.baseline = document.read().layout().clone();
-            show_trust(ui, document);
-            saved.message(if commands_valid {
-                Msg::None
-            } else {
-                Msg::MenuDraft
-            })
+            saved.message(Msg::None)
         }
         Err(error) => {
             if error == ConfigError::ExternalChange {
@@ -283,9 +182,7 @@ fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.timer = None;
     state.baseline = document.read().layout().clone();
     state.layout = state.baseline.clone();
-    state.reference_ids = state.layout.commands.iter().map(|c| c.id.clone()).collect();
     normalize(&mut state.layout);
-    show_trust(ui, document);
     refresh(ui, &state.layout, true);
 }
 
@@ -310,13 +207,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let mut layout = baseline.clone();
     normalize(&mut layout);
     let state: Shared = Rc::new(RefCell::new(State {
-        reference_ids: layout.commands.iter().map(|c| c.id.clone()).collect(),
         baseline,
         layout,
         timer: None,
     }));
     let e = ui.global::<MenuEditor>();
-    show_trust(ui, document);
     match serde_json::from_str::<Vec<Category>>(include_str!("../../ui/emoji-catalog.json")) {
         Ok(categories) => e.set_catalog(ModelRc::new(VecModel::from(
             categories
@@ -346,8 +241,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             && state.baseline != *document.read().layout()
         {
             reload(&ui, document, &mut state);
-        } else {
-            show_trust(&ui, document);
         }
     });
 
@@ -360,29 +253,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 let Some(ui) = weak.upgrade() else { return };
                 {
                     let mut state = shared.borrow_mut();
-                    let commands = state.layout.commands.clone();
-                    let ids = state.reference_ids.clone();
                     edit(&ui.global::<MenuEditor>(), &mut state.layout);
-                    state.reference_ids = state
-                        .layout
-                        .commands
-                        .iter()
-                        .map(|command| {
-                            commands
-                                .iter()
-                                .position(|old| old == command)
-                                .map(|index| ids[index].clone())
-                                .unwrap_or_else(|| command.id.clone())
-                        })
-                        .collect();
                     normalize(&mut state.layout);
                     ui.global::<MenuEditor>().set_editing_count(0);
                     if !typing {
                         save(&ui, &doc, &mut state);
                     }
                     refresh(&ui, &state.layout, !typing);
-                    ui.global::<MenuEditor>()
-                        .set_trusted(doc.read().commands_trusted());
                 }
                 if typing {
                     save_later(&ui, &doc, &shared);
@@ -403,24 +280,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_editing_count(0);
         e.set_kind(kind);
         e.set_selected_page(0);
-        if state.layout.commands == state.baseline.commands {
-            reload(&ui, &doc, &mut state);
-        }
-        e.set_status(
-            if state.layout.commands != state.baseline.commands {
-                Msg::MenuDraft
-            } else {
-                Msg::None
-            }
-            .to_ui(),
-        );
+        reload(&ui, &doc, &mut state);
+        e.set_status(Msg::None.to_ui());
         e.set_selected_cell(if kind == MenuKind::Quick {
             first_filled(&state.layout, 0)
         } else {
             0
         });
-        e.set_trusted(doc.read().commands_trusted());
-        e.set_has_errors(false);
         refresh(&ui, &state.layout, true);
     });
 
@@ -649,115 +515,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }
             e.set_selected_cell(to as i32);
         });
-    });
-
-    let c = change.clone();
-    e.on_add_command(move |name| {
-        c(false, &|_, layout| {
-            let mut id = ids::generate("cmd_");
-            while layout.commands.iter().any(|c| c.id == id) {
-                id = ids::generate("cmd_");
-            }
-            layout.commands.insert(
-                0,
-                Command {
-                    id,
-                    name: name.to_string(),
-                    linux: String::new(),
-                    working_directory: None,
-                },
-            );
-        });
-    });
-    let c = change.clone();
-    let shared = state.clone();
-    e.on_remove_command(move |index| {
-        let source = usize::try_from(index)
-            .ok()
-            .and_then(|index| shared.borrow().reference_ids.get(index).cloned());
-        c(false, &|_, layout| {
-            if let Ok(index) = usize::try_from(index)
-                && index < layout.commands.len()
-            {
-                let id = source
-                    .clone()
-                    .unwrap_or_else(|| layout.commands[index].id.clone());
-                layout.commands.remove(index);
-                lhc_core::profile::menus::replace_command_references(layout, &id, None);
-            }
-        });
-    });
-    let c = change.clone();
-    e.on_move_command(move |index, target| {
-        c(false, &|_, layout| {
-            let len = layout.commands.len() as i32;
-            let next = target;
-            if (0..len).contains(&index) && (0..len).contains(&next) {
-                let item = layout.commands.remove(index as usize);
-                layout.commands.insert(next as usize, item);
-            }
-        });
-    });
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    e.on_set_command(move |index, field, value| {
-        let Some(ui) = weak.upgrade() else { return };
-        {
-            let mut state = shared.borrow_mut();
-            let Some(index) = usize::try_from(index)
-                .ok()
-                .filter(|index| *index < state.layout.commands.len())
-            else {
-                return;
-            };
-            match field {
-                CommandField::Id => {
-                    let old = state.reference_ids[index].clone();
-                    state.layout.commands[index].id = value.to_string();
-                    if command_issue(&state.layout.commands, index).is_none() {
-                        lhc_core::profile::menus::replace_command_references(
-                            &mut state.layout,
-                            &old,
-                            Some(&value),
-                        );
-                        state.reference_ids[index] = value.to_string();
-                    }
-                }
-                CommandField::Name => state.layout.commands[index].name = value.to_string(),
-                CommandField::Linux => state.layout.commands[index].linux = value.to_string(),
-                CommandField::WorkingDirectory => {
-                    state.layout.commands[index].working_directory =
-                        (!value.trim().is_empty()).then(|| value.trim().to_owned());
-                }
-            }
-            annotate_commands(&ui, &state.layout);
-            ui.global::<MenuEditor>()
-                .set_trusted(doc.read().commands_trusted());
-        }
-        save_later(&ui, &doc, &shared);
-    });
-
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    e.on_trust(move |approve| {
-        let Some(ui) = weak.upgrade() else { return };
-        let e = ui.global::<MenuEditor>();
-        {
-            let mut state = state.borrow_mut();
-            if state.timer.is_some() {
-                save(&ui, &doc, &mut state);
-            }
-            if approve && state.layout.commands != doc.read().layout().commands {
-                e.set_status(Msg::MenuSaveFirst.to_ui());
-                return;
-            }
-        }
-        let message = match doc.edit(View::Menus, |config| config.trust_commands(approve)) {
-            Ok(saved) => saved.message(Msg::None),
-            Err(error) => Msg::from(&error),
-        };
-        show_trust(&ui, &doc);
-        e.set_status(message.to_ui());
     });
 }
 
