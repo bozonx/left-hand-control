@@ -60,12 +60,27 @@ component PickerCell inherits Rectangle {
     accessible-action-default => { root.pick(); }
     function pick() { ActionPicker.value = root.item.value; ActionPicker.refresh(); }
     VerticalLayout { padding: 8px; spacing: 2px;
-        HorizontalLayout { spacing: 5px; CategoryIcon { category: root.item.category; } Text { text: root.item.label; color: Theme.text; wrap: word-wrap; overflow: elide; vertical-alignment: center; } }
+        Text { text: root.item.label; color: Theme.text; wrap: word-wrap; overflow: elide; vertical-alignment: center; }
         if root.item.notice.id != "": Text { text: Locale.text(root.item.notice); color: Theme.warning; font-size: 10px; overflow: elide; }
         if root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
     }
     item-focus := FocusScope { key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.pick(); return accept; } return reject; } }
     item-touch := TouchArea { clicked => { root.pick(); item-focus.focus(); } }
+}
+
+component CategoryButton inherits Rectangle {
+    in property <int> index;
+    in property <string> title;
+    in property <int> count;
+    height: 32px; border-radius: 4px;
+    background: ActionPicker.category == root.index ? Theme.accent : category-touch.has-hover ? Theme.hover : Theme.card;
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 8px; spacing: 7px;
+        CategoryIcon { category: root.index; }
+        Text { text: root.title; color: Theme.text; horizontal-stretch: 1; vertical-alignment: center; overflow: elide; }
+        if root.index < 11: Text { text: "" + root.count; color: Theme.text; vertical-alignment: center; }
+    }
+    category-touch := TouchArea { clicked => { ActionPicker.category = root.index; ActionPicker.query = ""; ActionPicker.refresh(); } }
 }
 
 export component PickerOverlay inherits Rectangle {
@@ -110,10 +125,8 @@ export component PickerOverlay inherits Rectangle {
                         VerticalLayout { spacing: 0px;
                             for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
                                 padding: 0px; padding-bottom: 4px;
-                                if index < 6 || (!ActionPicker.key-only && (index < 12 || ActionPicker.macro-step)): Button {
-                                    text: title + (index < 11 ? "  " + ActionPicker.counts[index] : "");
-                                    primary: ActionPicker.category == index;
-                                    clicked => { ActionPicker.category = index; ActionPicker.query = ""; ActionPicker.refresh(); }
+                                if index < 6 || (!ActionPicker.key-only && (index < 12 || ActionPicker.macro-step)): CategoryButton {
+                                    index: index; title: title; count: ActionPicker.counts[index];
                                 }
                             }
                         }
