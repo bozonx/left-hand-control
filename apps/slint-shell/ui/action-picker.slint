@@ -6,7 +6,7 @@ import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit } from "std-widg
 export struct PickerItem { value: string, label: string, category: int, notice: Message }
 export component CategoryIcon inherits Rectangle {
     in property <int> category;
-    width: 16px; height: 16px; background: transparent;
+    width: 20px; height: 20px; background: transparent;
     if root.category == 0: Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
     if root.category == 1: Image { source: @image-url("icons/text-cursor-input.svg"); colorize: Theme.muted; }
     if root.category == 2: Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
@@ -59,10 +59,13 @@ component PickerCell inherits Rectangle {
     accessible-label: item.label;
     accessible-action-default => { root.pick(); }
     function pick() { ActionPicker.value = root.item.value; ActionPicker.refresh(); }
-    VerticalLayout { padding: 8px; spacing: 2px;
+    HorizontalLayout { padding: 8px; spacing: 7px;
+        CategoryIcon { category: root.item.category; }
+        VerticalLayout { spacing: 2px;
         Text { text: root.item.label; color: Theme.text; wrap: word-wrap; overflow: elide; vertical-alignment: center; }
         if root.item.notice.id != "": Text { text: Locale.text(root.item.notice); color: Theme.warning; font-size: 10px; overflow: elide; }
-        if root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
+        if !root.compact && root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
+        }
     }
     item-focus := FocusScope { key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.pick(); return accept; } return reject; } }
     item-touch := TouchArea { clicked => { root.pick(); item-focus.focus(); } }
@@ -73,7 +76,8 @@ component CategoryButton inherits Rectangle {
     in property <string> title;
     in property <int> count;
     height: 32px; border-radius: 4px;
-    background: ActionPicker.category == root.index ? Theme.accent : category-touch.has-hover ? Theme.hover : Theme.card;
+    background: ActionPicker.category == root.index ? Theme.accent : category-touch.has-hover && ActionPicker.query == "" ? Theme.hover : Theme.card;
+    opacity: ActionPicker.query == "" ? 1 : 0.55;
     HorizontalLayout {
         padding-left: 8px; padding-right: 8px; spacing: 7px;
         CategoryIcon { category: root.index; }
@@ -103,8 +107,6 @@ export component PickerOverlay inherits Rectangle {
                         Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
                         Text { text: @tr("Previously selected: {}", ActionPicker.original); color: Theme.muted; overflow: elide; }
                     }
-                    Button { width: 110px; height: 34px; horizontal-stretch: 0; text: @tr("Cancel"); clicked => { ActionPicker.dismiss-picker(); } }
-                    Button { width: 125px; height: 34px; horizontal-stretch: 0; primary: true; text: @tr("Apply"); enabled: ActionPicker.valid && !ActionPicker.capturing; clicked => { ActionPicker.apply(); } }
                 }
                 Text { text: @tr("Current value"); color: Theme.muted; }
                 HorizontalBox { vertical-stretch: 0;
@@ -119,9 +121,10 @@ export component PickerOverlay inherits Rectangle {
                 if ActionPicker.notice.id != "": Text { text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
                 if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
                 if !ActionPicker.valid: Text { text: @tr("Choose a valid key or action."); color: Theme.error; }
-                LineEdit { text <=> ActionPicker.query; placeholder-text: @tr("Search keys and actions"); edited => { if ActionPicker.query != "" && ActionPicker.category >= 11 { ActionPicker.category = 0; } ActionPicker.refresh(); } }
                 HorizontalBox { spacing: 12px;
-                    ScrollView { viewport-width: self.visible-width; width: 195px;
+                    VerticalBox { padding: 0px; spacing: 8px; width: 220px; horizontal-stretch: 0;
+                    LineEdit { text <=> ActionPicker.query; placeholder-text: @tr("Search keys and actions"); edited => { if ActionPicker.query != "" && ActionPicker.category >= 11 { ActionPicker.category = 0; } ActionPicker.refresh(); } }
+                    ScrollView { viewport-width: self.visible-width;
                         VerticalLayout { spacing: 0px;
                             for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
                                 padding: 0px; padding-bottom: 4px;
@@ -130,6 +133,7 @@ export component PickerOverlay inherits Rectangle {
                                 }
                             }
                         }
+                    }
                     }
                     VerticalBox { padding: 0px;
                         if ActionPicker.category == 11: VerticalBox { padding: 0px;
@@ -142,17 +146,22 @@ export component PickerOverlay inherits Rectangle {
                         }
                         if ActionPicker.category < 11: ScrollView { viewport-width: self.visible-width;
                             VerticalLayout { spacing: 0px;
-                                for row in ceil(ActionPicker.items.length / (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2)): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
-                                    for col in (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2): PickerCell {
-                                        item: ActionPicker.items[row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col];
-                                        visible: row * (ActionPicker.category < 6 && ActionPicker.query == "" ? 3 : 2) + col < ActionPicker.items.length;
-                                        compact: ActionPicker.category < 6 && ActionPicker.query == "";
+                                for row in ceil(ActionPicker.items.length / 2): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
+                                    for col in 2: PickerCell {
+                                        item: ActionPicker.items[row * 2 + col];
+                                        visible: row * 2 + col < ActionPicker.items.length;
+                                        compact: ActionPicker.query != "" || ActionPicker.category < 6;
                                     }
                                 }
                             }
                         }
                         if ActionPicker.category < 11 && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
                     }
+                }
+                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                    Rectangle { background: transparent; horizontal-stretch: 1; }
+                    Button { width: 110px; height: 34px; horizontal-stretch: 0; text: @tr("Cancel"); clicked => { ActionPicker.dismiss-picker(); } }
+                    Button { width: 125px; height: 34px; horizontal-stretch: 0; primary: true; text: @tr("Apply"); enabled: ActionPicker.valid && !ActionPicker.capturing; clicked => { ActionPicker.apply(); } }
                 }
             }
         }
