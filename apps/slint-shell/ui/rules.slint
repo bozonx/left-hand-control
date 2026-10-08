@@ -8,7 +8,7 @@ import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, CheckBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
+export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -33,6 +33,11 @@ export global RulesEditor {
     in-out property <string> hold-for;
     in-out property <string> hold-timeout;
     in-out property <string> double-timeout;
+    in-out property <string> original-isolate;
+    in-out property <string> original-hold-for;
+    in-out property <string> original-hold-timeout;
+    in-out property <string> original-double-timeout;
+    out property <bool> advanced-dirty: isolate != original-isolate || hold-for != original-hold-for || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
     in-out property <bool> enabled: true;
     in-out property <bool> swallow-tap;
     in-out property <bool> swallow-hold;
@@ -121,7 +126,19 @@ export component RulesPage inherits VerticalBox {
                         DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
                         CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
                         Rectangle { horizontal-stretch: 1; }
-                        IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
+                        if rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" || rule.hold-for != "": Text {
+                            min-width: 0px; max-width: 420px; overflow: elide; vertical-alignment: center;
+                            text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
+                                + (rule.double-timeout != "" ? (rule.hold-timeout != "" ? " · " : "") + @tr("Double tap: {} ms", rule.double-timeout) : "")
+                                + (rule.isolate != "" ? ((rule.hold-timeout != "" || rule.double-timeout != "" ? " · " : "") + @tr("Release for {}", rule.isolate)) : "")
+                                + (rule.hold-for != "" ? ((rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" ? " · " : "") + @tr("Hold with {}", rule.hold-for)) : "");
+                            color: Theme.muted;
+                        }
+                        IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
+                            if RulesEditor.dialog == RuleDialog.advanced && RulesEditor.selected == index && RulesEditor.advanced-dirty: Rectangle {
+                                x: parent.width - 5px; y: 3px; width: 7px; height: 7px; border-radius: 4px; background: Theme.accent;
+                            }
+                        }
                     }
                     HorizontalLayout { min-width: 0px; spacing: 16px;
                         trigger-column := VerticalLayout { width: max(0px, min(220px, (rule-scroll.visible-width - 61px) * 0.35)); horizontal-stretch: 0; spacing: 10px; alignment: start;
@@ -141,13 +158,6 @@ export component RulesPage inherits VerticalBox {
                             HorizontalLayout { min-width: 0px; spacing: 12px;
                                 RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
                                 RuleCell { title: @tr("Hold action"); value: rule.hold; empty-text: rule.swallow-hold ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
-                            }
-                            if rule.hold-timeout != "" || rule.double-timeout != "" || rule.advanced: Text {
-                                text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
-                                    + (rule.hold-timeout != "" && rule.double-timeout != "" ? " · " : "")
-                                    + (rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "")
-                                    + (rule.advanced ? (rule.hold-timeout != "" || rule.double-timeout != "" ? " · " : "") + @tr("Custom hold options") : "");
-                                color: Theme.muted; wrap: word-wrap;
                             }
                         }
                     }

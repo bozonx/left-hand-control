@@ -1354,6 +1354,12 @@ msgstr "Двойное нажатие: {} мс"
 msgid "Custom hold options"
 msgstr "Особые параметры удержания"
 
+msgid "Release for {}"
+msgstr "Отпускать при {}"
+
+msgid "Hold with {}"
+msgstr "Удержание с {}"
+
 msgid "Leave empty to use the global timing settings."
 msgstr "Оставьте пустым, чтобы использовать общие настройки времени."
 

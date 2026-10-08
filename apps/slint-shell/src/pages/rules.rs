@@ -99,6 +99,8 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 excluded: join(&rule.condition_apps_blacklist).into(),
                 hold_timeout: timeout_text(rule.hold_timeout_ms).into(),
                 double_timeout: timeout_text(rule.double_tap_timeout_ms).into(),
+                isolate: rule.isolate.clone().unwrap_or_default().into(),
+                hold_for: rule.hold_for.clone().unwrap_or_default().into(),
                 enabled: rule.is_enabled(),
                 swallow_tap: rule.tap_action.is_none(),
                 swallow_hold: rule.hold_action.is_none(),
@@ -129,6 +131,10 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_hold_for(rule.hold_for.clone().unwrap_or_default().into());
     editor.set_hold_timeout(timeout_text(rule.hold_timeout_ms).into());
     editor.set_double_timeout(timeout_text(rule.double_tap_timeout_ms).into());
+    editor.set_original_isolate(rule.isolate.clone().unwrap_or_default().into());
+    editor.set_original_hold_for(rule.hold_for.clone().unwrap_or_default().into());
+    editor.set_original_hold_timeout(timeout_text(rule.hold_timeout_ms).into());
+    editor.set_original_double_timeout(timeout_text(rule.double_tap_timeout_ms).into());
 }
 
 /// Status after a saved change: mapper problems first, then rule warnings.
