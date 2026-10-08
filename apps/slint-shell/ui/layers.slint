@@ -7,7 +7,6 @@ import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
 import { Button, HorizontalBox, LineEdit, Palette, VerticalBox } from "std-widgets.slint";
-import { SelectField } from "controls.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
@@ -113,7 +112,7 @@ component ActionText inherits HorizontalLayout {
     Text {
         min-width: 0px;
         horizontal-stretch: 1;
-        text: root.kind == Assignment.transparent ? "—" : root.kind == Assignment.swallow ? @tr("Ignore key") : root.action;
+        text: root.kind == Assignment.transparent ? "—" : root.kind == Assignment.swallow ? @tr("Suppress") : root.action;
         color: root.kind == Assignment.transparent ? Theme.muted : Theme.link;
         font-size: root.text-size;
         font-weight: root.kind == Assignment.transparent ? 400 : 500;
@@ -157,7 +156,7 @@ component KeyCap inherits Rectangle {
     background: Theme.surface;
     accessible-role: button;
     accessible-label: root.cell.label;
-    accessible-description: root.cell.kind == Assignment.transparent ? "" : root.cell.kind == Assignment.swallow ? @tr("Ignore key") : root.cell.action;
+    accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.action;
     accessible-action-default => { root.clicked(); }
     VerticalLayout {
         padding: 4px;
@@ -459,7 +458,7 @@ export component LayersPage inherits VerticalLayout {
                                     spacing: 2px;
                                     Text { text: @tr("Action"); color: Theme.muted; font-size: 11px; }
                                     ExtraFieldButton {
-                                        text: extra.kind == Assignment.transparent ? @tr("Pass through") : extra.kind == Assignment.swallow ? @tr("Ignore key") : extra.action;
+                                        text: extra.kind == Assignment.transparent ? @tr("Normal key behavior") : extra.kind == Assignment.swallow ? @tr("Suppress") : extra.action;
                                         clicked => { LayersEditor.pick-extra(index, false); }
                                     }
                                 }
@@ -514,10 +513,14 @@ export component LayerDialogOverlay inherits FocusScope {
                         LineEdit { text <=> LayersEditor.dialog-key; horizontal-stretch: 1; }
                         Button { text: @tr("Choose trigger key"); clicked => { ActionPicker.open(PickerTarget.layer-key, 0, LayersEditor.dialog-key, true); } }
                     }
-                    SelectField {
-                        model: LayersEditor.dialog == LayerDialog.extra-key ? [@tr("Native"), @tr("Swallow"), @tr("Action")] : [@tr("Transparent"), @tr("Swallow"), @tr("Action")];
-                        current-index: LayersEditor.assignment == Assignment.swallow ? 1 : LayersEditor.assignment == Assignment.action ? 2 : 0;
-                        selected(value) => { LayersEditor.assignment = self.current-index == 1 ? Assignment.swallow : self.current-index == 2 ? Assignment.action : Assignment.transparent; }
+                    Text { text: @tr("Behavior"); color: Theme.muted; }
+                    HorizontalBox { spacing: 8px;
+                        Button { text: LayersEditor.dialog == LayerDialog.extra-key ? @tr("Normal key behavior") : @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
+                        Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
+                        Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
+                    }
+                    if LayersEditor.assignment != Assignment.action: Text {
+                        text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : LayersEditor.dialog == LayerDialog.extra-key ? @tr("Send the original key to the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
                     }
                     if LayersEditor.assignment == Assignment.action: HorizontalBox { vertical-stretch: 0; spacing: 8px;
                         LineEdit { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
@@ -529,7 +532,7 @@ export component LayerDialogOverlay inherits FocusScope {
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
-                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; clicked => { LayersEditor.apply-dialog(); } }
+                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; enabled: (LayersEditor.dialog != LayerDialog.extra-key || LayersEditor.dialog-key != "") && ((LayersEditor.dialog != LayerDialog.extra-key && LayersEditor.dialog != LayerDialog.edit-key) || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
                 }
             }
         }

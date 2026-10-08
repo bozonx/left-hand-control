@@ -584,6 +584,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             let Some(item) = layout.quick_actions.get_mut(page * PAGE + cell_index) else {
                 return;
             };
+            if action.is_empty() {
+                *item = empty_quick_action();
+                e.set_selected_cell(-1);
+                return;
+            }
             let automatic = item.name.trim().is_empty() || item.name == item.action;
             if item.action.trim().is_empty() {
                 *item = QuickAction {

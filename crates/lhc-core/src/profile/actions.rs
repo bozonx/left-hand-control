@@ -253,7 +253,7 @@ pub enum ActionIssue {
 pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
     match action {
         Action::Native | Action::Swallow | Action::Text(_) => None,
-        Action::Keys(keys) => (!is_chord(keys)).then_some(ActionIssue::InvalidSyntax),
+        Action::Keys(keys) => (!valid_held_key(keys)).then_some(ActionIssue::InvalidSyntax),
         Action::Pause(_) => Some(ActionIssue::PauseOutsideMacro),
         Action::Macro(id) => {
             let known = config.macros.iter().any(|item| &item.id == id)
@@ -331,12 +331,39 @@ pub fn execution_issue(
     check(action, config, trusted, 0)
 }
 
-fn is_chord(value: &str) -> bool {
-    let tokens: Vec<&str> = value.split('+').map(str::trim).collect();
-    !tokens.iter().any(|token| token.is_empty())
-        && tokens
+pub fn valid_held_key(value: &str) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        crate::mapper::action::parse_action(value).is_some()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut tokens = value.split('+').map(str::trim).collect::<Vec<_>>();
+        let Some(key) = tokens.pop() else {
+            return false;
+        };
+        super::key_catalog::CATEGORIES
             .iter()
-            .all(|token| token.chars().all(|c| c.is_ascii_alphanumeric()))
+            .any(|keys| keys.contains(&key))
+            && tokens.iter().all(|modifier| {
+                matches!(
+                    *modifier,
+                    "Ctrl"
+                        | "ControlLeft"
+                        | "ControlRight"
+                        | "Shift"
+                        | "ShiftLeft"
+                        | "ShiftRight"
+                        | "Alt"
+                        | "AltLeft"
+                        | "AltRight"
+                        | "AltGr"
+                        | "Meta"
+                        | "MetaLeft"
+                        | "MetaRight"
+                )
+            })
+    }
 }
 
 #[cfg(test)]
@@ -385,6 +412,8 @@ mod tests {
         let check = |raw: &str| validate(&Action::parse(Some(raw)), &config);
         assert_eq!(check("Ctrl+KeyC"), None);
         assert_eq!(check("Ctrl+"), Some(ActionIssue::InvalidSyntax));
+        assert_eq!(check("NotAKey"), Some(ActionIssue::InvalidSyntax));
+        assert_eq!(check("KeyA+KeyB"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("macro:copyLine"), None);
         assert_eq!(check("macro:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("cmd:nope"), Some(ActionIssue::UnknownCommand));

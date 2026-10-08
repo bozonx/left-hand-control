@@ -1668,3 +1668,66 @@ msgstr "Разблокируйте команды на странице «Ком
 
 msgid "Main"
 msgstr "Основное"
+
+msgid "Saved assignment: {}"
+msgstr "Сохранённое назначение: {}"
+
+msgid "Behavior"
+msgstr "Поведение"
+
+msgid "Inherit"
+msgstr "Наследовать"
+
+msgid "No separate action"
+msgstr "Без отдельного действия"
+
+msgid "Activate layer only"
+msgstr "Только активировать слой"
+
+msgid "Normal key behavior"
+msgstr "Обычное поведение"
+
+msgid "Suppress"
+msgstr "Подавлять"
+
+msgid "Assign held key"
+msgstr "Назначить удержание"
+
+msgid "Perform action"
+msgstr "Выполнить действие"
+
+msgid "The key will not reach the application."
+msgstr "Нажатие не будет передано приложению."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Использовать назначение из нижележащего слоя или базовой раскладки."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Не назначать отдельное действие для этого жеста."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr "Удержание активирует выбранный слой. Исходная клавиша не передаётся."
+
+msgid "Send the original key to the application."
+msgstr "Передавать исходную клавишу приложению."
+
+msgid "Capture shortcut"
+msgstr "Записать сочетание"
+
+msgid "Choose a valid trigger key."
+msgstr "Выберите допустимую клавишу-триггер."
+
+msgid "Choose a valid action."
+msgstr "Выберите допустимое действие."
+
+msgid "Empty cell"
+msgstr "Пустая ячейка"
+
+msgid "Remove the action from this menu cell."
+msgstr "Удалить действие из этой ячейки меню."
+
+msgid "Edit assignment"
+msgstr "Изменить назначение"
+
+msgid "Holding also activates the selected layer."
+msgstr "Удержание также активирует выбранный слой."

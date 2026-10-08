@@ -126,6 +126,13 @@ export global Locale {
         if m.id == "copy-name" { return @tr("{} (copy)", m.arg); }
         if m.id == "mapper-required" { return @tr("Start the mapper to run actions from the menus"); }
         if m.id == "layer-name-required" { return @tr("Enter a layer name"); }
+        if m.id == "action-required" { return @tr("Choose a valid action."); }
+        if m.id == "picker-suppress" { return @tr("Suppress"); }
+        if m.id == "picker-inherit" { return @tr("Inherit"); }
+        if m.id == "picker-native" { return @tr("Normal key behavior"); }
+        if m.id == "picker-empty-cell" { return @tr("Empty cell"); }
+        if m.id == "picker-no-action" { return @tr("No separate action"); }
+        if m.id == "picker-layer-only" { return @tr("Activate layer only"); }
         if m.id == "key-code-required" { return @tr("Enter a key code"); }
         if m.id == "timeout-invalid" { return @tr("Enter a non-negative integer for each timeout"); }
         if m.id == "saved-mapper-not-updated" { return @tr("Saved, but the mapper was not updated: {}", m.arg); }

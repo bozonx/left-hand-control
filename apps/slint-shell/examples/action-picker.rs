@@ -22,15 +22,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(rules.get_dialog(), RuleDialog::None, "the picker replaces the dialog");
     assert_eq!(
         picker.get_counts().iter().collect::<Vec<_>>(),
-        [40, 37, 27, 15, 8, 43, 0, 0, 0, 0, 0]
+        [40, 37, 27, 15, 5, 43, 0, 0, 0, 0, 0]
     );
+    picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());
     picker.invoke_dismiss_picker();
     assert_eq!(document.read().layout().rules.len(), count);
     rules.invoke_add();
+    picker.invoke_select_behavior(2);
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert!(picker.get_opened(), "a trigger must be a key");
+    picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
@@ -45,27 +48,55 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(picker.get_items().iter().any(|item| item.category == category));
     }
     assert_eq!(picker.get_category(), 11);
+    picker.invoke_select_behavior(2);
     picker.set_value("KeyA".into());
     picker.invoke_refresh();
     assert_eq!(picker.get_value_category(), 1);
     picker.set_query("громкость".into());
     picker.invoke_refresh();
     assert!(picker.get_items().row_count() >= 2);
+    picker.invoke_select_behavior(2);
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert_eq!(
         document.read().layout().rules[index as usize].tap_action.as_deref(),
         Some("macro:copyLine")
     );
+    rules.invoke_open_dialog(index, RuleDialog::Tap);
+    picker.invoke_select_behavior(2);
+    picker.set_value("KeyB".into());
+    picker.invoke_select_behavior(1);
+    assert_eq!(picker.get_value(), "KeyB");
+    picker.invoke_select_behavior(2);
+    assert_eq!(picker.get_value(), "KeyB");
+    picker.set_value("".into());
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    assert!(!picker.get_valid());
+    picker.invoke_dismiss_picker();
+    assert_eq!(document.read().layout().rules[index as usize].tap_action.as_deref(), Some("macro:copyLine"));
+    rules.invoke_open_dialog(index, RuleDialog::Hold);
+    picker.invoke_select_behavior(2);
+    picker.set_value("macro:copyLine".into());
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    picker.invoke_dismiss_picker();
+    rules.invoke_open_dialog(index, RuleDialog::Key);
+    picker.set_value("MouseLeft".into());
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    picker.invoke_dismiss_picker();
     let macros = ui.global::<MacroEditor>();
     macros.invoke_add("Self".into());
     macros.invoke_set_field(0, MacroField::Id, "self".into());
     macros.invoke_add_step(0, "KeyA".into());
     macros.set_picker_macro(0);
     picker.invoke_open(PickerTarget::MacroStep, 0, "KeyA".into(), false);
+    picker.invoke_select_behavior(2);
     picker.set_value("macro:self".into());
     picker.invoke_apply();
     assert!(picker.get_opened(), "a macro cannot call itself");
+    picker.invoke_select_behavior(2);
     picker.set_value("pause:250".into());
     picker.invoke_apply();
     assert_eq!(
@@ -75,6 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(document.read().layout().macros[0].steps[0].action, "pause:250");
     ui.invoke_navigate(Page::Menus, MenuKind::Quick);
     picker.invoke_open(PickerTarget::QuickAction, 1, "".into(), false);
+    picker.invoke_select_behavior(2);
     picker.set_value("text:Привет\nмир".into());
     picker.invoke_apply();
     let menus = ui.global::<MenuEditor>();
@@ -84,16 +116,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let layers = ui.global::<LayersEditor>();
     layers.set_dialog_key("F13".into());
     picker.invoke_open(PickerTarget::LayerKey, 0, "F13".into(), true);
+    picker.invoke_select_behavior(2);
     picker.set_value("NumpadEnter".into());
     picker.invoke_apply();
     assert_eq!(layers.get_dialog_key(), "NumpadEnter");
     layers.set_dialog(LayerDialog::EditKey);
     picker.invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
+    picker.invoke_select_behavior(2);
     picker.set_value("Ctrl+KeyC".into());
     picker.invoke_apply();
     assert_eq!(layers.get_dialog_action(), "Ctrl+KeyC");
     layers.set_dialog(LayerDialog::None);
     ui.global::<KeyEditor>().invoke_edit(33);
+    picker.invoke_select_behavior(2);
     picker.set_value("text:example".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
@@ -109,6 +144,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         picker.invoke_refresh();
     }
     if let Ok(value) = std::env::var("LHC_PICKER_VALUE") {
+        picker.invoke_select_behavior(2);
         picker.set_value(value.into());
         picker.invoke_refresh();
     }

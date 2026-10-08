@@ -183,9 +183,33 @@ pub const CATEGORIES: &[&[&str]] = &[
     ],
 ];
 
+pub fn valid_key(value: &str) -> bool {
+    CATEGORIES.iter().any(|keys| keys.contains(&value))
+}
+
+pub fn valid_trigger(value: &str) -> bool {
+    valid_key(value) && !matches!(value, "MouseLeft" | "MouseRight" | "MouseMiddle")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn required_keys_and_rule_triggers() {
+        assert!(valid_key("MouseLeft"));
+        assert!(valid_trigger("F13"));
+        for value in [
+            "",
+            "NotAKey",
+            "Ctrl+KeyA",
+            "MouseLeft",
+            "MouseRight",
+            "MouseMiddle",
+        ] {
+            assert!(!valid_trigger(value));
+        }
+    }
+
     #[test]
     fn complete_catalog_has_unique_key_codes() {
         assert_eq!(

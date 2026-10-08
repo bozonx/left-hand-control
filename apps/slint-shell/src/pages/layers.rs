@@ -301,6 +301,20 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
     let key = editor.get_dialog_key().trim().to_owned();
     let action = editor.get_dialog_action().to_string();
     let assignment = editor.get_assignment();
+    if matches!(dialog, LayerDialog::EditKey | LayerDialog::ExtraKey)
+        && assignment == Assignment::Action
+    {
+        if action.trim().is_empty() {
+            return Err(Msg::ActionRequired);
+        }
+        let parsed = actions::Action::parse(Some(&action));
+        if matches!(&parsed, actions::Action::Text(text) if text.is_empty()) {
+            return Err(Msg::TextEmpty);
+        }
+        if let Some(issue) = actions::validate(&parsed, &document.read().config()) {
+            return Err(Msg::InvalidAction(issue));
+        }
+    }
     if matches!(
         dialog,
         LayerDialog::Create | LayerDialog::Rename | LayerDialog::Duplicate
@@ -339,7 +353,7 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
             change(ui, document, |config| config.set_layer_key(&id, key, value))?
         }
         LayerDialog::ExtraKey => {
-            if key.is_empty() {
+            if !lhc_core::profile::key_catalog::valid_key(&key) {
                 return Err(Msg::KeyCodeRequired);
             }
             let value = match assignment {
@@ -442,6 +456,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_update_extra_key(move |index, key| {
         let Some(ui) = weak.upgrade() else { return };
+        if !lhc_core::profile::key_catalog::valid_key(key.trim()) {
+            ui.global::<LayersEditor>()
+                .set_status(Msg::KeyCodeRequired.to_ui());
+            return;
+        }
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
@@ -606,7 +625,7 @@ pub(super) fn assign_extra(
         .and_then(|map| row.and_then(|row| map.extras.get(row)))
         .cloned();
     let (key, action) = if key_only {
-        if value.trim().is_empty() {
+        if !lhc_core::profile::key_catalog::valid_key(value) {
             return Err(Msg::KeyCodeRequired);
         }
         (
@@ -615,7 +634,7 @@ pub(super) fn assign_extra(
         )
     } else {
         let extra = existing.ok_or(Msg::KeyCodeRequired)?;
-        if extra.key.is_empty() {
+        if !lhc_core::profile::key_catalog::valid_key(&extra.key) {
             return Err(Msg::KeyCodeRequired);
         }
         (

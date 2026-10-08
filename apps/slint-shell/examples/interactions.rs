@@ -147,6 +147,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let library = ui.global::<LayoutLibrary>();
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
     ui.global::<KeyEditor>().invoke_edit(33);
+    picker.invoke_select_behavior(2);
     picker.set_value("text:Привет 👋".into());
     picker.invoke_apply();
     library.invoke_save_as("Test layout".into());
@@ -154,6 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_dirty());
     assert_eq!(library.get_current_label(), "Test layout");
     ui.global::<KeyEditor>().invoke_edit(33);
+    picker.invoke_select_behavior(2);
     picker.set_value("text:Changed".into());
     picker.invoke_apply();
     assert!(library.get_dirty());
@@ -287,18 +289,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(document.read().layout().rules.len(), count);
     rules.invoke_add();
     let picker = ui.global::<ActionPicker>();
+    picker.invoke_select_behavior(2);
     picker.set_value("CapsLock".into());
     picker.invoke_apply();
     assert_eq!(rules.get_selected(), 0);
     assert_eq!(document.read().layout().rules[0].key, "CapsLock");
     assert_eq!(document.read().layout().rules[1].key, "F14");
     rules.invoke_open_dialog(0, RuleDialog::Tap);
-    picker.set_ignore_key(true);
+    picker.invoke_select_behavior(1);
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(document.read().layout().rules[0].tap_action, None);
     rules.invoke_open_dialog(0, RuleDialog::Tap);
-    picker.set_ignore_key(false);
+    picker.invoke_select_behavior(0);
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(
@@ -335,6 +338,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         3
     );
     layers.invoke_add_extra();
+    picker.invoke_select_behavior(2);
     picker.set_value("F16".into());
     picker.invoke_apply();
     assert_eq!(
@@ -347,7 +351,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     layers.invoke_pick_extra(3, false);
     assert!(picker.get_layer_action());
-    picker.set_ignore_key(true);
+    picker.invoke_select_behavior(1);
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(
@@ -355,6 +359,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     );
     layers.invoke_pick_extra(3, true);
+    picker.invoke_select_behavior(2);
     picker.set_value("F17".into());
     picker.invoke_apply();
     assert_eq!(
@@ -371,7 +376,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(picker.get_opened());
     assert!(picker.get_layer_action());
     assert_eq!(layers.get_dialog(), LayerDialog::None);
-    picker.set_ignore_key(true);
+    picker.invoke_select_behavior(1);
     picker.set_value("".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
@@ -381,7 +386,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
     assert!(picker.get_ignore_key());
-    picker.set_ignore_key(false);
+    picker.invoke_select_behavior(0);
     picker.invoke_apply();
     assert_eq!(
         document.read().layer_key(&second, "Escape"),

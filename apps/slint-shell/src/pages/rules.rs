@@ -106,8 +106,12 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 swallow_hold: rule.hold_action.is_none(),
                 advanced: rule.isolate.is_some() || rule.hold_for.is_some(),
                 key_category: super::picker::category_for_value(&rule.key),
-                tap_category: super::picker::category_for_value(rule.tap_action.as_deref().unwrap_or_default()),
-                hold_category: super::picker::category_for_value(rule.hold_action.as_deref().unwrap_or_default()),
+                tap_category: super::picker::category_for_value(
+                    rule.tap_action.as_deref().unwrap_or_default(),
+                ),
+                hold_category: super::picker::category_for_value(
+                    rule.hold_action.as_deref().unwrap_or_default(),
+                ),
                 double_category: super::picker::category_for_value(&rule.double_tap_action),
             })
             .collect::<Vec<_>>(),
@@ -224,10 +228,10 @@ fn set_field(rule: &mut LayerRule, field: RuleField, value: &str, current: &str)
 pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> Result<(), Msg> {
     let editor = ui.global::<RulesEditor>();
     let property = editor.get_field();
+    if property == RuleDialog::Key && !lhc_core::profile::key_catalog::valid_trigger(value) {
+        return Err(Msg::KeyCodeRequired);
+    }
     if property == RuleDialog::Key && editor.get_selected() == -1 {
-        if value.trim().is_empty() {
-            return Err(Msg::None);
-        }
         change(ui, document, true, |layout| {
             let id = unique_rule_id(&layout.rules);
             layout.rules.insert(0, LayerRule::new(id, value));
@@ -243,6 +247,12 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
         refresh(ui, document, true);
         editor.set_field(RuleDialog::None);
         return Ok(());
+    }
+    if property == RuleDialog::Hold
+        && !value.is_empty()
+        && !lhc_core::profile::actions::valid_held_key(value)
+    {
+        return Err(Msg::ActionRequired);
     }
     let index = selected(ui, document).ok_or(Msg::None)?;
     // Validate before saving so a bad value leaves the rule untouched.

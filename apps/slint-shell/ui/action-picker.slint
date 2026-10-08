@@ -27,6 +27,16 @@ export global ActionPicker {
     in-out property <bool> layer-action;
     in-out property <bool> rule-action;
     in-out property <bool> ignore-key;
+    in property <bool> allow-default;
+    in property <bool> allow-swallow;
+    in property <bool> inherit-default;
+    in property <bool> empty-default;
+    in property <bool> quick-action;
+    in property <bool> hold-layer;
+    in property <bool> hold-action;
+    in-out property <int> behavior: 2;
+    in-out property <bool> touched;
+    callback select-behavior(int);
     in-out property <Message> error;
     in property <Message> notice;
     in-out property <bool> key-only;
@@ -62,7 +72,7 @@ component PickerCell inherits Rectangle {
     accessible-role: button;
     accessible-label: item.label;
     accessible-action-default => { root.pick(); }
-    function pick() { ActionPicker.value = root.item.value; ActionPicker.refresh(); }
+    function pick() { ActionPicker.touched = true; ActionPicker.value = root.item.value; ActionPicker.refresh(); }
     HorizontalLayout { padding: 8px; spacing: 7px;
         if ActionPicker.query != "": CategoryIcon { category: root.item.category; }
         VerticalLayout { spacing: 2px; alignment: center;
@@ -108,31 +118,46 @@ export component PickerOverlay inherits Rectangle {
             VerticalBox { padding: 18px; spacing: 10px;
                 HorizontalBox { vertical-stretch: 0;
                     VerticalBox { padding: 0px; spacing: 4px; horizontal-stretch: 1;
-                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
-                        Text { text: @tr("Previously selected: {}", ActionPicker.original); color: Theme.muted; overflow: elide; }
+                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
+                        Text { text: @tr("Saved assignment: {}", ActionPicker.original == "" ? @tr("Not selected") : ActionPicker.original); color: Theme.muted; overflow: elide; }
                     }
                 }
-                Text { text: @tr("Current value"); color: Theme.muted; }
-                HorizontalBox { vertical-stretch: 0;
-                    if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
-                    LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.refresh(); } }
-                    if ActionPicker.layer-action || ActionPicker.rule-action: Button { text: ActionPicker.rule-action ? @tr("Swallow key") : @tr("Ignore key"); primary: ActionPicker.ignore-key; clicked => { ActionPicker.ignore-key = true; ActionPicker.value = ""; ActionPicker.refresh(); } }
-                    Button { text: @tr("Clear"); enabled: !ActionPicker.key-only && !ActionPicker.macro-step; clicked => { ActionPicker.ignore-key = false; ActionPicker.value = ""; ActionPicker.refresh(); } }
-                    Button { text: ActionPicker.capturing ? @tr("Stop capture") : @tr("Capture key"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
+                if ActionPicker.allow-default || ActionPicker.allow-swallow: VerticalBox { padding: 0px; spacing: 6px; vertical-stretch: 0;
+                    Text { text: @tr("Behavior"); color: Theme.muted; }
+                    HorizontalBox { spacing: 8px;
+                        if ActionPicker.allow-default: Button {
+                            text: ActionPicker.inherit-default ? @tr("Inherit") : ActionPicker.quick-action ? @tr("Empty cell") : ActionPicker.empty-default ? @tr("No separate action") : ActionPicker.hold-layer ? @tr("Activate layer only") : @tr("Normal key behavior");
+                            primary: ActionPicker.behavior == 0;
+                            clicked => { ActionPicker.select-behavior(0); }
+                        }
+                        if ActionPicker.allow-swallow: Button { text: @tr("Suppress"); primary: ActionPicker.behavior == 1; clicked => { ActionPicker.select-behavior(1); } }
+                        Button { text: ActionPicker.hold-action ? @tr("Assign held key") : @tr("Perform action"); primary: ActionPicker.behavior == 2; clicked => { ActionPicker.select-behavior(2); } }
+                    }
                 }
-                if ActionPicker.rule-action: Text { text: @tr("Clear restores normal key behavior. Swallow prevents the key from reaching the application."); color: Theme.muted; wrap: word-wrap; }
+                if ActionPicker.hold-layer && ActionPicker.behavior != 0: Text { text: @tr("Holding also activates the selected layer."); color: Theme.muted; wrap: word-wrap; }
+                if ActionPicker.behavior != 2: Text {
+                    text: ActionPicker.behavior == 1 ? @tr("The key will not reach the application.") : ActionPicker.inherit-default ? @tr("Use the assignment from the lower layer or base layout.") : ActionPicker.quick-action ? @tr("Remove the action from this menu cell.") : ActionPicker.empty-default ? @tr("Do not assign a separate action to this gesture.") : ActionPicker.hold-layer ? @tr("Holding activates the selected layer. The original key is not sent.") : @tr("Send the original key to the application.");
+                    color: Theme.muted; wrap: word-wrap;
+                }
+                if ActionPicker.behavior == 2: Text { text: ActionPicker.key-only ? @tr("Trigger key") : @tr("Action"); color: Theme.muted; }
+                if ActionPicker.behavior == 2: HorizontalBox { vertical-stretch: 0;
+                    if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
+                    LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
+                    Button { text: ActionPicker.capturing ? @tr("Stop capture") : ActionPicker.key-only ? @tr("Capture key") : @tr("Capture shortcut"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
+                }
                 if ActionPicker.capturing: Text { text: ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
-                if ActionPicker.notice.id != "": Text { text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
+                if ActionPicker.behavior == 2 && ActionPicker.notice.id != "": Text { text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
                 if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
-                if !ActionPicker.valid: Text { text: @tr("Choose a valid key or action."); color: Theme.error; }
-                HorizontalBox { spacing: 12px;
+                if ActionPicker.touched && !ActionPicker.valid: Text { text: ActionPicker.key-only ? @tr("Choose a valid trigger key.") : @tr("Choose a valid action."); color: Theme.error; }
+                if ActionPicker.behavior != 2: Rectangle { background: transparent; vertical-stretch: 1; }
+                if ActionPicker.behavior == 2: HorizontalBox { spacing: 12px;
                     VerticalBox { padding: 0px; spacing: 8px; width: 220px; horizontal-stretch: 0;
                         LineEdit { text <=> ActionPicker.query; placeholder-text: @tr("Search keys and actions"); edited => { ActionPicker.refresh(); } }
                         ScrollView { viewport-width: self.visible-width;
                             VerticalLayout { spacing: 0px;
                                 for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
                                     padding: 0px; padding-bottom: 4px;
-                                    if index < 6 || (!ActionPicker.key-only && (index < 12 || ActionPicker.macro-step)): CategoryButton {
+                                    if index < 6 || (!ActionPicker.key-only && !ActionPicker.hold-action && (index < 12 || ActionPicker.macro-step)): CategoryButton {
                                         index: index; title: title; count: ActionPicker.counts[index];
                                     }
                                 }
@@ -143,11 +168,11 @@ export component PickerOverlay inherits Rectangle {
                         private property <int> columns: ActionPicker.query == "" && ActionPicker.category < 6 ? min(4, max(2, floor(self.width / (ActionPicker.category == 3 ? 190px : 140px)))) : 2;
                         if ActionPicker.query == "" && ActionPicker.category == 11: VerticalBox { padding: 0px;
                             Text { text: @tr("Literal text (text: prefix is added automatically)"); color: Theme.muted; wrap: word-wrap; }
-                            TextEdit { text: ActionPicker.text-content; edited => { ActionPicker.value = "text:" + self.text; ActionPicker.refresh(); } }
+                            TextEdit { text: ActionPicker.text-content; edited => { ActionPicker.touched = true; ActionPicker.value = "text:" + self.text; ActionPicker.refresh(); } }
                         }
                         if ActionPicker.query == "" && ActionPicker.category == 12: VerticalBox { padding: 0px;
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
-                            LineEdit { text: ActionPicker.pause-content; edited => { ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
+                            LineEdit { text: ActionPicker.pause-content; edited => { ActionPicker.touched = true; ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
                         }
                         if ActionPicker.query != "" || ActionPicker.category < 11: ScrollView { viewport-width: self.visible-width;
                             VerticalLayout { spacing: 0px;

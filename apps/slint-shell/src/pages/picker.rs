@@ -130,7 +130,7 @@ fn valid(
     excluded: &str,
     config: Option<&ConfigDocument>,
 ) -> bool {
-    if macro_step && value.trim().is_empty() {
+    if value.trim().is_empty() {
         return false;
     }
     if key_only {
@@ -140,6 +140,12 @@ fn valid(
         return false;
     }
     let action = Action::parse(Some(value));
+    if matches!(&action, Action::Keys(_)) && !actions::valid_held_key(value) {
+        return false;
+    }
+    if matches!(&action, Action::Text(text) if text.is_empty()) {
+        return false;
+    }
     if let Action::Pause(ms) = &action {
         return macro_step && valid_pause(ms);
     }
@@ -164,6 +170,23 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             let picker = ui.global::<ActionPicker>();
             picker.set_capturing(!picker.get_capturing());
         }
+    });
+
+    let weak = ui.as_weak();
+    picker.on_select_behavior(move |behavior| {
+        let Some(ui) = weak.upgrade() else { return };
+        let picker = ui.global::<ActionPicker>();
+        if (behavior == 0 && !picker.get_allow_default())
+            || (behavior == 1 && !picker.get_allow_swallow())
+            || !(0..=2).contains(&behavior)
+        {
+            return;
+        }
+        picker.set_behavior(behavior);
+        picker.set_ignore_key(behavior == 1);
+        picker.set_capturing(false);
+        picker.set_error(Msg::None.to_ui());
+        picker.invoke_refresh();
     });
 
     let weak = ui.as_weak();
@@ -210,10 +233,70 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                         ui.global::<crate::ui::RulesEditor>().get_swallow_hold()
                     }),
         );
+        let standalone_layer = picker.get_layer_action();
+        let double_tap =
+            target == PickerTarget::Rule && rule_field == crate::ui::RuleDialog::DoubleTap;
+        let allow_default = !key_only
+            && (standalone_layer
+                || rule_action
+                || double_tap
+                || matches!(target, PickerTarget::BaseKey | PickerTarget::QuickAction));
+        picker.set_allow_default(allow_default);
+
+        picker.set_inherit_default(standalone_layer && target == PickerTarget::LayerAction);
+        picker.set_empty_default(double_tap);
+        picker.set_quick_action(target == PickerTarget::QuickAction);
+        picker.set_hold_action(rule_action && rule_field == crate::ui::RuleDialog::Hold);
+        picker.set_hold_layer(
+            picker.get_hold_action()
+                && !ui.global::<crate::ui::RulesEditor>().get_layer().is_empty(),
+        );
+        picker.set_allow_swallow(standalone_layer || (rule_action && !picker.get_hold_layer()));
+        picker.set_behavior(if picker.get_ignore_key() && picker.get_allow_swallow() {
+            1
+        } else if allow_default && (value.is_empty() || picker.get_ignore_key()) {
+            0
+        } else {
+            2
+        });
+        picker.set_ignore_key(picker.get_behavior() == 1);
+        picker.set_touched(false);
         picker.set_error(Msg::None.to_ui());
         picker.set_key_only(key_only);
         picker.set_macro_step(target == PickerTarget::MacroStep);
-        picker.set_original(value.clone());
+        let original = if picker.get_behavior() == 1 {
+            ui.global::<Locale>()
+                .invoke_text(Msg::PickerSuppress.to_ui())
+        } else if picker.get_behavior() == 0 {
+            ui.global::<Locale>().invoke_text(
+                if picker.get_inherit_default() {
+                    Msg::PickerInherit
+                } else if picker.get_quick_action() {
+                    Msg::PickerEmptyCell
+                } else if picker.get_empty_default() {
+                    Msg::PickerNoAction
+                } else if picker.get_hold_layer() {
+                    Msg::PickerLayerOnly
+                } else {
+                    Msg::PickerNative
+                }
+                .to_ui(),
+            )
+        } else {
+            ui.global::<ActionPicker>().get_original()
+        };
+        let original = if picker.get_behavior() == 2 {
+            state
+                .borrow()
+                .catalog
+                .iter()
+                .find(|item| item.value == value)
+                .map(|item| item.label.clone())
+                .unwrap_or_else(|| value.clone())
+        } else {
+            original
+        };
+        picker.set_original(original);
         picker.set_value(value);
         picker.set_query("".into());
         picker.set_capturing(false);
@@ -247,6 +330,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .iter()
             .filter(|entry| {
                 (!key_only || entry.category < MACROS)
+                    && (!picker.get_hold_action() || actions::valid_held_key(&entry.value))
+                    && (!(key_only
+                        && state
+                            .target
+                            .is_some_and(|(target, _)| target == PickerTarget::Rule))
+                        || lhc_core::profile::key_catalog::valid_trigger(&entry.value))
                     && (excluded.is_empty() || entry.value != excluded_value)
             })
             .collect();
@@ -285,13 +374,24 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             None => Msg::None,
         };
         picker.set_notice(notice.to_ui());
-        picker.set_valid(valid(
-            &value,
-            key_only,
-            picker.get_macro_step(),
-            &excluded,
-            Some(&doc.read()),
-        ));
+        picker.set_valid(
+            ((picker.get_behavior() == 0 && picker.get_allow_default())
+                || (picker.get_behavior() == 1 && picker.get_allow_swallow()))
+                || (picker.get_behavior() == 2
+                    && valid(
+                        &value,
+                        key_only,
+                        picker.get_macro_step(),
+                        &excluded,
+                        Some(&doc.read()),
+                    )
+                    && (!picker.get_hold_action() || actions::valid_held_key(&value))
+                    && (!(key_only
+                        && state
+                            .target
+                            .is_some_and(|(target, _)| target == PickerTarget::Rule))
+                        || lhc_core::profile::key_catalog::valid_trigger(&value))),
+        );
     });
 
     let weak = ui.as_weak();
@@ -315,7 +415,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         }
         picker.set_error(Msg::None.to_ui());
-        let value = picker.get_value();
+        let value = if picker.get_behavior() == 2 {
+            picker.get_value()
+        } else {
+            "".into()
+        };
         let (target, label) = {
             let state = session.borrow();
             let label = state
@@ -411,6 +515,7 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
         )
     });
     if let Some(value) = value {
+        picker.set_touched(true);
         picker.set_value(value.into());
         picker.set_capturing(false);
         picker.invoke_refresh();
