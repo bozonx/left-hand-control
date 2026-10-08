@@ -487,7 +487,10 @@ export component LibraryDialogOverlay inherits Rectangle {
             VerticalBox {
                 padding: 24px; spacing: 12px;
                 Text { text: @tr("Save layout as…"); color: Theme.text; font-size: 22px; }
-                LineEdit { text <=> LayoutLibrary.save-as-name; placeholder-text: @tr("New layout name"); accepted => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+                VerticalBox { padding: 0px; spacing: 4px;
+                    Text { text: @tr("Layout name"); color: Theme.text; }
+                    LineEdit { text <=> LayoutLibrary.save-as-name; accessible-label: @tr("Layout name"); accepted => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+                }
                 Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
                 HorizontalBox { vertical-stretch: 0;
                     Rectangle { horizontal-stretch: 1; }

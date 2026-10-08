@@ -5,7 +5,7 @@ import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
-import { NumericField, SelectField } from "controls.slint";
+import { FormLabel, NumericField, SelectField } from "controls.slint";
 
 export struct CapabilityRow { supported: bool, available: bool, status: Message, detail: string }
 
@@ -231,7 +231,12 @@ export component SettingsPage inherits VerticalBox {
                         TouchArea { clicked => { SettingsEditor.select-process(index); } }
                     }
                     HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                        LineEdit { text <=> SettingsEditor.process-name; placeholder-text: @tr("Process name"); }
+                        VerticalBox { padding: 0px; spacing: 4px;
+                            FormLabel { text: @tr("Process name"); }
+                            LineEdit { text <=> SettingsEditor.process-name; accessible-label: @tr("Process name"); }
+                        }
+                    }
+                    HorizontalBox { vertical-stretch: 0; spacing: 8px;
                         CheckBox { text: @tr("Active window only"); checked <=> SettingsEditor.process-only-active; enabled: AppState.game-window-availability.id != "capability-unsupported"; }
                         CheckBox { text: @tr("Exclude"); checked <=> SettingsEditor.process-blacklist; }
                     }
@@ -243,9 +248,21 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if root.selected-tab == 3 && AppState.is-linux: Section {
                     title: @tr("Linux text injection");
-                    SelectField { model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": LineEdit { text <=> SettingsEditor.ydotool-path; edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } placeholder-text: @tr("ydotool path"); }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": LineEdit { text <=> SettingsEditor.xdotool-path; edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } placeholder-text: @tr("xdotool path"); }
+                    VerticalBox {
+                        padding: 0px; spacing: 4px;
+                        FormLabel { text: @tr("Text injection method"); }
+                        SelectField { model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                    }
+                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
+                        padding: 0px; spacing: 4px;
+                        FormLabel { text: @tr("ydotool path"); }
+                        LineEdit { text <=> SettingsEditor.ydotool-path; accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                    }
+                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalBox {
+                        padding: 0px; spacing: 4px;
+                        FormLabel { text: @tr("xdotool path"); }
+                        LineEdit { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                    }
                 }
                 if root.selected-tab == 3: Section {
                     title: @tr("Configuration and system");

@@ -484,8 +484,9 @@ component CommandCard inherits Card {
                 spacing: 6px;
                 alignment: start;
                 FieldLabel { text: @tr("Linux shell script"); vertical-alignment: center; }
-                Button { text: root.expanded ? @tr("Collapse script") : @tr("View full script"); clicked => { root.expanded = !root.expanded; } }
                 InfoTip { text: @tr("Passed to sh -lc as-is. Multiline scripts, variables, pipes, conditions, and loops are supported. Read scripts from shared layouts carefully before allowing them."); }
+                Rectangle { horizontal-stretch: 1; }
+                Button { text: root.expanded ? @tr("Collapse script") : @tr("View full script"); clicked => { root.expanded = !root.expanded; } }
             }
             VerticalLayout {
                 spacing: 4px;

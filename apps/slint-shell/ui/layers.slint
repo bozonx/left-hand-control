@@ -522,9 +522,13 @@ export component LayerDialogOverlay inherits FocusScope {
                     if LayersEditor.assignment != Assignment.action: Text {
                         text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : LayersEditor.dialog == LayerDialog.extra-key ? @tr("Send the original key to the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
                     }
-                    if LayersEditor.assignment == Assignment.action: HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                        LineEdit { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
-                        Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
+                    if LayersEditor.assignment == Assignment.action: VerticalBox {
+                        padding: 0px; spacing: 4px; vertical-stretch: 0;
+                        Text { text: @tr("Action"); color: Theme.text; }
+                        HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                            LineEdit { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
+                            Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
+                        }
                     }
                 }
                 Text { text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }

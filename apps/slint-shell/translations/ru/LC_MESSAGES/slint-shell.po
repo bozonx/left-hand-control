@@ -1737,3 +1737,24 @@ msgstr "Из общих настроек: {} мс"
 
 msgid "Leave a timeout empty to use the global setting."
 msgstr "Оставьте поле времени пустым, чтобы использовать значение из общих настроек."
+
+msgid "Block"
+msgstr "Блокировать"
+
+msgid "The key press is consumed: the system and the active application will not receive it."
+msgstr "Нажатие поглощается: система и активное приложение его не получат."
+
+msgid "The key press passes through unchanged, as if no assignment were configured."
+msgstr "Нажатие передаётся дальше без изменений — как если бы переназначение не было задано."
+
+msgid "Capture"
+msgstr "Захватить"
+
+msgid "Unchanged"
+msgstr "Без изменений"
+
+msgid "Text injection method"
+msgstr "Способ ввода текста"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "Оставьте поле задержки пустым, чтобы использовать значение из общих настроек."

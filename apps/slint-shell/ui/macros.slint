@@ -83,6 +83,7 @@ component StepRow inherits HorizontalLayout {
             spacing: 8px;
             alignment: start;
             CategoryIcon { category: 12; }
+            Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
             NumericInput {
                 field-width: 110px;
                 text: root.step.pause-ms;
@@ -174,12 +175,12 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         NumericInput {
                             text: root.item.step-pause;
-                            placeholder-text: MacroEditor.default-step-pause;
                             accessible-label: @tr("Pause between steps");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
                         }
                         Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
                     }
+                    Text { text: @tr("Global setting: {} ms", MacroEditor.default-step-pause); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                 }
                 VerticalLayout {
                     spacing: 4px;
@@ -193,14 +194,15 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         NumericInput {
                             text: root.item.modifier-delay;
-                            placeholder-text: MacroEditor.default-modifier-delay;
                             accessible-label: @tr("Modifier delay");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
                         }
                         Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
                     }
+                    Text { text: @tr("Global setting: {} ms", MacroEditor.default-modifier-delay); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                 }
             }
+            Text { text: @tr("Leave a delay empty to use the global setting."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
             if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
             if root.item.usage.length > 0: HorizontalLayout {
                 spacing: 4px;
