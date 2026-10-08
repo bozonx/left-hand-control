@@ -1680,3 +1680,15 @@ msgstr "Рабочая папка (необязательно)"
 
 msgid "Save layout changes before opening another layout."
 msgstr "Сохраните изменения раскладки перед переходом к другой раскладке."
+
+msgid "No layer"
+msgstr "Без слоя"
+
+msgid "Layer not found"
+msgstr "Слой не найден"
+
+msgid "Create new layer…"
+msgstr "Создать слой…"
+
+msgid "Create “{}”"
+msgstr "Создать «{}»"

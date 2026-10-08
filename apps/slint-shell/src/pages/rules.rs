@@ -13,7 +13,7 @@ use lhc_core::profile::{
     diagnostics, ids,
     model::{Layer, LayerRule, LayoutPreset},
 };
-use slint::{ComponentHandle, ModelRc, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
 
 fn join(value: &Option<Vec<String>>) -> String {
@@ -82,40 +82,48 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             .to_string()
             .into(),
     );
-    editor.set_rows(ModelRc::new(VecModel::from(
-        layout
-            .rules
-            .iter()
-            .map(|rule| RuleRow {
-                key: rule.key.clone().into(),
-                tap: rule.tap_action.clone().unwrap_or_default().into(),
-                hold: rule.hold_action.clone().unwrap_or_default().into(),
-                double_tap: rule.double_tap_action.clone().into(),
-                layer: layer_name(layout, &rule.layer_id).into(),
-                has_conditions: has_conditions(rule),
-                game: game_condition(rule.condition_game_mode.as_deref()),
-                languages: join(&rule.condition_layouts).into(),
-                applications: join(&rule.condition_apps_whitelist).into(),
-                excluded: join(&rule.condition_apps_blacklist).into(),
-                hold_timeout: timeout_text(rule.hold_timeout_ms).into(),
-                double_timeout: timeout_text(rule.double_tap_timeout_ms).into(),
-                isolate: rule.isolate.clone().unwrap_or_default().into(),
-                hold_for: rule.hold_for.clone().unwrap_or_default().into(),
-                enabled: rule.is_enabled(),
-                swallow_tap: rule.tap_action.is_none(),
-                swallow_hold: rule.hold_action.is_none(),
-                advanced: rule.isolate.is_some() || rule.hold_for.is_some(),
-                key_category: super::picker::category_for_value(&rule.key),
-                tap_category: super::picker::category_for_value(
-                    rule.tap_action.as_deref().unwrap_or_default(),
-                ),
-                hold_category: super::picker::category_for_value(
-                    rule.hold_action.as_deref().unwrap_or_default(),
-                ),
-                double_category: super::picker::category_for_value(&rule.double_tap_action),
-            })
-            .collect::<Vec<_>>(),
-    )));
+    let rows = layout
+        .rules
+        .iter()
+        .map(|rule| RuleRow {
+            key: rule.key.clone().into(),
+            tap: rule.tap_action.clone().unwrap_or_default().into(),
+            hold: rule.hold_action.clone().unwrap_or_default().into(),
+            double_tap: rule.double_tap_action.clone().into(),
+            layer: layer_name(layout, &rule.layer_id).into(),
+            has_conditions: has_conditions(rule),
+            game: game_condition(rule.condition_game_mode.as_deref()),
+            languages: join(&rule.condition_layouts).into(),
+            applications: join(&rule.condition_apps_whitelist).into(),
+            excluded: join(&rule.condition_apps_blacklist).into(),
+            hold_timeout: timeout_text(rule.hold_timeout_ms).into(),
+            double_timeout: timeout_text(rule.double_tap_timeout_ms).into(),
+            isolate: rule.isolate.clone().unwrap_or_default().into(),
+            hold_for: rule.hold_for.clone().unwrap_or_default().into(),
+            enabled: rule.is_enabled(),
+            swallow_tap: rule.tap_action.is_none(),
+            swallow_hold: rule.hold_action.is_none(),
+            advanced: rule.isolate.is_some() || rule.hold_for.is_some(),
+            key_category: super::picker::category_for_value(&rule.key),
+            tap_category: super::picker::category_for_value(
+                rule.tap_action.as_deref().unwrap_or_default(),
+            ),
+            hold_category: super::picker::category_for_value(
+                rule.hold_action.as_deref().unwrap_or_default(),
+            ),
+            double_category: super::picker::category_for_value(&rule.double_tap_action),
+        })
+        .collect::<Vec<_>>();
+    let model = editor.get_rows();
+    if let Some(model) = model.as_any().downcast_ref::<VecModel<RuleRow>>()
+        && model.row_count() == rows.len()
+    {
+        for (index, row) in rows.into_iter().enumerate() {
+            model.set_row_data(index, row);
+        }
+    } else {
+        editor.set_rows(ModelRc::new(VecModel::from(rows)));
+    }
     let index = usize::try_from(editor.get_selected())
         .ok()
         .filter(|index| *index < layout.rules.len());
@@ -413,7 +421,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some(ui) = weak.upgrade() else { return };
         let editor = ui.global::<RulesEditor>();
         editor.set_selected(index);
-        refresh(&ui, &doc, true);
+        if dialog != RuleDialog::Layer {
+            refresh(&ui, &doc, true);
+        }
         if selected(&ui, &doc).is_none() {
             return;
         }
@@ -441,7 +451,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         }
         if dialog == RuleDialog::Layer {
-            editor.set_layer_items(layer_choices(doc.read().layout().layers.iter()));
+            let config = doc.read();
+            let layer_id = &config.layout().rules[index as usize].layer_id;
+            editor.set_layer_id(layer_id.into());
+            editor.set_layer_highlight(
+                config
+                    .layout()
+                    .layers
+                    .iter()
+                    .position(|layer| &layer.id == layer_id)
+                    .map_or(0, |index| index as i32 + 1),
+            );
+            editor.set_layer_items(layer_choices(config.layout().layers.iter()));
             editor.set_new_layer_name("".into());
             editor.set_dialog_value("".into());
         } else {
