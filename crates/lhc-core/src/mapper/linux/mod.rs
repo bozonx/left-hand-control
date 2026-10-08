@@ -351,7 +351,7 @@ fn run_loop<D: LoopDriver>(
                         engine = Engine::new(&next_cfg);
                     }
                     MapperControl::Execute(action) => {
-                        log::debug!("[mapper] remote execute: {action:?}");
+                        log::debug!("[mapper] remote execute requested");
                         engine.execute_remote(&action, &mut out_buf);
                         flush_out(&mut virt, &mut out_buf)?;
                     }

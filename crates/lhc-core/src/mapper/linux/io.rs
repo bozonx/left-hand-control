@@ -454,11 +454,7 @@ fn spawn_system(cmd: &SysCommand) {
     match c.spawn() {
         Ok(mut child) => {
             let pid = child.id();
-            log::debug!(
-                "[mapper] spawned side-effect pid={pid}: {} {:?}",
-                cmd.program,
-                cmd.args
-            );
+            log::debug!("[mapper] spawned side-effect pid={pid}");
             // Detach the wait so a hung child cannot stall the side-effect worker.
             std::thread::spawn(move || match child.wait() {
                 Ok(status) if status.success() => {

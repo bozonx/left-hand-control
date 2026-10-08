@@ -407,7 +407,7 @@ fn type_text_xdotool(text: &str, xdotool_path: Option<String>) {
 
 fn type_text_portal(text: &str) {
     let Ok(mut slot) = PORTAL_TX.lock() else {
-        log::debug!("[portal] literal {:?} dropped (worker lock poisoned)", text);
+        log::debug!("[portal] text injection dropped (worker lock poisoned)");
         return;
     };
 
@@ -420,14 +420,11 @@ fn type_text_portal(text: &str) {
     }
 
     let Some(tx) = start_portal_singleton() else {
-        log::debug!("[portal] literal {:?} dropped (worker spawn failed)", text);
+        log::debug!("[portal] text injection dropped (worker spawn failed)");
         return;
     };
     if tx.send(Cmd::Type(text.to_string(), false)).is_err() {
-        log::debug!(
-            "[portal] literal {:?} dropped (worker exited during init)",
-            text
-        );
+        log::debug!("[portal] text injection dropped (worker exited during init)");
         return;
     }
     *slot = Some(tx);
@@ -435,7 +432,7 @@ fn type_text_portal(text: &str) {
 
 fn type_text_libei(text: &str, clipboard_fallback: bool) -> bool {
     let Ok(mut slot) = LIBEI_TX.lock() else {
-        log::debug!("[libei] literal {:?} dropped (worker lock poisoned)", text);
+        log::debug!("[libei] text injection dropped (worker lock poisoned)");
         return false;
     };
 
@@ -453,10 +450,7 @@ fn type_text_libei(text: &str, clipboard_fallback: bool) -> bool {
     };
     let cmd = Cmd::Type(text.to_string(), clipboard_fallback);
     if tx.send(cmd).is_err() {
-        log::debug!(
-            "[libei] literal {:?} dropped (worker exited during init)",
-            text
-        );
+        log::debug!("[libei] text injection dropped (worker exited during init)");
         return false;
     }
     *slot = Some(tx);
@@ -639,7 +633,7 @@ impl LibeiBackend {
         for ch in text.chars() {
             let keysym = unsafe { xkb_utf32_to_keysym(ch as u32) };
             let Some(entry) = table.get(&keysym) else {
-                log::debug!("[libei] no keycode for {ch:?}, skipping");
+                log::debug!("[libei] no keycode for a character, skipping");
                 continue;
             };
             self.inject_keycode_combo(level_to_mods(entry.level), entry.evdev)?;
@@ -866,7 +860,7 @@ fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
                 continue;
             }
         }
-        inject_keysym(portal, session, &empty, keysym, ch);
+        inject_keysym(portal, session, &empty, keysym);
     }
 }
 
@@ -970,7 +964,7 @@ fn inject_keycode_combo(
         if let Err(e) =
             portal.call_method("NotifyKeyboardKeycode", &(session, empty, m, STATE_PRESSED))
         {
-            log::debug!("[portal] mod keycode {m} press failed: {e}");
+            log::debug!("[portal] modifier press failed: {e}");
             for &m2 in mods {
                 let _ = portal.call_method(
                     "NotifyKeyboardKeycode",
@@ -1006,12 +1000,11 @@ fn inject_keysym(
     session: &OwnedObjectPath,
     empty: &HashMap<String, Value>,
     keysym: u32,
-    ch: char,
 ) {
     for state in [STATE_PRESSED, STATE_RELEASED] {
         if let Err(e) = portal.call_method("NotifyKeyboardKeysym", &(session, empty, keysym, state))
         {
-            log::debug!("[portal] NotifyKeyboardKeysym({ch:?}, state={state}) failed: {e}");
+            log::debug!("[portal] NotifyKeyboardKeysym failed: {e}");
             break;
         }
     }

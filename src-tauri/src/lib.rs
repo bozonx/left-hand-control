@@ -275,7 +275,7 @@ fn quit_application(app: tauri::AppHandle) {
 
 #[tauri::command]
 fn execute_action(action: String) -> Result<(), String> {
-    log::debug!("[cmd] execute_action action={action}");
+    log::debug!("[cmd] execute_action");
     mapper::execute_action(action)
 }
 
@@ -382,7 +382,7 @@ fn commit_menu_action(app: tauri::AppHandle, menu: String, action: String) -> Re
 #[tauri::command]
 fn insert_text(text: String) -> Result<(), String> {
     let action = format!("text:{}", text);
-    log::debug!("[cmd] insert_text action={action}");
+    log::debug!("[cmd] insert_text");
     mapper::execute_action(action)
 }
 

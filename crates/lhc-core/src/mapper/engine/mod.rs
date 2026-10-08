@@ -298,7 +298,6 @@ impl Engine {
             }
         }
         for k in expired_hold {
-            log::debug!("[mapper] hold-timeout -> commit hold (key={:?})", k);
             self.commit_hold(k, out);
             // A hold that timed out while presses were buffered behind it
             // (permissive-hold mode) must now replay them in the held context.
@@ -306,7 +305,6 @@ impl Engine {
         }
         for k in expired_second {
             let pending = self.pending.remove(&k);
-            log::debug!("[mapper] dtap-window expired -> tap (key={:?})", k);
             if let Some(pending) = pending {
                 self.fire_tap(k, &pending.rule.tap, now, out);
             }
@@ -370,12 +368,6 @@ impl Engine {
             return;
         }
 
-        log::debug!(
-            "[mapper] in {} key={:?} active={:?}",
-            if down { "DOWN" } else { " UP " },
-            key,
-            self.active_layers
-        );
         if down {
             self.on_press(key, now, out);
         } else {
@@ -405,7 +397,6 @@ impl Engine {
                 if matches!(self.decision_mode, DecisionMode::HoldOnOtherKeyPress) {
                     self.commit_waiting_decisions(out);
                 }
-                log::debug!("[mapper] double-tap fired (key={:?})", key);
                 let dtap = pending.and_then(|p| p.rule.double_tap);
                 self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
                 // The matching release must not emit anything (fire-and-forget).
@@ -416,10 +407,6 @@ impl Engine {
             // through and treat this key-down as a brand-new press (which may
             // itself open a fresh tap/hold/double-tap sequence).
             if let Some(pending) = self.pending.remove(&key) {
-                log::debug!(
-                    "[mapper] dtap-window elapsed on 2nd press -> tap (key={:?})",
-                    key
-                );
                 self.fire_tap(key, &pending.rule.tap, now, out);
             }
         }
@@ -493,7 +480,6 @@ impl Engine {
                         .filter(|t| t.hold_ks.is_some() && t.whitelist.contains(&key))
                         .map(|t| (t.key, t.hold_ks.clone().unwrap()));
                     if let Some((owner, ks)) = materialize {
-                        log::debug!("[mapper] lazy-hold materialize {:?} for {:?}", ks.key, key);
                         self.emit_stroke_press(owner, ks, out);
                         if let Some(t) = self
                             .layer_triggers
@@ -525,11 +511,6 @@ impl Engine {
                                         });
                                     }
                                     suppressed.push(*target_key);
-                                    log::debug!(
-                                        "[mapper] isolate+ {:?} suppress hold {:?}",
-                                        key,
-                                        target_key
-                                    );
                                 }
                                 if !suppressed.is_empty() {
                                     self.isolated_holds.insert(key, suppressed);
@@ -540,25 +521,13 @@ impl Engine {
 
                     match def {
                         ActionDef::Stroke(ks) => {
-                            log::debug!(
-                                "[mapper]   press {:?} -> remap mods={:?} key={:?}",
-                                key,
-                                ks.mods,
-                                ks.key
-                            );
                             self.emit_stroke_press(key, ks, out);
                         }
                         ActionDef::Literal(text) => {
-                            log::debug!("[mapper]   press {:?} -> literal {:?}", key, text);
                             out.push(Out::Literal(text));
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Macro(md) => {
-                            log::debug!(
-                                "[mapper]   press {:?} -> run macro ({} steps)",
-                                key,
-                                md.steps.len()
-                            );
                             if !md.steps.is_empty() {
                                 self.abort_active_macro(out);
                                 self.active_macro = Some(self::model::ActiveMacro {
@@ -574,23 +543,19 @@ impl Engine {
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::System(action) => {
-                            log::debug!("[mapper]   press {:?} -> run system {:?}", key, action);
                             out.push(Out::RunSystem(action));
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Command(command) => {
-                            log::debug!("[mapper]   press {:?} -> run command {:?}", key, command);
                             out.push(Out::RunCommand(command));
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Swallow => {
-                            log::debug!("[mapper]   press {:?} -> swallow", key);
                             self.oneshot_consumed.insert(key);
                         }
                     }
                 }
                 None => {
-                    log::debug!("[mapper]   press {:?} -> passthrough", key);
                     out.push(Out::KeyRaw { key, down: true });
                     self.emitted.insert(key, Keystroke { mods: vec![], key });
                 }
@@ -611,7 +576,6 @@ impl Engine {
                     .values()
                     .any(|ks| ks.key == target_key || ks.mods.contains(&target_key));
                 if still_held {
-                    log::debug!("[mapper] isolate- {:?} restore hold {:?}", key, target_key);
                     out.push(Out::KeyRaw {
                         key: target_key,
                         down: true,
@@ -809,7 +773,6 @@ impl Engine {
             .map(|(k, _)| *k)
             .collect();
         for k in keys {
-            log::debug!("[mapper] interrupt -> commit hold (key={:?})", k);
             self.commit_hold(k, out);
         }
     }
@@ -847,11 +810,6 @@ impl Engine {
             return false;
         }
         if down {
-            log::debug!(
-                "[mapper] permissive: buffer {:?} (deciding={:?})",
-                key,
-                deciding
-            );
             self.decision_buffer
                 .push(BufferedEvent { key, down, at: now });
             return true;
@@ -859,11 +817,6 @@ impl Engine {
         // Release of a key pressed *after* the deciding key → nested
         // press+release → the deciding key is a hold.
         if self.decision_buffer.iter().any(|e| e.key == key && e.down) {
-            log::debug!(
-                "[mapper] permissive: nested release {:?} -> commit hold {:?}",
-                key,
-                deciding
-            );
             self.resolve_deciding_as_hold(out);
             // Fall through so this release is processed after the replayed
             // buffer (which re-pressed `key`).
@@ -876,11 +829,6 @@ impl Engine {
         // that same state. With an empty buffer nothing can be reordered, so
         // let the release flow through immediately.
         if !self.decision_buffer.is_empty() {
-            log::debug!(
-                "[mapper] permissive: buffer prior-key release {:?} (deciding={:?})",
-                key,
-                deciding
-            );
             self.decision_buffer
                 .push(BufferedEvent { key, down, at: now });
             return true;
@@ -937,7 +885,6 @@ impl Engine {
             _ => None,
         };
         if let Some(id) = &rule.layer_id {
-            log::debug!("[mapper] layer+ {id} (key={:?})", key);
             self.push_layer(id.clone());
             self.layer_triggers
                 .entry(id.clone())
@@ -969,7 +916,6 @@ impl Engine {
     /// Undo whatever `commit_hold_with` did for this rule key.
     fn release_hold_with(&mut self, rule: &RuleEntry, key: Key, out: &mut Vec<Out>) {
         if let Some(id) = &rule.layer_id {
-            log::debug!("[mapper] layer- {id} (key={:?})", key);
             if let Some(triggers) = self.layer_triggers.get_mut(id) {
                 if let Some(pos) = triggers.iter().rposition(|trigger| trigger.key == key) {
                     triggers.remove(pos);
@@ -1058,7 +1004,6 @@ impl Engine {
             .collect();
         for k in keys {
             let pending = self.pending.remove(&k);
-            log::debug!("[mapper] dtap-window flushed -> tap (key={:?})", k);
             if let Some(pending) = pending {
                 self.fire_tap(k, &pending.rule.tap, now, out);
             }
