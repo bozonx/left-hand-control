@@ -1,4 +1,4 @@
-import { Palette, Button, LineEdit, TextEdit } from "std-widgets.slint";
+import { Palette, Button, LineEdit, TextEdit, SpinBox, ComboBox } from "std-widgets.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 
@@ -72,6 +72,24 @@ export component InfoTip inherits Rectangle {
             }
         }
     }
+}
+
+export component NumericField inherits SpinBox {
+    in property <length> field-width: 124px;
+    width: root.field-width;
+    horizontal-stretch: 0;
+}
+
+export component NumericInput inherits LineEdit {
+    in property <length> field-width: 124px;
+    width: root.field-width;
+    input-type: number;
+    horizontal-stretch: 0;
+}
+
+export component SelectField inherits ComboBox {
+    width: 180px;
+    horizontal-stretch: 0;
 }
 
 /// Icon button; with `text` it grows into an icon + label button.

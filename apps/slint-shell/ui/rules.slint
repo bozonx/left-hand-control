@@ -2,11 +2,11 @@ import { ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
-import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge } from "controls.slint";
+import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, ComboBox, CheckBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, CheckBox } from "std-widgets.slint";
 
 export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
 export struct RuleLayerChoice { id: string, label: string }
@@ -178,7 +178,7 @@ export component RuleDialogOverlay inherits FocusScope {
         Rectangle {
             x: (parent.width - self.width) / 2;
             y: 32px;
-            width: min(parent.width - 64px, 700px);
+            width: min(parent.width - 48px, 560px);
             height: min(parent.height - 64px, 620px);
             background: Theme.surface;
             border-color: Theme.border;
@@ -220,18 +220,14 @@ export component RuleDialogOverlay inherits FocusScope {
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     VerticalLayout { spacing: 8px; alignment: start;
-                        Text { text: @tr("Hold timeout, ms"); color: Theme.text; }
-                        LineEdit { text <=> RulesEditor.hold-timeout; placeholder-text: @tr("Default: {} ms", RulesEditor.default-hold-timeout); }
-                        Text { text: @tr("Double-tap ms"); color: Theme.text; }
-                        LineEdit { text <=> RulesEditor.double-timeout; placeholder-text: @tr("Default: {} ms", RulesEditor.default-double-timeout); }
-                        Text { text: @tr("Leave empty to use the global timing settings."); color: Theme.muted; wrap: word-wrap; }
-                        Text { text: @tr("Release held action for these keys"); color: Theme.text; }
+                        HorizontalLayout { spacing: 6px; Text { text: @tr("Hold timeout, ms"); color: Theme.text; } InfoTip { text: @tr("Time before this rule becomes a hold. Leave empty to use the global setting: {} ms", RulesEditor.default-hold-timeout); } }
+                        NumericInput { text <=> RulesEditor.hold-timeout; placeholder-text: @tr("Default: {} ms", RulesEditor.default-hold-timeout); }
+                        HorizontalLayout { spacing: 6px; Text { text: @tr("Double-tap ms"); color: Theme.text; } InfoTip { text: @tr("Maximum interval between two taps for this rule. Leave empty to use the global setting: {} ms", RulesEditor.default-double-timeout); } }
+                        NumericInput { text <=> RulesEditor.double-timeout; placeholder-text: @tr("Default: {} ms", RulesEditor.default-double-timeout); }
+                        HorizontalLayout { spacing: 6px; Text { text: @tr("Release held action for these keys"); color: Theme.text; } InfoTip { text: @tr("Temporarily releases the held key or modifier while these keys are pressed in the layer. First set a hold action for this rule."); } }
                         LineEdit { text <=> RulesEditor.isolate; enabled: RulesEditor.hold != "" && !RulesEditor.swallow-hold; placeholder-text: @tr("For example: KeyW, KeyE"); }
-                        Text { text: @tr("Temporarily releases the held key or modifier while these keys are pressed in the layer."); color: Theme.muted; wrap: word-wrap; }
-                        Text { text: @tr("Activate held action only with these keys"); color: Theme.text; }
+                        HorizontalLayout { spacing: 6px; Text { text: @tr("Activate held action only with these keys"); color: Theme.text; } InfoTip { text: @tr("Defers the hold action until one of these keys is pressed in the layer. First set both a hold action and a layer for this rule."); } }
                         LineEdit { text <=> RulesEditor.hold-for; enabled: RulesEditor.hold != "" && !RulesEditor.swallow-hold && RulesEditor.layer != ""; placeholder-text: @tr("For example: Tab"); }
-                        Text { text: @tr("Defers the held action until one of these keys is pressed in the layer. Requires a hold action and a layer."); color: Theme.muted; wrap: word-wrap; }
-                        Button { text: @tr("Delete rule"); clicked => { RulesEditor.dialog = RuleDialog.remove; } }
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.remove: Text { text: @tr("This rule will be removed from the current layout."); color: Theme.muted; }
@@ -249,6 +245,7 @@ export component RuleDialogOverlay inherits FocusScope {
                         enabled: RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.remove;
                         clicked => { RulesEditor.choose(""); }
                     }
+                    if RulesEditor.dialog == RuleDialog.advanced: Button { text: @tr("Delete rule"); clicked => { RulesEditor.dialog = RuleDialog.remove; } }
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { RulesEditor.dialog = RuleDialog.none; RulesEditor.refresh(); } }
                     Button {

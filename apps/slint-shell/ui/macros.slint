@@ -4,7 +4,7 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, NumericInput } from "controls.slint";
 import { Button, LineEdit } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string }
@@ -81,9 +81,8 @@ component StepRow inherits HorizontalLayout {
             spacing: 8px;
             alignment: start;
             Image { width: 16px; source: @image-url("icons/clock.svg"); colorize: Theme.muted; }
-            LineEdit {
-                width: 110px;
-                input-type: number;
+            NumericInput {
+                field-width: 110px;
                 text: root.step.pause-ms;
                 accessible-label: @tr("Pause (ms)");
                 edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
@@ -171,8 +170,7 @@ component MacroCard inherits Card {
                     }
                     HorizontalLayout {
                         spacing: 6px;
-                        LineEdit {
-                            input-type: number;
+                        NumericInput {
                             text: root.item.step-pause;
                             placeholder-text: MacroEditor.default-step-pause;
                             accessible-label: @tr("Pause between steps");
@@ -191,8 +189,7 @@ component MacroCard inherits Card {
                     }
                     HorizontalLayout {
                         spacing: 6px;
-                        LineEdit {
-                            input-type: number;
+                        NumericInput {
                             text: root.item.modifier-delay;
                             placeholder-text: MacroEditor.default-modifier-delay;
                             accessible-label: @tr("Modifier delay");

@@ -1,8 +1,8 @@
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { GameCondition } from "types.slint";
-import { IconButton, InfoTip } from "controls.slint";
-import { CheckBox, ComboBox, LineEdit } from "std-widgets.slint";
+import { IconButton, InfoTip, SelectField } from "controls.slint";
+import { CheckBox, LineEdit } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
 
@@ -48,7 +48,7 @@ export component ConditionsForm inherits VerticalLayout {
     in property <bool> show-applications: true;
     spacing: 8px;
     Text { text: @tr("Game mode"); color: Theme.text; }
-    ComboBox {
+    SelectField {
         model: [@tr("Does not matter"), @tr("Game mode on"), @tr("Game mode off")];
         current-index: root.game == GameCondition.on ? 1 : root.game == GameCondition.off ? 2 : 0;
         selected => { root.game = self.current-index == 1 ? GameCondition.on : self.current-index == 2 ? GameCondition.off : GameCondition.any; }

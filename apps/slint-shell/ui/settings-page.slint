@@ -4,7 +4,8 @@ import { Badge, Card, CardHeader } from "controls.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, SpinBox, VerticalBox } from "std-widgets.slint";
+import { Button, CheckBox, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
+import { NumericField, SelectField } from "controls.slint";
 
 export struct CapabilityRow { supported: bool, available: bool, status: Message, detail: string }
 
@@ -133,11 +134,11 @@ export component SettingsPage inherits VerticalBox {
                     HorizontalBox { vertical-stretch: 0; spacing: 24px;
                         VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 8px;
                         Text { text: @tr("Theme"); color: Theme.text; vertical-alignment: center; }
-                        ComboBox { model: [@tr("System"), @tr("Light"), @tr("Dark"), @tr("E-ink")]; current-index: SettingsEditor.appearance-index; selected(value) => { SettingsEditor.appearance-index = self.current-index; SettingsEditor.save(); } }
+                        SelectField { model: [@tr("System"), @tr("Light"), @tr("Dark"), @tr("E-ink")]; current-index: SettingsEditor.appearance-index; selected(value) => { SettingsEditor.appearance-index = self.current-index; SettingsEditor.save(); } }
                         }
                         VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 8px;
                         Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
-                        ComboBox { model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
+                        SelectField { model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                         }
                     }
                 }
@@ -145,7 +146,7 @@ export component SettingsPage inherits VerticalBox {
                     title: @tr("Commands");
                     HorizontalBox { vertical-stretch: 0; spacing: 24px;
                         Text { text: @tr("Maximum command execution time (seconds)"); color: Theme.text; vertical-alignment: center; }
-                        SpinBox { minimum: 1; maximum: 2147483647; value: SettingsEditor.command-timeout.to-float(); edited(value) => { SettingsEditor.command-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 1; maximum: 2147483647; value: SettingsEditor.command-timeout.to-float(); edited(value) => { SettingsEditor.command-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
                     }
                     Text { text: @tr("Commands exceeding this time are stopped. Default: 30 seconds."); color: Theme.muted; wrap: word-wrap; }
                 }
@@ -181,31 +182,31 @@ export component SettingsPage inherits VerticalBox {
                     title: @tr("Key behavior");
                     HorizontalBox { vertical-stretch: 0; spacing: 8px;
                         Text { text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
-                        ComboBox { model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
+                        SelectField { model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
                     }
                     Text { text: SettingsEditor.tap-decision-index == 0 ? @tr("Hold after another key is pressed and released; otherwise tap.") : @tr("Hold as soon as another key is pressed."); color: Theme.muted; wrap: word-wrap; }
                     Rectangle { height: 1px; background: Theme.border; }
                     HorizontalBox { vertical-stretch: 0; spacing: 24px;
                         VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 8px;
                         Text { text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                        SpinBox { minimum: 0; maximum: 2147483647; value: SettingsEditor.hold-timeout.to-float(); edited(value) => { SettingsEditor.hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.hold-timeout.to-float(); edited(value) => { SettingsEditor.hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
                         Text { text: @tr("Time before a key press becomes a hold."); color: Theme.muted; wrap: word-wrap; }
                         }
                         VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 8px;
                         Text { text: @tr("Double tap timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                        SpinBox { minimum: 0; maximum: 2147483647; value: SettingsEditor.double-tap-timeout.to-float(); edited(value) => { SettingsEditor.double-tap-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.double-tap-timeout.to-float(); edited(value) => { SettingsEditor.double-tap-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
                         Text { text: @tr("Maximum interval between two taps."); color: Theme.muted; wrap: word-wrap; }
                         }
                     }
                     HorizontalBox { vertical-stretch: 0; spacing: 24px;
                         VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 8px;
                         Text { text: @tr("Macro step pause (ms)"); color: Theme.text; vertical-alignment: center; }
-                        SpinBox { minimum: 0; maximum: 2147483647; value: SettingsEditor.macro-pause.to-float(); edited(value) => { SettingsEditor.macro-pause = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.macro-pause.to-float(); edited(value) => { SettingsEditor.macro-pause = "" + self.value; SettingsEditor.schedule-save(); } }
                         Text { text: @tr("Default pause between macro steps."); color: Theme.muted; wrap: word-wrap; }
                         }
                         VerticalBox { horizontal-stretch: 1; preferred-width: 0px; spacing: 8px;
                         Text { text: @tr("Modifier delay (ms)"); color: Theme.text; vertical-alignment: center; }
-                        SpinBox { minimum: 0; maximum: 2147483647; value: SettingsEditor.modifier-delay.to-float(); edited(value) => { SettingsEditor.modifier-delay = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.modifier-delay.to-float(); edited(value) => { SettingsEditor.modifier-delay = "" + self.value; SettingsEditor.schedule-save(); } }
                         Text { text: @tr("Delay after pressing macro modifiers."); color: Theme.muted; wrap: word-wrap; }
                         }
                     }
@@ -242,7 +243,7 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if root.selected-tab == 3 && AppState.is-linux: Section {
                     title: @tr("Linux text injection");
-                    ComboBox { model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                    SelectField { model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": LineEdit { text <=> SettingsEditor.ydotool-path; edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } placeholder-text: @tr("ydotool path"); }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": LineEdit { text <=> SettingsEditor.xdotool-path; edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } placeholder-text: @tr("xdotool path"); }
                 }

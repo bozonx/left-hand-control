@@ -5,7 +5,8 @@ import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButt
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
-import { Button, ComboBox, HorizontalBox, LineEdit, Palette, VerticalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, LineEdit, Palette, VerticalBox } from "std-widgets.slint";
+import { SelectField } from "controls.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
@@ -515,7 +516,7 @@ export component LayerDialogOverlay inherits FocusScope {
                         LineEdit { text <=> LayersEditor.dialog-key; horizontal-stretch: 1; }
                         Button { text: @tr("Choose trigger key"); clicked => { ActionPicker.open(PickerTarget.layer-key, 0, LayersEditor.dialog-key, true); } }
                     }
-                    ComboBox {
+                    SelectField {
                         model: LayersEditor.dialog == LayerDialog.extra-key ? [@tr("Native"), @tr("Swallow"), @tr("Action")] : [@tr("Transparent"), @tr("Swallow"), @tr("Action")];
                         current-index: LayersEditor.assignment == Assignment.swallow ? 1 : LayersEditor.assignment == Assignment.action ? 2 : 0;
                         selected(value) => { LayersEditor.assignment = self.current-index == 1 ? Assignment.swallow : self.current-index == 2 ? Assignment.action : Assignment.transparent; }

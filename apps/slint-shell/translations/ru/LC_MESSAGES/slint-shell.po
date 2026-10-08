@@ -1351,6 +1351,18 @@ msgstr "Удержание: {} мс"
 msgid "Double tap: {} ms"
 msgstr "Двойное нажатие: {} мс"
 
+msgid "Time before this rule becomes a hold. Leave empty to use the global setting: {} ms"
+msgstr "Время до срабатывания удержания для этого правила. Оставьте пустым, чтобы использовать общее значение: {} мс"
+
+msgid "Maximum interval between two taps for this rule. Leave empty to use the global setting: {} ms"
+msgstr "Максимальный интервал между нажатиями для этого правила. Оставьте пустым, чтобы использовать общее значение: {} мс"
+
+msgid "Temporarily releases the held key or modifier while these keys are pressed in the layer. First set a hold action for this rule."
+msgstr "Временно отпускает удерживаемую клавишу или модификатор, пока в слое нажаты указанные клавиши. Сначала задайте действие удержания для этого правила."
+
+msgid "Defers the hold action until one of these keys is pressed in the layer. First set both a hold action and a layer for this rule."
+msgstr "Откладывает действие удержания, пока в слое не нажата одна из указанных клавиш. Сначала задайте для правила действие удержания и слой."
+
 msgid "Custom hold options"
 msgstr "Особые параметры удержания"
 
