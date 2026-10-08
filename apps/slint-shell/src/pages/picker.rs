@@ -34,19 +34,29 @@ const PAUSE: i32 = MACROS + 6;
 const COUNTED: i32 = TEXT;
 
 pub(crate) fn category_for_value(value: &str) -> i32 {
+    for (prefix, category) in [
+        ("macro:", MACROS),
+        ("system-macro:", SYSTEM_MACROS),
+        ("cmd:", COMMANDS),
+        ("app:", APP_ACTIONS),
+        ("sys:", SYSTEM_ACTIONS),
+        ("text:", TEXT),
+        ("pause:", PAUSE),
+    ] {
+        if value.starts_with(prefix) {
+            return category;
+        }
+    }
     for key in value.split('+') {
-        if let Some((index, _)) = CATEGORIES.iter().enumerate().find(|(_, keys)| keys.contains(&key)) {
+        if let Some((index, _)) = CATEGORIES
+            .iter()
+            .enumerate()
+            .find(|(_, keys)| keys.contains(&key))
+        {
             return index as i32;
         }
     }
-    if value.starts_with("macro:") { MACROS }
-    else if value.starts_with("system-macro:") { SYSTEM_MACROS }
-    else if value.starts_with("cmd:") { COMMANDS }
-    else if value.starts_with("app:") { APP_ACTIONS }
-    else if value.starts_with("sys:") { SYSTEM_ACTIONS }
-    else if value.starts_with("text:") { TEXT }
-    else if value.starts_with("pause:") { PAUSE }
-    else { 5 }
+    5
 }
 
 /// Longest pause a macro step may wait, in milliseconds.
@@ -246,6 +256,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .collect::<Vec<_>>(),
         )));
         let value = picker.get_value();
+        picker.set_value_category(category_for_value(&value));
         picker.set_text_content(value.strip_prefix("text:").unwrap_or_default().into());
         picker.set_pause_content(value.strip_prefix("pause:").unwrap_or_default().into());
         let query = picker.get_query().to_lowercase();
@@ -535,5 +546,9 @@ mod tests {
     fn categories_follow_the_key_catalog() {
         assert_eq!(MACROS, 6);
         assert_eq!(PAUSE, 12);
+        assert_eq!(category_for_value("CapsLock"), 0);
+        assert_eq!(category_for_value("Ctrl+KeyV"), 1);
+        assert_eq!(category_for_value("text:Ctrl+KeyV"), TEXT);
+        assert_eq!(category_for_value("cmd:Ctrl+KeyV"), COMMANDS);
     }
 }

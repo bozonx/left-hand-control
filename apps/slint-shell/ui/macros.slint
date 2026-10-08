@@ -45,7 +45,6 @@ component StepRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         spacing: 2px;
         alignment: center;
-        if !root.step.pause: CategoryIcon { category: root.step.category; }
         if !root.step.pause: Rectangle {
             height: 32px;
             border-radius: 6px;
@@ -61,6 +60,7 @@ component StepRow inherits HorizontalLayout {
             }
             HorizontalLayout {
                 padding-left: 10px; padding-right: 10px; spacing: 6px;
+                if root.step.action != "": CategoryIcon { category: root.step.category; }
                 Text {
                     horizontal-stretch: 1;
                     text: root.step.action;
@@ -82,7 +82,7 @@ component StepRow inherits HorizontalLayout {
         if root.step.pause: HorizontalLayout {
             spacing: 8px;
             alignment: start;
-            Image { width: 16px; source: @image-url("icons/clock.svg"); colorize: Theme.muted; }
+            CategoryIcon { category: 12; }
             NumericInput {
                 field-width: 110px;
                 text: root.step.pause-ms;

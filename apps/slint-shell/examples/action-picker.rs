@@ -14,11 +14,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bind_document(&ui, &document);
     ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
     let rules = ui.global::<RulesEditor>();
+    let count = document.read().layout().rules.len();
     rules.invoke_add();
-    let index = rules.get_selected();
-    assert!(index >= 0);
     let picker = ui.global::<ActionPicker>();
-    rules.invoke_open_dialog(index, RuleDialog::Key);
     assert!(picker.get_opened());
     assert!(picker.get_key_only());
     assert_eq!(rules.get_dialog(), RuleDialog::None, "the picker replaces the dialog");
@@ -28,16 +26,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     picker.set_value("Tab".into());
     picker.invoke_dismiss_picker();
-    assert_eq!(document.read().layout().rules[index as usize].key, "");
-    rules.invoke_open_dialog(index, RuleDialog::Key);
+    assert_eq!(document.read().layout().rules.len(), count);
+    rules.invoke_add();
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert!(picker.get_opened(), "a trigger must be a key");
     picker.set_value("Tab".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
+    let index = rules.get_selected();
+    assert!(index >= 0);
     assert_eq!(document.read().layout().rules[index as usize].key, "Tab");
     rules.invoke_open_dialog(index, RuleDialog::Tap);
+    picker.set_category(11);
+    picker.set_query("es".into());
+    picker.invoke_refresh();
+    for category in [0, 3, 4] {
+        assert!(picker.get_items().iter().any(|item| item.category == category));
+    }
+    assert_eq!(picker.get_category(), 11);
+    picker.set_value("KeyA".into());
+    picker.invoke_refresh();
+    assert_eq!(picker.get_value_category(), 1);
     picker.set_query("громкость".into());
     picker.invoke_refresh();
     assert!(picker.get_items().row_count() >= 2);
@@ -77,10 +87,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("NumpadEnter".into());
     picker.invoke_apply();
     assert_eq!(layers.get_dialog_key(), "NumpadEnter");
+    layers.set_dialog(LayerDialog::EditKey);
     picker.invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
     picker.set_value("Ctrl+KeyC".into());
     picker.invoke_apply();
     assert_eq!(layers.get_dialog_action(), "Ctrl+KeyC");
+    layers.set_dialog(LayerDialog::None);
     ui.global::<KeyEditor>().invoke_edit(33);
     picker.set_value("text:example".into());
     picker.invoke_apply();
@@ -90,6 +102,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Ok(category) = std::env::var("LHC_PICKER_CATEGORY") {
         rules.invoke_open_dialog(index, RuleDialog::Tap);
         picker.set_category(category.parse()?);
+        picker.invoke_refresh();
+    }
+    if let Ok(query) = std::env::var("LHC_PICKER_QUERY") {
+        picker.set_query(query.into());
+        picker.invoke_refresh();
+    }
+    if let Ok(value) = std::env::var("LHC_PICKER_VALUE") {
+        picker.set_value(value.into());
         picker.invoke_refresh();
     }
     ui.show()?;

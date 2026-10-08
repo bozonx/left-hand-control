@@ -109,10 +109,7 @@ component ActionText inherits HorizontalLayout {
     in property <length> text-size: 10px;
     in property <TextHorizontalAlignment> text-alignment: center;
     spacing: 3px;
-    if root.kind == Assignment.action: VerticalLayout {
-        alignment: center;
-        CategoryIcon { category: root.category; }
-    }
+    if root.kind == Assignment.action: CategoryIcon { category: root.category; size: root.text-size <= 10px ? 12px : 16px; }
     Text {
         min-width: 0px;
         horizontal-stretch: 1;

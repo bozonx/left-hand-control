@@ -51,7 +51,7 @@ export component KeyboardPage inherits VerticalLayout {
                         Text { min-width: 0px; overflow: elide; text: KeyEditor.keys[index].label; color: Theme.text; font-size: 12px; }
                         HorizontalLayout { spacing: 3px;
                             if KeyEditor.keys[index].action != "": CategoryIcon { category: KeyEditor.keys[index].category; }
-                            Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: 10px; overflow: elide; }
+                            Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: 10px; overflow: elide; vertical-alignment: center; }
                         }
                     }
                     key-touch := TouchArea { clicked => { KeyEditor.selected = index; keys-focus.focus(); KeyEditor.edit(index); } }
