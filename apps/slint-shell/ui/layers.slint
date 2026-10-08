@@ -277,7 +277,7 @@ export component LayersPage inherits VerticalLayout {
                         width: 3px; height: parent.height; background: Theme.link;
                     }
                 }
-                VerticalLayout { alignment: center;
+                VerticalLayout { height: 36px; alignment: center;
                     IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Create new layer"); primary: true; clicked => { LayersEditor.open-dialog(LayerDialog.create, -1); } }
                 }
             }
@@ -296,11 +296,14 @@ export component LayersPage inherits VerticalLayout {
                     HorizontalLayout {
                         spacing: 12px;
                         Text { horizontal-stretch: 0; text: @tr("Layer") + ":"; color: Theme.text; font-size: 13px; vertical-alignment: center; }
-                        InlineTextField {
-                            horizontal-stretch: 1; min-width: 0px;
-                            text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
-                            label: @tr("Name"); text-weight: 600;
-                            saved(value) => { LayersEditor.update-name(value); }
+                        VerticalLayout {
+                            alignment: center;
+                            InlineTextField {
+                                horizontal-stretch: 1; min-width: 0px;
+                                text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
+                                label: @tr("Name"); text-size: 13px; text-weight: 600;
+                                saved(value) => { LayersEditor.update-name(value); }
+                            }
                         }
                         Rectangle { horizontal-stretch: 1; }
                         Rectangle {

@@ -59,7 +59,6 @@ export component SettingsWindow inherits Window {
                             alignment: center;
                             spacing: 4px;
                             LineEdit { preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
-                            IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Clear"); enabled: root.test-text != ""; clicked => { root.test-text = ""; } }
                         }
                     }
                     VerticalLayout { alignment: center; Badge {
