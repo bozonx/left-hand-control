@@ -148,6 +148,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         picker.set_value(value.into());
         picker.invoke_refresh();
     }
+    if std::env::var_os("LHC_RULE_ADVANCED_PREVIEW").is_some() {
+        ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
+        picker.invoke_dismiss_picker();
+        rules.invoke_open_dialog(index, RuleDialog::Advanced);
+    }
     ui.show()?;
     ui.window().set_size(slint::LogicalSize::new(954.0, 700.0));
     let timer = slint::Timer::default();

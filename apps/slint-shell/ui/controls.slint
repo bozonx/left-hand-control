@@ -187,6 +187,27 @@ export component Badge inherits Rectangle {
     }
 }
 
+export component FormLabel inherits HorizontalLayout {
+    in property <string> text;
+    in property <string> info;
+    spacing: 6px;
+    alignment: start;
+    vertical-stretch: 0;
+    Text {
+        text: root.text;
+        color: Theme.text;
+        horizontal-stretch: 0;
+        min-width: 0px;
+        wrap: word-wrap;
+        vertical-alignment: center;
+    }
+    if root.info != "": VerticalLayout {
+        horizontal-stretch: 0;
+        alignment: center;
+        InfoTip { text: root.info; }
+    }
+}
+
 export component FieldLabel inherits Text {
     color: Theme.muted;
     font-size: 12px;

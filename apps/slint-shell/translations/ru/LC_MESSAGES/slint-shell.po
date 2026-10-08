@@ -1731,3 +1731,9 @@ msgstr "Изменить назначение"
 
 msgid "Holding also activates the selected layer."
 msgstr "Удержание также активирует выбранный слой."
+
+msgid "Global setting: {} ms"
+msgstr "Из общих настроек: {} мс"
+
+msgid "Leave a timeout empty to use the global setting."
+msgstr "Оставьте поле времени пустым, чтобы использовать значение из общих настроек."
