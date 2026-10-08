@@ -63,6 +63,7 @@ export global ActionPicker {
     in-out property <[PickerItem]> items;
     in-out property <[int]> counts;
     in-out property <bool> macro-step;
+    in-out property <int> title-context;
     /// Open for `target`; `index` is the row it edits, `value` the current
     /// value and `key-only` limits choices to plain keys.
     callback open(PickerTarget, int, string, bool);
@@ -137,7 +138,7 @@ export component PickerOverlay inherits Rectangle {
             VerticalBox { padding: 18px; spacing: 8px;
                 HorizontalBox { vertical-stretch: 0;
                     VerticalBox { padding: 0px; spacing: 4px; horizontal-stretch: 1;
-                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
+                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : ActionPicker.title-context == 1 ? @tr("Double-tap action") : ActionPicker.title-context == 2 ? @tr("Tap action") : ActionPicker.title-context == 3 ? @tr("Hold action") : ActionPicker.title-context == 4 ? @tr("Macro step") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
                     }
                 }
                 if ActionPicker.allow-default || ActionPicker.allow-swallow: HorizontalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;

@@ -180,6 +180,18 @@ pub const CATEGORIES: &[&[&str]] = &[
         "Lang3",
         "Lang4",
         "Lang5",
+        "Prog1",
+        "Prog2",
+        "Prog3",
+        "Prog4",
+        "BrightnessDown",
+        "BrightnessUp",
+        "DisplayToggle",
+        "KeyboardBrightnessToggle",
+        "KeyboardBrightnessDown",
+        "KeyboardBrightnessUp",
+        "Bluetooth",
+        "WLAN",
     ],
 ];
 

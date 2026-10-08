@@ -196,6 +196,19 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "Lang3" => Key::KEY_KATAKANA,
         "Lang4" => Key::KEY_HIRAGANA,
         "Lang5" => Key::KEY_ZENKAKUHANKAKU,
+        // Programmable and system keys
+        "Prog1" => Key::KEY_PROG1,
+        "Prog2" => Key::KEY_PROG2,
+        "Prog3" => Key::KEY_PROG3,
+        "Prog4" => Key::KEY_PROG4,
+        "BrightnessDown" => Key::KEY_BRIGHTNESSDOWN,
+        "BrightnessUp" => Key::KEY_BRIGHTNESSUP,
+        "DisplayToggle" => Key::KEY_DISPLAYTOGGLE,
+        "KeyboardBrightnessToggle" => Key::KEY_KBDILLUMTOGGLE,
+        "KeyboardBrightnessDown" => Key::KEY_KBDILLUMDOWN,
+        "KeyboardBrightnessUp" => Key::KEY_KBDILLUMUP,
+        "Bluetooth" => Key::KEY_BLUETOOTH,
+        "WLAN" => Key::KEY_WLAN,
 
         _ => return None,
     })

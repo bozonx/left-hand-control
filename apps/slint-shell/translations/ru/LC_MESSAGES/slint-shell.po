@@ -748,6 +748,18 @@ msgstr "Поиск клавиш и действий"
 msgid "Search keys"
 msgstr "Поиск клавиш"
 
+msgid "Double-tap action"
+msgstr "Действие двойного нажатия"
+
+msgid "Tap action"
+msgstr "Действие нажатия"
+
+msgid "Hold action"
+msgstr "Действие удержания"
+
+msgid "Macro step"
+msgstr "Шаг макроса"
+
 msgid "You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system."
 msgstr "Можно указать сочетание клавиш, разделив их знаком +. Работа некоторых клавиш зависит от оборудования клавиатуры и может не поддерживаться системой."
 

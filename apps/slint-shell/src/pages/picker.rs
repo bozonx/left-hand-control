@@ -225,6 +225,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             ) && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None,
         );
         let rule_field = ui.global::<crate::ui::RulesEditor>().get_field();
+        picker.set_title_context(if target == PickerTarget::MacroStep {
+            4
+        } else if target == PickerTarget::Rule {
+            match rule_field {
+                crate::ui::RuleDialog::DoubleTap => 1,
+                crate::ui::RuleDialog::Tap => 2,
+                crate::ui::RuleDialog::Hold => 3,
+                _ => 0,
+            }
+        } else {
+            0
+        });
         let rule_action = target == PickerTarget::Rule
             && matches!(
                 rule_field,
