@@ -745,6 +745,24 @@ msgstr "Выберите допустимую клавишу или действ
 msgid "Search keys and actions"
 msgstr "Поиск клавиш и действий"
 
+msgid "Search keys"
+msgstr "Поиск клавиш"
+
+msgid "You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Можно указать сочетание клавиш, разделив их знаком +. Работа некоторых клавиш зависит от оборудования клавиатуры и может не поддерживаться системой."
+
+msgid "You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."
+msgstr "Можно назначить сочетание клавиш, разделив их знаком +. Доступность специальных клавиш зависит от клавиатуры и среды рабочего стола."
+
+msgid "Behavior:"
+msgstr "Поведение:"
+
+msgid "Action:"
+msgstr "Действие:"
+
+msgid "Trigger key:"
+msgstr "Клавиша-триггер:"
+
 msgid "Special keys"
 msgstr "Специальные"
 
