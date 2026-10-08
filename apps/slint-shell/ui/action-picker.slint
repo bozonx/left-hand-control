@@ -7,12 +7,12 @@ export struct PickerItem { value: string, label: string, category: int, notice: 
 export component CategoryIcon inherits Rectangle {
     in property <int> category;
     width: 16px; height: 16px; background: transparent;
-    if root.category == 0: Image { source: @image-url("icons/square.svg"); colorize: Theme.muted; }
+    if root.category == 0: Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
     if root.category == 1: Image { source: @image-url("icons/text-cursor-input.svg"); colorize: Theme.muted; }
     if root.category == 2: Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
     if root.category == 3: Image { source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
     if root.category == 4: Image { source: @image-url("icons/gamepad-2.svg"); colorize: Theme.muted; }
-    if root.category == 5: Image { source: @image-url("icons/square.svg"); colorize: Theme.muted; }
+    if root.category == 5: Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
     if root.category == 6 || root.category == 7: Image { source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
     if root.category == 8: Image { source: @image-url("icons/terminal.svg"); colorize: Theme.muted; }
     if root.category == 9: Image { source: @image-url("icons/app-window.svg"); colorize: Theme.muted; }

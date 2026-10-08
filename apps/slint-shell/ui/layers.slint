@@ -1,6 +1,7 @@
 import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
+import { CategoryIcon } from "action-picker.slint";
 import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -10,8 +11,8 @@ import { SelectField } from "controls.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
-export struct LayerKeyCell { index: int, label: string, code: string, numeric: string, kind: Assignment, action: string, icon: ActionKind }
-export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind }
+export struct LayerKeyCell { index: int, label: string, code: string, numeric: string, kind: Assignment, action: string, icon: ActionKind, category: int }
+export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: int }
 
 /// Layers of the layout being edited and their keymaps.
 export global LayersEditor {
@@ -104,13 +105,13 @@ component Segmented inherits Rectangle {
 component ActionText inherits HorizontalLayout {
     in property <Assignment> kind;
     in property <string> action;
-    in property <ActionKind> icon;
+    in property <int> category;
     in property <length> text-size: 10px;
     in property <TextHorizontalAlignment> text-alignment: center;
     spacing: 3px;
-    if root.kind != Assignment.transparent && root.icon != ActionKind.none: VerticalLayout {
+    if root.kind == Assignment.action: VerticalLayout {
         alignment: center;
-        ActionIcon { kind: root.icon; colorize: Theme.link; }
+        CategoryIcon { category: root.category; }
     }
     Text {
         min-width: 0px;
@@ -176,7 +177,7 @@ component KeyCap inherits Rectangle {
         }
         HorizontalLayout {
             alignment: center;
-            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; icon: root.cell.icon; }
+            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; category: root.cell.category; }
         }
     }
     focus := FocusScope {

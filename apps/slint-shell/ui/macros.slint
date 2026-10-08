@@ -45,6 +45,7 @@ component StepRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         spacing: 2px;
         alignment: center;
+        if !root.step.pause: CategoryIcon { category: root.step.category; }
         if !root.step.pause: Rectangle {
             height: 32px;
             border-radius: 6px;
@@ -60,7 +61,6 @@ component StepRow inherits HorizontalLayout {
             }
             HorizontalLayout {
                 padding-left: 10px; padding-right: 10px; spacing: 6px;
-                CategoryIcon { category: root.step.category; }
                 Text {
                     horizontal-stretch: 1;
                     text: root.step.action;

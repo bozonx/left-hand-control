@@ -78,6 +78,7 @@ fn hand_cells(
                 code: (*code).into(),
                 numeric: keyboard::system_code(code).into(),
                 kind,
+                category: super::picker::category_for_value(&action),
                 action: action.into(),
                 icon,
             });
@@ -176,6 +177,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
                         LayerExtraRow {
                             key: extra.key.clone().into(),
                             kind,
+                            category: super::picker::category_for_value(&action),
                             action: action.into(),
                             icon,
                         }

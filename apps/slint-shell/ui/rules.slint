@@ -1,5 +1,6 @@
 import { ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
+import { CategoryIcon } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput } from "controls.slint";
@@ -8,7 +9,7 @@ import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, CheckBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool }
+export struct RuleRow { key: string, tap: string, hold: string, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: int, tap-category: int, hold-category: int, double-category: int }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -87,13 +88,21 @@ component RuleCell inherits VerticalBox {
     in property <string> value;
     in property <string> empty-text: @tr("Not set");
     in property <bool> enabled: true;
+    in property <int> category: -1;
     callback clicked();
     spacing: 5px;
     horizontal-stretch: 1;
     min-width: 0px;
     preferred-width: 0px;
     Text { min-width: 0px; wrap: word-wrap; text: root.title; color: Theme.muted; }
-    Button { enabled: root.enabled; min-width: 0px; text: root.value == "" ? root.empty-text : root.value; clicked => { root.clicked(); } }
+    Rectangle {
+        min-width: 0px; height: 32px; border-radius: 5px; border-width: 1px; border-color: Theme.border; background: rule-cell-touch.has-hover ? Theme.hover : Theme.card;
+        HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 5px;
+            if root.value != "" && root.category >= 0: CategoryIcon { category: root.category; }
+            Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? root.empty-text : root.value; color: Theme.text; vertical-alignment: center; overflow: elide; }
+        }
+        rule-cell-touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+    }
 }
 
 export component RulesPage inherits VerticalBox {
@@ -142,7 +151,7 @@ export component RulesPage inherits VerticalBox {
                     }
                     HorizontalLayout { min-width: 0px; spacing: 16px;
                         trigger-column := VerticalLayout { width: max(0px, min(220px, (rule-scroll.visible-width - 61px) * 0.35)); horizontal-stretch: 0; spacing: 10px; alignment: start;
-                            RuleCell { title: @tr("Trigger"); value: rule.key; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
+                            RuleCell { title: @tr("Trigger"); value: rule.key; category: rule.key-category; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                             RuleCell { enabled: rule.key != ""; title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
                             if rule.game != GameCondition.any: RuleBadge { available-width: trigger-column.width; text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.accent; }
                             for language in ConditionChoices.items(rule.languages): RuleBadge { available-width: trigger-column.width; text: language; }
@@ -152,12 +161,12 @@ export component RulesPage inherits VerticalBox {
                         Rectangle { width: 1px; background: Theme.border; }
                         VerticalLayout { min-width: 0px; spacing: 12px; alignment: start;
                             HorizontalLayout { min-width: 0px; spacing: 12px;
-                                RuleCell { title: @tr("Tap action"); value: rule.tap; empty-text: rule.swallow-tap ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
-                                RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                                RuleCell { title: @tr("Tap action"); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
+                                RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; category: rule.double-category; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
                             }
                             HorizontalLayout { min-width: 0px; spacing: 12px;
                                 RuleCell { title: @tr("Layer (hold)"); value: rule.layer; clicked => { RulesEditor.open-dialog(index, RuleDialog.layer); } }
-                                RuleCell { title: @tr("Hold action"); value: rule.hold; empty-text: rule.swallow-hold ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
+                                RuleCell { title: @tr("Hold action"); value: rule.hold; category: rule.hold-category; empty-text: rule.swallow-hold ? @tr("Swallow key") : @tr("Pass through"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
                             }
                         }
                     }

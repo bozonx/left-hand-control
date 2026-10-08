@@ -34,8 +34,10 @@ const PAUSE: i32 = MACROS + 6;
 const COUNTED: i32 = TEXT;
 
 pub(crate) fn category_for_value(value: &str) -> i32 {
-    if let Some((index, _)) = CATEGORIES.iter().enumerate().find(|(_, keys)| keys.contains(&value)) {
-        return index as i32;
+    for key in value.split('+') {
+        if let Some((index, _)) = CATEGORIES.iter().enumerate().find(|(_, keys)| keys.contains(&key)) {
+            return index as i32;
+        }
     }
     if value.starts_with("macro:") { MACROS }
     else if value.starts_with("system-macro:") { SYSTEM_MACROS }

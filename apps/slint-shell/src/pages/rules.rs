@@ -105,6 +105,10 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 swallow_tap: rule.tap_action.is_none(),
                 swallow_hold: rule.hold_action.is_none(),
                 advanced: rule.isolate.is_some() || rule.hold_for.is_some(),
+                key_category: super::picker::category_for_value(&rule.key),
+                tap_category: super::picker::category_for_value(rule.tap_action.as_deref().unwrap_or_default()),
+                hold_category: super::picker::category_for_value(rule.hold_action.as_deref().unwrap_or_default()),
+                double_category: super::picker::category_for_value(&rule.double_tap_action),
             })
             .collect::<Vec<_>>(),
     )));
