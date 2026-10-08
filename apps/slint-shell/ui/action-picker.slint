@@ -4,6 +4,22 @@ import { Theme } from "theme.slint";
 import { PickerTarget } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: int, notice: Message }
+export component CategoryIcon inherits Rectangle {
+    in property <int> category;
+    width: 16px; height: 16px; background: transparent;
+    if root.category == 0: Image { source: @image-url("icons/square.svg"); colorize: Theme.muted; }
+    if root.category == 1: Image { source: @image-url("icons/text-cursor-input.svg"); colorize: Theme.muted; }
+    if root.category == 2: Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
+    if root.category == 3: Image { source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
+    if root.category == 4: Image { source: @image-url("icons/gamepad-2.svg"); colorize: Theme.muted; }
+    if root.category == 5: Image { source: @image-url("icons/square.svg"); colorize: Theme.muted; }
+    if root.category == 6 || root.category == 7: Image { source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
+    if root.category == 8: Image { source: @image-url("icons/terminal.svg"); colorize: Theme.muted; }
+    if root.category == 9: Image { source: @image-url("icons/app-window.svg"); colorize: Theme.muted; }
+    if root.category == 10: Image { source: @image-url("icons/settings-2.svg"); colorize: Theme.muted; }
+    if root.category == 11: Image { source: @image-url("icons/text-cursor-input.svg"); colorize: Theme.muted; }
+    if root.category == 12: Image { source: @image-url("icons/clock.svg"); colorize: Theme.muted; }
+}
 export global ActionPicker {
     in-out property <bool> opened;
     in-out property <bool> layer-action;
@@ -44,7 +60,7 @@ component PickerCell inherits Rectangle {
     accessible-action-default => { root.pick(); }
     function pick() { ActionPicker.value = root.item.value; ActionPicker.refresh(); }
     VerticalLayout { padding: 8px; spacing: 2px;
-        Text { text: root.item.label; color: Theme.text; wrap: word-wrap; overflow: elide; vertical-alignment: center; }
+        HorizontalLayout { spacing: 5px; CategoryIcon { category: root.item.category; } Text { text: root.item.label; color: Theme.text; wrap: word-wrap; overflow: elide; vertical-alignment: center; } }
         if root.item.notice.id != "": Text { text: Locale.text(root.item.notice); color: Theme.warning; font-size: 10px; overflow: elide; }
         if root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: 10px; overflow: elide; }
     }
@@ -77,6 +93,7 @@ export component PickerOverlay inherits Rectangle {
                 }
                 Text { text: @tr("Current value"); color: Theme.muted; }
                 HorizontalBox { vertical-stretch: 0;
+                    if ActionPicker.value != "": CategoryIcon { category: ActionPicker.category; }
                     LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.refresh(); } }
                     if ActionPicker.layer-action || ActionPicker.rule-action: Button { text: ActionPicker.rule-action ? @tr("Swallow key") : @tr("Ignore key"); primary: ActionPicker.ignore-key; clicked => { ActionPicker.ignore-key = true; ActionPicker.value = ""; ActionPicker.refresh(); } }
                     Button { text: @tr("Clear"); enabled: !ActionPicker.key-only && !ActionPicker.macro-step; clicked => { ActionPicker.ignore-key = false; ActionPicker.value = ""; ActionPicker.refresh(); } }

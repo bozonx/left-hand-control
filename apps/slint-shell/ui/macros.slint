@@ -1,13 +1,14 @@
 import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
+import { CategoryIcon } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerTarget } from "types.slint";
 import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, NumericInput } from "controls.slint";
 import { Button, LineEdit } from "std-widgets.slint";
 
-export struct MacroStepRow { action: string, pause: bool, pause-ms: string }
+export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: int }
 export struct MacroRow { id: string, name: string, step-pause: string, modifier-delay: string, usage: [string], error: Message, steps: [MacroStepRow] }
 export struct SystemMacroRow { id: string, name: string, steps: string }
 export global MacroEditor {
@@ -59,6 +60,7 @@ component StepRow inherits HorizontalLayout {
             }
             HorizontalLayout {
                 padding-left: 10px; padding-right: 10px; spacing: 6px;
+                CategoryIcon { category: root.step.category; }
                 Text {
                     horizontal-stretch: 1;
                     text: root.step.action;

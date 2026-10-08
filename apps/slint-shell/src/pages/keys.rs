@@ -18,6 +18,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
             code: (*code).into(),
             label: keyboard::label(code).into(),
             action: config.base_tap_action(code).unwrap_or_default().into(),
+            category: super::picker::category_for_value(config.base_tap_action(code).unwrap_or_default()),
         })
         .collect();
     let editor = ui.global::<KeyEditor>();

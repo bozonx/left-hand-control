@@ -108,6 +108,7 @@ fn steps(item: &Macro) -> ModelRc<MacroStepRow> {
                     action: step.action.clone().into(),
                     pause: pause.is_some(),
                     pause_ms: pause.unwrap_or_default().trim().into(),
+                    category: super::picker::category_for_value(&step.action),
                 }
             })
             .collect::<Vec<_>>(),

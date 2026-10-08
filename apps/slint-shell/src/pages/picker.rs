@@ -33,6 +33,20 @@ const PAUSE: i32 = MACROS + 6;
 /// Categories with countable catalog entries.
 const COUNTED: i32 = TEXT;
 
+pub(crate) fn category_for_value(value: &str) -> i32 {
+    if let Some((index, _)) = CATEGORIES.iter().enumerate().find(|(_, keys)| keys.contains(&value)) {
+        return index as i32;
+    }
+    if value.starts_with("macro:") { MACROS }
+    else if value.starts_with("system-macro:") { SYSTEM_MACROS }
+    else if value.starts_with("cmd:") { COMMANDS }
+    else if value.starts_with("app:") { APP_ACTIONS }
+    else if value.starts_with("sys:") { SYSTEM_ACTIONS }
+    else if value.starts_with("text:") { TEXT }
+    else if value.starts_with("pause:") { PAUSE }
+    else { 5 }
+}
+
 /// Longest pause a macro step may wait, in milliseconds.
 pub const MAX_PAUSE_MS: u32 = 10_000;
 
