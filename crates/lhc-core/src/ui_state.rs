@@ -18,7 +18,7 @@ impl UiState {
             self.selected_layer_id = layer.to_owned();
         }
         if let Some(mode) = mode {
-            self.label_mode = mode.clamp(0, 2);
+            self.label_mode = mode.clamp(0, 1);
         }
     }
 }
@@ -30,9 +30,9 @@ mod tests {
     #[test]
     fn preferences_do_not_survive_a_new_session() {
         let mut state = UiState::default();
-        state.update(Some("nav"), Some(2));
+        state.update(Some("nav"), Some(1));
         assert_eq!(state.selected_layer_id(), "nav");
-        assert_eq!(state.label_mode(), 2);
+        assert_eq!(state.label_mode(), 1);
         let next = UiState::default();
         assert_eq!(next.selected_layer_id(), "");
         assert_eq!(next.label_mode(), 0);

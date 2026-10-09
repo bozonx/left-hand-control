@@ -76,7 +76,6 @@ fn hand_cells(
                 index: index as i32,
                 label: keyboard::label(code).into(),
                 code: (*code).into(),
-                numeric: keyboard::system_code(code).into(),
                 kind,
                 category: super::picker::category_for_value(&action),
                 action: action.into(),
@@ -363,17 +362,6 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
             let previous = extra_at(document, &id, index).map(|(key, _)| key);
             change(ui, document, |config| {
                 set_extra(config, &id, previous.as_deref(), &key, value)
-            })?
-        }
-        LayerDialog::ClearKeys | LayerDialog::ClearExtras => {
-            let extra = dialog == LayerDialog::ClearExtras;
-            change(ui, document, |config| {
-                config.update_layout(|layout| {
-                    layout
-                        .layer_keymap_mut(&id)
-                        .keys
-                        .retain(|key, _| keyboard::layer_keys().any(|code| code == key) == extra);
-                })
             })?
         }
         LayerDialog::Create | LayerDialog::None => {}

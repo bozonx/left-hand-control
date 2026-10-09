@@ -2,7 +2,7 @@ import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
-import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
+import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
@@ -10,7 +10,7 @@ import { Button, HorizontalBox, LineEdit, TextEdit, Palette, VerticalBox } from 
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
-export struct LayerKeyCell { index: int, label: string, code: string, numeric: string, kind: Assignment, action: string, icon: ActionKind, category: int }
+export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: int }
 export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: int }
 
 /// Layers of the layout being edited and their keymaps.
@@ -145,6 +145,41 @@ component ExtraFieldButton inherits Rectangle {
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
+// The row itself is the TouchArea, so it keeps `has-hover` while the pointer is over one of
+// its buttons; a sibling TouchArea would lose hover there and make the buttons flicker.
+component ExtraKeyLine inherits TouchArea {
+    in property <int> index;
+    in property <LayerExtraRow> item;
+    opacity: DragDrop.dragging && DragDrop.group == 3 && DragDrop.source == root.index ? 0.6 : 1;
+    Rectangle { background: root.has-hover ? Theme.hover.transparentize(0.6) : transparent; }
+    VerticalLayout {
+        HorizontalLayout {
+            padding: 8px;
+            spacing: 12px;
+            ExtraFieldButton { width: 200px; text: root.item.key; clicked => { LayersEditor.pick-extra(root.index, true); } }
+            ExtraFieldButton {
+                horizontal-stretch: 1;
+                min-width: 0px;
+                text: root.item.kind == Assignment.transparent ? @tr("Normal key behavior") : root.item.kind == Assignment.swallow ? @tr("Suppress") : root.item.action;
+                clicked => { LayersEditor.pick-extra(root.index, false); }
+            }
+            VerticalLayout {
+                width: 32px;
+                alignment: center;
+                IconButton {
+                    // Opacity instead of `visible`: the button stays focusable from the keyboard.
+                    opacity: root.has-hover ? 1 : 0;
+                    icon: @image-url("icons/trash-2.svg");
+                    tooltip: @tr("Remove");
+                    clicked => { LayersEditor.delete-extra = root.index; }
+                }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.divider; }
+    }
+    DropMarker { width: parent.width; group: 3; index: root.index; row-y: root.y; row-height: root.height; }
+}
+
 component KeyCap inherits Rectangle {
     in property <LayerKeyCell> cell;
     in property <int> label-mode;
@@ -163,7 +198,7 @@ component KeyCap inherits Rectangle {
         alignment: center;
         Text {
             min-width: 0px;
-            text: root.label-mode == 0 ? root.cell.label : root.label-mode == 1 ? root.cell.code : root.cell.numeric;
+            text: root.label-mode == 0 ? root.cell.label : root.cell.code;
             color: Theme.text;
             font-size: 13px;
             font-weight: 600;
@@ -357,20 +392,11 @@ export component LayersPage inherits VerticalLayout {
                         Text { text: @tr("Keyboard"); color: Theme.text; font-size: 15px; font-weight: 700; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
-                            InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Internal codes” shows app-specific codes (e.g. KeyA, ArrowLeft). “System codes” shows raw system event codes."); }
+                            InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Internal codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."); }
                         }
                         Rectangle { horizontal-stretch: 1; }
-                        VerticalLayout {
-                            alignment: center;
-                            IconButton {
-                                icon: @image-url("icons/eraser.svg");
-                                text: @tr("Clear");
-                                tooltip: @tr("Clears key bindings only. Extra keys are not affected.");
-                                clicked => { LayersEditor.open-dialog(LayerDialog.clear-keys, -1); }
-                            }
-                        }
                         Segmented {
-                            labels: [@tr("US layout"), @tr("Internal codes"), @tr("System codes")];
+                            labels: [@tr("US layout"), @tr("Internal codes")];
                             selected-index: root.label-mode;
                             selected(index) => { LayersEditor.set-label-mode(index); }
                         }
@@ -415,14 +441,6 @@ export component LayersPage inherits VerticalLayout {
                                 InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger, then choose its action, suppress it, or inherit its assignment from the lower layer."); }
                             }
                         }
-                        if LayersEditor.extras.length > 0: VerticalLayout {
-                            alignment: center;
-                            IconButton {
-                                icon: @image-url("icons/eraser.svg");
-                                text: @tr("Clear");
-                                clicked => { LayersEditor.open-dialog(LayerDialog.clear-extras, -1); }
-                            }
-                        }
                         VerticalLayout {
                             alignment: center;
                             IconButton {
@@ -436,45 +454,19 @@ export component LayersPage inherits VerticalLayout {
                     Divider {}
                     VerticalLayout {
                         padding: 20px;
-                        spacing: 8px;
+                        spacing: 0px;
                         if LayersEditor.extras.length == 0: Text { text: @tr("No extra keys for this layer yet."); color: Theme.muted; }
-                        for extra[index] in LayersEditor.extras: Rectangle {
-                            opacity: DragDrop.dragging && DragDrop.group == 3 && DragDrop.source == index ? 0.6 : 1;
-
-                            background: Theme.surface;
-                            border-radius: 6px;
-                            border-width: 1px;
-                            border-color: Theme.divider;
-                            HorizontalLayout {
-                                padding: 10px;
-                                padding-left: 14px;
-                                spacing: 16px;
-                                VerticalLayout {
-                                    width: 200px;
-                                    horizontal-stretch: 0;
-                                    spacing: 2px;
-                                    Text { text: @tr("Key"); color: Theme.muted; font-size: 11px; }
-                                    ExtraFieldButton { text: extra.key; clicked => { LayersEditor.pick-extra(index, true); } }
-                                }
-                                VerticalLayout {
-                                    horizontal-stretch: 1;
-                                    min-width: 0px;
-                                    preferred-width: 0px;
-                                    spacing: 2px;
-                                    Text { text: @tr("Action"); color: Theme.muted; font-size: 11px; }
-                                    ExtraFieldButton {
-                                        text: extra.kind == Assignment.transparent ? @tr("Normal key behavior") : extra.kind == Assignment.swallow ? @tr("Suppress") : extra.action;
-                                        clicked => { LayersEditor.pick-extra(index, false); }
-                                    }
-                                }
-                                HorizontalLayout {
-                                    spacing: 2px;
-                                    VerticalLayout { alignment: center;
-                                        IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); clicked => { LayersEditor.delete-extra = index; } }
-                                    }
-                                }
-                            }
-                            DropMarker { width: parent.width; group: 3; index: index; row-y: parent.y; row-height: parent.height; }
+                        if LayersEditor.extras.length > 0: HorizontalLayout {
+                            padding: 8px;
+                            spacing: 12px;
+                            FieldLabel { width: 200px; text: @tr("Key"); }
+                            FieldLabel { horizontal-stretch: 1; text: @tr("Action"); }
+                            Rectangle { width: 32px; }
+                        }
+                        if LayersEditor.extras.length > 0: Rectangle { height: 1px; background: Theme.divider; }
+                        for extra[index] in LayersEditor.extras: ExtraKeyLine {
+                            index: index;
+                            item: extra;
                         }
                     }
                 }
@@ -487,7 +479,7 @@ export component LayerDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: (LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0) && !ActionPicker.opened;
     key-pressed(event) => { if event.text == Key.Escape { LayersEditor.dialog = LayerDialog.none; LayersEditor.delete-extra = -1; return accept; } return reject; }
-    if LayersEditor.dialog != LayerDialog.none && LayersEditor.dialog != LayerDialog.delete && LayersEditor.dialog != LayerDialog.clear-keys && LayersEditor.dialog != LayerDialog.clear-extras: Rectangle {
+    if LayersEditor.dialog != LayerDialog.none && LayersEditor.dialog != LayerDialog.delete: Rectangle {
         background: #00000099;
         TouchArea { clicked => { LayersEditor.dialog = LayerDialog.none; } }
         Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: 12px;
@@ -498,8 +490,7 @@ export component LayerDialogOverlay inherits FocusScope {
                         : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
                         : LayersEditor.dialog == LayerDialog.delete ? @tr("Delete layer?")
                         : LayersEditor.dialog == LayerDialog.edit-key ? @tr("Edit layer key")
-                        : LayersEditor.dialog == LayerDialog.extra-key ? @tr("Extra key")
-                        : @tr("Clear assignments?");
+                        : @tr("Extra key");
                     color: Theme.text; font-size: 22px; font-weight: 700;
                 }
                 if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
@@ -545,11 +536,6 @@ export component LayerDialogOverlay inherits FocusScope {
     }
     if LayersEditor.dialog == LayerDialog.delete: ConfirmDialog {
         title: @tr("Delete layer?"); body: @tr("Rules using this layer will return to the base layer."); confirm-text: @tr("Delete");
-        confirm => { LayersEditor.apply-dialog(); } cancel => { LayersEditor.dialog = LayerDialog.none; }
-    }
-
-    if LayersEditor.dialog == LayerDialog.clear-keys || LayersEditor.dialog == LayerDialog.clear-extras: ConfirmDialog {
-        title: @tr("Clear assignments?"); body: @tr("The selected assignments will be cleared."); confirm-text: @tr("Clear");
         confirm => { LayersEditor.apply-dialog(); } cancel => { LayersEditor.dialog = LayerDialog.none; }
     }
 

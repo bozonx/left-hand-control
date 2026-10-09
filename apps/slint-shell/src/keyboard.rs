@@ -105,21 +105,6 @@ pub fn label(code: &str) -> &str {
     }
 }
 
-/// System (evdev) code of a key, shown by the "System codes" view.
-pub fn system_code(code: &str) -> String {
-    #[cfg(target_os = "linux")]
-    {
-        lhc_core::mapper::keys::code_to_key(code)
-            .map(|key| key.code().to_string())
-            .unwrap_or_default()
-    }
-    #[cfg(not(target_os = "linux"))]
-    {
-        let _ = code;
-        String::new()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,7 +133,5 @@ mod tests {
         assert_eq!(layer_key(-1), None);
         assert_eq!(base_key(33), Some("KeyQ"));
         assert_eq!(base_key(80), None);
-        #[cfg(target_os = "linux")]
-        assert_eq!(system_code("KeyA"), "30");
     }
 }
