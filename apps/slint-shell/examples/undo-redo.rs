@@ -4,10 +4,14 @@ use slint::winit_030::{
     winit::keyboard::{KeyCode, ModifiersState},
 };
 use slint::{ComponentHandle, SharedString};
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    time::Duration,
+};
 
 slint::slint! {
-    import { LineEdit, TextEdit, VerticalBox } from "std-widgets.slint";
+    import { LineEdit, TextEdit } from "std-widgets.slint";
     import { InlineTextField, InlineTextArea } from "../ui/controls.slint";
     export component EditingWindow inherits Window {
         width: 500px; height: 480px;
@@ -28,10 +32,11 @@ slint::slint! {
             if root.active == 1 { line.focus(); }
             if root.active == 2 { area.focus(); }
         }
-        VerticalBox {
+        VerticalLayout {
+            padding: 16px; spacing: 12px; alignment: start;
             raw := TextInput { text <=> root.raw-text; single-line: true; read-only: root.read-only; height: 36px; }
-            line := LineEdit { text <=> root.line-text; read-only: root.read-only; }
-            area := TextEdit { text <=> root.area-text; read-only: root.read-only; }
+            line := LineEdit { text <=> root.line-text; read-only: root.read-only; height: 32px; }
+            area := TextEdit { text <=> root.area-text; read-only: root.read-only; height: 120px; }
             inline := InlineTextField { text: root.inline-text; clearable: root.clearable; saved(value) => { root.inline-text = value; } }
             inline-area := InlineTextArea { text: root.inline-area; saved(value) => { root.inline-area = value; } }
         }
@@ -40,10 +45,13 @@ slint::slint! {
 
 fn key(ui: &EditingWindow, text: impl Into<SharedString>) {
     let text = text.into();
-    ui.window()
-        .dispatch_event(WindowEvent::KeyPressed { text: text.clone() });
-    ui.window()
-        .dispatch_event(WindowEvent::KeyReleased { text });
+    for character in text.chars() {
+        let text: SharedString = character.to_string().into();
+        ui.window()
+            .dispatch_event(WindowEvent::KeyPressed { text: text.clone() });
+        ui.window()
+            .dispatch_event(WindowEvent::KeyReleased { text });
+    }
 }
 
 fn shortcut(ui: &EditingWindow, logical: &str, physical: KeyCode, shift: bool) {
@@ -111,7 +119,15 @@ fn clipboard(value: Option<&str>) -> Option<String> {
     .unwrap()
 }
 
-fn verify(ui: &EditingWindow) {
+struct ClipboardRestore(Option<String>);
+
+impl Drop for ClipboardRestore {
+    fn drop(&mut self) {
+        clipboard(Some(self.0.as_deref().unwrap_or_default()));
+    }
+}
+
+fn verify(ui: &EditingWindow) -> ClipboardRestore {
     shortcut(ui, "ф", KeyCode::KeyA, false);
     key(ui, "новый🙂");
     shortcut(ui, "я", KeyCode::KeyZ, false);
@@ -164,7 +180,7 @@ fn verify(ui: &EditingWindow) {
     assert_eq!(text(ui), "c");
     shortcut(ui, "я", KeyCode::KeyZ, false);
     assert_eq!(text(ui), "abc");
-    let old_clipboard = clipboard(None);
+    let old_clipboard = ClipboardRestore(clipboard(None));
     clipboard(Some("вставка🙂"));
     shortcut(ui, "ф", KeyCode::KeyA, false);
     shortcut(ui, "м", KeyCode::KeyV, false);
@@ -182,14 +198,6 @@ fn verify(ui: &EditingWindow) {
         assert_eq!((ui.get_cursor(), ui.get_anchor()), (18, 0));
     }
     shortcut(ui, "с", KeyCode::KeyC, false);
-    let copied = clipboard(None);
-    clipboard(Some(old_clipboard.as_deref().unwrap_or_default()));
-    assert_eq!(
-        copied.as_deref(),
-        Some("вставка🙂"),
-        "copy in editor {}",
-        ui.get_active()
-    );
     if ui.get_active() == 2 {
         reset(ui, "строка");
         key(ui, Key::End);
@@ -204,6 +212,7 @@ fn verify(ui: &EditingWindow) {
         shortcut(ui, "Я", KeyCode::KeyZ, true);
         assert_eq!(text(ui), "строка\nвторая🙂");
     }
+    old_clipboard
 }
 
 fn snapshot(ui: &EditingWindow) {
@@ -238,11 +247,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.show()?;
     let timer = slint::Timer::default();
     let step = Rc::new(Cell::new(0));
+    let pending_clipboard = RefCell::new(None::<ClipboardRestore>);
     timer.start(slint::TimerMode::Repeated, Duration::from_millis(100), move || {
+        if let Some(original) = pending_clipboard.borrow_mut().take() {
+            let copied = clipboard(None);
+            drop(original);
+            assert_eq!(copied.as_deref(), Some("вставка🙂"), "copy in editor {}", ui.get_active());
+        }
         let current = step.get();
         match current {
             0 | 2 | 4 => { ui.set_active(current / 2); reset(&ui, "исходный"); }
-            1 | 3 | 5 => verify(&ui),
+            1 | 3 | 5 => { *pending_clipboard.borrow_mut() = Some(verify(&ui)); }
             6 | 8 | 10 | 12 => {
                 ui.set_clearable(current >= 10);
                 ui.invoke_begin_inline();
@@ -287,10 +302,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             16 => {
                 ui.set_clearable(false);
                 ui.set_inline_text(format!("{}END", "длинный текст ".repeat(24)).into());
-                ui.invoke_begin_inline();
             }
-            17 => key(&ui, Key::End),
-            18 => {
+            17 => ui.invoke_begin_inline(),
+            18 => key(&ui, Key::End),
+            19 => {
                 snapshot(&ui);
                 key(&ui, Key::Backspace);
                 shortcut(&ui, "я", KeyCode::KeyZ, false);
@@ -298,7 +313,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key(&ui, Key::Return);
                 assert!(ui.get_inline_text().ends_with("EN"));
             }
-            19 => {
+            20 => {
                 println!("Undo/redo passed: TextInput, LineEdit, TextEdit, both inline fields, inline textarea, Russian shortcuts, atomic replacement, redo invalidation, selection, deletion, clipboard, read-only, multiline");
                 slint::quit_event_loop().unwrap();
             }

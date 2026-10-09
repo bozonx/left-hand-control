@@ -91,8 +91,7 @@ impl TextHistory {
                 }
                 match kind {
                     EditKind::Typing
-                        if last.removed.is_empty()
-                            && edit.removed.is_empty()
+                        if edit.removed.is_empty()
                             && edit.pos == last.pos + last.inserted.len()
                             && edit.inserted.chars().count() == 1
                             && !edit.inserted.chars().any(char::is_whitespace)
@@ -183,6 +182,41 @@ mod tests {
         let (text, caret) = history.redo(&text).unwrap();
         assert_eq!(text, "🙂");
         assert_eq!(caret, selection(4, 4));
+    }
+
+    #[test]
+    fn replacement_and_following_typing_share_one_group() {
+        let mut history = TextHistory::default();
+        history.record(
+            "привет",
+            0..12,
+            "н",
+            selection(12, 0),
+            EditKind::Typing,
+            Duration::ZERO,
+        );
+        history.record(
+            "н",
+            2..2,
+            "о",
+            selection(2, 2),
+            EditKind::Typing,
+            Duration::from_millis(20),
+        );
+        history.record(
+            "но",
+            4..4,
+            "в",
+            selection(4, 4),
+            EditKind::Typing,
+            Duration::from_millis(40),
+        );
+        let (text, caret) = history.undo("нов").unwrap();
+        assert_eq!(text, "привет");
+        assert_eq!(caret, selection(12, 0));
+        let (text, caret) = history.redo(&text).unwrap();
+        assert_eq!(text, "нов");
+        assert_eq!(caret, selection(6, 6));
     }
 
     #[test]

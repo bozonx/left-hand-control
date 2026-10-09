@@ -344,9 +344,10 @@ impl SpellWin {
             47 => Some('v'), 44 => Some('z'), 21 => Some('y'),
             _ => None,
         };
+        let shortcut_logical = event.keysym.key_char().map(|character| character.to_string());
         let logical = get_string(event);
         i_slint_core::input::text_editing_shortcut(
-            logical.as_str(), physical, self.modifiers.ctrl, self.modifiers.shift,
+            shortcut_logical.as_deref().unwrap_or(logical.as_str()), physical, self.modifiers.ctrl, self.modifiers.shift,
             self.modifiers.alt, self.modifiers.logo,
         ).map(SharedString::from).unwrap_or(logical)
     }
