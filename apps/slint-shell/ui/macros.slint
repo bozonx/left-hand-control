@@ -179,6 +179,7 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         NumericInput {
                             text: root.item.step-pause;
+                            placeholder-text: MacroEditor.default-step-pause;
                             accessible-label: @tr("Pause between steps");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
                         }
@@ -199,6 +200,7 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         NumericInput {
                             text: root.item.modifier-delay;
+                            placeholder-text: MacroEditor.default-modifier-delay;
                             accessible-label: @tr("Modifier delay");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
                         }
