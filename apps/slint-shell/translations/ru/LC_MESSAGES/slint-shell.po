@@ -1863,3 +1863,18 @@ msgstr "Отключить анимацию подсветки в редакто
 
 msgid "Every control can be reached with Tab and activated with Space or Enter. Interface size follows the desktop scale factor."
 msgstr "До любого элемента можно дойти клавишей Tab и нажать его пробелом или Enter. Размер интерфейса следует масштабу рабочего стола."
+
+msgid "Always"
+msgstr "Всегда"
+
+msgid "+ Add key"
+msgstr "+ Добавить клавишу"
+
+msgid "Hold duration"
+msgstr "Время удержания"
+
+msgid "{} s"
+msgstr "{} с"
+
+msgid "{} s (default)"
+msgstr "{} с (по умолчанию)"

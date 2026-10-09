@@ -3,13 +3,13 @@ import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
-import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput, FormLabel, SelectField } from "controls.slint";
+import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput, FormLabel } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, CheckBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: int, tap-category: int, hold-category: int, double-category: int }
+export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: int, tap-category: int, hold-category: int, double-category: int, long-hold-category: int }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -74,19 +74,37 @@ export global RulesEditor {
     callback create-layer(string);
 }
 
-component RuleBadge inherits Rectangle {
+component ConditionLine inherits HorizontalLayout {
+    in property <image> icon;
     in property <string> text;
-    in property <color> fill: Theme.hover;
-    private property <string> measure: root.text;
-    in property <length> available-width: 208px;
-    width: min(root.available-width, measure-text.preferred-width + 14px);
-    height: 22px;
-    border-radius: 5px;
-    background: root.fill;
-    measure-text := Text { text: root.measure; visible: false; }
-    HorizontalLayout {
-        padding-left: 7px; padding-right: 7px;
-        Text { min-width: 0px; horizontal-stretch: 1; overflow: elide; text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+    in property <color> tint: Theme.muted;
+    spacing: 6px;
+    min-width: 0px;
+    VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: root.icon; colorize: root.tint; } }
+    Text { min-width: 0px; horizontal-stretch: 1; text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+}
+
+/// Rule conditions as one line per kind; the whole block opens the editor.
+component ConditionsCell inherits VerticalLayout {
+    in property <RuleRow> rule;
+    in property <bool> enabled: true;
+    callback clicked();
+    spacing: 5px;
+    min-width: 0px;
+    FormLabel { text: @tr("Conditions"); }
+    Rectangle {
+        min-width: 0px; min-height: 32px; border-radius: 5px; border-width: 1px; border-color: Theme.border;
+        background: conditions-touch.has-hover ? Theme.hover : Theme.card;
+        accessible-role: button; accessible-label: @tr("Conditions");
+        accessible-action-default => { root.clicked(); }
+        VerticalLayout { padding-left: 8px; padding-right: 8px; padding-top: 6px; padding-bottom: 6px; spacing: 4px; alignment: center;
+            if !root.rule.has-conditions: Text { text: @tr("Always"); color: Theme.muted; vertical-alignment: center; overflow: elide; }
+            if root.rule.game != GameCondition.any: ConditionLine { icon: @image-url("icons/gamepad-2.svg"); text: root.rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); }
+            if root.rule.languages != "": ConditionLine { icon: @image-url("icons/globe.svg"); text: root.rule.languages; }
+            if root.rule.applications != "": ConditionLine { icon: @image-url("icons/app-window.svg"); text: root.rule.applications; tint: Theme.success; }
+            if root.rule.excluded != "": ConditionLine { icon: @image-url("icons/ban.svg"); text: root.rule.excluded; tint: Theme.error; }
+        }
+        conditions-touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.clicked(); } }
     }
 }
 
@@ -108,100 +126,138 @@ component RuleCell inherits VerticalBox {
         min-width: 0px; height: 32px; border-radius: 5px; border-width: 1px; border-color: Theme.border; background: rule-cell-touch.has-hover ? Theme.hover : Theme.card;
         HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 5px;
             if root.value != "" && root.category >= 0: CategoryIcon { category: root.category; }
-            Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? root.empty-text : root.value; color: Theme.text; vertical-alignment: center; overflow: elide; }
+            Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? root.empty-text : root.value; color: root.value == "" ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; }
         }
         rule-cell-touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
     }
 }
 
-component LayerField inherits VerticalBox {
+/// What holding the trigger does: nothing, a layer, or a long-hold action,
+/// all picked from one menu.
+component HoldField inherits VerticalBox {
     padding: 0px;
     in property <int> rule-index;
-    in property <string> value;
+    in property <RuleRow> rule;
+    in property <bool> enabled: true;
     private property <bool> creating;
     private property <length> scroll-y;
-    private property <length> list-height: min(252px, max(72px, (RulesEditor.layer-items.length + 1) * 36px));
+    private property <int> count: RulesEditor.layer-items.length;
+    private property <length> list-height: min(216px, max(36px, root.count * 36px));
     min-width: 0px;
     preferred-width: 0px;
     horizontal-stretch: 1;
     spacing: 5px;
     function close-menu() { menu.close(); RulesEditor.dialog = RuleDialog.none; field-focus.focus(); }
+    // Menu entries: 0 = nothing, 1..count = layers, count + 1 = action.
     function choose(index: int) {
-        RulesEditor.choose(index == 0 ? "" : RulesEditor.layer-items[index - 1].id);
-        if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); }
+        if index == 0 {
+            RulesEditor.edit(RuleField.hold-mode, "0");
+            root.close-menu();
+        } else if index <= root.count {
+            RulesEditor.choose(RulesEditor.layer-items[index - 1].id);
+            if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); }
+        } else {
+            root.close-menu();
+            RulesEditor.open-dialog(root.rule-index, RuleDialog.long-hold);
+        }
     }
     function reveal() {
-        let top = RulesEditor.layer-highlight * 36px;
+        if RulesEditor.layer-highlight < 1 || RulesEditor.layer-highlight > root.count { return; }
+        let top = (RulesEditor.layer-highlight - 1) * 36px;
         if top < -root.scroll-y { root.scroll-y = -top; }
         if top + 36px > -root.scroll-y + root.list-height { root.scroll-y = -(top + 36px - root.list-height); }
     }
     function open-menu() {
+        if !root.enabled { return; }
         RulesEditor.open-dialog(root.rule-index, RuleDialog.layer);
+        if root.rule.hold-mode == 0 { RulesEditor.layer-highlight = 0; }
+        if root.rule.hold-mode == 2 { RulesEditor.layer-highlight = root.count + 1; }
         root.creating = false;
         root.scroll-y = 0px;
         menu.show();
         root.reveal();
     }
-    Text { text: @tr("Layer (hold)"); color: Theme.muted; }
+    FormLabel { text: @tr("When held"); info: @tr("Choose a layer active until release, or an action performed once after the hold duration."); }
     field := Rectangle {
         min-width: 0px; height: 32px; border-radius: 5px; border-width: 1px;
         border-color: field-focus.has-focus || menu.is-open ? Theme.link : Theme.border;
         background: touch.has-hover ? Theme.hover : Theme.card;
-        accessible-role: combobox; accessible-label: @tr("Layer (hold)");
-        accessible-value: root.value; accessible-expandable: true; accessible-expanded: menu.is-open;
+        opacity: root.enabled ? 1 : 0.5;
+        accessible-role: combobox; accessible-label: @tr("When held");
+        accessible-value: value-text.text; accessible-expandable: true; accessible-expanded: menu.is-open;
         accessible-action-expand => { root.open-menu(); }
         forward-focus: field-focus;
-        HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 8px;
-            Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? @tr("No layer") : root.value; color: root.value == "" ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; }
+        HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 5px;
+            if root.rule.hold-mode == 1: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
+            if root.rule.hold-mode == 2 && root.rule.long-hold != "": CategoryIcon { category: root.rule.long-hold-category; }
+            value-text := Text {
+                min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; overflow: elide;
+                text: root.rule.hold-mode == 1 ? (root.rule.layer != "" ? root.rule.layer : @tr("Choose layer"))
+                    : root.rule.hold-mode == 2 ? (root.rule.long-hold != "" ? root.rule.long-hold : @tr("Choose action"))
+                    : @tr("Nothing");
+                color: (root.rule.hold-mode == 1 && root.rule.layer != "") || (root.rule.hold-mode == 2 && root.rule.long-hold != "") ? Theme.text : Theme.muted;
+            }
             VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; } }
         }
-        field-focus := FocusScope { key-pressed(event) => {
+        field-focus := FocusScope { enabled: root.enabled; key-pressed(event) => {
             if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow { root.open-menu(); return accept; }
             return reject;
         } }
-        touch := TouchArea { mouse-cursor: pointer; clicked => { root.open-menu(); } }
+        touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.open-menu(); } }
         menu := PopupWindow {
-            x: 0px; y: field.height + 4px; width: 360px;
-            height: root.list-height + (root.creating ? 136px : 96px) + (RulesEditor.status.id != "" ? 40px : 0px);
+            x: 0px; y: field.height + 4px; width: max(field.width, 300px);
+            height: popup-content.preferred-height;
             close-policy: close-on-click-outside;
             forward-focus: search;
             FocusScope {
                 capture-key-pressed(event) => {
                     if event.text == Key.Escape { root.close-menu(); return accept; }
                     if !root.creating && (event.text == Key.DownArrow || event.text == Key.UpArrow) {
-                        RulesEditor.layer-highlight = mod(RulesEditor.layer-highlight + RulesEditor.layer-items.length + 1 + (event.text == Key.DownArrow ? 1 : -1), RulesEditor.layer-items.length + 1);
+                        RulesEditor.layer-highlight = mod(RulesEditor.layer-highlight + root.count + 2 + (event.text == Key.DownArrow ? 1 : -1), root.count + 2);
                         root.reveal(); return accept;
                     }
                     if !root.creating && event.text == Key.Return { root.choose(RulesEditor.layer-highlight); return accept; }
                     return reject;
                 }
                 Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 8px;
-                    VerticalLayout { padding: 8px; spacing: 8px;
-                        search := LineEdit { text <=> RulesEditor.dialog-value; placeholder-text: @tr("Search layers"); edited => { RulesEditor.filter-layers(self.text); RulesEditor.layer-highlight = 0; root.scroll-y = 0px; } }
+                    popup-content := VerticalLayout { padding: 8px; spacing: 6px;
+                        search := LineEdit { text <=> RulesEditor.dialog-value; placeholder-text: @tr("Search layers"); edited => { RulesEditor.filter-layers(self.text); RulesEditor.layer-highlight = min(1, root.count); root.scroll-y = 0px; } }
+                        Rectangle { height: 36px; border-radius: 4px; background: none-touch.has-hover || RulesEditor.layer-highlight == 0 ? Theme.hover : transparent;
+                            HorizontalLayout { padding-left: 8px; padding-right: 8px;
+                                Text { horizontal-stretch: 1; text: @tr("Nothing"); color: Theme.text; vertical-alignment: center; }
+                                if root.rule.hold-mode == 0: Text { text: "✓"; color: Theme.link; vertical-alignment: center; }
+                            }
+                            none-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(0); } }
+                        }
+                        Rectangle { height: 1px; background: Theme.divider; }
+                        Text { text: @tr("Layers"); color: Theme.muted; font-size: 11px; }
                         ScrollView { height: root.list-height; vertical-stretch: 0; viewport-width: self.visible-width; viewport-y <=> root.scroll-y;
                             VerticalLayout { spacing: 0px; alignment: start;
-                                Rectangle { height: 36px; border-radius: 4px; background: clear-touch.has-hover || RulesEditor.layer-highlight == 0 ? Theme.hover : transparent;
-                                    HorizontalLayout { padding-left: 8px; padding-right: 8px;
-                                        Text { text: @tr("No layer"); color: Theme.text; vertical-alignment: center; }
-                                        if RulesEditor.layer-id == "": Text { text: "✓"; color: Theme.link; horizontal-alignment: right; vertical-alignment: center; }
-                                    }
-                                    clear-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(0); } }
-                                }
                                 for item[index] in RulesEditor.layer-items: Rectangle { height: 36px; border-radius: 4px; background: row-touch.has-hover || RulesEditor.layer-highlight == index + 1 ? Theme.hover : transparent;
-                                    HorizontalLayout { padding-left: 8px; padding-right: 8px;
+                                    HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 8px;
+                                        VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
                                         Text { min-width: 0px; horizontal-stretch: 1; text: item.label; overflow: elide; color: Theme.text; vertical-alignment: center; }
-                                        if RulesEditor.layer-id == item.id: Text { text: "✓"; color: Theme.link; vertical-alignment: center; }
+                                        if root.rule.hold-mode == 1 && RulesEditor.layer-id == item.id: Text { text: "✓"; color: Theme.link; vertical-alignment: center; }
                                     }
                                     row-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(index + 1); } }
                                 }
-                                if RulesEditor.layer-items.length == 0: Text { height: 36px; text: @tr("Layer not found"); color: Theme.muted; vertical-alignment: center; }
+                                if root.count == 0: Text { height: 36px; text: @tr("Layer not found"); color: Theme.muted; vertical-alignment: center; }
                             }
                         }
-                        Rectangle { height: 1px; background: Theme.divider; }
                         Button { text: RulesEditor.dialog-value == "" ? @tr("Create new layer…") : @tr("Create “{}”", RulesEditor.dialog-value); clicked => { root.creating = true; RulesEditor.new-layer-name = RulesEditor.dialog-value; } }
                         if root.creating: HorizontalLayout { spacing: 8px;
-                            name := LineEdit { init => { self.focus(); } text <=> RulesEditor.new-layer-name; placeholder-text: @tr("New layer name"); accepted => { RulesEditor.create-layer(self.text); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
+                            LineEdit { init => { self.focus(); } text <=> RulesEditor.new-layer-name; placeholder-text: @tr("New layer name"); accepted => { RulesEditor.create-layer(self.text); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
                             Button { text: @tr("Create layer"); enabled: RulesEditor.new-layer-name != ""; clicked => { RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
+                        }
+                        Rectangle { height: 1px; background: Theme.divider; }
+                        Rectangle { height: 36px; border-radius: 4px; background: action-touch.has-hover || RulesEditor.layer-highlight == root.count + 1 ? Theme.hover : transparent;
+                            HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 8px;
+                                VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; } }
+                                Text { min-width: 0px; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; color: Theme.text;
+                                    text: root.rule.hold-mode == 2 && root.rule.long-hold != "" ? @tr("Run action") + ": " + root.rule.long-hold : @tr("Run action") + "…"; }
+                                if root.rule.hold-mode == 2: Text { text: "✓"; color: Theme.link; vertical-alignment: center; }
+                            }
+                            action-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(root.count + 1); } }
                         }
                         if RulesEditor.status.id != "": Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
                     }
@@ -241,10 +297,9 @@ export component RulesPage inherits VerticalBox {
                         DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
                         CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
                         Rectangle { horizontal-stretch: 1; }
-                        if rule.hold != "" || rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" || rule.hold-for != "": Text {
+                        if rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" || rule.hold-for != "": Text {
                             min-width: 0px; max-width: 420px; overflow: elide; vertical-alignment: center;
-                            text: (rule.hold != "" ? @tr("Held key: {}", rule.hold) + (rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" || rule.hold-for != "" ? " · " : "") : "")
-                                + (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
+                            text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
                                 + (rule.double-timeout != "" ? (rule.hold-timeout != "" ? " · " : "") + @tr("Double tap: {} ms", rule.double-timeout) : "")
                                 + (rule.isolate != "" ? ((rule.hold-timeout != "" || rule.double-timeout != "" ? " · " : "") + @tr("Release for {}", rule.isolate)) : "")
                                 + (rule.hold-for != "" ? ((rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" ? " · " : "") + @tr("Hold with {}", rule.hold-for)) : "");
@@ -257,47 +312,22 @@ export component RulesPage inherits VerticalBox {
                         }
                     }
                     HorizontalLayout { min-width: 0px; spacing: 16px;
-                        trigger-column := VerticalLayout { width: max(0px, min(220px, (rule-scroll.visible-width - 61px) * 0.35)); horizontal-stretch: 0; spacing: 10px; alignment: start;
+                        VerticalLayout { width: max(0px, min(220px, (rule-scroll.visible-width - 61px) * 0.35)); horizontal-stretch: 0; spacing: 12px; alignment: start;
                             RuleCell { title: @tr("Trigger"); info: @tr("A trigger can be a single key or a combination, such as ShiftLeft+ControlLeft. The combination works in either press order and ends when any key is released."); value: rule.key; category: rule.key-category; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
-                            RuleCell { enabled: rule.key != ""; title: @tr("Conditions"); value: rule.has-conditions ? @tr("Set") : ""; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
-                            if rule.game != GameCondition.any: VerticalLayout {
-                                spacing: 4px;
-                                Text { text: @tr("Game mode"); color: Theme.muted; font-size: 11px; }
-                                RuleBadge { available-width: trigger-column.width; text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.selected; }
-                            }
-                            if rule.languages != "": VerticalLayout {
-                                spacing: 4px;
-                                Text { text: @tr("Languages"); color: Theme.muted; font-size: 11px; }
-                                for language in ConditionChoices.items(rule.languages): RuleBadge { available-width: trigger-column.width; text: language; }
-                            }
-                            if rule.applications != "": VerticalLayout {
-                                spacing: 4px;
-                                Text { text: @tr("Applications"); color: Theme.muted; font-size: 11px; }
-                                for application in ConditionChoices.items(rule.applications): RuleBadge { available-width: trigger-column.width; text: application; fill: Theme.success.transparentize(0.8); }
-                            }
-                            if rule.excluded != "": VerticalLayout {
-                                spacing: 4px;
-                                Text { text: @tr("Excluded applications"); color: Theme.muted; font-size: 11px; }
-                                for application in ConditionChoices.items(rule.excluded): RuleBadge { available-width: trigger-column.width; text: application; fill: Theme.error.transparentize(0.8); }
-                            }
+                            ConditionsCell { enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
                         }
                         Rectangle { width: 1px; background: Theme.divider; }
                         VerticalLayout { min-width: 0px; horizontal-stretch: 1; preferred-width: 0px; spacing: 12px; alignment: start;
                             HorizontalLayout { min-width: 0px; spacing: 12px;
                                 RuleCell { title: @tr("Tap action"); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
                                 if !rule.is-chord: RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                                if rule.is-chord: Rectangle { horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
                             }
                             HorizontalLayout { min-width: 0px; spacing: 12px;
-                                VerticalLayout { width: 160px; horizontal-stretch: 0; spacing: 5px;
-                                    FormLabel { text: @tr("When held"); info: @tr("Choose a layer active until release, or an action performed once after the hold duration."); }
-                                    SelectField { enabled: rule.key != ""; model: [@tr("Nothing"), @tr("Activate layer"), @tr("Run action")]; current-index: rule.hold-mode; selected(value) => { RulesEditor.select(index); RulesEditor.edit(RuleField.hold-mode, "" + self.current-index); } }
-                                }
-                                if rule.hold-mode == 0: Rectangle { horizontal-stretch: 1; }
-                                if rule.hold-mode == 1: LayerField { width: 160px; horizontal-stretch: 0; rule-index: index; value: rule.layer; }
-                                if rule.hold-mode == 1: RuleCell { title: @tr("Held key"); info: @tr("Holds the selected key or combination while the trigger is held. It can be combined with layer activation. Leave empty to activate only the layer."); value: rule.hold; category: rule.hold-category; empty-text: rule.layer != "" ? @tr("Activate layer only") : rule.swallow-hold ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
-                                if rule.hold-mode == 2: RuleCell { title: @tr("Long-hold action"); value: rule.long-hold; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.long-hold); } }
+                                HoldField { enabled: rule.key != ""; rule-index: index; rule: rule; }
+                                if rule.hold-mode != 2: RuleCell { enabled: rule.key != ""; title: @tr("Held key"); info: @tr("Holds the selected key or combination while the trigger is held. It can be combined with layer activation. Leave empty to activate only the layer."); value: rule.hold; category: rule.hold-category; empty-text: rule.layer != "" ? @tr("+ Add key") : rule.swallow-hold ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
+                                if rule.hold-mode == 2: RuleCell { enabled: rule.key != ""; title: @tr("Hold duration"); info: @tr("The action runs once after continuous holding. Leave empty to use the global setting: {} s", RulesEditor.default-long-hold-timeout); value: rule.long-hold-timeout == "" ? "" : @tr("{} s", rule.long-hold-timeout); empty-text: @tr("{} s (default)", RulesEditor.default-long-hold-timeout); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                             }
-                            if rule.hold-mode == 2: Text { text: @tr("Runs once after {} s", rule.long-hold-timeout == "" ? RulesEditor.default-long-hold-timeout : rule.long-hold-timeout); color: Theme.muted; wrap: word-wrap; }
                         }
                     }
                 }

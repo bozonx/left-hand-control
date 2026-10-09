@@ -11,7 +11,7 @@ use crate::{
 };
 use lhc_core::profile::{
     diagnostics, ids,
-    model::{Layer, LayerRule, LayoutPreset},
+    model::{HoldBehavior, Layer, LayerRule, LayoutPreset},
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
@@ -72,9 +72,9 @@ fn optional_seconds(value: &str) -> Result<Option<u64>, Msg> {
 
 fn hold_mode(rule: &LayerRule) -> i32 {
     match rule.hold_behavior() {
-        lhc_core::profile::model::HoldBehavior::None => 0,
-        lhc_core::profile::model::HoldBehavior::Layer => 1,
-        lhc_core::profile::model::HoldBehavior::Action => 2,
+        HoldBehavior::None => 0,
+        HoldBehavior::Layer => 1,
+        HoldBehavior::Action => 2,
     }
 }
 
@@ -165,6 +165,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 rule.hold_action.as_deref().unwrap_or_default(),
             ),
             double_category: super::picker::category_for_value(&rule.double_tap_action),
+            long_hold_category: super::picker::category_for_value(&rule.long_hold_action),
         })
         .collect::<Vec<_>>();
     let model = editor.get_rows();
@@ -272,10 +273,20 @@ fn change_rule(
 fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Result<(), Msg> {
     match property {
         RuleDialog::Key => rule.key = value.into(),
-        RuleDialog::Layer => rule.layer_id = value.into(),
+        RuleDialog::Layer => {
+            if !value.is_empty() {
+                set_hold_behavior(rule, HoldBehavior::Layer);
+            }
+            rule.layer_id = value.into();
+        }
         RuleDialog::Tap => rule.tap_action = Some(value.into()),
         RuleDialog::Hold => rule.hold_action = Some(value.into()),
-        RuleDialog::LongHold => rule.long_hold_action = value.into(),
+        RuleDialog::LongHold => {
+            if !value.is_empty() {
+                set_hold_behavior(rule, HoldBehavior::Action);
+            }
+            rule.long_hold_action = value.into();
+        }
         RuleDialog::DoubleTap => rule.double_tap_action = value.into(),
         RuleDialog::HoldTimeout => rule.hold_timeout_ms = parse_timeout(value)?,
         RuleDialog::DoubleTimeout => rule.double_tap_timeout_ms = parse_timeout(value)?,
@@ -284,31 +295,35 @@ fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Resu
     Ok(())
 }
 
+/// Switch what holding the trigger does, dropping options of the other modes.
+fn set_hold_behavior(rule: &mut LayerRule, behavior: HoldBehavior) {
+    rule.hold_behavior = Some(behavior);
+    if behavior != HoldBehavior::Layer {
+        rule.layer_id.clear();
+    }
+    if behavior != HoldBehavior::Action {
+        rule.long_hold_action.clear();
+    }
+    if behavior == HoldBehavior::Action {
+        rule.hold_action = Some(String::new());
+        rule.isolate = None;
+        rule.hold_for = None;
+    }
+}
+
 /// Set a property edited in place. Swallowing keeps `current` so turning
 /// it off restores the previous action.
 fn set_field(rule: &mut LayerRule, field: RuleField, value: &str, current: &str) {
     let on = value == "true";
     match field {
-        RuleField::HoldMode => {
-            use lhc_core::profile::model::HoldBehavior;
-            let behavior = match value {
+        RuleField::HoldMode => set_hold_behavior(
+            rule,
+            match value {
                 "1" => HoldBehavior::Layer,
                 "2" => HoldBehavior::Action,
                 _ => HoldBehavior::None,
-            };
-            rule.hold_behavior = Some(behavior);
-            if behavior != HoldBehavior::Layer {
-                rule.layer_id.clear();
-            }
-            if behavior != HoldBehavior::Action {
-                rule.long_hold_action.clear();
-            }
-            if behavior == HoldBehavior::Action {
-                rule.hold_action = Some(String::new());
-                rule.isolate = None;
-                rule.hold_for = None;
-            }
-        }
+            },
+        ),
         RuleField::Enabled => rule.enabled = (!on).then_some(false),
         RuleField::SwallowTap => rule.tap_action = (!on).then(|| current.to_owned()),
         RuleField::SwallowHold => rule.hold_action = (!on).then(|| current.to_owned()),
@@ -490,6 +505,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 description: None,
             });
             if let Some(rule) = index.and_then(|index| layout.rules.get_mut(index)) {
+                set_hold_behavior(rule, HoldBehavior::Layer);
                 rule.layer_id = id.clone();
             }
         });
@@ -683,7 +699,6 @@ mod tests {
 
     #[test]
     fn hold_modes_clear_incompatible_options_and_preserve_legacy_layers() {
-        use lhc_core::profile::model::HoldBehavior;
         let mut rule = LayerRule::new("r".into(), "ShiftLeft+ControlLeft");
         rule.layer_id = "nav".into();
         rule.hold_action = Some("AltLeft".into());
@@ -696,6 +711,20 @@ mod tests {
         set_field(&mut rule, RuleField::HoldMode, "1", "");
         assert!(rule.long_hold_action.is_empty());
         assert_eq!(rule.hold_behavior(), HoldBehavior::Layer);
+    }
+
+    #[test]
+    fn choosing_a_layer_or_long_hold_action_switches_the_hold_mode() {
+        let mut rule = LayerRule::new("r".into(), "Tab");
+        rule.long_hold_action = "text:hello".into();
+        set_property(&mut rule, RuleDialog::Layer, "nav").unwrap();
+        assert_eq!(rule.hold_behavior(), HoldBehavior::Layer);
+        assert!(rule.long_hold_action.is_empty());
+        set_property(&mut rule, RuleDialog::LongHold, "MediaStop").unwrap();
+        assert_eq!(rule.hold_behavior(), HoldBehavior::Action);
+        assert!(rule.layer_id.is_empty());
+        set_property(&mut rule, RuleDialog::LongHold, "").unwrap();
+        assert_eq!(rule.hold_behavior(), HoldBehavior::Action);
     }
 
     #[test]
