@@ -248,6 +248,30 @@ impl LayoutPreset {
     pub fn layer_keymap_mut(&mut self, layer_id: &str) -> &mut LayerKeymap {
         self.layer_keymaps.entry(layer_id.into()).or_default()
     }
+
+    /// Number of commands some action of the preset refers to; commands
+    /// left behind by reassigned actions are not counted.
+    pub fn used_commands(&self) -> usize {
+        fn collect<'a>(value: &'a serde_json::Value, refs: &mut Vec<&'a str>) {
+            match value {
+                serde_json::Value::String(text) => refs.extend(text.strip_prefix("cmd:")),
+                serde_json::Value::Array(items) => items.iter().for_each(|v| collect(v, refs)),
+                serde_json::Value::Object(map) => map.values().for_each(|v| collect(v, refs)),
+                _ => {}
+            }
+        }
+        let actions = serde_json::to_value(Self {
+            commands: Vec::new(),
+            ..self.clone()
+        })
+        .unwrap_or_default();
+        let mut refs = Vec::new();
+        collect(&actions, &mut refs);
+        self.commands
+            .iter()
+            .filter(|command| refs.contains(&command.id.as_str()))
+            .count()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -460,5 +484,28 @@ impl AppConfig {
 
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap_or_default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn used_commands_skips_orphans() {
+        let command = |id: &str| Command {
+            id: id.into(),
+            name: String::new(),
+            linux: "ls".into(),
+            working_directory: None,
+        };
+        let mut rule = LayerRule::new("r1".into(), "KeyA");
+        rule.tap_action = Some("cmd:used".into());
+        let preset = LayoutPreset {
+            rules: vec![rule],
+            commands: vec![command("used"), command("orphan")],
+            ..LayoutPreset::default()
+        };
+        assert_eq!(preset.used_commands(), 1);
     }
 }

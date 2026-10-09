@@ -165,7 +165,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
                     emoji_pages: preset.emoji_pages.len() as i32,
                     action_pages: preset.quick_action_pages.len() as i32,
                     macros: preset.macros.len() as i32,
-                    commands: preset.commands.len() as i32,
+                    commands: preset.used_commands() as i32,
                 }
             })
             .collect::<Vec<_>>(),
