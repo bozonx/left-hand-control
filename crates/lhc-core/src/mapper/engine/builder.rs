@@ -55,7 +55,6 @@ impl Engine {
                         program: "sh".into(),
                         args: vec!["-lc".into(), linux.to_string()],
                         working_directory: c.working_directory.clone(),
-                        timeout: Duration::from_secs(30),
                     },
                 );
             }

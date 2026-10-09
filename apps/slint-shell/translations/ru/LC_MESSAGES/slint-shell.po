@@ -1510,8 +1510,8 @@ msgstr "Удалить дополнительную клавишу?"
 msgid "This key assignment will be removed from the layer."
 msgstr "Назначение этой клавиши будет удалено из слоя."
 
-msgid "Command completed: {}"
-msgstr "Команда выполнена: {}"
+msgid "Command started: {}"
+msgstr "Команда запущена: {}"
 
 msgid "Unavailable on this platform or desktop"
 msgstr "Недоступно на этой платформе или в этом окружении"
@@ -1863,3 +1863,66 @@ msgstr "{} с"
 
 msgid "{} s (default)"
 msgstr "{} с (по умолчанию)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr "Команда оболочки или путь к скрипту, например playerctl play-pause"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Запускается через sh -lc в фоне, результат не ожидается."
+
+msgid "Choose script…"
+msgstr "Выбрать скрипт…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "Рабочая папка (необязательно, по умолчанию домашняя)"
+
+msgid "Choose folder…"
+msgstr "Выбрать папку…"
+
+msgid "Command execution is turned off. Turn it on in the settings to assign commands."
+msgstr "Выполнение команд выключено. Включите его в настройках, чтобы назначать команды."
+
+msgid "Open command settings"
+msgstr "Открыть настройки команд"
+
+msgid "The working directory does not exist."
+msgstr "Рабочая папка не существует."
+
+msgid "The script file is not executable: run chmod +x on it or prefix the path with sh."
+msgstr "Файл скрипта не исполняемый: выполните для него chmod +x или добавьте sh перед путём."
+
+msgid "Choose a script"
+msgstr "Выберите скрипт"
+
+msgid "Choose a working directory"
+msgstr "Выберите рабочую папку"
+
+msgid "Commands run with sh -lc in the background and are not awaited. Edit one to change its script or working directory."
+msgstr "Команды запускаются через sh -lc в фоне и не ожидаются. Нажмите «Изменить», чтобы поменять скрипт или рабочую папку."
+
+msgid "Commands stay off until you allow execution. Review below what your layouts would run."
+msgstr "Команды не запускаются, пока выполнение не разрешено. Ниже видно, что запускали бы ваши лэйауты."
+
+msgid "editing now"
+msgstr "редактируется"
+
+msgid "Command"
+msgstr "Команда"
+
+msgid "Rule in {}"
+msgstr "Правило в слое {}"
+
+msgid "Rule"
+msgstr "Правило"
+
+msgid "Layer {}"
+msgstr "Слой {}"
+
+msgid "Macro"
+msgstr "Макрос"
+
+msgid "Quick action"
+msgstr "Быстрое действие"
+
+msgid "Folder: {}"
+msgstr "Папка: {}"

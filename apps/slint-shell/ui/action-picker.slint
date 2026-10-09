@@ -58,6 +58,12 @@ export global ActionPicker {
     in-out property <string> command-script;
     in-out property <string> command-directory;
     callback edit-command();
+    /// Warning about the command draft, such as a script file that cannot run.
+    in property <Message> command-notice;
+    callback choose-command-file();
+    callback choose-command-directory();
+    /// Leave the picker for the Commands tab of the settings.
+    callback open-command-settings();
     callback begin-capture();
     in-out property <string> query;
     in-out property <int> category;
@@ -201,8 +207,23 @@ export component PickerOverlay inherits Rectangle {
                         }
                         if ActionPicker.query == "" && ActionPicker.category == 8 && ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
                             LineEdit { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name"); edited => { ActionPicker.edit-command(); } }
-                            TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; edited => { ActionPicker.edit-command(); } }
-                            LineEdit { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (optional)"); edited => { ActionPicker.edit-command(); } }
+                            TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; placeholder-text: @tr("Shell command or path to a script, e.g. playerctl play-pause"); edited => { ActionPicker.edit-command(); } }
+                            HorizontalBox { padding: 0px; spacing: 8px;
+                                Text { horizontal-stretch: 1; text: @tr("Runs with sh -lc in the background; the result is not awaited."); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                                Button { horizontal-stretch: 0; text: @tr("Choose script…"); clicked => { ActionPicker.choose-command-file(); } }
+                            }
+                            if ActionPicker.command-notice.id != "": Text { text: Locale.text(ActionPicker.command-notice); color: Theme.warning; wrap: word-wrap; }
+                            HorizontalBox { padding: 0px; spacing: 8px;
+                                LineEdit { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (optional, home by default)"); edited => { ActionPicker.edit-command(); } }
+                                Button { horizontal-stretch: 0; text: @tr("Choose folder…"); clicked => { ActionPicker.choose-command-directory(); } }
+                            }
+                        }
+                        if ActionPicker.query == "" && ActionPicker.category == 8 && !ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
+                            Text { text: @tr("Command execution is turned off. Turn it on in the settings to assign commands."); color: Theme.muted; wrap: word-wrap; }
+                            HorizontalBox { padding: 0px;
+                                Button { horizontal-stretch: 0; text: @tr("Open command settings"); clicked => { ActionPicker.open-command-settings(); } }
+                                Rectangle { background: transparent; }
+                            }
                         }
                         if ActionPicker.query == "" && ActionPicker.category == 12: VerticalBox { padding: 0px;
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }

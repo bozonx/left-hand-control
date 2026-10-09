@@ -348,8 +348,6 @@ pub fn stop() -> Result<(), String> {
     // Join the worker thread outside the state lock so status polling
     // does not freeze while the mapper shuts down.
     let handle = lock_state().take_handle()?;
-    #[cfg(target_os = "linux")]
-    super::commands::cancel();
     handle.stop();
     Ok(())
 }
@@ -359,8 +357,6 @@ pub fn update_config(config_json: &str) -> Result<(), String> {
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     #[cfg(target_os = "linux")]
     validation::validate_config(&cfg)?;
-    #[cfg(target_os = "linux")]
-    super::commands::cancel();
     let mut state = lock_state();
     state.update_config(cfg)?;
     state.config_json = Some(config_json.to_owned());

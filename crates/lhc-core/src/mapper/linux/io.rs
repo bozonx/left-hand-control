@@ -65,7 +65,7 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn run_command(&mut self, command: &SysCommand) {
-        super::super::commands::enqueue(command.clone());
+        super::super::commands::spawn(command.clone());
     }
 }
 

@@ -3,10 +3,11 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        CapabilityRow, CommandAssignmentRow, DeviceChoice, DeviceChoices, DeviceGroup, ProcessRow,
-        SettingsEditor, SettingsWindow,
+        CapabilityRow, CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices,
+        DeviceGroup, ProcessRow, SettingsEditor, SettingsWindow,
     },
 };
+use lhc_core::profile::menus::PlaceKind;
 use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
@@ -207,25 +208,50 @@ struct State {
 
 /// Load the form unless the user has unsaved edits in it.
 fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: bool) {
-    let assignments = if document.read().settings().commands_enabled {
-        document.read().command_assignments()
-    } else {
-        Ok(Vec::new())
-    };
+    // Listed even while commands are off, so they can be reviewed first.
+    let assignments = document.read().command_assignments();
+    let current = document.read().settings().current_layout_id.clone();
     match assignments {
-        Ok(rows) => ui
-            .global::<SettingsEditor>()
-            .set_command_assignments(ModelRc::new(VecModel::from(
-                rows.into_iter()
-                    .map(|row| CommandAssignmentRow {
-                        layout_id: row.layout_id.unwrap_or_default().into(),
+        Ok(rows) => {
+            let mut previous = None;
+            let rows: Vec<_> = rows
+                .into_iter()
+                .map(|row| {
+                    let first = previous.as_ref() != Some(&row.layout_id);
+                    previous = Some(row.layout_id.clone());
+                    let layout_id = row.layout_id.unwrap_or_default();
+                    CommandAssignmentRow {
+                        layout_name: lhc_core::profile::model::user_layout_name(&layout_id)
+                            .unwrap_or_default()
+                            .into(),
+                        current: current.as_deref().unwrap_or("") == layout_id,
+                        first,
+                        layout_id: layout_id.into(),
                         command_id: row.command.id.into(),
                         name: row.command.name.into(),
                         script: row.command.linux.into(),
-                        usage: super::strings(row.usage),
-                    })
-                    .collect::<Vec<_>>(),
-            ))),
+                        directory: row.command.working_directory.unwrap_or_default().into(),
+                        places: ModelRc::new(VecModel::from(
+                            row.places
+                                .into_iter()
+                                .map(|place| CommandPlaceRow {
+                                    kind: match place.kind {
+                                        PlaceKind::Rule => 0,
+                                        PlaceKind::LayerKey => 1,
+                                        PlaceKind::Macro => 2,
+                                        PlaceKind::QuickAction => 3,
+                                    },
+                                    layer: place.layer.into(),
+                                    name: place.name.into(),
+                                })
+                                .collect::<Vec<_>>(),
+                        )),
+                    }
+                })
+                .collect();
+            ui.global::<SettingsEditor>()
+                .set_command_assignments(ModelRc::new(VecModel::from(rows)))
+        }
         Err(error) => ui
             .global::<SettingsEditor>()
             .set_message(crate::notifications::report(ui, &Msg::from(&error))),

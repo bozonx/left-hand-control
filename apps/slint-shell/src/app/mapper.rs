@@ -29,7 +29,7 @@ pub(super) fn forward_core_events() {
             post(move |app| match result {
                 Ok(()) => {
                     app.clear_action_error();
-                    crate::notifications::send(&app.settings, Msg::CommandCompleted(label));
+                    crate::notifications::send(&app.settings, Msg::CommandStarted(label));
                 }
                 Err(error) => app.set_error(Msg::ActionFailed(error)),
             });

@@ -511,12 +511,14 @@ fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Res
     if state.borrow().baseline.as_ref() != Some(&(name.clone(), current)) {
         return Err(Msg::LibraryChanged);
     }
-    let text = layout_file::serialize(document.read().layout());
-    edit(ui, document, state, |config| {
+    let text = edit(ui, document, state, |config| {
+        config.update_layout(LayoutPreset::prune_commands)?;
+        let text = layout_file::serialize(config.layout());
         config
             .paths()
             .save_user_layout(&name, &text, true)
-            .map_err(ConfigError::Io)
+            .map_err(ConfigError::Io)?;
+        Ok(text)
     })?;
     state.borrow_mut().baseline = Some((name.clone(), text));
     refresh_context(ui, document);
@@ -530,9 +532,10 @@ fn save_as(
     state: &Shared,
     name: &str,
 ) -> Result<Msg, Msg> {
-    let text = layout_file::serialize(document.read().layout());
-    let saved = edit(ui, document, state, |config| {
-        config.save_current_layout_as(name)
+    let (saved, text) = edit(ui, document, state, |config| {
+        config.update_layout(LayoutPreset::prune_commands)?;
+        let text = layout_file::serialize(config.layout());
+        Ok((config.save_current_layout_as(name)?, text))
     })?;
     state.borrow_mut().baseline = Some((saved.clone(), text));
     ui.global::<LayoutLibrary>().set_save_as_open(false);

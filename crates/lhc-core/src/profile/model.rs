@@ -252,9 +252,27 @@ impl LayoutPreset {
     /// Number of commands some action of the preset refers to; commands
     /// left behind by reassigned actions are not counted.
     pub fn used_commands(&self) -> usize {
-        fn collect<'a>(value: &'a serde_json::Value, refs: &mut Vec<&'a str>) {
+        let refs = self.command_refs();
+        self.commands
+            .iter()
+            .filter(|command| refs.contains(&command.id))
+            .count()
+    }
+
+    /// Drops commands no action refers to any more: each action owns its
+    /// command, so a reassigned action leaves its old command behind.
+    pub fn prune_commands(&mut self) {
+        let refs = self.command_refs();
+        self.commands.retain(|command| refs.contains(&command.id));
+    }
+
+    /// Ids of every `cmd:` action anywhere in the preset.
+    fn command_refs(&self) -> Vec<String> {
+        fn collect(value: &serde_json::Value, refs: &mut Vec<String>) {
             match value {
-                serde_json::Value::String(text) => refs.extend(text.strip_prefix("cmd:")),
+                serde_json::Value::String(text) => {
+                    refs.extend(text.trim().strip_prefix("cmd:").map(str::to_owned))
+                }
                 serde_json::Value::Array(items) => items.iter().for_each(|v| collect(v, refs)),
                 serde_json::Value::Object(map) => map.values().for_each(|v| collect(v, refs)),
                 _ => {}
@@ -267,10 +285,7 @@ impl LayoutPreset {
         .unwrap_or_default();
         let mut refs = Vec::new();
         collect(&actions, &mut refs);
-        self.commands
-            .iter()
-            .filter(|command| refs.contains(&command.id.as_str()))
-            .count()
+        refs
     }
 }
 
@@ -507,5 +522,8 @@ mod tests {
             ..LayoutPreset::default()
         };
         assert_eq!(preset.used_commands(), 1);
+        let mut preset = preset;
+        preset.prune_commands();
+        assert_eq!(preset.commands, vec![command("used")]);
     }
 }

@@ -120,7 +120,11 @@ export global Locale {
         if m.id == "menu-command-id" { return @tr("Command ID: 1–64 letters, digits, underscores or hyphens."); }
         if m.id == "menu-duplicate-command" { return @tr("Command IDs must be unique."); }
         if m.id == "menu-empty-command" { return @tr("Enter a shell command."); }
-        if m.id == "command-completed" { return @tr("Command completed: {}", m.arg); }
+        if m.id == "command-started" { return @tr("Command started: {}", m.arg); }
+        if m.id == "command-directory-missing" { return @tr("The working directory does not exist."); }
+        if m.id == "script-not-executable" { return @tr("The script file is not executable: run chmod +x on it or prefix the path with sh."); }
+        if m.id == "choose-command-script" { return @tr("Choose a script"); }
+        if m.id == "choose-command-directory" { return @tr("Choose a working directory"); }
         if m.id == "action-unavailable" { return @tr("Unavailable on this platform or desktop"); }
         if m.id == "save-layout-first" { return @tr("Save layout changes before opening another layout."); }
         if m.id == "commands-disabled" { return @tr("Commands are disabled in Settings."); }

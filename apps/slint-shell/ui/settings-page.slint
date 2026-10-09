@@ -8,7 +8,10 @@ import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, LineEdit, RadioGroup, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericField, SelectField } from "controls.slint";
 
-export struct CommandAssignmentRow { layout-id: string, command-id: string, name: string, script: string, usage: [string] }
+/// `kind`: 0 rule, 1 layer key, 2 macro step, 3 quick action.
+export struct CommandPlaceRow { kind: int, layer: string, name: string }
+/// `first` marks the first row of a layout, which shows its header.
+export struct CommandAssignmentRow { layout-id: string, layout-name: string, current: bool, first: bool, command-id: string, name: string, script: string, directory: string, places: [CommandPlaceRow] }
 
 export struct CapabilityRow { supported: bool, available: bool, status: Message, detail: string }
 
@@ -31,6 +34,8 @@ export global SettingsEditor {
     in-out property <bool> commands-enabled;
     in property <[CommandAssignmentRow]> command-assignments;
     callback edit-command(string, string);
+    /// Selected settings tab; 5 is Commands.
+    in-out property <int> tab;
     in-out property <bool> use-gamemoded: true;
     in-out property <bool> use-fullscreen;
     in property <[ProcessRow]> process-matchers;
@@ -86,7 +91,6 @@ component Section inherits Rectangle {
 }
 
 export component SettingsPage inherits VerticalBox {
-    private property <int> selected-tab: 0;
     padding: 0px;
     spacing: 10px;
     horizontal-stretch: 1;
@@ -110,21 +114,21 @@ export component SettingsPage inherits VerticalBox {
                 border-radius: 6px;
                 border-width: focus.has-focus ? 2px : 0px;
                 border-color: Theme.focus;
-                background: root.selected-tab == index ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
+                background: SettingsEditor.tab == index ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
                 accessible-role: tab;
                 accessible-label: label;
-                accessible-checked: root.selected-tab == index;
-                accessible-action-default => { root.selected-tab = index; content.viewport-y = 0px; }
+                accessible-checked: SettingsEditor.tab == index;
+                accessible-action-default => { SettingsEditor.tab = index; content.viewport-y = 0px; }
                 Rectangle {
                     x: 0px; y: 8px; width: 3px; height: parent.height - 16px;
                     border-radius: 2px;
-                    background: root.selected-tab == index ? Theme.accent : transparent;
+                    background: SettingsEditor.tab == index ? Theme.accent : transparent;
                 }
                 Text {
                     x: 14px;
                     width: parent.width - 26px;
                     text: label;
-                    color: root.selected-tab == index ? Theme.text : Theme.muted;
+                    color: SettingsEditor.tab == index ? Theme.text : Theme.muted;
                     font-weight: 600;
                     vertical-alignment: center;
                     overflow: elide;
@@ -132,7 +136,7 @@ export component SettingsPage inherits VerticalBox {
                 focus := FocusScope {
                     key-pressed(event) => {
                         if event.text == " " || event.text == "\n" {
-                            root.selected-tab = index;
+                            SettingsEditor.tab = index;
                             content.viewport-y = 0px;
                             return accept;
                         }
@@ -141,7 +145,7 @@ export component SettingsPage inherits VerticalBox {
                 }
                 touch := TouchArea {
                     mouse-cursor: pointer;
-                    clicked => { focus.focus(); root.selected-tab = index; content.viewport-y = 0px; }
+                    clicked => { focus.focus(); SettingsEditor.tab = index; content.viewport-y = 0px; }
                 }
             }
         }
@@ -162,7 +166,7 @@ export component SettingsPage inherits VerticalBox {
                 min-width: 0px;
                 max-width: 100000px;
                 spacing: 0px;
-                if root.selected-tab == 0: Section {
+                if SettingsEditor.tab == 0: Section {
                     title: @tr("General");
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
                     Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
@@ -179,7 +183,7 @@ export component SettingsPage inherits VerticalBox {
                     Text { vertical-stretch: 0; text: @tr("Language"); color: Theme.text; }
                     SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                 }
-                if root.selected-tab == 1: Section {
+                if SettingsEditor.tab == 1: Section {
                     title: @tr("Accessibility");
                     VerticalLayout { vertical-stretch: 0; spacing: 4px;
                         CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance-index != 3; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
@@ -191,33 +195,52 @@ export component SettingsPage inherits VerticalBox {
                     }
                     Text { vertical-stretch: 0; text: @tr("Every control can be reached with Tab and activated with Space or Enter. Interface size follows the desktop scale factor."); color: Theme.muted; wrap: word-wrap; }
                 }
-                if root.selected-tab == 5: Section {
+                if SettingsEditor.tab == 5: Section {
                     title: "";
                     CheckBox { text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
-                    if SettingsEditor.commands-enabled: VerticalBox { padding: 0px; spacing: 10px;
+                    Text { vertical-stretch: 0; text: SettingsEditor.commands-enabled ? @tr("Commands run with sh -lc in the background and are not awaited. Edit one to change its script or working directory.") : @tr("Commands stay off until you allow execution. Review below what your layouts would run."); color: Theme.muted; wrap: word-wrap; }
+                    VerticalBox { padding: 0px; spacing: 10px;
                         if SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
-                        if SettingsEditor.command-assignments.length > 0: HorizontalLayout {
-                            spacing: 16px;
-                            Text { width: (parent.width - 16px) / 2; text: @tr("Assigned to"); color: Theme.text; font-weight: 600; }
-                            Text { width: (parent.width - 16px) / 2; text: @tr("Command name"); color: Theme.text; font-weight: 600; }
-                        }
                         for item in SettingsEditor.command-assignments: VerticalLayout {
                             spacing: 8px;
+                            if item.first: Text {
+                                text: (item.layout-name != "" ? item.layout-name : @tr("Custom layout")) + (item.current ? " · " + @tr("editing now") : "");
+                                color: Theme.text; font-weight: 600; wrap: word-wrap;
+                            }
+                            if item.first: HorizontalLayout {
+                                spacing: 16px;
+                                Text { width: 32%; text: @tr("Assigned to"); color: Theme.muted; font-size: 12px; }
+                                Text { horizontal-stretch: 1; text: @tr("Command"); color: Theme.muted; font-size: 12px; }
+                            }
                             Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                             HorizontalLayout {
                                 spacing: 16px;
                                 VerticalLayout {
-                                    width: (parent.width - 16px) / 2;
+                                    width: 32%;
                                     spacing: 4px;
-                                    Text { text: item.layout-id != "" ? item.layout-id : @tr("Custom layout"); color: Theme.muted; wrap: word-wrap; }
-                                    for place in item.usage: Text { text: place; color: Theme.text; wrap: word-wrap; }
+                                    for place in item.places: Text {
+                                        text: (place.kind == 0 ? (place.layer != "" ? @tr("Rule in {}", place.layer) : @tr("Rule"))
+                                            : place.kind == 1 ? @tr("Layer {}", place.layer)
+                                            : place.kind == 2 ? @tr("Macro")
+                                            : @tr("Quick action")) + " · " + place.name;
+                                        color: Theme.text; wrap: word-wrap;
+                                    }
                                 }
-                                Text { width: (parent.width - 16px) / 2; text: item.name != "" ? item.name : item.script; color: Theme.text; wrap: word-wrap; }
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    spacing: 4px;
+                                    if item.name != "" && item.name != item.script: Text { text: item.name; color: Theme.text; font-weight: 600; wrap: word-wrap; }
+                                    Text { text: item.script; color: Theme.text; font-family: "monospace"; font-size: 12px; wrap: word-wrap; }
+                                    Text { text: @tr("Folder: {}", item.directory != "" ? item.directory : "~"); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                                }
+                                VerticalLayout { alignment: start;
+                                    Button { text: @tr("Edit"); enabled: SettingsEditor.commands-enabled; clicked => { SettingsEditor.edit-command(item.layout-id, item.command-id); } }
+                                }
                             }
                         }
                     }
                 }
-                if root.selected-tab == 2: Section {
+                if SettingsEditor.tab == 2: Section {
                     title: "";
                     VerticalBox { padding: 0px; spacing: 10px;
                         CardHeader { vertical-stretch: 0;
@@ -245,8 +268,8 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if root.selected-tab == 2: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
-                if root.selected-tab == 2: Section {
+                if SettingsEditor.tab == 2: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
+                if SettingsEditor.tab == 2: Section {
                     title: @tr("Key behavior");
                     VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 6px;
                         Text { vertical-stretch: 0; text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
@@ -280,7 +303,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if root.selected-tab == 3: Section {
+                if SettingsEditor.tab == 3: Section {
                     title: @tr("Game mode");
                     Text { vertical-stretch: 0; text: @tr("Choose Auto, On or Off in the top bar. These settings configure Auto."); color: Theme.muted; wrap: word-wrap; }
                     HorizontalBox { vertical-stretch: 0; spacing: 8px;
@@ -315,7 +338,7 @@ export component SettingsPage inherits VerticalBox {
                         Button { text: @tr("Remove selected"); enabled: SettingsEditor.selected-process >= 0; clicked => { SettingsEditor.delete-process(); } }
                     }
                 }
-                if root.selected-tab == 4 && AppState.is-linux: Section {
+                if SettingsEditor.tab == 4 && AppState.is-linux: Section {
                     title: @tr("Linux text injection");
                     VerticalBox {
                         padding: 0px; spacing: 4px;
@@ -333,8 +356,8 @@ export component SettingsPage inherits VerticalBox {
                         LineEdit { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
                 }
-                if root.selected-tab == 4 && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
-                if root.selected-tab == 4: Section {
+                if SettingsEditor.tab == 4 && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
+                if SettingsEditor.tab == 4: Section {
                     title: @tr("Configuration and system");
                     HorizontalBox {
                         Text { text: SettingsEditor.platform-summary; color: Theme.muted; horizontal-stretch: 1; }

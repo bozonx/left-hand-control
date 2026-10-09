@@ -1801,7 +1801,7 @@ mod tests {
         let mut out = Vec::new();
         engine.execute_remote("cmd:hello", &mut out);
         assert!(matches!(out.as_slice(), [Out::RunCommand(cmd)]
-            if cmd.working_directory.as_deref() == Some("~/Documents") && cmd.timeout == Duration::from_secs(30)));
+            if cmd.working_directory.as_deref() == Some("~/Documents")));
     }
 
     #[test]

@@ -154,6 +154,24 @@ fn valid(
     config.is_none_or(|config| actions::validate(&action, &config.config()).is_none())
 }
 
+/// Warning for the command being edited: a missing working directory or
+/// a script file that cannot be executed.
+fn command_notice(picker: &ActionPicker) -> Msg {
+    use lhc_core::mapper::commands::{DraftIssue, draft_issue};
+    if !picker.get_value().starts_with("cmd:") {
+        return Msg::None;
+    }
+    let directory = picker.get_command_directory();
+    match draft_issue(
+        &picker.get_command_script(),
+        Some(directory.as_str()).filter(|d| !d.trim().is_empty()),
+    ) {
+        Some(DraftIssue::MissingDirectory) => Msg::CommandDirectoryMissing,
+        Some(DraftIssue::NotExecutable) => Msg::ScriptNotExecutable,
+        None => Msg::None,
+    }
+}
+
 /// The open picker: who receives the value and the catalog built on open.
 #[derive(Default)]
 struct Session {
@@ -220,6 +238,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         picker.set_command_name("".into());
         picker.set_command_script("".into());
         picker.set_command_directory("".into());
+        picker.set_command_notice(Msg::None.to_ui());
         picker.set_layer_action(
             matches!(
                 target,
@@ -378,6 +397,64 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         picker.invoke_refresh();
     });
 
+    for directory in [false, true] {
+        let weak = ui.as_weak();
+        let choose = move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let title = ui
+                .global::<Locale>()
+                .invoke_text(
+                    if directory {
+                        Msg::ChooseCommandDirectory
+                    } else {
+                        Msg::ChooseCommandScript
+                    }
+                    .to_ui(),
+                )
+                .to_string();
+            let weak = ui.as_weak();
+            std::thread::spawn(move || {
+                let picked = lhc_core::platform::file_chooser::pick(&title, directory);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    let picker = ui.global::<ActionPicker>();
+                    match picked {
+                        Ok(Some(path)) => {
+                            let path = path.to_string_lossy();
+                            if directory {
+                                picker.set_command_directory(path.as_ref().into());
+                            } else {
+                                let quoted = lhc_core::mapper::commands::shell_quote(&path);
+                                let script = picker.get_command_script();
+                                picker.set_command_script(if script.trim().is_empty() {
+                                    quoted.into()
+                                } else {
+                                    format!("{} {quoted}", script.trim_end()).into()
+                                });
+                            }
+                            picker.invoke_edit_command();
+                        }
+                        Ok(None) => {}
+                        Err(error) => picker.set_error(Msg::ActionFailed(error).to_ui()),
+                    }
+                });
+            });
+        };
+        if directory {
+            picker.on_choose_command_directory(choose);
+        } else {
+            picker.on_choose_command_file(choose);
+        }
+    }
+
+    let weak = ui.as_weak();
+    picker.on_open_command_settings(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        ui.global::<ActionPicker>().invoke_dismiss_picker();
+        ui.global::<crate::ui::SettingsEditor>().set_tab(5);
+        ui.invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
+    });
+
     let weak = ui.as_weak();
     let (doc, state) = (document.clone(), session.clone());
     picker.on_refresh(move || {
@@ -464,6 +541,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 command.working_directory.clone().unwrap_or_default().into(),
             );
         }
+        picker.set_command_notice(command_notice(&picker).to_ui());
         picker.set_value_category(category_for_value(&value));
         picker.set_text_content(value.strip_prefix("text:").unwrap_or_default().into());
         picker.set_pause_content(value.strip_prefix("pause:").unwrap_or_default().into());
