@@ -331,6 +331,7 @@ export component InlineTextField inherits FocusScope {
     in property <string> placeholder;
     in property <string> label;
     in property <bool> allow-empty: true;
+    in property <bool> clearable: true;
     in property <length> text-size: 14px;
     in property <int> text-weight: 400;
     in property <color> text-color: Theme.text;
@@ -347,7 +348,7 @@ export component InlineTextField inherits FocusScope {
     function cancel() { root.draft = root.text; root.editing = false; }
     vertical-stretch: 0;
     horizontal-stretch: root.editing ? 1 : 0;
-    min-width: 0px;
+    min-width: root.editing ? 92px : 0px;
     preferred-width: measure.preferred-width + 40px;
     max-width: root.editing ? 100000px : root.preferred-width;
     focus-on-tab-navigation: !root.editing;
@@ -400,13 +401,42 @@ export component InlineTextField inherits FocusScope {
                 }
             }
         }
-        if root.editing: LineEdit {
+        if root.editing && root.clearable: LineEdit {
+            min-width: 0px;
             horizontal-stretch: 1;
             text <=> root.draft;
             placeholder-text: root.placeholder;
             accessible-label: root.label;
             init => { self.focus(); self.select-all(); }
             accepted => { root.save(); }
+        }
+        if root.editing && !root.clearable: Rectangle {
+            min-width: 28px;
+            horizontal-stretch: 1;
+            height: 32px;
+            border-radius: 4px;
+            border-width: 1px;
+            border-color: input.has-focus ? Theme.accent : Theme.border;
+            background: Theme.surface;
+            clip: true;
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: 6px;
+                input := TextInput {
+                    min-width: 0px;
+                    horizontal-stretch: 1;
+                    text <=> root.draft;
+                    single-line: true;
+                    color: Theme.text;
+                    font-size: root.text-size;
+                    vertical-alignment: center;
+                    selection-background-color: Theme.accent;
+                    selection-foreground-color: Theme.text;
+                    accessible-label: root.label;
+                    init => { self.focus(); self.select-all(); }
+                    accepted => { root.save(); }
+                }
+            }
         }
         if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); enabled: root.allow-empty || InlineEditors.nonempty(root.draft); clicked => { root.save(); } }
         if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }

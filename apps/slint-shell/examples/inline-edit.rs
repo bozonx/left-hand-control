@@ -13,7 +13,7 @@ slint::slint! {
         public function edit() { field.begin(); }
         public function edit-description() { description-field.begin(); }
         VerticalLayout { padding: 20px; spacing: 12px; alignment: start;
-            field := InlineTextField { text: root.value; saved(value) => { root.value = value; } }
+            field := InlineTextField { clearable: false; text: root.value; saved(value) => { root.value = value; } }
             description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; } }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }
