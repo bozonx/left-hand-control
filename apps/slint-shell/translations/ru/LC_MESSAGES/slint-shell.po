@@ -1773,3 +1773,6 @@ msgstr "Нажмите клавишу или удерживайте сочета
 
 msgid "Held key: {}"
 msgstr "Удерживаемая клавиша: {}"
+
+msgid "Assigned to"
+msgstr "Где назначена"

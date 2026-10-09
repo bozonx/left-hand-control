@@ -4,7 +4,7 @@ import { Badge, CardHeader } from "controls.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { Button, CheckBox, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
+import { Button, CheckBox, HorizontalBox, LineEdit, RadioGroup, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericField, SelectField } from "controls.slint";
 
 export struct CommandAssignmentRow { layout-id: string, command-id: string, name: string, script: string, usage: [string] }
@@ -156,29 +156,42 @@ export component SettingsPage inherits VerticalBox {
                 if root.selected-tab == 0: Section {
                     title: @tr("General");
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
-                        VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; vertical-alignment: center; }
-                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("System"), @tr("Light"), @tr("Dark"), @tr("E-ink")]; current-index: SettingsEditor.appearance-index; selected(value) => { SettingsEditor.appearance-index = self.current-index; SettingsEditor.save(); } }
-                        }
-                        VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
-                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
-                        }
+                    Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
+                    RadioGroup {
+                        vertical-stretch: 0;
+                        horizontal-stretch: 0;
+                        orientation: horizontal;
+                        selected(value) => { SettingsEditor.appearance-index = value == @tr("System") ? 0 : value == @tr("Light") ? 1 : value == @tr("Dark") ? 2 : 3; SettingsEditor.save(); }
+                        RadioButton { text: @tr("System"); checked: SettingsEditor.appearance-index == 0; }
+                        RadioButton { text: @tr("Light"); checked: SettingsEditor.appearance-index == 1; }
+                        RadioButton { text: @tr("Dark"); checked: SettingsEditor.appearance-index == 2; }
+                        RadioButton { text: @tr("E-ink"); checked: SettingsEditor.appearance-index == 3; }
                     }
+                    Text { vertical-stretch: 0; text: @tr("Language"); color: Theme.text; }
+                    SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                 }
                 if root.selected-tab == 4: Section {
                     title: "";
                     CheckBox { text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
                     if SettingsEditor.commands-enabled: VerticalBox { padding: 0px; spacing: 10px;
                         if SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
-                        for item in SettingsEditor.command-assignments: Rectangle {
-                            background: transparent;
-                            VerticalBox { padding: 12px; spacing: 6px;
-                                Text { text: item.name != "" ? item.name : item.script; color: Theme.text; wrap: word-wrap; }
-                                Text { text: item.script; color: Theme.muted; wrap: word-wrap; }
-                                Text { text: item.layout-id != "" ? item.layout-id : @tr("Custom layout"); color: Theme.muted; }
-                                for place in item.usage: Button { text: place; clicked => { SettingsEditor.edit-command(item.layout-id, item.command-id); } }
+                        if SettingsEditor.command-assignments.length > 0: HorizontalLayout {
+                            spacing: 16px;
+                            Text { width: (parent.width - 16px) / 2; text: @tr("Assigned to"); color: Theme.text; font-weight: 600; }
+                            Text { width: (parent.width - 16px) / 2; text: @tr("Command name"); color: Theme.text; font-weight: 600; }
+                        }
+                        for item in SettingsEditor.command-assignments: VerticalLayout {
+                            spacing: 8px;
+                            Rectangle { height: 1px; vertical-stretch: 0; background: Theme.border; }
+                            HorizontalLayout {
+                                spacing: 16px;
+                                VerticalLayout {
+                                    width: (parent.width - 16px) / 2;
+                                    spacing: 4px;
+                                    Text { text: item.layout-id != "" ? item.layout-id : @tr("Custom layout"); color: Theme.muted; wrap: word-wrap; }
+                                    for place in item.usage: Text { text: place; color: Theme.text; wrap: word-wrap; }
+                                }
+                                Text { width: (parent.width - 16px) / 2; text: item.name != "" ? item.name : item.script; color: Theme.text; wrap: word-wrap; }
                             }
                         }
                     }
