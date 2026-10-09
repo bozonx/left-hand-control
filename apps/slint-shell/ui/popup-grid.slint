@@ -9,6 +9,7 @@ export component PopupCell inherits Rectangle {
     in property <bool> emoji;
     callback clicked();
     property <bool> empty: root.content == "";
+    property <int> length: root.content.character-count;
     background: area.has-hover && !root.empty ? Theme.hover : Theme.card;
     border-radius: 10px;
     border-width: 1px;
@@ -26,8 +27,13 @@ export component PopupCell inherits Rectangle {
         text: root.content;
         color: Theme.text;
         font-family: root.emoji ? "Noto Color Emoji" : "";
-        font-size: root.emoji ? 28px : 13px;
-        wrap: root.emoji ? no-wrap : word-wrap;
+        // Emoji cells may hold text: shrink it with its length, down to 11px.
+        font-size: !root.emoji ? 13px
+            : root.length <= 2 ? 28px
+            : root.length <= 4 ? 20px
+            : root.length <= 8 ? 15px
+            : root.length <= 16 ? 12px : 11px;
+        wrap: root.emoji && root.length <= 4 ? no-wrap : word-wrap;
         overflow: elide;
         horizontal-alignment: center;
         vertical-alignment: center;

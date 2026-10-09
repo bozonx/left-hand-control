@@ -25,12 +25,26 @@ pub enum KeyOutcome {
 pub(crate) enum Shortcut {
     ChooseCell(i32),
     ChangePage(i32),
+    /// Digits 1…9 and 0 open pages 1…10.
+    OpenPage(i32),
 }
 
-/// Tab cycles pages; the left-hand hotkeys pick a cell.
+/// Page opened by a digit: `1` → 0, …, `9` → 8, `0` → 9.
+fn digit_page(digit: &str) -> Option<i32> {
+    match digit.parse::<i32>().ok()? {
+        0 => Some(9),
+        digit @ 1..=9 => Some(digit - 1),
+        _ => None,
+    }
+}
+
+/// Tab cycles pages, digits open one; the left-hand hotkeys pick a cell.
 pub(crate) fn shortcut(code: &str, shift: bool) -> Option<Shortcut> {
     if code == "Tab" {
         return Some(Shortcut::ChangePage(if shift { -1 } else { 1 }));
+    }
+    if let Some(page) = code.strip_prefix("Digit").and_then(digit_page) {
+        return Some(Shortcut::OpenPage(page));
     }
     LEFT_HAND_HOTKEYS
         .iter()
@@ -40,7 +54,12 @@ pub(crate) fn shortcut(code: &str, shift: bool) -> Option<Shortcut> {
 
 #[cfg(all(feature = "spell", target_os = "linux"))]
 pub(crate) fn evdev_shortcut(code: u32, shift: bool) -> Option<Shortcut> {
+    const DIGITS: [&str; 10] = [
+        "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9",
+        "Digit0",
+    ];
     let name = match code {
+        2..=11 => DIGITS[code as usize - 2],
         15 => "Tab",
         20 => "KeyT",
         16 => "KeyQ",
@@ -85,6 +104,18 @@ pub(crate) fn apply_shortcut(
             }
             KeyOutcome::PageChanged
         }
+        Shortcut::OpenPage(page) => {
+            let (count, set): (usize, &dyn Fn(i32)) = match popup {
+                Popup::Emoji => (emoji.get_page_names().row_count(), &|p| emoji.set_page(p)),
+                Popup::Quick => (quick.get_page_names().row_count(), &|p| quick.set_page(p)),
+            };
+            if (page as usize) < count {
+                set(page);
+                KeyOutcome::PageChanged
+            } else {
+                KeyOutcome::Ignored
+            }
+        }
     }
 }
 
@@ -117,11 +148,12 @@ fn popup_key(page: i32, pages: usize, key: &str) -> (Option<i32>, KeyOutcome) {
     if key == SharedString::from(Key::Backtab).as_str() {
         return (Some(advance(page, -1, pages)), KeyOutcome::PageChanged);
     }
-    if let Ok(number) = key.parse::<i32>()
-        && number > 0
-        && number as usize <= pages
-    {
-        return (Some(number - 1), KeyOutcome::PageChanged);
+    if let Some(page) = digit_page(key) {
+        return if (page as usize) < pages {
+            (Some(page), KeyOutcome::PageChanged)
+        } else {
+            (None, KeyOutcome::Ignored)
+        };
     }
     match hotkey_index(key) {
         Some(index) => (None, KeyOutcome::ChooseCell(index as i32)),
@@ -290,6 +322,8 @@ mod tests {
         }
         assert_eq!(shortcut("Tab", false), Some(Shortcut::ChangePage(1)));
         assert_eq!(shortcut("Tab", true), Some(Shortcut::ChangePage(-1)));
+        assert_eq!(shortcut("Digit1", false), Some(Shortcut::OpenPage(0)));
+        assert_eq!(shortcut("Digit0", false), Some(Shortcut::OpenPage(9)));
         assert_eq!(shortcut("Enter", false), None);
         assert_eq!(shortcut("Slash", false), None);
     }
@@ -307,6 +341,8 @@ mod tests {
             );
         }
         assert_eq!(evdev_shortcut(15, true), Some(Shortcut::ChangePage(-1)));
+        assert_eq!(evdev_shortcut(2, false), Some(Shortcut::OpenPage(0)));
+        assert_eq!(evdev_shortcut(11, false), Some(Shortcut::OpenPage(9)));
     }
 
     #[test]
@@ -320,6 +356,8 @@ mod tests {
         assert_eq!(popup_key(0, 2, &enter), (None, KeyOutcome::Ignored));
         assert_eq!(popup_key(0, 2, "\n"), (None, KeyOutcome::Ignored));
         assert_eq!(popup_key(0, 2, "2"), (Some(1), KeyOutcome::PageChanged));
+        assert_eq!(popup_key(0, 2, "3"), (None, KeyOutcome::Ignored));
+        assert_eq!(popup_key(0, 10, "0"), (Some(9), KeyOutcome::PageChanged));
         assert_eq!(popup_key(0, 2, "B"), (None, KeyOutcome::ChooseCell(14)));
         assert_eq!(hotkey_index("q"), Some(0));
         assert_eq!(hotkey_index("p"), None);
