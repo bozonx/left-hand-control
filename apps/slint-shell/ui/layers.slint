@@ -6,7 +6,7 @@ import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButt
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
-import { Button, HorizontalBox, LineEdit, Palette, VerticalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, LineEdit, TextEdit, Palette, VerticalBox } from "std-widgets.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
@@ -410,8 +410,10 @@ export component LayersPage inherits VerticalLayout {
                         VerticalLayout {
                             horizontal-stretch: 1;
                             spacing: 2px;
-                            Text { text: @tr("Extra keys"); color: Theme.text; font-size: 15px; font-weight: 700; }
-                            Text { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                            HorizontalLayout { spacing: 8px; alignment: start;
+                                Text { text: @tr("Extra keys"); color: Theme.text; font-size: 15px; font-weight: 700; }
+                                InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger, then choose its action, suppress it, or inherit its assignment from the lower layer."); }
+                            }
                         }
                         if LayersEditor.extras.length > 0: VerticalLayout {
                             alignment: center;
@@ -502,9 +504,9 @@ export component LayerDialogOverlay inherits FocusScope {
                 }
                 if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
                     Text { text: @tr("Name"); color: Theme.text; }
-                    LineEdit { text <=> LayersEditor.dialog-name; accepted => { LayersEditor.apply-dialog(); } }
+                    LineEdit { init => { self.focus(); } text <=> LayersEditor.dialog-name; accepted => { LayersEditor.apply-dialog(); } }
                     Text { text: @tr("Description"); color: Theme.text; }
-                    LineEdit { text <=> LayersEditor.dialog-description; accepted => { LayersEditor.apply-dialog(); } }
+                    TextEdit { text <=> LayersEditor.dialog-description; height: 100px; }
                 }
                 if LayersEditor.dialog == LayerDialog.delete: Text { text: @tr("Rules using this layer will return to the base layer."); color: Theme.muted; wrap: word-wrap; }
                 if LayersEditor.dialog == LayerDialog.edit-key || LayersEditor.dialog == LayerDialog.extra-key: VerticalBox { spacing: 8px;

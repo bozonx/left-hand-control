@@ -1736,7 +1736,7 @@ impl TextInput {
             cursor: self.cursor_position(&text),
             anchor: self.anchor_position(&text),
         });
-        let kind = if before.cursor == before.anchor {
+        let kind = if before.cursor == before.anchor && text[anchor..cursor].chars().count() == 1 {
             EditKind::Delete
         } else {
             EditKind::Isolated

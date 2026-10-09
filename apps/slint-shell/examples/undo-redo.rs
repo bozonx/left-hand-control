@@ -206,6 +206,22 @@ fn verify(ui: &EditingWindow) {
     }
 }
 
+fn snapshot(ui: &EditingWindow) {
+    let Some(dir) = std::env::var_os("LHC_EDITOR_SNAPSHOTS") else {
+        return;
+    };
+    let pixels = ui.window().take_snapshot().unwrap();
+    let mut bytes = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
+    for pixel in pixels.as_slice() {
+        bytes.extend_from_slice(&[pixel.r, pixel.g, pixel.b]);
+    }
+    std::fs::write(
+        std::path::PathBuf::from(dir).join("undo-redo-scroll.ppm"),
+        bytes,
+    )
+    .unwrap();
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = EditingWindow::new()?;
     let modifiers = Cell::new(ModifiersState::empty());
@@ -269,6 +285,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(ui.get_inline_area(), "первая\nзамена🙂");
             }
             16 => {
+                ui.set_clearable(false);
+                ui.set_inline_text(format!("{}END", "длинный текст ".repeat(24)).into());
+                ui.invoke_begin_inline();
+            }
+            17 => key(&ui, Key::End),
+            18 => {
+                snapshot(&ui);
+                key(&ui, Key::Backspace);
+                shortcut(&ui, "я", KeyCode::KeyZ, false);
+                shortcut(&ui, "н", KeyCode::KeyY, false);
+                key(&ui, Key::Return);
+                assert!(ui.get_inline_text().ends_with("EN"));
+            }
+            19 => {
                 println!("Undo/redo passed: TextInput, LineEdit, TextEdit, both inline fields, inline textarea, Russian shortcuts, atomic replacement, redo invalidation, selection, deletion, clipboard, read-only, multiline");
                 slint::quit_event_loop().unwrap();
             }

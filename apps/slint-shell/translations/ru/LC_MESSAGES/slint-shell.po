@@ -1830,3 +1830,12 @@ msgstr "Не удалось восстановить всплывающие ме
 
 msgid "Popup menu error: {}"
 msgstr "Ошибка всплывающего меню: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Выберите клавишу или сочетание для триггера"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger, then choose its action, suppress it, or inherit its assignment from the lower layer."
+msgstr "Кнопки мыши, мультимедийные клавиши и другие триггеры вне основной сетки клавиатуры. Добавьте триггер и назначьте действие, подавление или наследование назначения из нижнего слоя."
+
+msgid "You can enter emoji, any text, or Unicode symbols here. Drag an item from the palette onto a key to assign it."
+msgstr "Здесь можно вводить эмодзи, любой текст или символы Unicode. Перетащите символ из палитры на клавишу, чтобы назначить его."

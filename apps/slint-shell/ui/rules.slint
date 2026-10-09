@@ -326,7 +326,7 @@ export component RuleDialogOverlay inherits FocusScope {
             TouchArea {}
             VerticalBox { padding: 22px; spacing: 10px;
                 Text {
-                    text: RulesEditor.dialog == RuleDialog.key ? @tr("Choose trigger key")
+                    text: RulesEditor.dialog == RuleDialog.key ? @tr("Choose a key or combination for the trigger")
                         : RulesEditor.dialog == RuleDialog.layer ? @tr("Choose layer")
                         : RulesEditor.dialog == RuleDialog.conditions ? @tr("Conditions")
                         : RulesEditor.dialog == RuleDialog.advanced ? @tr("Advanced rule options")

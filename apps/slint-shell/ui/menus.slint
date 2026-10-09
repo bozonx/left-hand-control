@@ -10,6 +10,23 @@ import { Button, LineEdit, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
+global PaletteDrag {
+    in-out property <bool> active;
+    in-out property <length> x;
+    in-out property <length> y;
+    in-out property <length> grid-x;
+    in-out property <length> grid-y;
+    in-out property <length> cell-width;
+    in-out property <length> cell-height;
+    public pure function target(x: length, y: length) -> int {
+        let local-x = x - self.grid-x - 12px;
+        let local-y = y - self.grid-y - 12px;
+        if local-x < 0px || local-y < 0px || local-x >= 5 * (self.cell-width + 8px) - 8px || local-y >= 3 * (self.cell-height + 8px) - 8px { return -1; }
+        if mod(local-x, self.cell-width + 8px) >= self.cell-width || mod(local-y, self.cell-height + 8px) >= self.cell-height { return -1; }
+        return floor(local-y / (self.cell-height + 8px)) * 5 + floor(local-x / (self.cell-width + 8px));
+    }
+}
+
 export global MenuEditor {
     in-out property <MenuKind> kind;
     in property <[string]> pages;
@@ -60,6 +77,19 @@ component HotkeyGrid inherits Rectangle {
     border-width: 1px;
     border-color: Theme.border;
     background: Theme.surface;
+    private property <Point> grid-position: root.absolute-position;
+    function sync-grid() {
+        if root.emoji {
+            PaletteDrag.grid-x = root.grid-position.x;
+            PaletteDrag.grid-y = root.grid-position.y;
+            PaletteDrag.cell-width = root.cell-width;
+            PaletteDrag.cell-height = root.cell-height;
+        }
+    }
+    init => { root.sync-grid(); }
+    changed grid-position => { root.sync-grid(); }
+    changed cell-width => { root.sync-grid(); }
+    changed cell-height => { root.sync-grid(); }
     pure function index-at(x: length, y: length) -> int {
         return max(0, min(2, floor((y - self.pad) / (self.cell-height + self.gap)))) * 5
             + max(0, min(4, floor((x - self.pad) / (self.cell-width + self.gap))));
@@ -84,7 +114,7 @@ component HotkeyGrid inherits Rectangle {
         height: root.cell-height;
         border-radius: 6px;
         border-width: index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
+        border-color: (root.emoji && PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == index) || index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
         background: root.dragging && root.preview(index) == root.drag-over ? Theme.hover : Theme.card;
         opacity: root.dragging && index == root.drag-from ? 0.0 : 1.0;
         accessible-role: button;
@@ -204,7 +234,26 @@ component EmojiButton inherits Rectangle {
             return reject;
         }
     }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { root.pick(); } }
+    touch := TouchArea {
+        mouse-cursor: PaletteDrag.active ? grabbing : grab;
+        moved => {
+            if self.pressed {
+                if abs(self.mouse-x - self.pressed-x) > 6px || abs(self.mouse-y - self.pressed-y) > 6px { PaletteDrag.active = true; }
+                PaletteDrag.x = root.absolute-position.x + self.mouse-x;
+                PaletteDrag.y = root.absolute-position.y + self.mouse-y;
+            }
+        }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
+                if PaletteDrag.active {
+                    let target = PaletteDrag.target(root.absolute-position.x + self.mouse-x, root.absolute-position.y + self.mouse-y);
+                    if target >= 0 { MenuEditor.select-cell(target); root.pick(); }
+                } else { root.pick(); }
+                PaletteDrag.active = false;
+            }
+            if event.kind == PointerEventKind.cancel { PaletteDrag.active = false; }
+        }
+    }
 }
 
 export component EmojiPage inherits Rectangle {
@@ -247,6 +296,7 @@ export component EmojiPage inherits Rectangle {
                             edited => { MenuEditor.set-cell(); }
                         }
                         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
+                        InfoTip { text: @tr("You can enter emoji, any text, or Unicode symbols here. Drag an item from the palette onto a key to assign it."); }
                     }
                     if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                     ScrollView {
