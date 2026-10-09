@@ -477,11 +477,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
-    let step = Rc::new(std::cell::Cell::new(0));
+    let step = Rc::new(std::cell::Cell::new(-3));
     timer.start(slint::TimerMode::Repeated, Duration::from_millis(400), move || {
         let ui = weak.unwrap();
         let n = step.get();
         match n {
+            -3 => {
+                let position = slint::LogicalPosition::new(100.0, 260.0);
+                for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
+            }
+            -2 => {
+                snapshot(&ui, "settings-keyboard-narrow");
+                ui.window().set_size(slint::LogicalSize::new(1400.0, 760.0));
+            }
+            -1 => {
+                assert_eq!(ui.window().size().width, (1400.0 * ui.window().scale_factor()) as u32);
+                snapshot(&ui, "settings-keyboard-wide");
+                let position = slint::LogicalPosition::new(100.0, 210.0);
+                for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
+            }
             0 => { snapshot(&ui, "settings-dark-ru"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -1200.0 }); }
             1 => { snapshot(&ui, "settings-bottom-ru"); ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji); }
             2 => { snapshot(&ui, "keyboard-ru"); ui.invoke_navigate(Page::Layouts, MenuKind::Emoji); }
