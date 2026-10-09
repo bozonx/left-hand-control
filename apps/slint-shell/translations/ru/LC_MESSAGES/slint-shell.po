@@ -1198,6 +1198,33 @@ msgstr "Места и транспорт"
 msgid "UTF Symbols"
 msgstr "UTF-символы"
 
+msgid "Typography"
+msgstr "Типографика"
+
+msgid "Texts"
+msgstr "Тексты"
+
+msgid "Non-breaking space"
+msgstr "Неразрывный пробел"
+
+msgid "continue"
+msgstr "продолжай"
+
+msgid "do all you recommended"
+msgstr "сделай всё, что ты рекомендовал"
+
+msgid "fix the errors above"
+msgstr "исправь ошибки выше"
+
+msgid "I'll call you back later"
+msgstr "Перезвоню позже"
+
+msgid "Thanks!"
+msgstr "Спасибо!"
+
+msgid "OK, got it 👍"
+msgstr "Ок, понял 👍"
+
 msgid "Unique identifier used in references like macro:<id>. To bind this macro to a key, choose that action on the Layers or Rules tab. Change the ID only when nothing uses this macro."
 msgstr "Уникальный идентификатор для ссылок вида macro:<id>. Чтобы назначить макрос на клавишу, выберите это действие во вкладках «Слои» или «Правила». Меняйте ID только если макрос нигде не используется."
 

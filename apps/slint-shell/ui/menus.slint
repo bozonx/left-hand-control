@@ -215,6 +215,8 @@ component PageEditor inherits HorizontalLayout {
 
 component EmojiButton inherits Rectangle {
     in property <string> item;
+    // Text snippets: wider buttons with a smaller, left-aligned label.
+    in property <bool> wide;
     height: 40px;
     horizontal-stretch: 1;
     min-width: 0px;
@@ -224,10 +226,20 @@ component EmojiButton inherits Rectangle {
     border-color: focus.has-focus ? Theme.text : touch.has-hover ? Theme.link : Theme.border;
     background: touch.has-hover ? Theme.hover : Theme.surface;
     accessible-role: button;
-    accessible-label: root.item;
+    accessible-label: root.item == "\u{a0}" ? @tr("Non-breaking space") : root.item;
     accessible-action-default => { self.pick(); }
     function pick() { MenuEditor.value = root.item; MenuEditor.set-cell(); }
-    Text { text: root.item; font-family: "Noto Color Emoji"; font-size: 20px; color: Theme.text; horizontal-alignment: center; vertical-alignment: center; }
+    Text {
+        x: root.wide ? 10px : 0px;
+        width: root.wide ? parent.width - 20px : parent.width;
+        text: root.item == "\u{a0}" ? "⍽" : root.item;
+        font-family: root.wide ? "" : "Noto Color Emoji";
+        font-size: root.wide ? 13px : 20px;
+        color: Theme.text;
+        horizontal-alignment: root.wide ? left : center;
+        vertical-alignment: center;
+        overflow: elide;
+    }
     focus := FocusScope {
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.pick(); return accept; }
@@ -259,6 +271,17 @@ component EmojiButton inherits Rectangle {
 export component EmojiPage inherits Rectangle {
     vertical-stretch: 1;
     private property <bool> confirming;
+    // Common text snippets, localized so the inserted text matches the UI language.
+    private property <[string]> texts: [
+        "TODO: ",
+        "FIXME: ",
+        @tr("continue"),
+        @tr("do all you recommended"),
+        @tr("fix the errors above"),
+        @tr("I'll call you back later"),
+        @tr("Thanks!"),
+        @tr("OK, got it 👍"),
+    ];
     VerticalLayout {
         width: 100%;
         height: 100%;
@@ -317,6 +340,7 @@ export component EmojiPage inherits Rectangle {
                                         : category.id == "nature" ? @tr("Animals & Nature")
                                         : category.id == "food" ? @tr("Food & Drink")
                                         : category.id == "travel" ? @tr("Travel & Places")
+                                        : category.id == "typography" ? @tr("Typography")
                                         : @tr("UTF Symbols");
                                     color: Theme.muted;
                                     font-size: 11px;
@@ -327,6 +351,19 @@ export component EmojiPage inherits Rectangle {
                                     for col in 6: EmojiButton {
                                         item: category.items[row * 6 + col];
                                         visible: row * 6 + col < category.items.length;
+                                    }
+                                }
+                            }
+                            VerticalLayout {
+                                spacing: 6px;
+                                padding-bottom: 8px;
+                                Text { text: @tr("Texts"); color: Theme.muted; font-size: 11px; font-weight: 700; }
+                                for row in ceil(root.texts.length / 2): HorizontalLayout {
+                                    spacing: 6px;
+                                    for col in 2: EmojiButton {
+                                        wide: true;
+                                        item: root.texts[row * 2 + col];
+                                        visible: row * 2 + col < root.texts.length;
                                     }
                                 }
                             }
