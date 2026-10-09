@@ -4,8 +4,8 @@
 //! written by either shell read back identically in the other one.
 
 use super::model::{
-    Command, EmojiPage, ExtraKey, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, LayerRule, LayoutPreset,
-    Macro, MacroStep, QuickAction, QuickActionPage,
+    Command, EmojiPage, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, LayerRule, LayoutPreset, Macro,
+    MacroStep, QuickAction, QuickActionPage,
 };
 use serde_json::{Map, Value};
 use serde_yaml::{Mapping, Value as Yaml};
@@ -48,22 +48,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     .collect()
             })
             .unwrap_or_default();
-        let extras = array(layer, "extras")
-            .filter_map(|extra| {
-                let key = non_empty(extra, "key").or_else(|| non_empty(extra, "name"))?;
-                let action = match extra.get("action") {
-                    None => return None,
-                    Some(Value::Null) => None,
-                    Some(value) => Some(scalar(value).filter(|a| !a.is_empty())?),
-                };
-                Some(ExtraKey {
-                    id: str_of(extra, "id").map_or_else(|| next_id("x_"), str::to_owned),
-                    key: key.into(),
-                    action,
-                })
-            })
-            .collect();
-        layer_keymaps.insert(id.to_owned(), LayerKeymap { keys, extras });
+        layer_keymaps.insert(id.to_owned(), LayerKeymap { keys });
     }
 
     let rules = array(doc, "rules")
@@ -240,23 +225,6 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                                         .iter()
                                         .map(|(code, action)| {
                                             (code.as_str().into(), optional(action))
-                                        })
-                                        .collect(),
-                                ),
-                            );
-                        }
-                        if !keymap.extras.is_empty() {
-                            out.insert(
-                                "extras".into(),
-                                Yaml::Sequence(
-                                    keymap
-                                        .extras
-                                        .iter()
-                                        .map(|extra| {
-                                            let mut item = Mapping::new();
-                                            put(&mut item, "key", extra.key.as_str());
-                                            item.insert("action".into(), optional(&extra.action));
-                                            Yaml::Mapping(item)
                                         })
                                         .collect(),
                                 ),
@@ -563,9 +531,7 @@ layers:
       KeyH: ArrowLeft
       KeyQ: null
       Digit1: 5
-    extras:
-      - key: MouseForward
-        action: Ctrl+KeyC
+      MouseForward: Ctrl+KeyC
 rules:
   - key: CapsLock
     layer: nav
@@ -601,7 +567,7 @@ emojiPages:
         assert_eq!(nav.keys["KeyH"].as_deref(), Some("ArrowLeft"));
         assert_eq!(nav.keys["KeyQ"], None);
         assert_eq!(nav.keys["Digit1"].as_deref(), Some("5"));
-        assert_eq!(nav.extras[0].action.as_deref(), Some("Ctrl+KeyC"));
+        assert_eq!(nav.keys["MouseForward"].as_deref(), Some("Ctrl+KeyC"));
         assert_eq!(preset.rules.len(), 2);
         let caps = &preset.rules[0];
         assert_eq!(caps.layer_id, "nav");

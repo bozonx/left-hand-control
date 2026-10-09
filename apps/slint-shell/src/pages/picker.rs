@@ -5,6 +5,7 @@ use super::{keys, layers, rules};
 use crate::{
     document::Document,
     i18n::Msg,
+    keyboard,
     ui::{
         ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerItem, PickerTarget,
         SettingsWindow,
@@ -268,7 +269,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 || matches!(target, PickerTarget::BaseKey | PickerTarget::QuickAction));
         picker.set_allow_default(allow_default);
 
-        picker.set_inherit_default(standalone_layer && target == PickerTarget::LayerAction);
+        picker.set_inherit_default(standalone_layer);
         picker.set_empty_default(double_tap);
         picker.set_quick_action(target == PickerTarget::QuickAction);
         picker.set_hold_action(rule_action && rule_field == crate::ui::RuleDialog::Hold);
@@ -397,11 +398,38 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let key_only = picker.get_key_only();
         state.borrow_mut().catalog = catalog(&ui, &doc.read());
         let state = state.borrow();
+        let unavailable_keys: Vec<String> = if state
+            .target
+            .is_some_and(|(target, _)| target == PickerTarget::ExtraKey)
+        {
+            let editor = ui.global::<LayersEditor>();
+            let selected = editor.get_selected_id();
+            let current = editor.get_dialog_key();
+            let config = doc.read();
+            keyboard::layer_keys()
+                .map(str::to_owned)
+                .chain(
+                    config
+                        .layout()
+                        .layer_keymaps
+                        .get(selected.as_str())
+                        .into_iter()
+                        .flat_map(|map| map.keys.keys())
+                        .filter(|key| key.as_str() != current.as_str())
+                        .cloned(),
+                )
+                .collect()
+        } else {
+            Vec::new()
+        };
         let entries: Vec<&PickerItem> = state
             .catalog
             .iter()
             .filter(|entry| {
                 (!key_only || entry.category < MACROS)
+                    && !unavailable_keys
+                        .iter()
+                        .any(|key| key == entry.value.as_str())
                     && (!picker.get_hold_action() || actions::valid_held_key(&entry.value))
                     && (!(key_only
                         && state

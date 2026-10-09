@@ -47,24 +47,13 @@
         "KeyH": "ArrowLeft",
         "KeyQ": null,
         "KeyW": null,
-        "Digit1": "5"
-      },
-      "extras": [
-        {
-          "id": "x1",
-          "key": "MouseForward",
-          "action": "Ctrl+KeyC"
-        },
-        {
-          "id": "x2",
-          "key": "MouseBack",
-          "action": null
-        }
-      ]
+        "Digit1": "5",
+        "MouseForward": "Ctrl+KeyC",
+        "MouseBack": null
+      }
     },
     "sym": {
-      "keys": {},
-      "extras": []
+      "keys": {}
     }
   },
   "macros": [

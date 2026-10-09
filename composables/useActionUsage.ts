@@ -21,9 +21,6 @@ export function useActionUsage(parseRef: (action: string | null | undefined) => 
       for (const [code, action] of Object.entries(keymap.keys ?? {})) {
         noteIf(action, `${layerId}.${code}`)
       }
-      for (const extra of keymap.extras ?? []) {
-        noteIf(extra.action, `${layerId}.${extra.key || 'extra'}`)
-      }
     }
     for (const macro of config.value.macros) {
       for (const [index, step] of macro.steps.entries()) {

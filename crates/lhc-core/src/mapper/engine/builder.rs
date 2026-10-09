@@ -464,28 +464,7 @@ impl Engine {
                 };
                 m.insert(key, def);
             }
-            for extra in &km.extras {
-                let Some(key) = code_to_key(&extra.key) else {
-                    log::debug!(
-                        "[mapper] unknown extra key code in keymap {layer_id}: {}",
-                        extra.key
-                    );
-                    continue;
-                };
-                let def = match &extra.action {
-                    ActionSpec::Native => continue,
-                    ActionSpec::Swallow => ActionDef::Swallow,
-                    ActionSpec::Action(s) => {
-                        let Some(def) =
-                            resolve(s, &format!("keymap {layer_id}.extra({})", extra.key))
-                        else {
-                            continue;
-                        };
-                        def
-                    }
-                };
-                m.insert(key, def);
-            }
+
             layer_maps.insert(layer_id.clone(), m);
         }
 

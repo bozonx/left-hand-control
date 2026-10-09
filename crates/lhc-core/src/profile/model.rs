@@ -132,22 +132,12 @@ impl LayerRule {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ExtraKey {
-    pub id: String,
-    pub key: String,
-    /// `None` swallows the key.
-    pub action: Option<String>,
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LayerKeymap {
     /// Key code → action; `None` swallows the key inside the layer. A
     /// missing entry is transparent.
     pub keys: BTreeMap<String, Option<String>>,
-    pub extras: Vec<ExtraKey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

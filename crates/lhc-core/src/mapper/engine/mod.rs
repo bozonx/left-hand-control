@@ -1400,8 +1400,7 @@ fn is_mouse_button(key: Key) -> bool {
 mod tests {
     use super::*;
     use crate::mapper::config::{
-        ActionSpec, AppConfig, Command, ExtraKey, LayerKeymap, Macro, MacroStep, Rule, Settings,
-        TapDecision,
+        ActionSpec, AppConfig, Command, LayerKeymap, Macro, MacroStep, Rule, Settings, TapDecision,
     };
     use evdev::Key;
     use std::collections::HashMap;
@@ -2610,10 +2609,8 @@ mod tests {
             keys: HashMap::new(),
             ..Default::default()
         };
-        sp.extras.push(crate::mapper::config::ExtraKey {
-            key: "MouseSide".into(),
-            action: ActionSpec::Action("BrowserBack".into()),
-        });
+        sp.keys
+            .insert("MouseSide".into(), Some("BrowserBack".into()));
         cfg.layer_keymaps.insert("sp".into(), sp);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -2724,10 +2721,7 @@ mod tests {
             keys: HashMap::new(),
             ..Default::default()
         };
-        mouse.extras.push(ExtraKey {
-            key: "MouseLeft".into(),
-            action: ActionSpec::Action("Escape".into()),
-        });
+        mouse.keys.insert("MouseLeft".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("mouse".into(), mouse);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -2761,7 +2755,7 @@ mod tests {
     }
 
     #[test]
-    fn explicit_null_extra_in_layer_keymap_swallows_key() {
+    fn explicit_null_mouse_key_in_layer_keymap_swallows_key() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
             enabled: true,
@@ -2786,10 +2780,7 @@ mod tests {
             keys: HashMap::new(),
             ..Default::default()
         };
-        mouse.extras.push(ExtraKey {
-            key: "MouseSide".into(),
-            action: ActionSpec::Swallow,
-        });
+        mouse.keys.insert("MouseSide".into(), None);
         cfg.layer_keymaps.insert("mouse".into(), mouse);
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -3226,7 +3217,7 @@ mod tests {
     }
 
     #[test]
-    fn layer_native_extra_is_skipped() {
+    fn layer_missing_key_is_transparent() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
             enabled: true,
@@ -3252,10 +3243,7 @@ mod tests {
             ..Default::default()
         };
         sp.keys.insert("KeyA".into(), Some("Escape".into()));
-        sp.extras.push(ExtraKey {
-            key: "KeyB".into(),
-            action: ActionSpec::Native,
-        });
+
         cfg.layer_keymaps.insert("sp".into(), sp);
 
         let mut engine = Engine::new(&cfg);
@@ -3266,7 +3254,7 @@ mod tests {
         engine.tick(now + Duration::from_millis(260), &mut out);
         out.clear();
 
-        // KeyB mapped as Native extra should passthrough
+        // KeyB without a mapping should passthrough
         engine.handle(Key::KEY_B, true, now + Duration::from_millis(270), &mut out);
         assert!(matches!(
             out.as_slice(),

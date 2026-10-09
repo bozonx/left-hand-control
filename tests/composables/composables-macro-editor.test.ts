@@ -27,7 +27,7 @@ describe('useMacroEditor', () => {
   it('adds and clones macros, validates ids, tracks usage and edits steps', async () => {
     const state = makeConfigState()
     state.config.value.layers.push({ id: 'nav', name: 'Navigation' })
-    state.config.value.layerKeymaps.nav = { keys: {}, extras: [] }
+    state.config.value.layerKeymaps.nav = { keys: {} }
     state.config.value.rules.push({
       id: 'rule-1',
       key: 'CapsLock',
@@ -37,11 +37,7 @@ describe('useMacroEditor', () => {
       doubleTapAction: '',
     })
     state.config.value.layerKeymaps.nav!.keys.KeyH = macroActionRef('dup')
-    state.config.value.layerKeymaps.nav!.extras.push({
-      id: 'extra-1',
-      key: 'MouseSide',
-      action: macroActionRef('dup'),
-    })
+    state.config.value.layerKeymaps.nav!.keys.MouseSide = macroActionRef('dup')
     useConfigMock.mockReturnValue(state)
 
     const Harness = defineComponent({

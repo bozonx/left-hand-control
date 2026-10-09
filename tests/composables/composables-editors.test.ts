@@ -29,7 +29,7 @@ describe('editor composables', () => {
   it('useLayers creates, renames and deletes layers while keeping config consistent', async () => {
     const state = makeConfigState()
     state.config.value.layers.push({ id: 'nav', name: 'Navigation' })
-    state.config.value.layerKeymaps.nav = { keys: {}, extras: [] }
+    state.config.value.layerKeymaps.nav = { keys: {} }
     state.config.value.rules.push({
       id: 'rule-1',
       key: 'CapsLock',
@@ -50,7 +50,7 @@ describe('editor composables', () => {
     const wrapper = await mountSuspended(Harness)
     const vm = wrapper.vm as any
 
-    expect(vm.ensureLayerKeymap('symbols')).toEqual({ keys: {}, extras: [] })
+    expect(vm.ensureLayerKeymap('symbols')).toEqual({ keys: {} })
 
     const createdId = vm.createLayer({
       name: '  Navigation  ',
@@ -65,7 +65,6 @@ describe('editor composables', () => {
     })
     expect(state.config.value.layerKeymaps[createdId!]).toEqual({
       keys: {},
-      extras: [],
     })
 
     expect(
@@ -148,7 +147,7 @@ describe('editor composables', () => {
     state.config.value.layers.push({ id: 'nav', name: 'Navigation' })
     state.config.value.layerKeymaps.nav = {
       keys: { KeyH: 'ArrowLeft' },
-      extras: [],
+
     }
     useConfigMock.mockReturnValue(state)
 
@@ -179,35 +178,33 @@ describe('editor composables', () => {
     vm.clearEdit()
     expect(state.config.value.layerKeymaps.nav?.keys.KeyJ).toBeUndefined()
 
-    vm.addExtra()
-    const extraId = state.config.value.layerKeymaps.nav?.extras[0]?.id
-    expect(state.config.value.layerKeymaps.nav?.extras[0]).toMatchObject({
-      key: '',
-      action: '',
-    })
-    state.config.value.layerKeymaps.nav?.extras.push({
-      id: 'extra-2',
-      key: 'MouseExtra',
-      action: 'BrowserForward',
-    })
-    vm.moveExtra('extra-2', 'up')
-    expect(state.config.value.layerKeymaps.nav?.extras.map((extra: any) => extra.id)).toEqual([
-      'extra-2',
-      extraId,
-    ])
-    vm.moveExtra('extra-2', 'down')
-    expect(state.config.value.layerKeymaps.nav?.extras.map((extra: any) => extra.id)).toEqual([
-      extraId,
-      'extra-2',
-    ])
-    vm.removeExtra(extraId!)
-    expect(state.config.value.layerKeymaps.nav?.extras).toEqual([
-      {
-        id: 'extra-2',
-        key: 'MouseExtra',
-        action: 'BrowserForward',
-      },
-    ])
+    vm.addExtra('F4')
+    expect(state.config.value.layerKeymaps.nav?.keys.F4).toBe('F4')
+    expect(vm.extraKeys).toContainEqual({ key: 'F4', action: 'F4' })
+    vm.updateExtra('F4', 'action', null)
+    expect(state.config.value.layerKeymaps.nav?.keys.F4).toBeNull()
+    vm.updateExtra('F4', 'key', 'MouseSide')
+    expect(state.config.value.layerKeymaps.nav?.keys.F4).toBeUndefined()
+    expect(state.config.value.layerKeymaps.nav?.keys.MouseSide).toBeNull()
+    vm.addExtra('MouseSide')
+    expect(state.config.value.layerKeymaps.nav?.keys.MouseSide).toBeNull()
+    vm.addExtra('KeyQ')
+    expect(state.config.value.layerKeymaps.nav?.keys.KeyQ).toBeUndefined()
+    vm.addExtra('MouseExtra')
+    vm.updateExtra('MouseSide', 'key', 'MouseExtra')
+    expect(state.config.value.layerKeymaps.nav?.keys.MouseSide).toBeNull()
+    vm.removeExtra('MouseSide')
+    expect(state.config.value.layerKeymaps.nav?.keys.MouseSide).toBeUndefined()
+    vm.updateExtra('MouseExtra', 'action', '')
+    expect(state.config.value.layerKeymaps.nav?.keys.MouseExtra).toBeUndefined()
+
+    vm.addExtra('F4')
+    vm.clearSelectedLayer()
+    expect(state.config.value.layerKeymaps.nav?.keys).toEqual({ F4: 'F4' })
+    vm.openEdit('KeyH', 'H')
+    vm.saveEdit('ArrowLeft')
+    vm.clearSelectedExtras()
+    expect(state.config.value.layerKeymaps.nav?.keys).toEqual({ KeyH: 'ArrowLeft' })
 
     vm.openRename()
     vm.renameDraftName = 'Nav'

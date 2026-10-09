@@ -5,7 +5,6 @@ import {
   type Command,
   type EmojiHotkey,
   type EmojiPage,
-  type ExtraKey,
   type Layer,
   type LayerKeymap,
   type LayerRule,
@@ -32,12 +31,6 @@ interface LayoutYaml {
     description?: string
     keys?: Record<string, string | null>
     isolate?: string[]
-    extras?: Array<{
-      id?: string
-      key?: string
-      name?: string
-      action?: string | null
-    }>
   }>
   rules?: Array<{
     key?: string
@@ -115,17 +108,7 @@ function parsePreset(doc: LayoutYaml): LayoutPreset {
       }
       keys[k] = String(v)
     }
-    const extras: ExtraKey[] = []
-    for (const e of l.extras ?? []) {
-      const key = e?.key ?? e?.name
-      if (!key || e?.action === undefined || e.action === '') continue
-      extras.push({
-        id: e.id ?? genId('x_'),
-        key,
-        action: e.action === null ? null : String(e.action),
-      })
-    }
-    layerKeymaps[l.id] = { keys, extras }
+    layerKeymaps[l.id] = { keys }
   }
 
   const rules: LayerRule[] = []
@@ -297,14 +280,6 @@ export function serializeLayoutYaml(preset: LayoutPreset): string {
         name: l.name,
         ...(l.description ? { description: l.description } : {}),
         ...(km && Object.keys(km.keys).length > 0 ? { keys: km.keys } : {}),
-        ...(km && km.extras.length > 0
-          ? {
-              extras: km.extras.map((e) => ({
-                key: e.key,
-                action: e.action,
-              })),
-            }
-          : {}),
       }
     }),
     rules: preset.rules.map((r) => ({
@@ -437,7 +412,7 @@ export function applyPresetToConfig(
   }
   for (const layer of next.layers) {
     if (!next.layerKeymaps[layer.id]) {
-      next.layerKeymaps[layer.id] = { keys: {}, extras: [] }
+      next.layerKeymaps[layer.id] = { keys: {} }
     }
   }
   return next

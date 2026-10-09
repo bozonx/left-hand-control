@@ -342,8 +342,6 @@ export default {
       'Trigger key: mouse button, media key or any other key from the full list.',
     extraActionLabel: 'Action',
     extraActionHint: 'Action sent by this key while the layer is active.',
-    moveExtraUp: 'Move up',
-    moveExtraDown: 'Move down',
     deleteExtra: 'Delete',
     deleteLayerTitle: 'Delete layer “{name}”',
     deleteLayerBody:

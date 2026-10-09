@@ -38,7 +38,6 @@ export global LayersEditor {
     /// Open `dialog`; `index` is the key or extra row it edits, or -1.
     callback open-dialog(LayerDialog, int);
     callback apply-dialog();
-    callback move-extra(int, int);
     callback reorder(int, int);
     callback remove-extra(int);
     callback update-description(string);
@@ -394,7 +393,7 @@ export component LayersPage inherits VerticalLayout {
                             horizontal-stretch: 0;
                             title: @tr("Right hand");
                             cells: LayersEditor.right-cells;
-                            columns: 8;
+                            columns: 6;
                             label-mode: root.label-mode;
                             edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
                         }
@@ -468,9 +467,6 @@ export component LayersPage inherits VerticalLayout {
                                 HorizontalLayout {
                                     spacing: 2px;
                                     VerticalLayout { alignment: center;
-                                        DragHandle { group: 3; index: index; count: LayersEditor.extras.length; dropped(from, to) => { LayersEditor.move-extra(from, to); } }
-                                    }
-                                    VerticalLayout { alignment: center;
                                         IconButton { icon: @image-url("icons/trash-2.svg"); tooltip: @tr("Remove"); clicked => { LayersEditor.delete-extra = index; } }
                                     }
                                 }
@@ -518,12 +514,12 @@ export component LayerDialogOverlay inherits FocusScope {
                     }
                     Text { text: @tr("Behavior"); color: Theme.muted; }
                     HorizontalBox { spacing: 8px;
-                        Button { text: LayersEditor.dialog == LayerDialog.extra-key ? @tr("Normal key behavior") : @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
+                        Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
                         Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
                         Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
                     }
                     if LayersEditor.assignment != Assignment.action: Text {
-                        text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : LayersEditor.dialog == LayerDialog.extra-key ? @tr("Send the original key to the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
+                        text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
                     }
                     if LayersEditor.assignment == Assignment.action: VerticalBox {
                         padding: 0px; spacing: 4px; vertical-stretch: 0;

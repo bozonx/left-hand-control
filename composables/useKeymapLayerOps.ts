@@ -1,4 +1,5 @@
-import type { AppConfig, ExtraKey, Layer } from '~/types/config'
+import { VISUAL_KEY_CODES } from '~/utils/keys'
+import type { AppConfig, Layer } from '~/types/config'
 
 export function useKeymapLayerOps(
   selectedLayerId: Ref<string>,
@@ -78,9 +79,9 @@ export function useKeymapLayerOps(
     const keymap = config.value.layerKeymaps[selectedLayerId.value]
     if (!keymap) return
     lastClearedBackup.value = {
-      keys: { ...keymap.keys },
+      keys: Object.fromEntries(Object.entries(keymap.keys).filter(([key]) => VISUAL_KEY_CODES.includes(key))),
     }
-    keymap.keys = {}
+    keymap.keys = Object.fromEntries(Object.entries(keymap.keys).filter(([key]) => !VISUAL_KEY_CODES.includes(key)))
     clearConfirmOpen.value = false
     toast.add({
       title: t('keymap.layerCleared'),
@@ -100,12 +101,12 @@ export function useKeymapLayerOps(
     if (!backup || !currentLayer.value) return
     const keymap = config.value.layerKeymaps[selectedLayerId.value]
     if (!keymap) return
-    keymap.keys = backup.keys
+    Object.assign(keymap.keys, backup.keys)
     lastClearedBackup.value = null
   }
 
   const clearExtrasConfirmOpen = ref(false)
-  const lastClearedExtrasBackup = ref<ExtraKey[] | null>(null)
+  const lastClearedExtrasBackup = ref<Record<string, string | null> | null>(null)
 
   function requestClearExtras() {
     if (!currentLayer.value) return
@@ -120,8 +121,8 @@ export function useKeymapLayerOps(
     if (!currentLayer.value) return
     const keymap = config.value.layerKeymaps[selectedLayerId.value]
     if (!keymap) return
-    lastClearedExtrasBackup.value = keymap.extras.map((e) => ({ ...e }))
-    keymap.extras = []
+    lastClearedExtrasBackup.value = Object.fromEntries(Object.entries(keymap.keys).filter(([key]) => !VISUAL_KEY_CODES.includes(key)))
+    keymap.keys = Object.fromEntries(Object.entries(keymap.keys).filter(([key]) => VISUAL_KEY_CODES.includes(key)))
     clearExtrasConfirmOpen.value = false
     toast.add({
       title: t('keymap.extrasCleared'),
@@ -141,7 +142,7 @@ export function useKeymapLayerOps(
     if (!backup || !currentLayer.value) return
     const keymap = config.value.layerKeymaps[selectedLayerId.value]
     if (!keymap) return
-    keymap.extras = backup
+    Object.assign(keymap.keys, backup)
     lastClearedExtrasBackup.value = null
   }
 

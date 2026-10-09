@@ -110,7 +110,7 @@ const emit = defineEmits<{
           <div
             v-for="(kbRow, i) in RIGHT_HAND_ROWS"
             :key="`r-${i}`"
-            class="grid grid-cols-8 gap-1.5"
+            class="grid grid-cols-6 gap-1.5"
           >
             <KeyCap
               v-for="keyDef in kbRow"

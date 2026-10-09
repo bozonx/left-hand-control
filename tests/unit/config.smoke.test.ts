@@ -102,7 +102,7 @@ describe('config helpers', () => {
     })
 
     expect(config.layers.map((layer) => layer.id)).toEqual(['nav'])
-    expect(config.layerKeymaps.nav).toEqual({ keys: {}, extras: [] })
+    expect(config.layerKeymaps.nav).toEqual({ keys: {} })
     expect(config.rules[0]).toMatchObject({
       tapAction: '',
       holdAction: '',
@@ -151,7 +151,6 @@ describe('config helpers', () => {
             KeyJ: 'ArrowDown',
             KeyK: '',
           },
-          extras: [],
         },
       },
     })

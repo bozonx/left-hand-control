@@ -110,25 +110,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                 );
             }
         }
-        for extra in &km.extras {
-            if code_to_key(&extra.key).is_none() {
-                errors.push(format!(
-                    "Keymap \"{layer_id}\" extra: unknown key \"{}\"",
-                    extra.key
-                ));
-            }
-            if let crate::mapper::config::ActionSpec::Action(action) = &extra.action {
-                validate_action(
-                    action,
-                    &format!("Keymap \"{layer_id}\" extra \"{}\"", extra.key),
-                    ActionKind::Any,
-                    &user_macro_ids,
-                    &system_macro_ids,
-                    &command_ids,
-                    &mut errors,
-                );
-            }
-        }
     }
 
     for m in &cfg.macros {

@@ -14,7 +14,7 @@ use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::auto_switch::{self, AutoSwitchContext};
 use crate::profile::diagnostics::{self, RuleIssue};
 use crate::profile::model::{
-    AppConfig, AppSettings, Appearance, ExtraKey, Layer, LayerRule, LayoutMode, LayoutPreset,
+    AppConfig, AppSettings, Appearance, Layer, LayerRule, LayoutMode, LayoutPreset,
     LocalePreference,
 };
 use crate::profile::{layout_file, settings};
@@ -354,14 +354,11 @@ impl ConfigDocument {
         }
         let id = crate::profile::ids::generate("l_");
         self.update_layout(|layout| {
-            let mut keymap = layout
+            let keymap = layout
                 .layer_keymaps
                 .get(source_id)
                 .cloned()
                 .unwrap_or_default();
-            for extra in &mut keymap.extras {
-                extra.id = crate::profile::ids::generate("e_");
-            }
             layout.layer_keymaps.insert(id.clone(), keymap);
             layout.layers.push(Layer {
                 id: id.clone(),
@@ -392,79 +389,11 @@ impl ConfigDocument {
         self.update_layout(|layout| layout.layer_keymap_mut(id).keys.clear())
     }
 
-    pub fn set_layer_extra(
-        &mut self,
-        layer_id: &str,
-        index: Option<usize>,
-        key: &str,
-        action: Option<String>,
-    ) -> Result<(), ConfigError> {
-        self.require_layer(layer_id)?;
-        if let Some(index) = index {
-            self.require_extra(layer_id, index)?;
-        }
-        self.update_layout(|layout| {
-            let extras = &mut layout.layer_keymap_mut(layer_id).extras;
-            if let Some(index) = index {
-                let extra = &mut extras[index];
-                extra.key = key.into();
-                extra.action = action;
-            } else {
-                extras.push(ExtraKey {
-                    id: crate::profile::ids::generate("e_"),
-                    key: key.into(),
-                    action,
-                });
-            }
-        })
-    }
-
-    pub fn move_layer_extra(
-        &mut self,
-        layer_id: &str,
-        index: usize,
-        next: usize,
-    ) -> Result<(), ConfigError> {
-        self.require_extra(layer_id, index)?;
-        self.require_extra(layer_id, next)?;
-        self.update_layout(|layout| {
-            let extras = &mut layout.layer_keymap_mut(layer_id).extras;
-            let item = extras.remove(index);
-            extras.insert(next, item);
-        })
-    }
-
-    pub fn remove_layer_extra(&mut self, layer_id: &str, index: usize) -> Result<(), ConfigError> {
-        self.require_extra(layer_id, index)?;
-        self.update_layout(|layout| {
-            layout.layer_keymap_mut(layer_id).extras.remove(index);
-        })
-    }
-
-    pub fn clear_layer_extras(&mut self, id: &str) -> Result<(), ConfigError> {
-        self.require_layer(id)?;
-        self.update_layout(|layout| layout.layer_keymap_mut(id).extras.clear())
-    }
-
     fn require_layer(&self, id: &str) -> Result<(), ConfigError> {
         if self.layout.layers.iter().any(|layer| layer.id == id) {
             Ok(())
         } else {
             Err(ConfigError::Invalid("unknown layer".into()))
-        }
-    }
-
-    fn require_extra(&self, id: &str, index: usize) -> Result<(), ConfigError> {
-        self.require_layer(id)?;
-        if self
-            .layout
-            .layer_keymaps
-            .get(id)
-            .is_some_and(|map| index < map.extras.len())
-        {
-            Ok(())
-        } else {
-            Err(ConfigError::Invalid("unknown extra key".into()))
         }
     }
 
@@ -650,9 +579,6 @@ impl ConfigDocument {
             return Err(ConfigError::Rules(blocking));
         }
         diagnostics::runtime_rules(&mut config);
-        for keymap in config.layer_keymaps.values_mut() {
-            keymap.extras.retain(|extra| !extra.key.trim().is_empty());
-        }
         let json = config.to_json();
         validate_for_mapper(&json)?;
         Ok(RuntimeConfig { json, layout_id })
@@ -961,41 +887,6 @@ mod tests {
     }
 
     #[test]
-    fn runtime_config_skips_extra_key_drafts_without_changing_the_document() {
-        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
-        document
-            .set_layer_extra("nav", None, "", Some(String::new()))
-            .unwrap();
-        document
-            .set_layer_extra("nav", None, "   ", Some("KeyA".into()))
-            .unwrap();
-        document.set_layer_extra("nav", None, "F13", None).unwrap();
-        let saved = document.paths.load_current_layout().unwrap();
-        let runtime = document
-            .runtime_config(&AutoSwitchContext::default())
-            .unwrap();
-        let value: Value = serde_json::from_str(&runtime.json).unwrap();
-        assert_eq!(
-            value["layerKeymaps"]["nav"]["extras"]
-                .as_array()
-                .unwrap()
-                .len(),
-            1
-        );
-        assert_eq!(value["layerKeymaps"]["nav"]["extras"][0]["key"], "F13");
-        assert_eq!(document.layout().layer_keymaps["nav"].extras.len(), 3);
-        assert_eq!(document.paths.load_current_layout().unwrap(), saved);
-        document
-            .set_layer_extra("nav", None, "BadKey", Some("KeyA".into()))
-            .unwrap();
-        #[cfg(target_os = "linux")]
-        assert!(matches!(
-            document.runtime_config(&AutoSwitchContext::default()),
-            Err(ConfigError::Invalid(_))
-        ));
-    }
-
-    #[test]
     fn auto_mode_without_a_match_is_passthrough() {
         let (_dir, document) = document(
             json!({"version": 1, "settings": {"layoutMode": "auto"}}),
@@ -1047,39 +938,12 @@ mod tests {
             other => panic!("unexpected {other:?}"),
         }
     }
-    #[test]
-    fn moving_extra_inserts_without_swapping_intermediate_keys() {
-        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
-        for key in ["F13", "F14", "F15"] {
-            document
-                .set_layer_extra("nav", None, key, Some("Escape".into()))
-                .unwrap();
-        }
-        document.move_layer_extra("nav", 0, 2).unwrap();
-        let keys = || {
-            document.layout().layer_keymaps["nav"]
-                .extras
-                .iter()
-                .map(|row| row.key.as_str())
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(keys(), ["F14", "F15", "F13"]);
-        document.move_layer_extra("nav", 2, 0).unwrap();
-        assert_eq!(
-            document.layout().layer_keymaps["nav"]
-                .extras
-                .iter()
-                .map(|row| row.key.as_str())
-                .collect::<Vec<_>>(),
-            ["F13", "F14", "F15"]
-        );
-    }
 
     #[test]
     fn layer_lifecycle_preserves_keymaps_and_detaches_rules() {
         let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
         document
-            .set_layer_extra("nav", None, "F13", Some("Escape".into()))
+            .set_layer_key("nav", "F13", KeyAssignment::Action("Escape".into()))
             .unwrap();
         let copy = document
             .clone_layer("nav", "Navigation copy", "Copied")
@@ -1088,12 +952,10 @@ mod tests {
             document.layout().layer_keymaps[&copy].keys["KeyH"].as_deref(),
             Some("ArrowLeft")
         );
-        assert_eq!(document.layout().layer_keymaps[&copy].extras.len(), 1);
-        assert_ne!(
-            document.layout().layer_keymaps[&copy].extras[0].id,
-            document.layout().layer_keymaps["nav"].extras[0].id
+        assert_eq!(
+            document.layout().layer_keymaps[&copy].keys["F13"].as_deref(),
+            Some("Escape")
         );
-        document.move_layer_extra("nav", 0, 0).unwrap();
         document.clear_layer_keys(&copy).unwrap();
         assert!(document.layout().layer_keymaps[&copy].keys.is_empty());
         document.delete_layer("nav").unwrap();

@@ -72,22 +72,12 @@ export interface LayerRule {
   doubleTapTimeoutMs?: number
 }
 
-export interface ExtraKey {
-  id: string
-  // Physical key code (mouse button, media key, etc.) that triggers this binding.
-  key: string
-  // Action mapped to this extra key. Null explicitly swallows the key.
-  action: string | null
-}
-
 export interface LayerKeymap {
   // key code -> action string, or null for explicit swallow inside the layer.
   // Missing entry means transparent passthrough to the base layout.
   keys: Record<string, string | null>
   isolate?: string[]
   holdFor?: string[]
-  // Extra user-defined key bindings (e.g. mouse buttons, media keys, ...).
-  extras: ExtraKey[]
 }
 
 // One step of a macro. The value is a full action string: key chord,

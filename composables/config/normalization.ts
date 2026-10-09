@@ -252,9 +252,11 @@ export function normalizeConfig(raw: unknown): AppConfig {
   }
   for (const layer of cfg.layers) {
     if (!cfg.layerKeymaps[layer.id]) {
-      cfg.layerKeymaps[layer.id] = { keys: {}, extras: [] }
+      cfg.layerKeymaps[layer.id] = { keys: {} }
     } else {
-      const km = cfg.layerKeymaps[layer.id]!
+      const source = cfg.layerKeymaps[layer.id]!
+      const km = { keys: source.keys, isolate: source.isolate, holdFor: source.holdFor }
+      cfg.layerKeymaps[layer.id] = km
       if (!km.keys || typeof km.keys !== 'object') {
         km.keys = {}
       } else {
@@ -266,21 +268,6 @@ export function normalizeConfig(raw: unknown): AppConfig {
                 (typeof value === 'string' && value.trim() !== '')),
           ),
         )
-      }
-      if (!Array.isArray(km.extras)) {
-        km.extras = []
-      } else {
-        km.extras = km.extras
-          .filter((extra) => !!extra && typeof extra === 'object')
-          .map((extra) => ({
-            ...extra,
-            key: typeof extra.key === 'string' ? extra.key : '',
-            action: extra.action === null
-              ? null
-              : typeof extra.action === 'string'
-                ? extra.action
-                : '',
-          }))
       }
     }
   }

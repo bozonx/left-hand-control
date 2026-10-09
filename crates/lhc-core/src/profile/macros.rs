@@ -124,11 +124,6 @@ pub fn action_usage(config: &AppConfig, action: &str) -> Vec<String> {
                 places.push(format!("{layer}: {key}"));
             }
         }
-        for extra in &map.extras {
-            if extra.action.as_deref() == Some(action) {
-                places.push(format!("{layer}: {}", extra.key));
-            }
-        }
     }
     for item in &config.macros {
         if item.steps.iter().any(|s| s.action.trim() == action) {

@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import RuleActionField from '~/components/features/rules/RuleActionField.vue'
-import type { ExtraKey } from '~/types/config'
 import { VISUAL_KEY_CODES } from '~/utils/keys'
 
-defineProps<{
-  extras: ExtraKey[]
+const props = defineProps<{
+  extras: { key: string; action: string | null }[]
 }>()
 
 const emit = defineEmits<{
-  add: []
+  add: [key: string]
   'clear-all': []
-  'update-extra': [id: string, field: 'key' | 'action', value: string | null]
-  moveUp: [id: string]
-  moveDown: [id: string]
-  remove: [id: string]
+  'update-extra': [key: string, field: 'key' | 'action', value: string | null]
+  remove: [key: string]
 }>()
 
+const addOpen = ref(false)
+const newKey = ref<string | null>('')
+const excludedKeys = computed(() => [...VISUAL_KEY_CODES, ...props.extras.map((extra) => extra.key)])
 </script>
 
 <template>
@@ -39,7 +39,7 @@ const emit = defineEmits<{
           >
             {{ $t('common.clear') }}
           </UButton>
-          <UButton icon="i-lucide-plus" size="sm" @click="$emit('add')">
+          <UButton icon="i-lucide-plus" size="sm" @click="newKey = ''; addOpen = true">
             {{ $t('keymap.addExtra') }}
           </UButton>
         </div>
@@ -53,8 +53,8 @@ const emit = defineEmits<{
     </div>
     <div v-else class="space-y-2">
       <div
-        v-for="(extra, index) in extras"
-        :key="extra.id"
+        v-for="extra in extras"
+        :key="extra.key"
         class="grid grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.1fr)_auto] items-center gap-3 rounded-md border border-(--ui-border) bg-(--ui-bg-muted) p-3 transition-all duration-200 hover:border-(--ui-primary)/50 hover:bg-(--ui-bg-elevated) hover:shadow-md"
       >
         <UFormField>
@@ -67,10 +67,11 @@ const emit = defineEmits<{
           <ActionPickerModal
             :model-value="extra.key"
             key-only
-            :excluded-values="VISUAL_KEY_CODES"
-            :excluded-category-ids="['lettersSymbols']"
+            single-key-only
+            require-value
+            :excluded-values="excludedKeys.filter((key) => key !== extra.key)"
             :placeholder="$t('rules.keyPh')"
-            @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'key', value ?? '')"
+            @update:model-value="(value: string | null) => emit('update-extra', extra.key, 'key', value ?? '')"
           />
         </UFormField>
         <UFormField>
@@ -83,30 +84,10 @@ const emit = defineEmits<{
           <RuleActionField
             :model-value="extra.action"
             :placeholder="$t('rules.tapPh')"
-            @update:model-value="(value: string | null) => emit('update-extra', extra.id, 'action', value)"
+            @update:model-value="(value: string | null) => emit('update-extra', extra.key, 'action', value)"
           />
         </UFormField>
         <div class="flex items-start gap-1">
-          <UButton
-            icon="i-lucide-arrow-up"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            square
-            :disabled="index === 0"
-            :aria-label="$t('keymap.moveExtraUp')"
-            @click="$emit('moveUp', extra.id)"
-          />
-          <UButton
-            icon="i-lucide-arrow-down"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            square
-            :disabled="index === extras.length - 1"
-            :aria-label="$t('keymap.moveExtraDown')"
-            @click="$emit('moveDown', extra.id)"
-          />
           <UButton
             icon="i-lucide-trash-2"
             color="error"
@@ -114,10 +95,20 @@ const emit = defineEmits<{
             size="sm"
             square
             :aria-label="$t('keymap.deleteExtra')"
-            @click="$emit('remove', extra.id)"
+            @click="$emit('remove', extra.key)"
           />
         </div>
       </div>
     </div>
+    <ActionPickerModal
+      v-model="newKey"
+      v-model:open="addOpen"
+      hide-trigger
+      key-only
+      single-key-only
+      require-value
+      :excluded-values="excludedKeys"
+      @apply="(key: string) => emit('add', key)"
+    />
   </UCard>
 </template>

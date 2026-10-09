@@ -98,14 +98,6 @@ function row(codes: Array<[string, string]>): KeyDef[] {
 
 export const LEFT_HAND_ROWS: KeyDef[][] = [
   row([
-    ['Escape', 'Esc'],
-    ['F1', 'F1'],
-    ['F2', 'F2'],
-    ['F3', 'F3'],
-    ['F4', 'F4'],
-    ['F5', 'F5'],
-  ]),
-  row([
     ['Backquote', '`'],
     ['Digit1', '1'],
     ['Digit2', '2'],
@@ -147,24 +139,12 @@ export const LEFT_HAND_ROWS: KeyDef[][] = [
 
 export const RIGHT_HAND_ROWS: KeyDef[][] = [
   row([
-    ['F6', 'F6'],
-    ['F7', 'F7'],
-    ['F8', 'F8'],
-    ['F9', 'F9'],
-    ['F10', 'F10'],
-    ['F11', 'F11'],
-    ['F12', 'F12'],
-    ['PrintScreen', 'PrtSc'],
-  ]),
-  row([
     ['Digit6', '6'],
     ['Digit7', '7'],
     ['Digit8', '8'],
     ['Digit9', '9'],
     ['Digit0', '0'],
     ['Minus', '-'],
-    ['Equal', '='],
-    ['Backspace', 'Bksp'],
   ]),
   row([
     ['KeyY', 'Y'],
@@ -173,8 +153,6 @@ export const RIGHT_HAND_ROWS: KeyDef[][] = [
     ['KeyO', 'O'],
     ['KeyP', 'P'],
     ['BracketLeft', '['],
-    ['BracketRight', ']'],
-    ['Backslash', '\\'],
   ]),
   row([
     ['KeyH', 'H'],
@@ -183,7 +161,6 @@ export const RIGHT_HAND_ROWS: KeyDef[][] = [
     ['KeyL', 'L'],
     ['Semicolon', ';'],
     ['Quote', "'"],
-    ['Enter', 'Enter'],
   ]),
   row([
     ['KeyN', 'N'],

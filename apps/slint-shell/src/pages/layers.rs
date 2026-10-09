@@ -168,14 +168,15 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
         &lookup,
     ))));
     editor.set_extras(ModelRc::new(VecModel::from(
-        keymap
+        layer
+            .and_then(|layer| layout.layer_keymaps.get(&layer.id))
             .map(|map| {
-                map.extras
-                    .iter()
-                    .map(|extra| {
-                        let (kind, action, icon) = assignment(Some(&extra.action), &names);
+                extra_entries(map)
+                    .into_iter()
+                    .map(|(key, value)| {
+                        let (kind, action, icon) = assignment(Some(&value), &names);
                         LayerExtraRow {
-                            key: extra.key.clone().into(),
+                            key: key.into(),
                             kind,
                             category: super::picker::category_for_value(&action),
                             action: action.into(),
@@ -262,11 +263,11 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
                     .layout()
                     .layer_keymaps
                     .get(&layer.id)
-                    .and_then(|map| map.extras.get(index))
+                    .and_then(|map| extra_entries(map).into_iter().nth(index))
             });
             if let Some(extra) = extra {
-                editor.set_dialog_key(extra.key.clone().into());
-                match &extra.action {
+                editor.set_dialog_key(extra.0.into());
+                match &extra.1 {
                     None => editor.set_assignment(Assignment::Swallow),
                     Some(action) if action.is_empty() => {}
                     Some(action) => {
@@ -357,29 +358,102 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
                 return Err(Msg::KeyCodeRequired);
             }
             let value = match assignment {
-                Assignment::Transparent => Some(String::new()),
-                Assignment::Swallow => None,
-                Assignment::Action => Some(action),
+                Assignment::Transparent => KeyAssignment::Transparent,
+                Assignment::Swallow => KeyAssignment::Swallow,
+                Assignment::Action => KeyAssignment::Action(action),
             };
-            let row = usize::try_from(index).ok();
+            let previous = extra_at(document, &id, index).map(|(key, _)| key);
             change(ui, document, |config| {
-                config.set_layer_extra(&id, row, &key, value)
+                set_extra(config, &id, previous.as_deref(), &key, value)
             })?
         }
-        LayerDialog::ClearKeys => change(ui, document, |config| config.clear_layer_keys(&id))?,
-        LayerDialog::ClearExtras => change(ui, document, |config| config.clear_layer_extras(&id))?,
+        LayerDialog::ClearKeys | LayerDialog::ClearExtras => {
+            let extra = dialog == LayerDialog::ClearExtras;
+            change(ui, document, |config| {
+                config.update_layout(|layout| {
+                    layout
+                        .layer_keymap_mut(&id)
+                        .keys
+                        .retain(|key, _| keyboard::layer_keys().any(|code| code == key) == extra);
+                })
+            })?
+        }
         LayerDialog::Create | LayerDialog::None => {}
     }
     Ok(())
 }
 
-fn extras_len(document: &Document, id: &str) -> usize {
+fn extra_entries(map: &lhc_core::profile::model::LayerKeymap) -> Vec<(String, Option<String>)> {
+    let mut entries: Vec<_> = map
+        .keys
+        .iter()
+        .filter(|(key, _)| !keyboard::layer_keys().any(|code| code == key.as_str()))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+    let catalog: Vec<_> = lhc_core::profile::key_catalog::CATEGORIES
+        .iter()
+        .flat_map(|keys| keys.iter().copied())
+        .collect();
+    entries.sort_by_key(|(key, _)| {
+        (
+            catalog
+                .iter()
+                .position(|code| *code == key)
+                .unwrap_or(usize::MAX),
+            key.clone(),
+        )
+    });
+    entries
+}
+
+fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option<String>)> {
+    let index = usize::try_from(index).ok()?;
     document
         .read()
         .layout()
         .layer_keymaps
         .get(id)
-        .map_or(0, |map| map.extras.len())
+        .and_then(|map| extra_entries(map).into_iter().nth(index))
+}
+
+fn set_extra(
+    config: &mut ConfigDocument,
+    id: &str,
+    previous: Option<&str>,
+    key: &str,
+    value: KeyAssignment,
+) -> Result<(), ConfigError> {
+    if !lhc_core::profile::key_catalog::valid_key(key)
+        || keyboard::layer_keys().any(|code| code == key)
+    {
+        return Err(ConfigError::Invalid("invalid additional key".into()));
+    }
+    if previous != Some(key)
+        && config
+            .layout()
+            .layer_keymaps
+            .get(id)
+            .is_some_and(|map| map.keys.contains_key(key))
+    {
+        return Err(ConfigError::Invalid("key already assigned".into()));
+    }
+    config.update_layout(|layout| {
+        let keys = &mut layout.layer_keymap_mut(id).keys;
+        if let Some(previous) = previous {
+            keys.remove(previous);
+        }
+        match value {
+            KeyAssignment::Transparent => {
+                keys.remove(key);
+            }
+            KeyAssignment::Swallow => {
+                keys.insert(key.into(), None);
+            }
+            KeyAssignment::Action(action) => {
+                keys.insert(key.into(), Some(action));
+            }
+        }
+    })
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -426,6 +500,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let weak = ui.as_weak();
     editor.on_add_extra(move || {
         if let Some(ui) = weak.upgrade() {
+            ui.global::<LayersEditor>().set_dialog_key("".into());
             ui.global::<ActionPicker>()
                 .invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
         }
@@ -464,19 +539,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
-        let Ok(index) = usize::try_from(index) else {
-            return;
-        };
-        let action = doc
-            .read()
-            .layout()
-            .layer_keymaps
-            .get(&id)
-            .and_then(|map| map.extras.get(index))
-            .map(|extra| extra.action.clone());
-        if let Some(action) = action {
+        if let Some((previous, action)) = extra_at(&doc, &id, index) {
+            let value = action.map_or(KeyAssignment::Swallow, KeyAssignment::Action);
             let _ = change(&ui, &doc, |config| {
-                config.set_layer_extra(&id, Some(index), key.trim(), action)
+                set_extra(config, &id, Some(&previous), key.trim(), value)
             });
         }
     });
@@ -530,25 +596,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     let weak = ui.as_weak();
     let doc = document.clone();
-    editor.on_move_extra(move |index, target| {
-        let Some(ui) = weak.upgrade() else { return };
-        let Some(id) = selected_id(&ui, &doc) else {
-            return;
-        };
-        let len = extras_len(&doc, &id);
-        let (Ok(from), Some(to)) = (
-            usize::try_from(index),
-            usize::try_from(target).ok().filter(|to| *to < len),
-        ) else {
-            return;
-        };
-        if from < len {
-            let _ = change(&ui, &doc, |config| config.move_layer_extra(&id, from, to));
-        }
-    });
-
-    let weak = ui.as_weak();
-    let doc = document.clone();
     editor.on_update_description(move |description| {
         let Some(ui) = weak.upgrade() else { return };
         let Some(id) = selected_id(&ui, &doc) else {
@@ -576,13 +623,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
-        let Some(row) = usize::try_from(index)
-            .ok()
-            .filter(|row| *row < extras_len(&doc, &id))
-        else {
-            return;
-        };
-        let _ = change(&ui, &doc, |config| config.remove_layer_extra(&id, row));
+        if let Some((key, _)) = extra_at(&doc, &id, index) {
+            let _ = change(&ui, &doc, |config| {
+                config.set_layer_key(&id, &key, KeyAssignment::Transparent)
+            });
+        }
     });
 }
 
@@ -616,40 +661,69 @@ pub(super) fn assign_extra(
     ignore: bool,
 ) -> Result<(), Msg> {
     let id = selected_id(ui, document).ok_or(Msg::None)?;
-    let row = usize::try_from(index).ok();
-    let existing = document
-        .read()
-        .layout()
-        .layer_keymaps
-        .get(&id)
-        .and_then(|map| row.and_then(|row| map.extras.get(row)))
-        .cloned();
+    let existing = extra_at(document, &id, index);
     let (key, action) = if key_only {
         if !lhc_core::profile::key_catalog::valid_key(value) {
             return Err(Msg::KeyCodeRequired);
         }
         (
             value.to_owned(),
-            existing.map_or(Some(String::new()), |extra| extra.action),
+            existing.as_ref().map_or_else(
+                || KeyAssignment::Action(value.to_owned()),
+                |(_, action)| {
+                    action
+                        .clone()
+                        .map_or(KeyAssignment::Swallow, KeyAssignment::Action)
+                },
+            ),
         )
     } else {
-        let extra = existing.ok_or(Msg::KeyCodeRequired)?;
-        if !lhc_core::profile::key_catalog::valid_key(&extra.key) {
-            return Err(Msg::KeyCodeRequired);
-        }
+        let (key, _) = existing.clone().ok_or(Msg::KeyCodeRequired)?;
         (
-            extra.key,
-            if ignore { None } else { Some(value.to_owned()) },
+            key,
+            if ignore {
+                KeyAssignment::Swallow
+            } else if value.is_empty() {
+                KeyAssignment::Transparent
+            } else {
+                KeyAssignment::Action(value.to_owned())
+            },
         )
     };
     change(ui, document, |config| {
-        config.set_layer_extra(&id, row, &key, action)
+        set_extra(
+            config,
+            &id,
+            existing.as_ref().map(|(key, _)| key.as_str()),
+            &key,
+            action,
+        )
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bundled_additional_keys_preserve_actions_and_suppression() {
+        let layout = lhc_core::profile::layout_file::parse(include_str!(
+            "../../../../public/ivank-layout.yaml"
+        ))
+        .unwrap()
+        .unwrap();
+        for id in ["nav", "sel", "sym", "fkeys"] {
+            assert_eq!(
+                extra_entries(&layout.layer_keymaps[id]),
+                vec![("BracketRight".into(), None), ("Backslash".into(), None),]
+            );
+        }
+        let win = extra_entries(&layout.layer_keymaps["win"]);
+        assert_eq!(win.len(), 3);
+        assert!(win.contains(&("Backspace".into(), Some("sys:screenOff".into()))));
+        assert!(win.contains(&("F4".into(), Some("F4".into()))));
+        assert!(win.contains(&("BracketRight".into(), Some("sys:switchLayout7".into()))));
+    }
 
     #[test]
     fn assignments_describe_keymap_values() {
@@ -670,8 +744,8 @@ mod tests {
     fn hand_grids_index_every_key() {
         let lookup = |_: &str| (Assignment::Transparent, String::new(), ActionKind::None);
         let left = hand_cells(&keyboard::LEFT_HAND, keyboard::LEFT_COLUMNS, 0, 2, &lookup);
-        assert_eq!(left.len(), 36);
-        let thumb = &left[30..];
+        assert_eq!(left.len(), 30);
+        let thumb = &left[24..];
         assert_eq!(thumb[0].index, -1);
         assert_eq!(thumb[2].code, "ControlLeft");
         let indexed: Vec<_> = left.iter().filter(|cell| cell.index >= 0).collect();
@@ -679,6 +753,6 @@ mod tests {
             indexed.len(),
             keyboard::LEFT_HAND.iter().map(|r| r.len()).sum::<usize>()
         );
-        assert_eq!(keyboard::layer_key(indexed[7].index), Some("Digit1"));
+        assert_eq!(keyboard::layer_key(indexed[1].index), Some("Digit1"));
     }
 }

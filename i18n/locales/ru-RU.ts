@@ -351,8 +351,6 @@ export default {
     extraActionLabel: 'Действие',
     extraActionHint:
       'Какое действие отправляет эта клавиша, пока слой активен.',
-    moveExtraUp: 'Переместить вверх',
-    moveExtraDown: 'Переместить вниз',
     deleteExtra: 'Удалить',
     deleteLayerTitle: 'Удалить слой «{name}»',
     deleteLayerBody:

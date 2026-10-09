@@ -8,16 +8,8 @@ layers:
       KeyQ: null
       KeyW: ""
       Digit1: 5
-    extras:
-      - id: x1
-        key: MouseForward
-        action: Ctrl+KeyC
-      - id: x2
-        name: MouseBack
-        action: null
-      - id: x3
-        key: MouseExtra
-        action: ""
+      MouseForward: Ctrl+KeyC
+      MouseBack: null
   - id: sym
 rules:
   - id: r1

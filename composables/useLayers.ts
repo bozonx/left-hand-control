@@ -5,7 +5,7 @@ export function useLayers() {
 
   function ensureLayerKeymap(id: string) {
     if (!config.value.layerKeymaps[id]) {
-      config.value.layerKeymaps[id] = { keys: {}, extras: [] }
+      config.value.layerKeymaps[id] = { keys: {} }
     }
     return config.value.layerKeymaps[id]
   }
@@ -55,7 +55,6 @@ export function useLayers() {
     if (sourceKeymap) {
       config.value.layerKeymaps[newId] = {
         keys: { ...sourceKeymap.keys },
-        extras: sourceKeymap.extras.map((e) => ({ ...e, id: randomId() })),
       }
     } else {
       ensureLayerKeymap(newId)

@@ -25,7 +25,7 @@ export function useKeymapEditor() {
     clearEdit: keyEdit.clearEdit,
     swallowEdit: keyEdit.swallowEdit,
     addExtra: extras.addExtra,
-    moveExtra: extras.moveExtra,
+    extraKeys: extras.extraKeys,
     removeExtra: extras.removeExtra,
     updateExtra: extras.updateExtra,
     renameOpen: layerOps.renameOpen,

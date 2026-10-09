@@ -1,4 +1,7 @@
-use lhc_core::{config_document::ConfigDocument, storage::StoragePaths};
+use lhc_core::{
+    config_document::{ConfigDocument, KeyAssignment},
+    storage::StoragePaths,
+};
 use slint::{ComponentHandle, Model};
 use slint_shell::{Document, bind_document, ui::*};
 use std::{rc::Rc, time::Duration};
@@ -257,18 +260,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     for key in ["F13", "F14", "F15"] {
         document.edit(slint_shell::document::View::Library, |config| {
-            config.set_layer_extra(&second, None, key, Some("Escape".into()))
+            config.set_layer_key(&second, key, KeyAssignment::Action("Escape".into()))
         })?;
     }
-    ui.global::<LayersEditor>().invoke_move_extra(0, 2);
-    assert_eq!(
-        document.read().layout().layer_keymaps[&second]
-            .extras
-            .iter()
-            .map(|row| row.key.as_str())
-            .collect::<Vec<_>>(),
-        ["F14", "F15", "F13"]
-    );
     let rules = ui.global::<RulesEditor>();
     let count = document.read().layout().rules.len();
     rules.invoke_add();
@@ -380,14 +374,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let layers = ui.global::<LayersEditor>();
     layers.invoke_add_extra();
     assert_eq!(
-        document.read().layout().layer_keymaps[&second].extras.len(),
+        document.read().layout().layer_keymaps[&second].keys.len(),
         3
     );
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());
     picker.invoke_dismiss_picker();
     assert_eq!(
-        document.read().layout().layer_keymaps[&second].extras.len(),
+        document.read().layout().layer_keymaps[&second].keys.len(),
         3
     );
     layers.invoke_add_extra();
@@ -395,12 +389,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("F16".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().layout().layer_keymaps[&second].extras.len(),
+        document.read().layout().layer_keymaps[&second].keys.len(),
         4
     );
     assert_eq!(
-        document.read().layout().layer_keymaps[&second].extras[3].key,
-        "F16"
+        document.read().layout().layer_keymaps[&second].keys["F16"].as_deref(),
+        Some("F16")
     );
     layers.invoke_pick_extra(3, false);
     assert!(picker.get_layer_action());
@@ -408,19 +402,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().layout().layer_keymaps[&second].extras[3].action,
+        document.read().layout().layer_keymaps[&second].keys["F16"],
         None
     );
     layers.invoke_pick_extra(3, true);
     picker.invoke_select_behavior(2);
     picker.set_value("F17".into());
     picker.invoke_apply();
-    assert_eq!(
-        document.read().layout().layer_keymaps[&second].extras[3].key,
-        "F17"
+    assert!(
+        document.read().layout().layer_keymaps[&second]
+            .keys
+            .contains_key("F17")
     );
     assert_eq!(
-        document.read().layout().layer_keymaps[&second].extras[3].action,
+        document.read().layout().layer_keymaps[&second].keys["F17"],
         None
     );
     layers.invoke_remove_extra(3);
@@ -434,7 +429,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_apply();
     assert!(!picker.get_opened());
     assert_eq!(
-        document.read().layer_key(&second, "Escape"),
+        document.read().layer_key(&second, "Backquote"),
         lhc_core::config_document::KeyAssignment::Swallow
     );
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
@@ -442,7 +437,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_select_behavior(0);
     picker.invoke_apply();
     assert_eq!(
-        document.read().layer_key(&second, "Escape"),
+        document.read().layer_key(&second, "Backquote"),
         lhc_core::config_document::KeyAssignment::Transparent
     );
     assert!(library.get_rules_dirty());

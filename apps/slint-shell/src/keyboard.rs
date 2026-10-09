@@ -20,20 +20,25 @@ pub const BASE: [&str; 80] = [
 
 /// Layer grids, split by hand; the last row of each hand is the thumb row.
 pub const LEFT_COLUMNS: usize = 6;
-pub const LEFT_HAND: [&[&str]; 6] = [
-    &["Escape", "F1", "F2", "F3", "F4", "F5"],
-    &["Backquote", "Digit1", "Digit2", "Digit3", "Digit4", "Digit5"],
+pub const LEFT_HAND: [&[&str]; 5] = [
+    &[
+        "Backquote",
+        "Digit1",
+        "Digit2",
+        "Digit3",
+        "Digit4",
+        "Digit5",
+    ],
     &["Tab", "KeyQ", "KeyW", "KeyE", "KeyR", "KeyT"],
     &["CapsLock", "KeyA", "KeyS", "KeyD", "KeyF", "KeyG"],
     &["ShiftLeft", "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB"],
     &["ControlLeft", "MetaLeft", "AltLeft", "Space"],
 ];
-pub const RIGHT_COLUMNS: usize = 8;
-pub const RIGHT_HAND: [&[&str]; 6] = [
-    &["F6", "F7", "F8", "F9", "F10", "F11", "F12", "PrintScreen"],
-    &["Digit6", "Digit7", "Digit8", "Digit9", "Digit0", "Minus", "Equal", "Backspace"],
-    &["KeyY", "KeyU", "KeyI", "KeyO", "KeyP", "BracketLeft", "BracketRight", "Backslash"],
-    &["KeyH", "KeyJ", "KeyK", "KeyL", "Semicolon", "Quote", "Enter"],
+pub const RIGHT_COLUMNS: usize = 6;
+pub const RIGHT_HAND: [&[&str]; 5] = [
+    &["Digit6", "Digit7", "Digit8", "Digit9", "Digit0", "Minus"],
+    &["KeyY", "KeyU", "KeyI", "KeyO", "KeyP", "BracketLeft"],
+    &["KeyH", "KeyJ", "KeyK", "KeyL", "Semicolon", "Quote"],
     &["KeyN", "KeyM", "Comma", "Period", "Slash", "ShiftRight"],
     &["AltRight", "MetaRight", "ContextMenu", "ControlRight"],
 ];
@@ -139,7 +144,7 @@ mod tests {
         assert_eq!(label("KeyQ"), "Q");
         assert_eq!(label("Digit7"), "7");
         assert_eq!(label("ControlRight"), "Ctrl");
-        assert_eq!(layer_key(0), Some("Escape"));
+        assert_eq!(layer_key(0), Some("Backquote"));
         assert_eq!(layer_key(-1), None);
         assert_eq!(base_key(33), Some("KeyQ"));
         assert_eq!(base_key(80), None);

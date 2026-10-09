@@ -124,14 +124,6 @@ pub struct Rule {
     pub double_tap_timeout_ms: Option<u64>,
 }
 #[derive(Debug, Deserialize, Default, Clone)]
-pub struct ExtraKey {
-    #[serde(alias = "name")]
-    pub key: String,
-    #[serde(default)]
-    pub action: ActionSpec,
-}
-
-#[derive(Debug, Deserialize, Default, Clone)]
 pub struct LayerKeymap {
     #[serde(default)]
     pub keys: HashMap<String, Option<String>>,
@@ -139,8 +131,6 @@ pub struct LayerKeymap {
     pub isolate: Vec<String>,
     #[serde(default)]
     pub hold_for: Vec<String>,
-    #[serde(default)]
-    pub extras: Vec<ExtraKey>,
 }
 
 /// How the mapper resolves tap vs hold when another key is pressed while a

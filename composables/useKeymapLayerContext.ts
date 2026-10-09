@@ -3,7 +3,6 @@ import type { KeyLabelMode } from '~/utils/keys'
 
 const EMPTY_KEYMAP: LayerKeymap = {
   keys: {},
-  extras: [],
 }
 
 export function useKeymapLayerContext() {

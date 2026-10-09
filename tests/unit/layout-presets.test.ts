@@ -24,11 +24,8 @@ layers:
       KeyH: ArrowLeft
       KeyJ: ~
       KeyL: ArrowRight
-    extras:
-      - key: MouseSide
-        action: BrowserBack
-      - key: MouseExtra
-        action: ~
+      MouseSide: BrowserBack
+      MouseExtra: ~
 rules:
   - key: CapsLock
     layer: nav
@@ -78,17 +75,9 @@ macros:
             KeyH: 'ArrowLeft',
             KeyJ: null,
             KeyL: 'ArrowRight',
+            MouseSide: 'BrowserBack',
+            MouseExtra: null,
           },
-          extras: [
-            {
-              key: 'MouseSide',
-              action: 'BrowserBack',
-            },
-            {
-              key: 'MouseExtra',
-              action: null,
-            },
-          ],
         },
       },
       macros: [
@@ -187,11 +176,7 @@ macros:
       ],
       layerKeymaps: {
         edit: {
-          keys: { KeyH: 'ArrowLeft', KeyJ: null },
-          extras: [
-            { id: 'extra-1', key: 'MouseSide', action: 'BrowserBack' },
-            { id: 'extra-2', key: 'MouseExtra', action: null },
-          ],
+          keys: { KeyH: 'ArrowLeft', KeyJ: null, MouseSide: 'BrowserBack', MouseExtra: null },
         },
       },
       macros: [
@@ -248,11 +233,7 @@ macros:
       ],
       layerKeymaps: {
         edit: {
-          keys: { KeyH: 'ArrowLeft', KeyJ: null },
-          extras: [
-            { key: 'MouseSide', action: 'BrowserBack' },
-            { key: 'MouseExtra', action: null },
-          ],
+          keys: { KeyH: 'ArrowLeft', KeyJ: null, MouseSide: 'BrowserBack', MouseExtra: null },
         },
       },
       macros: [
@@ -370,8 +351,7 @@ macros:
       doubleTapAction: '',
     })
     config.layerKeymaps.nav = {
-      keys: { KeyH: 'ArrowLeft' },
-      extras: [{ id: 'extra-1', key: 'MouseSide', action: 'BrowserBack' }],
+      keys: { KeyH: 'ArrowLeft', MouseSide: 'BrowserBack' },
     }
     config.macros.push({
       id: 'duplicateLine',

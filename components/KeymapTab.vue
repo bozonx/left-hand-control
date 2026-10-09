@@ -18,7 +18,7 @@ const {
   clearEdit,
   swallowEdit,
   addExtra,
-  moveExtra,
+  extraKeys,
   removeExtra,
   updateExtra,
   renameOpen,
@@ -79,11 +79,9 @@ const {
 
       <div>
         <ExtrasCard
-          :extras="currentKeymap.extras"
+          :extras="extraKeys"
           @add="addExtra"
           @update-extra="updateExtra"
-          @move-up="(id) => moveExtra(id, 'up')"
-          @move-down="(id) => moveExtra(id, 'down')"
           @remove="removeExtra"
           @clear-all="requestClearExtras"
         />

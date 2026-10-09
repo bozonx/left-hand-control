@@ -42,11 +42,6 @@ layers:
       Comma: macro:upHome
       Period: Ctrl+ArrowRight
       Slash: macro:down5Times
-      # extras:
-      #   - key: MouseSide
-      #     action: BrowserBack
-      #   - key: MouseExtra
-      #     action: BrowserForward
   - id: sel
     keys:
       CapsLock: null
