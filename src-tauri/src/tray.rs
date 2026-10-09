@@ -63,7 +63,6 @@ pub fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 }
             }
             "quit" => {
-                let _ = crate::mapper::stop();
                 app.exit(0);
             }
             _ => {}

@@ -52,11 +52,30 @@ pub struct LayoutInfo {
 }
 
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
+static WATCHERS: Mutex<Vec<std::thread::JoinHandle<()>>> = Mutex::new(Vec::new());
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 static LAST_PUBLISHED: Mutex<Option<(String, String)>> = Mutex::new(None);
 
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
+    if let Ok(mut watchers) = WATCHERS.lock() {
+        for watcher in watchers.drain(..) {
+            if let Err(error) = watcher.join() {
+                log::error!("[layout] watcher panicked: {error:?}");
+            }
+        }
+    }
+}
+
+pub(crate) fn register_watcher(watcher: std::io::Result<std::thread::JoinHandle<()>>) {
+    match watcher {
+        Ok(watcher) => {
+            if let Ok(mut watchers) = WATCHERS.lock() {
+                watchers.push(watcher);
+            }
+        }
+        Err(error) => log::error!("[layout] failed to spawn watcher: {error}"),
+    }
 }
 
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]

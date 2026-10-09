@@ -62,6 +62,13 @@ impl Supervisor {
             ..Self::default()
         }
     }
+
+    pub(super) fn shutdown(&mut self) {
+        #[cfg(target_os = "linux")]
+        if let Some(worker) = self.worker.as_mut() {
+            worker.shutdown();
+        }
+    }
 }
 
 impl App {

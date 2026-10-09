@@ -244,6 +244,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         timer: None,
     }));
     render(ui, document, &state.borrow().draft);
+    let weak = ui.as_weak();
+    let (doc, shared) = (document.clone(), state.clone());
+    editor.on_flush_pending(move || {
+        if let Some(ui) = weak.upgrade() {
+            let mut state = shared.borrow_mut();
+            if state.timer.is_some() {
+                save(&ui, &doc, &mut state);
+            }
+        }
+    });
 
     // Other pages change macro usage; a reload replaces a draft without
     // unsaved edits.

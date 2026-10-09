@@ -78,12 +78,16 @@ pub fn set_layout(index: u32) -> Result<(), String> {
 }
 
 pub fn start_watcher() {
-    let _ = thread::Builder::new()
-        .name("layout-kde-watcher".into())
-        .spawn(run_watcher);
-    let _ = thread::Builder::new()
-        .name("layout-kde-signal".into())
-        .spawn(run_signal_watcher);
+    super::register_watcher(
+        thread::Builder::new()
+            .name("layout-kde-watcher".into())
+            .spawn(run_watcher),
+    );
+    super::register_watcher(
+        thread::Builder::new()
+            .name("layout-kde-signal".into())
+            .spawn(run_signal_watcher),
+    );
 }
 
 fn run_watcher() {

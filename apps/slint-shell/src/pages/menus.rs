@@ -212,6 +212,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         timer: None,
     }));
     let e = ui.global::<MenuEditor>();
+    let weak = ui.as_weak();
+    let (doc, shared) = (document.clone(), state.clone());
+    e.on_flush_pending(move || {
+        if let Some(ui) = weak.upgrade() {
+            let mut state = shared.borrow_mut();
+            if state.timer.is_some() {
+                save(&ui, &doc, &mut state);
+            }
+        }
+    });
     match serde_json::from_str::<Vec<Category>>(include_str!("../../ui/emoji-catalog.json")) {
         Ok(categories) => e.set_catalog(ModelRc::new(VecModel::from(
             categories

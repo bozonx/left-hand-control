@@ -63,31 +63,35 @@ impl Worker {
     ) -> Result<(), Box<dyn std::error::Error>> {
         ipc::send(&self.socket, command, source, start, token)
     }
-}
 
-impl Drop for Worker {
-    /// Ask the worker to quit and reap it on a background thread, so the UI
-    /// never waits for it.
-    fn drop(&mut self) {
+    pub fn shutdown(&mut self) {
         let Some(mut child) = self.child.take() else {
             return;
         };
         let socket = std::mem::take(&mut self.socket);
-        std::thread::spawn(move || {
-            let _ = ipc::send(&socket, &Command::Quit, Source::Ipc, Instant::now(), None);
-            let deadline = Instant::now() + QUIT_TIMEOUT;
-            while Instant::now() < deadline {
-                if child.try_wait().ok().flatten().is_some() {
-                    break;
-                }
-                std::thread::sleep(Duration::from_millis(10));
+        let _ = ipc::send(&socket, &Command::Quit, Source::Ipc, Instant::now(), None);
+        let deadline = Instant::now() + QUIT_TIMEOUT;
+        while Instant::now() < deadline {
+            if child.try_wait().ok().flatten().is_some() {
+                break;
             }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if child.try_wait().ok().flatten().is_none() {
             let _ = child.kill();
-            let _ = child.wait();
-            if let Ok(path) = ipc::socket_path(&socket) {
-                let _ = std::fs::remove_file(path);
-            }
-        });
+        }
+        if let Err(error) = child.wait() {
+            log::error!("wait for Spell worker: {error}");
+        }
+        if let Ok(path) = ipc::socket_path(&socket) {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
@@ -145,7 +149,11 @@ pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {
     };
     let deadline = Instant::now() + STARTUP_TIMEOUT;
     loop {
-        if let Some(status) = worker.child.as_mut().and_then(|child| child.try_wait().ok().flatten()) {
+        if let Some(status) = worker
+            .child
+            .as_mut()
+            .and_then(|child| child.try_wait().ok().flatten())
+        {
             return Err(format!("Spell worker exited: {status}").into());
         }
         if worker

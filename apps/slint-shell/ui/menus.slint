@@ -40,6 +40,7 @@ export global MenuEditor {
     in-out property <int> editing-count: 0;
     in property <Message> status;
     callback open(MenuKind);
+    callback flush-pending();
     callback refresh();
     callback select-page(int);
     callback select-cell(int);

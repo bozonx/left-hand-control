@@ -270,7 +270,6 @@ fn get_platform_info() -> platform::PlatformInfo {
 
 #[tauri::command]
 fn quit_application(app: tauri::AppHandle) {
-    let _ = mapper::stop();
     app.exit(0);
 }
 
@@ -566,7 +565,9 @@ pub fn run() {
 
     app.run(|_app_handle, event| {
         if let RunEvent::Exit = event {
-            let _ = mapper::stop();
+            if let Err(error) = mapper::stop() {
+                log::error!("stop mapper during shutdown: {error}");
+            }
             gamemode::stop_watcher();
             layout::stop_watcher();
             active_window::stop_watcher();

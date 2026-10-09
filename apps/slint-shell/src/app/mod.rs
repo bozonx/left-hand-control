@@ -60,6 +60,7 @@ pub(crate) struct App {
     config_watch: slint::Timer,
     worker_watch: slint::Timer,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
+    shutting_down: Cell<bool>,
 }
 
 thread_local! { static APP: RefCell<Option<Rc<App>>> = const { RefCell::new(None) }; }
@@ -184,7 +185,7 @@ impl App {
                 }
             }
             Command::Quit => {
-                let _ = lhc_core::mapper::runtime::stop();
+                self.shutdown();
                 let _ = slint::quit_event_loop();
             }
         }
@@ -280,6 +281,22 @@ impl App {
         self.invalidate_menus();
         self.apply_preferences();
     }
+
+    fn shutdown(&self) {
+        if self.shutting_down.replace(true) {
+            return;
+        }
+        self.settings
+            .global::<crate::ui::MenuEditor>()
+            .invoke_flush_pending();
+        self.settings
+            .global::<crate::ui::MacroEditor>()
+            .invoke_flush_pending();
+        self.settings
+            .global::<crate::ui::SettingsEditor>()
+            .invoke_save();
+        self.supervisor.borrow_mut().shutdown();
+    }
 }
 
 fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
@@ -320,10 +337,20 @@ fn start_core() {
 }
 
 fn stop_core() {
-    let _ = lhc_core::mapper::runtime::stop();
+    if let Err(error) = lhc_core::mapper::runtime::stop() {
+        log::error!("stop mapper during shutdown: {error}");
+    }
     lhc_core::layout::stop_watcher();
     lhc_core::gamemode::stop_watcher();
     lhc_core::active_window::stop_watcher();
+}
+
+struct CoreGuard;
+
+impl Drop for CoreGuard {
+    fn drop(&mut self) {
+        stop_core();
+    }
 }
 
 pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
@@ -334,6 +361,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     // Core watchers post to the UI via `invoke_from_event_loop`, which fails
     // until a Slint platform exists.
     start_core();
+    let _core_guard = CoreGuard;
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
     crate::notifications::bind(&settings);
@@ -368,6 +396,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         config_watch: slint::Timer::default(),
         worker_watch: slint::Timer::default(),
         last_mapper_status: RefCell::new(None),
+        shutting_down: Cell::new(false),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
     app.set_preferences(app.configured_preferences());
@@ -409,9 +438,11 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         hotkey::start(dispatch);
     });
     log::info!("ready; backend={:?}", std::env::var("SLINT_BACKEND"));
-    slint::run_event_loop_until_quit()?;
-    stop_core();
+    let event_loop_result = slint::run_event_loop_until_quit();
+    app.shutdown();
+    server.stop();
     APP.with(|slot| slot.borrow_mut().take());
+    event_loop_result?;
     Ok(())
 }
 

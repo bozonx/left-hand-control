@@ -21,6 +21,7 @@ export global MacroEditor {
     in property <Message> status;
     in-out property <int> picker-macro: -1;
     callback refresh();
+    callback flush-pending();
     callback add(string);
     callback clone-system(int, string);
     callback remove(int);

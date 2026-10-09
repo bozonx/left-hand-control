@@ -6,7 +6,7 @@
 // directly by the mapper engine to evaluate per-rule app conditions.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
+use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 #[cfg(target_os = "linux")]
@@ -30,6 +30,7 @@ pub(crate) fn availability() -> crate::gamemode::DetectorAvailability {
 }
 
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
+static WATCHER: std::sync::Mutex<Option<JoinHandle<()>>> = std::sync::Mutex::new(None);
 
 pub fn cached_active_window() -> Option<ActiveWindow> {
     crate::runtime_state::active_window()
@@ -37,6 +38,12 @@ pub fn cached_active_window() -> Option<ActiveWindow> {
 
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
+    if let Ok(mut watcher) = WATCHER.lock()
+        && let Some(watcher) = watcher.take()
+        && let Err(error) = watcher.join()
+    {
+        log::error!("[active-window] watcher panicked: {error:?}");
+    }
 }
 
 fn watcher_stop_requested() -> bool {
@@ -46,7 +53,7 @@ fn watcher_stop_requested() -> bool {
 pub fn start_watcher() {
     WATCHER_STOP.store(false, Ordering::SeqCst);
 
-    let _ = thread::Builder::new()
+    let Ok(watcher) = thread::Builder::new()
         .name("active-window-watcher".into())
         .spawn(move || {
             let mut last: Option<ActiveWindow> = None;
@@ -64,7 +71,14 @@ pub fn start_watcher() {
 
                 thread::sleep(Duration::from_millis(500));
             }
-        });
+        })
+    else {
+        log::error!("[active-window] failed to spawn watcher");
+        return;
+    };
+    if let Ok(mut slot) = WATCHER.lock() {
+        *slot = Some(watcher);
+    }
 }
 
 fn detect_active_window() -> Option<ActiveWindow> {

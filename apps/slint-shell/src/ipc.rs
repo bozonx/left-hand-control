@@ -18,6 +18,11 @@ use std::os::unix::net::{UnixListener, UnixStream};
 use std::{
     io::{BufRead, BufReader, Read, Write},
     path::PathBuf,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread::JoinHandle,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -123,6 +128,8 @@ pub struct Server {
     listener: TcpListener,
     #[cfg(windows)]
     token: String,
+    stopped: Arc<AtomicBool>,
+    thread: Mutex<Option<JoinHandle<()>>>,
 }
 
 impl Server {
@@ -140,7 +147,12 @@ impl Server {
         }
         // The directory is private, so the socket is reachable only by us.
         let listener = UnixListener::bind(&path)?;
-        Ok(Self { listener, path })
+        Ok(Self {
+            listener,
+            path,
+            stopped: Arc::new(AtomicBool::new(false)),
+            thread: Mutex::new(None),
+        })
     }
 
     #[cfg(windows)]
@@ -148,32 +160,74 @@ impl Server {
         let listener = TcpListener::bind(tcp_address())?;
         let token = random_token();
         std::fs::write(token_path()?, &token)?;
-        Ok(Self { listener, token })
+        Ok(Self {
+            listener,
+            token,
+            stopped: Arc::new(AtomicBool::new(false)),
+            thread: Mutex::new(None),
+        })
     }
 
     /// Serve requests on a background thread, handing commands to `dispatch`.
     pub fn start(&self, dispatch: Dispatch) -> std::io::Result<()> {
         let listener = self.listener.try_clone()?;
+        listener.set_nonblocking(true)?;
+        let stopped = self.stopped.clone();
         #[cfg(unix)]
         let auth: Option<String> = None;
         #[cfg(windows)]
         let auth = Some(self.token.clone());
-        std::thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(mut stream) = stream else { continue };
+        let thread = std::thread::spawn(move || {
+            while !stopped.load(Ordering::Acquire) {
+                let mut stream = match listener.accept() {
+                    Ok((stream, _)) => stream,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        std::thread::sleep(Duration::from_millis(20));
+                        continue;
+                    }
+                    Err(error) => {
+                        log::warn!("IPC accept: {error}");
+                        break;
+                    }
+                };
                 let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
                 let reply = reply(receive(&stream, &dispatch, auth.as_deref()));
                 let _ = stream.write_all(reply.as_bytes());
             }
         });
+        *self
+            .thread
+            .lock()
+            .map_err(|_| std::io::Error::other("IPC thread lock poisoned"))? = Some(thread);
         Ok(())
+    }
+}
+
+impl Server {
+    pub fn stop(&self) {
+        self.stopped.store(true, Ordering::Release);
+        if let Ok(mut thread) = self.thread.lock() {
+            if let Some(thread) = thread.take() {
+                if thread.join().is_err() {
+                    log::error!("IPC server thread panicked");
+                }
+            }
+        }
     }
 }
 
 #[cfg(unix)]
 impl Drop for Server {
     fn drop(&mut self) {
+        self.stop();
         let _ = std::fs::remove_file(&self.path);
+    }
+}
+
+#[cfg(windows)]
+impl Drop for Server {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 
