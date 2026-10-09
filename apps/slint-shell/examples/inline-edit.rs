@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             4 => ui.invoke_edit(),
             5 => { key(&ui, "Discarded"); key(&ui, Key::Escape); assert_eq!(ui.get_value(), "Saved"); }
             6 => ui.invoke_edit_description(),
-            7 => { shortcut(&ui, "a"); key(&ui, "Line one"); key(&ui, Key::Return); key(&ui, "Line two"); shortcut(&ui, "\n"); assert_eq!(ui.get_description(), "Line one\nLine two"); }
+            7 => { shortcut(&ui, "a"); key(&ui, "Line one"); key(&ui, Key::Return); key(&ui, "Line two"); shortcut(&ui, "z"); shortcut(&ui, "z"); redo(&ui); redo(&ui); shortcut(&ui, "z"); key(&ui, "Replacement"); redo(&ui); shortcut(&ui, "\n"); assert_eq!(ui.get_description(), "Line one\nReplacement"); }
             8 => ui.set_confirming(true),
             9 => { snapshot(&ui, "confirm"); key(&ui, Key::Return); assert!(ui.get_confirmed()); println!("Inline editing passed: native undo/redo, save, cancel, multiline, confirmation focus"); }
             10 => ui.window().dispatch_event(WindowEvent::PointerMoved {

@@ -333,6 +333,9 @@ fn observe(app: &Rc<App>, window: Window) {
                 }
                 return EventResult::PreventDefault;
             }
+            if crate::text_editing::dispatch_shortcut(native, event, modifiers.get()) {
+                return EventResult::PreventDefault;
+            }
             match event {
                 WindowEvent::Focused(true) => {
                     app.metrics.borrow_mut().mark(window.name(), "t4_focused")

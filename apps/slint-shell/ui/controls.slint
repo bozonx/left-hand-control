@@ -422,19 +422,33 @@ export component InlineTextField inherits FocusScope {
             HorizontalLayout {
                 padding-left: 6px;
                 padding-right: 6px;
-                input := TextInput {
+                Rectangle {
                     min-width: 0px;
                     horizontal-stretch: 1;
-                    text <=> root.draft;
-                    single-line: true;
-                    color: Theme.text;
-                    font-size: root.text-size;
-                    vertical-alignment: center;
-                    selection-background-color: Theme.accent;
-                    selection-foreground-color: Theme.text;
-                    accessible-label: root.label;
-                    init => { self.focus(); self.select-all(); }
-                    accepted => { root.save(); }
+                    clip: true;
+                    input := TextInput {
+                        private property <length> scroll-x;
+                        x: min(0px, max(parent.width - self.width - self.text-cursor-width, self.scroll-x));
+                        width: max(parent.width - self.text-cursor-width, self.preferred-width);
+                        height: parent.height;
+                        cursor-position-changed(position) => {
+                            if position.x + self.scroll-x < 4px {
+                                self.scroll-x = 4px - position.x;
+                            } else if position.x + self.scroll-x > parent.width - 4px - self.text-cursor-width {
+                                self.scroll-x = parent.width - position.x - 4px - self.text-cursor-width;
+                            }
+                        }
+                        text <=> root.draft;
+                        single-line: true;
+                        color: Theme.text;
+                        font-size: root.text-size;
+                        vertical-alignment: center;
+                        selection-background-color: Theme.accent;
+                        selection-foreground-color: Theme.text;
+                        accessible-label: root.label;
+                        init => { self.focus(); self.select-all(); }
+                        accepted => { root.save(); }
+                    }
                 }
             }
         }

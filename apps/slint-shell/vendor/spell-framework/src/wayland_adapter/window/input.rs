@@ -277,7 +277,7 @@ impl KeyboardHandler for SpellWin {
             self.consumed_keys.insert(code);
             return;
         }
-        let text = get_string(event);
+        let text = self.editing_text(event);
         if is_modifier(&text) { return; }
         self.pressed.insert(code, text.clone());
         self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyPressed { text });
@@ -338,9 +338,22 @@ fn is_modifier(text: &SharedString) -> bool {
 }
 
 impl SpellWin {
+    fn editing_text(&self, event: smithay_client_toolkit::seat::keyboard::KeyEvent) -> SharedString {
+        let physical = match event.raw_code {
+            30 => Some('a'), 46 => Some('c'), 45 => Some('x'),
+            47 => Some('v'), 44 => Some('z'), 21 => Some('y'),
+            _ => None,
+        };
+        let logical = get_string(event);
+        i_slint_core::input::text_editing_shortcut(
+            logical.as_str(), physical, self.modifiers.ctrl, self.modifiers.shift,
+            self.modifiers.alt, self.modifiers.logo,
+        ).map(SharedString::from).unwrap_or(logical)
+    }
+
     pub(super) fn repeat_input(&mut self, event: smithay_client_toolkit::seat::keyboard::KeyEvent) {
         if self.is_hidden.get() || self.consumed_keys.contains(&event.raw_code) { return; }
-        let text = get_string(event);
+        let text = self.editing_text(event);
         if !is_modifier(&text) {
             self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyPressRepeated { text });
         }

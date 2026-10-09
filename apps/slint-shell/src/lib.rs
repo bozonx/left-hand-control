@@ -49,6 +49,7 @@ pub mod popup_model;
 mod spell;
 #[cfg(all(feature = "probes", target_os = "linux"))]
 pub mod test_keyboard;
+pub mod text_editing;
 
 pub use document::Document;
 pub use game_mode::bind as bind_game_mode;
@@ -74,3 +75,7 @@ pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     }
     app::run(start)
 }
+
+#[cfg(test)]
+#[path = "../vendor/i-slint-core/text_history.rs"]
+mod text_history_tests;
