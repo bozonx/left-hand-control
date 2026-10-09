@@ -187,7 +187,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
             Msg::from(&error)
         }
     };
-    editor.set_status(message.to_ui());
+    editor.set_status(crate::notifications::report(ui, &message));
 }
 
 /// Save typed changes once typing pauses.

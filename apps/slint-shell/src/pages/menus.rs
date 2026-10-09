@@ -175,7 +175,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
             Msg::from(&error)
         }
     };
-    e.set_status(message.to_ui());
+    e.set_status(crate::notifications::report(ui, &message));
 }
 
 fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {

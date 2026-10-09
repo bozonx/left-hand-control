@@ -11,6 +11,12 @@ export global Locale {
     in-out property <bool> english: false;
 
     public pure function text(m: Message) -> string {
+        if m.id == "layout-discarded" { return @tr("Changes to layout “{}” discarded", m.arg); }
+        if m.id == "copied" { return @tr("Copied to clipboard"); }
+        if m.id == "layout-created" { return @tr("Layout “{}” created", m.arg); }
+        if m.id == "layout-saved" { return @tr("Layout “{}” saved", m.arg); }
+        if m.id == "layout-deleted" { return @tr("Layout “{}” deleted", m.arg); }
+        if m.id == "layout-activated" { return @tr("Layout “{}” activated", m.arg); }
         if m.id == "capability-available" { return @tr("Available"); }
         if m.id == "capability-unavailable" { return @tr("Unavailable"); }
         if m.id == "capability-unsupported" { return @tr("Not implemented"); }
@@ -96,11 +102,11 @@ export global Locale {
         if m.id == "device-saved" { return @tr("Device saved: {}", m.arg); }
         if m.id == "load-config-first" { return @tr("Load a valid configuration before starting the mapper"); }
         if m.id == "select-input-device" { return @tr("Select a keyboard device in the settings"); }
-        if m.id == "worker-unavailable" { return @tr("Spell popup process unavailable: {}", m.arg); }
-        if m.id == "worker-restarting" { return @tr("Spell worker is restarting"); }
-        if m.id == "worker-restart-limit" { return @tr("Spell worker: restart limit exceeded (3 per minute)"); }
-        if m.id == "worker-not-started" { return @tr("Spell worker is not running"); }
-        if m.id == "worker-error" { return @tr("Spell worker: {}", m.arg); }
+        if m.id == "worker-unavailable" { return @tr("Popup menus are unavailable: {}", m.arg); }
+        if m.id == "worker-restarting" { return @tr("Popup menus are restarting. Try again shortly."); }
+        if m.id == "worker-restart-limit" { return @tr("Popup menus could not recover. Restart the application."); }
+        if m.id == "worker-not-started" { return @tr("Popup menus are not running. Try opening the menu again."); }
+        if m.id == "worker-error" { return @tr("Popup menu error: {}", m.arg); }
         if m.id == "action-saved" { return @tr("Action saved"); }
         if m.id == "settings-saved" { return @tr("Settings saved"); }
         if m.id == "process-name-required" { return @tr("Enter a process name"); }

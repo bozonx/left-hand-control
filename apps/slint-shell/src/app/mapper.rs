@@ -13,7 +13,7 @@ pub(super) fn forward_core_events() {
         CoreEvent::MapperStopped(error) => {
             let error = error.clone();
             post(move |app| {
-                app.set_error(Msg::Error(error));
+                app.set_error(Msg::MapperStopped(Some(error)));
                 app.refresh_mapper_status();
             });
         }
@@ -27,10 +27,10 @@ pub(super) fn forward_core_events() {
                 .collect::<String>();
             let result = result.clone();
             post(move |app| match result {
-                Ok(()) => app
-                    .settings
-                    .global::<AppState>()
-                    .set_status(Msg::CommandCompleted(label).to_ui()),
+                Ok(()) => {
+                    app.clear_action_error();
+                    crate::notifications::send(&app.settings, Msg::CommandCompleted(label));
+                }
                 Err(error) => app.set_error(Msg::ActionFailed(error)),
             });
         }
@@ -68,12 +68,19 @@ impl App {
         let Some(document) = self.document() else {
             return;
         };
-        if let Err(error) = document.sync_runtime(false) {
-            self.set_error(Msg::SavedMapperNotUpdated(error));
+        match document.sync_runtime(false) {
+            Ok(()) => self.clear_runtime_error(),
+            Err(error) => self.set_error(Msg::SavedMapperNotUpdated(error)),
         }
         self.refresh_mapper_status();
         pages::refresh_active(&self.settings, &document);
         self.invalidate_menus();
+    }
+
+    fn clear_runtime_error(&self) {
+        if self.settings.global::<AppState>().get_backend_error().id == "saved-mapper-not-updated" {
+            self.set_error(Msg::None);
+        }
     }
 
     pub(super) fn refresh_mapper_status(&self) {
@@ -96,7 +103,7 @@ impl App {
         };
         self.settings
             .global::<AppState>()
-            .set_status(message.to_ui());
+            .set_status(crate::notifications::report(&self.settings, &message));
     }
 
     fn set_mapper_busy(&self, busy: bool) {
@@ -114,8 +121,12 @@ impl App {
                 let result = lhc_core::mapper::runtime::stop();
                 post(move |app| {
                     app.set_mapper_busy(false);
-                    if let Err(error) = result {
-                        app.set_error(Msg::Error(error));
+                    match result {
+                        Ok(()) => {
+                            app.set_error(Msg::None);
+                            crate::notifications::send(&app.settings, Msg::MapperStopped(None));
+                        }
+                        Err(error) => app.set_error(Msg::Error(error)),
                     }
                     app.refresh_mapper_status();
                 });
@@ -153,6 +164,7 @@ impl App {
                 match result {
                     Ok(()) => {
                         app.set_error(Msg::None);
+                        crate::notifications::send(&app.settings, Msg::MapperRunning(None));
                         if let Some(document) = app.document() {
                             document.mapper_started(runtime.layout_id);
                             // The context may have changed while starting.
@@ -189,13 +201,18 @@ impl App {
             Ok(Some(saved)) => {
                 let rules = document.read().layout().rules.len();
                 state.set_config_status(Msg::ConfigReloaded(rules).to_ui());
-                if let Err(error) = saved.runtime {
-                    self.set_error(Msg::SavedMapperNotUpdated(error));
+                match saved.runtime {
+                    Ok(()) => self.clear_runtime_error(),
+                    Err(error) => self.set_error(Msg::SavedMapperNotUpdated(error)),
                 }
             }
             Err(error) => {
                 log::warn!("reload config: {error}");
-                state.set_config_status(Msg::ConfigUnavailable(error.to_string()).to_ui());
+                state.set_config_status(crate::notifications::report_changed(
+                    &self.settings,
+                    &Msg::ConfigUnavailable(error.to_string()),
+                    state.get_config_status(),
+                ));
             }
         }
     }

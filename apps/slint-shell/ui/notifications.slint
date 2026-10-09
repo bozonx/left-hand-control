@@ -1,0 +1,57 @@
+import { IconButton } from "controls.slint";
+import { Locale, Message } from "i18n.slint";
+import { Theme } from "theme.slint";
+
+export enum ToastKind { success, warning, error }
+export struct ToastItem { token: int, message: Message, kind: ToastKind }
+export global NotificationCenter {
+    in property <[ToastItem]> items;
+    in-out property <bool> initialized;
+    public pure function is-problem(id: string) -> bool {
+        return id == "error" || id == "action-failed" || id == "saved-mapper-not-updated" || id == "config-unavailable" || id == "library-changed" || id == "config-external-change";
+    }
+    public pure function is-warning(id: string) -> bool {
+        return id == "saved-mapper-not-updated" || id == "library-changed" || id == "config-external-change" || id == "worker-restarting" || id == "commands-disabled" || id == "action-unavailable" || id == "save-layout-first" || id == "select-input-device";
+    }
+    callback send(Message);
+    callback backend(Message);
+    callback dismiss(int);
+    callback hover(bool);
+}
+
+component ToastCard inherits Rectangle {
+    in property <ToastItem> item;
+    property <color> accent: item.kind == ToastKind.error ? Theme.error : item.kind == ToastKind.warning ? Theme.warning : Theme.success;
+    height: content.preferred-height;
+    background: Theme.card;
+    border-color: root.accent;
+    border-width: 1px;
+    border-radius: 8px;
+    accessible-role: AccessibleRole.groupbox;
+    accessible-label: Locale.text(root.item.message);
+    content := HorizontalLayout {
+        padding: 14px;
+        spacing: 12px;
+        Text { text: root.item.kind == ToastKind.error ? "!" : root.item.kind == ToastKind.warning ? "!" : "✓"; color: root.accent; font-weight: 700; vertical-alignment: top; }
+        VerticalLayout {
+            spacing: 4px;
+            horizontal-stretch: 1;
+            if root.item.kind == ToastKind.error: Text { text: @tr("Could not complete the action"); color: Theme.error; font-weight: 600; wrap: word-wrap; }
+            Text { text: Locale.text(root.item.message); color: Theme.text; wrap: word-wrap; max-height: 72px; overflow: elide; }
+        }
+        VerticalLayout {
+            alignment: start;
+            IconButton { size: 24px; icon: @image-url("icons/x.svg"); label: @tr("Dismiss notification"); clicked => { NotificationCenter.dismiss(root.item.token); } }
+        }
+    }
+}
+
+export component ToastStack inherits TouchArea {
+    height: content.preferred-height;
+    changed has-hover => { NotificationCenter.hover(self.has-hover); }
+    content := VerticalLayout {
+        spacing: 8px;
+        padding: 0px;
+        for item in NotificationCenter.items: ToastCard { item: item; }
+    }
+}

@@ -185,6 +185,12 @@ fn unquote(value: &str) -> String {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Msg {
     None,
+    Copied,
+    LayoutCreated(String),
+    LayoutSaved(String),
+    LayoutDeleted(String),
+    LayoutActivated(String),
+    LayoutDiscarded(String),
     MapperRunning(Option<String>),
     MapperStopped(Option<String>),
     MapperStarting,
@@ -265,6 +271,12 @@ impl Msg {
         let empty = String::new;
         let (id, arg, count) = match self {
             Self::None => ("", empty(), 0),
+            Self::Copied => ("copied", empty(), 0),
+            Self::LayoutCreated(name) => ("layout-created", name.clone(), 0),
+            Self::LayoutSaved(name) => ("layout-saved", name.clone(), 0),
+            Self::LayoutDeleted(name) => ("layout-deleted", name.clone(), 0),
+            Self::LayoutActivated(name) => ("layout-activated", name.clone(), 0),
+            Self::LayoutDiscarded(name) => ("layout-discarded", name.clone(), 0),
             Self::MapperRunning(error) => ("mapper-running", error.clone().unwrap_or_default(), 0),
             Self::MapperStopped(error) => ("mapper-stopped", error.clone().unwrap_or_default(), 0),
             Self::MapperStarting => ("mapper-starting", empty(), 0),

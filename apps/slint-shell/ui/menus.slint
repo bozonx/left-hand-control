@@ -248,6 +248,7 @@ export component EmojiPage inherits Rectangle {
                         }
                         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
                     }
+                    if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                     ScrollView {
                         min-height: 0px;
                         vertical-stretch: 1;
@@ -347,6 +348,7 @@ export component QuickActionsPage inherits Rectangle {
                                     alignment: start;
                                     PageEditor { remove => { root.confirming = true; } }
                                     Rectangle { height: 1px; background: Theme.border; }
+                                    if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                                     if MenuEditor.selected-cell >= 0: FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                                     if root.filled: VerticalLayout {
                                         spacing: 4px;

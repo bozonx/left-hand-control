@@ -41,6 +41,7 @@ mod i18n;
 mod ipc;
 pub mod keyboard;
 mod metrics;
+mod notifications;
 pub mod pages;
 mod platform;
 pub mod popup_model;

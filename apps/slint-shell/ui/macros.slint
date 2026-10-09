@@ -1,3 +1,4 @@
+import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
@@ -350,9 +351,7 @@ export component MacrosPage inherits Rectangle {
     private property <int> delete-macro: -1;
     private property <int> delete-step: -1;
     clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    private property <bool> copied;
-    function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); root.copied = true; toast-timer.restart(); }
-    toast-timer := Timer { interval: 2200ms; running: false; triggered => { root.copied = false; self.stop(); } }
+    function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     VerticalLayout {
         padding: 0px;
         spacing: 16px;
@@ -393,11 +392,6 @@ export component MacrosPage inherits Rectangle {
                 SystemMacrosCard { open <=> root.system-open; copy(value) => { root.copy(value); } }
             }
         }
-    }
-    if root.copied: Rectangle {
-        width: 220px; height: 44px; x: (root.width - self.width) / 2; y: root.height - self.height - 20px;
-        background: Theme.accent; border-radius: 8px; border-width: 1px; border-color: Theme.border;
-        Text { text: @tr("Copied to clipboard"); color: Theme.text; horizontal-alignment: center; vertical-alignment: center; }
     }
     if root.delete-macro >= 0 && root.delete-step < 0: ConfirmDialog {
         width: 100%;

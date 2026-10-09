@@ -1,3 +1,4 @@
+import { NotificationCenter, ToastStack } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { ActionPicker, PickerOverlay } from "action-picker.slint";
 import { AppState } from "app-state.slint";
@@ -26,6 +27,22 @@ export component SettingsWindow inherits Window {
     min-height: 700px;
     in-out property <Page> page: Page.layouts;
     private property <string> test-text;
+    property <bool> shell-problem: NotificationCenter.is-problem(AppState.status.id);
+    property <bool> library-problem: NotificationCenter.is-problem(LayoutLibrary.status.id);
+    property <bool> layers-problem: NotificationCenter.is-problem(LayersEditor.status.id);
+    property <bool> rules-problem: NotificationCenter.is-problem(RulesEditor.status.id);
+    property <bool> macros-problem: NotificationCenter.is-problem(MacroEditor.status.id);
+    property <bool> menus-problem: NotificationCenter.is-problem(MenuEditor.status.id);
+    property <bool> settings-problem: NotificationCenter.is-problem(SettingsEditor.message.id);
+    property <Message> problem: AppState.backend-error.id != "" ? AppState.backend-error
+        : AppState.config-status.id == "config-unavailable" ? AppState.config-status
+        : root.shell-problem ? AppState.status
+        : root.library-problem ? LayoutLibrary.status
+        : root.layers-problem ? LayersEditor.status
+        : root.rules-problem ? RulesEditor.status
+        : root.macros-problem ? MacroEditor.status
+        : root.menus-problem ? MenuEditor.status
+        : root.settings-problem ? SettingsEditor.message : {};
 
     public function navigate(page: Page, kind: MenuKind) {
         InlineEditors.commit-revision += 1;
@@ -137,6 +154,7 @@ export component SettingsWindow inherits Window {
                 vertical-stretch: 1;
                 padding: Theme.page-padding;
                 spacing: 12px;
+                if root.problem.id != "": Text { text: Locale.text(root.problem); color: NotificationCenter.is-warning(root.problem.id) ? Theme.warning : Theme.error; wrap: word-wrap; max-height: 96px; overflow: elide; }
                 if root.page == Page.layouts: LibraryPage {}
                 if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
@@ -146,32 +164,6 @@ export component SettingsWindow inherits Window {
             }
         }
     }
-    property <Message> toast;
-    function notify(message: Message) {
-        if message.id != "" && message.id != "library-saved" && message.id != "layer-saved" && message.id != "rule-saved" && message.id != "action-saved" && message.id != "settings-saved" && message.id != "device-saved" && message.id != "config-saved" {
-            root.toast = message;
-            toast-timer.restart();
-        }
-    }
-    property <Message> config-notification: AppState.config-status;
-    changed config-notification => { if AppState.config-status.id == "config-unavailable" || AppState.config-status.id == "config-external-change" { root.notify(AppState.config-status); } }
-    property <Message> shell-status: AppState.status;
-    changed shell-status => { if AppState.status.id == "select-input-device" || AppState.status.id == "saved-mapper-not-updated" || ((AppState.status.id == "mapper-running" || AppState.status.id == "mapper-stopped") && AppState.status.arg != "") { root.notify(AppState.status); } }
-    property <Message> notification-0: LayersEditor.status;
-    changed notification-0 => { root.notify(LayersEditor.status); }
-    property <Message> notification-1: RulesEditor.status;
-    changed notification-1 => { root.notify(RulesEditor.status); }
-    property <Message> notification-2: LayoutLibrary.status;
-    changed notification-2 => { root.notify(LayoutLibrary.status); }
-    property <Message> notification-3: MacroEditor.status;
-    changed notification-3 => { root.notify(MacroEditor.status); }
-    property <Message> notification-4: MenuEditor.status;
-    changed notification-4 => { root.notify(MenuEditor.status); }
-    property <Message> notification-5: SettingsEditor.message;
-    changed notification-5 => { root.notify(SettingsEditor.message); }
-    property <Message> notification-6: AppState.backend-error;
-    changed notification-6 => { root.notify(AppState.backend-error); }
-    toast-timer := Timer { interval: 6000ms; running: false; triggered => { root.toast = { id: "", arg: "", count: 0 }; self.stop(); } }
     active-menu := PopupWindow {
         x: active-layout.absolute-position.x; y: 52px; width: 240px;
         Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 8px;
@@ -187,13 +179,9 @@ export component SettingsWindow inherits Window {
     RuleDialogOverlay {}
     LayerDialogOverlay {}
     if ActionPicker.opened: PickerOverlay {}
-    if root.toast.id != "": Rectangle {
-        x: parent.width - self.width - 20px; y: parent.height - self.height - 20px;
-        width: 420px; height: toast-layout.preferred-height;
-        background: Theme.card; border-color: Theme.error; border-width: 1px; border-radius: 8px;
-        toast-layout := HorizontalLayout { padding: 16px; spacing: 12px;
-            Text { text: Locale.text(root.toast); color: Theme.error; wrap: word-wrap; horizontal-stretch: 1; }
-            Button { text: "×"; clicked => { root.toast = { id: "", arg: "", count: 0 }; } }
-        }
+    ToastStack {
+        x: parent.width - self.width - 20px;
+        y: parent.height - self.height - 20px;
+        width: min(420px, parent.width - 40px);
     }
 }

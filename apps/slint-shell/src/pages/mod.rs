@@ -28,6 +28,7 @@ use std::rc::Rc;
 
 /// Bind every page of `ui` to `document`.
 pub fn bind_document(ui: &SettingsWindow, document: &Rc<Document>) {
+    crate::notifications::bind(ui);
     ui.global::<crate::ui::InlineEditors>()
         .on_nonempty(|value| !value.trim().is_empty());
     reorder::bind(ui);

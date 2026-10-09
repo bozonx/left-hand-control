@@ -134,8 +134,21 @@ impl App {
 
     fn set_error(&self, message: Msg) {
         self.settings
+            .global::<crate::ui::NotificationCenter>()
+            .invoke_backend(message.to_ui());
+        self.settings
             .global::<AppState>()
             .set_backend_error(message.to_ui());
+    }
+
+    fn clear_action_error(&self) {
+        let error = self.settings.global::<AppState>().get_backend_error();
+        if matches!(
+            error.id.as_str(),
+            "action-failed" | "mapper-required" | "commands-disabled"
+        ) {
+            self.set_error(Msg::None);
+        }
     }
 
     fn command(&self, command: Command, source: Source, start: Instant, token: Option<String>) {
@@ -165,8 +178,11 @@ impl App {
             Command::Execute(action) => {
                 if !lhc_core::mapper::runtime::status().running {
                     self.set_error(Msg::MapperRequired);
-                } else if let Err(error) = lhc_core::mapper::runtime::execute_action(action) {
-                    self.set_error(Msg::ActionFailed(error));
+                } else {
+                    match lhc_core::mapper::runtime::execute_action(action) {
+                        Ok(()) => self.clear_action_error(),
+                        Err(error) => self.set_error(Msg::ActionFailed(error)),
+                    }
                 }
             }
             Command::Quit => {
@@ -276,7 +292,11 @@ fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
         }
         Err(error) => {
             log::warn!("configuration unavailable: {error}");
-            state.set_config_status(Msg::ConfigUnavailable(error.to_string()).to_ui());
+            state.set_config_status(crate::notifications::report_changed(
+                settings,
+                &Msg::ConfigUnavailable(error.to_string()),
+                state.get_config_status(),
+            ));
             None
         }
     }
@@ -313,6 +333,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     start_core();
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
+    crate::notifications::bind(&settings);
     settings
         .global::<AppState>()
         .set_is_linux(cfg!(target_os = "linux"));

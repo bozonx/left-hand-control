@@ -271,8 +271,21 @@ fn reset_context(ui: &SettingsWindow, document: &Document, state: &mut State) {
 }
 
 fn report(ui: &SettingsWindow, result: Result<Msg, Msg>) {
-    ui.global::<LayoutLibrary>()
-        .set_status(result.unwrap_or_else(|error| error).to_ui());
+    let message = result.unwrap_or_else(|error| error);
+    if matches!(
+        message,
+        Msg::LayoutCreated(_)
+            | Msg::LayoutSaved(_)
+            | Msg::LayoutDeleted(_)
+            | Msg::LayoutActivated(_)
+            | Msg::LayoutDiscarded(_)
+    ) {
+        ui.global::<LayoutLibrary>().set_status(Msg::None.to_ui());
+        crate::notifications::send(ui, message);
+    } else {
+        ui.global::<LayoutLibrary>()
+            .set_status(crate::notifications::report(ui, &message));
+    }
 }
 
 fn selected_name(state: &Shared) -> Result<String, Msg> {
@@ -430,7 +443,11 @@ fn library_action(
     ) {
         library.set_dialog(LibraryDialog::None);
     }
-    Ok(Msg::None)
+    Ok(if action == LibraryAction::Activate {
+        Msg::LayoutActivated(name)
+    } else {
+        Msg::None
+    })
 }
 
 /// Replace the working copy with the selected layout and open its rules.
@@ -474,7 +491,7 @@ fn create(
     library.set_dialog(LibraryDialog::None);
     select(ui, document, state, index as i32)?;
     library.invoke_edit(index as i32);
-    Ok(Msg::None)
+    Ok(Msg::LayoutCreated(created))
 }
 
 /// Save the working copy back to its library file.
@@ -500,9 +517,9 @@ fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Res
             .save_user_layout(&name, &text, true)
             .map_err(ConfigError::Io)
     })?;
-    state.borrow_mut().baseline = Some((name, text));
+    state.borrow_mut().baseline = Some((name.clone(), text));
     refresh_context(ui, document);
-    Ok(Msg::None)
+    Ok(Msg::LayoutSaved(name))
 }
 
 /// Save the working copy as a new library layout and continue editing it.
@@ -516,10 +533,10 @@ fn save_as(
     let saved = edit(ui, document, state, |config| {
         config.save_current_layout_as(name)
     })?;
-    state.borrow_mut().baseline = Some((saved, text));
+    state.borrow_mut().baseline = Some((saved.clone(), text));
     ui.global::<LayoutLibrary>().set_save_as_open(false);
     refresh(ui, document, &mut state.borrow_mut())?;
-    Ok(Msg::None)
+    Ok(Msg::LayoutSaved(saved))
 }
 
 fn delete(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
@@ -530,7 +547,7 @@ fn delete(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Ms
     })?;
     reset_context(ui, document, &mut state.borrow_mut());
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
-    Ok(Msg::None)
+    Ok(Msg::LayoutDeleted(name))
 }
 
 fn set_description(
@@ -717,7 +734,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 config.load_library_for_editing(&name)
             })?;
             reset_context(&ui, doc, &mut state.borrow_mut());
-            Ok(Msg::None)
+            Ok(Msg::LayoutDiscarded(name))
         });
         report(&ui, result);
     });
@@ -733,7 +750,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     config.update_settings(|settings| settings.manual_active_layout_id = Some(id))
                 })
             });
-        report(&ui, result.map(|()| Msg::None));
+        let name = current_name(&doc.read()).unwrap_or_default();
+        report(&ui, result.map(|()| Msg::LayoutActivated(name)));
     });
     on!(on_load, |ui, doc, state| report(&ui, load(&ui, doc, state)));
     on!(on_delete, |ui, doc, state| report(

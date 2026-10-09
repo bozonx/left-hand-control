@@ -1,3 +1,4 @@
+import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
 import { Badge, CardHeader } from "controls.slint";
@@ -89,8 +90,9 @@ export component SettingsPage inherits VerticalBox {
     horizontal-stretch: 1;
     max-width: 100000px;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); }
+    function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
+    if SettingsEditor.message.id != "": Text { text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
     HorizontalBox {
         padding: 0px;
         spacing: 16px;

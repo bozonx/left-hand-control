@@ -117,7 +117,7 @@ fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
     if let Some(id) = id
         && let Err(error) = document.save_ui_state(Some(&id), None)
     {
-        editor.set_status(Msg::Error(error).to_ui());
+        editor.set_status(crate::notifications::report(ui, &Msg::Error(error)));
     }
     refresh(ui, document);
 }
@@ -199,13 +199,13 @@ fn change<T>(
     match document.edit(View::Layers, edit) {
         Ok(saved) => {
             refresh(ui, document);
-            editor.set_status(saved.message(Msg::None).to_ui());
+            editor.set_status(crate::notifications::report(ui, &saved.message(Msg::None)));
             Ok(saved.value)
         }
         Err(error) => {
             refresh(ui, document);
             let message = Msg::from(&error);
-            editor.set_status(message.to_ui());
+            editor.set_status(crate::notifications::report(ui, &message));
             Err(message)
         }
     }
@@ -533,7 +533,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some(ui) = weak.upgrade() else { return };
         if !lhc_core::profile::key_catalog::valid_key(key.trim()) {
             ui.global::<LayersEditor>()
-                .set_status(Msg::KeyCodeRequired.to_ui());
+                .set_status(crate::notifications::report(&ui, &Msg::KeyCodeRequired));
             return;
         }
         let Some(id) = selected_id(&ui, &doc) else {
@@ -554,7 +554,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             let editor = ui.global::<LayersEditor>();
             match doc.save_ui_state(None, Some(mode)) {
                 Ok(()) => editor.set_label_mode(mode),
-                Err(error) => editor.set_status(Msg::Error(error).to_ui()),
+                Err(error) => {
+                    editor.set_status(crate::notifications::report(&ui, &Msg::Error(error)))
+                }
             }
         }
     });
@@ -590,7 +592,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let editor = ui.global::<LayersEditor>();
         match apply_dialog(&ui, &doc) {
             Ok(()) => editor.set_dialog(LayerDialog::None),
-            Err(error) => editor.set_status(error.to_ui()),
+            Err(error) => editor.set_status(crate::notifications::report(&ui, &error)),
         }
     });
 

@@ -218,7 +218,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
             ))),
         Err(error) => ui
             .global::<SettingsEditor>()
-            .set_message(Msg::from(&error).to_ui()),
+            .set_message(crate::notifications::report(ui, &Msg::from(&error))),
     }
     let loaded = Form::from_settings(document.read().settings());
     if let Some(base) = &state.base {
@@ -437,7 +437,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         {
             if ui.global::<crate::ui::LayoutLibrary>().get_dirty() {
                 ui.global::<SettingsEditor>()
-                    .set_message(Msg::SaveLayoutFirst.to_ui());
+                    .set_message(crate::notifications::report(&ui, &Msg::SaveLayoutFirst));
                 return;
             }
             let Some(name) = layout_id.strip_prefix("user:") else {
@@ -447,7 +447,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 doc.edit(View::Shell, |config| config.load_library_for_editing(name))
             {
                 ui.global::<SettingsEditor>()
-                    .set_message(Msg::from(&error).to_ui());
+                    .set_message(crate::notifications::report(&ui, &Msg::from(&error)));
                 return;
             }
         }
@@ -482,7 +482,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         if let Some(ui) = weak.upgrade() {
             shared.borrow().autosave.stop();
             let message = save(&ui, &doc, &mut shared.borrow_mut());
-            ui.global::<SettingsEditor>().set_message(message.to_ui());
+            ui.global::<SettingsEditor>()
+                .set_message(crate::notifications::report(&ui, &message));
         }
     });
 
@@ -568,7 +569,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let e = ui.global::<SettingsEditor>();
         let name = e.get_process_name().trim().to_owned();
         if name.is_empty() {
-            e.set_message(Msg::ProcessNameRequired.to_ui());
+            e.set_message(crate::notifications::report(&ui, &Msg::ProcessNameRequired));
             return;
         }
         let mut state = shared.borrow_mut();
@@ -591,7 +592,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let e = ui.global::<SettingsEditor>();
         let name = e.get_process_name().trim().to_owned();
         if name.is_empty() {
-            e.set_message(Msg::ProcessNameRequired.to_ui());
+            e.set_message(crate::notifications::report(&ui, &Msg::ProcessNameRequired));
             return;
         }
         let mut state = shared.borrow_mut();

@@ -1794,3 +1794,39 @@ msgstr "Открыть страницу во всплывающем окне"
 
 msgid "Page:"
 msgstr "Страница:"
+
+msgid "Layout “{}” created"
+msgstr "Раскладка «{}» создана"
+
+msgid "Layout “{}” saved"
+msgstr "Раскладка «{}» сохранена"
+
+msgid "Layout “{}” deleted"
+msgstr "Раскладка «{}» удалена"
+
+msgid "Layout “{}” activated"
+msgstr "Раскладка «{}» активирована"
+
+msgid "Could not complete the action"
+msgstr "Не удалось выполнить действие"
+
+msgid "Dismiss notification"
+msgstr "Закрыть уведомление"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "Изменения раскладки «{}» отменены"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "Всплывающие меню недоступны: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "Всплывающие меню не запущены. Попробуйте открыть меню снова."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "Всплывающие меню перезапускаются. Повторите действие чуть позже."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "Не удалось восстановить всплывающие меню. Перезапустите приложение."
+
+msgid "Popup menu error: {}"
+msgstr "Ошибка всплывающего меню: {}"

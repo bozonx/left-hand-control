@@ -225,7 +225,8 @@ fn report<T>(ui: &SettingsWindow, document: &Document, saved: &Saved<T>, ok: Msg
         (Ok(()), Some(issue)) => Msg::Rule(issue),
         (Ok(()), None) => ok,
     };
-    ui.global::<RulesEditor>().set_status(message.to_ui());
+    ui.global::<RulesEditor>()
+        .set_status(crate::notifications::report(ui, &message));
     message
 }
 
@@ -245,7 +246,8 @@ fn change(
         Err(error) => {
             refresh(ui, document, true);
             let message = Msg::from(&error);
-            ui.global::<RulesEditor>().set_status(message.to_ui());
+            ui.global::<RulesEditor>()
+                .set_status(crate::notifications::report(ui, &message));
             Err(message)
         }
     }
@@ -348,7 +350,7 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
     let index = selected(ui, document).ok_or(Msg::None)?;
     // Validate before saving so a bad value leaves the rule untouched.
     set_property(&mut LayerRule::new(String::new(), ""), property, value).inspect_err(|error| {
-        editor.set_status(error.to_ui());
+        editor.set_status(crate::notifications::report(ui, error));
     })?;
     change_rule(ui, document, index, true, |rule| {
         let _ = set_property(rule, property, value);
@@ -476,7 +478,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let name = name.trim().to_owned();
         let editor = ui.global::<RulesEditor>();
         if name.is_empty() {
-            editor.set_status(Msg::LayerNameRequired.to_ui());
+            editor.set_status(crate::notifications::report(&ui, &Msg::LayerNameRequired));
             return;
         }
         let index = selected(&ui, &doc);
@@ -618,14 +620,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let (hold, double) = match timeouts {
             Ok(values) => values,
             Err(error) => {
-                editor.set_status(error.to_ui());
+                editor.set_status(crate::notifications::report(&ui, &error));
                 return;
             }
         };
         let long_hold_timeout = match optional_seconds(&editor.get_long_hold_timeout()) {
             Ok(value) => value,
             Err(error) => {
-                editor.set_status(error.to_ui());
+                editor.set_status(crate::notifications::report(&ui, &error));
                 return;
             }
         };
