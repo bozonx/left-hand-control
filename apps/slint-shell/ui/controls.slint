@@ -1,4 +1,4 @@
-import { Palette, Button, LineEdit, TextEdit, SpinBox, ComboBox } from "std-widgets.slint";
+import { Palette, Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 
@@ -72,19 +72,6 @@ export component InfoTip inherits Rectangle {
             }
         }
     }
-}
-
-export component NumericField inherits SpinBox {
-    in property <length> field-width: 124px;
-    width: root.field-width;
-    horizontal-stretch: 0;
-}
-
-export component NumericInput inherits LineEdit {
-    in property <length> field-width: 124px;
-    width: root.field-width;
-    input-type: number;
-    horizontal-stretch: 0;
 }
 
 export component SelectField inherits ComboBox {
@@ -163,6 +150,114 @@ export component IconButton inherits Rectangle {
                 Text { text: root.tooltip; color: Theme.text; font-size: 12px; }
             }
         }
+    }
+}
+
+// One wheel notch is 60px in the winit backend; touchpads send small pixel deltas.
+global NumericWheel {
+    out property <length> notch: 50px;
+}
+
+// The parent TouchArea only sees the wheel after the field rejects it, and steps only while
+// the field has focus so scrolling the page over an unfocused field keeps scrolling the page.
+export component NumericField inherits TouchArea {
+    in property <length> field-width: 140px;
+    in property <int> minimum: 0;
+    in property <int> maximum: 2147483647;
+    in property <int> step-size: 1;
+    in-out property <int> value;
+    callback edited(int);
+    private property <length> wheel;
+    width: root.field-width;
+    height: 32px;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    accessible-role: spinbox;
+    accessible-value: root.value;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    accessible-value-step: root.step-size;
+    accessible-action-increment => { root.apply(root.value + root.step-size); }
+    accessible-action-decrement => { root.apply(root.value - root.step-size); }
+    accessible-action-set-value(v) => { if v.is-float() { root.apply(v.to-float()); } }
+    changed value => { input.text = root.value; }
+    function apply(next: int) {
+        let value = clamp(next, root.minimum, root.maximum);
+        input.text = value;
+        if value != root.value { root.value = value; root.edited(value); }
+    }
+    scroll-event(event) => {
+        if !input.has-focus || event.delta-y == 0 { return reject; }
+        root.wheel += event.delta-y;
+        if abs(root.wheel) >= NumericWheel.notch {
+            root.apply(root.value + (root.wheel > 0 ? root.step-size : -root.step-size));
+            root.wheel = 0;
+        }
+        accept
+    }
+    Rectangle {
+        border-radius: 4px;
+        border-width: 1px;
+        border-color: input.has-focus ? Theme.accent : Theme.border;
+        background: Theme.surface;
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 2px;
+            spacing: 2px;
+            input := TextInput {
+                min-width: 0px;
+                horizontal-stretch: 1;
+                text: root.value;
+                input-type: number;
+                color: Theme.text;
+                vertical-alignment: center;
+                selection-background-color: Theme.accent;
+                selection-foreground-color: Theme.text;
+                accessible-role: none;
+                edited => {
+                    if self.text.is-float() && self.text.to-float() >= root.minimum && self.text.to-float() <= root.maximum && self.text.to-float() != root.value {
+                        root.value = self.text.to-float();
+                        root.edited(root.value);
+                    }
+                }
+                accepted => { self.text = root.value; }
+                changed has-focus => { if !self.has-focus { self.text = root.value; } }
+            }
+            VerticalLayout { alignment: center; IconButton { size: 24px; icon: @image-url("icons/chevron-up.svg"); label: @tr("Increase"); clicked => { root.apply(root.value + root.step-size); } } }
+            VerticalLayout { alignment: center; IconButton { size: 24px; icon: @image-url("icons/chevron-down.svg"); label: @tr("Decrease"); clicked => { root.apply(root.value - root.step-size); } } }
+        }
+    }
+}
+
+// Text-backed numeric field: empty means "use the global default" (shown as the placeholder).
+export component NumericInput inherits TouchArea {
+    in property <length> field-width: 124px;
+    in-out property <string> text <=> edit.text;
+    in property <string> placeholder-text <=> edit.placeholder-text;
+    in property <string> label;
+    in property <int> minimum: 0;
+    in property <int> step: 10;
+    callback edited(string);
+    private property <length> wheel;
+    width: root.field-width;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    scroll-event(event) => {
+        if !edit.has-focus || event.delta-y == 0 { return reject; }
+        root.wheel += event.delta-y;
+        if abs(root.wheel) >= NumericWheel.notch {
+            let current = edit.text.is-float() ? edit.text.to-float() : edit.placeholder-text.is-float() ? edit.placeholder-text.to-float() : root.minimum;
+            edit.text = max(root.minimum, round(current) + (root.wheel > 0 ? root.step : -root.step));
+            root.wheel = 0;
+            root.edited(edit.text);
+        }
+        accept
+    }
+    edit := LineEdit {
+        width: 100%;
+        input-type: number;
+        accessible-label: root.label;
+        edited(value) => { root.edited(value); }
     }
 }
 
@@ -324,7 +419,10 @@ export component ConfirmDialog inherits Rectangle {
 }
 
 export global InlineEditors {
-    in-out property <int> commit-revision: 0; in-out property <int> revision; pure callback nonempty(string) -> bool; }
+    in-out property <int> commit-revision: 0; in-out property <int> revision; pure callback nonempty(string) -> bool;
+    // Set from the winit window events: focus loss caused by switching windows must not commit.
+    in-out property <bool> window-active: true;
+}
 
 export component InlineTextField inherits FocusScope {
     in property <string> text;
@@ -346,6 +444,10 @@ export component InlineTextField inherits FocusScope {
     public function begin() { root.draft = root.text; root.editing = true; }
     function save() { if root.allow-empty || InlineEditors.nonempty(root.draft) { root.saved(root.draft); root.editing = false; } }
     function cancel() { root.draft = root.text; root.editing = false; }
+    function blurred() {
+        if !root.editing || !InlineEditors.window-active { return; }
+        if root.allow-empty || InlineEditors.nonempty(root.draft) { root.save(); } else { root.cancel(); }
+    }
     vertical-stretch: 0;
     horizontal-stretch: root.editing ? 1 : 0;
     min-width: root.editing ? 92px : 0px;
@@ -409,6 +511,7 @@ export component InlineTextField inherits FocusScope {
             accessible-label: root.label;
             init => { self.focus(); self.select-all(); }
             accepted => { root.save(); }
+            changed has-focus => { if !self.has-focus { root.blurred(); } }
         }
         if root.editing && !root.clearable: Rectangle {
             min-width: 28px;
@@ -448,6 +551,7 @@ export component InlineTextField inherits FocusScope {
                         accessible-label: root.label;
                         init => { self.focus(); self.select-all(); }
                         accepted => { root.save(); }
+                        changed has-focus => { if !self.has-focus { root.blurred(); } }
                     }
                 }
             }
@@ -477,6 +581,10 @@ export component InlineTextArea inherits FocusScope {
     public function begin() { root.draft = root.text; root.editing = true; }
     function save() { if root.allow-empty || InlineEditors.nonempty(root.draft) { root.saved(root.draft); root.editing = false; } }
     function cancel() { root.draft = root.text; root.editing = false; }
+    function blurred() {
+        if !root.editing || !InlineEditors.window-active { return; }
+        if root.allow-empty || InlineEditors.nonempty(root.draft) { root.save(); } else { root.cancel(); }
+    }
     vertical-stretch: 0;
     horizontal-stretch: 1;
     min-width: 0px;
@@ -531,6 +639,7 @@ export component InlineTextArea inherits FocusScope {
             text <=> root.draft;
             accessible-label: root.label;
             init => { self.focus(); }
+            changed has-focus => { if !self.has-focus { root.blurred(); } }
         }
         if root.editing: HorizontalLayout {
             spacing: 4px;

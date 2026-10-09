@@ -304,6 +304,14 @@ fn observe(app: &Rc<App>, window: Window) {
             let Some(app) = weak.upgrade() else {
                 return EventResult::Propagate;
             };
+            // Inline editors commit on focus loss, but not when the whole window is deactivated.
+            if window == Window::Settings
+                && let WindowEvent::Focused(active) = event
+            {
+                app.settings
+                    .global::<crate::ui::InlineEditors>()
+                    .set_window_active(*active);
+            }
             if window == Window::Settings && crate::pages::capture(&app.settings, event) {
                 return EventResult::PreventDefault;
             }

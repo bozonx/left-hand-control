@@ -4,11 +4,28 @@ export global DragDrop {
     in-out property <int> group: -1;
     in-out property <int> source: -1;
     in-out property <int> target: -1;
+    in-out property <int> count;
     in-out property <length> offset;
     in-out property <bool> dragging;
+    // Pointer position in window coordinates, for edge auto-scroll.
+    in-out property <length> pointer-y;
+    // Wheel deltas from the drag handle (it holds the mouse grab), consumed by the ScrollView.
+    in-out property <length> wheel;
+    in-out property <int> wheel-serial;
     callback row(int, int, length, length);
     callback locate(int, int, length, int) -> int;
-    public function reset() { self.group = -1; self.source = -1; self.target = -1; self.offset = 0px; self.dragging = false; }
+    public function reset() {
+        self.group = -1; self.source = -1; self.target = -1; self.count = 0; self.offset = 0px; self.dragging = false;
+        self.wheel = 0px;
+    }
+    public function request-scroll(delta: length) { self.wheel += delta; self.wheel-serial += 1; }
+    // The list moved by `shift` under a stationary pointer; the next move event recomputes
+    // the offset from the handle, which scrolled along with the list.
+    public function scrolled(shift: length) {
+        if !self.dragging || shift == 0px { return; }
+        self.offset += shift;
+        self.target = self.locate(self.group, self.source, self.offset, self.count);
+    }
 }
 
 export component DragHandle inherits Rectangle {
@@ -27,7 +44,7 @@ export component DragHandle inherits Rectangle {
         mouse-cursor: self.pressed ? grabbing : grab;
         pointer-event(event) => {
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                DragDrop.group = root.group; DragDrop.source = root.index; DragDrop.target = root.index;
+                DragDrop.group = root.group; DragDrop.source = root.index; DragDrop.target = root.index; DragDrop.count = root.count;
             }
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == root.group {
                 let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
@@ -36,8 +53,14 @@ export component DragHandle inherits Rectangle {
             }
             if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
         }
+        // While the handle holds the grab, the wheel comes here instead of the ScrollView.
+        scroll-event(event) => {
+            if DragDrop.dragging && DragDrop.group == root.group && !root.horizontal { DragDrop.request-scroll(event.delta-y); return accept; }
+            reject
+        }
         moved => {
             if self.pressed && DragDrop.group == root.group {
+                DragDrop.pointer-y = self.absolute-position.y + self.mouse-y;
                 DragDrop.offset = root.horizontal ? self.mouse-x - self.pressed-x : self.mouse-y - self.pressed-y;
                 if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
                 if DragDrop.dragging { DragDrop.target = DragDrop.locate(root.group, root.index, DragDrop.offset, root.count); }

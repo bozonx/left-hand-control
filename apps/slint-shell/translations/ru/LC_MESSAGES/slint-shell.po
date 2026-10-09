@@ -10,6 +10,12 @@ msgstr "Действие сохранено"
 msgid "Cancel"
 msgstr "Отмена"
 
+msgid "Increase"
+msgstr "Увеличить"
+
+msgid "Decrease"
+msgstr "Уменьшить"
+
 msgid "Configuration loaded: {n} rule"
 msgid_plural "Configuration loaded: {n} rules"
 msgstr[0] "Конфигурация загружена: {n} правило"

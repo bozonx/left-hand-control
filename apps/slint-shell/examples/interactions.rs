@@ -48,6 +48,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(drag.invoke_locate(99, 2, -340.0, 3), 0);
     assert_eq!(drag.invoke_locate(99, 0, 340.0, 2), 1);
     assert_eq!(drag.invoke_locate(99, 0, 6.0, 3), 0);
+    // Scrolling the list under a stationary pointer moves the drop target too.
+    drag.set_group(99);
+    drag.set_source(0);
+    drag.set_target(0);
+    drag.set_count(3);
+    drag.set_dragging(true);
+    drag.invoke_scrolled(340.0);
+    assert_eq!(drag.get_target(), 2);
+    drag.invoke_scrolled(-340.0);
+    assert_eq!(drag.get_target(), 0);
+    drag.invoke_reset();
     let settings = ui.global::<SettingsEditor>();
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
     settings.set_hold_timeout("not a number".into());

@@ -239,19 +239,19 @@ export component SettingsPage inherits VerticalBox {
                     HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
                         VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
                         Text { vertical-stretch: 0; text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.hold-timeout.to-float(); edited(value) => { SettingsEditor.hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.hold-timeout.to-float(); edited(value) => { SettingsEditor.hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
                         Text { vertical-stretch: 0; text: @tr("Time before a key press becomes a hold."); color: Theme.muted; wrap: word-wrap; }
                         }
                         VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
                         Text { vertical-stretch: 0; text: @tr("Double tap timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.double-tap-timeout.to-float(); edited(value) => { SettingsEditor.double-tap-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.double-tap-timeout.to-float(); edited(value) => { SettingsEditor.double-tap-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
                         Text { vertical-stretch: 0; text: @tr("Maximum interval between two taps."); color: Theme.muted; wrap: word-wrap; }
                         }
                     }
                     HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
                         VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
                         Text { vertical-stretch: 0; text: @tr("Macro step pause (ms)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.macro-pause.to-float(); edited(value) => { SettingsEditor.macro-pause = "" + self.value; SettingsEditor.schedule-save(); } }
+                        NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.macro-pause.to-float(); edited(value) => { SettingsEditor.macro-pause = "" + self.value; SettingsEditor.schedule-save(); } }
                         Text { vertical-stretch: 0; text: @tr("Default pause between macro steps."); color: Theme.muted; wrap: word-wrap; }
                         }
                         VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;

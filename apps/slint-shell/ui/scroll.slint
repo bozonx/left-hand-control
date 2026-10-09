@@ -1,4 +1,5 @@
 import { Theme } from "theme.slint";
+import { DragDrop } from "reorder.slint";
 
 component ScrollBar inherits Rectangle {
     in property <bool> enabled: true;
@@ -65,6 +66,29 @@ export component ScrollView {
     private property <length> scrollbar-gap: Theme.scrollbar-gap;
     private property <bool> vertical: root.vertical-scrollbar-policy == ScrollBarPolicy.always-on || (root.vertical-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-height > root.visible-height);
     private property <bool> horizontal: root.horizontal-scrollbar-policy == ScrollBarPolicy.always-on || (root.horizontal-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-width > root.visible-width);
+    // Scroll under an active DragHandle drag: wheel events forwarded by the handle and
+    // auto-scroll while the pointer is near the top or bottom edge.
+    in property <bool> drag-scroll: false;
+    private property <bool> drag-active: root.drag-scroll && DragDrop.dragging;
+    private property <length> drag-edge: 48px;
+    private property <length> drag-pointer: DragDrop.pointer-y - root.absolute-position.y;
+    private property <length> drag-speed: !root.drag-active ? 0px
+        : root.drag-pointer < root.drag-edge ? 16px * min(1, (root.drag-edge - root.drag-pointer) / root.drag-edge)
+        : root.drag-pointer > content.height - root.drag-edge ? -16px * min(1, (root.drag-pointer - content.height + root.drag-edge) / root.drag-edge)
+        : 0px;
+    private property <int> drag-wheel: DragDrop.wheel-serial;
+    changed drag-wheel => {
+        if root.drag-active && DragDrop.wheel != 0px { root.drag-scroll-by(DragDrop.wheel); }
+        DragDrop.wheel = 0px;
+    }
+    function drag-scroll-by(delta: length) {
+        let before = content.viewport-y;
+        content.viewport-y = clamp(before + delta, min(0px, content.height - content.viewport-height), 0px);
+        if content.viewport-y != before {
+            DragDrop.scrolled(before - content.viewport-y);
+            root.scrolled();
+        }
+    }
     callback scrolled();
     min-width: 50px;
     min-height: 50px;
@@ -76,6 +100,11 @@ export component ScrollView {
         interactive: root.mouse-drag-pan-enabled;
         flicked => { root.scrolled(); }
         @children
+    }
+    Timer {
+        interval: 16ms;
+        running: root.drag-speed != 0px;
+        triggered => { root.drag-scroll-by(root.drag-speed); }
     }
     if root.vertical: ScrollBar {
         x: content.width + root.scrollbar-gap;

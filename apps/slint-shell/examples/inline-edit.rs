@@ -3,7 +3,7 @@ use slint::{ComponentHandle, SharedString};
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 slint::slint! {
-    import { InlineTextField, InlineTextArea, ConfirmDialog, InfoTip } from "../ui/controls.slint";
+    import { InlineTextField, InlineTextArea, ConfirmDialog, InfoTip, NumericField, InlineEditors } from "../ui/controls.slint";
     export component ControlsWindow inherits Window {
         width: 520px; height: 320px;
         in-out property <string> value: "Original";
@@ -12,11 +12,17 @@ slint::slint! {
         in-out property <bool> confirmed;
         public function edit() { field.begin(); }
         public function edit-description() { description-field.begin(); }
+        public function set-window-active(active: bool) { InlineEditors.window-active = active; }
+        out property <bool> editing: field.editing;
+        out property <int> number: numeric.value;
+        // Stands in for the settings window's root FocusScope that takes focus on empty clicks.
+        FocusScope { }
         VerticalLayout { padding: 20px; spacing: 12px; alignment: start;
             field := InlineTextField { clearable: false; text: root.value; saved(value) => { root.value = value; } }
             description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; } }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }
+        numeric := NumericField { x: 300px; y: 260px; step-size: 10; value: 100; }
         if root.confirming: ConfirmDialog {
             title: "Delete?"; body: "Confirm deletion."; confirm-text: "Delete";
             confirm => { root.confirmed = true; root.confirming = false; }
@@ -53,6 +59,20 @@ fn redo(ui: &ControlsWindow) {
         ui.window().dispatch_event(WindowEvent::KeyReleased { text: Key::Shift.into() });
         ui.window().dispatch_event(WindowEvent::KeyReleased { text: Key::Control.into() });
     }
+}
+
+fn click(ui: &ControlsWindow, x: f32, y: f32) {
+    let position = slint::LogicalPosition::new(x, y);
+    let button = slint::platform::PointerEventButton::Left;
+    ui.window().dispatch_event(WindowEvent::PointerMoved { position });
+    ui.window().dispatch_event(WindowEvent::PointerPressed { position, button });
+    ui.window().dispatch_event(WindowEvent::PointerReleased { position, button });
+}
+
+fn wheel(ui: &ControlsWindow, x: f32, y: f32, delta_y: f32) {
+    let position = slint::LogicalPosition::new(x, y);
+    ui.window().dispatch_event(WindowEvent::PointerMoved { position });
+    ui.window().dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
 }
 
 fn snapshot(ui: &ControlsWindow, name: &str) {
@@ -92,7 +112,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 position: slint::LogicalPosition::new(29.0, 120.0),
             }),
             11..=17 => {},
-            18 => { snapshot(&ui, "info-tip"); slint::quit_event_loop().unwrap(); },
+            18 => { snapshot(&ui, "info-tip"); ui.invoke_edit(); },
+            19 => { key(&ui, "Blurred"); click(&ui, 120.0, 300.0); }
+            20 => { assert_eq!(ui.get_value(), "Blurred"); assert!(!ui.get_editing()); ui.invoke_edit(); }
+            21 => { key(&ui, "Cancelled"); click(&ui, 486.0, 36.0); }
+            22 => { assert_eq!(ui.get_value(), "Blurred"); assert!(!ui.get_editing()); ui.invoke_edit(); }
+            23 => { key(&ui, "Switched"); ui.invoke_set_window_active(false); ui.window().dispatch_event(WindowEvent::WindowActiveChanged(false)); }
+            24 => { assert!(ui.get_editing()); ui.window().dispatch_event(WindowEvent::WindowActiveChanged(true)); ui.invoke_set_window_active(true); }
+            25 => { assert!(ui.get_editing()); key(&ui, Key::Escape); assert_eq!(ui.get_value(), "Blurred"); }
+            26 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 100); click(&ui, 320.0, 276.0); }
+            27 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 110); wheel(&ui, 320.0, 276.0, -60.0); wheel(&ui, 320.0, 276.0, -60.0); assert_eq!(ui.get_number(), 90); }
+            28 => { println!("Focus loss passed: blur saves, cancel button, window switch, focused wheel steps"); slint::quit_event_loop().unwrap(); }
             _ => unreachable!(),
         }
         step.set(step.get() + 1);

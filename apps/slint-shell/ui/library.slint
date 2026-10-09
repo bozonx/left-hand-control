@@ -321,7 +321,7 @@ export component LibraryPage inherits VerticalBox {
             }
         }
     }
-    if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width;
+    if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width; drag-scroll: true;
         vertical-stretch: 1;
         VerticalLayout { padding: 0px; spacing: 0px;
             for name[index] in LayoutLibrary.names: card := Rectangle {

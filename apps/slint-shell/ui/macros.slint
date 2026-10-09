@@ -88,7 +88,7 @@ component StepRow inherits HorizontalLayout {
             NumericInput {
                 field-width: 110px;
                 text: root.step.pause-ms;
-                accessible-label: @tr("Pause (ms)");
+                label: @tr("Pause (ms)");
                 edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
             }
             Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
@@ -181,7 +181,7 @@ component MacroCard inherits Card {
                         NumericInput {
                             text: root.item.step-pause;
                             placeholder-text: MacroEditor.default-step-pause;
-                            accessible-label: @tr("Pause between steps");
+                            label: @tr("Pause between steps");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
                         }
                         Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
@@ -202,7 +202,8 @@ component MacroCard inherits Card {
                         NumericInput {
                             text: root.item.modifier-delay;
                             placeholder-text: MacroEditor.default-modifier-delay;
-                            accessible-label: @tr("Modifier delay");
+                            step: 1;
+                            label: @tr("Modifier delay");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
                         }
                         Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
@@ -276,12 +277,13 @@ component SystemMacrosHeader inherits Rectangle {
     TouchArea { mouse-cursor: pointer; clicked => { root.open = !root.open; header-focus.focus(); } }
 }
 
-component SystemMacroLine inherits Rectangle {
+// The row itself is the TouchArea, so it keeps `has-hover` while the pointer is over one of
+// its buttons; a sibling TouchArea would lose hover there and make the buttons flicker.
+component SystemMacroLine inherits TouchArea {
     in property <int> index;
     in property <SystemMacroRow> item;
     callback copy(string);
-    background: row-touch.has-hover ? Theme.hover.transparentize(0.6) : transparent;
-    row-touch := TouchArea {}
+    Rectangle { background: root.has-hover ? Theme.hover.transparentize(0.6) : transparent; }
     VerticalLayout {
         HorizontalLayout {
             padding: 8px;
@@ -307,6 +309,8 @@ component SystemMacroLine inherits Rectangle {
                 width: 170px;
                 alignment: center;
                 Button {
+                    // Opacity instead of `visible`: the button stays focusable from the keyboard.
+                    opacity: root.has-hover || self.has-focus ? 1 : 0;
                     text: @tr("Create based on");
                     icon: @image-url("icons/copy-plus.svg");
                     colorize-icon: true;
@@ -373,6 +377,7 @@ export component MacrosPage inherits Rectangle {
             }
         }
         ScrollView {
+            drag-scroll: true;
             viewport-width: self.visible-width;
             vertical-stretch: 1;
             VerticalLayout {
