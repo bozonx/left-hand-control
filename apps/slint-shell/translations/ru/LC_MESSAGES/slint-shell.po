@@ -1126,9 +1126,6 @@ msgstr "Сдвинуть страницу влево"
 msgid "Move page right"
 msgstr "Сдвинуть страницу вправо"
 
-msgid "New command"
-msgstr "Новая команда"
-
 msgid "New macro"
 msgstr "Новый макрос"
 

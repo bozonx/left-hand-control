@@ -109,7 +109,7 @@ component CategoryButton inherits Rectangle {
         padding-left: 8px; padding-right: 8px; spacing: 7px;
         CategoryIcon { category: root.index; }
         Text { text: root.title; wrap: no-wrap; color: Theme.text; horizontal-stretch: 1; vertical-alignment: center; overflow: elide; }
-        if root.index < 11: Text { text: "" + root.count; color: Theme.text; vertical-alignment: center; }
+        if root.index < 11 && root.index != 8: Text { text: "" + root.count; color: Theme.text; vertical-alignment: center; }
     }
     Tooltip {
         Rectangle {
@@ -180,7 +180,9 @@ export component PickerOverlay inherits Rectangle {
                         LineEdit { text <=> ActionPicker.query; placeholder-text: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); edited => { ActionPicker.list-scroll = 0px; ActionPicker.refresh(); } }
                         ScrollView { viewport-width: self.visible-width;
                             VerticalLayout { spacing: 0px;
-                                for title[index] in [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")]: VerticalBox {
+                                // Commands go last: one command per action, not a catalog.
+                                for index in [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 8]: VerticalBox {
+                                    private property <string> title: [@tr("Special keys"), @tr("Letters and symbols"), @tr("Digits and numpad"), @tr("Media"), @tr("Mouse"), @tr("Other keys"), @tr("Macros"), @tr("System macros"), @tr("Commands"), @tr("Application"), @tr("System actions"), @tr("Text"), @tr("Pause")][index];
                                     padding: 0px; padding-bottom: 4px;
                                     if (!ActionPicker.command-only || index == 8) && (index != 8 || ActionPicker.commands-enabled): VerticalBox { padding: 0px;
                                     if index < 6 || (!ActionPicker.key-only && !ActionPicker.hold-action && (index < 12 || ActionPicker.macro-step)): CategoryButton {
@@ -201,13 +203,12 @@ export component PickerOverlay inherits Rectangle {
                             LineEdit { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name"); edited => { ActionPicker.edit-command(); } }
                             TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; edited => { ActionPicker.edit-command(); } }
                             LineEdit { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (optional)"); edited => { ActionPicker.edit-command(); } }
-                            if !ActionPicker.command-only: Button { text: @tr("New command"); clicked => { ActionPicker.value = ""; ActionPicker.command-name = ""; ActionPicker.command-script = ""; ActionPicker.command-directory = ""; ActionPicker.edit-command(); } }
                         }
                         if ActionPicker.query == "" && ActionPicker.category == 12: VerticalBox { padding: 0px;
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
                             LineEdit { text: ActionPicker.pause-content; edited => { ActionPicker.touched = true; ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
                         }
-                        if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.category < 11): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
+                        if !ActionPicker.command-only && (ActionPicker.query != "" || (ActionPicker.category < 11 && ActionPicker.category != 8)): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
                             VerticalLayout { spacing: 0px;
                                 for row in ceil(ActionPicker.items.length / catalog.columns): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
                                     for col in catalog.columns: PickerCell {
@@ -218,7 +219,7 @@ export component PickerOverlay inherits Rectangle {
                                 }
                             }
                         }
-                        if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.category < 11) && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
+                        if !ActionPicker.command-only && (ActionPicker.query != "" || (ActionPicker.category < 11 && ActionPicker.category != 8)) && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
                     }
                 }
                 HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;

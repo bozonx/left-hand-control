@@ -427,6 +427,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .iter()
             .filter(|entry| {
                 (!key_only || entry.category < MACROS)
+                    // Each action owns its command; existing ones are not offered.
+                    && entry.category != COMMANDS
                     && !unavailable_keys
                         .iter()
                         .any(|key| key == entry.value.as_str())
