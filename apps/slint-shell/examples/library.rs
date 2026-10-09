@@ -150,12 +150,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
     menus.apply_emoji(&emoji);
     menus.apply_quick(&quick);
-    quick.set_query("previous search".into());
     popup_model::select_page(Popup::Emoji, 4, &emoji, &quick);
     assert_eq!(emoji.get_page(), 3);
     popup_model::select_page(Popup::Quick, 3, &emoji, &quick);
     assert_eq!(quick.get_page(), 2);
-    assert_eq!(quick.get_query(), "");
     assert_eq!(
         Command::parse("show emoji 4")?,
         Command::ShowPage(Popup::Emoji, 4)

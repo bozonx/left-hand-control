@@ -1,11 +1,11 @@
-import { Button, VerticalBox, HorizontalBox } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { PopupCell, PopupHeader, PopupKeys } from "popup-grid.slint";
 
 /// Emoji menu: pages of 3 × 5 cells addressed by the left-hand hotkeys.
 export component EmojiPopup inherits Window {
     title: @tr("Emoji");
-    width: 520px;
-    height: 460px;
+    width: 480px;
+    height: 350px;
     no-frame: true;
     always-on-top: true;
     background: transparent;
@@ -13,47 +13,39 @@ export component EmojiPopup inherits Window {
     in property <[string]> emojis;
     in property <[string]> page-names;
     in-out property <int> page: 0;
-    in-out property <int> selected: 0;
     in property <bool> presented: true;
     callback key(string);
     callback choose(int);
     callback dismiss();
     public function prepare() { keys.focus(); }
-    Rectangle {
-        visible: root.presented;
-        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
-        background: Theme.surface; border-radius: 16px;
-        VerticalBox {
-            padding: 16px;
-            HorizontalBox {
-                Text { text: root.page-names.length == 0 ? @tr("Emoji") : root.page-names[root.page]; color: Theme.text; }
-                Button { text: "×"; clicked => { root.dismiss(); } }
-            }
-            HorizontalBox {
-                Button { text: "←"; enabled: root.page > 0; clicked => { root.page -= 1; root.selected = 0; keys.focus(); } }
-                Text { text: "" + (root.page-names.length == 0 ? 0 : root.page + 1) + "/" + root.page-names.length; color: Theme.text; horizontal-alignment: center; }
-                Button { text: "→"; enabled: root.page + 1 < root.page-names.length; clicked => { root.page += 1; root.selected = 0; keys.focus(); } }
-            }
-            keys := FocusScope {
-                key-pressed(event) => { root.key(event.text); return accept; }
-                VerticalLayout {
-                    for row in 3: HorizontalLayout {
-                        height: 74px;
-                        for col in 5: Rectangle {
-                            background: root.selected == row * 5 + col ? Theme.selected : transparent;
-                            border-radius: 8px;
-                            Text {
-                                text: root.emojis[root.page * 15 + row * 5 + col];
-                                font-family: "Noto Color Emoji"; font-size: 18px;
-                                overflow: elide;
-                                horizontal-alignment: center; vertical-alignment: center;
-                            }
-                            TouchArea { clicked => { root.choose(row * 5 + col); } }
-                        }
+    keys := FocusScope {
+        key-pressed(event) => { root.key(event.text); return accept; }
+        Rectangle {
+            visible: root.presented;
+            x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+            background: Theme.surface; border-radius: 16px;
+            border-width: 1px; border-color: Theme.divider;
+            VerticalLayout {
+                padding: 16px;
+                spacing: 12px;
+                PopupHeader {
+                    title: @tr("Emoji");
+                    page-name: root.page-names.length == 0 ? "" : root.page-names[root.page];
+                    page: root.page;
+                    page-count: root.page-names.length;
+                    dismiss => { root.dismiss(); }
+                }
+                for row in 3: HorizontalLayout {
+                    spacing: 8px;
+                    for col in 5: PopupCell {
+                        height: 80px;
+                        hotkey: PopupKeys.labels[row * 5 + col];
+                        content: root.emojis[root.page * 15 + row * 5 + col];
+                        emoji: true;
+                        clicked => { root.choose(row * 5 + col); }
                     }
                 }
             }
-            Text { text: "Q W E R T · A S D F G · Z X C V B · Enter · Esc"; color: Theme.text; }
         }
     }
 }

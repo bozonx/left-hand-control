@@ -28,7 +28,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-const WIDTH: u32 = 520;
 /// Poll interval while a popup is visible or was just used: pending
 /// Wayland requests are flushed by the next dispatch.
 const ACTIVE_POLL: Duration = Duration::from_millis(4);
@@ -47,7 +46,6 @@ enum Event {
     Choose(Popup, i32),
     Action(Popup, i32, String),
     Hide(Popup),
-    Filter,
     Focus(Popup, bool),
     Frame(Popup),
 }
@@ -67,17 +65,21 @@ impl Waker {
     }
 }
 
-fn height(popup: Popup) -> u32 {
+fn width(popup: Popup) -> u32 {
     match popup {
-        Popup::Emoji => 460,
-        Popup::Quick => 500,
+        Popup::Emoji => 480,
+        Popup::Quick => 780,
     }
+}
+
+fn height(_popup: Popup) -> u32 {
+    350
 }
 
 fn configuration(popup: Popup) -> Result<WindowConf, Box<dyn std::error::Error>> {
     let mut builder = WindowConf::builder();
     builder
-        .width(WIDTH)
+        .width(width(popup))
         .height(height(popup))
         .anchor_1(LayerAnchor::BOTTOM)
         .margins(0, 0, 24, 0)
@@ -99,8 +101,6 @@ struct Layers {
     /// `unmap` lifecycle: hidden layers commit an empty buffer.
     unmap: bool,
     menus: ConfiguredMenus,
-    /// Actions of the quick items in display order.
-    quick_actions: Vec<String>,
 }
 
 impl Layers {
@@ -123,7 +123,7 @@ impl Layers {
         self.set_presented(popup, false);
         let way = self.way(popup);
         way.remove_focus();
-        way.subtract_input_region(0, 0, WIDTH as i32, height(popup) as i32);
+        way.subtract_input_region(0, 0, width(popup) as i32, height(popup) as i32);
         if unmap {
             way.hide();
         }
@@ -137,7 +137,7 @@ impl Layers {
             Popup::Quick => self.quick.invoke_prepare(),
         }
         let way = self.way(popup);
-        way.add_input_region(0, 0, WIDTH as i32, height(popup) as i32);
+        way.add_input_region(0, 0, width(popup) as i32, height(popup) as i32);
         if unmap {
             way.show_again();
         }
@@ -167,7 +167,7 @@ impl Layers {
     }
 
     fn filter(&mut self) {
-        self.quick_actions = self.menus.filter_quick(&self.quick);
+        self.menus.fill_quick(&self.quick);
     }
 
     /// Action of item `index` of `popup`.
@@ -177,16 +177,14 @@ impl Layers {
                 .menus
                 .emoji(&self.emoji, index)
                 .map(|emoji| format!("text:{emoji}")),
-            Popup::Quick => usize::try_from(index)
-                .ok()
-                .and_then(|index| self.quick_actions.get(index).cloned()),
+            Popup::Quick => self.menus.quick_cell(self.quick.get_page(), index),
         }
     }
 }
 
 /// Initial state: hidden without removing focus that was never granted.
 fn start_hidden(way: &mut SpellWin, popup: Popup, unmap: bool) {
-    way.subtract_input_region(0, 0, WIDTH as i32, height(popup) as i32);
+    way.subtract_input_region(0, 0, width(popup) as i32, height(popup) as i32);
     if unmap {
         way.hide();
     }
@@ -301,20 +299,15 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         quick,
         unmap,
         menus: ConfiguredMenus::default(),
-        quick_actions: Vec::new(),
     };
     layers.filter();
     metrics.ready("quick");
     for popup in Popup::ALL {
         let keys = waker.clone();
-        let quick = layers.quick.as_weak();
         layers
             .way(popup)
-            .set_key_handler(move |code, shift, control| {
-                let searching = quick.upgrade().is_some_and(|quick| quick.get_searching());
-                if let Some(shortcut) =
-                    popup_model::evdev_shortcut(popup, code, shift, control, searching)
-                {
+            .set_key_handler(move |code, shift, _control| {
+                if let Some(shortcut) = popup_model::evdev_shortcut(code, shift) {
                     keys.send(Event::Shortcut(popup, shortcut));
                     true
                 } else {
@@ -368,6 +361,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         while let Ok(event) = rx.try_recv() {
             active = true;
             let mut dismiss = None;
+            let mut outcome = None;
             match event {
                 Event::Command(Command::Preferences(preferences), _, _) => {
                     layers.apply(preferences);
@@ -476,66 +470,40 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     dismiss = Some(popup);
                 }
                 Event::Action(_, _, _) => {}
-                Event::Filter => {
-                    if layers
-                        .quick
-                        .get_query()
-                        .chars()
-                        .any(|c| ('\u{0400}'..='\u{04ff}').contains(&c))
-                    {
-                        metrics.mark("quick", "filter_cyrillic");
-                    }
-                    layers.filter();
-                    metrics.mark("quick", "filter_changed");
-                }
                 Event::Shortcut(popup, shortcut) if visible == Some(popup) => {
                     metrics.mark(popup.name(), "t5_first_key");
-                    match popup_model::apply_shortcut(popup, shortcut, &layers.emoji, &layers.quick)
-                    {
-                        KeyOutcome::ChooseCell(index) => {
-                            let action = if popup == Popup::Emoji {
-                                layers.action(popup, index)
-                            } else {
-                                layers.menus.quick_cell(layers.quick.get_page(), index)
-                            };
-                            if let Some(action) = action {
-                                waker.send(Event::Action(popup, index, action));
-                            }
-                        }
-                        KeyOutcome::PageChanged => {
-                            layers.filter();
-                            metrics.mark(popup.name(), "navigation_handled");
-                            navigation_count += 1;
-                            if navigation_count > 1 {
-                                metrics.mark(popup.name(), "navigation_repeated");
-                            }
-                        }
-                        _ => {}
-                    }
+                    outcome = Some((
+                        popup,
+                        popup_model::apply_shortcut(popup, shortcut, &layers.emoji, &layers.quick),
+                    ));
                 }
                 Event::Shortcut(_, _) => {}
                 Event::Key(popup, key) if visible == Some(popup) => {
                     metrics.mark(popup.name(), "t5_first_key");
-                    let outcome = match popup {
+                    let result = match popup {
                         Popup::Emoji => popup_model::emoji_key(&layers.emoji, &key),
                         Popup::Quick => popup_model::quick_key(&layers.quick, &key),
                     };
-                    match outcome {
-                        KeyOutcome::Dismiss => dismiss = Some(popup),
-                        KeyOutcome::Choose(index) => waker.send(Event::Choose(popup, index)),
-                        KeyOutcome::Moved => {
-                            metrics.mark(popup.name(), "navigation_handled");
-                            navigation_count += 1;
-                            if navigation_count > 1 {
-                                metrics.mark(popup.name(), "navigation_repeated");
-                            }
-                        }
-                        KeyOutcome::Ignored
-                        | KeyOutcome::ChooseCell(_)
-                        | KeyOutcome::PageChanged => {}
-                    }
+                    outcome = Some((popup, result));
                 }
                 Event::Key(_, _) => {}
+            }
+            match outcome {
+                Some((popup, KeyOutcome::Dismiss)) => dismiss = Some(popup),
+                Some((popup, KeyOutcome::ChooseCell(index))) => {
+                    if let Some(action) = layers.action(popup, index) {
+                        waker.send(Event::Action(popup, index, action));
+                    }
+                }
+                Some((popup, KeyOutcome::PageChanged)) => {
+                    layers.filter();
+                    metrics.mark(popup.name(), "navigation_handled");
+                    navigation_count += 1;
+                    if navigation_count > 1 {
+                        metrics.mark(popup.name(), "navigation_repeated");
+                    }
+                }
+                Some((_, KeyOutcome::Ignored)) | None => {}
             }
             if let Some(popup) = dismiss
                 && visible == Some(popup)
@@ -584,8 +552,6 @@ fn show(
     source: Source,
     start: Instant,
 ) {
-    layers.quick.set_query("".into());
-    layers.quick.set_searching(false);
     layers.filter();
     if let Some(page) = page {
         popup_model::select_page(popup, page, &layers.emoji, &layers.quick);
@@ -630,8 +596,4 @@ fn bind_callbacks(layers: &Layers, waker: &Waker) {
     layers
         .quick
         .on_dismiss(move || w.send(Event::Hide(Popup::Quick)));
-    let w = waker.clone();
-    layers.quick.on_change_page(move |_| w.send(Event::Filter));
-    let w = waker.clone();
-    layers.quick.on_filter(move |_| w.send(Event::Filter));
 }

@@ -151,12 +151,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     let quick_popup = QuickPopup::new()?;
-    quick_popup.set_query("old query".into());
-    quick_popup.invoke_begin_search();
-    assert!(quick_popup.get_searching());
     quick_popup.invoke_prepare();
-    assert!(!quick_popup.get_searching());
-    assert!(quick_popup.get_query().is_empty());
 
     let picker = ui.global::<ActionPicker>();
     let library = ui.global::<LayoutLibrary>();

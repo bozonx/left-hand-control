@@ -1,0 +1,72 @@
+import { Theme } from "theme.slint";
+
+/// Shared pieces of the Emoji and Quick action popups.
+
+/// One cell of the 3 × 5 grid, labelled with its left-hand hotkey.
+export component PopupCell inherits Rectangle {
+    in property <string> hotkey;
+    in property <string> content;
+    in property <bool> emoji;
+    callback clicked();
+    property <bool> empty: root.content == "";
+    background: area.has-hover && !root.empty ? Theme.hover : Theme.card;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: Theme.divider;
+    Text {
+        x: 8px; y: 5px;
+        text: root.hotkey;
+        color: root.empty ? Theme.divider : Theme.accent;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    Text {
+        x: 8px; y: 18px;
+        width: parent.width - 16px; height: parent.height - 22px;
+        text: root.content;
+        color: Theme.text;
+        font-family: root.emoji ? "Noto Color Emoji" : "";
+        font-size: root.emoji ? 28px : 13px;
+        wrap: root.emoji ? no-wrap : word-wrap;
+        overflow: elide;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    area := TouchArea {
+        enabled: !root.empty;
+        mouse-cursor: root.empty ? default : pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+/// Title, current page, the Tab hint and the close button.
+export component PopupHeader inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> page-name;
+    in property <int> page;
+    in property <int> page-count;
+    callback dismiss();
+    spacing: 10px;
+    height: 32px;
+    Text { text: root.title; color: Theme.text; font-size: 16px; font-weight: 600; vertical-alignment: center; }
+    if root.page-count > 0 && root.page-name != "": Text {
+        text: root.page-name; color: Theme.muted; font-size: 14px;
+        vertical-alignment: center; overflow: elide;
+    }
+    Rectangle { horizontal-stretch: 1; }
+    if root.page-count > 1: Text {
+        text: @tr("Tab · {}/{}", root.page + 1, root.page-count);
+        color: Theme.muted; font-size: 12px; vertical-alignment: center;
+    }
+    Rectangle {
+        width: 28px;
+        border-radius: 6px;
+        background: close.has-hover ? Theme.hover : transparent;
+        Text { text: "×"; color: Theme.muted; font-size: 18px; }
+        close := TouchArea { clicked => { root.dismiss(); } }
+    }
+}
+
+export global PopupKeys {
+    out property <[string]> labels: ["Q", "W", "E", "R", "T", "A", "S", "D", "F", "G", "Z", "X", "C", "V", "B"];
+}

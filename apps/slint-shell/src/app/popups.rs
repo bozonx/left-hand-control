@@ -116,8 +116,6 @@ impl App {
                     self.return_input.borrow_mut().capture();
                 }
             }
-            self.quick.set_query("".into());
-            self.quick.set_searching(false);
             self.refresh_popup_data();
             if let Some(page) = page {
                 popup_model::select_page(popup, page, &self.emoji, &self.quick);
@@ -183,19 +181,13 @@ impl App {
     fn popup_outcome(&self, popup: Popup, outcome: KeyOutcome) {
         match outcome {
             KeyOutcome::Dismiss => self.defer_hide(Window::Popup(popup)),
-            KeyOutcome::Choose(index) => self.choose(popup, index),
-            KeyOutcome::ChooseCell(index) => {
-                if popup == Popup::Emoji {
-                    self.choose(popup, index);
-                } else if let Some(action) = self.menus().quick_cell(self.quick.get_page(), index) {
-                    self.choose_action(popup, action);
-                }
+            KeyOutcome::ChooseCell(index) => self.choose(popup, index),
+            KeyOutcome::PageChanged => {
+                self.filter_quick();
+                self.metrics
+                    .borrow_mut()
+                    .mark(popup.name(), "navigation_handled");
             }
-            KeyOutcome::PageChanged => self.filter_quick(),
-            KeyOutcome::Moved => self
-                .metrics
-                .borrow_mut()
-                .mark(popup.name(), "navigation_handled"),
             KeyOutcome::Ignored => {}
         }
     }
@@ -206,9 +198,7 @@ impl App {
                 .menus()
                 .emoji(&self.emoji, index)
                 .map(|emoji| format!("text:{emoji}")),
-            Popup::Quick => usize::try_from(index)
-                .ok()
-                .and_then(|index| self.quick_actions.borrow().get(index).cloned()),
+            Popup::Quick => self.menus().quick_cell(self.quick.get_page(), index),
         };
         let Some(action) = action else { return };
         self.choose_action(popup, action);
@@ -252,7 +242,7 @@ impl App {
     }
 
     pub(super) fn filter_quick(&self) {
-        *self.quick_actions.borrow_mut() = self.menus().filter_quick(&self.quick);
+        self.menus().fill_quick(&self.quick);
     }
 }
 
@@ -330,13 +320,8 @@ fn observe(app: &Rc<App>, window: Window) {
                 && let WindowEvent::KeyboardInput { event, .. } = event
                 && let slint::winit_030::winit::keyboard::PhysicalKey::Code(code) =
                     event.physical_key
-                && let Some(shortcut) = popup_model::shortcut(
-                    popup,
-                    &format!("{code:?}"),
-                    modifiers.get().shift_key(),
-                    modifiers.get().control_key(),
-                    app.quick.get_searching(),
-                )
+                && let Some(shortcut) =
+                    popup_model::shortcut(&format!("{code:?}"), modifiers.get().shift_key())
             {
                 if event.state == slint::winit_030::winit::event::ElementState::Pressed
                     && !event.repeat
@@ -400,10 +385,7 @@ pub(super) fn bind(app: &Rc<App>) {
     app.emoji
         .on_dismiss(|| with_app(|app| app.defer_hide(Window::EMOJI)));
     app.quick
-        .on_change_page(|_| with_app(|app| app.filter_quick()));
-    app.quick
         .on_key(|key| with_app(|app| app.popup_key(Popup::Quick, &key)));
-    app.quick.on_filter(|_| with_app(|app| app.filter_quick()));
     app.quick
         .on_choose(|index| with_app(|app| app.choose(Popup::Quick, index)));
     app.quick

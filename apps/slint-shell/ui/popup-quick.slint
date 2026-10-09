@@ -1,82 +1,48 @@
-import { ScrollView } from "scroll.slint";
-import { LineEdit, VerticalBox, HorizontalBox, Button } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { PopupCell, PopupHeader, PopupKeys } from "popup-grid.slint";
+
+/// Quick actions: pages of 3 × 5 cells addressed by the left-hand hotkeys.
 export component QuickPopup inherits Window {
     title: @tr("Quick actions");
-    width: 520px; height: 500px;
+    width: 780px;
+    height: 350px;
     no-frame: true; always-on-top: true; background: transparent;
+    /// Labels of the current page, 15 cells; empty cells have no action.
     in property <[string]> items;
     in property <[string]> page-names;
     in-out property <int> page;
-    callback change-page(int);
-    in-out property <string> query;
-    in-out property <bool> searching;
-    in-out property <int> selected;
-    callback filter(string);
-    callback key(string);
     in property <bool> presented: true;
+    callback key(string);
     callback choose(int);
     callback dismiss();
-    public function prepare() { root.query = ""; root.searching = false; keys.focus(); }
-    public function begin-search() { root.searching = true; search.focus(); }
+    public function prepare() { keys.focus(); }
     keys := FocusScope {
-    key-pressed(event) => {
-        if event.modifiers.alt && event.text >= "1" && event.text <= "9" {
-            root.choose(event.text.to-float() - 1);
-        } else { root.key(event.text); }
-        return accept;
-    }
-    Rectangle {
-        visible: root.presented;
-        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
-        background: Theme.surface; border-radius: 16px;
-        VerticalBox {
-            padding: 16px;
-            HorizontalBox {
-                Text { text: @tr("Quick actions"); color: Theme.text; font-size: 22px; }
-                Button { text: @tr("Search"); clicked => { root.begin-search(); } }
-                Button { text: "×"; clicked => { root.dismiss(); } }
-            }
-            if root.page-names.length > 0: HorizontalBox {
-                Button { text: "←"; enabled: root.page > 0; clicked => { root.page -= 1; root.change-page(root.page); if root.searching { search.focus(); } else { keys.focus(); } } }
-                Text { text: root.page-names[root.page]; color: Theme.text; horizontal-stretch: 1; }
-                Button { text: "→"; enabled: root.page + 1 < root.page-names.length; clicked => { root.page += 1; root.change-page(root.page); if root.searching { search.focus(); } else { keys.focus(); } } }
-            }
-            search := LineEdit {
-                visible: root.searching;
-                text <=> root.query;
-                placeholder-text: @tr("Filter");
-                edited => { root.filter(self.text); }
-                key-pressed(event) => {
-                    if event.modifiers.alt && event.text >= "1" && event.text <= "9" {
-                        root.choose(event.text.to-float() - 1);
-                        return accept;
-                    }
-                    if event.text == Key.UpArrow || event.text == Key.DownArrow || event.text == Key.Escape || event.text == Key.Return {
-                        root.key(event.text);
-                        return accept;
-                    }
-                    return reject;
+        key-pressed(event) => { root.key(event.text); return accept; }
+        Rectangle {
+            visible: root.presented;
+            x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+            background: Theme.surface; border-radius: 16px;
+            border-width: 1px; border-color: Theme.divider;
+            VerticalLayout {
+                padding: 16px;
+                spacing: 12px;
+                PopupHeader {
+                    title: @tr("Quick actions");
+                    page-name: root.page-names.length == 0 ? "" : root.page-names[root.page];
+                    page: root.page;
+                    page-count: root.page-names.length;
+                    dismiss => { root.dismiss(); }
                 }
-            }
-            ScrollView {
-                viewport-width: self.visible-width;
-                viewport-height: root.items.length * 42px;
-                viewport-y: -max(0, root.selected - 6) * 42px;
-                for item[index] in root.items: Rectangle {
-                    y: index * 42px; height: 40px;
-                    background: index == root.selected ? Theme.selected : transparent;
-                    border-radius: 8px;
-                    HorizontalLayout {
-                        padding: 8px;
-                        Text { text: "◆"; color: Theme.text; width: 28px; }
-                        Text { text: item; color: Theme.text; }
-                        Text { text: index < 9 ? "Alt+" + (index + 1) : ""; color: Theme.muted; }
+                for row in 3: HorizontalLayout {
+                    spacing: 8px;
+                    for col in 5: PopupCell {
+                        height: 80px;
+                        hotkey: PopupKeys.labels[row * 5 + col];
+                        content: root.items[row * 5 + col];
+                        clicked => { root.choose(row * 5 + col); }
                     }
-                    TouchArea { clicked => { root.choose(index); } }
                 }
             }
         }
     }
-}
 }

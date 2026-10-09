@@ -46,11 +46,11 @@ msgstr "Устройство сохранено: {}"
 msgid "Emoji"
 msgstr "Эмодзи"
 
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
 msgid "Enter non-empty text"
 msgstr "Введите непустой текст"
-
-msgid "Filter"
-msgstr "Фильтр / Filter"
 
 msgid "Key {} only has conditional or layer rules; edit it in the full editor"
 msgstr "Клавиша {} имеет только условные или послойные правила; отредактируйте её в полном редакторе"
@@ -1320,9 +1320,6 @@ msgstr "Ввод текста"
 
 msgid "Layout detection"
 msgstr "Определение раскладки"
-
-msgid "Search"
-msgstr "Поиск"
 
 msgid "Launch on startup"
 msgstr "Запускать вместе с системой"

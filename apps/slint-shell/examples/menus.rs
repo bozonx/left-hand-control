@@ -98,7 +98,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(layout.quick_actions[2].action, "text:Здравствуйте");
     assert_eq!(layout.quick_actions[2].name, "text:Здравствуйте");
     let menus = slint_shell::popup_model::ConfiguredMenus { layout };
-    assert_eq!(menus.quick_page("ЗАПУСК", None)[0].1, reference.as_str());
+    assert_eq!(menus.quick_labels(0)[0], "Запуск");
+    assert_eq!(menus.quick_cell(0, 0).as_deref(), Some(reference.as_str()));
     e.invoke_set_action(0, "macro:missing".into(), "".into());
     assert_ne!(e.get_status().id.as_str(), "");
     assert_eq!(

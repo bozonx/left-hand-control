@@ -52,8 +52,6 @@ pub(crate) struct App {
     menu_generation: Cell<u64>,
     /// Layout and generation last sent to the Spell worker.
     menus_sent: RefCell<Option<(Option<String>, u64)>>,
-    /// Actions of the quick popup items in display order.
-    quick_actions: RefCell<Vec<String>>,
     /// Action chosen in a popup, run once the popup lost the focus.
     pending_action: RefCell<Option<(Popup, String)>>,
     supervisor: RefCell<worker::Supervisor>,
@@ -363,7 +361,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         menus: RefCell::default(),
         menu_generation: Cell::new(0),
         menus_sent: RefCell::default(),
-        quick_actions: RefCell::default(),
         pending_action: RefCell::default(),
         supervisor: RefCell::new(worker::Supervisor::new(use_spell)),
         preferences: Cell::new(Preferences::default()),

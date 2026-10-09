@@ -377,12 +377,18 @@ export component LibraryPage inherits VerticalBox {
                         }
                     }
                     VerticalLayout { width: 220px; spacing: 8px; alignment: start;
-                        Text { text: @tr("{n} rule" | "{n} rules" % LayoutLibrary.summaries[index].rules); color: Theme.muted; font-size: 13px; }
-                        Text { text: @tr("{n} layer" | "{n} layers" % LayoutLibrary.summaries[index].layers); color: Theme.muted; font-size: 13px; }
-                        Text { text: @tr("{n} emoji page" | "{n} emoji pages" % LayoutLibrary.summaries[index].emoji-pages); color: Theme.muted; font-size: 13px; }
-                        Text { text: @tr("{n} action page" | "{n} action pages" % LayoutLibrary.summaries[index].action-pages); color: Theme.muted; font-size: 13px; }
-                        Text { text: @tr("{n} macro" | "{n} macros" % LayoutLibrary.summaries[index].macros); color: Theme.muted; font-size: 13px; }
-                        Text { text: @tr("{n} command" | "{n} commands" % LayoutLibrary.summaries[index].commands); color: Theme.muted; font-size: 13px; }
+                        property <LayoutSummary> summary: LayoutLibrary.summaries[index];
+                        if summary.rules + summary.layers + summary.emoji-pages + summary.action-pages + summary.macros + summary.commands == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: 13px; }
+                        if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: 13px; }
+                        if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: 13px; }
+                        if summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: 13px; }
+                        if summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: 13px; }
+                        if summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: 13px; }
+                        // Commands run shell scripts, so they stand out when reviewing a layout.
+                        if summary.commands > 0: HorizontalLayout { spacing: 6px; alignment: start;
+                            Image { width: 14px; height: 14px; y: (parent.height - self.height) / 2; source: @image-url("icons/triangle-alert.svg"); colorize: Theme.warning; }
+                            Text { text: @tr("{n} command" | "{n} commands" % summary.commands); color: Theme.warning; font-size: 13px; font-weight: 600; }
+                        }
                     }
                 }
                 }
