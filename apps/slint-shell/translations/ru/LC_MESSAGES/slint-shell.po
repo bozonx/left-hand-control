@@ -727,6 +727,9 @@ msgstr "Создать раскладку"
 msgid "Empty"
 msgstr "Пустая"
 
+msgid "Empty layout"
+msgstr "Пустая раскладка"
+
 msgid "Previously selected: {}"
 msgstr "Было выбрано: {}"
 
@@ -1197,9 +1200,6 @@ msgstr "Места и транспорт"
 
 msgid "UTF Symbols"
 msgstr "UTF-символы"
-
-msgid "Typography"
-msgstr "Типографика"
 
 msgid "Texts"
 msgstr "Тексты"
