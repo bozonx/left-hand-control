@@ -1776,3 +1776,18 @@ msgstr "Удерживаемая клавиша: {}"
 
 msgid "Assigned to"
 msgstr "Где назначена"
+
+msgid "Held key"
+msgstr "Удерживать клавишу"
+
+msgid "Holds the selected key or combination while the trigger is held. It can be combined with layer activation. Leave empty to activate only the layer."
+msgstr "Удерживает выбранную клавишу или сочетание, пока удерживается клавиша правила. Можно использовать вместе с включением слоя. Оставьте поле пустым, чтобы только активировать слой."
+
+msgid "Languages"
+msgstr "Языки"
+
+msgid "Excluded applications"
+msgstr "Исключённые приложения"
+
+msgid "Open page in popup"
+msgstr "Открыть страницу во всплывающем окне"

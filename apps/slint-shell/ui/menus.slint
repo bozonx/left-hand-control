@@ -28,6 +28,7 @@ export global MenuEditor {
     callback select-cell(int);
     callback add-page(string);
     callback remove-page();
+    callback show-page();
     callback move-page(int);
     /// Read `page-name`, `value` and `name` into the selected page and cell.
     callback rename-page();
@@ -175,8 +176,9 @@ component HotkeyGrid inherits Rectangle {
 component PageEditor inherits HorizontalLayout {
     callback remove();
     spacing: 4px;
-    FieldLabel { text: @tr("Page"); vertical-alignment: center; }
+    FieldLabel { text: @tr("Page"); horizontal-stretch: 0; max-width: self.preferred-width; vertical-alignment: center; }
     InlineTextField { horizontal-stretch: 1; text: MenuEditor.page-name; label: @tr("Page name"); allow-empty: false; saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
+    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/app-window.svg"); label: @tr("Open page in popup"); clicked => { MenuEditor.show-page(); } } }
     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); danger: true; clicked => { root.remove(); } } }
 }
 

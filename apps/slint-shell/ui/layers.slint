@@ -204,8 +204,8 @@ component HandGrid inherits VerticalLayout {
         spacing: 6px;
         for col in root.columns: Rectangle {
             height: 46px;
-            min-width: 0px;
-            horizontal-stretch: 1;
+            width: (root.width - (root.columns - 1) * 6px) / root.columns;
+            horizontal-stretch: 0;
             if root.cells[row * root.columns + col].index >= 0: KeyCap {
                 width: parent.width;
                 height: parent.height;
@@ -380,7 +380,7 @@ export component LayersPage inherits VerticalLayout {
                         padding: 20px;
                         spacing: 24px;
                         HandGrid {
-                            width: (root.width - 16px - 40px - 24px - 72px) / 14 * 6 + 30px;
+                            width: (root.width - 16px - 40px - 24px) / 2;
                             horizontal-stretch: 0;
                             title: @tr("Left hand");
                             cells: LayersEditor.left-cells;
@@ -389,7 +389,7 @@ export component LayersPage inherits VerticalLayout {
                             edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
                         }
                         HandGrid {
-                            width: (root.width - 16px - 40px - 24px - 72px) / 14 * 8 + 42px;
+                            width: (root.width - 16px - 40px - 24px) / 2;
                             horizontal-stretch: 0;
                             title: @tr("Right hand");
                             cells: LayersEditor.right-cells;
@@ -448,8 +448,8 @@ export component LayersPage inherits VerticalLayout {
                                 padding-left: 14px;
                                 spacing: 16px;
                                 VerticalLayout {
-                                    horizontal-stretch: 1;
-                                    min-width: 0px;
+                                    width: 200px;
+                                    horizontal-stretch: 0;
                                     spacing: 2px;
                                     Text { text: @tr("Key"); color: Theme.muted; font-size: 11px; }
                                     ExtraFieldButton { text: extra.key; clicked => { LayersEditor.pick-extra(index, true); } }
@@ -457,6 +457,7 @@ export component LayersPage inherits VerticalLayout {
                                 VerticalLayout {
                                     horizontal-stretch: 1;
                                     min-width: 0px;
+                                    preferred-width: 0px;
                                     spacing: 2px;
                                     Text { text: @tr("Action"); color: Theme.muted; font-size: 11px; }
                                     ExtraFieldButton {

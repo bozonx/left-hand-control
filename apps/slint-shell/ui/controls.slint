@@ -270,7 +270,7 @@ export component PageTabs inherits ScrollView {
             }
             touch := TouchArea { mouse-cursor: pointer; clicked => { root.select(index); } }
         }
-        IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add page"); clicked => { root.add(); } }
+        IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Add page"); primary: true; clicked => { root.add(); } }
     }
 }
 

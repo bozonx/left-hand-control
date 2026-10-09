@@ -8,6 +8,7 @@ use crate::{
     command::{Command, Popup, Source, Window},
     popup_model::{self, ConfiguredMenus, KeyOutcome},
 };
+use slint::ComponentHandle;
 use slint::winit_030::{EventResult, WinitWindowAccessor, winit::event::WindowEvent};
 use std::{rc::Rc, time::Instant};
 
@@ -355,6 +356,25 @@ pub(super) fn bind(app: &Rc<App>) {
     for window in Window::ALL {
         observe(app, window);
     }
+    app.settings
+        .global::<crate::ui::MenuEditor>()
+        .on_show_page(|| {
+            with_app(|app| {
+                let editor = app.settings.global::<crate::ui::MenuEditor>();
+                let popup = match editor.get_kind() {
+                    crate::ui::MenuKind::Emoji => Popup::Emoji,
+                    crate::ui::MenuKind::Quick => Popup::Quick,
+                };
+                if let Ok(page) = u8::try_from(editor.get_selected_page() + 1) {
+                    app.command(
+                        Command::ShowPage(popup, page),
+                        Source::Button,
+                        Instant::now(),
+                        None,
+                    );
+                }
+            });
+        });
     app.emoji
         .on_key(|key| with_app(|app| app.popup_key(Popup::Emoji, &key)));
     app.emoji
