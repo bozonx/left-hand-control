@@ -1791,3 +1791,6 @@ msgstr "Исключённые приложения"
 
 msgid "Open page in popup"
 msgstr "Открыть страницу во всплывающем окне"
+
+msgid "Page:"
+msgstr "Страница:"

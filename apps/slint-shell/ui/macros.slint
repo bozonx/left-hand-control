@@ -123,7 +123,8 @@ component MacroCard inherits Card {
             HorizontalLayout {
                 spacing: 12px;
                 VerticalLayout {
-                    horizontal-stretch: 1;
+                    width: (parent.width - 12px) / 2;
+                    horizontal-stretch: 0;
                     spacing: 4px;
                     HorizontalLayout {
                         spacing: 6px;
@@ -143,7 +144,8 @@ component MacroCard inherits Card {
                     }
                 }
                 VerticalLayout {
-                    horizontal-stretch: 1;
+                    width: (parent.width - 12px) / 2;
+                    horizontal-stretch: 0;
                     spacing: 4px;
                     HorizontalLayout {
                         spacing: 6px;
@@ -164,6 +166,8 @@ component MacroCard inherits Card {
                 spacing: 12px;
                 alignment: start;
                 VerticalLayout {
+                    width: (parent.width - 12px) / 2;
+                    horizontal-stretch: 0;
                     spacing: 4px;
                     HorizontalLayout {
                         spacing: 6px;
@@ -182,6 +186,8 @@ component MacroCard inherits Card {
                     }
                 }
                 VerticalLayout {
+                    width: (parent.width - 12px) / 2;
+                    horizontal-stretch: 0;
                     spacing: 4px;
                     HorizontalLayout {
                         spacing: 6px;
