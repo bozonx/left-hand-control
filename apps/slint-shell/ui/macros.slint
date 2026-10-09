@@ -94,7 +94,7 @@ component StepRow inherits HorizontalLayout {
         }
     }
     DragHandle { group: 100 + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
-    IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step"); danger: true; clicked => { root.remove(); } }
+    IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step"); clicked => { root.remove(); } }
 }
 
 component MacroCard inherits Card {
@@ -118,7 +118,7 @@ component MacroCard inherits Card {
                 spacing: 2px;
                 DragHandle { group: 4; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
                 Rectangle { horizontal-stretch: 1; }
-                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro"); danger: true; clicked => { root.remove(); } }
+                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro"); clicked => { root.remove(); } }
             }
             HorizontalLayout {
                 spacing: 12px;
@@ -283,7 +283,7 @@ component SystemMacroLine inherits Rectangle {
     row-touch := TouchArea {}
     VerticalLayout {
         HorizontalLayout {
-            padding-top: 6px; padding-bottom: 6px;
+            padding: 8px;
             spacing: 12px;
             HorizontalLayout {
                 width: 190px;
@@ -306,7 +306,6 @@ component SystemMacroLine inherits Rectangle {
                 width: 170px;
                 alignment: center;
                 Button {
-                    opacity: row-touch.has-hover ? 1 : 0;
                     text: @tr("Create based on");
                     icon: @image-url("icons/copy-plus.svg");
                     colorize-icon: true;
@@ -328,7 +327,7 @@ component SystemMacrosCard inherits Card {
         if root.open: VerticalLayout {
             spacing: 0px;
             HorizontalLayout {
-                padding-bottom: 6px;
+                padding: 8px;
                 spacing: 12px;
                 FieldLabel { width: 190px; text: @tr("ID"); }
                 FieldLabel { width: 200px; text: @tr("Name"); }

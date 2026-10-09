@@ -368,7 +368,7 @@ export component LibraryPage inherits VerticalBox {
                                         VerticalBox { padding: 4px; spacing: 0px;
                                             LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
                                             Rectangle { height: 1px; background: Theme.border; }
-                                            LayoutMenuItem { text: @tr("Delete…"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                                            LayoutMenuItem { text: @tr("Delete…"); clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
                                         }
                                     }
                                 }
