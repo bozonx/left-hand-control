@@ -76,7 +76,7 @@ export component GameModeButton inherits Rectangle {
                             focus.focus(); menu.close();
                         }
                     }
-                    Rectangle { height: 1px; background: Theme.border; }
+                    Rectangle { height: 1px; background: Theme.divider; }
                     Text { text: Locale.text(AppState.game-auto-status); color: Theme.muted; wrap: word-wrap; }
                     Text { text: @tr("On and Off last until restart. Auto keeps detecting in the background."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                 }

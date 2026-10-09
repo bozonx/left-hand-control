@@ -218,7 +218,7 @@ component MacroCard inherits Card {
                 for place in root.item.usage: Badge { text: place; }
             }
         }
-        Rectangle { width: 1px; background: Theme.border; }
+        Rectangle { width: 1px; background: Theme.divider; }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 12px; alignment: start;
             HorizontalLayout {
                 spacing: 6px;
@@ -318,7 +318,7 @@ component SystemMacroLine inherits TouchArea {
                 }
             }
         }
-        Rectangle { height: 1px; background: Theme.border; }
+        Rectangle { height: 1px; background: Theme.divider; }
     }
 }
 
@@ -339,7 +339,7 @@ component SystemMacrosCard inherits Card {
                 FieldLabel { horizontal-stretch: 1; text: @tr("Steps"); }
                 Rectangle { width: 170px; }
             }
-            Rectangle { height: 1px; background: Theme.border; }
+            Rectangle { height: 1px; background: Theme.divider; }
             for item[index] in MacroEditor.system-macros: SystemMacroLine {
                 index: index;
                 item: item;

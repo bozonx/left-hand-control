@@ -221,7 +221,7 @@ export component SaveSplitButton inherits Rectangle {
             Rectangle {
                 width: 1px;
                 height: parent.height;
-                background: Theme.border;
+                background: Theme.divider;
             }
             chevron-btn := Rectangle {
                 width: 26px;
@@ -305,7 +305,7 @@ export component LibraryPage inherits VerticalBox {
         HorizontalLayout {
             spacing: 8px;
             Text { text: @tr("Create layout") + ":"; color: Theme.text; vertical-alignment: center; }
-            Button { text: @tr("New"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+            Button { text: @tr("New"); primary: LayoutLibrary.names.length > 0; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
             Button { text: @tr("Based on Ivan K layout"); clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
         }
     }
@@ -338,7 +338,7 @@ export component LibraryPage inherits VerticalBox {
                 background: Theme.card;
                 border-radius: 8px;
                 border-width: DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index ? 2px : card.active ? 2px : 1px;
-                border-color: card.active || (DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index) ? Theme.accent : Theme.border;
+                border-color: card.active || (DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index) ? Theme.accent : Theme.divider;
                 TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
                 card-content := HorizontalLayout { padding: 16px; spacing: 20px;
                     VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 10px;
@@ -367,7 +367,7 @@ export component LibraryPage inherits VerticalBox {
                                         background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
                                         VerticalBox { padding: 4px; spacing: 0px;
                                             LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
-                                            Rectangle { height: 1px; background: Theme.border; }
+                                            Rectangle { height: 1px; background: Theme.divider; }
                                             LayoutMenuItem { text: @tr("Delete…"); clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
                                         }
                                     }

@@ -81,7 +81,7 @@ component PickerCell inherits Rectangle {
     min-width: 0px; preferred-width: 0px; horizontal-stretch: 1; height: compact ? (root.item.notice.id != "" ? 54px : 38px) : 76px;
     border-width: root.selected ? 2px : 1px; border-radius: 5px;
     border-color: root.selected || item-focus.has-focus ? Theme.link : Theme.border;
-    background: root.selected ? Theme.accent : item-touch.has-hover ? Theme.hover : Theme.card;
+    background: root.selected ? Theme.selected : item-touch.has-hover ? Theme.hover : Theme.card;
     accessible-role: button;
     accessible-label: item.label;
     accessible-action-default => { root.pick(); }
@@ -103,7 +103,7 @@ component CategoryButton inherits Rectangle {
     in property <string> title;
     in property <int> count;
     height: 32px; border-radius: 4px;
-    background: ActionPicker.query == "" && ActionPicker.category == root.index ? Theme.accent : category-touch.has-hover && ActionPicker.query == "" ? Theme.hover : Theme.card;
+    background: ActionPicker.query == "" && ActionPicker.category == root.index ? Theme.selected : category-touch.has-hover && ActionPicker.query == "" ? Theme.hover : Theme.card;
     opacity: ActionPicker.query == "" ? 1 : 0.55;
     HorizontalLayout {
         padding-left: 8px; padding-right: 8px; spacing: 7px;

@@ -79,8 +79,10 @@ export component ScrollView {
     private property <int> drag-wheel: DragDrop.wheel-serial;
     // Every ScrollView sees the serial change; only the one hosting the drag may consume it.
     changed drag-wheel => {
-        if root.drag-active && DragDrop.wheel != 0px { root.drag-scroll-by(DragDrop.wheel); }
+        if !root.drag-active { return; }
+        let delta = DragDrop.wheel;
         DragDrop.wheel = 0px;
+        root.drag-scroll-by(delta);
     }
     function drag-scroll-by(delta: length) {
         let before = content.viewport-y;

@@ -286,7 +286,7 @@ export component EmojiPage inherits Rectangle {
                     padding: 14px;
                     spacing: 12px;
                     PageEditor { remove => { root.confirming = true; } }
-                    Rectangle { height: 1px; background: Theme.border; }
+                    Rectangle { height: 1px; background: Theme.divider; }
                     FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                     HorizontalLayout {
                         spacing: 4px;
@@ -397,7 +397,7 @@ export component QuickActionsPage inherits Rectangle {
                                     spacing: 12px;
                                     alignment: start;
                                     PageEditor { remove => { root.confirming = true; } }
-                                    Rectangle { height: 1px; background: Theme.border; }
+                                    Rectangle { height: 1px; background: Theme.divider; }
                                     if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                                     if MenuEditor.selected-cell >= 0: FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                                     if root.filled: VerticalLayout {

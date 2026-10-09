@@ -33,6 +33,8 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             Some("eink") => Appearance::EInk,
             _ => Appearance::System,
         },
+        high_contrast: bool_or(raw, "highContrast", base.high_contrast),
+        reduce_motion: bool_or(raw, "reduceMotion", base.reduce_motion),
         locale: match str_of(raw, "locale") {
             Some("en-US") => LocalePreference::English,
             Some("ru-RU") => LocalePreference::Russian,

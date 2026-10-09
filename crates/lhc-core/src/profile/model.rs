@@ -346,6 +346,8 @@ pub enum LayoutMode {
 pub struct AppSettings {
     pub launch_on_startup: bool,
     pub appearance: Appearance,
+    pub high_contrast: bool,
+    pub reduce_motion: bool,
     pub locale: LocalePreference,
     pub default_hold_timeout_ms: u64,
     pub default_long_hold_timeout_ms: u64,
@@ -377,6 +379,8 @@ impl Default for AppSettings {
         Self {
             launch_on_startup: false,
             appearance: Appearance::System,
+            high_contrast: false,
+            reduce_motion: false,
             locale: LocalePreference::Auto,
             default_long_hold_timeout_ms: 1000,
             default_hold_timeout_ms: 200,

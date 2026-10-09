@@ -152,6 +152,8 @@ impl Layers {
         ] {
             theme.set_dark(preferences.theme == ThemeMode::Dark);
             theme.set_eink(preferences.theme == ThemeMode::EInk);
+            theme.set_high_contrast(preferences.high_contrast);
+            theme.set_reduce_motion(preferences.reduce_motion);
             crate::ui::apply_theme(&theme);
             locale.set_english(preferences.language == Language::English);
         }

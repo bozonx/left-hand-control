@@ -27,6 +27,8 @@ const TAP_DECISIONS: [&str; 2] = ["permissiveHold", "holdOnOtherKeyPress"];
 struct Form {
     launch_on_startup: bool,
     appearance: i32,
+    high_contrast: bool,
+    reduce_motion: bool,
     locale: i32,
     tap_decision: i32,
     hold: String,
@@ -59,6 +61,8 @@ impl Form {
         Self {
             launch_on_startup: settings.launch_on_startup,
             appearance: choice_index(&APPEARANCES, &settings.appearance),
+            high_contrast: settings.high_contrast,
+            reduce_motion: settings.reduce_motion,
             locale: choice_index(&LOCALES, &settings.locale),
             tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision.as_str()),
             hold: settings.default_hold_timeout_ms.to_string(),
@@ -89,6 +93,8 @@ impl Form {
         Self {
             launch_on_startup: e.get_launch_on_startup(),
             appearance: e.get_appearance_index(),
+            high_contrast: e.get_high_contrast(),
+            reduce_motion: e.get_reduce_motion(),
             locale: e.get_locale_index(),
             tap_decision: e.get_tap_decision_index(),
             hold: e.get_hold_timeout().into(),
@@ -112,6 +118,8 @@ impl Form {
         let e = ui.global::<SettingsEditor>();
         e.set_launch_on_startup(self.launch_on_startup);
         e.set_appearance_index(self.appearance);
+        e.set_high_contrast(self.high_contrast);
+        e.set_reduce_motion(self.reduce_motion);
         e.set_locale_index(self.locale);
         e.set_tap_decision_index(self.tap_decision);
         e.set_hold_timeout(self.hold.clone().into());
@@ -154,6 +162,8 @@ impl Form {
         }
         changed!(launch_on_startup => settings.launch_on_startup = self.launch_on_startup);
         changed!(appearance => settings.appearance = choice(&APPEARANCES, self.appearance));
+        changed!(high_contrast => settings.high_contrast = self.high_contrast);
+        changed!(reduce_motion => settings.reduce_motion = self.reduce_motion);
         changed!(locale => settings.locale = choice(&LOCALES, self.locale));
         changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision).into());
         changed!(long_hold => settings.default_long_hold_timeout_ms = long_hold);

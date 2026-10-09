@@ -65,7 +65,7 @@ export component QuickPopup inherits Window {
                 viewport-y: -max(0, root.selected - 6) * 42px;
                 for item[index] in root.items: Rectangle {
                     y: index * 42px; height: 40px;
-                    background: index == root.selected ? Theme.accent : transparent;
+                    background: index == root.selected ? Theme.selected : transparent;
                     border-radius: 8px;
                     HorizontalLayout {
                         padding: 8px;

@@ -13,7 +13,7 @@ slint::slint! {
         out property <length> other-y: other.viewport-y;
         // A second ScrollView on the page also observes the wheel and must leave it alone.
         other := ScrollView {
-            x: 300px; width: 100px; height: 100%;
+            x: 300px; width: 50px; height: 100%;
             VerticalLayout { for i in 30: Rectangle { height: 40px; } }
         }
         list := ScrollView {
@@ -27,6 +27,11 @@ slint::slint! {
                     DropMarker { width: parent.width; group: 7; index: i; row-y: parent.y; row-height: parent.height; }
                 }
             }
+        }
+        // `changed` handlers run in an unspecified order, so put a passive ScrollView on both sides.
+        ScrollView {
+            x: 350px; width: 50px; height: 100%;
+            VerticalLayout { for i in 30: Rectangle { height: 40px; } }
         }
     }
 }

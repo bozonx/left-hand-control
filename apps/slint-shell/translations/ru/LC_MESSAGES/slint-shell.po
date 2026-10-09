@@ -328,8 +328,8 @@ msgstr "Правила и триггеры"
 msgid "Define how physical keys activate layers or run actions."
 msgstr "Настройте, как клавиши включают слои и запускают действия."
 
-msgid "+ Add rule"
-msgstr "+ Добавить правило"
+msgid "Add rule"
+msgstr "Добавить правило"
 
 msgid "Not set"
 msgstr "Не задано"
@@ -1845,3 +1845,21 @@ msgstr "Кнопки мыши, мультимедийные клавиши и д
 
 msgid "You can enter emoji, any text, or Unicode symbols here. Drag an item from the palette onto a key to assign it."
 msgstr "Здесь можно вводить эмодзи, любой текст или символы Unicode. Перетащите символ из палитры на клавишу, чтобы назначить его."
+
+msgid "Accessibility"
+msgstr "Доступность"
+
+msgid "High contrast"
+msgstr "Высокая контрастность"
+
+msgid "Pure black or white background, stronger text, borders and focus outlines. Works with the light and dark themes."
+msgstr "Чисто чёрный или белый фон, более яркий текст, границы и рамка фокуса. Работает со светлой и тёмной темой."
+
+msgid "Reduce motion"
+msgstr "Уменьшить анимацию"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "Отключить анимацию подсветки в редакторе."
+
+msgid "Every control can be reached with Tab and activated with Space or Enter. Interface size follows the desktop scale factor."
+msgstr "До любого элемента можно дойти клавишей Tab и нажать его пробелом или Enter. Размер интерфейса следует масштабу рабочего стола."

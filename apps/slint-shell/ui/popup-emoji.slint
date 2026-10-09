@@ -40,7 +40,7 @@ export component EmojiPopup inherits Window {
                     for row in 3: HorizontalLayout {
                         height: 74px;
                         for col in 5: Rectangle {
-                            background: root.selected == row * 5 + col ? Theme.accent : transparent;
+                            background: root.selected == row * 5 + col ? Theme.selected : transparent;
                             border-radius: 8px;
                             Text {
                                 text: root.emojis[root.page * 15 + row * 5 + col];

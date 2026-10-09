@@ -197,7 +197,7 @@ component LayerField inherits VerticalBox {
                                 if RulesEditor.layer-items.length == 0: Text { height: 36px; text: @tr("Layer not found"); color: Theme.muted; vertical-alignment: center; }
                             }
                         }
-                        Rectangle { height: 1px; background: Theme.border; }
+                        Rectangle { height: 1px; background: Theme.divider; }
                         Button { text: RulesEditor.dialog-value == "" ? @tr("Create new layer…") : @tr("Create “{}”", RulesEditor.dialog-value); clicked => { root.creating = true; RulesEditor.new-layer-name = RulesEditor.dialog-value; } }
                         if root.creating: HorizontalLayout { spacing: 8px;
                             name := LineEdit { init => { self.focus(); } text <=> RulesEditor.new-layer-name; placeholder-text: @tr("New layer name"); accepted => { RulesEditor.create-layer(self.text); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
@@ -221,7 +221,7 @@ export component RulesPage inherits VerticalBox {
             InfoTip { text: @tr("Define how physical keys activate layers or run actions."); }
         }
         Rectangle { horizontal-stretch: 1; }
-        Button { max-height: 36px; text: @tr("+ Add rule"); clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
+        Button { max-height: 36px; text: @tr("Add rule"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
     }
     rule-scroll := ScrollView { viewport-width: self.visible-width; drag-scroll: true; vertical-stretch: 1;
         VerticalLayout { padding: 0px; width: rule-scroll.visible-width; spacing: 10px; alignment: start;
@@ -229,9 +229,9 @@ export component RulesPage inherits VerticalBox {
                 vertical-stretch: 0;
                 min-height: max(180px, rule-content.preferred-height);
                 min-width: 0px;
-                background: RulesEditor.created == index ? Theme.accent : Theme.card;
-                animate background { duration: 650ms; }
-                border-color: (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.accent : Theme.border;
+                background: RulesEditor.created == index ? Theme.selected : Theme.card;
+                animate background { duration: Theme.reduce-motion ? 0ms : 650ms; }
+                border-color: (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index) ? Theme.focus : Theme.divider;
                 border-width: 1px;
                 border-radius: 10px;
                 opacity: ItemStyle.opacity(rule.enabled) * (DragDrop.dragging && DragDrop.group == 1 && DragDrop.source == index ? 0.6 : 1);
@@ -263,7 +263,7 @@ export component RulesPage inherits VerticalBox {
                             if rule.game != GameCondition.any: VerticalLayout {
                                 spacing: 4px;
                                 Text { text: @tr("Game mode"); color: Theme.muted; font-size: 11px; }
-                                RuleBadge { available-width: trigger-column.width; text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.accent; }
+                                RuleBadge { available-width: trigger-column.width; text: rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); fill: Theme.selected; }
                             }
                             if rule.languages != "": VerticalLayout {
                                 spacing: 4px;
@@ -281,7 +281,7 @@ export component RulesPage inherits VerticalBox {
                                 for application in ConditionChoices.items(rule.excluded): RuleBadge { available-width: trigger-column.width; text: application; fill: Theme.error.transparentize(0.8); }
                             }
                         }
-                        Rectangle { width: 1px; background: Theme.border; }
+                        Rectangle { width: 1px; background: Theme.divider; }
                         VerticalLayout { min-width: 0px; horizontal-stretch: 1; preferred-width: 0px; spacing: 12px; alignment: start;
                             HorizontalLayout { min-width: 0px; spacing: 12px;
                                 RuleCell { title: @tr("Tap action"); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }

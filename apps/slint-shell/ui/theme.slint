@@ -1,22 +1,43 @@
 import { Palette } from "std-widgets.slint";
+
+/// Neutral zinc surfaces with the sky accent of the Nuxt UI app. Every text
+/// color keeps WCAG AA contrast (4.5:1) on `surface`, `card`, `hover` and
+/// `selected`; `border` keeps 3:1 for control outlines. `accent` matches what
+/// the Fluent style derives from the accent color set in `apply_theme`, so
+/// std-widgets primary buttons and our own controls share one color.
 export global Theme {
     out property <length> page-padding: 20px;
     out property <length> scrollbar-size: 12px;
     out property <length> scrollbar-gap: 4px;
     in-out property <bool> dark: true;
     in-out property <bool> eink: false;
-    out property <color> surface: eink ? #ffffff : dark ? #202531 : #f5f7fc;
-    out property <color> text: eink ? #000000 : dark ? #f0f3fa : #182030;
-    out property <color> muted: eink ? #333333 : dark ? #c2c9d6 : #485568;
-    out property <color> accent: eink ? #cccccc : dark ? #476bb0 : #b7d0fa;
-    out property <color> hover: eink ? #eeeeee : dark ? #3e526e : #dbe6f7;
-    out property <color> card: eink ? #ffffff : dark ? #242d3c : #ffffff;
-    out property <color> border: eink ? #000000 : dark ? #626b7b : #8794a8;
+    in-out property <bool> high-contrast: false;
+    in-out property <bool> reduce-motion: false;
+    property <bool> hc: high-contrast && !eink;
+    /// Window background.
+    out property <color> surface: eink ? #ffffff : hc ? (dark ? #000000 : #ffffff) : dark ? #141416 : #f4f4f5;
+    /// Cards, bars, dialogs.
+    out property <color> card: eink ? #ffffff : hc ? (dark ? #0a0a0a : #ffffff) : dark ? #1c1c1f : #ffffff;
+    out property <color> text: eink ? #000000 : hc ? (dark ? #ffffff : #000000) : dark ? #f4f4f5 : #18181b;
+    out property <color> muted: eink ? #333333 : hc ? (dark ? #e4e4e7 : #27272a) : dark ? #a1a1aa : #52525b;
+    /// Primary action and focus color.
+    out property <color> accent: eink ? #000000 : dark ? #4dccff : #0069a9;
+    /// Foreground on `accent`.
+    out property <color> on-accent: eink ? #ffffff : dark ? #000000 : #ffffff;
+    /// Background of the selected item in lists, tabs and menus.
+    out property <color> selected: eink ? #cccccc : hc ? (dark ? #003a5c : #cce7f8) : dark ? #163246 : #e0f0fb;
+    out property <color> hover: eink ? #eeeeee : hc ? (dark ? #262626 : #e4e4e7) : dark ? #27272b : #ececee;
+    /// Outline of inputs and controls.
+    out property <color> border: eink ? #000000 : hc ? (dark ? #ffffff : #000000) : dark ? #71717a : #8a8a93;
+    /// Separators and card outlines.
+    out property <color> divider: eink ? #000000 : hc ? (dark ? #a1a1aa : #52525b) : dark ? #2e2e33 : #e4e4e7;
+    out property <color> focus: eink ? #000000 : hc ? text : accent;
     /// Foreground for assigned actions on key caps.
-    out property <color> link: eink ? #000000 : dark ? #7fb3ff : #1f5fbf;
-    out property <color> error: eink ? #000000 : dark ? #ffb4ab : #a52222;
-    out property <color> warning: eink ? #000000 : dark ? #f5c26b : #8a5300;
-    out property <color> success: eink ? #000000 : dark ? #7fd6a0 : #1d7a45;
+    out property <color> link: eink ? #000000 : dark ? #4dccff : #0069a9;
+    out property <color> error: eink ? #000000 : hc ? (dark ? #ff8a80 : #8b0000) : dark ? #f87171 : #b91c1c;
+    out property <color> warning: eink ? #000000 : hc ? (dark ? #ffd54f : #6b3a00) : dark ? #fbbf24 : #92400e;
+    out property <color> success: eink ? #000000 : hc ? (dark ? #69f0ae : #0b5d2a) : dark ? #4ade80 : #15803d;
+    out property <duration> motion: reduce-motion ? 0ms : 150ms;
     public function apply() {
         Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light;
     }

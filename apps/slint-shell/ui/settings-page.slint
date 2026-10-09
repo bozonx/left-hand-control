@@ -19,6 +19,8 @@ export global SettingsEditor {
     in-out property <bool> mouse-manual;
     in-out property <bool> launch-on-startup;
     in-out property <int> appearance-index;
+    in-out property <bool> high-contrast;
+    in-out property <bool> reduce-motion;
     in-out property <int> locale-index;
     in-out property <int> tap-decision-index;
     in-out property <string> hold-timeout;
@@ -103,22 +105,27 @@ export component SettingsPage inherits VerticalBox {
             width: 180px;
             horizontal-stretch: 0;
             alignment: start;
-            for label[index] in [@tr("Main"), @tr("Keyboard"), @tr("Game mode"), @tr("System"), @tr("Commands")]: Rectangle {
-                height: 42px;
+            for label[index] in [@tr("Main"), @tr("Accessibility"), @tr("Keyboard"), @tr("Game mode"), @tr("System"), @tr("Commands")]: Rectangle {
+                height: 38px;
                 border-radius: 6px;
-                border-width: 1px;
-                border-color: focus.has-focus ? Theme.text : root.selected-tab == index ? Theme.border : transparent;
-                background: root.selected-tab == index ? Theme.accent : touch.has-hover ? Theme.hover : transparent;
+                border-width: focus.has-focus ? 2px : 0px;
+                border-color: Theme.focus;
+                background: root.selected-tab == index ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
                 accessible-role: tab;
                 accessible-label: label;
                 accessible-checked: root.selected-tab == index;
                 accessible-action-default => { root.selected-tab = index; content.viewport-y = 0px; }
+                Rectangle {
+                    x: 0px; y: 8px; width: 3px; height: parent.height - 16px;
+                    border-radius: 2px;
+                    background: root.selected-tab == index ? Theme.accent : transparent;
+                }
                 Text {
-                    x: 12px;
-                    width: parent.width - 24px;
+                    x: 14px;
+                    width: parent.width - 26px;
                     text: label;
-                    color: Theme.text;
-                    font-weight: root.selected-tab == index ? 600 : 400;
+                    color: root.selected-tab == index ? Theme.text : Theme.muted;
+                    font-weight: 600;
                     vertical-alignment: center;
                     overflow: elide;
                 }
@@ -138,7 +145,7 @@ export component SettingsPage inherits VerticalBox {
                 }
             }
         }
-        Rectangle { width: 1px; horizontal-stretch: 0; background: Theme.border; }
+        Rectangle { width: 1px; horizontal-stretch: 0; background: Theme.divider; }
         content := ScrollView {
             viewport-width: self.visible-width;
             viewport-height: settings-content.preferred-height;
@@ -172,7 +179,19 @@ export component SettingsPage inherits VerticalBox {
                     Text { vertical-stretch: 0; text: @tr("Language"); color: Theme.text; }
                     SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                 }
-                if root.selected-tab == 4: Section {
+                if root.selected-tab == 1: Section {
+                    title: @tr("Accessibility");
+                    VerticalLayout { vertical-stretch: 0; spacing: 4px;
+                        CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance-index != 3; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
+                        Text { text: @tr("Pure black or white background, stronger text, borders and focus outlines. Works with the light and dark themes."); color: Theme.muted; wrap: word-wrap; }
+                    }
+                    VerticalLayout { vertical-stretch: 0; spacing: 4px;
+                        CheckBox { text: @tr("Reduce motion"); checked <=> SettingsEditor.reduce-motion; toggled => { SettingsEditor.save(); } }
+                        Text { text: @tr("Turn off highlight animations in the editor."); color: Theme.muted; wrap: word-wrap; }
+                    }
+                    Text { vertical-stretch: 0; text: @tr("Every control can be reached with Tab and activated with Space or Enter. Interface size follows the desktop scale factor."); color: Theme.muted; wrap: word-wrap; }
+                }
+                if root.selected-tab == 5: Section {
                     title: "";
                     CheckBox { text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
                     if SettingsEditor.commands-enabled: VerticalBox { padding: 0px; spacing: 10px;
@@ -184,7 +203,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                         for item in SettingsEditor.command-assignments: VerticalLayout {
                             spacing: 8px;
-                            Rectangle { height: 1px; vertical-stretch: 0; background: Theme.border; }
+                            Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                             HorizontalLayout {
                                 spacing: 16px;
                                 VerticalLayout {
@@ -198,7 +217,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if root.selected-tab == 1: Section {
+                if root.selected-tab == 2: Section {
                     title: "";
                     VerticalBox { padding: 0px; spacing: 10px;
                         CardHeader { vertical-stretch: 0;
@@ -226,8 +245,8 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if root.selected-tab == 1: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.border; }
-                if root.selected-tab == 1: Section {
+                if root.selected-tab == 2: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
+                if root.selected-tab == 2: Section {
                     title: @tr("Key behavior");
                     VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 6px;
                         Text { vertical-stretch: 0; text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
@@ -261,7 +280,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if root.selected-tab == 2: Section {
+                if root.selected-tab == 3: Section {
                     title: @tr("Game mode");
                     Text { vertical-stretch: 0; text: @tr("Choose Auto, On or Off in the top bar. These settings configure Auto."); color: Theme.muted; wrap: word-wrap; }
                     HorizontalBox { vertical-stretch: 0; spacing: 8px;
@@ -276,7 +295,7 @@ export component SettingsPage inherits VerticalBox {
                     Text { vertical-stretch: 0; text: @tr("Exact process name or app ID; use * and ? for patterns. Window titles are not matched."); color: Theme.muted; wrap: word-wrap; }
                     Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                     for item[index] in SettingsEditor.process-matchers: Rectangle {
-                        height: 30px; background: SettingsEditor.selected-process == index ? Theme.accent : Theme.card;
+                        height: 30px; background: SettingsEditor.selected-process == index ? Theme.selected : Theme.card;
                         Text { x: 8px; text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: Theme.text; vertical-alignment: center; }
                         TouchArea { clicked => { SettingsEditor.select-process(index); } }
                     }
@@ -296,7 +315,7 @@ export component SettingsPage inherits VerticalBox {
                         Button { text: @tr("Remove selected"); enabled: SettingsEditor.selected-process >= 0; clicked => { SettingsEditor.delete-process(); } }
                     }
                 }
-                if root.selected-tab == 3 && AppState.is-linux: Section {
+                if root.selected-tab == 4 && AppState.is-linux: Section {
                     title: @tr("Linux text injection");
                     VerticalBox {
                         padding: 0px; spacing: 4px;
@@ -314,8 +333,8 @@ export component SettingsPage inherits VerticalBox {
                         LineEdit { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
                 }
-                if root.selected-tab == 3 && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.border; }
-                if root.selected-tab == 3: Section {
+                if root.selected-tab == 4 && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
+                if root.selected-tab == 4: Section {
                     title: @tr("Configuration and system");
                     HorizontalBox {
                         Text { text: SettingsEditor.platform-summary; color: Theme.muted; horizontal-stretch: 1; }

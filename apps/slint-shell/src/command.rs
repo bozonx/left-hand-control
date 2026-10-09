@@ -124,6 +124,8 @@ impl ThemeMode {
 pub struct Preferences {
     pub theme: ThemeMode,
     pub language: Language,
+    pub high_contrast: bool,
+    pub reduce_motion: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -210,16 +212,26 @@ impl Command {
             ["toggle-mapper"] => Self::ToggleMapper,
             ["quit"] => Self::Quit,
             ["ping"] => Self::Ping,
-            ["preferences", theme, language] => Self::Preferences(Preferences {
-                theme: match *theme {
-                    "system" => ThemeMode::System,
-                    "light" => ThemeMode::Light,
-                    "dark" => ThemeMode::Dark,
-                    "eink" => ThemeMode::EInk,
-                    _ => return Err(USAGE.into()),
-                },
-                language: Language::from_code(language).ok_or(USAGE)?,
-            }),
+            ["preferences", theme, language, flags @ ..] => {
+                if flags
+                    .iter()
+                    .any(|flag| !matches!(*flag, "high-contrast" | "reduce-motion"))
+                {
+                    return Err(USAGE.into());
+                }
+                Self::Preferences(Preferences {
+                    theme: match *theme {
+                        "system" => ThemeMode::System,
+                        "light" => ThemeMode::Light,
+                        "dark" => ThemeMode::Dark,
+                        "eink" => ThemeMode::EInk,
+                        _ => return Err(USAGE.into()),
+                    },
+                    language: Language::from_code(language).ok_or(USAGE)?,
+                    high_contrast: flags.contains(&"high-contrast"),
+                    reduce_motion: flags.contains(&"reduce-motion"),
+                })
+            }
             _ => return Err(USAGE.into()),
         };
         Ok(command)
@@ -246,12 +258,21 @@ impl fmt::Display for Command {
             Self::ToggleMapper => f.write_str("toggle-mapper"),
             Self::Quit => f.write_str("quit"),
             Self::Ping => f.write_str("ping"),
-            Self::Preferences(preferences) => write!(
-                f,
-                "preferences {} {}",
-                preferences.theme.name(),
-                preferences.language.code()
-            ),
+            Self::Preferences(preferences) => {
+                write!(
+                    f,
+                    "preferences {} {}",
+                    preferences.theme.name(),
+                    preferences.language.code()
+                )?;
+                if preferences.high_contrast {
+                    f.write_str(" high-contrast")?;
+                }
+                if preferences.reduce_motion {
+                    f.write_str(" reduce-motion")?;
+                }
+                Ok(())
+            }
             Self::Execute(action) => write!(f, "execute {action}"),
         }
     }
@@ -280,10 +301,18 @@ mod tests {
             Command::Preferences(Preferences {
                 theme: ThemeMode::Light,
                 language: Language::English,
+                ..Preferences::default()
             }),
             Command::Preferences(Preferences {
                 theme: ThemeMode::EInk,
                 language: Language::Russian,
+                ..Preferences::default()
+            }),
+            Command::Preferences(Preferences {
+                theme: ThemeMode::Dark,
+                language: Language::English,
+                high_contrast: true,
+                reduce_motion: true,
             }),
             Command::Preferences(Preferences::default()),
             Command::Execute("text:  Привет 👋 ".into()),
@@ -322,9 +351,11 @@ mod tests {
             Command::parse("preferences light ru"),
             Ok(Command::Preferences(Preferences {
                 theme: ThemeMode::Light,
-                language: Language::Russian
+                language: Language::Russian,
+                ..Preferences::default()
             }))
         );
+        assert!(Command::parse("preferences light ru bold").is_err());
         assert!(Command::parse("show nothing").is_err());
         assert!(Command::parse("preferences dim ru").is_err());
     }
