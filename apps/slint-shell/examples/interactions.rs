@@ -140,8 +140,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reloaded = Document::load(paths.clone())?;
     let second_ui = SettingsWindow::new()?;
     bind_document(&second_ui, &reloaded);
-    assert_eq!(second_ui.global::<LayersEditor>().get_selected(), 1);
-    assert_eq!(second_ui.global::<LayersEditor>().get_label_mode(), 2);
+    assert!(reloaded.read().layout().layers.is_empty());
+    assert_eq!(second_ui.global::<LayersEditor>().get_selected(), -1);
+    assert_eq!(second_ui.global::<LayersEditor>().get_label_mode(), 0);
     ui.global::<LayersEditor>().invoke_reorder(0, 1);
     assert_eq!(ui.global::<LayersEditor>().get_selected(), 0);
     assert_eq!(document.read().layout().layers[0].id, second);
@@ -359,7 +360,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         2500
     );
     assert_eq!(
-        ConfigDocument::load(paths.clone())?.layout().rules[0].long_hold_action,
+        document.read().layout().rules[0].long_hold_action,
         "macro:copyLine"
     );
     rules.invoke_edit(RuleField::HoldMode, "1".into());

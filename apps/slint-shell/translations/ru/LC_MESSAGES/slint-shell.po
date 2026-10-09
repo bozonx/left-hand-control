@@ -100,8 +100,8 @@ msgstr "Переключиться на рабочий стол {n}"
 msgid "Save"
 msgstr "Сохранить"
 
-msgid "Saved, but the mapper was not updated: {}"
-msgstr "Сохранено, но mapper не обновился: {}"
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "Изменения применены, но mapper не обновился: {}"
 
 msgid "Select a key to assign an action."
 msgstr "Выберите клавишу, чтобы назначить действие."

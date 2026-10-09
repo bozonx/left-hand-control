@@ -126,7 +126,7 @@ describe('useConfig', () => {
     expect(api.currentLayoutId.value).toBe('user:test')
     expect(api.isLayoutDirty.value).toBe(false)
     expect(invokeMock).toHaveBeenCalledWith('save_config', expect.anything())
-    expect(invokeMock).toHaveBeenCalledWith('save_current_layout', expect.anything())
+    expect(invokeMock).not.toHaveBeenCalledWith('save_current_layout', expect.anything())
   })
 
   it('resetCurrentLayout restores saved preset and clears dirty', async () => {
@@ -143,7 +143,7 @@ describe('useConfig', () => {
     expect(api.isLayoutDirty.value).toBe(false)
     expect(api.config.value.commands).toHaveLength(0)
     expect(invokeMock).toHaveBeenCalledWith('save_config', expect.anything())
-    expect(invokeMock).toHaveBeenCalledWith('save_current_layout', expect.anything())
+    expect(invokeMock).not.toHaveBeenCalledWith('save_current_layout', expect.anything())
   })
 
   it('markLayoutSavedAs updates currentLayoutId and clears dirty', async () => {
@@ -221,4 +221,71 @@ describe('useConfig', () => {
     expect(await api.reloadIfChangedOnDisk()).toBe(true)
     expect(api.config.value.settings.locale).toBe('ru-RU')
   })
+  it('autosaves settings without writing layout drafts', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'load_config') return JSON.stringify({ version: 1, settings: {} })
+      return ''
+    })
+    const api = await getApi()
+    await api.load()
+    await nextTick()
+    await api.flush()
+    invokeMock.mockClear()
+    api.config.value.commands.push({ id: 'draft', name: 'Draft', linux: 'echo draft' })
+    await nextTick()
+    await api.flush()
+    expect(invokeMock).not.toHaveBeenCalled()
+    api.config.value.settings.locale = 'ru-RU'
+    await nextTick()
+    await api.flush()
+    expect(invokeMock).toHaveBeenCalledWith('save_config', expect.anything())
+    expect(invokeMock).not.toHaveBeenCalledWith('save_current_layout', expect.anything())
+    expect(api.isLayoutDirty.value).toBe(true)
+    await api.load()
+    expect(api.config.value.commands).toHaveLength(0)
+  })
+
+  it('keeps local layout edits when external settings change', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'load_config') return JSON.stringify({ version: 1, settings: {} })
+      return ''
+    })
+    const api = await getApi()
+    await api.load()
+    await nextTick()
+    await api.flush()
+    api.config.value.commands.push({ id: 'draft', name: 'Draft', linux: 'echo draft' })
+    await nextTick()
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'config_changed_on_disk') return true
+      if (command === 'load_config') return JSON.stringify({ version: 1, settings: { locale: 'ru-RU' } })
+      return ''
+    })
+    await api.reloadIfChangedOnDisk()
+    expect(api.config.value.settings.locale).toBe('ru-RU')
+    expect(api.config.value.commands[0]?.id).toBe('draft')
+    expect(api.isLayoutDirty.value).toBe(true)
+    await api.resetCurrentLayout()
+    expect(api.config.value.commands).toHaveLength(0)
+  })
+
+  it('starts from the saved library version and resets edits to that version', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'load_config') return JSON.stringify({ version: 1, settings: { currentLayoutId: 'user:Saved' } })
+      if (command === 'load_user_layout') return 'commands:\n  - id: saved\n    name: Saved\n    linux: echo saved\n'
+      return ''
+    })
+    const api = await getApi()
+    await api.load()
+    expect(api.config.value.commands[0]?.linux).toBe('echo saved')
+    expect(api.isLayoutDirty.value).toBe(false)
+    api.config.value.commands[0]!.linux = 'echo draft'
+    await nextTick()
+    expect(api.isLayoutDirty.value).toBe(true)
+    await api.resetCurrentLayout()
+    expect(api.config.value.commands[0]?.linux).toBe('echo saved')
+    expect(api.isLayoutDirty.value).toBe(false)
+    expect(invokeMock).not.toHaveBeenCalledWith('load_current_layout')
+  })
+
 })

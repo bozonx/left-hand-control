@@ -10,8 +10,6 @@ import {
 } from '~/utils/layoutPresets'
 import {
   clonePreset,
-  parseCurrentLayout,
-  serializeCurrentLayout,
 } from '~/composables/config/layoutSerialization'
 import {
   parsePersistedSettings,
@@ -22,9 +20,7 @@ import {
   getSettingsDir,
   isExternalChangeError,
   readConfigRaw,
-  readCurrentLayoutRaw,
   writeConfigRaw,
-  writeCurrentLayoutRaw,
 } from '~/composables/config/storage'
 
 export { getSettingsDir } from '~/composables/config/storage'
@@ -72,6 +68,7 @@ export function useConfig(): ConfigState {
 
   const toast = useToast()
   const { t } = useI18n()
+  const route = useRoute()
   const config = ref<AppConfig>(createDefaultConfig())
   const loaded = ref(false)
   const lastError = ref<string | null>(null)
@@ -113,10 +110,8 @@ export function useConfig(): ConfigState {
   const persistence = usePersistedState({
     delayMs: 300,
     async onSave() {
-      await Promise.all([
-        writeConfigRaw(serializePersistedSettings(config.value)),
-        writeCurrentLayoutRaw(serializeCurrentLayout(config.value)),
-      ])
+      if (route.path === '/quick-menu' || route.path === '/emoji-menu') return
+      await writeConfigRaw(serializePersistedSettings(config.value))
       lastError.value = null
       lastNotifiedSaveError = null
     },
@@ -128,7 +123,7 @@ export function useConfig(): ConfigState {
           color: 'warning',
           icon: 'i-lucide-refresh-cw',
         })
-        void load()
+        void load(true)
         return
       }
       const message = saveErrorMessage(e)
@@ -137,6 +132,7 @@ export function useConfig(): ConfigState {
     },
     canSave() {
       return loaded.value && !needsWelcome.value
+        && route.path !== '/quick-menu' && route.path !== '/emoji-menu'
     },
   })
 
@@ -152,7 +148,8 @@ export function useConfig(): ConfigState {
     } catch {
       return false
     }
-    await load()
+    await useLayoutLibrary().refresh()
+    await load(true)
     return true
   }
 
@@ -207,7 +204,10 @@ export function useConfig(): ConfigState {
     await persistNow()
   }
 
-  async function load() {
+  async function load(preserveLayout = false) {
+    const previous = preserveLayout ? extractPresetFromConfig(config.value) : null
+    const previousId = currentLayoutId.value
+    const wasDirty = isLayoutDirty.value
     const gen = ++loadGeneration
 
     loaded.value = false
@@ -217,15 +217,15 @@ export function useConfig(): ConfigState {
     try {
       config.value = createDefaultConfig()
 
-      const [rawConfig, rawCurrentLayout] = await Promise.all([
-        readConfigRaw(),
-        readCurrentLayoutRaw(),
-      ])
+      const rawConfig = await readConfigRaw()
 
       if (rawConfig) {
         config.value.settings = parsePersistedSettings(rawConfig).settings
         needsWelcome.value = false
-        const persistedLayout = parseCurrentLayout(rawCurrentLayout)
+        const layoutId = config.value.settings.currentLayoutId
+        const persistedLayout = layoutId
+          ? await useLayoutLibrary().loadPreset(layoutId)
+          : null
 
         if (persistedLayout) {
           config.value = applyPresetToConfig(
@@ -239,6 +239,9 @@ export function useConfig(): ConfigState {
         }
         savedLayoutPreset.value = extractPresetFromConfig(config.value)
         layoutSnapshot.value = layoutSnapshotOf(config.value)
+        if (previous && wasDirty && previousId === currentLayoutId.value) {
+          config.value = applyPresetToConfig(config.value, previous, previousId)
+        }
       } else {
         needsWelcome.value = true
         savedLayoutPreset.value = extractPresetFromConfig(config.value)
@@ -261,7 +264,7 @@ export function useConfig(): ConfigState {
   }
 
   watch(
-    config,
+    () => config.value.settings,
     () => {
       scheduleSave()
     },

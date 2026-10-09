@@ -1,8 +1,7 @@
 //! Editable configuration shared by every shell.
 //!
-//! The configuration lives in two files, exactly as the Tauri frontend
-//! stores it: global settings in `config.json` and the current keyboard
-//! layout in `current-layout.yaml`. Saved layouts live in the user
+//! Global settings live in `config.json`; the current keyboard layout
+//! stays in memory. Saved layouts live in the user
 //! library (`layouts/<name>.yaml`, id `user:<name>`).
 //!
 //! Settings keep the raw JSON next to the typed view, so edits change only
@@ -93,8 +92,8 @@ pub struct ConfigDocument {
     settings_file: TrackedFile,
     settings_raw: Value,
     settings: AppSettings,
-    layout_file: TrackedFile,
     layout: LayoutPreset,
+    saved_layout: LayoutPreset,
     library_files: BTreeMap<String, TrackedFile>,
 }
 
@@ -103,10 +102,16 @@ impl ConfigDocument {
         paths.ensure().map_err(ConfigError::Io)?;
         let (settings_file, settings_text) =
             TrackedFile::open(paths.config_path()).map_err(ConfigError::Io)?;
-        let (layout_file, layout_text) =
-            TrackedFile::open(paths.current_layout_path()).map_err(ConfigError::Io)?;
         let settings_raw = parse_settings(&settings_text)?;
-        let layout = parse_layout(&layout_text)?;
+        let settings = settings::from_value(settings_raw.get("settings"));
+        let layout = match settings.current_layout_id.as_deref() {
+            Some(id) => {
+                let name = crate::profile::model::user_layout_name(id)
+                    .ok_or_else(|| ConfigError::Invalid(format!("unknown layout id \"{id}\"")))?;
+                parse_layout(&paths.load_user_layout(name).map_err(ConfigError::Io)?)?
+            }
+            None => LayoutPreset::initial(),
+        };
         crate::gamemode::update_settings_from_config_json(&settings_text);
         let library_files = paths
             .list_user_layouts()
@@ -127,8 +132,8 @@ impl ConfigDocument {
             settings,
             settings_raw,
             settings_file,
+            saved_layout: layout.clone(),
             layout,
-            layout_file,
             paths,
         })
     }
@@ -449,30 +454,25 @@ impl ConfigDocument {
 
     pub(crate) fn ensure_files_unchanged(&mut self) -> Result<(), ConfigError> {
         if self
-            .layout_file
+            .settings_file
             .changed()
             .map_err(ConfigError::Io)?
             .is_some()
-            || self
-                .settings_file
-                .changed()
-                .map_err(ConfigError::Io)?
-                .is_some()
         {
             return Err(ConfigError::ExternalChange);
         }
         Ok(())
     }
 
-    /// Apply `edit` to a copy of the current layout and save it.
+    /// Apply `edit` to a copy of the current layout.
     pub fn update_layout(
         &mut self,
         edit: impl FnOnce(&mut LayoutPreset),
     ) -> Result<(), ConfigError> {
+        self.ensure_files_unchanged()?;
         let mut candidate = self.layout.clone();
         edit(&mut candidate);
-        self.layout_file
-            .write(&layout_file::serialize(&candidate))?;
+
         self.layout = candidate;
         Ok(())
     }
@@ -481,9 +481,19 @@ impl ConfigDocument {
     /// document now reflects new contents.
     pub fn reload_if_changed(&mut self) -> Result<bool, ConfigError> {
         let settings_text = self.settings_file.changed().map_err(ConfigError::Io)?;
-        let layout_text = self.layout_file.changed().map_err(ConfigError::Io)?;
+
         let settings_raw = settings_text.as_deref().map(parse_settings).transpose()?;
-        let layout = layout_text.as_deref().map(parse_layout).transpose()?;
+
+        let next_settings = settings_raw
+            .as_ref()
+            .map(|raw| settings::from_value(raw.get("settings")))
+            .unwrap_or_else(|| self.settings.clone());
+        let next_layout = match next_settings.current_layout_id.as_deref() {
+            Some(id) => self.load_layout(id)?,
+            None => LayoutPreset::initial(),
+        };
+        let replace_layout = next_settings.current_layout_id != self.settings.current_layout_id
+            || layout_file::serialize(&self.layout) == layout_file::serialize(&self.saved_layout);
         let names = self.paths.list_user_layouts().map_err(ConfigError::Io)?;
         let mut added = BTreeMap::new();
         let mut updates = Vec::new();
@@ -502,7 +512,6 @@ impl ConfigDocument {
             }
         }
         let changed = settings_text.is_some()
-            || layout_text.is_some()
             || !added.is_empty()
             || !updates.is_empty()
             || self.library_files.keys().any(|name| !names.contains(name));
@@ -512,10 +521,10 @@ impl ConfigDocument {
             self.settings_raw = raw;
             self.settings_file.mark_read(text);
         }
-        if let (Some(text), Some(layout)) = (layout_text, layout) {
-            self.layout = layout;
-            self.layout_file.mark_read(text);
+        if replace_layout {
+            self.layout = next_layout.clone();
         }
+        self.saved_layout = next_layout;
         if self
             .settings_raw
             .pointer("/settings/commandsEnabled")
@@ -664,13 +673,21 @@ mod tests {
 
     const LAYOUT: &str = "layers:\n  - id: nav\n    name: Navigation\n    keys:\n      KeyH: ArrowLeft\nrules:\n  - key: CapsLock\n    layer: nav\n    tap: Escape\n";
 
-    fn document(settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
+    fn document(mut settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        if settings["settings"]["currentLayoutId"].is_null() {
+            settings["settings"]["currentLayoutId"] = json!("user:Test");
+        }
+        let name = settings["settings"]["currentLayoutId"]
+            .as_str()
+            .unwrap()
+            .strip_prefix("user:")
+            .unwrap();
         paths
             .save_config(&serde_json::to_string_pretty(&settings).unwrap())
             .unwrap();
-        paths.save_current_layout(layout).unwrap();
+        paths.save_user_layout(name, layout, true).unwrap();
         (dir, ConfigDocument::load(paths).unwrap())
     }
 
@@ -695,13 +712,15 @@ mod tests {
     fn failed_reload_does_not_accept_only_part_of_the_changes() {
         let (_dir, mut doc) = document(json!({"settings": {"appearance": "dark"}}), LAYOUT);
         doc.paths
-            .save_config(r#"{"settings":{"appearance":"light"}}"#)
+            .save_config(r#"{"settings":{"appearance":"light","currentLayoutId":"user:Test"}}"#)
             .unwrap();
-        doc.paths.save_current_layout("layers: [").unwrap();
+        doc.paths
+            .save_user_layout("Test", "layers: [", true)
+            .unwrap();
         assert!(doc.reload_if_changed().is_err());
         assert_eq!(doc.settings().appearance, Appearance::Dark);
         doc.paths
-            .save_current_layout(&LAYOUT.replace("Escape", "Enter"))
+            .save_user_layout("Test", &LAYOUT.replace("Escape", "Enter"), true)
             .unwrap();
         assert!(doc.reload_if_changed().unwrap());
         assert_eq!(doc.settings().appearance, Appearance::Light);
@@ -730,7 +749,8 @@ mod tests {
             json!({"version": 1, "settings": {"futureOption": 7}, "extra": true}),
             LAYOUT,
         );
-        let layout_before = fs::read_to_string(document.paths.current_layout_path()).unwrap();
+        let layout_before =
+            fs::read_to_string(document.paths.layouts_dir().join("Test.yaml")).unwrap();
         document.set_input_device("/dev/input/event7").unwrap();
         document.set_locale(LocalePreference::English).unwrap();
         let saved: Value =
@@ -742,7 +762,7 @@ mod tests {
         assert_eq!(saved["settings"]["locale"], "en-US");
         assert!(saved.get("rules").is_none());
         assert_eq!(
-            fs::read_to_string(document.paths.current_layout_path()).unwrap(),
+            fs::read_to_string(document.paths.layouts_dir().join("Test.yaml")).unwrap(),
             layout_before
         );
     }
@@ -784,11 +804,11 @@ mod tests {
         assert!(document.set_base_tap_action("CapsLock", "KeyB").is_err());
         assert_eq!(document.layout().rules.len(), 2);
         let reloaded = ConfigDocument::load(document.paths().clone()).unwrap();
-        assert_eq!(reloaded.base_tap_action("KeyA"), Some("Ctrl+KeyV"));
+        assert_eq!(reloaded.base_tap_action("KeyA"), None);
     }
 
     #[test]
-    fn layer_keys_are_saved_to_the_layout_file() {
+    fn layer_keys_remain_in_memory_until_explicitly_saved() {
         let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Action("ArrowDown".into()))
@@ -805,7 +825,16 @@ mod tests {
                 .set_layer_key("missing", "KeyK", KeyAssignment::Swallow)
                 .is_err()
         );
-        let reloaded = ConfigDocument::load(document.paths.clone()).unwrap();
+        let restarted = ConfigDocument::load(document.paths.clone()).unwrap();
+        assert_eq!(
+            restarted.layer_key("nav", "KeyJ"),
+            KeyAssignment::Transparent
+        );
+        assert_eq!(
+            restarted.layer_key("nav", "KeyH"),
+            KeyAssignment::Action("ArrowLeft".into())
+        );
+        let reloaded = &document;
         assert_eq!(
             reloaded.layer_key("nav", "KeyJ"),
             KeyAssignment::Action("ArrowDown".into())
@@ -832,7 +861,11 @@ mod tests {
         let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
         document
             .paths
-            .save_current_layout("layers:\n  - id: nav\n    name: Changed\n")
+            .save_config(r#"{"settings":{"currentLayoutId":"user:Test","locale":"ru-RU"}}"#)
+            .unwrap();
+        document
+            .paths
+            .save_user_layout("Test", "layers:\n  - id: nav\n    name: Changed\n", true)
             .unwrap();
         assert_eq!(
             document.set_layer_key("nav", "KeyJ", KeyAssignment::Swallow),
@@ -844,6 +877,53 @@ mod tests {
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
             .unwrap();
+    }
+
+    #[test]
+    fn legacy_drafts_are_ignored_and_session_edits_do_not_touch_disk() {
+        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        let paths = document.paths().clone();
+        fs::write(paths.data_dir().join("current-layout.yaml"), "{broken").unwrap();
+        fs::write(paths.settings_dir().join("ui-state.json"), "{broken").unwrap();
+        let saved = paths.load_user_layout("Test").unwrap();
+        document.set_base_tap_action("KeyA", "Enter").unwrap();
+        document.set_locale(LocalePreference::English).unwrap();
+        assert_eq!(paths.load_user_layout("Test").unwrap(), saved);
+        let restarted = ConfigDocument::load(paths.clone()).unwrap();
+        assert_eq!(restarted.base_tap_action("KeyA"), None);
+        assert_eq!(restarted.settings().locale, LocalePreference::English);
+        assert_eq!(
+            fs::read_to_string(paths.data_dir().join("current-layout.yaml")).unwrap(),
+            "{broken"
+        );
+        document.save_current_layout_as("Saved").unwrap();
+        document.set_base_tap_action("KeyA", "Tab").unwrap();
+        let restarted = ConfigDocument::load(paths).unwrap();
+        assert_eq!(restarted.base_tap_action("KeyA"), Some("Enter"));
+    }
+
+    #[test]
+    fn external_settings_keep_drafts_and_discard_uses_latest_saved_layout() {
+        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        document.set_base_tap_action("KeyA", "Enter").unwrap();
+        document
+            .paths
+            .save_config(r#"{"settings":{"currentLayoutId":"user:Test","locale":"ru-RU"}}"#)
+            .unwrap();
+        document
+            .paths
+            .save_user_layout("Test", &LAYOUT.replace("Escape", "Tab"), true)
+            .unwrap();
+        assert!(document.reload_if_changed().unwrap());
+        assert_eq!(document.base_tap_action("KeyA"), Some("Enter"));
+        assert_eq!(document.settings().locale, LocalePreference::Russian);
+        let saved = document.load_layout("user:Test").unwrap();
+        document.update_layout(|layout| *layout = saved).unwrap();
+        assert_eq!(document.base_tap_action("KeyA"), None);
+        assert_eq!(
+            document.layout().rules[0].tap_action.as_deref(),
+            Some("Tab")
+        );
     }
 
     #[test]
@@ -962,7 +1042,10 @@ mod tests {
         assert!(document.layout().rules[0].layer_id.is_empty());
         assert!(!document.layout().layer_keymaps.contains_key("nav"));
         let loaded = ConfigDocument::load(document.paths().clone()).unwrap();
-        assert_eq!(loaded.layout().layers[0].name, "Navigation copy");
-        assert!(loaded.layout().rules[0].layer_id.is_empty());
+        assert_eq!(loaded.layout().layers[0].name, "Navigation");
+        document.save_current_layout_as("Saved").unwrap();
+        let saved = ConfigDocument::load(document.paths().clone()).unwrap();
+        assert_eq!(saved.layout().layers[0].name, "Navigation copy");
+        assert!(saved.layout().rules[0].layer_id.is_empty());
     }
 }

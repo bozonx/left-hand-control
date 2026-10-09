@@ -78,7 +78,7 @@ Most feature logic lives in composables under `composables/`. Key ones:
 - `useMapper()` / `useMapperRuntime()` — mapper start/stop, device list
 - `useLayers()`, `useMacros()`, `useRulesEditor()` — feature-specific editors, all reading/writing `useConfig().config`
 - `useLayoutLibrary()` — reading/writing user YAML layout files via Tauri fs commands
-- `useUiState()` — UI-only ephemeral state (selected layer, etc.), persisted to `ui-state.json`
+- `useUiState()` — UI-only session state (selected layer, etc.), kept in memory
 
 Composables that manage shared state use a singleton pattern (module-level `let singleton`). Test files call `resetConfigStateForTests()` to clear singletons between tests.
 

@@ -58,7 +58,7 @@ pnpm tauri:dev
 
 This starts the Nuxt dev server on `http://localhost:3010` (override via `LHC_DEV_PORT` in `.env`) and launches the Tauri window pointing at it. The dev wrapper fails when the configured port is busy, because Tauri needs a stable `devUrl`.
 
-In debug builds the desktop app stores its `config.json`, `ui-state.json` and user layouts in `<repo>/.dev-files/` instead of `~/.config/...`, so dev runs do not pollute your real settings and can be reset with `rm -rf .dev-files`. Override the location with `LHC_DEV_DIR` (absolute or relative to CWD).
+In debug builds the desktop app stores its `config.json` and user layouts in `<repo>/.dev-files/` instead of `~/.config/...`, so dev runs do not pollute your real settings and can be reset with `rm -rf .dev-files`. Override the location with `LHC_DEV_DIR` (absolute or relative to CWD).
 
 The dev scripts (`pnpm dev`, `pnpm tauri:dev`) work on Linux, macOS and Windows. The native key-interception engine itself is currently Linux-only — see `AGENTS.md` for the per-platform coverage matrix.
 
@@ -167,15 +167,15 @@ The app uses Tauri's platform-specific app directories based on the bundle ident
 
 - **Linux** (primary):
   - config: `~/.config/dev.bozonx.left-hand-control/config.json`
-  - UI state: `~/.config/dev.bozonx.left-hand-control/ui-state.json`
-  - current working layout: `~/.local/share/dev.bozonx.left-hand-control/current-layout.yaml`
+  - UI state: memory only; reset on application restart
+  - current working layout: memory only; unsaved edits are discarded on exit
   - user layouts: `~/.local/share/dev.bozonx.left-hand-control/layouts/`
 
 If `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is set, the app uses those directories instead of `~/.config` and `~/.local/share`.
 
 - `config.json` stores app settings and the currently selected layout id.
-- `ui-state.json` stores UI-only state: active tab and the last selected keymap layer.
-- `current-layout.yaml` stores the current editable layout, including macros.
+- Selected keymap layer, key labels and expanded UI sections stay in memory.
+- The current editable layout, including macros, stays in memory until explicitly saved to the layout library. UI state is session-only. Legacy `current-layout.yaml` and `ui-state.json` files are ignored.
 
 - **macOS / Windows** (future support):
   - Standard Tauri app data directories.

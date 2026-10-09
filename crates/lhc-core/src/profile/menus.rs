@@ -146,6 +146,7 @@ mod tests {
         let layout = doc.layout().clone();
         doc.update_settings(|settings| settings.commands_enabled = false)
             .unwrap();
+        doc.save_current_layout_as("Saved").unwrap();
         let loaded = ConfigDocument::load(paths.clone()).unwrap();
         assert!(!loaded.settings().commands_enabled);
         assert_eq!(
@@ -164,8 +165,17 @@ mod tests {
     fn command_overview_lists_only_assignments_across_saved_layouts() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        paths.save_current_layout("commands:\n  - id: hello\n    linux: printf hello\n  - id: unused\n    linux: true\nrules:\n  - key: KeyQ\n    tap: cmd:hello\n").unwrap();
+        paths.save_user_layout("Test", "commands:\n  - id: hello\n    linux: printf hello\n  - id: unused\n    linux: true\nrules:\n  - key: KeyQ\n    tap: cmd:hello\n", true).unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.update_layout(|layout| {
+            *layout = super::super::layout_file::parse(&paths.load_user_layout("Test").unwrap())
+                .unwrap()
+                .unwrap()
+        })
+        .unwrap();
+        doc.update_settings(|settings| settings.commands_enabled = true)
+            .unwrap();
+        paths.delete_user_layout("Test").unwrap();
         assert!(doc.settings().commands_enabled);
         doc.save_current_layout_as("First").unwrap();
         doc.save_current_layout_as("Second").unwrap();

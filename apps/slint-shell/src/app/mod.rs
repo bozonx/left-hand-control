@@ -174,7 +174,7 @@ impl App {
             }
             Command::ToggleMapper => self.toggle_mapper(),
             Command::Preferences(preferences) => self.set_preferences(preferences),
-            Command::Ping | Command::PopupLayout(_) => {}
+            Command::Ping | Command::PopupLayout(_) | Command::PopupContents(_) => {}
             Command::Execute(action) => {
                 if !lhc_core::mapper::runtime::status().running {
                     self.set_error(Msg::MapperRequired);

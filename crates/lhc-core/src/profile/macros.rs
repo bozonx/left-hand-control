@@ -211,7 +211,14 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_current_layout("rules:\n  - key: KeyA\n    tap: macro:outer\n")
+            .save_user_layout(
+                "Test",
+                "rules:\n  - key: KeyA\n    tap: macro:outer\n",
+                true,
+            )
+            .unwrap();
+        paths
+            .save_config(r#"{"settings":{"currentLayoutId":"user:Test"}}"#)
             .unwrap();
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         let rules = document.layout().rules.clone();
@@ -227,7 +234,7 @@ mod tests {
         assert_eq!(usage(&document.config(), "outer"), ["KeyA"]);
         assert_eq!(usage(&document.config(), "inner"), ["macro:outer"]);
         document.move_macro(0, 1).unwrap();
-        let loaded = ConfigDocument::load(paths.clone()).unwrap();
+        let loaded = &document;
         assert_eq!(loaded.layout().macros[0].id, "inner");
         assert_eq!(loaded.layout().macros[0].steps[2].action, "text: hello ");
         assert_eq!(loaded.layout().macros[0].modifier_delay_ms, Some(0));
@@ -238,7 +245,7 @@ mod tests {
         );
         document.remove_macro(1).unwrap();
         assert_eq!(
-            ConfigDocument::load(paths).unwrap().layout().macros.len(),
+            document.layout().macros.len(),
             1
         );
     }
@@ -275,12 +282,10 @@ mod tests {
         delay.step_pause_ms = Some(2001);
         assert!(document.save_macro(None, delay).is_err());
         assert_eq!(
-            super::super::layout_file::serialize(
-                ConfigDocument::load(paths.clone()).unwrap().layout()
-            ),
+            super::super::layout_file::serialize(document.layout()),
             super::super::layout_file::serialize(&before)
         );
-        paths.save_current_layout("rules: []\n").unwrap();
+        paths.save_config("{}").unwrap();
         assert_eq!(
             document.save_macro(None, item("new", &[])),
             Err(ConfigError::ExternalChange)

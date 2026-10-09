@@ -221,7 +221,14 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_current_layout("commands:\n  - id: hello\n    linux: printf hello\n")
+            .save_user_layout(
+                "Test",
+                "commands:\n  - id: hello\n    linux: printf hello\n",
+                true,
+            )
+            .unwrap();
+        paths
+            .save_config(r#"{"settings":{"currentLayoutId":"user:Test"}}"#)
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         doc.save_current_layout_as("Hello").unwrap();

@@ -2,6 +2,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { useConfig } from '~/composables/useConfig'
+import { parsePersistedConfig } from '~/composables/config/normalization'
 import { useMenuPage } from '~/composables/useMenuPage'
 import {
     LEFT_HAND_HOTKEYS,
@@ -72,6 +73,13 @@ async function prepareMenu(payload: unknown, clearPending = true) {
     if (clearPending) pendingHotkeyCode = null
 
     await load()
+    const tauri = await useTauri()
+    if (tauri) {
+        config.value = {
+            ...parsePersistedConfig(await tauri.invoke<string>('get_popup_config')),
+            settings: config.value.settings,
+        }
+    }
     await resetScroll(nextPage)
 
     if (generation !== menuGeneration) return

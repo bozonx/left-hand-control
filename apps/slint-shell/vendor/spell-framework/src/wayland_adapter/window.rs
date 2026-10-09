@@ -21,10 +21,7 @@ use smithay_client_toolkit::{
             Connection, QueueHandle,
             globals::registry_queue_init,
             protocol::{
-                wl_keyboard::WlKeyboard,
-                wl_output::WlOutput,
-                wl_shm,
-                wl_surface::WlSurface,
+                wl_keyboard::WlKeyboard, wl_output::WlOutput, wl_shm, wl_surface::WlSurface,
                 wl_touch::WlTouch,
             },
         },
@@ -153,19 +150,36 @@ impl SpellWin {
         self.configured.set(false);
         self.first_configure.set(true);
         self.frame_pending.set(false);
-        self.config.board_interactivity.set(KeyboardInteractivity::None);
+        self.config
+            .board_interactivity
+            .set(KeyboardInteractivity::None);
         let output = self.config.monitor_name.as_ref().and_then(|name| {
             self.states.output_state.outputs().find(|output| {
-                self.states.output_state.info(output).and_then(|info| info.name).as_ref() == Some(name)
+                self.states
+                    .output_state
+                    .info(output)
+                    .and_then(|info| info.name)
+                    .as_ref()
+                    == Some(name)
             })
         });
         let surface = self.states.compositor_state.create_surface(&self.queue);
         self.layer = Some(self.layer_shell.create_layer_surface(
-            &self.queue, surface.clone(), self.config.layer_type,
-            Some(self.layer_name.clone()), output.as_ref(),
+            &self.queue,
+            surface.clone(),
+            self.config.layer_type,
+            Some(self.layer_name.clone()),
+            output.as_ref(),
         ));
-        let fractional_scale = self.states.fractional_scale_state.get_scale(&surface, &self.queue);
-        self.viewport = Some(self.states.viewporter_state.get_viewport(&surface, &self.queue, fractional_scale));
+        let fractional_scale = self
+            .states
+            .fractional_scale_state
+            .get_scale(&surface, &self.queue);
+        self.viewport = Some(self.states.viewporter_state.get_viewport(
+            &surface,
+            &self.queue,
+            fractional_scale,
+        ));
         self.set_config_internal();
         self.layer.as_ref().unwrap().commit();
         self.adapter.as_ref().unwrap().needs_redraw.set(true);
@@ -245,9 +259,10 @@ impl SpellWin {
             span: span!(Level::INFO, "widget", name = layer_name.as_str(),),
         };
 
-        let monitors = Self::get_available_monitors(&mut event_queue, &mut win)
-            .unwrap_or_default();
-        let mut output_info = window_conf.monitor_name.as_ref()
+        let monitors = Self::get_available_monitors(&mut event_queue, &mut win).unwrap_or_default();
+        let mut output_info = window_conf
+            .monitor_name
+            .as_ref()
             .and_then(|name| monitors.get(name).cloned());
         if window_conf.monitor_name.is_some() && output_info.is_none() {
             warn!("Requested output unavailable; using compositor default");
@@ -598,7 +613,8 @@ impl SpellAssociatedNew for SpellWin {
             // Local change: never block here; the host waits on `get_fd_owned`.
             .dispatch(std::time::Duration::ZERO, self)?;
         slint::platform::update_timers_and_animations();
-        if self.configured.get() && !self.is_hidden.get()
+        if self.configured.get()
+            && !self.is_hidden.get()
             && !self.frame_pending.get()
             && self.adapter.as_ref().unwrap().needs_redraw.get()
         {

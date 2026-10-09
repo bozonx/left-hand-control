@@ -1,6 +1,6 @@
 //! Layout library page and the working copy toolbar.
 //!
-//! The working copy (`current-layout.yaml`) is edited by the other pages;
+//! The working copy in memory is edited by the other pages;
 //! the library holds named layouts. Library files are compared with the
 //! contents last read so a change made elsewhere is never overwritten.
 
@@ -195,16 +195,17 @@ fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let name = current_name(&config);
     library.set_current_label(name.clone().unwrap_or_default().into());
     let named = name.is_some();
-    let saved = name.and_then(|name| config.load_layout(&user_layout_id(&name)).ok());
+    let saved = name
+        .and_then(|name| config.load_layout(&user_layout_id(&name)).ok())
+        .or_else(|| (!named).then(LayoutPreset::initial));
     let current = config.layout();
     let normalized = layout_file::parse(&layout_file::serialize(current))
         .ok()
         .flatten();
     let current = normalized.as_ref().unwrap_or(current);
-    let dirty = named
-        && saved
-            .as_ref()
-            .is_none_or(|saved| layout_file::serialize(saved) != layout_file::serialize(current));
+    let dirty = saved
+        .as_ref()
+        .is_none_or(|saved| layout_file::serialize(saved) != layout_file::serialize(current));
     library.set_dirty(dirty);
     let changed = |section: fn(&LayoutPreset) -> LayoutPreset| {
         saved.as_ref().map_or(dirty, |saved| {

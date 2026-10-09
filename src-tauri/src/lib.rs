@@ -50,33 +50,9 @@ fn get_command_assignments(
 }
 
 #[tauri::command]
-fn load_current_layout(app: tauri::AppHandle) -> Result<String, String> {
-    let paths = app_storage(&app)?;
-    paths.ensure()?;
-    storage::read_tracked(&paths.current_layout_path())
-}
-
-#[tauri::command]
-fn save_current_layout(app: tauri::AppHandle, contents: String) -> Result<(), String> {
-    storage::write_tracked(&app_storage(&app)?.current_layout_path(), &contents)
-}
-
-/// True when the Slint shell or a user changed the config files since the
-/// frontend loaded them.
-#[tauri::command]
 fn config_changed_on_disk(app: tauri::AppHandle) -> Result<bool, String> {
     let paths = app_storage(&app)?;
-    storage::changed_on_disk(&[paths.config_path(), paths.current_layout_path()])
-}
-
-#[tauri::command]
-fn load_ui_state(app: tauri::AppHandle) -> Result<String, String> {
-    app_storage(&app)?.load_ui_state()
-}
-
-#[tauri::command]
-fn save_ui_state(app: tauri::AppHandle, contents: String) -> Result<(), String> {
-    app_storage(&app)?.save_ui_state(&contents)
+    Ok(storage::changed_on_disk(&[paths.config_path()])? || storage::library_changed(&paths)?)
 }
 
 // --- User layouts ------------------------------------------------------------
@@ -90,12 +66,15 @@ fn get_layouts_dir(app: tauri::AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 fn list_user_layouts(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    app_storage(&app)?.list_user_layouts()
+    let names = app_storage(&app)?.list_user_layouts()?;
+    storage::remember_layouts(&names)?;
+    Ok(names)
 }
 
 #[tauri::command]
 fn load_user_layout(app: tauri::AppHandle, name: String) -> Result<String, String> {
-    app_storage(&app)?.load_user_layout(&name)
+    let paths = app_storage(&app)?;
+    storage::read_tracked(&paths.layout_path(&name)?)
 }
 
 #[tauri::command]
@@ -220,6 +199,28 @@ fn update_mapper_config(config_json: String) -> Result<(), String> {
         log::debug!("[cmd] update_mapper_config ERR: {e}");
     }
     r
+}
+
+#[tauri::command]
+fn get_popup_config(app: tauri::AppHandle) -> Result<String, String> {
+    if let Some(config) = lhc_core::mapper::runtime::config_json() {
+        return Ok(config);
+    }
+    let document = lhc_core::config_document::ConfigDocument::load(app_storage(&app)?)
+        .map_err(|error| error.to_string())?;
+    let context = lhc_core::profile::auto_switch::AutoSwitchContext::current();
+    let layout_id = document
+        .active_layout_id(&context)
+        .map_err(|error| error.to_string())?;
+    let layout = document
+        .active_layout(&context)
+        .map_err(|error| error.to_string())?;
+    Ok(lhc_core::profile::model::AppConfig::from_parts(
+        document.settings().clone(),
+        layout,
+        layout_id.as_deref(),
+    )
+    .to_json())
 }
 
 #[tauri::command]
@@ -526,12 +527,8 @@ pub fn run() {
             get_settings_dir,
             load_config,
             save_config,
-            load_current_layout,
             get_command_assignments,
-            save_current_layout,
             config_changed_on_disk,
-            load_ui_state,
-            save_ui_state,
             get_layouts_dir,
             list_user_layouts,
             load_user_layout,
@@ -544,6 +541,7 @@ pub fn run() {
             start_mapper,
             stop_mapper,
             update_mapper_config,
+            get_popup_config,
             mapper_status,
             get_current_layout,
             get_system_layouts,

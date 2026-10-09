@@ -1,7 +1,7 @@
 //! The editable configuration of a shell process and its single write path.
 //!
 //! Pages never touch [`ConfigDocument`] mutably themselves. They edit
-//! through [`Document::edit`], which saves the change, pushes it to a
+//! through [`Document::edit`], which applies the change, pushes it to a
 //! running mapper and tells the other pages to refresh. No borrow is held
 //! while listeners run, so a refresh that leads to another edit cannot hit a
 //! `RefCell` conflict.
@@ -41,7 +41,7 @@ pub struct Document {
     pushed_layout: RefCell<Option<Option<String>>>,
 }
 
-/// A saved edit and whether the running mapper took it.
+/// An applied edit and whether the running mapper took it.
 #[derive(Debug)]
 pub struct Saved<T> {
     pub value: T,
@@ -50,7 +50,7 @@ pub struct Saved<T> {
 
 impl<T> Saved<T> {
     /// `ok` when the mapper is up to date, otherwise a warning that the
-    /// change was saved but not applied.
+    /// change was applied to the document but not to the mapper.
     pub fn message(&self, ok: Msg) -> Msg {
         match &self.runtime {
             Ok(()) => ok,
@@ -61,7 +61,7 @@ impl<T> Saved<T> {
 
 impl Document {
     pub fn new(config: ConfigDocument) -> Rc<Self> {
-        let ui_state = lhc_core::ui_state::UiState::load(config.paths().clone());
+        let ui_state = lhc_core::ui_state::UiState::default();
         Rc::new(Self {
             ui_state: RefCell::new(ui_state),
             config: RefCell::new(config),
@@ -82,7 +82,7 @@ impl Document {
         self.ui_state.borrow().label_mode()
     }
 
-    pub fn save_ui_state(&self, layer: Option<&str>, mode: Option<i32>) -> Result<(), String> {
+    pub fn update_ui_state(&self, layer: Option<&str>, mode: Option<i32>) {
         self.ui_state.borrow_mut().update(layer, mode)
     }
 
@@ -96,8 +96,8 @@ impl Document {
         self.listeners.borrow_mut().push((view, Rc::new(refresh)));
     }
 
-    /// Change the document on behalf of `origin`. On success the change is
-    /// on disk, pushed to a running mapper and every other view refreshed.
+    /// Change the document on behalf of `origin`, update a running mapper
+    /// and refresh every other view.
     /// When another process changed the files first, the document reloads
     /// them, refreshes every view and returns [`ConfigError::ExternalChange`].
     pub fn edit<T>(
@@ -242,6 +242,7 @@ mod tests {
         let other = ConfigDocument::load(document.read().paths().clone()).unwrap();
         let mut other = other;
         other.create_layer("Elsewhere", "").unwrap();
+        other.save_current_layout_as("Elsewhere").unwrap();
         let refreshed = Rc::new(Cell::new(0));
         let counter = refreshed.clone();
         document.subscribe(View::Rules, move |_| counter.set(counter.get() + 1));

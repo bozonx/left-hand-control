@@ -241,8 +241,14 @@ impl KeyboardHandler for SpellWin {
         _raw: &[u32],
         _keysyms: &[smithay_client_toolkit::seat::keyboard::Keysym],
     ) {
-        if _surface != self.layer.as_ref().unwrap().wl_surface() { return; }
-        self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::WindowActiveChanged(true));
+        if _surface != self.layer.as_ref().unwrap().wl_surface() {
+            return;
+        }
+        self.adapter
+            .as_ref()
+            .unwrap()
+            .window
+            .dispatch_event(WindowEvent::WindowActiveChanged(true));
         self.emit(super::WindowEvent::Focus(true));
     }
 
@@ -254,13 +260,23 @@ impl KeyboardHandler for SpellWin {
         _surface: &smithay_client_toolkit::reexports::client::protocol::wl_surface::WlSurface,
         _serial: u32,
     ) {
-        if _surface != self.layer.as_ref().unwrap().wl_surface() { return; }
+        if _surface != self.layer.as_ref().unwrap().wl_surface() {
+            return;
+        }
         self.consumed_keys.clear();
         for (_, text) in self.pressed.drain() {
-            self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyReleased { text });
+            self.adapter
+                .as_ref()
+                .unwrap()
+                .window
+                .dispatch_event(WindowEvent::KeyReleased { text });
         }
         self.sync_modifiers(Default::default());
-        self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::WindowActiveChanged(false));
+        self.adapter
+            .as_ref()
+            .unwrap()
+            .window
+            .dispatch_event(WindowEvent::WindowActiveChanged(false));
         self.emit(super::WindowEvent::Focus(false));
     }
 
@@ -273,14 +289,24 @@ impl KeyboardHandler for SpellWin {
         event: smithay_client_toolkit::seat::keyboard::KeyEvent,
     ) {
         let code = event.raw_code;
-        if self.key_handler.as_mut().is_some_and(|handler| handler(code, self.modifiers.shift, self.modifiers.ctrl)) {
+        if self
+            .key_handler
+            .as_mut()
+            .is_some_and(|handler| handler(code, self.modifiers.shift, self.modifiers.ctrl))
+        {
             self.consumed_keys.insert(code);
             return;
         }
         let text = self.editing_text(event);
-        if is_modifier(&text) { return; }
+        if is_modifier(&text) {
+            return;
+        }
         self.pressed.insert(code, text.clone());
-        self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyPressed { text });
+        self.adapter
+            .as_ref()
+            .unwrap()
+            .window
+            .dispatch_event(WindowEvent::KeyPressed { text });
     }
 
     fn release_key(
@@ -291,9 +317,15 @@ impl KeyboardHandler for SpellWin {
         _serial: u32,
         /*mut*/ event: smithay_client_toolkit::seat::keyboard::KeyEvent,
     ) {
-        if self.consumed_keys.remove(&event.raw_code) { return; }
+        if self.consumed_keys.remove(&event.raw_code) {
+            return;
+        }
         if let Some(text) = self.pressed.remove(&event.raw_code) {
-            self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyReleased { text });
+            self.adapter
+                .as_ref()
+                .unwrap()
+                .window
+                .dispatch_event(WindowEvent::KeyReleased { text });
         }
     }
 
@@ -333,30 +365,62 @@ impl KeyboardHandler for SpellWin {
 
 fn is_modifier(text: &SharedString) -> bool {
     use slint::platform::Key;
-    [Key::Shift, Key::ShiftR, Key::Control, Key::ControlR, Key::Alt, Key::AltGr, Key::Meta, Key::MetaR]
-        .into_iter().any(|key| *text == SharedString::from(key))
+    [
+        Key::Shift,
+        Key::ShiftR,
+        Key::Control,
+        Key::ControlR,
+        Key::Alt,
+        Key::AltGr,
+        Key::Meta,
+        Key::MetaR,
+    ]
+    .into_iter()
+    .any(|key| *text == SharedString::from(key))
 }
 
 impl SpellWin {
-    fn editing_text(&self, event: smithay_client_toolkit::seat::keyboard::KeyEvent) -> SharedString {
+    fn editing_text(
+        &self,
+        event: smithay_client_toolkit::seat::keyboard::KeyEvent,
+    ) -> SharedString {
         let physical = match event.raw_code {
-            30 => Some('a'), 46 => Some('c'), 45 => Some('x'),
-            47 => Some('v'), 44 => Some('z'), 21 => Some('y'),
+            30 => Some('a'),
+            46 => Some('c'),
+            45 => Some('x'),
+            47 => Some('v'),
+            44 => Some('z'),
+            21 => Some('y'),
             _ => None,
         };
-        let shortcut_logical = event.keysym.key_char().map(|character| character.to_string());
+        let shortcut_logical = event
+            .keysym
+            .key_char()
+            .map(|character| character.to_string());
         let logical = get_string(event);
         i_slint_core::input::text_editing_shortcut(
-            shortcut_logical.as_deref().unwrap_or(logical.as_str()), physical, self.modifiers.ctrl, self.modifiers.shift,
-            self.modifiers.alt, self.modifiers.logo,
-        ).map(SharedString::from).unwrap_or(logical)
+            shortcut_logical.as_deref().unwrap_or(logical.as_str()),
+            physical,
+            self.modifiers.ctrl,
+            self.modifiers.shift,
+            self.modifiers.alt,
+            self.modifiers.logo,
+        )
+        .map(SharedString::from)
+        .unwrap_or(logical)
     }
 
     pub(super) fn repeat_input(&mut self, event: smithay_client_toolkit::seat::keyboard::KeyEvent) {
-        if self.is_hidden.get() || self.consumed_keys.contains(&event.raw_code) { return; }
+        if self.is_hidden.get() || self.consumed_keys.contains(&event.raw_code) {
+            return;
+        }
         let text = self.editing_text(event);
         if !is_modifier(&text) {
-            self.adapter.as_ref().unwrap().window.dispatch_event(WindowEvent::KeyPressRepeated { text });
+            self.adapter
+                .as_ref()
+                .unwrap()
+                .window
+                .dispatch_event(WindowEvent::KeyPressRepeated { text });
         }
     }
 
@@ -370,11 +434,15 @@ impl SpellWin {
         ] {
             if before != after {
                 let text = key.into();
-                self.adapter.as_ref().unwrap().window.dispatch_event(if after {
-                    WindowEvent::KeyPressed { text }
-                } else {
-                    WindowEvent::KeyReleased { text }
-                });
+                self.adapter
+                    .as_ref()
+                    .unwrap()
+                    .window
+                    .dispatch_event(if after {
+                        WindowEvent::KeyPressed { text }
+                    } else {
+                        WindowEvent::KeyReleased { text }
+                    });
             }
         }
         self.modifiers = next;

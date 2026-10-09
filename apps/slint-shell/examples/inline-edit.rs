@@ -53,26 +53,42 @@ fn redo(ui: &ControlsWindow) {
     if cfg!(target_os = "windows") {
         shortcut(ui, "y");
     } else {
-        ui.window().dispatch_event(WindowEvent::KeyPressed { text: Key::Control.into() });
-        ui.window().dispatch_event(WindowEvent::KeyPressed { text: Key::Shift.into() });
+        ui.window().dispatch_event(WindowEvent::KeyPressed {
+            text: Key::Control.into(),
+        });
+        ui.window().dispatch_event(WindowEvent::KeyPressed {
+            text: Key::Shift.into(),
+        });
         key(ui, "Z");
-        ui.window().dispatch_event(WindowEvent::KeyReleased { text: Key::Shift.into() });
-        ui.window().dispatch_event(WindowEvent::KeyReleased { text: Key::Control.into() });
+        ui.window().dispatch_event(WindowEvent::KeyReleased {
+            text: Key::Shift.into(),
+        });
+        ui.window().dispatch_event(WindowEvent::KeyReleased {
+            text: Key::Control.into(),
+        });
     }
 }
 
 fn click(ui: &ControlsWindow, x: f32, y: f32) {
     let position = slint::LogicalPosition::new(x, y);
     let button = slint::platform::PointerEventButton::Left;
-    ui.window().dispatch_event(WindowEvent::PointerMoved { position });
-    ui.window().dispatch_event(WindowEvent::PointerPressed { position, button });
-    ui.window().dispatch_event(WindowEvent::PointerReleased { position, button });
+    ui.window()
+        .dispatch_event(WindowEvent::PointerMoved { position });
+    ui.window()
+        .dispatch_event(WindowEvent::PointerPressed { position, button });
+    ui.window()
+        .dispatch_event(WindowEvent::PointerReleased { position, button });
 }
 
 fn wheel(ui: &ControlsWindow, x: f32, y: f32, delta_y: f32) {
     let position = slint::LogicalPosition::new(x, y);
-    ui.window().dispatch_event(WindowEvent::PointerMoved { position });
-    ui.window().dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
+    ui.window()
+        .dispatch_event(WindowEvent::PointerMoved { position });
+    ui.window().dispatch_event(WindowEvent::PointerScrolled {
+        position,
+        delta_x: 0.0,
+        delta_y,
+    });
 }
 
 fn snapshot(ui: &ControlsWindow, name: &str) {

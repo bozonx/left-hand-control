@@ -131,6 +131,7 @@ pub enum Command {
     Show(Window),
     ShowPage(Popup, u8),
     PopupLayout(Option<String>),
+    PopupContents(String),
     Hide,
     ToggleSettings,
     ToggleMapper,
@@ -171,6 +172,11 @@ impl Command {
     }
 
     pub fn parse(value: &str) -> Result<Self, String> {
+        if let Some(contents) = value.strip_prefix("popup-contents ") {
+            return serde_json::from_str(contents)
+                .map(Self::PopupContents)
+                .map_err(|_| USAGE.into());
+        }
         if let Some(layout) = value.strip_prefix("popup-layout ") {
             return serde_json::from_str(layout)
                 .map(Self::PopupLayout)
@@ -230,6 +236,11 @@ impl fmt::Display for Command {
                 "popup-layout {}",
                 serde_json::to_string(layout).map_err(|_| fmt::Error)?
             ),
+            Self::PopupContents(contents) => write!(
+                f,
+                "popup-contents {}",
+                serde_json::to_string(contents).map_err(|_| fmt::Error)?
+            ),
             Self::Hide => f.write_str("hide"),
             Self::ToggleSettings => f.write_str("toggle-settings"),
             Self::ToggleMapper => f.write_str("toggle-mapper"),
@@ -258,6 +269,7 @@ mod tests {
             Command::Show(Window::Settings),
             Command::PopupLayout(Some("user:Привет".into())),
             Command::PopupLayout(None),
+            Command::PopupContents("rules: []\nname: Привет\n".into()),
             Command::ShowPage(Popup::Quick, 3),
             Command::ShowPage(Popup::Emoji, 5),
             Command::Hide,
@@ -269,7 +281,10 @@ mod tests {
                 theme: ThemeMode::Light,
                 language: Language::English,
             }),
-            Command::Preferences(Preferences { theme: ThemeMode::EInk, language: Language::Russian }),
+            Command::Preferences(Preferences {
+                theme: ThemeMode::EInk,
+                language: Language::Russian,
+            }),
             Command::Preferences(Preferences::default()),
             Command::Execute("text:  Привет 👋 ".into()),
             Command::Execute("Ctrl+KeyC".into()),

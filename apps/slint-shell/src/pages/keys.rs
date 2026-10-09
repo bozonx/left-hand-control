@@ -18,7 +18,9 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
             code: (*code).into(),
             label: keyboard::label(code).into(),
             action: config.base_tap_action(code).unwrap_or_default().into(),
-            category: super::picker::category_for_value(config.base_tap_action(code).unwrap_or_default()),
+            category: super::picker::category_for_value(
+                config.base_tap_action(code).unwrap_or_default(),
+            ),
         })
         .collect();
     let editor = ui.global::<KeyEditor>();
@@ -58,8 +60,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         };
         ui.global::<KeyEditor>().set_selected(index);
-        let current = doc.read().base_tap_action(key).unwrap_or_default().to_owned();
-        ui.global::<ActionPicker>()
-            .invoke_open(PickerTarget::BaseKey, index, current.into(), false);
+        let current = doc
+            .read()
+            .base_tap_action(key)
+            .unwrap_or_default()
+            .to_owned();
+        ui.global::<ActionPicker>().invoke_open(
+            PickerTarget::BaseKey,
+            index,
+            current.into(),
+            false,
+        );
     });
 }

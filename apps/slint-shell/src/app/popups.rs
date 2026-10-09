@@ -78,7 +78,8 @@ impl App {
         if self.menus_sent.borrow().as_ref() == Some(&current) {
             return Ok(());
         }
-        self.send_worker(&Command::PopupLayout(id), source, start, None)?;
+        let contents = lhc_core::profile::layout_file::serialize(&self.menus().layout);
+        self.send_worker(&Command::PopupContents(contents), source, start, None)?;
         *self.menus_sent.borrow_mut() = Some(current);
         Ok(())
     }
@@ -201,7 +202,10 @@ impl App {
 
     fn choose(&self, popup: Popup, index: i32) {
         let action = match popup {
-            Popup::Emoji => self.menus().emoji(&self.emoji, index).map(|emoji| format!("text:{emoji}")),
+            Popup::Emoji => self
+                .menus()
+                .emoji(&self.emoji, index)
+                .map(|emoji| format!("text:{emoji}")),
             Popup::Quick => usize::try_from(index)
                 .ok()
                 .and_then(|index| self.quick_actions.borrow().get(index).cloned()),
@@ -270,7 +274,10 @@ fn observe(app: &Rc<App>, window: Window) {
                 .mark(window.name(), "t3_first_frame");
         }
     }) {
-        log::warn!("{} rendering notifier unavailable: {error:?}", window.name());
+        log::warn!(
+            "{} rendering notifier unavailable: {error:?}",
+            window.name()
+        );
     }
     let weak = Rc::downgrade(app);
     let modifiers =

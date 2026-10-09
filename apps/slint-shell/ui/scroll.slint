@@ -77,6 +77,7 @@ export component ScrollView {
         : root.drag-pointer > content.height - root.drag-edge ? -16px * min(1, (root.drag-pointer - content.height + root.drag-edge) / root.drag-edge)
         : 0px;
     private property <int> drag-wheel: DragDrop.wheel-serial;
+    // Every ScrollView sees the serial change; only the one hosting the drag may consume it.
     changed drag-wheel => {
         if root.drag-active && DragDrop.wheel != 0px { root.drag-scroll-by(DragDrop.wheel); }
         DragDrop.wheel = 0px;
@@ -95,6 +96,8 @@ export component ScrollView {
     horizontal-stretch: 1;
     vertical-stretch: 1;
     content := Flickable {
+        x: 0px;
+        y: 0px;
         width: max(0px, root.width - (root.vertical-scrollbar-policy != ScrollBarPolicy.always-off ? root.scrollbar-size + root.scrollbar-gap : 0px));
         height: max(0px, root.height - (root.horizontal ? root.scrollbar-size + root.scrollbar-gap : 0px));
         interactive: root.mouse-drag-pan-enabled;
@@ -107,6 +110,7 @@ export component ScrollView {
         triggered => { root.drag-scroll-by(root.drag-speed); }
     }
     if root.vertical: ScrollBar {
+        y: 0px;
         x: content.width + root.scrollbar-gap;
         width: root.scrollbar-size;
         height: content.height;
@@ -117,6 +121,7 @@ export component ScrollView {
         scrolled => { root.scrolled(); }
     }
     if root.horizontal: ScrollBar {
+        x: 0px;
         y: content.height + root.scrollbar-gap;
         height: root.scrollbar-size;
         width: content.width;

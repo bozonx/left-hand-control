@@ -57,3 +57,37 @@ pub fn changed_on_disk(paths: &[PathBuf]) -> Result<bool, String> {
     }
     Ok(false)
 }
+
+static LIBRARY_NAMES: Mutex<Option<Vec<String>>> = Mutex::new(None);
+
+pub fn remember_layouts(names: &[String]) -> Result<(), String> {
+    *LIBRARY_NAMES
+        .lock()
+        .map_err(|_| "storage lock poisoned".to_string())? = Some(names.to_vec());
+    Ok(())
+}
+
+pub fn library_changed(paths: &StoragePaths) -> Result<bool, String> {
+    let names = paths.list_user_layouts()?;
+    if LIBRARY_NAMES
+        .lock()
+        .map_err(|_| "storage lock poisoned".to_string())?
+        .as_ref()
+        .is_some_and(|previous| previous != &names)
+    {
+        return Ok(true);
+    }
+    let tracked: Vec<PathBuf> = TRACKED
+        .lock()
+        .map_err(|_| "storage lock poisoned".to_string())?
+        .as_ref()
+        .map(|files| {
+            files
+                .keys()
+                .filter(|path| path.parent() == Some(paths.layouts_dir().as_path()))
+                .cloned()
+                .collect()
+        })
+        .unwrap_or_default();
+    changed_on_disk(&tracked)
+}

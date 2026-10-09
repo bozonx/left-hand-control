@@ -63,8 +63,13 @@ impl SeatHandler for SpellWin {
             let keyboard = self
                 .states
                 .seat_state
-                .get_keyboard_with_repeat(qh, &seat, None, self.loop_handle.clone(),
-                    Box::new(|win, _, event| win.repeat_input(event)))
+                .get_keyboard_with_repeat(
+                    qh,
+                    &seat,
+                    None,
+                    self.loop_handle.clone(),
+                    Box::new(|win, _, event| win.repeat_input(event)),
+                )
                 .expect("Failed to create keyboard");
             self.states.keyboard_state = Some(keyboard);
         }
@@ -220,7 +225,9 @@ impl CompositorHandler for SpellWin {
         _surface: &wl_surface::WlSurface,
         _time: u32,
     ) {
-        if _surface != self.layer.as_ref().unwrap().wl_surface() { return; }
+        if _surface != self.layer.as_ref().unwrap().wl_surface() {
+            return;
+        }
         self.frame_pending.set(false);
         self.converter(qh);
         self.popup_manager.redraw_popups(qh);
@@ -255,7 +262,9 @@ impl FractionalScaleHandler for SpellWin {
         surface: &wl_surface::WlSurface,
         scale: u32,
     ) {
-        if surface != self.layer.as_ref().unwrap().wl_surface() { return; }
+        if surface != self.layer.as_ref().unwrap().wl_surface() {
+            return;
+        }
         info!("Scale factor changed, invoked from custom trait: {}", scale);
         let width_old = self.adapter.as_ref().unwrap().size_original.get().width;
         let height_old = self.adapter.as_ref().unwrap().size_original.get().height;
@@ -292,7 +301,9 @@ impl FractionalScaleHandler for SpellWin {
 
 impl LayerShellHandler for SpellWin {
     fn closed(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, _layer: &LayerSurface) {
-        if Some(_layer) != self.layer.as_ref() { return; }
+        if Some(_layer) != self.layer.as_ref() {
+            return;
+        }
         self.is_hidden.set(true);
         self.recreate_layer();
         self.emit(super::WindowEvent::Closed);
@@ -306,7 +317,9 @@ impl LayerShellHandler for SpellWin {
         _configure: LayerSurfaceConfigure,
         _serial: u32,
     ) {
-        if Some(_layer) != self.layer.as_ref() { return; }
+        if Some(_layer) != self.layer.as_ref() {
+            return;
+        }
         self.configured.set(true);
         self.converter(qh);
     }

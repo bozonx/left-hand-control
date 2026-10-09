@@ -10,9 +10,6 @@ function toggleOpen() {
     isOpen.value = !isOpen.value
 }
 
-onMounted(() => {
-    if (!uiState.loaded.value) void uiState.load()
-})
 </script>
 
 <template>

@@ -1,4 +1,4 @@
-//! Layout YAML files (`current-layout.yaml` and the user library).
+//! Saved layout YAML files in the user library.
 //!
 //! Parsing and serialisation follow `utils/layoutPresets.ts`, so files
 //! written by either shell read back identically in the other one.

@@ -383,6 +383,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     return Ok(());
                 }
+                Event::Command(Command::PopupContents(contents), _, _) => {
+                    match lhc_core::profile::layout_file::parse(&contents) {
+                        Ok(layout) => layers.set_menus(ConfiguredMenus {
+                            layout: layout.unwrap_or_default(),
+                        }),
+                        Err(error) => log::error!("popup configuration: {error}"),
+                    }
+                }
                 Event::Command(Command::PopupLayout(id), _, _) => {
                     let menus = ConfiguredMenus::load_for(id.as_deref()).unwrap_or_else(|error| {
                         log::error!("load popup configuration: {error}");

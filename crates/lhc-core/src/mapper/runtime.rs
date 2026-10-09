@@ -39,6 +39,7 @@ struct MapperRuntime<B> {
     backend: B,
     handle: Option<Box<dyn BackendHandle>>,
     status: MapperStatus,
+    config_json: Option<String>,
     /// True while a start is in flight outside the state lock (spawn can
     /// wait seconds for readiness and must not block status()/stop()).
     starting: bool,
@@ -55,6 +56,7 @@ impl<B> MapperRuntime<B> {
                 mouse_device_path: None,
                 last_error: None,
             },
+            config_json: None,
             starting: false,
         }
     }
@@ -79,6 +81,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
             if handle.reap_if_finished() {
                 self.handle = None;
                 self.status.running = false;
+                self.config_json = None;
             }
         }
         if self.handle.is_some() || self.starting {
@@ -129,6 +132,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         match self.handle.take() {
             Some(handle) => {
                 self.status.running = false;
+                self.config_json = None;
                 Ok(handle)
             }
             None => Err("mapper is not running".into()),
@@ -147,6 +151,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         if handle.reap_if_finished() {
             self.handle = None;
             self.status.running = false;
+            self.config_json = None;
             return Err("mapper is not running".into());
         }
         handle.update_config(cfg)
@@ -159,6 +164,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         if handle.reap_if_finished() {
             self.handle = None;
             self.status.running = false;
+            self.config_json = None;
             return Err("mapper is not running".into());
         }
         handle.execute_action(action)
@@ -174,6 +180,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
             if finished {
                 self.handle = None;
                 self.status.running = false;
+                self.config_json = None;
             }
         }
         self.status.clone()
@@ -331,7 +338,10 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
         mouse_path.map(|s| s.to_string()),
         cfg,
     );
-    lock_state().finish_start(result, device_path, mouse_path)
+    let mut state = lock_state();
+    state.finish_start(result, device_path, mouse_path)?;
+    state.config_json = Some(config_json.to_owned());
+    Ok(())
 }
 
 pub fn stop() -> Result<(), String> {
@@ -351,7 +361,10 @@ pub fn update_config(config_json: &str) -> Result<(), String> {
     validation::validate_config(&cfg)?;
     #[cfg(target_os = "linux")]
     super::commands::cancel();
-    lock_state().update_config(cfg)
+    let mut state = lock_state();
+    state.update_config(cfg)?;
+    state.config_json = Some(config_json.to_owned());
+    Ok(())
 }
 
 /// Push a saved config to the mapper when it is running; no-op otherwise.
@@ -360,6 +373,15 @@ pub fn update_config_if_running(config_json: &str) -> Result<(), String> {
         return Ok(());
     }
     update_config(config_json)
+}
+
+pub fn config_json() -> Option<String> {
+    let mut state = lock_state();
+    state
+        .status()
+        .running
+        .then(|| state.config_json.clone())
+        .flatten()
 }
 
 pub fn execute_action(action: String) -> Result<(), String> {
@@ -508,8 +530,10 @@ mod tests {
         runtime
             .start("/dev/input/event1", None, empty_cfg())
             .expect("start");
+        runtime.config_json = Some("session config".into());
         let status = runtime.status();
 
+        assert!(runtime.config_json.is_none());
         assert!(!status.running);
         assert_eq!(status.device_path.as_deref(), Some("/dev/input/event1"));
         assert_eq!(status.last_error.as_deref(), Some("boom"));
@@ -533,7 +557,9 @@ mod tests {
         runtime
             .start("/dev/input/event2", None, empty_cfg())
             .expect("start");
+        runtime.config_json = Some("session config".into());
         runtime.stop().expect("stop");
+        assert!(runtime.config_json.is_none());
 
         assert!(*stop_called.lock().expect("lock stop flag"));
         assert!(!runtime.status().running);

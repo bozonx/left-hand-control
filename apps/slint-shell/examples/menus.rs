@@ -1,4 +1,4 @@
-use lhc_core::{config_document::ConfigDocument, storage::StoragePaths};
+use lhc_core::storage::StoragePaths;
 use slint::{ComponentHandle, Model};
 use slint_shell::{
     Document, bind_document,
@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.set_page(Page::Menus);
     ui.global::<Theme>().invoke_apply();
     let e = ui.global::<MenuEditor>();
-    let loaded = || ConfigDocument::load(paths.clone()).unwrap();
+    let loaded = || document.read();
 
     e.invoke_open(MenuKind::Emoji);
     e.set_value("Привет 👋".into());
@@ -108,13 +108,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_open(MenuKind::Quick);
     assert_eq!(e.get_cells().row_count(), 15);
     assert_eq!(e.get_value().as_str(), reference.as_str());
-    paths.save_current_layout("rules: []\n")?;
+    paths.save_config("{}")?;
     e.set_name("conflict".into());
     e.invoke_set_name();
     settle();
     // The conflicting save reloads the document from disk.
     assert_eq!(e.get_status().id.as_str(), "config-external-change");
-    assert!(document.read().layout().rules.is_empty());
+
     document.edit(slint_shell::document::View::Shell, |config| {
         config.save_command(lhc_core::profile::model::Command {
             id: reference.trim_start_matches("cmd:").into(),

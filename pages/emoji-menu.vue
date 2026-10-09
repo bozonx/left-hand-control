@@ -7,6 +7,7 @@ import {
     createDefaultEmojiPage,
 } from '~/types/config'
 import type { EmojiHotkey } from '~/types/config'
+import { parsePersistedConfig } from '~/composables/config/normalization'
 import { useMenuPage } from '~/composables/useMenuPage'
 
 const { config, load } = useConfig()
@@ -73,6 +74,13 @@ async function prepareMenu(payload: unknown, clearPending = true) {
     if (clearPending) pendingHotkeyCode = null
 
     await load()
+    const tauri = await useTauri()
+    if (tauri) {
+        config.value = {
+            ...parsePersistedConfig(await tauri.invoke<string>('get_popup_config')),
+            settings: config.value.settings,
+        }
+    }
     await resetScroll(nextPage)
 
     if (generation !== menuGeneration) return

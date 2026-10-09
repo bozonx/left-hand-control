@@ -1,4 +1,4 @@
-use lhc_core::{config_document::ConfigDocument, storage::StoragePaths};
+use lhc_core::storage::StoragePaths;
 use slint::{ComponentHandle, Model};
 use slint_shell::{
     Document, bind_document,
@@ -42,7 +42,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(first(&document).steps[4].action, "pause:250");
     editor.invoke_add_step(0, "macro:testMacro".into());
     assert!(editor.get_has_errors());
-    assert_eq!(editor.get_macros().row_data(0).unwrap().error.id, "macro-cycle");
+    assert_eq!(
+        editor.get_macros().row_data(0).unwrap().error.id,
+        "macro-cycle"
+    );
     assert_eq!(first(&document).steps.len(), 5);
     editor.invoke_remove_step(0, 5);
     assert!(!editor.get_has_errors());
@@ -55,9 +58,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_move(0, 1);
     assert_eq!(document.read().layout().macros[0].id, "testMacro");
     editor.invoke_remove(1);
-    let loaded = ConfigDocument::load(paths)?;
+    let loaded = document.read();
     assert_eq!(loaded.layout().macros.len(), 1);
     assert_eq!(loaded.layout().macros[0].name, "Тестовый макрос");
+    drop(loaded);
     editor.invoke_add_step(0, "".into());
     let picker = ui.global::<slint_shell::ui::ActionPicker>();
     picker.set_value("KeyA".into());

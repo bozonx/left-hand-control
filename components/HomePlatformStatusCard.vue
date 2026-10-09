@@ -12,7 +12,6 @@ function toggleOpen() {
 }
 
 onMounted(() => {
-    if (!uiState.loaded.value) void uiState.load()
     platform.refresh()
 })
 

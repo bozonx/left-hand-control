@@ -41,7 +41,10 @@ pub fn game_mode() -> (bool, bool) {
 }
 
 pub fn set_game_mode(active: bool, state_available: bool) {
-    GAME_MODE.store(u8::from(active) | (u8::from(state_available) << 1), Ordering::SeqCst);
+    GAME_MODE.store(
+        u8::from(active) | (u8::from(state_available) << 1),
+        Ordering::SeqCst,
+    );
 }
 
 pub fn layout_short() -> Option<String> {

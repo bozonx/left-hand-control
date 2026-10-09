@@ -114,10 +114,8 @@ fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
     let editor = ui.global::<LayersEditor>();
     editor.set_selected(index);
     editor.set_selected_id(id.clone().unwrap_or_default().into());
-    if let Some(id) = id
-        && let Err(error) = document.save_ui_state(Some(&id), None)
-    {
-        editor.set_status(crate::notifications::report(ui, &Msg::Error(error)));
+    if let Some(id) = id {
+        document.update_ui_state(Some(&id), None);
     }
     refresh(ui, document);
 }
@@ -552,12 +550,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     editor.on_set_label_mode(move |mode| {
         if let Some(ui) = weak.upgrade() {
             let editor = ui.global::<LayersEditor>();
-            match doc.save_ui_state(None, Some(mode)) {
-                Ok(()) => editor.set_label_mode(mode),
-                Err(error) => {
-                    editor.set_status(crate::notifications::report(&ui, &Msg::Error(error)))
-                }
-            }
+            doc.update_ui_state(None, Some(mode));
+            editor.set_label_mode(mode);
         }
     });
 

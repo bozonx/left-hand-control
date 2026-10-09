@@ -67,7 +67,9 @@ pub fn socket_dir() -> std::io::Result<PathBuf> {
 #[cfg(unix)]
 pub fn socket_path(name: &str) -> std::io::Result<PathBuf> {
     if name.is_empty() || name.contains('/') {
-        return Err(std::io::Error::other(format!("invalid socket name {name:?}")));
+        return Err(std::io::Error::other(format!(
+            "invalid socket name {name:?}"
+        )));
     }
     Ok(socket_dir()?.join(name))
 }
@@ -188,7 +190,7 @@ fn receive(
     auth: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut line = String::new();
-    BufReader::new(stream.take(8192)).read_line(&mut line)?;
+    BufReader::new(stream.take(4 * 1024 * 1024)).read_line(&mut line)?;
     let received = Instant::now();
     let request: Request = serde_json::from_str(&line)?;
     if auth.is_some() && request.auth.as_deref() != auth {
@@ -319,7 +321,8 @@ mod tests {
     fn dispatch() -> (Dispatch, Arc<Mutex<Vec<Command>>>) {
         let seen = Arc::new(Mutex::new(Vec::new()));
         let sink = seen.clone();
-        let dispatch: Dispatch = Arc::new(move |command, _, _, _| sink.lock().unwrap().push(command));
+        let dispatch: Dispatch =
+            Arc::new(move |command, _, _, _| sink.lock().unwrap().push(command));
         (dispatch, seen)
     }
 

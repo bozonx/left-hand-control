@@ -33,7 +33,10 @@ impl Modifiers {
     fn update(&mut self, key: KeyCode, value: i32) -> bool {
         if !matches!(
             key,
-            KeyCode::KEY_LEFTCTRL | KeyCode::KEY_RIGHTCTRL | KeyCode::KEY_LEFTALT | KeyCode::KEY_RIGHTALT
+            KeyCode::KEY_LEFTCTRL
+                | KeyCode::KEY_RIGHTCTRL
+                | KeyCode::KEY_LEFTALT
+                | KeyCode::KEY_RIGHTALT
         ) {
             return false;
         }
@@ -47,7 +50,8 @@ impl Modifiers {
 
     fn ctrl_alt(&self) -> bool {
         let any = |a, b| self.0.contains(&a) || self.0.contains(&b);
-        any(KeyCode::KEY_LEFTCTRL, KeyCode::KEY_RIGHTCTRL) && any(KeyCode::KEY_LEFTALT, KeyCode::KEY_RIGHTALT)
+        any(KeyCode::KEY_LEFTCTRL, KeyCode::KEY_RIGHTCTRL)
+            && any(KeyCode::KEY_LEFTALT, KeyCode::KEY_RIGHTALT)
     }
 }
 
@@ -63,7 +67,12 @@ fn command(modifiers: &mut Modifiers, key: KeyCode, value: i32) -> Option<Comman
     }
 }
 
-fn listen(path: PathBuf, mut device: Device, dispatch: Dispatch, watched: Arc<Mutex<HashSet<PathBuf>>>) {
+fn listen(
+    path: PathBuf,
+    mut device: Device,
+    dispatch: Dispatch,
+    watched: Arc<Mutex<HashSet<PathBuf>>>,
+) {
     std::thread::spawn(move || {
         log::info!("evdev listening: {}", path.display());
         let mut modifiers = Modifiers::default();
@@ -74,7 +83,9 @@ fn listen(path: PathBuf, mut device: Device, dispatch: Dispatch, watched: Arc<Mu
                         if event.event_type() != evdev::EventType::KEY {
                             continue;
                         }
-                        if let Some(command) = command(&mut modifiers, KeyCode::new(event.code()), event.value()) {
+                        if let Some(command) =
+                            command(&mut modifiers, KeyCode::new(event.code()), event.value())
+                        {
                             dispatch(command, Source::Evdev, Instant::now(), None);
                         }
                     }
@@ -86,7 +97,10 @@ fn listen(path: PathBuf, mut device: Device, dispatch: Dispatch, watched: Arc<Mu
             }
         }
         // Allow the device to be opened again if it comes back.
-        watched.lock().unwrap_or_else(|p| p.into_inner()).remove(&path);
+        watched
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .remove(&path);
     });
 }
 
@@ -127,7 +141,10 @@ pub fn start(dispatch: Dispatch) {
                 });
             for path in paths {
                 if ignored.contains(&path)
-                    || watched.lock().unwrap_or_else(|p| p.into_inner()).contains(&path)
+                    || watched
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .contains(&path)
                 {
                     continue;
                 }
@@ -136,7 +153,10 @@ pub fn start(dispatch: Dispatch) {
                     continue;
                 };
                 found = true;
-                watched.lock().unwrap_or_else(|p| p.into_inner()).insert(path.clone());
+                watched
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner())
+                    .insert(path.clone());
                 listen(path, device, dispatch.clone(), watched.clone());
             }
             if !found && !warned {
@@ -161,8 +181,15 @@ mod tests {
         assert_eq!(command(&mut m, KeyCode::KEY_RIGHTCTRL, 1), None);
         assert_eq!(command(&mut m, KeyCode::KEY_RIGHTCTRL, 0), None);
         assert_eq!(command(&mut m, KeyCode::KEY_LEFTALT, 1), None);
-        assert_eq!(command(&mut m, KeyCode::KEY_F11, 1), Some(Command::Show(Window::EMOJI)));
-        assert_eq!(command(&mut m, KeyCode::KEY_F11, 2), None, "repeats do not reopen");
+        assert_eq!(
+            command(&mut m, KeyCode::KEY_F11, 1),
+            Some(Command::Show(Window::EMOJI))
+        );
+        assert_eq!(
+            command(&mut m, KeyCode::KEY_F11, 2),
+            None,
+            "repeats do not reopen"
+        );
         assert_eq!(command(&mut m, KeyCode::KEY_LEFTALT, 0), None);
         assert_eq!(command(&mut m, KeyCode::KEY_F12, 1), None);
     }

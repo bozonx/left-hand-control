@@ -62,14 +62,6 @@ impl StoragePaths {
         &self.data_dir
     }
 
-    pub fn ui_state_path(&self) -> PathBuf {
-        self.config_dir.join("ui-state.json")
-    }
-
-    pub fn current_layout_path(&self) -> PathBuf {
-        self.data_dir.join("current-layout.yaml")
-    }
-
     pub fn layouts_dir(&self) -> PathBuf {
         self.data_dir.join("layouts")
     }
@@ -93,34 +85,6 @@ impl StoragePaths {
     pub fn save_config(&self, contents: &str) -> Result<(), String> {
         self.ensure()?;
         write_atomic(&self.config_path(), contents.as_bytes())
-    }
-
-    pub fn load_ui_state(&self) -> Result<String, String> {
-        self.ensure()?;
-        let path = self.ui_state_path();
-        if !path.exists() {
-            return Ok(String::new());
-        }
-        fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
-    }
-
-    pub fn save_ui_state(&self, contents: &str) -> Result<(), String> {
-        self.ensure()?;
-        write_atomic(&self.ui_state_path(), contents.as_bytes())
-    }
-
-    pub fn load_current_layout(&self) -> Result<String, String> {
-        self.ensure()?;
-        let path = self.current_layout_path();
-        if !path.exists() {
-            return Ok(String::new());
-        }
-        fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
-    }
-
-    pub fn save_current_layout(&self, contents: &str) -> Result<(), String> {
-        self.ensure()?;
-        write_atomic(&self.current_layout_path(), contents.as_bytes())
     }
 
     pub fn list_user_layouts(&self) -> Result<Vec<String>, String> {
@@ -452,9 +416,9 @@ mod tests {
             PathBuf::from("/repo/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json")
         );
         assert_eq!(
-            linux.current_layout_path(),
+            linux.layouts_dir().join("Test.yaml"),
             PathBuf::from(
-                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/current-layout.yaml"
+                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/layouts/Test.yaml"
             )
         );
         let windows = StoragePaths::dev(base, "windows");
@@ -554,36 +518,6 @@ mod tests {
         assert!(validate_layout_name("   ").is_err());
         assert!(validate_layout_name("...").is_err());
         assert!(validate_layout_name("left/hand").is_err());
-    }
-
-    #[test]
-    fn save_and_load_ui_state_roundtrip() {
-        let temp = TempDir::new("storage-ui-state");
-        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
-
-        storage
-            .save_ui_state("{\"selectedLayerId\":\"nav\"}")
-            .expect("save ui state");
-
-        assert_eq!(
-            storage.load_ui_state().expect("load ui state"),
-            "{\"selectedLayerId\":\"nav\"}"
-        );
-    }
-
-    #[test]
-    fn save_and_load_current_layout_roundtrip() {
-        let temp = TempDir::new("storage-current-layout");
-        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
-
-        storage
-            .save_current_layout("name: Current")
-            .expect("save current layout");
-
-        assert_eq!(
-            storage.load_current_layout().expect("load current layout"),
-            "name: Current"
-        );
     }
 
     #[test]
