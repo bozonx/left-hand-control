@@ -272,7 +272,7 @@ component MenuTabs inherits ScrollView {
             changed position => { DragDrop.row(5, index, self.position.x, self.width); }
             changed width => { DragDrop.row(5, index, self.position.x, self.width); }
             Timer { interval: 400ms; running: parent.hovered && index != root.selected; triggered => { root.select(index); } }
-            tab := NavTab { text: label; selected: index == root.selected; clicked => { root.select(index); } opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == index ? 0.5 : 1; }
+            tab := NavTab { text: (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == index ? 0.5 : 1; }
             if DragDrop.dragging && DragDrop.group == 5 && DragDrop.target == index && index != DragDrop.source: Rectangle {
                 x: index > DragDrop.source ? parent.width : -3px;
                 width: 3px; background: Theme.link;
@@ -432,6 +432,7 @@ export component EmojiPage inherits Rectangle {
                         InfoTip { text: @tr("You can enter emoji, any text, or Unicode symbols here. Drag an item from the palette onto a key to assign it."); }
                     }
                     if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
+                    FieldLabel { text: @tr("Examples"); }
                     ScrollView {
                         min-height: 0px;
                         vertical-stretch: 1;

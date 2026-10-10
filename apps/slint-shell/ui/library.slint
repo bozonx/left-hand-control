@@ -305,8 +305,8 @@ export component LibraryPage inherits VerticalBox {
         HorizontalLayout {
             spacing: 8px;
             Text { text: @tr("Create layout") + ":"; color: Theme.text; vertical-alignment: center; }
-            Button { text: @tr("New"); primary: LayoutLibrary.names.length > 0; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-            Button { text: @tr("Based on Ivan K layout"); clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+            Button { text: @tr("New"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+            Button { text: @tr("Based on Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
         }
     }
     if LayoutLibrary.names.length == 0: Rectangle {
@@ -317,7 +317,7 @@ export component LibraryPage inherits VerticalBox {
             Text { text: @tr("Start from the author's Ivan K layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
             HorizontalLayout { alignment: center; spacing: 8px;
                 Button { text: @tr("Create empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-                Button { text: @tr("Based on Ivan K layout"); primary: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+                Button { text: @tr("Based on Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
             }
         }
     }

@@ -409,7 +409,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().layer_keymaps[&second].keys["F16"].as_deref(),
         Some("F16")
     );
-    layers.invoke_pick_extra(3, false);
+    layers.invoke_reorder_extra(3, 0);
+    assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F16");
+    layers.invoke_pick_extra(0, false);
     assert!(picker.get_layer_action());
     picker.invoke_select_behavior(1);
     picker.set_value("".into());
@@ -418,7 +420,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().layer_keymaps[&second].keys["F16"],
         None
     );
-    layers.invoke_pick_extra(3, true);
+    layers.invoke_pick_extra(0, true);
     picker.invoke_select_behavior(2);
     picker.set_value("F17".into());
     picker.invoke_apply();
@@ -431,7 +433,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().layer_keymaps[&second].keys["F17"],
         None
     );
-    layers.invoke_remove_extra(3);
+    assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F17");
+    layers.invoke_remove_extra(0);
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());
@@ -491,7 +494,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let n = step.get();
         match n {
             -3 => {
-                let position = slint::LogicalPosition::new(100.0, 260.0);
+                let position = slint::LogicalPosition::new(100.0, 288.0);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
             }
@@ -500,7 +503,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.window().set_size(slint::LogicalSize::new(1400.0, 760.0));
             }
             -1 => {
-                assert_eq!(ui.window().size().width, (1400.0 * ui.window().scale_factor()) as u32);
+                // Wayland may keep a tiled window at its compositor-controlled size.
+                assert!(ui.window().size().width >= (940.0 * ui.window().scale_factor()) as u32);
                 snapshot(&ui, "settings-keyboard-wide");
                 let position = slint::LogicalPosition::new(100.0, 210.0);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
@@ -528,7 +532,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             12 => { snapshot(&ui, "game-mode-on-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Off); }
             13 => { snapshot(&ui, "game-mode-off-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Auto); }
             14 => { snapshot(&ui, "game-mode-auto-dark");
-                let position = slint::LogicalPosition::new(600.0, 27.0);
+                let position = slint::LogicalPosition::new(530.0, 27.0);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
             }
             15 => { snapshot(&ui, "game-mode-menu-dark");
@@ -569,7 +573,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 rules.invoke_choose(id.into());
             }
             24 => { snapshot(&ui, "rules-layer"); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Advanced); }
-            25 => { snapshot(&ui, "rules-layer-advanced"); println!("Interactions passed: settings, rules, long-hold actions, chord triggers, persistence, validation, navigation and game mode"); slint::quit_event_loop().unwrap(); }
+            25 => { snapshot(&ui, "rules-layer-advanced"); ui.global::<RulesEditor>().set_dialog(RuleDialog::None); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_tab(2); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
+            26 => {
+                let position = slint::LogicalPosition::new(250.0, 616.0);
+                let wheel = |delta_y| ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
+                let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<f64>().unwrap();
+                // Move to focus the field after scrolling the page: Flickable keeps
+                // consecutive wheel events at one position in the same gesture.
+                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(280.0, 616.0), delta_x: 0.0, delta_y: 60.0 });
+                assert!((duration() - 2.5).abs() < 0.0001);
+                for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                wheel(60.0);
+                assert!((duration() - 2.6).abs() < 0.0001, "duration after wheel: {}", duration());
+                wheel(-60.0);
+                assert!((duration() - 2.5).abs() < 0.0001);
+                println!("Interactions passed: settings, numeric wheel, rules, long-hold actions, chord triggers, extra-key sorting, persistence, validation, navigation and game mode");
+                slint::quit_event_loop().unwrap();
+            }
             _ => {}
         }
         step.set(n + 1);

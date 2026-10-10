@@ -66,6 +66,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_delete();
     assert_eq!(library.get_names().row_count(), 1);
     library.invoke_create("Copy".into(), "".into(), LayoutSource::Copy, 0);
+    assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+    library.invoke_continue_pending();
     assert_eq!(library.get_dialog(), LibraryDialog::None);
     assert_eq!(
         paths.load_user_layout("A")?,

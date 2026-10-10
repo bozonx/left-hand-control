@@ -145,7 +145,7 @@ export component PickerOverlay inherits Rectangle {
             VerticalBox { padding: 18px; spacing: 8px;
                 HorizontalBox { vertical-stretch: 0;
                     VerticalBox { padding: 0px; spacing: 4px; horizontal-stretch: 1;
-                        Text { text: ActionPicker.key-only ? @tr("Choose trigger key") : ActionPicker.title-context == 1 ? @tr("Double-tap action") : ActionPicker.title-context == 2 ? @tr("Tap action") : ActionPicker.title-context == 3 ? @tr("Hold another key / combination") : ActionPicker.title-context == 4 ? @tr("Macro step") : ActionPicker.title-context == 5 ? @tr("Long-hold action") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
+                        Text { text: ActionPicker.key-only ? (ActionPicker.trigger-chords ? @tr("Choose a key or key combination") : @tr("Choose trigger key")) : ActionPicker.title-context == 1 ? @tr("Double-tap action") : ActionPicker.title-context == 2 ? @tr("Tap action") : ActionPicker.title-context == 3 ? @tr("Hold another key / combination") : ActionPicker.title-context == 4 ? @tr("Macro step") : ActionPicker.title-context == 5 ? @tr("Long-hold action") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: 22px; font-weight: 700; }
                     }
                 }
                 if ActionPicker.allow-default || ActionPicker.allow-swallow: HorizontalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;

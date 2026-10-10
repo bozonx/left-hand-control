@@ -1950,3 +1950,9 @@ msgstr "Быстрое действие"
 
 msgid "Folder: {}"
 msgstr "Папка: {}"
+
+msgid "Choose a key or key combination"
+msgstr "Выберите клавишу или сочетание клавиш"
+
+msgid "Examples"
+msgstr "Примеры"

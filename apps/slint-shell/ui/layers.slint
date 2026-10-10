@@ -39,6 +39,7 @@ export global LayersEditor {
     callback open-dialog(LayerDialog, int);
     callback apply-dialog();
     callback reorder(int, int);
+    callback reorder-extra(int, int);
     callback remove-extra(int);
     callback update-description(string);
     callback update-name(string);
@@ -162,6 +163,15 @@ component ExtraKeyLine inherits TouchArea {
                 min-width: 0px;
                 text: root.item.kind == Assignment.transparent ? @tr("Normal key behavior") : root.item.kind == Assignment.swallow ? @tr("Suppress") : root.item.action;
                 clicked => { LayersEditor.pick-extra(root.index, false); }
+            }
+            VerticalLayout {
+                width: 28px;
+                alignment: center;
+                DragHandle {
+                    opacity: root.has-hover || (DragDrop.group == 3 && DragDrop.source == root.index) ? 1 : 0;
+                    group: 3; index: root.index; count: LayersEditor.extras.length;
+                    dropped(from, to) => { LayersEditor.reorder-extra(from, to); }
+                }
             }
             VerticalLayout {
                 width: 32px;
@@ -318,6 +328,7 @@ export component LayersPage inherits VerticalLayout {
         }
     }
     ScrollView {
+        drag-scroll: true;
         viewport-width: self.visible-width;
         vertical-stretch: 1;
         VerticalLayout { padding: 0px;
@@ -461,6 +472,7 @@ export component LayersPage inherits VerticalLayout {
                             spacing: 12px;
                             FieldLabel { width: 200px; text: @tr("Key"); }
                             FieldLabel { horizontal-stretch: 1; text: @tr("Action"); }
+                            Rectangle { width: 28px; }
                             Rectangle { width: 32px; }
                         }
                         if LayersEditor.extras.length > 0: Rectangle { height: 1px; background: Theme.divider; }

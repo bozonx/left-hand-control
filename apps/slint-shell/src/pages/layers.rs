@@ -15,7 +15,7 @@ use lhc_core::{
     config_document::{ConfigDocument, ConfigError, KeyAssignment},
     profile::actions,
 };
-use slint::{ComponentHandle, ModelRc, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{collections::HashMap, rc::Rc};
 
 /// Display names of catalog actions (macros, commands, built-ins).
@@ -168,7 +168,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
         layer
             .and_then(|layer| layout.layer_keymaps.get(&layer.id))
             .map(|map| {
-                extra_entries(map)
+                ordered_extra_entries(map, document, layer.map_or("", |layer| layer.id.as_str()))
                     .into_iter()
                     .map(|(key, value)| {
                         let (kind, action, icon) = assignment(Some(&value), &names);
@@ -260,7 +260,11 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
                     .layout()
                     .layer_keymaps
                     .get(&layer.id)
-                    .and_then(|map| extra_entries(map).into_iter().nth(index))
+                    .and_then(|map| {
+                        ordered_extra_entries(map, document, &layer.id)
+                            .into_iter()
+                            .nth(index)
+                    })
             });
             if let Some(extra) = extra {
                 editor.set_dialog_key(extra.0.into());
@@ -392,6 +396,22 @@ fn extra_entries(map: &lhc_core::profile::model::LayerKeymap) -> Vec<(String, Op
     entries
 }
 
+fn ordered_extra_entries(
+    map: &lhc_core::profile::model::LayerKeymap,
+    document: &Document,
+    layer: &str,
+) -> Vec<(String, Option<String>)> {
+    let mut entries = extra_entries(map);
+    let order = document.extra_key_order(layer);
+    entries.sort_by_key(|(key, _)| {
+        order
+            .iter()
+            .position(|code| code == key)
+            .unwrap_or(usize::MAX)
+    });
+    entries
+}
+
 fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option<String>)> {
     let index = usize::try_from(index).ok()?;
     document
@@ -399,7 +419,11 @@ fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option
         .layout()
         .layer_keymaps
         .get(id)
-        .and_then(|map| extra_entries(map).into_iter().nth(index))
+        .and_then(|map| {
+            ordered_extra_entries(map, document, id)
+                .into_iter()
+                .nth(index)
+        })
 }
 
 fn set_extra(
@@ -461,6 +485,26 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             })
         });
     });
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    ui.global::<LayersEditor>()
+        .on_reorder_extra(move |from, to| {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(id) = selected_id(&ui, &doc) else {
+                return;
+            };
+            let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+                return;
+            };
+            let keys = ui
+                .global::<LayersEditor>()
+                .get_extras()
+                .iter()
+                .map(|row| row.key.to_string())
+                .collect();
+            doc.reorder_extra_keys(&id, keys, from, to);
+            refresh(&ui, &doc);
+        });
     ui.global::<LayersEditor>()
         .set_selected_id(document.selected_layer_id().into());
     refresh(ui, document);
@@ -608,9 +652,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         };
         if let Some((key, _)) = extra_at(&doc, &id, index) {
-            let _ = change(&ui, &doc, |config| {
+            if change(&ui, &doc, |config| {
                 config.set_layer_key(&id, &key, KeyAssignment::Transparent)
-            });
+            })
+            .is_ok()
+            {
+                doc.rename_extra_key(&id, &key, "");
+                refresh(&ui, &doc);
+            }
         }
     });
 }
@@ -674,6 +723,7 @@ pub(super) fn assign_extra(
             },
         )
     };
+    let removed = action == KeyAssignment::Transparent;
     change(ui, document, |config| {
         set_extra(
             config,
@@ -682,7 +732,12 @@ pub(super) fn assign_extra(
             &key,
             action,
         )
-    })
+    })?;
+    if let Some((old, _)) = existing {
+        document.rename_extra_key(&id, &old, if removed { "" } else { &key });
+        refresh(ui, document);
+    }
+    Ok(())
 }
 
 #[cfg(test)]

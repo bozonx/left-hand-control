@@ -165,9 +165,10 @@ export component NumericField inherits TouchArea {
     in property <length> field-width: 140px;
     in property <int> minimum: 0;
     in property <int> maximum: 2147483647;
-    in property <int> step-size: 1;
-    in-out property <int> value;
-    callback edited(int);
+    in property <float> step-size: 1;
+    in property <bool> fractional: false;
+    in-out property <float> value;
+    callback edited(float);
     private property <length> wheel;
     width: root.field-width;
     height: 32px;
@@ -182,8 +183,8 @@ export component NumericField inherits TouchArea {
     accessible-action-decrement => { root.apply(root.value - root.step-size); }
     accessible-action-set-value(v) => { if v.is-float() { root.apply(v.to-float()); } }
     changed value => { input.text = root.value; }
-    function apply(next: int) {
-        let value = clamp(next, root.minimum, root.maximum);
+    function apply(next: float) {
+        let value = clamp(root.fractional ? round(next * 1000) / 1000 : round(next), root.minimum, root.maximum);
         input.text = value;
         if value != root.value { root.value = value; root.edited(value); }
     }
@@ -209,7 +210,7 @@ export component NumericField inherits TouchArea {
                 min-width: 0px;
                 horizontal-stretch: 1;
                 text: root.value;
-                input-type: number;
+                input-type: root.fractional ? decimal : number;
                 color: Theme.text;
                 vertical-alignment: center;
                 selection-background-color: Theme.selected;
