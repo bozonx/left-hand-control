@@ -168,7 +168,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
         layer
             .and_then(|layer| layout.layer_keymaps.get(&layer.id))
             .map(|map| {
-                ordered_extra_entries(map, document, layer.map_or("", |layer| layer.id.as_str()))
+                ordered_extra_entries(map)
                     .into_iter()
                     .map(|(key, value)| {
                         let (kind, action, icon) = assignment(Some(&value), &names);
@@ -260,11 +260,7 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
                     .layout()
                     .layer_keymaps
                     .get(&layer.id)
-                    .and_then(|map| {
-                        ordered_extra_entries(map, document, &layer.id)
-                            .into_iter()
-                            .nth(index)
-                    })
+                    .and_then(|map| ordered_extra_entries(map).into_iter().nth(index))
             });
             if let Some(extra) = extra {
                 editor.set_dialog_key(extra.0.into());
@@ -398,11 +394,9 @@ fn extra_entries(map: &lhc_core::profile::model::LayerKeymap) -> Vec<(String, Op
 
 fn ordered_extra_entries(
     map: &lhc_core::profile::model::LayerKeymap,
-    document: &Document,
-    layer: &str,
 ) -> Vec<(String, Option<String>)> {
     let mut entries = extra_entries(map);
-    let order = document.extra_key_order(layer);
+    let order = &map.extra_key_order;
     entries.sort_by_key(|(key, _)| {
         order
             .iter()
@@ -419,11 +413,7 @@ fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option
         .layout()
         .layer_keymaps
         .get(id)
-        .and_then(|map| {
-            ordered_extra_entries(map, document, id)
-                .into_iter()
-                .nth(index)
-        })
+        .and_then(|map| ordered_extra_entries(map).into_iter().nth(index))
 }
 
 fn set_extra(
@@ -448,7 +438,18 @@ fn set_extra(
         return Err(ConfigError::Invalid("key already assigned".into()));
     }
     config.update_layout(|layout| {
-        let keys = &mut layout.layer_keymap_mut(id).keys;
+        let map = layout.layer_keymap_mut(id);
+        if let Some(previous) = previous {
+            for code in &mut map.extra_key_order {
+                if code == previous {
+                    *code = key.to_owned();
+                }
+            }
+        }
+        if value == KeyAssignment::Transparent {
+            map.extra_key_order.retain(|code| code != key);
+        }
+        let keys = &mut map.keys;
         if let Some(previous) = previous {
             keys.remove(previous);
         }
@@ -502,8 +503,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .iter()
                 .map(|row| row.key.to_string())
                 .collect();
-            doc.reorder_extra_keys(&id, keys, from, to);
-            refresh(&ui, &doc);
+            let _ = change(&ui, &doc, |config| {
+                config.reorder_extra_keys(&id, keys, from, to)
+            });
         });
     ui.global::<LayersEditor>()
         .set_selected_id(document.selected_layer_id().into());
@@ -657,7 +659,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             })
             .is_ok()
             {
-                doc.rename_extra_key(&id, &key, "");
                 refresh(&ui, &doc);
             }
         }
@@ -723,7 +724,6 @@ pub(super) fn assign_extra(
             },
         )
     };
-    let removed = action == KeyAssignment::Transparent;
     change(ui, document, |config| {
         set_extra(
             config,
@@ -733,10 +733,6 @@ pub(super) fn assign_extra(
             action,
         )
     })?;
-    if let Some((old, _)) = existing {
-        document.rename_extra_key(&id, &old, if removed { "" } else { &key });
-        refresh(ui, document);
-    }
     Ok(())
 }
 

@@ -135,6 +135,9 @@ impl LayerRule {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LayerKeymap {
+    /// Saved display order of additional keys; absent in older layouts.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub extra_key_order: Vec<String>,
     /// Key code → action; `None` swallows the key inside the layer. A
     /// missing entry is transparent.
     pub keys: BTreeMap<String, Option<String>>,

@@ -78,31 +78,6 @@ impl Document {
         self.ui_state.borrow().selected_layer_id().to_owned()
     }
 
-    pub fn extra_key_order(&self, layer: &str) -> Vec<String> {
-        let config = self.read();
-        let layout = config.settings().current_layout_id.as_deref().unwrap_or("");
-        self.ui_state
-            .borrow()
-            .extra_key_order(layout, layer)
-            .to_vec()
-    }
-
-    pub fn reorder_extra_keys(&self, layer: &str, keys: Vec<String>, from: usize, to: usize) {
-        let config = self.read();
-        let layout = config.settings().current_layout_id.as_deref().unwrap_or("");
-        self.ui_state
-            .borrow_mut()
-            .reorder_extra_keys(layout, layer, keys, from, to);
-    }
-
-    pub fn rename_extra_key(&self, layer: &str, old: &str, new: &str) {
-        let config = self.read();
-        let layout = config.settings().current_layout_id.as_deref().unwrap_or("");
-        self.ui_state
-            .borrow_mut()
-            .rename_extra_key(layout, layer, old, new);
-    }
-
     pub fn label_mode(&self) -> i32 {
         self.ui_state.borrow().label_mode()
     }

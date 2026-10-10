@@ -48,7 +48,20 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     .collect()
             })
             .unwrap_or_default();
-        layer_keymaps.insert(id.to_owned(), LayerKeymap { keys });
+        layer_keymaps.insert(
+            id.to_owned(),
+            LayerKeymap {
+                keys,
+                extra_key_order: layer
+                    .get("extraKeyOrder")
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(Value::as_str)
+                    .map(str::to_owned)
+                    .collect(),
+            },
+        );
     }
 
     let rules = array(doc, "rules")
@@ -216,6 +229,18 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                         put(&mut out, "description", description);
                     }
                     if let Some(keymap) = preset.layer_keymaps.get(&layer.id) {
+                        if !keymap.extra_key_order.is_empty() {
+                            out.insert(
+                                "extraKeyOrder".into(),
+                                Yaml::Sequence(
+                                    keymap
+                                        .extra_key_order
+                                        .iter()
+                                        .map(|key| Yaml::from(key.as_str()))
+                                        .collect(),
+                                ),
+                            );
+                        }
                         if !keymap.keys.is_empty() {
                             out.insert(
                                 "keys".into(),
@@ -612,6 +637,16 @@ emojiPages:
             }
         }
         assert_eq!(serde_json::to_value(&preset).unwrap(), expected);
+    }
+
+    #[test]
+    fn additional_key_order_round_trips() {
+        let mut preset = parse(SAMPLE).unwrap().unwrap();
+        assert!(preset.layer_keymaps["nav"].extra_key_order.is_empty());
+        preset.layer_keymaps.get_mut("nav").unwrap().extra_key_order =
+            vec!["F15".into(), "F13".into()];
+        let again = parse(&serialize(&preset)).unwrap().unwrap();
+        assert_eq!(again.layer_keymaps, preset.layer_keymaps);
     }
 
     #[test]

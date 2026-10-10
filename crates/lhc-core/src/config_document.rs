@@ -391,7 +391,28 @@ impl ConfigDocument {
 
     pub fn clear_layer_keys(&mut self, id: &str) -> Result<(), ConfigError> {
         self.require_layer(id)?;
-        self.update_layout(|layout| layout.layer_keymap_mut(id).keys.clear())
+        self.update_layout(|layout| {
+            let map = layout.layer_keymap_mut(id);
+            map.keys.clear();
+            map.extra_key_order.clear();
+        })
+    }
+
+    /// Save the displayed additional-key order after a drag operation.
+    pub fn reorder_extra_keys(
+        &mut self,
+        id: &str,
+        mut keys: Vec<String>,
+        from: usize,
+        to: usize,
+    ) -> Result<(), ConfigError> {
+        self.require_layer(id)?;
+        if from >= keys.len() || to >= keys.len() || from == to {
+            return Ok(());
+        }
+        let key = keys.remove(from);
+        keys.insert(to, key);
+        self.update_layout(|layout| layout.layer_keymap_mut(id).extra_key_order = keys)
     }
 
     fn require_layer(&self, id: &str) -> Result<(), ConfigError> {
@@ -437,10 +458,12 @@ impl ConfigDocument {
             }
         }
         self.update_layout(|layout| {
-            let keys = &mut layout.layer_keymap_mut(layer_id).keys;
+            let map = layout.layer_keymap_mut(layer_id);
+            let keys = &mut map.keys;
             match assignment {
                 KeyAssignment::Transparent => {
                     keys.remove(key);
+                    map.extra_key_order.retain(|code| code != key);
                 }
                 KeyAssignment::Swallow => {
                     keys.insert(key.into(), None);
@@ -805,6 +828,43 @@ mod tests {
         assert_eq!(document.layout().rules.len(), 2);
         let reloaded = ConfigDocument::load(document.paths().clone()).unwrap();
         assert_eq!(reloaded.base_tap_action("KeyA"), None);
+    }
+
+    #[test]
+    fn additional_key_order_survives_saved_layout_reload() {
+        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        for key in ["F13", "F14", "F15"] {
+            document
+                .set_layer_key("nav", key, KeyAssignment::Swallow)
+                .unwrap();
+        }
+        document
+            .reorder_extra_keys("nav", vec!["F13".into(), "F14".into(), "F15".into()], 0, 2)
+            .unwrap();
+        document.save_current_layout_as("Ordered").unwrap();
+        let restarted = ConfigDocument::load(document.paths.clone()).unwrap();
+        assert_eq!(
+            restarted.layout().layer_keymaps["nav"].extra_key_order,
+            ["F14", "F15", "F13"]
+        );
+        document
+            .set_layer_key("nav", "F15", KeyAssignment::Transparent)
+            .unwrap();
+        assert_eq!(
+            document.layout().layer_keymaps["nav"].extra_key_order,
+            ["F14", "F13"]
+        );
+        let copy = document.clone_layer("nav", "Copy", "").unwrap();
+        assert_eq!(
+            document.layout().layer_keymaps[&copy].extra_key_order,
+            ["F14", "F13"]
+        );
+        document.clear_layer_keys("nav").unwrap();
+        assert!(
+            document.layout().layer_keymaps["nav"]
+                .extra_key_order
+                .is_empty()
+        );
     }
 
     #[test]
