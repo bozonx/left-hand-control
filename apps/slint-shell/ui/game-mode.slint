@@ -3,6 +3,7 @@ import { AppState } from "app-state.slint";
 import { Locale } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { GameModeControl } from "types.slint";
+import { SettingsEditor } from "settings-page.slint";
 
 export component GameModeButton inherits Rectangle {
     private property <int> highlighted: 0;
@@ -64,7 +65,7 @@ export component GameModeButton inherits Rectangle {
                 VerticalLayout {
                     padding: 8px; spacing: 6px;
                     Text { text: @tr("Game mode"); color: Theme.text; font-weight: 600; }
-                    for label[index] in [@tr("Game mode control" => "Auto"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Off")]: Button {
+                    for label[index] in [@tr("Auto — detect games"), @tr("On — always"), @tr("Off — never")]: Button {
                         text: label + (AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off) ? " ✓" : "");
                         primary: root.highlighted == index;
                         accessible-role: radio-button;
@@ -78,7 +79,7 @@ export component GameModeButton inherits Rectangle {
                     }
                     Rectangle { height: 1px; background: Theme.divider; }
                     Text { text: Locale.text(AppState.game-auto-status); color: Theme.muted; wrap: word-wrap; }
-                    Text { text: @tr("On and Off last until restart. Auto keeps detecting in the background."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                    Text { text: SettingsEditor.remember-game-control ? @tr("On and Off are remembered after restart. Auto keeps detecting in the background.") : @tr("On and Off last until restart. Auto keeps detecting in the background."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                 }
             }
         }

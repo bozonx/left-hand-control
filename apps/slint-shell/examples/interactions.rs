@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(game_state.get_game_control(), control);
         assert_eq!(game_state.get_game_active(), active);
         assert!(game_state.get_game_state_available());
-        assert_eq!(lhc_core::runtime_state::game_mode(), (active, true));
+        assert_eq!(lhc_core::runtime_state::game_mode_active(), active);
     }
     game_state.invoke_set_game_control(GameModeControl::Auto);
     assert_eq!(game_state.get_game_control(), GameModeControl::Auto);
@@ -85,6 +85,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded.settings(), document.read().settings());
     assert_eq!(loaded.settings().default_hold_timeout_ms, 310);
     assert_eq!(loaded.settings().game_mode.process_matchers.len(), 1);
+    assert_eq!(settings.get_process_name(), "");
+    settings.invoke_set_process_flags(0, false, true);
+    let loaded = ConfigDocument::load(paths.clone())?;
+    let matcher = &loaded.settings().game_mode.process_matchers[0];
+    assert!(!matcher.only_active_window && matcher.is_blacklist);
+    settings.invoke_delete_process(0);
+    assert!(
+        ConfigDocument::load(paths.clone())?
+            .settings()
+            .game_mode
+            .process_matchers
+            .is_empty()
+    );
     assert_eq!(
         loaded.settings().linux_wayland_text_mode.as_deref(),
         Some("ydotool")
@@ -542,7 +555,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(ui.global::<AppState>().get_game_control(), GameModeControl::On);
             }
             16 => { snapshot(&ui, "game-mode-menu-selected"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_hold_timeout("321".into()); ui.global::<SettingsEditor>().invoke_schedule_save(); }
-            18 => { assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
+            17 => ui.global::<SettingsEditor>().set_tab(3),
+            18 => {
+                snapshot(&ui, "settings-game-mode");
+                let position = slint::LogicalPosition::new(500.0, 450.0);
+                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -900.0 });
+                snapshot(&ui, "settings-game-mode-bottom");
+                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 900.0 });
+                ui.global::<SettingsEditor>().set_tab(0); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
             19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
             20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "timeout-invalid".into(), arg: "".into(), count: 0 }); }
             21 => {

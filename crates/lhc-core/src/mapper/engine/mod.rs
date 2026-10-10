@@ -1337,10 +1337,8 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
         return true;
     }
     if has_gm_cond {
-        let (gm_active, state_available) = crate::runtime_state::game_mode();
-        if !state_available {
-            return false;
-        }
+        // Undetectable game mode counts as off, so desktop rules keep working.
+        let gm_active = crate::runtime_state::game_mode_active();
         if !match rule.condition_game_mode {
             Some(GameModeCondition::On) => gm_active,
             Some(GameModeCondition::Off) => !gm_active,
@@ -2288,6 +2286,7 @@ mod tests {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
             process_name: None,
+            fullscreen: None,
             title: "Mozilla Firefox".into(),
             app_id: "navigator".into(),
         }));
@@ -2301,6 +2300,7 @@ mod tests {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
             process_name: None,
+            fullscreen: None,
             title: "Library".into(),
             app_id: "Steam".into(),
         }));
@@ -2314,6 +2314,7 @@ mod tests {
         let _g = APPS_TEST_LOCK.lock().unwrap();
         crate::runtime_state::set_active_window(Some(crate::runtime_state::ActiveWindow {
             process_name: None,
+            fullscreen: None,
             title: "Editor — secret".into(),
             app_id: "editor".into(),
         }));
@@ -2331,10 +2332,10 @@ mod tests {
     }
 
     #[test]
-    fn game_mode_condition_blocks_when_detection_disabled() {
+    fn undetected_game_mode_counts_as_off() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::runtime_state::set_game_mode(true, false);
-        let rule = RuleEntry {
+        crate::runtime_state::set_game_mode_active(false);
+        let mut rule = RuleEntry {
             trigger_keys: vec![],
             tap: TapMode::Native,
             layer_id: None,
@@ -2353,7 +2354,8 @@ mod tests {
         };
 
         assert!(!rule_passes_conditions(&rule));
-        crate::runtime_state::set_game_mode(false, true);
+        rule.condition_game_mode = Some(GameModeCondition::Off);
+        assert!(rule_passes_conditions(&rule));
     }
 
     #[test]
@@ -2367,7 +2369,7 @@ mod tests {
     #[test]
     fn game_mode_condition_passes_when_cached_state_matches() {
         let _g = APPS_TEST_LOCK.lock().unwrap();
-        crate::runtime_state::set_game_mode(true, true);
+        crate::runtime_state::set_game_mode_active(true);
         let rule = RuleEntry {
             trigger_keys: vec![],
             tap: TapMode::Native,
@@ -2387,7 +2389,7 @@ mod tests {
         };
 
         assert!(rule_passes_conditions(&rule));
-        crate::runtime_state::set_game_mode(false, true);
+        crate::runtime_state::set_game_mode_active(false);
     }
 
     #[test]

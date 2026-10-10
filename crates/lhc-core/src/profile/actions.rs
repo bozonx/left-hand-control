@@ -165,15 +165,29 @@ pub fn system_action_name(id: &str) -> Option<ActionName> {
         .map(|known| ActionName::System { id: known, n: 0 })
 }
 
+/// Game-mode control actions: flip the effective state, or set the mode.
+pub const GAME_MODE_APP_ACTIONS: [&str; 4] = [
+    "gameModeToggle",
+    "gameModeAuto",
+    "gameModeOn",
+    "gameModeOff",
+];
+
 pub fn app_action_name(id: &str) -> Option<ActionName> {
     numbered(id, &["showQuickMenu", "showEmojiMenu"], MENU_PAGE_COUNT)
         .map(|(id, n)| ActionName::App { id, n })
+        .or_else(|| {
+            GAME_MODE_APP_ACTIONS
+                .iter()
+                .find(|known| **known == id)
+                .map(|known| ActionName::App { id: known, n: 0 })
+        })
 }
 
 /// Page of an `app:` menu action, e.g. `showEmojiMenu2` → (Emoji, 2).
 pub fn menu_page(app_id: &str) -> Option<(bool, u32)> {
     match app_action_name(app_id)? {
-        ActionName::App { id, n } => Some((id == "showEmojiMenu", n)),
+        ActionName::App { id, n } if n > 0 => Some((id == "showEmojiMenu", n)),
         _ => None,
     }
 }
@@ -205,6 +219,10 @@ pub fn app_actions() -> Vec<CatalogEntry> {
                 name: ActionName::App { id, n },
             })
         })
+        .chain(GAME_MODE_APP_ACTIONS.map(|id| CatalogEntry {
+            action: Action::App(id.into()),
+            name: ActionName::App { id, n: 0 },
+        }))
         .collect()
 }
 
@@ -388,7 +406,7 @@ mod tests {
     #[test]
     fn catalogs_match_the_frontend() {
         assert_eq!(system_actions().len(), 30 + 52);
-        assert_eq!(app_actions().len(), 10);
+        assert_eq!(app_actions().len(), 14);
         assert_eq!(
             system_action_name("switchDesktop10"),
             Some(ActionName::System {
@@ -399,6 +417,14 @@ mod tests {
         assert_eq!(system_action_name("switchDesktop11"), None);
         assert_eq!(menu_page("showEmojiMenu3"), Some((true, 3)));
         assert_eq!(menu_page("showQuickMenu6"), None);
+        assert_eq!(menu_page("gameModeToggle"), None);
+        assert_eq!(
+            app_action_name("gameModeOff"),
+            Some(ActionName::App {
+                id: "gameModeOff",
+                n: 0
+            })
+        );
     }
 
     #[test]

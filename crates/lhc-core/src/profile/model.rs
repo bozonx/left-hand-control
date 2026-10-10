@@ -5,7 +5,7 @@
 //! frontend exchange; the persisted formats (`config.json` settings and
 //! YAML layouts) are handled by [`super::settings`] and [`super::layout_file`].
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Keys that address cells of the Quick and Emoji menus, row by row.
@@ -343,6 +343,22 @@ pub struct GameModeSettings {
     pub use_gamemoded: bool,
     pub use_fullscreen: bool,
     pub process_matchers: Vec<GameModeProcessMatcher>,
+    /// Restore `control` on startup instead of starting in `Auto`.
+    pub remember_control: bool,
+    /// Last Auto/On/Off choice; only meaningful with `remember_control`.
+    pub control: GameModeControl,
+    /// Ignore the global popup hotkeys while game mode is active.
+    pub block_popups: bool,
+}
+
+/// Who decides whether game mode is active: detection or the user.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GameModeControl {
+    #[default]
+    Auto,
+    On,
+    Off,
 }
 
 /// Theme preference; `System` follows the desktop.
@@ -460,6 +476,9 @@ impl Default for AppSettings {
                 use_gamemoded: true,
                 use_fullscreen: false,
                 process_matchers: Vec::new(),
+                remember_control: false,
+                control: GameModeControl::Auto,
+                block_popups: false,
             },
             linux_wayland_text_mode: Some("libei".into()),
             linux_ydotool_path: String::new(),

@@ -8,8 +8,8 @@ use super::model::{AppSettings, AutoRule, LayoutConditionSet, LayoutMode};
 pub struct AutoSwitchContext {
     /// Short id of the system keyboard layout; `None` when undetectable.
     pub system_layout: Option<String>,
+    /// Effective game-mode state; undetectable counts as off.
     pub game_mode_active: bool,
-    pub game_mode_detection_enabled: bool,
     pub window_title: Option<String>,
     pub window_app_id: Option<String>,
 }
@@ -18,11 +18,9 @@ impl AutoSwitchContext {
     /// Snapshot of the state cached by the core watchers.
     pub fn current() -> Self {
         let window = crate::runtime_state::active_window();
-        let (game_mode_active, game_mode_detection_enabled) = crate::runtime_state::game_mode();
         Self {
             system_layout: crate::runtime_state::layout_short(),
-            game_mode_active,
-            game_mode_detection_enabled,
+            game_mode_active: crate::runtime_state::game_mode_active(),
             window_title: window.as_ref().map(|window| window.title.clone()),
             window_app_id: window.map(|window| window.app_id),
         }
@@ -30,15 +28,10 @@ impl AutoSwitchContext {
 }
 
 pub fn matches_condition_set(set: &LayoutConditionSet, ctx: &AutoSwitchContext) -> bool {
-    if set.game_mode.is_some() && !ctx.game_mode_detection_enabled {
-        return false;
-    }
-    if ctx.game_mode_detection_enabled {
-        match set.game_mode.as_deref() {
-            Some("on") if !ctx.game_mode_active => return false,
-            Some("off") if ctx.game_mode_active => return false,
-            _ => {}
-        }
+    match set.game_mode.as_deref() {
+        Some("on") if !ctx.game_mode_active => return false,
+        Some("off") if ctx.game_mode_active => return false,
+        _ => {}
     }
     if !set.layouts.is_empty() {
         match &ctx.system_layout {
@@ -172,7 +165,6 @@ mod tests {
         AutoSwitchContext {
             system_layout: layout.map(str::to_owned),
             game_mode_active: game,
-            game_mode_detection_enabled: true,
             window_title: Some(title.into()),
             window_app_id: None,
         }
@@ -200,11 +192,10 @@ mod tests {
             &set(None, &[], &[" FIRE"]),
             &ctx(None, false, "Firefox")
         ));
-        let mut no_detection = ctx(None, true, "");
-        no_detection.game_mode_detection_enabled = false;
-        assert!(!matches_condition_set(
-            &set(Some("on"), &[], &[]),
-            &no_detection
+        // Undetectable game mode is reported as off.
+        assert!(matches_condition_set(
+            &set(Some("off"), &[], &[]),
+            &ctx(None, false, "")
         ));
     }
 

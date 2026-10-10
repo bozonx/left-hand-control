@@ -1,38 +1,27 @@
-use crate::mapper_config::GameModeSettings;
-use crate::platform::windows;
+//! Windows game-mode sources: running processes from a ToolHelp snapshot.
+//! Fullscreen comes with the active window (`platform::windows`), which
+//! also asks the shell whether a Direct3D game runs fullscreen.
 
-use super::{Detection, DetectorAvailability, GameModeDetectors};
+use super::{DetectorAvailability, GameModeDetectors, GameModeSettings, Observation};
 
-pub(super) fn detect(settings: &GameModeSettings) -> Detection {
-    let need_running = settings
-        .process_matchers
-        .iter()
-        .any(|matcher| !matcher.only_active_window && !matcher.name.trim().is_empty());
-    let running = need_running.then(windows::running_process_names).flatten();
-    let fullscreen = settings
-        .use_fullscreen
-        .then(windows::fullscreen_active)
+pub(super) fn observe(settings: &GameModeSettings) -> Observation {
+    let need_running = super::needs_running_processes(settings);
+    let running = need_running
+        .then(crate::platform::windows::running_process_names)
         .flatten();
-    let detectors = GameModeDetectors {
-        gamemoded: DetectorAvailability::Unsupported,
-        fullscreen: if settings.use_fullscreen && fullscreen.is_none() {
-            DetectorAvailability::Unavailable
-        } else {
-            DetectorAvailability::Available
+    Observation {
+        detectors: GameModeDetectors {
+            gamemoded: DetectorAvailability::Unsupported,
+            fullscreen: DetectorAvailability::Available,
+            processes: if need_running && running.is_none() {
+                DetectorAvailability::Unavailable
+            } else {
+                DetectorAvailability::Available
+            },
+            active_window: crate::active_window::availability(),
+            missing_window_tool: None,
         },
-        processes: if need_running && running.is_none() {
-            DetectorAvailability::Unavailable
-        } else {
-            DetectorAvailability::Available
-        },
-        active_window: crate::active_window::availability(),
-    };
-    super::evaluate(
-        settings,
-        detectors,
-        running.as_deref().unwrap_or_default(),
-        crate::active_window::cached_active_window().as_ref(),
-        false,
-        fullscreen.unwrap_or(false),
-    )
+        running: running.unwrap_or_default(),
+        daemon: false,
+    }
 }

@@ -60,6 +60,7 @@ target/debug/slint-shell show settings
 target/debug/slint-shell show emoji
 target/debug/slint-shell show quick
 target/debug/slint-shell toggle-mapper
+target/debug/slint-shell game toggle   # auto|on|off|toggle
 target/debug/slint-shell hide
 target/debug/slint-shell quit
 ```

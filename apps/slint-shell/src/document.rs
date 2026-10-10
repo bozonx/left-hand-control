@@ -141,7 +141,10 @@ impl Document {
 
     /// Bring a running mapper up to date. With `force` the configuration is
     /// always sent; otherwise only when the active layout changed (system
-    /// context changes). A stopped mapper is left alone.
+    /// context changes). A stopped mapper is left alone. A failed edit
+    /// stops the mapper, which would run outdated rules; a failed context
+    /// switch (e.g. a game started) keeps the current layout running and
+    /// is retried on the next change.
     pub fn sync_runtime(&self, force: bool) -> Result<(), String> {
         if !lhc_core::mapper::runtime::status().running {
             self.pushed_layout.borrow_mut().take();
@@ -156,7 +159,7 @@ impl Document {
             *self.pushed_layout.borrow_mut() = Some(runtime.layout_id);
             Ok(())
         })();
-        if result.is_err() {
+        if result.is_err() && force {
             self.pushed_layout.borrow_mut().take();
             if let Err(error) = lhc_core::mapper::runtime::stop() {
                 log::warn!("stop outdated mapper: {error}");

@@ -29,6 +29,18 @@ pub(crate) fn availability() -> crate::gamemode::DetectorAvailability {
     }
 }
 
+/// Tool window detection needs but cannot find, e.g. `kdotool`.
+pub(crate) fn missing_tool() -> Option<&'static str> {
+    #[cfg(target_os = "linux")]
+    {
+        linux::missing_tool()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        None
+    }
+}
+
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
 static WATCHER: std::sync::Mutex<Option<JoinHandle<()>>> = std::sync::Mutex::new(None);
 
@@ -66,6 +78,8 @@ pub fn start_watcher() {
                     crate::events::emit(crate::events::CoreEvent::ActiveWindowChanged(
                         current.clone(),
                     ));
+                    // Fullscreen and foreground rules depend on the window.
+                    crate::gamemode::wake();
                     last = current;
                 }
 

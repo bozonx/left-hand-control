@@ -112,7 +112,7 @@ impl ConfigDocument {
             }
             None => LayoutPreset::initial(),
         };
-        crate::gamemode::update_settings_from_config_json(&settings_text);
+        crate::gamemode::set_settings(&settings.game_mode);
         let library_files = paths
             .list_user_layouts()
             .map_err(ConfigError::Io)?
@@ -242,7 +242,7 @@ impl ConfigDocument {
             }
             return Err(error.into());
         }
-        crate::gamemode::update_settings_from_config_json(&text);
+        crate::gamemode::set_settings(&updated.game_mode);
         self.settings = updated;
         self.settings_raw = candidate;
         Ok(())
@@ -539,8 +539,8 @@ impl ConfigDocument {
             || !updates.is_empty()
             || self.library_files.keys().any(|name| !names.contains(name));
         if let (Some(text), Some(raw)) = (settings_text, settings_raw) {
-            crate::gamemode::update_settings_from_config_json(&text);
             self.settings = settings::from_value(raw.get("settings"));
+            crate::gamemode::set_settings(&self.settings.game_mode);
             self.settings_raw = raw;
             self.settings_file.mark_read(text);
         }
@@ -657,8 +657,8 @@ impl ConfigDocument {
         let text = serde_json::to_string_pretty(&candidate)
             .map_err(|error| ConfigError::Parse(error.to_string()))?;
         self.settings_file.write(&text)?;
-        crate::gamemode::update_settings_from_config_json(&text);
         self.settings = settings::from_value(candidate.get("settings"));
+        crate::gamemode::set_settings(&self.settings.game_mode);
         self.settings_raw = candidate;
         Ok(())
     }

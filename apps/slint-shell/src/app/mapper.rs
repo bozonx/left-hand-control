@@ -40,13 +40,29 @@ pub(super) fn forward_core_events() {
             };
             post(move |app| app.command(command, Source::Mapper, Instant::now(), None));
         }
-        CoreEvent::LayoutChanged(_)
-        | CoreEvent::GameModeChanged(_)
-        | CoreEvent::ActiveWindowChanged(_) => post(|app| app.context_changed()),
+        CoreEvent::GameModeChanged(status) => {
+            let status = status.clone();
+            post(move |app| app.game_mode_changed(&status));
+        }
+        CoreEvent::LayoutChanged(_) | CoreEvent::ActiveWindowChanged(_) => {
+            post(|app| app.context_changed())
+        }
     });
 }
 
 impl App {
+    /// Show the game-mode status; the active layout only depends on
+    /// whether game mode is on, not on which detector reported it.
+    pub(super) fn game_mode_changed(&self, status: &lhc_core::gamemode::GameModeStatus) {
+        crate::game_mode::refresh(&self.settings, status);
+        if let Some(tray) = self.tray.borrow().as_ref() {
+            tray.set_game(status);
+        }
+        if self.game_active.replace(Some(status.active)) != Some(status.active) {
+            self.context_changed();
+        }
+    }
+
     /// The system context (layout, game mode, window) changed: the active
     /// layout may differ now.
     pub(super) fn context_changed(&self) {

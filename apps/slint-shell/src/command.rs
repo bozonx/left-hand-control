@@ -119,6 +119,27 @@ impl ThemeMode {
     }
 }
 
+/// Game-mode control from the tray, the CLI or a key binding.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GameMode {
+    Auto,
+    On,
+    Off,
+    /// Override to the opposite of the current effective state.
+    Toggle,
+}
+
+impl GameMode {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::On => "on",
+            Self::Off => "off",
+            Self::Toggle => "toggle",
+        }
+    }
+}
+
 /// Resolved appearance shared with the Spell worker.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Preferences {
@@ -137,6 +158,7 @@ pub enum Command {
     Hide,
     ToggleSettings,
     ToggleMapper,
+    GameMode(GameMode),
     Quit,
     Ping,
     Preferences(Preferences),
@@ -146,10 +168,20 @@ pub enum Command {
 }
 
 pub const USAGE: &str = "usage: slint-shell [show emoji|quick [1-5] | show settings | hide | toggle-mapper | \
-preferences system|light|dark en|ru | execute <action> | ping | quit]";
+game auto|on|off|toggle | preferences system|light|dark en|ru | execute <action> | ping | quit]";
 
 impl Command {
     pub fn from_app_action(name: &str) -> Option<Self> {
+        let game = match name {
+            "game_mode_toggle" => Some(GameMode::Toggle),
+            "game_mode_auto" => Some(GameMode::Auto),
+            "game_mode_on" => Some(GameMode::On),
+            "game_mode_off" => Some(GameMode::Off),
+            _ => None,
+        };
+        if let Some(game) = game {
+            return Some(Self::GameMode(game));
+        }
         let (popup, suffix) = if let Some(suffix) = name.strip_prefix("show_emoji_menu_") {
             (Popup::Emoji, suffix)
         } else {
@@ -210,6 +242,13 @@ impl Command {
             ["hide"] => Self::Hide,
             ["toggle-settings"] => Self::ToggleSettings,
             ["toggle-mapper"] => Self::ToggleMapper,
+            ["game", mode] => Self::GameMode(match *mode {
+                "auto" => GameMode::Auto,
+                "on" => GameMode::On,
+                "off" => GameMode::Off,
+                "toggle" => GameMode::Toggle,
+                _ => return Err(USAGE.into()),
+            }),
             ["quit"] => Self::Quit,
             ["ping"] => Self::Ping,
             ["preferences", theme, language, flags @ ..] => {
@@ -256,6 +295,7 @@ impl fmt::Display for Command {
             Self::Hide => f.write_str("hide"),
             Self::ToggleSettings => f.write_str("toggle-settings"),
             Self::ToggleMapper => f.write_str("toggle-mapper"),
+            Self::GameMode(mode) => write!(f, "game {}", mode.name()),
             Self::Quit => f.write_str("quit"),
             Self::Ping => f.write_str("ping"),
             Self::Preferences(preferences) => {
@@ -296,6 +336,10 @@ mod tests {
             Command::Hide,
             Command::ToggleSettings,
             Command::ToggleMapper,
+            Command::GameMode(GameMode::Auto),
+            Command::GameMode(GameMode::On),
+            Command::GameMode(GameMode::Off),
+            Command::GameMode(GameMode::Toggle),
             Command::Quit,
             Command::Ping,
             Command::Preferences(Preferences {
@@ -335,6 +379,10 @@ mod tests {
                 Some(Command::ShowPage(Popup::Emoji, page))
             );
         }
+        assert_eq!(
+            Command::from_app_action("game_mode_toggle"),
+            Some(Command::GameMode(GameMode::Toggle))
+        );
         for invalid in [
             "show_quick_menu_0",
             "show_emoji_menu_6",
@@ -357,6 +405,7 @@ mod tests {
         );
         assert!(Command::parse("preferences light ru bold").is_err());
         assert!(Command::parse("show nothing").is_err());
+        assert!(Command::parse("game maybe").is_err());
         assert!(Command::parse("preferences dim ru").is_err());
     }
 

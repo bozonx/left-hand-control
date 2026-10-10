@@ -4,8 +4,8 @@
 //! of the wrong type fall back to defaults instead of failing the load.
 
 use super::model::{
-    AppSettings, Appearance, AutoRule, GameModeProcessMatcher, LayoutConditionSet, LayoutMode,
-    LocalePreference,
+    AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, LayoutConditionSet,
+    LayoutMode, LocalePreference,
 };
 use serde_json::{Map, Value};
 
@@ -95,6 +95,18 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             bool_or(game_mode, "useGamemoded", base.game_mode.use_gamemoded);
         settings.game_mode.use_fullscreen =
             bool_or(game_mode, "useFullscreen", base.game_mode.use_fullscreen);
+        settings.game_mode.remember_control = bool_or(
+            game_mode,
+            "rememberControl",
+            base.game_mode.remember_control,
+        );
+        settings.game_mode.control = match str_of(game_mode, "control") {
+            Some("on") => GameModeControl::On,
+            Some("off") => GameModeControl::Off,
+            _ => GameModeControl::Auto,
+        };
+        settings.game_mode.block_popups =
+            bool_or(game_mode, "blockPopups", base.game_mode.block_popups);
         if let Some(matchers) = game_mode.get("processMatchers").and_then(Value::as_array) {
             settings.game_mode.process_matchers = matchers
                 .iter()

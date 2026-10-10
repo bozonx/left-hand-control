@@ -87,7 +87,14 @@ pub fn resolve_app(name: &str) -> Option<SysAction> {
             return Some(SysAction::AppEvent(format!("show_emoji_menu_{page}")));
         }
     }
-    None
+    let event = match name {
+        "gameModeToggle" => "game_mode_toggle",
+        "gameModeAuto" => "game_mode_auto",
+        "gameModeOn" => "game_mode_on",
+        "gameModeOff" => "game_mode_off",
+        _ => return None,
+    };
+    Some(SysAction::AppEvent(event.into()))
 }
 
 pub fn is_known_app(name: &str) -> bool {
@@ -373,6 +380,22 @@ mod tests {
         assert_eq!(event, "show_emoji_menu_5");
         assert!(resolve_app("showEmojiMenu").is_none());
         assert!(resolve_for_desktop("showEmojiMenu5", &Desktop::Kde).is_none());
+    }
+
+    #[test]
+    fn resolve_game_mode_actions() {
+        for (name, event) in [
+            ("gameModeToggle", "game_mode_toggle"),
+            ("gameModeAuto", "game_mode_auto"),
+            ("gameModeOn", "game_mode_on"),
+            ("gameModeOff", "game_mode_off"),
+        ] {
+            let Some(SysAction::AppEvent(resolved)) = resolve_app(name) else {
+                panic!("{name} did not resolve to an AppEvent");
+            };
+            assert_eq!(resolved, event);
+            assert!(crate::profile::actions::app_action_name(name).is_some());
+        }
     }
 
     #[test]

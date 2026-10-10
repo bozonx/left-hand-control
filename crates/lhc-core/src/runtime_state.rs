@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -9,10 +9,13 @@ pub struct ActiveWindow {
     pub app_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub process_name: Option<String>,
+    /// Whether the window covers its screen; `None` when undetectable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fullscreen: Option<bool>,
 }
 
 static ACTIVE_WINDOW: Mutex<Option<ActiveWindow>> = Mutex::new(None);
-static GAME_MODE: AtomicU8 = AtomicU8::new(0);
+static GAME_MODE: AtomicBool = AtomicBool::new(false);
 static LAYOUT: Mutex<Option<LayoutSelection>> = Mutex::new(None);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,20 +34,13 @@ pub fn set_active_window(value: Option<ActiveWindow>) {
     }
 }
 
+/// Effective game-mode state; undetectable counts as off.
 pub fn game_mode_active() -> bool {
-    game_mode().0
+    GAME_MODE.load(Ordering::SeqCst)
 }
 
-pub fn game_mode() -> (bool, bool) {
-    let state = GAME_MODE.load(Ordering::SeqCst);
-    (state & 1 != 0, state & 2 != 0)
-}
-
-pub fn set_game_mode(active: bool, state_available: bool) {
-    GAME_MODE.store(
-        u8::from(active) | (u8::from(state_available) << 1),
-        Ordering::SeqCst,
-    );
+pub fn set_game_mode_active(active: bool) {
+    GAME_MODE.store(active, Ordering::SeqCst);
 }
 
 pub fn layout_short() -> Option<String> {

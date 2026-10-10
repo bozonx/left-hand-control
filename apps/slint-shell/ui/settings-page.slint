@@ -1,7 +1,8 @@
 import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
-import { Badge, CardHeader } from "controls.slint";
+import { Badge, CardHeader, IconButton } from "controls.slint";
+import { LayoutLibrary } from "library.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -42,7 +43,16 @@ export global SettingsEditor {
     in-out property <string> process-name;
     in-out property <bool> process-only-active;
     in-out property <bool> process-blacklist;
-    in-out property <int> selected-process: -1;
+    /// Running processes whose names contain the typed text.
+    in property <[string]> process-suggestions;
+    /// Seconds left until the focused window is read; 0 when idle.
+    in property <int> pick-countdown;
+    in-out property <bool> remember-game-control;
+    in-out property <bool> block-game-popups;
+    /// Enabled rules of the current layout with a game-mode condition.
+    in property <int> game-rule-count;
+    /// Enabled automatic layout rules with a game-mode condition.
+    in property <int> game-auto-rule-count;
     in property <[string]> text-modes;
     in-out property <int> text-mode-index;
     in-out property <string> ydotool-path;
@@ -66,9 +76,11 @@ export global SettingsEditor {
     callback select-device(int);
     callback select-mouse(int);
     callback add-process();
-    callback select-process(int);
-    callback update-process();
-    callback delete-process();
+    callback process-name-edited(string);
+    /// Row index, only-active-window, exclude.
+    callback set-process-flags(int, bool, bool);
+    callback delete-process(int);
+    callback pick-active-window();
 }
 
 component Section inherits Rectangle {
@@ -313,37 +325,84 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if SettingsEditor.tab == 3: Section {
                     title: @tr("Game mode");
-                    Text { vertical-stretch: 0; text: @tr("Choose Auto, On or Off in the top bar. These settings configure Auto."); color: Theme.muted; wrap: word-wrap; }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
-                        if AppState.is-linux: CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
-                        CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
+                    Text { vertical-stretch: 0; text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."); color: Theme.muted; wrap: word-wrap; }
+                    Rectangle {
+                        vertical-stretch: 0; height: now-row.preferred-height; border-radius: 6px;
+                        background: AppState.game-active ? Theme.success.transparentize(0.85) : Theme.surface;
+                        border-width: 1px; border-color: AppState.game-active ? Theme.success : Theme.border;
+                        now-row := HorizontalLayout {
+                            padding: 10px; spacing: 8px;
+                            VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: AppState.game-active ? Theme.success : Theme.muted; } }
+                            Text { text: Locale.text(AppState.game-status); color: Theme.text; font-weight: 600; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
+                        }
                     }
-                    if AppState.is-linux: Text { vertical-stretch: 0; text: @tr("GameMode daemon: ") + Locale.text(AppState.game-daemon-availability); color: Theme.muted; }
-                    Text { vertical-stretch: 0; text: @tr("Fullscreen detection: ") + Locale.text(AppState.game-fullscreen-availability); color: Theme.muted; }
-                    if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { vertical-stretch: 0; text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.warning; wrap: word-wrap; }
-                    if AppState.game-fullscreen-availability.id == "capability-unavailable": Text { vertical-stretch: 0; text: @tr("Fullscreen detection tools are missing or could not query the session."); color: Theme.warning; wrap: word-wrap; }
-                    Text { vertical-stretch: 0; text: @tr("Process rules"); color: Theme.text; font-weight: 600; }
-                    Text { vertical-stretch: 0; text: @tr("Exact process name or app ID; use * and ? for patterns. Window titles are not matched."); color: Theme.muted; wrap: word-wrap; }
+                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count == 0: Text { vertical-stretch: 0; text: @tr("Nothing uses game mode yet: no rule or automatic layout rule has a game-mode condition, so turning it on changes nothing."); color: Theme.warning; wrap: word-wrap; }
+                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count == 0: HorizontalLayout { vertical-stretch: 0; alignment: start; Button { text: @tr("Add automatic rule: no layout in games"); clicked => { LayoutLibrary.add-game-rule(); } } }
+                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count > 0: Text {
+                        vertical-stretch: 0; color: Theme.muted; wrap: word-wrap;
+                        text: @tr("Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}.", SettingsEditor.game-rule-count, SettingsEditor.game-auto-rule-count);
+                    }
+                    if SettingsEditor.game-auto-rule-count > 0 && !LayoutLibrary.automatic: Text { vertical-stretch: 0; text: @tr("Automatic layout rules apply only when the layout is chosen automatically (Layouts page)."); color: Theme.warning; wrap: word-wrap; }
+                    CheckBox { text: @tr("Remember On and Off after restart"); checked <=> SettingsEditor.remember-game-control; toggled => { SettingsEditor.save(); } }
+                    CheckBox { text: @tr("Ignore popup hotkeys while game mode is on"); checked <=> SettingsEditor.block-game-popups; toggled => { SettingsEditor.save(); } }
+
+                    Text { vertical-stretch: 0; text: @tr("Automatic detection"); color: Theme.text; font-weight: 600; }
+                    if AppState.is-linux: VerticalBox {
+                        padding: 0px; spacing: 4px; vertical-stretch: 0;
+                        CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
+                        Text { text: @tr("GameMode daemon: ") + Locale.text(AppState.game-daemon-availability); color: Theme.muted; }
+                        Text { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                        if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: @tr("GameMode is not installed: install the gamemode package."); color: Theme.warning; wrap: word-wrap; }
+                    }
+                    VerticalBox {
+                        padding: 0px; spacing: 4px; vertical-stretch: 0;
+                        CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
+                        Text { text: @tr("Fullscreen detection: ") + Locale.text(AppState.game-fullscreen-availability); color: Theme.muted; }
+                        Text { text: @tr("Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                        if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.warning; wrap: word-wrap; }
+                    }
+                    if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }
+                    if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { vertical-stretch: 0; text: @tr("Fullscreen detection tools are missing or could not query the session."); color: Theme.warning; wrap: word-wrap; }
+
+                    Text { vertical-stretch: 0; text: @tr("Games and exclusions"); color: Theme.text; font-weight: 600; }
+                    Text { vertical-stretch: 0; text: @tr("Exact process name or app ID; use * and ? for patterns. Window titles are not matched. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."); color: Theme.muted; wrap: word-wrap; }
                     Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                     for item[index] in SettingsEditor.process-matchers: Rectangle {
-                        height: 30px; background: SettingsEditor.selected-process == index ? Theme.selected : Theme.card;
-                        Text { x: 8px; text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: Theme.text; vertical-alignment: center; }
-                        TouchArea { clicked => { SettingsEditor.select-process(index); } }
+                        vertical-stretch: 0; height: process-row.preferred-height; border-radius: 4px; background: Theme.card;
+                        process-row := HorizontalLayout {
+                            padding-left: 8px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px; spacing: 12px;
+                            Text { text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: item.blacklist ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+                            CheckBox { text: @tr("Active window only"); checked: item.only-active; enabled: AppState.game-window-availability.id != "capability-unsupported"; toggled => { SettingsEditor.set-process-flags(index, self.checked, item.blacklist); } }
+                            CheckBox { text: @tr("Exclude"); checked: item.blacklist; toggled => { SettingsEditor.set-process-flags(index, item.only-active, self.checked); } }
+                            VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); danger: true; clicked => { SettingsEditor.delete-process(index); } } }
+                        }
                     }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
-                        VerticalBox { padding: 0px; spacing: 8px;
-                            FormLabel { text: @tr("Process name"); }
-                            LineEdit { text <=> SettingsEditor.process-name; accessible-label: @tr("Process name"); }
+                    VerticalBox {
+                        padding: 0px; spacing: 8px; vertical-stretch: 0;
+                        FormLabel { text: @tr("Process name"); }
+                        LineEdit {
+                            text <=> SettingsEditor.process-name; accessible-label: @tr("Process name");
+                            placeholder-text: @tr("Type to search running processes");
+                            edited(text) => { SettingsEditor.process-name-edited(text); }
+                            accepted => { SettingsEditor.add-process(); }
+                        }
+                        for suggestion in SettingsEditor.process-suggestions: Rectangle {
+                            height: 26px; border-radius: 4px; background: suggestion-touch.has-hover ? Theme.hover : transparent;
+                            Text { x: 8px; text: suggestion; color: Theme.text; vertical-alignment: center; }
+                            suggestion-touch := TouchArea { mouse-cursor: pointer; clicked => { SettingsEditor.process-name = suggestion; SettingsEditor.process-name-edited(suggestion); } }
                         }
                     }
                     HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
                         CheckBox { text: @tr("Active window only"); checked <=> SettingsEditor.process-only-active; enabled: AppState.game-window-availability.id != "capability-unsupported"; }
                         CheckBox { text: @tr("Exclude"); checked <=> SettingsEditor.process-blacklist; }
                     }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
-                        Button { text: @tr("Add process"); clicked => { SettingsEditor.add-process(); } }
-                        Button { text: @tr("Update selected"); enabled: SettingsEditor.selected-process >= 0; clicked => { SettingsEditor.update-process(); } }
-                        Button { text: @tr("Remove selected"); enabled: SettingsEditor.selected-process >= 0; clicked => { SettingsEditor.delete-process(); } }
+                    HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px; alignment: start;
+                        Button { text: @tr("Add process"); enabled: SettingsEditor.process-name != ""; clicked => { SettingsEditor.add-process(); } }
+                        Button {
+                            text: SettingsEditor.pick-countdown > 0 ? @tr("Switch to the game window… {}", SettingsEditor.pick-countdown) : @tr("Take from the active window");
+                            enabled: SettingsEditor.pick-countdown == 0 && AppState.game-window-availability.id == "capability-available";
+                            clicked => { SettingsEditor.pick-active-window(); }
+                        }
                     }
                 }
                 if SettingsEditor.tab == 4 && AppState.is-linux: Section {

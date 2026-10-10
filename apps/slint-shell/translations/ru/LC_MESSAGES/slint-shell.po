@@ -217,9 +217,6 @@ msgstr "Использовать GameMode"
 msgid "Detect fullscreen"
 msgstr "Определять полноэкранный режим"
 
-msgid "Process rules"
-msgstr "Правила процессов"
-
 msgid "Include: "
 msgstr "Включить: "
 
@@ -238,11 +235,6 @@ msgstr "Исключить"
 msgid "Add process"
 msgstr "Добавить процесс"
 
-msgid "Update selected"
-msgstr "Изменить выбранный"
-
-msgid "Remove selected"
-msgstr "Удалить выбранный"
 
 msgid "Linux text injection"
 msgstr "Ввод текста в Linux"
@@ -571,7 +563,6 @@ msgstr "Выберите раскладку"
 msgid "Layout changed on disk; select it again"
 msgstr "Раскладка изменена на диске; выберите её заново"
 
-
 msgid "Any game mode"
 msgstr "Любой игровой режим"
 
@@ -599,7 +590,6 @@ msgstr "В редакторе · не сохранено"
 msgid "Editing"
 msgstr "В редакторе"
 
-
 msgid "Activate"
 msgstr "Активировать"
 
@@ -609,10 +599,8 @@ msgstr "Удалить раскладку?"
 msgid "Layout details"
 msgstr "Свойства раскладки"
 
-
 msgid "Do not use when"
 msgstr "Не использовать, когда"
-
 
 msgid "The layout file will be deleted. This cannot be undone."
 msgstr "Файл раскладки будет удалён. Это действие нельзя отменить."
@@ -635,7 +623,6 @@ msgstr "Раскладка с таким именем уже есть."
 msgid "Add a description…"
 msgstr "Добавить описание…"
 
-
 msgid "Based on Ivan K layout"
 msgstr "На основе раскладки Айвана Кея"
 
@@ -651,13 +638,11 @@ msgstr "Описание (необязательно)"
 msgid "Discard changes"
 msgstr "Не сохранять"
 
-
 msgid "Make active"
 msgstr "Сделать активной"
 
 msgid "Single: the layout you make active works everywhere."
 msgstr "Одиночный: везде работает раскладка, которую вы сделали активной."
-
 
 msgid "No layouts yet"
 msgstr "Раскладок пока нет"
@@ -682,7 +667,6 @@ msgstr "Имя содержит символы, недопустимые в им
 
 msgid "Unsaved changes"
 msgstr "Несохранённые изменения"
-
 
 msgid "You are editing “{}”, but “{}” is active."
 msgstr "Вы редактируете «{}», а активна «{}»."
@@ -1251,7 +1235,6 @@ msgstr "↓"
 msgid "Does not matter"
 msgstr "Не важно"
 
-
 msgid "Open for editing (unsaved)"
 msgstr "Открыта на редактирование (не сохранено)"
 
@@ -1429,17 +1412,9 @@ msgstr "Auto: активно полноэкранное окно"
 msgid "Auto: excluded by {}"
 msgstr "Auto: исключён правилом {}"
 
-msgid "Game mode manually on until restart"
-msgstr "Игровой режим включён вручную до перезапуска"
-
-msgid "Game mode manually off until restart"
-msgstr "Игровой режим выключен вручную до перезапуска"
 
 msgid "On and Off last until restart. Auto keeps detecting in the background."
 msgstr "On и Off действуют до перезапуска. Auto продолжает определение в фоне."
-
-msgid "Choose Auto, On or Off in the top bar. These settings configure Auto."
-msgstr "Выберите Auto, On или Off в верхней панели. Эти настройки управляют автоопределением."
 
 msgid "GameMode daemon: "
 msgstr "Служба GameMode: "
@@ -1452,9 +1427,6 @@ msgstr "Определение полноэкранного окна не под
 
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "Инструменты определения полноэкранного окна отсутствуют или не смогли получить данные сессии."
-
-msgid "Exact process name or app ID; use * and ? for patterns. Window titles are not matched."
-msgstr "Точное имя процесса или ID приложения; для шаблонов используйте * и ?. Заголовки окон не проверяются."
 
 msgid "Running processes: "
 msgstr "Запущенные процессы: "
@@ -2031,3 +2003,90 @@ msgid_plural "In {n} rules"
 msgstr[0] "В {n} правиле"
 msgstr[1] "В {n} правилах"
 msgstr[2] "В {n} правилах"
+
+msgid "Add automatic rule: no layout in games"
+msgstr "Добавить авто-правило: без раскладки в играх"
+
+msgid "Auto — detect games"
+msgstr "Auto — определять игры"
+
+msgid "On — always"
+msgstr "On — всегда"
+
+msgid "Off — never"
+msgstr "Off — никогда"
+
+msgid "Automatic detection"
+msgstr "Автоопределение"
+
+msgid "Automatic layout rules apply only when the layout is chosen automatically (Layouts page)."
+msgstr "Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»)."
+
+msgid "Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."
+msgstr "Окна без рамки на весь экран тоже считаются. Браузеры, видеоплееры и презентации не учитываются."
+
+msgid "Exact process name or app ID; use * and ? for patterns. Window titles are not matched. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."
+msgstr "Точное имя процесса или ID приложения; для шаблонов используйте * и ?. Заголовки окон не проверяются. У игр Steam ID приложения — steam_app_<номер>; игры Proton находятся и по имени .exe. Пока совпадает исключение, игровой режим не включается."
+
+msgid "Game mode is off (set manually)"
+msgstr "Игровой режим выключен (вручную)"
+
+msgid "Game mode is on (set manually)"
+msgstr "Игровой режим включён (вручную)"
+
+msgid "Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Игровой режим включает правила и авто-правила раскладок с условием «игровой режим». Переключайте Auto, On и Off в верхней панели, в меню трея или клавишей с действием игрового режима."
+
+msgid "Game mode: always off"
+msgstr "Игровой режим: всегда выключен"
+
+msgid "Game mode: always on"
+msgstr "Игровой режим: всегда включён"
+
+msgid "Game mode: detect automatically"
+msgstr "Игровой режим: определять автоматически"
+
+msgid "Toggle game mode"
+msgstr "Переключить игровой режим"
+
+msgid "GameMode is not installed: install the gamemode package."
+msgstr "GameMode не установлен: установите пакет gamemode."
+
+msgid "Games and exclusions"
+msgstr "Игры и исключения"
+
+msgid "Ignore popup hotkeys while game mode is on"
+msgstr "Не открывать попапы по горячим клавишам в игровом режиме"
+
+msgid "Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules."
+msgstr "Установите {}, чтобы определять активное и полноэкранное окно. Он же нужен для условий по приложениям в правилах."
+
+msgid "Nothing uses game mode yet: no rule or automatic layout rule has a game-mode condition, so turning it on changes nothing."
+msgstr "Игровой режим пока ни на что не влияет: ни у одного правила или авто-правила раскладки нет условия «игровой режим»."
+
+msgid "On and Off are remembered after restart. Auto keeps detecting in the background."
+msgstr "On и Off сохраняются после перезапуска. В режиме Auto определение работает в фоне."
+
+msgid "Remember On and Off after restart"
+msgstr "Помнить On и Off после перезапуска"
+
+msgid "Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}."
+msgstr "Правил текущей раскладки с условием игрового режима: {}. Авто-правил раскладок с условием игрового режима: {}."
+
+msgid "Switch to the game window… {}"
+msgstr "Переключитесь на окно игры… {}"
+
+msgid "Take from the active window"
+msgstr "Взять из активного окна"
+
+msgid "Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."
+msgstr "Срабатывает, пока игра запущена через gamemoderun или сама запросила GameMode. В Steam укажите параметры запуска «gamemoderun %command%»."
+
+msgid "Type to search running processes"
+msgstr "Начните вводить, чтобы найти запущенный процесс"
+
+msgid "Game mode: on"
+msgstr "Игровой режим: включён"
+
+msgid "Game mode: off"
+msgstr "Игровой режим: выключен"

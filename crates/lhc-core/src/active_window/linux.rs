@@ -17,6 +17,14 @@ use super::ActiveWindow;
 static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 const COMMAND_TIMEOUT_MS: u64 = 1000;
 static LAST_QUERY: AtomicU8 = AtomicU8::new(0);
+/// KWin script printing the active window as JSON. Borderless windows
+/// covering their output count as fullscreen: many games use them instead
+/// of real fullscreen.
+const KDE_ACTIVE_WINDOW_SCRIPT: &str = "var w=workspace.activeWindow;var r={};\
+if(w){r.title=w.caption;r.appId=String(w.resourceClass);r.pid=w.pid;r.fullscreen=w.fullScreen;\
+try{var g=w.frameGeometry,o=w.output.geometry;r.fullscreen=r.fullscreen||(w.normalWindow&&w.noBorder&&\
+g.x<=o.x&&g.y<=o.y&&g.x+g.width>=o.x+o.width&&g.y+g.height>=o.y+o.height);}catch(e){}}\
+output_result(JSON.stringify(r));";
 
 pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
     use crate::gamemode::DetectorAvailability;
@@ -33,6 +41,19 @@ pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
     } else {
         DetectorAvailability::Unavailable
     }
+}
+
+/// Tool that window detection needs in this session but cannot find.
+pub(super) fn missing_tool() -> Option<&'static str> {
+    let session = crate::platform::linux::detect();
+    let tools: &[&'static str] = match (session.desktop, session.session_type) {
+        (_, SessionType::X11) => &["xdotool", "xprop"],
+        (Desktop::Kde, SessionType::Wayland) => &["kdotool"],
+        (Desktop::Hyprland, SessionType::Wayland) => &["hyprctl"],
+        (Desktop::Sway, SessionType::Wayland) => &["swaymsg"],
+        _ => &[],
+    };
+    tools.iter().copied().find(|tool| !command_available(tool))
 }
 
 pub fn detect() -> Option<ActiveWindow> {
@@ -65,10 +86,7 @@ fn detect_hyprland() -> Result<Option<ActiveWindow>, ()> {
 
 fn detect_kde_wayland() -> Result<Option<ActiveWindow>, ()> {
     let output = run_cmd_with_timeout(
-        Command::new("kdotool").args([
-            "kwinscript", "--inline",
-            "var w=workspace.activeWindow;output_result(w ? JSON.stringify({title:w.caption,appId:String(w.resourceClass),pid:w.pid}) : '{}');",
-        ]),
+        Command::new("kdotool").args(["kwinscript", "--inline", KDE_ACTIVE_WINDOW_SCRIPT]),
         COMMAND_TIMEOUT_MS,
     );
     let Some(output) = output else {
@@ -94,7 +112,32 @@ fn detect_sway() -> Result<Option<ActiveWindow>, ()> {
         return Err(());
     }
     let tree: serde_json::Value = serde_json::from_slice(&output.stdout).map_err(|_| ())?;
-    Ok(find_focused_window(&tree))
+    Ok(find_focused_window(&tree).map(|window| ActiveWindow {
+        fullscreen: Some(find_focused_fullscreen(&tree, false)),
+        ..window
+    }))
+}
+
+/// Whether the focused Sway node, or a container holding it, is
+/// fullscreen.
+fn find_focused_fullscreen(node: &serde_json::Value, ancestor_fullscreen: bool) -> bool {
+    let fullscreen = ancestor_fullscreen
+        || node
+            .get("fullscreen_mode")
+            .and_then(serde_json::Value::as_u64)
+            .is_some_and(|mode| mode > 0);
+    if node.get("focused").and_then(serde_json::Value::as_bool) == Some(true) {
+        return fullscreen;
+    }
+    ["nodes", "floating_nodes"].iter().any(|key| {
+        node.get(key)
+            .and_then(serde_json::Value::as_array)
+            .is_some_and(|nodes| {
+                nodes
+                    .iter()
+                    .any(|node| find_focused_fullscreen(node, fullscreen))
+            })
+    })
 }
 
 fn find_focused_window(node: &serde_json::Value) -> Option<ActiveWindow> {
@@ -115,6 +158,7 @@ fn find_focused_window(node: &serde_json::Value) -> Option<ActiveWindow> {
                 title,
                 app_id,
                 process_name: process_name(node.get("pid").and_then(serde_json::Value::as_u64)),
+                fullscreen: None,
             });
         }
     }
@@ -127,14 +171,17 @@ fn find_focused_window(node: &serde_json::Value) -> Option<ActiveWindow> {
 }
 
 fn process_name(pid: Option<u64>) -> Option<String> {
-    let pid = pid.filter(|pid| *pid > 0)?;
-    if let Ok(exe) = std::fs::read_link(format!("/proc/{pid}/exe")) {
-        return exe.file_name()?.to_str().map(str::to_owned);
+    crate::gamemode::process::proc_display_name(pid.filter(|pid| *pid > 0)?)
+}
+
+/// KWin reports `fullscreen` as a boolean, Hyprland as a mode number
+/// whose bit 2 is real fullscreen (1 is maximized).
+fn fullscreen_from_json(value: &serde_json::Value) -> Option<bool> {
+    match value.get("fullscreen")? {
+        serde_json::Value::Bool(value) => Some(*value),
+        serde_json::Value::Number(value) => value.as_u64().map(|value| value & 2 != 0),
+        _ => None,
     }
-    std::fs::read_to_string(format!("/proc/{pid}/comm"))
-        .ok()
-        .map(|name| name.trim().to_string())
-        .filter(|name| !name.is_empty())
 }
 
 fn window_from_json(
@@ -159,6 +206,7 @@ fn window_from_json(
         title,
         app_id,
         process_name: process_name(value.get("pid").and_then(serde_json::Value::as_u64)),
+        fullscreen: fullscreen_from_json(value),
     })
 }
 
@@ -185,7 +233,7 @@ fn detect_x11() -> Result<Option<ActiveWindow>, ()> {
     )
     .ok_or(())?;
     let class_output = run_cmd_with_timeout(
-        Command::new("xprop").args(["-id", window_id, "WM_CLASS", "_NET_WM_PID"]),
+        Command::new("xprop").args(["-id", window_id, "WM_CLASS", "_NET_WM_PID", "_NET_WM_STATE"]),
         COMMAND_TIMEOUT_MS,
     )
     .ok_or(())?;
@@ -210,6 +258,7 @@ fn detect_x11() -> Result<Option<ActiveWindow>, ()> {
         title,
         app_id,
         process_name,
+        fullscreen: Some(stdout.contains("_NET_WM_STATE_FULLSCREEN")),
     }))
 }
 
@@ -255,6 +304,40 @@ mod tests {
         let xwayland = serde_json::json!({"floating_nodes": [{"focused": true, "name": "Game", "app_id": null, "window_properties": {"class": "Game.exe"}}]});
         assert_eq!(find_focused_window(&xwayland).unwrap().app_id, "Game.exe");
         assert!(find_focused_window(&serde_json::json!({"focused": true, "name": null})).is_none());
+    }
+
+    #[test]
+    fn sway_fullscreen_can_belong_to_a_focused_childs_parent() {
+        let tree =
+            serde_json::json!({"nodes": [{"fullscreen_mode": 1, "nodes": [{"focused": true}]}]});
+        assert!(find_focused_fullscreen(&tree, false));
+        let tree = serde_json::json!({"nodes": [{"fullscreen_mode": 1, "focused": false}, {"focused": true}]});
+        assert!(!find_focused_fullscreen(&tree, false));
+        let tree = serde_json::json!({"floating_nodes": [{"fullscreen_mode": 1, "focused": true}]});
+        assert!(find_focused_fullscreen(&tree, false));
+    }
+
+    #[test]
+    fn reads_kwin_and_hyprland_fullscreen() {
+        let kde = serde_json::json!({"title": "Game", "appId": "steam_app_1", "fullscreen": true});
+        assert_eq!(
+            window_from_json(&kde, "title", "appId").unwrap().fullscreen,
+            Some(true)
+        );
+        for (mode, fullscreen) in [(0, false), (1, false), (2, true), (3, true)] {
+            let hyprland = format!(r#"{{"title":"Game","class":"game","fullscreen":{mode}}}"#);
+            assert_eq!(
+                parse_hyprctl_json(&hyprland).unwrap().fullscreen,
+                Some(fullscreen)
+            );
+        }
+        let unknown = serde_json::json!({"title": "Game", "appId": "game"});
+        assert_eq!(
+            window_from_json(&unknown, "title", "appId")
+                .unwrap()
+                .fullscreen,
+            None
+        );
     }
 
     #[test]

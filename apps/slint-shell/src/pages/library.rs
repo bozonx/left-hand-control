@@ -305,7 +305,10 @@ pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
     let library = ui.global::<LayoutLibrary>();
     library.set_active_label(label.into());
     library.set_auto_matched(matched);
-    library.set_game_detection(context.game_mode_detection_enabled);
+    let game = lhc_core::gamemode::status();
+    library.set_game_detection(
+        game.detection_enabled || game.control != lhc_core::gamemode::GameModeControl::Auto,
+    );
 }
 
 /// Remember the library file of the working copy as its saved state.

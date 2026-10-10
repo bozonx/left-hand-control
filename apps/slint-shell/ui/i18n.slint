@@ -27,10 +27,14 @@ export global Locale {
         if m.id == "game-mode-process-active" { return @tr("Auto: matched {}", m.arg); }
         if m.id == "game-mode-fullscreen-active" { return @tr("Auto: fullscreen window active"); }
         if m.id == "game-mode-excluded" { return @tr("Auto: excluded by {}", m.arg); }
-        if m.id == "game-mode-manual-on" { return @tr("Game mode manually on until restart"); }
-        if m.id == "game-mode-manual-off" { return @tr("Game mode manually off until restart"); }
+        if m.id == "game-mode-manual-on" { return @tr("Game mode is on (set manually)"); }
+        if m.id == "game-mode-manual-off" { return @tr("Game mode is off (set manually)"); }
         if m.id == "picker-action" && m.arg == "showQuickMenu" { return @tr("Show Quick Action Menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "showEmojiMenu" { return @tr("Show Emoji & Symbols menu page {}", m.count); }
+        if m.id == "picker-action" && m.arg == "gameModeToggle" { return @tr("Toggle game mode"); }
+        if m.id == "picker-action" && m.arg == "gameModeAuto" { return @tr("Game mode: detect automatically"); }
+        if m.id == "picker-action" && m.arg == "gameModeOn" { return @tr("Game mode: always on"); }
+        if m.id == "picker-action" && m.arg == "gameModeOff" { return @tr("Game mode: always off"); }
         if m.id == "picker-action" && m.arg == "switchDesktop" { return @tr("Switch to desktop {}", m.count); }
         if m.id == "picker-action" && m.arg == "switchLayout" { return @tr("Switch to layout {}", m.count); }
         if m.id == "picker-action" && m.arg == "taskEntry" { return @tr("Activate task manager entry {}", m.count); }

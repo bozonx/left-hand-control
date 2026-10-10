@@ -60,6 +60,8 @@ pub(crate) struct App {
     config_watch: slint::Timer,
     worker_watch: slint::Timer,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
+    /// Game-mode state the active layout was last chosen for.
+    game_active: Cell<Option<bool>>,
     shutting_down: Cell<bool>,
 }
 
@@ -172,6 +174,12 @@ impl App {
                 }
             }
             Command::ToggleMapper => self.toggle_mapper(),
+            Command::GameMode(mode) => {
+                match crate::game_mode::apply(mode, self.document().as_deref()) {
+                    Ok(status) => self.game_mode_changed(&status),
+                    Err(error) => self.set_error(error),
+                }
+            }
             Command::Preferences(preferences) => self.set_preferences(preferences),
             Command::Ping | Command::PopupLayout(_) | Command::PopupContents(_) => {}
             Command::Execute(action) => {
@@ -396,6 +404,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         config_watch: slint::Timer::default(),
         worker_watch: slint::Timer::default(),
         last_mapper_status: RefCell::new(None),
+        game_active: Cell::new(None),
         shutting_down: Cell::new(false),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
@@ -405,6 +414,12 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     }
     app.refresh_mapper_status();
     crate::game_mode::bind(&app.settings);
+    app.settings
+        .global::<AppState>()
+        .on_set_game_control(|control| {
+            let command = Command::GameMode(crate::game_mode::from_ui(control));
+            with_app(|app| app.command(command, Source::Button, Instant::now(), None));
+        });
     app.settings
         .global::<AppState>()
         .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));
@@ -428,6 +443,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         with_app(|app| match tray::start(dispatch.clone()) {
             Ok(tray) => {
                 tray.set_english(app.preferences.get().language == Language::English);
+                tray.set_game(&lhc_core::gamemode::status());
                 *app.tray.borrow_mut() = Some(tray);
                 app.last_mapper_status.borrow_mut().take();
                 app.refresh_mapper_status();

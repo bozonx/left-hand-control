@@ -461,6 +461,47 @@ impl TrayItem {
     }
 }
 
+/// Game-mode choices of the tray submenu, in display order.
+pub const TRAY_GAME_MODES: [crate::command::GameMode; 3] = [
+    crate::command::GameMode::Auto,
+    crate::command::GameMode::On,
+    crate::command::GameMode::Off,
+];
+
+/// Title of the tray game-mode submenu: the effective state.
+pub fn tray_game_title(language: Language, active: bool) -> String {
+    tr(
+        language,
+        if active {
+            "Game mode: on"
+        } else {
+            "Game mode: off"
+        },
+        None,
+    )
+}
+
+/// Label of one tray game-mode choice.
+pub fn tray_game_choice(language: Language, mode: crate::command::GameMode) -> String {
+    use crate::command::GameMode;
+    let source = match mode {
+        GameMode::Auto => "Auto — detect games",
+        GameMode::On => "On — always",
+        GameMode::Off | GameMode::Toggle => "Off — never",
+    };
+    tr(language, source, None)
+}
+
+/// Index of `control` in [`TRAY_GAME_MODES`].
+pub fn tray_game_index(control: lhc_core::gamemode::GameModeControl) -> usize {
+    use lhc_core::gamemode::GameModeControl;
+    match control {
+        GameModeControl::Auto => 0,
+        GameModeControl::On => 1,
+        GameModeControl::Off => 2,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -8,6 +8,9 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
 use windows::Win32::System::Threading::{
     OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
 };
+use windows::Win32::UI::Shell::{
+    QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
     GetClientRect, GetForegroundWindow, GetShellWindow, GetWindowTextLengthW, GetWindowTextW,
     GetWindowThreadProcessId, IsIconic,
@@ -36,6 +39,7 @@ pub(crate) fn active_window() -> Option<ActiveWindow> {
         title,
         app_id,
         process_name,
+        fullscreen: fullscreen_active(),
     })
 }
 
@@ -86,7 +90,15 @@ pub(crate) fn running_process_names() -> Option<Vec<String>> {
     Some(names)
 }
 
+/// Whether the foreground window is fullscreen: exclusive Direct3D
+/// fullscreen as reported by the shell, or a window (often borderless)
+/// whose client area covers its monitor.
 pub(crate) fn fullscreen_active() -> Option<bool> {
+    match unsafe { SHQueryUserNotificationState() } {
+        Ok(state) if state == QUNS_RUNNING_D3D_FULL_SCREEN => return Some(true),
+        Ok(state) if state == QUNS_PRESENTATION_MODE => return Some(false),
+        _ => {}
+    }
     let window = unsafe { GetForegroundWindow() };
     if window.is_invalid()
         || window == unsafe { GetShellWindow() }

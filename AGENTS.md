@@ -22,7 +22,8 @@ SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell # popups as la
 SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview  # hot reload of .slint
 
 target/debug/slint-shell show settings   # CLI client → running instance (show emoji|quick [page], hide,
-                                         # toggle-mapper, preferences dark|light ru|en, ping, quit)
+                                         # toggle-mapper, game auto|on|off|toggle,
+                                         # preferences dark|light ru|en, ping, quit)
 ```
 
 Windows start hidden; the app lives in the tray. Only one instance runs per `XDG_RUNTIME_DIR` (override with `SLINT_SHELL_SOCKET`).

@@ -173,28 +173,6 @@ pub struct Settings {
     pub linux_xdotool_path: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct GameModeSettings {
-    #[serde(default)]
-    pub use_gamemoded: bool,
-    #[serde(default)]
-    pub use_fullscreen: bool,
-    #[serde(default)]
-    pub process_matchers: Vec<GameModeProcessMatcher>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct GameModeProcessMatcher {
-    #[serde(default)]
-    pub name: String,
-    #[serde(default)]
-    pub only_active_window: bool,
-    #[serde(default)]
-    pub is_blacklist: bool,
-}
-
 /// Three-valued condition on game-mode state for a rule.
 /// `Ignore` (the default when the field is absent) means the rule always
 /// fires regardless of game-mode state.

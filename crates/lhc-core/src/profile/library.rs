@@ -435,7 +435,6 @@ mod tests {
         let mut context = AutoSwitchContext {
             system_layout: Some("us".into()),
             window_app_id: Some("org.kde.kate".into()),
-            game_mode_detection_enabled: true,
             ..Default::default()
         };
         let active = document.runtime_config(&context).unwrap();
