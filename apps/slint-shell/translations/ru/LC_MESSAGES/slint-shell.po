@@ -1911,8 +1911,8 @@ msgstr "Добавить правило…"
 msgid "All filled conditions must match. A rule without conditions always matches."
 msgstr "Должны выполняться все заполненные условия. Правило без условий срабатывает всегда."
 
-msgid "Automatic switching"
-msgstr "Автопереключение"
+msgid "Automatic switching rules"
+msgstr "Правила автопереключения"
 
 msgid "Automatic: the layout is chosen by switching rules for the application, system language or game mode."
 msgstr "Авто: раскладка выбирается правилами переключения по приложению, языку системы или игровому режиму."
@@ -2168,3 +2168,6 @@ msgstr "В правиле «{}» некорректное действие пр�
 
 msgid "Rule \"{}\" has an invalid double-tap action."
 msgstr "В правиле «{}» некорректное действие при двойном нажатии."
+
+msgid "Automatic switching rule deleted"
+msgstr "Правило автопереключения удалено"

@@ -329,6 +329,7 @@ fn report(ui: &SettingsWindow, result: Result<Msg, Msg>) {
         Msg::LayoutCreated(_)
             | Msg::LayoutSaved(_)
             | Msg::LayoutDeleted(_)
+            | Msg::AutoRuleDeleted
             | Msg::LayoutActivated(_)
             | Msg::LayoutDiscarded(_)
     ) {
@@ -669,12 +670,15 @@ fn save_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result
                 rule.layout_id = layout_id;
                 rule.conditions = conditions;
             }
-            None => settings.auto_rules.push(AutoRule {
-                id: ids::generate("rule-"),
-                enabled: true,
-                layout_id,
-                conditions,
-            }),
+            None => settings.auto_rules.insert(
+                0,
+                AutoRule {
+                    id: ids::generate("rule-"),
+                    enabled: true,
+                    layout_id,
+                    conditions,
+                },
+            ),
         }
     })?;
     library.set_dialog(LibraryDialog::None);
@@ -694,7 +698,11 @@ fn delete_rule(
         }
     })?;
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
-    Ok(message)
+    Ok(if matches!(message, Msg::None) {
+        Msg::AutoRuleDeleted
+    } else {
+        message
+    })
 }
 
 fn move_rule(
@@ -734,15 +742,18 @@ fn set_rule_enabled(
 /// Ready-made rule: no layout while game mode is on.
 fn add_game_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
     edit_auto(ui, document, state, |settings| {
-        settings.auto_rules.push(AutoRule {
-            id: ids::generate("rule-"),
-            enabled: true,
-            layout_id: None,
-            conditions: LayoutConditionSet {
-                game_mode: Some("on".into()),
-                ..LayoutConditionSet::default()
+        settings.auto_rules.insert(
+            0,
+            AutoRule {
+                id: ids::generate("rule-"),
+                enabled: true,
+                layout_id: None,
+                conditions: LayoutConditionSet {
+                    game_mode: Some("on".into()),
+                    ..LayoutConditionSet::default()
+                },
             },
-        });
+        );
     })
 }
 

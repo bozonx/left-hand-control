@@ -153,6 +153,18 @@ pub(super) fn bind(ui: &SettingsWindow) {
             .any(|value| value == item.as_str())
     });
     choices.on_items(|value| strings(parse_list(&value)));
+    choices.on_unknown_languages(|value, languages| {
+        strings(
+            parse_list(&value)
+                .into_iter()
+                .filter(|code| {
+                    !languages
+                        .iter()
+                        .any(|language| language.code == code.as_str())
+                })
+                .collect::<Vec<_>>(),
+        )
+    });
     choices.on_toggle(|value, item, checked| {
         let mut values = parse_list(&value);
         values.retain(|value| value != item.as_str());

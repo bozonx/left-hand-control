@@ -68,8 +68,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_open_rule(-1, -1);
     library.set_rule_game(GameCondition::On);
     library.invoke_save_rule();
+    assert_eq!(
+        library.get_auto_rules().row_data(0).unwrap().game,
+        GameCondition::On
+    );
+    library.invoke_move_rule(0, 1);
+    assert_eq!(
+        library.get_auto_rules().row_data(1).unwrap().game,
+        GameCondition::On
+    );
     library.invoke_move_rule(1, 0);
     library.invoke_set_auto_default(0);
+    assert_eq!(
+        ConfigDocument::load(paths.clone())?.settings().auto_rules,
+        document.read().settings().auto_rules
+    );
     {
         let config = document.read();
         let settings = config.settings();
@@ -91,18 +104,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(library.get_rule_apps(), "kate, terminal");
     library.invoke_delete_rule(0);
     assert_eq!(library.get_auto_rules().row_count(), 1);
+    assert_eq!(
+        ConfigDocument::load(paths.clone())?.settings().auto_rules,
+        document.read().settings().auto_rules
+    );
     // A game-mode rule, then a narrower one it always shadows.
     library.invoke_add_game_rule();
     library.invoke_open_rule(-1, -1);
     library.set_rule_game(GameCondition::On);
     library.set_rule_apps("kate".into());
     library.invoke_save_rule();
+    library.invoke_move_rule(0, 2);
+    library.invoke_move_rule(0, 1);
     let rules = library.get_auto_rules();
     assert_eq!(rules.row_count(), 3);
     assert_eq!(rules.row_data(1).unwrap().shadowed_by, -1);
     assert_eq!(rules.row_data(2).unwrap().shadowed_by, 1);
     library.invoke_set_rule_enabled(1, false);
     assert!(!document.read().settings().auto_rules[1].enabled);
+    assert!(!ConfigDocument::load(paths.clone())?.settings().auto_rules[1].enabled);
     let rules = library.get_auto_rules();
     assert!(!rules.row_data(1).unwrap().enabled);
     assert_eq!(rules.row_data(2).unwrap().shadowed_by, -1);
@@ -238,6 +258,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.invoke_navigate(Page::Layouts, MenuKind::Emoji);
     if std::env::var_os("LHC_LIBRARY_AUTO").is_some() {
         library.invoke_set_automatic(true);
+    }
+    if std::env::var_os("LHC_LIBRARY_RULE_DRAG").is_some() {
+        library.invoke_set_automatic(true);
+        for target in 0..3 {
+            library.invoke_open_rule(-1, target);
+            library.invoke_save_rule();
+        }
     }
     if let Ok(dialog) = std::env::var("LHC_LIBRARY_DIALOG") {
         ui.global::<ConditionChoices>().invoke_refresh();

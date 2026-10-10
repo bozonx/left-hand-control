@@ -30,6 +30,7 @@ export global ConditionChoices {
     pure callback contains(string, string) -> bool;
     pure callback toggle(string, string, bool) -> string;
     pure callback items(string) -> [string];
+    pure callback unknown-languages(string, [LanguageChoice]) -> [string];
     pure callback remove(string, int) -> string;
     pure callback add(string, string) -> string;
     pure callback is-title(string) -> bool;
@@ -146,10 +147,10 @@ export component ConditionsForm inherits VerticalLayout {
     in property <bool> show-applications: true;
     spacing: 8px;
     Text { text: @tr("Game mode"); color: Theme.text; }
-    SelectField {
-        model: [@tr("Does not matter"), @tr("Game mode on"), @tr("Game mode off")];
-        current-index: root.game == GameCondition.on ? 1 : root.game == GameCondition.off ? 2 : 0;
-        selected => { root.game = self.current-index == 1 ? GameCondition.on : self.current-index == 2 ? GameCondition.off : GameCondition.any; }
+    HorizontalLayout { spacing: 12px; alignment: start;
+        CheckBox { text: @tr("Does not matter"); checked: root.game == GameCondition.any; toggled => { root.game = GameCondition.any; } }
+        CheckBox { text: @tr("Game mode on"); checked: root.game == GameCondition.on; toggled => { root.game = self.checked ? GameCondition.on : GameCondition.any; } }
+        CheckBox { text: @tr("Game mode off"); checked: root.game == GameCondition.off; toggled => { root.game = self.checked ? GameCondition.off : GameCondition.any; } }
     }
     Text { text: @tr("System languages"); color: Theme.text; }
     for language in ConditionChoices.languages: CheckBox {
@@ -158,10 +159,10 @@ export component ConditionsForm inherits VerticalLayout {
         toggled => { root.languages = ConditionChoices.toggle(root.languages, language.code, self.checked); }
     }
     if ConditionChoices.languages.length == 0: Text { text: @tr("No system languages detected"); color: Theme.muted; wrap: word-wrap; }
-    for code in ConditionChoices.items(root.languages): HorizontalLayout {
-        visible: !ConditionChoices.available(code);
-        Text { text: code; color: Theme.muted; vertical-alignment: center; horizontal-stretch: 1; }
-        IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); clicked => { root.languages = ConditionChoices.toggle(root.languages, code, false); } }
+    for code in ConditionChoices.unknown-languages(root.languages, ConditionChoices.languages): CheckBox {
+        text: code;
+        checked: ConditionChoices.contains(root.languages, code);
+        toggled => { root.languages = ConditionChoices.toggle(root.languages, code, self.checked); }
     }
     if root.show-applications: ApplicationsField { value <=> root.applications; }
 }
