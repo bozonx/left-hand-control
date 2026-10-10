@@ -31,6 +31,7 @@ export global SettingsEditor {
     in-out property <string> hold-timeout;
     in-out property <string> long-hold-timeout;
     in-out property <string> double-tap-timeout;
+    in-out property <string> combo-timeout;
     in-out property <string> macro-pause;
     in-out property <string> modifier-delay;
     in-out property <bool> commands-enabled;
@@ -343,6 +344,12 @@ export component SettingsPage inherits VerticalBox {
                             info: @tr("Used by rules without their own value. A second press within this window after the first release counts as a double tap. When a rule has a double-tap action, a single tap waits for this window before it runs.");
                             hint: @tr("Maximum interval between two taps.");
                             NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.double-tap-timeout.to-float(); edited(value) => { SettingsEditor.double-tap-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        }
+                        BehaviorField {
+                            label: @tr("Combination timeout (ms)");
+                            info: @tr("For rules triggered by a key combination such as KeyJ+KeyK. All keys must be pressed within this window. Until then the first keys are held back, and if the combination is not completed they are typed as usual. Modifiers are never held back.");
+                            hint: @tr("Maximum interval between the keys of a combination.");
+                            NumericField { minimum: 0; maximum: 1000; step-size: 10; value: SettingsEditor.combo-timeout.to-float(); edited(value) => { SettingsEditor.combo-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
                         }
                     }
                     SubsectionTitle { text: @tr("Macros"); }

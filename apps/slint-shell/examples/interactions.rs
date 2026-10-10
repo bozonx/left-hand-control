@@ -66,6 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(settings.get_message().id, "timeout-invalid");
     settings.set_hold_timeout("310".into());
     settings.set_double_tap_timeout("270".into());
+    settings.set_combo_timeout("80".into());
     settings.set_macro_pause("35".into());
     settings.set_modifier_delay("12".into());
     settings.set_appearance_index(1);
@@ -84,6 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let loaded = ConfigDocument::load(paths.clone())?;
     assert_eq!(loaded.settings(), document.read().settings());
     assert_eq!(loaded.settings().default_hold_timeout_ms, 310);
+    assert_eq!(loaded.settings().combo_timeout_ms, 80);
     assert_eq!(loaded.settings().game_mode.process_matchers.len(), 1);
     assert_eq!(settings.get_process_name(), "");
     settings.invoke_set_process_flags(0, false, true);

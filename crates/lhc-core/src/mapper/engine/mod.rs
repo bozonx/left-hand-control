@@ -65,11 +65,6 @@ use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
-/// How long a press of a chord member is held back waiting for the rest of
-/// the chord (QMK's `COMBO_TERM`). A chord whose keys arrive within this
-/// window fires without its members ever reaching the app.
-const COMBO_TERM: Duration = Duration::from_millis(50);
-
 pub struct Engine {
     rules: HashMap<Key, Vec<RuleEntry>>,
     chord_rules: Vec<(Vec<Key>, RuleEntry)>,
@@ -93,9 +88,13 @@ pub struct Engine {
     /// resolves. Always empty in `HoldOnOtherKeyPress` mode.
     decision_buffer: Vec<BufferedEvent>,
     /// Events deferred while a non-modifier chord member waits for the rest
-    /// of its chord (see [`COMBO_TERM`]). Replayed in order when the chord
+    /// of its chord (see `combo_term`). Replayed in order when the chord
     /// cannot complete any more; dropped for members when it fires.
     combo_buffer: Vec<BufferedEvent>,
+    /// How long a press of a chord member is held back waiting for the rest
+    /// of the chord (QMK's `COMBO_TERM`). A chord whose keys arrive within
+    /// this window fires without its members ever reaching the app.
+    combo_term: Duration,
 
     /// Stack of currently active layers (top = highest priority).
     active_layers: Vec<String>,
@@ -939,7 +938,7 @@ impl Engine {
     }
 
     fn combo_deadline(&self) -> Option<Instant> {
-        self.combo_buffer.first().map(|ev| ev.at + COMBO_TERM)
+        self.combo_buffer.first().map(|ev| ev.at + self.combo_term)
     }
 
     /// A non-modifier key that belongs to an eligible chord starts a combo
@@ -2617,14 +2616,43 @@ mod tests {
         let now = Instant::now();
         let mut out = Vec::new();
         engine.handle(Key::KEY_J, true, now, &mut out);
-        assert_eq!(engine.next_deadline(now), Some(COMBO_TERM));
-        engine.tick(now + COMBO_TERM, &mut out);
+        assert_eq!(engine.next_deadline(now), Some(engine.combo_term));
+        engine.tick(now + engine.combo_term, &mut out);
         assert_eq!(raw_keys(&out), vec![(Key::KEY_J, true)]);
         // `j` is already typed — a late K must not turn it into the chord.
         engine.handle(Key::KEY_K, true, now + Duration::from_millis(70), &mut out);
         engine.tick(now + Duration::from_millis(200), &mut out);
         assert!(!fired_text(&out));
         assert_eq!(raw_keys(&out), vec![(Key::KEY_J, true), (Key::KEY_K, true)]);
+    }
+
+    #[test]
+    fn combo_window_comes_from_settings() {
+        let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+            "rules": [{"key": "KeyJ+KeyK", "tapAction": "text:esc"}],
+            "settings": {"comboTimeoutMs": 120},
+        }))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_J, true, now, &mut out);
+        assert_eq!(engine.next_deadline(now), Some(Duration::from_millis(120)));
+        engine.handle(Key::KEY_K, true, now + Duration::from_millis(100), &mut out);
+        engine.handle(
+            Key::KEY_K,
+            false,
+            now + Duration::from_millis(130),
+            &mut out,
+        );
+        engine.handle(
+            Key::KEY_J,
+            false,
+            now + Duration::from_millis(140),
+            &mut out,
+        );
+        assert!(fired_text(&out));
+        assert!(raw_keys(&out).is_empty());
     }
 
     #[test]

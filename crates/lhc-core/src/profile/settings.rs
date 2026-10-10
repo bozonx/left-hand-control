@@ -75,6 +75,7 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             "defaultDoubleTapTimeoutMs",
             base.default_double_tap_timeout_ms,
         ),
+        combo_timeout_ms: u64_or(raw, "comboTimeoutMs", base.combo_timeout_ms),
         default_macro_step_pause_ms: u64_or(
             raw,
             "defaultMacroStepPauseMs",

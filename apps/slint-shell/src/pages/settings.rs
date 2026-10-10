@@ -35,6 +35,7 @@ struct Form {
     hold: String,
     long_hold: String,
     double_tap: String,
+    combo: String,
     macro_pause: String,
     modifier_delay: String,
     commands_enabled: bool,
@@ -71,6 +72,7 @@ impl Form {
             hold: settings.default_hold_timeout_ms.to_string(),
             long_hold: super::rules::seconds_text(settings.default_long_hold_timeout_ms),
             double_tap: settings.default_double_tap_timeout_ms.to_string(),
+            combo: settings.combo_timeout_ms.to_string(),
             macro_pause: settings.default_macro_step_pause_ms.to_string(),
             modifier_delay: settings.default_macro_modifier_delay_ms.to_string(),
             commands_enabled: settings.commands_enabled,
@@ -105,6 +107,7 @@ impl Form {
             hold: e.get_hold_timeout().into(),
             long_hold: e.get_long_hold_timeout().into(),
             double_tap: e.get_double_tap_timeout().into(),
+            combo: e.get_combo_timeout().into(),
             macro_pause: e.get_macro_pause().into(),
             modifier_delay: e.get_modifier_delay().into(),
             commands_enabled: e.get_commands_enabled(),
@@ -132,6 +135,7 @@ impl Form {
         e.set_hold_timeout(self.hold.clone().into());
         e.set_long_hold_timeout(self.long_hold.clone().into());
         e.set_double_tap_timeout(self.double_tap.clone().into());
+        e.set_combo_timeout(self.combo.clone().into());
         e.set_macro_pause(self.macro_pause.clone().into());
         e.set_modifier_delay(self.modifier_delay.clone().into());
         e.set_commands_enabled(self.commands_enabled);
@@ -161,6 +165,7 @@ impl Form {
             parse_ms(&self.double_tap)?,
             parse_ms(&self.macro_pause)?,
             parse_ms(&self.modifier_delay)?,
+            parse_ms(&self.combo)?,
         ];
         macro_rules! changed {
             ($field:ident => $apply:expr) => {
@@ -180,6 +185,7 @@ impl Form {
         changed!(double_tap => settings.default_double_tap_timeout_ms = numbers[1]);
         changed!(macro_pause => settings.default_macro_step_pause_ms = numbers[2]);
         changed!(modifier_delay => settings.default_macro_modifier_delay_ms = numbers[3]);
+        changed!(combo => settings.combo_timeout_ms = numbers[4]);
         changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);

@@ -307,6 +307,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             assert_eq!(library.get_names().row_data(2).unwrap(), first);
             println!("Library drag-and-drop passed");
         }
+        if std::env::var_os("LHC_LIBRARY_RULE_DRAG").is_some() {
+            let first = document.read().settings().auto_rules[0].id.clone();
+            let start = slint::LogicalPosition::new(796.0, 278.0);
+            let end = slint::LogicalPosition::new(796.0, 460.0);
+            let window = ui.window();
+            window.dispatch_event(slint::platform::WindowEvent::PointerMoved { position: start });
+            window.dispatch_event(slint::platform::WindowEvent::PointerPressed {
+                position: start,
+                button: slint::platform::PointerEventButton::Left,
+            });
+            window.dispatch_event(slint::platform::WindowEvent::PointerMoved { position: end });
+            assert!(ui.global::<DragDrop>().get_dragging());
+            assert_eq!(ui.global::<DragDrop>().get_source(), 0);
+            assert_eq!(ui.global::<DragDrop>().get_target(), 2);
+            window.dispatch_event(slint::platform::WindowEvent::PointerReleased {
+                position: end,
+                button: slint::platform::PointerEventButton::Left,
+            });
+            assert_eq!(document.read().settings().auto_rules[2].id, first);
+            assert_eq!(
+                ConfigDocument::load(document.read().paths().clone())
+                    .unwrap()
+                    .settings()
+                    .auto_rules,
+                document.read().settings().auto_rules
+            );
+            println!("Automatic rule drag-and-drop passed");
+        }
         if let Some(path) = std::env::var_os("LHC_LIBRARY_SNAPSHOT") {
             let pixels = ui.window().take_snapshot().unwrap();
             let mut bytes =

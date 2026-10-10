@@ -161,6 +161,8 @@ pub struct Settings {
     pub default_macro_modifier_delay_ms: u64,
     #[serde(default = "default_double_tap")]
     pub default_double_tap_timeout_ms: u64,
+    #[serde(default = "default_combo_timeout")]
+    pub combo_timeout_ms: u64,
     #[serde(default)]
     pub current_layout_id: Option<String>,
     #[serde(default)]
@@ -197,6 +199,7 @@ impl Default for Settings {
             default_macro_step_pause_ms: default_step_pause(),
             default_macro_modifier_delay_ms: default_mod_delay(),
             default_double_tap_timeout_ms: default_double_tap(),
+            combo_timeout_ms: default_combo_timeout(),
             current_layout_id: None,
             commands_enabled: false,
             linux_wayland_text_mode: Some("libei".into()),
@@ -224,6 +227,10 @@ fn default_mod_delay() -> u64 {
 
 fn default_double_tap() -> u64 {
     200
+}
+
+fn default_combo_timeout() -> u64 {
+    50
 }
 
 #[cfg(test)]
@@ -285,6 +292,7 @@ mod tests {
         assert_eq!(s.default_macro_step_pause_ms, 20);
         assert_eq!(s.default_macro_modifier_delay_ms, 5);
         assert_eq!(s.default_double_tap_timeout_ms, 200);
+        assert_eq!(s.combo_timeout_ms, 50);
         assert_eq!(s.tap_decision, TapDecision::PermissiveHold);
         assert_eq!(s.linux_wayland_text_mode.as_deref(), Some("libei"));
         assert!(s.linux_ydotool_path.is_none());
