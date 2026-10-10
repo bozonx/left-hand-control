@@ -35,7 +35,6 @@ type Listener = Rc<dyn Fn(&Document)>;
 
 pub struct Document {
     config: RefCell<ConfigDocument>,
-    ui_state: RefCell<lhc_core::ui_state::UiState>,
     listeners: RefCell<Vec<(View, Listener)>>,
     /// Layout last given to the running mapper; `None` before the first push.
     pushed_layout: RefCell<Option<Option<String>>>,
@@ -61,9 +60,7 @@ impl<T> Saved<T> {
 
 impl Document {
     pub fn new(config: ConfigDocument) -> Rc<Self> {
-        let ui_state = lhc_core::ui_state::UiState::default();
         Rc::new(Self {
-            ui_state: RefCell::new(ui_state),
             config: RefCell::new(config),
             listeners: RefCell::default(),
             pushed_layout: RefCell::default(),
@@ -72,18 +69,6 @@ impl Document {
 
     pub fn load(paths: StoragePaths) -> Result<Rc<Self>, ConfigError> {
         ConfigDocument::load(paths).map(Self::new)
-    }
-
-    pub fn selected_layer_id(&self) -> String {
-        self.ui_state.borrow().selected_layer_id().to_owned()
-    }
-
-    pub fn label_mode(&self) -> i32 {
-        self.ui_state.borrow().label_mode()
-    }
-
-    pub fn update_ui_state(&self, layer: Option<&str>, mode: Option<i32>) {
-        self.ui_state.borrow_mut().update(layer, mode)
     }
 
     /// Read access. Do not keep the guard across UI calls that may edit.

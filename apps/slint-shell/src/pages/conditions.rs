@@ -23,8 +23,20 @@ pub(crate) fn show_active_window(ui: &SettingsWindow, window: Option<&ActiveWind
         }
         parts.join(" · ")
     });
-    ui.global::<ConditionChoices>()
-        .set_active_window(text.into());
+    let choices = ui.global::<ConditionChoices>();
+    choices.set_active_window(text.into());
+    choices.set_active_pattern(
+        window
+            .map(|window| window_pattern(&window.app_id, window.process_name.as_deref()))
+            .unwrap_or_default()
+            .into(),
+    );
+    choices.set_active_title(
+        window
+            .map(|window| window.title.as_str())
+            .unwrap_or_default()
+            .into(),
+    );
 }
 
 /// The pattern a condition stores for a window: its app id, or the
@@ -87,6 +99,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
     let weak = ui.as_weak();
     choices.on_pick_active_window(move || {
         let Some(ui) = weak.upgrade() else { return };
+        lhc_core::active_window::set_titles_needed_by_picker(true);
         ui.global::<ConditionChoices>()
             .set_pick_countdown(PICK_DELAY);
         let weak = weak.clone();
@@ -95,7 +108,13 @@ pub(super) fn bind(ui: &SettingsWindow) {
             slint::TimerMode::Repeated,
             std::time::Duration::from_secs(1),
             move || {
-                let Some(ui) = weak.upgrade() else { return };
+                let Some(ui) = weak.upgrade() else {
+                    lhc_core::active_window::set_titles_needed_by_picker(false);
+                    if let Some(timer) = stop.upgrade() {
+                        timer.stop();
+                    }
+                    return;
+                };
                 let choices = ui.global::<ConditionChoices>();
                 let left = (choices.get_pick_countdown() - 1).max(0);
                 choices.set_pick_countdown(left);
@@ -105,9 +124,20 @@ pub(super) fn bind(ui: &SettingsWindow) {
                 if let Some(timer) = stop.upgrade() {
                     timer.stop();
                 }
-                let picked = lhc_core::active_window::detect_active_window_now()
+                let window = lhc_core::active_window::pick_active_window();
+                lhc_core::active_window::set_titles_needed_by_picker(false);
+                let picked = window
+                    .as_ref()
                     .map(|window| window_pattern(&window.app_id, window.process_name.as_deref()))
                     .unwrap_or_default();
+                choices.set_picked_title(
+                    window
+                        .as_ref()
+                        .map(|window| window.title.as_str())
+                        .unwrap_or_default()
+                        .into(),
+                );
+                show_active_window(&ui, window.as_ref());
                 choices.set_picked(picked.into());
                 choices.set_picked_serial(choices.get_picked_serial() + 1);
             },

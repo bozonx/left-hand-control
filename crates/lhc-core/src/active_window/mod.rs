@@ -33,6 +33,8 @@ const EVENT_FALLBACK_INTERVAL: Duration = Duration::from_secs(3);
 static TITLES_FOR_SHELL: AtomicBool = AtomicBool::new(false);
 /// Game-mode process rules need window titles.
 static TITLES_FOR_GAME_MODE: AtomicBool = AtomicBool::new(false);
+/// The condition picker temporarily needs window titles.
+static TITLES_FOR_PICKER: AtomicBool = AtomicBool::new(false);
 /// Windows of this application do not count as the active window.
 static IGNORE_OWN_WINDOWS: AtomicBool = AtomicBool::new(false);
 
@@ -109,8 +111,17 @@ pub(crate) fn set_titles_needed_by_game_mode(needed: bool) {
     }
 }
 
+/// Keep titles available during the condition picker's focus countdown.
+pub fn set_titles_needed_by_picker(needed: bool) {
+    if TITLES_FOR_PICKER.swap(needed, Ordering::SeqCst) != needed {
+        wake();
+    }
+}
+
 pub(crate) fn titles_needed() -> bool {
-    TITLES_FOR_SHELL.load(Ordering::SeqCst) || TITLES_FOR_GAME_MODE.load(Ordering::SeqCst)
+    TITLES_FOR_SHELL.load(Ordering::SeqCst)
+        || TITLES_FOR_GAME_MODE.load(Ordering::SeqCst)
+        || TITLES_FOR_PICKER.load(Ordering::SeqCst)
 }
 
 #[derive(Default)]
@@ -256,7 +267,10 @@ fn stop_events() {
 }
 
 fn detect_active_window() -> Option<ActiveWindow> {
-    let titles = titles_needed();
+    detect_active_window_with_titles(titles_needed())
+}
+
+fn detect_active_window_with_titles(titles: bool) -> Option<ActiveWindow> {
     #[cfg(target_os = "linux")]
     let window = linux::detect(titles);
     #[cfg(target_os = "windows")]
@@ -282,7 +296,18 @@ pub fn detect_active_window_now() -> Option<ActiveWindow> {
     current
 }
 
-/// Applications with open windows, one entry per app id and process,
+/// Read a window for the condition picker, including its title.
+/// Own windows preserve the last external window.
+pub fn pick_active_window() -> Option<ActiveWindow> {
+    let current = detect_active_window_with_titles(true);
+    if current.as_ref().is_some_and(is_ignored) {
+        return cached_active_window();
+    }
+    crate::runtime_state::set_active_window(current.clone());
+    current
+}
+
+/// Applications with open windows, one entry per app id, process and title,
 /// sorted by app id. Asked on demand when the user picks a condition, so
 /// titles are included.
 pub fn open_windows() -> Vec<OpenWindow> {
@@ -305,12 +330,14 @@ pub fn open_windows() -> Vec<OpenWindow> {
                 .clone()
                 .unwrap_or_default()
                 .to_lowercase(),
+            window.title.to_lowercase(),
         )
     });
     windows.dedup_by(|a, b| {
         a.app_id.eq_ignore_ascii_case(&b.app_id)
             && a.process_name.as_deref().map(str::to_lowercase)
                 == b.process_name.as_deref().map(str::to_lowercase)
+            && a.title == b.title
     });
     windows
 }

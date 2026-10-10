@@ -5,7 +5,7 @@ import { CategoryIcon } from "action-picker.slint";
 import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { ActionKind, Assignment, LayerDialog, PickerTarget } from "types.slint";
+import { ActionKind, Assignment, LabelMode, LayerDialog, PickerTarget } from "types.slint";
 import { Button, HorizontalBox, LineEdit, TextEdit, Palette, VerticalBox } from "std-widgets.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
@@ -15,8 +15,7 @@ export struct LayerExtraRow { key: string, kind: Assignment, action: string, ico
 
 /// Layers of the layout being edited and their keymaps.
 export global LayersEditor {
-    in-out property <int> label-mode;
-    callback set-label-mode(int);
+    in-out property <LabelMode> label-mode: LabelMode.label;
     in property <[string]> names;
     in-out property <int> selected: -1;
     in-out property <string> selected-id;
@@ -192,7 +191,7 @@ component ExtraKeyLine inherits TouchArea {
 
 component KeyCap inherits Rectangle {
     in property <LayerKeyCell> cell;
-    in property <int> label-mode;
+    in property <LabelMode> label-mode;
     callback clicked();
     border-radius: 6px;
     border-width: 1px;
@@ -208,7 +207,7 @@ component KeyCap inherits Rectangle {
         alignment: center;
         Text {
             min-width: 0px;
-            text: root.label-mode == 0 ? root.cell.label : root.cell.code;
+            text: root.label-mode == LabelMode.label ? root.cell.label : root.cell.code;
             color: Theme.text;
             font-size: 13px;
             font-weight: 600;
@@ -233,7 +232,7 @@ component HandGrid inherits VerticalLayout {
     in property <string> title;
     in property <[LayerKeyCell]> cells;
     in property <int> columns;
-    in property <int> label-mode;
+    in property <LabelMode> label-mode;
     callback edit(int);
     horizontal-stretch: root.columns;
     preferred-width: 0px;
@@ -264,7 +263,7 @@ component HandGrid inherits VerticalLayout {
 
 export component LayersPage inherits VerticalLayout {
     padding: 0px;
-    in-out property <int> label-mode <=> LayersEditor.label-mode;
+    in-out property <LabelMode> label-mode <=> LayersEditor.label-mode;
 
 
     vertical-stretch: 1;
@@ -408,8 +407,8 @@ export component LayersPage inherits VerticalLayout {
                         Rectangle { horizontal-stretch: 1; }
                         Segmented {
                             labels: [@tr("US layout"), @tr("Internal codes")];
-                            selected-index: root.label-mode;
-                            selected(index) => { LayersEditor.set-label-mode(index); }
+                            selected-index: root.label-mode == LabelMode.code ? 1 : 0;
+                            selected(index) => { root.label-mode = index == 1 ? LabelMode.code : LabelMode.label; }
                         }
                     }
                     Divider {}

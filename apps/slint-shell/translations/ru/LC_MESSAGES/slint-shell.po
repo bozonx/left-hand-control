@@ -2180,3 +2180,30 @@ msgstr "В правиле «{}» некорректное действие пр�
 
 msgid "Automatic switching rule deleted"
 msgstr "Правило автопереключения удалено"
+
+msgid "Apply in windows"
+msgstr "Применять в окнах"
+
+msgid "Do not apply in windows"
+msgstr "Не применять в окнах"
+
+msgid "App ID / process"
+msgstr "ID приложения / процесс"
+
+msgid "Choose a window in 3 seconds"
+msgstr "Выбрать окно через 3 секунды"
+
+msgid "Use the last active window"
+msgstr "Взять последнее активное окно"
+
+msgid "Last active window: {}"
+msgstr "Последнее активное окно: {}"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr "Совпадение запрещает правило, даже если окно входит в список разрешённых."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr "Достаточно одного совпадения. Пустой список разрешает все окна."
+
+msgid "The last window title is unavailable. Choose from open windows or switch to a window during the countdown."
+msgstr "Заголовок последнего окна недоступен. Выберите открытое окно или переключитесь на него во время отсчёта."

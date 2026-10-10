@@ -3,7 +3,7 @@ import { Theme } from "theme.slint";
 import { GameCondition } from "types.slint";
 import { AppState } from "app-state.slint";
 import { IconButton, InfoTip, SelectField } from "controls.slint";
-import { Button, CheckBox, LineEdit } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit, RadioGroup } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
 
@@ -18,10 +18,13 @@ export global ConditionChoices {
     in property <bool> open-windows-loading;
     /// App id and process of the focused window, e.g. "org.kde.dolphin · dolphin".
     in property <string> active-window;
+    in property <string> active-pattern;
+    in property <string> active-title;
     /// Seconds left before the active window is taken.
     in property <int> pick-countdown;
     /// Pattern of the window taken last; `picked-serial` counts the picks.
     in property <string> picked;
+    in property <string> picked-title;
     in property <int> picked-serial;
     callback refresh();
     callback refresh-open-windows();
@@ -46,6 +49,7 @@ export global ConditionChoices {
 
 /// Applications with open windows; a click reports the pattern to store.
 export component OpenWindowsList inherits VerticalLayout {
+    in property <bool> by-title;
     callback chosen(string);
     spacing: 2px;
     if ConditionChoices.open-windows-loading: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
@@ -63,7 +67,8 @@ export component OpenWindowsList inherits VerticalLayout {
             }
             window-touch := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.chosen(window.pattern); }
+                enabled: !root.by-title || window.title != "";
+                clicked => { root.chosen(root.by-title ? ConditionChoices.make-pattern(window.title, true) : window.pattern); }
             }
         }
     }
@@ -71,25 +76,29 @@ export component OpenWindowsList inherits VerticalLayout {
 
 export component ApplicationsField inherits VerticalLayout {
     in-out property <string> value;
+    in property <string> label: @tr("Apply in windows");
+    in property <bool> exclusion;
     private property <string> draft;
     private property <bool> by-title;
     private property <bool> picking;
+    private property <bool> picking-title;
     private property <bool> browsing;
     private property <int> picked-serial: ConditionChoices.picked-serial;
     /// Unknown until the first status counts as available.
     private property <bool> detection-available: AppState.game-window-availability.id != "capability-unavailable"
         && AppState.game-window-availability.id != "capability-unsupported";
     changed picked-serial => {
-        if root.picking && ConditionChoices.picked != "" {
-            root.value = ConditionChoices.add(root.value, ConditionChoices.picked);
+        if root.picking {
+            root.value = ConditionChoices.add(root.value, root.picking-title ? (ConditionChoices.picked-title == "" ? "" : ConditionChoices.make-pattern(ConditionChoices.picked-title, true)) : ConditionChoices.picked);
         }
         root.picking = false;
     }
-    spacing: 6px;
+    spacing: 12px;
     HorizontalLayout { spacing: 6px; alignment: start;
-        Text { text: @tr("Applications"); color: Theme.text; vertical-alignment: center; }
+        Text { text: root.label; color: Theme.text; vertical-alignment: center; }
         InfoTip { text: @tr("An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions."); }
     }
+    Text { text: root.exclusion ? @tr("A match blocks the rule, even if the window is in the allowed list.") : @tr("Any match allows the rule. An empty list allows all windows."); color: Theme.muted; wrap: word-wrap; }
     if !root.detection-available: Text {
         text: @tr("Active window detection is unavailable in this session, so application conditions do not match.");
         color: Theme.warning; wrap: word-wrap;
@@ -104,7 +113,7 @@ export component ApplicationsField inherits VerticalLayout {
     }
     HorizontalLayout { spacing: 6px;
         SelectField {
-            model: [@tr("Application"), @tr("Window title")];
+            model: [@tr("App ID / process"), @tr("Window title")];
             current-index: root.by-title ? 1 : 0;
             selected => { root.by-title = self.current-index == 1; }
         }
@@ -116,7 +125,7 @@ export component ApplicationsField inherits VerticalLayout {
         }
         IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add"); enabled: root.draft != ""; clicked => { root.value = ConditionChoices.add(root.value, ConditionChoices.make-pattern(root.draft, root.by-title)); root.draft = ""; } }
     }
-    HorizontalLayout { spacing: 6px; alignment: start;
+    VerticalLayout { spacing: 8px;
         Button {
             text: root.browsing ? @tr("Hide open windows") : @tr("Choose from open windows");
             enabled: root.detection-available;
@@ -126,16 +135,23 @@ export component ApplicationsField inherits VerticalLayout {
             }
         }
         Button {
-            text: root.picking && ConditionChoices.pick-countdown > 0 ? @tr("Switch to the window… {}", ConditionChoices.pick-countdown) : @tr("Take from the active window");
+            text: root.picking && ConditionChoices.pick-countdown > 0 ? @tr("Switch to the window… {}", ConditionChoices.pick-countdown) : @tr("Choose a window in 3 seconds");
             enabled: ConditionChoices.pick-countdown == 0 && root.detection-available;
-            clicked => { root.picking = true; ConditionChoices.pick-active-window(); }
+            clicked => { root.picking-title = root.by-title; root.picking = true; ConditionChoices.pick-active-window(); }
         }
     }
+    Button {
+        text: @tr("Use the last active window");
+        enabled: root.detection-available && (root.by-title ? ConditionChoices.active-title != "" : ConditionChoices.active-pattern != "");
+        clicked => { root.value = ConditionChoices.add(root.value, root.by-title ? ConditionChoices.make-pattern(ConditionChoices.active-title, true) : ConditionChoices.active-pattern); }
+    }
+    if root.by-title && ConditionChoices.active-title == "": Text { text: @tr("The last window title is unavailable. Choose from open windows or switch to a window during the countdown."); color: Theme.muted; wrap: word-wrap; }
     if root.browsing: OpenWindowsList {
+        by-title: root.by-title;
         chosen(pattern) => { root.value = ConditionChoices.add(root.value, pattern); }
     }
     if ConditionChoices.active-window != "": Text {
-        text: @tr("Active now: {}", ConditionChoices.active-window);
+        text: @tr("Last active window: {}", ConditionChoices.active-window);
         color: Theme.muted; font-size: 12px; wrap: word-wrap;
     }
 }
@@ -145,24 +161,30 @@ export component ConditionsForm inherits VerticalLayout {
     in-out property <string> languages;
     in-out property <string> applications;
     in property <bool> show-applications: true;
-    spacing: 8px;
-    Text { text: @tr("Game mode"); color: Theme.text; }
-    HorizontalLayout { spacing: 12px; alignment: start;
-        CheckBox { text: @tr("Does not matter"); checked: root.game == GameCondition.any; toggled => { root.game = GameCondition.any; } }
-        CheckBox { text: @tr("Game mode on"); checked: root.game == GameCondition.on; toggled => { root.game = self.checked ? GameCondition.on : GameCondition.any; } }
-        CheckBox { text: @tr("Game mode off"); checked: root.game == GameCondition.off; toggled => { root.game = self.checked ? GameCondition.off : GameCondition.any; } }
+    spacing: 24px;
+    VerticalLayout { spacing: 10px;
+        Text { text: @tr("Game mode"); color: Theme.text; }
+        RadioGroup {
+            orientation: vertical;
+            selected(value) => { root.game = value == @tr("Game mode on") ? GameCondition.on : value == @tr("Game mode off") ? GameCondition.off : GameCondition.any; }
+            RadioButton { text: @tr("Does not matter"); checked: root.game == GameCondition.any; }
+            RadioButton { text: @tr("Game mode on"); checked: root.game == GameCondition.on; }
+            RadioButton { text: @tr("Game mode off"); checked: root.game == GameCondition.off; }
+        }
     }
-    Text { text: @tr("System languages"); color: Theme.text; }
-    for language in ConditionChoices.languages: CheckBox {
-        text: language.label;
-        checked: ConditionChoices.contains(root.languages, language.code);
-        toggled => { root.languages = ConditionChoices.toggle(root.languages, language.code, self.checked); }
-    }
-    if ConditionChoices.languages.length == 0: Text { text: @tr("No system languages detected"); color: Theme.muted; wrap: word-wrap; }
-    for code in ConditionChoices.unknown-languages(root.languages, ConditionChoices.languages): CheckBox {
-        text: code;
-        checked: ConditionChoices.contains(root.languages, code);
-        toggled => { root.languages = ConditionChoices.toggle(root.languages, code, self.checked); }
+    VerticalLayout { spacing: 10px;
+        Text { text: @tr("System languages"); color: Theme.text; }
+        for language in ConditionChoices.languages: CheckBox {
+            text: language.label;
+            checked: ConditionChoices.contains(root.languages, language.code);
+            toggled => { root.languages = ConditionChoices.toggle(root.languages, language.code, self.checked); }
+        }
+        if ConditionChoices.languages.length == 0: Text { text: @tr("No system languages detected"); color: Theme.muted; wrap: word-wrap; }
+        for code in ConditionChoices.unknown-languages(root.languages, ConditionChoices.languages): CheckBox {
+            text: code;
+            checked: ConditionChoices.contains(root.languages, code);
+            toggled => { root.languages = ConditionChoices.toggle(root.languages, code, self.checked); }
+        }
     }
     if root.show-applications: ApplicationsField { value <=> root.applications; }
 }

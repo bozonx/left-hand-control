@@ -19,6 +19,9 @@ export enum RuleDialog { none, key, layer, tap, hold, long-hold, double-tap, con
 /// Rule property changed in place (without a dialog).
 export enum RuleField { enabled, hold-mode, swallow-tap, swallow-hold, isolate, hold-for }
 
+/// What key caps on the layers page show: the US-layout label or the internal key code.
+export enum LabelMode { label, code }
+
 /// Dialog of the layers page.
 export enum LayerDialog { none, create, rename, duplicate, delete, edit-key, extra-key }
 

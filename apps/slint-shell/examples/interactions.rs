@@ -151,13 +151,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })?
         .value;
     ui.global::<LayersEditor>().invoke_choose(1);
-    ui.global::<LayersEditor>().invoke_set_label_mode(2);
+    ui.global::<LayersEditor>().set_label_mode(LabelMode::Code);
     let reloaded = Document::load(paths.clone())?;
     let second_ui = SettingsWindow::new()?;
     bind_document(&second_ui, &reloaded);
     assert!(reloaded.read().layout().layers.is_empty());
     assert_eq!(second_ui.global::<LayersEditor>().get_selected(), -1);
-    assert_eq!(second_ui.global::<LayersEditor>().get_label_mode(), 0);
+    assert_eq!(
+        second_ui.global::<LayersEditor>().get_label_mode(),
+        LabelMode::Label
+    );
     ui.global::<LayersEditor>().invoke_reorder(0, 1);
     assert_eq!(ui.global::<LayersEditor>().get_selected(), 0);
     assert_eq!(document.read().layout().layers[0].id, second);
@@ -595,10 +598,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 rules.invoke_choose(id.into());
             }
             24 => { snapshot(&ui, "rules-layer"); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Advanced); }
-            25 => { snapshot(&ui, "rules-layer-advanced"); ui.global::<RulesEditor>().set_dialog(RuleDialog::None); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_tab(2); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
+            25 => { snapshot(&ui, "rules-layer-advanced"); ui.global::<RulesEditor>().set_dialog(RuleDialog::None); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Conditions); }
             26 => {
+                snapshot(&ui, "rules-conditions");
+                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(700.0, 450.0), delta_x: 0.0, delta_y: -700.0 });
+            }
+            27 => {
+                snapshot(&ui, "rules-conditions-exclusions");
+                ui.global::<RulesEditor>().set_dialog(RuleDialog::None);
+                ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
+                ui.global::<SettingsEditor>().set_tab(2);
+                ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
+            }
+            28 => {
                 snapshot(&ui, "settings-behavior");
-                let position = slint::LogicalPosition::new(560.0, 464.0);
+                let position = slint::LogicalPosition::new(560.0, 499.0);
                 let wheel = |delta_y| ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
                 let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<f64>().unwrap();
                 // Scroll the long-hold field into view, then move to focus it: Flickable

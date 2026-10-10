@@ -112,10 +112,7 @@ fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
         .map(|layer| layer.id.clone());
     let editor = ui.global::<LayersEditor>();
     editor.set_selected(index);
-    editor.set_selected_id(id.clone().unwrap_or_default().into());
-    if let Some(id) = id {
-        document.update_ui_state(Some(&id), None);
-    }
+    editor.set_selected_id(id.unwrap_or_default().into());
     refresh(ui, document);
 }
 
@@ -507,8 +504,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 config.reorder_extra_keys(&id, keys, from, to)
             });
         });
-    ui.global::<LayersEditor>()
-        .set_selected_id(document.selected_layer_id().into());
     refresh(ui, document);
     let weak = ui.as_weak();
     document.subscribe(View::Layers, move |document| {
@@ -578,17 +573,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             });
         }
     });
-    editor.set_label_mode(document.label_mode());
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_set_label_mode(move |mode| {
-        if let Some(ui) = weak.upgrade() {
-            let editor = ui.global::<LayersEditor>();
-            doc.update_ui_state(None, Some(mode));
-            editor.set_label_mode(mode);
-        }
-    });
-
     let weak = ui.as_weak();
     let doc = document.clone();
     editor.on_refresh(move || {

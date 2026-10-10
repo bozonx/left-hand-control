@@ -356,10 +356,9 @@ export component RuleDialogOverlay inherits FocusScope {
                     color: Theme.text; font-size: 22px; font-weight: 700;
                 }
                 if RulesEditor.dialog == RuleDialog.conditions: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                    VerticalLayout { spacing: 12px;
+                    VerticalLayout { spacing: 24px;
                         ConditionsForm { game <=> RulesEditor.game-mode; languages <=> RulesEditor.layouts; applications <=> RulesEditor.apps-include; }
-                        Text { text: @tr("Do not use when"); color: Theme.text; }
-                        ApplicationsField { value <=> RulesEditor.apps-exclude; }
+                        ApplicationsField { exclusion: true; label: @tr("Do not apply in windows"); value <=> RulesEditor.apps-exclude; }
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
