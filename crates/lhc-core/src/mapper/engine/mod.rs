@@ -815,6 +815,7 @@ impl Engine {
         let matching = self
             .chord_rules
             .iter()
+            .rev()
             .filter(|(keys, rule)| {
                 keys.contains(&key)
                     && keys.iter().all(|member| {
@@ -2442,6 +2443,33 @@ mod tests {
             [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_B
         ));
         crate::runtime_state::set_active_window(None);
+    }
+
+    #[test]
+    fn duplicate_chords_use_first_matching_rule() {
+        let mut cfg = empty_cfg();
+        let mut first = tap_hold_rule(
+            "ControlLeft+KeyQ",
+            ActionSpec::Action("KeyA".into()),
+            ActionSpec::Native,
+        );
+        first.condition_game_mode = Some(GameModeCondition::Ignore);
+        let second = tap_hold_rule(
+            "KeyQ+ControlLeft",
+            ActionSpec::Action("KeyB".into()),
+            ActionSpec::Native,
+        );
+        cfg.rules = vec![first, second];
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+        engine.handle(Key::KEY_LEFTCTRL, true, now, &mut out);
+        engine.handle(Key::KEY_Q, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(Key::KEY_Q, false, now + Duration::from_millis(20), &mut out);
+        assert!(out.iter().any(|event| matches!(event,
+            Out::Stroke { ks, .. } if ks.key == Key::KEY_A)));
+        assert!(!out.iter().any(|event| matches!(event,
+            Out::Stroke { ks, .. } if ks.key == Key::KEY_B)));
     }
 
     #[test]

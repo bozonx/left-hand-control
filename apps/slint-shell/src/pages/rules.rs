@@ -220,7 +220,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
 fn report<T>(ui: &SettingsWindow, document: &Document, saved: &Saved<T>, ok: Msg) -> Msg {
     let issue = diagnostics::analyze_rules(&document.read().config())
         .into_iter()
-        .next();
+        .max_by_key(|issue| issue.code.is_error());
     let message = match (&saved.runtime, issue) {
         (Err(_), _) => saved.message(ok),
         (Ok(()), Some(issue)) => Msg::Rule(issue),

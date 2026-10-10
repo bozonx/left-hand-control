@@ -2144,3 +2144,27 @@ msgstr "Используется макросами без собственно�
 
 msgid "Used by macros without their own value. How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of one step."
 msgstr "Используется макросами без собственного значения. Сколько ждать между нажатием модификаторов (Shift, Ctrl, …) и основной клавиши в одном шаге."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "Правило без триггера сохранено как черновик и будет пропущено."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "Триггер «{}» нельзя использовать в правиле."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr "Условия правил с триггером «{}» могут пересекаться; сработает первое подходящее правило."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr "Правило с триггером «{}» перекрыто предыдущим правилом и не сработает."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "Правило «{}» ссылается на слой, которого больше нет."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "В правиле «{}» некорректное действие при нажатии."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "В правиле «{}» некорректное действие при удержании."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "В правиле «{}» некорректное действие при двойном нажатии."

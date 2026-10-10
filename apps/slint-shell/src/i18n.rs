@@ -387,6 +387,7 @@ impl Msg {
                     RuleIssueCode::MissingTrigger => "rule-missing-trigger",
                     RuleIssueCode::InvalidTrigger => "rule-invalid-trigger",
                     RuleIssueCode::DuplicateTrigger => "rule-duplicate-trigger",
+                    RuleIssueCode::ShadowedTrigger => "rule-shadowed-trigger",
                     RuleIssueCode::UnknownLayer => "rule-unknown-layer",
                     RuleIssueCode::InvalidTapAction => "rule-invalid-tap",
                     RuleIssueCode::InvalidHoldAction => "rule-invalid-hold",

@@ -19,7 +19,10 @@ fn policy(message: &Message, backend: bool) -> Option<(ToastKind, Duration)> {
         "layout-created" | "layout-saved" | "layout-deleted" | "layout-activated"
         | "layout-discarded" | "command-completed" => (ToastKind::Success, 3),
         "mapper-running" | "mapper-stopped" if message.arg.is_empty() => (ToastKind::Success, 3),
-        "config-external-change"
+        "rule-duplicate-trigger"
+        | "rule-shadowed-trigger"
+        | "rule-missing-trigger"
+        | "config-external-change"
         | "library-changed"
         | "worker-restarting"
         | "commands-disabled"

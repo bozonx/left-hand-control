@@ -1177,18 +1177,33 @@ mod tests {
     fn blocking_rule_issues_refuse_runtime_config() {
         let (_dir, document) = document(
             json!({"version": 1, "settings": {}}),
-            "rules:\n  - key: KeyA\n    tap: KeyB\n  - key: KeyA\n    tap: KeyC\n",
+            "rules:\n  - key: UnknownKey\n    tap: KeyB\n",
         );
         match document.runtime_config(&AutoSwitchContext::default()) {
             Err(ConfigError::Rules(issues)) => {
                 assert!(
                     issues
                         .iter()
-                        .all(|issue| issue.code == RuleIssueCode::DuplicateTrigger)
+                        .all(|issue| issue.code == RuleIssueCode::InvalidTrigger)
                 )
             }
             other => panic!("unexpected {other:?}"),
         }
+    }
+
+    #[test]
+    fn repeated_triggers_keep_both_rules_in_runtime_order() {
+        let (_dir, document) = document(
+            json!({"version": 1, "settings": {}}),
+            "rules:\n  - key: KeyA\n    tap: KeyB\n  - key: KeyA\n    tap: KeyC\n",
+        );
+        let runtime = document
+            .runtime_config(&AutoSwitchContext::default())
+            .unwrap();
+        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        assert_eq!(value["rules"].as_array().unwrap().len(), 2);
+        assert_eq!(value["rules"][0]["tapAction"], "KeyB");
+        assert_eq!(value["rules"][1]["tapAction"], "KeyC");
     }
 
     #[test]
