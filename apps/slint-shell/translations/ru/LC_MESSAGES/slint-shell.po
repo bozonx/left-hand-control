@@ -190,8 +190,8 @@ msgstr "Поведение клавиш"
 msgid "Tap decision"
 msgstr "Распознавание нажатия"
 
-msgid "Permissive hold"
-msgstr "Удержание при сочетании"
+msgid "Permissive hold (recommended)"
+msgstr "Удержание после отпускания (рекомендуется)"
 
 msgid "Hold on other key press"
 msgstr "Удержание при нажатии другой клавиши"
@@ -200,7 +200,7 @@ msgid "Hold timeout (ms)"
 msgstr "Задержка удержания (мс)"
 
 msgid "Double tap timeout (ms)"
-msgstr "Задержка двойного нажатия (мс)"
+msgstr "Окно двойного нажатия (мс)"
 
 msgid "Macro step pause (ms)"
 msgstr "Пауза между шагами макроса (мс)"
@@ -1449,11 +1449,11 @@ msgstr "E-ink"
 msgid "Enter device path manually"
 msgstr "Ввести путь устройства вручную"
 
-msgid "Hold after another key is pressed and released; otherwise tap."
-msgstr "Удержание после нажатия и отпускания другой клавиши; иначе — нажатие."
+msgid "Hold only when another key is pressed and released before this one, or the hold timeout expires. Fast key rolls while typing stay taps."
+msgstr "Удержание, только если другая клавиша нажата и отпущена раньше этой или истекло время удержания. Быстрые переборы клавиш при печати остаются нажатиями."
 
-msgid "Hold as soon as another key is pressed."
-msgstr "Удержание сразу при нажатии другой клавиши."
+msgid "Hold as soon as another key is pressed. Reacts faster, but fast typing can trigger the hold by mistake."
+msgstr "Удержание сразу при нажатии другой клавиши. Реагирует быстрее, но при быстрой печати удержание может сработать по ошибке."
 
 msgid "Time before a key press becomes a hold."
 msgstr "Время до перехода нажатия в удержание."
@@ -1726,7 +1726,7 @@ msgid "Hold another key / combination"
 msgstr "Удерживать другую клавишу / сочетание"
 
 msgid "Long-hold duration (seconds)"
-msgstr "Длительность удержания для действия (секунды)"
+msgstr "Время до действия после удержания (секунды)"
 
 msgid "Default delay before a rule runs its long-hold action once. Each rule can override it in advanced options."
 msgstr "Задержка перед однократным выполнением действия после удержания. В дополнительных параметрах правила можно задать своё значение."
@@ -2120,3 +2120,27 @@ msgstr "Заголовок окна"
 
 msgid "Window title contains: {}"
 msgstr "Заголовок окна содержит: {}"
+
+msgid "Defaults for all rules and macros. Each rule or macro can override them in its own settings."
+msgstr "Значения по умолчанию для всех правил и макросов. Каждое правило или макрос может переопределить их в своих настройках."
+
+msgid "Decides what a rule key does when another key is pressed while it is held: stay a tap or switch to hold."
+msgstr "Определяет, что делает клавиша правила, если во время её удержания нажата другая клавиша: остаётся нажатием или переходит в удержание."
+
+msgid "Timing"
+msgstr "Тайминги"
+
+msgid "Used by rules without their own value. Release the key earlier to run the tap action; hold it longer to switch to the hold behavior."
+msgstr "Используется правилами без собственного значения. Отпустите клавишу раньше, чтобы выполнить действие нажатия; держите дольше, чтобы включить удержание."
+
+msgid "Holding a key this long runs its long-hold action."
+msgstr "Если держать клавишу так долго, выполнится действие после удержания."
+
+msgid "Used by rules without their own value. A second press within this window after the first release counts as a double tap. When a rule has a double-tap action, a single tap waits for this window before it runs."
+msgstr "Используется правилами без собственного значения. Второе нажатие в пределах этого окна после первого отпускания считается двойным. Если у правила есть действие двойного нажатия, одиночное нажатие выполняется только после окончания окна."
+
+msgid "Used by macros without their own value."
+msgstr "Используется макросами без собственного значения."
+
+msgid "Used by macros without their own value. How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr "Используется макросами без собственного значения. Сколько ждать между нажатием модификаторов (Shift, Ctrl, …) и основной клавиши в одном шаге."

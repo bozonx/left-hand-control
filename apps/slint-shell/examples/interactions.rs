@@ -595,12 +595,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             24 => { snapshot(&ui, "rules-layer"); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Advanced); }
             25 => { snapshot(&ui, "rules-layer-advanced"); ui.global::<RulesEditor>().set_dialog(RuleDialog::None); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_tab(2); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
             26 => {
-                let position = slint::LogicalPosition::new(250.0, 616.0);
+                snapshot(&ui, "settings-behavior");
+                let position = slint::LogicalPosition::new(560.0, 464.0);
                 let wheel = |delta_y| ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
                 let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<f64>().unwrap();
-                // Move to focus the field after scrolling the page: Flickable keeps
-                // consecutive wheel events at one position in the same gesture.
-                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(280.0, 616.0), delta_x: 0.0, delta_y: 60.0 });
+                // Scroll the long-hold field into view, then move to focus it: Flickable
+                // keeps consecutive wheel events at one position in the same gesture.
+                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(250.0, 450.0), delta_x: 0.0, delta_y: -240.0 });
+                snapshot(&ui, "settings-behavior-timing");
                 assert!((duration() - 2.5).abs() < 0.0001);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 wheel(60.0);

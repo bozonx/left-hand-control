@@ -107,6 +107,28 @@ component Section inherits Rectangle {
     }
 }
 
+/// Labelled setting with an info tooltip, a control and a short hint below.
+component BehaviorField inherits VerticalLayout {
+    in property <string> label;
+    in property <string> info;
+    in property <string> hint;
+    width: 280px;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    spacing: 8px;
+    alignment: start;
+    FormLabel { text: root.label; info: root.info; }
+    @children
+    if root.hint != "": Text { vertical-stretch: 0; text: root.hint; color: Theme.muted; wrap: word-wrap; }
+}
+
+component SubsectionTitle inherits Text {
+    vertical-stretch: 0;
+    color: Theme.text;
+    font-size: 14px;
+    font-weight: 600;
+}
+
 export component SettingsPage inherits VerticalBox {
     padding: 0px;
     spacing: 10px;
@@ -294,37 +316,48 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == 2: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                 if SettingsEditor.tab == 2: Section {
                     title: @tr("Key behavior");
+                    Text { vertical-stretch: 0; text: @tr("Defaults for all rules and macros. Each rule or macro can override them in its own settings."); color: Theme.muted; wrap: word-wrap; }
                     VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Tap decision"); color: Theme.text; vertical-alignment: center; }
-                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Permissive hold"), @tr("Hold on other key press")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
-                        Text { vertical-stretch: 0; text: SettingsEditor.tap-decision-index == 0 ? @tr("Hold after another key is pressed and released; otherwise tap.") : @tr("Hold as soon as another key is pressed."); color: Theme.muted; wrap: word-wrap; }
+                        FormLabel { text: @tr("Tap decision"); info: @tr("Decides what a rule key does when another key is pressed while it is held: stay a tap or switch to hold."); }
+                        SelectField { width: 360px; height: 32px; vertical-stretch: 0; model: [@tr("Permissive hold (recommended)"), @tr("Hold on other key press")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
+                        Text { vertical-stretch: 0; max-width: 576px; text: SettingsEditor.tap-decision-index == 0 ? @tr("Hold only when another key is pressed and released before this one, or the hold timeout expires. Fast key rolls while typing stay taps.") : @tr("Hold as soon as another key is pressed. Reacts faster, but fast typing can trigger the hold by mistake."); color: Theme.muted; wrap: word-wrap; }
                     }
-                    VerticalLayout { vertical-stretch: 0; spacing: 8px;
-                        FormLabel { text: @tr("Long-hold duration (seconds)"); info: @tr("Default delay before a rule runs its long-hold action once. Each rule can override it in advanced options."); }
-                        NumericField { minimum: 0; maximum: 2147483; step-size: 0.1; fractional: true; value: SettingsEditor.long-hold-timeout.to-float(); edited(value) => { SettingsEditor.long-hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                    SubsectionTitle { text: @tr("Timing"); }
+                    HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
+                        BehaviorField {
+                            label: @tr("Hold timeout (ms)");
+                            info: @tr("Used by rules without their own value. Release the key earlier to run the tap action; hold it longer to switch to the hold behavior.");
+                            hint: @tr("Time before a key press becomes a hold.");
+                            NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.hold-timeout.to-float(); edited(value) => { SettingsEditor.hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        }
+                        BehaviorField {
+                            label: @tr("Long-hold duration (seconds)");
+                            info: @tr("Default delay before a rule runs its long-hold action once. Each rule can override it in advanced options.");
+                            hint: @tr("Holding a key this long runs its long-hold action.");
+                            NumericField { minimum: 0; maximum: 2147483; step-size: 0.1; fractional: true; value: SettingsEditor.long-hold-timeout.to-float(); edited(value) => { SettingsEditor.long-hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
+                        }
                     }
                     HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
-                        VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Hold timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.hold-timeout.to-float(); edited(value) => { SettingsEditor.hold-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
-                        Text { vertical-stretch: 0; text: @tr("Time before a key press becomes a hold."); color: Theme.muted; wrap: word-wrap; }
-                        }
-                        VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Double tap timeout (ms)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.double-tap-timeout.to-float(); edited(value) => { SettingsEditor.double-tap-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
-                        Text { vertical-stretch: 0; text: @tr("Maximum interval between two taps."); color: Theme.muted; wrap: word-wrap; }
+                        BehaviorField {
+                            label: @tr("Double tap timeout (ms)");
+                            info: @tr("Used by rules without their own value. A second press within this window after the first release counts as a double tap. When a rule has a double-tap action, a single tap waits for this window before it runs.");
+                            hint: @tr("Maximum interval between two taps.");
+                            NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.double-tap-timeout.to-float(); edited(value) => { SettingsEditor.double-tap-timeout = "" + self.value; SettingsEditor.schedule-save(); } }
                         }
                     }
+                    SubsectionTitle { text: @tr("Macros"); }
                     HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
-                        VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Macro step pause (ms)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.macro-pause.to-float(); edited(value) => { SettingsEditor.macro-pause = "" + self.value; SettingsEditor.schedule-save(); } }
-                        Text { vertical-stretch: 0; text: @tr("Default pause between macro steps."); color: Theme.muted; wrap: word-wrap; }
+                        BehaviorField {
+                            label: @tr("Macro step pause (ms)");
+                            info: @tr("Used by macros without their own value.");
+                            hint: @tr("Default pause between macro steps.");
+                            NumericField { minimum: 0; maximum: 2147483647; step-size: 10; value: SettingsEditor.macro-pause.to-float(); edited(value) => { SettingsEditor.macro-pause = "" + self.value; SettingsEditor.schedule-save(); } }
                         }
-                        VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Modifier delay (ms)"); color: Theme.text; vertical-alignment: center; }
-                        NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.modifier-delay.to-float(); edited(value) => { SettingsEditor.modifier-delay = "" + self.value; SettingsEditor.schedule-save(); } }
-                        Text { vertical-stretch: 0; text: @tr("Delay after pressing macro modifiers."); color: Theme.muted; wrap: word-wrap; }
+                        BehaviorField {
+                            label: @tr("Modifier delay (ms)");
+                            info: @tr("Used by macros without their own value. How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of one step.");
+                            hint: @tr("Delay after pressing macro modifiers.");
+                            NumericField { minimum: 0; maximum: 2147483647; value: SettingsEditor.modifier-delay.to-float(); edited(value) => { SettingsEditor.modifier-delay = "" + self.value; SettingsEditor.schedule-save(); } }
                         }
                     }
                 }
