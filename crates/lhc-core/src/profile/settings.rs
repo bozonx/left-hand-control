@@ -141,6 +141,7 @@ fn auto_rule((index, value): (usize, &Value)) -> Option<AutoRule> {
         layout_id: str_of(value, "layoutId")
             .filter(|id| !id.is_empty())
             .map(str::to_owned),
+        enabled: value.get("enabled") != Some(&Value::Bool(false)),
         conditions: condition_set(&Value::Object(value.clone())).unwrap_or_default(),
     })
 }
@@ -173,6 +174,7 @@ fn migrate_layout_conditions(
         if let Some(blacklist) = rule.get("blacklist").and_then(condition_set) {
             rules.push(AutoRule {
                 id: format!("rule-{}", rules.len()),
+                enabled: true,
                 layout_id: None,
                 conditions: blacklist,
             });
@@ -180,6 +182,7 @@ fn migrate_layout_conditions(
         match rule.get("whitelist").and_then(condition_set) {
             Some(whitelist) => rules.push(AutoRule {
                 id: format!("rule-{}", rules.len()),
+                enabled: true,
                 layout_id: Some(id.clone()),
                 conditions: whitelist,
             }),
@@ -284,7 +287,7 @@ mod tests {
         let settings = from_value(Some(&json!({
             "autoRules": [
                 {"id": "a", "layoutId": "user:A", "apps": ["blender"], "layouts": [""]},
-                {"layoutId": null, "gameMode": "maybe"},
+                {"layoutId": null, "gameMode": "maybe", "enabled": false},
                 3,
             ],
             "autoDefaultLayoutId": "user:B",
@@ -295,6 +298,8 @@ mod tests {
         assert!(settings.auto_rules[0].conditions.layouts.is_empty());
         assert_eq!(settings.auto_rules[1].id, "rule-1");
         assert_eq!(settings.auto_rules[1].layout_id, None);
+        assert!(settings.auto_rules[0].enabled);
+        assert!(!settings.auto_rules[1].enabled);
         assert!(settings.auto_rules[1].conditions.is_empty());
         assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:B"));
     }

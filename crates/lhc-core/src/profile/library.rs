@@ -338,6 +338,7 @@ mod tests {
                 settings.layout_order = vec!["user:A".into(), "user:B".into()];
                 settings.auto_rules = vec![AutoRule {
                     id: "r".into(),
+                    enabled: true,
                     layout_id: Some("user:B".into()),
                     conditions: LayoutConditionSet::default(),
                 }];
@@ -411,6 +412,7 @@ mod tests {
                 settings.auto_rules = vec![
                     AutoRule {
                         id: "games".into(),
+                        enabled: true,
                         layout_id: None,
                         conditions: LayoutConditionSet {
                             game_mode: Some("on".into()),
@@ -419,6 +421,7 @@ mod tests {
                     },
                     AutoRule {
                         id: "editor".into(),
+                        enabled: true,
                         layout_id: Some("user:Editor".into()),
                         conditions: LayoutConditionSet {
                             game_mode: None,

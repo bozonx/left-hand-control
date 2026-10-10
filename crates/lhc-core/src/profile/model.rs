@@ -308,6 +308,10 @@ impl LayoutConditionSet {
     }
 }
 
+fn is_true(value: &bool) -> bool {
+    *value
+}
+
 /// One automatic-mode rule: when `conditions` match, `layout_id` is used.
 /// Rules are checked in order and the first match wins.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -316,6 +320,9 @@ pub struct AutoRule {
     pub id: String,
     /// `None` turns the mapper off (native passthrough).
     pub layout_id: Option<String>,
+    /// A disabled rule is kept but never matches.
+    #[serde(skip_serializing_if = "is_true")]
+    pub enabled: bool,
     /// Empty conditions always match.
     #[serde(flatten)]
     pub conditions: LayoutConditionSet,

@@ -49,6 +49,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(paths.load_user_layout("B").is_err());
     assert!(paths.load_user_layout("Профиль")?.contains("Описание"));
     assert_eq!(library.get_current_label(), "Профиль");
+    // Entering auto mode without rules keeps the single-mode layout.
+    library.invoke_set_automatic(true);
+    assert_eq!(
+        document.read().settings().auto_default_layout_id.as_deref(),
+        Some("user:A")
+    );
+    assert_eq!(library.get_auto_default(), 0);
+    assert_eq!(library.invoke_new_rule_target(), 0);
+    library.invoke_set_automatic(false);
     // "Профиль" is the second row: a rule for it, then an "off" rule above it.
     library.invoke_open_rule(-1, 1);
     assert_eq!(library.get_dialog(), LibraryDialog::Rule);
@@ -81,6 +90,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_open_rule(1, 1);
     assert_eq!(library.get_rule_apps(), "kate, terminal");
     library.invoke_delete_rule(0);
+    assert_eq!(library.get_auto_rules().row_count(), 1);
+    // A game-mode rule, then a narrower one it always shadows.
+    library.invoke_add_game_rule();
+    library.invoke_open_rule(-1, -1);
+    library.set_rule_game(GameCondition::On);
+    library.set_rule_apps("kate".into());
+    library.invoke_save_rule();
+    let rules = library.get_auto_rules();
+    assert_eq!(rules.row_count(), 3);
+    assert_eq!(rules.row_data(1).unwrap().shadowed_by, -1);
+    assert_eq!(rules.row_data(2).unwrap().shadowed_by, 1);
+    library.invoke_set_rule_enabled(1, false);
+    assert!(!document.read().settings().auto_rules[1].enabled);
+    let rules = library.get_auto_rules();
+    assert!(!rules.row_data(1).unwrap().enabled);
+    assert_eq!(rules.row_data(2).unwrap().shadowed_by, -1);
+    library.invoke_delete_rule(2);
+    library.invoke_delete_rule(1);
     assert_eq!(library.get_auto_rules().row_count(), 1);
     library.invoke_select(1);
     library.invoke_action(LibraryAction::MoveUp);

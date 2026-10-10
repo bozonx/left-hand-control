@@ -9,8 +9,10 @@ import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, Palette, TextEdit,
 
 export struct LayoutSummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
 
-/// One automatic-mode rule. `target` indexes `names`; -1 means off.
-export struct AutoRuleView { game: GameCondition, list: string, target: int, missing: bool, shadows: bool }
+/// One automatic-mode rule. `target` indexes `names`; -1 means no layout.
+/// `shadowed-by` is the earlier rule that always matches first, or -1;
+/// `unknown-languages` lists languages the system does not have.
+export struct AutoRuleView { game: GameCondition, list: string, target: int, missing: bool, enabled: bool, shadowed-by: int, unknown-languages: string }
 
 /// The layout library and the working copy being edited.
 export global LayoutLibrary {
@@ -24,6 +26,10 @@ export global LayoutLibrary {
     in property <bool> auto-default-missing;
     in property <int> auto-matched: -1;
     in property <[int]> rule-counts;
+    /// Game mode detection works, so game-mode conditions can match.
+    in property <bool> game-detection: true;
+    /// Layout whose rules are highlighted in the rules panel, or -1.
+    in-out property <int> highlight-target: -1;
     in-out property <int> selected: -1;
     in property <Message> status;
     in-out property <bool> automatic;
@@ -86,6 +92,9 @@ export global LayoutLibrary {
     callback delete-rule(int);
     callback move-rule(int, int);
     callback set-auto-default(int);
+    callback set-rule-enabled(int, bool);
+    /// Add the ready-made rule "no layout while game mode is on".
+    callback add-game-rule();
 
     pure function create-base(source: LayoutSource) -> string {
         if source == LayoutSource.author { return @tr("Ivan K layout"); }
@@ -143,6 +152,10 @@ export global LayoutLibrary {
         ConditionChoices.refresh();
         self.load-rule(index, target);
     }
+    /// Layout a new rule starts with: the default, else the first layout.
+    public pure function new-rule-target() -> int {
+        return self.auto-default >= 0 ? self.auto-default : self.names.length > 0 ? 0 : -1;
+    }
     pure function game-text(game: GameCondition) -> string {
         return game == GameCondition.on ? @tr("game mode on") : game == GameCondition.off ? @tr("game mode off") : "";
     }
@@ -151,7 +164,7 @@ export global LayoutLibrary {
         return self.game-text(game) != "" && list != "" ? self.game-text(game) + " · " + list : self.game-text(game) + list;
     }
     public pure function target-text(target: int) -> string {
-        return target >= 0 && target < self.names.length ? self.names[target] : @tr("Turned off");
+        return target >= 0 && target < self.names.length ? self.names[target] : @tr("No layout");
     }
 }
 
@@ -327,7 +340,7 @@ component TargetPicker inherits Rectangle {
         Rectangle {
             background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
             VerticalBox { padding: 4px; spacing: 0px;
-                LayoutMenuItem { text: @tr("Turned off"); clicked => { menu.close(); root.picked(-1); } }
+                LayoutMenuItem { text: @tr("No layout (keys as is)"); clicked => { menu.close(); root.picked(-1); } }
                 Rectangle { height: 1px; background: Theme.divider; }
                 for name[index] in LayoutLibrary.names: LayoutMenuItem { text: name; clicked => { menu.close(); root.picked(index); } }
             }
@@ -340,19 +353,23 @@ component AutoRuleRow inherits Rectangle {
     in property <int> index;
     in property <int> count;
     in property <bool> matched;
+    property <bool> highlighted: LayoutLibrary.highlight-target >= 0 && LayoutLibrary.highlight-target == root.rule.target;
     border-radius: 6px;
-    border-width: 1px;
-    border-color: root.matched ? Theme.accent : Theme.divider;
+    border-width: root.highlighted ? 2px : 1px;
+    border-color: root.matched ? Theme.accent : root.highlighted ? Theme.link : Theme.divider;
     background: root.matched ? Theme.accent.transparentize(0.88) : touch.has-hover ? Theme.hover : transparent;
     height: row.preferred-height;
     accessible-role: button;
     accessible-label: @tr("Rule {}", root.index + 1) + ": " + LayoutLibrary.rule-text(root.rule.game, root.rule.list) + " → " + LayoutLibrary.target-text(root.rule.target);
     accessible-action-default => { LayoutLibrary.open-rule(root.index, root.rule.target); }
     touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.open-rule(root.index, root.rule.target); } }
-    row := HorizontalLayout { padding: 8px; spacing: 8px;
-        Text { text: root.index + 1; color: Theme.muted; width: 16px; horizontal-alignment: right; }
+    row := HorizontalLayout { padding: 8px; spacing: 6px;
+        VerticalLayout { alignment: start;
+            DragHandle { group: 2; index: root.index; count: root.count; dropped(from, to) => { LayoutLibrary.move-rule(from, to); } }
+        }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 2px;
-            Text { text: LayoutLibrary.rule-text(root.rule.game, root.rule.list); color: Theme.text; wrap: word-wrap; }
+            opacity: root.rule.enabled ? 1 : 0.5;
+            Text { text: (root.index + 1) + ". " + LayoutLibrary.rule-text(root.rule.game, root.rule.list); color: Theme.text; wrap: word-wrap; }
             HorizontalLayout { spacing: 4px; alignment: start;
                 Text { text: "→"; color: Theme.muted; }
                 Text {
@@ -362,16 +379,28 @@ component AutoRuleRow inherits Rectangle {
                     overflow: elide;
                 }
             }
-            if root.rule.shadows: Text {
-                text: @tr("Always matches: the rules below never apply.");
+            if root.rule.enabled && root.rule.shadowed-by >= 0: Text {
+                text: @tr("Never applies: rule {} always matches first.", root.rule.shadowed-by + 1);
+                color: Theme.warning; font-size: 12px; wrap: word-wrap;
+            }
+            if root.rule.enabled && root.rule.game != GameCondition.any && !LayoutLibrary.game-detection: Text {
+                text: @tr("Game mode detection is off, so this rule never matches.");
+                color: Theme.warning; font-size: 12px; wrap: word-wrap;
+            }
+            if root.rule.enabled && root.rule.unknown-languages != "": Text {
+                text: @tr("Not among the system languages: {}", root.rule.unknown-languages);
                 color: Theme.warning; font-size: 12px; wrap: word-wrap;
             }
         }
-        VerticalLayout { alignment: start; spacing: 2px;
-            IconButton { size: 24px; icon: @image-url("icons/chevron-up.svg"); label: @tr("Move up"); enabled: root.index > 0; clicked => { LayoutLibrary.move-rule(root.index, root.index - 1); } }
-            IconButton { size: 24px; icon: @image-url("icons/chevron-down.svg"); label: @tr("Move down"); enabled: root.index < root.count - 1; clicked => { LayoutLibrary.move-rule(root.index, root.index + 1); } }
+        VerticalLayout { alignment: start;
+            CheckBox {
+                accessible-label: @tr("Rule enabled");
+                checked: root.rule.enabled;
+                toggled => { LayoutLibrary.set-rule-enabled(root.index, self.checked); }
+            }
         }
     }
+    DropMarker { width: parent.width; group: 2; index: root.index; row-y: root.y; row-height: root.height; }
 }
 
 /// Automatic mode rules shown next to the library.
@@ -384,22 +413,31 @@ component AutoRulesPanel inherits Rectangle {
         HorizontalLayout { spacing: 6px; vertical-stretch: 0;
             Text { text: @tr("Automatic switching"); color: Theme.text; font-size: 16px; font-weight: 600; vertical-alignment: center; }
             VerticalLayout { alignment: center;
-                InfoTip { text: @tr("Rules are checked from top to bottom; the first one whose conditions match chooses the layout. If none matches, the default is used. “Turned off” disables remapping, for example in an application where the layout gets in the way."); }
+                InfoTip { text: @tr("Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."); }
             }
         }
         Text {
             vertical-stretch: 0;
-            text: LayoutLibrary.auto-matched >= 0
-                ? @tr("Now: {} (rule {})", LayoutLibrary.active-label == "" ? @tr("Turned off") : LayoutLibrary.active-label, LayoutLibrary.auto-matched + 1)
-                : @tr("Now: {} (default)", LayoutLibrary.active-label == "" ? @tr("Turned off") : LayoutLibrary.active-label);
+            text: LayoutLibrary.auto-matched >= 0 && LayoutLibrary.auto-matched < LayoutLibrary.auto-rules.length
+                ? @tr("Now: {} (rule {}: {})", LayoutLibrary.active-label == "" ? @tr("No layout") : LayoutLibrary.active-label, LayoutLibrary.auto-matched + 1,
+                    LayoutLibrary.rule-text(LayoutLibrary.auto-rules[LayoutLibrary.auto-matched].game, LayoutLibrary.auto-rules[LayoutLibrary.auto-matched].list))
+                : @tr("Now: {} (default)", LayoutLibrary.active-label == "" ? @tr("No layout") : LayoutLibrary.active-label);
             color: Theme.accent; wrap: word-wrap;
         }
         ScrollView { viewport-width: self.visible-width;
             vertical-stretch: 1;
             VerticalLayout { spacing: 6px; alignment: start;
-                if LayoutLibrary.auto-rules.length == 0: Text {
-                    text: @tr("No rules yet: the default layout is always used.");
-                    color: Theme.muted; wrap: word-wrap;
+                if LayoutLibrary.auto-rules.length == 0: VerticalLayout { spacing: 8px;
+                    Text {
+                        text: @tr("No rules yet: the default layout is always used. Start with a common rule:");
+                        color: Theme.muted; wrap: word-wrap;
+                    }
+                    HorizontalLayout { alignment: start;
+                        Button { text: @tr("No layout in games"); clicked => { LayoutLibrary.add-game-rule(); } }
+                    }
+                    HorizontalLayout { alignment: start;
+                        Button { text: @tr("No layout in an application…"); clicked => { LayoutLibrary.open-rule(-1, -1); } }
+                    }
                 }
                 for rule[index] in LayoutLibrary.auto-rules: AutoRuleRow {
                     rule: rule; index: index; count: LayoutLibrary.auto-rules.length;
@@ -408,7 +446,7 @@ component AutoRulesPanel inherits Rectangle {
             }
         }
         HorizontalLayout { alignment: start; vertical-stretch: 0;
-            Button { text: @tr("Add rule"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-rule(-1, -1); } }
+            Button { text: @tr("Add rule"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-rule(-1, LayoutLibrary.new-rule-target()); } }
         }
         Rectangle { height: 1px; background: Theme.divider; vertical-stretch: 0; }
         Rectangle {
@@ -424,6 +462,10 @@ component AutoRulesPanel inherits Rectangle {
                     target: LayoutLibrary.auto-default;
                     missing: LayoutLibrary.auto-default-missing;
                     picked(index) => { LayoutLibrary.set-auto-default(index); }
+                }
+                if LayoutLibrary.auto-default < 0 && !LayoutLibrary.auto-default-missing: Text {
+                    text: @tr("When no rule matches, the keyboard works without processing.");
+                    color: Theme.muted; font-size: 12px; wrap: word-wrap;
                 }
             }
         }
@@ -504,9 +546,19 @@ export component LibraryPage inherits VerticalBox {
                                     InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
                                     Rectangle { horizontal-stretch: 1; }
                                     if card.auto && LayoutLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: 13px; font-weight: 600; vertical-alignment: center; }
-                                    if card.auto && LayoutLibrary.rule-counts[index] > 0: Text {
-                                        text: @tr("In {n} rule" | "In {n} rules" % LayoutLibrary.rule-counts[index]);
-                                        color: Theme.muted; font-size: 13px; vertical-alignment: center;
+                                    if card.auto && LayoutLibrary.rule-counts[index] > 0: Rectangle {
+                                        property <bool> on: LayoutLibrary.highlight-target == index;
+                                        width: badge.preferred-width + 12px;
+                                        border-radius: 4px;
+                                        background: self.on ? Theme.link.transparentize(0.85) : badge-touch.has-hover ? Theme.hover : transparent;
+                                        accessible-role: button;
+                                        accessible-label: badge.text;
+                                        accessible-action-default => { LayoutLibrary.highlight-target = self.on ? -1 : index; }
+                                        badge := Text {
+                                            text: @tr("In {n} rule" | "In {n} rules" % LayoutLibrary.rule-counts[index]);
+                                            color: parent.on ? Theme.link : Theme.muted; font-size: 13px; vertical-alignment: center;
+                                        }
+                                        badge-touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.highlight-target = parent.on ? -1 : index; } }
                                     }
                                 }
                                 InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
@@ -565,7 +617,7 @@ export component LibraryPage inherits VerticalBox {
 }
 
 export component LibraryDialogOverlay inherits Rectangle {
-    if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete: Rectangle {
+    if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete && LayoutLibrary.dialog != LibraryDialog.delete-rule: Rectangle {
         background: #00000099;
         TouchArea { }
         FocusScope {
@@ -626,7 +678,7 @@ export component LibraryDialogOverlay inherits Rectangle {
                 HorizontalBox {
                     if LayoutLibrary.dialog == LibraryDialog.rule && LayoutLibrary.rule-index >= 0: Button {
                         text: @tr("Delete rule"); icon: @image-url("icons/trash-2.svg"); colorize-icon: true;
-                        clicked => { LayoutLibrary.delete-rule(LayoutLibrary.rule-index); }
+                        clicked => { LayoutLibrary.dialog = LibraryDialog.delete-rule; }
                     }
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
@@ -645,10 +697,22 @@ export component LibraryDialogOverlay inherits Rectangle {
     if LayoutLibrary.dialog == LibraryDialog.delete: ConfirmDialog {
         title: @tr("Delete layout?");
         error: LayoutLibrary.status.id == "library-saved" ? "" : Locale.text(LayoutLibrary.status);
-        body: @tr("“{}” will be deleted. This cannot be undone.", LayoutLibrary.names[LayoutLibrary.selected]);
+        body: @tr("“{}” will be deleted. This cannot be undone.", LayoutLibrary.names[LayoutLibrary.selected])
+            + (LayoutLibrary.rule-counts[LayoutLibrary.selected] > 0
+                ? " " + @tr("Its {n} automatic rule will be deleted too." | "Its {n} automatic rules will be deleted too." % LayoutLibrary.rule-counts[LayoutLibrary.selected])
+                : "")
+            + (LayoutLibrary.auto-default == LayoutLibrary.selected ? " " + @tr("Automatic mode will use no layout by default.") : "");
         confirm-text: @tr("Delete");
         cancel => { LayoutLibrary.cancel-dialog(); }
         confirm => { LayoutLibrary.delete(); }
+    }
+    if LayoutLibrary.dialog == LibraryDialog.delete-rule: ConfirmDialog {
+        title: @tr("Delete rule {}?", LayoutLibrary.rule-index + 1);
+        error: LayoutLibrary.status.id == "library-saved" ? "" : Locale.text(LayoutLibrary.status);
+        body: @tr("The rule will be deleted. This cannot be undone.");
+        confirm-text: @tr("Delete");
+        cancel => { LayoutLibrary.dialog = LibraryDialog.rule; }
+        confirm => { LayoutLibrary.delete-rule(LayoutLibrary.rule-index); }
     }
     if LayoutLibrary.save-as-open: Rectangle {
         background: #00000099;

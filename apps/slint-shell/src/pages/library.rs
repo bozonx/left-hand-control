@@ -16,11 +16,11 @@ use crate::{
 use lhc_core::{
     config_document::{ConfigDocument, ConfigError},
     profile::{
-        auto_switch::AutoSwitchContext,
+        auto_switch::{self, AutoSwitchContext},
         ids, layout_file,
         library::LibrarySource,
         model::{
-            AutoRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id,
+            AppSettings, AutoRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id,
             user_layout_name,
         },
     },
@@ -58,10 +58,7 @@ fn current_name(config: &ConfigDocument) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn summary(set: Option<&LayoutConditionSet>) -> (GameCondition, String) {
-    let Some(set) = set else {
-        return (GameCondition::Any, String::new());
-    };
+fn summary(set: &LayoutConditionSet) -> (GameCondition, String) {
     let list = [set.layouts.join(", "), set.apps.join(", ")]
         .into_iter()
         .filter(|part| !part.is_empty())
@@ -70,13 +67,12 @@ fn summary(set: Option<&LayoutConditionSet>) -> (GameCondition, String) {
     (game_condition(set.game_mode.as_deref()), list)
 }
 
-fn condition(game: GameCondition, layouts: &str, apps: &str) -> Option<LayoutConditionSet> {
-    let set = LayoutConditionSet {
+fn condition(game: GameCondition, layouts: &str, apps: &str) -> LayoutConditionSet {
+    LayoutConditionSet {
         game_mode: game_condition_value(game),
         layouts: parse_list(layouts),
         apps: parse_list(apps),
-    };
-    (set.game_mode.is_some() || !set.layouts.is_empty() || !set.apps.is_empty()).then_some(set)
+    }
 }
 
 fn name_issue(config: &ConfigDocument, name: &str) -> NameIssue {
@@ -107,67 +103,27 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
         .iter()
         .filter_map(|id| user_layout_name(id).map(str::to_owned))
         .collect();
-    library.set_automatic(config.settings().layout_mode == LayoutMode::Auto);
-    let ids: Vec<String> = names.iter().map(|name| user_layout_id(name)).collect();
-    let target = |id: &Option<String>| -> (i32, bool) {
-        match id {
-            None => (-1, false),
-            Some(id) => ids
-                .iter()
-                .position(|item| item == id)
-                .map_or((-1, true), |index| (index as i32, false)),
-        }
-    };
-    let rules = &config.settings().auto_rules;
-    library.set_auto_rules(ModelRc::new(VecModel::from(
-        rules
-            .iter()
-            .enumerate()
-            .map(|(index, rule)| {
-                let (game, list) = summary(Some(&rule.conditions));
-                let (target, missing) = target(&rule.layout_id);
-                AutoRuleView {
-                    game,
-                    list: list.into(),
-                    target,
-                    missing,
-                    shadows: !missing && rule.conditions.is_empty() && index + 1 < rules.len(),
-                }
-            })
-            .collect::<Vec<_>>(),
-    )));
-    let (default, default_missing) = target(&config.settings().auto_default_layout_id);
-    library.set_auto_default(default);
-    library.set_auto_default_missing(default_missing);
-    library.set_rule_counts(ModelRc::new(VecModel::from(
-        ids.iter()
-            .map(|id| {
-                rules
-                    .iter()
-                    .filter(|rule| rule.layout_id.as_ref() == Some(id))
-                    .count() as i32
-            })
-            .collect::<Vec<_>>(),
-    )));
-    library.set_descriptions(super::strings(names.iter().map(|name| {
-        config
-            .paths()
-            .load_user_layout(name)
-            .ok()
-            .and_then(|text| layout_file::parse(&text).ok().flatten())
-            .and_then(|layout| layout.description)
+    let presets: Vec<Option<LayoutPreset>> = names
+        .iter()
+        .map(|name| {
+            config
+                .paths()
+                .load_user_layout(name)
+                .ok()
+                .and_then(|text| layout_file::parse(&text).ok().flatten())
+        })
+        .collect();
+    library.set_descriptions(super::strings(presets.iter().map(|preset| {
+        preset
+            .as_ref()
+            .and_then(|preset| preset.description.clone())
             .unwrap_or_default()
     })));
     library.set_summaries(ModelRc::new(VecModel::from(
-        names
-            .iter()
-            .map(|name| {
-                let preset = config
-                    .paths()
-                    .load_user_layout(name)
-                    .ok()
-                    .and_then(|text| layout_file::parse(&text).ok().flatten())
-                    .unwrap_or_default();
+        presets
+            .into_iter()
+            .map(|preset| {
+                let preset = preset.unwrap_or_default();
                 LayoutSummary {
                     rules: preset.rules.len() as i32,
                     layers: preset.layers.len() as i32,
@@ -190,9 +146,81 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
         state.known = None;
     }
     drop(config);
+    refresh_auto(ui, document);
     refresh_context(ui, document);
-    refresh_active(ui, document);
     Ok(())
+}
+
+/// Automatic mode: the rules, the default and rules per layout. Targets
+/// index the `names` already shown.
+fn refresh_auto(ui: &SettingsWindow, document: &Document) {
+    let config = document.read();
+    let library = ui.global::<LayoutLibrary>();
+    let settings = config.settings();
+    library.set_automatic(settings.layout_mode == LayoutMode::Auto);
+    let ids: Vec<String> = slint::Model::iter(&library.get_names())
+        .map(|name| user_layout_id(&name))
+        .collect();
+    let target = |id: &Option<String>| -> (i32, bool) {
+        match id {
+            None => (-1, false),
+            Some(id) => ids
+                .iter()
+                .position(|item| item == id)
+                .map_or((-1, true), |index| (index as i32, false)),
+        }
+    };
+    let rules = &settings.auto_rules;
+    // Without layout detection every language would look unknown.
+    let languages: Vec<String> = if rules.iter().any(|rule| !rule.conditions.layouts.is_empty()) {
+        lhc_core::layout::available_layouts()
+            .map(|layouts| layouts.into_iter().map(|layout| layout.short).collect())
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    library.set_auto_rules(ModelRc::new(VecModel::from(
+        rules
+            .iter()
+            .enumerate()
+            .map(|(index, rule)| {
+                let (game, list) = summary(&rule.conditions);
+                let (target, missing) = target(&rule.layout_id);
+                let unknown: Vec<&str> = rule
+                    .conditions
+                    .layouts
+                    .iter()
+                    .filter(|code| !languages.is_empty() && !languages.contains(code))
+                    .map(String::as_str)
+                    .collect();
+                AutoRuleView {
+                    game,
+                    list: list.into(),
+                    target,
+                    missing,
+                    enabled: rule.enabled,
+                    shadowed_by: auto_switch::shadowed_by(rules, index)
+                        .map_or(-1, |index| index as i32),
+                    unknown_languages: unknown.join(", ").into(),
+                }
+            })
+            .collect::<Vec<_>>(),
+    )));
+    let (default, default_missing) = target(&settings.auto_default_layout_id);
+    library.set_auto_default(default);
+    library.set_auto_default_missing(default_missing);
+    library.set_rule_counts(ModelRc::new(VecModel::from(
+        ids.iter()
+            .map(|id| {
+                rules
+                    .iter()
+                    .filter(|rule| rule.layout_id.as_ref() == Some(id))
+                    .count() as i32
+            })
+            .collect::<Vec<_>>(),
+    )));
+    drop(config);
+    refresh_active(ui, document);
 }
 
 /// Label and dirty flag of the working copy: it differs from its library
@@ -277,6 +305,7 @@ pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
     let library = ui.global::<LayoutLibrary>();
     library.set_active_label(label.into());
     library.set_auto_matched(matched);
+    library.set_game_detection(context.game_mode_detection_enabled);
 }
 
 /// Remember the library file of the working copy as its saved state.
@@ -331,6 +360,27 @@ fn edit<T>(
         return Err(Msg::SavedMapperNotUpdated(error));
     }
     Ok(saved.value)
+}
+
+/// Change automatic-mode settings and refresh only the rules panel, so
+/// the library list (and an open picker over it) is not rebuilt.
+fn edit_auto(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    change: impl FnOnce(&mut AppSettings),
+) -> Result<Msg, Msg> {
+    let saved = document
+        .edit(View::Library, |config| config.update_settings(change))
+        .map_err(|error| {
+            let _ = refresh(ui, document, &mut state.borrow_mut());
+            match error {
+                ConfigError::ExternalChange => Msg::LibraryChanged,
+                other => config_error(other),
+            }
+        })?;
+    refresh_auto(ui, document);
+    Ok(saved.message(Msg::None))
 }
 
 fn select(ui: &SettingsWindow, document: &Document, state: &Shared, index: i32) -> Result<(), Msg> {
@@ -608,27 +658,24 @@ fn save_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result
         library.get_rule_game(),
         &library.get_rule_layouts(),
         &library.get_rule_apps(),
-    )
-    .unwrap_or_default();
+    );
     let index = usize::try_from(library.get_rule_index()).ok();
-    edit(ui, document, state, |config| {
-        config.update_settings(|settings| {
-            match index.and_then(|index| settings.auto_rules.get_mut(index)) {
-                Some(rule) => {
-                    rule.layout_id = layout_id;
-                    rule.conditions = conditions;
-                }
-                None => settings.auto_rules.push(AutoRule {
-                    id: ids::generate("rule-"),
-                    layout_id,
-                    conditions,
-                }),
+    let message = edit_auto(ui, document, state, |settings| {
+        match index.and_then(|index| settings.auto_rules.get_mut(index)) {
+            Some(rule) => {
+                rule.layout_id = layout_id;
+                rule.conditions = conditions;
             }
-        })
+            None => settings.auto_rules.push(AutoRule {
+                id: ids::generate("rule-"),
+                enabled: true,
+                layout_id,
+                conditions,
+            }),
+        }
     })?;
     library.set_dialog(LibraryDialog::None);
-    refresh_active(ui, document);
-    Ok(Msg::None)
+    Ok(message)
 }
 
 fn delete_rule(
@@ -638,16 +685,13 @@ fn delete_rule(
     index: i32,
 ) -> Result<Msg, Msg> {
     let index = usize::try_from(index).map_err(|_| Msg::LibrarySelect)?;
-    edit(ui, document, state, |config| {
-        config.update_settings(|settings| {
-            if index < settings.auto_rules.len() {
-                settings.auto_rules.remove(index);
-            }
-        })
+    let message = edit_auto(ui, document, state, |settings| {
+        if index < settings.auto_rules.len() {
+            settings.auto_rules.remove(index);
+        }
     })?;
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
-    refresh_active(ui, document);
-    Ok(Msg::None)
+    Ok(message)
 }
 
 fn move_rule(
@@ -660,17 +704,43 @@ fn move_rule(
     let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
         return Ok(Msg::None);
     };
-    edit(ui, document, state, |config| {
-        config.update_settings(|settings| {
-            let rules = &mut settings.auto_rules;
-            if from < rules.len() && to < rules.len() {
-                let rule = rules.remove(from);
-                rules.insert(to, rule);
-            }
-        })
-    })?;
-    refresh_active(ui, document);
-    Ok(Msg::None)
+    edit_auto(ui, document, state, |settings| {
+        let rules = &mut settings.auto_rules;
+        if from < rules.len() && to < rules.len() {
+            let rule = rules.remove(from);
+            rules.insert(to, rule);
+        }
+    })
+}
+
+fn set_rule_enabled(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    index: i32,
+    enabled: bool,
+) -> Result<Msg, Msg> {
+    let index = usize::try_from(index).map_err(|_| Msg::LibrarySelect)?;
+    edit_auto(ui, document, state, |settings| {
+        if let Some(rule) = settings.auto_rules.get_mut(index) {
+            rule.enabled = enabled;
+        }
+    })
+}
+
+/// Ready-made rule: no layout while game mode is on.
+fn add_game_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
+    edit_auto(ui, document, state, |settings| {
+        settings.auto_rules.push(AutoRule {
+            id: ids::generate("rule-"),
+            enabled: true,
+            layout_id: None,
+            conditions: LayoutConditionSet {
+                game_mode: Some("on".into()),
+                ..LayoutConditionSet::default()
+            },
+        });
+    })
 }
 
 fn set_auto_default(
@@ -680,11 +750,9 @@ fn set_auto_default(
     index: i32,
 ) -> Result<Msg, Msg> {
     let id = target_id(ui, index);
-    edit(ui, document, state, |config| {
-        config.update_settings(|settings| settings.auto_default_layout_id = id)
-    })?;
-    refresh_active(ui, document);
-    Ok(Msg::None)
+    edit_auto(ui, document, state, |settings| {
+        settings.auto_default_layout_id = id
+    })
 }
 
 fn drag_target(rows: &[Option<(f32, f32)>], source: usize, offset: f32, count: usize) -> i32 {
@@ -780,10 +848,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         report(
             &ui,
-            edit(&ui, doc, state, |config| {
-                config.update_settings(|settings| settings.layout_mode = mode)
-            })
-            .map(|()| Msg::None),
+            edit_auto(&ui, doc, state, |settings| {
+                auto_switch::set_mode(settings, mode)
+            }),
         );
     });
     on!(on_action, |ui, doc, state, action| report(
@@ -872,6 +939,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         &ui,
         move_rule(&ui, doc, state, from, to)
     ));
+    on!(
+        on_set_rule_enabled,
+        |ui, doc, state, index, enabled| report(
+            &ui,
+            set_rule_enabled(&ui, doc, state, index, enabled)
+        )
+    );
+    on!(on_add_game_rule, |ui, doc, state| report(
+        &ui,
+        add_game_rule(&ui, doc, state)
+    ));
     on!(on_set_auto_default, |ui, doc, state, index| report(
         &ui,
         set_auto_default(&ui, doc, state, index)
@@ -912,13 +990,13 @@ mod tests {
 
     #[test]
     fn conditions_round_trip() {
-        let set = condition(GameCondition::On, "us, ru", "").unwrap();
+        let set = condition(GameCondition::On, "us, ru", "");
         assert_eq!(set.layouts, ["us", "ru"]);
         assert_eq!(
             condition_fields(Some(set.clone())),
             (GameCondition::On, "us, ru".into(), String::new())
         );
-        assert_eq!(summary(Some(&set)), (GameCondition::On, "us, ru".into()));
-        assert!(condition(GameCondition::Any, " ", "").is_none());
+        assert_eq!(summary(&set), (GameCondition::On, "us, ru".into()));
+        assert!(condition(GameCondition::Any, " ", "").is_empty());
     }
 }

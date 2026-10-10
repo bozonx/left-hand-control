@@ -1,7 +1,7 @@
 //! Choosing the active layout in auto mode: an ordered list of rules
 //! (conditions → layout or off), first match wins, otherwise the default.
 
-use super::model::{AppSettings, LayoutConditionSet};
+use super::model::{AppSettings, AutoRule, LayoutConditionSet, LayoutMode};
 
 /// Observed system state the layout conditions are evaluated against.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -91,7 +91,9 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
         .auto_rules
         .iter()
         .enumerate()
-        .find(|(_, rule)| usable(&rule.layout_id) && matches_condition_set(&rule.conditions, ctx))
+        .find(|(_, rule)| {
+            rule.enabled && usable(&rule.layout_id) && matches_condition_set(&rule.conditions, ctx)
+        })
         .map(|(index, rule)| AutoChoice {
             rule: Some(index),
             layout_id: rule.layout_id.clone(),
@@ -105,10 +107,58 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
         })
 }
 
+/// Whether `outer` matches whenever `inner` does, so a rule with `inner`
+/// placed after `outer` can never apply.
+pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
+    let game = outer.game_mode.is_none() || outer.game_mode == inner.game_mode;
+    let layouts = outer.layouts.is_empty()
+        || (!inner.layouts.is_empty()
+            && inner
+                .layouts
+                .iter()
+                .all(|item| outer.layouts.contains(item)));
+    // Apps match by substring: a window containing `inner`'s needle also
+    // contains every needle that is a substring of it.
+    let needles: Vec<String> = outer
+        .apps
+        .iter()
+        .map(|needle| needle.trim().to_lowercase())
+        .filter(|needle| !needle.is_empty())
+        .collect();
+    let apps = needles.is_empty()
+        || (!inner.apps.is_empty()
+            && inner.apps.iter().all(|app| {
+                let app = app.trim().to_lowercase();
+                needles.iter().any(|needle| app.contains(needle.as_str()))
+            }));
+    game && layouts && apps
+}
+
+/// Index of the first enabled rule before `index` that always matches
+/// when rule `index` would, so rule `index` never applies.
+pub fn shadowed_by(rules: &[AutoRule], index: usize) -> Option<usize> {
+    let rule = rules.get(index)?;
+    rules[..index]
+        .iter()
+        .position(|earlier| earlier.enabled && covers(&earlier.conditions, &rule.conditions))
+}
+
+/// Switch the layout mode. Entering auto mode for the first time, with no
+/// rules and no default, keeps the single-mode layout as the default so
+/// nothing changes until rules are added.
+pub fn set_mode(settings: &mut AppSettings, mode: LayoutMode) {
+    if mode == LayoutMode::Auto
+        && settings.auto_rules.is_empty()
+        && settings.auto_default_layout_id.is_none()
+    {
+        settings.auto_default_layout_id = settings.manual_active_layout_id.clone();
+    }
+    settings.layout_mode = mode;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::profile::model::AutoRule;
 
     fn set(game_mode: Option<&str>, layouts: &[&str], apps: &[&str]) -> LayoutConditionSet {
         LayoutConditionSet {
@@ -173,6 +223,7 @@ mod tests {
         let ids: Vec<String> = ["user:A", "user:B"].map(String::from).to_vec();
         let rule = |id: &str, layout: Option<&str>, conditions| AutoRule {
             id: id.into(),
+            enabled: true,
             layout_id: layout.map(str::to_owned),
             conditions,
         };
@@ -211,5 +262,73 @@ mod tests {
         );
         settings.auto_default_layout_id = Some("user:X".into());
         assert_eq!(pick(&settings, "us", "Kate"), AutoChoice::default());
+    }
+
+    #[test]
+    fn disabled_rules_never_match() {
+        let ids = vec!["user:A".to_string()];
+        let settings = AppSettings {
+            auto_rules: vec![AutoRule {
+                id: "a".into(),
+                enabled: false,
+                layout_id: None,
+                conditions: LayoutConditionSet::default(),
+            }],
+            auto_default_layout_id: Some("user:A".into()),
+            ..AppSettings::default()
+        };
+        assert_eq!(
+            choose(&ids, &settings, &ctx(None, false, ""))
+                .layout_id
+                .as_deref(),
+            Some("user:A")
+        );
+    }
+
+    #[test]
+    fn earlier_broader_rules_shadow_later_ones() {
+        let rule = |enabled, conditions| AutoRule {
+            id: String::new(),
+            enabled,
+            layout_id: None,
+            conditions,
+        };
+        let rules = [
+            rule(true, set(None, &["ru", "us"], &[])),
+            rule(true, set(Some("on"), &["ru"], &["Kate"])),
+            rule(true, set(None, &[], &["kate"])),
+            rule(true, set(None, &["de"], &["kate-editor"])),
+            rule(false, set(None, &[], &[])),
+            rule(true, set(Some("off"), &[], &[])),
+        ];
+        assert_eq!(shadowed_by(&rules, 0), None);
+        assert_eq!(shadowed_by(&rules, 1), Some(0));
+        assert_eq!(shadowed_by(&rules, 2), None);
+        assert_eq!(shadowed_by(&rules, 3), Some(2));
+        // A disabled catch-all shadows nothing.
+        assert_eq!(shadowed_by(&rules, 5), None);
+        assert!(!covers(&set(None, &["ru"], &[]), &set(None, &[], &[])));
+    }
+
+    #[test]
+    fn first_switch_to_auto_keeps_the_single_layout() {
+        let mut settings = AppSettings {
+            manual_active_layout_id: Some("user:A".into()),
+            ..AppSettings::default()
+        };
+        set_mode(&mut settings, LayoutMode::Auto);
+        assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:A"));
+        // A deliberate "off" default with rules is left alone.
+        settings.auto_default_layout_id = None;
+        settings.auto_rules.push(AutoRule {
+            id: "r".into(),
+            enabled: true,
+            layout_id: Some("user:A".into()),
+            conditions: LayoutConditionSet::default(),
+        });
+        set_mode(&mut settings, LayoutMode::Manual);
+        set_mode(&mut settings, LayoutMode::Auto);
+        assert_eq!(settings.auto_default_layout_id, None);
+        assert_eq!(settings.layout_mode, LayoutMode::Auto);
     }
 }

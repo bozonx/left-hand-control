@@ -1945,9 +1945,6 @@ msgstr "Добавить правило…"
 msgid "All filled conditions must match. A rule without conditions always matches."
 msgstr "Должны выполняться все заполненные условия. Правило без условий срабатывает всегда."
 
-msgid "Always matches: the rules below never apply."
-msgstr "Срабатывает всегда: правила ниже никогда не применятся."
-
 msgid "Automatic switching"
 msgstr "Автопереключение"
 
@@ -1963,14 +1960,8 @@ msgstr "Раскладка не найдена"
 msgid "New rule"
 msgstr "Новое правило"
 
-msgid "No rules yet: the default layout is always used."
-msgstr "Правил пока нет: всегда используется раскладка по умолчанию."
-
 msgid "Now: {} (default)"
 msgstr "Сейчас: {} (по умолчанию)"
-
-msgid "Now: {} (rule {})"
-msgstr "Сейчас: {} (правило {})"
 
 msgid "Otherwise (default)"
 msgstr "Иначе (по умолчанию)"
@@ -1978,17 +1969,62 @@ msgstr "Иначе (по умолчанию)"
 msgid "Rule {}"
 msgstr "Правило {}"
 
-msgid "Rules are checked from top to bottom; the first one whose conditions match chooses the layout. If none matches, the default is used. “Turned off” disables remapping, for example in an application where the layout gets in the way."
-msgstr "Правила проверяются сверху вниз; первое правило, условия которого выполнены, выбирает раскладку. Если ни одно не подошло, используется раскладка по умолчанию. «Выключено» отключает переназначение клавиш — например, в приложении, где раскладка мешает."
-
 msgid "Use layout"
 msgstr "Использовать раскладку"
 
 msgid "When"
 msgstr "Когда"
 
-msgid "Turned off"
-msgstr "Выключено"
+msgid "No layout"
+msgstr "Без раскладки"
+
+msgid "No layout (keys as is)"
+msgstr "Без раскладки (клавиши как есть)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Сейчас: {} (правило {}: {})"
+
+msgid "Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."
+msgstr "Правила проверяются сверху вниз; первое включённое правило, условия которого выполнены, выбирает раскладку. Если ни одно не подошло, используется раскладка по умолчанию. «Без раскладки» оставляет клавиатуру без обработки — например, в приложении, где раскладка мешает."
+
+msgid "No rules yet: the default layout is always used. Start with a common rule:"
+msgstr "Правил пока нет: всегда используется раскладка по умолчанию. Можно начать с типового правила:"
+
+msgid "No layout in games"
+msgstr "Без раскладки в играх"
+
+msgid "No layout in an application…"
+msgstr "Без раскладки в приложении…"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr "Если ни одно правило не подошло, клавиатура работает без обработки."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Никогда не применится: правило {} всегда срабатывает раньше."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr "Определение игрового режима выключено, поэтому правило никогда не сработает."
+
+msgid "Not among the system languages: {}"
+msgstr "Нет среди языков системы: {}"
+
+msgid "Rule enabled"
+msgstr "Правило включено"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "В автоматическом режиме по умолчанию не будет раскладки."
+
+msgid "Delete rule {}?"
+msgstr "Удалить правило {}?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "Правило будет удалено. Это действие нельзя отменить."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "Её {n} правило автопереключения тоже будет удалено."
+msgstr[1] "Её {n} правила автопереключения тоже будут удалены."
+msgstr[2] "Её {n} правил автопереключения тоже будут удалены."
 
 msgid "In {n} rule"
 msgid_plural "In {n} rules"
