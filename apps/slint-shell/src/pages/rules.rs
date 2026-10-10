@@ -698,7 +698,7 @@ mod tests {
     }
 
     #[test]
-    fn hold_modes_clear_incompatible_options_and_preserve_legacy_layers() {
+    fn hold_modes_clear_incompatible_options_and_preserve_layer_assignments() {
         let mut rule = LayerRule::new("r".into(), "ShiftLeft+ControlLeft");
         rule.layer_id = "nav".into();
         rule.hold_action = Some("AltLeft".into());

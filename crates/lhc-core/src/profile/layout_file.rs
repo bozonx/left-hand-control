@@ -1,6 +1,6 @@
 //! Saved layout YAML files in the user library.
 //!
-//! Parsing and serialisation preserve compatibility with existing layout files.
+//! Window conditions use `windows` and `excludeWindows` patterns.
 
 use super::model::{
     Command, EmojiPage, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, LayerRule, LayoutPreset, Macro,
@@ -16,6 +16,15 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
     }
     let doc: Value =
         serde_yaml::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
+    if let Some(object) = doc.as_object() {
+        for rule in array(object, "rules") {
+            for field in ["appsWhitelist", "appsBlacklist"] {
+                if rule.contains_key(field) {
+                    return Err(format!("unsupported layout rule field: {field}"));
+                }
+            }
+        }
+    }
     Ok(doc.as_object().map(from_object))
 }
 
@@ -73,8 +82,8 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     .filter(|mode| matches!(*mode, "on" | "off"))
                     .map(str::to_owned),
                 condition_layouts: string_list(rule, "layouts"),
-                condition_apps_whitelist: window_list(rule, "windows", "appsWhitelist"),
-                condition_apps_blacklist: window_list(rule, "excludeWindows", "appsBlacklist"),
+                condition_apps_whitelist: string_list(rule, "windows"),
+                condition_apps_blacklist: string_list(rule, "excludeWindows"),
                 key: key.into(),
                 layer_id: str_of(rule, "layer").unwrap_or("").into(),
                 tap_action: three_state(rule, "tap"),
@@ -511,17 +520,6 @@ fn string_list(object: &Map<String, Value>, name: &str) -> Option<Vec<String>> {
     (!items.is_empty()).then_some(items)
 }
 
-/// Window patterns under `name`, or the legacy substring list under
-/// `legacy` converted to patterns.
-fn window_list(object: &Map<String, Value>, name: &str, legacy: &str) -> Option<Vec<String>> {
-    if object.contains_key(name) {
-        return string_list(object, name);
-    }
-    string_list(object, legacy)
-        .map(|needles| super::app_match::list_from_legacy(&needles))
-        .filter(|patterns| !patterns.is_empty())
-}
-
 fn key_list(value: Option<&Value>) -> Option<String> {
     let joined = match value {
         Some(Value::String(text)) => text.clone(),
@@ -596,7 +594,7 @@ emojiPages:
 "#;
 
     #[test]
-    fn parses_compatible_layout_fields() {
+    fn parses_layout_fields() {
         let preset = parse(SAMPLE).unwrap().unwrap();
         assert_eq!(preset.description.as_deref(), Some("Sample"));
         let nav = &preset.layer_keymaps["nav"];
@@ -626,24 +624,15 @@ emojiPages:
         assert_eq!(preset.emoji_pages[0].cells.len(), 1);
     }
 
-    /// Verify the layout parser against the recorded compatibility fixture.
+    /// Verify the layout parser against the recorded layout fixture.
     #[test]
-    fn matches_the_recorded_layout_compatibility_fixture() {
+    fn matches_the_recorded_layout_fixture() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
         let text = std::fs::read_to_string(root.join("layout-parity.yaml")).unwrap();
         let expected: Value = serde_json::from_str(
             &std::fs::read_to_string(root.join("layout-parity.expected.json")).unwrap(),
         )
         .unwrap();
-        let mut expected = expected;
-        // The fixture keeps legacy substring needles; the core turns
-        // them into window patterns.
-        for rule in expected["rules"].as_array_mut().unwrap() {
-            if let Some(needles) = rule.get_mut("conditionAppsWhitelist") {
-                let list: Vec<String> = serde_json::from_value(needles.clone()).unwrap();
-                *needles = serde_json::json!(crate::profile::app_match::list_from_legacy(&list));
-            }
-        }
         let mut preset = parse(&text).unwrap().unwrap();
         for step in preset
             .macros
@@ -658,28 +647,21 @@ emojiPages:
     }
 
     #[test]
-    fn window_conditions_migrate_from_legacy_substrings() {
-        let text = "rules:\n  - key: KeyA\n    appsWhitelist: [kate]\n    appsBlacklist: ['']\n  \
-                    - key: KeyB\n    windows: [org.kde.kate, 'title:Doc']\n    appsWhitelist: [x]\n";
-        let preset = parse(text).unwrap().unwrap();
-        let legacy = &preset.rules[0];
+    fn unsupported_window_conditions_are_rejected() {
+        for field in ["appsWhitelist", "appsBlacklist"] {
+            let text = format!("rules:\n  - key: KeyA\n    {field}: [kate]\n    windows: [kate]\n");
+            assert!(parse(&text).unwrap_err().contains(field));
+        }
+    }
+
+    #[test]
+    fn window_patterns_round_trip_without_substring_expansion() {
+        let preset = parse("rules:\n  - key: KeyA\n    windows: [org.kde.kate, 'title:Doc']\n    excludeWindows: [firefox]\n").unwrap().unwrap();
         assert_eq!(
-            legacy.condition_apps_whitelist,
-            Some(vec!["*kate*".to_string(), "title:kate".to_string()])
+            preset.rules[0].condition_apps_whitelist,
+            Some(vec!["org.kde.kate".into(), "title:Doc".into()])
         );
-        assert_eq!(legacy.condition_apps_blacklist, None);
-        let current = &preset.rules[1];
-        assert_eq!(
-            current.condition_apps_whitelist,
-            Some(vec!["org.kde.kate".to_string(), "title:Doc".to_string()])
-        );
-        let text = serialize(&preset);
-        assert!(text.contains("windows:") && !text.contains("appsWhitelist"));
-        let again = parse(&text).unwrap().unwrap();
-        assert_eq!(
-            again.rules[0].condition_apps_whitelist,
-            legacy.condition_apps_whitelist
-        );
+        assert_eq!(parse(&serialize(&preset)).unwrap().unwrap(), preset);
     }
 
     #[test]

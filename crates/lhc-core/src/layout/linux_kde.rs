@@ -58,7 +58,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
 ///
 /// Backed by `org.kde.KeyboardLayouts.setLayout(uint) -> bool`. The
 /// boolean return is `false` when the index is out of range; we surface
-/// that as an error so the frontend can fall back to refreshing the
+/// that as an error so the shell can fall back to refreshing the
 /// list and retrying.
 pub fn set_layout(index: u32) -> Result<(), String> {
     let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;

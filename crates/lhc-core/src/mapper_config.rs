@@ -142,7 +142,7 @@ pub enum TapDecision {
     /// commit the hold on a nested release or timeout.
     #[default]
     PermissiveHold,
-    /// Legacy behaviour: any other key press commits the hold immediately.
+    /// Behaviour: any other key press commits the hold immediately.
     HoldOnOtherKeyPress,
 }
 
@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn app_config_deserializes_from_frontend_json() {
+    fn app_config_deserializes_from_runtime_json() {
         let json = r#"{
             "rules":[{"key":"KeyQ","tapAction":"Escape","holdAction":""}],
             "layerKeymaps":{},

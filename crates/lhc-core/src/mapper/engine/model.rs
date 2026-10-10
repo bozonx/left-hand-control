@@ -118,7 +118,7 @@ pub(super) enum DecisionMode {
     /// key (nested press+release) or the hold timeout elapses. Rolling
     /// overlaps during fast typing resolve as taps.
     PermissiveHold,
-    /// Legacy behaviour: any other key press commits the hold immediately.
+    /// Behaviour: any other key press commits the hold immediately.
     HoldOnOtherKeyPress,
 }
 

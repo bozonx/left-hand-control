@@ -3,8 +3,8 @@ Windows PowerShell 5.1.26100.9444
 Repository commit: 56184e9
 Date: 2026-09-24
 
-Command:
-powershell -ExecutionPolicy Bypass -File .\prototypes\slint-shell\scripts\check-windows-automated.ps1
+Historical run of check-windows-automated.ps1 at the commit above.
+Current script: apps/slint-shell/scripts/check-windows-automated.ps1
 
 Result: WINDOWS AUTOMATED ACCEPTANCE PASSED
 

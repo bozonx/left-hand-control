@@ -21,7 +21,7 @@ rules:
     hold: null
     tap: null
     layouts: [us, ""]
-    appsWhitelist: [code]
+    windows: [code]
     gameMode: "on"
     isolate: [KeyA, KeyB]
     holdFor: KeyTab

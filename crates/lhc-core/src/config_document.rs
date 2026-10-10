@@ -126,10 +126,6 @@ impl ConfigDocument {
             })
             .collect::<Result<_, _>>()
             .map_err(ConfigError::Io)?;
-        let mut settings = settings::from_value(settings_raw.get("settings"));
-        if settings_raw.pointer("/settings/commandsEnabled").is_none() {
-            settings.commands_enabled = !layout.commands.is_empty();
-        }
         Ok(Self {
             library_files,
             settings,
@@ -206,8 +202,6 @@ impl ConfigDocument {
             .or_insert_with(|| json!({}))
             .as_object_mut()
             .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?;
-        settings.remove("commandTrust");
-        settings.remove("commandTimeoutSecs");
         let previous = serde_json::to_value(&self.settings)
             .map_err(|error| ConfigError::Parse(error.to_string()))?;
         for name in previous
@@ -551,13 +545,6 @@ impl ConfigDocument {
             self.layout = next_layout.clone();
         }
         self.saved_layout = next_layout;
-        if self
-            .settings_raw
-            .pointer("/settings/commandsEnabled")
-            .is_none()
-        {
-            self.settings.commands_enabled = !self.layout.commands.is_empty();
-        }
         self.library_files.retain(|name, _| names.contains(name));
         self.library_files.extend(added);
         for (name, text) in updates {
@@ -701,6 +688,7 @@ fn parse_settings(text: &str) -> Result<Value, ConfigError> {
             "config.json must contain an object".into(),
         ));
     }
+    settings::validate(value.get("settings")).map_err(ConfigError::Parse)?;
     Ok(value)
 }
 
@@ -733,6 +721,10 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         if settings["settings"]["currentLayoutId"].is_null() {
             settings["settings"]["currentLayoutId"] = json!("user:Test");
+        }
+        if settings["settings"]["manualActiveLayoutId"].is_null() {
+            settings["settings"]["manualActiveLayoutId"] =
+                settings["settings"]["currentLayoutId"].clone();
         }
         let name = settings["settings"]["currentLayoutId"]
             .as_str()
@@ -823,28 +815,43 @@ mod tests {
     }
 
     #[test]
-    fn migrated_auto_rules_are_saved_next_to_legacy_conditions() {
-        let legacy = json!({"user:Test": {"enabledInAuto": true, "whitelist": {"apps": ["kate"]}}});
+    fn unsupported_settings_are_rejected_without_rewriting_the_file() {
+        for raw in [
+            json!({"layoutConditions": {}}),
+            json!({"commandTrust": {}}),
+            json!({"commandTimeoutSecs": 10}),
+            json!({"autoRules": [{"apps": ["kate"], "windows": ["kate"]}]}),
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+            let text = json!({"version": 1, "settings": raw}).to_string();
+            paths.save_config(&text).unwrap();
+            assert!(matches!(
+                ConfigDocument::load(paths.clone()),
+                Err(ConfigError::Parse(_))
+            ));
+            assert_eq!(paths.load_config().unwrap(), text);
+        }
+    }
+
+    #[test]
+    fn commands_require_explicit_permission_on_load_and_reload() {
         let (_dir, mut document) = document(
-            json!({"version": 1, "settings": {"layoutConditions": legacy}}),
-            LAYOUT,
+            json!({"version": 1, "settings": {}}),
+            "commands:\n  - id: hello\n    linux: printf hello\n",
         );
-        assert_eq!(document.settings().auto_rules.len(), 1);
+        assert!(!document.settings().commands_enabled);
         document
-            .update_settings(|settings| settings.auto_default_layout_id = Some("user:Test".into()))
+            .paths
+            .save_config(
+                &json!({"version": 1, "settings": {
+                    "currentLayoutId": "user:Test", "appearance": "dark"
+                }})
+                .to_string(),
+            )
             .unwrap();
-        let saved: Value =
-            serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
-                .unwrap();
-        // The legacy shell still reads `layoutConditions`.
-        assert_eq!(saved["settings"]["layoutConditions"], legacy);
-        assert_eq!(saved["settings"]["autoRules"][0]["layoutId"], "user:Test");
-        assert_eq!(
-            saved["settings"]["autoRules"][0]["windows"],
-            json!(["*kate*", "title:kate"])
-        );
-        assert!(saved["settings"]["autoRules"][0].get("apps").is_none());
-        assert_eq!(saved["settings"]["autoDefaultLayoutId"], "user:Test");
+        assert!(document.reload_if_changed().unwrap());
+        assert!(!document.settings().commands_enabled);
     }
 
     #[test]
@@ -997,11 +1004,9 @@ mod tests {
     }
 
     #[test]
-    fn legacy_drafts_are_ignored_and_session_edits_do_not_touch_disk() {
+    fn session_edits_do_not_touch_disk() {
         let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
         let paths = document.paths().clone();
-        fs::write(paths.data_dir().join("current-layout.yaml"), "{broken").unwrap();
-        fs::write(paths.settings_dir().join("ui-state.json"), "{broken").unwrap();
         let saved = paths.load_user_layout("Test").unwrap();
         document.set_base_tap_action("KeyA", "Enter").unwrap();
         document.set_locale(LocalePreference::English).unwrap();
@@ -1009,10 +1014,6 @@ mod tests {
         let restarted = ConfigDocument::load(paths.clone()).unwrap();
         assert_eq!(restarted.base_tap_action("KeyA"), None);
         assert_eq!(restarted.settings().locale, LocalePreference::English);
-        assert_eq!(
-            fs::read_to_string(paths.data_dir().join("current-layout.yaml")).unwrap(),
-            "{broken"
-        );
         document.save_current_layout_as("Saved").unwrap();
         document.set_base_tap_action("KeyA", "Tab").unwrap();
         let restarted = ConfigDocument::load(paths).unwrap();

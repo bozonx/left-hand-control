@@ -39,7 +39,7 @@
 //             first, it is a tap and the buffer replays after it. This lets
 //             fast rolling overlaps during typing resolve as taps instead of
 //             swallowing them into a hold.
-//           * HoldOnOtherKeyPress (legacy): any other key press commits the
+//           * HoldOnOtherKeyPress: any other key press commits the
 //             hold immediately, then the new key flows through.
 //   * HoldActive — hold has been committed (layer pushed, native key or
 //     keystroke held). On release: undo the hold.
@@ -80,7 +80,7 @@ pub struct Engine {
     default_hold: Duration,
     default_mod_delay: Duration,
 
-    /// Tap-vs-hold resolution strategy (permissive hold vs the legacy
+    /// Tap-vs-hold resolution strategy (permissive hold vs the
     /// commit-on-other-key-press).
     decision_mode: DecisionMode,
     /// Events deferred while a rule key is in `WaitingDecision`
@@ -1843,7 +1843,7 @@ mod tests {
         };
         sel.keys.insert("KeyQ".into(), Some("Ctrl+KeyZ".into()));
         cfg.layer_keymaps.insert("sel".into(), sel);
-        // Asserts the legacy interrupt-on-press semantics.
+        // Asserts the interrupt-on-press semantics.
         cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -1907,7 +1907,7 @@ mod tests {
         };
         space.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("space".into(), space);
-        // Asserts the legacy interrupt-on-press semantics.
+        // Asserts the interrupt-on-press semantics.
         cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -2048,7 +2048,7 @@ mod tests {
         };
         win.keys.insert("Tab".into(), Some("Tab".into()));
         cfg.layer_keymaps.insert("win".into(), win);
-        // Asserts the legacy interrupt-on-press semantics.
+        // Asserts the interrupt-on-press semantics.
         cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -2218,7 +2218,7 @@ mod tests {
         };
         win.keys.insert("Tab".into(), Some("Escape".into()));
         cfg.layer_keymaps.insert("win".into(), win);
-        // Asserts the legacy interrupt-on-press semantics.
+        // Asserts the interrupt-on-press semantics.
         cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
@@ -3394,7 +3394,7 @@ mod tests {
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
-        // Asserts the legacy interrupt-on-press semantics.
+        // Asserts the interrupt-on-press semantics.
         cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();

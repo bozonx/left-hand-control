@@ -247,7 +247,7 @@ mod tests {
             )
             .unwrap();
         paths
-            .save_config(r#"{"settings":{"currentLayoutId":"user:Test"}}"#)
+            .save_config(r#"{"settings":{"currentLayoutId":"user:Test","commandsEnabled":true}}"#)
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         doc.save_current_layout_as("Hello").unwrap();

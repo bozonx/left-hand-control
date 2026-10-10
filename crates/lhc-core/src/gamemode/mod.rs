@@ -6,7 +6,6 @@
 //! or a loading screen does not flip layouts back and forth. A state that
 //! cannot be detected counts as off.
 
-use serde::{Serialize, Serializer};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
@@ -26,8 +25,7 @@ const WATCH_INTERVAL: Duration = Duration::from_secs(1);
 /// How long Auto keeps game mode on after the last detection.
 pub const OFF_DELAY: Duration = Duration::from_secs(3);
 
-#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum DetectorAvailability {
     Available,
     Unavailable,
@@ -35,8 +33,7 @@ pub enum DetectorAvailability {
     Unsupported,
 }
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct GameModeDetectors {
     pub gamemoded: DetectorAvailability,
     pub fullscreen: DetectorAvailability,
@@ -57,21 +54,7 @@ pub enum GameModeMethod {
     Process(String),
 }
 
-impl Serialize for GameModeMethod {
-    /// Plain strings (`gamemoded`, `process:<name>`, …) as the legacy
-    /// frontend expects them.
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Manual => serializer.serialize_str("manual"),
-            Self::Daemon => serializer.serialize_str("gamemoded"),
-            Self::Fullscreen => serializer.serialize_str("fullscreen"),
-            Self::Process(name) => serializer.serialize_str(&format!("process:{name}")),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct GameModeStatus {
     pub revision: u64,
     /// Effective state that conditions see.
@@ -234,13 +217,6 @@ pub fn set_settings(settings: &GameModeSettings) {
             .map(|matcher| &matcher.name),
     ));
     wake();
-}
-
-/// Legacy entry point: detection settings from the raw `config.json` text.
-pub fn update_settings_from_config_json(raw: &str) {
-    if let Some(settings) = parse_game_mode_settings(raw) {
-        set_settings(&settings);
-    }
 }
 
 /// Re-run detection now, e.g. after the focused window changed.
@@ -502,6 +478,7 @@ fn load_game_mode_settings(storage: Option<&StoragePaths>) -> (GameModeSettings,
 /// The same lenient parsing the settings page uses.
 fn parse_game_mode_settings(raw: &str) -> Option<GameModeSettings> {
     let value: serde_json::Value = serde_json::from_str(raw).ok()?;
+    crate::profile::settings::validate(value.get("settings")).ok()?;
     Some(crate::profile::settings::from_value(value.get("settings")).game_mode)
 }
 
@@ -708,18 +685,6 @@ mod tests {
             ..gap
         };
         assert!(!hold_active(&active, excluded, Some(now), now).active);
-    }
-
-    #[test]
-    fn method_serializes_as_legacy_strings() {
-        assert_eq!(
-            serde_json::to_string(&GameModeMethod::Process("steam".into())).unwrap(),
-            "\"process:steam\""
-        );
-        assert_eq!(
-            serde_json::to_string(&GameModeMethod::Daemon).unwrap(),
-            "\"gamemoded\""
-        );
     }
 
     #[test]

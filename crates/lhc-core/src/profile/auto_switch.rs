@@ -157,7 +157,7 @@ mod tests {
     }
 
     #[test]
-    fn condition_sets_match_like_the_frontend() {
+    fn condition_sets_match_window_patterns() {
         assert!(matches_condition_set(
             &set(None, &[], &[]),
             &ctx(None, false, "")

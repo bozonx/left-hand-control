@@ -220,7 +220,7 @@ pub fn spawn(
     })
 }
 
-/// Tell the frontend the mapper thread died unexpectedly (device gone,
+/// Tell the shell the mapper thread died unexpectedly (device gone,
 /// panic, …) so it can update state without waiting for a status poll.
 fn notify_mapper_stopped(error: &str) {
     super::notify_mapper_stopped(error);

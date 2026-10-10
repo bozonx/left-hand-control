@@ -287,11 +287,6 @@ mod tests {
             super::super::layout_file::serialize(&layout)
         );
         assert_eq!(loaded.layout().commands[0].name, "printf hello");
-        assert!(
-            !std::fs::read_to_string(paths.config_path())
-                .unwrap()
-                .contains("commandTrust")
-        );
     }
 
     #[test]

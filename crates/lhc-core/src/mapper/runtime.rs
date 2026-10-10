@@ -331,7 +331,7 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
     validation::validate_config(&cfg)?;
     // Spawn outside the state lock: waiting for the worker to grab the
     // device and report readiness can take seconds and must not block
-    // concurrent status()/stop() calls from the frontend.
+    // concurrent status()/stop() calls from the shell.
     lock_state().begin_start()?;
     let result = OsBackend::new().spawn(
         device_path.to_string(),

@@ -206,13 +206,13 @@ impl std::fmt::Display for WriteError {
     }
 }
 
-/// Marker at the start of errors returned to the frontend when a save was
+/// Marker at the start of errors returned to the shell when a save was
 /// refused because the file changed on disk.
 pub const EXTERNAL_CHANGE: &str = "EXTERNAL_CHANGE";
 
 /// A file that remembers the contents it was last read or written with and
-/// refuses to overwrite contents another process wrote since then. Both
-/// shells edit the same files, so every save goes through this check.
+/// refuses to overwrite contents another process wrote since then. Every
+/// save goes through this check to protect against external edits.
 #[derive(Debug, Clone)]
 pub struct TrackedFile {
     path: PathBuf,

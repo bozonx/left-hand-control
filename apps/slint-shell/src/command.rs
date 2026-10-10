@@ -394,7 +394,7 @@ mod tests {
     }
 
     #[test]
-    fn legacy_wire_strings_stay_supported() {
+    fn wire_strings_are_validated() {
         assert_eq!(
             Command::parse("preferences light ru"),
             Ok(Command::Preferences(Preferences {

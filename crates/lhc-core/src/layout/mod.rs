@@ -168,7 +168,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
 
 /// Switch the active OS keyboard layout to the given zero-based index.
 /// Currently implemented for KDE Plasma; other desktops/OSes return an
-/// explicit error so the frontend can disable the control.
+/// explicit error so the shell can disable the control.
 pub fn set(index: u32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {

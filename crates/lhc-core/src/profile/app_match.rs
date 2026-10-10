@@ -98,24 +98,6 @@ pub fn uses_title<'a>(patterns: impl IntoIterator<Item = &'a String>) -> bool {
         .any(|pattern| matches!(AppMatcher::parse(pattern), Some(AppMatcher::Title(_))))
 }
 
-/// Patterns equivalent to a legacy substring needle, which matched the
-/// title or the app id: `*needle*` and `title:needle`.
-pub fn from_legacy(needle: &str) -> Vec<String> {
-    let needle = needle.trim();
-    if needle.is_empty() {
-        return Vec::new();
-    }
-    vec![format!("*{needle}*"), format!("{TITLE_PREFIX}{needle}")]
-}
-
-/// [`from_legacy`] over a whole list.
-pub fn list_from_legacy(needles: &[String]) -> Vec<String> {
-    needles
-        .iter()
-        .flat_map(|needle| from_legacy(needle))
-        .collect()
-}
-
 /// Whether `outer` matches every window `inner` matches. Conservative:
 /// `false` when it cannot tell.
 pub fn covers(outer: &str, inner: &str) -> bool {
@@ -270,27 +252,6 @@ mod tests {
         assert!(wildcard_matches("*игра?", "моя-игра1"));
         assert!(!wildcard_matches("game*", "other-game"));
         assert!(wildcard_matches("*a*b", "zaaab"));
-    }
-
-    #[test]
-    fn legacy_needles_keep_matching_title_or_app_id() {
-        let patterns = list_from_legacy(&["tele".into(), " ".into(), "YouTube".into()]);
-        assert_eq!(
-            patterns,
-            ["*tele*", "title:tele", "*YouTube*", "title:YouTube"]
-        );
-        assert!(any_matches_window(
-            &patterns,
-            &window("", "org.telegram.desktop", None)
-        ));
-        assert!(any_matches_window(
-            &patterns,
-            &window("Video - YouTube", "firefox", None)
-        ));
-        assert!(!any_matches_window(
-            &patterns,
-            &window("Kate", "kate", None)
-        ));
     }
 
     #[test]

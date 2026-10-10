@@ -52,7 +52,7 @@ Page-specific examples: `action-picker`, `library`, `macros`, `menus`, `undo-red
 
 ```
 crates/lhc-core/assets/       # bundled default layout
-crates/lhc-core/tests/fixtures/ # layout compatibility fixtures
+crates/lhc-core/tests/fixtures/ # layout parser fixtures
 crates/lhc-core/src/          # UI-independent domain + platform code (no UI framework)
 ├── profile/                  # config model: settings, layouts, actions, macros, menus, auto-switch
 ├── config_document.rs        # editable config.json: validation, external-change guard, reload
@@ -164,7 +164,7 @@ Report the exact commands you ran and their results. If something could not be r
 **Always**
 - Put domain and platform logic in `lhc-core`; keep the shell thin.
 - Edit config through `Document::edit`; resolve paths through `StoragePaths::resolve()`.
-- Keep `config.json` and layout YAML backward-compatible: users' existing files must still load.
+- Support the current `config.json` and layout YAML formats only; do not add migrations or fallbacks for retired formats.
 
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.
