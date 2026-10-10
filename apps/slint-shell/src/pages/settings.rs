@@ -658,11 +658,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             e.set_message(crate::notifications::report(&ui, &Msg::ProcessNameRequired));
             return;
         }
+        let by_title = e.get_process_by_title();
+        let name = if by_title {
+            lhc_core::profile::app_match::title_pattern(&name)
+        } else {
+            name
+        };
         let mut state = shared.borrow_mut();
         state.matchers.push(GameModeProcessMatcher {
             id: lhc_core::profile::ids::generate("process-"),
             name,
-            only_active_window: e.get_process_only_active(),
+            only_active_window: by_title || e.get_process_only_active(),
             is_blacklist: e.get_process_blacklist(),
         });
         e.set_process_matchers(rows(&state.matchers));
@@ -676,6 +682,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let shared = state.clone();
     e.on_process_name_edited(move |text| {
         let Some(ui) = weak.upgrade() else { return };
+        // Titles are not process names: nothing to suggest.
+        if ui.global::<SettingsEditor>().get_process_by_title() {
+            ui.global::<SettingsEditor>()
+                .set_process_suggestions(strings(Vec::<String>::new()));
+            return;
+        }
         let mut state = shared.borrow_mut();
         let stale = state
             .processes
@@ -758,6 +770,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                         .process_name
                         .filter(|name| !name.is_empty())
                         .unwrap_or(window.app_id);
+                    e.set_process_by_title(false);
                     e.set_process_name(name.into());
                     e.set_process_only_active(true);
                     e.set_process_suggestions(strings(Vec::<String>::new()));

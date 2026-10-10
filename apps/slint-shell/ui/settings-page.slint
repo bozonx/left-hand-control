@@ -8,6 +8,7 @@ import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, LineEdit, RadioGroup, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericField, SelectField } from "controls.slint";
+import { ConditionChoices, OpenWindowsList } from "conditions.slint";
 
 /// `kind`: 0 rule, 1 layer key, 2 macro step, 3 quick action.
 export struct CommandPlaceRow { kind: int, layer: string, name: string }
@@ -43,6 +44,10 @@ export global SettingsEditor {
     in-out property <string> process-name;
     in-out property <bool> process-only-active;
     in-out property <bool> process-blacklist;
+    /// The new matcher is a window-title pattern, not a process name.
+    in-out property <bool> process-by-title;
+    /// The open-window list is shown under the form.
+    in-out property <bool> process-browsing;
     /// Running processes whose names contain the typed text.
     in property <[string]> process-suggestions;
     /// Seconds left until the focused window is read; 0 when idle.
@@ -371,20 +376,28 @@ export component SettingsPage inherits VerticalBox {
                         vertical-stretch: 0; height: process-row.preferred-height; border-radius: 4px; background: Theme.card;
                         process-row := HorizontalLayout {
                             padding-left: 8px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px; spacing: 12px;
-                            Text { text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + item.name; color: item.blacklist ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
-                            CheckBox { text: @tr("Active window only"); checked: item.only-active; enabled: AppState.game-window-availability.id != "capability-unsupported"; toggled => { SettingsEditor.set-process-flags(index, self.checked, item.blacklist); } }
+                            Text { text: (item.blacklist ? @tr("Exclude: ") : @tr("Include: ")) + ConditionChoices.label(item.name); color: item.blacklist ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+                            // A title belongs to a window, so title patterns always look at the active one.
+                            CheckBox { text: @tr("Active window only"); checked: item.only-active || ConditionChoices.is-title(item.name); enabled: AppState.game-window-availability.id != "capability-unsupported" && !ConditionChoices.is-title(item.name); toggled => { SettingsEditor.set-process-flags(index, self.checked, item.blacklist); } }
                             CheckBox { text: @tr("Exclude"); checked: item.blacklist; toggled => { SettingsEditor.set-process-flags(index, item.only-active, self.checked); } }
                             VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); danger: true; clicked => { SettingsEditor.delete-process(index); } } }
                         }
                     }
                     VerticalBox {
                         padding: 0px; spacing: 8px; vertical-stretch: 0;
-                        FormLabel { text: @tr("Process name"); }
-                        LineEdit {
-                            text <=> SettingsEditor.process-name; accessible-label: @tr("Process name");
-                            placeholder-text: @tr("Type to search running processes");
-                            edited(text) => { SettingsEditor.process-name-edited(text); }
-                            accepted => { SettingsEditor.add-process(); }
+                        FormLabel { text: SettingsEditor.process-by-title ? @tr("Window title") : @tr("Process name"); }
+                        HorizontalBox { padding: 0px; spacing: 8px;
+                            SelectField {
+                                model: [@tr("Application"), @tr("Window title")];
+                                current-index: SettingsEditor.process-by-title ? 1 : 0;
+                                selected => { SettingsEditor.process-by-title = self.current-index == 1; SettingsEditor.process-name-edited(SettingsEditor.process-name); }
+                            }
+                            LineEdit {
+                                text <=> SettingsEditor.process-name; accessible-label: SettingsEditor.process-by-title ? @tr("Window title") : @tr("Process name");
+                                placeholder-text: SettingsEditor.process-by-title ? @tr("Text in the window title") : @tr("Type to search running processes");
+                                edited(text) => { SettingsEditor.process-name-edited(text); }
+                                accepted => { SettingsEditor.add-process(); }
+                            }
                         }
                         for suggestion in SettingsEditor.process-suggestions: Rectangle {
                             height: 26px; border-radius: 4px; background: suggestion-touch.has-hover ? Theme.hover : transparent;
@@ -393,15 +406,32 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                     HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
-                        CheckBox { text: @tr("Active window only"); checked <=> SettingsEditor.process-only-active; enabled: AppState.game-window-availability.id != "capability-unsupported"; }
+                        CheckBox { text: @tr("Active window only"); checked: SettingsEditor.process-only-active || SettingsEditor.process-by-title; enabled: AppState.game-window-availability.id != "capability-unsupported" && !SettingsEditor.process-by-title; toggled => { SettingsEditor.process-only-active = self.checked; } }
                         CheckBox { text: @tr("Exclude"); checked <=> SettingsEditor.process-blacklist; }
                     }
                     HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px; alignment: start;
                         Button { text: @tr("Add process"); enabled: SettingsEditor.process-name != ""; clicked => { SettingsEditor.add-process(); } }
                         Button {
+                            text: SettingsEditor.process-browsing ? @tr("Hide open windows") : @tr("Choose from open windows");
+                            enabled: AppState.game-window-availability.id == "capability-available";
+                            clicked => {
+                                SettingsEditor.process-browsing = !SettingsEditor.process-browsing;
+                                if SettingsEditor.process-browsing { ConditionChoices.refresh-open-windows(); }
+                            }
+                        }
+                        Button {
                             text: SettingsEditor.pick-countdown > 0 ? @tr("Switch to the game window… {}", SettingsEditor.pick-countdown) : @tr("Take from the active window");
                             enabled: SettingsEditor.pick-countdown == 0 && AppState.game-window-availability.id == "capability-available";
                             clicked => { SettingsEditor.pick-active-window(); }
+                        }
+                    }
+                    if SettingsEditor.process-browsing: OpenWindowsList {
+                        vertical-stretch: 0;
+                        chosen(pattern) => {
+                            SettingsEditor.process-by-title = false;
+                            SettingsEditor.process-name = pattern;
+                            SettingsEditor.process-only-active = true;
+                            SettingsEditor.process-browsing = false;
                         }
                     }
                 }

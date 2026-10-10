@@ -10,6 +10,7 @@
 // promptly during app shutdown. Switching the active layout goes through
 // the same DBus interface (`setLayout(uint)`).
 
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
@@ -119,8 +120,31 @@ fn run_signal_watcher() {
 // layout condition fire (or stay silent) wrongly. Subscribing to KDE's
 // `layoutChanged` signal refreshes the cache the moment the layout changes;
 // the poll loop stays as a fallback.
+/// Connection the signal watcher blocks on; closed to wake it for stop.
+static SIGNAL_CONNECTION: Mutex<Option<Connection>> = Mutex::new(None);
+
+/// End the signal watcher's wait so it notices the stop request.
+pub(super) fn interrupt_signal_watcher() {
+    let connection = SIGNAL_CONNECTION
+        .lock()
+        .ok()
+        .and_then(|mut slot| slot.take());
+    if let Some(connection) = connection
+        && let Err(e) = connection.close()
+    {
+        log::debug!("[layout/kde] close signal connection: {e}");
+    }
+}
+
 fn signal_watch_once() -> Result<(), String> {
     let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+    if let Ok(mut slot) = SIGNAL_CONNECTION.lock() {
+        *slot = Some(conn.clone());
+    }
+    // A stop requested before the connection was published.
+    if super::watcher_stop_requested() {
+        return Ok(());
+    }
     let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
         .map_err(|e| format!("create keyboard proxy: {e}"))?;
     let signals = proxy
@@ -131,6 +155,9 @@ fn signal_watch_once() -> Result<(), String> {
             return Ok(());
         }
         emit_current(&proxy);
+    }
+    if super::watcher_stop_requested() {
+        return Ok(());
     }
     Err("layoutChanged signal stream ended".to_string())
 }

@@ -1054,6 +1054,61 @@ mod tests {
     }
 
     #[test]
+    fn runtime_config_reports_whether_titles_are_needed() {
+        let (_dir, mut document) = document(
+            json!({"version": 1, "settings": {"currentLayoutId": "user:Main", "manualActiveLayoutId": "user:Other"}}),
+            LAYOUT,
+        );
+        let save = |document: &ConfigDocument, rules: &str| {
+            document
+                .paths
+                .save_user_layout("Other", &format!("rules:\n{rules}"), true)
+                .unwrap();
+        };
+        let uses_titles = |document: &ConfigDocument| {
+            document
+                .runtime_config(&AutoSwitchContext::default())
+                .unwrap()
+                .uses_titles
+        };
+        save(
+            &document,
+            "  - key: KeyA\n    tap: KeyB\n    windows: [kate]\n",
+        );
+        assert!(!uses_titles(&document));
+        save(
+            &document,
+            "  - key: KeyA\n    tap: KeyB\n    excludeWindows: ['title:Secret']\n",
+        );
+        assert!(uses_titles(&document));
+        // Disabled rules never run, so they need no titles.
+        save(
+            &document,
+            "  - key: KeyA\n    enabled: false\n    tap: KeyB\n    windows: ['title:x']\n",
+        );
+        assert!(!uses_titles(&document));
+        // Auto rules count only in auto mode.
+        document
+            .update_settings(|settings| {
+                settings.auto_rules = vec![crate::profile::model::AutoRule {
+                    id: "r".into(),
+                    enabled: true,
+                    layout_id: None,
+                    conditions: crate::profile::model::LayoutConditionSet {
+                        apps: vec!["title:YouTube".into()],
+                        ..Default::default()
+                    },
+                }];
+            })
+            .unwrap();
+        assert!(!uses_titles(&document));
+        document
+            .update_settings(|settings| settings.layout_mode = LayoutMode::Auto)
+            .unwrap();
+        assert!(uses_titles(&document));
+    }
+
+    #[test]
     fn runtime_config_uses_the_active_library_layout() {
         let (_dir, mut document) = document(
             json!({"version": 1, "settings": {"currentLayoutId": "user:Main", "manualActiveLayoutId": "user:Other"}}),

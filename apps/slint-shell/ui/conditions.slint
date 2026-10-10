@@ -37,6 +37,35 @@ export global ConditionChoices {
     pure callback title-text(string) -> string;
     /// Pattern for the typed text: an app pattern, or with `title` a title pattern.
     pure callback make-pattern(string, bool) -> string;
+    /// How a stored pattern reads in a list.
+    public pure function label(pattern: string) -> string {
+        return self.is-title(pattern) ? @tr("Window title contains: {}", self.title-text(pattern)) : pattern;
+    }
+}
+
+/// Applications with open windows; a click reports the pattern to store.
+export component OpenWindowsList inherits VerticalLayout {
+    callback chosen(string);
+    spacing: 2px;
+    if ConditionChoices.open-windows-loading: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
+    if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; }
+    if !ConditionChoices.open-windows-loading: VerticalLayout {
+        spacing: 2px;
+        for window in ConditionChoices.open-windows: Rectangle {
+            height: window-row.preferred-height;
+            border-radius: 4px;
+            background: window-touch.has-hover ? Theme.hover : transparent;
+            window-row := VerticalLayout {
+                padding: 6px; spacing: 2px;
+                Text { text: window.process == "" || window.process == window.app-id ? window.app-id : window.app-id + " · " + window.process; color: Theme.text; wrap: word-wrap; }
+                if window.title != "": Text { text: window.title; color: Theme.muted; font-size: 12px; overflow: elide; }
+            }
+            window-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.chosen(window.pattern); }
+            }
+        }
+    }
 }
 
 export component ApplicationsField inherits VerticalLayout {
@@ -67,7 +96,7 @@ export component ApplicationsField inherits VerticalLayout {
     for item[index] in ConditionChoices.items(root.value): HorizontalLayout {
         spacing: 6px;
         Text {
-            text: ConditionChoices.is-title(item) ? @tr("Window title contains: {}", ConditionChoices.title-text(item)) : item;
+            text: ConditionChoices.label(item);
             color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center;
         }
         IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); clicked => { root.value = ConditionChoices.remove(root.value, index); } }
@@ -101,24 +130,8 @@ export component ApplicationsField inherits VerticalLayout {
             clicked => { root.picking = true; ConditionChoices.pick-active-window(); }
         }
     }
-    if root.browsing && ConditionChoices.open-windows-loading: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
-    if root.browsing && !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; }
-    if root.browsing && !ConditionChoices.open-windows-loading: VerticalLayout {
-        spacing: 2px;
-        for window in ConditionChoices.open-windows: Rectangle {
-            height: window-row.preferred-height;
-            border-radius: 4px;
-            background: window-touch.has-hover ? Theme.hover : transparent;
-            window-row := VerticalLayout {
-                padding: 6px; spacing: 2px;
-                Text { text: window.process == "" || window.process == window.app-id ? window.app-id : window.app-id + " · " + window.process; color: Theme.text; wrap: word-wrap; }
-                if window.title != "": Text { text: window.title; color: Theme.muted; font-size: 12px; overflow: elide; }
-            }
-            window-touch := TouchArea {
-                mouse-cursor: pointer;
-                clicked => { root.value = ConditionChoices.add(root.value, window.pattern); }
-            }
-        }
+    if root.browsing: OpenWindowsList {
+        chosen(pattern) => { root.value = ConditionChoices.add(root.value, pattern); }
     }
     if ConditionChoices.active-window != "": Text {
         text: @tr("Active now: {}", ConditionChoices.active-window);

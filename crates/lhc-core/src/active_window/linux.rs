@@ -112,10 +112,7 @@ pub(super) fn start_events() -> bool {
         (Desktop::Hyprland, SessionType::Wayland) => hyprland_events(),
         (Desktop::Sway, SessionType::Wayland) => command_events(
             Command::new("swaymsg").args(["-m", "-r", "-t", "subscribe", "[\"window\"]"]),
-            |line| {
-                !(line.contains("\"change\":\"title\"") || line.contains("\"change\": \"title\""))
-                    || super::titles_needed()
-            },
+            |line| sway_event_relevant(line, super::titles_needed()),
         ),
         (_, SessionType::X11) => command_events(
             Command::new("xprop").args(["-root", "-spy", "_NET_ACTIVE_WINDOW"]),
@@ -194,6 +191,26 @@ fn command_events(command: &mut Command, relevant: fn(&str) -> bool) -> Option<E
     Some(Events::Command(child, alive))
 }
 
+/// Whether a `swaymsg -t subscribe` window event can change the result;
+/// title changes count only while titles are needed.
+fn sway_event_relevant(line: &str, titles: bool) -> bool {
+    let title = match serde_json::from_str::<serde_json::Value>(line) {
+        Ok(event) => event.get("change").and_then(serde_json::Value::as_str) == Some("title"),
+        // Pretty-printed output spreads an event over several lines.
+        Err(_) => line.contains("\"change\": \"title\""),
+    };
+    titles || !title
+}
+
+/// Whether a Hyprland `socket2` line (`event>>data`) can change the result.
+fn hyprland_event_relevant(line: &str, titles: bool) -> bool {
+    match line.split(">>").next().unwrap_or("") {
+        "activewindowv2" | "fullscreen" | "closewindow" => true,
+        "windowtitlev2" => titles,
+        _ => false,
+    }
+}
+
 fn hyprland_events() -> Option<Events> {
     use std::os::unix::net::UnixStream;
     let signature = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").ok()?;
@@ -220,13 +237,7 @@ fn hyprland_events() -> Option<Events> {
                 match reader.read_line(&mut line) {
                     Ok(0) => break,
                     Ok(_) => {
-                        let event = line.split(">>").next().unwrap_or("");
-                        let relevant = match event {
-                            "activewindowv2" | "fullscreen" | "closewindow" => true,
-                            "windowtitlev2" => super::titles_needed(),
-                            _ => false,
-                        };
-                        if relevant {
+                        if hyprland_event_relevant(&line, super::titles_needed()) {
                             super::wake();
                         }
                         line.clear();
@@ -619,6 +630,44 @@ mod tests {
                 .fullscreen,
             None
         );
+    }
+
+    #[test]
+    fn hyprland_events_that_change_the_window() {
+        assert!(hyprland_event_relevant("activewindowv2>>5612abcd\n", false));
+        assert!(hyprland_event_relevant("fullscreen>>1\n", false));
+        assert!(!hyprland_event_relevant(
+            "windowtitlev2>>5612abcd,zsh\n",
+            false
+        ));
+        assert!(hyprland_event_relevant(
+            "windowtitlev2>>5612abcd,zsh\n",
+            true
+        ));
+        assert!(!hyprland_event_relevant("workspace>>2\n", true));
+    }
+
+    #[test]
+    fn sway_title_events_count_only_with_titles() {
+        let title = r#"{"change":"title","container":{"name":"zsh"}}"#;
+        assert!(!sway_event_relevant(title, false));
+        assert!(sway_event_relevant(title, true));
+        assert!(sway_event_relevant(r#"{"change":"focus"}"#, false));
+        assert!(sway_event_relevant("not json", false));
+        assert!(!sway_event_relevant(r#"  "change": "title","#, false));
+    }
+
+    #[test]
+    fn kwin_reports_without_titles_or_window() {
+        let report = serde_json::json!({"appId": "org.kde.kate", "pid": 0, "fullscreen": false});
+        let window = window_from_json(&report, "title", "appId").unwrap();
+        assert_eq!(
+            (window.app_id.as_str(), window.title.as_str()),
+            ("org.kde.kate", "")
+        );
+        assert_eq!(window.process_name, None);
+        assert_eq!(window.fullscreen, Some(false));
+        assert!(window_from_json(&serde_json::json!({}), "title", "appId").is_none());
     }
 
     #[test]

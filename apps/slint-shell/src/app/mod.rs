@@ -340,6 +340,8 @@ fn start_core() {
     }
     lhc_core::layout::start_watcher();
     lhc_core::gamemode::start_watcher(paths.ok());
+    // Settings and popups must not change app conditions while open.
+    lhc_core::active_window::ignore_own_windows(true);
     lhc_core::active_window::start_watcher();
     mapper::forward_core_events();
 }

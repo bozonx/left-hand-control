@@ -33,6 +33,8 @@ const EVENT_FALLBACK_INTERVAL: Duration = Duration::from_secs(3);
 static TITLES_FOR_SHELL: AtomicBool = AtomicBool::new(false);
 /// Game-mode process rules need window titles.
 static TITLES_FOR_GAME_MODE: AtomicBool = AtomicBool::new(false);
+/// Windows of this application do not count as the active window.
+static IGNORE_OWN_WINDOWS: AtomicBool = AtomicBool::new(false);
 
 /// An application with an open window, for picking a condition.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -70,6 +72,31 @@ pub(crate) fn missing_tool() -> Option<&'static str> {
 }
 
 /// Whether the shell's conditions need window titles. Off by default.
+/// Skip this application's own windows (settings, popups, also those of
+/// helper processes of the same executable): while one has the focus the
+/// previous window stays active, so conditions and "take the active
+/// window" see the application the user works in.
+pub fn ignore_own_windows(ignore: bool) {
+    IGNORE_OWN_WINDOWS.store(ignore, Ordering::SeqCst);
+}
+
+/// Whether `process` is this application's executable.
+fn is_own_process(process: Option<&str>) -> bool {
+    static OWN: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    let own = OWN.get_or_init(|| {
+        std::env::current_exe()
+            .ok()?
+            .file_name()?
+            .to_str()
+            .map(str::to_lowercase)
+    });
+    matches!((own, process), (Some(own), Some(process)) if *own == process.to_lowercase())
+}
+
+fn is_ignored(window: &ActiveWindow) -> bool {
+    IGNORE_OWN_WINDOWS.load(Ordering::SeqCst) && is_own_process(window.process_name.as_deref())
+}
+
 pub fn set_titles_needed(needed: bool) {
     if TITLES_FOR_SHELL.swap(needed, Ordering::SeqCst) != needed {
         wake();
@@ -155,7 +182,7 @@ pub fn start_watcher() {
                     control.refresh = false;
                 }
                 let current = detect_active_window();
-                if current != last {
+                if current != last && !current.as_ref().is_some_and(is_ignored) {
                     crate::runtime_state::set_active_window(current.clone());
                     crate::events::emit(crate::events::CoreEvent::ActiveWindowChanged(
                         current.clone(),
@@ -245,8 +272,12 @@ fn detect_active_window() -> Option<ActiveWindow> {
 }
 
 /// Detect synchronously and refresh the cache (used before showing popups).
+/// An own window (see [`ignore_own_windows`]) leaves the cache as is.
 pub fn detect_active_window_now() -> Option<ActiveWindow> {
     let current = detect_active_window();
+    if current.as_ref().is_some_and(is_ignored) {
+        return cached_active_window();
+    }
     crate::runtime_state::set_active_window(current.clone());
     current
 }
@@ -261,7 +292,11 @@ pub fn open_windows() -> Vec<OpenWindow> {
     let mut windows = crate::platform::windows::open_windows();
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     let mut windows: Vec<OpenWindow> = Vec::new();
-    windows.retain(|window| !window.app_id.is_empty() || window.process_name.is_some());
+    windows.retain(|window| {
+        (!window.app_id.is_empty() || window.process_name.is_some())
+            && !(IGNORE_OWN_WINDOWS.load(Ordering::SeqCst)
+                && is_own_process(window.process_name.as_deref()))
+    });
     windows.sort_by_key(|window| {
         (
             window.app_id.to_lowercase(),
@@ -278,4 +313,28 @@ pub fn open_windows() -> Vec<OpenWindow> {
                 == b.process_name.as_deref().map(str::to_lowercase)
     });
     windows
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn own_windows_are_ignored_only_when_asked() {
+        let exe = std::env::current_exe().unwrap();
+        let own = ActiveWindow {
+            app_id: "slint-shell".into(),
+            process_name: exe.file_name().unwrap().to_str().map(str::to_uppercase),
+            ..ActiveWindow::default()
+        };
+        let other = ActiveWindow {
+            process_name: Some("kate".into()),
+            ..ActiveWindow::default()
+        };
+        assert!(!is_ignored(&own));
+        ignore_own_windows(true);
+        assert!(is_ignored(&own));
+        assert!(!is_ignored(&other));
+        ignore_own_windows(false);
+    }
 }

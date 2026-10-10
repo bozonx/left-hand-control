@@ -58,6 +58,8 @@ static LAST_PUBLISHED: Mutex<Option<(String, String)>> = Mutex::new(None);
 
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
+    #[cfg(target_os = "linux")]
+    linux_kde::interrupt_signal_watcher();
     if let Ok(mut watchers) = WATCHERS.lock() {
         for watcher in watchers.drain(..) {
             if let Err(error) = watcher.join() {
