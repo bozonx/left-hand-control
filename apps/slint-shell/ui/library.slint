@@ -306,6 +306,12 @@ component TargetPicker inherits Rectangle {
     in property <int> target: -1;
     in property <bool> missing;
     callback picked(int);
+    // Closing the popup destroys the repeated item's parent in Live Preview.
+    // Continue in the surviving picker's context instead (Slint issue #6426).
+    function choose(index: int) {
+        menu.close();
+        root.picked(index);
+    }
     height: 32px;
     border-radius: 6px;
     border-width: 1px;
@@ -340,9 +346,9 @@ component TargetPicker inherits Rectangle {
         Rectangle {
             background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
             VerticalBox { padding: 4px; spacing: 0px;
-                LayoutMenuItem { text: @tr("No layout (keys as is)"); clicked => { menu.close(); root.picked(-1); } }
+                LayoutMenuItem { text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
                 Rectangle { height: 1px; background: Theme.divider; }
-                for name[index] in LayoutLibrary.names: LayoutMenuItem { text: name; clicked => { menu.close(); root.picked(index); } }
+                for name[index] in LayoutLibrary.names: LayoutMenuItem { text: name; clicked => { root.choose(index); } }
             }
         }
     }
