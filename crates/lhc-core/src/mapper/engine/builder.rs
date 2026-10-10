@@ -487,6 +487,7 @@ impl Engine {
                 }
             },
             decision_buffer: Vec::new(),
+            combo_buffer: Vec::new(),
             active_layers: Vec::new(),
             pending: HashMap::new(),
             emitted: HashMap::new(),

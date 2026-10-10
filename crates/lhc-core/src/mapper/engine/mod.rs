@@ -65,6 +65,11 @@ use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
+/// How long a press of a chord member is held back waiting for the rest of
+/// the chord (QMK's `COMBO_TERM`). A chord whose keys arrive within this
+/// window fires without its members ever reaching the app.
+const COMBO_TERM: Duration = Duration::from_millis(50);
+
 pub struct Engine {
     rules: HashMap<Key, Vec<RuleEntry>>,
     chord_rules: Vec<(Vec<Key>, RuleEntry)>,
@@ -87,6 +92,10 @@ pub struct Engine {
     /// (permissive-hold mode only). Replayed in order once the decision
     /// resolves. Always empty in `HoldOnOtherKeyPress` mode.
     decision_buffer: Vec<BufferedEvent>,
+    /// Events deferred while a non-modifier chord member waits for the rest
+    /// of its chord (see [`COMBO_TERM`]). Replayed in order when the chord
+    /// cannot complete any more; dropped for members when it fires.
+    combo_buffer: Vec<BufferedEvent>,
 
     /// Stack of currently active layers (top = highest priority).
     active_layers: Vec<String>,
@@ -138,12 +147,22 @@ impl Engine {
                     .as_ref()
                     .map(|am| am.next_wake.saturating_duration_since(now)),
             )
+            .chain(
+                self.combo_deadline()
+                    .map(|deadline| deadline.saturating_duration_since(now)),
+            )
             .min()
     }
 
     /// Tick pending state machines. Commits holds whose decision window
     /// elapsed and fires taps whose double-tap window elapsed.
     pub fn tick(&mut self, now: Instant, out: &mut Vec<Out>) {
+        if self
+            .combo_deadline()
+            .is_some_and(|deadline| now >= deadline)
+        {
+            self.flush_combo_buffer(out);
+        }
         let expired: Vec<_> = self
             .long_holds
             .iter()
@@ -377,7 +396,18 @@ impl Engine {
         {
             self.tick(now, out);
         }
+        // A press arriving after the combo window but before the next tick
+        // must not extend the stale combo.
+        if self
+            .combo_deadline()
+            .is_some_and(|deadline| now >= deadline)
+        {
+            self.flush_combo_buffer(out);
+        }
         if self.handle_chord(key, down, now, out) {
+            return;
+        }
+        if self.combo_intercept(key, down, now, out) {
             return;
         }
         self.handle_event(key, down, now, out);
@@ -818,17 +848,25 @@ impl Engine {
             .rev()
             .filter(|(keys, rule)| {
                 keys.contains(&key)
+                    && self.chord_eligible(keys, rule)
                     && keys.iter().all(|member| {
-                        self.physical_down.contains(member) && !self.chord_consumed.contains(member)
+                        self.physical_down.contains(member)
+                            && (*member == key || !self.chord_member_leaked(*member))
                     })
-                    && rule_passes_apps(rule)
-                    && rule_passes_conditions(rule)
             })
             .max_by_key(|(keys, _)| keys.len())
             .cloned();
         let Some((keys, rule)) = matching else {
             return false;
         };
+        // Buffered member presses never reached the app — drop them. Anything
+        // else in the buffer (releases of unrelated keys) happened before
+        // this press, so it replays first.
+        for ev in std::mem::take(&mut self.combo_buffer) {
+            if !keys.contains(&ev.key) {
+                self.handle_event(ev.key, ev.down, ev.at, out);
+            }
+        }
         let owner = keys[0];
         let previous = self.pending.remove(&owner);
         let mut suppressed = Vec::new();
@@ -873,6 +911,98 @@ impl Engine {
         self.start_rule(owner, rule, now, out);
         self.drain_decision_buffer(out);
         true
+    }
+
+    /// Chords, like single-key rules, act only on the base level (no layer
+    /// active), never reuse a key owned by an active chord and obey the
+    /// rule's conditions.
+    fn chord_eligible(&self, keys: &[Key], rule: &RuleEntry) -> bool {
+        self.active_layers.is_empty()
+            && !keys
+                .iter()
+                .any(|member| self.chord_consumed.contains(member))
+            && rule_passes_apps(rule)
+            && rule_passes_conditions(rule)
+    }
+
+    /// True when a held chord member already produced visible output (a
+    /// passed-through character, a fired action), so the chord can no longer
+    /// take it back. Held modifiers are not output: the chord suppresses and
+    /// later restores them.
+    fn chord_member_leaked(&self, member: Key) -> bool {
+        !is_modifier_key(member)
+            && (self.oneshot_consumed.contains(&member)
+                || self
+                    .emitted
+                    .get(&member)
+                    .is_some_and(|ks| !is_modifier_key(ks.key)))
+    }
+
+    fn combo_deadline(&self) -> Option<Instant> {
+        self.combo_buffer.first().map(|ev| ev.at + COMBO_TERM)
+    }
+
+    /// A non-modifier key that belongs to an eligible chord starts a combo
+    /// window. Modifiers pass through as before: a held modifier prints
+    /// nothing and the chord suppresses it if it completes.
+    fn starts_combo(&self, key: Key) -> bool {
+        !is_modifier_key(key)
+            && self
+                .chord_rules
+                .iter()
+                .any(|(keys, rule)| keys.contains(&key) && self.chord_eligible(keys, rule))
+    }
+
+    /// True when `key` together with every buffered press is still part of
+    /// some eligible chord.
+    fn extends_combo(&self, key: Key) -> bool {
+        self.chord_rules.iter().any(|(keys, rule)| {
+            keys.contains(&key)
+                && self
+                    .combo_buffer
+                    .iter()
+                    .filter(|ev| ev.down)
+                    .all(|ev| keys.contains(&ev.key))
+                && self.chord_eligible(keys, rule)
+        })
+    }
+
+    /// Combo interception, run after `handle_chord` found no complete chord.
+    /// Presses that may still grow into a chord are buffered; anything that
+    /// rules the chord out replays the buffer first so output keeps the
+    /// physical order.
+    ///
+    /// Returns true when the event was consumed (buffered).
+    fn combo_intercept(&mut self, key: Key, down: bool, now: Instant, out: &mut Vec<Out>) -> bool {
+        if !self.combo_buffer.is_empty() {
+            if down && self.extends_combo(key) {
+                self.combo_buffer.push(BufferedEvent { key, down, at: now });
+                return true;
+            }
+            if down || self.combo_buffer.iter().any(|ev| ev.key == key) {
+                // A key outside the chord, or a buffered member released
+                // before the chord completed: no chord here.
+                self.flush_combo_buffer(out);
+            } else {
+                // Release of a key held before the combo started: keep it
+                // ordered behind the buffered presses.
+                self.combo_buffer.push(BufferedEvent { key, down, at: now });
+                return true;
+            }
+        }
+        if down && self.starts_combo(key) {
+            self.combo_buffer.push(BufferedEvent { key, down, at: now });
+            return true;
+        }
+        false
+    }
+
+    /// Replay the combo buffer as ordinary key events with their original
+    /// timestamps, so tap/hold deadlines stay anchored to the physical press.
+    fn flush_combo_buffer(&mut self, out: &mut Vec<Out>) {
+        for ev in std::mem::take(&mut self.combo_buffer) {
+            self.handle_event(ev.key, ev.down, ev.at, out);
+        }
     }
 
     fn active_rule_for_key(&self, key: Key) -> Option<RuleEntry> {
@@ -1209,6 +1339,7 @@ impl Engine {
         // to release — drop them rather than replaying into a tearing-down
         // engine.
         self.decision_buffer.clear();
+        self.combo_buffer.clear();
         self.oneshot_consumed.clear();
         self.layer_triggers.clear();
         self.isolated_holds.clear();
@@ -1553,7 +1684,7 @@ mod tests {
         engine.handle(
             Key::KEY_B,
             true,
-            now + Duration::from_millis(1300),
+            now + Duration::from_millis(1210),
             &mut out,
         );
         out.clear();
@@ -2443,6 +2574,154 @@ mod tests {
             [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == Key::KEY_B
         ));
         crate::runtime_state::set_active_window(None);
+    }
+
+    fn raw_keys(out: &[Out]) -> Vec<(Key, bool)> {
+        out.iter()
+            .filter_map(|event| match event {
+                Out::KeyRaw { key, down } => Some((*key, *down)),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn fired_text(out: &[Out]) -> bool {
+        out.iter().any(|event| matches!(event, Out::Literal(_)))
+    }
+
+    #[test]
+    fn combo_members_never_reach_the_app() {
+        for (first, second) in [(Key::KEY_J, Key::KEY_K), (Key::KEY_K, Key::KEY_J)] {
+            let cfg =
+                config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
+            let mut engine = Engine::new(&cfg);
+            let now = Instant::now();
+            let mut out = Vec::new();
+            engine.handle(first, true, now, &mut out);
+            assert!(out.is_empty());
+            engine.handle(second, true, now + Duration::from_millis(20), &mut out);
+            engine.handle(first, false, now + Duration::from_millis(60), &mut out);
+            engine.handle(second, false, now + Duration::from_millis(70), &mut out);
+            assert!(fired_text(&out));
+            assert!(raw_keys(&out).is_empty());
+            assert!(engine.combo_buffer.is_empty());
+            assert!(engine.chord_consumed.is_empty());
+        }
+    }
+
+    #[test]
+    fn combo_window_expiry_types_the_member_and_blocks_the_chord() {
+        let cfg =
+            config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_J, true, now, &mut out);
+        assert_eq!(engine.next_deadline(now), Some(COMBO_TERM));
+        engine.tick(now + COMBO_TERM, &mut out);
+        assert_eq!(raw_keys(&out), vec![(Key::KEY_J, true)]);
+        // `j` is already typed — a late K must not turn it into the chord.
+        engine.handle(Key::KEY_K, true, now + Duration::from_millis(70), &mut out);
+        engine.tick(now + Duration::from_millis(200), &mut out);
+        assert!(!fired_text(&out));
+        assert_eq!(raw_keys(&out), vec![(Key::KEY_J, true), (Key::KEY_K, true)]);
+    }
+
+    #[test]
+    fn combo_late_press_before_tick_does_not_extend_stale_window() {
+        let cfg =
+            config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_J, true, now, &mut out);
+        engine.handle(Key::KEY_K, true, now + Duration::from_millis(80), &mut out);
+        engine.tick(now + Duration::from_millis(200), &mut out);
+        assert!(!fired_text(&out));
+        assert_eq!(raw_keys(&out), vec![(Key::KEY_J, true), (Key::KEY_K, true)]);
+    }
+
+    #[test]
+    fn combo_member_released_early_types_normally() {
+        let cfg =
+            config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_J, true, now, &mut out);
+        engine.handle(Key::KEY_J, false, now + Duration::from_millis(10), &mut out);
+        assert_eq!(
+            raw_keys(&out),
+            vec![(Key::KEY_J, true), (Key::KEY_J, false)]
+        );
+        engine.handle(Key::KEY_K, true, now + Duration::from_millis(20), &mut out);
+        engine.handle(Key::KEY_K, false, now + Duration::from_millis(30), &mut out);
+        assert!(!fired_text(&out));
+        assert_eq!(
+            raw_keys(&out),
+            vec![
+                (Key::KEY_J, true),
+                (Key::KEY_J, false),
+                (Key::KEY_K, true),
+                (Key::KEY_K, false),
+            ]
+        );
+    }
+
+    #[test]
+    fn combo_flush_keeps_physical_order() {
+        let cfg =
+            config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        // A non-member press rules the chord out and replays J before itself.
+        engine.handle(Key::KEY_J, true, now, &mut out);
+        engine.handle(Key::KEY_L, true, now + Duration::from_millis(10), &mut out);
+        assert_eq!(raw_keys(&out), vec![(Key::KEY_J, true), (Key::KEY_L, true)]);
+        engine.shutdown(&mut out);
+        out.clear();
+
+        // Shift released while J is buffered must stay behind J, or the
+        // replayed `J` would lose its Shift.
+        let now = now + Duration::from_secs(1);
+        engine.handle(Key::KEY_LEFTSHIFT, true, now, &mut out);
+        engine.handle(Key::KEY_J, true, now + Duration::from_millis(10), &mut out);
+        engine.handle(
+            Key::KEY_LEFTSHIFT,
+            false,
+            now + Duration::from_millis(20),
+            &mut out,
+        );
+        engine.tick(now + Duration::from_millis(60), &mut out);
+        assert_eq!(
+            raw_keys(&out),
+            vec![
+                (Key::KEY_LEFTSHIFT, true),
+                (Key::KEY_J, true),
+                (Key::KEY_LEFTSHIFT, false),
+            ]
+        );
+    }
+
+    #[test]
+    fn chords_are_inactive_inside_a_layer() {
+        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+            {"key": "Space", "layerId": "nav", "tapAction": null},
+            {"key": "KeyJ+KeyK", "tapAction": "text:esc"},
+        ]}))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(Key::KEY_SPACE, true, now, &mut out);
+        assert_eq!(engine.active_layers, vec!["nav"]);
+        engine.handle(Key::KEY_J, true, now + Duration::from_millis(10), &mut out);
+        // No combo delay inside the layer: J flows through at once.
+        assert_eq!(raw_keys(&out), vec![(Key::KEY_J, true)]);
+        engine.handle(Key::KEY_K, true, now + Duration::from_millis(20), &mut out);
+        assert!(!fired_text(&out));
+        assert!(engine.combo_buffer.is_empty());
     }
 
     #[test]
