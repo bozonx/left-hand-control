@@ -143,7 +143,7 @@ impl Form {
         e.set_use_fullscreen(self.use_fullscreen);
         e.set_remember_game_control(self.remember_game_control);
         e.set_block_game_popups(self.block_game_popups);
-        e.set_process_matchers(rows(&self.matchers));
+        show_matchers(&e, &self.matchers);
         e.set_text_mode_index(self.text_mode);
         e.set_ydotool_path(self.ydotool.clone().into());
         e.set_xdotool_path(self.xdotool.clone().into());
@@ -201,6 +201,12 @@ impl Form {
     }
 }
 
+/// Show the matchers and their names, which the application picker checks.
+fn show_matchers(e: &SettingsEditor, items: &[GameModeProcessMatcher]) {
+    e.set_process_matchers(rows(items));
+    e.set_process_names(strings(items.iter().map(|item| item.name.as_str())));
+}
+
 fn rows(items: &[GameModeProcessMatcher]) -> ModelRc<ProcessRow> {
     ModelRc::new(VecModel::from(
         items
@@ -214,45 +220,12 @@ fn rows(items: &[GameModeProcessMatcher]) -> ModelRc<ProcessRow> {
     ))
 }
 
-/// How many running-process suggestions the page lists.
-const SUGGESTIONS: usize = 8;
-/// Seconds the user gets to focus the game before its window is read.
-const PICK_DELAY: i32 = 3;
-
 /// The form as last loaded from the document, and the draft process list.
 #[derive(Default)]
 struct State {
     base: Option<Form>,
     matchers: Vec<GameModeProcessMatcher>,
     autosave: slint::Timer,
-    /// Running processes, refreshed when the user starts typing a name.
-    processes: Option<(std::time::Instant, Vec<String>)>,
-    pick: slint::Timer,
-}
-
-/// Running processes containing `query`, without the ones already listed.
-fn suggestions(
-    processes: &[String],
-    matchers: &[GameModeProcessMatcher],
-    query: &str,
-) -> Vec<String> {
-    let query = query.trim().to_lowercase();
-    if query.is_empty() {
-        return Vec::new();
-    }
-    processes
-        .iter()
-        .filter(|name| {
-            let lower = name.to_lowercase();
-            lower.contains(&query)
-                && lower != query
-                && !matchers
-                    .iter()
-                    .any(|item| item.name.eq_ignore_ascii_case(name))
-        })
-        .take(SUGGESTIONS)
-        .cloned()
-        .collect()
 }
 
 /// Rules and automatic layout rules that depend on game mode.
@@ -656,62 +629,26 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     let weak = ui.as_weak();
     let shared = state.clone();
-    e.on_add_process(move || {
+    e.on_toggle_process(move |name, on, window| {
         let Some(ui) = weak.upgrade() else { return };
         let e = ui.global::<SettingsEditor>();
-        let name = e.get_process_name().trim().to_owned();
-        if name.is_empty() {
-            e.set_message(crate::notifications::report(&ui, &Msg::ProcessNameRequired));
-            return;
-        }
-        let by_title = e.get_process_by_title();
-        let name = if by_title {
-            lhc_core::profile::app_match::title_pattern(&name)
-        } else {
-            name
-        };
+        let name = name.trim();
         let mut state = shared.borrow_mut();
-        state.matchers.push(GameModeProcessMatcher {
-            id: lhc_core::profile::ids::generate("process-"),
-            name,
-            only_active_window: by_title || e.get_process_only_active(),
-            is_blacklist: e.get_process_blacklist(),
-        });
-        e.set_process_matchers(rows(&state.matchers));
-        e.set_process_name("".into());
-        e.set_process_suggestions(strings(Vec::<String>::new()));
+        state
+            .matchers
+            .retain(|item| !item.name.eq_ignore_ascii_case(name));
+        if on && !name.is_empty() {
+            state.matchers.push(GameModeProcessMatcher {
+                id: lhc_core::profile::ids::generate("process-"),
+                name: name.to_owned(),
+                // A game picked by its window counts while it has the focus.
+                only_active_window: window,
+                is_blacklist: false,
+            });
+        }
+        show_matchers(&e, &state.matchers);
         drop(state);
         e.invoke_save();
-    });
-
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    e.on_process_name_edited(move |text| {
-        let Some(ui) = weak.upgrade() else { return };
-        // Titles are not process names: nothing to suggest.
-        if ui.global::<SettingsEditor>().get_process_by_title() {
-            ui.global::<SettingsEditor>()
-                .set_process_suggestions(strings(Vec::<String>::new()));
-            return;
-        }
-        let mut state = shared.borrow_mut();
-        let stale = state
-            .processes
-            .as_ref()
-            .is_none_or(|(at, _)| at.elapsed() > std::time::Duration::from_secs(2));
-        if stale {
-            state.processes = Some((
-                std::time::Instant::now(),
-                lhc_core::gamemode::running_processes(),
-            ));
-        }
-        let found = state
-            .processes
-            .as_ref()
-            .map(|(_, names)| suggestions(names, &state.matchers, &text))
-            .unwrap_or_default();
-        ui.global::<SettingsEditor>()
-            .set_process_suggestions(strings(found));
     });
 
     let weak = ui.as_weak();
@@ -728,7 +665,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         item.only_active_window = only_active;
         item.is_blacklist = blacklist;
-        e.set_process_matchers(rows(&state.matchers));
+        show_matchers(&e, &state.matchers);
         drop(state);
         e.invoke_save();
     });
@@ -746,43 +683,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         };
         state.matchers.remove(index);
-        e.set_process_matchers(rows(&state.matchers));
+        show_matchers(&e, &state.matchers);
         drop(state);
         e.invoke_save();
-    });
-
-    let weak = ui.as_weak();
-    e.on_pick_active_window(move || {
-        let Some(ui) = weak.upgrade() else { return };
-        ui.global::<SettingsEditor>().set_pick_countdown(PICK_DELAY);
-        let weak = weak.clone();
-        let shared = Rc::downgrade(&state);
-        state.borrow().pick.start(
-            slint::TimerMode::Repeated,
-            std::time::Duration::from_secs(1),
-            move || {
-                let Some(ui) = weak.upgrade() else { return };
-                let e = ui.global::<SettingsEditor>();
-                let left = e.get_pick_countdown() - 1;
-                e.set_pick_countdown(left.max(0));
-                if left > 0 {
-                    return;
-                }
-                if let Some(state) = shared.upgrade() {
-                    state.borrow().pick.stop();
-                }
-                if let Some(window) = lhc_core::active_window::detect_active_window_now() {
-                    let name = window
-                        .process_name
-                        .filter(|name| !name.is_empty())
-                        .unwrap_or(window.app_id);
-                    e.set_process_by_title(false);
-                    e.set_process_name(name.into());
-                    e.set_process_only_active(true);
-                    e.set_process_suggestions(strings(Vec::<String>::new()));
-                }
-            },
-        );
     });
 }
 

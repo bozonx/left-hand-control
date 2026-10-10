@@ -226,7 +226,6 @@ pub enum Msg {
     LibrarySaved,
     LibrarySelect,
     LibraryChanged,
-    ProcessNameRequired,
     LayerSaved,
     RuleSaved,
     LayoutEmpty,
@@ -317,7 +316,6 @@ impl Msg {
             Self::GameModeManualOn => ("game-mode-manual-on", empty(), 0),
             Self::GameModeManualOff => ("game-mode-manual-off", empty(), 0),
             Self::SettingsSaved => ("settings-saved", empty(), 0),
-            Self::ProcessNameRequired => ("process-name-required", empty(), 0),
             Self::MacroIssue(issue) => (
                 match issue {
                     lhc_core::profile::macros::MacroIssue::InvalidId => "macro-invalid-id",

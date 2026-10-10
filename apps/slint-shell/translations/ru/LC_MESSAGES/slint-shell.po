@@ -232,17 +232,11 @@ msgstr "Включить: "
 msgid "Exclude: "
 msgstr "Исключить: "
 
-msgid "Process name"
-msgstr "Имя процесса"
-
 msgid "Active window only"
 msgstr "Только активное окно"
 
 msgid "Exclude"
 msgstr "Исключить"
-
-msgid "Add process"
-msgstr "Добавить процесс"
 
 
 msgid "Linux text injection"
@@ -268,9 +262,6 @@ msgstr "Сохранить настройки"
 
 msgid "Settings saved"
 msgstr "Настройки сохранены"
-
-msgid "Enter a process name"
-msgstr "Введите имя процесса"
 
 msgid "Enter a non-negative integer for each timeout"
 msgstr "Введите неотрицательное целое число для каждой задержки"
@@ -2076,17 +2067,8 @@ msgstr "Помнить On и Off после перезапуска"
 msgid "Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}."
 msgstr "Правил текущей раскладки с условием игрового режима: {}. Авто-правил раскладок с условием игрового режима: {}."
 
-msgid "Switch to the game window… {}"
-msgstr "Переключитесь на окно игры… {}"
-
-msgid "Take from the active window"
-msgstr "Взять из активного окна"
-
 msgid "Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."
 msgstr "Срабатывает, пока игра запущена через gamemoderun или сама запросила GameMode. В Steam укажите параметры запуска «gamemoderun %command%»."
-
-msgid "Type to search running processes"
-msgstr "Начните вводить, чтобы найти запущенный процесс"
 
 msgid "Game mode: on"
 msgstr "Игровой режим: включён"
@@ -2103,29 +2085,11 @@ msgstr "Определение активного окна недоступно 
 msgid "An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions."
 msgstr "Приложение сравнивается по ID или имени процесса: имя целиком, без учёта регистра, * и ? — шаблоны. Элемент по заголовку окна срабатывает, если заголовок содержит текст. Достаточно совпадения с любым элементом. Пустой список не ограничивает приложения."
 
-msgid "Application ID or process name"
-msgstr "ID приложения или имя процесса"
-
-msgid "Choose from open windows"
-msgstr "Выбрать из открытых окон"
-
-msgid "Hide open windows"
-msgstr "Скрыть открытые окна"
-
 msgid "Looking for open windows…"
 msgstr "Ищем открытые окна…"
 
 msgid "No open windows found"
 msgstr "Открытые окна не найдены"
-
-msgid "Switch to the window… {}"
-msgstr "Переключитесь на нужное окно… {}"
-
-msgid "Text in the window title"
-msgstr "Текст в заголовке окна"
-
-msgid "Window title"
-msgstr "Заголовок окна"
 
 msgid "Window title contains: {}"
 msgstr "Заголовок окна содержит: {}"
@@ -2187,23 +2151,62 @@ msgstr "Применять в окнах"
 msgid "Do not apply in windows"
 msgstr "Не применять в окнах"
 
-msgid "App ID / process"
-msgstr "ID приложения / процесс"
-
-msgid "Choose a window in 3 seconds"
-msgstr "Выбрать окно через 3 секунды"
-
-msgid "Use the last active window"
-msgstr "Взять последнее активное окно"
-
-msgid "Last active window: {}"
-msgstr "Последнее активное окно: {}"
-
 msgid "A match blocks the rule, even if the window is in the allowed list."
 msgstr "Совпадение запрещает правило, даже если окно входит в список разрешённых."
 
 msgid "Any match allows the rule. An empty list allows all windows."
 msgstr "Достаточно одного совпадения. Пустой список разрешает все окна."
 
-msgid "The last window title is unavailable. Choose from open windows or switch to a window during the countdown."
-msgstr "Заголовок последнего окна недоступен. Выберите открытое окно или переключитесь на него во время отсчёта."
+msgid "Add application…"
+msgstr "Добавить приложение…"
+
+msgid "Choose applications"
+msgstr "Выбор приложений"
+
+msgid "Choose applications to exclude"
+msgstr "Выбор приложений для исключения"
+
+msgid "Choose games and exclusions"
+msgstr "Выбор игр и исключений"
+
+msgid "Search, or type an app ID or title text"
+msgstr "Поиск или ID приложения / текст заголовка"
+
+msgid "Open windows"
+msgstr "Открытые окна"
+
+msgid "Running processes"
+msgstr "Запущенные процессы"
+
+msgid "Last active"
+msgstr "Последнее активное"
+
+msgid "Match by window title"
+msgstr "Условие по заголовку окна"
+
+msgid "Add “{}” as app ID or process"
+msgstr "Добавить «{}» как ID приложения или процесс"
+
+msgid "Add “{}” as window title text"
+msgstr "Добавить «{}» как текст в заголовке окна"
+
+msgid "Nothing found"
+msgstr "Ничего не найдено"
+
+msgid "Refresh"
+msgstr "Обновить"
+
+msgid "Done"
+msgstr "Готово"
+
+msgid "Nothing is excluded."
+msgstr "Ничего не исключено."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Ограничений нет: правило работает во всех окнах."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} окно"
+msgstr[1] "{n} окна"
+msgstr[2] "{n} окон"

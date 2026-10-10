@@ -33,8 +33,6 @@ const EVENT_FALLBACK_INTERVAL: Duration = Duration::from_secs(3);
 static TITLES_FOR_SHELL: AtomicBool = AtomicBool::new(false);
 /// Game-mode process rules need window titles.
 static TITLES_FOR_GAME_MODE: AtomicBool = AtomicBool::new(false);
-/// The condition picker temporarily needs window titles.
-static TITLES_FOR_PICKER: AtomicBool = AtomicBool::new(false);
 /// Windows of this application do not count as the active window.
 static IGNORE_OWN_WINDOWS: AtomicBool = AtomicBool::new(false);
 
@@ -76,8 +74,8 @@ pub(crate) fn missing_tool() -> Option<&'static str> {
 /// Whether the shell's conditions need window titles. Off by default.
 /// Skip this application's own windows (settings, popups, also those of
 /// helper processes of the same executable): while one has the focus the
-/// previous window stays active, so conditions and "take the active
-/// window" see the application the user works in.
+/// previous window stays active, so conditions and the application
+/// picker see the application the user works in.
 pub fn ignore_own_windows(ignore: bool) {
     IGNORE_OWN_WINDOWS.store(ignore, Ordering::SeqCst);
 }
@@ -111,17 +109,8 @@ pub(crate) fn set_titles_needed_by_game_mode(needed: bool) {
     }
 }
 
-/// Keep titles available during the condition picker's focus countdown.
-pub fn set_titles_needed_by_picker(needed: bool) {
-    if TITLES_FOR_PICKER.swap(needed, Ordering::SeqCst) != needed {
-        wake();
-    }
-}
-
 pub(crate) fn titles_needed() -> bool {
-    TITLES_FOR_SHELL.load(Ordering::SeqCst)
-        || TITLES_FOR_GAME_MODE.load(Ordering::SeqCst)
-        || TITLES_FOR_PICKER.load(Ordering::SeqCst)
+    TITLES_FOR_SHELL.load(Ordering::SeqCst) || TITLES_FOR_GAME_MODE.load(Ordering::SeqCst)
 }
 
 #[derive(Default)]
@@ -289,17 +278,6 @@ fn detect_active_window_with_titles(titles: bool) -> Option<ActiveWindow> {
 /// An own window (see [`ignore_own_windows`]) leaves the cache as is.
 pub fn detect_active_window_now() -> Option<ActiveWindow> {
     let current = detect_active_window();
-    if current.as_ref().is_some_and(is_ignored) {
-        return cached_active_window();
-    }
-    crate::runtime_state::set_active_window(current.clone());
-    current
-}
-
-/// Read a window for the condition picker, including its title.
-/// Own windows preserve the last external window.
-pub fn pick_active_window() -> Option<ActiveWindow> {
-    let current = detect_active_window_with_titles(true);
     if current.as_ref().is_some_and(is_ignored) {
         return cached_active_window();
     }

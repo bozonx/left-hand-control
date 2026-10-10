@@ -1,42 +1,111 @@
 use super::{condition_list, parse_list, strings};
 use crate::ui::{ConditionChoices, LanguageChoice, SettingsWindow, WindowChoice};
-use lhc_core::active_window::ActiveWindow;
+use lhc_core::active_window::{ActiveWindow, OpenWindow};
 use lhc_core::profile::app_match;
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::rc::Rc;
+use std::cell::RefCell;
+use std::time::{Duration, Instant};
 
-/// Seconds the user gets to focus a window before it is read.
-const PICK_DELAY: i32 = 3;
+/// How many running processes the picker lists.
+const PROCESSES: usize = 8;
 
-/// Show which application has the focus, as conditions see it.
+thread_local! {
+    /// Running processes, re-read when older than two seconds.
+    static PROCESS_CACHE: RefCell<Option<(Instant, Vec<String>)>> = const { RefCell::new(None) };
+}
+
+/// Put the focused application first in the picker's open-window list.
 pub(crate) fn show_active_window(ui: &SettingsWindow, window: Option<&ActiveWindow>) {
-    let text = window.map_or_else(String::new, |window| {
-        let mut parts: Vec<&str> = Vec::new();
-        if !window.app_id.is_empty() {
-            parts.push(&window.app_id);
-        }
-        if let Some(process) = window.process_name.as_deref()
-            && !process.is_empty()
-            && !process.eq_ignore_ascii_case(&window.app_id)
-        {
-            parts.push(process);
-        }
-        parts.join(" · ")
-    });
     let choices = ui.global::<ConditionChoices>();
-    choices.set_active_window(text.into());
-    choices.set_active_pattern(
-        window
-            .map(|window| window_pattern(&window.app_id, window.process_name.as_deref()))
+    let rows = choices.get_open_windows().iter().collect::<Vec<_>>();
+    choices.set_open_windows(ModelRc::new(VecModel::from(arrange(rows, window))));
+}
+
+/// One row per application, in the order of `windows`; the first title
+/// stands for the others.
+fn group(windows: Vec<OpenWindow>) -> Vec<WindowChoice> {
+    let mut rows: Vec<WindowChoice> = Vec::new();
+    for window in windows {
+        let pattern = window_pattern(&window.app_id, window.process_name.as_deref());
+        if let Some(row) = rows
+            .iter_mut()
+            .find(|row| row.pattern.eq_ignore_ascii_case(&pattern))
+        {
+            row.count += 1;
+            if row.title.is_empty() {
+                row.title = window.title.into();
+            }
+            continue;
+        }
+        rows.push(WindowChoice {
+            pattern: pattern.into(),
+            app_id: window.app_id.into(),
+            process: window.process_name.unwrap_or_default().into(),
+            title: window.title.into(),
+            count: 1,
+            recent: false,
+        });
+    }
+    rows
+}
+
+/// Mark the active application and put it first, the others by app id.
+/// It is not added without an open window: that is mostly the desktop
+/// shell, focused when the settings are opened from the tray.
+fn arrange(mut rows: Vec<WindowChoice>, active: Option<&ActiveWindow>) -> Vec<WindowChoice> {
+    let pattern = active
+        .map(|active| window_pattern(&active.app_id, active.process_name.as_deref()))
+        .unwrap_or_default();
+    for row in &mut rows {
+        row.recent = !pattern.is_empty() && row.pattern.eq_ignore_ascii_case(&pattern);
+    }
+    rows.sort_by_key(|row| {
+        (
+            !row.recent,
+            row.app_id.to_lowercase(),
+            row.process.to_lowercase(),
+        )
+    });
+    rows
+}
+
+/// Whether the window's app id, process or title contains `query`.
+fn window_matches(window: &WindowChoice, query: &str) -> bool {
+    [&window.app_id, &window.process, &window.title]
+        .iter()
+        .any(|text| text.to_lowercase().contains(query))
+}
+
+/// Running processes containing `query` that `taken` does not list.
+fn process_matches(processes: &[String], taken: &[String], query: &str) -> Vec<String> {
+    let query = query.trim().to_lowercase();
+    if query.is_empty() {
+        return Vec::new();
+    }
+    processes
+        .iter()
+        .filter(|name| {
+            name.to_lowercase().contains(&query)
+                && !taken.iter().any(|taken| taken.eq_ignore_ascii_case(name))
+        })
+        .take(PROCESSES)
+        .cloned()
+        .collect()
+}
+
+fn running_processes() -> Vec<String> {
+    PROCESS_CACHE.with_borrow_mut(|cache| {
+        let stale = cache
+            .as_ref()
+            .is_none_or(|(at, _)| at.elapsed() > Duration::from_secs(2));
+        if stale {
+            *cache = Some((Instant::now(), lhc_core::gamemode::running_processes()));
+        }
+        cache
+            .as_ref()
+            .map(|(_, names)| names.clone())
             .unwrap_or_default()
-            .into(),
-    );
-    choices.set_active_title(
-        window
-            .map(|window| window.title.as_str())
-            .unwrap_or_default()
-            .into(),
-    );
+    })
 }
 
 /// The pattern a condition stores for a window: its app id, or the
@@ -51,7 +120,30 @@ fn window_pattern(app_id: &str, process: Option<&str>) -> String {
 
 pub(super) fn bind(ui: &SettingsWindow) {
     let choices = ui.global::<ConditionChoices>();
-    show_active_window(ui, lhc_core::active_window::cached_active_window().as_ref());
+    choices.on_has(|patterns, pattern| {
+        patterns
+            .iter()
+            .any(|item| item.eq_ignore_ascii_case(&pattern))
+    });
+    choices.on_matching(|windows, query| {
+        let query = query.trim().to_lowercase();
+        ModelRc::new(VecModel::from(
+            windows
+                .iter()
+                .filter(|window| window_matches(window, &query))
+                .collect::<Vec<_>>(),
+        ))
+    });
+    choices.on_processes(|windows, query| {
+        if query.trim().is_empty() {
+            return strings(Vec::<String>::new());
+        }
+        let taken = windows
+            .iter()
+            .flat_map(|window| [window.pattern.to_string(), window.process.to_string()])
+            .collect::<Vec<_>>();
+        strings(process_matches(&running_processes(), &taken, &query))
+    });
     choices.on_is_title(|pattern| app_match::title_text(&pattern).is_some());
     choices.on_title_text(|pattern| app_match::title_text(&pattern).unwrap_or("").into());
     choices.on_make_pattern(|text, title| {
@@ -76,72 +168,16 @@ pub(super) fn bind(ui: &SettingsWindow) {
             let windows = lhc_core::active_window::open_windows();
             if let Err(error) = weak.upgrade_in_event_loop(move |ui| {
                 let choices = ui.global::<ConditionChoices>();
-                choices.set_open_windows(ModelRc::new(VecModel::from(
-                    windows
-                        .into_iter()
-                        .map(|window| WindowChoice {
-                            pattern: window_pattern(&window.app_id, window.process_name.as_deref())
-                                .into(),
-                            app_id: window.app_id.into(),
-                            process: window.process_name.unwrap_or_default().into(),
-                            title: window.title.into(),
-                        })
-                        .collect::<Vec<_>>(),
-                )));
+                let rows = arrange(
+                    group(windows),
+                    lhc_core::active_window::cached_active_window().as_ref(),
+                );
+                choices.set_open_windows(ModelRc::new(VecModel::from(rows)));
                 choices.set_open_windows_loading(false);
             }) {
                 log::warn!("open windows: {error}");
             }
         });
-    });
-
-    let timer = Rc::new(slint::Timer::default());
-    let weak = ui.as_weak();
-    choices.on_pick_active_window(move || {
-        let Some(ui) = weak.upgrade() else { return };
-        lhc_core::active_window::set_titles_needed_by_picker(true);
-        ui.global::<ConditionChoices>()
-            .set_pick_countdown(PICK_DELAY);
-        let weak = weak.clone();
-        let stop = Rc::downgrade(&timer);
-        timer.start(
-            slint::TimerMode::Repeated,
-            std::time::Duration::from_secs(1),
-            move || {
-                let Some(ui) = weak.upgrade() else {
-                    lhc_core::active_window::set_titles_needed_by_picker(false);
-                    if let Some(timer) = stop.upgrade() {
-                        timer.stop();
-                    }
-                    return;
-                };
-                let choices = ui.global::<ConditionChoices>();
-                let left = (choices.get_pick_countdown() - 1).max(0);
-                choices.set_pick_countdown(left);
-                if left > 0 {
-                    return;
-                }
-                if let Some(timer) = stop.upgrade() {
-                    timer.stop();
-                }
-                let window = lhc_core::active_window::pick_active_window();
-                lhc_core::active_window::set_titles_needed_by_picker(false);
-                let picked = window
-                    .as_ref()
-                    .map(|window| window_pattern(&window.app_id, window.process_name.as_deref()))
-                    .unwrap_or_default();
-                choices.set_picked_title(
-                    window
-                        .as_ref()
-                        .map(|window| window.title.as_str())
-                        .unwrap_or_default()
-                        .into(),
-                );
-                show_active_window(&ui, window.as_ref());
-                choices.set_picked(picked.into());
-                choices.set_picked_serial(choices.get_picked_serial() + 1);
-            },
-        );
     });
 
     let weak = ui.as_weak();
@@ -197,7 +233,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
     });
     choices.on_toggle(|value, item, checked| {
         let mut values = parse_list(&value);
-        values.retain(|value| value != item.as_str());
+        values.retain(|value| !value.eq_ignore_ascii_case(&item));
         if checked {
             values.push(item.to_string());
         }
@@ -220,4 +256,64 @@ pub(super) fn bind(ui: &SettingsWindow) {
         }
         condition_list(&values).into()
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn open(app_id: &str, process: &str, title: &str) -> OpenWindow {
+        OpenWindow {
+            app_id: app_id.into(),
+            process_name: Some(process.into()),
+            title: title.into(),
+        }
+    }
+
+    #[test]
+    fn windows_are_grouped_by_application() {
+        let rows = group(vec![
+            open("firefox", "firefox", ""),
+            open("Firefox", "firefox", "Docs"),
+            open("", "kate", "notes.txt"),
+        ]);
+        assert_eq!(rows.len(), 2);
+        assert_eq!((rows[0].count, rows[0].title.as_str()), (2, "Docs"));
+        assert_eq!(rows[1].pattern, "kate");
+    }
+
+    #[test]
+    fn active_application_goes_first() {
+        let rows = group(vec![
+            open("dolphin", "dolphin", ""),
+            open("kate", "kate", ""),
+        ]);
+        let active = ActiveWindow {
+            app_id: "kate".into(),
+            ..Default::default()
+        };
+        let rows = arrange(rows, Some(&active));
+        assert_eq!(rows[0].pattern, "kate");
+        assert!(rows[0].recent && !rows[1].recent);
+
+        // An application without an open window is not added; the order returns.
+        let plasma = ActiveWindow {
+            app_id: "plasmashell".into(),
+            ..Default::default()
+        };
+        let rows = arrange(rows, Some(&plasma));
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].pattern, "dolphin");
+        assert!(rows.iter().all(|row| !row.recent));
+    }
+
+    #[test]
+    fn processes_skip_listed_ones() {
+        let processes = ["steam".to_owned(), "steamwebhelper".into(), "kate".into()];
+        assert_eq!(
+            process_matches(&processes, &["Steam".into()], " STEAM "),
+            vec!["steamwebhelper".to_owned()]
+        );
+        assert!(process_matches(&processes, &[], "").is_empty());
+    }
 }

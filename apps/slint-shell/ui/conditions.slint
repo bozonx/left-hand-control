@@ -2,33 +2,23 @@ import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { GameCondition } from "types.slint";
 import { AppState } from "app-state.slint";
-import { IconButton, InfoTip, SelectField } from "controls.slint";
+import { Badge, IconButton, InfoTip } from "controls.slint";
 import { Button, CheckBox, LineEdit, RadioGroup } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
 
-/// An application with an open window; `pattern` is what a condition
-/// stores for it.
-export struct WindowChoice { pattern: string, app-id: string, process: string, title: string }
+/// An application with `count` open windows; `pattern` is what a
+/// condition stores for it. `recent` marks the last active application.
+export struct WindowChoice { pattern: string, app-id: string, process: string, title: string, count: int, recent: bool }
 
 export global ConditionChoices {
     in property <[LanguageChoice]> languages;
+    /// Applications with open windows, the last active one first.
     in property <[WindowChoice]> open-windows;
     /// The open-window list is being collected.
     in property <bool> open-windows-loading;
-    /// App id and process of the focused window, e.g. "org.kde.dolphin · dolphin".
-    in property <string> active-window;
-    in property <string> active-pattern;
-    in property <string> active-title;
-    /// Seconds left before the active window is taken.
-    in property <int> pick-countdown;
-    /// Pattern of the window taken last; `picked-serial` counts the picks.
-    in property <string> picked;
-    in property <string> picked-title;
-    in property <int> picked-serial;
     callback refresh();
     callback refresh-open-windows();
-    callback pick-active-window();
     pure callback available(string) -> bool;
     pure callback contains(string, string) -> bool;
     pure callback toggle(string, string, bool) -> string;
@@ -41,35 +31,116 @@ export global ConditionChoices {
     pure callback title-text(string) -> string;
     /// Pattern for the typed text: an app pattern, or with `title` a title pattern.
     pure callback make-pattern(string, bool) -> string;
+    /// Whether a list of patterns has the pattern, ignoring case.
+    pure callback has(patterns: [string], pattern: string) -> bool;
+    /// Windows whose app id, process or title contains the query.
+    pure callback matching(windows: [WindowChoice], query: string) -> [WindowChoice];
+    /// Running processes containing the query, without those of the windows.
+    pure callback processes(windows: [WindowChoice], query: string) -> [string];
     /// How a stored pattern reads in a list.
     public pure function label(pattern: string) -> string {
         return self.is-title(pattern) ? @tr("Window title contains: {}", self.title-text(pattern)) : pattern;
     }
 }
 
-/// Applications with open windows; a click reports the pattern to store.
-export component OpenWindowsList inherits VerticalLayout {
-    in property <bool> by-title;
-    callback chosen(string);
-    spacing: 2px;
-    if ConditionChoices.open-windows-loading: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
-    if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; }
-    if !ConditionChoices.open-windows-loading: VerticalLayout {
-        spacing: 2px;
-        for window in ConditionChoices.open-windows: Rectangle {
-            height: window-row.preferred-height;
-            border-radius: 4px;
-            background: window-touch.has-hover ? Theme.hover : transparent;
-            window-row := VerticalLayout {
-                padding: 6px; spacing: 2px;
-                Text { text: window.process == "" || window.process == window.app-id ? window.app-id : window.app-id + " · " + window.process; color: Theme.text; wrap: word-wrap; }
-                if window.title != "": Text { text: window.title; color: Theme.muted; font-size: 12px; overflow: elide; }
+/// A checkable row of the application picker.
+component PickerRow inherits Rectangle {
+    in property <string> text;
+    in property <string> detail;
+    in property <string> badge;
+    in property <bool> checked;
+    /// Title the row can offer as a title condition.
+    in property <string> title;
+    callback toggled(bool);
+    callback use-title(string);
+    height: row.preferred-height;
+    border-radius: 6px;
+    background: touch.has-hover ? Theme.hover : transparent;
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.toggled(!root.checked); } }
+    row := HorizontalLayout {
+        padding: 6px; spacing: 8px;
+        VerticalLayout { alignment: center; CheckBox { checked: root.checked; accessible-label: root.text; toggled => { root.toggled(self.checked); } } }
+        VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 2px;
+            HorizontalLayout { spacing: 6px;
+                Text { text: root.text; color: Theme.text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+                if root.badge != "": Badge { text: root.badge; fill: Theme.accent.transparentize(0.75); }
             }
-            window-touch := TouchArea {
-                mouse-cursor: pointer;
-                enabled: !root.by-title || window.title != "";
-                clicked => { root.chosen(root.by-title ? ConditionChoices.make-pattern(window.title, true) : window.pattern); }
+            if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: 12px; overflow: elide; }
+        }
+        if root.title != "": VerticalLayout { alignment: center;
+            IconButton { icon: @image-url("icons/text-cursor-input.svg"); label: @tr("Match by window title"); tooltip: @tr("Match by window title"); clicked => { root.use-title(root.title); } }
+        }
+    }
+}
+
+/// Pick applications for a list: open windows (the last active one first),
+/// running processes and typed text. Rows are checked when `selected`
+/// has their pattern; `window` tells whether a pattern came from a window.
+export component AppPicker inherits Rectangle {
+    in property <[string]> selected;
+    in property <string> title: @tr("Choose applications");
+    callback toggled(pattern: string, on: bool, window: bool);
+    callback done();
+    private property <string> query;
+    private property <[WindowChoice]> windows: ConditionChoices.matching(ConditionChoices.open-windows, root.query);
+    private property <[string]> processes: ConditionChoices.processes(ConditionChoices.open-windows, root.query);
+    private property <string> typed: ConditionChoices.make-pattern(root.query, false);
+    background: Theme.card;
+    border-width: 1px;
+    border-color: Theme.divider;
+    border-radius: 10px;
+    height: body.preferred-height;
+    body := VerticalLayout {
+        padding: 12px; spacing: 8px;
+        HorizontalLayout { spacing: 8px;
+            Text { text: root.title; color: Theme.text; font-weight: 600; vertical-alignment: center; horizontal-stretch: 1; }
+            IconButton { text: @tr("Refresh"); enabled: !ConditionChoices.open-windows-loading; clicked => { ConditionChoices.refresh-open-windows(); } }
+        }
+        search := LineEdit {
+            text <=> root.query;
+            placeholder-text: @tr("Search, or type an app ID or title text");
+            accepted => {
+                if root.typed != "" {
+                    root.toggled(ConditionChoices.make-pattern(root.typed, false), true, false);
+                    root.query = "";
+                }
             }
+        }
+        if ConditionChoices.open-windows-loading: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
+        if !ConditionChoices.open-windows-loading && root.windows.length == 0 && root.processes.length == 0: Text {
+            text: root.query == "" ? @tr("No open windows found") : @tr("Nothing found");
+            color: Theme.muted; wrap: word-wrap;
+        }
+        if root.windows.length > 0: Text { text: @tr("Open windows"); color: Theme.muted; font-size: 12px; }
+        VerticalLayout { spacing: 2px;
+            for window in root.windows: PickerRow {
+                text: window.process == "" || window.process == window.app-id ? window.app-id : window.app-id + " · " + window.process;
+                detail: window.count > 1 ? @tr("{n} window" | "{n} windows" % window.count) + " · " + window.title : window.title;
+                badge: window.recent ? @tr("Last active") : "";
+                checked: ConditionChoices.has(root.selected, window.pattern);
+                title: window.title;
+                toggled(on) => { root.toggled(window.pattern, on, true); }
+                use-title(text) => { root.query = text; search.focus(); }
+            }
+        }
+        if root.processes.length > 0: Text { text: @tr("Running processes"); color: Theme.muted; font-size: 12px; }
+        VerticalLayout { spacing: 2px;
+            for process in root.processes: PickerRow {
+                text: process;
+                checked: ConditionChoices.has(root.selected, process);
+                toggled(on) => { root.toggled(process, on, false); }
+            }
+        }
+        if root.typed != "": VerticalLayout { spacing: 2px;
+            HorizontalLayout { alignment: start;
+                IconButton { icon: @image-url("icons/plus.svg"); text: @tr("Add “{}” as app ID or process", root.typed); clicked => { root.toggled(ConditionChoices.make-pattern(root.typed, false), true, false); root.query = ""; } }
+            }
+            HorizontalLayout { alignment: start;
+                IconButton { icon: @image-url("icons/plus.svg"); text: @tr("Add “{}” as window title text", root.typed); clicked => { root.toggled(ConditionChoices.make-pattern(root.typed, true), true, true); root.query = ""; } }
+            }
+        }
+        HorizontalLayout { alignment: end; padding-top: 4px;
+            Button { text: @tr("Done"); primary: true; clicked => { root.done(); } }
         }
     }
 }
@@ -78,22 +149,11 @@ export component ApplicationsField inherits VerticalLayout {
     in-out property <string> value;
     in property <string> label: @tr("Apply in windows");
     in property <bool> exclusion;
-    private property <string> draft;
-    private property <bool> by-title;
     private property <bool> picking;
-    private property <bool> picking-title;
-    private property <bool> browsing;
-    private property <int> picked-serial: ConditionChoices.picked-serial;
     /// Unknown until the first status counts as available.
     private property <bool> detection-available: AppState.game-window-availability.id != "capability-unavailable"
         && AppState.game-window-availability.id != "capability-unsupported";
-    changed picked-serial => {
-        if root.picking {
-            root.value = ConditionChoices.add(root.value, root.picking-title ? (ConditionChoices.picked-title == "" ? "" : ConditionChoices.make-pattern(ConditionChoices.picked-title, true)) : ConditionChoices.picked);
-        }
-        root.picking = false;
-    }
-    spacing: 12px;
+    spacing: 8px;
     HorizontalLayout { spacing: 6px; alignment: start;
         Text { text: root.label; color: Theme.text; vertical-alignment: center; }
         InfoTip { text: @tr("An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions."); }
@@ -103,56 +163,29 @@ export component ApplicationsField inherits VerticalLayout {
         text: @tr("Active window detection is unavailable in this session, so application conditions do not match.");
         color: Theme.warning; wrap: word-wrap;
     }
-    for item[index] in ConditionChoices.items(root.value): HorizontalLayout {
-        spacing: 6px;
-        Text {
-            text: ConditionChoices.label(item);
-            color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center;
-        }
-        IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); clicked => { root.value = ConditionChoices.remove(root.value, index); } }
+    if ConditionChoices.items(root.value).length == 0: Text {
+        text: root.exclusion ? @tr("Nothing is excluded.") : @tr("No restrictions: the rule works in every window.");
+        color: Theme.muted; wrap: word-wrap;
     }
-    HorizontalLayout { spacing: 6px;
-        SelectField {
-            model: [@tr("App ID / process"), @tr("Window title")];
-            current-index: root.by-title ? 1 : 0;
-            selected => { root.by-title = self.current-index == 1; }
-        }
-        LineEdit {
-            horizontal-stretch: 1;
-            text <=> root.draft;
-            placeholder-text: root.by-title ? @tr("Text in the window title") : @tr("Application ID or process name");
-            accepted => { root.value = ConditionChoices.add(root.value, ConditionChoices.make-pattern(root.draft, root.by-title)); root.draft = ""; }
-        }
-        IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add"); enabled: root.draft != ""; clicked => { root.value = ConditionChoices.add(root.value, ConditionChoices.make-pattern(root.draft, root.by-title)); root.draft = ""; } }
-    }
-    VerticalLayout { spacing: 8px;
-        Button {
-            text: root.browsing ? @tr("Hide open windows") : @tr("Choose from open windows");
-            enabled: root.detection-available;
-            clicked => {
-                root.browsing = !root.browsing;
-                if root.browsing { ConditionChoices.refresh-open-windows(); }
-            }
-        }
-        Button {
-            text: root.picking && ConditionChoices.pick-countdown > 0 ? @tr("Switch to the window… {}", ConditionChoices.pick-countdown) : @tr("Choose a window in 3 seconds");
-            enabled: ConditionChoices.pick-countdown == 0 && root.detection-available;
-            clicked => { root.picking-title = root.by-title; root.picking = true; ConditionChoices.pick-active-window(); }
+    for item[index] in ConditionChoices.items(root.value): Rectangle {
+        height: item-row.preferred-height; border-radius: 6px; background: Theme.card;
+        item-row := HorizontalLayout {
+            padding-left: 10px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px; spacing: 6px;
+            Text { text: ConditionChoices.label(item); color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center; }
+            VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); clicked => { root.value = ConditionChoices.remove(root.value, index); } } }
         }
     }
-    Button {
-        text: @tr("Use the last active window");
-        enabled: root.detection-available && (root.by-title ? ConditionChoices.active-title != "" : ConditionChoices.active-pattern != "");
-        clicked => { root.value = ConditionChoices.add(root.value, root.by-title ? ConditionChoices.make-pattern(ConditionChoices.active-title, true) : ConditionChoices.active-pattern); }
+    if !root.picking: HorizontalLayout { alignment: start;
+        IconButton {
+            icon: @image-url("icons/plus.svg"); text: @tr("Add application…");
+            clicked => { root.picking = true; ConditionChoices.refresh-open-windows(); }
+        }
     }
-    if root.by-title && ConditionChoices.active-title == "": Text { text: @tr("The last window title is unavailable. Choose from open windows or switch to a window during the countdown."); color: Theme.muted; wrap: word-wrap; }
-    if root.browsing: OpenWindowsList {
-        by-title: root.by-title;
-        chosen(pattern) => { root.value = ConditionChoices.add(root.value, pattern); }
-    }
-    if ConditionChoices.active-window != "": Text {
-        text: @tr("Last active window: {}", ConditionChoices.active-window);
-        color: Theme.muted; font-size: 12px; wrap: word-wrap;
+    if root.picking: AppPicker {
+        selected: ConditionChoices.items(root.value);
+        title: root.exclusion ? @tr("Choose applications to exclude") : @tr("Choose applications");
+        toggled(pattern, on, window) => { root.value = ConditionChoices.toggle(root.value, pattern, on); }
+        done => { root.picking = false; }
     }
 }
 
