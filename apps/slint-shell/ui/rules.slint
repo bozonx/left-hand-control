@@ -85,19 +85,21 @@ component ConditionLine inherits HorizontalLayout {
 }
 
 /// Rule conditions as one line per kind; the whole block opens the editor.
-component ConditionsCell inherits VerticalLayout {
+component ConditionsCell inherits HorizontalLayout {
     in property <RuleRow> rule;
     in property <bool> enabled: true;
     callback clicked();
-    spacing: 5px;
+    spacing: 8px;
     min-width: 0px;
-    FormLabel { text: @tr("Conditions"); }
+    horizontal-stretch: 1;
+    preferred-width: 0px;
+    FormLabel { horizontal-stretch: 0; text: @tr("Conditions"); }
     Rectangle {
-        min-width: 0px; min-height: 32px; border-radius: 5px; border-width: 1px; border-color: Theme.border;
+        min-width: 0px; horizontal-stretch: 1; height: 32px; border-radius: 5px; border-width: 1px; border-color: Theme.border;
         background: conditions-touch.has-hover ? Theme.hover : Theme.card;
         accessible-role: button; accessible-label: @tr("Conditions");
         accessible-action-default => { root.clicked(); }
-        VerticalLayout { padding-left: 8px; padding-right: 8px; padding-top: 6px; padding-bottom: 6px; spacing: 4px; alignment: center;
+        HorizontalLayout { min-width: 0px; padding-left: 8px; padding-right: 8px; spacing: 8px;
             if !root.rule.has-conditions: Text { text: @tr("Always"); color: Theme.muted; vertical-alignment: center; overflow: elide; }
             if root.rule.game != GameCondition.any: ConditionLine { icon: @image-url("icons/gamepad-2.svg"); text: root.rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); }
             if root.rule.languages != "": ConditionLine { icon: @image-url("icons/globe.svg"); text: root.rule.languages; }
@@ -283,7 +285,7 @@ export component RulesPage inherits VerticalBox {
         VerticalLayout { padding: 0px; width: rule-scroll.visible-width; spacing: 10px; alignment: start;
             for rule[index] in RulesEditor.rows: Rectangle {
                 vertical-stretch: 0;
-                min-height: max(180px, rule-content.preferred-height);
+                min-height: rule-content.preferred-height;
                 min-width: 0px;
                 background: RulesEditor.created == index ? Theme.selected : Theme.card;
                 animate background { duration: Theme.reduce-motion ? 0ms : 650ms; }
@@ -296,7 +298,7 @@ export component RulesPage inherits VerticalBox {
                     HorizontalLayout { spacing: 6px;
                         DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
                         CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
-                        Rectangle { horizontal-stretch: 1; }
+                        ConditionsCell { enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
                         if rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" || rule.hold-for != "": Text {
                             min-width: 0px; max-width: 420px; overflow: elide; vertical-alignment: center;
                             text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
@@ -311,24 +313,13 @@ export component RulesPage inherits VerticalBox {
                             }
                         }
                     }
-                    HorizontalLayout { min-width: 0px; spacing: 16px;
-                        VerticalLayout { width: max(0px, min(220px, (rule-scroll.visible-width - 61px) * 0.35)); horizontal-stretch: 0; spacing: 12px; alignment: start;
-                            RuleCell { title: @tr("Trigger"); info: @tr("A trigger can be a single key or a combination, such as ShiftLeft+ControlLeft. The combination works in either press order and ends when any key is released."); value: rule.key; category: rule.key-category; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
-                            ConditionsCell { enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
-                        }
+                    HorizontalLayout { min-width: 0px; spacing: 12px;
+                        RuleCell { width: 180px; horizontal-stretch: 0; title: @tr("Trigger"); info: @tr("A trigger can be a single key or a combination, such as ShiftLeft+ControlLeft. The combination works in either press order and ends when any key is released."); value: rule.key; category: rule.key-category; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                         Rectangle { width: 1px; background: Theme.divider; }
-                        VerticalLayout { min-width: 0px; horizontal-stretch: 1; preferred-width: 0px; spacing: 12px; alignment: start;
-                            HorizontalLayout { min-width: 0px; spacing: 12px;
-                                RuleCell { title: @tr("Tap action"); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
-                                if !rule.is-chord: RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
-                                if rule.is-chord: Rectangle { horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
-                            }
-                            HorizontalLayout { min-width: 0px; spacing: 12px;
-                                HoldField { enabled: rule.key != ""; rule-index: index; rule: rule; }
-                                if rule.hold-mode != 2: RuleCell { enabled: rule.key != ""; title: @tr("Held key"); info: @tr("Holds the selected key or combination while the trigger is held. It can be combined with layer activation. Leave empty to activate only the layer."); value: rule.hold; category: rule.hold-category; empty-text: rule.layer != "" ? @tr("+ Add key") : rule.swallow-hold ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.hold); } }
-                                if rule.hold-mode == 2: RuleCell { enabled: rule.key != ""; title: @tr("Hold duration"); info: @tr("The action runs once after continuous holding. Leave empty to use the global setting: {} s", RulesEditor.default-long-hold-timeout); value: rule.long-hold-timeout == "" ? "" : @tr("{} s", rule.long-hold-timeout); empty-text: @tr("{} s (default)", RulesEditor.default-long-hold-timeout); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
-                            }
-                        }
+                        RuleCell { title: @tr("Tap action"); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
+                        if !rule.is-chord: RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                        if rule.is-chord: Rectangle { horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
+                        HoldField { enabled: rule.key != ""; rule-index: index; rule: rule; }
                     }
                 }
                 DropMarker { width: parent.width; group: 1; index: index; row-y: parent.y; row-height: parent.height; }
@@ -373,6 +364,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     VerticalLayout { spacing: 8px; alignment: start;
+                        if RulesEditor.hold-mode != 2: RuleCell { title: @tr("Held key"); info: @tr("Holds the selected key or combination while the trigger is held. It can be combined with layer activation. Leave empty to activate only the layer."); value: RulesEditor.hold; empty-text: RulesEditor.layer != "" ? @tr("+ Add key") : RulesEditor.swallow-hold ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(RulesEditor.selected, RuleDialog.hold); } }
                         if RulesEditor.hold-mode == 2: VerticalLayout { spacing: 8px;
                             FormLabel { text: @tr("Long-hold duration, seconds"); info: @tr("The action runs once after continuous holding. Leave empty to use the global setting: {} s", RulesEditor.default-long-hold-timeout); }
                             LineEdit { text <=> RulesEditor.long-hold-timeout; placeholder-text: @tr("Default: {} s", RulesEditor.default-long-hold-timeout); }
