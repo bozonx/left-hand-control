@@ -4,8 +4,8 @@
 //! of the wrong type fall back to defaults instead of failing the load.
 
 use super::model::{
-    AppSettings, Appearance, GameModeProcessMatcher, LayoutConditionRule, LayoutConditionSet,
-    LayoutMode, LocalePreference,
+    AppSettings, Appearance, AutoRule, GameModeProcessMatcher, LayoutConditionSet, LayoutMode,
+    LocalePreference,
 };
 use serde_json::{Map, Value};
 
@@ -80,16 +80,8 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             .filter(|id| !id.is_empty())
             .map(str::to_owned),
         layout_order: string_list(raw.get("layoutOrder")),
-        layout_conditions: raw
-            .get("layoutConditions")
-            .and_then(Value::as_object)
-            .map(|conditions| {
-                conditions
-                    .iter()
-                    .filter_map(|(id, value)| Some((id.clone(), condition_rule(value)?)))
-                    .collect()
-            })
-            .unwrap_or_default(),
+        auto_rules: Vec::new(),
+        auto_default_layout_id: None,
         commands_enabled: bool_or(raw, "commandsEnabled", base.commands_enabled),
         game_mode: base.game_mode.clone(),
         linux_wayland_text_mode: str_of(raw, "linuxWaylandTextMode")
@@ -119,6 +111,18 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
                 .collect();
         }
     }
+    match raw.get("autoRules").and_then(Value::as_array) {
+        Some(rules) => {
+            settings.auto_rules = rules.iter().enumerate().filter_map(auto_rule).collect();
+            settings.auto_default_layout_id = str_of(raw, "autoDefaultLayoutId")
+                .filter(|id| !id.is_empty())
+                .map(str::to_owned);
+        }
+        None => {
+            (settings.auto_rules, settings.auto_default_layout_id) =
+                migrate_layout_conditions(raw, &settings.layout_order);
+        }
+    }
     if settings.layout_mode == LayoutMode::Manual && settings.manual_active_layout_id.is_none() {
         settings.manual_active_layout_id = settings
             .current_layout_id
@@ -128,14 +132,61 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
     settings
 }
 
-fn condition_rule(value: &Value) -> Option<LayoutConditionRule> {
+fn auto_rule((index, value): (usize, &Value)) -> Option<AutoRule> {
     let value = value.as_object()?;
-    let rule = LayoutConditionRule {
-        enabled_in_auto: value.get("enabledInAuto") == Some(&Value::Bool(true)),
-        whitelist: value.get("whitelist").and_then(condition_set),
-        blacklist: value.get("blacklist").and_then(condition_set),
+    Some(AutoRule {
+        id: str_of(value, "id")
+            .filter(|id| !id.is_empty())
+            .map_or_else(|| format!("rule-{index}"), str::to_owned),
+        layout_id: str_of(value, "layoutId")
+            .filter(|id| !id.is_empty())
+            .map(str::to_owned),
+        conditions: condition_set(&Value::Object(value.clone())).unwrap_or_default(),
+    })
+}
+
+/// Rules equivalent to the legacy per-layout `layoutConditions`: layouts
+/// included in auto mode become rules in library order, the first one
+/// without a whitelist becomes the default (later ones never applied).
+/// A blacklist turns into an "off" rule placed before the layout's rule;
+/// that is exact unless a later layout would have matched instead.
+fn migrate_layout_conditions(
+    raw: &Map<String, Value>,
+    order: &[String],
+) -> (Vec<AutoRule>, Option<String>) {
+    let Some(conditions) = raw.get("layoutConditions").and_then(Value::as_object) else {
+        return (Vec::new(), None);
     };
-    (rule.enabled_in_auto || rule.whitelist.is_some() || rule.blacklist.is_some()).then_some(rule)
+    let mut ids: Vec<&String> = order
+        .iter()
+        .filter(|id| conditions.contains_key(*id))
+        .collect();
+    ids.extend(conditions.keys().filter(|id| !order.contains(id)));
+    let mut rules = Vec::new();
+    for id in ids {
+        let Some(rule) = conditions[id].as_object() else {
+            continue;
+        };
+        if rule.get("enabledInAuto") != Some(&Value::Bool(true)) {
+            continue;
+        }
+        if let Some(blacklist) = rule.get("blacklist").and_then(condition_set) {
+            rules.push(AutoRule {
+                id: format!("rule-{}", rules.len()),
+                layout_id: None,
+                conditions: blacklist,
+            });
+        }
+        match rule.get("whitelist").and_then(condition_set) {
+            Some(whitelist) => rules.push(AutoRule {
+                id: format!("rule-{}", rules.len()),
+                layout_id: Some(id.clone()),
+                conditions: whitelist,
+            }),
+            None => return (rules, Some(id.clone())),
+        }
+    }
+    (rules, None)
 }
 
 fn condition_set(value: &Value) -> Option<LayoutConditionSet> {
@@ -229,14 +280,49 @@ mod tests {
     }
 
     #[test]
-    fn empty_condition_sets_are_dropped() {
-        let settings = from_value(Some(&json!({"layoutConditions": {
-            "user:A": {"whitelist": {"layouts": []}},
-            "user:B": {"enabledInAuto": true, "blacklist": {"gameMode": "on", "layouts": ["", "us"]}},
+    fn auto_rules_are_read_leniently() {
+        let settings = from_value(Some(&json!({
+            "autoRules": [
+                {"id": "a", "layoutId": "user:A", "apps": ["blender"], "layouts": [""]},
+                {"layoutId": null, "gameMode": "maybe"},
+                3,
+            ],
+            "autoDefaultLayoutId": "user:B",
+            "layoutConditions": {"user:C": {"enabledInAuto": true}},
+        })));
+        assert_eq!(settings.auto_rules.len(), 2);
+        assert_eq!(settings.auto_rules[0].conditions.apps, ["blender"]);
+        assert!(settings.auto_rules[0].conditions.layouts.is_empty());
+        assert_eq!(settings.auto_rules[1].id, "rule-1");
+        assert_eq!(settings.auto_rules[1].layout_id, None);
+        assert!(settings.auto_rules[1].conditions.is_empty());
+        assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:B"));
+    }
+
+    #[test]
+    fn legacy_layout_conditions_become_rules() {
+        let settings = from_value(Some(&json!({
+            "layoutOrder": ["user:B", "user:A"],
+            "layoutConditions": {
+                "user:A": {"enabledInAuto": true, "blacklist": {"apps": ["blender"]}},
+                "user:B": {"enabledInAuto": true, "whitelist": {"layouts": ["ru"]}},
+                "user:C": {"enabledInAuto": true},
+                "user:D": {"whitelist": {"layouts": ["us"]}},
+            },
+        })));
+        let targets: Vec<_> = settings
+            .auto_rules
+            .iter()
+            .map(|rule| rule.layout_id.as_deref())
+            .collect();
+        assert_eq!(targets, [Some("user:B"), None]);
+        assert_eq!(settings.auto_rules[0].conditions.layouts, ["ru"]);
+        assert_eq!(settings.auto_rules[1].conditions.apps, ["blender"]);
+        assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:A"));
+        let none = from_value(Some(&json!({"layoutConditions": {
+            "user:A": {"enabledInAuto": true, "whitelist": {"apps": ["kate"]}},
         }})));
-        assert!(!settings.layout_conditions.contains_key("user:A"));
-        let rule = &settings.layout_conditions["user:B"];
-        assert!(rule.enabled_in_auto);
-        assert_eq!(rule.blacklist.as_ref().unwrap().layouts, vec!["us"]);
+        assert_eq!(none.auto_rules.len(), 1);
+        assert_eq!(none.auto_default_layout_id, None);
     }
 }

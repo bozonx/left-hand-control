@@ -582,14 +582,24 @@ impl ConfigDocument {
     }
 
     /// Layout whose rules should run now: the manual choice, or in auto
-    /// mode the first layout whose conditions match `ctx`.
+    /// mode the first matching rule's layout or the default.
     pub fn active_layout_id(&self, ctx: &AutoSwitchContext) -> Result<Option<String>, ConfigError> {
         Ok(match self.settings.layout_mode {
             LayoutMode::Manual => self.settings.manual_active_layout_id.clone(),
-            LayoutMode::Auto => {
-                auto_switch::pick_active_layout(&self.layout_ids()?, &self.settings, ctx)
-            }
+            LayoutMode::Auto => self.auto_choice(ctx)?.layout_id,
         })
+    }
+
+    /// Which automatic rule applies under `ctx`, whatever the current mode.
+    pub fn auto_choice(
+        &self,
+        ctx: &AutoSwitchContext,
+    ) -> Result<auto_switch::AutoChoice, ConfigError> {
+        Ok(auto_switch::choose(
+            &self.layout_ids()?,
+            &self.settings,
+            ctx,
+        ))
     }
 
     /// Mapper configuration for the current system state, like
@@ -788,6 +798,27 @@ mod tests {
             fs::read_to_string(document.paths.layouts_dir().join("Test.yaml")).unwrap(),
             layout_before
         );
+    }
+
+    #[test]
+    fn migrated_auto_rules_are_saved_next_to_legacy_conditions() {
+        let legacy = json!({"user:Test": {"enabledInAuto": true, "whitelist": {"apps": ["kate"]}}});
+        let (_dir, mut document) = document(
+            json!({"version": 1, "settings": {"layoutConditions": legacy}}),
+            LAYOUT,
+        );
+        assert_eq!(document.settings().auto_rules.len(), 1);
+        document
+            .update_settings(|settings| settings.auto_default_layout_id = Some("user:Test".into()))
+            .unwrap();
+        let saved: Value =
+            serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
+                .unwrap();
+        // The legacy shell still reads `layoutConditions`.
+        assert_eq!(saved["settings"]["layoutConditions"], legacy);
+        assert_eq!(saved["settings"]["autoRules"][0]["layoutId"], "user:Test");
+        assert_eq!(saved["settings"]["autoRules"][0]["apps"], json!(["kate"]));
+        assert_eq!(saved["settings"]["autoDefaultLayoutId"], "user:Test");
     }
 
     #[test]

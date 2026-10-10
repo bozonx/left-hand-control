@@ -49,21 +49,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(paths.load_user_layout("B").is_err());
     assert!(paths.load_user_layout("Профиль")?.contains("Описание"));
     assert_eq!(library.get_current_label(), "Профиль");
-    library.set_auto_enabled(true);
-    library.set_white_layouts("us, ru".into());
-    library.set_white_apps("kate, terminal".into());
-    library.set_black_game(GameCondition::On);
-    library.invoke_action(LibraryAction::SaveConditions);
+    // "Профиль" is the second row: a rule for it, then an "off" rule above it.
+    library.invoke_open_rule(-1, 1);
+    assert_eq!(library.get_dialog(), LibraryDialog::Rule);
+    library.set_rule_layouts("us, ru".into());
+    library.set_rule_apps("kate, terminal".into());
+    library.invoke_save_rule();
+    assert_eq!(library.get_dialog(), LibraryDialog::None);
+    library.invoke_open_rule(-1, -1);
+    library.set_rule_game(GameCondition::On);
+    library.invoke_save_rule();
+    library.invoke_move_rule(1, 0);
+    library.invoke_set_auto_default(0);
+    {
+        let config = document.read();
+        let settings = config.settings();
+        assert_eq!(settings.auto_rules.len(), 2);
+        assert_eq!(settings.auto_rules[0].layout_id, None);
+        assert_eq!(
+            settings.auto_rules[0].conditions.game_mode.as_deref(),
+            Some("on")
+        );
+        assert_eq!(
+            settings.auto_rules[1].layout_id.as_deref(),
+            Some("user:Профиль")
+        );
+        assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:A"));
+    }
+    assert_eq!(library.get_auto_rules().row_data(1).unwrap().target, 1);
+    assert_eq!(library.get_rule_counts().row_data(1).unwrap(), 1);
+    library.invoke_open_rule(1, 1);
+    assert_eq!(library.get_rule_apps(), "kate, terminal");
+    library.invoke_delete_rule(0);
+    assert_eq!(library.get_auto_rules().row_count(), 1);
+    library.invoke_select(1);
     library.invoke_action(LibraryAction::MoveUp);
     assert_eq!(library.get_names().row_data(0).unwrap(), "Профиль");
     library.invoke_set_automatic(true);
     assert_eq!(document.read().settings().layout_mode, LayoutMode::Auto);
     assert!(library.get_automatic());
     library.invoke_select(0);
-    assert!(library.get_auto_enabled());
-    assert_eq!(library.get_black_game(), GameCondition::On);
-    assert_eq!(library.get_white_apps(), "kate, terminal");
     library.invoke_delete();
+    assert!(document.read().settings().auto_rules.is_empty());
     assert_eq!(library.get_names().row_count(), 1);
     library.invoke_create("Copy".into(), "".into(), LayoutSource::Copy, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
@@ -107,7 +134,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "terminal"
     );
     let reloaded = ConfigDocument::load(paths.clone())?;
-    assert!(reloaded.settings().layout_conditions.is_empty());
+    assert!(reloaded.settings().auto_rules.is_empty());
     assert_eq!(
         reloaded.settings().current_layout_id.as_deref(),
         Some("user:Copy")
@@ -190,7 +217,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         library.invoke_select(0);
         library.set_dialog(match dialog.as_str() {
             "create" => LibraryDialog::Create,
-            "conditions" => LibraryDialog::Conditions,
+            "rule" => LibraryDialog::Rule,
             "delete" => LibraryDialog::Delete,
             "unsaved" => LibraryDialog::Unsaved,
             _ => LibraryDialog::None,

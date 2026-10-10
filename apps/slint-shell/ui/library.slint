@@ -9,28 +9,33 @@ import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, Palette, TextEdit,
 
 export struct LayoutSummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
 
-export struct LayoutConditionsView { when-game: GameCondition, when-list: string, unless-game: GameCondition, unless-list: string }
+/// One automatic-mode rule. `target` indexes `names`; -1 means off.
+export struct AutoRuleView { game: GameCondition, list: string, target: int, missing: bool, shadows: bool }
 
 /// The layout library and the working copy being edited.
 export global LayoutLibrary {
     in property <[string]> names;
     in property <[string]> descriptions;
     in property <[LayoutSummary]> summaries;
-    in property <[bool]> auto-included;
-    in property <[LayoutConditionsView]> conditions;
+    /// Automatic mode: ordered rules, the default (-1 is off), the rule
+    /// that applies now (-1 is the default) and rules per layout.
+    in property <[AutoRuleView]> auto-rules;
+    in property <int> auto-default: -1;
+    in property <bool> auto-default-missing;
+    in property <int> auto-matched: -1;
+    in property <[int]> rule-counts;
     in-out property <int> selected: -1;
     in property <Message> status;
     in-out property <bool> automatic;
-    /// Fields of the selected layout (details and conditions dialogs).
+    /// Fields of the selected layout (details dialog).
     in-out property <string> name;
     in-out property <string> description;
-    in-out property <bool> auto-enabled;
-    in-out property <GameCondition> white-game;
-    in-out property <GameCondition> black-game;
-    in-out property <string> white-layouts;
-    in-out property <string> black-layouts;
-    in-out property <string> white-apps;
-    in-out property <string> black-apps;
+    /// Rule being edited in the rule dialog; `rule-index` -1 is a new rule.
+    in-out property <int> rule-index: -1;
+    in-out property <int> rule-target: -1;
+    in-out property <GameCondition> rule-game;
+    in-out property <string> rule-layouts;
+    in-out property <string> rule-apps;
     in-out property <LibraryDialog> dialog: LibraryDialog.none;
     in-out property <string> create-name;
     in-out property <string> create-description;
@@ -75,6 +80,12 @@ export global LayoutLibrary {
     callback refresh-context();
     callback save-current();
     callback save-as(string);
+    /// Fill the rule dialog fields for rule `index` (-1: new rule using `target`).
+    callback load-rule(int, int);
+    callback save-rule();
+    callback delete-rule(int);
+    callback move-rule(int, int);
+    callback set-auto-default(int);
 
     pure function create-base(source: LayoutSource) -> string {
         if source == LayoutSource.author { return @tr("Ivan K layout"); }
@@ -128,19 +139,19 @@ export global LayoutLibrary {
         self.dialog = LibraryDialog.none;
         self.pending-action = PendingLayoutAction.none;
     }
+    public function open-rule(index: int, target: int) {
+        ConditionChoices.refresh();
+        self.load-rule(index, target);
+    }
     pure function game-text(game: GameCondition) -> string {
         return game == GameCondition.on ? @tr("game mode on") : game == GameCondition.off ? @tr("game mode off") : "";
     }
-    pure function join-summary(game: GameCondition, list: string) -> string {
+    public pure function rule-text(game: GameCondition, list: string) -> string {
+        if self.game-text(game) == "" && list == "" { return @tr("Always"); }
         return self.game-text(game) != "" && list != "" ? self.game-text(game) + " · " + list : self.game-text(game) + list;
     }
-    public pure function conditions-text(c: LayoutConditionsView) -> string {
-        let when = self.join-summary(c.when-game, c.when-list);
-        let unless = self.join-summary(c.unless-game, c.unless-list);
-        if when == "" && unless == "" { return @tr("No conditions: always matches"); }
-        if unless == "" { return @tr("When: {}", when); }
-        if when == "" { return @tr("Except: {}", unless); }
-        return @tr("When: {}", when) + " — " + @tr("Except: {}", unless);
+    public pure function target-text(target: int) -> string {
+        return target >= 0 && target < self.names.length ? self.names[target] : @tr("Turned off");
     }
 }
 
@@ -277,6 +288,148 @@ export component SaveSplitButton inherits Rectangle {
     }
 }
 
+/// Button choosing a library layout or "Off" (-1).
+component TargetPicker inherits Rectangle {
+    in property <int> target: -1;
+    in property <bool> missing;
+    callback picked(int);
+    height: 32px;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Theme.border;
+    background: touch.has-hover || focus.has-focus ? Theme.hover : Theme.card;
+    accessible-role: combobox;
+    accessible-label: @tr("Layout");
+    accessible-value: label.text;
+    accessible-action-default => { menu.show(); }
+    HorizontalLayout { padding-left: 10px; padding-right: 8px; spacing: 6px;
+        label := Text {
+            horizontal-stretch: 1;
+            text: root.missing ? @tr("Layout not found") : LayoutLibrary.target-text(root.target);
+            color: root.missing ? Theme.error : root.target < 0 ? Theme.muted : Theme.text;
+            font-weight: root.target >= 0 ? 600 : 400;
+            overflow: elide; vertical-alignment: center;
+        }
+        VerticalLayout { alignment: center;
+            Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.text; }
+        }
+    }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == "\n" || event.text == " " { menu.show(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { menu.show(); } }
+    menu := PopupWindow {
+        y: root.height + 4px;
+        width: max(root.width, 220px);
+        Rectangle {
+            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+            VerticalBox { padding: 4px; spacing: 0px;
+                LayoutMenuItem { text: @tr("Turned off"); clicked => { menu.close(); root.picked(-1); } }
+                Rectangle { height: 1px; background: Theme.divider; }
+                for name[index] in LayoutLibrary.names: LayoutMenuItem { text: name; clicked => { menu.close(); root.picked(index); } }
+            }
+        }
+    }
+}
+
+component AutoRuleRow inherits Rectangle {
+    in property <AutoRuleView> rule;
+    in property <int> index;
+    in property <int> count;
+    in property <bool> matched;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: root.matched ? Theme.accent : Theme.divider;
+    background: root.matched ? Theme.accent.transparentize(0.88) : touch.has-hover ? Theme.hover : transparent;
+    height: row.preferred-height;
+    accessible-role: button;
+    accessible-label: @tr("Rule {}", root.index + 1) + ": " + LayoutLibrary.rule-text(root.rule.game, root.rule.list) + " → " + LayoutLibrary.target-text(root.rule.target);
+    accessible-action-default => { LayoutLibrary.open-rule(root.index, root.rule.target); }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.open-rule(root.index, root.rule.target); } }
+    row := HorizontalLayout { padding: 8px; spacing: 8px;
+        Text { text: root.index + 1; color: Theme.muted; width: 16px; horizontal-alignment: right; }
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 2px;
+            Text { text: LayoutLibrary.rule-text(root.rule.game, root.rule.list); color: Theme.text; wrap: word-wrap; }
+            HorizontalLayout { spacing: 4px; alignment: start;
+                Text { text: "→"; color: Theme.muted; }
+                Text {
+                    text: root.rule.missing ? @tr("Layout not found") : LayoutLibrary.target-text(root.rule.target);
+                    color: root.rule.missing ? Theme.error : root.rule.target < 0 ? Theme.muted : Theme.text;
+                    font-weight: root.rule.target >= 0 ? 600 : 400;
+                    overflow: elide;
+                }
+            }
+            if root.rule.shadows: Text {
+                text: @tr("Always matches: the rules below never apply.");
+                color: Theme.warning; font-size: 12px; wrap: word-wrap;
+            }
+        }
+        VerticalLayout { alignment: start; spacing: 2px;
+            IconButton { size: 24px; icon: @image-url("icons/chevron-up.svg"); label: @tr("Move up"); enabled: root.index > 0; clicked => { LayoutLibrary.move-rule(root.index, root.index - 1); } }
+            IconButton { size: 24px; icon: @image-url("icons/chevron-down.svg"); label: @tr("Move down"); enabled: root.index < root.count - 1; clicked => { LayoutLibrary.move-rule(root.index, root.index + 1); } }
+        }
+    }
+}
+
+/// Automatic mode rules shown next to the library.
+component AutoRulesPanel inherits Rectangle {
+    background: Theme.card;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: Theme.divider;
+    VerticalLayout { padding: 14px; spacing: 10px;
+        HorizontalLayout { spacing: 6px; vertical-stretch: 0;
+            Text { text: @tr("Automatic switching"); color: Theme.text; font-size: 16px; font-weight: 600; vertical-alignment: center; }
+            VerticalLayout { alignment: center;
+                InfoTip { text: @tr("Rules are checked from top to bottom; the first one whose conditions match chooses the layout. If none matches, the default is used. “Turned off” disables remapping, for example in an application where the layout gets in the way."); }
+            }
+        }
+        Text {
+            vertical-stretch: 0;
+            text: LayoutLibrary.auto-matched >= 0
+                ? @tr("Now: {} (rule {})", LayoutLibrary.active-label == "" ? @tr("Turned off") : LayoutLibrary.active-label, LayoutLibrary.auto-matched + 1)
+                : @tr("Now: {} (default)", LayoutLibrary.active-label == "" ? @tr("Turned off") : LayoutLibrary.active-label);
+            color: Theme.accent; wrap: word-wrap;
+        }
+        ScrollView { viewport-width: self.visible-width;
+            vertical-stretch: 1;
+            VerticalLayout { spacing: 6px; alignment: start;
+                if LayoutLibrary.auto-rules.length == 0: Text {
+                    text: @tr("No rules yet: the default layout is always used.");
+                    color: Theme.muted; wrap: word-wrap;
+                }
+                for rule[index] in LayoutLibrary.auto-rules: AutoRuleRow {
+                    rule: rule; index: index; count: LayoutLibrary.auto-rules.length;
+                    matched: LayoutLibrary.auto-matched == index;
+                }
+            }
+        }
+        HorizontalLayout { alignment: start; vertical-stretch: 0;
+            Button { text: @tr("Add rule"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-rule(-1, -1); } }
+        }
+        Rectangle { height: 1px; background: Theme.divider; vertical-stretch: 0; }
+        Rectangle {
+            vertical-stretch: 0;
+            border-radius: 6px;
+            height: default-row.preferred-height;
+            border-width: 1px;
+            border-color: LayoutLibrary.auto-matched < 0 ? Theme.accent : transparent;
+            background: LayoutLibrary.auto-matched < 0 ? Theme.accent.transparentize(0.88) : transparent;
+            default-row := VerticalLayout { padding: 8px; spacing: 6px;
+                Text { text: @tr("Otherwise (default)"); color: Theme.text; font-weight: 600; }
+                TargetPicker {
+                    target: LayoutLibrary.auto-default;
+                    missing: LayoutLibrary.auto-default-missing;
+                    picked(index) => { LayoutLibrary.set-auto-default(index); }
+                }
+            }
+        }
+    }
+}
+
 export component LibraryPage inherits VerticalBox {
     padding: 0px;
     spacing: 12px;
@@ -292,7 +445,7 @@ export component LibraryPage inherits VerticalBox {
                 alignment: center;
                 InfoTip {
                     text: @tr("Single: the layout you make active works everywhere.") + "\n\n"
-                        + @tr("Automatic: the first included layout whose conditions match is used. Order sets priority.");
+                        + @tr("Automatic: the layout is chosen by switching rules for the application, system language or game mode.");
                 }
             }
             ButtonGroup {
@@ -309,92 +462,105 @@ export component LibraryPage inherits VerticalBox {
             Button { text: @tr("Based on Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
         }
     }
-    if LayoutLibrary.names.length == 0: Rectangle {
+    HorizontalLayout {
         vertical-stretch: 1;
+        spacing: 12px;
         VerticalLayout {
-            alignment: center; spacing: 12px;
-            Text { text: @tr("No layouts yet"); color: Theme.text; font-size: 20px; font-weight: 600; horizontal-alignment: center; }
-            Text { text: @tr("Start from the author's Ivan K layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
-            HorizontalLayout { alignment: center; spacing: 8px;
-                Button { text: @tr("Create empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-                Button { text: @tr("Based on Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+            horizontal-stretch: 1;
+            min-width: 0px;
+            if LayoutLibrary.names.length == 0: Rectangle {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    alignment: center; spacing: 12px;
+                    Text { text: @tr("No layouts yet"); color: Theme.text; font-size: 20px; font-weight: 600; horizontal-alignment: center; }
+                    Text { text: @tr("Start from the author's Ivan K layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
+                    HorizontalLayout { alignment: center; spacing: 8px;
+                        Button { text: @tr("Create empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+                        Button { text: @tr("Based on Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+                    }
+                }
             }
-        }
-    }
-    if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width; drag-scroll: true;
-        vertical-stretch: 1;
-        VerticalLayout { padding: 0px; spacing: 0px;
-            for name[index] in LayoutLibrary.names: card := Rectangle {
-                property <bool> active: LayoutLibrary.active-label == name;
-                property <bool> current: LayoutLibrary.current-label == name;
-                property <bool> auto: LayoutLibrary.automatic;
-                height: max(132px, card-content.preferred-height + 10px);
-                init => { LayoutLibrary.row-position(index, self.y, self.height); }
-                changed y => { LayoutLibrary.row-position(index, self.y, self.height); }
-                changed height => { LayoutLibrary.row-position(index, self.y, self.height); }
-                Rectangle {
-                height: parent.height - 10px; width: parent.width;
-                opacity: card.auto && !LayoutLibrary.auto-included[index] ? ItemStyle.opacity(false) : card.auto && !card.active ? 0.65 : 1;
-                background: Theme.card;
-                border-radius: 8px;
-                border-width: DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index ? 2px : card.active ? 2px : 1px;
-                border-color: card.active || (DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index) ? Theme.accent : Theme.divider;
-                TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
-                card-content := HorizontalLayout { padding: 16px; spacing: 20px;
-                    VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 10px;
-                        HorizontalLayout { spacing: 8px; vertical-stretch: 0;
-                            InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
-                            Rectangle { horizontal-stretch: 1; }
-                        }
-                        InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
-                        Rectangle { vertical-stretch: 1; }
-                        HorizontalLayout { spacing: 8px; alignment: start; vertical-stretch: 0;
-                            DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
-                            if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: 600; vertical-alignment: center; }
-                            if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
-                            if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
-                            if !card.current: Button { text: @tr("Edit layout"); clicked => { LayoutLibrary.edit(index); } }
-                            Rectangle {
-                                width: 44px; height: 36px;
-                                Button {
-                                    width: parent.width; height: parent.height; text: "…";
-                                    clicked => { LayoutLibrary.select(index); more-menu.show(); }
-                                }
-                                more-menu := PopupWindow {
-                                    x: parent.width - self.width; y: parent.height;
-                                    width: 240px;
-                                    Rectangle {
-                                        background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-                                        VerticalBox { padding: 4px; spacing: 0px;
-                                            LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
-                                            Rectangle { height: 1px; background: Theme.divider; }
-                                            LayoutMenuItem { text: @tr("Delete…"); clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
-                                        }
+            if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width; drag-scroll: true;
+                vertical-stretch: 1;
+                VerticalLayout { padding: 0px; spacing: 0px;
+                    for name[index] in LayoutLibrary.names: card := Rectangle {
+                        property <bool> active: LayoutLibrary.active-label == name;
+                        property <bool> current: LayoutLibrary.current-label == name;
+                        property <bool> auto: LayoutLibrary.automatic;
+                        height: max(132px, card-content.preferred-height + 10px);
+                        init => { LayoutLibrary.row-position(index, self.y, self.height); }
+                        changed y => { LayoutLibrary.row-position(index, self.y, self.height); }
+                        changed height => { LayoutLibrary.row-position(index, self.y, self.height); }
+                        Rectangle {
+                        height: parent.height - 10px; width: parent.width;
+                                background: Theme.card;
+                        border-radius: 8px;
+                        border-width: DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index ? 2px : card.active ? 2px : 1px;
+                        border-color: card.active || (DragDrop.dragging && DragDrop.group == 0 && DragDrop.target == index) ? Theme.accent : Theme.divider;
+                        TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
+                        card-content := HorizontalLayout { padding: 16px; spacing: 20px;
+                            VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 10px;
+                                HorizontalLayout { spacing: 8px; vertical-stretch: 0;
+                                    InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    if card.auto && LayoutLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: 13px; font-weight: 600; vertical-alignment: center; }
+                                    if card.auto && LayoutLibrary.rule-counts[index] > 0: Text {
+                                        text: @tr("In {n} rule" | "In {n} rules" % LayoutLibrary.rule-counts[index]);
+                                        color: Theme.muted; font-size: 13px; vertical-alignment: center;
                                     }
                                 }
+                                InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
+                                Rectangle { vertical-stretch: 1; }
+                                HorizontalLayout { spacing: 8px; alignment: start; vertical-stretch: 0;
+                                    DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
+                                    if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: 600; vertical-alignment: center; }
+                                    if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
+                                    if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
+                                    if !card.current: Button { text: @tr("Edit layout"); clicked => { LayoutLibrary.edit(index); } }
+                                    Rectangle {
+                                        width: 44px; height: 36px;
+                                        Button {
+                                            width: parent.width; height: parent.height; text: "…";
+                                            clicked => { LayoutLibrary.select(index); more-menu.show(); }
+                                        }
+                                        more-menu := PopupWindow {
+                                            x: parent.width - self.width; y: parent.height;
+                                            width: 240px;
+                                            Rectangle {
+                                                background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+                                                VerticalBox { padding: 4px; spacing: 0px;
+                                                    LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
+                                                    Rectangle { height: 1px; background: Theme.divider; }
+                                                    LayoutMenuItem { text: @tr("Delete…"); clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if card.auto: Button { text: @tr("Add rule…"); clicked => { LayoutLibrary.open-rule(-1, index); } }
+                                }
                             }
-                            if card.auto: Button { text: @tr("Conditions…"); clicked => { LayoutLibrary.select(index); ConditionChoices.refresh(); LayoutLibrary.dialog = LibraryDialog.conditions; } }
+                            VerticalLayout { width: 220px; spacing: 8px; alignment: start;
+                                property <LayoutSummary> summary: LayoutLibrary.summaries[index];
+                                if summary.rules + summary.layers + summary.emoji-pages + summary.action-pages + summary.macros + summary.commands == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: 13px; }
+                                if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: 13px; }
+                                if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: 13px; }
+                                if summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: 13px; }
+                                if summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: 13px; }
+                                if summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: 13px; }
+                                // Commands run shell scripts, so they stand out when reviewing a layout.
+                                if summary.commands > 0: HorizontalLayout { spacing: 6px; alignment: start;
+                                    Image { width: 14px; height: 14px; y: (parent.height - self.height) / 2; source: @image-url("icons/triangle-alert.svg"); colorize: Theme.warning; }
+                                    Text { text: @tr("{n} command" | "{n} commands" % summary.commands); color: Theme.warning; font-size: 13px; font-weight: 600; }
+                                }
+                            }
                         }
-                    }
-                    VerticalLayout { width: 220px; spacing: 8px; alignment: start;
-                        property <LayoutSummary> summary: LayoutLibrary.summaries[index];
-                        if summary.rules + summary.layers + summary.emoji-pages + summary.action-pages + summary.macros + summary.commands == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: 13px; }
-                        if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: 13px; }
-                        if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: 13px; }
-                        if summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: 13px; }
-                        if summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: 13px; }
-                        if summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: 13px; }
-                        // Commands run shell scripts, so they stand out when reviewing a layout.
-                        if summary.commands > 0: HorizontalLayout { spacing: 6px; alignment: start;
-                            Image { width: 14px; height: 14px; y: (parent.height - self.height) / 2; source: @image-url("icons/triangle-alert.svg"); colorize: Theme.warning; }
-                            Text { text: @tr("{n} command" | "{n} commands" % summary.commands); color: Theme.warning; font-size: 13px; font-weight: 600; }
                         }
+                        DropMarker { width: parent.width; group: 0; index: index; row-y: card.y; row-height: card.height; }
                     }
                 }
-                }
-                DropMarker { width: parent.width; group: 0; index: index; row-y: card.y; row-height: card.height; }
             }
         }
+        if LayoutLibrary.automatic: AutoRulesPanel { width: 340px; }
     }
 }
 
@@ -411,7 +577,7 @@ export component LibraryDialogOverlay inherits Rectangle {
         Rectangle {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: 620px;
-            height: LayoutLibrary.dialog == LibraryDialog.conditions ? min(root.height - 48px, 700px)
+            height: LayoutLibrary.dialog == LibraryDialog.rule ? min(root.height - 48px, 700px)
                 : LayoutLibrary.dialog == LibraryDialog.create ? 420px
                 : LayoutLibrary.dialog == LibraryDialog.unsaved ? 210px
                 : 210px;
@@ -419,12 +585,9 @@ export component LibraryDialogOverlay inherits Rectangle {
             VerticalBox { padding: 24px; spacing: 12px;
                 Text {
                     text: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
-                        : LayoutLibrary.dialog == LibraryDialog.conditions ? @tr("Layout activation conditions")
+                        : LayoutLibrary.dialog == LibraryDialog.rule ? (LayoutLibrary.rule-index < 0 ? @tr("New rule") : @tr("Rule {}", LayoutLibrary.rule-index + 1))
                         : @tr("Unsaved changes");
                     color: Theme.text; font-size: 22px;
-                }
-                if LayoutLibrary.dialog == LibraryDialog.conditions && LayoutLibrary.selected >= 0: Text {
-                    text: LayoutLibrary.names[LayoutLibrary.selected]; color: Theme.muted;
                 }
                 if LayoutLibrary.dialog == LibraryDialog.create: VerticalBox { padding: 0px; spacing: 10px;
                     Text { text: @tr("Name"); color: Theme.text; }
@@ -441,16 +604,15 @@ export component LibraryDialogOverlay inherits Rectangle {
                     Text { text: @tr("Description (optional)"); color: Theme.text; }
                     TextEdit { text <=> LayoutLibrary.create-description; height: 120px; }
                 }
-                if LayoutLibrary.dialog == LibraryDialog.conditions: ScrollView {
+                if LayoutLibrary.dialog == LibraryDialog.rule: ScrollView {
                     viewport-width: self.visible-width;
                     vertical-stretch: 1;
                     VerticalLayout { spacing: 12px;
-                        CheckBox { text: @tr("Include in automatic mode"); checked <=> LayoutLibrary.auto-enabled; }
-                        Text { text: @tr("Use when"); color: Theme.text; font-weight: 600; }
-                        ConditionsForm { game <=> LayoutLibrary.white-game; languages <=> LayoutLibrary.white-layouts; applications <=> LayoutLibrary.white-apps; }
-                        Text { text: @tr("Do not use when"); color: Theme.text; font-weight: 600; }
-                        ConditionsForm { game <=> LayoutLibrary.black-game; languages <=> LayoutLibrary.black-layouts; applications <=> LayoutLibrary.black-apps; }
-                        Text { text: @tr("Empty conditions impose no restrictions. Exclusions take priority."); color: Theme.muted; wrap: word-wrap; }
+                        Text { text: @tr("Use layout"); color: Theme.text; font-weight: 600; }
+                        TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
+                        Text { text: @tr("When"); color: Theme.text; font-weight: 600; }
+                        ConditionsForm { game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; }
+                        Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
                     }
                 }
                 if LayoutLibrary.dialog == LibraryDialog.unsaved: Text {
@@ -460,12 +622,16 @@ export component LibraryDialogOverlay inherits Rectangle {
                     color: Theme.text; wrap: word-wrap;
                 }
                 if LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
-                if LayoutLibrary.dialog != LibraryDialog.conditions: Rectangle { vertical-stretch: 1; }
+                if LayoutLibrary.dialog != LibraryDialog.rule: Rectangle { vertical-stretch: 1; }
                 HorizontalBox {
+                    if LayoutLibrary.dialog == LibraryDialog.rule && LayoutLibrary.rule-index >= 0: Button {
+                        text: @tr("Delete rule"); icon: @image-url("icons/trash-2.svg"); colorize-icon: true;
+                        clicked => { LayoutLibrary.delete-rule(LayoutLibrary.rule-index); }
+                    }
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
                     if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.ok; clicked => { LayoutLibrary.submit-create(); } }
-                    if LayoutLibrary.dialog == LibraryDialog.conditions: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.action(LibraryAction.save-conditions); } }
+                    if LayoutLibrary.dialog == LibraryDialog.rule: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.save-rule(); } }
                     if LayoutLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { LayoutLibrary.continue-pending(); } }
                     if LayoutLibrary.dialog == LibraryDialog.unsaved && LayoutLibrary.current-label != "": Button {
                         text: @tr("Save and continue"); primary: true;

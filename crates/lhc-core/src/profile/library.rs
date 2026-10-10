@@ -151,8 +151,15 @@ impl ConfigDocument {
                     *id = new.clone();
                 }
             }
-            if let Some(rule) = settings.layout_conditions.remove(&old) {
-                settings.layout_conditions.insert(new.clone(), rule);
+            for target in settings
+                .auto_rules
+                .iter_mut()
+                .map(|rule| &mut rule.layout_id)
+                .chain([&mut settings.auto_default_layout_id])
+            {
+                if target.as_ref() == Some(&old) {
+                    *target = Some(new.clone());
+                }
             }
         });
         if let Err(error) = result {
@@ -182,7 +189,12 @@ impl ConfigDocument {
         let id = user_layout_id(name);
         let result = self.update_settings(|settings| {
             settings.layout_order.retain(|item| item != &id);
-            settings.layout_conditions.remove(&id);
+            settings
+                .auto_rules
+                .retain(|rule| rule.layout_id.as_ref() != Some(&id));
+            if settings.auto_default_layout_id.as_ref() == Some(&id) {
+                settings.auto_default_layout_id = None;
+            }
             if settings.current_layout_id.as_ref() == Some(&id) {
                 settings.current_layout_id = None;
             }
@@ -211,7 +223,7 @@ mod tests {
     use crate::{
         profile::{
             auto_switch::AutoSwitchContext,
-            model::{LayoutConditionRule, LayoutConditionSet, LayoutMode},
+            model::{AutoRule, LayoutConditionSet, LayoutMode},
         },
         storage::StoragePaths,
     };
@@ -324,13 +336,12 @@ mod tests {
             .update_settings(|settings| {
                 settings.manual_active_layout_id = Some("user:A".into());
                 settings.layout_order = vec!["user:A".into(), "user:B".into()];
-                settings.layout_conditions.insert(
-                    "user:B".into(),
-                    LayoutConditionRule {
-                        enabled_in_auto: true,
-                        ..Default::default()
-                    },
-                );
+                settings.auto_rules = vec![AutoRule {
+                    id: "r".into(),
+                    layout_id: Some("user:B".into()),
+                    conditions: LayoutConditionSet::default(),
+                }];
+                settings.auto_default_layout_id = Some("user:B".into());
             })
             .unwrap();
         document.load_library_for_editing("B").unwrap();
@@ -357,8 +368,14 @@ mod tests {
             document.settings().current_layout_id.as_deref(),
             Some("user:C")
         );
-        assert!(document.settings().layout_conditions.contains_key("user:C"));
-        assert!(!document.settings().layout_conditions.contains_key("user:B"));
+        assert_eq!(
+            document.settings().auto_rules[0].layout_id.as_deref(),
+            Some("user:C")
+        );
+        assert_eq!(
+            document.settings().auto_default_layout_id.as_deref(),
+            Some("user:C")
+        );
         assert_eq!(document.layout().description.as_deref(), Some("Описание"));
         document.move_library_layout("user:C", -1).unwrap();
         assert_eq!(document.ordered_layout_ids().unwrap(), ["user:C", "user:A"]);
@@ -376,7 +393,8 @@ mod tests {
             Some("user:A")
         );
         assert_eq!(reloaded.settings().layout_order, ["user:A"]);
-        assert!(reloaded.settings().layout_conditions.is_empty());
+        assert!(reloaded.settings().auto_rules.is_empty());
+        assert!(reloaded.settings().auto_default_layout_id.is_none());
     }
 
     #[test]
@@ -390,22 +408,25 @@ mod tests {
         document
             .update_settings(|settings| {
                 settings.layout_mode = LayoutMode::Auto;
-                settings.layout_conditions.insert(
-                    "user:Editor".into(),
-                    LayoutConditionRule {
-                        enabled_in_auto: true,
-                        whitelist: Some(LayoutConditionSet {
+                settings.auto_rules = vec![
+                    AutoRule {
+                        id: "games".into(),
+                        layout_id: None,
+                        conditions: LayoutConditionSet {
+                            game_mode: Some("on".into()),
+                            ..Default::default()
+                        },
+                    },
+                    AutoRule {
+                        id: "editor".into(),
+                        layout_id: Some("user:Editor".into()),
+                        conditions: LayoutConditionSet {
                             game_mode: None,
                             layouts: vec!["us".into()],
                             apps: vec!["kate".into()],
-                        }),
-                        blacklist: Some(LayoutConditionSet {
-                            game_mode: Some("on".into()),
-                            layouts: vec![],
-                            apps: vec![],
-                        }),
+                        },
                     },
-                );
+                ];
             })
             .unwrap();
         let mut context = AutoSwitchContext {

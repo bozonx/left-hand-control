@@ -571,8 +571,6 @@ msgstr "Выберите раскладку"
 msgid "Layout changed on disk; select it again"
 msgstr "Раскладка изменена на диске; выберите её заново"
 
-msgid "Include in automatic mode"
-msgstr "Включить в автоматический режим"
 
 msgid "Any game mode"
 msgstr "Любой игровой режим"
@@ -601,8 +599,6 @@ msgstr "В редакторе · не сохранено"
 msgid "Editing"
 msgstr "В редакторе"
 
-msgid "Conditions…"
-msgstr "Условия…"
 
 msgid "Activate"
 msgstr "Активировать"
@@ -613,14 +609,10 @@ msgstr "Удалить раскладку?"
 msgid "Layout details"
 msgstr "Свойства раскладки"
 
-msgid "Use when"
-msgstr "Использовать, когда"
 
 msgid "Do not use when"
 msgstr "Не использовать, когда"
 
-msgid "Empty conditions impose no restrictions. Exclusions take priority."
-msgstr "Пустые условия не ограничивают выбор. Исключения имеют приоритет."
 
 msgid "The layout file will be deleted. This cannot be undone."
 msgstr "Файл раскладки будет удалён. Это действие нельзя отменить."
@@ -643,8 +635,6 @@ msgstr "Раскладка с таким именем уже есть."
 msgid "Add a description…"
 msgstr "Добавить описание…"
 
-msgid "Automatic: the first included layout whose conditions match is used. Order sets priority."
-msgstr "Автоматически: работает первая включённая раскладка, чьи условия выполнены. Порядок задаёт приоритет."
 
 msgid "Based on Ivan K layout"
 msgstr "На основе раскладки Айвана Кея"
@@ -661,8 +651,6 @@ msgstr "Описание (необязательно)"
 msgid "Discard changes"
 msgstr "Не сохранять"
 
-msgid "Except: {}"
-msgstr "Кроме: {}"
 
 msgid "Make active"
 msgstr "Сделать активной"
@@ -670,8 +658,6 @@ msgstr "Сделать активной"
 msgid "Single: the layout you make active works everywhere."
 msgstr "Одиночный: везде работает раскладка, которую вы сделали активной."
 
-msgid "No conditions: always matches"
-msgstr "Без условий: подходит всегда"
 
 msgid "No layouts yet"
 msgstr "Раскладок пока нет"
@@ -697,8 +683,6 @@ msgstr "Имя содержит символы, недопустимые в им
 msgid "Unsaved changes"
 msgstr "Несохранённые изменения"
 
-msgid "When: {}"
-msgstr "Когда: {}"
 
 msgid "You are editing “{}”, but “{}” is active."
 msgstr "Вы редактируете «{}», а активна «{}»."
@@ -1267,8 +1251,6 @@ msgstr "↓"
 msgid "Does not matter"
 msgstr "Не важно"
 
-msgid "Layout activation conditions"
-msgstr "Условия активации раскладки"
 
 msgid "Open for editing (unsaved)"
 msgstr "Открыта на редактирование (не сохранено)"
@@ -1956,3 +1938,60 @@ msgstr "Выберите клавишу или сочетание клавиш"
 
 msgid "Examples"
 msgstr "Примеры"
+
+msgid "Add rule…"
+msgstr "Добавить правило…"
+
+msgid "All filled conditions must match. A rule without conditions always matches."
+msgstr "Должны выполняться все заполненные условия. Правило без условий срабатывает всегда."
+
+msgid "Always matches: the rules below never apply."
+msgstr "Срабатывает всегда: правила ниже никогда не применятся."
+
+msgid "Automatic switching"
+msgstr "Автопереключение"
+
+msgid "Automatic: the layout is chosen by switching rules for the application, system language or game mode."
+msgstr "Авто: раскладка выбирается правилами переключения по приложению, языку системы или игровому режиму."
+
+msgid "Layout"
+msgstr "Раскладка"
+
+msgid "Layout not found"
+msgstr "Раскладка не найдена"
+
+msgid "New rule"
+msgstr "Новое правило"
+
+msgid "No rules yet: the default layout is always used."
+msgstr "Правил пока нет: всегда используется раскладка по умолчанию."
+
+msgid "Now: {} (default)"
+msgstr "Сейчас: {} (по умолчанию)"
+
+msgid "Now: {} (rule {})"
+msgstr "Сейчас: {} (правило {})"
+
+msgid "Otherwise (default)"
+msgstr "Иначе (по умолчанию)"
+
+msgid "Rule {}"
+msgstr "Правило {}"
+
+msgid "Rules are checked from top to bottom; the first one whose conditions match chooses the layout. If none matches, the default is used. “Turned off” disables remapping, for example in an application where the layout gets in the way."
+msgstr "Правила проверяются сверху вниз; первое правило, условия которого выполнены, выбирает раскладку. Если ни одно не подошло, используется раскладка по умолчанию. «Выключено» отключает переназначение клавиш — например, в приложении, где раскладка мешает."
+
+msgid "Use layout"
+msgstr "Использовать раскладку"
+
+msgid "When"
+msgstr "Когда"
+
+msgid "Turned off"
+msgstr "Выключено"
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "В {n} правиле"
+msgstr[1] "В {n} правилах"
+msgstr[2] "В {n} правилах"

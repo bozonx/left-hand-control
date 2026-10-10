@@ -9,18 +9,18 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        GameCondition, LayoutConditionsView, LayoutLibrary, LayoutSource, LayoutSummary,
-        LibraryAction, LibraryDialog, MenuKind, NameIssue, Page, SettingsWindow,
+        AutoRuleView, GameCondition, LayoutLibrary, LayoutSource, LayoutSummary, LibraryAction,
+        LibraryDialog, MenuKind, NameIssue, Page, SettingsWindow,
     },
 };
 use lhc_core::{
     config_document::{ConfigDocument, ConfigError},
     profile::{
         auto_switch::AutoSwitchContext,
-        layout_file,
+        ids, layout_file,
         library::LibrarySource,
         model::{
-            LayoutConditionRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id,
+            AutoRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id,
             user_layout_name,
         },
     },
@@ -108,35 +108,44 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
         .filter_map(|id| user_layout_name(id).map(str::to_owned))
         .collect();
     library.set_automatic(config.settings().layout_mode == LayoutMode::Auto);
-    let rules: Vec<LayoutConditionRule> = names
-        .iter()
-        .map(|name| {
-            config
-                .settings()
-                .layout_conditions
-                .get(&user_layout_id(name))
-                .cloned()
-                .unwrap_or_default()
-        })
-        .collect();
-    library.set_auto_included(ModelRc::new(VecModel::from(
+    let ids: Vec<String> = names.iter().map(|name| user_layout_id(name)).collect();
+    let target = |id: &Option<String>| -> (i32, bool) {
+        match id {
+            None => (-1, false),
+            Some(id) => ids
+                .iter()
+                .position(|item| item == id)
+                .map_or((-1, true), |index| (index as i32, false)),
+        }
+    };
+    let rules = &config.settings().auto_rules;
+    library.set_auto_rules(ModelRc::new(VecModel::from(
         rules
             .iter()
-            .map(|rule| rule.enabled_in_auto)
+            .enumerate()
+            .map(|(index, rule)| {
+                let (game, list) = summary(Some(&rule.conditions));
+                let (target, missing) = target(&rule.layout_id);
+                AutoRuleView {
+                    game,
+                    list: list.into(),
+                    target,
+                    missing,
+                    shadows: !missing && rule.conditions.is_empty() && index + 1 < rules.len(),
+                }
+            })
             .collect::<Vec<_>>(),
     )));
-    library.set_conditions(ModelRc::new(VecModel::from(
-        rules
-            .iter()
-            .map(|rule| {
-                let (when_game, when_list) = summary(rule.whitelist.as_ref());
-                let (unless_game, unless_list) = summary(rule.blacklist.as_ref());
-                LayoutConditionsView {
-                    when_game,
-                    when_list: when_list.into(),
-                    unless_game,
-                    unless_list: unless_list.into(),
-                }
+    let (default, default_missing) = target(&config.settings().auto_default_layout_id);
+    library.set_auto_default(default);
+    library.set_auto_default_missing(default_missing);
+    library.set_rule_counts(ModelRc::new(VecModel::from(
+        ids.iter()
+            .map(|id| {
+                rules
+                    .iter()
+                    .filter(|rule| rule.layout_id.as_ref() == Some(id))
+                    .count() as i32
             })
             .collect::<Vec<_>>(),
     )));
@@ -248,16 +257,26 @@ fn refresh_context(ui: &SettingsWindow, document: &Document) {
     }));
 }
 
-/// Name of the layout the mapper uses now.
+/// Name of the layout the mapper uses now and the automatic rule that
+/// chose it.
 pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
-    let label = document
-        .read()
-        .active_layout_id(&AutoSwitchContext::current())
+    let config = document.read();
+    let context = AutoSwitchContext::current();
+    let label = config
+        .active_layout_id(&context)
         .ok()
         .flatten()
         .and_then(|id| user_layout_name(&id).map(str::to_owned))
         .unwrap_or_default();
-    ui.global::<LayoutLibrary>().set_active_label(label.into());
+    let matched = config
+        .auto_choice(&context)
+        .ok()
+        .and_then(|choice| choice.rule)
+        .map_or(-1, |index| index as i32);
+    drop(config);
+    let library = ui.global::<LayoutLibrary>();
+    library.set_active_label(label.into());
+    library.set_auto_matched(matched);
 }
 
 /// Remember the library file of the working copy as its saved state.
@@ -326,12 +345,6 @@ fn select(ui: &SettingsWindow, document: &Document, state: &Shared, index: i32) 
     let layout = layout_file::parse(&text)
         .map_err(io)?
         .ok_or(Msg::LayoutEmpty)?;
-    let rule = config
-        .settings()
-        .layout_conditions
-        .get(&user_layout_id(&name))
-        .cloned()
-        .unwrap_or_default();
     {
         let mut state = state.borrow_mut();
         state.selected = Some(name.clone());
@@ -340,15 +353,6 @@ fn select(ui: &SettingsWindow, document: &Document, state: &Shared, index: i32) 
     library.set_selected(index);
     library.set_name(name.into());
     library.set_description(layout.description.unwrap_or_default().into());
-    library.set_auto_enabled(rule.enabled_in_auto);
-    let (white_game, white_layouts, white_apps) = condition_fields(rule.whitelist);
-    let (black_game, black_layouts, black_apps) = condition_fields(rule.blacklist);
-    library.set_white_game(white_game);
-    library.set_white_layouts(white_layouts.into());
-    library.set_white_apps(white_apps.into());
-    library.set_black_game(black_game);
-    library.set_black_layouts(black_layouts.into());
-    library.set_black_apps(black_apps.into());
     Ok(())
 }
 
@@ -397,26 +401,6 @@ fn library_action(
                 config.move_library_layout(&id, delta)
             })?;
         }
-        LibraryAction::SaveConditions => {
-            let rule = LayoutConditionRule {
-                enabled_in_auto: library.get_auto_enabled(),
-                whitelist: condition(
-                    library.get_white_game(),
-                    &library.get_white_layouts(),
-                    &library.get_white_apps(),
-                ),
-                blacklist: condition(
-                    library.get_black_game(),
-                    &library.get_black_layouts(),
-                    &library.get_black_apps(),
-                ),
-            };
-            edit(ui, document, state, |config| {
-                config.update_settings(|settings| {
-                    settings.layout_conditions.insert(id, rule);
-                })
-            })?;
-        }
         LibraryAction::SaveDetails => {
             let expected = state.borrow().known.clone().ok_or(Msg::LibrarySelect)?;
             let new_name = library.get_name().to_string();
@@ -438,10 +422,7 @@ fn library_action(
             reset_context(ui, document, &mut state.borrow_mut());
         }
     }
-    if matches!(
-        action,
-        LibraryAction::SaveConditions | LibraryAction::SaveDetails
-    ) {
+    if action == LibraryAction::SaveDetails {
         library.set_dialog(LibraryDialog::None);
     }
     Ok(if action == LibraryAction::Activate {
@@ -585,6 +566,124 @@ fn set_description(
         library.set_description(description.trim().into());
     }
     reset_context(ui, document, &mut state.borrow_mut());
+    Ok(Msg::None)
+}
+
+/// Layout id of the library row `index`; any other index means off.
+fn target_id(ui: &SettingsWindow, index: i32) -> Option<String> {
+    usize::try_from(index)
+        .ok()
+        .and_then(|index| slint::Model::row_data(&ui.global::<LayoutLibrary>().get_names(), index))
+        .map(|name| user_layout_id(&name))
+}
+
+/// Fill the rule dialog with rule `index`, or a new rule for `target`.
+fn load_rule(ui: &SettingsWindow, document: &Document, index: i32, target: i32) {
+    let library = ui.global::<LayoutLibrary>();
+    let rule = usize::try_from(index)
+        .ok()
+        .and_then(|index| document.read().settings().auto_rules.get(index).cloned());
+    let (game, layouts, apps) = condition_fields(rule.map(|rule| rule.conditions));
+    library.set_rule_index(if rule_exists(document, index) {
+        index
+    } else {
+        -1
+    });
+    library.set_rule_target(target);
+    library.set_rule_game(game);
+    library.set_rule_layouts(layouts.into());
+    library.set_rule_apps(apps.into());
+    library.set_status(Msg::None.to_ui());
+    library.set_dialog(LibraryDialog::Rule);
+}
+
+fn rule_exists(document: &Document, index: i32) -> bool {
+    usize::try_from(index).is_ok_and(|index| index < document.read().settings().auto_rules.len())
+}
+
+fn save_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
+    let library = ui.global::<LayoutLibrary>();
+    let layout_id = target_id(ui, library.get_rule_target());
+    let conditions = condition(
+        library.get_rule_game(),
+        &library.get_rule_layouts(),
+        &library.get_rule_apps(),
+    )
+    .unwrap_or_default();
+    let index = usize::try_from(library.get_rule_index()).ok();
+    edit(ui, document, state, |config| {
+        config.update_settings(|settings| {
+            match index.and_then(|index| settings.auto_rules.get_mut(index)) {
+                Some(rule) => {
+                    rule.layout_id = layout_id;
+                    rule.conditions = conditions;
+                }
+                None => settings.auto_rules.push(AutoRule {
+                    id: ids::generate("rule-"),
+                    layout_id,
+                    conditions,
+                }),
+            }
+        })
+    })?;
+    library.set_dialog(LibraryDialog::None);
+    refresh_active(ui, document);
+    Ok(Msg::None)
+}
+
+fn delete_rule(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    index: i32,
+) -> Result<Msg, Msg> {
+    let index = usize::try_from(index).map_err(|_| Msg::LibrarySelect)?;
+    edit(ui, document, state, |config| {
+        config.update_settings(|settings| {
+            if index < settings.auto_rules.len() {
+                settings.auto_rules.remove(index);
+            }
+        })
+    })?;
+    ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
+    refresh_active(ui, document);
+    Ok(Msg::None)
+}
+
+fn move_rule(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    from: i32,
+    to: i32,
+) -> Result<Msg, Msg> {
+    let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+        return Ok(Msg::None);
+    };
+    edit(ui, document, state, |config| {
+        config.update_settings(|settings| {
+            let rules = &mut settings.auto_rules;
+            if from < rules.len() && to < rules.len() {
+                let rule = rules.remove(from);
+                rules.insert(to, rule);
+            }
+        })
+    })?;
+    refresh_active(ui, document);
+    Ok(Msg::None)
+}
+
+fn set_auto_default(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    index: i32,
+) -> Result<Msg, Msg> {
+    let id = target_id(ui, index);
+    edit(ui, document, state, |config| {
+        config.update_settings(|settings| settings.auto_default_layout_id = id)
+    })?;
+    refresh_active(ui, document);
     Ok(Msg::None)
 }
 
@@ -758,6 +857,25 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         report(&ui, result.map(|()| Msg::LayoutActivated(name)));
     });
     on!(on_load, |ui, doc, state| report(&ui, load(&ui, doc, state)));
+    on!(on_load_rule, |ui, doc, _state, index, target| load_rule(
+        &ui, doc, index, target
+    ));
+    on!(on_save_rule, |ui, doc, state| report(
+        &ui,
+        save_rule(&ui, doc, state)
+    ));
+    on!(on_delete_rule, |ui, doc, state, index| report(
+        &ui,
+        delete_rule(&ui, doc, state, index)
+    ));
+    on!(on_move_rule, |ui, doc, state, from, to| report(
+        &ui,
+        move_rule(&ui, doc, state, from, to)
+    ));
+    on!(on_set_auto_default, |ui, doc, state, index| report(
+        &ui,
+        set_auto_default(&ui, doc, state, index)
+    ));
     on!(on_delete, |ui, doc, state| report(
         &ui,
         delete(&ui, doc, state)

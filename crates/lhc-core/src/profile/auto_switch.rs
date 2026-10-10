@@ -1,6 +1,7 @@
-//! Choosing the active layout in auto mode (`utils/layoutAutoSwitch.ts`).
+//! Choosing the active layout in auto mode: an ordered list of rules
+//! (conditions → layout or off), first match wins, otherwise the default.
 
-use super::model::{AppSettings, LayoutConditionRule, LayoutConditionSet};
+use super::model::{AppSettings, LayoutConditionSet};
 
 /// Observed system state the layout conditions are evaluated against.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -61,23 +62,6 @@ fn matches_active_window(needles: &[String], ctx: &AutoSwitchContext) -> bool {
         .any(|needle| title.contains(&needle) || app_id.contains(&needle))
 }
 
-/// Whether a layout's rules may fire under `ctx`.
-pub fn layout_allowed(rule: Option<&LayoutConditionRule>, ctx: &AutoSwitchContext) -> bool {
-    let Some(rule) = rule else {
-        return true;
-    };
-    if rule
-        .blacklist
-        .as_ref()
-        .is_some_and(|blacklist| matches_condition_set(blacklist, ctx))
-    {
-        return false;
-    }
-    rule.whitelist
-        .as_ref()
-        .is_none_or(|whitelist| matches_condition_set(whitelist, ctx))
-}
-
 /// `available` sorted by `order`; ids missing from `order` keep their
 /// relative position at the end.
 pub fn order_layout_ids(available: &[String], order: &[String]) -> Vec<String> {
@@ -90,23 +74,41 @@ pub fn order_layout_ids(available: &[String], order: &[String]) -> Vec<String> {
     out
 }
 
-/// First layout enabled in auto mode whose conditions allow it.
-pub fn pick_active_layout(
-    available: &[String],
-    settings: &AppSettings,
-    ctx: &AutoSwitchContext,
-) -> Option<String> {
-    order_layout_ids(available, &settings.layout_order)
-        .into_iter()
-        .find(|id| {
-            let rule = settings.layout_conditions.get(id);
-            rule.is_some_and(|rule| rule.enabled_in_auto) && layout_allowed(rule, ctx)
+/// Outcome of the automatic choice.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct AutoChoice {
+    /// Index of the matching rule; `None` means the default applied.
+    pub rule: Option<usize>,
+    /// Layout to use; `None` means off (native passthrough).
+    pub layout_id: Option<String>,
+}
+
+/// First rule whose conditions match `ctx`, or the default. Rules and the
+/// default pointing at a layout missing from `available` are skipped.
+pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchContext) -> AutoChoice {
+    let usable = |id: &Option<String>| id.as_ref().is_none_or(|id| available.contains(id));
+    settings
+        .auto_rules
+        .iter()
+        .enumerate()
+        .find(|(_, rule)| usable(&rule.layout_id) && matches_condition_set(&rule.conditions, ctx))
+        .map(|(index, rule)| AutoChoice {
+            rule: Some(index),
+            layout_id: rule.layout_id.clone(),
+        })
+        .unwrap_or_else(|| AutoChoice {
+            rule: None,
+            layout_id: settings
+                .auto_default_layout_id
+                .clone()
+                .filter(|id| available.contains(id)),
         })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::profile::model::AutoRule;
 
     fn set(game_mode: Option<&str>, layouts: &[&str], apps: &[&str]) -> LayoutConditionSet {
         LayoutConditionSet {
@@ -157,58 +159,57 @@ mod tests {
     }
 
     #[test]
-    fn blacklist_wins_over_whitelist() {
-        let rule = LayoutConditionRule {
-            enabled_in_auto: true,
-            whitelist: Some(set(None, &["us"], &[])),
-            blacklist: Some(set(Some("on"), &[], &[])),
-        };
-        assert!(layout_allowed(Some(&rule), &ctx(Some("us"), false, "")));
-        assert!(!layout_allowed(Some(&rule), &ctx(Some("us"), true, "")));
-        assert!(!layout_allowed(Some(&rule), &ctx(Some("ru"), false, "")));
+    fn library_order_keeps_unknown_ids_last() {
+        let ids: Vec<String> = ["user:A", "user:B", "user:C"].map(String::from).to_vec();
+        let order = ["user:C".to_string(), "user:B".to_string()];
+        assert_eq!(
+            order_layout_ids(&ids, &order),
+            ["user:C", "user:B", "user:A"]
+        );
     }
 
     #[test]
-    fn picks_first_allowed_layout_in_priority_order() {
-        let ids: Vec<String> = ["user:A", "user:B", "user:C"].map(String::from).to_vec();
+    fn first_matching_rule_wins_then_default() {
+        let ids: Vec<String> = ["user:A", "user:B"].map(String::from).to_vec();
+        let rule = |id: &str, layout: Option<&str>, conditions| AutoRule {
+            id: id.into(),
+            layout_id: layout.map(str::to_owned),
+            conditions,
+        };
         let mut settings = AppSettings {
-            layout_order: vec!["user:C".into(), "user:B".into()],
+            auto_rules: vec![
+                rule("off", None, set(None, &[], &["blender"])),
+                rule("ru", Some("user:B"), set(None, &["ru"], &[])),
+                rule("gone", Some("user:X"), set(None, &[], &[])),
+            ],
+            auto_default_layout_id: Some("user:A".into()),
             ..AppSettings::default()
         };
+        let pick = |settings: &AppSettings, layout, title| {
+            choose(&ids, settings, &ctx(Some(layout), false, title))
+        };
         assert_eq!(
-            order_layout_ids(&ids, &settings.layout_order),
-            vec!["user:C", "user:B", "user:A"]
-        );
-        for (id, layouts) in [
-            ("user:A", vec![]),
-            ("user:B", vec!["ru"]),
-            ("user:C", vec!["de"]),
-        ] {
-            settings.layout_conditions.insert(
-                id.into(),
-                LayoutConditionRule {
-                    enabled_in_auto: true,
-                    whitelist: (!layouts.is_empty()).then(|| set(None, &layouts, &[])),
-                    blacklist: None,
-                },
-            );
-        }
-        assert_eq!(
-            pick_active_layout(&ids, &settings, &ctx(Some("ru"), false, "")).as_deref(),
-            Some("user:B")
+            pick(&settings, "ru", "Blender"),
+            AutoChoice {
+                rule: Some(0),
+                layout_id: None
+            }
         );
         assert_eq!(
-            pick_active_layout(&ids, &settings, &ctx(Some("us"), false, "")).as_deref(),
-            Some("user:A")
+            pick(&settings, "ru", "Kate"),
+            AutoChoice {
+                rule: Some(1),
+                layout_id: Some("user:B".into())
+            }
         );
-        settings
-            .layout_conditions
-            .get_mut("user:A")
-            .unwrap()
-            .enabled_in_auto = false;
         assert_eq!(
-            pick_active_layout(&ids, &settings, &ctx(Some("us"), false, "")),
-            None
+            pick(&settings, "us", "Kate"),
+            AutoChoice {
+                rule: None,
+                layout_id: Some("user:A".into())
+            }
         );
+        settings.auto_default_layout_id = Some("user:X".into());
+        assert_eq!(pick(&settings, "us", "Kate"), AutoChoice::default());
     }
 }

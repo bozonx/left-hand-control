@@ -292,7 +292,7 @@ impl LayoutPreset {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LayoutConditionSet {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -302,15 +302,23 @@ pub struct LayoutConditionSet {
     pub apps: Vec<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+impl LayoutConditionSet {
+    pub fn is_empty(&self) -> bool {
+        self.game_mode.is_none() && self.layouts.is_empty() && self.apps.is_empty()
+    }
+}
+
+/// One automatic-mode rule: when `conditions` match, `layout_id` is used.
+/// Rules are checked in order and the first match wins.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LayoutConditionRule {
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
-    pub enabled_in_auto: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub whitelist: Option<LayoutConditionSet>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub blacklist: Option<LayoutConditionSet>,
+pub struct AutoRule {
+    pub id: String,
+    /// `None` turns the mapper off (native passthrough).
+    pub layout_id: Option<String>,
+    /// Empty conditions always match.
+    #[serde(flatten)]
+    pub conditions: LayoutConditionSet,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -407,7 +415,9 @@ pub struct AppSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub manual_active_layout_id: Option<String>,
     pub layout_order: Vec<String>,
-    pub layout_conditions: BTreeMap<String, LayoutConditionRule>,
+    pub auto_rules: Vec<AutoRule>,
+    /// Layout used in automatic mode when no rule matches; `None` is off.
+    pub auto_default_layout_id: Option<String>,
     pub commands_enabled: bool,
     pub game_mode: GameModeSettings,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -436,7 +446,8 @@ impl Default for AppSettings {
             layout_mode: LayoutMode::Manual,
             manual_active_layout_id: None,
             layout_order: Vec::new(),
-            layout_conditions: BTreeMap::new(),
+            auto_rules: Vec::new(),
+            auto_default_layout_id: None,
             commands_enabled: false,
             game_mode: GameModeSettings {
                 use_gamemoded: true,
