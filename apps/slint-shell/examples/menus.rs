@@ -162,7 +162,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::var_os("LHC_MENUS_DND").is_some() {
         use slint::platform::{PointerEventButton, WindowEvent};
         e.invoke_open(MenuKind::Emoji);
-        e.set_value("🐱".into());
+        e.set_value("сделай всё, что ты рекомендовал".into());
         e.invoke_set_cell();
         e.invoke_flush_pending();
         e.invoke_add_page("Target".into());
@@ -190,15 +190,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     e.invoke_select_page(0);
                 }
                 2 => { press(100.0, 285.0); move_to(200.0, 184.0); }
-                3 => { assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0); release(230.0, 285.0); }
+                3 => {
+                    assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0);
+                    if let Ok(path) = std::env::var("LHC_MENUS_DND_SNAPSHOT") {
+                        let pixels = ui.window().take_snapshot().unwrap();
+                        let mut data = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
+                        for p in pixels.as_slice() { data.extend([p.r, p.g, p.b]); }
+                        std::fs::write(path, data).unwrap();
+                    }
+                    release(230.0, 285.0);
+                }
                 4 => {
-                    assert_eq!(document.read().layout().emoji_pages[1].cells["KeyW"], "🐱");
+                    assert_eq!(document.read().layout().emoji_pages[1].cells["KeyW"], "сделай всё, что ты рекомендовал");
                     assert!(!document.read().layout().emoji_pages[0].cells.contains_key("KeyQ"));
                     e.invoke_select_page(0);
+                    e.invoke_select_cell(4);
                 }
-                5 => { press(760.0, 345.0); move_to(365.0, 285.0); release(365.0, 285.0); e.invoke_flush_pending(); }
+                5 => { press(760.0, 345.0); move_to(500.0, 285.0); release(500.0, 285.0); e.invoke_flush_pending(); }
                 6 => {
-                    assert_eq!(document.read().layout().emoji_pages[0].cells["KeyE"], "😀");
+                    assert_eq!(document.read().layout().emoji_pages[0].cells["KeyR"], "😀");
                     e.invoke_open(MenuKind::Quick);
                     e.invoke_set_action(0, "text:drag".into(), "Drag".into());
                     e.invoke_add_page("Target".into());

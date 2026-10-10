@@ -14,6 +14,7 @@ global PaletteDrag {
     in-out property <bool> active;
     in-out property <string> value;
     in-out property <string> name;
+    in-out property <bool> text-item;
     public function reset() { self.active = false; self.value = ""; self.name = ""; }
     in-out property <length> x;
     in-out property <length> y;
@@ -77,7 +78,7 @@ component HotkeyGrid inherits Rectangle {
     private property <length> press-x;
     private property <length> press-y;
     private property <int> current-page: MenuEditor.selected-page;
-    changed current-page => { if root.dragging { root.drag-over = PaletteDrag.target(PaletteDrag.x, PaletteDrag.y); } }
+    changed current-page => { if root.dragging { root.drag-over = root.drop-at(PaletteDrag.x - root.absolute-position.x, PaletteDrag.y - root.absolute-position.y); } }
     min-width: 5 * 64px + 2 * self.pad + 4 * self.gap;
     height: 2 * self.pad + 3 * self.cell-height + 2 * self.gap;
     border-radius: 8px;
@@ -93,11 +94,19 @@ component HotkeyGrid inherits Rectangle {
     }
     init => { root.sync-grid(); }
     changed grid-position => { root.sync-grid(); }
+    changed width => { root.sync-grid(); }
     changed cell-width => { root.sync-grid(); }
     changed cell-height => { root.sync-grid(); }
     pure function index-at(x: length, y: length) -> int {
         return max(0, min(2, floor((y - self.pad) / (self.cell-height + self.gap)))) * 5
             + max(0, min(4, floor((x - self.pad) / (self.cell-width + self.gap))));
+    }
+    pure function drop-at(x: length, y: length) -> int {
+        let local-x = x - self.pad;
+        let local-y = y - self.pad;
+        if local-x < 0px || local-y < 0px || local-x >= 5 * (self.cell-width + self.gap) - self.gap || local-y >= 3 * (self.cell-height + self.gap) - self.gap { return -1; }
+        if mod(local-x, self.cell-width + self.gap) >= self.cell-width || mod(local-y, self.cell-height + self.gap) >= self.cell-height { return -1; }
+        return floor(local-y / (self.cell-height + self.gap)) * 5 + floor(local-x / (self.cell-width + self.gap));
     }
     pure function preview(index: int) -> int {
         if !self.dragging || self.source-page != MenuEditor.selected-page || self.drag-over < 0 { return index; }
@@ -117,9 +126,10 @@ component HotkeyGrid inherits Rectangle {
         y: root.pad + floor(root.preview(index) / 5) * (root.cell-height + root.gap);
         width: root.cell-width;
         height: root.cell-height;
+        clip: true;
         border-radius: 6px;
-        border-width: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
+        border-width: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
+        border-color: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
         background: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
         opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? 0.25 : 1.0;
         accessible-role: button;
@@ -168,12 +178,14 @@ component HotkeyGrid inherits Rectangle {
                 root.drag-from = root.index-at(self.mouse-x, self.mouse-y);
                 PaletteDrag.value = MenuEditor.cells[root.drag-from].value;
                 PaletteDrag.name = MenuEditor.cells[root.drag-from].name;
+                PaletteDrag.text-item = !root.emoji || PaletteDrag.value.character-count > 6;
                 root.drag-over = root.drag-from;
                 root.press-x = self.mouse-x;
                 root.press-y = self.mouse-y;
                 root.dragging = false;
             }
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
+                if root.dragging { root.drag-over = root.drop-at(self.mouse-x, self.mouse-y); }
                 if !root.dragging {
                     root.activate(root.drag-from);
                 } else if root.drag-over >= 0 {
@@ -197,9 +209,10 @@ component HotkeyGrid inherits Rectangle {
                     PaletteDrag.active = root.dragging;
                 }
                 if root.dragging {
+                    root.sync-grid();
                     PaletteDrag.x = root.absolute-position.x + self.mouse-x;
                     PaletteDrag.y = root.absolute-position.y + self.mouse-y;
-                    root.drag-over = PaletteDrag.target(PaletteDrag.x, PaletteDrag.y);
+                    root.drag-over = root.drop-at(PaletteDrag.x - root.absolute-position.x, PaletteDrag.y - root.absolute-position.y);
                 }
             }
         }
@@ -211,10 +224,22 @@ component DragPreview inherits Rectangle {
     visible: PaletteDrag.active;
     x: PaletteDrag.x - root.origin.x + 14px;
     y: PaletteDrag.y - root.origin.y + 14px;
-    width: 120px; height: 64px;
+    width: PaletteDrag.text-item ? 200px : 72px;
+    height: PaletteDrag.text-item ? 76px : 64px;
+    clip: true;
     border-radius: 6px; border-width: 2px; border-color: Theme.link;
-    background: Theme.card; opacity: 0.9;
-    Text { text: PaletteDrag.name == "" ? PaletteDrag.value : PaletteDrag.name; font-family: MenuEditor.kind == MenuKind.emoji ? "Noto Color Emoji" : ""; font-size: MenuEditor.kind == MenuKind.emoji ? 24px : 14px; color: Theme.text; wrap: word-wrap; horizontal-alignment: center; vertical-alignment: center; }
+    background: Theme.card; opacity: 0.95;
+    Text {
+        x: 10px; y: 8px;
+        width: parent.width - 20px; height: parent.height - 16px;
+        text: PaletteDrag.name == "" ? PaletteDrag.value : PaletteDrag.name;
+        font-family: PaletteDrag.text-item ? "" : "Noto Color Emoji";
+        font-size: PaletteDrag.text-item ? 13px : 26px;
+        color: Theme.text;
+        wrap: word-wrap; overflow: elide;
+        horizontal-alignment: PaletteDrag.text-item ? left : center;
+        vertical-alignment: center;
+    }
 }
 
 component MenuTabs inherits ScrollView {
@@ -339,7 +364,7 @@ component EmojiButton inherits Rectangle {
         }
         pointer-event(event) => {
             if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
-                PaletteDrag.reset(); PaletteDrag.value = root.item;
+                PaletteDrag.reset(); PaletteDrag.value = root.item; PaletteDrag.text-item = root.wide || root.item.character-count > 6;
             }
             if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
                 if PaletteDrag.active {
