@@ -12,7 +12,7 @@ use lhc_core::{
     config_document::ConfigError,
     profile::{ids, menus::empty_quick_action, model::*},
 };
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
 const PAGE: usize = LEFT_HAND_HOTKEYS.len();
@@ -95,7 +95,14 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
     };
     let p = (e.get_selected_page().max(0) as usize).min(names.len().saturating_sub(1));
     e.set_selected_page(p as i32);
-    e.set_pages(super::strings(names.clone()));
+    if e.get_pages()
+        .iter()
+        .map(|name| name.to_string())
+        .collect::<Vec<_>>()
+        != names
+    {
+        e.set_pages(super::strings(names.clone()));
+    }
     let c = e.get_selected_cell().clamp(-1, PAGE as i32 - 1);
     let cells: Vec<MenuCell> = if kind == MenuKind::Emoji {
         let c = c.max(0);
@@ -400,6 +407,53 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 }
             }
             e.set_selected_page(n as i32);
+        });
+    });
+    let c = change.clone();
+    e.on_reorder_page(move |from, to| {
+        c(false, &|e, layout| {
+            let count = page_count(e.get_kind(), layout) as i32;
+            if !(0..count).contains(&from) || !(0..count).contains(&to) || from == to {
+                return;
+            }
+            lhc_core::profile::menus::reorder_page(
+                layout,
+                e.get_kind() == MenuKind::Emoji,
+                from as usize,
+                to as usize,
+            );
+            let selected = e.get_selected_page();
+            e.set_selected_page(if selected == from {
+                to
+            } else if from < selected && selected <= to {
+                selected - 1
+            } else if to <= selected && selected < from {
+                selected + 1
+            } else {
+                selected
+            });
+        });
+    });
+    let c = change.clone();
+    e.on_transfer_cell(move |source_page, source, target| {
+        c(false, &|e, layout| {
+            let (Ok(source_page), Ok(source), Ok(target), Ok(target_page)) = (
+                usize::try_from(source_page),
+                usize::try_from(source),
+                usize::try_from(target),
+                usize::try_from(e.get_selected_page()),
+            ) else {
+                return;
+            };
+            lhc_core::profile::menus::transfer_cell(
+                layout,
+                e.get_kind() == MenuKind::Emoji,
+                source_page,
+                source,
+                target_page,
+                target,
+            );
+            e.set_selected_cell(target as i32);
         });
     });
     let c = change.clone();

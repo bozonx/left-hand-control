@@ -4,7 +4,11 @@ fn main() {
     println!("cargo:rerun-if-changed=translations");
     let mut russian = rspolib::pofile("translations/ru/LC_MESSAGES/slint-shell.po").unwrap();
     if let Some(forms) = russian.metadata.get_mut("Plural-Forms") {
-        *forms = forms.split(';').map(str::trim).collect::<Vec<_>>().join(";");
+        *forms = forms
+            .split(';')
+            .map(str::trim)
+            .collect::<Vec<_>>()
+            .join(";");
     }
     let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
     std::fs::write(output.join("ru.mo"), russian.as_bytes()).unwrap();

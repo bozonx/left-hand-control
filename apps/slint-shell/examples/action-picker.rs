@@ -19,7 +19,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());
     assert!(picker.get_key_only());
-    assert_eq!(rules.get_dialog(), RuleDialog::None, "the picker replaces the dialog");
+    assert_eq!(
+        rules.get_dialog(),
+        RuleDialog::None,
+        "the picker replaces the dialog"
+    );
     assert_eq!(
         picker.get_counts().iter().collect::<Vec<_>>(),
         [40, 37, 27, 15, 5, 55, 0, 0, 0, 0, 0]
@@ -45,7 +49,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_query("es".into());
     picker.invoke_refresh();
     for category in [0, 3, 4] {
-        assert!(picker.get_items().iter().any(|item| item.category == category));
+        assert!(
+            picker
+                .get_items()
+                .iter()
+                .any(|item| item.category == category)
+        );
     }
     assert_eq!(picker.get_category(), 11);
     picker.invoke_select_behavior(2);
@@ -59,7 +68,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().layout().rules[index as usize].tap_action.as_deref(),
+        document.read().layout().rules[index as usize]
+            .tap_action
+            .as_deref(),
         Some("macro:copyLine")
     );
     rules.invoke_open_dialog(index, RuleDialog::Tap);
@@ -74,7 +85,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(picker.get_opened());
     assert!(!picker.get_valid());
     picker.invoke_dismiss_picker();
-    assert_eq!(document.read().layout().rules[index as usize].tap_action.as_deref(), Some("macro:copyLine"));
+    assert_eq!(
+        document.read().layout().rules[index as usize]
+            .tap_action
+            .as_deref(),
+        Some("macro:copyLine")
+    );
     rules.invoke_open_dialog(index, RuleDialog::Hold);
     picker.invoke_select_behavior(2);
     picker.set_value("macro:copyLine".into());
@@ -100,10 +116,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("pause:250".into());
     picker.invoke_apply();
     assert_eq!(
-        macros.get_macros().row_data(0).unwrap().steps.row_data(0).unwrap().action,
+        macros
+            .get_macros()
+            .row_data(0)
+            .unwrap()
+            .steps
+            .row_data(0)
+            .unwrap()
+            .action,
         "pause:250"
     );
-    assert_eq!(document.read().layout().macros[0].steps[0].action, "pause:250");
+    assert_eq!(
+        document.read().layout().macros[0].steps[0].action,
+        "pause:250"
+    );
     ui.invoke_navigate(Page::Menus, MenuKind::Quick);
     picker.invoke_open(PickerTarget::QuickAction, 1, "".into(), false);
     picker.invoke_select_behavior(2);
@@ -112,7 +138,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let menus = ui.global::<MenuEditor>();
     assert_eq!(menus.get_value(), "text:Привет\nмир");
     assert_eq!(menus.get_selected_cell(), 1);
-    assert_eq!(document.read().layout().quick_actions[1].action, "text:Привет\nмир");
+    assert_eq!(
+        document.read().layout().quick_actions[1].action,
+        "text:Привет\nмир"
+    );
     let layers = ui.global::<LayersEditor>();
     layers.set_dialog_key("F13".into());
     picker.invoke_open(PickerTarget::LayerKey, 0, "F13".into(), true);
@@ -132,7 +161,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("text:example".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
-    assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:example"));
+    assert_eq!(
+        document.read().base_tap_action("KeyQ"),
+        Some("text:example")
+    );
     rules.invoke_open_dialog(index, RuleDialog::Key);
     if let Ok(category) = std::env::var("LHC_PICKER_CATEGORY") {
         rules.invoke_open_dialog(index, RuleDialog::Tap);

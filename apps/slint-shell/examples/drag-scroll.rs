@@ -38,7 +38,8 @@ slint::slint! {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = DragWindow::new()?;
-    ui.global::<DragDrop>().on_locate(|_, source, offset, _| source + (offset / 40.0).round() as i32);
+    ui.global::<DragDrop>()
+        .on_locate(|_, source, offset, _| source + (offset / 40.0).round() as i32);
     ui.show()?;
     let weak = ui.as_weak();
     let step = Rc::new(Cell::new(0u32));

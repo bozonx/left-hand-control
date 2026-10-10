@@ -22,13 +22,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         let locale = ui.global::<Locale>();
         slint_shell::select_ui_language("ru")?;
-        assert_eq!(locale.invoke_text(loaded(1)), "Конфигурация загружена: 1 правило");
-        assert_eq!(locale.invoke_text(loaded(5)), "Конфигурация загружена: 5 правил");
-        assert_eq!(locale.invoke_text(loaded(2)), "Конфигурация загружена: 2 правила");
+        assert_eq!(
+            locale.invoke_text(loaded(1)),
+            "Конфигурация загружена: 1 правило"
+        );
+        assert_eq!(
+            locale.invoke_text(loaded(5)),
+            "Конфигурация загружена: 5 правил"
+        );
+        assert_eq!(
+            locale.invoke_text(loaded(2)),
+            "Конфигурация загружена: 2 правила"
+        );
         slint_shell::select_ui_language("en")?;
-        assert_eq!(locale.invoke_text(loaded(1)), "Configuration loaded: 1 rule");
+        assert_eq!(
+            locale.invoke_text(loaded(1)),
+            "Configuration loaded: 1 rule"
+        );
         slint_shell::select_ui_language("ru")?;
-        assert_eq!(locale.invoke_text(loaded(21)), "Конфигурация загружена: 21 правило");
+        assert_eq!(
+            locale.invoke_text(loaded(21)),
+            "Конфигурация загружена: 21 правило"
+        );
         slint_shell::select_ui_language("en")?;
 
         // Editing a key opens the picker; applying saves the tap action.
@@ -40,8 +55,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         picker.set_value("text:Привет 👋".into());
         picker.invoke_apply();
         assert!(!picker.get_opened());
-        assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Привет 👋"));
-        assert_eq!(keys.get_keys().row_data(33).unwrap().action, "text:Привет 👋");
+        assert_eq!(
+            document.read().base_tap_action("KeyQ"),
+            Some("text:Привет 👋")
+        );
+        assert_eq!(
+            keys.get_keys().row_data(33).unwrap().action,
+            "text:Привет 👋"
+        );
         assert_eq!(ui.global::<AppState>().get_status().id, "");
 
         // Cancel keeps the saved value.
@@ -50,7 +71,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         picker.invoke_select_behavior(2);
         picker.set_value("Ctrl+KeyC".into());
         picker.invoke_dismiss_picker();
-        assert_eq!(document.read().base_tap_action("KeyQ"), Some("text:Привет 👋"));
+        assert_eq!(
+            document.read().base_tap_action("KeyQ"),
+            Some("text:Привет 👋")
+        );
 
         // Pauses are only valid inside macros.
         keys.invoke_edit(33);
@@ -62,13 +86,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         picker.invoke_select_behavior(2);
         picker.set_value("Ctrl+Shift+KeyK".into());
         picker.invoke_apply();
-        assert_eq!(document.read().base_tap_action("KeyQ"), Some("Ctrl+Shift+KeyK"));
+        assert_eq!(
+            document.read().base_tap_action("KeyQ"),
+            Some("Ctrl+Shift+KeyK")
+        );
         ui.show()?;
         let weak = ui.as_weak();
         slint::Timer::single_shot(std::time::Duration::from_millis(500), move || {
             let ui = weak.unwrap();
             snapshot(&ui, "keyboard");
-            println!("Editor smoke: passed (80 keys, picker assignment, cancel, validation, translations)");
+            println!(
+                "Editor smoke: passed (80 keys, picker assignment, cancel, validation, translations)"
+            );
             slint::quit_event_loop().unwrap();
         });
     }

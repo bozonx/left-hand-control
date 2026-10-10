@@ -27,6 +27,8 @@ const MAX_DELAY_MS: u64 = 2000;
 #[derive(Clone, PartialEq)]
 struct Entry {
     item: Macro,
+    /// Id on disk, `None` until first saved; used to follow id renames.
+    saved_id: Option<String>,
     step_pause: String,
     modifier_delay: String,
 }
@@ -37,6 +39,7 @@ impl Entry {
         Self {
             step_pause: text(item.step_pause_ms),
             modifier_delay: text(item.modifier_delay_ms),
+            saved_id: None,
             item,
         }
     }
@@ -71,7 +74,10 @@ fn load(document: &Document) -> Vec<Entry> {
         .macros
         .iter()
         .cloned()
-        .map(Entry::new)
+        .map(|item| Entry {
+            saved_id: Some(item.id.clone()),
+            ..Entry::new(item)
+        })
         .collect()
 }
 
@@ -176,8 +182,19 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         editor.set_status(Msg::None.to_ui());
         return;
     }
-    let message = match document.edit(View::Macros, |config| config.save_macros(items)) {
-        Ok(saved) => saved.message(Msg::None),
+    let renames: Vec<(String, String)> = state
+        .draft
+        .iter()
+        .filter_map(|e| Some((e.saved_id.clone()?, e.item.id.clone())))
+        .collect();
+    let edit = document.edit(View::Macros, |config| config.save_macros(items, &renames));
+    let message = match edit {
+        Ok(saved) => {
+            for entry in &mut state.draft {
+                entry.saved_id = Some(entry.item.id.clone());
+            }
+            saved.message(Msg::None)
+        }
         Err(error) => {
             // The document reloaded the files; show what is on disk now.
             if error == ConfigError::ExternalChange {
@@ -203,17 +220,26 @@ fn save_later(ui: &SettingsWindow, document: &Rc<Document>, state: &Shared) {
     state.borrow_mut().timer = Some(timer);
 }
 
+fn taken(draft: &[Entry], id: &str) -> bool {
+    draft.iter().any(|e| e.item.id == id) || SYSTEM_MACROS.iter().any(|m| m.id == id)
+}
+
 fn unique_id(draft: &[Entry], base: &str) -> String {
-    let taken = |id: &str| {
-        draft.iter().any(|e| e.item.id == id) || SYSTEM_MACROS.iter().any(|m| m.id == id)
-    };
-    if !taken(base) {
+    if !taken(draft, base) {
         return base.into();
     }
     (2..1000)
         .map(|n| format!("{base}{n}"))
-        .find(|id| !taken(id))
-        .unwrap_or_else(|| ids::generate("macro_"))
+        .find(|id| !taken(draft, id))
+        .unwrap_or_else(|| ids::generate(base))
+}
+
+/// Short id for a new macro: the first free `m1`, `m2`, …
+fn new_id(draft: &[Entry]) -> String {
+    (1..)
+        .map(|n| format!("m{n}"))
+        .find(|id| !taken(draft, id))
+        .unwrap_or_default()
 }
 
 fn step(action: impl Into<String>) -> MacroStep {
@@ -304,7 +330,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let s = structural.clone();
     editor.on_add(move |name| {
         s(&|draft| {
-            let id = unique_id(draft, &ids::generate("macro_"));
+            let id = new_id(draft);
             draft.insert(
                 0,
                 Entry::new(Macro {

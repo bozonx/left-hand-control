@@ -5,13 +5,16 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MenuKind, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, PageTabs } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, NavTab } from "controls.slint";
 import { Button, LineEdit, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
 global PaletteDrag {
     in-out property <bool> active;
+    in-out property <string> value;
+    in-out property <string> name;
+    public function reset() { self.active = false; self.value = ""; self.name = ""; }
     in-out property <length> x;
     in-out property <length> y;
     in-out property <length> grid-x;
@@ -55,6 +58,8 @@ export global MenuEditor {
     callback set-action(int, string, string);
     callback clear-cell();
     callback move-cell(int, int);
+    callback transfer-cell(int, int, int);
+    callback reorder-page(int, int);
 }
 
 /// 5×3 grid of the left-hand hotkeys; click selects, drag moves a cell.
@@ -67,11 +72,12 @@ component HotkeyGrid inherits Rectangle {
     private property <length> cell-width: (self.width - 2 * self.pad - 4 * self.gap) / 5;
     private property <int> drag-from: -1;
     private property <int> drag-over: -1;
+    private property <int> source-page: -1;
     private property <bool> dragging;
     private property <length> press-x;
     private property <length> press-y;
-    private property <length> pointer-x;
-    private property <length> pointer-y;
+    private property <int> current-page: MenuEditor.selected-page;
+    changed current-page => { if root.dragging { root.drag-over = PaletteDrag.target(PaletteDrag.x, PaletteDrag.y); } }
     min-width: 5 * 64px + 2 * self.pad + 4 * self.gap;
     height: 2 * self.pad + 3 * self.cell-height + 2 * self.gap;
     border-radius: 8px;
@@ -80,12 +86,10 @@ component HotkeyGrid inherits Rectangle {
     background: Theme.surface;
     private property <Point> grid-position: root.absolute-position;
     function sync-grid() {
-        if root.emoji {
-            PaletteDrag.grid-x = root.grid-position.x;
-            PaletteDrag.grid-y = root.grid-position.y;
-            PaletteDrag.cell-width = root.cell-width;
-            PaletteDrag.cell-height = root.cell-height;
-        }
+        PaletteDrag.grid-x = root.grid-position.x;
+        PaletteDrag.grid-y = root.grid-position.y;
+        PaletteDrag.cell-width = root.cell-width;
+        PaletteDrag.cell-height = root.cell-height;
     }
     init => { root.sync-grid(); }
     changed grid-position => { root.sync-grid(); }
@@ -96,13 +100,13 @@ component HotkeyGrid inherits Rectangle {
             + max(0, min(4, floor((x - self.pad) / (self.cell-width + self.gap))));
     }
     pure function preview(index: int) -> int {
-        if !self.dragging { return index; }
+        if !self.dragging || self.source-page != MenuEditor.selected-page || self.drag-over < 0 { return index; }
         if index == self.drag-from { return self.drag-over; }
         if self.drag-from < self.drag-over && index > self.drag-from && index <= self.drag-over { return index - 1; }
         if self.drag-from > self.drag-over && index >= self.drag-over && index < self.drag-from { return index + 1; }
         return index;
     }
-    if root.dragging: Rectangle {
+    if root.dragging && root.drag-over >= 0: Rectangle {
         x: root.pad + mod(root.drag-over, 5) * (root.cell-width + root.gap);
         y: root.pad + floor(root.drag-over / 5) * (root.cell-height + root.gap);
         width: root.cell-width; height: root.cell-height;
@@ -114,10 +118,10 @@ component HotkeyGrid inherits Rectangle {
         width: root.cell-width;
         height: root.cell-height;
         border-radius: 6px;
-        border-width: index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: (root.emoji && PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == index) || index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
-        background: root.dragging && root.preview(index) == root.drag-over ? Theme.hover : Theme.card;
-        opacity: root.dragging && index == root.drag-from ? 0.0 : 1.0;
+        border-width: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
+        border-color: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || index == MenuEditor.selected-cell || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
+        background: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
+        opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? 0.25 : 1.0;
         accessible-role: button;
         accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
         accessible-action-default => { root.activate(index); }
@@ -155,51 +159,128 @@ component HotkeyGrid inherits Rectangle {
             if !root.emoji: Rectangle { vertical-stretch: 1; }
         }
     }
-    if root.dragging: Rectangle {
-        x: max(0px, min(root.width - self.width, root.pad + mod(root.drag-from, 5) * (root.cell-width + root.gap) + root.pointer-x - root.press-x));
-        y: max(0px, min(root.height - self.height, root.pad + floor(root.drag-from / 5) * (root.cell-height + root.gap) + root.pointer-y - root.press-y));
-        width: root.cell-width; height: root.cell-height;
-        border-radius: 6px; border-width: 2px; border-color: Theme.link; background: Theme.card; opacity: 0.92;
-        VerticalLayout { padding: 8px; spacing: 4px;
-            Text { text: MenuEditor.cells[root.drag-from].key; color: Theme.link; }
-            Text { font-family: root.emoji ? "Noto Color Emoji" : ""; text: root.emoji ? MenuEditor.cells[root.drag-from].value : MenuEditor.cells[root.drag-from].name; color: Theme.text; font-size: root.emoji ? 26px : 14px; wrap: word-wrap; horizontal-alignment: center; vertical-alignment: center; vertical-stretch: 1; }
-            if !root.emoji: Text { text: MenuEditor.cells[root.drag-from].value; color: Theme.muted; overflow: elide; }
-        }
-    }
     TouchArea {
         mouse-cursor: root.dragging ? grabbing : pointer;
         pointer-event(event) => {
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                PaletteDrag.reset();
+                root.source-page = MenuEditor.selected-page;
                 root.drag-from = root.index-at(self.mouse-x, self.mouse-y);
+                PaletteDrag.value = MenuEditor.cells[root.drag-from].value;
+                PaletteDrag.name = MenuEditor.cells[root.drag-from].name;
                 root.drag-over = root.drag-from;
                 root.press-x = self.mouse-x;
                 root.press-y = self.mouse-y;
-                root.pointer-x = self.mouse-x; root.pointer-y = self.mouse-y;
                 root.dragging = false;
             }
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
                 if !root.dragging {
                     root.activate(root.drag-from);
-                } else if root.drag-over != root.drag-from {
-                    MenuEditor.move-cell(root.drag-from, root.drag-over);
+                } else if root.drag-over >= 0 {
+                    if root.source-page == MenuEditor.selected-page {
+                        MenuEditor.move-cell(root.drag-from, root.drag-over);
+                    } else {
+                        MenuEditor.transfer-cell(root.source-page, root.drag-from, root.drag-over);
+                    }
                 }
+                PaletteDrag.reset();
                 root.dragging = false;
                 root.drag-from = -1;
                 root.drag-over = -1;
             }
-            if event.kind == PointerEventKind.cancel { root.dragging = false; root.drag-from = -1; root.drag-over = -1; }
+            if event.kind == PointerEventKind.cancel { PaletteDrag.reset(); root.dragging = false; root.drag-from = -1; root.drag-over = -1; }
         }
         moved => {
             if self.pressed && root.drag-from >= 0 {
-                root.pointer-x = self.mouse-x; root.pointer-y = self.mouse-y;
                 if abs(self.mouse-x - root.press-x) > 6px || abs(self.mouse-y - root.press-y) > 6px {
-                    root.dragging = true;
+                    root.dragging = PaletteDrag.value != "";
+                    PaletteDrag.active = root.dragging;
                 }
                 if root.dragging {
-                    root.drag-over = root.index-at(self.mouse-x, self.mouse-y);
+                    PaletteDrag.x = root.absolute-position.x + self.mouse-x;
+                    PaletteDrag.y = root.absolute-position.y + self.mouse-y;
+                    root.drag-over = PaletteDrag.target(PaletteDrag.x, PaletteDrag.y);
                 }
             }
         }
+    }
+}
+
+component DragPreview inherits Rectangle {
+    in property <Point> origin;
+    visible: PaletteDrag.active;
+    x: PaletteDrag.x - root.origin.x + 14px;
+    y: PaletteDrag.y - root.origin.y + 14px;
+    width: 120px; height: 64px;
+    border-radius: 6px; border-width: 2px; border-color: Theme.link;
+    background: Theme.card; opacity: 0.9;
+    Text { text: PaletteDrag.name == "" ? PaletteDrag.value : PaletteDrag.name; font-family: MenuEditor.kind == MenuKind.emoji ? "Noto Color Emoji" : ""; font-size: MenuEditor.kind == MenuKind.emoji ? 24px : 14px; color: Theme.text; wrap: word-wrap; horizontal-alignment: center; vertical-alignment: center; }
+}
+
+component MenuTabs inherits ScrollView {
+    in property <[string]> labels;
+    in property <int> selected;
+    callback select(int);
+    callback add();
+    height: 44px;
+    viewport-height: self.visible-height;
+    viewport-width: max(self.visible-width, tabs.preferred-width);
+    vertical-scrollbar-policy: always-off;
+    horizontal-scrollbar-policy: as-needed;
+    private property <length> pointer-x;
+    private property <bool> cell-over-tabs: PaletteDrag.active && PaletteDrag.y >= root.absolute-position.y && PaletteDrag.y < root.absolute-position.y + root.height;
+    private property <length> scroll-pointer: root.cell-over-tabs ? PaletteDrag.x : root.pointer-x;
+    Timer {
+        interval: 30ms;
+        running: (DragDrop.dragging && DragDrop.group == 5) || root.cell-over-tabs;
+        triggered => {
+            if root.scroll-pointer < root.absolute-position.x + 24px { root.viewport-x = min(0px, root.viewport-x + 12px); }
+            if root.scroll-pointer > root.absolute-position.x + root.width - 24px { root.viewport-x = max(root.visible-width - root.viewport-width, root.viewport-x - 12px); }
+        }
+    }
+    tabs := HorizontalLayout { spacing: 6px; alignment: start;
+        for label[index] in root.labels: Rectangle {
+            width: tab.preferred-width; height: 40px;
+            private property <Point> position: self.absolute-position;
+            private property <bool> hovered: PaletteDrag.active && PaletteDrag.x >= max(root.absolute-position.x, self.position.x) && PaletteDrag.x < min(root.absolute-position.x + root.width, self.position.x + self.width) && PaletteDrag.y >= self.position.y && PaletteDrag.y < self.position.y + self.height;
+            init => { DragDrop.row(5, index, self.position.x, self.width); }
+            changed position => { DragDrop.row(5, index, self.position.x, self.width); }
+            changed width => { DragDrop.row(5, index, self.position.x, self.width); }
+            Timer { interval: 400ms; running: parent.hovered && index != root.selected; triggered => { root.select(index); } }
+            tab := NavTab { text: label; selected: index == root.selected; clicked => { root.select(index); } opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == index ? 0.5 : 1; }
+            if DragDrop.dragging && DragDrop.group == 5 && DragDrop.target == index && index != DragDrop.source: Rectangle {
+                x: index > DragDrop.source ? parent.width : -3px;
+                width: 3px; background: Theme.link;
+            }
+            Timer {
+                interval: 30ms;
+                running: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == index;
+                triggered => { DragDrop.target = DragDrop.locate(5, index, root.pointer-x - parent.position.x - touch.pressed-x, root.labels.length); }
+            }
+            touch := TouchArea {
+                mouse-cursor: self.pressed ? grabbing : pointer;
+                pointer-event(event) => {
+                    if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                        DragDrop.reset(); DragDrop.group = 5; DragDrop.source = index; DragDrop.target = index;
+                    }
+                    if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == 5 {
+                        let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
+                        DragDrop.reset();
+                        if moved { MenuEditor.reorder-page(from, to); } else { root.select(index); }
+                    }
+                    if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
+                }
+                moved => {
+                    if self.pressed && DragDrop.group == 5 {
+                        root.pointer-x = self.absolute-position.x + self.mouse-x;
+                        DragDrop.offset = self.mouse-x - self.pressed-x;
+                        if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
+                        if DragDrop.dragging { DragDrop.target = DragDrop.locate(5, DragDrop.source, DragDrop.offset, root.labels.length); }
+                    }
+                }
+            }
+        }
+        IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Add page"); primary: root.labels.length == 0; clicked => { root.add(); } }
     }
 }
 
@@ -257,14 +338,17 @@ component EmojiButton inherits Rectangle {
             }
         }
         pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                PaletteDrag.reset(); PaletteDrag.value = root.item;
+            }
             if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
                 if PaletteDrag.active {
                     let target = PaletteDrag.target(root.absolute-position.x + self.mouse-x, root.absolute-position.y + self.mouse-y);
                     if target >= 0 { MenuEditor.select-cell(target); root.pick(); }
                 } else { root.pick(); }
-                PaletteDrag.active = false;
+                PaletteDrag.reset();
             }
-            if event.kind == PointerEventKind.cancel { PaletteDrag.active = false; }
+            if event.kind == PointerEventKind.cancel { PaletteDrag.reset(); }
         }
     }
 }
@@ -300,7 +384,7 @@ export component EmojiPage inherits Rectangle {
                 horizontal-stretch: 1;
                 spacing: 16px;
                 alignment: start;
-                    PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
+                    MenuTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
                 HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
             }
             Card {
@@ -373,6 +457,7 @@ export component EmojiPage inherits Rectangle {
             }
         }
     }
+    DragPreview { origin: root.absolute-position; }
     if root.confirming: ConfirmDialog {
         width: 100%;
         height: 100%;
@@ -399,7 +484,7 @@ export component QuickActionsPage inherits Rectangle {
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
-            PageTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
+            MenuTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(@tr("Page {}", MenuEditor.pages.length + 1)); } }
         }
         ScrollView {
             vertical-stretch: 1;
@@ -487,6 +572,7 @@ export component QuickActionsPage inherits Rectangle {
             }
         }
     }
+    DragPreview { origin: root.absolute-position; }
     if root.confirming: ConfirmDialog {
         width: 100%;
         height: 100%;

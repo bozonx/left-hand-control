@@ -112,6 +112,78 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
     None
 }
 
+/// Move a page and its cells together, preserving the order of other pages.
+pub fn reorder_page(layout: &mut LayoutPreset, emoji: bool, from: usize, to: usize) {
+    if emoji {
+        if from < layout.emoji_pages.len() && to < layout.emoji_pages.len() {
+            let page = layout.emoji_pages.remove(from);
+            layout.emoji_pages.insert(to, page);
+        }
+    } else {
+        let size = LEFT_HAND_HOTKEYS.len();
+        if from >= layout.quick_action_pages.len()
+            || to >= layout.quick_action_pages.len()
+            || layout.quick_actions.len() < layout.quick_action_pages.len() * size
+        {
+            return;
+        }
+        let page = layout.quick_action_pages.remove(from);
+        layout.quick_action_pages.insert(to, page);
+        let cells: Vec<_> = layout
+            .quick_actions
+            .drain(from * size..(from + 1) * size)
+            .collect();
+        layout.quick_actions.splice(to * size..to * size, cells);
+    }
+}
+
+/// Transfer a cell between pages, returning the destination's contents to its source.
+pub fn transfer_cell(
+    layout: &mut LayoutPreset,
+    emoji: bool,
+    source_page: usize,
+    source: usize,
+    target_page: usize,
+    target: usize,
+) {
+    let size = LEFT_HAND_HOTKEYS.len();
+    if source >= size || target >= size || source_page == target_page {
+        return;
+    }
+    if emoji {
+        if source_page >= layout.emoji_pages.len() || target_page >= layout.emoji_pages.len() {
+            return;
+        }
+        let source_key = LEFT_HAND_HOTKEYS[source];
+        let target_key = LEFT_HAND_HOTKEYS[target];
+        let Some(value) = layout.emoji_pages[source_page].cells.remove(source_key) else {
+            return;
+        };
+        if let Some(previous) = layout.emoji_pages[target_page]
+            .cells
+            .insert(target_key.into(), value)
+        {
+            layout.emoji_pages[source_page]
+                .cells
+                .insert(source_key.into(), previous);
+        }
+    } else {
+        if source_page >= layout.quick_action_pages.len()
+            || target_page >= layout.quick_action_pages.len()
+        {
+            return;
+        }
+        let from = source_page * size + source;
+        let to = target_page * size + target;
+        if from < layout.quick_actions.len()
+            && to < layout.quick_actions.len()
+            && !layout.quick_actions[from].action.is_empty()
+        {
+            layout.quick_actions.swap(from, to);
+        }
+    }
+}
+
 pub fn empty_quick_action() -> QuickAction {
     QuickAction {
         id: ids::generate("quick_"),
@@ -125,6 +197,67 @@ pub fn empty_quick_action() -> QuickAction {
 mod tests {
     use super::*;
     use crate::storage::StoragePaths;
+
+    #[test]
+    fn transfers_and_page_reorders_preserve_cells_and_action_metadata() {
+        let mut layout = LayoutPreset {
+            emoji_pages: vec![
+                EmojiPage {
+                    id: "a".into(),
+                    name: "A".into(),
+                    cells: [("KeyQ".into(), "😀".into())].into(),
+                },
+                EmojiPage {
+                    id: "b".into(),
+                    name: "B".into(),
+                    cells: [("KeyW".into(), "✨".into())].into(),
+                },
+            ],
+            quick_action_pages: vec![
+                QuickActionPage {
+                    id: "a".into(),
+                    name: "A".into(),
+                },
+                QuickActionPage {
+                    id: "b".into(),
+                    name: "B".into(),
+                },
+            ],
+            quick_actions: (0..30).map(|_| empty_quick_action()).collect(),
+            ..LayoutPreset::default()
+        };
+        transfer_cell(&mut layout, true, 0, 0, 1, 1);
+        assert_eq!(layout.emoji_pages[0].cells["KeyQ"], "✨");
+        assert_eq!(layout.emoji_pages[1].cells["KeyW"], "😀");
+        transfer_cell(&mut layout, true, 1, 1, 0, 2);
+        assert!(!layout.emoji_pages[1].cells.contains_key("KeyW"));
+        assert_eq!(layout.emoji_pages[0].cells["KeyE"], "😀");
+        reorder_page(&mut layout, true, 0, 1);
+        assert_eq!(layout.emoji_pages[1].id, "a");
+        assert_eq!(layout.emoji_pages[1].cells["KeyE"], "😀");
+
+        layout.quick_actions[0] = QuickAction {
+            id: "source".into(),
+            name: "Label".into(),
+            action: "text:hello".into(),
+            icon: Some("icon".into()),
+        };
+        layout.quick_actions[16].action = "text:previous".into();
+        let source = layout.quick_actions[0].clone();
+        let previous = layout.quick_actions[16].clone();
+        transfer_cell(&mut layout, false, 0, 0, 1, 1);
+        assert_eq!(layout.quick_actions[16], source);
+        assert_eq!(layout.quick_actions[0], previous);
+        reorder_page(&mut layout, false, 1, 0);
+        assert_eq!(layout.quick_action_pages[0].id, "b");
+        assert_eq!(layout.quick_actions[1], source);
+        assert_eq!(layout.quick_actions[15], previous);
+        let unchanged = layout.clone();
+        transfer_cell(&mut layout, false, 99, 0, 0, 1);
+        transfer_cell(&mut layout, true, 0, 15, 1, 0);
+        reorder_page(&mut layout, false, 0, 99);
+        assert_eq!(layout, unchanged);
+    }
 
     #[test]
     fn command_switch_roundtrips_without_changing_assignments() {

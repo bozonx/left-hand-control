@@ -3,8 +3,8 @@ use slint::{ComponentHandle, Model};
 use slint_shell::{
     Document, bind_document,
     ui::{
-        ActionPicker, MenuEditor, MenuKind, Page, PickerTarget, SettingsEditor, SettingsWindow,
-        Theme,
+        ActionPicker, DragDrop, MenuEditor, MenuKind, Page, PickerTarget, SettingsEditor,
+        SettingsWindow, Theme,
     },
 };
 use std::time::Duration;
@@ -40,6 +40,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_set_cell();
     e.invoke_move_cell(0, 2);
     assert_eq!(loaded().layout().emoji_pages[1].cells["KeyE"], "✨");
+    e.invoke_select_page(0);
+    e.invoke_transfer_cell(1, 2, 0);
+    assert_eq!(loaded().layout().emoji_pages[0].cells["KeyQ"], "✨");
+    assert_eq!(loaded().layout().emoji_pages[1].cells["KeyE"], "Привет 👋");
+    e.invoke_transfer_cell(1, 2, 0);
+    e.invoke_reorder_page(1, 0);
+    assert_eq!(e.get_selected_page(), 1);
+    e.invoke_reorder_page(0, 1);
+    e.invoke_select_page(1);
     e.invoke_move_page(-1);
     assert_eq!(loaded().layout().emoji_pages[0].cells["KeyE"], "✨");
     e.invoke_select_cell(2);
@@ -94,6 +103,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settle();
     e.invoke_set_action(1, "text:Здравствуйте".into(), "".into());
     e.invoke_move_cell(1, 2);
+    e.invoke_add_page("Second".into());
+    e.invoke_transfer_cell(0, 2, 4);
+    assert_eq!(
+        loaded().layout().quick_actions[19].action,
+        "text:Здравствуйте"
+    );
+    assert!(loaded().layout().quick_actions[2].action.is_empty());
+    e.invoke_reorder_page(1, 0);
+    assert_eq!(e.get_selected_page(), 0);
+    e.invoke_select_page(1);
+    e.invoke_transfer_cell(0, 4, 2);
+    e.invoke_reorder_page(1, 0);
     let layout = loaded().layout().clone();
     assert_eq!(layout.quick_actions[2].action, "text:Здравствуйте");
     assert_eq!(layout.quick_actions[2].name, "text:Здравствуйте");
@@ -138,6 +159,67 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     slint::select_bundled_translation("ru")?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     ui.show()?;
+    if std::env::var_os("LHC_MENUS_DND").is_some() {
+        use slint::platform::{PointerEventButton, WindowEvent};
+        e.invoke_open(MenuKind::Emoji);
+        e.set_value("🐱".into());
+        e.invoke_set_cell();
+        e.invoke_flush_pending();
+        e.invoke_add_page("Target".into());
+        e.invoke_select_page(0);
+        let timer = slint::Timer::default();
+        let weak = ui.as_weak();
+        let document = document.clone();
+        let stage = std::cell::Cell::new(0);
+        timer.start(slint::TimerMode::Repeated, Duration::from_millis(650), move || {
+            let ui = weak.upgrade().unwrap();
+            let e = ui.global::<MenuEditor>();
+            let at = slint::LogicalPosition::new;
+            let press = |x, y| ui.window().dispatch_event(WindowEvent::PointerPressed { position: at(x, y), button: PointerEventButton::Left });
+            let move_to = |x, y| ui.window().dispatch_event(WindowEvent::PointerMoved { position: at(x, y) });
+            let release = |x, y| ui.window().dispatch_event(WindowEvent::PointerReleased { position: at(x, y), button: PointerEventButton::Left });
+            match stage.get() {
+                0 => {
+                    press(80.0, 184.0); move_to(200.0, 184.0);
+                    assert_eq!(ui.global::<DragDrop>().get_target(), 1);
+                    release(200.0, 184.0);
+                }
+                1 => {
+                    assert_eq!(document.read().layout().emoji_pages[0].name, "Target");
+                    e.invoke_reorder_page(1, 0);
+                    e.invoke_select_page(0);
+                }
+                2 => { press(100.0, 285.0); move_to(200.0, 184.0); }
+                3 => { assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0); release(230.0, 285.0); }
+                4 => {
+                    assert_eq!(document.read().layout().emoji_pages[1].cells["KeyW"], "🐱");
+                    assert!(!document.read().layout().emoji_pages[0].cells.contains_key("KeyQ"));
+                    e.invoke_select_page(0);
+                }
+                5 => { press(760.0, 345.0); move_to(365.0, 285.0); release(365.0, 285.0); e.invoke_flush_pending(); }
+                6 => {
+                    assert_eq!(document.read().layout().emoji_pages[0].cells["KeyE"], "😀");
+                    e.invoke_open(MenuKind::Quick);
+                    e.invoke_set_action(0, "text:drag".into(), "Drag".into());
+                    e.invoke_add_page("Target".into());
+                    e.invoke_select_page(0);
+                    e.set_page_name("Source".into()); e.invoke_rename_page(); e.invoke_flush_pending();
+                }
+                7 => { press(100.0, 285.0); move_to(140.0, 184.0); }
+                8 => { assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0); release(230.0, 285.0); }
+                9 => {
+                    assert_eq!(document.read().layout().quick_actions[16].action, "text:drag");
+                    assert!(document.read().layout().quick_actions[0].action.is_empty());
+                    println!("Menus pointer DnD passed: page reorder, hover switching, emoji palette and cross-page emoji/quick moves");
+                    slint::quit_event_loop().unwrap();
+                }
+                _ => unreachable!(),
+            }
+            stage.set(stage.get() + 1);
+        });
+        slint::run_event_loop()?;
+        return Ok(());
+    }
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     timer.start(slint::TimerMode::SingleShot,Duration::from_millis(700),move || {

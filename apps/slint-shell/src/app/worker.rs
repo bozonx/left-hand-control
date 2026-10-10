@@ -129,7 +129,10 @@ impl App {
     pub(super) fn check_worker(&self) {
         let dead = {
             let mut supervisor = self.supervisor.borrow_mut();
-            let dead = supervisor.worker.as_mut().is_some_and(|worker| !worker.is_alive());
+            let dead = supervisor
+                .worker
+                .as_mut()
+                .is_some_and(|worker| !worker.is_alive());
             if dead {
                 supervisor.worker = None;
             }

@@ -15,7 +15,10 @@ struct Active(Arc<Mutex<String>>);
 
 impl Active {
     fn get(&self) -> String {
-        self.0.lock().unwrap_or_else(|poison| poison.into_inner()).clone()
+        self.0
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .clone()
     }
 }
 
@@ -132,8 +135,7 @@ impl ReturnInput {
             }
             return None;
         }
-        if self.active.get() != *id
-            || (!crate::test_keyboard::isolated() && !modifiers_released())
+        if self.active.get() != *id || (!crate::test_keyboard::isolated() && !modifiers_released())
         {
             return None;
         }

@@ -1,6 +1,6 @@
 use super::{
     actions::{self, Action},
-    model::{AppConfig, Macro},
+    model::{AppConfig, LayoutPreset, Macro},
 };
 use crate::{
     config_document::{ConfigDocument, ConfigError},
@@ -138,6 +138,39 @@ pub fn action_usage(config: &AppConfig, action: &str) -> Vec<String> {
     places
 }
 
+/// Point `macro:<old>` actions at the new ids. All renames apply at once, so
+/// swapping two ids works.
+fn rename_references(layout: &mut LayoutPreset, renames: &[(String, String)]) {
+    let renames: Vec<_> = renames
+        .iter()
+        .filter(|(old, new)| old != new)
+        .map(|(old, new)| (format!("macro:{old}"), format!("macro:{new}")))
+        .collect();
+    if renames.is_empty() {
+        return;
+    }
+    let fix = |action: &mut String| {
+        if let Some((_, new)) = renames.iter().find(|(old, _)| action.trim() == old) {
+            *action = new.clone();
+        }
+    };
+    for rule in &mut layout.rules {
+        rule.tap_action.iter_mut().for_each(fix);
+        rule.hold_action.iter_mut().for_each(fix);
+        fix(&mut rule.long_hold_action);
+        fix(&mut rule.double_tap_action);
+    }
+    for map in layout.layer_keymaps.values_mut() {
+        map.keys.values_mut().flatten().for_each(fix);
+    }
+    for item in &mut layout.macros {
+        item.steps.iter_mut().for_each(|s| fix(&mut s.action));
+    }
+    for item in &mut layout.quick_actions {
+        fix(&mut item.action);
+    }
+}
+
 impl ConfigDocument {
     pub fn save_macro(&mut self, index: Option<usize>, item: Macro) -> Result<(), ConfigError> {
         let mut candidate = self.config();
@@ -155,13 +188,22 @@ impl ConfigDocument {
     }
 
     /// Replace all user macros at once; every macro must be valid.
-    pub fn save_macros(&mut self, items: Vec<Macro>) -> Result<(), ConfigError> {
+    /// `renames` maps old macro ids to new ones; references `macro:<old>`
+    /// elsewhere in the layout follow the new id.
+    pub fn save_macros(
+        &mut self,
+        items: Vec<Macro>,
+        renames: &[(String, String)],
+    ) -> Result<(), ConfigError> {
         let mut candidate = self.config();
         candidate.macros = items.clone();
         for item in &items {
             validate(&candidate, item)?;
         }
-        self.update_layout(|layout| layout.macros = items)
+        self.update_layout(|layout| {
+            layout.macros = items;
+            rename_references(layout, renames);
+        })
     }
 
     pub fn remove_macro(&mut self, index: usize) -> Result<(), ConfigError> {
@@ -244,10 +286,7 @@ mod tests {
             Some("macro:outer")
         );
         document.remove_macro(1).unwrap();
-        assert_eq!(
-            document.layout().macros.len(),
-            1
-        );
+        assert_eq!(document.layout().macros.len(), 1);
     }
 
     #[test]
@@ -290,5 +329,25 @@ mod tests {
             document.save_macro(None, item("new", &[])),
             Err(ConfigError::ExternalChange)
         );
+    }
+
+    #[test]
+    fn renamed_ids_carry_their_references() {
+        let mut layout = LayoutPreset::initial();
+        let mut rule = crate::profile::model::LayerRule::new("r1".into(), "KeyA");
+        rule.tap_action = Some("macro:a".into());
+        rule.hold_action = Some("macro:b".into());
+        layout.rules.push(rule);
+        layout.macros = vec![item("x", &["macro:a", "macro:other"])];
+        let renames = [("a".into(), "b".into()), ("b".into(), "a".into())];
+        rename_references(&mut layout, &renames);
+        assert_eq!(layout.rules[0].tap_action.as_deref(), Some("macro:b"));
+        assert_eq!(layout.rules[0].hold_action.as_deref(), Some("macro:a"));
+        let steps: Vec<_> = layout.macros[0]
+            .steps
+            .iter()
+            .map(|s| &s.action[..])
+            .collect();
+        assert_eq!(steps, ["macro:b", "macro:other"]);
     }
 }

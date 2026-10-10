@@ -355,6 +355,7 @@ pub fn serialize(preset: &LayoutPreset) -> String {
 
 fn rule_yaml(rule: &LayerRule) -> Yaml {
     let mut out = Mapping::new();
+    put(&mut out, "id", rule.id.as_str());
     put(&mut out, "key", rule.key.as_str());
     if rule.enabled == Some(false) {
         out.insert("enabled".into(), false.into());
@@ -630,6 +631,7 @@ emojiPages:
                 (&b.key, &b.tap_action, &b.hold_action)
             );
             assert_eq!(a.isolate, b.isolate);
+            assert_eq!(a.id, b.id);
         }
         assert_eq!(again.macros[0].steps.len(), 3);
         assert_eq!(again.quick_action_pages, preset.quick_action_pages);

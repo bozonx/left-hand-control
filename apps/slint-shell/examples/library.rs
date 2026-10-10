@@ -30,9 +30,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_action(LibraryAction::Activate);
     library.invoke_select(1);
     library.invoke_load();
-    assert_eq!(document.read().settings().current_layout_id.as_deref(), Some("user:B"));
     assert_eq!(
-        document.read().settings().manual_active_layout_id.as_deref(),
+        document.read().settings().current_layout_id.as_deref(),
+        Some("user:B")
+    );
+    assert_eq!(
+        document
+            .read()
+            .settings()
+            .manual_active_layout_id
+            .as_deref(),
         Some("user:A")
     );
     library.set_name("Профиль".into());
@@ -60,7 +67,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(library.get_names().row_count(), 1);
     library.invoke_create("Copy".into(), "".into(), LayoutSource::Copy, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
-    assert_eq!(paths.load_user_layout("A")?, paths.load_user_layout("Copy")?);
+    assert_eq!(
+        paths.load_user_layout("A")?,
+        paths.load_user_layout("Copy")?
+    );
     library.invoke_set_description(0, "Inline".into());
     assert!(paths.load_user_layout("A")?.contains("Inline"));
     assert_eq!(library.get_names().row_count(), 2);
@@ -86,11 +96,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(choices.invoke_items(app.clone()).row_count(), 2);
     assert!(choices.invoke_contains(app, "A title, with comma".into()));
     assert_eq!(choices.invoke_add("kate".into(), "kate".into()), "kate");
-    assert_eq!(choices.invoke_toggle("us, ru".into(), "ru".into(), false), "us");
-    assert_eq!(choices.invoke_remove("kate, terminal".into(), 0), "terminal");
+    assert_eq!(
+        choices.invoke_toggle("us, ru".into(), "ru".into(), false),
+        "us"
+    );
+    assert_eq!(
+        choices.invoke_remove("kate, terminal".into(), 0),
+        "terminal"
+    );
     let reloaded = ConfigDocument::load(paths.clone())?;
     assert!(reloaded.settings().layout_conditions.is_empty());
-    assert_eq!(reloaded.settings().current_layout_id.as_deref(), Some("user:Copy"));
+    assert_eq!(
+        reloaded.settings().current_layout_id.as_deref(),
+        Some("user:Copy")
+    );
     document.edit(slint_shell::document::View::Shell, |config| {
         config.update_settings(|settings| {
             settings.layout_mode = LayoutMode::Manual;
@@ -190,13 +209,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let first = library.get_names().row_data(0).unwrap();
             let start = slint::LogicalPosition::new(50.0, 218.0 + row_height / 2.0);
             let end = slint::LogicalPosition::new(50.0, start.y + row_height * 2.0);
-            ui.window().dispatch_event(slint::platform::WindowEvent::PointerPressed {
-                position: start, button: slint::platform::PointerEventButton::Left,
-            });
-            ui.window().dispatch_event(slint::platform::WindowEvent::PointerMoved { position: end });
-            ui.window().dispatch_event(slint::platform::WindowEvent::PointerReleased {
-                position: end, button: slint::platform::PointerEventButton::Left,
-            });
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::PointerPressed {
+                    position: start,
+                    button: slint::platform::PointerEventButton::Left,
+                });
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::PointerMoved { position: end });
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::PointerReleased {
+                    position: end,
+                    button: slint::platform::PointerEventButton::Left,
+                });
             assert_eq!(library.get_names().row_data(2).unwrap(), first);
             println!("Library drag-and-drop passed");
         }
