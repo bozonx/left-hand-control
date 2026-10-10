@@ -2,7 +2,7 @@
 //!
 //! The core emits events from background threads (mapper, watchers). Each
 //! shell subscribes once at startup and forwards events to its own UI
-//! runtime (Tauri `emit`, Slint `invoke_from_event_loop`, …). This is the
+//! runtime (for example, Slint `invoke_from_event_loop`). This is the
 //! only notification channel out of the core.
 
 use crate::active_window::ActiveWindow;

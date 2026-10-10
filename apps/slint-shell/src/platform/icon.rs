@@ -2,7 +2,7 @@
 
 /// RGBA pixels, width and height of the tray icon.
 pub fn rgba(enabled: bool) -> (Vec<u8>, u32, u32) {
-    match decode(include_bytes!("../../../../src-tauri/icons/32x32.png")) {
+    match decode(include_bytes!("../../assets/icon.png")) {
         Ok((mut pixels, width, height)) => {
             if !enabled {
                 for pixel in pixels.chunks_exact_mut(4) {

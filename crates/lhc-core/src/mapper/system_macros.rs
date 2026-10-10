@@ -2,8 +2,8 @@
 // `macro:<id>` at runtime regardless of the active layout preset.
 //
 // The engine builds these first, then overlays user macros from the
-// config (same id → user wins). Keep this catalog in sync with
-// `utils/systemMacros.ts` on the frontend.
+// config (same id → user wins). The action catalog derives its entries
+// from these definitions.
 
 pub struct SysMacro {
     pub id: &'static str,

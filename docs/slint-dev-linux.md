@@ -1,6 +1,6 @@
 # Разработка Slint-версии под Linux
 
-Как собрать, запустить и проверить Slint-оболочку (`apps/slint-shell`) на Linux при разработке. Tauri-версия описана в корневом `README.md` и в `AGENTS.md`; обе оболочки собираются из одного Cargo workspace и используют общий крейт `crates/lhc-core`.
+Как собрать, запустить и проверить Slint-оболочку (`apps/slint-shell`) на Linux при разработке. Оболочка и UI-независимый крейт `crates/lhc-core` составляют Cargo workspace.
 
 Основная среда разработки и проверки — KDE Plasma 6 на Wayland. На других окружениях многое работает, но не принято (см. «Что зависит от окружения»)
 
@@ -110,12 +110,12 @@ python scripts/check-slint-shell-recovery.py --popups winit --live-preview
 
 Debug-сборки никогда не трогают реальный конфиг пользователя:
 
-- по умолчанию — `<repo>/.dev-files/config/config.json` (данные — в `.dev-files/data/`);
+- по умолчанию — `<repo>/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json` (данные — в `dev-files/linux/.local/share/dev.bozonx.left-hand-control/`);
 - `LHC_DEV_DIR=/путь` задаёт другой каталог (относительный путь считается от текущего каталога).
 
-Это тот же каталог, что использует `pnpm tauri:dev`. Обе оболочки видят один конфиг. Изменения, сделанные в Tauri, Slint перечитывает автоматически раз в секунду.
+Внешние изменения конфигурации Slint перечитывает автоматически раз в секунду.
 
-Release-сборки используют `~/.config/dev.bozonx.left-hand-control/` и `~/.local/share/dev.bozonx.left-hand-control/`, те же каталоги, что и Tauri.
+Release-сборки используют `~/.config/dev.bozonx.left-hand-control/` и `~/.local/share/dev.bozonx.left-hand-control/`.
 
 Пути разрешает `lhc_core::storage::StoragePaths::resolve()`. Не вычисляйте их в оболочке самостоятельно.
 
@@ -142,7 +142,7 @@ target/debug/slint-shell quit
 1. Откройте настройки, выберите «Устройство клавиатуры». Путь сохраняется в `settings.inputDevicePath` конфига.
 2. Нажмите «Mapper вкл / выкл» (или `slint-shell toggle-mapper`, или пункт меню трея).
 
-Mapper, раскладка, game mode и активное окно работают через `lhc-core` так же, как в Tauri. Linux-бэкенд держит межпроцессную блокировку: одновременно mapper может работать только в одной оболочке. Сохранение назначения клавиши в редакторе сразу передаётся запущенному mapper.
+Mapper, раскладка, game mode и активное окно работают через `lhc-core`. Linux-бэкенд держит межпроцессную блокировку: одновременно mapper может работать только в одном процессе. Сохранение назначения клавиши в редакторе сразу передаётся запущенному mapper.
 
 Редактор пока меняет только безусловные правила базового слоя (`tapAction`). Для клавиш, у которых есть только условные или послойные правила, он откажет и попросит воспользоваться полным редактором.
 
@@ -171,7 +171,7 @@ Mapper, раскладка, game mode и активное окно работа�
 ```sh
 cargo run --locked -p slint-shell --example macros
 cargo test --locked --workspace --features slint-shell/spell
-cargo clippy --locked -p lhc-core -p slint-shell -p left-hand-control --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo run -p slint-shell --example editor -- --smoke
 cargo run -p slint-shell --example interactions
 ```
@@ -184,7 +184,7 @@ cargo run -p slint-shell --example interactions
 
 Команды назначаются и редактируются в общем модале действий. В «Настройки → Команды» находится общий выключатель: для новой конфигурации он выключен. При выключении назначения сохраняются, но команды не выполняются и категория команд скрыта в выборе действий. При включении показаны используемые команды и места назначения во всех сохранённых раскладках. Системные действия не зависят от этого выключателя.
 
-Обычные и Spell-меню используют сохранённые данные. Поиск быстрых действий работает по всем страницам; без поискового запроса отображается выбранная страница. Выбор выполняется через запущенный mapper, как в Tauri. Эмоджи выбираются мышью, стрелками с Enter или буквами ячеек; цифры переключают страницы. В обоих меню физические клавиши Q/W/E/R/T, A/S/D/F/G, Z/X/C/V/B выбирают ячейки независимо от языка ввода; Tab/Shift+Tab переключают страницы. В быстрых действиях также доступны мышь, стрелки с Enter и Alt+1…9. Поиск включается кнопкой «Поиск», Ctrl+F или клавишей `/`; в этом режиме буквы вводят запрос.
+Обычные и Spell-меню используют сохранённые данные. Поиск быстрых действий работает по всем страницам; без поискового запроса отображается выбранная страница. Выбор выполняется через запущенный mapper. Эмоджи выбираются мышью, стрелками с Enter или буквами ячеек; цифры переключают страницы. В обоих меню физические клавиши Q/W/E/R/T, A/S/D/F/G, Z/X/C/V/B выбирают ячейки независимо от языка ввода; Tab/Shift+Tab переключают страницы. В быстрых действиях также доступны мышь, стрелки с Enter и Alt+1…9. Поиск включается кнопкой «Поиск», Ctrl+F или клавишей `/`; в этом режиме буквы вводят запрос.
 
 Проверка редакторов на временной конфигурации:
 
@@ -225,8 +225,8 @@ SLINT_SHELL_SOCKET=lhc-dev.sock target/debug/slint-shell quit
 ## Проверки перед коммитом
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell -p left-hand-control --check
-cargo clippy --locked -p lhc-core -p slint-shell -p left-hand-control \
+cargo fmt -p lhc-core -p slint-shell --check
+cargo clippy --locked -p lhc-core -p slint-shell \
   --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets        # сборка без Spell
@@ -246,7 +246,7 @@ cargo run -p slint-shell --example interactions          # настройки, �
 ## Структура кода
 
 ```
-crates/lhc-core/src/        # общий код обеих оболочек, без UI
+crates/lhc-core/src/        # доменная и платформенная логика, без UI
 ├── config_document.rs      # редактируемый config.json: валидация, защита от внешних изменений
 ├── storage.rs              # StoragePaths::resolve() — пути dev/release
 ├── events.rs               # шина CoreEvent: единственный канал «ядро → оболочка»
@@ -296,7 +296,7 @@ apps/slint-shell/
 - **`No readable Ctrl+Alt+F11/F12 evdev devices`** — нет доступа к `/dev/input`; см. раздел про группу `input`, либо отключите хоткеи `SLINT_SHELL_HOTKEYS=off`.
 - **Emoji монохромные или квадратами** — установите Noto Color Emoji; для окон winit используйте `SLINT_BACKEND=winit-skia`.
 - **`compositor does not advertise zwlr_layer_shell_v1`** — композитор без layer-shell (GNOME); используйте `SLINT_SHELL_POPUPS=auto` или `winit`.
-- **Сохранение отклонено: «конфигурация изменена другим приложением»** — файл изменили параллельно (например, в Tauri). Документ уже перечитан, повторите изменение.
+- **Сохранение отклонено: «конфигурация изменена другим приложением»** — файл изменили параллельно. Документ уже перечитан, повторите изменение.
 
 ## Основное окно приложения
 

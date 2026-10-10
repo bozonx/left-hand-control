@@ -1,4 +1,4 @@
-//! Editable configuration shared by every shell.
+//! Editable application configuration.
 //!
 //! Global settings live in `config.json`; the current keyboard layout
 //! stays in memory. Saved layouts live in the user
@@ -605,8 +605,7 @@ impl ConfigDocument {
         ))
     }
 
-    /// Mapper configuration for the current system state, like
-    /// `computeRuntimeConfig()` in the frontend: picks the active layout,
+    /// Mapper configuration for the current system state: picks the active layout,
     /// refuses blocking rule problems and drops disabled or draft rules.
     pub fn runtime_config(&self, ctx: &AutoSwitchContext) -> Result<RuntimeConfig, ConfigError> {
         let layout_id = self.active_layout_id(ctx)?;
@@ -1156,7 +1155,7 @@ mod tests {
     #[test]
     fn bundled_layout_runs_in_the_mapper() {
         let path =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../public/ivank-layout.yaml");
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/ivank-layout.yaml");
         let (_dir, document) = document(
             json!({"version": 1, "settings": {}}),
             &fs::read_to_string(path).unwrap(),

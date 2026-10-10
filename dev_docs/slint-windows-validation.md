@@ -1,4 +1,4 @@
-# Проверка Slint-прототипа на Windows
+# Проверка Slint-оболочки на Windows
 
 Статус: базовый Windows-проход выполнен частично 2026-09-21–23. Оставшаяся
 приёмка ограничена особенностями Slint shell и его Windows-адаптеров.
@@ -77,7 +77,7 @@ VM не сравнивать с Linux-стендом.
 Единый автоматический Windows-suite повторно пройден 2026-09-24 на Windows 11
 build 26200: native tests, release-сборка, portable interactions, 100 циклов
 show/hide, контроль working set/handles, shutdown и отключённые hotkeys успешны.
-[Краткий протокол запуска](slint-prototype-results/windows-2026-09-24.txt).
+[Краткий протокол запуска](windows-results/2026-09-24.txt).
 
 ## Автоматическая приёмка
 

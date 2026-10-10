@@ -26,38 +26,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Run Slint editor smoke test
+        run: cargo run --locked -p slint-shell --features spell --example editor -- --smoke
 
-      - name: Install tauri-driver
-        run: cargo install tauri-driver --locked
+      - name: Run Slint interactions
+        run: cargo run --locked -p slint-shell --features spell --example interactions
 
-      - name: Run KDE Wayland E2E smoke tests
-        run: pnpm test:e2e:kde
+      - name: Run Slint library scenario
+        run: cargo run --locked -p slint-shell --features spell --example library
 
-      - name: Upload E2E artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-artifacts-kde-wayland
-          path: |
-            e2e/screenshots/
+      - name: Build Slint shell
+        run: cargo build --locked -p slint-shell --features spell
+
+      - name: Check configuration and popup worker recovery
+        run: python3 scripts/check-slint-shell-recovery.py --popups spell
 
   windows:
     if: inputs.target == 'windows'
@@ -68,34 +56,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install tauri-driver
-        run: cargo install tauri-driver --locked
-
       - name: Run Slint Windows automated acceptance
         shell: powershell
         run: .\apps\slint-shell\scripts\check-windows-automated.ps1
-
-      - name: Run Windows E2E smoke tests
-        run: pnpm test:e2e:windows
 
       - name: Upload E2E artifacts
         if: always()
@@ -103,5 +72,4 @@ jobs:
         with:
           name: e2e-artifacts-windows
           path: |
-            e2e/screenshots/
             windows-runtime/lifecycle/

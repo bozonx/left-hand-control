@@ -1,4 +1,4 @@
-//! Rule checks run before the mapper starts (`utils/ruleDiagnostics.ts`).
+//! Rule checks run before the mapper starts.
 
 use super::actions::{self, Action};
 use super::model::{AppConfig, LayerRule};

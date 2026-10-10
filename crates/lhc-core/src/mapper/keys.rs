@@ -1,4 +1,4 @@
-// Mapping between frontend key codes (KeyboardEvent.code-ish, see utils/keys.ts)
+// Mapping between configuration key codes (following KeyboardEvent.code)
 // and Linux evdev `Key` values.
 
 #![cfg(target_os = "linux")]

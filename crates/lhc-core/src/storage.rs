@@ -2,8 +2,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-/// Application identifier; must match `identifier` in `src-tauri/tauri.conf.json`
-/// so both shells share the same config and data directories.
+/// Stable application identifier used for config and data directories.
 pub const APP_ID: &str = "dev.bozonx.left-hand-control";
 
 #[derive(Debug, Clone)]
@@ -13,15 +12,14 @@ pub struct StoragePaths {
 }
 
 impl StoragePaths {
-    /// Resolve the storage location shared by every shell.
+    /// Resolve the application storage location.
     ///
     /// Debug builds use `$LHC_DEV_DIR` (relative paths resolve against the
     /// current directory) or `<repo>/dev-files`, so development never
     /// touches the user's real configuration. Inside it `<os>/` mirrors the
     /// user's home directory, e.g. `dev-files/linux/.config/<APP_ID>/`.
     /// Release builds use the platform config/data directories under
-    /// [`APP_ID`], which are the same directories Tauri's
-    /// `app_config_dir()` / `app_data_dir()` return.
+    /// [`APP_ID`].
     pub fn resolve() -> Result<Self, String> {
         if cfg!(debug_assertions) {
             let base = dev_base_dir(std::env::var_os("LHC_DEV_DIR").map(PathBuf::from))?;

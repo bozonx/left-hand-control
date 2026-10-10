@@ -7,7 +7,7 @@
 pub mod ui {
     slint::include_modules!();
 
-    /// Sky accent of the Nuxt UI app; the Fluent style derives its primary
+    /// Application sky accent; the Fluent style derives its primary
     /// buttons and check boxes from it, matching `Theme.accent`.
     const ACCENT: slint::Color = slint::Color::from_rgb_u8(0x0e, 0xa5, 0xe9);
 

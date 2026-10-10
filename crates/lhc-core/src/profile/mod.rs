@@ -1,6 +1,6 @@
 //! The editable configuration model: settings, layouts, actions and the
-//! rules that turn them into mapper input. UI-independent; both shells
-//! present and edit it through [`crate::config_document::ConfigDocument`].
+//! rules that turn them into mapper input. UI-independent; the shell
+//! presents and edits it through [`crate::config_document::ConfigDocument`].
 
 pub mod actions;
 pub mod app_match;

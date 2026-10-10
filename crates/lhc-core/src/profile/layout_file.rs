@@ -1,7 +1,6 @@
 //! Saved layout YAML files in the user library.
 //!
-//! Parsing and serialisation follow `utils/layoutPresets.ts`, so files
-//! written by either shell read back identically in the other one.
+//! Parsing and serialisation preserve compatibility with existing layout files.
 
 use super::model::{
     Command, EmojiPage, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, LayerRule, LayoutPreset, Macro,
@@ -207,7 +206,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
     }
 }
 
-/// Serialise a preset in the frontend's field order.
+/// Serialise a preset in the established field order.
 pub fn serialize(preset: &LayoutPreset) -> String {
     let mut doc = Mapping::new();
     if let Some(description) = &preset.description {
@@ -485,7 +484,7 @@ fn trimmed<'a>(object: &'a Map<String, Value>, name: &str) -> Option<&'a str> {
         .filter(|value| !value.is_empty())
 }
 
-/// YAML scalars as the frontend's `String(value)` sees them.
+/// Convert supported YAML scalars to their string representation.
 fn scalar(value: &Value) -> Option<String> {
     match value {
         Value::String(text) => Some(text.clone()),
@@ -597,7 +596,7 @@ emojiPages:
 "#;
 
     #[test]
-    fn parses_like_the_frontend() {
+    fn parses_compatible_layout_fields() {
         let preset = parse(SAMPLE).unwrap().unwrap();
         assert_eq!(preset.description.as_deref(), Some("Sample"));
         let nav = &preset.layer_keymaps["nav"];
@@ -627,18 +626,17 @@ emojiPages:
         assert_eq!(preset.emoji_pages[0].cells.len(), 1);
     }
 
-    /// Shared with `tests/unit/layout-parity.test.ts`: the frontend parser
-    /// must produce the same preset.
+    /// Verify the layout parser against the recorded compatibility fixture.
     #[test]
-    fn matches_the_frontend_parser_on_the_shared_fixture() {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures");
+    fn matches_the_recorded_layout_compatibility_fixture() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
         let text = std::fs::read_to_string(root.join("layout-parity.yaml")).unwrap();
         let expected: Value = serde_json::from_str(
             &std::fs::read_to_string(root.join("layout-parity.expected.json")).unwrap(),
         )
         .unwrap();
         let mut expected = expected;
-        // The frontend keeps legacy substring needles; the core turns
+        // The fixture keeps legacy substring needles; the core turns
         // them into window patterns.
         for rule in expected["rules"].as_array_mut().unwrap() {
             if let Some(needles) = rule.get_mut("conditionAppsWhitelist") {

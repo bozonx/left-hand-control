@@ -87,7 +87,7 @@ pub struct CatalogEntry {
 
 const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = ["switchDesktop", "switchLayout", "taskEntry"];
 
-/// `sys:` ids of `utils/systemActions.ts`, apart from the numbered ones.
+/// Built-in `sys:` ids, apart from the numbered ones.
 pub const SYSTEM_ACTION_IDS: [&str; 52] = [
     "walkThroughWindowsAlternative",
     "walkThroughWindowsCurrentApp",
@@ -404,7 +404,7 @@ mod tests {
     }
 
     #[test]
-    fn catalogs_match_the_frontend() {
+    fn catalogs_preserve_builtin_action_ids() {
         assert_eq!(system_actions().len(), 30 + 52);
         assert_eq!(app_actions().len(), 14);
         assert_eq!(

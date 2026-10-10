@@ -1,6 +1,6 @@
 //! `config.json`: `{ "version": 1, "settings": { … } }`.
 //!
-//! Reading is lenient like `normalizeSettings()` in the frontend: values
+//! Reading is lenient: values
 //! of the wrong type fall back to defaults instead of failing the load.
 
 use super::model::{

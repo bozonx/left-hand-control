@@ -743,7 +743,7 @@ mod tests {
     #[test]
     fn bundled_additional_keys_preserve_actions_and_suppression() {
         let layout = lhc_core::profile::layout_file::parse(include_str!(
-            "../../../../public/ivank-layout.yaml"
+            "../../../../crates/lhc-core/assets/ivank-layout.yaml"
         ))
         .unwrap()
         .unwrap();

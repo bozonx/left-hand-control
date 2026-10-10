@@ -1,6 +1,6 @@
 # Windows testing in KVM/QEMU
 
-This document describes the reproducible Windows 11 test environment for Left Hand Control and the Slint prototype. Use a full VM with an interactive desktop. Docker and Windows containers cannot validate native windows, tray behavior, foreground activation, global hotkeys, `SendInput`, WebView2, DPI, or keyboard-layout integration.
+This document describes the reproducible Windows 11 test environment for the Slint shell of Left Hand Control. Use a full VM with an interactive desktop. Docker and Windows containers cannot validate native windows, tray behavior, foreground activation, global hotkeys, `SendInput`, DPI, or keyboard-layout integration.
 
 KVM/QEMU is the primary local hypervisor on Linux. It gives near-native CPU execution, scriptable disks and snapshots, UEFI Secure Boot, TPM 2.0, and a QEMU monitor that can inject emulated hardware keys. VirtualBox is acceptable only as a fallback when KVM is unavailable; do not mix performance results from the two hypervisors.
 
@@ -175,7 +175,6 @@ rustc --version
 cargo --version
 ```
 
-For the full Tauri application also install Node 20, pnpm 9, WebView2 Runtime, and `tauri-driver` as described in [E2E Desktop Testing](e2e-linux-kde.md#windows-vm).
 
 ## Build workflow
 
@@ -227,7 +226,7 @@ that native failure under `Continue` before restoring strict PowerShell error ha
 
 Use PowerShell 7 where possible for UTF-8 logs. In Windows PowerShell 5.1, Cyrillic and emoji can appear as mojibake even when the application sent the correct UTF-16 text. Verify the resulting text in Notepad and save logs explicitly as UTF-8; do not diagnose Unicode behavior from a mojibake console line alone.
 
-## Running the Slint prototype
+## Running the Slint shell
 
 Use Skia for the Windows visual pass:
 
@@ -400,7 +399,7 @@ The complete Slint checklist is in [Windows Slint validation](../dev_docs/slint-
 Keep at least these restore points:
 
 - `windows-clean`: Windows desktop and local user, before developer tools;
-- `windows-toolchain`: MSVC, Rust, Node/pnpm and WebView2 installed;
+- `windows-toolchain`: MSVC and Rust installed;
 - `slint-ready`: exact tested source built and ready to run.
 
 Before recording a result, capture:

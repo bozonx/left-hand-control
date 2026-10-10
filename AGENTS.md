@@ -7,7 +7,6 @@ Guide for AI coding agents working in this repository. Read it before making cha
 **Left Hand Control** is a desktop keyboard mapper: it intercepts a physical keyboard, applies layers, rules, macros and commands, and emits the result through a virtual device. It also shows two quick popups (Emoji, Quick actions) and lives in the system tray.
 
 - **The product is the Slint shell** in `apps/slint-shell/` on top of the shared Rust crate `crates/lhc-core/`. All new work goes here.
-- **The Tauri 2 + Nuxt 4 app is legacy** (`src-tauri/` and the Nuxt project at the repo root). It is being phased out. Do not develop, refactor or fix it unless the user explicitly asks — see [Legacy Tauri/Nuxt](#legacy-taurinuxt).
 - Primary target: **Linux, KDE Plasma 6 on Wayland**. The Slint UI also compiles for Windows and macOS with minimal portable adapters; those platforms are not accepted yet.
 
 Stack: Rust stable ≥ 1.85 (edition 2024), Cargo workspace, Slint **1.17.1** (pinned, `=1.17.1`) with winit 0.30, `ksni` tray, `evdev`/`uinput`, `zbus`, vendored `spell-framework` for layer-shell popups.
@@ -32,7 +31,7 @@ Checks (same as CI plus the workspace-wide ones):
 
 ```sh
 cargo fmt -p lhc-core -p slint-shell --check
-cargo clippy --locked -p lhc-core -p slint-shell -p left-hand-control \
+cargo clippy --locked -p lhc-core -p slint-shell \
   --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets              # build without Spell
@@ -52,7 +51,9 @@ Page-specific examples: `action-picker`, `library`, `macros`, `menus`, `undo-red
 ## Repository map
 
 ```
-crates/lhc-core/src/          # UI-independent domain + platform code (no Slint, no Tauri)
+crates/lhc-core/assets/       # bundled default layout
+crates/lhc-core/tests/fixtures/ # layout compatibility fixtures
+crates/lhc-core/src/          # UI-independent domain + platform code (no UI framework)
 ├── profile/                  # config model: settings, layouts, actions, macros, menus, auto-switch
 ├── config_document.rs        # editable config.json: validation, external-change guard, reload
 ├── storage.rs                # StoragePaths::resolve(): dev vs release directories
@@ -72,12 +73,13 @@ apps/slint-shell/
 ├── src/i18n.rs               # Msg ids for Locale.text()
 ├── src/platform/linux/       # evdev hotkeys, ksni tray, Wayland activation, input return
 ├── src/platform/portable/    # Windows/macOS: global-hotkey, tray-icon, native input
+├── assets/                   # application icon
 ├── ui/*.slint                # app.slint entry; types.slint enums; i18n.slint messages; theme.slint
 ├── translations/ru/          # Russian PO catalog (source strings are English)
 ├── examples/                 # UI scenarios and benchmarks
 └── vendor/                   # patched i-slint-core and spell-framework (see PATCHES.md in each)
 
-docs/                         # slint-dev-linux.md, windows-testing.md, e2e-linux-kde.md
+docs/                         # slint-dev-linux.md, windows-testing.md
 ```
 
 ## Architecture
@@ -88,7 +90,7 @@ docs/                         # slint-dev-linux.md, windows-testing.md, e2e-linu
 
 **Config writes.** Pages change the configuration only through `Document::edit` (`src/document.rs`). It applies the edit, saves, pushes the result to a running mapper and notifies the other views via `Document::subscribe`. Never hold a `Document::read()` borrow across UI calls that may edit — it causes `RefCell` conflicts.
 
-**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. External changes (e.g. from the legacy Tauri app) are detected and reloaded; a save over unread external changes is rejected. Paths come from `StoragePaths::resolve()`: debug builds use `<repo>/.dev-files/` (or `LHC_DEV_DIR`), release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
+**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. External changes are detected and reloaded; a save over unread external changes is rejected. Paths come from `StoragePaths::resolve()`: debug builds use `<repo>/dev-files/<os>/` (or the same OS layout under `LHC_DEV_DIR`), release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
 
 **Processes.** One binary, three roles: the settings process, the Spell popup worker (`--spell-worker`) and a CLI client that sends a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-signed loopback TCP on Windows). The mapper holds a cross-process lock, so only one process can grab keyboards.
 
@@ -152,7 +154,7 @@ docs/                         # slint-dev-linux.md, windows-testing.md, e2e-linu
 2. `cargo check --locked -p slint-shell --all-targets` passes (non-Spell build).
 3. For UI changes: `editor -- --smoke` and `interactions` pass in a graphical session, and the relevant page example if one exists.
 4. For new user-visible strings: Russian translation added and the translation test passes.
-5. For core changes that affect the public API: the legacy shell still compiles (it is part of the workspace, so the clippy/test commands above cover it).
+5. Core public API changes must compile with the Slint shell; workspace checks cover both crates.
 6. For platform-dependent behaviour: state which environment you verified (e.g. KDE Wayland) and what remains untested.
 
 Report the exact commands you ran and their results. If something could not be run (no graphical session, no `/dev/uinput` access), say so.
@@ -167,23 +169,19 @@ Report the exact commands you ran and their results. If something could not be r
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.
 - Changing the on-disk config or layout format, the IPC wire format or the CLI commands.
-- Touching anything under `src-tauri/` or the Nuxt sources.
+- Modifying the historical archive under `_old/`.
 
 **Never**
-- Read or write the real user config from debug builds or tests (use `.dev-files/`, `LHC_DEV_DIR` or a temp dir).
+- Read or write the real user config from debug builds or tests (use `dev-files/`, `LHC_DEV_DIR` or a temp dir).
 - Hardcode absolute paths, call into Slint from `lhc-core`, or add UI text outside `@tr`.
-- Commit `target/`, `.dev-files/`, `.nuxt/`, `.output/` or `node_modules/`.
+- Commit build artifacts, development config/data, or dependency caches.
 - Enable `slint/live-preview` in regular or release builds.
 
-## Legacy Tauri/Nuxt
+## Historical archive
 
-`src-tauri/` (crate `left-hand-control`) and the Nuxt 4 SPA at the repo root (`pages/`, `components/`, `composables/`, `utils/`, `i18n/`, `package.json`, `pnpm` tooling) are frozen. They still build and share `config.json` and the dev directory with the Slint shell, and `src-tauri` is still a workspace member over `lhc-core`.
-
-- Do not add features, refactor or port fixes there unless explicitly asked; the Slint shell and `lhc-core` are the reference.
-- Do not use the Tauri app or its TypeScript as a specification when it disagrees with the Slint shell.
-- If a core change breaks compilation of `src-tauri`, make the minimal adaptation needed to keep the workspace green and mention it.
-- `scripts/check-system-macros-sync.mjs` checks that `utils/systemMacros.ts` matches `crates/lhc-core/src/mapper/system_macros.rs`; if you change system macros in the core, either update the TS list or tell the user the check will fail.
-- `CLAUDE.md` still describes the Tauri/Nuxt frontend in detail; when it disagrees with this file, this file wins.
+`_old/` is an inactive archive, excluded from the Cargo workspace and CI.
+Do not use its code or instructions as the product specification, add dependencies
+on it, or try to keep it building. Work only in `lhc-core` and `apps/slint-shell`.
 
 ## Common pitfalls
 

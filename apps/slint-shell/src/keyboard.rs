@@ -1,6 +1,6 @@
 //! Physical keyboard grids shown by the editor and their key labels.
 //!
-//! Key codes follow `KeyboardEvent.code` (`utils/keys.ts`); every grid lists
+//! Key codes follow `KeyboardEvent.code`; every grid lists
 //! codes only, labels come from [`label`].
 
 /// Base keyboard page: 5 rows × 16 caps.

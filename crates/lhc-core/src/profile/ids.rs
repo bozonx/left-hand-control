@@ -1,4 +1,4 @@
-//! Random ids for new entities, like the frontend's `genId()`.
+//! Random ids for new configuration entities.
 
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hasher};

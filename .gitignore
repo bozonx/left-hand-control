@@ -1,18 +1,14 @@
-.dev-files/
-dev-files/
-# Nuxt
-.nuxt
-.output
-.data
-dist
+# Local development configuration and data
+/dev-files/
+/.dev-files/
 .env
 .env.*
 !.env.example
-dist/
-.vagrant/
 
-# Node
-node_modules
+# Build artifacts and diagnostics
+/target/
+/slint-shell*.csv
+/windows-runtime/
 *.log
 .DS_Store
 
@@ -20,12 +16,14 @@ node_modules
 .vscode
 .idea
 
-# Tauri build artefacts
-/target/
-src-tauri/target
-
-# Tauri application icons are generated assets, but they are committed so
-# clean checkouts and CI can build native bundles without regenerating them.
-!src-tauri/icons/
-!src-tauri/icons/**
-/slint-shell*.csv
+# Archived build artifacts and dependency caches
+_old/**/target/
+_old/**/node_modules/
+_old/**/.nuxt/
+_old/**/.output/
+_old/**/.data/
+_old/**/dist
+_old/**/coverage/
+_old/**/.vagrant/
+_old/**/dev-files/
+_old/**/.dev-files/

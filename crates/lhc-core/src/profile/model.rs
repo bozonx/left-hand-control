@@ -1,8 +1,7 @@
-//! Editable application model shared by every shell.
+//! Editable application model used by the shell and mapper.
 //!
-//! These types mirror `types/config.ts`. Serialising [`AppConfig`] with
-//! `serde_json` produces the JSON the mapper runtime and the Tauri
-//! frontend exchange; the persisted formats (`config.json` settings and
+//! Serialising [`AppConfig`] with `serde_json` produces the JSON consumed
+//! by the mapper runtime; the persisted formats (`config.json` settings and
 //! YAML layouts) are handled by [`super::settings`] and [`super::layout_file`].
 
 use serde::{Deserialize, Serialize};
@@ -488,8 +487,7 @@ impl Default for AppSettings {
     }
 }
 
-/// Settings plus the current layout: what the Tauri frontend calls
-/// `AppConfig` and what the mapper runtime consumes as JSON.
+/// Settings plus the current layout, consumed by the mapper runtime as JSON.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppConfig {

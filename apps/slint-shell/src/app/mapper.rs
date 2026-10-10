@@ -201,7 +201,7 @@ impl App {
         });
     }
 
-    /// Pick up edits made by the Tauri shell or by hand. A file that cannot
+    /// Pick up external configuration edits. A file that cannot
     /// be read right now (for example mid-write) leaves the mapper running.
     pub(super) fn reload_config(self: &std::rc::Rc<Self>) {
         let Some(document) = self.document() else {

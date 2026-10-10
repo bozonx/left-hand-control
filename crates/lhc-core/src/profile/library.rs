@@ -41,7 +41,7 @@ impl ConfigDocument {
         let mut preset = match source {
             LibrarySource::Empty => LayoutPreset::default(),
             LibrarySource::IvanK => {
-                layout_file::parse(include_str!("../../../../public/ivank-layout.yaml"))
+                layout_file::parse(include_str!("../../assets/ivank-layout.yaml"))
                     .map_err(ConfigError::Parse)?
                     .ok_or_else(|| ConfigError::Invalid("Bundled layout is empty".into()))?
             }
