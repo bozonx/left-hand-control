@@ -1253,12 +1253,6 @@ msgstr "Доступные языки системы не обнаружены"
 msgid "Applications"
 msgstr "Приложения"
 
-msgid "Window title or application ID"
-msgstr "Заголовок окна или ID приложения"
-
-msgid "Substrings matched against the active window title and application ID, ignoring case. Any matching item is enough. An empty list imposes no restrictions."
-msgstr "Подстроки для поиска в заголовке активного окна и ID приложения без учёта регистра. Достаточно совпадения с любым элементом. Пустой список не ограничивает приложения."
-
 msgid "“{}” will be deleted. This cannot be undone."
 msgstr "«{}» будет удалена. Это действие нельзя отменить."
 
@@ -2025,8 +2019,8 @@ msgstr "Авто-правила раскладок работают, тольк�
 msgid "Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."
 msgstr "Окна без рамки на весь экран тоже считаются. Браузеры, видеоплееры и презентации не учитываются."
 
-msgid "Exact process name or app ID; use * and ? for patterns. Window titles are not matched. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."
-msgstr "Точное имя процесса или ID приложения; для шаблонов используйте * и ?. Заголовки окон не проверяются. У игр Steam ID приложения — steam_app_<номер>; игры Proton находятся и по имени .exe. Пока совпадает исключение, игровой режим не включается."
+msgid "Exact process name or app ID; use * and ? for patterns. title:<text> matches the active window title. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."
+msgstr "Точное имя процесса или ID приложения; для шаблонов используйте * и ?. title:<текст> проверяет заголовок активного окна. У игр Steam ID приложения — steam_app_<номер>; игры Proton находятся и по имени .exe. Пока совпадает исключение, игровой режим не включается."
 
 msgid "Game mode is off (set manually)"
 msgstr "Игровой режим выключен (вручную)"
@@ -2090,3 +2084,39 @@ msgstr "Игровой режим: включён"
 
 msgid "Game mode: off"
 msgstr "Игровой режим: выключен"
+
+msgid "Active now: {}"
+msgstr "Сейчас активно: {}"
+
+msgid "Active window detection is unavailable in this session, so application conditions do not match."
+msgstr "Определение активного окна недоступно в этом сеансе, поэтому условия по приложениям не срабатывают."
+
+msgid "An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions."
+msgstr "Приложение сравнивается по ID или имени процесса: имя целиком, без учёта регистра, * и ? — шаблоны. Элемент по заголовку окна срабатывает, если заголовок содержит текст. Достаточно совпадения с любым элементом. Пустой список не ограничивает приложения."
+
+msgid "Application ID or process name"
+msgstr "ID приложения или имя процесса"
+
+msgid "Choose from open windows"
+msgstr "Выбрать из открытых окон"
+
+msgid "Hide open windows"
+msgstr "Скрыть открытые окна"
+
+msgid "Looking for open windows…"
+msgstr "Ищем открытые окна…"
+
+msgid "No open windows found"
+msgstr "Открытые окна не найдены"
+
+msgid "Switch to the window… {}"
+msgstr "Переключитесь на нужное окно… {}"
+
+msgid "Text in the window title"
+msgstr "Текст в заголовке окна"
+
+msgid "Window title"
+msgstr "Заголовок окна"
+
+msgid "Window title contains: {}"
+msgstr "Заголовок окна содержит: {}"

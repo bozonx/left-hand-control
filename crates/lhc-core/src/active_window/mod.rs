@@ -1,18 +1,46 @@
-// Detection of the currently focused window across supported Linux DEs.
+// Detection of the currently focused window.
 //
-// Provides a poll-based watcher (similar to `gamemode`) that caches the
-// latest result in `runtime_state` and emits
-// `CoreEvent::ActiveWindowChanged`. The cached value is also consumed
-// directly by the mapper engine to evaluate per-rule app conditions.
+// A watcher thread caches the latest result in `runtime_state` and emits
+// `CoreEvent::ActiveWindowChanged`; the mapper engine reads the cache to
+// evaluate per-rule app conditions. Where the platform reports focus
+// changes (KWin script, Hyprland and Sway IPC, the X11 root property, a
+// Windows WinEvent hook) the watcher re-reads on every event and polls
+// only as a slow fallback.
+//
+// Window titles are read only while some condition needs them
+// (`title:` patterns, see `profile::app_match`): the app id and the
+// process are enough otherwise, and a title is the most private and the
+// least stable part of a window.
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 #[cfg(target_os = "linux")]
+mod kwin;
+#[cfg(target_os = "linux")]
 mod linux;
 
 pub use crate::runtime_state::ActiveWindow;
+
+/// Poll interval without focus events.
+const POLL_INTERVAL: Duration = Duration::from_millis(500);
+/// Safety re-read while focus events arrive, e.g. for X11 titles.
+const EVENT_FALLBACK_INTERVAL: Duration = Duration::from_secs(3);
+
+/// The shell (rules, auto mode) needs window titles.
+static TITLES_FOR_SHELL: AtomicBool = AtomicBool::new(false);
+/// Game-mode process rules need window titles.
+static TITLES_FOR_GAME_MODE: AtomicBool = AtomicBool::new(false);
+
+/// An application with an open window, for picking a condition.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct OpenWindow {
+    pub app_id: String,
+    pub process_name: Option<String>,
+    pub title: String,
+}
 
 pub(crate) fn availability() -> crate::gamemode::DetectorAvailability {
     #[cfg(target_os = "linux")]
@@ -41,38 +69,92 @@ pub(crate) fn missing_tool() -> Option<&'static str> {
     }
 }
 
-static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
-static WATCHER: std::sync::Mutex<Option<JoinHandle<()>>> = std::sync::Mutex::new(None);
+/// Whether the shell's conditions need window titles. Off by default.
+pub fn set_titles_needed(needed: bool) {
+    if TITLES_FOR_SHELL.swap(needed, Ordering::SeqCst) != needed {
+        wake();
+    }
+}
+
+pub(crate) fn set_titles_needed_by_game_mode(needed: bool) {
+    if TITLES_FOR_GAME_MODE.swap(needed, Ordering::SeqCst) != needed {
+        wake();
+    }
+}
+
+pub(crate) fn titles_needed() -> bool {
+    TITLES_FOR_SHELL.load(Ordering::SeqCst) || TITLES_FOR_GAME_MODE.load(Ordering::SeqCst)
+}
+
+#[derive(Default)]
+struct Control {
+    stop: bool,
+    refresh: bool,
+}
+
+struct Watcher {
+    control: Arc<(Mutex<Control>, Condvar)>,
+    thread: JoinHandle<()>,
+}
+
+static WATCHER: Mutex<Option<Watcher>> = Mutex::new(None);
 
 pub fn cached_active_window() -> Option<ActiveWindow> {
     crate::runtime_state::active_window()
 }
 
-pub fn stop_watcher() {
-    WATCHER_STOP.store(true, Ordering::SeqCst);
-    if let Ok(mut watcher) = WATCHER.lock()
-        && let Some(watcher) = watcher.take()
-        && let Err(error) = watcher.join()
+/// Re-read the focused window now; event sources call it.
+pub(crate) fn wake() {
+    if let Ok(watcher) = WATCHER.lock()
+        && let Some(watcher) = watcher.as_ref()
+        && let Ok(mut control) = watcher.control.0.lock()
     {
-        log::error!("[active-window] watcher panicked: {error:?}");
+        control.refresh = true;
+        watcher.control.1.notify_one();
     }
 }
 
-fn watcher_stop_requested() -> bool {
-    WATCHER_STOP.load(Ordering::SeqCst)
+pub fn stop_watcher() {
+    let watcher = WATCHER.lock().ok().and_then(|mut watcher| watcher.take());
+    if let Some(watcher) = watcher {
+        if let Ok(mut control) = watcher.control.0.lock() {
+            control.stop = true;
+            watcher.control.1.notify_one();
+        }
+        if let Err(error) = watcher.thread.join() {
+            log::error!("[active-window] watcher panicked: {error:?}");
+        }
+    }
 }
 
 pub fn start_watcher() {
-    WATCHER_STOP.store(false, Ordering::SeqCst);
-
-    let Ok(watcher) = thread::Builder::new()
+    let Ok(mut slot) = WATCHER.lock() else {
+        return;
+    };
+    if slot
+        .as_ref()
+        .is_some_and(|watcher| !watcher.thread.is_finished())
+    {
+        return;
+    }
+    let control = Arc::new((Mutex::new(Control::default()), Condvar::new()));
+    let thread_control = control.clone();
+    let thread = thread::Builder::new()
         .name("active-window-watcher".into())
         .spawn(move || {
+            let events = start_events();
             let mut last: Option<ActiveWindow> = None;
-
-            while !watcher_stop_requested() {
+            loop {
+                {
+                    let Ok(mut control) = thread_control.0.lock() else {
+                        break;
+                    };
+                    if control.stop {
+                        break;
+                    }
+                    control.refresh = false;
+                }
                 let current = detect_active_window();
-
                 if current != last {
                     crate::runtime_state::set_active_window(current.clone());
                     crate::events::emit(crate::events::CoreEvent::ActiveWindowChanged(
@@ -82,32 +164,84 @@ pub fn start_watcher() {
                     crate::gamemode::wake();
                     last = current;
                 }
-
-                thread::sleep(Duration::from_millis(500));
+                let interval = if events_active(events) {
+                    EVENT_FALLBACK_INTERVAL
+                } else {
+                    POLL_INTERVAL
+                };
+                let Ok(control) = thread_control.0.lock() else {
+                    break;
+                };
+                let Ok((control, _)) =
+                    thread_control
+                        .1
+                        .wait_timeout_while(control, interval, |control| {
+                            !control.stop && !control.refresh
+                        })
+                else {
+                    break;
+                };
+                if control.stop {
+                    break;
+                }
             }
-        })
-    else {
-        log::error!("[active-window] failed to spawn watcher");
-        return;
-    };
-    if let Ok(mut slot) = WATCHER.lock() {
-        *slot = Some(watcher);
+            stop_events();
+        });
+    match thread {
+        Ok(thread) => *slot = Some(Watcher { control, thread }),
+        Err(error) => log::error!("[active-window] failed to spawn watcher: {error}"),
     }
 }
 
-fn detect_active_window() -> Option<ActiveWindow> {
+/// Start the platform's focus-change events; `false` when there are none.
+fn start_events() -> bool {
     #[cfg(target_os = "linux")]
     {
-        linux::detect()
+        linux::start_events()
     }
     #[cfg(target_os = "windows")]
     {
-        crate::platform::windows::active_window()
+        crate::platform::windows::start_focus_events()
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     {
-        None
+        false
     }
+}
+
+/// Whether the events started by [`start_events`] still arrive.
+fn events_active(started: bool) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        started && linux::events_active()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        started
+    }
+}
+
+fn stop_events() {
+    #[cfg(target_os = "linux")]
+    linux::stop_events();
+    #[cfg(target_os = "windows")]
+    crate::platform::windows::stop_focus_events();
+}
+
+fn detect_active_window() -> Option<ActiveWindow> {
+    let titles = titles_needed();
+    #[cfg(target_os = "linux")]
+    let window = linux::detect(titles);
+    #[cfg(target_os = "windows")]
+    let window = crate::platform::windows::active_window(titles);
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    let window: Option<ActiveWindow> = None;
+    window.map(|mut window| {
+        if !titles {
+            window.title.clear();
+        }
+        window
+    })
 }
 
 /// Detect synchronously and refresh the cache (used before showing popups).
@@ -115,4 +249,33 @@ pub fn detect_active_window_now() -> Option<ActiveWindow> {
     let current = detect_active_window();
     crate::runtime_state::set_active_window(current.clone());
     current
+}
+
+/// Applications with open windows, one entry per app id and process,
+/// sorted by app id. Asked on demand when the user picks a condition, so
+/// titles are included.
+pub fn open_windows() -> Vec<OpenWindow> {
+    #[cfg(target_os = "linux")]
+    let mut windows = linux::open_windows();
+    #[cfg(target_os = "windows")]
+    let mut windows = crate::platform::windows::open_windows();
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    let mut windows: Vec<OpenWindow> = Vec::new();
+    windows.retain(|window| !window.app_id.is_empty() || window.process_name.is_some());
+    windows.sort_by_key(|window| {
+        (
+            window.app_id.to_lowercase(),
+            window
+                .process_name
+                .clone()
+                .unwrap_or_default()
+                .to_lowercase(),
+        )
+    });
+    windows.dedup_by(|a, b| {
+        a.app_id.eq_ignore_ascii_case(&b.app_id)
+            && a.process_name.as_deref().map(str::to_lowercase)
+                == b.process_name.as_deref().map(str::to_lowercase)
+    });
+    windows
 }

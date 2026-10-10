@@ -74,8 +74,8 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     .filter(|mode| matches!(*mode, "on" | "off"))
                     .map(str::to_owned),
                 condition_layouts: string_list(rule, "layouts"),
-                condition_apps_whitelist: string_list(rule, "appsWhitelist"),
-                condition_apps_blacklist: string_list(rule, "appsBlacklist"),
+                condition_apps_whitelist: window_list(rule, "windows", "appsWhitelist"),
+                condition_apps_blacklist: window_list(rule, "excludeWindows", "appsBlacklist"),
                 key: key.into(),
                 layer_id: str_of(rule, "layer").unwrap_or("").into(),
                 tap_action: three_state(rule, "tap"),
@@ -394,8 +394,8 @@ fn rule_yaml(rule: &LayerRule) -> Yaml {
     }
     for (name, list) in [
         ("layouts", &rule.condition_layouts),
-        ("appsWhitelist", &rule.condition_apps_whitelist),
-        ("appsBlacklist", &rule.condition_apps_blacklist),
+        ("windows", &rule.condition_apps_whitelist),
+        ("excludeWindows", &rule.condition_apps_blacklist),
     ] {
         if let Some(list) = list.as_ref().filter(|list| !list.is_empty()) {
             out.insert(
@@ -512,6 +512,17 @@ fn string_list(object: &Map<String, Value>, name: &str) -> Option<Vec<String>> {
     (!items.is_empty()).then_some(items)
 }
 
+/// Window patterns under `name`, or the legacy substring list under
+/// `legacy` converted to patterns.
+fn window_list(object: &Map<String, Value>, name: &str, legacy: &str) -> Option<Vec<String>> {
+    if object.contains_key(name) {
+        return string_list(object, name);
+    }
+    string_list(object, legacy)
+        .map(|needles| super::app_match::list_from_legacy(&needles))
+        .filter(|patterns| !patterns.is_empty())
+}
+
 fn key_list(value: Option<&Value>) -> Option<String> {
     let joined = match value {
         Some(Value::String(text)) => text.clone(),
@@ -626,6 +637,15 @@ emojiPages:
             &std::fs::read_to_string(root.join("layout-parity.expected.json")).unwrap(),
         )
         .unwrap();
+        let mut expected = expected;
+        // The frontend keeps legacy substring needles; the core turns
+        // them into window patterns.
+        for rule in expected["rules"].as_array_mut().unwrap() {
+            if let Some(needles) = rule.get_mut("conditionAppsWhitelist") {
+                let list: Vec<String> = serde_json::from_value(needles.clone()).unwrap();
+                *needles = serde_json::json!(crate::profile::app_match::list_from_legacy(&list));
+            }
+        }
         let mut preset = parse(&text).unwrap().unwrap();
         for step in preset
             .macros
@@ -637,6 +657,31 @@ emojiPages:
             }
         }
         assert_eq!(serde_json::to_value(&preset).unwrap(), expected);
+    }
+
+    #[test]
+    fn window_conditions_migrate_from_legacy_substrings() {
+        let text = "rules:\n  - key: KeyA\n    appsWhitelist: [kate]\n    appsBlacklist: ['']\n  \
+                    - key: KeyB\n    windows: [org.kde.kate, 'title:Doc']\n    appsWhitelist: [x]\n";
+        let preset = parse(text).unwrap().unwrap();
+        let legacy = &preset.rules[0];
+        assert_eq!(
+            legacy.condition_apps_whitelist,
+            Some(vec!["*kate*".to_string(), "title:kate".to_string()])
+        );
+        assert_eq!(legacy.condition_apps_blacklist, None);
+        let current = &preset.rules[1];
+        assert_eq!(
+            current.condition_apps_whitelist,
+            Some(vec!["org.kde.kate".to_string(), "title:Doc".to_string()])
+        );
+        let text = serialize(&preset);
+        assert!(text.contains("windows:") && !text.contains("appsWhitelist"));
+        let again = parse(&text).unwrap().unwrap();
+        assert_eq!(
+            again.rules[0].condition_apps_whitelist,
+            legacy.condition_apps_whitelist
+        );
     }
 
     #[test]

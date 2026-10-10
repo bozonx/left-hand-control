@@ -227,6 +227,12 @@ pub fn set_settings(settings: &GameModeSettings) {
     if restore {
         set_control(settings.control);
     }
+    crate::active_window::set_titles_needed_by_game_mode(crate::profile::app_match::uses_title(
+        settings
+            .process_matchers
+            .iter()
+            .map(|matcher| &matcher.name),
+    ));
     wake();
 }
 
@@ -399,7 +405,7 @@ fn needs_running_processes(settings: &GameModeSettings) -> bool {
     settings
         .process_matchers
         .iter()
-        .any(|matcher| !matcher.only_active_window && !matcher.name.trim().is_empty())
+        .any(|matcher| !process::window_only(matcher) && !matcher.name.trim().is_empty())
 }
 
 fn evaluate(
@@ -409,7 +415,7 @@ fn evaluate(
 ) -> Detection {
     let detectors = &observation.detectors;
     let source_available = |matcher: &crate::profile::model::GameModeProcessMatcher| {
-        if matcher.only_active_window {
+        if process::window_only(matcher) {
             detectors.active_window == DetectorAvailability::Available
         } else {
             detectors.processes == DetectorAvailability::Available
@@ -417,19 +423,13 @@ fn evaluate(
     };
     let matches = |matcher: &crate::profile::model::GameModeProcessMatcher| {
         source_available(matcher)
-            && if matcher.only_active_window {
-                window.is_some_and(|window| {
-                    process::matches(matcher, &window.app_id)
-                        || window
-                            .process_name
-                            .as_deref()
-                            .is_some_and(|name| process::matches(matcher, name))
-                })
+            && if process::window_only(matcher) {
+                window.is_some_and(|window| process::matches_window(matcher, window))
             } else {
                 observation
                     .running
                     .iter()
-                    .any(|name| process::matches(matcher, name))
+                    .any(|name| process::matches_process(matcher, name))
             }
     };
     let whitelist: Vec<_> = settings

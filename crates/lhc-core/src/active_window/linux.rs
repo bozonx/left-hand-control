@@ -1,25 +1,31 @@
 // Linux-side active window detection.
 //
 // Dispatches by detected desktop / session type:
-//   * KDE Wayland     -> kdotool
-//   * Hyprland        -> hyprctl activewindow -j
-//   * X11 (any DE)    -> xdotool + xprop
+//   * KDE Wayland     -> KWin script over D-Bus (`kwin`), `kdotool` fallback
+//   * Hyprland        -> hyprctl activewindow -j, events from socket2
+//   * Sway            -> swaymsg get_tree, events from `swaymsg subscribe`
+//   * X11 (any DE)    -> xprop (+ xdotool for titles), events from `xprop -spy`
 //   * everything else -> None (condition will not match)
 
-use std::process::Command;
+use std::io::{BufRead, BufReader};
+use std::os::unix::process::CommandExt;
+use std::process::{Child, Command, Stdio};
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::time::Duration;
 
 use crate::exec::run_cmd_with_timeout;
 use crate::platform::linux::{Desktop, SessionType, command_available};
 
-use super::ActiveWindow;
+use super::{ActiveWindow, OpenWindow, kwin};
 
 static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 const COMMAND_TIMEOUT_MS: u64 = 1000;
 static LAST_QUERY: AtomicU8 = AtomicU8::new(0);
-/// KWin script printing the active window as JSON. Borderless windows
-/// covering their output count as fullscreen: many games use them instead
-/// of real fullscreen.
+/// KWin script printing the active window as JSON, for `kdotool` when the
+/// D-Bus script cannot run. Borderless windows covering their output
+/// count as fullscreen: many games use them instead of real fullscreen.
 const KDE_ACTIVE_WINDOW_SCRIPT: &str = "var w=workspace.activeWindow;var r={};\
 if(w){r.title=w.caption;r.appId=String(w.resourceClass);r.pid=w.pid;r.fullscreen=w.fullScreen;\
 try{var g=w.frameGeometry,o=w.output.geometry;r.fullscreen=r.fullscreen||(w.normalWindow&&w.noBorder&&\
@@ -30,8 +36,10 @@ pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
     use crate::gamemode::DetectorAvailability;
     let session = crate::platform::linux::detect();
     let available = match (session.desktop, session.session_type) {
-        (_, SessionType::X11) => command_available("xdotool") && command_available("xprop"),
-        (Desktop::Kde, SessionType::Wayland) => command_available("kdotool"),
+        (_, SessionType::X11) => {
+            command_available("xprop") && (!super::titles_needed() || command_available("xdotool"))
+        }
+        (Desktop::Kde, SessionType::Wayland) => kwin::active() || command_available("kdotool"),
         (Desktop::Hyprland, SessionType::Wayland) => command_available("hyprctl"),
         (Desktop::Sway, SessionType::Wayland) => command_available("swaymsg"),
         _ => return DetectorAvailability::Unsupported,
@@ -47,7 +55,9 @@ pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
 pub(super) fn missing_tool() -> Option<&'static str> {
     let session = crate::platform::linux::detect();
     let tools: &[&'static str] = match (session.desktop, session.session_type) {
-        (_, SessionType::X11) => &["xdotool", "xprop"],
+        (_, SessionType::X11) if super::titles_needed() => &["xprop", "xdotool"],
+        (_, SessionType::X11) => &["xprop"],
+        (Desktop::Kde, SessionType::Wayland) if kwin::active() => &[],
         (Desktop::Kde, SessionType::Wayland) => &["kdotool"],
         (Desktop::Hyprland, SessionType::Wayland) => &["hyprctl"],
         (Desktop::Sway, SessionType::Wayland) => &["swaymsg"],
@@ -56,18 +66,183 @@ pub(super) fn missing_tool() -> Option<&'static str> {
     tools.iter().copied().find(|tool| !command_available(tool))
 }
 
-pub fn detect() -> Option<ActiveWindow> {
+pub fn detect(titles: bool) -> Option<ActiveWindow> {
     let session = crate::platform::linux::detect();
 
     let result = match (session.desktop.clone(), session.session_type) {
         (Desktop::Hyprland, SessionType::Wayland) => detect_hyprland(),
-        (Desktop::Kde, SessionType::Wayland) => detect_kde_wayland(),
+        (Desktop::Kde, SessionType::Wayland) => {
+            kwin::sync(titles);
+            match kwin::current() {
+                Some(window) => Ok(window),
+                // Not reported yet, or the script did not load.
+                None => detect_kde_wayland(),
+            }
+        }
         (Desktop::Sway, SessionType::Wayland) => detect_sway(),
-        (_, SessionType::X11) => detect_x11(),
+        (_, SessionType::X11) => detect_x11(titles),
         _ => Err(()),
     };
     LAST_QUERY.store(if result.is_ok() { 1 } else { 2 }, Ordering::Relaxed);
     result.ok().flatten()
+}
+
+/// A running focus-event source.
+enum Events {
+    Kwin,
+    /// A long-running command printing a line per event.
+    Command(Child, Arc<AtomicBool>),
+    /// Hyprland's event socket, read by a thread until `stop`.
+    Socket {
+        stop: Arc<AtomicBool>,
+        alive: Arc<AtomicBool>,
+    },
+}
+
+static EVENTS: Mutex<Option<Events>> = Mutex::new(None);
+
+/// Start reporting focus changes through [`super::wake`]. Called on the
+/// watcher thread, which outlives the sources it starts.
+pub(super) fn start_events() -> bool {
+    let session = crate::platform::linux::detect();
+    let events = match (session.desktop, session.session_type) {
+        (Desktop::Kde, SessionType::Wayland) => {
+            kwin::start(super::titles_needed()).then_some(Events::Kwin)
+        }
+        (Desktop::Hyprland, SessionType::Wayland) => hyprland_events(),
+        (Desktop::Sway, SessionType::Wayland) => command_events(
+            Command::new("swaymsg").args(["-m", "-r", "-t", "subscribe", "[\"window\"]"]),
+            |line| {
+                !(line.contains("\"change\":\"title\"") || line.contains("\"change\": \"title\""))
+                    || super::titles_needed()
+            },
+        ),
+        (_, SessionType::X11) => command_events(
+            Command::new("xprop").args(["-root", "-spy", "_NET_ACTIVE_WINDOW"]),
+            |_| true,
+        ),
+        _ => None,
+    };
+    let started = events.is_some();
+    if let Ok(mut slot) = EVENTS.lock() {
+        *slot = events;
+    }
+    started
+}
+
+/// Whether the started source still delivers events.
+pub(super) fn events_active() -> bool {
+    match EVENTS.lock().ok().as_deref() {
+        Some(Some(Events::Kwin)) => kwin::active(),
+        Some(Some(Events::Command(_, alive) | Events::Socket { alive, .. })) => {
+            alive.load(Ordering::SeqCst)
+        }
+        _ => false,
+    }
+}
+
+pub(super) fn stop_events() {
+    let events = EVENTS.lock().ok().and_then(|mut slot| slot.take());
+    match events {
+        Some(Events::Kwin) => kwin::stop(),
+        Some(Events::Command(mut child, _)) => {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+        Some(Events::Socket { stop, .. }) => stop.store(true, Ordering::SeqCst),
+        None => {}
+    }
+}
+
+/// Run `command` and wake the watcher for every output line `relevant`
+/// accepts. The child dies with the watcher thread.
+fn command_events(command: &mut Command, relevant: fn(&str) -> bool) -> Option<Events> {
+    // SAFETY: prctl is async-signal-safe and touches no parent state.
+    let mut child = unsafe {
+        command
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .pre_exec(|| {
+                libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
+                Ok(())
+            })
+            .spawn()
+    }
+    .inspect_err(|error| log::debug!("[active-window] event source: {error}"))
+    .ok()?;
+    let stdout = child.stdout.take()?;
+    let alive = Arc::new(AtomicBool::new(true));
+    let thread_alive = alive.clone();
+    let spawned = std::thread::Builder::new()
+        .name("active-window-events".into())
+        .spawn(move || {
+            for line in BufReader::new(stdout).lines() {
+                match line {
+                    Ok(line) if relevant(&line) => super::wake(),
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+            thread_alive.store(false, Ordering::SeqCst);
+        });
+    if spawned.is_err() {
+        let _ = child.kill();
+        let _ = child.wait();
+        return None;
+    }
+    Some(Events::Command(child, alive))
+}
+
+fn hyprland_events() -> Option<Events> {
+    use std::os::unix::net::UnixStream;
+    let signature = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").ok()?;
+    let path = dirs::runtime_dir()
+        .map(|dir| dir.join("hypr").join(&signature).join(".socket2.sock"))
+        .filter(|path| path.exists())
+        .unwrap_or_else(|| {
+            std::path::PathBuf::from(format!("/tmp/hypr/{signature}/.socket2.sock"))
+        });
+    let stream = UnixStream::connect(&path)
+        .inspect_err(|error| log::debug!("[active-window] Hyprland events: {error}"))
+        .ok()?;
+    // Bounded reads let the thread notice `stop`.
+    stream.set_read_timeout(Some(Duration::from_secs(1))).ok()?;
+    let stop = Arc::new(AtomicBool::new(false));
+    let alive = Arc::new(AtomicBool::new(true));
+    let (thread_stop, thread_alive) = (stop.clone(), alive.clone());
+    std::thread::Builder::new()
+        .name("active-window-events".into())
+        .spawn(move || {
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+            while !thread_stop.load(Ordering::SeqCst) {
+                match reader.read_line(&mut line) {
+                    Ok(0) => break,
+                    Ok(_) => {
+                        let event = line.split(">>").next().unwrap_or("");
+                        let relevant = match event {
+                            "activewindowv2" | "fullscreen" | "closewindow" => true,
+                            "windowtitlev2" => super::titles_needed(),
+                            _ => false,
+                        };
+                        if relevant {
+                            super::wake();
+                        }
+                        line.clear();
+                    }
+                    Err(error)
+                        if matches!(
+                            error.kind(),
+                            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                        ) => {}
+                    Err(_) => break,
+                }
+            }
+            thread_alive.store(false, Ordering::SeqCst);
+        })
+        .ok()?;
+    Some(Events::Socket { stop, alive })
 }
 
 fn detect_hyprland() -> Result<Option<ActiveWindow>, ()> {
@@ -184,7 +359,7 @@ fn fullscreen_from_json(value: &serde_json::Value) -> Option<bool> {
     }
 }
 
-fn window_from_json(
+pub(super) fn window_from_json(
     value: &serde_json::Value,
     title_key: &str,
     app_key: &str,
@@ -210,7 +385,7 @@ fn window_from_json(
     })
 }
 
-fn detect_x11() -> Result<Option<ActiveWindow>, ()> {
+fn detect_x11(titles: bool) -> Result<Option<ActiveWindow>, ()> {
     let output = run_cmd_with_timeout(
         Command::new("xprop").args(["-root", "_NET_ACTIVE_WINDOW"]),
         COMMAND_TIMEOUT_MS,
@@ -227,22 +402,23 @@ fn detect_x11() -> Result<Option<ActiveWindow>, ()> {
     if !window_id.starts_with("0x") {
         return Err(());
     }
-    let title_output = run_cmd_with_timeout(
-        Command::new("xdotool").args(["getwindowname", window_id]),
-        COMMAND_TIMEOUT_MS,
-    )
-    .ok_or(())?;
+    x11_window(window_id, titles)
+}
+
+fn x11_window(window_id: &str, titles: bool) -> Result<Option<ActiveWindow>, ()> {
+    let title = if titles {
+        x11_title(window_id)?
+    } else {
+        String::new()
+    };
     let class_output = run_cmd_with_timeout(
         Command::new("xprop").args(["-id", window_id, "WM_CLASS", "_NET_WM_PID", "_NET_WM_STATE"]),
         COMMAND_TIMEOUT_MS,
     )
     .ok_or(())?;
-    if !title_output.status.success() || !class_output.status.success() {
+    if !class_output.status.success() {
         return Err(());
     }
-    let title = String::from_utf8_lossy(&title_output.stdout)
-        .trim()
-        .to_string();
     let stdout = String::from_utf8_lossy(&class_output.stdout);
     let app_id = parse_wm_class(&stdout);
     let pid = stdout
@@ -260,6 +436,111 @@ fn detect_x11() -> Result<Option<ActiveWindow>, ()> {
         process_name,
         fullscreen: Some(stdout.contains("_NET_WM_STATE_FULLSCREEN")),
     }))
+}
+
+fn x11_title(window_id: &str) -> Result<String, ()> {
+    let output = run_cmd_with_timeout(
+        Command::new("xdotool").args(["getwindowname", window_id]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .ok_or(())?;
+    if !output.status.success() {
+        return Err(());
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// Applications with open windows in this session.
+pub(super) fn open_windows() -> Vec<OpenWindow> {
+    let session = crate::platform::linux::detect();
+    let windows = match (session.desktop, session.session_type) {
+        (Desktop::Kde, SessionType::Wayland) => kwin::open_windows().unwrap_or_default(),
+        (Desktop::Hyprland, SessionType::Wayland) => json_command(&["hyprctl", "clients", "-j"])
+            .and_then(|value| value.as_array().cloned())
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|client| window_from_json(client, "title", "class"))
+            .collect(),
+        (Desktop::Sway, SessionType::Wayland) => {
+            let mut windows = Vec::new();
+            if let Some(tree) = json_command(&["swaymsg", "-t", "get_tree", "-r"]) {
+                collect_sway_windows(&tree, &mut windows);
+            }
+            windows
+        }
+        (_, SessionType::X11) => x11_client_ids()
+            .iter()
+            .filter_map(|id| x11_window(id, command_available("xdotool")).ok().flatten())
+            .collect(),
+        _ => Vec::new(),
+    };
+    windows
+        .into_iter()
+        .map(|window| OpenWindow {
+            app_id: window.app_id,
+            process_name: window.process_name,
+            title: window.title,
+        })
+        .collect()
+}
+
+fn json_command(command: &[&str]) -> Option<serde_json::Value> {
+    let output = run_cmd_with_timeout(
+        Command::new(command[0]).args(&command[1..]),
+        COMMAND_TIMEOUT_MS,
+    )?;
+    output
+        .status
+        .success()
+        .then(|| serde_json::from_slice(&output.stdout).ok())
+        .flatten()
+}
+
+/// Sway windows: leaves with a pid.
+fn collect_sway_windows(node: &serde_json::Value, out: &mut Vec<ActiveWindow>) {
+    if node
+        .get("pid")
+        .and_then(serde_json::Value::as_u64)
+        .is_some_and(|pid| pid > 0)
+    {
+        let mut focused = node.clone();
+        focused["focused"] = true.into();
+        out.extend(find_focused_window(&focused));
+    }
+    for key in ["nodes", "floating_nodes"] {
+        for child in node
+            .get(key)
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            collect_sway_windows(child, out);
+        }
+    }
+}
+
+fn x11_client_ids() -> Vec<String> {
+    let Some(output) = run_cmd_with_timeout(
+        Command::new("xprop").args(["-root", "_NET_CLIENT_LIST"]),
+        COMMAND_TIMEOUT_MS,
+    ) else {
+        return Vec::new();
+    };
+    parse_client_list(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Window ids of `_NET_CLIENT_LIST(WINDOW): window id # 0x1, 0x2`.
+fn parse_client_list(stdout: &str) -> Vec<String> {
+    stdout
+        .split_once('#')
+        .map(|(_, ids)| {
+            ids.split(',')
+                .map(str::trim)
+                .filter(|id| id.starts_with("0x"))
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 // Parses `xprop WM_CLASS` output of the form:
@@ -338,6 +619,30 @@ mod tests {
                 .fullscreen,
             None
         );
+    }
+
+    #[test]
+    fn parses_x11_client_list() {
+        assert_eq!(
+            parse_client_list("_NET_CLIENT_LIST(WINDOW): window id # 0x1a00003, 0x2c00004\n"),
+            ["0x1a00003", "0x2c00004"]
+        );
+        assert!(parse_client_list("_NET_CLIENT_LIST:  not found.\n").is_empty());
+    }
+
+    #[test]
+    fn sway_lists_every_window() {
+        let tree = serde_json::json!({"nodes": [{"pid": 0, "nodes": [
+            {"pid": 10, "name": "A", "app_id": "a"},
+            {"pid": 11, "name": "B", "app_id": null, "window_properties": {"class": "B"}},
+        ]}]});
+        let mut windows = Vec::new();
+        collect_sway_windows(&tree, &mut windows);
+        let ids: Vec<_> = windows
+            .iter()
+            .map(|window| window.app_id.as_str())
+            .collect();
+        assert_eq!(ids, ["a", "B"]);
     }
 
     #[test]

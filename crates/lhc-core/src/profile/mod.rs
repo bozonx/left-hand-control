@@ -3,6 +3,7 @@
 //! present and edit it through [`crate::config_document::ConfigDocument`].
 
 pub mod actions;
+pub mod app_match;
 pub mod auto_switch;
 pub mod diagnostics;
 pub mod ids;

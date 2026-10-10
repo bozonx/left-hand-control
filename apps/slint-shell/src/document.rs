@@ -152,6 +152,7 @@ impl Document {
         }
         let result = (|| {
             let runtime = self.runtime_config().map_err(|error| error.to_string())?;
+            lhc_core::active_window::set_titles_needed(runtime.uses_titles);
             if !force && self.pushed_layout.borrow().as_ref() == Some(&runtime.layout_id) {
                 return Ok(());
             }

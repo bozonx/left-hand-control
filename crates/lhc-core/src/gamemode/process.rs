@@ -1,23 +1,27 @@
 //! Process and window names as game-mode rules see them.
 
+use crate::profile::app_match::AppMatcher;
 use crate::profile::model::GameModeProcessMatcher;
 use crate::runtime_state::ActiveWindow;
 
 /// Applications that go fullscreen without being games: browsers, video
-/// players and presentations. Matched as substrings of the app id or
-/// process name.
-const FULLSCREEN_NON_GAMES: [&str; 24] = [
+/// players and presentations. Compared with the app id, its last dotted
+/// part and the process name, whole or followed by `-` (`brave-browser`).
+const FULLSCREEN_NON_GAMES: [&str; 27] = [
     "firefox",
     "librewolf",
     "waterfox",
-    "chrom",
+    "chrome",
+    "chromium",
+    "google-chrome",
     "brave",
     "vivaldi",
     "opera",
     "msedge",
     "microsoft-edge",
     "yandex",
-    "zen-browser",
+    "yandex-browser",
+    "zen",
     "falkon",
     "epiphany",
     "mpv",
@@ -29,18 +33,32 @@ const FULLSCREEN_NON_GAMES: [&str; 24] = [
     "mplayer",
     "kodi",
     "libreoffice",
-    "soffice",
+    "soffice.bin",
     "okular",
 ];
 
 /// Whether a fullscreen `window` most likely shows a video or a page,
 /// not a game.
 pub(crate) fn fullscreen_non_game(window: &ActiveWindow) -> bool {
-    let app_id = window.app_id.to_lowercase();
-    let process = window.process_name.as_deref().unwrap_or("").to_lowercase();
-    FULLSCREEN_NON_GAMES
-        .iter()
-        .any(|name| app_id.contains(name) || process.contains(name))
+    let app_id = window.app_id.trim().to_lowercase();
+    let process = window
+        .process_name
+        .as_deref()
+        .unwrap_or("")
+        .trim()
+        .to_lowercase();
+    let candidates = [
+        app_id.as_str(),
+        app_id.rsplit('.').next().unwrap_or(""),
+        process.strip_suffix(".exe").unwrap_or(&process),
+    ];
+    FULLSCREEN_NON_GAMES.iter().any(|name| {
+        candidates.iter().any(|candidate| {
+            candidate
+                .strip_prefix(name)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('-'))
+        })
+    })
 }
 
 /// Last component of a Unix or Windows path: Wine and Proton games show
@@ -104,46 +122,19 @@ pub(crate) fn proc_display_name(pid: u64) -> Option<String> {
     }
 }
 
-pub(super) fn matches(matcher: &GameModeProcessMatcher, candidate: &str) -> bool {
-    let needle = matcher.name.trim().to_lowercase();
-    let candidate = candidate.trim().to_lowercase();
-    if needle.is_empty() || candidate.is_empty() {
-        return false;
-    }
-    if needle.contains('*') || needle.contains('?') {
-        wildcard_matches(&needle, &candidate)
-    } else {
-        candidate == needle
-            || candidate.strip_suffix(".exe") == Some(needle.as_str())
-            || needle.strip_suffix(".exe") == Some(candidate.as_str())
-    }
+/// Whether `matcher` looks at the active window only: by choice, or
+/// because a title pattern has no process to match.
+pub(super) fn window_only(matcher: &GameModeProcessMatcher) -> bool {
+    matcher.only_active_window
+        || matches!(AppMatcher::parse(&matcher.name), Some(AppMatcher::Title(_)))
 }
 
-fn wildcard_matches(pattern: &str, candidate: &str) -> bool {
-    let pattern: Vec<char> = pattern.chars().collect();
-    let candidate: Vec<char> = candidate.chars().collect();
-    let (mut p, mut c) = (0, 0);
-    let (mut star, mut retry) = (None, 0);
-    while c < candidate.len() {
-        if p < pattern.len() && (pattern[p] == '?' || pattern[p] == candidate[c]) {
-            p += 1;
-            c += 1;
-        } else if p < pattern.len() && pattern[p] == '*' {
-            star = Some(p);
-            p += 1;
-            retry = c;
-        } else if let Some(index) = star {
-            p = index + 1;
-            retry += 1;
-            c = retry;
-        } else {
-            return false;
-        }
-    }
-    while p < pattern.len() && pattern[p] == '*' {
-        p += 1;
-    }
-    p == pattern.len()
+pub(super) fn matches_window(matcher: &GameModeProcessMatcher, window: &ActiveWindow) -> bool {
+    AppMatcher::parse(&matcher.name).is_some_and(|parsed| parsed.matches_window(window))
+}
+
+pub(super) fn matches_process(matcher: &GameModeProcessMatcher, name: &str) -> bool {
+    AppMatcher::parse(&matcher.name).is_some_and(|parsed| parsed.matches_process(name))
 }
 
 #[cfg(test)]
@@ -161,22 +152,13 @@ mod tests {
 
     #[test]
     fn exact_names_do_not_match_unrelated_processes() {
-        assert!(matches(&matcher(" GAME "), "game"));
-        assert!(matches(&matcher("game"), "Game.exe"));
-        assert!(!matches(&matcher("game"), "game-launcher"));
-        assert!(!matches(&matcher("steam"), "steamwebhelper"));
-        assert!(!matches(&matcher(""), "game"));
-    }
-
-    #[test]
-    fn explicit_wildcards_match_the_entire_name() {
-        assert!(matches(&matcher("steam*"), "steamwebhelper"));
-        assert!(matches(&matcher("game?.exe"), "game1.exe"));
-        assert!(!matches(&matcher("game?.exe"), "game12.exe"));
-        assert!(matches(&matcher("*game*"), "my-game-launcher"));
-        assert!(matches(&matcher("*игра?"), "моя-игра1"));
-        assert!(!matches(&matcher("game*"), "other-game"));
-        assert!(matches(&matcher("*a*b"), "zaaab"));
+        assert!(matches_process(&matcher(" GAME "), "game"));
+        assert!(matches_process(&matcher("game"), "Game.exe"));
+        assert!(!matches_process(&matcher("game"), "game-launcher"));
+        assert!(!matches_process(&matcher("steam"), "steamwebhelper"));
+        assert!(matches_process(&matcher("steam*"), "steamwebhelper"));
+        assert!(!matches_process(&matcher(""), "game"));
+        assert!(!matches_process(&matcher("title:game"), "game"));
     }
 
     #[test]
@@ -202,6 +184,13 @@ mod tests {
         assert!(fullscreen_non_game(&window("org.mozilla.firefox", None)));
         assert!(fullscreen_non_game(&window("", Some("chrome.exe"))));
         assert!(fullscreen_non_game(&window("mpv", None)));
+        assert!(fullscreen_non_game(&window("brave-browser", None)));
+        assert!(fullscreen_non_game(&window("org.kde.haruna", None)));
+        assert!(!fullscreen_non_game(&window(
+            "",
+            Some("OperationFlashpoint.exe")
+        )));
+        assert!(!fullscreen_non_game(&window("zenless", None)));
         assert!(!fullscreen_non_game(&window(
             "steam_app_1091500",
             Some("Cyberpunk2077.exe")

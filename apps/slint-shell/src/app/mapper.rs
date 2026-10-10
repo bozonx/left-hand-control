@@ -66,6 +66,10 @@ impl App {
     /// The system context (layout, game mode, window) changed: the active
     /// layout may differ now.
     pub(super) fn context_changed(&self) {
+        pages::conditions::show_active_window(
+            &self.settings,
+            lhc_core::active_window::cached_active_window().as_ref(),
+        );
         let state = self.settings.global::<AppState>();
         crate::game_mode::refresh(&self.settings, &lhc_core::gamemode::status());
         state.set_keyboard_language(
@@ -171,6 +175,7 @@ impl App {
                 return;
             }
         };
+        lhc_core::active_window::set_titles_needed(runtime.uses_titles);
         self.set_mapper_busy(true);
         state.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {

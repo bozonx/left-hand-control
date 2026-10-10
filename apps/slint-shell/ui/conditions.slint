@@ -1,43 +1,128 @@
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { GameCondition } from "types.slint";
+import { AppState } from "app-state.slint";
 import { IconButton, InfoTip, SelectField } from "controls.slint";
-import { CheckBox, LineEdit } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
 
+/// An application with an open window; `pattern` is what a condition
+/// stores for it.
+export struct WindowChoice { pattern: string, app-id: string, process: string, title: string }
+
 export global ConditionChoices {
     in property <[LanguageChoice]> languages;
+    in property <[WindowChoice]> open-windows;
+    /// The open-window list is being collected.
+    in property <bool> open-windows-loading;
+    /// App id and process of the focused window, e.g. "org.kde.dolphin · dolphin".
+    in property <string> active-window;
+    /// Seconds left before the active window is taken.
+    in property <int> pick-countdown;
+    /// Pattern of the window taken last; `picked-serial` counts the picks.
+    in property <string> picked;
+    in property <int> picked-serial;
     callback refresh();
+    callback refresh-open-windows();
+    callback pick-active-window();
     pure callback available(string) -> bool;
     pure callback contains(string, string) -> bool;
     pure callback toggle(string, string, bool) -> string;
     pure callback items(string) -> [string];
     pure callback remove(string, int) -> string;
     pure callback add(string, string) -> string;
+    pure callback is-title(string) -> bool;
+    /// Text of a title pattern without its prefix.
+    pure callback title-text(string) -> string;
+    /// Pattern for the typed text: an app pattern, or with `title` a title pattern.
+    pure callback make-pattern(string, bool) -> string;
 }
 
 export component ApplicationsField inherits VerticalLayout {
     in-out property <string> value;
     private property <string> draft;
+    private property <bool> by-title;
+    private property <bool> picking;
+    private property <bool> browsing;
+    private property <int> picked-serial: ConditionChoices.picked-serial;
+    /// Unknown until the first status counts as available.
+    private property <bool> detection-available: AppState.game-window-availability.id != "capability-unavailable"
+        && AppState.game-window-availability.id != "capability-unsupported";
+    changed picked-serial => {
+        if root.picking && ConditionChoices.picked != "" {
+            root.value = ConditionChoices.add(root.value, ConditionChoices.picked);
+        }
+        root.picking = false;
+    }
     spacing: 6px;
     HorizontalLayout { spacing: 6px; alignment: start;
         Text { text: @tr("Applications"); color: Theme.text; vertical-alignment: center; }
-        InfoTip { text: @tr("Substrings matched against the active window title and application ID, ignoring case. Any matching item is enough. An empty list imposes no restrictions."); }
+        InfoTip { text: @tr("An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions."); }
     }
-    HorizontalLayout { spacing: 6px;
-        LineEdit {
-            horizontal-stretch: 1;
-            text <=> root.draft;
-            placeholder-text: @tr("Window title or application ID");
-            accepted => { root.value = ConditionChoices.add(root.value, root.draft); root.draft = ""; }
-        }
-        IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add"); enabled: root.draft != ""; clicked => { root.value = ConditionChoices.add(root.value, root.draft); root.draft = ""; } }
+    if !root.detection-available: Text {
+        text: @tr("Active window detection is unavailable in this session, so application conditions do not match.");
+        color: Theme.warning; wrap: word-wrap;
     }
     for item[index] in ConditionChoices.items(root.value): HorizontalLayout {
         spacing: 6px;
-        Text { text: item; color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center; }
+        Text {
+            text: ConditionChoices.is-title(item) ? @tr("Window title contains: {}", ConditionChoices.title-text(item)) : item;
+            color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center;
+        }
         IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); clicked => { root.value = ConditionChoices.remove(root.value, index); } }
+    }
+    HorizontalLayout { spacing: 6px;
+        SelectField {
+            model: [@tr("Application"), @tr("Window title")];
+            current-index: root.by-title ? 1 : 0;
+            selected => { root.by-title = self.current-index == 1; }
+        }
+        LineEdit {
+            horizontal-stretch: 1;
+            text <=> root.draft;
+            placeholder-text: root.by-title ? @tr("Text in the window title") : @tr("Application ID or process name");
+            accepted => { root.value = ConditionChoices.add(root.value, ConditionChoices.make-pattern(root.draft, root.by-title)); root.draft = ""; }
+        }
+        IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add"); enabled: root.draft != ""; clicked => { root.value = ConditionChoices.add(root.value, ConditionChoices.make-pattern(root.draft, root.by-title)); root.draft = ""; } }
+    }
+    HorizontalLayout { spacing: 6px; alignment: start;
+        Button {
+            text: root.browsing ? @tr("Hide open windows") : @tr("Choose from open windows");
+            enabled: root.detection-available;
+            clicked => {
+                root.browsing = !root.browsing;
+                if root.browsing { ConditionChoices.refresh-open-windows(); }
+            }
+        }
+        Button {
+            text: root.picking && ConditionChoices.pick-countdown > 0 ? @tr("Switch to the window… {}", ConditionChoices.pick-countdown) : @tr("Take from the active window");
+            enabled: ConditionChoices.pick-countdown == 0 && root.detection-available;
+            clicked => { root.picking = true; ConditionChoices.pick-active-window(); }
+        }
+    }
+    if root.browsing && ConditionChoices.open-windows-loading: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
+    if root.browsing && !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; }
+    if root.browsing && !ConditionChoices.open-windows-loading: VerticalLayout {
+        spacing: 2px;
+        for window in ConditionChoices.open-windows: Rectangle {
+            height: window-row.preferred-height;
+            border-radius: 4px;
+            background: window-touch.has-hover ? Theme.hover : transparent;
+            window-row := VerticalLayout {
+                padding: 6px; spacing: 2px;
+                Text { text: window.process == "" || window.process == window.app-id ? window.app-id : window.app-id + " · " + window.process; color: Theme.text; wrap: word-wrap; }
+                if window.title != "": Text { text: window.title; color: Theme.muted; font-size: 12px; overflow: elide; }
+            }
+            window-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.value = ConditionChoices.add(root.value, window.pattern); }
+            }
+        }
+    }
+    if ConditionChoices.active-window != "": Text {
+        text: @tr("Active now: {}", ConditionChoices.active-window);
+        color: Theme.muted; font-size: 12px; wrap: word-wrap;
     }
 }
 

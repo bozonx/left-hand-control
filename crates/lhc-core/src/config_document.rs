@@ -16,7 +16,7 @@ use crate::profile::model::{
     AppConfig, AppSettings, Appearance, Layer, LayerRule, LayoutMode, LayoutPreset,
     LocalePreference,
 };
-use crate::profile::{layout_file, settings};
+use crate::profile::{app_match, layout_file, settings};
 use crate::storage::{StoragePaths, TrackedFile, WriteError};
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, fmt};
@@ -85,6 +85,9 @@ pub struct RuntimeConfig {
     pub json: String,
     /// Layout the rules come from; `None` means native passthrough.
     pub layout_id: Option<String>,
+    /// Whether the rules or the auto-mode choice look at window titles,
+    /// see [`crate::active_window::set_titles_needed`].
+    pub uses_titles: bool,
 }
 
 pub struct ConfigDocument {
@@ -621,9 +624,29 @@ impl ConfigDocument {
             return Err(ConfigError::Rules(blocking));
         }
         diagnostics::runtime_rules(&mut config);
+        let rule_patterns = config.rules.iter().flat_map(|rule| {
+            [
+                &rule.condition_apps_whitelist,
+                &rule.condition_apps_blacklist,
+            ]
+            .into_iter()
+            .flatten()
+            .flatten()
+        });
+        let auto_patterns = self
+            .settings
+            .auto_rules
+            .iter()
+            .filter(|_| self.settings.layout_mode == LayoutMode::Auto)
+            .flat_map(|rule| &rule.conditions.apps);
+        let uses_titles = app_match::uses_title(rule_patterns.chain(auto_patterns));
         let json = config.to_json();
         validate_for_mapper(&json)?;
-        Ok(RuntimeConfig { json, layout_id })
+        Ok(RuntimeConfig {
+            json,
+            layout_id,
+            uses_titles,
+        })
     }
 
     pub fn active_layout(&self, ctx: &AutoSwitchContext) -> Result<LayoutPreset, ConfigError> {
@@ -817,7 +840,11 @@ mod tests {
         // The legacy shell still reads `layoutConditions`.
         assert_eq!(saved["settings"]["layoutConditions"], legacy);
         assert_eq!(saved["settings"]["autoRules"][0]["layoutId"], "user:Test");
-        assert_eq!(saved["settings"]["autoRules"][0]["apps"], json!(["kate"]));
+        assert_eq!(
+            saved["settings"]["autoRules"][0]["windows"],
+            json!(["*kate*", "title:kate"])
+        );
+        assert!(saved["settings"]["autoRules"][0].get("apps").is_none());
         assert_eq!(saved["settings"]["autoDefaultLayoutId"], "user:Test");
     }
 

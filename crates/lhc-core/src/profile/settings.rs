@@ -213,10 +213,14 @@ fn condition_set(value: &Value) -> Option<LayoutConditionSet> {
         .into_iter()
         .filter(|layout| !layout.is_empty())
         .collect();
-    let apps: Vec<String> = string_list(value.get("apps"))
-        .into_iter()
-        .filter(|app| !app.trim().is_empty())
-        .collect();
+    // `apps` held substrings of the title or app id before patterns.
+    let apps: Vec<String> = match value.get("windows") {
+        Some(windows) => string_list(Some(windows)),
+        None => super::app_match::list_from_legacy(&string_list(value.get("apps"))),
+    }
+    .into_iter()
+    .filter(|app| !app.trim().is_empty())
+    .collect();
     if game_mode.is_none() && layouts.is_empty() && apps.is_empty() {
         return None;
     }
@@ -298,7 +302,7 @@ mod tests {
     fn auto_rules_are_read_leniently() {
         let settings = from_value(Some(&json!({
             "autoRules": [
-                {"id": "a", "layoutId": "user:A", "apps": ["blender"], "layouts": [""]},
+                {"id": "a", "layoutId": "user:A", "windows": ["blender"], "layouts": [""]},
                 {"layoutId": null, "gameMode": "maybe", "enabled": false},
                 3,
             ],
@@ -334,7 +338,10 @@ mod tests {
             .collect();
         assert_eq!(targets, [Some("user:B"), None]);
         assert_eq!(settings.auto_rules[0].conditions.layouts, ["ru"]);
-        assert_eq!(settings.auto_rules[1].conditions.apps, ["blender"]);
+        assert_eq!(
+            settings.auto_rules[1].conditions.apps,
+            ["*blender*", "title:blender"]
+        );
         assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:A"));
         let none = from_value(Some(&json!({"layoutConditions": {
             "user:A": {"enabledInAuto": true, "whitelist": {"apps": ["kate"]}},

@@ -365,7 +365,7 @@ export component SettingsPage inherits VerticalBox {
                     if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { vertical-stretch: 0; text: @tr("Fullscreen detection tools are missing or could not query the session."); color: Theme.warning; wrap: word-wrap; }
 
                     Text { vertical-stretch: 0; text: @tr("Games and exclusions"); color: Theme.text; font-weight: 600; }
-                    Text { vertical-stretch: 0; text: @tr("Exact process name or app ID; use * and ? for patterns. Window titles are not matched. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."); color: Theme.muted; wrap: word-wrap; }
+                    Text { vertical-stretch: 0; text: @tr("Exact process name or app ID; use * and ? for patterns. title:<text> matches the active window title. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."); color: Theme.muted; wrap: word-wrap; }
                     Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                     for item[index] in SettingsEditor.process-matchers: Rectangle {
                         vertical-stretch: 0; height: process-row.preferred-height; border-radius: 4px; background: Theme.card;

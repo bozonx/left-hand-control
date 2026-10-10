@@ -1,7 +1,7 @@
 //! Pages of the settings window. Each module binds one Slint global to the
 //! shared [`Document`] and refreshes it when the document changes.
 
-mod conditions;
+pub(crate) mod conditions;
 mod keys;
 mod layers;
 mod library;

@@ -60,6 +60,7 @@ use self::model::{
 use super::action::Keystroke;
 use super::config::GameModeCondition;
 use super::system::SysCommand;
+use crate::profile::app_match::any_matches_window;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
@@ -1265,18 +1266,6 @@ impl Engine {
     }
 }
 
-/// Returns true when a list of substrings matches the active window's
-/// title or app id (case-insensitive, OR).
-fn matches_active_window(needles: &[String], aw: &crate::runtime_state::ActiveWindow) -> bool {
-    let title = aw.title.to_lowercase();
-    let app_id = aw.app_id.to_lowercase();
-    needles
-        .iter()
-        .map(|n| n.trim().to_lowercase())
-        .filter(|n| !n.is_empty())
-        .any(|n| title.contains(&n) || app_id.contains(&n))
-}
-
 /// Evaluates the apps whitelist / blacklist for a rule.
 /// Blacklist takes precedence: a match blocks the rule. Whitelist, when
 /// non-empty, must match for the rule to fire.
@@ -1309,14 +1298,14 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
     }
     if let Some(bl) = bl {
         match &aw {
-            Some(aw) if matches_active_window(bl, aw) => return false,
+            Some(aw) if any_matches_window(bl, aw) => return false,
             Some(_) => {}
             None => return false, // fail-closed: unknown window + blacklist -> block
         }
     }
     if let Some(wl) = wl {
         match &aw {
-            Some(aw) if matches_active_window(wl, aw) => {}
+            Some(aw) if any_matches_window(wl, aw) => {}
             _ => return false,
         }
     }
@@ -2290,8 +2279,10 @@ mod tests {
             title: "Mozilla Firefox".into(),
             app_id: "navigator".into(),
         }));
-        let rule = rule_with_apps(Some(vec!["firefox".into()]), None);
+        let rule = rule_with_apps(Some(vec!["title:firefox".into()]), None);
         assert!(rule_passes_apps(&rule));
+        let rule = rule_with_apps(Some(vec!["firefox".into()]), None);
+        assert!(!rule_passes_apps(&rule));
         crate::runtime_state::set_active_window(None);
     }
 
@@ -2318,7 +2309,10 @@ mod tests {
             title: "Editor — secret".into(),
             app_id: "editor".into(),
         }));
-        let rule = rule_with_apps(Some(vec!["editor".into()]), Some(vec!["secret".into()]));
+        let rule = rule_with_apps(
+            Some(vec!["editor".into()]),
+            Some(vec!["title:secret".into()]),
+        );
         assert!(!rule_passes_apps(&rule));
         crate::runtime_state::set_active_window(None);
     }

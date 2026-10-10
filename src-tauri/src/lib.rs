@@ -493,6 +493,8 @@ pub fn run() {
             }
             layout::start_watcher();
             gamemode::start_watcher(storage);
+            // Menu windows are recognised by their titles.
+            active_window::set_titles_needed(true);
             active_window::start_watcher();
             #[cfg(target_os = "linux")]
             benchmark::start(app.handle().clone());

@@ -298,7 +298,8 @@ pub struct LayoutConditionSet {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub game_mode: Option<String>,
     pub layouts: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    /// Window patterns, see [`super::app_match`].
+    #[serde(rename = "windows", skip_serializing_if = "Vec::is_empty")]
     pub apps: Vec<String>,
 }
 

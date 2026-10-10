@@ -1,7 +1,9 @@
 //! Choosing the active layout in auto mode: an ordered list of rules
 //! (conditions → layout or off), first match wins, otherwise the default.
 
+use super::app_match;
 use super::model::{AppSettings, AutoRule, LayoutConditionSet, LayoutMode};
+use crate::runtime_state::ActiveWindow;
 
 /// Observed system state the layout conditions are evaluated against.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -10,19 +12,17 @@ pub struct AutoSwitchContext {
     pub system_layout: Option<String>,
     /// Effective game-mode state; undetectable counts as off.
     pub game_mode_active: bool,
-    pub window_title: Option<String>,
-    pub window_app_id: Option<String>,
+    /// Focused window; `None` when undetectable.
+    pub window: Option<ActiveWindow>,
 }
 
 impl AutoSwitchContext {
     /// Snapshot of the state cached by the core watchers.
     pub fn current() -> Self {
-        let window = crate::runtime_state::active_window();
         Self {
             system_layout: crate::runtime_state::layout_short(),
             game_mode_active: crate::runtime_state::game_mode_active(),
-            window_title: window.as_ref().map(|window| window.title.clone()),
-            window_app_id: window.map(|window| window.app_id),
+            window: crate::runtime_state::active_window(),
         }
     }
 }
@@ -39,20 +39,11 @@ pub fn matches_condition_set(set: &LayoutConditionSet, ctx: &AutoSwitchContext) 
             _ => return false,
         }
     }
-    set.apps.is_empty() || matches_active_window(&set.apps, ctx)
-}
-
-fn matches_active_window(needles: &[String], ctx: &AutoSwitchContext) -> bool {
-    let title = ctx.window_title.as_deref().unwrap_or("").to_lowercase();
-    let app_id = ctx.window_app_id.as_deref().unwrap_or("").to_lowercase();
-    if title.is_empty() && app_id.is_empty() {
-        return false;
-    }
-    needles
-        .iter()
-        .map(|needle| needle.trim().to_lowercase())
-        .filter(|needle| !needle.is_empty())
-        .any(|needle| title.contains(&needle) || app_id.contains(&needle))
+    set.apps.is_empty()
+        || ctx
+            .window
+            .as_ref()
+            .is_some_and(|window| app_match::any_matches_window(&set.apps, window))
 }
 
 /// `available` sorted by `order`; ids missing from `order` keep their
@@ -110,20 +101,13 @@ pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
                 .layouts
                 .iter()
                 .all(|item| outer.layouts.contains(item)));
-    // Apps match by substring: a window containing `inner`'s needle also
-    // contains every needle that is a substring of it.
-    let needles: Vec<String> = outer
-        .apps
-        .iter()
-        .map(|needle| needle.trim().to_lowercase())
-        .filter(|needle| !needle.is_empty())
-        .collect();
-    let apps = needles.is_empty()
+    // Every window pattern of `inner` must be covered by one of `outer`.
+    let apps = outer.apps.iter().all(|app| app.trim().is_empty())
         || (!inner.apps.is_empty()
-            && inner.apps.iter().all(|app| {
-                let app = app.trim().to_lowercase();
-                needles.iter().any(|needle| app.contains(needle.as_str()))
-            }));
+            && inner
+                .apps
+                .iter()
+                .all(|app| outer.apps.iter().any(|outer| app_match::covers(outer, app))));
     game && layouts && apps
 }
 
@@ -161,12 +145,14 @@ mod tests {
         }
     }
 
-    fn ctx(layout: Option<&str>, game: bool, title: &str) -> AutoSwitchContext {
+    fn ctx(layout: Option<&str>, game: bool, app_id: &str) -> AutoSwitchContext {
         AutoSwitchContext {
             system_layout: layout.map(str::to_owned),
             game_mode_active: game,
-            window_title: Some(title.into()),
-            window_app_id: None,
+            window: Some(ActiveWindow {
+                app_id: app_id.into(),
+                ..ActiveWindow::default()
+            }),
         }
     }
 
@@ -189,7 +175,11 @@ mod tests {
             &ctx(None, true, "")
         ));
         assert!(matches_condition_set(
-            &set(None, &[], &[" FIRE"]),
+            &set(None, &[], &[" FIRE*"]),
+            &ctx(None, false, "Firefox")
+        ));
+        assert!(!matches_condition_set(
+            &set(None, &[], &["fire"]),
             &ctx(None, false, "Firefox")
         ));
         // Undetectable game mode is reported as off.
@@ -287,8 +277,8 @@ mod tests {
         let rules = [
             rule(true, set(None, &["ru", "us"], &[])),
             rule(true, set(Some("on"), &["ru"], &["Kate"])),
-            rule(true, set(None, &[], &["kate"])),
-            rule(true, set(None, &["de"], &["kate-editor"])),
+            rule(true, set(None, &[], &["kate*"])),
+            rule(true, set(None, &["de"], &["kate-editor", "Kate"])),
             rule(false, set(None, &[], &[])),
             rule(true, set(Some("off"), &[], &[])),
         ];

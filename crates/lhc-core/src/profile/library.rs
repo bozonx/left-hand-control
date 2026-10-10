@@ -220,6 +220,13 @@ impl ConfigDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn window(app_id: &str) -> crate::runtime_state::ActiveWindow {
+        crate::runtime_state::ActiveWindow {
+            app_id: app_id.into(),
+            ..Default::default()
+        }
+    }
     use crate::{
         profile::{
             auto_switch::AutoSwitchContext,
@@ -426,7 +433,7 @@ mod tests {
                         conditions: LayoutConditionSet {
                             game_mode: None,
                             layouts: vec!["us".into()],
-                            apps: vec!["kate".into()],
+                            apps: vec!["*kate".into()],
                         },
                     },
                 ];
@@ -434,16 +441,16 @@ mod tests {
             .unwrap();
         let mut context = AutoSwitchContext {
             system_layout: Some("us".into()),
-            window_app_id: Some("org.kde.kate".into()),
+            window: Some(window("org.kde.kate")),
             ..Default::default()
         };
         let active = document.runtime_config(&context).unwrap();
         assert_eq!(active.layout_id.as_deref(), Some("user:Editor"));
         for change in 0..3 {
             match change {
-                0 => context.window_app_id = Some("browser".into()),
+                0 => context.window = Some(window("browser")),
                 1 => {
-                    context.window_app_id = Some("kate".into());
+                    context.window = Some(window("org.kde.kate"));
                     context.system_layout = Some("ru".into());
                 }
                 _ => {
