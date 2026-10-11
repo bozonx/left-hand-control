@@ -220,6 +220,69 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "WLAN" => Key::KEY_WLAN,
         "AirplaneMode" => Key::KEY_RFKILL,
 
+        "MediaPlay" => Key::KEY_PLAY,
+        "MediaPlayCD" => Key::KEY_PLAYCD,
+        "MediaPause" => Key::KEY_PAUSECD,
+        "MediaClose" => Key::KEY_CLOSECD,
+        "MediaEjectToggle" => Key::KEY_EJECTCLOSECD,
+        "MediaBassBoost" => Key::KEY_BASSBOOST,
+        "MediaVideoNext" => Key::KEY_VIDEO_NEXT,
+        "MediaVideoPrev" => Key::KEY_VIDEO_PREV,
+        "LaunchApp2" => Key::KEY_CALC,
+        "LaunchFiles" => Key::KEY_FILE,
+        "LaunchCamera" => Key::KEY_CAMERA,
+        "LaunchAudio" => Key::KEY_SOUND,
+        "LaunchChat" => Key::KEY_CHAT,
+        "LaunchDocuments" => Key::KEY_DOCUMENTS,
+        "LaunchPlayer" => Key::KEY_PLAYER,
+        "LaunchCalendar" => Key::KEY_CALENDAR,
+        "LaunchPhone" => Key::KEY_PHONE,
+        "LaunchFinance" => Key::KEY_FINANCE,
+        "LaunchSports" => Key::KEY_SPORT,
+        "LaunchShop" => Key::KEY_SHOP,
+        "ScreenLock" => Key::KEY_COFFEE,
+        "Suspend" => Key::KEY_SUSPEND,
+        "BrightnessCycle" => Key::KEY_BRIGHTNESS_CYCLE,
+        "BrightnessAuto" => Key::KEY_BRIGHTNESS_AUTO,
+        "BrightnessMin" => Key::KEY_BRIGHTNESS_MIN,
+        "BrightnessMax" => Key::KEY_BRIGHTNESS_MAX,
+        "DisplayOff" => Key::KEY_DISPLAY_OFF,
+        "DisplayRotate" => Key::KEY_ROTATE_DISPLAY,
+        "TouchpadOn" => Key::KEY_TOUCHPAD_ON,
+        "TouchpadOff" => Key::KEY_TOUCHPAD_OFF,
+        "WWAN" => Key::KEY_WWAN,
+        "UWB" => Key::KEY_UWB,
+        "Battery" => Key::KEY_BATTERY,
+        "CycleWindows" => Key::KEY_CYCLEWINDOWS,
+        "AllApplications" => Key::KEY_DASHBOARD,
+        "Assistant" => Key::KEY_ASSISTANT,
+        "Compose" => Key::KEY_COMPOSE,
+        "New" => Key::KEY_NEW,
+        "Close" => Key::KEY_CLOSE,
+        "Save" => Key::KEY_SAVE,
+        "Print" => Key::KEY_PRINT,
+        "Cancel" => Key::KEY_CANCEL,
+        "Exit" => Key::KEY_EXIT,
+        "Edit" => Key::KEY_EDIT,
+        "Move" => Key::KEY_MOVE,
+        "Front" => Key::KEY_FRONT,
+        "Send" => Key::KEY_SEND,
+        "Reply" => Key::KEY_REPLY,
+        "ForwardMail" => Key::KEY_FORWARDMAIL,
+        "SendFile" => Key::KEY_SENDFILE,
+        "DeleteFile" => Key::KEY_DELETEFILE,
+        "Transfer" => Key::KEY_XFER,
+        "Macro" => Key::KEY_MACRO,
+        "ScrollUp" => Key::KEY_SCROLLUP,
+        "ScrollDown" => Key::KEY_SCROLLDOWN,
+        "CameraFocus" => Key::KEY_CAMERA_FOCUS,
+        "CameraZoomIn" => Key::KEY_CAMERA_ZOOMIN,
+        "CameraZoomOut" => Key::KEY_CAMERA_ZOOMOUT,
+        "CameraUp" => Key::KEY_CAMERA_UP,
+        "CameraDown" => Key::KEY_CAMERA_DOWN,
+        "CameraLeft" => Key::KEY_CAMERA_LEFT,
+        "CameraRight" => Key::KEY_CAMERA_RIGHT,
+
         _ => return None,
     })
 }
@@ -319,17 +382,25 @@ mod tests {
     }
 
     #[test]
-    fn every_catalog_key_maps_to_a_distinct_evdev_key() {
+    fn every_catalog_key_maps_and_round_trips_except_explicit_aliases() {
         let mut codes = std::collections::HashSet::new();
         for name in crate::profile::key_catalog::CATEGORIES
             .iter()
             .flat_map(|keys| keys.iter())
         {
             let key = code_to_key(name).unwrap_or_else(|| panic!("{name} has no evdev key"));
-            assert!(codes.insert(key.code()), "{name} duplicates an evdev key");
-            assert_eq!(evdev_to_code(key.code()), Some(*name));
+            let canonical = match *name {
+                "Compose" => "ContextMenu",
+                "Print" => "PrintScreen",
+                "LaunchApp2" => "Calculator",
+                name => {
+                    assert!(codes.insert(key.code()), "{name} duplicates an evdev key");
+                    name
+                }
+            };
+            assert_eq!(evdev_to_code(key.code()), Some(canonical));
         }
-        assert_eq!(code_to_key("LaunchApp2"), None);
+        assert_eq!(code_to_key("LaunchApp2"), Some(Key::KEY_CALC));
         assert_eq!(evdev_to_code(Key::KEY_CALC.code()), Some("Calculator"));
         assert_eq!(evdev_to_code(Key::KEY_UNKNOWN.code()), None);
     }
