@@ -178,26 +178,26 @@ layers:
     keys:
       F4: F4
       Tab: Tab
-      Backspace: sys:screenOff
-      CapsLock: sys:walkThroughWindowsAlternative
-      #ShiftLeft: sys:walkThroughWindowsCurrentApp
+      Backspace: kde:org_kde_powerdevil/Turn Off Screen
+      CapsLock: kde:kwin/Walk Through Windows Alternative
+      #ShiftLeft: Alt+Backquote
 
-      Digit1: sys:taskEntry1
-      Digit2: sys:taskEntry2
-      Digit3: sys:taskEntry3
-      Digit4: sys:taskEntry4
-      Digit5: sys:taskEntry5
-      Digit6: sys:taskEntry6
-      Digit7: sys:taskEntry7
-      Digit8: sys:taskEntry8
-      Digit9: sys:taskEntry9
-      Digit0: sys:taskEntry10
+      Digit1: Meta+Digit1
+      Digit2: Meta+Digit2
+      Digit3: Meta+Digit3
+      Digit4: Meta+Digit4
+      Digit5: Meta+Digit5
+      Digit6: Meta+Digit6
+      Digit7: Meta+Digit7
+      Digit8: Meta+Digit8
+      Digit9: Meta+Digit9
+      Digit0: Meta+Digit0
 
       KeyQ: null
       KeyW: Ctrl+KeyA
       KeyE: null
       KeyR: null
-      KeyT: sys:windowKeepAbove
+      KeyT: kde:kwin/Window Above Other Windows
       KeyY: sys:switchLayout1
       KeyU: sys:switchLayout2
       KeyI: sys:switchLayout3
@@ -205,39 +205,34 @@ layers:
       KeyP: sys:switchLayout5
       BracketLeft: sys:switchLayout6
       BracketRight: sys:switchLayout7
-      #Backslash: sys:screenOff
+      #Backslash: kde:org_kde_powerdevil/Turn Off Screen
 
       KeyA: sys:switchDesktop4
       KeyS: sys:switchDesktop3
       KeyD: sys:switchDesktop2
       KeyF: sys:switchDesktop1
-      KeyG: sys:windowToNextDesktop
-      KeyH: sys:quickTileWindowLeft
-      KeyJ: sys:quickTileWindowTop
-      KeyK: sys:quickTileWindowBottom
-      KeyL: sys:quickTileWindowRight
-      Semicolon: sys:windowMaximizeVertical
-      Quote: sys:windowMaximizeHorizontal
+      KeyG: kde:kwin/Window to Next Desktop
+      KeyH: Meta+ArrowLeft
+      KeyJ: Meta+ArrowUp
+      KeyK: Meta+ArrowDown
+      KeyL: Meta+ArrowRight
+      Semicolon: kde:kwin/Window Maximize Vertical
+      Quote: kde:kwin/Window Maximize Horizontal
 
       ShiftLeft: sys:switchLayout4
       KeyZ: sys:switchLayout3
       KeyX: sys:switchLayout2
       KeyC: sys:switchLayout1
-      #KeyV: sys:showClipboardHistory
       KeyV: Meta+KeyV
       # use alt+F4
-      #KeyB: sys:windowClose
       # KeyB: F4
       KeyB: PrintScreen
-      KeyN: sys:brightnessDown
-      KeyM: sys:brightnessUp
-      #Comma: sys:volumeDown
+      KeyN: BrightnessDown
+      KeyM: BrightnessUp
       Comma: AudioVolumeDown
       Period: AudioVolumeUp
-      #Period: sys:volumeUp
-      # Slash: sys:muteAudio
       Slash: AudioVolumeMute
-      ShiftRight: sys:muteMicrophone
+      ShiftRight: MicrophoneMuteToggle
   # - id: space
   #   keys:
   #     Tab: sys:switchLayout1

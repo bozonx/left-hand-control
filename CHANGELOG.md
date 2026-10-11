@@ -13,3 +13,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Retired application sources and historical comparison reports are archived outside the active build.
 - Removed configuration and layout migrations and the unused raw-JSON game-mode API.
 - Retired condition fields are rejected; manual activation and command permissions use explicit settings.
+- System actions (`sys:`) are reduced to `switchDesktopN`, `switchLayoutN` and the new `windowToDesktopN`; the other KDE-only actions are removed in favour of standard keys, chords or `kde:` shortcuts (see `dev_docs/removed-system-actions.md`).
+
+### Added
+
+- `kde:<component>/<shortcut>` action and a "KDE shortcuts" picker category listing every global shortcut of the running KDE session.

@@ -1,5 +1,6 @@
 //! Action strings (`KeyA`, `Ctrl+KeyC`, `macro:id`, `cmd:id`, `sys:id`,
-//! `app:id`, `text:…`, `pause:ms`) and the catalogs of built-in actions.
+//! `app:id`, `kde:component/shortcut`, `text:…`, `pause:ms`) and the
+//! catalogs of built-in actions.
 
 use super::model::AppConfig;
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
@@ -17,6 +18,8 @@ pub enum Action {
     Command(String),
     System(String),
     App(String),
+    /// KDE global shortcut, `component/shortcut` as named by kglobalaccel.
+    KdeShortcut(String),
     Text(String),
     /// Macro-only delay in milliseconds.
     Pause(String),
@@ -32,11 +35,12 @@ impl Action {
         }
         let value = value.trim();
         type Constructor = fn(String) -> Action;
-        let prefixed: [(&str, Constructor); 5] = [
+        let prefixed: [(&str, Constructor); 6] = [
             ("macro:", Self::Macro),
             ("cmd:", Self::Command),
             ("sys:", Self::System),
             ("app:", Self::App),
+            ("kde:", Self::KdeShortcut),
             ("pause:", Self::Pause),
         ];
         for (prefix, build) in prefixed {
@@ -61,6 +65,7 @@ impl Action {
             Self::Command(id) => format!("cmd:{id}"),
             Self::System(id) => format!("sys:{id}"),
             Self::App(id) => format!("app:{id}"),
+            Self::KdeShortcut(id) => format!("kde:{id}"),
             Self::Text(text) => format!("text:{text}"),
             Self::Pause(ms) => format!("pause:{ms}"),
         })
@@ -85,63 +90,7 @@ pub struct CatalogEntry {
     pub name: ActionName,
 }
 
-const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = ["switchDesktop", "switchLayout", "taskEntry"];
-
-/// Built-in `sys:` ids, apart from the numbered ones.
-pub const SYSTEM_ACTION_IDS: [&str; 52] = [
-    "walkThroughWindowsAlternative",
-    "walkThroughWindowsCurrentApp",
-    "showClipboardHistory",
-    "volumeDown",
-    "volumeUp",
-    "muteAudio",
-    "brightnessDown",
-    "brightnessUp",
-    "windowClose",
-    "windowToNextDesktop",
-    "windowToPreviousDesktop",
-    "windowKeepAbove",
-    "windowMaximizeVertical",
-    "windowMaximizeHorizontal",
-    "screenOff",
-    "launchKrunner",
-    "launchSystemMonitor",
-    "manageActivities",
-    "nextActivity",
-    "previousActivity",
-    "muteMicrophone",
-    "showDisplayConfig",
-    "toggleTouchpad",
-    "lockSession",
-    "logout",
-    "logoutWithoutConfirmation",
-    "increaseKeyboardBrightness",
-    "decreaseKeyboardBrightness",
-    "toggleKeyboardBacklight",
-    "activateApplicationLauncher",
-    "showDesktop",
-    "maximizeWindow",
-    "minimizeWindow",
-    "moveWindow",
-    "windowToNextScreen",
-    "windowToPreviousScreen",
-    "quickTileWindowTop",
-    "quickTileWindowBottom",
-    "quickTileWindowLeft",
-    "quickTileWindowRight",
-    "toggleNightColor",
-    "toggleGridView",
-    "toggleOverview",
-    "togglePresentWindowsAllDesktops",
-    "togglePresentWindowsCurrentDesktop",
-    "windowMenu",
-    "zoomIn",
-    "zoomOut",
-    "zoomActualSize",
-    "killWindow",
-    "windowFullscreen",
-    "windowOnAllDesktops",
-];
+const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = ["switchDesktop", "switchLayout", "windowToDesktop"];
 
 /// Numbered actions have ids 1…10 (system) and 1…5 (app menus).
 const SYSTEM_NUMBERED_COUNT: u32 = 10;
@@ -156,13 +105,20 @@ fn numbered(id: &str, names: &[&'static str], max: u32) -> Option<(&'static str,
 }
 
 pub fn system_action_name(id: &str) -> Option<ActionName> {
-    if let Some((name, n)) = numbered(id, &NUMBERED_SYSTEM_ACTIONS, SYSTEM_NUMBERED_COUNT) {
-        return Some(ActionName::System { id: name, n });
-    }
-    SYSTEM_ACTION_IDS
-        .iter()
-        .find(|known| **known == id)
-        .map(|known| ActionName::System { id: known, n: 0 })
+    numbered(id, &NUMBERED_SYSTEM_ACTIONS, SYSTEM_NUMBERED_COUNT)
+        .map(|(name, n)| ActionName::System { id: name, n })
+}
+
+/// Split a `kde:` id into its kglobalaccel component and shortcut name.
+/// The component is the last segment of its D-Bus object path, so it may
+/// only hold the characters such a segment allows.
+pub fn kde_shortcut_parts(id: &str) -> Option<(&str, &str)> {
+    let (component, shortcut) = id.split_once('/')?;
+    let valid_component = !component.is_empty()
+        && component
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_');
+    (valid_component && !shortcut.trim().is_empty()).then_some((component, shortcut))
 }
 
 /// Game-mode control actions: flip the effective state, or set the mode.
@@ -193,22 +149,15 @@ pub fn menu_page(app_id: &str) -> Option<(bool, u32)> {
 }
 
 pub fn system_actions() -> Vec<CatalogEntry> {
-    let mut out = Vec::new();
-    for name in NUMBERED_SYSTEM_ACTIONS {
-        for n in 1..=SYSTEM_NUMBERED_COUNT {
-            out.push(CatalogEntry {
+    NUMBERED_SYSTEM_ACTIONS
+        .into_iter()
+        .flat_map(|name| {
+            (1..=SYSTEM_NUMBERED_COUNT).map(move |n| CatalogEntry {
                 action: Action::System(format!("{name}{n}")),
                 name: ActionName::System { id: name, n },
-            });
-        }
-    }
-    for id in SYSTEM_ACTION_IDS {
-        out.push(CatalogEntry {
-            action: Action::System(id.into()),
-            name: ActionName::System { id, n: 0 },
-        });
-    }
-    out
+            })
+        })
+        .collect()
 }
 
 pub fn app_actions() -> Vec<CatalogEntry> {
@@ -290,6 +239,9 @@ pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
         Action::App(id) => app_action_name(id)
             .is_none()
             .then_some(ActionIssue::UnknownAppAction),
+        Action::KdeShortcut(id) => kde_shortcut_parts(id)
+            .is_none()
+            .then_some(ActionIssue::InvalidSyntax),
     }
 }
 
@@ -317,6 +269,15 @@ pub fn execution_issue(action: &Action, config: &AppConfig) -> Option<ExecutionI
             Action::System(id) => {
                 #[cfg(target_os = "linux")]
                 if crate::mapper::system::resolve(id).is_some() {
+                    return None;
+                }
+                #[cfg(not(target_os = "linux"))]
+                let _ = id;
+                Some(ExecutionIssue::Unavailable)
+            }
+            Action::KdeShortcut(id) => {
+                #[cfg(target_os = "linux")]
+                if crate::mapper::system::resolve_kde_shortcut(id).is_some() {
                     return None;
                 }
                 #[cfg(not(target_os = "linux"))]
@@ -376,6 +337,7 @@ mod tests {
             "cmd:music",
             "sys:switchDesktop2",
             "app:showQuickMenu1",
+            "kde:kwin/Window Quick Tile Top",
             "text:  keep spaces ",
             "text:   ",
             "text:first\nsecond\n",
@@ -390,7 +352,7 @@ mod tests {
 
     #[test]
     fn catalogs_preserve_builtin_action_ids() {
-        assert_eq!(system_actions().len(), 30 + 52);
+        assert_eq!(system_actions().len(), 30);
         assert_eq!(app_actions().len(), 14);
         assert_eq!(
             system_action_name("switchDesktop10"),
@@ -400,6 +362,14 @@ mod tests {
             })
         );
         assert_eq!(system_action_name("switchDesktop11"), None);
+        assert_eq!(system_action_name("lockSession"), None);
+        assert_eq!(
+            kde_shortcut_parts("org_kde_powerdevil/Turn Off Screen"),
+            Some(("org_kde_powerdevil", "Turn Off Screen"))
+        );
+        assert_eq!(kde_shortcut_parts("kwin"), None);
+        assert_eq!(kde_shortcut_parts("kwin/ "), None);
+        assert_eq!(kde_shortcut_parts("org.kde/Overview"), None);
         assert_eq!(menu_page("showEmojiMenu3"), Some((true, 3)));
         assert_eq!(menu_page("showQuickMenu6"), None);
         assert_eq!(menu_page("gameModeToggle"), None);
@@ -423,7 +393,13 @@ mod tests {
         assert_eq!(check("macro:copyLine"), None);
         assert_eq!(check("macro:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("cmd:nope"), Some(ActionIssue::UnknownCommand));
-        assert_eq!(check("sys:lockSession"), None);
+        assert_eq!(check("sys:windowToDesktop2"), None);
+        assert_eq!(
+            check("sys:lockSession"),
+            Some(ActionIssue::UnknownSystemAction)
+        );
+        assert_eq!(check("kde:ksmserver/Lock Session"), None);
+        assert_eq!(check("kde:Lock Session"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(
             check("app:showEmojiMenu9"),
             Some(ActionIssue::UnknownAppAction)

@@ -3,6 +3,10 @@
 // cross-platform; the concrete action (DBus call or shell command) is
 // picked per OS/DE by dispatching through `crate::platform::linux::detect()`.
 //
+// Only actions a key cannot express live here (switch to desktop / layout N,
+// move window to desktop N); everything else is a standard key, a chord or
+// a `kde:` global shortcut. See `dev_docs/removed-system-actions.md`.
+//
 // Two action shapes are supported:
 //   * `SysAction::Dbus` — direct session-bus method call. Preferred when
 //                         the target DE exposes a DBus service: avoids
@@ -101,6 +105,21 @@ pub fn is_known_app(name: &str) -> bool {
     resolve_app(name).is_some()
 }
 
+/// Resolve a `kde:` id (`component/shortcut`) into a kglobalaccel call,
+/// or `None` outside KDE or when the id is malformed.
+pub fn resolve_kde_shortcut(id: &str) -> Option<SysAction> {
+    use crate::platform::linux::{Desktop, detect};
+    if !matches!(detect().desktop, Desktop::Kde) {
+        return None;
+    }
+    kde_shortcut(id)
+}
+
+fn kde_shortcut(id: &str) -> Option<SysAction> {
+    let (component, shortcut) = crate::profile::actions::kde_shortcut_parts(id.trim())?;
+    Some(kde::invoke_shortcut(component, shortcut))
+}
+
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
     let name = name.trim();
 
@@ -121,7 +140,7 @@ fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) ->
 mod kde {
     use super::{DbusArg, DbusCall, SysAction};
 
-    fn invoke_shortcut(component: &str, shortcut: &str) -> SysAction {
+    pub(super) fn invoke_shortcut(component: &str, shortcut: &str) -> SysAction {
         SysAction::Dbus(DbusCall {
             destination: "org.kde.kglobalaccel".into(),
             path: format!("/component/{component}"),
@@ -159,199 +178,12 @@ mod kde {
                 }
             }
         }
-        if let Some(rest) = name.strip_prefix("taskEntry") {
+        if let Some(rest) = name.strip_prefix("windowToDesktop") {
             if let Ok(n) = rest.parse::<u32>() {
-                if (1..=10).contains(&n) {
-                    return Some(invoke_shortcut(
-                        "plasmashell",
-                        &format!("activate task manager entry {n}"),
-                    ));
+                if (1..=20).contains(&n) {
+                    return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
                 }
             }
-        }
-        match name {
-            "walkThroughWindowsAlternative" => {
-                return Some(invoke_shortcut("kwin", "Walk Through Windows Alternative"));
-            }
-            "walkThroughWindowsCurrentApp" => {
-                return Some(invoke_shortcut(
-                    "kwin",
-                    "Walk Through Windows of Current Application",
-                ));
-            }
-            "volumeDown" => return Some(invoke_shortcut("kmix", "decrease_volume")),
-            "volumeUp" => return Some(invoke_shortcut("kmix", "increase_volume")),
-            "muteAudio" => return Some(invoke_shortcut("kmix", "mute")),
-            "brightnessDown" => {
-                return Some(invoke_shortcut(
-                    "org_kde_powerdevil",
-                    "Decrease Screen Brightness",
-                ));
-            }
-            "brightnessUp" => {
-                return Some(invoke_shortcut(
-                    "org_kde_powerdevil",
-                    "Increase Screen Brightness",
-                ));
-            }
-            "windowClose" => return Some(invoke_shortcut("kwin", "Window Close")),
-            "windowToNextDesktop" => {
-                return Some(invoke_shortcut("kwin", "Window to Next Desktop"));
-            }
-            "windowToPreviousDesktop" => {
-                return Some(invoke_shortcut("kwin", "Window to Previous Desktop"));
-            }
-            "windowKeepAbove" => {
-                return Some(invoke_shortcut("kwin", "Window Above Other Windows"));
-            }
-            "windowMaximizeVertical" => {
-                return Some(invoke_shortcut("kwin", "Window Maximize Vertical"));
-            }
-            "windowMaximizeHorizontal" => {
-                return Some(invoke_shortcut("kwin", "Window Maximize Horizontal"));
-            }
-            "screenOff" => {
-                return Some(invoke_shortcut("org_kde_powerdevil", "Turn Off Screen"));
-            }
-            "launchKrunner" => {
-                return Some(invoke_shortcut("org_kde_krunner_desktop", "_launch"));
-            }
-            "launchSystemMonitor" => {
-                return Some(invoke_shortcut(
-                    "org_kde_plasma_systemmonitor_desktop",
-                    "_launch",
-                ));
-            }
-            "manageActivities" => {
-                return Some(invoke_shortcut("plasmashell", "manage activities"));
-            }
-            "nextActivity" => {
-                return Some(invoke_shortcut("plasmashell", "next activity"));
-            }
-            "previousActivity" => {
-                return Some(invoke_shortcut("plasmashell", "previous activity"));
-            }
-            "muteMicrophone" => {
-                return Some(invoke_shortcut("kmix", "mic_mute"));
-            }
-            "showDisplayConfig" => {
-                return Some(invoke_shortcut("org_kde_kscreen_desktop", "ShowOSD"));
-            }
-            "toggleTouchpad" => {
-                return Some(invoke_shortcut(
-                    "org_kde_touchpadshortcuts_desktop",
-                    "ToggleTouchpad",
-                ));
-            }
-            "lockSession" => {
-                return Some(invoke_shortcut("ksmserver", "Lock Session"));
-            }
-            "logout" => {
-                return Some(invoke_shortcut("ksmserver", "Log Out"));
-            }
-            "logoutWithoutConfirmation" => {
-                return Some(invoke_shortcut("ksmserver", "Log Out Without Confirmation"));
-            }
-            "increaseKeyboardBrightness" => {
-                return Some(invoke_shortcut(
-                    "org_kde_powerdevil",
-                    "Increase Keyboard Brightness",
-                ));
-            }
-            "decreaseKeyboardBrightness" => {
-                return Some(invoke_shortcut(
-                    "org_kde_powerdevil",
-                    "Decrease Keyboard Brightness",
-                ));
-            }
-            "toggleKeyboardBacklight" => {
-                return Some(invoke_shortcut(
-                    "org_kde_powerdevil",
-                    "Toggle Keyboard Backlight",
-                ));
-            }
-            "activateApplicationLauncher" => {
-                return Some(invoke_shortcut(
-                    "plasmashell",
-                    "activate application launcher",
-                ));
-            }
-            "showDesktop" => {
-                return Some(invoke_shortcut("kwin", "Show Desktop"));
-            }
-            "maximizeWindow" => {
-                return Some(invoke_shortcut("kwin", "Window Maximize"));
-            }
-            "minimizeWindow" => {
-                return Some(invoke_shortcut("kwin", "Window Minimize"));
-            }
-            "moveWindow" => {
-                return Some(invoke_shortcut("kwin", "Window Move"));
-            }
-            "windowToNextScreen" => {
-                return Some(invoke_shortcut("kwin", "Window to Next Screen"));
-            }
-            "windowToPreviousScreen" => {
-                return Some(invoke_shortcut("kwin", "Window to Previous Screen"));
-            }
-            "quickTileWindowTop" => {
-                return Some(invoke_shortcut("kwin", "Window Quick Tile Top"));
-            }
-            "quickTileWindowBottom" => {
-                return Some(invoke_shortcut("kwin", "Window Quick Tile Bottom"));
-            }
-            "quickTileWindowLeft" => {
-                return Some(invoke_shortcut("kwin", "Window Quick Tile Left"));
-            }
-            "quickTileWindowRight" => {
-                return Some(invoke_shortcut("kwin", "Window Quick Tile Right"));
-            }
-            "toggleNightColor" => {
-                return Some(invoke_shortcut("kwin", "Toggle Night Color"));
-            }
-            "toggleGridView" => {
-                return Some(invoke_shortcut("kwin", "Grid View"));
-            }
-            "toggleOverview" => {
-                return Some(invoke_shortcut("kwin", "Overview"));
-            }
-            "togglePresentWindowsAllDesktops" => {
-                return Some(invoke_shortcut("kwin", "ExposeAll"));
-            }
-            "togglePresentWindowsCurrentDesktop" => {
-                return Some(invoke_shortcut("kwin", "Expose"));
-            }
-            "windowMenu" => {
-                return Some(invoke_shortcut("kwin", "Window Operations Menu"));
-            }
-            "zoomIn" => {
-                return Some(invoke_shortcut("kwin", "view_zoom_in"));
-            }
-            "zoomOut" => {
-                return Some(invoke_shortcut("kwin", "view_zoom_out"));
-            }
-            "zoomActualSize" => {
-                return Some(invoke_shortcut("kwin", "view_actual_size"));
-            }
-            "killWindow" => {
-                return Some(invoke_shortcut("kwin", "Kill Window"));
-            }
-            "windowFullscreen" => {
-                return Some(invoke_shortcut("kwin", "Window Fullscreen"));
-            }
-            "windowOnAllDesktops" => {
-                return Some(invoke_shortcut("kwin", "Window On All Desktops"));
-            }
-            _ => {}
-        }
-        if name == "showClipboardHistory" {
-            return Some(SysAction::Dbus(DbusCall {
-                destination: "org.kde.plasmashell".into(),
-                path: "/klipper".into(),
-                interface: Some("org.kde.klipper.klipper".into()),
-                method: "showKlipperPopupMenu".into(),
-                args: vec![],
-            }));
         }
         None
     }
@@ -359,7 +191,7 @@ mod kde {
 
 #[cfg(test)]
 mod tests {
-    use super::{DbusArg, SysAction, resolve_app, resolve_for_desktop};
+    use super::{DbusArg, SysAction, kde_shortcut, resolve_app, resolve_for_desktop};
     use crate::platform::linux::Desktop;
 
     #[test]
@@ -415,72 +247,30 @@ mod tests {
     }
 
     #[test]
-    fn volume_and_window_actions_resolve_via_kglobalaccel() {
-        let Some(SysAction::Dbus(call)) =
-            resolve_for_desktop("walkThroughWindowsAlternative", &Desktop::Kde)
+    fn window_to_desktop_and_kde_shortcuts_use_kglobalaccel() {
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("windowToDesktop3", &Desktop::Kde)
         else {
-            panic!("walkThroughWindowsAlternative did not resolve to a DBus action");
-        };
-        assert_eq!(call.path, "/component/kwin");
-        assert!(matches!(
-            call.args.as_slice(),
-            [DbusArg::Str(s)] if s == "Walk Through Windows Alternative"
-        ));
-
-        let Some(SysAction::Dbus(call)) =
-            resolve_for_desktop("walkThroughWindowsCurrentApp", &Desktop::Kde)
-        else {
-            panic!("walkThroughWindowsCurrentApp did not resolve to a DBus action");
-        };
-        assert_eq!(call.path, "/component/kwin");
-        assert!(matches!(
-            call.args.as_slice(),
-            [DbusArg::Str(s)] if s == "Walk Through Windows of Current Application"
-        ));
-
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("volumeUp", &Desktop::Kde) else {
-            panic!("volumeUp did not resolve to a DBus action");
+            panic!("windowToDesktop3 did not resolve to a DBus action");
         };
         assert_eq!(call.destination, "org.kde.kglobalaccel");
-        assert_eq!(call.path, "/component/kmix");
+        assert_eq!(call.path, "/component/kwin");
         assert_eq!(
             call.interface.as_deref(),
             Some("org.kde.kglobalaccel.Component")
         );
         assert_eq!(call.method, "invokeShortcut");
-        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "increase_volume"));
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window to Desktop 3"));
 
-        let Some(SysAction::Dbus(call)) =
-            resolve_for_desktop("windowMaximizeVertical", &Desktop::Kde)
-        else {
-            panic!("windowMaximizeVertical did not resolve to a DBus action");
+        let Some(SysAction::Dbus(call)) = kde_shortcut("org_kde_powerdevil/Turn Off Screen") else {
+            panic!("kde shortcut did not resolve to a DBus action");
         };
-        assert_eq!(call.path, "/component/kwin");
-        assert!(
-            matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Maximize Vertical")
-        );
+        assert_eq!(call.path, "/component/org_kde_powerdevil");
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Turn Off Screen"));
+        assert!(kde_shortcut("Turn Off Screen").is_none());
 
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("windowToNextDesktop", &Desktop::Kde)
-        else {
-            panic!("windowToNextDesktop did not resolve to a DBus action");
-        };
-        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window to Next Desktop"));
-
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("windowKeepAbove", &Desktop::Kde)
-        else {
-            panic!("windowKeepAbove did not resolve to a DBus action");
-        };
-        assert!(
-            matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window Above Other Windows")
-        );
-
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("taskEntry3", &Desktop::Kde) else {
-            panic!("taskEntry3 did not resolve to a DBus action");
-        };
-        assert_eq!(call.path, "/component/plasmashell");
-        assert!(
-            matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "activate task manager entry 3")
-        );
+        for removed in ["taskEntry1", "lockSession", "volumeUp", "screenOff"] {
+            assert!(resolve_for_desktop(removed, &Desktop::Kde).is_none());
+        }
     }
 }
 

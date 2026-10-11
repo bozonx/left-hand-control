@@ -96,7 +96,7 @@ docs/                         # slint-dev-linux.md, windows-testing.md
 
 **Popups.** `SLINT_SHELL_POPUPS=winit` (default) shows borderless winit windows in-process; `auto` uses Spell layer-shell when the compositor supports `zwlr_layer_shell_v1` and falls back to winit otherwise; `spell` requires layer-shell. Popup data and key handling live in `popup_model.rs` so both paths behave identically.
 
-**Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `cmd:<id>`, `sys:<id>`, `app:<id>`, `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them through the `Action` type in `lhc_core::profile::actions`, not ad-hoc string handling.
+**Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `cmd:<id>`, `sys:<id>` (only `switchDesktopN`, `switchLayoutN`, `windowToDesktopN`), `app:<id>`, `kde:<component>/<shortcut>` (any KDE global shortcut via kglobalaccel), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them through the `Action` type in `lhc_core::profile::actions`, not ad-hoc string handling.
 
 ### Where does a change go?
 
@@ -137,7 +137,8 @@ docs/                         # slint-dev-linux.md, windows-testing.md
 | Key interception (evdev+uinput) | ✅ | ✅ | ✅ | ✅ | ❌ stub | ❌ stub |
 | Literal text (xdg-desktop-portal) | ✅ | ✅ | ✅ | ⚠ if portal present | ❌ | ❌ |
 | Layout detection | ✅ DBus `org.kde.keyboard` | 🚧 | 🚧 | 🚧 | 🚧 | 🚧 |
-| System actions (`switchDesktopN`) | ✅ KWin DBus | 🚧 | 🚧 | 🚧 | ❌ | ❌ |
+| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`) | ✅ KWin DBus | 🚧 | 🚧 | 🚧 | ❌ | ❌ |
+| KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
 | Layer-shell popups (Spell) | ✅ | ❌ winit fallback | ✅ not accepted | ❌ winit | — | — |
 
 🚧 = skeleton module returning `Ok(None)`/`None` with a planned-implementation note; ❌ stub = explicit "not implemented" error. Both compile and are safe to ship.

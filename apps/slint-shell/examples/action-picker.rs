@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .map(|entry| entry.count)
             .collect::<Vec<_>>(),
-        [48, 9, 35, 29, 36, 44, 5, 69, 0, 0, 0, 0, 0, 0, 0]
+        [48, 9, 35, 29, 36, 44, 5, 69, 0, 0, 0, 0, 0, 0, 0, 0]
     );
     picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("KeyA".into());
     picker.invoke_refresh();
     assert_eq!(picker.get_value_category(), PickerCategory::Letters);
-    picker.set_query("громкость".into());
+    picker.set_query("рабочий стол".into());
     picker.invoke_refresh();
     assert!(picker.get_items().row_count() >= 2);
     picker.invoke_select_behavior(2);
@@ -232,6 +232,7 @@ fn parse_category(name: &str) -> Result<PickerCategory, String> {
         "commands" => C::Commands,
         "app" => C::App,
         "system-actions" => C::SystemActions,
+        "kde-shortcuts" => C::KdeShortcuts,
         "text" => C::Text,
         "pause" => C::Pause,
         other => return Err(format!("unknown picker category: {other}")),

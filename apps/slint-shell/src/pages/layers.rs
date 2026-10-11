@@ -20,10 +20,19 @@ use std::{collections::HashMap, rc::Rc};
 
 /// Display names of catalog actions (macros, commands, built-ins).
 fn action_names(ui: &SettingsWindow, config: &ConfigDocument) -> HashMap<String, String> {
-    actions::catalog(&config.config())
+    let mut names: HashMap<String, String> = actions::catalog(&config.config())
         .into_iter()
         .filter_map(|entry| Some((entry.action.format()?, action_label(ui, entry.name)?)))
-        .collect()
+        .collect();
+    super::picker::KDE_SHORTCUTS.with(|cache| {
+        names.extend(
+            cache
+                .borrow()
+                .iter()
+                .map(|shortcut| (shortcut.value.clone(), shortcut.label.clone())),
+        );
+    });
+    names
 }
 
 /// How a keymap value is shown: `None` no entry, `Some(None)` swallow.
@@ -41,6 +50,12 @@ fn assignment(
             let kind = action_kind(action);
             let label = match actions::Action::parse(Some(action)) {
                 actions::Action::Text(text) => text,
+                actions::Action::KdeShortcut(id) => {
+                    names.get(action).cloned().unwrap_or_else(|| {
+                        actions::kde_shortcut_parts(&id)
+                            .map_or(id.clone(), |(_, shortcut)| shortcut.to_owned())
+                    })
+                }
                 _ => names.get(action).cloned().unwrap_or_else(|| action.clone()),
             };
             (Assignment::Action, label, kind)
@@ -739,7 +754,10 @@ mod tests {
         }
         let win = extra_entries(&layout.layer_keymaps["win"]);
         assert_eq!(win.len(), 3);
-        assert!(win.contains(&("Backspace".into(), Some("sys:screenOff".into()))));
+        assert!(win.contains(&(
+            "Backspace".into(),
+            Some("kde:org_kde_powerdevil/Turn Off Screen".into())
+        )));
         assert!(win.contains(&("F4".into(), Some("F4".into()))));
         assert!(win.contains(&("BracketRight".into(), Some("sys:switchLayout7".into()))));
     }

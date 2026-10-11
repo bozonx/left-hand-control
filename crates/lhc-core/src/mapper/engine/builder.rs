@@ -99,6 +99,17 @@ impl Engine {
                     }
                     continue;
                 }
+                if let Some(rest) = raw.strip_prefix("kde:") {
+                    match system::resolve_kde_shortcut(rest) {
+                        Some(cmd) => steps.push(MacroStepItem::System(cmd)),
+                        None => log::debug!(
+                            "[mapper] macro {} step: KDE shortcut {:?} not available",
+                            id,
+                            rest.trim()
+                        ),
+                    }
+                    continue;
+                }
                 if let Some(rest) = raw.strip_prefix("app:") {
                     match system::resolve_app(rest.trim()) {
                         Some(cmd) => steps.push(MacroStepItem::System(cmd)),
@@ -248,6 +259,19 @@ impl Engine {
                         log::debug!(
                             "[mapper] system fn {:?} not available on this OS/DE ({})",
                             name,
+                            where_
+                        );
+                        return None;
+                    }
+                }
+            }
+            if let Some(rest) = trimmed.strip_prefix("kde:") {
+                match system::resolve_kde_shortcut(rest) {
+                    Some(cmd) => return Some(ActionDef::System(cmd)),
+                    None => {
+                        log::debug!(
+                            "[mapper] KDE shortcut {:?} not available ({})",
+                            rest.trim(),
                             where_
                         );
                         return None;

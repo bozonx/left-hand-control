@@ -1418,6 +1418,11 @@ impl Engine {
                 out.push(Out::RunSystem(app));
                 available = true;
             }
+        } else if let Some(rest) = action.trim().strip_prefix("kde:") {
+            if let Some(sys) = super::system::resolve_kde_shortcut(rest) {
+                out.push(Out::RunSystem(sys));
+                available = true;
+            }
         }
         if !available {
             crate::events::emit(crate::events::CoreEvent::CommandFinished {

@@ -48,7 +48,7 @@ commands:
 quickActions:
   - id: qa1
     name: " Lock "
-    action: sys:lockSession
+    action: kde:ksmserver/Lock Session
     icon: " "
 quickActionPages:
   - id: qap1

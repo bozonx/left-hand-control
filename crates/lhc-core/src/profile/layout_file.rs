@@ -587,7 +587,7 @@ commands:
     linux: " playerctl play-pause "
 quickActions:
   - name: Lock
-    action: sys:lockSession
+    action: kde:ksmserver/Lock Session
 emojiPages:
   - name: Faces
     cells: { KeyQ: "😀", Other: "x" }

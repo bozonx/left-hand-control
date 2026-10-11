@@ -284,6 +284,15 @@ fn validate_action(
         }
         return;
     }
+    if let Some(id) = action.strip_prefix("kde:") {
+        let id = id.trim();
+        if crate::profile::actions::kde_shortcut_parts(id).is_none() {
+            errors.push(format!(
+                "{where_}: invalid KDE shortcut \"{id}\", expected component/shortcut"
+            ));
+        }
+        return;
+    }
     if explicit_text(action).is_some() {
         return;
     }

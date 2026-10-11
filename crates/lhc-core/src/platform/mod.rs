@@ -24,6 +24,8 @@
 #[cfg(target_os = "linux")]
 pub mod file_chooser;
 #[cfg(target_os = "linux")]
+pub mod kde_shortcuts;
+#[cfg(target_os = "linux")]
 pub mod linux;
 
 #[cfg(target_os = "windows")]
