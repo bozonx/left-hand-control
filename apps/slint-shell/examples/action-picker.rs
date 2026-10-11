@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .map(|entry| entry.count)
             .collect::<Vec<_>>(),
-        [9, 48, 11, 27, 24, 23, 17, 5, 25, 0, 0, 0, 0, 0, 0, 0]
+        [48, 9, 35, 27, 23, 17, 5, 25, 0, 0, 0, 0, 0, 0, 0]
     );
     picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());
@@ -223,7 +223,6 @@ fn parse_category(name: &str) -> Result<PickerCategory, String> {
         "letters" => C::Letters,
         "control-keys" => C::ControlKeys,
         "navigation" => C::Navigation,
-        "function-keys" => C::FunctionKeys,
         "media" => C::Media,
         "system-keys" => C::SystemKeys,
         "mouse" => C::Mouse,

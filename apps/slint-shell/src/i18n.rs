@@ -234,6 +234,10 @@ pub enum Msg {
     /// Menu actions run through the mapper, which is stopped.
     MapperRequired,
     CommandStarted(String),
+    CommandHelpLinux,
+    CommandHelpWindows,
+    CommandHelpMacos,
+
     CommandDirectoryMissing,
     ScriptNotExecutable,
     ChooseCommandScript,
@@ -341,6 +345,9 @@ impl Msg {
                 empty(),
                 0,
             ),
+            Self::CommandHelpLinux => ("command-help-linux", empty(), 0),
+            Self::CommandHelpWindows => ("command-help-windows", empty(), 0),
+            Self::CommandHelpMacos => ("command-help-macos", empty(), 0),
             Self::CommandStarted(name) => ("command-started", name.clone(), 0),
             Self::CommandDirectoryMissing => ("command-directory-missing", empty(), 0),
             Self::ScriptNotExecutable => ("script-not-executable", empty(), 0),

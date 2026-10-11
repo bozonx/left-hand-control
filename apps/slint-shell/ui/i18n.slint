@@ -11,6 +11,10 @@ export global Locale {
     in-out property <bool> english: false;
 
     public pure function text(m: Message) -> string {
+        if m.id == "command-help-linux" { return @tr("Commands run with sh -lc in the background. The mapper does not wait for completion or collect output. An empty name uses the command itself as its label. The working directory defaults to your home folder; scripts need execute permission. Command execution must be enabled in settings."); }
+        if m.id == "command-help-windows" { return @tr("The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on Windows."); }
+        if m.id == "command-help-macos" { return @tr("The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on macOS."); }
+
         if m.id == "layout-discarded" { return @tr("Changes to layout “{}” discarded", m.arg); }
         if m.id == "copied" { return @tr("Copied to clipboard"); }
         if m.id == "layout-created" { return @tr("Layout “{}” created", m.arg); }

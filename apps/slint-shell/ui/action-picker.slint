@@ -19,7 +19,6 @@ export component CategoryIcon inherits VerticalLayout {
             : root.category == PickerCategory.letters || root.category == PickerCategory.text ? @image-url("icons/text-cursor-input.svg")
             : root.category == PickerCategory.control-keys ? @image-url("icons/corner-down-left.svg")
             : root.category == PickerCategory.navigation ? @image-url("icons/move.svg")
-            : root.category == PickerCategory.function-keys ? @image-url("icons/square-function.svg")
             : root.category == PickerCategory.media ? @image-url("icons/music-2.svg")
             : root.category == PickerCategory.system-keys ? @image-url("icons/laptop.svg")
             : root.category == PickerCategory.mouse ? @image-url("icons/mouse.svg")
@@ -66,6 +65,7 @@ export global ActionPicker {
     callback edit-command();
     /// Warning about the command draft, such as a script file that cannot run.
     in property <Message> command-notice;
+    in property <Message> command-help;
     callback choose-command-file();
     callback choose-command-directory();
     /// Leave the picker for the Commands tab of the settings.
@@ -90,7 +90,7 @@ export global ActionPicker {
     public pure function is-key(category: PickerCategory) -> bool {
         return category == PickerCategory.modifiers || category == PickerCategory.letters
             || category == PickerCategory.control-keys || category == PickerCategory.navigation
-            || category == PickerCategory.function-keys || category == PickerCategory.media
+            || category == PickerCategory.media
             || category == PickerCategory.system-keys || category == PickerCategory.mouse
             || category == PickerCategory.other-keys;
     }
@@ -105,9 +105,8 @@ export global ActionPicker {
             : category == PickerCategory.letters ? @tr("Letters and digits")
             : category == PickerCategory.control-keys ? @tr("Control keys")
             : category == PickerCategory.navigation ? @tr("Navigation and numpad")
-            : category == PickerCategory.function-keys ? @tr("F1–F24")
             : category == PickerCategory.media ? @tr("Media and launch")
-            : category == PickerCategory.system-keys ? @tr("System and laptop")
+            : category == PickerCategory.system-keys ? @tr("System")
             : category == PickerCategory.mouse ? @tr("Mouse")
             : category == PickerCategory.other-keys ? @tr("Other keys")
             : category == PickerCategory.macros ? @tr("Macros")
@@ -202,7 +201,7 @@ export component PickerOverlay inherits Rectangle {
                     Text { text: @tr("Behavior:"); color: Theme.muted; vertical-alignment: center; }
                     HorizontalBox { spacing: 8px; horizontal-stretch: 1;
                         if ActionPicker.allow-default: Button {
-                            text: ActionPicker.inherit-default ? @tr("Inherit") : ActionPicker.quick-action ? @tr("Empty cell") : ActionPicker.empty-default ? @tr("No separate action") : ActionPicker.hold-layer ? @tr("Activate layer only") : @tr("Unchanged");
+                            text: ActionPicker.inherit-default ? @tr("Inherit") : ActionPicker.quick-action ? @tr("Empty cell") : ActionPicker.empty-default ? @tr("No separate action") : ActionPicker.hold-layer ? @tr("Activate layer only") : @tr("Do not process");
                             primary: ActionPicker.behavior == 0;
                             clicked => { ActionPicker.select-behavior(0); }
                         }
@@ -220,9 +219,6 @@ export component PickerOverlay inherits Rectangle {
                     if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
                     LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
                     Button { text: ActionPicker.capturing ? @tr("Stop") : @tr("Capture"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
-                }
-                if ActionPicker.behavior == 2 && ActionPicker.value-category != PickerCategory.commands: HorizontalBox {
-                    padding: 0px; spacing: 8px; vertical-stretch: 0;
                     InfoTip { text: ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
                 }
                 if ActionPicker.behavior == 2 && ActionPicker.value-category == PickerCategory.commands && !ActionPicker.commands-enabled: Text { text: ActionPicker.command-name != "" ? ActionPicker.command-name : ActionPicker.command-script; color: Theme.text; wrap: word-wrap; }
@@ -241,8 +237,8 @@ export component PickerOverlay inherits Rectangle {
                                     padding: 0px; padding-bottom: 4px;
                                     if (!ActionPicker.command-only || commands) && (!commands || ActionPicker.commands-enabled): VerticalBox { padding: 0px;
                                     // Section headings only when keys and actions share the sidebar.
-                                    if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.modifiers || entry.category == PickerCategory.macros): Text {
-                                        text: entry.category == PickerCategory.modifiers ? @tr("Keys") : @tr("Actions");
+                                    if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.letters || entry.category == PickerCategory.macros): Text {
+                                        text: entry.category == PickerCategory.letters ? @tr("Keys") : @tr("Actions");
                                         color: Theme.muted; font-size: 11px; font-weight: 700;
                                     }
                                     if ActionPicker.is-key(entry.category) || (!ActionPicker.key-only && !ActionPicker.hold-action && (entry.category != PickerCategory.pause || ActionPicker.macro-step)): CategoryButton {
@@ -256,19 +252,22 @@ export component PickerOverlay inherits Rectangle {
                     catalog := VerticalBox { padding: 0px; min-width: 0px; horizontal-stretch: 1;
                         private property <int> columns: ActionPicker.query == "" && ActionPicker.is-key(ActionPicker.category) ? 4 : 2;
                         if ActionPicker.query == "" && ActionPicker.category == PickerCategory.text: VerticalBox { padding: 0px;
-                            Text { text: @tr("Literal text (text: prefix is added automatically)"); color: Theme.muted; wrap: word-wrap; }
+                            HorizontalBox { vertical-stretch: 0;
+                                Text { text: @tr("Text to type when the action is invoked:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                                InfoTip { text: @tr("Enter literal text without the text: prefix. Line breaks, spaces and tabs are preserved. On Linux, text is inserted into the active application via the desktop portal; permission may be required. Text injection by the mapper is not implemented on Windows or macOS."); }
+                            }
                             TextEdit { text: ActionPicker.text-content; edited => { ActionPicker.touched = true; ActionPicker.value = "text:" + self.text; ActionPicker.refresh(); } }
                         }
                         if ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
-                            LineEdit { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name"); edited => { ActionPicker.edit-command(); } }
-                            TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; placeholder-text: @tr("Shell command or path to a script, e.g. playerctl play-pause"); edited => { ActionPicker.edit-command(); } }
-                            HorizontalBox { padding: 0px; spacing: 8px;
-                                Text { horizontal-stretch: 1; text: @tr("Runs with sh -lc in the background; the result is not awaited."); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                            HorizontalBox { vertical-stretch: 0;
+                                LineEdit { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name (optional)"); edited => { ActionPicker.edit-command(); } }
+                                InfoTip { text: Locale.text(ActionPicker.command-help); }
                                 Button { horizontal-stretch: 0; text: @tr("Choose script…"); clicked => { ActionPicker.choose-command-file(); } }
                             }
+                            TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; placeholder-text: @tr("Shell command or path to a script, e.g. playerctl play-pause"); edited => { ActionPicker.edit-command(); } }
                             if ActionPicker.command-notice.id != "": Text { text: Locale.text(ActionPicker.command-notice); color: Theme.warning; wrap: word-wrap; }
                             HorizontalBox { padding: 0px; spacing: 8px;
-                                LineEdit { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (optional, home by default)"); edited => { ActionPicker.edit-command(); } }
+                                LineEdit { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (home by default)"); edited => { ActionPicker.edit-command(); } }
                                 Button { horizontal-stretch: 0; text: @tr("Choose folder…"); clicked => { ActionPicker.choose-command-directory(); } }
                             }
                         }

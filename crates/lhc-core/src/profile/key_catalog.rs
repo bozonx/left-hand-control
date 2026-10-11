@@ -4,18 +4,6 @@
 /// Key groups in picker order; the shell maps each index to a
 /// `PickerCategory`.
 pub const CATEGORIES: &[&[&str]] = &[
-    // Modifiers.
-    &[
-        "ShiftLeft",
-        "ShiftRight",
-        "ControlLeft",
-        "ControlRight",
-        "AltLeft",
-        "AltRight",
-        "MetaLeft",
-        "MetaRight",
-        "CapsLock",
-    ],
     // Letters, digits and symbols of the main block.
     &[
         "KeyA",
@@ -67,6 +55,18 @@ pub const CATEGORIES: &[&[&str]] = &[
         "Slash",
         "IntlBackslash",
     ],
+    // Modifiers.
+    &[
+        "ShiftLeft",
+        "ShiftRight",
+        "ControlLeft",
+        "ControlRight",
+        "AltLeft",
+        "AltRight",
+        "MetaLeft",
+        "MetaRight",
+        "CapsLock",
+    ],
     // Control keys.
     &[
         "Escape",
@@ -80,6 +80,30 @@ pub const CATEGORIES: &[&[&str]] = &[
         "PrintScreen",
         "ScrollLock",
         "Pause",
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14",
+        "F15",
+        "F16",
+        "F17",
+        "F18",
+        "F19",
+        "F20",
+        "F21",
+        "F22",
+        "F23",
+        "F24",
     ],
     // Navigation and numpad.
     &[
@@ -110,11 +134,6 @@ pub const CATEGORIES: &[&[&str]] = &[
         "NumpadComma",
         "NumpadEqual",
         "NumpadEnter",
-    ],
-    // Function keys.
-    &[
-        "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14",
-        "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24",
     ],
     // Media, browser and launch keys.
     &[
@@ -252,7 +271,7 @@ mod tests {
     fn complete_catalog_has_unique_key_codes() {
         assert_eq!(
             CATEGORIES.iter().map(|c| c.len()).collect::<Vec<_>>(),
-            [9, 48, 11, 27, 24, 23, 17, 8, 25]
+            [48, 9, 35, 27, 23, 17, 8, 25]
         );
         let keys: Vec<_> = CATEGORIES
             .iter()

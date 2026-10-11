@@ -23,11 +23,10 @@ use std::{cell::RefCell, rc::Rc};
 
 /// Picker category of each group of [`CATEGORIES`], in the same order.
 const KEY_CATEGORIES: [PickerCategory; CATEGORIES.len()] = [
-    PickerCategory::Modifiers,
     PickerCategory::Letters,
+    PickerCategory::Modifiers,
     PickerCategory::ControlKeys,
     PickerCategory::Navigation,
-    PickerCategory::FunctionKeys,
     PickerCategory::Media,
     PickerCategory::SystemKeys,
     PickerCategory::Mouse,
@@ -247,6 +246,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             command: None,
         };
         let picker = ui.global::<ActionPicker>();
+        picker.set_command_help(if cfg!(target_os = "windows") {
+            Msg::CommandHelpWindows.to_ui()
+        } else if cfg!(target_os = "macos") {
+            Msg::CommandHelpMacos.to_ui()
+        } else {
+            Msg::CommandHelpLinux.to_ui()
+        });
         picker.set_commands_enabled(doc.read().settings().commands_enabled);
         picker.set_command_only(target == PickerTarget::Command);
         picker.set_command_name("".into());
@@ -993,10 +999,10 @@ mod tests {
         assert_eq!(category_for_value("Ctrl+KeyV"), PickerCategory::Letters);
         assert_eq!(
             category_for_value("ShiftLeft+F13"),
-            PickerCategory::FunctionKeys
+            PickerCategory::ControlKeys
         );
         assert_eq!(category_for_value("KeyV"), PickerCategory::Letters);
-        assert_eq!(category_for_value("F13"), PickerCategory::FunctionKeys);
+        assert_eq!(category_for_value("F13"), PickerCategory::ControlKeys);
         assert_eq!(category_for_value("MicMute"), PickerCategory::Media);
         assert_eq!(
             category_for_value("TouchpadToggle"),

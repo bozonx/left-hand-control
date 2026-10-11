@@ -2237,3 +2237,27 @@ msgid_plural "{n} windows"
 msgstr[0] "{n} окно"
 msgstr[1] "{n} окна"
 msgstr[2] "{n} окон"
+
+msgid "Do not process"
+msgstr "Не обрабатывать"
+
+msgid "Command name (optional)"
+msgstr "Название команды (необязательно)"
+
+msgid "Working directory (home by default)"
+msgstr "Рабочая папка (по умолчанию домашняя)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "Текст который будет напечатан при вызове действия:"
+
+msgid "Enter literal text without the text: prefix. Line breaks, spaces and tabs are preserved. On Linux, text is inserted into the active application via the desktop portal; permission may be required. Text injection by the mapper is not implemented on Windows or macOS."
+msgstr "Введите текст без префикса text:. Переносы строк, пробелы и табуляция сохраняются. На Linux текст вставляется в активное приложение через портал рабочего стола; может потребоваться разрешение. Ввод текста через mapper на Windows и macOS пока не реализован."
+
+msgid "Commands run with sh -lc in the background. The mapper does not wait for completion or collect output. An empty name uses the command itself as its label. The working directory defaults to your home folder; scripts need execute permission. Command execution must be enabled in settings."
+msgstr "Команды запускаются через sh -lc в фоне. Mapper не ждёт завершения и не собирает вывод. Если название пустое, используется сама команда. По умолчанию рабочая папка — домашняя; скрипту нужны права на выполнение. Выполнение команд должно быть включено в настройках."
+
+msgid "The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on Windows."
+msgstr "Название необязательно: если оно пустое, используется сама команда. Выполнение команд через mapper на Windows пока не реализовано."
+
+msgid "The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on macOS."
+msgstr "Название необязательно: если оно пустое, используется сама команда. Выполнение команд через mapper на macOS пока не реализовано."
