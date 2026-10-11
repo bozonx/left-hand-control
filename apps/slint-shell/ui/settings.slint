@@ -28,7 +28,6 @@ export component SettingsWindow inherits Window {
     in-out property <Page> page: Page.layouts;
     forward-focus: shortcut-focus;
     private property <string> test-text;
-    private property <bool> editor-open: false;
     private property <bool> confirm-discard: false;
     private property <bool> confirm-close: false;
     property <bool> shell-problem: NotificationCenter.is-problem(AppState.status.id);
@@ -48,12 +47,23 @@ export component SettingsWindow inherits Window {
         : root.menus-problem ? MenuEditor.status
         : root.settings-problem ? SettingsEditor.message : {};
 
+    public function close-layout() {
+        InlineEditors.commit-revision += 1;
+        MacroEditor.flush-pending();
+        if LayoutLibrary.dirty || MacroEditor.has-errors {
+            root.confirm-close = true;
+        } else {
+            LayoutLibrary.editor-open = false;
+            root.navigate(Page.layouts, MenuKind.emoji);
+        }
+    }
+
     public function navigate(page: Page, kind: MenuKind) {
         InlineEditors.commit-revision += 1;
         DragDrop.reset();
         if page == Page.layouts { LayoutLibrary.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
-        if page != Page.layouts && page != Page.settings { root.editor-open = true; }
+        if page != Page.layouts && page != Page.settings { LayoutLibrary.editor-open = true; }
         root.page = page;
         shortcut-focus.focus();
     }
@@ -69,7 +79,7 @@ export component SettingsWindow inherits Window {
         focus-on-tab-navigation: false;
         init => { self.focus(); }
         capture-key-pressed(event) => {
-            if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && root.editor-open {
+            if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && LayoutLibrary.editor-open {
                 InlineEditors.commit-revision += 1; MacroEditor.flush-pending();
                 if LayoutLibrary.dirty { LayoutLibrary.save-current(); }
                 return accept;
@@ -125,7 +135,7 @@ export component SettingsWindow inherits Window {
                 }
             }
             Rectangle { height: 1px; background: Theme.divider; }
-            if root.editor-open: Rectangle {
+            if LayoutLibrary.editor-open: Rectangle {
                 height: 50px + (editor-tabs.viewport-width > editor-tabs.visible-width ? Theme.scrollbar-size + Theme.scrollbar-gap : 0px);
                 background: Theme.card;
                 HorizontalLayout {
@@ -154,10 +164,10 @@ export component SettingsWindow inherits Window {
                             NavTab { icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }
-                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close layout"); clicked => { InlineEditors.commit-revision += 1; MacroEditor.flush-pending(); if LayoutLibrary.dirty || MacroEditor.has-errors { root.confirm-close = true; } else { root.editor-open = false; root.navigate(Page.layouts, MenuKind.emoji); } } } }
+                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close layout"); clicked => { root.close-layout(); } } }
                 }
             }
-            if root.editor-open: Rectangle { height: 1px; background: Theme.divider; }
+            if LayoutLibrary.editor-open: Rectangle { height: 1px; background: Theme.divider; }
             if root.show-active-banner: Rectangle {
                 background: Theme.card;
                 HorizontalLayout {
@@ -205,7 +215,7 @@ export component SettingsWindow inherits Window {
         cancel => { root.confirm-discard = false; root.confirm-close = false; }
         confirm => {
             InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
-            if root.confirm-close && !LayoutLibrary.dirty { root.editor-open = false; root.navigate(Page.layouts, MenuKind.emoji); }
+            if root.confirm-close && !LayoutLibrary.dirty { LayoutLibrary.editor-open = false; root.navigate(Page.layouts, MenuKind.emoji); }
             root.confirm-discard = false; root.confirm-close = false;
         }
     }

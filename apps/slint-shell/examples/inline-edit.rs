@@ -3,7 +3,7 @@ use slint::{ComponentHandle, SharedString};
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 slint::slint! {
-    import { InlineTextField, InlineTextArea, ConfirmDialog, InfoTip, NumericField, InlineEditors } from "../ui/controls.slint";
+    import { InlineTextField, InlineTextArea, ConfirmDialog, InfoTip, NumericInput, InlineEditors } from "../ui/controls.slint";
     export component ControlsWindow inherits Window {
         width: 520px; height: 320px;
         in-out property <string> value: "Original";
@@ -14,7 +14,7 @@ slint::slint! {
         public function edit-description() { description-field.begin(); }
         public function set-window-active(active: bool) { InlineEditors.window-active = active; }
         out property <bool> editing: field.editing;
-        out property <int> number: numeric.value;
+        out property <int> number: numeric.text.to-float();
         // Stands in for the settings window's root FocusScope that takes focus on empty clicks.
         FocusScope { }
         VerticalLayout { padding: 20px; spacing: 12px; alignment: start;
@@ -22,7 +22,7 @@ slint::slint! {
             description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; } }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }
-        numeric := NumericField { x: 300px; y: 260px; step-size: 10; value: 100; }
+        numeric := NumericInput { x: 300px; y: 260px; step: 10; text: "100"; }
         if root.confirming: ConfirmDialog {
             title: "Delete?"; body: "Confirm deletion."; confirm-text: "Delete";
             confirm => { root.confirmed = true; root.confirming = false; }

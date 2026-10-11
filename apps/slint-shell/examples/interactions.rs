@@ -93,6 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     drag.invoke_reset();
     let settings = ui.global::<SettingsEditor>();
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
+    assert!(!ui.global::<LayoutLibrary>().get_editor_open());
     settings.set_hold_timeout("not a number".into());
     settings.invoke_save();
     assert_eq!(settings.get_message().id, "timeout-invalid");
@@ -213,6 +214,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_save_as_open());
     assert!(!library.get_dirty());
     assert_eq!(library.get_current_label(), "Test layout");
+    assert!(library.get_editor_open());
+    ui.invoke_close_layout();
+    assert!(!library.get_editor_open());
+    assert_eq!(ui.get_page(), Page::Layouts);
+    assert_eq!(library.get_current_label(), "Test layout");
+    ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
+    assert!(library.get_editor_open());
     ui.global::<KeyEditor>().invoke_edit(33);
     picker.invoke_select_behavior(2);
     picker.set_value("text:Changed".into());

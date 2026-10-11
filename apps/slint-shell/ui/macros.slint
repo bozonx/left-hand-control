@@ -6,7 +6,7 @@ import { CategoryIcon } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerCategory, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, NumericField, NumericInput } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, NumericInput } from "controls.slint";
 import { Button, LineEdit } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
@@ -86,13 +86,12 @@ component StepRow inherits HorizontalLayout {
             alignment: start;
             CategoryIcon { category: PickerCategory.pause; }
             Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
-            NumericField {
+            NumericInput {
                 field-width: 110px;
-                value: root.step.pause-ms.to-float();
-                step-size: 10;
-                wheel-on-hover: true;
-                accessible-label: @tr("Pause (ms)");
-                edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, "" + round(value)); }
+                text: root.step.pause-ms;
+                step: 10;
+                label: @tr("Pause (ms)");
+                edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
             }
             Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
         }

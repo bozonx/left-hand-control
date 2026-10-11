@@ -50,6 +50,8 @@ export global LayoutLibrary {
     in-out property <LayoutSource> pending-create-source: LayoutSource.empty;
     in-out property <int> pending-create-copy-index: 0;
     in-out property <PendingLayoutAction> pending-action: PendingLayoutAction.none;
+    /// Whether the working copy is currently open in the editor.
+    in-out property <bool> editor-open: false;
     /// Working copy: the library layout it came from and whether it changed.
     in property <string> current-label;
     in-out property <string> active-label;
@@ -565,7 +567,7 @@ export component LibraryPage inherits VerticalBox {
                 VerticalLayout { padding: 0px; spacing: 0px;
                     for name[index] in LayoutLibrary.names: card := Rectangle {
                         property <bool> active: LayoutLibrary.active-label == name;
-                        property <bool> current: LayoutLibrary.current-label == name;
+                        property <bool> current: LayoutLibrary.editor-open && LayoutLibrary.current-label == name;
                         property <bool> auto: LayoutLibrary.automatic;
                         height: max(132px, card-content.preferred-height + 10px);
                         init => { LayoutLibrary.row-position(index, self.y, self.height); }
