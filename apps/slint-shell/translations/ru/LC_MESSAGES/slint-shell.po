@@ -2300,3 +2300,18 @@ msgstr "Создавайте последовательности сочетан
 
 msgid "Global defaults: step pause {} ms; modifier delay {} ms."
 msgstr "По умолчанию: пауза между шагами {} мс; задержка модификатора {} мс."
+
+msgid "Layout changed on disk"
+msgstr "Раскладка изменена на диске"
+
+msgid "The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do."
+msgstr "Файл раскладки «{}» изменён другой программой после того, как вы её открыли. Ваши правки сохранятся, пока вы не выберете, что делать."
+
+msgid "Load from disk"
+msgstr "Загрузить с диска"
+
+msgid "Save as new…"
+msgstr "Сохранить как новую…"
+
+msgid "Overwrite"
+msgstr "Перезаписать"

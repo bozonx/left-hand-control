@@ -538,22 +538,65 @@ fn create(
     Ok(Msg::LayoutCreated(created))
 }
 
-/// Save the working copy back to its library file.
+/// Layout text as it would be saved, so formatting does not count.
+fn normalized(text: &str) -> Option<String> {
+    layout_file::parse(text)
+        .ok()
+        .flatten()
+        .map(|layout| layout_file::serialize(&layout))
+}
+
+/// Whether saving the working copy as `name` loses nothing on disk: the
+/// file is what the working copy was opened from, or already holds it.
+fn safe_to_save(config: &ConfigDocument, state: &State, name: &str) -> bool {
+    let Ok(disk) = config.paths().load_user_layout(name) else {
+        return false;
+    };
+    let Some(disk_layout) = normalized(&disk) else {
+        return false;
+    };
+    let opened = state
+        .baseline
+        .as_ref()
+        .filter(|(baseline, _)| baseline == name)
+        .map(|(_, text)| text);
+    if opened.is_some_and(|text| *text == disk || normalized(text).as_ref() == Some(&disk_layout)) {
+        return true;
+    }
+    let mut current = config.layout().clone();
+    current.prune_commands();
+    normalized(&layout_file::serialize(&current)).as_ref() == Some(&disk_layout)
+}
+
+/// Save the working copy back to its library file. When the file was
+/// changed elsewhere, ask whether to overwrite, save a copy or reload.
 fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
+    let library = ui.global::<LayoutLibrary>();
     let Some(name) = current_name(&document.read()) else {
-        let library = ui.global::<LayoutLibrary>();
         library.set_save_as_name("".into());
         library.set_save_as_open(true);
         return Ok(Msg::None);
     };
-    let current = document
-        .read()
-        .paths()
-        .load_user_layout(&name)
-        .map_err(io)?;
-    if state.borrow().baseline.as_ref() != Some(&(name.clone(), current)) {
-        return Err(Msg::LibraryChanged);
+    if !safe_to_save(&document.read(), &state.borrow(), &name) {
+        library.set_dialog(LibraryDialog::Conflict);
+        return Ok(Msg::None);
     }
+    write_current(ui, document, state, name)
+}
+
+/// Write the working copy over its library file.
+fn overwrite_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
+    let name = current_name(&document.read()).ok_or(Msg::LibrarySelect)?;
+    ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
+    write_current(ui, document, state, name)
+}
+
+fn write_current(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    name: String,
+) -> Result<Msg, Msg> {
     let text = edit(ui, document, state, |config| {
         config.update_layout(LayoutPreset::prune_commands)?;
         let text = layout_file::serialize(config.layout());
@@ -991,6 +1034,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(on_save_current, |ui, doc, state| report(
         &ui,
         save_current(&ui, doc, state)
+    ));
+    on!(on_overwrite_current, |ui, doc, state| report(
+        &ui,
+        overwrite_current(&ui, doc, state)
     ));
     on!(on_save_as, |ui, doc, state, name| report(
         &ui,

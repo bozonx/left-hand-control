@@ -1,5 +1,7 @@
 use lhc_core::{
-    config_document::ConfigDocument, profile::model::LayoutMode, storage::StoragePaths,
+    config_document::ConfigDocument,
+    profile::{layout_file, model::LayoutMode},
+    storage::StoragePaths,
 };
 use slint::{ComponentHandle, Model};
 use slint_shell::{
@@ -167,6 +169,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_discard_current();
     assert!(!library.get_dirty());
     assert_eq!(document.read().layout(), &saved);
+    // Saving over a file changed elsewhere asks first; formatting alone
+    // does not count as a change.
+    let describe = |description: &str| {
+        document.edit(slint_shell::document::View::Rules, |config| {
+            config.update_layout(|layout| layout.description = Some(description.into()))
+        })
+    };
+    let mut theirs = saved.clone();
+    theirs.description = Some("Theirs".into());
+    let theirs = layout_file::serialize(&theirs);
+    let disk = paths.load_user_layout("Copy")?;
+    paths.save_user_layout("Copy", &format!("# comment\n{disk}"), true)?;
+    describe("Formatting")?;
+    library.invoke_save_current();
+    assert_eq!(library.get_dialog(), LibraryDialog::None);
+    assert!(paths.load_user_layout("Copy")?.contains("Formatting"));
+    describe("Mine")?;
+    paths.save_user_layout("Copy", &theirs, true)?;
+    library.invoke_save_current();
+    assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
+    assert_eq!(paths.load_user_layout("Copy")?, theirs);
+    library.invoke_cancel_dialog();
+    assert!(library.get_dirty());
+    library.invoke_save_current();
+    library.invoke_overwrite_current();
+    assert_eq!(library.get_dialog(), LibraryDialog::None);
+    assert!(paths.load_user_layout("Copy")?.contains("Mine"));
+    assert!(!library.get_dirty());
+    describe("Lost")?;
+    paths.save_user_layout("Copy", &theirs, true)?;
+    library.invoke_save_current();
+    assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
+    library.invoke_cancel_dialog();
+    library.invoke_discard_current();
+    assert_eq!(
+        document.read().layout().description.as_deref(),
+        Some("Theirs")
+    );
+    assert!(!library.get_dirty());
     let choices = ui.global::<ConditionChoices>();
     let app = choices.invoke_add("kate".into(), "A title, with comma".into());
     assert_eq!(choices.invoke_items(app.clone()).row_count(), 2);

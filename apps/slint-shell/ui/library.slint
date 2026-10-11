@@ -87,6 +87,8 @@ export global LayoutLibrary {
     /// Recompute `current-label` and `dirty`.
     callback refresh-context();
     callback save-current();
+    /// Save the working copy over a library file changed elsewhere.
+    callback overwrite-current();
     callback save-as(string);
     /// Fill the rule dialog fields for rule `index` (-1: new rule using `target`).
     callback load-rule(int, int);
@@ -656,7 +658,7 @@ export component LibraryPage inherits VerticalBox {
 }
 
 export component LibraryDialogOverlay inherits Rectangle {
-    if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete && LayoutLibrary.dialog != LibraryDialog.delete-rule: Rectangle {
+    if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete && LayoutLibrary.dialog != LibraryDialog.delete-rule && LayoutLibrary.dialog != LibraryDialog.conflict: Rectangle {
         background: #00000099;
         TouchArea { }
         FocusScope {

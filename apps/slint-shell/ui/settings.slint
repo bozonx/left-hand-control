@@ -219,6 +219,59 @@ export component SettingsWindow inherits Window {
             root.confirm-discard = false; root.confirm-close = false;
         }
     }
+    if LayoutLibrary.dialog == LibraryDialog.conflict: Rectangle {
+        background: #00000099;
+        TouchArea { }
+        FocusScope {
+            focus-on-tab-navigation: false;
+            init => { self.focus(); }
+            key-pressed(event) => {
+                if event.text == Key.Escape { LayoutLibrary.cancel-dialog(); return accept; }
+                return reject;
+            }
+            Rectangle {
+                width: min(560px, root.width - 32px);
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                height: conflict-layout.preferred-height;
+                background: Theme.surface;
+                border-radius: 10px;
+                border-width: 1px;
+                border-color: Theme.border;
+                TouchArea {}
+                conflict-layout := VerticalLayout {
+                    padding: 18px;
+                    spacing: 12px;
+                    Text { text: @tr("Layout changed on disk"); color: Theme.text; font-size: 16px; font-weight: 700; wrap: word-wrap; }
+                    Text {
+                        text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", LayoutLibrary.current-label);
+                        color: Theme.text; wrap: word-wrap;
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: end;
+                        Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
+                        Button {
+                            text: @tr("Load from disk");
+                            clicked => {
+                                LayoutLibrary.cancel-dialog();
+                                InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
+                            }
+                        }
+                        Button {
+                            text: @tr("Save as new…");
+                            clicked => {
+                                LayoutLibrary.cancel-dialog();
+                                LayoutLibrary.save-as-name = LayoutLibrary.suggest-name(LayoutLibrary.current-label);
+                                LayoutLibrary.save-as-open = true;
+                            }
+                        }
+                        Button { text: @tr("Overwrite"); primary: true; clicked => { LayoutLibrary.overwrite-current(); } }
+                    }
+                }
+            }
+        }
+    }
     LibraryDialogOverlay {}
     RuleDialogOverlay {}
     LayerDialogOverlay {}
