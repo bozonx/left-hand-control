@@ -408,6 +408,41 @@ component AutoRuleRow inherits Rectangle {
     DropMarker { width: parent.width; group: 2; index: root.index; row-y: root.absolute-position.y; row-height: root.height; }
 }
 
+/// Shared entry point for common and custom automatic rules.
+component AddRuleButton inherits Rectangle {
+    in property <bool> compact: false;
+    height: button.preferred-height;
+    width: button.preferred-width;
+    function choose(kind: int) {
+        menu.close();
+        if kind == 0 {
+            LayoutLibrary.add-game-rule();
+        } else if kind == 1 {
+            LayoutLibrary.open-rule(-1, -1);
+        } else {
+            LayoutLibrary.open-rule(-1, LayoutLibrary.new-rule-target());
+        }
+    }
+    button := Button {
+        text: root.compact ? "" : @tr("Add rule");
+        icon: root.compact ? @image-url("icons/plus.svg") : @image-url("icons/chevron-down.svg");
+        accessible-label: @tr("Add rule");
+        clicked => { menu.show(); }
+    }
+    menu := PopupWindow {
+        y: root.height + 4px;
+        width: 220px;
+        Rectangle {
+            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
+            VerticalBox { padding: 4px; spacing: 0px;
+                LayoutMenuItem { text: @tr("For games"); clicked => { root.choose(0); } }
+                LayoutMenuItem { text: @tr("For an application"); clicked => { root.choose(1); } }
+                LayoutMenuItem { text: @tr("Custom rule"); clicked => { root.choose(2); } }
+            }
+        }
+    }
+}
+
 /// Automatic mode rules shown next to the library.
 component AutoRulesPanel inherits Rectangle {
     background: Theme.card;
@@ -421,7 +456,7 @@ component AutoRulesPanel inherits Rectangle {
                 InfoTip { text: @tr("Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."); }
             }
             Rectangle { horizontal-stretch: 1; }
-            IconButton { icon: @image-url("icons/plus.svg"); label: @tr("Add rule"); clicked => { LayoutLibrary.open-rule(-1, LayoutLibrary.new-rule-target()); } }
+            AddRuleButton { compact: true; }
         }
         Text {
             vertical-stretch: 0;
@@ -435,15 +470,13 @@ component AutoRulesPanel inherits Rectangle {
             vertical-stretch: 1;
             VerticalLayout { spacing: 6px; alignment: start;
                 if LayoutLibrary.auto-rules.length == 0: VerticalLayout { spacing: 8px;
+                    Text { text: @tr("No rules"); color: Theme.text; font-weight: 600; }
                     Text {
-                        text: @tr("No rules yet: the default layout is always used. Start with a common rule:");
+                        text: @tr("The default layout is always used.");
                         color: Theme.muted; wrap: word-wrap;
                     }
                     HorizontalLayout { alignment: start;
-                        Button { text: @tr("No layout in games"); clicked => { LayoutLibrary.add-game-rule(); } }
-                    }
-                    HorizontalLayout { alignment: start;
-                        Button { text: @tr("No layout in an application…"); clicked => { LayoutLibrary.open-rule(-1, -1); } }
+                        AddRuleButton {}
                     }
                 }
                 for rule[index] in LayoutLibrary.auto-rules: AutoRuleRow {

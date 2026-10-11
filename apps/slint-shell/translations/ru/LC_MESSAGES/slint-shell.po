@@ -1953,14 +1953,20 @@ msgstr "Сейчас: {} (правило {}: {})"
 msgid "Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."
 msgstr "Правила проверяются сверху вниз; первое включённое правило, условия которого выполнены, выбирает раскладку. Если ни одно не подошло, используется раскладка по умолчанию. «Без раскладки» оставляет клавиатуру без обработки — например, в приложении, где раскладка мешает."
 
-msgid "No rules yet: the default layout is always used. Start with a common rule:"
-msgstr "Правил пока нет: всегда используется раскладка по умолчанию. Можно начать с типового правила:"
+msgid "No rules"
+msgstr "Нет правил"
 
-msgid "No layout in games"
-msgstr "Без раскладки в играх"
+msgid "The default layout is always used."
+msgstr "Всегда используется раскладка по умолчанию."
 
-msgid "No layout in an application…"
-msgstr "Без раскладки в приложении…"
+msgid "For games"
+msgstr "Для игр"
+
+msgid "For an application"
+msgstr "Для приложения"
+
+msgid "Custom rule"
+msgstr "Своё правило"
 
 msgid "When no rule matches, the keyboard works without processing."
 msgstr "Если ни одно правило не подошло, клавиатура работает без обработки."
