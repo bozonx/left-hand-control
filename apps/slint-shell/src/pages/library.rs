@@ -518,8 +518,16 @@ fn create(
         LayoutSource::Copy => LibrarySource::Copy(copy_from.as_deref().ok_or(Msg::LibrarySelect)?),
         LayoutSource::Empty => LibrarySource::Empty,
     };
+    let activate_first =
+        slint::Model::row_count(&library.get_names()) == 0 && !library.get_automatic();
     let created = edit(ui, document, state, |config| {
-        config.create_library_layout(name, description, source)
+        let created = config.create_library_layout(name, description, source)?;
+        if activate_first {
+            config.update_settings(|settings| {
+                settings.manual_active_layout_id = Some(user_layout_id(&created));
+            })?;
+        }
+        Ok(created)
     })?;
     let index = slint::Model::iter(&library.get_names())
         .position(|item| item == created)

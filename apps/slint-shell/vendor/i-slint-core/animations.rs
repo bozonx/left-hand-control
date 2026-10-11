@@ -231,6 +231,7 @@ impl Instant {
 pub struct AnimationDriver {
     /// Indicate whether there are any active animations that require a future call to update_animations.
     active_animations: Cell<bool>,
+    animations_enabled: core::pin::Pin<Box<crate::Property<bool>>>,
     global_instant: core::pin::Pin<Box<crate::Property<Instant>>>,
 }
 
@@ -238,6 +239,7 @@ impl Default for AnimationDriver {
     fn default() -> Self {
         AnimationDriver {
             active_animations: Cell::default(),
+            animations_enabled: Box::pin(crate::Property::new(true)),
             global_instant: Box::pin(crate::Property::new_named(
                 Instant::default(),
                 "i_slint_core::AnimationDriver::global_instant",
@@ -281,6 +283,17 @@ crate::thread_local!(
 pub static CURRENT_ANIMATION_DRIVER : AnimationDriver = AnimationDriver::default()
 );
 
+/// Enables or disables UI property transitions on the current event-loop thread.
+/// Changing this also invalidates transitions already in progress.
+pub fn set_animations_enabled(enabled: bool) {
+    CURRENT_ANIMATION_DRIVER.with(|driver| driver.animations_enabled.as_ref().set(enabled));
+}
+
+/// Whether UI transitions are enabled; registers a binding dependency.
+pub fn animations_enabled() -> bool {
+    CURRENT_ANIMATION_DRIVER.with(|driver| driver.animations_enabled.as_ref().get())
+}
+
 /// The current instant that is to be used for animation
 /// using this function register the current binding as a dependency
 pub fn current_tick() -> Instant {
@@ -290,6 +303,9 @@ pub fn current_tick() -> Instant {
 /// Same as [`current_tick`], but also register that one should be running animation
 /// on next frame
 pub fn animation_tick() -> u64 {
+    if !animations_enabled() {
+        return 0;
+    }
     CURRENT_ANIMATION_DRIVER.with(|driver| {
         driver.set_has_active_animations();
         driver.current_tick().0

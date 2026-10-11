@@ -164,7 +164,6 @@ component CategoryButton inherits Rectangle {
         padding-left: 8px; padding-right: 8px; spacing: 7px;
         CategoryIcon { category: root.category; }
         Text { text: root.title; wrap: no-wrap; color: Theme.text; horizontal-stretch: 1; vertical-alignment: center; overflow: elide; }
-        if ActionPicker.is-listed(root.category) && !ActionPicker.is-key(root.category): Text { text: "" + root.count; color: Theme.text; vertical-alignment: center; }
     }
     Tooltip {
         Rectangle {

@@ -21,7 +21,39 @@ fn snapshot(ui: &SettingsWindow, name: &str) {
     }
 }
 
+fn check_first_layout_activation() -> Result<(), Box<dyn std::error::Error>> {
+    for automatic in [false, true] {
+        let dir = tempfile::tempdir()?;
+        let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+        let document = Document::load(paths)?;
+        let ui = SettingsWindow::new()?;
+        bind_document(&ui, &document);
+        let library = ui.global::<LayoutLibrary>();
+        library.invoke_set_automatic(automatic);
+        library.invoke_create("First".into(), "".into(), LayoutSource::Empty, 0);
+        assert_eq!(
+            document
+                .read()
+                .settings()
+                .manual_active_layout_id
+                .as_deref(),
+            if automatic { None } else { Some("user:First") }
+        );
+        library.invoke_create("Second".into(), "".into(), LayoutSource::Empty, 0);
+        assert_eq!(
+            document
+                .read()
+                .settings()
+                .manual_active_layout_id
+                .as_deref(),
+            if automatic { None } else { Some("user:First") }
+        );
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    check_first_layout_activation()?;
     let dir = tempfile::tempdir()?;
     let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
     let document = Document::load(paths.clone())?;
@@ -501,6 +533,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     library.set_active_label("Test layout".into());
     ui.global::<AppState>().set_keyboard_language("EN".into());
+    slint_shell::select_ui_language("ru")?;
     ui.show()?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();
@@ -511,8 +544,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let n = step.get();
         match n {
             -3 => {
-                let position = slint::LogicalPosition::new(100.0, 288.0);
+                let position = slint::LogicalPosition::new(100.0, 249.0);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                assert_eq!(ui.global::<SettingsEditor>().get_tab(), 2);
                 ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
             }
             -2 => {
@@ -532,11 +566,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             2 => { snapshot(&ui, "keyboard-ru"); ui.invoke_navigate(Page::Layouts, MenuKind::Emoji); }
             3 => { snapshot(&ui, "layouts-ru"); ui.invoke_navigate(Page::Rules, MenuKind::Emoji); }
             4 => { snapshot(&ui, "rules-ru"); ui.invoke_navigate(Page::Layers, MenuKind::Emoji); }
-            5 => { snapshot(&ui, "layers-ru"); ui.invoke_navigate(Page::Macros, MenuKind::Emoji); }
+            5 => {
+                ui.global::<MacroEditor>().invoke_add("Shortcut save".into());
+                assert!(ui.global::<LayoutLibrary>().get_dirty());
+                for active in [false, true] {
+                    ui.global::<InlineEditors>().set_window_active(active);
+                    for event in [
+                        slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Control.into() },
+                        slint::platform::WindowEvent::KeyPressed { text: "s".into() },
+                        slint::platform::WindowEvent::KeyReleased { text: "s".into() },
+                        slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Control.into() },
+                    ] { ui.window().dispatch_event(event); }
+                    assert_eq!(ui.global::<LayoutLibrary>().get_dirty(), !active,
+                        "Ctrl+S saves only when the settings window is active: picker={}, rules={:?}, layers={:?}, library={:?}, save-as={}, status={}",
+                        ui.global::<ActionPicker>().get_opened(), ui.global::<RulesEditor>().get_dialog(),
+                        ui.global::<LayersEditor>().get_dialog(), ui.global::<LayoutLibrary>().get_dialog(),
+                        ui.global::<LayoutLibrary>().get_save_as_open(), ui.global::<LayoutLibrary>().get_status().id);
+
+                }
+                snapshot(&ui, "layers-ru"); ui.invoke_navigate(Page::Macros, MenuKind::Emoji); }
             6 => { snapshot(&ui, "macros-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Emoji); }
             7 => { snapshot(&ui, "emoji-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Quick); }
             8 => { snapshot(&ui, "quick-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); }
-            9 => { snapshot(&ui, "settings-commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance_index(1); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
+            9 => { snapshot(&ui, "settings-commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance_index(1); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); slint_shell::select_ui_language("en").unwrap(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
             10 => { snapshot(&ui, "settings-light-en-small");
                 for (x, expected) in [(60.0, Page::Layouts), (170.0, Page::Settings)] {
                     let position = slint::LogicalPosition::new(x, 27.0);

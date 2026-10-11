@@ -1,7 +1,7 @@
 import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
-import { Badge, CardHeader, IconButton } from "controls.slint";
+import { Badge, CardHeader, IconButton, InfoTip } from "controls.slint";
 import { LayoutLibrary } from "library.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
@@ -141,26 +141,27 @@ export component SettingsPage inherits VerticalBox {
             width: 180px;
             horizontal-stretch: 0;
             alignment: start;
-            for label[index] in [@tr("Main"), @tr("Accessibility"), @tr("Keyboard"), @tr("Game mode"), @tr("System"), @tr("Commands")]: Rectangle {
+            for label[index] in [@tr("Main"), @tr("Keyboard"), @tr("System"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
+                property <int> tab-id: [0, 2, 4, 3, 5, 1][index];
                 height: 38px;
                 border-radius: 6px;
                 border-width: focus.has-focus ? 2px : 0px;
                 border-color: Theme.focus;
-                background: SettingsEditor.tab == index ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
+                background: SettingsEditor.tab == tab-id ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
                 accessible-role: tab;
                 accessible-label: label;
-                accessible-checked: SettingsEditor.tab == index;
-                accessible-action-default => { SettingsEditor.tab = index; content.viewport-y = 0px; }
+                accessible-checked: SettingsEditor.tab == tab-id;
+                accessible-action-default => { SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
                 Rectangle {
                     x: 0px; y: 8px; width: 3px; height: parent.height - 16px;
                     border-radius: 2px;
-                    background: SettingsEditor.tab == index ? Theme.accent : transparent;
+                    background: SettingsEditor.tab == tab-id ? Theme.accent : transparent;
                 }
                 Text {
                     x: 14px;
                     width: parent.width - 26px;
                     text: label;
-                    color: SettingsEditor.tab == index ? Theme.text : Theme.muted;
+                    color: SettingsEditor.tab == tab-id ? Theme.text : Theme.muted;
                     font-weight: 600;
                     vertical-alignment: center;
                     overflow: elide;
@@ -168,7 +169,7 @@ export component SettingsPage inherits VerticalBox {
                 focus := FocusScope {
                     key-pressed(event) => {
                         if event.text == " " || event.text == "\n" {
-                            SettingsEditor.tab = index;
+                            SettingsEditor.tab = tab-id;
                             content.viewport-y = 0px;
                             return accept;
                         }
@@ -177,7 +178,7 @@ export component SettingsPage inherits VerticalBox {
                 }
                 touch := TouchArea {
                     mouse-cursor: pointer;
-                    clicked => { focus.focus(); SettingsEditor.tab = index; content.viewport-y = 0px; }
+                    clicked => { focus.focus(); SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
                 }
             }
         }
@@ -225,18 +226,17 @@ export component SettingsPage inherits VerticalBox {
                     title: @tr("Accessibility");
                     VerticalLayout { vertical-stretch: 0; spacing: 8px;
                         CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance-index != 3; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
-                        Text { text: @tr("Pure black or white background, stronger text, borders and focus outlines. Works with the light and dark themes."); color: Theme.muted; wrap: word-wrap; }
                     }
                     VerticalLayout { vertical-stretch: 0; spacing: 8px;
-                        CheckBox { text: @tr("Reduce motion"); checked <=> SettingsEditor.reduce-motion; toggled => { SettingsEditor.save(); } }
-                        Text { text: @tr("Turn off highlight animations in the editor."); color: Theme.muted; wrap: word-wrap; }
+                        CheckBox { text: @tr("Disable animations"); checked <=> SettingsEditor.reduce-motion; toggled => { SettingsEditor.save(); } }
                     }
-                    Text { vertical-stretch: 0; text: @tr("Every control can be reached with Tab and activated with Space or Enter. Interface size follows the desktop scale factor."); color: Theme.muted; wrap: word-wrap; }
                 }
                 if SettingsEditor.tab == 5: Section {
                     title: "";
-                    CheckBox { text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
-                    Text { vertical-stretch: 0; text: SettingsEditor.commands-enabled ? @tr("Commands run with sh -lc in the background and are not awaited. Edit one to change its script or working directory.") : @tr("Commands stay off until you allow execution. Review below what your layouts would run."); color: Theme.muted; wrap: word-wrap; }
+                    HorizontalLayout { alignment: start; spacing: 6px;
+                        CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Commands run with sh -lc in the background and are not awaited. Edit one to change its script or working directory.") + "\n" + @tr("Commands stay off until you allow execution. Review below what your layouts would run."); } }
+                    }
                     VerticalBox { padding: 0px; spacing: 16px;
                         if SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
                         for item in SettingsEditor.command-assignments: VerticalLayout {

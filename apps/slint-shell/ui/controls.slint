@@ -160,13 +160,14 @@ global NumericWheel {
 }
 
 // The parent TouchArea only sees the wheel after the field rejects it, and steps only while
-// the field has focus so scrolling the page over an unfocused field keeps scrolling the page.
+// the field has focus unless wheel-on-hover is requested explicitly.
 export component NumericField inherits TouchArea {
     in property <length> field-width: 140px;
     in property <int> minimum: 0;
     in property <int> maximum: 2147483647;
     in property <float> step-size: 1;
     in property <bool> fractional: false;
+    in property <bool> wheel-on-hover: false;
     in-out property <float> value;
     callback edited(float);
     private property <length> wheel;
@@ -189,7 +190,7 @@ export component NumericField inherits TouchArea {
         if value != root.value { root.value = value; root.edited(value); }
     }
     scroll-event(event) => {
-        if !input.has-focus || event.delta-y == 0 { return reject; }
+        if !root.enabled || (!input.has-focus && !root.wheel-on-hover) || event.delta-y == 0 { return reject; }
         root.wheel += event.delta-y;
         if abs(root.wheel) >= NumericWheel.notch {
             root.apply(root.value + (root.wheel > 0 ? root.step-size : -root.step-size));
@@ -256,6 +257,7 @@ export component NumericInput inherits TouchArea {
         accept
     }
     edit := LineEdit {
+        enabled: root.enabled;
         width: 100%;
         input-type: number;
         accessible-label: root.label;

@@ -75,12 +75,14 @@ impl App {
         state.set_keyboard_language(
             lhc_core::runtime_state::layout()
                 .map(|layout| {
-                    let variant = if layout.variant.is_empty() {
-                        &layout.short
+                    let code = layout.short.to_uppercase();
+                    if layout.variant.is_empty()
+                        || layout.variant.eq_ignore_ascii_case(&layout.short)
+                    {
+                        code
                     } else {
-                        &layout.variant
-                    };
-                    format!("{}-{variant}", layout.short.to_uppercase())
+                        format!("{code} ({})", layout.variant)
+                    }
                 })
                 .unwrap_or_default()
                 .into(),

@@ -11,3 +11,5 @@ The published crate's Cargo.toml and license files are preserved. The root Cargo
 - Normalize text editing shortcuts in native input adapters: keep Latin layout shortcuts, use physical key positions for non-Latin layouts, exclude AltGr and other modified chords.
 
 The history implementation is exercised by `slint-shell` unit tests through the same source file, and by `examples/undo-redo.rs` and `examples/inline-edit.rs` with real Slint widgets.
+
+- Expose a reactive event-loop animation switch: disabled property transitions immediately reach their target, including standard Fluent widgets; animation-tick effects become static. The shell applies the accessibility preference in `ui::apply_theme`.

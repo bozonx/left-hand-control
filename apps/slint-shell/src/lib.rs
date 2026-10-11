@@ -22,6 +22,7 @@ pub mod ui {
     }
 
     pub fn apply_theme(theme: &Theme<'_>) {
+        i_slint_core::animations::set_animations_enabled(!theme.get_reduce_motion());
         let wanted = if theme.get_eink() {
             slint::Color::from_rgb_u8(0, 0, 0)
         } else {
@@ -93,3 +94,26 @@ pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 #[path = "../vendor/i-slint-core/text_history.rs"]
 mod text_history_tests;
+
+#[cfg(test)]
+mod animation_tests {
+    #[test]
+    fn disabling_animations_finishes_an_active_transition() {
+        use i_slint_core::{Property, animations, items::PropertyAnimation};
+
+        animations::set_animations_enabled(true);
+        let value = Box::pin(Property::new(0.0_f32));
+        value.as_ref().set_animated_value(
+            1.0,
+            PropertyAnimation {
+                duration: 10_000,
+                ..Default::default()
+            },
+        );
+        assert!(value.as_ref().get() < 1.0);
+        animations::set_animations_enabled(false);
+        assert_eq!(value.as_ref().get(), 1.0);
+        assert_eq!(animations::animation_tick(), 0);
+        animations::set_animations_enabled(true);
+    }
+}

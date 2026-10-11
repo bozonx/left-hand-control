@@ -2261,3 +2261,39 @@ msgstr "Название необязательно: если оно пусто�
 
 msgid "The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on macOS."
 msgstr "Название необязательно: если оно пустое, используется сама команда. Выполнение команд через mapper на macOS пока не реализовано."
+
+msgid "Triggers"
+msgstr "Триггеры"
+
+msgid "Disable animations"
+msgstr "Выключить анимацию"
+
+msgid "LHC Ivan K layout"
+msgstr "Раскладка LHC Айвана Кея"
+
+msgid "Add layout: "
+msgstr "Добавить раскладку: "
+
+msgid "Save (Ctrl+S)"
+msgstr "Сохранить (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Закрыть раскладку"
+
+msgid "Discard layout changes?"
+msgstr "Сбросить изменения раскладки?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Несохранённые изменения этой раскладки будут потеряны."
+
+msgid "Unique identifier used in references like macro:<id>. To bind this macro to a key, choose that action on the Layers or Triggers tab. Change the ID only when nothing uses this macro."
+msgstr "Уникальный идентификатор для ссылок macro:<id>. Для привязки макроса к клавише выберите это действие на вкладке «Слои» или «Триггеры». Меняйте ID только тогда, когда макрос нигде не используется."
+
+msgid "Discard"
+msgstr "Сбросить"
+
+msgid "Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n\nThe step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr "Создавайте последовательности сочетаний клавиш, текста, команд и системных действий. ID должен быть уникальным: он используется в ссылках macro:<id>. Имя отображается в списках действий. Назначайте макросы на вкладках «Слои» или «Триггеры»; меняйте ID только тогда, когда макрос нигде не используется.\n\nПауза задаёт интервал между шагами макроса. Задержка модификатора — время между нажатием модификатора и основной клавиши. Оставьте задержки пустыми, чтобы использовать значения из настроек."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr "По умолчанию: пауза между шагами {} мс; задержка модификатора {} мс."

@@ -79,7 +79,7 @@ impl<T: InterpolatedPropertyValue + Clone> PropertyValueAnimationData<T> {
     /// Single iteration of the animation
     pub fn compute_interpolated_value(&mut self) -> (T, bool) {
         // If animation is disabled, immediately return the target value
-        if !self.details.enabled {
+        if !crate::animations::animations_enabled() || !self.details.enabled {
             return (self.to_value.clone(), true);
         }
 

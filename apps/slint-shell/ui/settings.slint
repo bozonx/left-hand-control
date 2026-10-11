@@ -10,7 +10,7 @@ import { MenuEditor, MenusPage } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
 import { DragDrop } from "reorder.slint";
 import { SettingsPage, SettingsEditor } from "settings-page.slint";
-import { Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
+import { ConfirmDialog, IconButton, Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
@@ -26,7 +26,11 @@ export component SettingsWindow inherits Window {
     max-width: 100000px;
     min-height: 700px;
     in-out property <Page> page: Page.layouts;
+    forward-focus: shortcut-focus;
     private property <string> test-text;
+    private property <bool> editor-open: false;
+    private property <bool> confirm-discard: false;
+    private property <bool> confirm-close: false;
     property <bool> shell-problem: NotificationCenter.is-problem(AppState.status.id);
     property <bool> library-problem: NotificationCenter.is-problem(LayoutLibrary.status.id);
     property <bool> layers-problem: NotificationCenter.is-problem(LayersEditor.status.id);
@@ -49,14 +53,29 @@ export component SettingsWindow inherits Window {
         DragDrop.reset();
         if page == Page.layouts { LayoutLibrary.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
+        if page != Page.layouts && page != Page.settings { root.editor-open = true; }
         root.page = page;
+        shortcut-focus.focus();
     }
 
-    property <bool> modal-open: ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
+    property <bool> modal-open: root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
         || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none;
     property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings && !LayoutLibrary.automatic
         && LayoutLibrary.current-label != "" && LayoutLibrary.current-label != LayoutLibrary.active-label;
 
+    changed modal-open => { if !root.modal-open { shortcut-focus.focus(); } }
+
+    shortcut-focus := FocusScope {
+        focus-on-tab-navigation: false;
+        init => { self.focus(); }
+        capture-key-pressed(event) => {
+            if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && root.editor-open {
+                InlineEditors.commit-revision += 1; MacroEditor.flush-pending();
+                if LayoutLibrary.dirty { LayoutLibrary.save-current(); }
+                return accept;
+            }
+            return reject;
+        }
     FocusScope {
         focus-on-tab-navigation: false;
         enabled: !root.modal-open;
@@ -68,11 +87,11 @@ export component SettingsWindow inherits Window {
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
-                    VerticalLayout { alignment: center; NavButton { text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
-                    VerticalLayout { alignment: center; NavButton { text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; NavButton { icon: @image-url("icons/keyboard.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; NavButton { icon: @image-url("icons/settings-2.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     Rectangle {
                         horizontal-stretch: 1;
-                        min-width: 180px;
+                        min-width: 120px;
                         HorizontalLayout {
                             alignment: center;
                             spacing: 4px;
@@ -80,8 +99,9 @@ export component SettingsWindow inherits Window {
                         }
                     }
                     VerticalLayout { alignment: center; Badge {
+                        min-width: 40px;
                         text: AppState.keyboard-language == "" ? "—" : AppState.keyboard-language;
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system"); color: Theme.text; } } } }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
                     }
                     }
                     GameModeButton {}
@@ -105,7 +125,7 @@ export component SettingsWindow inherits Window {
                 }
             }
             Rectangle { height: 1px; background: Theme.divider; }
-            Rectangle {
+            if root.editor-open: Rectangle {
                 height: 50px + (editor-tabs.viewport-width > editor-tabs.visible-width ? Theme.scrollbar-size + Theme.scrollbar-gap : 0px);
                 background: Theme.card;
                 HorizontalLayout {
@@ -114,7 +134,7 @@ export component SettingsWindow inherits Window {
                     VerticalLayout { alignment: center; SaveSplitButton {
                         enabled: LayoutLibrary.dirty;
                         save => { LayoutLibrary.save-current(); }
-                        discard => { InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh(); }
+                        discard => { root.confirm-discard = true; }
                         save-as => { LayoutLibrary.save-as-name = ""; LayoutLibrary.save-as-open = true; }
                     } }
                     Rectangle { width: 16px; }
@@ -127,16 +147,17 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: 2px; alignment: start;
-                            NavTab { icon: @image-url("icons/settings-2.svg"); text: @tr("Rules") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/settings-2.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
                             NavTab { icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }
+                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close layout"); clicked => { InlineEditors.commit-revision += 1; MacroEditor.flush-pending(); if LayoutLibrary.dirty || MacroEditor.has-errors { root.confirm-close = true; } else { root.editor-open = false; root.navigate(Page.layouts, MenuKind.emoji); } } } }
                 }
             }
-            Rectangle { height: 1px; background: Theme.divider; }
+            if root.editor-open: Rectangle { height: 1px; background: Theme.divider; }
             if root.show-active-banner: Rectangle {
                 background: Theme.card;
                 HorizontalLayout {
@@ -176,6 +197,18 @@ export component SettingsWindow inherits Window {
             }
         }
     }
+    if root.confirm-discard || root.confirm-close: ConfirmDialog {
+        width: 100%; height: 100%;
+        title: @tr("Discard layout changes?");
+        body: @tr("Unsaved changes to this layout will be lost.");
+        confirm-text: @tr("Discard");
+        cancel => { root.confirm-discard = false; root.confirm-close = false; }
+        confirm => {
+            InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
+            if root.confirm-close && !LayoutLibrary.dirty { root.editor-open = false; root.navigate(Page.layouts, MenuKind.emoji); }
+            root.confirm-discard = false; root.confirm-close = false;
+        }
+    }
     LibraryDialogOverlay {}
     RuleDialogOverlay {}
     LayerDialogOverlay {}
@@ -184,5 +217,6 @@ export component SettingsWindow inherits Window {
         x: parent.width - self.width - 20px;
         y: parent.height - self.height - 20px;
         width: min(420px, parent.width - 40px);
+    }
     }
 }

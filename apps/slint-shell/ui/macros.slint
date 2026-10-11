@@ -6,7 +6,7 @@ import { CategoryIcon } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerCategory, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, NumericInput } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, NumericField, NumericInput } from "controls.slint";
 import { Button, LineEdit } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
@@ -86,11 +86,13 @@ component StepRow inherits HorizontalLayout {
             alignment: start;
             CategoryIcon { category: PickerCategory.pause; }
             Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
-            NumericInput {
+            NumericField {
                 field-width: 110px;
-                text: root.step.pause-ms;
-                label: @tr("Pause (ms)");
-                edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
+                value: root.step.pause-ms.to-float();
+                step-size: 10;
+                wheel-on-hover: true;
+                accessible-label: @tr("Pause (ms)");
+                edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, "" + round(value)); }
             }
             Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
         }
@@ -132,7 +134,6 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         alignment: start;
                         FieldLabel { text: @tr("ID"); vertical-alignment: center; }
-                        InfoTip { text: @tr("Unique identifier used in references like macro:<id>. To bind this macro to a key, choose that action on the Layers or Rules tab. Change the ID only when nothing uses this macro."); }
                     }
                     HorizontalLayout {
                         spacing: 6px;
@@ -153,7 +154,6 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         alignment: start;
                         FieldLabel { text: @tr("Name"); vertical-alignment: center; }
-                        InfoTip { text: @tr("Human-readable macro name, shown in picker lists."); }
                     }
                     InlineTextField {
                         text: root.item.name;
@@ -175,7 +175,6 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         alignment: start;
                         FieldLabel { text: @tr("Pause between steps"); vertical-alignment: center; }
-                        InfoTip { text: @tr("Per-macro pause between steps. Defaults to the Settings value.") + "\n" + @tr("Global setting: {} ms", MacroEditor.default-step-pause) + "\n" + @tr("Leave a delay empty to use the global setting."); }
                     }
                     HorizontalLayout {
                         spacing: 6px;
@@ -196,7 +195,6 @@ component MacroCard inherits Card {
                         spacing: 6px;
                         alignment: start;
                         FieldLabel { text: @tr("Modifier delay"); vertical-alignment: center; }
-                        InfoTip { text: @tr("Time between pressing a modifier and the main key within one step. Defaults to the Settings value.") + "\n" + @tr("Global setting: {} ms", MacroEditor.default-modifier-delay) + "\n" + @tr("Leave a delay empty to use the global setting."); }
                     }
                     HorizontalLayout {
                         spacing: 6px;
@@ -266,7 +264,6 @@ component BuiltinMacrosHeader inherits Rectangle {
                 Text { text: @tr("Built-in macros"); color: Theme.text; font-size: 16px; font-weight: 700; vertical-alignment: center; }
                 Badge { text: MacroEditor.builtin-macros.length; }
             }
-            Text { text: @tr("Built-in macros that cannot be edited. To customize, create a user macro based on one."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
         }
     }
     header-focus := FocusScope {
@@ -364,7 +361,7 @@ export component MacrosPage inherits Rectangle {
             vertical-stretch: 0;
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
             title: @tr("User macros");
-            info: @tr("Build reusable sequences from key chords, text actions, commands, or system actions. Steps run in order with the configured pause between them.");
+            info: @tr("Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n\nThe step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults.") + "\n" + @tr("Global defaults: step pause {} ms; modifier delay {} ms.", MacroEditor.default-step-pause, MacroEditor.default-modifier-delay);
             VerticalLayout {
                 alignment: center;
                 Button {

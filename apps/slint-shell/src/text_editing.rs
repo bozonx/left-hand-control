@@ -16,6 +16,16 @@ pub fn shortcut_text(
     if !primary || modifiers.alt_key() {
         return None;
     }
+    if !modifiers.shift_key()
+        && (logical.eq_ignore_ascii_case("s")
+            || (physical == KeyCode::KeyS
+                && logical
+                    .chars()
+                    .next()
+                    .is_some_and(|letter| letter.is_alphabetic() && !letter.is_ascii())))
+    {
+        return Some("s");
+    }
     let physical = match physical {
         KeyCode::KeyA => Some('a'),
         KeyCode::KeyC => Some('c'),
@@ -85,6 +95,8 @@ mod tests {
             ("ч", KeyCode::KeyX, "x"),
             ("м", KeyCode::KeyV, "v"),
             ("Z", KeyCode::KeyZ, "z"),
+            ("ы", KeyCode::KeyS, "s"),
+            ("S", KeyCode::KeyS, "s"),
         ] {
             assert_eq!(shortcut_text(logical, physical, primary()), Some(expected));
         }
@@ -98,6 +110,8 @@ mod tests {
     fn preserves_latin_layouts_and_leaves_typing_altgr_and_other_chords_alone() {
         assert_eq!(shortcut_text("z", KeyCode::KeyY, primary()), Some("z"));
         assert_eq!(shortcut_text("q", KeyCode::KeyA, primary()), None);
+        assert_eq!(shortcut_text("o", KeyCode::KeyS, primary()), None);
+        assert_eq!(shortcut_text("s", KeyCode::KeyO, primary()), Some("s"));
         assert_eq!(
             shortcut_text("я", KeyCode::KeyZ, ModifiersState::empty()),
             None
