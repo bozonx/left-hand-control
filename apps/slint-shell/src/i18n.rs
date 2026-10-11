@@ -13,6 +13,7 @@ use lhc_core::config_document::ConfigError;
 use lhc_core::profile::actions::ActionIssue;
 use lhc_core::profile::diagnostics::{RuleIssue, RuleIssueCode};
 use lhc_core::profile::model::LocalePreference;
+use lhc_core::profile::names::{NameIssue, NameKind};
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 
@@ -249,7 +250,8 @@ pub enum Msg {
     SaveLayoutFirst,
     MenuIssue(lhc_core::profile::menus::MenuIssue),
     MacroIssue(lhc_core::profile::macros::MacroIssue),
-    LayerNameRequired,
+    Name(NameKind, NameIssue),
+    PageNameRequired,
     KeyCodeRequired,
     ActionRequired,
     PickerSuppress,
@@ -364,7 +366,18 @@ impl Msg {
             Self::LayoutEmpty => ("layout-empty", empty(), 0),
             Self::CopyName(name) => ("copy-name", name.clone(), 0),
             Self::MapperRequired => ("mapper-required", empty(), 0),
-            Self::LayerNameRequired => ("layer-name-required", empty(), 0),
+            Self::Name(kind, issue) => (
+                match (kind, issue) {
+                    (NameKind::Layer, NameIssue::Empty) => "layer-name-required",
+                    (NameKind::Layer, NameIssue::Taken) => "layer-name-taken",
+                    (NameKind::Layout, NameIssue::Empty) => "layout-name-required",
+                    (NameKind::Layout, NameIssue::Taken) => "layout-name-taken",
+                    (_, NameIssue::Invalid) => "name-invalid",
+                },
+                empty(),
+                0,
+            ),
+            Self::PageNameRequired => ("page-name-required", empty(), 0),
             Self::ActionRequired => ("action-required", empty(), 0),
             Self::PickerSuppress => ("picker-suppress", empty(), 0),
             Self::PickerInherit => ("picker-inherit", empty(), 0),
@@ -424,6 +437,7 @@ impl From<&ConfigError> for Msg {
             ConfigError::ExternalChange => Self::ConfigExternalChange,
             ConfigError::Menu(issue) => Self::MenuIssue(*issue),
             ConfigError::Macro(issue) => Self::MacroIssue(*issue),
+            ConfigError::Name(kind, issue) => Self::Name(*kind, *issue),
             ConfigError::InvalidAction(issue) => Self::InvalidAction(*issue),
             ConfigError::Rules(issues) if !issues.is_empty() => Self::Rule(issues[0].clone()),
             other => Self::Error(other.to_string()),

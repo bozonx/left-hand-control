@@ -486,16 +486,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
+    let doc = document.clone();
+    editor.on_layer_name_error(move |name| super::name_error(doc.read().layer_name(&name, None)));
+
     let weak = ui.as_weak();
     let doc = document.clone();
     editor.on_create_layer(move |name| {
         let Some(ui) = weak.upgrade() else { return };
-        let name = name.trim().to_owned();
         let editor = ui.global::<RulesEditor>();
-        if name.is_empty() {
-            editor.set_status(crate::notifications::report(&ui, &Msg::LayerNameRequired));
-            return;
-        }
+        let checked = doc.read().layer_name(&name, None);
+        let name = match checked {
+            Ok(name) => name,
+            Err(error) => {
+                editor.set_status(crate::notifications::report(&ui, &Msg::from(&error)));
+                return;
+            }
+        };
         let index = selected(&ui, &doc);
         let id = ids::generate("l_");
         let result = change(&ui, &doc, true, |layout| {

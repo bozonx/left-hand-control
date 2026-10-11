@@ -446,6 +446,15 @@ msgstr "Код действия"
 msgid "Enter a layer name"
 msgstr "Введите имя слоя"
 
+msgid "A layer with this name already exists."
+msgstr "Слой с таким именем уже есть."
+
+msgid "Enter a layout name"
+msgstr "Введите имя раскладки"
+
+msgid "Enter a page name"
+msgstr "Введите имя страницы"
+
 msgid "Enter a key code"
 msgstr "Введите код клавиши"
 

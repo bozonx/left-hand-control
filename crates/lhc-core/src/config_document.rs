@@ -16,6 +16,7 @@ use crate::profile::model::{
     AppConfig, AppSettings, Appearance, Layer, LayerRule, LayoutMode, LayoutPreset,
     LocalePreference,
 };
+use crate::profile::names::{self, NameIssue, NameKind};
 use crate::profile::{app_match, layout_file, settings};
 use crate::storage::{StoragePaths, TrackedFile, WriteError};
 use serde_json::{Value, json};
@@ -33,6 +34,8 @@ pub enum ConfigError {
     InvalidAction(ActionIssue),
     Macro(crate::profile::macros::MacroIssue),
     Menu(crate::profile::menus::MenuIssue),
+    /// A layer or layout name cannot be used.
+    Name(NameKind, NameIssue),
     /// Rules have blocking problems; the mapper cannot start.
     Rules(Vec<RuleIssue>),
     /// Another process changed a file after this document read it.
@@ -46,6 +49,7 @@ impl fmt::Display for ConfigError {
             Self::Parse(error) => write!(f, "parse config: {error}"),
             Self::Invalid(error) => write!(f, "invalid config: {error}"),
             Self::Menu(issue) => write!(f, "invalid menu: {issue:?}"),
+            Self::Name(kind, issue) => write!(f, "invalid {kind:?} name: {issue:?}"),
             Self::Macro(issue) => write!(f, "invalid macro: {issue:?}"),
             Self::InvalidAction(issue) => write!(f, "invalid action: {issue:?}"),
             Self::Rules(issues) => match issues.first() {
@@ -300,16 +304,19 @@ impl ConfigDocument {
         })
     }
 
+    /// Trimmed `name` for a new layer or for renaming layer `except`.
+    pub fn layer_name(&self, name: &str, except: Option<&str>) -> Result<String, ConfigError> {
+        names::layer_name(&self.layout, name, except)
+            .map_err(|issue| ConfigError::Name(NameKind::Layer, issue))
+    }
+
     pub fn create_layer(&mut self, name: &str, description: &str) -> Result<String, ConfigError> {
-        let name = name.trim();
-        if name.is_empty() {
-            return Err(ConfigError::Invalid("layer name is required".into()));
-        }
+        let name = self.layer_name(name, None)?;
         let id = crate::profile::ids::generate("l_");
         self.update_layout(|layout| {
             layout.layers.push(Layer {
                 id: id.clone(),
-                name: name.into(),
+                name,
                 description: optional_text(description),
             });
             layout.layer_keymap_mut(&id);
@@ -323,10 +330,7 @@ impl ConfigDocument {
         name: &str,
         description: &str,
     ) -> Result<(), ConfigError> {
-        let name = name.trim();
-        if name.is_empty() {
-            return Err(ConfigError::Invalid("layer name is required".into()));
-        }
+        let name = self.layer_name(name, Some(id))?;
         if !self.layout.layers.iter().any(|layer| layer.id == id) {
             return Err(ConfigError::Invalid("unknown layer".into()));
         }
@@ -336,7 +340,7 @@ impl ConfigDocument {
                 .iter_mut()
                 .find(|layer| layer.id == id)
                 .unwrap();
-            layer.name = name.into();
+            layer.name = name;
             layer.description = optional_text(description);
         })
     }
@@ -347,10 +351,7 @@ impl ConfigDocument {
         name: &str,
         description: &str,
     ) -> Result<String, ConfigError> {
-        let name = name.trim();
-        if name.is_empty() {
-            return Err(ConfigError::Invalid("layer name is required".into()));
-        }
+        let name = self.layer_name(name, None)?;
         if !self.layout.layers.iter().any(|layer| layer.id == source_id) {
             return Err(ConfigError::Invalid("unknown layer".into()));
         }
@@ -364,7 +365,7 @@ impl ConfigDocument {
             layout.layer_keymaps.insert(id.clone(), keymap);
             layout.layers.push(Layer {
                 id: id.clone(),
-                name: name.into(),
+                name,
                 description: optional_text(description),
             });
         })?;

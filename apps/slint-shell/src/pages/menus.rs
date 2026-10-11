@@ -456,6 +456,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             e.set_selected_cell(target as i32);
         });
     });
+    e.on_page_name_error(|name| {
+        if name.trim().is_empty() {
+            Msg::PageNameRequired
+        } else {
+            Msg::None
+        }
+        .to_ui()
+    });
     let c = change.clone();
     e.on_rename_page(move || {
         c(true, &|e, layout| {

@@ -10,7 +10,7 @@ use crate::{
     i18n::Msg,
     ui::{
         AutoRuleView, GameCondition, LayoutLibrary, LayoutSource, LayoutSummary, LibraryAction,
-        LibraryDialog, MenuKind, NameIssue, Page, SettingsWindow,
+        LibraryDialog, MenuKind, Page, SettingsWindow,
     },
 };
 use lhc_core::{
@@ -24,7 +24,6 @@ use lhc_core::{
             user_layout_name,
         },
     },
-    storage::validate_layout_name,
 };
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
@@ -72,24 +71,6 @@ fn condition(game: GameCondition, layouts: &str, apps: &str) -> LayoutConditionS
         game_mode: game_condition_value(game),
         layouts: parse_list(layouts),
         apps: parse_list(apps),
-    }
-}
-
-fn name_issue(config: &ConfigDocument, name: &str) -> NameIssue {
-    if name.trim().is_empty() {
-        return NameIssue::Empty;
-    }
-    let Ok(name) = validate_layout_name(name) else {
-        return NameIssue::Invalid;
-    };
-    let taken = config
-        .paths()
-        .list_user_layouts()
-        .is_ok_and(|names| names.iter().any(|item| item.eq_ignore_ascii_case(&name)));
-    if taken {
-        NameIssue::Taken
-    } else {
-        NameIssue::Ok
     }
 }
 
@@ -927,10 +908,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         .unique_library_name(&base)
         .unwrap_or_else(|_| base.to_string())
         .into());
-    on!(on_name_issue, |_ui, doc, _state, name| name_issue(
-        &doc.read(),
-        &name
-    ));
+    on!(on_name_error, |_ui, doc, _state, name, except| {
+        let except = (!except.is_empty()).then_some(except.as_str());
+        super::name_error(doc.read().checked_layout_name(&name, except))
+    });
     on!(on_create, |ui,
                     doc,
                     state,

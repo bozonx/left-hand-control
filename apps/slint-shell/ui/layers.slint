@@ -2,7 +2,7 @@ import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
-import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel } from "controls.slint";
+import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel, FormField } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LabelMode, LayerDialog, PickerCategory, PickerTarget } from "types.slint";
@@ -42,6 +42,8 @@ export global LayersEditor {
     callback remove-extra(int);
     callback update-description(string);
     callback update-name(string);
+    /// Why `name` cannot be used for a new layer or, when `renaming`, for the selected one.
+    pure callback name-error(name: string, renaming: bool) -> Message;
     callback add-extra();
     callback update-extra-key(int, string);
     callback pick-extra(int, bool);
@@ -356,6 +358,7 @@ export component LayersPage inherits VerticalLayout {
                                 horizontal-stretch: 1; min-width: 0px;
                                 text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
                                 label: @tr("Name"); text-size: 13px; text-weight: 600;
+                                validate(value) => { return LayersEditor.name-error(value, true); }
                                 saved(value) => { LayersEditor.update-name(value); }
                             }
                         }
@@ -516,8 +519,12 @@ export component LayerDialogOverlay inherits FocusScope {
                     color: Theme.text; font-size: 22px; font-weight: 700;
                 }
                 if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
-                    Text { text: @tr("Name"); color: Theme.text; }
-                    LineEdit { init => { self.focus(); } text <=> LayersEditor.dialog-name; accepted => { LayersEditor.apply-dialog(); } }
+                    FormField {
+                        label: @tr("Name"); autofocus: true;
+                        text <=> LayersEditor.dialog-name;
+                        error: LayersEditor.name-error(LayersEditor.dialog-name, false);
+                        accepted => { if LayersEditor.name-error(LayersEditor.dialog-name, false).id == "" { LayersEditor.apply-dialog(); } }
+                    }
                     Text { text: @tr("Description"); color: Theme.text; }
                     TextEdit { text <=> LayersEditor.dialog-description; height: 100px; }
                 }
@@ -551,7 +558,7 @@ export component LayerDialogOverlay inherits FocusScope {
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
-                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; enabled: (LayersEditor.dialog != LayerDialog.extra-key || LayersEditor.dialog-key != "") && ((LayersEditor.dialog != LayerDialog.extra-key && LayersEditor.dialog != LayerDialog.edit-key) || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
+                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; enabled: ((LayersEditor.dialog != LayerDialog.create && LayersEditor.dialog != LayerDialog.duplicate) || LayersEditor.name-error(LayersEditor.dialog-name, false).id == "") && (LayersEditor.dialog != LayerDialog.extra-key || LayersEditor.dialog-key != "") && ((LayersEditor.dialog != LayerDialog.extra-key && LayersEditor.dialog != LayerDialog.edit-key) || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
                 }
             }
         }

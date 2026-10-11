@@ -54,6 +54,7 @@ export global MenuEditor {
     callback move-page(int);
     /// Read `page-name`, `value` and `name` into the selected page and cell.
     callback rename-page();
+    pure callback page-name-error(name: string) -> Message;
     callback set-cell();
     callback set-name();
     callback set-action(int, string, string);
@@ -314,7 +315,7 @@ component PageEditor inherits HorizontalLayout {
     callback remove();
     spacing: 4px;
     FieldLabel { text: @tr("Page:"); horizontal-stretch: 0; max-width: self.preferred-width; vertical-alignment: center; }
-    page-name := InlineTextField { clearable: false; text: MenuEditor.page-name; label: @tr("Page name"); allow-empty: false; saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
+    page-name := InlineTextField { clearable: false; text: MenuEditor.page-name; label: @tr("Page name"); allow-empty: false; validate(value) => { return MenuEditor.page-name-error(value); } saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
     Rectangle { min-width: 0px; preferred-width: 0px; horizontal-stretch: page-name.editing ? 0 : 1; }
     VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/app-window.svg"); label: @tr("Open page in popup"); clicked => { MenuEditor.show-page(); } } }
     VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); clicked => { root.remove(); } } }

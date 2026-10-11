@@ -3,7 +3,7 @@ import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
-import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput, FormLabel } from "controls.slint";
+import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput, FormLabel, FormField } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition, PickerCategory } from "types.slint";
@@ -72,6 +72,8 @@ export global RulesEditor {
     callback apply-conditions();
     callback apply-advanced();
     callback create-layer(string);
+    /// Why `name` cannot be used for a new layer.
+    pure callback layer-name-error(name: string) -> Message;
 }
 
 component ConditionLine inherits HorizontalLayout {
@@ -249,8 +251,9 @@ component HoldField inherits VerticalBox {
                         }
                         Button { text: RulesEditor.dialog-value == "" ? @tr("Create new layer…") : @tr("Create “{}”", RulesEditor.dialog-value); clicked => { root.creating = true; RulesEditor.new-layer-name = RulesEditor.dialog-value; } }
                         if root.creating: HorizontalLayout { spacing: 8px;
-                            LineEdit { init => { self.focus(); } text <=> RulesEditor.new-layer-name; placeholder-text: @tr("New layer name"); accepted => { RulesEditor.create-layer(self.text); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
-                            Button { text: @tr("Create layer"); enabled: RulesEditor.new-layer-name != ""; clicked => { RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
+                            FormField { horizontal-stretch: 1; autofocus: true; text <=> RulesEditor.new-layer-name; placeholder: @tr("New layer name"); error: RulesEditor.layer-name-error(RulesEditor.new-layer-name);
+                                accepted => { if RulesEditor.layer-name-error(RulesEditor.new-layer-name).id != "" { return; } RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
+                            VerticalLayout { alignment: start; Button { text: @tr("Create layer"); enabled: RulesEditor.layer-name-error(RulesEditor.new-layer-name).id == ""; clicked => { RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } } }
                         }
                         Rectangle { height: 1px; background: Theme.divider; }
                         Rectangle { height: 36px; border-radius: 4px; background: action-touch.has-hover || RulesEditor.layer-highlight == root.count + 1 ? Theme.hover : transparent;

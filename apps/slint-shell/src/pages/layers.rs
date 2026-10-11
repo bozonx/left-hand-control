@@ -325,13 +325,6 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
             return Err(Msg::InvalidAction(issue));
         }
     }
-    if matches!(
-        dialog,
-        LayerDialog::Create | LayerDialog::Rename | LayerDialog::Duplicate
-    ) && name.is_empty()
-    {
-        return Err(Msg::LayerNameRequired);
-    }
     if dialog == LayerDialog::Create {
         change(ui, document, |config| {
             config.create_layer(&name, &description)
@@ -527,6 +520,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
     let editor = ui.global::<LayersEditor>();
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    editor.on_name_error(move |name, renaming| {
+        let Some(ui) = weak.upgrade() else {
+            return Msg::None.to_ui();
+        };
+        let except = renaming.then(|| selected_id(&ui, &doc)).flatten();
+        super::name_error(doc.read().layer_name(&name, except.as_deref()))
+    });
     let weak = ui.as_weak();
     let doc = document.clone();
     editor.on_update_name(move |name| {

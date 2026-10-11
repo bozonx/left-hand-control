@@ -104,6 +104,11 @@ export global Locale {
         if m.id == "copy-name" { return @tr("{} (copy)", m.arg); }
         if m.id == "mapper-required" { return @tr("Start the mapper to run actions from the menus"); }
         if m.id == "layer-name-required" { return @tr("Enter a layer name"); }
+        if m.id == "layer-name-taken" { return @tr("A layer with this name already exists."); }
+        if m.id == "layout-name-required" { return @tr("Enter a layout name"); }
+        if m.id == "layout-name-taken" { return @tr("A layout with this name already exists."); }
+        if m.id == "name-invalid" { return @tr("The name contains characters that cannot be used in a file name."); }
+        if m.id == "page-name-required" { return @tr("Enter a page name"); }
         if m.id == "action-required" { return @tr("Choose a valid action."); }
         if m.id == "picker-suppress" { return @tr("Suppress"); }
         if m.id == "picker-inherit" { return @tr("Inherit"); }

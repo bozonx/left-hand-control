@@ -1,10 +1,10 @@
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ScrollView } from "scroll.slint";
-import { ButtonGroup, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog } from "controls.slint";
+import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, NameIssue, PendingLayoutAction } from "types.slint";
+import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, PendingLayoutAction } from "types.slint";
 import { Button, CheckBox, ComboBox, HorizontalBox, LineEdit, Palette, TextEdit, VerticalBox } from "std-widgets.slint";
 
 export struct LayoutSummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
@@ -70,7 +70,8 @@ export global LayoutLibrary {
     callback set-automatic(bool);
     callback action(LibraryAction);
     pure callback suggest-name(string) -> string;
-    pure callback name-issue(string) -> NameIssue;
+    /// Why `name` cannot be used for a layout; `except` is the layout being renamed, or "".
+    pure callback name-error(name: string, except: string) -> Message;
     callback create(string, string, LayoutSource, int);
     callback set-description(int, string);
     callback rename(int, string);
@@ -120,7 +121,7 @@ export global LayoutLibrary {
         self.guard-switch(PendingLayoutAction.create);
     }
     public function submit-create() {
-        if self.name-issue(self.create-name) != NameIssue.ok { return; }
+        if self.name-error(self.create-name, "").id != "" { return; }
         self.create(self.create-name, self.create-description, self.create-source, self.create-copy-index);
     }
     public function continue-pending() {
@@ -587,7 +588,7 @@ export component LibraryPage inherits VerticalBox {
                             VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 10px;
                                 HorizontalLayout { spacing: 8px; vertical-stretch: 0;
                                     Text { text: (index + 1) + "."; color: Theme.muted; font-size: 17px; font-weight: 600; vertical-alignment: center; accessible-role: none; }
-                                    InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); saved(value) => { LayoutLibrary.rename(index, value); } }
+                                    InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); validate(value) => { return LayoutLibrary.name-error(value, name); } saved(value) => { LayoutLibrary.rename(index, value); } }
                                     Rectangle { horizontal-stretch: 1; }
                                     if card.auto && LayoutLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: 13px; font-weight: 600; vertical-alignment: center; }
                                     if card.auto && LayoutLibrary.rule-counts[index] > 0: Rectangle {
@@ -685,16 +686,11 @@ export component LibraryDialogOverlay inherits Rectangle {
                     color: Theme.text; font-size: 22px;
                 }
                 if LayoutLibrary.dialog == LibraryDialog.create: VerticalBox { padding: 0px; spacing: 10px;
-                    Text { text: @tr("Name"); color: Theme.text; }
-                    LineEdit {
+                    FormField {
+                        label: @tr("Name"); placeholder: @tr("New layout name"); autofocus: true;
                         text <=> LayoutLibrary.create-name;
-                        placeholder-text: @tr("New layout name");
-                        init => { self.focus(); self.select-all(); }
+                        error: LayoutLibrary.name-error(LayoutLibrary.create-name, "");
                         accepted => { LayoutLibrary.submit-create(); }
-                    }
-                    if LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.taken || LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.invalid: Text {
-                        text: LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.taken ? @tr("A layout with this name already exists.") : @tr("The name contains characters that cannot be used in a file name.");
-                        color: Theme.error; wrap: word-wrap;
                     }
                     Text { text: @tr("Description (optional)"); color: Theme.text; }
                     TextEdit { text <=> LayoutLibrary.create-description; height: 120px; }
@@ -725,7 +721,7 @@ export component LibraryDialogOverlay inherits Rectangle {
                     }
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
-                    if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-issue(LayoutLibrary.create-name) == NameIssue.ok; clicked => { LayoutLibrary.submit-create(); } }
+                    if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-error(LayoutLibrary.create-name, "").id == ""; clicked => { LayoutLibrary.submit-create(); } }
                     if LayoutLibrary.dialog == LibraryDialog.rule: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.save-rule(); } }
                     if LayoutLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { LayoutLibrary.continue-pending(); } }
                     if LayoutLibrary.dialog == LibraryDialog.unsaved && LayoutLibrary.current-label != "": Button {
@@ -762,19 +758,21 @@ export component LibraryDialogOverlay inherits Rectangle {
         TouchArea { }
         Rectangle {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-            width: 480px; height: 220px; background: Theme.card; border-radius: 12px;
+            width: 480px; height: 250px; background: Theme.card; border-radius: 12px;
             VerticalBox {
                 padding: 24px; spacing: 12px;
                 Text { text: @tr("Save layout as…"); color: Theme.text; font-size: 22px; }
-                VerticalBox { padding: 0px; spacing: 4px;
-                    Text { text: @tr("Layout name"); color: Theme.text; }
-                    LineEdit { text <=> LayoutLibrary.save-as-name; accessible-label: @tr("Layout name"); accepted => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+                FormField {
+                    label: @tr("Layout name"); autofocus: true;
+                    text <=> LayoutLibrary.save-as-name;
+                    error: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "");
+                    accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
                 }
                 Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
                 HorizontalBox { vertical-stretch: 0;
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayoutLibrary.save-as-open = false; } }
-                    Button { text: @tr("Save"); enabled: LayoutLibrary.save-as-name != ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+                    Button { text: @tr("Save"); enabled: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
                 }
             }
         }

@@ -1,6 +1,7 @@
 import { Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
+import { Locale, Message } from "i18n.slint";
 
 export component ButtonGroup inherits HorizontalLayout {
     in property <[string]> labels;
@@ -510,6 +511,40 @@ export component ConfirmDialog inherits Rectangle {
     }
 }
 
+/// Single-line dialog field with its validation error under it. The error
+/// shows once the field holds text or the user has typed in it, so a
+/// freshly opened empty field is not flagged.
+export component FormField inherits VerticalLayout {
+    in property <string> label;
+    in property <string> placeholder;
+    in-out property <string> text;
+    /// Why the text cannot be used; an empty id accepts it.
+    in property <Message> error;
+    in property <bool> autofocus: false;
+    callback accepted();
+    private property <bool> touched: false;
+    private property <bool> show-error: root.error.id != "" && (root.touched || root.text != "");
+    padding: 0px;
+    spacing: 4px;
+    vertical-stretch: 0;
+    if root.label != "": Text { text: root.label; color: Theme.text; }
+    Rectangle {
+        HorizontalLayout {
+            LineEdit {
+                text <=> root.text;
+                placeholder-text: root.placeholder;
+                accessible-label: root.label != "" ? root.label : root.placeholder;
+                accessible-description: root.show-error ? Locale.text(root.error) : "";
+                init => { if root.autofocus { self.focus(); self.select-all(); } }
+                edited => { root.touched = true; }
+                accepted => { root.accepted(); }
+            }
+        }
+        if root.show-error: Rectangle { border-radius: 4px; border-width: 2px; border-color: Theme.error; }
+    }
+    if root.show-error: Text { text: Locale.text(root.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
+}
+
 export global InlineEditors {
     in-out property <int> commit-revision: 0; in-out property <int> revision; pure callback nonempty(string) -> bool;
     // Set from the winit window events: focus loss caused by switching windows must not commit.
@@ -529,16 +564,22 @@ export component InlineTextField inherits FocusScope {
     private property <string> draft;
     private property <int> revision: InlineEditors.revision;
     private property <int> commit-revision: InlineEditors.commit-revision;
+    private property <Message> no-issue;
+    // Checked only while editing: validation may read the library from disk.
+    private property <Message> issue: root.editing ? root.validate(root.draft) : root.no-issue;
+    private property <bool> can-save: (root.allow-empty || InlineEditors.nonempty(root.draft)) && root.issue.id == "";
     changed commit-revision => { if root.editing { root.save(); } }
     changed revision => { root.editing = false; }
     changed text => { root.editing = false; }
     callback saved(string);
+    /// Why the draft cannot be saved; an empty id accepts it.
+    pure callback validate(string) -> Message;
     public function begin() { root.draft = root.text; root.editing = true; }
-    function save() { if root.allow-empty || InlineEditors.nonempty(root.draft) { root.saved(root.draft); root.editing = false; } }
+    function save() { if root.can-save { root.saved(root.draft); root.editing = false; } }
     function cancel() { root.draft = root.text; root.editing = false; }
     function blurred() {
         if !root.editing || !InlineEditors.window-active { return; }
-        if root.allow-empty || InlineEditors.nonempty(root.draft) { root.save(); } else { root.cancel(); }
+        if root.can-save { root.save(); } else { root.cancel(); }
     }
     vertical-stretch: 0;
     horizontal-stretch: root.editing ? 1 : 0;
@@ -557,99 +598,110 @@ export component InlineTextField inherits FocusScope {
         font-weight: root.text-weight;
         visible: false;
     }
-    HorizontalLayout {
-        spacing: 4px;
-        if !root.editing: display-touch := TouchArea {
-            height: max(28px, measure.preferred-height + 8px);
-            mouse-cursor: MouseCursor.text;
-            accessible-role: button;
-            accessible-label: root.label;
-            accessible-action-default => { root.begin(); }
-            clicked => { root.begin(); }
-            Rectangle {
-                border-radius: 4px;
-                background: display-touch.has-hover ? Theme.hover : transparent;
-                border-width: root.has-focus ? 1px : 0px;
-                border-color: Theme.focus;
-                HorizontalLayout {
-                    padding-left: 4px;
-                    spacing: 4px;
-                    Text {
-                        min-width: 0px;
-                        text: root.text == "" ? root.placeholder : root.text;
-                        color: root.text == "" ? Theme.muted : root.text-color;
-                        font-size: root.text-size;
-                        font-weight: root.text-weight;
-                        vertical-alignment: center;
-                        overflow: elide;
-                    }
-                    Rectangle {
-                        width: 28px;
-                        IconButton {
-                            visible: display-touch.has-hover || root.has-focus;
-                            icon: @image-url("icons/pencil.svg");
-                            label: root.label;
-                            clicked => { root.begin(); }
-                        }
-                    }
-                }
-            }
-        }
-        if root.editing && root.clearable: LineEdit {
-            min-width: 0px;
-            horizontal-stretch: 1;
-            text <=> root.draft;
-            placeholder-text: root.placeholder;
-            accessible-label: root.label;
-            init => { self.focus(); self.select-all(); }
-            accepted => { root.save(); }
-            changed has-focus => { if !self.has-focus { root.blurred(); } }
-        }
-        if root.editing && !root.clearable: Rectangle {
-            min-width: 28px;
-            horizontal-stretch: 1;
-            height: 32px;
-            border-radius: 4px;
-            border-width: 1px;
-            border-color: input.has-focus ? Theme.focus : Theme.border;
-            background: Theme.surface;
-            clip: true;
-            HorizontalLayout {
-                padding-left: 6px;
-                padding-right: 6px;
+    VerticalLayout {
+        spacing: 2px;
+        HorizontalLayout {
+            spacing: 4px;
+            if !root.editing: display-touch := TouchArea {
+                height: max(28px, measure.preferred-height + 8px);
+                mouse-cursor: MouseCursor.text;
+                accessible-role: button;
+                accessible-label: root.label;
+                accessible-action-default => { root.begin(); }
+                clicked => { root.begin(); }
                 Rectangle {
-                    min-width: 0px;
-                    horizontal-stretch: 1;
-                    clip: true;
-                    input := TextInput {
-                        private property <length> scroll-x;
-                        x: min(0px, max(parent.width - self.width - self.text-cursor-width, self.scroll-x));
-                        width: max(parent.width - self.text-cursor-width, self.preferred-width);
-                        height: parent.height;
-                        cursor-position-changed(position) => {
-                            if position.x + self.scroll-x < 4px {
-                                self.scroll-x = 4px - position.x;
-                            } else if position.x + self.scroll-x > parent.width - 4px - self.text-cursor-width {
-                                self.scroll-x = parent.width - position.x - 4px - self.text-cursor-width;
+                    border-radius: 4px;
+                    background: display-touch.has-hover ? Theme.hover : transparent;
+                    border-width: root.has-focus ? 1px : 0px;
+                    border-color: Theme.focus;
+                    HorizontalLayout {
+                        padding-left: 4px;
+                        spacing: 4px;
+                        Text {
+                            min-width: 0px;
+                            text: root.text == "" ? root.placeholder : root.text;
+                            color: root.text == "" ? Theme.muted : root.text-color;
+                            font-size: root.text-size;
+                            font-weight: root.text-weight;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        Rectangle {
+                            width: 28px;
+                            IconButton {
+                                visible: display-touch.has-hover || root.has-focus;
+                                icon: @image-url("icons/pencil.svg");
+                                label: root.label;
+                                clicked => { root.begin(); }
                             }
                         }
-                        text <=> root.draft;
-                        single-line: true;
-                        color: Theme.text;
-                        font-size: root.text-size;
-                        vertical-alignment: center;
-                        selection-background-color: Theme.selected;
-                        selection-foreground-color: Theme.text;
-                        accessible-label: root.label;
-                        init => { self.focus(); self.select-all(); }
-                        accepted => { root.save(); }
-                        changed has-focus => { if !self.has-focus { root.blurred(); } }
                     }
                 }
             }
+            if root.editing && root.clearable: LineEdit {
+                min-width: 0px;
+                horizontal-stretch: 1;
+                text <=> root.draft;
+                placeholder-text: root.placeholder;
+                accessible-label: root.label;
+                accessible-description: Locale.text(root.issue);
+                init => { self.focus(); self.select-all(); }
+                accepted => { root.save(); }
+                changed has-focus => { if !self.has-focus { root.blurred(); } }
+            }
+            if root.editing && !root.clearable: Rectangle {
+                min-width: 28px;
+                horizontal-stretch: 1;
+                height: 32px;
+                border-radius: 4px;
+                border-width: root.issue.id != "" ? 2px : 1px;
+                border-color: root.issue.id != "" ? Theme.error : input.has-focus ? Theme.focus : Theme.border;
+                background: Theme.surface;
+                clip: true;
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    Rectangle {
+                        min-width: 0px;
+                        horizontal-stretch: 1;
+                        clip: true;
+                        input := TextInput {
+                            private property <length> scroll-x;
+                            x: min(0px, max(parent.width - self.width - self.text-cursor-width, self.scroll-x));
+                            width: max(parent.width - self.text-cursor-width, self.preferred-width);
+                            height: parent.height;
+                            cursor-position-changed(position) => {
+                                if position.x + self.scroll-x < 4px {
+                                    self.scroll-x = 4px - position.x;
+                                } else if position.x + self.scroll-x > parent.width - 4px - self.text-cursor-width {
+                                    self.scroll-x = parent.width - position.x - 4px - self.text-cursor-width;
+                                }
+                            }
+                            text <=> root.draft;
+                            single-line: true;
+                            color: Theme.text;
+                            font-size: root.text-size;
+                            vertical-alignment: center;
+                            selection-background-color: Theme.selected;
+                            selection-foreground-color: Theme.text;
+                            accessible-label: root.label;
+                            accessible-description: Locale.text(root.issue);
+                            init => { self.focus(); self.select-all(); }
+                            accepted => { root.save(); }
+                            changed has-focus => { if !self.has-focus { root.blurred(); } }
+                        }
+                    }
+                }
+            }
+            if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); enabled: root.can-save; clicked => { root.save(); } }
+            if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }
         }
-        if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); enabled: root.allow-empty || InlineEditors.nonempty(root.draft); clicked => { root.save(); } }
-        if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }
+        if root.editing && root.issue.id != "": Text {
+            text: Locale.text(root.issue);
+            color: Theme.error;
+            font-size: 12px;
+            wrap: word-wrap;
+        }
     }
 }
 

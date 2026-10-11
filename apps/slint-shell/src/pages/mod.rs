@@ -17,8 +17,10 @@ pub use picker::capture;
 
 use crate::{
     document::Document,
-    ui::{ActionKind, GameCondition, SettingsWindow},
+    i18n::Msg,
+    ui::{ActionKind, GameCondition, Message, SettingsWindow},
 };
+use lhc_core::config_document::ConfigError;
 use lhc_core::profile::{
     actions::Action,
     model::{Appearance, LocalePreference},
@@ -90,6 +92,14 @@ pub(crate) fn game_condition_value(condition: GameCondition) -> Option<String> {
         GameCondition::Off => Some("off".into()),
         GameCondition::Any => None,
     }
+}
+
+/// Message shown under a name field; empty when the name can be used.
+pub(crate) fn name_error<T>(result: Result<T, ConfigError>) -> Message {
+    result
+        .err()
+        .map_or(Msg::None, |error| Msg::from(&error))
+        .to_ui()
 }
 
 /// Icon of an action on key caps.

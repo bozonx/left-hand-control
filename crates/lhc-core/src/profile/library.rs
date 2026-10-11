@@ -3,6 +3,7 @@ use crate::{
     profile::{
         auto_switch, layout_file,
         model::{LayoutPreset, user_layout_id},
+        names::{NameIssue, NameKind},
     },
 };
 
@@ -19,11 +20,11 @@ pub enum LibrarySource<'a> {
 impl ConfigDocument {
     /// `base`, or `base (2)`, `base (3)`, … — the first name not taken in the library.
     pub fn unique_library_name(&self, base: &str) -> Result<String, ConfigError> {
-        let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
+        self.paths().list_user_layouts().map_err(ConfigError::Io)?;
         let base = base.trim();
         let mut name = base.to_owned();
         let mut suffix = 2;
-        while names.contains(&name) {
+        while self.layout_name(&name, None) == Err(NameIssue::Taken) {
             name = format!("{base} ({suffix})");
             suffix += 1;
         }
@@ -37,6 +38,7 @@ impl ConfigDocument {
         description: &str,
         source: LibrarySource,
     ) -> Result<String, ConfigError> {
+        let name = &self.checked_layout_name(name, None)?;
         let description = description.trim();
         let mut preset = match source {
             LibrarySource::Empty => LayoutPreset::default(),
@@ -70,8 +72,19 @@ impl ConfigDocument {
             .map_err(ConfigError::Io)
     }
 
+    /// [`ConfigDocument::layout_name`] as a [`ConfigError`].
+    pub fn checked_layout_name(
+        &self,
+        name: &str,
+        except: Option<&str>,
+    ) -> Result<String, ConfigError> {
+        self.layout_name(name, except)
+            .map_err(|issue| ConfigError::Name(NameKind::Layout, issue))
+    }
+
     pub fn save_current_layout_as(&mut self, name: &str) -> Result<String, ConfigError> {
         self.ensure_files_unchanged()?;
+        let name = &self.checked_layout_name(name, None)?;
         let saved = self
             .paths()
             .save_user_layout(name, &layout_file::serialize(self.layout()), false)
@@ -119,6 +132,7 @@ impl ConfigDocument {
         description: &str,
         expected: &str,
     ) -> Result<String, ConfigError> {
+        let new_name = &self.checked_layout_name(new_name, Some(name))?;
         if self
             .paths()
             .load_user_layout(name)
@@ -270,6 +284,15 @@ mod tests {
             .unwrap();
         assert!(!document.load_layout("user:Ivan").unwrap().rules.is_empty());
         assert_eq!(document.unique_library_name("Ivan").unwrap(), "Ivan (2)");
+        assert_eq!(document.unique_library_name("ivan").unwrap(), "ivan (2)");
+        assert_eq!(
+            document.create_library_layout("IVAN", "", LibrarySource::Empty),
+            Err(ConfigError::Name(NameKind::Layout, NameIssue::Taken))
+        );
+        assert_eq!(
+            document.layout_name("IVAN", Some("Ivan")),
+            Ok("IVAN".into())
+        );
         assert!(
             document
                 .create_library_layout(&ivan, "", LibrarySource::Empty)

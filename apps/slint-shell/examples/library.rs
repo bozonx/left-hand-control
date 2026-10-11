@@ -23,9 +23,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_create_name().is_empty());
     library.invoke_create("A".into(), "".into(), LayoutSource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
-    assert_eq!(library.invoke_name_issue("A".into()), NameIssue::Taken);
-    assert_eq!(library.invoke_name_issue("a/b".into()), NameIssue::Invalid);
-    assert_eq!(library.invoke_name_issue(" ".into()), NameIssue::Empty);
+    let error = |name: &str, except: &str| library.invoke_name_error(name.into(), except.into()).id;
+    assert_eq!(error("a", ""), "layout-name-taken");
+    assert_eq!(error("a", "A"), "");
+    assert_eq!(error("a/b", ""), "name-invalid");
+    assert_eq!(error(" ", ""), "layout-name-required");
     library.invoke_create("B".into(), "".into(), LayoutSource::Empty, 0);
     assert_eq!(library.get_names().row_count(), 2);
     library.invoke_select(0);

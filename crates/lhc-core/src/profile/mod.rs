@@ -10,6 +10,7 @@ pub mod ids;
 pub mod layout_file;
 pub mod macros;
 pub mod model;
+pub mod names;
 pub mod settings;
 
 pub mod menus;
