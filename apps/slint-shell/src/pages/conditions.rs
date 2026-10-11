@@ -2,12 +2,14 @@ use super::{condition_list, parse_list, strings};
 use crate::ui::{ConditionChoices, LanguageChoice, SettingsWindow, WindowChoice};
 use lhc_core::active_window::{ActiveWindow, OpenWindow};
 use lhc_core::profile::app_match;
-use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 /// How many running processes the picker lists.
 const PROCESSES: usize = 8;
+/// How many suggestions the add field shows.
+const SUGGESTIONS: usize = 6;
 
 thread_local! {
     /// Running processes, re-read when older than two seconds.
@@ -22,31 +24,104 @@ pub(crate) fn show_active_window(ui: &SettingsWindow, window: Option<&ActiveWind
 }
 
 /// One row per application, in the order of `windows`; the first title
-/// stands for the others.
+/// stands for the others, `titles` keeps one per window.
 fn group(windows: Vec<OpenWindow>) -> Vec<WindowChoice> {
-    let mut rows: Vec<WindowChoice> = Vec::new();
+    let mut rows: Vec<(WindowChoice, Vec<SharedString>)> = Vec::new();
     for window in windows {
         let pattern = window_pattern(&window.app_id, window.process_name.as_deref());
-        if let Some(row) = rows
+        if let Some((row, titles)) = rows
             .iter_mut()
-            .find(|row| row.pattern.eq_ignore_ascii_case(&pattern))
+            .find(|(row, _)| row.pattern.eq_ignore_ascii_case(&pattern))
         {
             row.count += 1;
             if row.title.is_empty() {
-                row.title = window.title.into();
+                row.title = window.title.as_str().into();
             }
+            titles.push(window.title.into());
             continue;
         }
-        rows.push(WindowChoice {
-            pattern: pattern.into(),
-            app_id: window.app_id.into(),
-            process: window.process_name.unwrap_or_default().into(),
-            title: window.title.into(),
-            count: 1,
-            recent: false,
-        });
+        let title = SharedString::from(window.title);
+        rows.push((
+            WindowChoice {
+                pattern: pattern.into(),
+                app_id: window.app_id.into(),
+                process: window.process_name.unwrap_or_default().into(),
+                title: title.clone(),
+                titles: ModelRc::default(),
+                count: 1,
+                recent: false,
+            },
+            vec![title],
+        ));
     }
-    rows
+    rows.into_iter()
+        .map(|(mut row, titles)| {
+            row.titles = strings(titles);
+            row
+        })
+        .collect()
+}
+
+/// How many of the open windows `pattern` matches.
+fn open_matches(windows: &[WindowChoice], pattern: &str) -> usize {
+    let Some(matcher) = app_match::AppMatcher::parse(pattern) else {
+        return 0;
+    };
+    windows
+        .iter()
+        .map(|row| {
+            row.titles
+                .iter()
+                .filter(|title| {
+                    matcher.matches_window(&ActiveWindow {
+                        title: title.to_string(),
+                        app_id: row.app_id.to_string(),
+                        process_name: (!row.process.is_empty()).then(|| row.process.to_string()),
+                        fullscreen: None,
+                    })
+                })
+                .count()
+        })
+        .sum()
+}
+
+/// Open applications, then running processes, containing `query` and not
+/// yet in `selected`; a process row has only `pattern` and `process`.
+fn suggestions(
+    windows: &[WindowChoice],
+    processes: &[String],
+    selected: &[String],
+    query: &str,
+) -> Vec<WindowChoice> {
+    let query = query.trim().to_lowercase();
+    if query.is_empty() {
+        return Vec::new();
+    }
+    let listed = |pattern: &str| {
+        selected
+            .iter()
+            .any(|item| item.eq_ignore_ascii_case(pattern))
+    };
+    let taken = windows
+        .iter()
+        .flat_map(|window| [window.pattern.to_string(), window.process.to_string()])
+        .chain(selected.iter().cloned())
+        .collect::<Vec<_>>();
+    windows
+        .iter()
+        .filter(|window| window_matches(window, &query) && !listed(&window.pattern))
+        .cloned()
+        .chain(
+            process_matches(processes, &taken, &query)
+                .into_iter()
+                .map(|name| WindowChoice {
+                    pattern: name.as_str().into(),
+                    process: name.into(),
+                    ..Default::default()
+                }),
+        )
+        .take(SUGGESTIONS)
+        .collect()
 }
 
 /// Mark the active application and put it first, the others by app id.
@@ -144,6 +219,25 @@ pub(super) fn bind(ui: &SettingsWindow) {
             .collect::<Vec<_>>();
         strings(process_matches(&running_processes(), &taken, &query))
     });
+    choices.on_open_count(|windows, pattern| {
+        let windows = windows.iter().collect::<Vec<_>>();
+        i32::try_from(open_matches(&windows, &pattern)).unwrap_or(i32::MAX)
+    });
+    choices.on_suggest(|windows, selected, query| {
+        let windows = windows.iter().collect::<Vec<_>>();
+        let selected = selected
+            .iter()
+            .map(|item| item.to_string())
+            .collect::<Vec<_>>();
+        let processes = if query.trim().is_empty() {
+            Vec::new()
+        } else {
+            running_processes()
+        };
+        ModelRc::new(VecModel::from(suggestions(
+            &windows, &processes, &selected, &query,
+        )))
+    });
     choices.on_is_title(|pattern| app_match::title_text(&pattern).is_some());
     choices.on_title_text(|pattern| app_match::title_text(&pattern).unwrap_or("").into());
     choices.on_make_pattern(|text, title| {
@@ -174,6 +268,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
                 );
                 choices.set_open_windows(ModelRc::new(VecModel::from(rows)));
                 choices.set_open_windows_loading(false);
+                choices.set_open_windows_ready(true);
             }) {
                 log::warn!("open windows: {error}");
             }
@@ -247,6 +342,19 @@ pub(super) fn bind(ui: &SettingsWindow) {
         }
         condition_list(&values).into()
     });
+    choices.on_replace(|value, index, item| {
+        let mut values = parse_list(&value);
+        let item = item.trim();
+        if let Some(slot) = usize::try_from(index)
+            .ok()
+            .and_then(|index| values.get_mut(index))
+        {
+            if !item.is_empty() {
+                *slot = item.to_owned();
+            }
+        }
+        condition_list(&values).into()
+    });
     choices.on_remove(|value, index| {
         let mut values = parse_list(&value);
         if let Ok(index) = usize::try_from(index) {
@@ -305,6 +413,36 @@ mod tests {
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0].pattern, "dolphin");
         assert!(rows.iter().all(|row| !row.recent));
+    }
+
+    #[test]
+    fn patterns_count_matching_windows() {
+        let rows = group(vec![
+            open("firefox", "firefox", "YouTube — Firefox"),
+            open("firefox", "firefox", "Docs"),
+            open("org.telegram.desktop", "Telegram", "Chat"),
+        ]);
+        assert_eq!(open_matches(&rows, "Firefox"), 2);
+        assert_eq!(open_matches(&rows, "telegram"), 1);
+        assert_eq!(open_matches(&rows, "title:youtube"), 1);
+        assert_eq!(open_matches(&rows, "steam_app_*"), 0);
+        assert_eq!(open_matches(&rows, " "), 0);
+    }
+
+    #[test]
+    fn suggestions_skip_selected_ones() {
+        let rows = group(vec![
+            open("org.kde.kate", "kate", ""),
+            open("org.kde.dolphin", "dolphin", ""),
+        ]);
+        let processes = ["kded6".to_owned(), "kate".into()];
+        let found = suggestions(&rows, &processes, &["org.kde.dolphin".into()], "kd");
+        let patterns = found
+            .iter()
+            .map(|row| row.pattern.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(patterns, ["org.kde.kate", "kded6"]);
+        assert!(suggestions(&rows, &processes, &[], " ").is_empty());
     }
 
     #[test]

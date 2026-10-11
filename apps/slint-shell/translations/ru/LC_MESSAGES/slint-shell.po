@@ -2318,3 +2318,51 @@ msgstr "Перезаписать"
 
 msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
 msgstr "Показать коды клавиш LHC, используемые в назначениях, например KeyA и ArrowLeft."
+
+msgid "Application"
+msgstr "Приложение"
+
+msgid "Window title"
+msgstr "Заголовок окна"
+
+msgid "Click to switch"
+msgstr "Нажмите, чтобы переключить"
+
+msgid "Match by app ID or process instead"
+msgstr "Сравнивать по ID приложения или процессу"
+
+msgid "Match by window title instead"
+msgstr "Сравнивать по заголовку окна"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Открыто: {n} окно"
+msgstr[1] "Открыто: {n} окна"
+msgstr[2] "Открыто: {n} окон"
+
+msgid "Not open now"
+msgstr "Сейчас не открыто"
+
+msgid "Running process"
+msgstr "Запущенный процесс"
+
+msgid "Text the window title contains"
+msgstr "Текст, который есть в заголовке окна"
+
+msgid "App ID or process, * and ? allowed"
+msgstr "ID приложения или процесс, можно * и ?"
+
+msgid "Already in the list"
+msgstr "Уже в списке"
+
+msgid "Choose from open windows…"
+msgstr "Выбрать из открытых окон…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "Совпадает с {n} открытым окном"
+msgstr[1] "Совпадает с {n} открытыми окнами"
+msgstr[2] "Совпадает с {n} открытыми окнами"
+
+msgid "Matches no open window"
+msgstr "Не совпадает ни с одним открытым окном"
