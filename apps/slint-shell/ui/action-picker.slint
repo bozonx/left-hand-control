@@ -2,7 +2,7 @@ import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { InfoTip } from "controls.slint";
-import { PickerCategory, PickerTarget } from "types.slint";
+import { PickerCategory, PickerTarget, ShortcutDesktop } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: PickerCategory, notice: Message }
 /// Picker category in sidebar order with the number of its catalog items.
@@ -27,7 +27,7 @@ export component CategoryIcon inherits VerticalLayout {
             : root.category == PickerCategory.commands ? @image-url("icons/terminal.svg")
             : root.category == PickerCategory.app ? @image-url("icons/hand.svg")
             : root.category == PickerCategory.system-actions ? @image-url("icons/settings-2.svg")
-            : root.category == PickerCategory.kde-shortcuts ? @image-url("icons/square-function.svg")
+            : root.category == PickerCategory.desktop-shortcuts ? @image-url("icons/square-function.svg")
             : root.category == PickerCategory.pause ? @image-url("icons/clock.svg")
             : @image-url("icons/keyboard.svg");
     }
@@ -74,6 +74,8 @@ export global ActionPicker {
     callback begin-capture();
     in-out property <string> query;
     in-out property <PickerCategory> category: PickerCategory.modifiers;
+    /// Source of the desktop-shortcuts category in this session.
+    in property <ShortcutDesktop> shortcut-desktop;
     in-out property <[PickerItem]> items;
     /// Every category in sidebar order; the Slint side hides those the
     /// current target does not accept.
@@ -99,7 +101,7 @@ export global ActionPicker {
     public pure function is-listed(category: PickerCategory) -> bool {
         return self.is-key(category) || category == PickerCategory.macros
             || category == PickerCategory.builtin-macros || category == PickerCategory.app
-            || category == PickerCategory.system-actions || category == PickerCategory.kde-shortcuts;
+            || category == PickerCategory.system-actions || category == PickerCategory.desktop-shortcuts;
     }
     public pure function title(category: PickerCategory) -> string {
         return category == PickerCategory.modifiers ? @tr("Modifiers")
@@ -115,7 +117,7 @@ export global ActionPicker {
             : category == PickerCategory.commands ? @tr("Commands")
             : category == PickerCategory.app ? @tr("Left Hand Control")
             : category == PickerCategory.system-actions ? @tr("System actions")
-            : category == PickerCategory.kde-shortcuts ? @tr("KDE shortcuts")
+            : category == PickerCategory.desktop-shortcuts ? (self.shortcut-desktop == ShortcutDesktop.kde ? @tr("KDE shortcuts") : "")
             : category == PickerCategory.text ? @tr("Text")
             : category == PickerCategory.pause ? @tr("Pause")
             : "";
@@ -242,8 +244,8 @@ export component PickerOverlay inherits Rectangle {
                                         text: entry.category == PickerCategory.letters ? @tr("Keys") : @tr("Actions");
                                         color: Theme.muted; font-size: 11px; font-weight: 700;
                                     }
-                                    // KDE shortcuts exist only in a KDE session.
-                                    if ActionPicker.is-key(entry.category) || (!ActionPicker.key-only && !ActionPicker.hold-action && (entry.category != PickerCategory.pause || ActionPicker.macro-step) && (entry.category != PickerCategory.kde-shortcuts || entry.count > 0)): CategoryButton {
+                                    // Desktop shortcuts exist only where the session has a shortcut backend.
+                                    if ActionPicker.is-key(entry.category) || (!ActionPicker.key-only && !ActionPicker.hold-action && (entry.category != PickerCategory.pause || ActionPicker.macro-step) && (entry.category != PickerCategory.desktop-shortcuts || entry.count > 0)): CategoryButton {
                                         category: entry.category; count: entry.count;
                                     }
                                     }

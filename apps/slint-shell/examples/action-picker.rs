@@ -232,7 +232,7 @@ fn parse_category(name: &str) -> Result<PickerCategory, String> {
         "commands" => C::Commands,
         "app" => C::App,
         "system-actions" => C::SystemActions,
-        "kde-shortcuts" => C::KdeShortcuts,
+        "desktop-shortcuts" => C::DesktopShortcuts,
         "text" => C::Text,
         "pause" => C::Pause,
         other => return Err(format!("unknown picker category: {other}")),

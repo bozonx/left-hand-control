@@ -24,7 +24,7 @@ fn action_names(ui: &SettingsWindow, config: &ConfigDocument) -> HashMap<String,
         .into_iter()
         .filter_map(|entry| Some((entry.action.format()?, action_label(ui, entry.name)?)))
         .collect();
-    super::picker::KDE_SHORTCUTS.with(|cache| {
+    super::picker::DESKTOP_SHORTCUTS.with(|cache| {
         names.extend(
             cache
                 .borrow()

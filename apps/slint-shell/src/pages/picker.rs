@@ -8,7 +8,7 @@ use crate::{
     keyboard,
     ui::{
         ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerCategory,
-        PickerCategoryCount, PickerItem, PickerTarget, SettingsWindow,
+        PickerCategoryCount, PickerItem, PickerTarget, SettingsWindow, ShortcutDesktop,
     },
 };
 use lhc_core::{
@@ -40,7 +40,7 @@ const ACTION_CATEGORIES: [PickerCategory; 8] = [
     PickerCategory::BuiltinMacros,
     PickerCategory::App,
     PickerCategory::SystemActions,
-    PickerCategory::KdeShortcuts,
+    PickerCategory::DesktopShortcuts,
     PickerCategory::Text,
     PickerCategory::Pause,
     PickerCategory::Commands,
@@ -56,7 +56,7 @@ pub(crate) fn category_for_value(value: &str) -> PickerCategory {
         ("cmd:", PickerCategory::Commands),
         ("app:", PickerCategory::App),
         ("sys:", PickerCategory::SystemActions),
-        ("kde:", PickerCategory::KdeShortcuts),
+        ("kde:", PickerCategory::DesktopShortcuts),
         ("text:", PickerCategory::Text),
         ("pause:", PickerCategory::Pause),
     ] {
@@ -96,58 +96,73 @@ pub(crate) fn action_label(ui: &SettingsWindow, name: ActionName) -> Option<Stri
     }
 }
 
-/// A KDE global shortcut as the picker and key caps show it.
-pub(crate) struct KdeShortcutItem {
-    /// `kde:component/shortcut`.
+/// A native global shortcut of the desktop environment as the picker and
+/// key caps show it.
+pub(crate) struct DesktopShortcutItem {
+    /// Backend-prefixed id, e.g. `kde:component/shortcut`.
     pub value: String,
     pub component: String,
     pub label: String,
 }
 
 thread_local! {
-    /// Global shortcuts of the running KDE session; empty until read and
-    /// outside KDE.
-    pub(crate) static KDE_SHORTCUTS: RefCell<Vec<KdeShortcutItem>> = const { RefCell::new(Vec::new()) };
+    /// Global shortcuts of the running desktop session; empty until read
+    /// and on desktops without a shortcut backend.
+    pub(crate) static DESKTOP_SHORTCUTS: RefCell<Vec<DesktopShortcutItem>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Re-read the KDE global shortcuts in the background and refresh an
-/// open picker when they arrive.
-fn load_kde_shortcuts(ui: slint::Weak<SettingsWindow>) {
+/// Desktop environment whose native shortcuts this session can list.
+fn shortcut_desktop() -> ShortcutDesktop {
     #[cfg(target_os = "linux")]
     {
-        use lhc_core::platform::{kde_shortcuts, linux};
-        if !matches!(linux::detect().desktop, linux::Desktop::Kde) {
-            return;
+        use lhc_core::platform::linux;
+        if matches!(linux::detect().desktop, linux::Desktop::Kde) {
+            return ShortcutDesktop::Kde;
         }
-        std::thread::spawn(move || {
-            let shortcuts = match kde_shortcuts::list() {
-                Ok(shortcuts) => shortcuts,
-                Err(error) => {
-                    log::warn!("[picker] cannot read KDE global shortcuts: {error}");
-                    return;
-                }
-            };
-            let _ = slint::invoke_from_event_loop(move || {
-                KDE_SHORTCUTS.with(|cache| {
-                    *cache.borrow_mut() = shortcuts
-                        .into_iter()
-                        .map(|shortcut| KdeShortcutItem {
-                            value: format!("kde:{}", shortcut.id()),
-                            component: shortcut.component_label,
-                            label: shortcut.label,
-                        })
-                        .collect();
-                });
-                if let Some(ui) = ui.upgrade()
-                    && ui.global::<ActionPicker>().get_opened()
-                {
-                    ui.global::<ActionPicker>().invoke_refresh();
-                }
-            });
+    }
+    ShortcutDesktop::None
+}
+
+/// Re-read the desktop's global shortcuts in the background and refresh
+/// an open picker when they arrive.
+fn load_desktop_shortcuts(ui: slint::Weak<SettingsWindow>) {
+    let read: fn() -> Result<Vec<DesktopShortcutItem>, String> = match shortcut_desktop() {
+        ShortcutDesktop::None => return,
+        ShortcutDesktop::Kde => read_kde_shortcuts,
+    };
+    std::thread::spawn(move || {
+        let shortcuts = match read() {
+            Ok(shortcuts) => shortcuts,
+            Err(error) => {
+                log::warn!("[picker] cannot read desktop global shortcuts: {error}");
+                return;
+            }
+        };
+        let _ = slint::invoke_from_event_loop(move || {
+            DESKTOP_SHORTCUTS.with(|cache| *cache.borrow_mut() = shortcuts);
+            if let Some(ui) = ui.upgrade()
+                && ui.global::<ActionPicker>().get_opened()
+            {
+                ui.global::<ActionPicker>().invoke_refresh();
+            }
         });
+    });
+}
+
+fn read_kde_shortcuts() -> Result<Vec<DesktopShortcutItem>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        Ok(lhc_core::platform::kde_shortcuts::list()?
+            .into_iter()
+            .map(|shortcut| DesktopShortcutItem {
+                value: format!("kde:{}", shortcut.id()),
+                component: shortcut.component_label,
+                label: shortcut.label,
+            })
+            .collect())
     }
     #[cfg(not(target_os = "linux"))]
-    let _ = ui;
+    Ok(Vec::new())
 }
 
 fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
@@ -191,11 +206,11 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             notice: notice.to_ui(),
         })
     }));
-    KDE_SHORTCUTS.with(|cache| {
+    DESKTOP_SHORTCUTS.with(|cache| {
         items.extend(cache.borrow().iter().map(|shortcut| PickerItem {
             value: shortcut.value.as_str().into(),
             label: format!("{}: {}", shortcut.component, shortcut.label).into(),
-            category: PickerCategory::KdeShortcuts,
+            category: PickerCategory::DesktopShortcuts,
             notice: Msg::None.to_ui(),
         }));
     });
@@ -260,7 +275,8 @@ struct Session {
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let session = Rc::new(RefCell::new(Session::default()));
     let picker = ui.global::<ActionPicker>();
-    load_kde_shortcuts(ui.as_weak());
+    picker.set_shortcut_desktop(shortcut_desktop());
+    load_desktop_shortcuts(ui.as_weak());
 
     let weak = ui.as_weak();
     picker.on_begin_capture(move || {
@@ -293,7 +309,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let (doc, state) = (document.clone(), session.clone());
     picker.on_open(move |target, index, value, key_only| {
         let Some(ui) = weak.upgrade() else { return };
-        load_kde_shortcuts(ui.as_weak());
+        load_desktop_shortcuts(ui.as_weak());
         let catalog = catalog(&ui, &doc.read());
         let category = catalog
             .iter()
@@ -302,7 +318,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .unwrap_or(if value.starts_with("text:") {
                 PickerCategory::Text
             } else if value.starts_with("kde:") {
-                PickerCategory::KdeShortcuts
+                PickerCategory::DesktopShortcuts
             } else if value.starts_with("pause:") && target == PickerTarget::MacroStep {
                 PickerCategory::Pause
             } else {
@@ -1075,7 +1091,7 @@ mod tests {
         assert_eq!(category_for_value("text:Ctrl+KeyV"), PickerCategory::Text);
         assert_eq!(
             category_for_value("kde:kwin/Window Close"),
-            PickerCategory::KdeShortcuts
+            PickerCategory::DesktopShortcuts
         );
         assert_eq!(
             category_for_value("cmd:Ctrl+KeyV"),
