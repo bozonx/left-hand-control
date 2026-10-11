@@ -137,6 +137,8 @@ component MacroCard inherits Card {
                     HorizontalLayout {
                         spacing: 6px;
                         InlineTextField {
+                            horizontal-stretch: 1;
+                            max-width: 100000px;
                             text: root.item.id;
                             placeholder: "id";
                             label: @tr("Macro ID");
@@ -261,7 +263,6 @@ component BuiltinMacrosHeader inherits Rectangle {
                 spacing: 8px;
                 alignment: start;
                 Text { text: @tr("Built-in macros"); color: Theme.text; font-size: 16px; font-weight: 700; vertical-alignment: center; }
-                Badge { text: MacroEditor.builtin-macros.length; }
             }
         }
     }

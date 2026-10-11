@@ -752,8 +752,8 @@ msgstr "Клавиша-триггер:"
 msgid "Modifiers"
 msgstr "Модификаторы"
 
-msgid "Letters and digits"
-msgstr "Буквы и цифры"
+msgid "Letters, digits and symbols"
+msgstr "Буквы, цифры, символы"
 
 msgid "Control keys"
 msgstr "Управляющие"
@@ -1013,8 +1013,8 @@ msgstr "Клавиша"
 msgid "US layout"
 msgstr "Английская раскладка"
 
-msgid "Internal codes"
-msgstr "Внутренние коды"
+msgid "LHC codes"
+msgstr "Коды LHC"
 
 msgid "No extra keys for this layer yet."
 msgstr "Ещё нет дополнительных клавиш для этого слоя."
@@ -1022,8 +1022,8 @@ msgstr "Ещё нет дополнительных клавиш для этог�
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid."
 msgstr "Кнопки мыши, медиа-клавиши и другие триггеры вне основной сетки клавиатуры."
 
-msgid "Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Internal codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."
-msgstr "Режим отображения меняет только метку — код клавиши остаётся прежним. «Английская раскладка» показывает буквы для удобства. «Внутренние коды» — коды приложения (например KeyA)."
+msgid "Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “LHC codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."
+msgstr "Режим отображения меняет только метку — код клавиши остаётся прежним. «Английская раскладка» показывает буквы для удобства. «Коды LHC» — коды приложения (например KeyA)."
 
 msgid "(copy)"
 msgstr "(копия)"
@@ -2315,3 +2315,6 @@ msgstr "Сохранить как новую…"
 
 msgid "Overwrite"
 msgstr "Перезаписать"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr "Показать коды клавиш LHC, используемые в назначениях, например KeyA и ArrowLeft."

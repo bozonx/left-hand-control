@@ -457,7 +457,7 @@ export component PageTabs inherits ScrollView {
             selected: index == root.selected;
             clicked => { root.select(index); }
         }
-        IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Add page"); primary: root.labels.length == 0; clicked => { root.add(); } }
+        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Add page"); primary: true; clicked => { root.add(); } } }
     }
 }
 

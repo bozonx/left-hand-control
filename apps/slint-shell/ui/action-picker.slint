@@ -102,7 +102,7 @@ export global ActionPicker {
     }
     public pure function title(category: PickerCategory) -> string {
         return category == PickerCategory.modifiers ? @tr("Modifiers")
-            : category == PickerCategory.letters ? @tr("Letters and digits")
+            : category == PickerCategory.letters ? @tr("Letters, digits and symbols")
             : category == PickerCategory.control-keys ? @tr("Control keys")
             : category == PickerCategory.navigation ? @tr("Navigation and numpad")
             : category == PickerCategory.media ? @tr("Media and launch")

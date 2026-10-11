@@ -62,6 +62,7 @@ component ActionIcon inherits Image {
 /// Segmented keyboard view selector.
 component Segmented inherits Rectangle {
     in property <[string]> labels;
+    in property <[string]> tooltips;
     in property <int> selected-index;
     callback selected(int);
     background: Theme.surface;
@@ -95,6 +96,15 @@ component Segmented inherits Rectangle {
                     return reject;
                 }
             }
+            if root.tooltips[index] != "": Tooltip {
+                Rectangle {
+                    background: Theme.card;
+                    border-radius: 4px;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    HorizontalLayout { padding: 6px; Text { text: root.tooltips[index]; color: Theme.text; font-size: 12px; } }
+                }
+            }
             seg-touch := TouchArea { mouse-cursor: pointer; clicked => { root.selected(index); } }
         }
     }
@@ -111,8 +121,8 @@ component ActionText inherits HorizontalLayout {
     Text {
         min-width: 0px;
         horizontal-stretch: 1;
-        text: root.kind == Assignment.transparent ? "—" : root.kind == Assignment.swallow ? @tr("Suppress") : root.action;
-        color: root.kind == Assignment.transparent ? Theme.muted : Theme.link;
+        text: root.kind == Assignment.transparent ? "" : root.kind == Assignment.swallow ? @tr("Suppress") : root.action;
+        color: root.kind == Assignment.action ? Theme.text : Theme.muted;
         font-size: root.text-size;
         font-weight: root.kind == Assignment.transparent ? 400 : 500;
         horizontal-alignment: root.text-alignment;
@@ -208,7 +218,7 @@ component KeyCap inherits Rectangle {
         Text {
             min-width: 0px;
             text: root.label-mode == LabelMode.label ? root.cell.label : root.cell.code;
-            color: Theme.text;
+            color: Theme.link;
             font-size: 13px;
             font-weight: 600;
             horizontal-alignment: center;
@@ -402,11 +412,12 @@ export component LayersPage inherits VerticalLayout {
                         Text { text: @tr("Keyboard"); color: Theme.text; font-size: 15px; font-weight: 700; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
-                            InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Internal codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."); }
+                            InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “LHC codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."); }
                         }
                         Rectangle { horizontal-stretch: 1; }
                         Segmented {
-                            labels: [@tr("US layout"), @tr("Internal codes")];
+                            labels: [@tr("US layout"), @tr("LHC codes")];
+                            tooltips: ["", @tr("Show LHC key codes used in assignments, such as KeyA and ArrowLeft.")];
                             selected-index: root.label-mode == LabelMode.code ? 1 : 0;
                             selected(index) => { root.label-mode = index == 1 ? LabelMode.code : LabelMode.label; }
                         }

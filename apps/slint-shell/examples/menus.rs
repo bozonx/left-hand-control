@@ -136,6 +136,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settle();
     // The conflicting save reloads the document from disk.
     assert_eq!(e.get_status().id.as_str(), "config-external-change");
+    settings.set_commands_enabled(true);
+    settings.invoke_save();
 
     document.edit(slint_shell::document::View::Shell, |config| {
         config.save_command(lhc_core::profile::model::Command {

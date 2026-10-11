@@ -305,7 +305,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             && (standalone_layer
                 || rule_action
                 || double_tap
-                || matches!(target, PickerTarget::BaseKey | PickerTarget::QuickAction));
+                || matches!(target, PickerTarget::BaseKey));
         picker.set_allow_default(allow_default);
 
         picker.set_inherit_default(standalone_layer);
