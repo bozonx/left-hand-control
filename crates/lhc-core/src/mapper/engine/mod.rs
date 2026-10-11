@@ -123,6 +123,7 @@ pub struct Engine {
 
     /// Currently executing macro (if any)
     active_macro: Option<self::model::ActiveMacro>,
+    text_pending: bool,
 }
 impl Engine {
     /// Time until the nearest pending deadline (hold-decision,
@@ -144,6 +145,9 @@ impl Engine {
             .chain(
                 self.active_macro
                     .as_ref()
+                    .filter(|am| {
+                        !self.text_pending || !matches!(am.phase, self::model::MacroPhase::NextStep)
+                    })
                     .map(|am| am.next_wake.saturating_duration_since(now)),
             )
             .chain(
@@ -151,6 +155,24 @@ impl Engine {
                     .map(|deadline| deadline.saturating_duration_since(now)),
             )
             .min()
+    }
+
+    /// Resume macro timing only after the text worker has completed injection.
+    pub fn set_text_pending(&mut self, pending: bool, now: Instant) {
+        if self.text_pending && !pending {
+            if let Some(am) = self.active_macro.as_mut() {
+                let previous = am.current_step.checked_sub(1).and_then(|i| am.steps.get(i));
+                if matches!(am.phase, self::model::MacroPhase::NextStep)
+                    && matches!(
+                        previous,
+                        Some(crate::mapper::action::MacroStepItem::Literal(_))
+                    )
+                {
+                    am.next_wake = next_macro_wake(now, am);
+                }
+            }
+        }
+        self.text_pending = pending;
     }
 
     /// Tick pending state machines. Commits holds whose decision window
@@ -175,7 +197,9 @@ impl Engine {
             }
         }
         if let Some(mut am) = self.active_macro.take() {
-            if now >= am.next_wake {
+            if now >= am.next_wake
+                && (!self.text_pending || !matches!(am.phase, self::model::MacroPhase::NextStep))
+            {
                 use self::model::MacroPhase;
                 use crate::mapper::action::MacroStepItem;
                 const MAX_MACRO_STEPS: usize = 1000;
@@ -269,6 +293,7 @@ impl Engine {
                                 }
                                 MacroStepItem::Literal(text) => {
                                     out.push(Out::Literal(text.clone()));
+                                    self.text_pending = true;
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
@@ -1367,7 +1392,7 @@ impl Engine {
                 .cloned()
                 .map(ActionDef::Command)
                 .or(Some(ActionDef::Swallow))
-        } else if let Some(text) = super::action::explicit_text(trimmed) {
+        } else if let Some(text) = super::action::explicit_text(action) {
             Some(ActionDef::Literal(text))
         } else {
             super::action::parse_action(trimmed).map(ActionDef::Stroke)
@@ -1770,6 +1795,173 @@ mod tests {
             commands: Vec::new(),
             settings: Settings::default(),
         }
+    }
+
+    #[test]
+    fn text_actions_preserve_whitespace_in_remote_rules_and_macros() {
+        for text in [" ", "   ", "  a  b  ", "one\ntwo\n", "\t\n", "Привет 👋 "] {
+            let action = format!("text:{text}");
+            let cfg = config_with_rule(serde_json::json!({
+                "key": "KeyA", "tapAction": action,
+            }));
+            let mut engine = Engine::new(&cfg);
+            let mut out = Vec::new();
+            engine.execute_remote(&action, &mut out);
+            assert!(matches!(out.as_slice(), [Out::Literal(value)] if value == text));
+            out.clear();
+            let now = Instant::now();
+            engine.handle(Key::KEY_A, true, now, &mut out);
+            engine.handle(Key::KEY_A, false, now + Duration::from_millis(1), &mut out);
+            engine.tick(now + Duration::from_secs(1), &mut out);
+            assert!(
+                out.iter()
+                    .any(|event| matches!(event, Out::Literal(value) if value == text))
+            );
+
+            let mut cfg = empty_cfg();
+            cfg.macros.push(Macro {
+                id: "text".into(),
+                steps: vec![MacroStep { action }],
+                step_pause_ms: Some(0),
+                modifier_delay_ms: Some(0),
+            });
+            let mut engine = Engine::new(&cfg);
+            out.clear();
+            engine.execute_remote("macro:text", &mut out);
+            engine.tick(Instant::now(), &mut out);
+            assert!(matches!(out.as_slice(), [Out::Literal(value)] if value == text));
+        }
+    }
+
+    #[test]
+    fn macro_waits_for_text_completion_before_next_step_and_pause() {
+        for pause in [false, true] {
+            let mut cfg = empty_cfg();
+            let mut steps = vec![MacroStep {
+                action: "text:hello\n ".into(),
+            }];
+            if pause {
+                steps.push(MacroStep {
+                    action: "pause:100".into(),
+                });
+            }
+            steps.push(MacroStep {
+                action: "Enter".into(),
+            });
+            cfg.macros.push(Macro {
+                id: "text".into(),
+                steps,
+                step_pause_ms: Some(10),
+                modifier_delay_ms: Some(0),
+            });
+            let mut engine = Engine::new(&cfg);
+            let mut out = Vec::new();
+            engine.execute_remote("macro:text", &mut out);
+            let now = Instant::now();
+            engine.tick(now, &mut out);
+            assert!(matches!(out.as_slice(), [Out::Literal(_)]));
+            out.clear();
+            let completed = now + Duration::from_secs(5);
+            engine.tick(completed, &mut out);
+            assert!(out.is_empty());
+            assert_eq!(engine.next_deadline(completed), None);
+            engine.set_text_pending(false, completed);
+            engine.tick(completed, &mut out);
+            assert!(out.is_empty());
+            engine.tick(completed + Duration::from_millis(9), &mut out);
+            assert!(out.is_empty());
+            engine.tick(
+                completed + Duration::from_millis(if pause { 110 } else { 10 }),
+                &mut out,
+            );
+            assert!(out.iter().any(|event| matches!(
+                event,
+                Out::KeyRaw {
+                    key: Key::KEY_ENTER,
+                    down: true
+                }
+            )));
+        }
+    }
+
+    #[test]
+    fn pending_text_does_not_keep_macro_modifiers_pressed() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "copy".into(),
+            steps: vec![
+                MacroStep {
+                    action: "Ctrl+KeyC".into(),
+                },
+                MacroStep {
+                    action: "Enter".into(),
+                },
+            ],
+            step_pause_ms: Some(10),
+            modifier_delay_ms: Some(10),
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        engine.execute_remote("macro:copy", &mut out);
+        let now = Instant::now();
+        engine.tick(now, &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw {
+                key: Key::KEY_LEFTCTRL,
+                down: true
+            }]
+        ));
+        out.clear();
+        engine.set_text_pending(true, now);
+        engine.tick(now + Duration::from_millis(10), &mut out);
+        out.clear();
+        engine.tick(now + Duration::from_millis(20), &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw {
+                key: Key::KEY_LEFTCTRL,
+                down: false
+            }]
+        ));
+        out.clear();
+        engine.tick(now + Duration::from_secs(1), &mut out);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn unrelated_text_does_not_reset_an_existing_macro_pause() {
+        let mut cfg = empty_cfg();
+        cfg.macros.push(Macro {
+            id: "pause".into(),
+            steps: vec![
+                MacroStep {
+                    action: "pause:100".into(),
+                },
+                MacroStep {
+                    action: "Enter".into(),
+                },
+            ],
+            step_pause_ms: Some(10),
+            modifier_delay_ms: Some(0),
+        });
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        engine.execute_remote("macro:pause", &mut out);
+        let now = Instant::now();
+        engine.tick(now, &mut out);
+        engine.set_text_pending(true, now + Duration::from_millis(20));
+        engine.set_text_pending(false, now + Duration::from_millis(30));
+        engine.tick(now + Duration::from_millis(99), &mut out);
+        assert!(out.is_empty());
+        engine.tick(now + Duration::from_millis(100), &mut out);
+        assert!(out.iter().any(|event| matches!(
+            event,
+            Out::KeyRaw {
+                key: Key::KEY_ENTER,
+                down: true
+            }
+        )));
     }
 
     #[test]

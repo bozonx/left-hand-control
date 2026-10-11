@@ -394,6 +394,8 @@ mod tests {
             "sys:switchDesktop2",
             "app:showQuickMenu1",
             "text:  keep spaces ",
+            "text:   ",
+            "text:first\nsecond\n",
             "pause:100",
             "",
         ] {

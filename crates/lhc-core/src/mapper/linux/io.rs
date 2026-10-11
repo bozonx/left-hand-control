@@ -6,6 +6,7 @@ use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, Key};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -22,6 +23,9 @@ pub(super) trait EventSink {
 pub(super) trait SideEffects {
     fn sleep(&mut self, duration: Duration);
     fn type_text(&mut self, text: &str);
+    fn text_pending(&self) -> bool {
+        false
+    }
     fn run_system(&mut self, action: &SysAction);
     fn run_command(&mut self, command: &SysCommand);
 }
@@ -57,7 +61,14 @@ impl SideEffects for RuntimeSideEffects {
         // portal::type_text can block for seconds on its first call (libei
         // handshake / consent dialog) — never run it on the mapper thread
         // while the keyboard is grabbed.
-        enqueue_side_effect(SideEffectJob::Text(text.to_string()));
+        TEXT_PENDING.fetch_add(1, Ordering::SeqCst);
+        if !enqueue_side_effect(SideEffectJob::Text(text.to_string())) {
+            TEXT_PENDING.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+
+    fn text_pending(&self) -> bool {
+        TEXT_PENDING.load(Ordering::SeqCst) != 0
     }
 
     fn run_system(&mut self, action: &SysAction) {
@@ -68,6 +79,8 @@ impl SideEffects for RuntimeSideEffects {
         super::super::commands::spawn(command.clone());
     }
 }
+
+static TEXT_PENDING: AtomicUsize = AtomicUsize::new(0);
 
 enum SideEffectJob {
     System(SysAction),
@@ -89,17 +102,22 @@ fn side_effect_tx() -> &'static mpsc::Sender<SideEffectJob> {
     })
 }
 
-fn enqueue_side_effect(job: SideEffectJob) {
+fn enqueue_side_effect(job: SideEffectJob) -> bool {
     if let Err(e) = side_effect_tx().send(job) {
-        log::debug!("[mapper] side-effect queue unavailable: {e}");
+        log::warn!("[mapper] side-effect queue unavailable: {e}");
+        return false;
     }
+    true
 }
 
 fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
     for job in rx {
         match job {
             SideEffectJob::System(action) => run_sys_action(&action),
-            SideEffectJob::Text(text) => portal::type_text(&text),
+            SideEffectJob::Text(text) => {
+                portal::type_text(&text);
+                TEXT_PENDING.fetch_sub(1, Ordering::SeqCst);
+            }
         }
     }
 }
@@ -249,6 +267,7 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     const MAX_WAIT: Duration = Duration::from_millis(100);
 
     let now = driver.now();
+    engine.set_text_pending(effects.text_pending(), now);
     let wait = engine
         .next_deadline(now)
         .map(|d| d.min(MAX_WAIT))

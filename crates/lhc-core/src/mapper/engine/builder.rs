@@ -84,7 +84,7 @@ impl Engine {
                 return steps;
             }
             for raw in raw_steps {
-                let raw = raw.trim();
+                let raw = raw.trim_start();
                 if raw.is_empty() {
                     continue;
                 }
@@ -264,7 +264,7 @@ impl Engine {
                     }
                 }
             }
-            if let Some(text) = explicit_text(trimmed) {
+            if let Some(text) = explicit_text(action) {
                 return Some(ActionDef::Literal(text));
             }
             match parse_action(trimmed) {
@@ -497,6 +497,7 @@ impl Engine {
             layer_triggers: HashMap::new(),
             isolated_holds: HashMap::new(),
             active_macro: None,
+            text_pending: false,
         }
     }
 }

@@ -29,7 +29,7 @@ pub enum MacroStepItem {
 
 pub fn explicit_text(action: &str) -> Option<String> {
     action
-        .trim()
+        .trim_start()
         .strip_prefix("text:")
         .map(|text| text.to_string())
 }
@@ -111,8 +111,11 @@ mod tests {
     }
 
     #[test]
-    fn explicit_text_trims_input() {
-        assert_eq!(explicit_text("  text:hello  "), Some("hello".into()));
+    fn explicit_text_preserves_payload_whitespace() {
+        assert_eq!(explicit_text("  text:hello  "), Some("hello  ".into()));
+        for text in [" ", "   ", "  a  b  ", "a\nb\n", "\t\n", "Привет 👋"] {
+            assert_eq!(explicit_text(&format!("text:{text}")), Some(text.into()));
+        }
     }
 
     #[test]

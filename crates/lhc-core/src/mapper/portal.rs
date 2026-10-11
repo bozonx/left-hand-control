@@ -246,7 +246,7 @@ fn build_keymap_table(layout: &str, variant: Option<&str>) -> HashMap<u32, Keyco
 // --- Public API ---------------------------------------------------------
 
 enum Cmd {
-    Type(String, bool), // (text, clipboard_fallback)
+    Type(String, bool, Sender<()>), // (text, clipboard_fallback, completion)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -363,97 +363,57 @@ pub fn type_text(text: &str) {
 }
 
 fn type_text_ydotool(text: &str, ydotool_path: Option<String>) {
-    let text = text.to_string();
     let program = ydotool_path.unwrap_or_else(|| "ydotool".to_string());
-    match thread::Builder::new()
-        .name("lhc-ydotool".into())
-        .spawn(move || {
-            let status = std::process::Command::new(&program)
-                .arg("type")
-                .arg(&text)
-                .status();
-            match status {
-                Ok(status) if status.success() => {}
-                Ok(status) => log::debug!("[ydotool] {program:?} exited with {status}"),
-                Err(e) => log::debug!("[ydotool] failed to run {program:?}: {e}"),
-            }
-        }) {
-        Ok(_) => {}
-        Err(e) => log::debug!("[ydotool] could not spawn worker: {e}"),
-    }
+    run_text_command(&program, &["type", "--escape=0", "--", text]);
 }
 
 fn type_text_xdotool(text: &str, xdotool_path: Option<String>) {
-    let text = text.to_string();
     let program = xdotool_path.unwrap_or_else(|| "xdotool".to_string());
-    match thread::Builder::new()
-        .name("lhc-xdotool".into())
-        .spawn(move || {
-            let status = std::process::Command::new(&program)
-                .arg("type")
-                .arg("--clearmodifiers")
-                .arg(&text)
-                .status();
-            match status {
-                Ok(status) if status.success() => {}
-                Ok(status) => log::debug!("[xdotool] {program:?} exited with {status}"),
-                Err(e) => log::debug!("[xdotool] failed to run {program:?}: {e}"),
-            }
-        }) {
-        Ok(_) => {}
-        Err(e) => log::debug!("[xdotool] could not spawn worker: {e}"),
+    run_text_command(&program, &["type", "--clearmodifiers", "--", text]);
+}
+
+fn run_text_command(program: &str, args: &[&str]) {
+    match std::process::Command::new(program).args(args).status() {
+        Ok(status) if status.success() => {}
+        Ok(status) => log::warn!("[text] {program:?} exited with {status}"),
+        Err(e) => log::warn!("[text] failed to run {program:?}: {e}"),
     }
 }
 
 fn type_text_portal(text: &str) {
     let Ok(mut slot) = PORTAL_TX.lock() else {
-        log::debug!("[portal] text injection dropped (worker lock poisoned)");
+        log::warn!("[portal] text injection dropped (worker lock poisoned)");
         return;
     };
-
-    if let Some(tx) = slot.as_ref() {
-        if tx.send(Cmd::Type(text.to_string(), false)).is_ok() {
-            return;
-        }
-        log::debug!("[portal] worker gone; retrying backend init");
+    if slot.is_none() {
+        *slot = start_portal_singleton();
+    }
+    let (done_tx, done_rx) = mpsc::channel();
+    let cmd = Cmd::Type(text.to_owned(), false, done_tx);
+    let sent = slot.as_ref().is_some_and(|tx| tx.send(cmd).is_ok());
+    if !sent || done_rx.recv().is_err() {
         *slot = None;
+        log::warn!("[portal] text injection failed (worker unavailable)");
     }
-
-    let Some(tx) = start_portal_singleton() else {
-        log::debug!("[portal] text injection dropped (worker spawn failed)");
-        return;
-    };
-    if tx.send(Cmd::Type(text.to_string(), false)).is_err() {
-        log::debug!("[portal] text injection dropped (worker exited during init)");
-        return;
-    }
-    *slot = Some(tx);
 }
 
 fn type_text_libei(text: &str, clipboard_fallback: bool) -> bool {
     let Ok(mut slot) = LIBEI_TX.lock() else {
-        log::debug!("[libei] text injection dropped (worker lock poisoned)");
         return false;
     };
-
-    let cmd = Cmd::Type(text.to_string(), clipboard_fallback);
-    if let Some(tx) = slot.as_ref() {
-        if tx.send(cmd).is_ok() {
-            return true;
-        }
-        log::debug!("[libei] worker gone; retrying backend init");
+    if slot.is_none() {
+        *slot = start_libei_singleton();
+    }
+    let (done_tx, done_rx) = mpsc::channel();
+    let cmd = Cmd::Type(text.to_owned(), clipboard_fallback, done_tx);
+    if !slot.as_ref().is_some_and(|tx| tx.send(cmd).is_ok()) {
         *slot = None;
-    }
-
-    let Some(tx) = start_libei_singleton() else {
-        return false;
-    };
-    let cmd = Cmd::Type(text.to_string(), clipboard_fallback);
-    if tx.send(cmd).is_err() {
-        log::debug!("[libei] text injection dropped (worker exited during init)");
         return false;
     }
-    *slot = Some(tx);
+    if done_rx.recv().is_err() {
+        *slot = None;
+        log::warn!("[libei] text injection failed (worker unavailable)");
+    }
     true
 }
 
@@ -520,7 +480,10 @@ fn portal_worker(rx: Receiver<Cmd>) {
 
     while let Ok(cmd) = rx.recv() {
         match cmd {
-            Cmd::Type(text, _) => inject_text(&portal, &session_handle, &text),
+            Cmd::Type(text, _, done) => {
+                inject_text(&portal, &session_handle, &text);
+                let _ = done.send(());
+            }
         }
     }
 
@@ -542,11 +505,11 @@ fn libei_worker(rx: Receiver<Cmd>, ready_tx: mpsc::SyncSender<Result<(), String>
 
     while let Ok(cmd) = rx.recv() {
         match cmd {
-            Cmd::Type(text, clipboard_fallback) => {
+            Cmd::Type(text, clipboard_fallback, done) => {
                 if let Err(e) = backend.type_text(&text, clipboard_fallback) {
-                    log::debug!("[libei] text injection failed: {e}");
-                    break;
+                    log::warn!("[libei] text injection failed: {e}");
                 }
+                let _ = done.send(());
             }
         }
     }
@@ -624,14 +587,15 @@ impl LibeiBackend {
             self.wait_for_keyboard(Duration::from_secs(2))?;
         }
         let table = keymap_table();
-        let has_missing = text
-            .chars()
-            .any(|ch| !table.contains_key(&unsafe { xkb_utf32_to_keysym(ch as u32) }));
-        if has_missing && clipboard_fallback {
-            return self.type_text_via_clipboard(text);
+        let has_missing = text.chars().any(|ch| !table.contains_key(&text_keysym(ch)));
+        if has_missing {
+            if clipboard_fallback {
+                return self.type_text_via_clipboard(text);
+            }
+            return Err("text contains characters unavailable in the keyboard map".into());
         }
-        for ch in text.chars() {
-            let keysym = unsafe { xkb_utf32_to_keysym(ch as u32) };
+        for ch in text.replace("\r\n", "\n").chars() {
+            let keysym = text_keysym(ch);
             let Some(entry) = table.get(&keysym) else {
                 log::debug!("[libei] no keycode for a character, skipping");
                 continue;
@@ -655,7 +619,9 @@ impl LibeiBackend {
             .get(&XKB_KEY_V_LOWER)
             .map(|e| e.evdev)
             .unwrap_or(KEY_V_EVDEV);
-        let result = self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], v_keycode);
+        let result = self
+            .inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], v_keycode)
+            .and_then(|()| self.context.flush().map_err(|e| format!("EI flush: {e}")));
         restore_wayland_clipboard_text(previous_clipboard);
         result
     }
@@ -849,11 +815,20 @@ fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
     }
 }
 
+// Text control characters need keyboard keysyms, not Unicode keysyms.
+fn text_keysym(ch: char) -> u32 {
+    match ch {
+        '\n' | '\r' => 0xff0d, // Return
+        '\t' => 0xff09,        // Tab
+        _ => unsafe { xkb_utf32_to_keysym(ch as u32) },
+    }
+}
+
 fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
     let table = keymap_table();
     let empty: HashMap<String, Value> = HashMap::new();
-    for ch in text.chars() {
-        let keysym: u32 = unsafe { xkb_utf32_to_keysym(ch as u32) };
+    for ch in text.replace("\r\n", "\n").chars() {
+        let keysym: u32 = text_keysym(ch);
         if let Some(entry) = table.get(&keysym) {
             let mods = level_to_mods(entry.level);
             if inject_keycode_combo(portal, session, &empty, mods, entry.evdev) {
@@ -910,18 +885,20 @@ fn set_wayland_clipboard_text(text: &str) -> Result<(), String> {
             .write_all(text.as_bytes())
             .map_err(|e| format!("write wl-copy stdin: {e}"))?;
     }
-    let _ = child.wait();
+    let status = child.wait().map_err(|e| format!("wait wl-copy: {e}"))?;
+    if !status.success() {
+        return Err(format!("wl-copy exited with {status}"));
+    }
     Ok(())
 }
 
 fn restore_wayland_clipboard_text(previous: Option<String>) {
+    // Keep the paste data available before reporting completion to the macro.
+    thread::sleep(Duration::from_millis(120));
     if let Some(previous) = previous {
-        thread::spawn(move || {
-            thread::sleep(std::time::Duration::from_millis(120));
-            if let Err(e) = set_wayland_clipboard_text(&previous) {
-                log::debug!("[portal] clipboard restore failed: {e}");
-            }
-        });
+        if let Err(e) = set_wayland_clipboard_text(&previous) {
+            log::warn!("[portal] clipboard restore failed: {e}");
+        }
     }
 }
 
@@ -1270,6 +1247,15 @@ fn make_request_path(sender_escaped: &str, handle_token: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn text_control_characters_use_keyboard_keysyms() {
+        assert_eq!(super::text_keysym('\n'), 0xff0d);
+        assert_eq!(super::text_keysym('\r'), 0xff0d);
+        assert_eq!(super::text_keysym('\t'), 0xff09);
+        assert_eq!(super::text_keysym(' '), 0x20);
+        assert_eq!(super::text_keysym('a'), 0x61);
+    }
+
     use super::*;
     use std::collections::HashMap;
 
