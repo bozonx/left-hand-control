@@ -5,13 +5,13 @@ import { CategoryIcon } from "action-picker.slint";
 import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { ActionKind, Assignment, LabelMode, LayerDialog, PickerTarget } from "types.slint";
+import { ActionKind, Assignment, LabelMode, LayerDialog, PickerCategory, PickerTarget } from "types.slint";
 import { Button, HorizontalBox, LineEdit, TextEdit, Palette, VerticalBox } from "std-widgets.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
-export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: int }
-export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: int }
+export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory }
+export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory }
 
 /// Layers of the layout being edited and their keymaps.
 export global LayersEditor {
@@ -103,7 +103,7 @@ component Segmented inherits Rectangle {
 component ActionText inherits HorizontalLayout {
     in property <Assignment> kind;
     in property <string> action;
-    in property <int> category;
+    in property <PickerCategory> category;
     in property <length> text-size: 10px;
     in property <TextHorizontalAlignment> text-alignment: center;
     spacing: 3px;

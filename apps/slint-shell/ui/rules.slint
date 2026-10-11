@@ -6,10 +6,10 @@ import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput, FormLabel } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { RuleDialog, RuleField, GameCondition } from "types.slint";
+import { RuleDialog, RuleField, GameCondition, PickerCategory } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, LineEdit, CheckBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: int, tap-category: int, hold-category: int, double-category: int, long-hold-category: int }
+export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -117,7 +117,7 @@ component RuleCell inherits VerticalBox {
     in property <string> value;
     in property <string> empty-text: @tr("Not set");
     in property <bool> enabled: true;
-    in property <int> category: -1;
+    in property <PickerCategory> category;
     callback clicked();
     spacing: 5px;
     horizontal-stretch: 1;
@@ -127,7 +127,7 @@ component RuleCell inherits VerticalBox {
     Rectangle {
         min-width: 0px; height: 32px; border-radius: 5px; border-width: 1px; border-color: Theme.border; background: rule-cell-touch.has-hover ? Theme.hover : Theme.card;
         HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 5px;
-            if root.value != "" && root.category >= 0: CategoryIcon { category: root.category; }
+            if root.value != "" && root.category != PickerCategory.none: CategoryIcon { category: root.category; }
             Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? root.empty-text : root.value; color: root.value == "" ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; }
         }
         rule-cell-touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }

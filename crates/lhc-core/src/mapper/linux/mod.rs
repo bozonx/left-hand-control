@@ -301,6 +301,15 @@ fn run(
     for code in (1u16..=248).chain(352..=511) {
         all_keys.insert(Key::new(code));
     }
+    // Catalog keys beyond that block, such as KEY_TOUCHPAD_TOGGLE (0x212).
+    for key in crate::profile::key_catalog::CATEGORIES
+        .iter()
+        .flat_map(|keys| keys.iter())
+        .filter_map(|name| super::keys::code_to_key(name))
+        .filter(|key| key.code() > 511)
+    {
+        all_keys.insert(key);
+    }
     let virt = VirtualDeviceBuilder::new()
         .map_err(|e| format!("uinput builder (need /dev/uinput access?): {e}"))?
         .name(VIRTUAL_DEVICE_NAME)

@@ -7,8 +7,8 @@ use crate::{
     i18n::Msg,
     keyboard,
     ui::{
-        ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerItem, PickerTarget,
-        SettingsWindow,
+        ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerCategory,
+        PickerCategoryCount, PickerItem, PickerTarget, SettingsWindow,
     },
 };
 use lhc_core::{
@@ -21,43 +21,56 @@ use lhc_core::{
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
-/// Picker categories after the key categories of [`CATEGORIES`]; the
-/// order matches the category list in `ui/action-picker.slint`.
-const MACROS: i32 = CATEGORIES.len() as i32;
-const SYSTEM_MACROS: i32 = MACROS + 1;
-const COMMANDS: i32 = MACROS + 2;
-const APP_ACTIONS: i32 = MACROS + 3;
-const SYSTEM_ACTIONS: i32 = MACROS + 4;
-/// Free-form categories without catalog entries.
-const TEXT: i32 = MACROS + 5;
-const PAUSE: i32 = MACROS + 6;
-/// Categories with countable catalog entries.
-const COUNTED: i32 = TEXT;
+/// Picker category of each group of [`CATEGORIES`], in the same order.
+const KEY_CATEGORIES: [PickerCategory; CATEGORIES.len()] = [
+    PickerCategory::Modifiers,
+    PickerCategory::Navigation,
+    PickerCategory::Letters,
+    PickerCategory::Digits,
+    PickerCategory::FunctionKeys,
+    PickerCategory::Media,
+    PickerCategory::SystemKeys,
+    PickerCategory::Mouse,
+    PickerCategory::OtherKeys,
+];
 
-pub(crate) fn category_for_value(value: &str) -> i32 {
+/// Sidebar order of the non-key categories. Commands go last: one
+/// command per action, not a catalog.
+const ACTION_CATEGORIES: [PickerCategory; 7] = [
+    PickerCategory::Macros,
+    PickerCategory::SystemMacros,
+    PickerCategory::App,
+    PickerCategory::SystemActions,
+    PickerCategory::Text,
+    PickerCategory::Pause,
+    PickerCategory::Commands,
+];
+
+fn is_key_category(category: PickerCategory) -> bool {
+    KEY_CATEGORIES.contains(&category)
+}
+
+pub(crate) fn category_for_value(value: &str) -> PickerCategory {
     for (prefix, category) in [
-        ("macro:", MACROS),
-        ("system-macro:", SYSTEM_MACROS),
-        ("cmd:", COMMANDS),
-        ("app:", APP_ACTIONS),
-        ("sys:", SYSTEM_ACTIONS),
-        ("text:", TEXT),
-        ("pause:", PAUSE),
+        ("macro:", PickerCategory::Macros),
+        ("system-macro:", PickerCategory::SystemMacros),
+        ("cmd:", PickerCategory::Commands),
+        ("app:", PickerCategory::App),
+        ("sys:", PickerCategory::SystemActions),
+        ("text:", PickerCategory::Text),
+        ("pause:", PickerCategory::Pause),
     ] {
         if value.starts_with(prefix) {
             return category;
         }
     }
-    for key in value.split('+') {
-        if let Some((index, _)) = CATEGORIES
-            .iter()
-            .enumerate()
-            .find(|(_, keys)| keys.contains(&key))
-        {
-            return index as i32;
+    // The last key of a chord is the main one; modifiers come first.
+    for key in value.split('+').rev() {
+        if let Some(index) = CATEGORIES.iter().position(|keys| keys.contains(&key)) {
+            return KEY_CATEGORIES[index];
         }
     }
-    5
+    PickerCategory::OtherKeys
 }
 
 /// Longest pause a macro step may wait, in milliseconds.
@@ -91,7 +104,7 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             keys.iter().map(move |key| PickerItem {
                 value: (*key).into(),
                 label: (*key).into(),
-                category: category as i32,
+                category: KEY_CATEGORIES[category],
                 notice: Msg::None.to_ui(),
             })
         })
@@ -100,12 +113,14 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
     let config = config.config();
     items.extend(actions::catalog(&config).into_iter().filter_map(|entry| {
         let category = match &entry.action {
-            Action::Macro(id) if config.macros.iter().any(|m| m.id == *id) => MACROS,
-            Action::Macro(_) => SYSTEM_MACROS,
-            Action::Command(_) if enabled => COMMANDS,
+            Action::Macro(id) if config.macros.iter().any(|m| m.id == *id) => {
+                PickerCategory::Macros
+            }
+            Action::Macro(_) => PickerCategory::SystemMacros,
+            Action::Command(_) if enabled => PickerCategory::Commands,
             Action::Command(_) => return None,
-            Action::App(_) => APP_ACTIONS,
-            Action::System(_) => SYSTEM_ACTIONS,
+            Action::App(_) => PickerCategory::App,
+            Action::System(_) => PickerCategory::SystemActions,
             _ => return None,
         };
         let notice = match actions::execution_issue(&entry.action, &config) {
@@ -221,11 +236,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .find(|item| item.value == value)
             .map(|item| item.category)
             .unwrap_or(if value.starts_with("text:") {
-                TEXT
+                PickerCategory::Text
             } else if value.starts_with("pause:") && target == PickerTarget::MacroStep {
-                PAUSE
+                PickerCategory::Pause
             } else {
-                0
+                PickerCategory::Modifiers
             });
         *state.borrow_mut() = Session {
             target: Some((target, index)),
@@ -503,9 +518,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .catalog
             .iter()
             .filter(|entry| {
-                (!key_only || entry.category < MACROS)
+                (!key_only || is_key_category(entry.category))
                     // Each action owns its command; existing ones are not offered.
-                    && entry.category != COMMANDS
+                    && entry.category != PickerCategory::Commands
                     && !unavailable_keys
                         .iter()
                         .any(|key| key == entry.value.as_str())
@@ -518,9 +533,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     && (excluded.is_empty() || entry.value != excluded_value)
             })
             .collect();
-        picker.set_counts(ModelRc::new(VecModel::from(
-            (0..COUNTED)
-                .map(|category| entries.iter().filter(|e| e.category == category).count() as i32)
+        picker.set_categories(ModelRc::new(VecModel::from(
+            KEY_CATEGORIES
+                .into_iter()
+                .chain(ACTION_CATEGORIES)
+                .map(|category| PickerCategoryCount {
+                    category,
+                    count: entries.iter().filter(|e| e.category == category).count() as i32,
+                })
                 .collect::<Vec<_>>(),
         )));
         let value = picker.get_value();
@@ -724,7 +744,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
 /// Keyboard capture for the picker; returns `true` when `event` was used.
 pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::WindowEvent) -> bool {
-    use slint::winit_030::winit::{event::WindowEvent, keyboard::PhysicalKey};
+    use slint::winit_030::winit::event::WindowEvent;
     let picker = ui.global::<ActionPicker>();
     if !picker.get_opened() || !picker.get_capturing() {
         return false;
@@ -736,18 +756,18 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
     let WindowEvent::KeyboardInput { event, .. } = event else {
         return false;
     };
-    let PhysicalKey::Code(code) = event.physical_key else {
+    let Some(key) = physical_key_name(event.physical_key) else {
         return true;
     };
     if event.repeat {
         return true;
     }
     let value = if picker.get_trigger_chords() {
-        CAPTURE_TRIGGER.with(|state| captured_trigger(code, event.state, &mut state.borrow_mut()))
+        CAPTURE_TRIGGER.with(|state| captured_trigger(&key, event.state, &mut state.borrow_mut()))
     } else {
         CAPTURE_MODIFIERS.with(|state| {
             captured_key(
-                code,
+                &key,
                 event.state,
                 picker.get_key_only(),
                 &mut state.borrow_mut(),
@@ -763,7 +783,24 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
     true
 }
 
-/// Config key code of a physical key. winit names its `KeyCode` variants
+/// Config key code of a physical key. Keys winit cannot name on Linux
+/// (most media, launch and laptop keys) arrive with their evdev code.
+fn physical_key_name(key: slint::winit_030::winit::keyboard::PhysicalKey) -> Option<String> {
+    use slint::winit_030::winit::keyboard::PhysicalKey;
+    match key {
+        PhysicalKey::Code(code) => Some(key_name(code)),
+        #[cfg(target_os = "linux")]
+        PhysicalKey::Unidentified(slint::winit_030::winit::keyboard::NativeKeyCode::Xkb(code)) => {
+            u16::try_from(code)
+                .ok()
+                .and_then(lhc_core::mapper::keys::evdev_to_code)
+                .map(str::to_owned)
+        }
+        PhysicalKey::Unidentified(_) => None,
+    }
+}
+
+/// Config key code of a winit key code. winit names its `KeyCode` variants
 /// after the W3C `KeyboardEvent.code` values the config uses, so the
 /// variant name is the code except where the config keeps older names.
 fn key_name(code: slint::winit_030::winit::keyboard::KeyCode) -> String {
@@ -777,28 +814,29 @@ fn key_name(code: slint::winit_030::winit::keyboard::KeyCode) -> String {
         "MediaTrackNext" => "MediaNext".into(),
         "MediaTrackPrevious" => "MediaPrev".into(),
         "LaunchMediaPlayer" => "MediaSelect".into(),
+        // W3C `LaunchApp2` is the calculator key.
+        "LaunchApp2" => "Calculator".into(),
         _ => raw,
     }
 }
 
 fn captured_key(
-    code: slint::winit_030::winit::keyboard::KeyCode,
+    key: &str,
     state: slint::winit_030::winit::event::ElementState,
     key_only: bool,
     modifiers: &mut Vec<&'static str>,
 ) -> Option<String> {
-    use slint::winit_030::winit::{event::ElementState, keyboard::KeyCode};
-    let modifier = match code {
-        KeyCode::ControlLeft | KeyCode::ControlRight => Some("Ctrl"),
-        KeyCode::ShiftLeft | KeyCode::ShiftRight => Some("Shift"),
-        KeyCode::AltLeft | KeyCode::AltRight => Some("Alt"),
-        KeyCode::SuperLeft | KeyCode::SuperRight => Some("Meta"),
+    use slint::winit_030::winit::event::ElementState;
+    let modifier = match key {
+        "ControlLeft" | "ControlRight" => Some("Ctrl"),
+        "ShiftLeft" | "ShiftRight" => Some("Shift"),
+        "AltLeft" | "AltRight" => Some("Alt"),
+        "MetaLeft" | "MetaRight" => Some("Meta"),
         _ => None,
     };
-    let key = key_name(code);
-    let known = CATEGORIES.iter().any(|keys| keys.contains(&key.as_str()));
+    let known = lhc_core::profile::key_catalog::valid_key(key);
     if key_only {
-        return (state == ElementState::Pressed && known).then_some(key);
+        return (state == ElementState::Pressed && known).then(|| key.to_owned());
     }
     if let Some(name) = modifier
         && state == ElementState::Pressed
@@ -810,12 +848,12 @@ fn captured_key(
     }
     if (state == ElementState::Pressed || modifier.is_some()) && known {
         let value = if modifier.is_some() {
-            key
+            key.to_owned()
         } else {
             ["Ctrl", "Alt", "Shift", "Meta"]
                 .into_iter()
                 .filter(|m| modifiers.contains(m))
-                .chain(std::iter::once(key.as_str()))
+                .chain(std::iter::once(key))
                 .collect::<Vec<_>>()
                 .join("+")
         };
@@ -826,20 +864,19 @@ fn captured_key(
 }
 
 fn captured_trigger(
-    code: slint::winit_030::winit::keyboard::KeyCode,
+    key: &str,
     state: slint::winit_030::winit::event::ElementState,
     keys: &mut Vec<String>,
 ) -> Option<String> {
-    let key = key_name(code);
-    if !lhc_core::profile::key_catalog::valid_trigger(&key) {
+    if !lhc_core::profile::key_catalog::valid_trigger(key) {
         return None;
     }
     if state == slint::winit_030::winit::event::ElementState::Pressed {
-        if !keys.contains(&key) {
-            keys.push(key);
+        if !keys.iter().any(|k| k == key) {
+            keys.push(key.to_owned());
         }
         None
-    } else if keys.contains(&key) {
+    } else if keys.iter().any(|k| k == key) {
         let value = keys.join("+");
         keys.clear();
         Some(value)
@@ -857,21 +894,18 @@ mod tests {
 
     #[test]
     fn captures_trigger_combinations_including_two_modifiers() {
-        use slint::winit_030::winit::{
-            event::ElementState::{Pressed, Released},
-            keyboard::KeyCode as K,
-        };
+        use slint::winit_030::winit::event::ElementState::{Pressed, Released};
         let mut keys = Vec::new();
-        assert_eq!(captured_trigger(K::ShiftLeft, Pressed, &mut keys), None);
-        assert_eq!(captured_trigger(K::ControlRight, Pressed, &mut keys), None);
+        assert_eq!(captured_trigger("ShiftLeft", Pressed, &mut keys), None);
+        assert_eq!(captured_trigger("ControlRight", Pressed, &mut keys), None);
         assert_eq!(
-            captured_trigger(K::ShiftLeft, Released, &mut keys).as_deref(),
+            captured_trigger("ShiftLeft", Released, &mut keys).as_deref(),
             Some("ShiftLeft+ControlRight")
         );
         assert!(keys.is_empty());
-        assert_eq!(captured_trigger(K::F13, Pressed, &mut keys), None);
+        assert_eq!(captured_trigger("F13", Pressed, &mut keys), None);
         assert_eq!(
-            captured_trigger(K::F13, Released, &mut keys).as_deref(),
+            captured_trigger("F13", Released, &mut keys).as_deref(),
             Some("F13")
         );
     }
@@ -884,39 +918,57 @@ mod tests {
         };
         let mut modifiers = Vec::new();
         assert_eq!(
-            captured_key(K::ControlRight, Pressed, true, &mut modifiers).as_deref(),
+            captured_key("ControlRight", Pressed, true, &mut modifiers).as_deref(),
             Some("ControlRight")
         );
         assert_eq!(
-            captured_key(K::NumpadEnter, Pressed, true, &mut modifiers).as_deref(),
+            captured_key("NumpadEnter", Pressed, true, &mut modifiers).as_deref(),
             Some("NumpadEnter")
         );
         assert_eq!(
-            captured_key(K::ShiftLeft, Pressed, false, &mut modifiers),
+            captured_key("ShiftLeft", Pressed, false, &mut modifiers),
             None
         );
         assert_eq!(
-            captured_key(K::ControlRight, Pressed, false, &mut modifiers),
+            captured_key("ControlRight", Pressed, false, &mut modifiers),
             None
         );
         assert_eq!(
-            captured_key(K::KeyK, Pressed, false, &mut modifiers).as_deref(),
+            captured_key("KeyK", Pressed, false, &mut modifiers).as_deref(),
             Some("Ctrl+Shift+KeyK")
         );
         assert!(modifiers.is_empty());
         assert_eq!(
-            captured_key(K::AltRight, Pressed, false, &mut modifiers),
+            captured_key("AltRight", Pressed, false, &mut modifiers),
             None
         );
         assert_eq!(
-            captured_key(K::AltRight, Released, false, &mut modifiers).as_deref(),
+            captured_key("AltRight", Released, false, &mut modifiers).as_deref(),
             Some("AltRight")
         );
         assert_eq!(
-            captured_key(K::AudioVolumeMute, Pressed, true, &mut modifiers).as_deref(),
+            captured_key(&key_name(K::AudioVolumeMute), Pressed, true, &mut modifiers).as_deref(),
             Some("VolumeMute")
         );
         assert_eq!(key_name(K::SuperLeft), "MetaLeft");
+        assert_eq!(key_name(K::LaunchApp2), "Calculator");
+        assert_eq!(
+            physical_key_name(slint::winit_030::winit::keyboard::PhysicalKey::Code(
+                K::NumpadEqual
+            ))
+            .as_deref(),
+            Some("NumpadEqual")
+        );
+        #[cfg(target_os = "linux")]
+        assert_eq!(
+            physical_key_name(
+                slint::winit_030::winit::keyboard::PhysicalKey::Unidentified(
+                    slint::winit_030::winit::keyboard::NativeKeyCode::Xkb(140)
+                )
+            )
+            .as_deref(),
+            Some("Calculator")
+        );
     }
 
     #[test]
@@ -934,11 +986,25 @@ mod tests {
 
     #[test]
     fn categories_follow_the_key_catalog() {
-        assert_eq!(MACROS, 6);
-        assert_eq!(PAUSE, 12);
-        assert_eq!(category_for_value("CapsLock"), 0);
-        assert_eq!(category_for_value("Ctrl+KeyV"), 1);
-        assert_eq!(category_for_value("text:Ctrl+KeyV"), TEXT);
-        assert_eq!(category_for_value("cmd:Ctrl+KeyV"), COMMANDS);
+        assert_eq!(category_for_value("CapsLock"), PickerCategory::Modifiers);
+        assert_eq!(category_for_value("ArrowUp"), PickerCategory::Navigation);
+        assert_eq!(category_for_value("Ctrl+KeyV"), PickerCategory::Letters);
+        assert_eq!(
+            category_for_value("ShiftLeft+F13"),
+            PickerCategory::FunctionKeys
+        );
+        assert_eq!(category_for_value("KeyV"), PickerCategory::Letters);
+        assert_eq!(category_for_value("F13"), PickerCategory::FunctionKeys);
+        assert_eq!(category_for_value("MicMute"), PickerCategory::Media);
+        assert_eq!(
+            category_for_value("TouchpadToggle"),
+            PickerCategory::SystemKeys
+        );
+        assert_eq!(category_for_value("Redo"), PickerCategory::OtherKeys);
+        assert_eq!(category_for_value("text:Ctrl+KeyV"), PickerCategory::Text);
+        assert_eq!(
+            category_for_value("cmd:Ctrl+KeyV"),
+            PickerCategory::Commands
+        );
     }
 }

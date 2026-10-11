@@ -50,3 +50,7 @@ export enum PickerTarget { rule, macro-step, quick-action, layer-key, layer-acti
 
 /// Editable field of a macro card.
 export enum MacroField { id, name, step-pause, modifier-delay }
+
+/// Category of the action picker; also the icon of an assigned value.
+/// The key categories follow `key_catalog::CATEGORIES` in order.
+export enum PickerCategory { none, modifiers, navigation, letters, digits, function-keys, media, system-keys, mouse, other-keys, macros, system-macros, commands, app, system-actions, text, pause }

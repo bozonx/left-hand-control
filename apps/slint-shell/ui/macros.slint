@@ -5,11 +5,11 @@ import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { MacroField, PickerTarget } from "types.slint";
+import { MacroField, PickerCategory, PickerTarget } from "types.slint";
 import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, NumericInput } from "controls.slint";
 import { Button, LineEdit } from "std-widgets.slint";
 
-export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: int }
+export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
 export struct MacroRow { id: string, name: string, step-pause: string, modifier-delay: string, usage: [string], error: Message, steps: [MacroStepRow] }
 export struct SystemMacroRow { id: string, name: string, steps: string }
 export global MacroEditor {
@@ -84,7 +84,7 @@ component StepRow inherits HorizontalLayout {
         if root.step.pause: HorizontalLayout {
             spacing: 8px;
             alignment: start;
-            CategoryIcon { category: 12; }
+            CategoryIcon { category: PickerCategory.pause; }
             Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
             NumericInput {
                 field-width: 110px;

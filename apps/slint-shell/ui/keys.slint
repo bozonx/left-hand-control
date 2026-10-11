@@ -1,9 +1,10 @@
 import { Theme } from "theme.slint";
 import { CategoryIcon } from "action-picker.slint";
+import { PickerCategory } from "types.slint";
 import { VerticalBox } from "std-widgets.slint";
 
 /// One cap of the base keyboard grid.
-export struct BaseKey { code: string, label: string, action: string, category: int }
+export struct BaseKey { code: string, label: string, action: string, category: PickerCategory }
 
 /// Tap actions of the base keyboard (keys outside any layer).
 export global KeyEditor {

@@ -749,8 +749,11 @@ msgstr "Действие:"
 msgid "Trigger key:"
 msgstr "Клавиша-триггер:"
 
-msgid "Special keys"
-msgstr "Специальные"
+msgid "Modifiers and service keys"
+msgstr "Модификаторы и служебные"
+
+msgid "Navigation and editing"
+msgstr "Навигация и редактирование"
 
 msgid "Letters and symbols"
 msgstr "Буквы и символы"
@@ -758,14 +761,29 @@ msgstr "Буквы и символы"
 msgid "Digits and numpad"
 msgstr "Цифры и numpad"
 
-msgid "Media"
-msgstr "Медиа"
+msgid "Function keys"
+msgstr "Функциональные F1–F24"
+
+msgid "Media and launch"
+msgstr "Мультимедиа и запуск"
+
+msgid "System and laptop"
+msgstr "Система и ноутбук"
 
 msgid "Mouse"
 msgstr "Мышь"
 
 msgid "Other keys"
-msgstr "Остальное"
+msgstr "Прочие"
+
+msgid "Back side button on most mice"
+msgstr "Боковая «назад» у большинства мышей"
+
+msgid "Forward side button on most mice"
+msgstr "Боковая «вперёд» у большинства мышей"
+
+msgid "Rare: most mice send Side/Extra"
+msgstr "Редко: обычно мыши шлют Side/Extra"
 
 msgid "Application"
 msgstr "Приложение"

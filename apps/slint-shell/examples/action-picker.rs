@@ -25,8 +25,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "the picker replaces the dialog"
     );
     assert_eq!(
-        picker.get_counts().iter().collect::<Vec<_>>(),
-        [40, 37, 27, 15, 5, 55, 0, 0, 0, 0, 0]
+        picker
+            .get_categories()
+            .iter()
+            .map(|entry| entry.count)
+            .collect::<Vec<_>>(),
+        [15, 13, 38, 29, 24, 23, 17, 5, 25, 0, 0, 0, 0, 0, 0, 0]
     );
     picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());
@@ -45,10 +49,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(index >= 0);
     assert_eq!(document.read().layout().rules[index as usize].key, "Tab");
     rules.invoke_open_dialog(index, RuleDialog::Tap);
-    picker.set_category(11);
+    picker.set_category(PickerCategory::Text);
     picker.set_query("es".into());
     picker.invoke_refresh();
-    for category in [0, 3, 4] {
+    // Escape, BrowserFavorites and MouseSide.
+    for category in [
+        PickerCategory::Modifiers,
+        PickerCategory::Media,
+        PickerCategory::Mouse,
+    ] {
         assert!(
             picker
                 .get_items()
@@ -56,11 +65,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .any(|item| item.category == category)
         );
     }
-    assert_eq!(picker.get_category(), 11);
+    assert_eq!(picker.get_category(), PickerCategory::Text);
     picker.invoke_select_behavior(2);
     picker.set_value("KeyA".into());
     picker.invoke_refresh();
-    assert_eq!(picker.get_value_category(), 1);
+    assert_eq!(picker.get_value_category(), PickerCategory::Letters);
     picker.set_query("громкость".into());
     picker.invoke_refresh();
     assert!(picker.get_items().row_count() >= 2);
@@ -168,7 +177,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rules.invoke_open_dialog(index, RuleDialog::Key);
     if let Ok(category) = std::env::var("LHC_PICKER_CATEGORY") {
         rules.invoke_open_dialog(index, RuleDialog::Tap);
-        picker.set_category(category.parse()?);
+        picker.set_category(parse_category(&category)?);
         picker.invoke_refresh();
     }
     if let Ok(query) = std::env::var("LHC_PICKER_QUERY") {
@@ -204,4 +213,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     slint::run_event_loop()?;
     Ok(())
+}
+
+/// `LHC_PICKER_CATEGORY` value: the kebab-case name of a `PickerCategory`.
+fn parse_category(name: &str) -> Result<PickerCategory, String> {
+    use PickerCategory as C;
+    Ok(match name {
+        "modifiers" => C::Modifiers,
+        "navigation" => C::Navigation,
+        "letters" => C::Letters,
+        "digits" => C::Digits,
+        "function-keys" => C::FunctionKeys,
+        "media" => C::Media,
+        "system-keys" => C::SystemKeys,
+        "mouse" => C::Mouse,
+        "other-keys" => C::OtherKeys,
+        "macros" => C::Macros,
+        "system-macros" => C::SystemMacros,
+        "commands" => C::Commands,
+        "app" => C::App,
+        "system-actions" => C::SystemActions,
+        "text" => C::Text,
+        "pause" => C::Pause,
+        other => return Err(format!("unknown picker category: {other}")),
+    })
 }

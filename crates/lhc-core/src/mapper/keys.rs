@@ -131,6 +131,10 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "MediaPrev" => Key::KEY_PREVIOUSSONG,
         "MediaStop" => Key::KEY_STOPCD,
         "Calculator" => Key::KEY_CALC,
+        "MicMute" => Key::KEY_MICMUTE,
+        "MediaRecord" => Key::KEY_RECORD,
+        "MediaRewind" => Key::KEY_REWIND,
+        "MediaFastForward" => Key::KEY_FASTFORWARD,
         "BrowserStop" => Key::KEY_STOP,
         "BrowserSearch" => Key::KEY_SEARCH,
         "BrowserFavorites" => Key::KEY_BOOKMARKS,
@@ -153,6 +157,8 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "NumpadDivide" => Key::KEY_KPSLASH,
         "NumpadDecimal" => Key::KEY_KPDOT,
         "NumpadEnter" => Key::KEY_KPENTER,
+        "NumpadEqual" => Key::KEY_KPEQUAL,
+        "NumpadComma" => Key::KEY_KPCOMMA,
 
         // Mouse buttons
         "MouseLeft" => Key::BTN_LEFT,
@@ -169,6 +175,7 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "FnLock" => Key::KEY_FN_ESC,
         "Help" => Key::KEY_HELP,
         "Undo" => Key::KEY_UNDO,
+        "Redo" => Key::KEY_REDO,
         "Again" => Key::KEY_AGAIN,
         "Find" => Key::KEY_FIND,
         "Open" => Key::KEY_OPEN,
@@ -183,7 +190,7 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "Eject" => Key::KEY_EJECTCD,
         "LaunchMail" => Key::KEY_MAIL,
         "LaunchApp1" => Key::KEY_COMPUTER,
-        "LaunchApp2" => Key::KEY_WWW,
+        "LaunchBrowser" => Key::KEY_WWW,
         "MediaSelect" => Key::KEY_MEDIA,
         "IntlBackslash" => Key::KEY_102ND,
         "IntlYen" => Key::KEY_YEN,
@@ -204,14 +211,25 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "BrightnessDown" => Key::KEY_BRIGHTNESSDOWN,
         "BrightnessUp" => Key::KEY_BRIGHTNESSUP,
         "DisplayToggle" => Key::KEY_DISPLAYTOGGLE,
+        "DisplayToggleIntExt" => Key::KEY_SWITCHVIDEOMODE,
+        "TouchpadToggle" => Key::KEY_TOUCHPAD_TOGGLE,
         "KeyboardBrightnessToggle" => Key::KEY_KBDILLUMTOGGLE,
         "KeyboardBrightnessDown" => Key::KEY_KBDILLUMDOWN,
         "KeyboardBrightnessUp" => Key::KEY_KBDILLUMUP,
         "Bluetooth" => Key::KEY_BLUETOOTH,
         "WLAN" => Key::KEY_WLAN,
+        "AirplaneMode" => Key::KEY_RFKILL,
 
         _ => return None,
     })
+}
+
+/// Config key code of an evdev key code, if the catalog has one.
+pub fn evdev_to_code(code: u16) -> Option<&'static str> {
+    crate::profile::key_catalog::CATEGORIES
+        .iter()
+        .flat_map(|keys| keys.iter().copied())
+        .find(|name| code_to_key(name).is_some_and(|key| key.code() == code))
 }
 
 #[cfg(test)]
@@ -298,6 +316,22 @@ mod tests {
         assert_eq!(code_to_key("IntlRo"), Some(Key::KEY_RO));
         assert_eq!(code_to_key("KanaMode"), Some(Key::KEY_KATAKANAHIRAGANA));
         assert_eq!(code_to_key("Lang5"), Some(Key::KEY_ZENKAKUHANKAKU));
+    }
+
+    #[test]
+    fn every_catalog_key_maps_to_a_distinct_evdev_key() {
+        let mut codes = std::collections::HashSet::new();
+        for name in crate::profile::key_catalog::CATEGORIES
+            .iter()
+            .flat_map(|keys| keys.iter())
+        {
+            let key = code_to_key(name).unwrap_or_else(|| panic!("{name} has no evdev key"));
+            assert!(codes.insert(key.code()), "{name} duplicates an evdev key");
+            assert_eq!(evdev_to_code(key.code()), Some(*name));
+        }
+        assert_eq!(code_to_key("LaunchApp2"), None);
+        assert_eq!(evdev_to_code(Key::KEY_CALC.code()), Some("Calculator"));
+        assert_eq!(evdev_to_code(Key::KEY_UNKNOWN.code()), None);
     }
 
     #[test]
