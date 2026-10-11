@@ -74,22 +74,7 @@ pub fn parse_action(action: &str) -> Option<Keystroke> {
 }
 
 fn parse_modifier(token: &str) -> Option<Key> {
-    Some(match token {
-        "Ctrl" => Key::KEY_LEFTCTRL,
-        "ControlLeft" => Key::KEY_LEFTCTRL,
-        "ControlRight" => Key::KEY_RIGHTCTRL,
-        "Shift" => Key::KEY_LEFTSHIFT,
-        "ShiftLeft" => Key::KEY_LEFTSHIFT,
-        "ShiftRight" => Key::KEY_RIGHTSHIFT,
-        "Alt" => Key::KEY_LEFTALT,
-        "AltLeft" => Key::KEY_LEFTALT,
-        "AltRight" => Key::KEY_RIGHTALT,
-        "AltGr" => Key::KEY_RIGHTALT,
-        "Meta" => Key::KEY_LEFTMETA,
-        "MetaLeft" => Key::KEY_LEFTMETA,
-        "MetaRight" => Key::KEY_RIGHTMETA,
-        _ => return None,
-    })
+    crate::profile::key_catalog::modifier_key(token).and_then(code_to_key)
 }
 
 fn parse_single(token: &str) -> Option<Key> {
@@ -160,7 +145,6 @@ mod tests {
         assert_eq!(parse_modifier("Alt"), Some(Key::KEY_LEFTALT));
         assert_eq!(parse_modifier("AltLeft"), Some(Key::KEY_LEFTALT));
         assert_eq!(parse_modifier("AltRight"), Some(Key::KEY_RIGHTALT));
-        assert_eq!(parse_modifier("AltGr"), Some(Key::KEY_RIGHTALT));
         assert_eq!(parse_modifier("Meta"), Some(Key::KEY_LEFTMETA));
         assert_eq!(parse_modifier("MetaLeft"), Some(Key::KEY_LEFTMETA));
         assert_eq!(parse_modifier("MetaRight"), Some(Key::KEY_RIGHTMETA));
@@ -168,6 +152,8 @@ mod tests {
 
     #[test]
     fn parse_unknown_modifier_returns_none() {
-        assert!(parse_modifier("Cmd").is_none());
+        for token in ["Cmd", "AltGr", "Control", "Super", "Win"] {
+            assert!(parse_modifier(token).is_none());
+        }
     }
 }

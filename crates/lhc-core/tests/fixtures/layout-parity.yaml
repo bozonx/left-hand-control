@@ -24,7 +24,7 @@ rules:
     windows: [code]
     gameMode: "on"
     isolate: [KeyA, KeyB]
-    holdFor: KeyTab
+    holdFor: Tab
     holdMs: 250
     dtap: Enter
     dtapMs: 150

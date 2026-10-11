@@ -167,7 +167,7 @@ pub fn label(code: &str) -> &str {
         "ControlLeft" | "ControlRight" => "Ctrl",
         "AltLeft" | "AltRight" => "Alt",
         "MetaLeft" | "MetaRight" => "Meta",
-        "ContextMenu" => "Menu",
+        "ContextMenu" => "☰",
         "Comma" => ",",
         "Period" => ".",
         "Slash" => "/",

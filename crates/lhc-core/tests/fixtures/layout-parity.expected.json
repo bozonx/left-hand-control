@@ -35,7 +35,7 @@
       "tapAction": null,
       "holdAction": null,
       "isolate": "KeyA, KeyB",
-      "holdFor": "KeyTab",
+      "holdFor": "Tab",
       "doubleTapAction": "Enter",
       "holdTimeoutMs": 250,
       "doubleTapTimeoutMs": 150

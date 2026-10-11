@@ -146,6 +146,8 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "NumpadEnter" => Key::KEY_KPENTER,
         "NumpadEqual" => Key::KEY_KPEQUAL,
         "NumpadComma" => Key::KEY_KPCOMMA,
+        "NumpadParenLeft" => Key::KEY_KPLEFTPAREN,
+        "NumpadParenRight" => Key::KEY_KPRIGHTPAREN,
 
         // Mouse buttons
         "MouseLeft" => Key::BTN_LEFT,
@@ -193,7 +195,7 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "LaunchCalendar" => Key::KEY_CALENDAR,
         "ZoomIn" => Key::KEY_ZOOMIN,
         "ZoomOut" => Key::KEY_ZOOMOUT,
-        "ZoomToggle" => Key::KEY_ZOOM,
+        "ZoomToggle" => Key::KEY_FULL_SCREEN,
 
         // System and laptop
         "Power" => Key::KEY_POWER,
@@ -249,6 +251,8 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "Again" => Key::KEY_AGAIN,
         "Find" => Key::KEY_FIND,
         "Open" => Key::KEY_OPEN,
+        // Sun's Props key sends USB "Keyboard Menu", which arrives as
+        // KEY_PROPS; the kernel does not map the USB "Props" usage.
         "Props" => Key::KEY_PROPS,
         // USB HID "Keyboard Select" arrives as KEY_FRONT.
         "Select" => Key::KEY_FRONT,
@@ -403,6 +407,8 @@ mod tests {
         assert_eq!(code_to_key("NumLock"), Some(Key::KEY_NUMLOCK));
         assert_eq!(code_to_key("Numpad0"), Some(Key::KEY_KP0));
         assert_eq!(code_to_key("NumpadEnter"), Some(Key::KEY_KPENTER));
+        assert_eq!(code_to_key("NumpadParenLeft"), Some(Key::KEY_KPLEFTPAREN));
+        assert_eq!(code_to_key("NumpadParenRight"), Some(Key::KEY_KPRIGHTPAREN));
     }
 
     #[test]

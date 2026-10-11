@@ -2169,6 +2169,9 @@ msgstr "В правиле «{}» некорректное действие пр�
 msgid "Rule \"{}\" has an invalid double-tap action."
 msgstr "В правиле «{}» некорректное действие при двойном нажатии."
 
+msgid "Rule \"{}\" lists an unknown key."
+msgstr "В правиле «{}» указана неизвестная клавиша."
+
 msgid "Automatic switching rule deleted"
 msgstr "Правило автопереключения удалено"
 

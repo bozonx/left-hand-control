@@ -14,6 +14,7 @@ pub enum RuleIssueCode {
     InvalidTapAction,
     InvalidHoldAction,
     InvalidDoubleTapAction,
+    UnknownListedKey,
 }
 
 impl RuleIssueCode {
@@ -73,6 +74,9 @@ impl std::fmt::Display for RuleIssue {
             RuleIssueCode::InvalidDoubleTapAction => {
                 write!(f, "Rule \"{trigger}\" has an invalid double-tap action.")
             }
+            RuleIssueCode::UnknownListedKey => {
+                write!(f, "Rule \"{trigger}\" lists an unknown key.")
+            }
         }
     }
 }
@@ -124,6 +128,13 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
                 rule,
                 Some(trigger),
             ));
+        }
+        if [&rule.isolate, &rule.hold_for]
+            .into_iter()
+            .flatten()
+            .any(|list| super::key_catalog::unknown_keys(list).next().is_some())
+        {
+            issues.push(issue(RuleIssueCode::UnknownListedKey, rule, Some(trigger)));
         }
     }
     for (trigger, rules) in by_trigger.into_iter().filter(|(_, rules)| rules.len() > 1) {

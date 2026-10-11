@@ -1,7 +1,8 @@
 //! Key codes the configuration accepts, grouped as the action picker
 //! shows them. Names follow the W3C `KeyboardEvent.code` spec; keys it
-//! does not cover use Chromium's code name (`dom_code_data.inc`) and,
-//! failing that, the Linux `KEY_*` name in PascalCase.
+//! does not cover use Chromium's code name or `DomCode` identifier
+//! (`dom_code_data.inc`) and, failing that, a name derived from the Linux
+//! `KEY_*` code.
 
 /// Key groups in picker order; the shell maps each index to a
 /// `PickerCategory`.
@@ -135,6 +136,8 @@ pub const CATEGORIES: &[&[&str]] = &[
         "NumpadDecimal",
         "NumpadComma",
         "NumpadEqual",
+        "NumpadParenLeft",
+        "NumpadParenRight",
         "NumpadEnter",
     ],
     // Media, browser and launch keys.
@@ -312,6 +315,30 @@ pub fn valid_key(value: &str) -> bool {
     CATEGORIES.iter().any(|keys| keys.contains(&value))
 }
 
+/// Key code a chord modifier stands for: a side-neutral `Ctrl`, `Shift`,
+/// `Alt` or `Meta` means the left key, a sided code means itself.
+pub fn modifier_key(token: &str) -> Option<&'static str> {
+    Some(match token {
+        "Ctrl" | "ControlLeft" => "ControlLeft",
+        "ControlRight" => "ControlRight",
+        "Shift" | "ShiftLeft" => "ShiftLeft",
+        "ShiftRight" => "ShiftRight",
+        "Alt" | "AltLeft" => "AltLeft",
+        "AltRight" => "AltRight",
+        "Meta" | "MetaLeft" => "MetaLeft",
+        "MetaRight" => "MetaRight",
+        _ => return None,
+    })
+}
+
+/// Entries of a comma-separated key list (`isolate`, `holdFor`) that are
+/// not catalog key codes.
+pub fn unknown_keys(list: &str) -> impl Iterator<Item = &str> {
+    list.split(',')
+        .map(str::trim)
+        .filter(|code| !code.is_empty() && !valid_key(code))
+}
+
 pub fn valid_trigger(value: &str) -> bool {
     trigger_keys(value).is_some()
 }
@@ -319,13 +346,7 @@ pub fn valid_trigger(value: &str) -> bool {
 pub fn trigger_keys(value: &str) -> Option<Vec<&str>> {
     let mut keys = Vec::new();
     for part in value.split('+').map(str::trim) {
-        let key = match part {
-            "Ctrl" | "Control" => "ControlLeft",
-            "Shift" => "ShiftLeft",
-            "Alt" => "AltLeft",
-            "Meta" | "Super" | "Win" => "MetaLeft",
-            key => key,
-        };
+        let key = modifier_key(part).unwrap_or(part);
         if !valid_key(key)
             || matches!(key, "MouseLeft" | "MouseRight" | "MouseMiddle")
             || keys.contains(&key)
@@ -348,16 +369,39 @@ mod tests {
         assert!(valid_trigger("ShiftLeft+ControlRight"));
         assert!(!valid_trigger("Ctrl+ControlLeft"));
         assert!(!valid_trigger("KeyA+"));
-        for value in ["", "NotAKey", "MouseLeft", "MouseRight", "MouseMiddle"] {
+        for value in [
+            "",
+            "NotAKey",
+            "MouseLeft",
+            "MouseRight",
+            "MouseMiddle",
+            "Control+KeyA",
+            "Super+KeyA",
+            "Win+KeyA",
+            "AltGr+KeyA",
+        ] {
             assert!(!valid_trigger(value));
         }
+    }
+
+    #[test]
+    fn modifiers_and_key_lists() {
+        assert_eq!(modifier_key("Ctrl"), Some("ControlLeft"));
+        assert_eq!(modifier_key("MetaRight"), Some("MetaRight"));
+        for token in [
+            "Control", "Super", "Win", "Cmd", "AltGr", "CapsLock", "KeyA",
+        ] {
+            assert_eq!(modifier_key(token), None);
+        }
+        assert_eq!(unknown_keys("KeyA, Tab,, NumpadParenLeft").count(), 0);
+        assert_eq!(unknown_keys("KeyA, KeyTab").collect::<Vec<_>>(), ["KeyTab"]);
     }
 
     #[test]
     fn complete_catalog_has_unique_key_codes() {
         assert_eq!(
             CATEGORIES.iter().map(|c| c.len()).collect::<Vec<_>>(),
-            [48, 9, 35, 27, 36, 44, 8, 69]
+            [48, 9, 35, 29, 36, 44, 8, 69]
         );
         let keys: Vec<_> = CATEGORIES
             .iter()

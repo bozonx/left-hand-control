@@ -355,27 +355,10 @@ pub fn valid_held_key(value: &str) -> bool {
         let Some(key) = tokens.pop() else {
             return false;
         };
-        super::key_catalog::CATEGORIES
-            .iter()
-            .any(|keys| keys.contains(&key))
-            && tokens.iter().all(|modifier| {
-                matches!(
-                    *modifier,
-                    "Ctrl"
-                        | "ControlLeft"
-                        | "ControlRight"
-                        | "Shift"
-                        | "ShiftLeft"
-                        | "ShiftRight"
-                        | "Alt"
-                        | "AltLeft"
-                        | "AltRight"
-                        | "AltGr"
-                        | "Meta"
-                        | "MetaLeft"
-                        | "MetaRight"
-                )
-            })
+        super::key_catalog::valid_key(key)
+            && tokens
+                .iter()
+                .all(|modifier| super::key_catalog::modifier_key(modifier).is_some())
     }
 }
 

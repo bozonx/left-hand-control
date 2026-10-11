@@ -57,6 +57,11 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         if !r.layer_id.is_empty() && !layer_ids.contains(r.layer_id.as_str()) {
             errors.push(format!("{where_key}: unknown layer \"{}\"", r.layer_id));
         }
+        for (name, list) in [("isolate", &r.isolate), ("holdFor", &r.hold_for)] {
+            for code in crate::profile::key_catalog::unknown_keys(list) {
+                errors.push(format!("{where_key} {name}: unknown key \"{code}\""));
+            }
+        }
         validate_action_spec(
             &r.tap_action,
             &format!("{where_key} tap"),
@@ -94,6 +99,13 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     }
 
     for (layer_id, km) in &cfg.layer_keymaps {
+        for (name, list) in [("isolate", &km.isolate), ("holdFor", &km.hold_for)] {
+            for code in list.iter().filter(|code| code_to_key(code).is_none()) {
+                errors.push(format!(
+                    "Keymap \"{layer_id}\" {name}: unknown key \"{code}\""
+                ));
+            }
+        }
         for (code, action) in &km.keys {
             if code_to_key(code).is_none() {
                 errors.push(format!("Keymap \"{layer_id}\": unknown key \"{code}\""));
@@ -349,7 +361,7 @@ fn macro_path_reaches(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mapper::config::{Command, Macro, MacroStep, Rule, Settings};
+    use crate::mapper::config::{Command, LayerKeymap, Macro, MacroStep, Rule, Settings};
     use std::collections::HashMap;
 
     fn empty_cfg() -> AppConfig {
@@ -387,6 +399,44 @@ mod tests {
 
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("unknown macro \"missing\""));
+    }
+
+    #[test]
+    fn rejects_unknown_keys_in_key_lists() {
+        let mut cfg = empty_cfg();
+        cfg.rules.push(Rule {
+            enabled: true,
+            condition_game_mode: None,
+            condition_layouts: None,
+            condition_apps_whitelist: None,
+            condition_apps_blacklist: None,
+            key: "CapsLock".into(),
+            layer_id: String::new(),
+            tap_action: ActionSpec::Native,
+            hold_behavior: None,
+            long_hold_action: String::new(),
+            long_hold_timeout_ms: None,
+            hold_action: ActionSpec::Native,
+            isolate: "KeyA, KeyQQ".into(),
+            hold_for: "KeyTab".into(),
+            hold_timeout_ms: None,
+            double_tap_action: String::new(),
+            double_tap_timeout_ms: None,
+        });
+        cfg.layer_keymaps.insert(
+            "nav".into(),
+            LayerKeymap {
+                keys: HashMap::new(),
+                isolate: vec!["Tab".into()],
+                hold_for: vec!["Super".into()],
+            },
+        );
+
+        let err = validate_config(&cfg).expect_err("validation should fail");
+        assert!(err.contains("isolate: unknown key \"KeyQQ\""));
+        assert!(err.contains("holdFor: unknown key \"KeyTab\""));
+        assert!(err.contains("Keymap \"nav\" holdFor: unknown key \"Super\""));
+        assert!(!err.contains("\"KeyA\""));
     }
 
     #[test]
