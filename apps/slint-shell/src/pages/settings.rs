@@ -30,6 +30,7 @@ struct Form {
     appearance: i32,
     high_contrast: bool,
     reduce_motion: bool,
+    layout_osd: bool,
     locale: i32,
     tap_decision: i32,
     hold: String,
@@ -67,6 +68,7 @@ impl Form {
             appearance: choice_index(&APPEARANCES, &settings.appearance),
             high_contrast: settings.high_contrast,
             reduce_motion: settings.reduce_motion,
+            layout_osd: settings.layout_osd,
             locale: choice_index(&LOCALES, &settings.locale),
             tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision.as_str()),
             hold: settings.default_hold_timeout_ms.to_string(),
@@ -102,6 +104,7 @@ impl Form {
             appearance: e.get_appearance_index(),
             high_contrast: e.get_high_contrast(),
             reduce_motion: e.get_reduce_motion(),
+            layout_osd: e.get_layout_osd(),
             locale: e.get_locale_index(),
             tap_decision: e.get_tap_decision_index(),
             hold: e.get_hold_timeout().into(),
@@ -130,6 +133,7 @@ impl Form {
         e.set_appearance_index(self.appearance);
         e.set_high_contrast(self.high_contrast);
         e.set_reduce_motion(self.reduce_motion);
+        e.set_layout_osd(self.layout_osd);
         e.set_locale_index(self.locale);
         e.set_tap_decision_index(self.tap_decision);
         e.set_hold_timeout(self.hold.clone().into());
@@ -178,6 +182,7 @@ impl Form {
         changed!(appearance => settings.appearance = choice(&APPEARANCES, self.appearance));
         changed!(high_contrast => settings.high_contrast = self.high_contrast);
         changed!(reduce_motion => settings.reduce_motion = self.reduce_motion);
+        changed!(layout_osd => settings.layout_osd = self.layout_osd);
         changed!(locale => settings.locale = choice(&LOCALES, self.locale));
         changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision).into());
         changed!(long_hold => settings.default_long_hold_timeout_ms = long_hold);

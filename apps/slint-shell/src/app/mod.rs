@@ -48,6 +48,9 @@ pub(crate) struct App {
     return_input: RefCell<crate::platform::return_input::ReturnInput>,
     /// Menus of the active layout for the winit popups.
     menus: RefCell<Option<Rc<ConfiguredMenus>>>,
+    /// Menus the winit popups show now; their page ids locate the last
+    /// used page in newer menus.
+    applied_menus: RefCell<Option<Rc<ConfiguredMenus>>>,
     /// Bumped whenever the menus may have changed.
     menu_generation: Cell<u64>,
     /// Layout and generation last sent to the Spell worker.
@@ -62,6 +65,8 @@ pub(crate) struct App {
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
     /// Game-mode state the active layout was last chosen for.
     game_active: Cell<Option<bool>>,
+    /// Active layout last seen for the OSD; `None` before the first look.
+    announced_layout: RefCell<Option<Option<String>>>,
     shutting_down: Cell<bool>,
 }
 
@@ -288,6 +293,7 @@ impl App {
         }
         self.invalidate_menus();
         self.apply_preferences();
+        self.announce_layout();
     }
 
     fn shutdown(&self) {
@@ -397,6 +403,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(not(target_os = "linux"))]
         return_input: RefCell::default(),
         menus: RefCell::default(),
+        applied_menus: RefCell::default(),
         menu_generation: Cell::new(0),
         menus_sent: RefCell::default(),
         pending_action: RefCell::default(),
@@ -407,6 +414,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         worker_watch: slint::Timer::default(),
         last_mapper_status: RefCell::new(None),
         game_active: Cell::new(None),
+        announced_layout: RefCell::new(None),
         shutting_down: Cell::new(false),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));

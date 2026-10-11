@@ -191,6 +191,8 @@ pub enum Msg {
     LayoutDeleted(String),
     AutoRuleDeleted,
     LayoutActivated(String),
+    /// `activateLayoutN` found no N-th layout in the library.
+    LayoutSlotEmpty(u32),
     LayoutDiscarded(String),
     MapperRunning(Option<String>),
     MapperStopped(Option<String>),
@@ -285,6 +287,7 @@ impl Msg {
             Self::AutoRuleDeleted => ("auto-rule-deleted", String::new(), 0),
             Self::LayoutDeleted(name) => ("layout-deleted", name.clone(), 0),
             Self::LayoutActivated(name) => ("layout-activated", name.clone(), 0),
+            Self::LayoutSlotEmpty(n) => ("layout-slot-empty", empty(), *n as usize),
             Self::LayoutDiscarded(name) => ("layout-discarded", name.clone(), 0),
             Self::MapperRunning(error) => ("mapper-running", error.clone().unwrap_or_default(), 0),
             Self::MapperStopped(error) => ("mapper-stopped", error.clone().unwrap_or_default(), 0),
@@ -501,6 +504,14 @@ pub fn tray_game_choice(language: Language, mode: crate::command::GameMode) -> S
     tr(language, source, None)
 }
 
+/// On-screen text announcing the active layout; `None` is no layout.
+pub fn layout_osd(language: Language, name: Option<&str>) -> String {
+    match name {
+        Some(name) => format!("{}: {name}", tr(language, "Layout", None)),
+        None => tr(language, "No layout", None),
+    }
+}
+
 /// Index of `control` in [`TRAY_GAME_MODES`].
 pub fn tray_game_index(control: lhc_core::gamemode::GameModeControl) -> usize {
     use lhc_core::gamemode::GameModeControl;
@@ -548,6 +559,11 @@ mod tests {
             tr(Language::Russian, "Switch to desktop {n}", Some(3)),
             "Переключиться на рабочий стол 3"
         );
+        assert_eq!(
+            layout_osd(Language::Russian, Some("Main")),
+            "Раскладка: Main"
+        );
+        assert_eq!(layout_osd(Language::Russian, None), "Без раскладки");
         assert_eq!(
             tr(Language::Russian, "not in the catalog", None),
             "not in the catalog"

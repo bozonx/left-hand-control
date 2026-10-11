@@ -160,8 +160,7 @@ impl Layers {
     }
 
     fn set_menus(&mut self, menus: ConfiguredMenus) {
-        menus.apply_emoji(&self.emoji);
-        menus.apply_quick(&self.quick);
+        menus.apply(Some(&self.menus), &self.emoji, &self.quick);
         self.menus = menus;
         self.filter();
     }

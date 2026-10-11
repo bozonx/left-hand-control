@@ -28,6 +28,7 @@ fn policy(message: &Message, backend: bool) -> Option<(ToastKind, Duration)> {
         | "commands-disabled"
         | "action-unavailable"
         | "save-layout-first"
+        | "layout-slot-empty"
         | "select-input-device" => (ToastKind::Warning, 6),
         "saved-mapper-not-updated" => (ToastKind::Warning, 10),
         "error"

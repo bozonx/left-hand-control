@@ -90,8 +90,14 @@ pub fn resolve_app(name: &str) -> Option<SysAction> {
         if name == format!("showEmojiMenu{page}") {
             return Some(SysAction::AppEvent(format!("show_emoji_menu_{page}")));
         }
+        if name == format!("activateLayout{page}") {
+            return Some(SysAction::AppEvent(format!("activate_layout_{page}")));
+        }
     }
     let event = match name {
+        "showQuickMenuLast" => "show_quick_menu_last",
+        "showEmojiMenuLast" => "show_emoji_menu_last",
+        "showSettings" => "show_settings",
         "gameModeToggle" => "game_mode_toggle",
         "gameModeAuto" => "game_mode_auto",
         "gameModeOn" => "game_mode_on",
@@ -212,6 +218,24 @@ mod tests {
         assert_eq!(event, "show_emoji_menu_5");
         assert!(resolve_app("showEmojiMenu").is_none());
         assert!(resolve_for_desktop("showEmojiMenu5", &Desktop::Kde).is_none());
+    }
+
+    #[test]
+    fn resolve_window_and_layout_actions() {
+        for (name, event) in [
+            ("showQuickMenuLast", "show_quick_menu_last"),
+            ("showEmojiMenuLast", "show_emoji_menu_last"),
+            ("showSettings", "show_settings"),
+            ("activateLayout1", "activate_layout_1"),
+            ("activateLayout5", "activate_layout_5"),
+        ] {
+            let Some(SysAction::AppEvent(resolved)) = resolve_app(name) else {
+                panic!("{name} did not resolve to an AppEvent");
+            };
+            assert_eq!(resolved, event);
+            assert!(crate::profile::actions::app_action_name(name).is_some());
+        }
+        assert!(resolve_app("activateLayout6").is_none());
     }
 
     #[test]

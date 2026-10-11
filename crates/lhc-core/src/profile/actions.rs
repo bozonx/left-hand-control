@@ -78,7 +78,7 @@ impl Action {
 pub enum ActionName {
     /// Built-in system action; the id is the `sys:` id without its number.
     System { id: &'static str, n: u32 },
-    /// Built-in app action (`showQuickMenu` / `showEmojiMenu`).
+    /// Built-in app action (`showQuickMenu`, `activateLayout`, …).
     App { id: &'static str, n: u32 },
     /// Name chosen by the user or an untranslated built-in name.
     Verbatim(String),
@@ -92,9 +92,11 @@ pub struct CatalogEntry {
 
 const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = ["switchDesktop", "switchLayout", "windowToDesktop"];
 
-/// Numbered actions have ids 1…10 (system) and 1…5 (app menus).
+/// Numbered actions have ids 1…10 (system), 1…5 (app menus) and 1…5
+/// (layouts in library order).
 const SYSTEM_NUMBERED_COUNT: u32 = 10;
 pub const MENU_PAGE_COUNT: u32 = 5;
+pub const LAYOUT_SLOT_COUNT: u32 = 5;
 
 /// Split `switchDesktop3` into its catalog name and number.
 fn numbered(id: &str, names: &[&'static str], max: u32) -> Option<(&'static str, u32)> {
@@ -129,12 +131,19 @@ pub const GAME_MODE_APP_ACTIONS: [&str; 4] = [
     "gameModeOff",
 ];
 
+/// App actions without a number: the menus on their last used page and
+/// the settings window.
+pub const WINDOW_APP_ACTIONS: [&str; 3] =
+    ["showQuickMenuLast", "showEmojiMenuLast", "showSettings"];
+
 pub fn app_action_name(id: &str) -> Option<ActionName> {
     numbered(id, &["showQuickMenu", "showEmojiMenu"], MENU_PAGE_COUNT)
+        .or_else(|| numbered(id, &["activateLayout"], LAYOUT_SLOT_COUNT))
         .map(|(id, n)| ActionName::App { id, n })
         .or_else(|| {
-            GAME_MODE_APP_ACTIONS
+            WINDOW_APP_ACTIONS
                 .iter()
+                .chain(&GAME_MODE_APP_ACTIONS)
                 .find(|known| **known == id)
                 .map(|known| ActionName::App { id: known, n: 0 })
         })
@@ -143,7 +152,10 @@ pub fn app_action_name(id: &str) -> Option<ActionName> {
 /// Page of an `app:` menu action, e.g. `showEmojiMenu2` → (Emoji, 2).
 pub fn menu_page(app_id: &str) -> Option<(bool, u32)> {
     match app_action_name(app_id)? {
-        ActionName::App { id, n } if n > 0 => Some((id == "showEmojiMenu", n)),
+        ActionName::App {
+            id: id @ ("showQuickMenu" | "showEmojiMenu"),
+            n,
+        } => Some((id == "showEmojiMenu", n)),
         _ => None,
     }
 }
@@ -161,17 +173,23 @@ pub fn system_actions() -> Vec<CatalogEntry> {
 }
 
 pub fn app_actions() -> Vec<CatalogEntry> {
-    (1..=MENU_PAGE_COUNT)
-        .flat_map(|n| {
-            ["showQuickMenu", "showEmojiMenu"].map(|id| CatalogEntry {
-                action: Action::App(format!("{id}{n}")),
-                name: ActionName::App { id, n },
-            })
-        })
-        .chain(GAME_MODE_APP_ACTIONS.map(|id| CatalogEntry {
-            action: Action::App(id.into()),
-            name: ActionName::App { id, n: 0 },
-        }))
+    let plain = |id: &'static str| CatalogEntry {
+        action: Action::App(id.into()),
+        name: ActionName::App { id, n: 0 },
+    };
+    let numbered = |id: &'static str, n: u32| CatalogEntry {
+        action: Action::App(format!("{id}{n}")),
+        name: ActionName::App { id, n },
+    };
+    WINDOW_APP_ACTIONS
+        .into_iter()
+        .map(plain)
+        .chain(
+            (1..=MENU_PAGE_COUNT)
+                .flat_map(|n| ["showQuickMenu", "showEmojiMenu"].map(|id| numbered(id, n))),
+        )
+        .chain((1..=LAYOUT_SLOT_COUNT).map(|n| numbered("activateLayout", n)))
+        .chain(GAME_MODE_APP_ACTIONS.map(plain))
         .collect()
 }
 
@@ -353,7 +371,7 @@ mod tests {
     #[test]
     fn catalogs_preserve_builtin_action_ids() {
         assert_eq!(system_actions().len(), 30);
-        assert_eq!(app_actions().len(), 14);
+        assert_eq!(app_actions().len(), 22);
         assert_eq!(
             system_action_name("switchDesktop10"),
             Some(ActionName::System {
@@ -373,6 +391,8 @@ mod tests {
         assert_eq!(menu_page("showEmojiMenu3"), Some((true, 3)));
         assert_eq!(menu_page("showQuickMenu6"), None);
         assert_eq!(menu_page("gameModeToggle"), None);
+        assert_eq!(menu_page("activateLayout2"), None);
+        assert_eq!(menu_page("showEmojiMenuLast"), None);
         assert_eq!(
             app_action_name("gameModeOff"),
             Some(ActionName::App {
@@ -380,6 +400,16 @@ mod tests {
                 n: 0
             })
         );
+        assert_eq!(
+            app_action_name("activateLayout5"),
+            Some(ActionName::App {
+                id: "activateLayout",
+                n: 5
+            })
+        );
+        assert_eq!(app_action_name("activateLayout6"), None);
+        assert!(app_action_name("showQuickMenuLast").is_some());
+        assert!(app_action_name("showSettings").is_some());
     }
 
     #[test]

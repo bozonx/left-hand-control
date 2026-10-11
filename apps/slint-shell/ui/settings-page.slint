@@ -26,6 +26,7 @@ export global SettingsEditor {
     in-out property <int> appearance-index;
     in-out property <bool> high-contrast;
     in-out property <bool> reduce-motion;
+    in-out property <bool> layout-osd;
     in-out property <int> locale-index;
     in-out property <int> tap-decision-index;
     in-out property <string> hold-timeout;
@@ -202,6 +203,7 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == 0: Section {
                     title: @tr("General");
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
+                    if AppState.is-linux: CheckBox { text: @tr("Show the layout name on screen when the active layout changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                     VerticalLayout { vertical-stretch: 0; spacing: 8px;
                         Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
                         HorizontalLayout { alignment: start;

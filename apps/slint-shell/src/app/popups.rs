@@ -250,8 +250,8 @@ impl App {
 
     fn refresh_popup_data(&self) {
         let menus = self.menus();
-        menus.apply_emoji(&self.emoji);
-        menus.apply_quick(&self.quick);
+        let previous = self.applied_menus.replace(Some(menus.clone()));
+        menus.apply(previous.as_deref(), &self.emoji, &self.quick);
         self.filter_quick();
     }
 

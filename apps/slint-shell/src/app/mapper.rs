@@ -2,8 +2,14 @@
 //! sync with changes other processes make.
 
 use super::{App, post};
-use crate::{command::Source, i18n::Msg, pages, ui::AppState};
-use lhc_core::CoreEvent;
+use crate::{command::Source, document::View, i18n::Msg, pages, ui::AppState};
+use lhc_core::{
+    CoreEvent,
+    profile::{
+        auto_switch::{self, AutoSwitchContext},
+        model::LayoutMode,
+    },
+};
 use slint::ComponentHandle;
 use std::time::Instant;
 
@@ -35,6 +41,13 @@ pub(super) fn forward_core_events() {
             });
         }
         CoreEvent::AppAction(name) => {
+            if let Some(slot) = name
+                .strip_prefix("activate_layout_")
+                .and_then(|slot| slot.parse::<u32>().ok())
+            {
+                post(move |app| app.activate_layout(slot));
+                return;
+            }
             let Some(command) = crate::command::Command::from_app_action(name) else {
                 return;
             };
@@ -61,6 +74,77 @@ impl App {
         if self.game_active.replace(Some(status.active)) != Some(status.active) {
             self.context_changed();
         }
+    }
+
+    /// `activateLayoutN`: make layout `slot` (1-based, library order) the
+    /// single active one, leaving automatic mode.
+    pub(super) fn activate_layout(&self, slot: u32) {
+        let Some(document) = self.document() else {
+            self.set_error(Msg::LoadConfigFirst);
+            return;
+        };
+        let id = document.read().ordered_layout_ids().map(|ids| {
+            usize::try_from(slot)
+                .ok()
+                .and_then(|slot| ids.get(slot.checked_sub(1)?).cloned())
+        });
+        let id = match id {
+            Ok(Some(id)) => id,
+            Ok(None) => {
+                crate::notifications::send(&self.settings, Msg::LayoutSlotEmpty(slot));
+                return;
+            }
+            Err(error) => {
+                self.set_error(Msg::from(&error));
+                return;
+            }
+        };
+        let result = document.edit(View::Shell, |config| {
+            config.update_settings(|settings| {
+                auto_switch::set_mode(settings, LayoutMode::Manual);
+                settings.manual_active_layout_id = Some(id);
+            })
+        });
+        match result {
+            Ok(saved) => {
+                if let Err(error) = saved.runtime {
+                    self.set_error(Msg::SavedMapperNotUpdated(error));
+                }
+            }
+            Err(error) => self.set_error(Msg::from(&error)),
+        }
+        self.document_changed();
+    }
+
+    /// Show the layout OSD when the active layout differs from the one
+    /// last seen. The first observation and a stopped mapper stay silent.
+    pub(super) fn announce_layout(&self) {
+        let Some(document) = self.document() else {
+            return;
+        };
+        let (id, enabled) = {
+            let config = document.read();
+            let Ok(id) = config.active_layout_id(&AutoSwitchContext::current()) else {
+                return;
+            };
+            (id, config.settings().layout_osd)
+        };
+        let previous = self.announced_layout.replace(Some(id.clone()));
+        if !enabled
+            || previous.is_none_or(|previous| previous == id)
+            || !lhc_core::mapper::runtime::status().running
+        {
+            return;
+        }
+        let name = id
+            .as_deref()
+            .and_then(lhc_core::profile::model::user_layout_name);
+        let text = crate::i18n::layout_osd(self.preferences.get().language, name);
+        std::thread::spawn(move || {
+            if let Err(error) = lhc_core::platform::osd::show(&text) {
+                log::warn!("[osd] {error}");
+            }
+        });
     }
 
     /// The system context (layout, game mode, window) changed: the active
@@ -97,6 +181,7 @@ impl App {
         self.refresh_mapper_status();
         pages::refresh_active(&self.settings, &document);
         self.invalidate_menus();
+        self.announce_layout();
     }
 
     fn clear_runtime_error(&self) {

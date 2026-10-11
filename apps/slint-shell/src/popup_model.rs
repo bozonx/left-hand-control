@@ -240,6 +240,45 @@ impl ConfiguredMenus {
         ui.set_page(ui.get_page().clamp(0, count.saturating_sub(1) as i32));
     }
 
+    /// Apply the menus to both popups. Each popup stays on the page it
+    /// showed under `previous` while a page with that id exists, so the
+    /// last used page survives edits, reordering and layout switches.
+    pub fn apply(
+        &self,
+        previous: Option<&ConfiguredMenus>,
+        emoji: &EmojiPopup,
+        quick: &QuickPopup,
+    ) {
+        let emoji_ids = |menus: &ConfiguredMenus| -> Vec<String> {
+            menus
+                .layout
+                .emoji_pages
+                .iter()
+                .map(|p| p.id.clone())
+                .collect()
+        };
+        let quick_ids = |menus: &ConfiguredMenus| -> Vec<String> {
+            menus
+                .layout
+                .quick_action_pages
+                .iter()
+                .map(|p| p.id.clone())
+                .collect()
+        };
+        let emoji_page = previous
+            .and_then(|old| moved_page(&emoji_ids(old), emoji.get_page(), &emoji_ids(self)));
+        let quick_page = previous
+            .and_then(|old| moved_page(&quick_ids(old), quick.get_page(), &quick_ids(self)));
+        self.apply_emoji(emoji);
+        self.apply_quick(quick);
+        if let Some(page) = emoji_page {
+            emoji.set_page(page);
+        }
+        if let Some(page) = quick_page {
+            quick.set_page(page);
+        }
+    }
+
     /// Emoji in cell `index` of the current page, if it is not empty.
     pub fn emoji(&self, ui: &EmojiPopup, index: i32) -> Option<String> {
         let page = self
@@ -292,6 +331,15 @@ impl ConfiguredMenus {
                 .collect::<Vec<_>>(),
         )));
     }
+}
+
+/// Index in `current` of the page that was `page` in `previous`.
+fn moved_page(previous: &[String], page: i32, current: &[String]) -> Option<i32> {
+    let id = previous.get(usize::try_from(page).ok()?)?;
+    current
+        .iter()
+        .position(|item| item == id)
+        .and_then(|index| i32::try_from(index).ok())
 }
 
 /// Open `page` (1-based) of `popup`.
@@ -361,6 +409,16 @@ mod tests {
         assert_eq!(popup_key(0, 2, "B"), (None, KeyOutcome::ChooseCell(14)));
         assert_eq!(hotkey_index("q"), Some(0));
         assert_eq!(hotkey_index("p"), None);
+    }
+
+    #[test]
+    fn last_page_follows_its_id() {
+        let ids = |items: &[&str]| items.iter().map(|id| id.to_string()).collect::<Vec<_>>();
+        let before = ids(&["a", "b", "c"]);
+        assert_eq!(moved_page(&before, 1, &ids(&["b", "a"])), Some(0));
+        assert_eq!(moved_page(&before, 2, &ids(&["a", "b"])), None);
+        assert_eq!(moved_page(&before, 5, &before), None);
+        assert_eq!(moved_page(&before, -1, &before), None);
     }
 
     #[test]

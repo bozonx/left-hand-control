@@ -421,6 +421,8 @@ pub struct AppSettings {
     pub appearance: Appearance,
     pub high_contrast: bool,
     pub reduce_motion: bool,
+    /// Show an on-screen display when the active layout changes.
+    pub layout_osd: bool,
     pub locale: LocalePreference,
     pub default_hold_timeout_ms: u64,
     pub default_long_hold_timeout_ms: u64,
@@ -458,6 +460,7 @@ impl Default for AppSettings {
             appearance: Appearance::System,
             high_contrast: false,
             reduce_motion: false,
+            layout_osd: false,
             locale: LocalePreference::Auto,
             default_long_hold_timeout_ms: 1000,
             default_hold_timeout_ms: 200,

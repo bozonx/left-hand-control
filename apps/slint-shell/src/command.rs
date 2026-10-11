@@ -172,6 +172,13 @@ game auto|on|off|toggle | preferences system|light|dark en|ru | execute <action>
 
 impl Command {
     pub fn from_app_action(name: &str) -> Option<Self> {
+        match name {
+            // Without a page the popups keep the page they showed last.
+            "show_quick_menu_last" => return Some(Self::Show(Window::QUICK)),
+            "show_emoji_menu_last" => return Some(Self::Show(Window::EMOJI)),
+            "show_settings" => return Some(Self::Show(Window::Settings)),
+            _ => {}
+        }
         let game = match name {
             "game_mode_toggle" => Some(GameMode::Toggle),
             "game_mode_auto" => Some(GameMode::Auto),
@@ -383,10 +390,19 @@ mod tests {
             Command::from_app_action("game_mode_toggle"),
             Some(Command::GameMode(GameMode::Toggle))
         );
+        assert_eq!(
+            Command::from_app_action("show_emoji_menu_last"),
+            Some(Command::Show(Window::EMOJI))
+        );
+        assert_eq!(
+            Command::from_app_action("show_settings"),
+            Some(Command::Show(Window::Settings))
+        );
         for invalid in [
             "show_quick_menu_0",
             "show_emoji_menu_6",
             "show_emoji_menu_bad",
+            "activate_layout_1",
             "quit",
         ] {
             assert!(Command::from_app_action(invalid).is_none());

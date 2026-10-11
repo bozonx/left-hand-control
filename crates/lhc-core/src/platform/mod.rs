@@ -27,6 +27,14 @@ pub mod file_chooser;
 pub mod kde_shortcuts;
 #[cfg(target_os = "linux")]
 pub mod linux;
+#[cfg(target_os = "linux")]
+pub mod osd;
+#[cfg(not(target_os = "linux"))]
+pub mod osd {
+    pub fn show(_text: &str) -> Result<(), String> {
+        Err("on-screen display is not implemented on this platform".into())
+    }
+}
 
 #[cfg(target_os = "windows")]
 pub(crate) mod windows;
