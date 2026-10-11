@@ -4331,7 +4331,7 @@ mod tests {
     }
 
     #[test]
-    fn builder_resolves_system_macro() {
+    fn builder_resolves_builtin_macro() {
         let mut cfg = empty_cfg();
         cfg.rules.push(Rule {
             enabled: true,

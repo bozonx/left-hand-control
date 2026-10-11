@@ -11,10 +11,10 @@ import { Button, LineEdit } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
 export struct MacroRow { id: string, name: string, step-pause: string, modifier-delay: string, usage: [string], error: Message, steps: [MacroStepRow] }
-export struct SystemMacroRow { id: string, name: string, steps: string }
+export struct BuiltinMacroRow { id: string, name: string, steps: string }
 export global MacroEditor {
     in property <[MacroRow]> macros;
-    in property <[SystemMacroRow]> system-macros;
+    in property <[BuiltinMacroRow]> builtin-macros;
     in property <string> default-step-pause;
     in property <string> default-modifier-delay;
     in property <bool> has-errors;
@@ -23,7 +23,7 @@ export global MacroEditor {
     callback refresh();
     callback flush-pending();
     callback add(string);
-    callback clone-system(int, string);
+    callback clone-builtin(int, string);
     callback remove(int);
     callback move(int, int);
     callback set-field(int, MacroField, string);
@@ -248,10 +248,10 @@ component MacroCard inherits Card {
     DropMarker { width: parent.width; group: 4; index: root.index; row-y: root.y; row-height: root.height; }
 }
 
-component SystemMacrosHeader inherits Rectangle {
+component BuiltinMacrosHeader inherits Rectangle {
     in-out property <bool> open;
     accessible-role: button;
-    accessible-label: @tr("System macros");
+    accessible-label: @tr("Built-in macros");
     accessible-expanded: root.open;
     accessible-action-default => { root.open = !root.open; }
     HorizontalLayout {
@@ -263,8 +263,8 @@ component SystemMacrosHeader inherits Rectangle {
             HorizontalLayout {
                 spacing: 8px;
                 alignment: start;
-                Text { text: @tr("System macros"); color: Theme.text; font-size: 16px; font-weight: 700; vertical-alignment: center; }
-                Badge { text: MacroEditor.system-macros.length; }
+                Text { text: @tr("Built-in macros"); color: Theme.text; font-size: 16px; font-weight: 700; vertical-alignment: center; }
+                Badge { text: MacroEditor.builtin-macros.length; }
             }
             Text { text: @tr("Built-in macros that cannot be edited. To customize, create a user macro based on one."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
         }
@@ -280,9 +280,9 @@ component SystemMacrosHeader inherits Rectangle {
 
 // The row itself is the TouchArea, so it keeps `has-hover` while the pointer is over one of
 // its buttons; a sibling TouchArea would lose hover there and make the buttons flicker.
-component SystemMacroLine inherits TouchArea {
+component BuiltinMacroLine inherits TouchArea {
     in property <int> index;
-    in property <SystemMacroRow> item;
+    in property <BuiltinMacroRow> item;
     callback copy(string);
     Rectangle { background: root.has-hover ? Theme.hover.transparentize(0.6) : transparent; }
     VerticalLayout {
@@ -315,7 +315,7 @@ component SystemMacroLine inherits TouchArea {
                     text: @tr("Create based on");
                     icon: @image-url("icons/copy-plus.svg");
                     colorize-icon: true;
-                    clicked => { MacroEditor.clone-system(root.index, @tr("(copy)")); }
+                    clicked => { MacroEditor.clone-builtin(root.index, @tr("(copy)")); }
                 }
             }
         }
@@ -323,13 +323,13 @@ component SystemMacroLine inherits TouchArea {
     }
 }
 
-component SystemMacrosCard inherits Card {
+component BuiltinMacrosCard inherits Card {
     in-out property <bool> open;
     callback copy(string);
     VerticalLayout {
         padding: 16px;
         spacing: 12px;
-        SystemMacrosHeader { open <=> root.open; }
+        BuiltinMacrosHeader { open <=> root.open; }
         if root.open: VerticalLayout {
             spacing: 0px;
             HorizontalLayout {
@@ -341,7 +341,7 @@ component SystemMacrosCard inherits Card {
                 Rectangle { width: 170px; }
             }
             Rectangle { height: 1px; background: Theme.divider; }
-            for item[index] in MacroEditor.system-macros: SystemMacroLine {
+            for item[index] in MacroEditor.builtin-macros: BuiltinMacroLine {
                 index: index;
                 item: item;
                 copy(value) => { root.copy(value); }
@@ -352,7 +352,7 @@ component SystemMacrosCard inherits Card {
 
 export component MacrosPage inherits Rectangle {
     vertical-stretch: 1;
-    private property <bool> system-open: false;
+    private property <bool> builtin-open: false;
     private property <int> delete-macro: -1;
     private property <int> delete-step: -1;
     clipboard := TextInput { visible: false; width: 0px; height: 0px; }
@@ -395,7 +395,7 @@ export component MacrosPage inherits Rectangle {
                     remove-step(step) => { root.delete-macro = index; root.delete-step = step; }
                     copy(value) => { root.copy(value); }
                 }
-                SystemMacrosCard { open <=> root.system-open; copy(value) => { root.copy(value); } }
+                BuiltinMacrosCard { open <=> root.builtin-open; copy(value) => { root.copy(value); } }
             }
         }
     }

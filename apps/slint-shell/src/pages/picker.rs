@@ -24,9 +24,9 @@ use std::{cell::RefCell, rc::Rc};
 /// Picker category of each group of [`CATEGORIES`], in the same order.
 const KEY_CATEGORIES: [PickerCategory; CATEGORIES.len()] = [
     PickerCategory::Modifiers,
-    PickerCategory::Navigation,
     PickerCategory::Letters,
-    PickerCategory::Digits,
+    PickerCategory::ControlKeys,
+    PickerCategory::Navigation,
     PickerCategory::FunctionKeys,
     PickerCategory::Media,
     PickerCategory::SystemKeys,
@@ -38,7 +38,7 @@ const KEY_CATEGORIES: [PickerCategory; CATEGORIES.len()] = [
 /// command per action, not a catalog.
 const ACTION_CATEGORIES: [PickerCategory; 7] = [
     PickerCategory::Macros,
-    PickerCategory::SystemMacros,
+    PickerCategory::BuiltinMacros,
     PickerCategory::App,
     PickerCategory::SystemActions,
     PickerCategory::Text,
@@ -53,7 +53,6 @@ fn is_key_category(category: PickerCategory) -> bool {
 pub(crate) fn category_for_value(value: &str) -> PickerCategory {
     for (prefix, category) in [
         ("macro:", PickerCategory::Macros),
-        ("system-macro:", PickerCategory::SystemMacros),
         ("cmd:", PickerCategory::Commands),
         ("app:", PickerCategory::App),
         ("sys:", PickerCategory::SystemActions),
@@ -116,7 +115,7 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             Action::Macro(id) if config.macros.iter().any(|m| m.id == *id) => {
                 PickerCategory::Macros
             }
-            Action::Macro(_) => PickerCategory::SystemMacros,
+            Action::Macro(_) => PickerCategory::BuiltinMacros,
             Action::Command(_) if enabled => PickerCategory::Commands,
             Action::Command(_) => return None,
             Action::App(_) => PickerCategory::App,
@@ -988,6 +987,9 @@ mod tests {
     fn categories_follow_the_key_catalog() {
         assert_eq!(category_for_value("CapsLock"), PickerCategory::Modifiers);
         assert_eq!(category_for_value("ArrowUp"), PickerCategory::Navigation);
+        assert_eq!(category_for_value("Numpad5"), PickerCategory::Navigation);
+        assert_eq!(category_for_value("Digit5"), PickerCategory::Letters);
+        assert_eq!(category_for_value("Escape"), PickerCategory::ControlKeys);
         assert_eq!(category_for_value("Ctrl+KeyV"), PickerCategory::Letters);
         assert_eq!(
             category_for_value("ShiftLeft+F13"),

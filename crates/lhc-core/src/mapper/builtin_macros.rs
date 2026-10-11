@@ -1,40 +1,40 @@
-// Built-in "system macros" — globally available macros that resolve
+// Built-in macros — globally available macros that resolve
 // `macro:<id>` at runtime regardless of the active layout preset.
 //
 // The engine builds these first, then overlays user macros from the
 // config (same id → user wins). The action catalog derives its entries
 // from these definitions.
 
-pub struct SysMacro {
+pub struct BuiltinMacro {
     pub id: &'static str,
     /// English display name.
     pub name: &'static str,
     pub steps: &'static [&'static str],
 }
 
-pub const SYSTEM_MACROS: &[SysMacro] = &[
+pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
     // nav layer
-    SysMacro {
+    BuiltinMacro {
         id: "moveLineDown",
         name: "Move line down",
         steps: &["Home", "Enter", "ArrowUp"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "downEnd",
         name: "Down + End",
         steps: &["ArrowDown", "End"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "upEnd",
         name: "Up + End",
         steps: &["ArrowUp", "End"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "up5Times",
         name: "Up 5 times",
         steps: &["ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "duplicateLine",
         name: "Duplicate line",
         steps: &[
@@ -46,22 +46,22 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
             "Ctrl+KeyV",
         ],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "rightSpace",
         name: "Right + Space",
         steps: &["ArrowRight", "Space"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "emptyLineBelow",
         name: "Empty line below",
         steps: &["End", "Enter"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "cutWordRightCenter",
         name: "Cut word right from center",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyX"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "copyWordAfterCenter",
         name: "Copy word right from center",
         steps: &[
@@ -71,27 +71,27 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
             "ArrowLeft",
         ],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "pasteAtLineAbove",
         name: "Paste at line above",
         steps: &["Home", "Enter", "ArrowUp", "Ctrl+KeyV"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "replaceWordWidthBuffer",
         name: "Replace word with buffer",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyC"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "downHome",
         name: "Down + Home",
         steps: &["ArrowDown", "Home"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "upHome",
         name: "Up + Home",
         steps: &["ArrowUp", "Home"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "down5Times",
         name: "Down 5 times",
         steps: &[
@@ -102,33 +102,33 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
             "ArrowDown",
         ],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "pasteAtLineBottom",
         name: "Paste at line bottom",
         steps: &["End", "Enter", "Ctrl+KeyV"],
     },
     // select layer
-    SysMacro {
+    BuiltinMacro {
         id: "cutToStart",
         name: "Cut to start",
         steps: &["Shift+Home", "Ctrl+KeyX"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "cutToEnd",
         name: "Cut to end",
         steps: &["Shift+End", "Ctrl+KeyX"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "cutLineContent",
         name: "Cut line content",
         steps: &["Home", "Shift+End", "Ctrl+KeyX"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "cutAndRemoveLine",
         name: "Cut and remove line",
         steps: &["Home", "Shift+End", "Ctrl+KeyX", "Delete"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "select5LinesUp",
         name: "Select 5 lines up",
         steps: &[
@@ -139,47 +139,47 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
             "Shift+ArrowUp",
         ],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "copyToStart",
         name: "Copy to start",
         steps: &["Shift+Home", "Ctrl+KeyC", "Home"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "copyToEnd",
         name: "Copy to end",
         steps: &["Shift+End", "Ctrl+KeyC", "End"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "copyLine",
         name: "Copy line",
         steps: &["Home", "Shift+End", "Ctrl+KeyC", "Home"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "selectWholeLine",
         name: "Select whole line",
         steps: &["Home", "Shift+End"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "selectWordRightCenter",
         name: "Select word right from center",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "replaceToStartWithBuffer",
         name: "Replace to start with buffer",
         steps: &["Shift+Home", "Ctrl+KeyV"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "replaceToEndWithBuffer",
         name: "Replace to end with buffer",
         steps: &["Shift+End", "Ctrl+KeyV"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "replaceLineWidthBuffer",
         name: "Replace line with buffer",
         steps: &["Home", "Shift+End", "Ctrl+KeyV"],
     },
-    SysMacro {
+    BuiltinMacro {
         id: "select5LinesDown",
         name: "Select 5 lines down",
         steps: &[
@@ -194,16 +194,16 @@ pub const SYSTEM_MACROS: &[SysMacro] = &[
 
 #[cfg(test)]
 mod tests {
-    use super::SYSTEM_MACROS;
+    use super::BUILTIN_MACROS;
     use crate::mapper::action::parse_action;
 
     #[test]
-    fn all_system_macros_have_valid_keystrokes() {
-        for m in SYSTEM_MACROS {
+    fn all_builtin_macros_have_valid_keystrokes() {
+        for m in BUILTIN_MACROS {
             for step in m.steps {
                 assert!(
                     parse_action(step).is_some(),
-                    "system macro {} has invalid step: {}",
+                    "built-in macro {} has invalid step: {}",
                     m.id,
                     step
                 );
@@ -212,11 +212,11 @@ mod tests {
     }
 
     #[test]
-    fn all_system_macro_ids_are_non_empty_and_unique() {
+    fn all_builtin_macro_ids_are_non_empty_and_unique() {
         let mut ids = std::collections::HashSet::new();
-        for m in SYSTEM_MACROS {
-            assert!(!m.id.is_empty(), "system macro id cannot be empty");
-            assert!(ids.insert(m.id), "duplicate system macro id: {}", m.id);
+        for m in BUILTIN_MACROS {
+            assert!(!m.id.is_empty(), "built-in macro id cannot be empty");
+            assert!(ids.insert(m.id), "duplicate built-in macro id: {}", m.id);
         }
     }
 }

@@ -4,7 +4,7 @@
 /// Key groups in picker order; the shell maps each index to a
 /// `PickerCategory`.
 pub const CATEGORIES: &[&[&str]] = &[
-    // Modifiers and service keys.
+    // Modifiers.
     &[
         "ShiftLeft",
         "ShiftRight",
@@ -14,31 +14,9 @@ pub const CATEGORIES: &[&[&str]] = &[
         "AltRight",
         "MetaLeft",
         "MetaRight",
-        "Escape",
-        "Enter",
-        "Tab",
-        "Backspace",
-        "Space",
         "CapsLock",
-        "ContextMenu",
     ],
-    // Navigation and editing.
-    &[
-        "ArrowLeft",
-        "ArrowRight",
-        "ArrowUp",
-        "ArrowDown",
-        "Home",
-        "End",
-        "PageUp",
-        "PageDown",
-        "Insert",
-        "Delete",
-        "PrintScreen",
-        "ScrollLock",
-        "Pause",
-    ],
-    // Letters and symbols of the main block.
+    // Letters, digits and symbols of the main block.
     &[
         "KeyA",
         "KeyB",
@@ -66,6 +44,16 @@ pub const CATEGORIES: &[&[&str]] = &[
         "KeyX",
         "KeyY",
         "KeyZ",
+        "Digit0",
+        "Digit1",
+        "Digit2",
+        "Digit3",
+        "Digit4",
+        "Digit5",
+        "Digit6",
+        "Digit7",
+        "Digit8",
+        "Digit9",
         "Backquote",
         "Minus",
         "Equal",
@@ -79,18 +67,30 @@ pub const CATEGORIES: &[&[&str]] = &[
         "Slash",
         "IntlBackslash",
     ],
-    // Digits and numpad.
+    // Control keys.
     &[
-        "Digit0",
-        "Digit1",
-        "Digit2",
-        "Digit3",
-        "Digit4",
-        "Digit5",
-        "Digit6",
-        "Digit7",
-        "Digit8",
-        "Digit9",
+        "Escape",
+        "Tab",
+        "Enter",
+        "Backspace",
+        "Space",
+        "Insert",
+        "Delete",
+        "ContextMenu",
+        "PrintScreen",
+        "ScrollLock",
+        "Pause",
+    ],
+    // Navigation and numpad.
+    &[
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End",
+        "PageUp",
+        "PageDown",
         "NumLock",
         "Numpad0",
         "Numpad1",

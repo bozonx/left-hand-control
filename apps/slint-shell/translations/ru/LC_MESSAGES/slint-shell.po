@@ -458,8 +458,8 @@ msgstr "Слой сохранён"
 msgid "Macros"
 msgstr "Макросы"
 
-msgid "System macros"
-msgstr "Системные макросы"
+msgid "Built-in macros"
+msgstr "Встроенные макросы"
 
 msgid "Macro ID"
 msgstr "ID макроса"
@@ -749,20 +749,20 @@ msgstr "Действие:"
 msgid "Trigger key:"
 msgstr "Клавиша-триггер:"
 
-msgid "Modifiers and service keys"
-msgstr "Модификаторы и служебные"
+msgid "Modifiers"
+msgstr "Модификаторы"
 
-msgid "Navigation and editing"
-msgstr "Навигация и редактирование"
+msgid "Letters and digits"
+msgstr "Буквы и цифры"
 
-msgid "Letters and symbols"
-msgstr "Буквы и символы"
+msgid "Control keys"
+msgstr "Управляющие"
 
-msgid "Digits and numpad"
-msgstr "Цифры и numpad"
+msgid "Navigation and numpad"
+msgstr "Навигация и Numpad"
 
-msgid "Function keys"
-msgstr "Функциональные F1–F24"
+msgid "F1–F24"
+msgstr "F1–F24"
 
 msgid "Media and launch"
 msgstr "Мультимедиа и запуск"
@@ -776,6 +776,9 @@ msgstr "Мышь"
 msgid "Other keys"
 msgstr "Прочие"
 
+msgid "Actions"
+msgstr "Действия"
+
 msgid "Back side button on most mice"
 msgstr "Боковая «назад» у большинства мышей"
 
@@ -785,8 +788,8 @@ msgstr "Боковая «вперёд» у большинства мышей"
 msgid "Rare: most mice send Side/Extra"
 msgstr "Редко: обычно мыши шлют Side/Extra"
 
-msgid "Application"
-msgstr "Приложение"
+msgid "Keys"
+msgstr "Клавиши"
 
 msgid "System actions"
 msgstr "Системные действия"

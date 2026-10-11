@@ -5,11 +5,11 @@
 use crate::{
     document::{Document, View},
     i18n::Msg,
-    ui::{MacroEditor, MacroField, MacroRow, MacroStepRow, SettingsWindow, SystemMacroRow},
+    ui::{BuiltinMacroRow, MacroEditor, MacroField, MacroRow, MacroStepRow, SettingsWindow},
 };
 use lhc_core::{
     config_document::ConfigError,
-    mapper::system_macros::SYSTEM_MACROS,
+    mapper::builtin_macros::BUILTIN_MACROS,
     profile::{
         ids, macros,
         model::{AppConfig, Macro, MacroStep},
@@ -221,7 +221,7 @@ fn save_later(ui: &SettingsWindow, document: &Rc<Document>, state: &Shared) {
 }
 
 fn taken(draft: &[Entry], id: &str) -> bool {
-    draft.iter().any(|e| e.item.id == id) || SYSTEM_MACROS.iter().any(|m| m.id == id)
+    draft.iter().any(|e| e.item.id == id) || BUILTIN_MACROS.iter().any(|m| m.id == id)
 }
 
 fn unique_id(draft: &[Entry], base: &str) -> String {
@@ -255,10 +255,10 @@ fn index(value: i32, len: usize) -> Option<usize> {
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let editor = ui.global::<MacroEditor>();
-    editor.set_system_macros(ModelRc::new(VecModel::from(
-        SYSTEM_MACROS
+    editor.set_builtin_macros(ModelRc::new(VecModel::from(
+        BUILTIN_MACROS
             .iter()
-            .map(|item| SystemMacroRow {
+            .map(|item| BuiltinMacroRow {
                 id: item.id.into(),
                 name: item.name.into(),
                 steps: item.steps.join("  ›  ").into(),
@@ -344,21 +344,21 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
     });
     let s = structural.clone();
-    editor.on_clone_system(move |index, suffix| {
-        let Some(system) = usize::try_from(index)
+    editor.on_clone_builtin(move |index, suffix| {
+        let Some(builtin) = usize::try_from(index)
             .ok()
-            .and_then(|i| SYSTEM_MACROS.get(i))
+            .and_then(|i| BUILTIN_MACROS.get(i))
         else {
             return;
         };
         s(&|draft| {
-            let id = unique_id(draft, &format!("{}Copy", system.id));
+            let id = unique_id(draft, &format!("{}Copy", builtin.id));
             draft.insert(
                 0,
                 Entry::new(Macro {
                     id,
-                    name: format!("{} {suffix}", system.name),
-                    steps: system.steps.iter().map(|a| step(*a)).collect(),
+                    name: format!("{} {suffix}", builtin.name),
+                    steps: builtin.steps.iter().map(|a| step(*a)).collect(),
                     step_pause_ms: None,
                     modifier_delay_ms: None,
                 }),
@@ -513,8 +513,8 @@ mod tests {
     }
 
     #[test]
-    fn ids_avoid_system_macros() {
-        let system = SYSTEM_MACROS[0].id;
-        assert_ne!(unique_id(&[], system), system);
+    fn ids_avoid_builtin_macros() {
+        let builtin = BUILTIN_MACROS[0].id;
+        assert_ne!(unique_id(&[], builtin), builtin);
     }
 }

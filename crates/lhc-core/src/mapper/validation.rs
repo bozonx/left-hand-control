@@ -2,15 +2,15 @@
 #![allow(clippy::too_many_arguments)]
 
 use super::action::{explicit_pause, explicit_text, parse_action};
+use super::builtin_macros::BUILTIN_MACROS;
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system;
-use super::system_macros::SYSTEM_MACROS;
 use std::collections::{HashMap, HashSet};
 
 pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     let mut errors = Vec::new();
-    let system_macro_ids: HashSet<&str> = SYSTEM_MACROS.iter().map(|m| m.id).collect();
+    let builtin_macro_ids: HashSet<&str> = BUILTIN_MACROS.iter().map(|m| m.id).collect();
 
     let mut user_macro_ids = HashSet::new();
     let mut seen_macro_ids = HashSet::new();
@@ -23,8 +23,8 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         if !seen_macro_ids.insert(id.to_string()) {
             errors.push(format!("Duplicate macro ID \"{id}\""));
         }
-        if system_macro_ids.contains(id) {
-            errors.push(format!("Macro ID \"{id}\" conflicts with a system macro"));
+        if builtin_macro_ids.contains(id) {
+            errors.push(format!("Macro ID \"{id}\" conflicts with a built-in macro"));
         }
         user_macro_ids.insert(id.to_string());
     }
@@ -62,7 +62,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &format!("{where_key} tap"),
             ActionKind::Any,
             &user_macro_ids,
-            &system_macro_ids,
+            &builtin_macro_ids,
             &command_ids,
             &mut errors,
         );
@@ -71,7 +71,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &format!("{where_key} hold"),
             ActionKind::HoldKeystroke,
             &user_macro_ids,
-            &system_macro_ids,
+            &builtin_macro_ids,
             &command_ids,
             &mut errors,
         );
@@ -79,7 +79,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &r.long_hold_action,
             &format!("{where_key} long hold"),
             &user_macro_ids,
-            &system_macro_ids,
+            &builtin_macro_ids,
             &command_ids,
             &mut errors,
         );
@@ -87,7 +87,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
             &r.double_tap_action,
             &format!("{where_key} double-tap"),
             &user_macro_ids,
-            &system_macro_ids,
+            &builtin_macro_ids,
             &command_ids,
             &mut errors,
         );
@@ -104,7 +104,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                     &format!("Keymap \"{layer_id}\" key \"{code}\""),
                     ActionKind::Any,
                     &user_macro_ids,
-                    &system_macro_ids,
+                    &builtin_macro_ids,
                     &command_ids,
                     &mut errors,
                 );
@@ -118,7 +118,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                 &step.action,
                 &format!("Macro \"{}\" step #{}", m.id, idx + 1),
                 &user_macro_ids,
-                &system_macro_ids,
+                &builtin_macro_ids,
                 &command_ids,
                 &mut errors,
             );
@@ -152,7 +152,7 @@ fn validate_action_spec(
     where_: &str,
     kind: ActionKind,
     user_macro_ids: &HashSet<String>,
-    system_macro_ids: &HashSet<&str>,
+    builtin_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
 
     errors: &mut Vec<String>,
@@ -163,7 +163,7 @@ fn validate_action_spec(
             where_,
             kind,
             user_macro_ids,
-            system_macro_ids,
+            builtin_macro_ids,
             command_ids,
             errors,
         );
@@ -174,7 +174,7 @@ fn validate_optional_action(
     action: &str,
     where_: &str,
     user_macro_ids: &HashSet<String>,
-    system_macro_ids: &HashSet<&str>,
+    builtin_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
 
     errors: &mut Vec<String>,
@@ -185,7 +185,7 @@ fn validate_optional_action(
             where_,
             ActionKind::Any,
             user_macro_ids,
-            system_macro_ids,
+            builtin_macro_ids,
             command_ids,
             errors,
         );
@@ -196,7 +196,7 @@ fn validate_macro_step(
     action: &str,
     where_: &str,
     user_macro_ids: &HashSet<String>,
-    system_macro_ids: &HashSet<&str>,
+    builtin_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
 
     errors: &mut Vec<String>,
@@ -216,7 +216,7 @@ fn validate_macro_step(
         where_,
         ActionKind::Any,
         user_macro_ids,
-        system_macro_ids,
+        builtin_macro_ids,
         command_ids,
         errors,
     );
@@ -227,7 +227,7 @@ fn validate_action(
     where_: &str,
     kind: ActionKind,
     user_macro_ids: &HashSet<String>,
-    system_macro_ids: &HashSet<&str>,
+    builtin_macro_ids: &HashSet<&str>,
     command_ids: &HashSet<String>,
 
     errors: &mut Vec<String>,
@@ -246,7 +246,7 @@ fn validate_action(
     }
     if let Some(id) = action.strip_prefix("macro:") {
         let id = id.trim();
-        if !user_macro_ids.contains(id) && !system_macro_ids.contains(id) {
+        if !user_macro_ids.contains(id) && !builtin_macro_ids.contains(id) {
             errors.push(format!("{where_}: unknown macro \"{id}\""));
         }
         return;
@@ -287,7 +287,7 @@ fn validate_action(
 fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
     let mut graph: HashMap<String, Vec<String>> = HashMap::new();
 
-    for sys in SYSTEM_MACROS {
+    for sys in BUILTIN_MACROS {
         graph.insert(
             sys.id.to_string(),
             sys.steps
@@ -432,7 +432,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_system_macro_shadowing() {
+    fn rejects_builtin_macro_shadowing() {
         let mut cfg = empty_cfg();
         cfg.macros.push(Macro {
             id: "copyLine".into(),
@@ -444,7 +444,7 @@ mod tests {
         });
 
         let err = validate_config(&cfg).expect_err("validation should fail");
-        assert!(err.contains("conflicts with a system macro"));
+        assert!(err.contains("conflicts with a built-in macro"));
     }
 
     #[test]

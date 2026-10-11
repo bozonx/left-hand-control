@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     config_document::{ConfigDocument, ConfigError},
-    mapper::system_macros::SYSTEM_MACROS,
+    mapper::builtin_macros::BUILTIN_MACROS,
 };
 use std::collections::HashSet;
 
@@ -29,7 +29,7 @@ pub fn validate(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
         return Err(ConfigError::Macro(MacroIssue::InvalidId));
     }
     if config.macros.iter().filter(|m| m.id == item.id).count() > 1
-        || SYSTEM_MACROS.iter().any(|m| m.id == item.id)
+        || BUILTIN_MACROS.iter().any(|m| m.id == item.id)
     {
         return Err(ConfigError::Macro(MacroIssue::DuplicateId));
     }
@@ -78,7 +78,7 @@ pub fn validate(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
         let steps: Vec<&str> = if let Some(item) = config.macros.iter().find(|m| m.id == target) {
             item.steps.iter().map(|s| s.action.as_str()).collect()
         } else {
-            SYSTEM_MACROS
+            BUILTIN_MACROS
                 .iter()
                 .find(|m| m.id == target)
                 .map(|m| m.steps.to_vec())

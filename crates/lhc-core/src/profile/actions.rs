@@ -2,7 +2,7 @@
 //! `app:id`, `text:…`, `pause:ms`) and the catalogs of built-in actions.
 
 use super::model::AppConfig;
-use crate::mapper::system_macros::SYSTEM_MACROS;
+use crate::mapper::builtin_macros::BUILTIN_MACROS;
 
 /// A bindable action, parsed from its canonical string form.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -227,7 +227,7 @@ pub fn app_actions() -> Vec<CatalogEntry> {
 }
 
 /// Every action that can be picked for `config`: user macros and
-/// commands, system macros, system and app actions.
+/// commands, built-in macros, system and app actions.
 pub fn catalog(config: &AppConfig) -> Vec<CatalogEntry> {
     let mut out: Vec<CatalogEntry> = config
         .macros
@@ -238,12 +238,12 @@ pub fn catalog(config: &AppConfig) -> Vec<CatalogEntry> {
         })
         .collect();
     out.extend(
-        SYSTEM_MACROS
+        BUILTIN_MACROS
             .iter()
-            .filter(|system| !config.macros.iter().any(|user| user.id == system.id))
-            .map(|system| CatalogEntry {
-                action: Action::Macro(system.id.into()),
-                name: ActionName::Verbatim(system.name.into()),
+            .filter(|builtin| !config.macros.iter().any(|user| user.id == builtin.id))
+            .map(|builtin| CatalogEntry {
+                action: Action::Macro(builtin.id.into()),
+                name: ActionName::Verbatim(builtin.name.into()),
             }),
     );
     out.extend(config.commands.iter().map(|command| CatalogEntry {
@@ -279,7 +279,7 @@ pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
         Action::Pause(_) => Some(ActionIssue::PauseOutsideMacro),
         Action::Macro(id) => {
             let known = config.macros.iter().any(|item| &item.id == id)
-                || SYSTEM_MACROS.iter().any(|item| item.id == id);
+                || BUILTIN_MACROS.iter().any(|item| item.id == id);
             (!known).then_some(ActionIssue::UnknownMacro)
         }
         Action::Command(id) => (!config.commands.iter().any(|command| &command.id == id))
@@ -328,7 +328,7 @@ pub fn execution_issue(action: &Action, config: &AppConfig) -> Option<ExecutionI
                     if let Some(item) = config.macros.iter().find(|item| item.id == *id) {
                         item.steps.iter().map(|step| step.action.as_str()).collect()
                     } else {
-                        SYSTEM_MACROS
+                        BUILTIN_MACROS
                             .iter()
                             .find(|item| item.id == id)
                             .map(|item| item.steps.to_vec())

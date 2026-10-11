@@ -1,10 +1,10 @@
 use super::Engine;
 use super::model::{ActionDef, DecisionMode, HoldMode, MacroDef, RuleEntry, TapMode};
 use crate::mapper::action::{MacroStepItem, explicit_pause, explicit_text, parse_action};
+use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, AppConfig};
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
-use crate::mapper::system_macros::SYSTEM_MACROS;
 use evdev::Key;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
@@ -32,7 +32,7 @@ impl Engine {
         let default_mod_delay = Duration::from_millis(cfg.settings.default_macro_modifier_delay_ms);
 
         // Build the macro table first so tap / keymap actions can reference
-        // macros by id. System macros are seeded first; user macros with the
+        // macros by id. Built-in macros are seeded first; user macros with the
         // same id override them.
         let mut macros: HashMap<String, MacroDef> = HashMap::new();
         let mut commands: HashMap<String, SysCommand> = HashMap::new();
@@ -113,7 +113,7 @@ impl Engine {
                 if let Some(rest) = raw.strip_prefix("macro:") {
                     let nested_id = rest.trim();
                     let mut found = false;
-                    if let Some(sys_m) = SYSTEM_MACROS.iter().find(|s| s.id == nested_id) {
+                    if let Some(sys_m) = BUILTIN_MACROS.iter().find(|s| s.id == nested_id) {
                         let sys_steps: Vec<&str> = sys_m.steps.to_vec();
                         let nested_steps = resolve_macro_steps(
                             nested_id,
@@ -172,12 +172,12 @@ impl Engine {
             steps
         }
 
-        for sys in SYSTEM_MACROS {
+        for sys in BUILTIN_MACROS {
             let steps =
                 resolve_macro_steps(sys.id, sys.steps.to_vec(), &raw_user_macros, &commands, 0);
             if steps.is_empty() {
                 log::debug!(
-                    "[mapper] system macro {} has no usable steps — skipped",
+                    "[mapper] built-in macro {} has no usable steps — skipped",
                     sys.id
                 );
                 continue;

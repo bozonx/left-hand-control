@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_refresh();
     // Escape, BrowserFavorites and MouseSide.
     for category in [
-        PickerCategory::Modifiers,
+        PickerCategory::ControlKeys,
         PickerCategory::Media,
         PickerCategory::Mouse,
     ] {
@@ -220,16 +220,16 @@ fn parse_category(name: &str) -> Result<PickerCategory, String> {
     use PickerCategory as C;
     Ok(match name {
         "modifiers" => C::Modifiers,
-        "navigation" => C::Navigation,
         "letters" => C::Letters,
-        "digits" => C::Digits,
+        "control-keys" => C::ControlKeys,
+        "navigation" => C::Navigation,
         "function-keys" => C::FunctionKeys,
         "media" => C::Media,
         "system-keys" => C::SystemKeys,
         "mouse" => C::Mouse,
         "other-keys" => C::OtherKeys,
         "macros" => C::Macros,
-        "system-macros" => C::SystemMacros,
+        "builtin-macros" => C::BuiltinMacros,
         "commands" => C::Commands,
         "app" => C::App,
         "system-actions" => C::SystemActions,

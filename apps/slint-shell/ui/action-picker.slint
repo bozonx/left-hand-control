@@ -14,19 +14,20 @@ export component CategoryIcon inherits VerticalLayout {
     horizontal-stretch: 0; alignment: center;
     Image {
         width: root.size; height: root.size;
-        image-fit: contain; colorize: Theme.muted;
+        // The app's own actions show its colour icon, as in the tray.
+        image-fit: contain; colorize: root.category == PickerCategory.app ? transparent : Theme.muted;
         source: root.category == PickerCategory.modifiers ? @image-url("icons/arrow-big-up.svg")
-            : root.category == PickerCategory.navigation ? @image-url("icons/move.svg")
             : root.category == PickerCategory.letters || root.category == PickerCategory.text ? @image-url("icons/text-cursor-input.svg")
-            : root.category == PickerCategory.digits ? @image-url("icons/hash.svg")
+            : root.category == PickerCategory.control-keys ? @image-url("icons/corner-down-left.svg")
+            : root.category == PickerCategory.navigation ? @image-url("icons/move.svg")
             : root.category == PickerCategory.function-keys ? @image-url("icons/square-function.svg")
             : root.category == PickerCategory.media ? @image-url("icons/music-2.svg")
             : root.category == PickerCategory.system-keys ? @image-url("icons/laptop.svg")
             : root.category == PickerCategory.mouse ? @image-url("icons/mouse.svg")
             : root.category == PickerCategory.other-keys ? @image-url("icons/ellipsis.svg")
-            : root.category == PickerCategory.macros || root.category == PickerCategory.system-macros ? @image-url("icons/zap.svg")
+            : root.category == PickerCategory.macros || root.category == PickerCategory.builtin-macros ? @image-url("icons/zap.svg")
             : root.category == PickerCategory.commands ? @image-url("icons/terminal.svg")
-            : root.category == PickerCategory.app ? @image-url("icons/app-window.svg")
+            : root.category == PickerCategory.app ? @image-url("../assets/icon.png")
             : root.category == PickerCategory.system-actions ? @image-url("icons/settings-2.svg")
             : root.category == PickerCategory.pause ? @image-url("icons/clock.svg")
             : @image-url("icons/keyboard.svg");
@@ -88,8 +89,8 @@ export global ActionPicker {
     callback dismiss-picker();
 
     public pure function is-key(category: PickerCategory) -> bool {
-        return category == PickerCategory.modifiers || category == PickerCategory.navigation
-            || category == PickerCategory.letters || category == PickerCategory.digits
+        return category == PickerCategory.modifiers || category == PickerCategory.letters
+            || category == PickerCategory.control-keys || category == PickerCategory.navigation
             || category == PickerCategory.function-keys || category == PickerCategory.media
             || category == PickerCategory.system-keys || category == PickerCategory.mouse
             || category == PickerCategory.other-keys;
@@ -97,23 +98,23 @@ export global ActionPicker {
     /// Whether the category is a list of catalog items rather than an editor.
     public pure function is-listed(category: PickerCategory) -> bool {
         return self.is-key(category) || category == PickerCategory.macros
-            || category == PickerCategory.system-macros || category == PickerCategory.app
+            || category == PickerCategory.builtin-macros || category == PickerCategory.app
             || category == PickerCategory.system-actions;
     }
     public pure function title(category: PickerCategory) -> string {
-        return category == PickerCategory.modifiers ? @tr("Modifiers and service keys")
-            : category == PickerCategory.navigation ? @tr("Navigation and editing")
-            : category == PickerCategory.letters ? @tr("Letters and symbols")
-            : category == PickerCategory.digits ? @tr("Digits and numpad")
-            : category == PickerCategory.function-keys ? @tr("Function keys")
+        return category == PickerCategory.modifiers ? @tr("Modifiers")
+            : category == PickerCategory.letters ? @tr("Letters and digits")
+            : category == PickerCategory.control-keys ? @tr("Control keys")
+            : category == PickerCategory.navigation ? @tr("Navigation and numpad")
+            : category == PickerCategory.function-keys ? @tr("F1–F24")
             : category == PickerCategory.media ? @tr("Media and launch")
             : category == PickerCategory.system-keys ? @tr("System and laptop")
             : category == PickerCategory.mouse ? @tr("Mouse")
             : category == PickerCategory.other-keys ? @tr("Other keys")
             : category == PickerCategory.macros ? @tr("Macros")
-            : category == PickerCategory.system-macros ? @tr("System macros")
+            : category == PickerCategory.builtin-macros ? @tr("Built-in macros")
             : category == PickerCategory.commands ? @tr("Commands")
-            : category == PickerCategory.app ? @tr("Application")
+            : category == PickerCategory.app ? @tr("Left Hand Control")
             : category == PickerCategory.system-actions ? @tr("System actions")
             : category == PickerCategory.text ? @tr("Text")
             : category == PickerCategory.pause ? @tr("Pause")
@@ -165,7 +166,7 @@ component CategoryButton inherits Rectangle {
         padding-left: 8px; padding-right: 8px; spacing: 7px;
         CategoryIcon { category: root.category; }
         Text { text: root.title; wrap: no-wrap; color: Theme.text; horizontal-stretch: 1; vertical-alignment: center; overflow: elide; }
-        if ActionPicker.is-listed(root.category): Text { text: "" + root.count; color: Theme.text; vertical-alignment: center; }
+        if ActionPicker.is-listed(root.category) && !ActionPicker.is-key(root.category): Text { text: "" + root.count; color: Theme.text; vertical-alignment: center; }
     }
     Tooltip {
         Rectangle {
@@ -240,6 +241,11 @@ export component PickerOverlay inherits Rectangle {
                                     private property <bool> commands: entry.category == PickerCategory.commands;
                                     padding: 0px; padding-bottom: 4px;
                                     if (!ActionPicker.command-only || commands) && (!commands || ActionPicker.commands-enabled): VerticalBox { padding: 0px;
+                                    // Section headings only when keys and actions share the sidebar.
+                                    if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.modifiers || entry.category == PickerCategory.macros): Text {
+                                        text: entry.category == PickerCategory.modifiers ? @tr("Keys") : @tr("Actions");
+                                        color: Theme.muted; font-size: 11px; font-weight: 700;
+                                    }
                                     if ActionPicker.is-key(entry.category) || (!ActionPicker.key-only && !ActionPicker.hold-action && (entry.category != PickerCategory.pause || ActionPicker.macro-step)): CategoryButton {
                                         category: entry.category; count: entry.count;
                                     }

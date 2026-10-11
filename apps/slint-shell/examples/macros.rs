@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     slint::select_bundled_translation("ru")?;
     ui.global::<Locale>().set_english(false);
     let editor = ui.global::<MacroEditor>();
-    editor.invoke_clone_system(0, "(копия)".into());
+    editor.invoke_clone_builtin(0, "(копия)".into());
     let first = |document: &Rc<Document>| document.read().layout().macros[0].clone();
     assert_eq!(first(&document).steps.len(), 3);
     assert_eq!(first(&document).id, "moveLineDownCopy");
