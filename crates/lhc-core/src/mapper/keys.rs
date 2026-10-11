@@ -5,6 +5,14 @@
 
 use evdev::Key;
 
+// Codes newer than the `evdev` crate's constants (linux/input-event-codes.h).
+const KEY_NOTIFICATION_CENTER: Key = Key::new(0x1bc);
+const KEY_EMOJI_PICKER: Key = Key::new(0x249);
+const KEY_DICTATE: Key = Key::new(0x24a);
+const KEY_CAMERA_ACCESS_TOGGLE: Key = Key::new(0x24d);
+const KEY_ACCESSIBILITY: Key = Key::new(0x24e);
+const KEY_DO_NOT_DISTURB: Key = Key::new(0x24f);
+
 pub fn code_to_key(code: &str) -> Option<Key> {
     Some(match code {
         // Letters
@@ -90,7 +98,7 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "ArrowRight" => Key::KEY_RIGHT,
         "ArrowUp" => Key::KEY_UP,
         "ArrowDown" => Key::KEY_DOWN,
-        "PrintScreen" => Key::KEY_PRINT,
+        "PrintScreen" => Key::KEY_SYSRQ,
         "ScrollLock" => Key::KEY_SCROLLLOCK,
         "Pause" => Key::KEY_PAUSE,
 
@@ -117,27 +125,6 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "MetaLeft" => Key::KEY_LEFTMETA,
         "MetaRight" => Key::KEY_RIGHTMETA,
         "ContextMenu" => Key::KEY_COMPOSE,
-
-        // Media / browser
-        "BrowserBack" => Key::KEY_BACK,
-        "BrowserForward" => Key::KEY_FORWARD,
-        "BrowserRefresh" => Key::KEY_REFRESH,
-        "BrowserHome" => Key::KEY_HOMEPAGE,
-        "VolumeUp" => Key::KEY_VOLUMEUP,
-        "VolumeDown" => Key::KEY_VOLUMEDOWN,
-        "VolumeMute" => Key::KEY_MUTE,
-        "MediaPlayPause" => Key::KEY_PLAYPAUSE,
-        "MediaNext" => Key::KEY_NEXTSONG,
-        "MediaPrev" => Key::KEY_PREVIOUSSONG,
-        "MediaStop" => Key::KEY_STOPCD,
-        "Calculator" => Key::KEY_CALC,
-        "MicMute" => Key::KEY_MICMUTE,
-        "MediaRecord" => Key::KEY_RECORD,
-        "MediaRewind" => Key::KEY_REWIND,
-        "MediaFastForward" => Key::KEY_FASTFORWARD,
-        "BrowserStop" => Key::KEY_STOP,
-        "BrowserSearch" => Key::KEY_SEARCH,
-        "BrowserFavorites" => Key::KEY_BOOKMARKS,
 
         // Numpad
         "NumLock" => Key::KEY_NUMLOCK,
@@ -170,9 +157,92 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "MouseBack" => Key::BTN_BACK,
         "MouseTask" => Key::BTN_TASK,
 
-        // Other keys
+        // Media, browser and launch
+        "AudioVolumeUp" => Key::KEY_VOLUMEUP,
+        "AudioVolumeDown" => Key::KEY_VOLUMEDOWN,
+        "AudioVolumeMute" => Key::KEY_MUTE,
+        "MicrophoneMuteToggle" => Key::KEY_MICMUTE,
+        "MediaPlayPause" => Key::KEY_PLAYPAUSE,
+        "MediaPlay" => Key::KEY_PLAY,
+        "MediaPause" => Key::KEY_PAUSECD,
+        "MediaStop" => Key::KEY_STOPCD,
+        "MediaTrackNext" => Key::KEY_NEXTSONG,
+        "MediaTrackPrevious" => Key::KEY_PREVIOUSSONG,
+        "MediaRewind" => Key::KEY_REWIND,
+        "MediaFastForward" => Key::KEY_FASTFORWARD,
+        "MediaRecord" => Key::KEY_RECORD,
+        "MediaSelect" => Key::KEY_CONFIG,
+        "LaunchMediaPlayer" => Key::KEY_MEDIA,
+        "Eject" => Key::KEY_EJECTCD,
+        "BrowserBack" => Key::KEY_BACK,
+        "BrowserForward" => Key::KEY_FORWARD,
+        "BrowserRefresh" => Key::KEY_REFRESH,
+        "BrowserStop" => Key::KEY_STOP,
+        "BrowserHome" => Key::KEY_HOMEPAGE,
+        "BrowserSearch" => Key::KEY_SEARCH,
+        "BrowserFavorites" => Key::KEY_BOOKMARKS,
+        "LaunchApp1" => Key::KEY_FILE,
+        "LaunchApp2" => Key::KEY_CALC,
+        "LaunchMail" => Key::KEY_MAIL,
+        "LaunchInternetBrowser" => Key::KEY_WWW,
+        "LaunchControlPanel" => Key::KEY_CONTROLPANEL,
+        "LaunchScreenSaver" => Key::KEY_SCREENSAVER,
+        "LaunchAssistant" => Key::KEY_ASSISTANT,
+        "LaunchCamera" => Key::KEY_CAMERA,
+        "LaunchDocuments" => Key::KEY_DOCUMENTS,
+        "LaunchCalendar" => Key::KEY_CALENDAR,
+        "ZoomIn" => Key::KEY_ZOOMIN,
+        "ZoomOut" => Key::KEY_ZOOMOUT,
+        "ZoomToggle" => Key::KEY_ZOOM,
+
+        // System and laptop
+        "Power" => Key::KEY_POWER,
+        "Sleep" => Key::KEY_SLEEP,
+        "WakeUp" => Key::KEY_WAKEUP,
+        "Suspend" => Key::KEY_SUSPEND,
+        "LockScreen" => Key::KEY_COFFEE,
+        "LogOff" => Key::KEY_LOGOFF,
+        "BrightnessUp" => Key::KEY_BRIGHTNESSUP,
+        "BrightnessDown" => Key::KEY_BRIGHTNESSDOWN,
+        "BrightnessToggle" => Key::KEY_DISPLAYTOGGLE,
+        "BrightnessCycle" => Key::KEY_BRIGHTNESS_CYCLE,
+        "BrightnessAuto" => Key::KEY_BRIGHTNESS_AUTO,
+        "BrightnessMinimum" => Key::KEY_BRIGHTNESS_MIN,
+        "BrightnessMaximum" => Key::KEY_BRIGHTNESS_MAX,
+        "DisplayOff" => Key::KEY_DISPLAY_OFF,
+        "DisplayToggleIntExt" => Key::KEY_SWITCHVIDEOMODE,
+        "RotateDisplay" => Key::KEY_ROTATE_DISPLAY,
+        "KeyboardBacklightUp" => Key::KEY_KBDILLUMUP,
+        "KeyboardBacklightDown" => Key::KEY_KBDILLUMDOWN,
+        "KeyboardBacklightToggle" => Key::KEY_KBDILLUMTOGGLE,
+        "TouchpadToggle" => Key::KEY_TOUCHPAD_TOGGLE,
+        "TouchpadOn" => Key::KEY_TOUCHPAD_ON,
+        "TouchpadOff" => Key::KEY_TOUCHPAD_OFF,
+        "CameraAccessToggle" => KEY_CAMERA_ACCESS_TOGGLE,
+        "PrivacyScreenToggle" => Key::KEY_PRIVACY_SCREEN_TOGGLE,
+        "WLAN" => Key::KEY_WLAN,
+        "Bluetooth" => Key::KEY_BLUETOOTH,
+        "AirplaneMode" => Key::KEY_RFKILL,
+        "WWAN" => Key::KEY_WWAN,
+        "UWB" => Key::KEY_UWB,
+        "Battery" => Key::KEY_BATTERY,
         "Fn" => Key::KEY_FN,
+        // Laptops report their Fn-lock toggle (Fn+Esc) with this code.
         "FnLock" => Key::KEY_FN_ESC,
+        "KeyboardLayoutSelect" => Key::KEY_KBD_LAYOUT_NEXT,
+        "EmojiPicker" => KEY_EMOJI_PICKER,
+        "Dictate" => KEY_DICTATE,
+        "SpeechInputToggle" => Key::KEY_VOICECOMMAND,
+        "Accessibility" => KEY_ACCESSIBILITY,
+        "DoNotDisturb" => KEY_DO_NOT_DISTURB,
+        "NotificationCenter" => KEY_NOTIFICATION_CENTER,
+        "SelectiveScreenshot" => Key::KEY_SELECTIVE_SCREENSHOT,
+        "SelectTask" => Key::KEY_APPSELECT,
+        "ShowAllWindows" => Key::KEY_SCALE,
+        "AllApplications" => Key::KEY_DASHBOARD,
+        "CycleWindows" => Key::KEY_CYCLEWINDOWS,
+
+        // Legacy editing, office, programmable, international and CD keys
         "Help" => Key::KEY_HELP,
         "Undo" => Key::KEY_UNDO,
         "Redo" => Key::KEY_REDO,
@@ -180,18 +250,16 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "Find" => Key::KEY_FIND,
         "Open" => Key::KEY_OPEN,
         "Props" => Key::KEY_PROPS,
-        "Select" => Key::KEY_SELECT,
+        // USB HID "Keyboard Select" arrives as KEY_FRONT.
+        "Select" => Key::KEY_FRONT,
         "Copy" => Key::KEY_COPY,
         "Cut" => Key::KEY_CUT,
         "Paste" => Key::KEY_PASTE,
-        "Power" => Key::KEY_POWER,
-        "Sleep" => Key::KEY_SLEEP,
-        "WakeUp" => Key::KEY_WAKEUP,
-        "Eject" => Key::KEY_EJECTCD,
-        "LaunchMail" => Key::KEY_MAIL,
-        "LaunchApp1" => Key::KEY_COMPUTER,
-        "LaunchBrowser" => Key::KEY_WWW,
-        "MediaSelect" => Key::KEY_MEDIA,
+        "Menu" => Key::KEY_MENU,
+        "Prog1" => Key::KEY_PROG1,
+        "Prog2" => Key::KEY_PROG2,
+        "Prog3" => Key::KEY_PROG3,
+        "Prog4" => Key::KEY_PROG4,
         "IntlBackslash" => Key::KEY_102ND,
         "IntlYen" => Key::KEY_YEN,
         "IntlRo" => Key::KEY_RO,
@@ -203,60 +271,6 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "Lang3" => Key::KEY_KATAKANA,
         "Lang4" => Key::KEY_HIRAGANA,
         "Lang5" => Key::KEY_ZENKAKUHANKAKU,
-        // Programmable and system keys
-        "Prog1" => Key::KEY_PROG1,
-        "Prog2" => Key::KEY_PROG2,
-        "Prog3" => Key::KEY_PROG3,
-        "Prog4" => Key::KEY_PROG4,
-        "BrightnessDown" => Key::KEY_BRIGHTNESSDOWN,
-        "BrightnessUp" => Key::KEY_BRIGHTNESSUP,
-        "DisplayToggle" => Key::KEY_DISPLAYTOGGLE,
-        "DisplayToggleIntExt" => Key::KEY_SWITCHVIDEOMODE,
-        "TouchpadToggle" => Key::KEY_TOUCHPAD_TOGGLE,
-        "KeyboardBrightnessToggle" => Key::KEY_KBDILLUMTOGGLE,
-        "KeyboardBrightnessDown" => Key::KEY_KBDILLUMDOWN,
-        "KeyboardBrightnessUp" => Key::KEY_KBDILLUMUP,
-        "Bluetooth" => Key::KEY_BLUETOOTH,
-        "WLAN" => Key::KEY_WLAN,
-        "AirplaneMode" => Key::KEY_RFKILL,
-
-        "MediaPlay" => Key::KEY_PLAY,
-        "MediaPlayCD" => Key::KEY_PLAYCD,
-        "MediaPause" => Key::KEY_PAUSECD,
-        "MediaClose" => Key::KEY_CLOSECD,
-        "MediaEjectToggle" => Key::KEY_EJECTCLOSECD,
-        "MediaBassBoost" => Key::KEY_BASSBOOST,
-        "MediaVideoNext" => Key::KEY_VIDEO_NEXT,
-        "MediaVideoPrev" => Key::KEY_VIDEO_PREV,
-        "LaunchApp2" => Key::KEY_CALC,
-        "LaunchFiles" => Key::KEY_FILE,
-        "LaunchCamera" => Key::KEY_CAMERA,
-        "LaunchAudio" => Key::KEY_SOUND,
-        "LaunchChat" => Key::KEY_CHAT,
-        "LaunchDocuments" => Key::KEY_DOCUMENTS,
-        "LaunchPlayer" => Key::KEY_PLAYER,
-        "LaunchCalendar" => Key::KEY_CALENDAR,
-        "LaunchPhone" => Key::KEY_PHONE,
-        "LaunchFinance" => Key::KEY_FINANCE,
-        "LaunchSports" => Key::KEY_SPORT,
-        "LaunchShop" => Key::KEY_SHOP,
-        "ScreenLock" => Key::KEY_COFFEE,
-        "Suspend" => Key::KEY_SUSPEND,
-        "BrightnessCycle" => Key::KEY_BRIGHTNESS_CYCLE,
-        "BrightnessAuto" => Key::KEY_BRIGHTNESS_AUTO,
-        "BrightnessMin" => Key::KEY_BRIGHTNESS_MIN,
-        "BrightnessMax" => Key::KEY_BRIGHTNESS_MAX,
-        "DisplayOff" => Key::KEY_DISPLAY_OFF,
-        "DisplayRotate" => Key::KEY_ROTATE_DISPLAY,
-        "TouchpadOn" => Key::KEY_TOUCHPAD_ON,
-        "TouchpadOff" => Key::KEY_TOUCHPAD_OFF,
-        "WWAN" => Key::KEY_WWAN,
-        "UWB" => Key::KEY_UWB,
-        "Battery" => Key::KEY_BATTERY,
-        "CycleWindows" => Key::KEY_CYCLEWINDOWS,
-        "AllApplications" => Key::KEY_DASHBOARD,
-        "Assistant" => Key::KEY_ASSISTANT,
-        "Compose" => Key::KEY_COMPOSE,
         "New" => Key::KEY_NEW,
         "Close" => Key::KEY_CLOSE,
         "Save" => Key::KEY_SAVE,
@@ -265,16 +279,34 @@ pub fn code_to_key(code: &str) -> Option<Key> {
         "Exit" => Key::KEY_EXIT,
         "Edit" => Key::KEY_EDIT,
         "Move" => Key::KEY_MOVE,
-        "Front" => Key::KEY_FRONT,
-        "Send" => Key::KEY_SEND,
-        "Reply" => Key::KEY_REPLY,
-        "ForwardMail" => Key::KEY_FORWARDMAIL,
+        "MailSend" => Key::KEY_SEND,
+        "MailReply" => Key::KEY_REPLY,
+        "MailForward" => Key::KEY_FORWARDMAIL,
         "SendFile" => Key::KEY_SENDFILE,
         "DeleteFile" => Key::KEY_DELETEFILE,
         "Transfer" => Key::KEY_XFER,
         "Macro" => Key::KEY_MACRO,
         "ScrollUp" => Key::KEY_SCROLLUP,
         "ScrollDown" => Key::KEY_SCROLLDOWN,
+        "LaunchComputer" => Key::KEY_COMPUTER,
+        "LaunchWordProcessor" => Key::KEY_WORDPROCESSOR,
+        "LaunchSpreadsheet" => Key::KEY_SPREADSHEET,
+        "LaunchContacts" => Key::KEY_ADDRESSBOOK,
+        "LaunchAudioBrowser" => Key::KEY_AUDIO,
+        "LaunchChat" => Key::KEY_CHAT,
+        "LaunchPlayer" => Key::KEY_PLAYER,
+        "LaunchPhone" => Key::KEY_PHONE,
+        "LaunchFinance" => Key::KEY_FINANCE,
+        "LaunchSports" => Key::KEY_SPORT,
+        "LaunchShop" => Key::KEY_SHOP,
+        "LaunchKeyboardLayout" => Key::KEY_KEYBOARD,
+        "SpellCheck" => Key::KEY_SPELLCHECK,
+        "PlayCD" => Key::KEY_PLAYCD,
+        "CloseCD" => Key::KEY_CLOSECD,
+        "EjectCloseCD" => Key::KEY_EJECTCLOSECD,
+        "BassBoost" => Key::KEY_BASSBOOST,
+        "VideoNext" => Key::KEY_VIDEO_NEXT,
+        "VideoPrev" => Key::KEY_VIDEO_PREV,
         "CameraFocus" => Key::KEY_CAMERA_FOCUS,
         "CameraZoomIn" => Key::KEY_CAMERA_ZOOMIN,
         "CameraZoomOut" => Key::KEY_CAMERA_ZOOMOUT,
@@ -349,10 +381,21 @@ mod tests {
 
     #[test]
     fn media_keys_map_correctly() {
-        assert_eq!(code_to_key("VolumeUp"), Some(Key::KEY_VOLUMEUP));
-        assert_eq!(code_to_key("VolumeDown"), Some(Key::KEY_VOLUMEDOWN));
+        assert_eq!(code_to_key("AudioVolumeUp"), Some(Key::KEY_VOLUMEUP));
+        assert_eq!(code_to_key("AudioVolumeDown"), Some(Key::KEY_VOLUMEDOWN));
         assert_eq!(code_to_key("MediaPlayPause"), Some(Key::KEY_PLAYPAUSE));
         assert_eq!(code_to_key("BrowserBack"), Some(Key::KEY_BACK));
+    }
+
+    #[test]
+    fn keys_follow_the_linux_hid_mapping() {
+        // Codes the kernel reports for the USB HID usages the W3C names.
+        assert_eq!(code_to_key("PrintScreen"), Some(Key::KEY_SYSRQ));
+        assert_eq!(code_to_key("LaunchApp1"), Some(Key::KEY_FILE));
+        assert_eq!(code_to_key("LaunchApp2"), Some(Key::KEY_CALC));
+        assert_eq!(code_to_key("MediaSelect"), Some(Key::KEY_CONFIG));
+        assert_eq!(code_to_key("Select"), Some(Key::KEY_FRONT));
+        assert_eq!(code_to_key("EmojiPicker").map(|k| k.code()), Some(0x249));
     }
 
     #[test]
@@ -382,26 +425,16 @@ mod tests {
     }
 
     #[test]
-    fn every_catalog_key_maps_and_round_trips_except_explicit_aliases() {
+    fn every_catalog_key_maps_to_a_distinct_evdev_key_and_round_trips() {
         let mut codes = std::collections::HashSet::new();
         for name in crate::profile::key_catalog::CATEGORIES
             .iter()
             .flat_map(|keys| keys.iter())
         {
             let key = code_to_key(name).unwrap_or_else(|| panic!("{name} has no evdev key"));
-            let canonical = match *name {
-                "Compose" => "ContextMenu",
-                "Print" => "PrintScreen",
-                "LaunchApp2" => "Calculator",
-                name => {
-                    assert!(codes.insert(key.code()), "{name} duplicates an evdev key");
-                    name
-                }
-            };
-            assert_eq!(evdev_to_code(key.code()), Some(canonical));
+            assert!(codes.insert(key.code()), "{name} duplicates an evdev key");
+            assert_eq!(evdev_to_code(key.code()), Some(*name));
         }
-        assert_eq!(code_to_key("LaunchApp2"), Some(Key::KEY_CALC));
-        assert_eq!(evdev_to_code(Key::KEY_CALC.code()), Some("Calculator"));
         assert_eq!(evdev_to_code(Key::KEY_UNKNOWN.code()), None);
     }
 

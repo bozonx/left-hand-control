@@ -9,7 +9,7 @@
 ```sh
 # один раз: системные пакеты (см. ниже), затем из корня репозитория
 cargo run -p slint-shell                                   # обычные окна winit
-SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell   # попапы как layer-shell
+SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell   # попапы как layer-shell8
 ```
 
 Окна при старте скрыты — приложение живёт в трее. Настройки открываются кликом по иконке трея или командой:

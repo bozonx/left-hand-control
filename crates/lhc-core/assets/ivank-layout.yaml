@@ -232,11 +232,11 @@ layers:
       KeyN: sys:brightnessDown
       KeyM: sys:brightnessUp
       #Comma: sys:volumeDown
-      Comma: VolumeDown
-      Period: VolumeUp
+      Comma: AudioVolumeDown
+      Period: AudioVolumeUp
       #Period: sys:volumeUp
       # Slash: sys:muteAudio
-      Slash: VolumeMute
+      Slash: AudioVolumeMute
       ShiftRight: sys:muteMicrophone
   # - id: space
   #   keys:

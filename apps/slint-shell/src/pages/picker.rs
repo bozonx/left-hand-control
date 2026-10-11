@@ -807,20 +807,12 @@ fn physical_key_name(key: slint::winit_030::winit::keyboard::PhysicalKey) -> Opt
 
 /// Config key code of a winit key code. winit names its `KeyCode` variants
 /// after the W3C `KeyboardEvent.code` values the config uses, so the
-/// variant name is the code except where the config keeps older names.
+/// variant name is the code except for the Meta keys.
 fn key_name(code: slint::winit_030::winit::keyboard::KeyCode) -> String {
     let raw = format!("{code:?}");
     match raw.as_str() {
         "SuperLeft" => "MetaLeft".into(),
         "SuperRight" => "MetaRight".into(),
-        "AudioVolumeUp" => "VolumeUp".into(),
-        "AudioVolumeDown" => "VolumeDown".into(),
-        "AudioVolumeMute" => "VolumeMute".into(),
-        "MediaTrackNext" => "MediaNext".into(),
-        "MediaTrackPrevious" => "MediaPrev".into(),
-        "LaunchMediaPlayer" => "MediaSelect".into(),
-        // W3C `LaunchApp2` is the calculator key.
-        "LaunchApp2" => "Calculator".into(),
         _ => raw,
     }
 }
@@ -953,10 +945,10 @@ mod tests {
         );
         assert_eq!(
             captured_key(&key_name(K::AudioVolumeMute), Pressed, true, &mut modifiers).as_deref(),
-            Some("VolumeMute")
+            Some("AudioVolumeMute")
         );
         assert_eq!(key_name(K::SuperLeft), "MetaLeft");
-        assert_eq!(key_name(K::LaunchApp2), "Calculator");
+        assert_eq!(key_name(K::LaunchApp1), "LaunchApp1");
         assert_eq!(
             physical_key_name(slint::winit_030::winit::keyboard::PhysicalKey::Code(
                 K::NumpadEqual
@@ -972,7 +964,7 @@ mod tests {
                 )
             )
             .as_deref(),
-            Some("Calculator")
+            Some("LaunchApp2")
         );
     }
 
@@ -1003,7 +995,10 @@ mod tests {
         );
         assert_eq!(category_for_value("KeyV"), PickerCategory::Letters);
         assert_eq!(category_for_value("F13"), PickerCategory::ControlKeys);
-        assert_eq!(category_for_value("MicMute"), PickerCategory::Media);
+        assert_eq!(
+            category_for_value("MicrophoneMuteToggle"),
+            PickerCategory::Media
+        );
         assert_eq!(
             category_for_value("TouchpadToggle"),
             PickerCategory::SystemKeys
