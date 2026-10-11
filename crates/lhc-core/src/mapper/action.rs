@@ -5,14 +5,14 @@
 
 use super::keys::code_to_key;
 use super::system::{SysAction, SysCommand};
-use evdev::Key;
+use evdev::KeyCode;
 use std::time::Duration;
 
 /// A keystroke = optional modifiers + one main key.
 #[derive(Clone, Debug)]
 pub struct Keystroke {
-    pub mods: Vec<Key>,
-    pub key: Key,
+    pub mods: Vec<KeyCode>,
+    pub key: KeyCode,
 }
 
 /// A single step of a macro. Macros may mix raw keystrokes with
@@ -73,11 +73,11 @@ pub fn parse_action(action: &str) -> Option<Keystroke> {
     Some(Keystroke { mods: vec![], key })
 }
 
-fn parse_modifier(token: &str) -> Option<Key> {
+fn parse_modifier(token: &str) -> Option<KeyCode> {
     crate::profile::key_catalog::modifier_key(token).and_then(code_to_key)
 }
 
-fn parse_single(token: &str) -> Option<Key> {
+fn parse_single(token: &str) -> Option<KeyCode> {
     code_to_key(token)
 }
 
@@ -106,22 +106,22 @@ mod tests {
     #[test]
     fn parse_single_key() {
         let k = parse_action("Escape").unwrap();
-        assert_eq!(k.key, Key::KEY_ESC);
+        assert_eq!(k.key, KeyCode::KEY_ESC);
         assert!(k.mods.is_empty());
     }
 
     #[test]
     fn parse_modifier_plus_key() {
         let k = parse_action("Ctrl+KeyC").unwrap();
-        assert_eq!(k.key, Key::KEY_C);
-        assert_eq!(k.mods, vec![Key::KEY_LEFTCTRL]);
+        assert_eq!(k.key, KeyCode::KEY_C);
+        assert_eq!(k.mods, vec![KeyCode::KEY_LEFTCTRL]);
     }
 
     #[test]
     fn parse_multiple_modifiers() {
         let k = parse_action("Ctrl+Shift+Tab").unwrap();
-        assert_eq!(k.key, Key::KEY_TAB);
-        assert_eq!(k.mods, vec![Key::KEY_LEFTCTRL, Key::KEY_LEFTSHIFT]);
+        assert_eq!(k.key, KeyCode::KEY_TAB);
+        assert_eq!(k.mods, vec![KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTSHIFT]);
     }
 
     #[test]
@@ -136,18 +136,18 @@ mod tests {
 
     #[test]
     fn parse_modifier_aliases() {
-        assert_eq!(parse_modifier("Ctrl"), Some(Key::KEY_LEFTCTRL));
-        assert_eq!(parse_modifier("ControlLeft"), Some(Key::KEY_LEFTCTRL));
-        assert_eq!(parse_modifier("ControlRight"), Some(Key::KEY_RIGHTCTRL));
-        assert_eq!(parse_modifier("Shift"), Some(Key::KEY_LEFTSHIFT));
-        assert_eq!(parse_modifier("ShiftLeft"), Some(Key::KEY_LEFTSHIFT));
-        assert_eq!(parse_modifier("ShiftRight"), Some(Key::KEY_RIGHTSHIFT));
-        assert_eq!(parse_modifier("Alt"), Some(Key::KEY_LEFTALT));
-        assert_eq!(parse_modifier("AltLeft"), Some(Key::KEY_LEFTALT));
-        assert_eq!(parse_modifier("AltRight"), Some(Key::KEY_RIGHTALT));
-        assert_eq!(parse_modifier("Meta"), Some(Key::KEY_LEFTMETA));
-        assert_eq!(parse_modifier("MetaLeft"), Some(Key::KEY_LEFTMETA));
-        assert_eq!(parse_modifier("MetaRight"), Some(Key::KEY_RIGHTMETA));
+        assert_eq!(parse_modifier("Ctrl"), Some(KeyCode::KEY_LEFTCTRL));
+        assert_eq!(parse_modifier("ControlLeft"), Some(KeyCode::KEY_LEFTCTRL));
+        assert_eq!(parse_modifier("ControlRight"), Some(KeyCode::KEY_RIGHTCTRL));
+        assert_eq!(parse_modifier("Shift"), Some(KeyCode::KEY_LEFTSHIFT));
+        assert_eq!(parse_modifier("ShiftLeft"), Some(KeyCode::KEY_LEFTSHIFT));
+        assert_eq!(parse_modifier("ShiftRight"), Some(KeyCode::KEY_RIGHTSHIFT));
+        assert_eq!(parse_modifier("Alt"), Some(KeyCode::KEY_LEFTALT));
+        assert_eq!(parse_modifier("AltLeft"), Some(KeyCode::KEY_LEFTALT));
+        assert_eq!(parse_modifier("AltRight"), Some(KeyCode::KEY_RIGHTALT));
+        assert_eq!(parse_modifier("Meta"), Some(KeyCode::KEY_LEFTMETA));
+        assert_eq!(parse_modifier("MetaLeft"), Some(KeyCode::KEY_LEFTMETA));
+        assert_eq!(parse_modifier("MetaRight"), Some(KeyCode::KEY_RIGHTMETA));
     }
 
     #[test]

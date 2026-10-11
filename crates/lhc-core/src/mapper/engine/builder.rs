@@ -5,11 +5,11 @@ use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, AppConfig};
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
-use evdev::Key;
+use evdev::KeyCode;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
-fn parse_key_list(raw: &str) -> Vec<Key> {
+fn parse_key_list(raw: &str) -> Vec<KeyCode> {
     raw.split(',')
         .map(str::trim)
         .filter(|code| !code.is_empty())
@@ -309,7 +309,10 @@ impl Engine {
 
             // Disallow left/right/middle mouse buttons as triggers —
             // remapping them would make the system unusable.
-            if matches!(key, Key::BTN_LEFT | Key::BTN_RIGHT | Key::BTN_MIDDLE) {
+            if matches!(
+                key,
+                KeyCode::BTN_LEFT | KeyCode::BTN_RIGHT | KeyCode::BTN_MIDDLE
+            ) {
                 log::debug!(
                     "[mapper] rule key {:?}: mouse buttons 1-3 cannot be used as triggers — skipped",
                     r.key
@@ -446,7 +449,7 @@ impl Engine {
             }
         }
 
-        let mut layer_maps: HashMap<String, HashMap<Key, ActionDef>> = HashMap::new();
+        let mut layer_maps: HashMap<String, HashMap<KeyCode, ActionDef>> = HashMap::new();
         for (layer_id, km) in &cfg.layer_keymaps {
             let mut m = HashMap::new();
             for (code, action) in &km.keys {

@@ -3,7 +3,7 @@ use super::super::engine::{Engine, Out};
 use super::super::portal;
 use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
 use evdev::uinput::VirtualDevice;
-use evdev::{Device, EventType, InputEvent, Key};
+use evdev::{Device, EventType, InputEvent, KeyCode, KeyEvent};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -33,7 +33,7 @@ pub(super) trait SideEffects {
 pub(super) trait LoopDriver {
     fn now(&mut self) -> Instant;
     fn wait(&mut self, timeout: Duration) -> Result<bool, String>;
-    fn fetch_key_events(&mut self) -> Result<Vec<(Key, bool)>, String>;
+    fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String>;
 }
 
 pub(super) struct VirtualEventSink<'a> {
@@ -222,7 +222,7 @@ impl LoopDriver for MultiDeviceLoopDriver {
         }
     }
 
-    fn fetch_key_events(&mut self) -> Result<Vec<(Key, bool)>, String> {
+    fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
         let mut out = Vec::new();
         for device in &mut self.devices {
             match device.fetch_events() {
@@ -235,7 +235,7 @@ impl LoopDriver for MultiDeviceLoopDriver {
                         if value == 2 {
                             continue;
                         }
-                        out.push((Key::new(ev.code()), value == 1));
+                        out.push((KeyCode::new(ev.code()), value == 1));
                     }
                 }
                 Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
@@ -293,7 +293,7 @@ fn emit_stroke_tap<S: EventSink, E: SideEffects>(
     if !ks.mods.is_empty() {
         let mut ev = Vec::with_capacity(ks.mods.len());
         for m in &ks.mods {
-            ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
+            ev.push(*KeyEvent::new(*m, 1));
         }
         sink.emit(&ev)?;
         effects.sleep(mod_delay);
@@ -301,15 +301,15 @@ fn emit_stroke_tap<S: EventSink, E: SideEffects>(
 
     // Down and up go in separate `EV_SYN` frames (with a tiny gap) so the
     // tap isn't seen as a zero-duration event and dropped.
-    sink.emit(&[InputEvent::new(EventType::KEY, ks.key.code(), 1)])?;
+    sink.emit(&[*KeyEvent::new(ks.key, 1)])?;
     effects.sleep(KEY_TAP_GAP);
-    sink.emit(&[InputEvent::new(EventType::KEY, ks.key.code(), 0)])?;
+    sink.emit(&[*KeyEvent::new(ks.key, 0)])?;
 
     if !ks.mods.is_empty() {
         effects.sleep(mod_delay);
         let mut ev = Vec::with_capacity(ks.mods.len());
         for m in ks.mods.iter().rev() {
-            ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
+            ev.push(*KeyEvent::new(*m, 0));
         }
         sink.emit(&ev)?;
     }
@@ -326,12 +326,12 @@ fn emit_chord_press<S: EventSink, E: SideEffects>(
     if !ks.mods.is_empty() {
         let mut ev = Vec::with_capacity(ks.mods.len());
         for m in &ks.mods {
-            ev.push(InputEvent::new(EventType::KEY, m.code(), 1));
+            ev.push(*KeyEvent::new(*m, 1));
         }
         sink.emit(&ev)?;
         effects.sleep(mod_delay);
     }
-    let down = [InputEvent::new(EventType::KEY, ks.key.code(), 1)];
+    let down = [*KeyEvent::new(ks.key, 1)];
     sink.emit(&down)?;
     Ok(())
 }
@@ -339,18 +339,18 @@ fn emit_chord_press<S: EventSink, E: SideEffects>(
 fn emit_chord_release<S: EventSink, E: SideEffects>(
     sink: &mut S,
     effects: &mut E,
-    key: Key,
-    mods: &[Key],
+    key: KeyCode,
+    mods: &[KeyCode],
     mod_delay: Duration,
 ) -> Result<(), String> {
-    let up = [InputEvent::new(EventType::KEY, key.code(), 0)];
+    let up = [*KeyEvent::new(key, 0)];
     sink.emit(&up)?;
 
     if !mods.is_empty() {
         effects.sleep(mod_delay);
         let mut ev = Vec::with_capacity(mods.len());
         for m in mods.iter().rev() {
-            ev.push(InputEvent::new(EventType::KEY, m.code(), 0));
+            ev.push(*KeyEvent::new(*m, 0));
         }
         sink.emit(&ev)?;
     }
@@ -402,11 +402,7 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                 if events.iter().any(|ev| ev.code() == code) {
                     flush_events(sink, &mut events)?;
                 }
-                events.push(InputEvent::new(
-                    EventType::KEY,
-                    code,
-                    if down { 1 } else { 0 },
-                ));
+                events.push(*KeyEvent::new(key, if down { 1 } else { 0 }));
             }
             Out::Stroke { ks, mod_delay } => {
                 flush_events(sink, &mut events)?;
@@ -432,7 +428,7 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                     if events.iter().any(|ev| ev.code() == code) {
                         flush_events(sink, &mut events)?;
                     }
-                    events.push(InputEvent::new(EventType::KEY, code, 0));
+                    events.push(*KeyEvent::new(m, 0));
                 }
             }
             Out::RunSystem(action) => {

@@ -1,6 +1,6 @@
 use super::VIRTUAL_DEVICE_NAME;
 use crate::mapper::{InputDevice, KeyboardDevice};
-use evdev::{Device, Key};
+use evdev::{Device, KeyCode};
 use std::path::PathBuf;
 
 pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
@@ -80,12 +80,12 @@ fn is_keyboard(dev: &Device) -> bool {
     // Heuristic: considered a keyboard if it reports several letter keys
     // plus space and enter. Excludes mice, power buttons, sleep keys, etc.
     let required = [
-        Key::KEY_A,
-        Key::KEY_S,
-        Key::KEY_D,
-        Key::KEY_F,
-        Key::KEY_SPACE,
-        Key::KEY_ENTER,
+        KeyCode::KEY_A,
+        KeyCode::KEY_S,
+        KeyCode::KEY_D,
+        KeyCode::KEY_F,
+        KeyCode::KEY_SPACE,
+        KeyCode::KEY_ENTER,
     ];
     required.iter().all(|k| keys.contains(*k))
 }
@@ -97,5 +97,5 @@ fn is_mouse(dev: &Device) -> bool {
     // Heuristic: mouse has left/right buttons but NOT letter keys.
     // We also skip devices that already pass the keyboard heuristic
     // (combined keyboard+mouse combos should be grabbed as a keyboard).
-    keys.contains(Key::BTN_LEFT) && keys.contains(Key::BTN_RIGHT) && !is_keyboard(dev)
+    keys.contains(KeyCode::BTN_LEFT) && keys.contains(KeyCode::BTN_RIGHT) && !is_keyboard(dev)
 }

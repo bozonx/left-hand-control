@@ -5,8 +5,8 @@ pub use devices::{list_input_devices, list_keyboards, list_mice};
 
 use super::config::AppConfig;
 use super::engine::{Engine, Out};
-use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
-use evdev::{AttributeSet, BusType, Device, InputId, Key};
+use evdev::uinput::VirtualDevice;
+use evdev::{AttributeSet, BusType, Device, InputId, KeyCode};
 #[cfg(test)]
 use io::{EventSink, SideEffects, flush_out_with, process_iteration_with};
 use io::{LoopDriver, MultiDeviceLoopDriver, flush_out, process_iteration};
@@ -292,14 +292,14 @@ fn run(
         devices.push(mouse);
     }
 
-    let mut all_keys = AttributeSet::<Key>::new();
+    let mut all_keys = AttributeSet::<KeyCode>::new();
     // Keyboard block (1..=248) plus the extended KEY_* block above the
     // BTN_* range: keys.rs maps e.g. KEY_SELECT (353) and KEY_FN (464),
     // which the virtual device must register or their emits are silently
     // dropped by uinput. The BTN_* block (256..=351) is skipped on purpose
     // so the device is not classified as a mouse/joystick.
     for code in (1u16..=248).chain(352..=511) {
-        all_keys.insert(Key::new(code));
+        all_keys.insert(KeyCode::new(code));
     }
     // Catalog keys beyond that block, such as KEY_TOUCHPAD_TOGGLE (0x212).
     for key in crate::profile::key_catalog::CATEGORIES
@@ -310,7 +310,7 @@ fn run(
     {
         all_keys.insert(key);
     }
-    let virt = VirtualDeviceBuilder::new()
+    let virt = VirtualDevice::builder()
         .map_err(|e| format!("uinput builder (need /dev/uinput access?): {e}"))?
         .name(VIRTUAL_DEVICE_NAME)
         .input_id(InputId::new(BusType::BUS_USB, 0x1d6b, 0x0104, 1))
@@ -382,7 +382,7 @@ mod tests {
     use crate::mapper::config::{ActionSpec, AppConfig, Rule, Settings};
     use crate::mapper::engine::{Engine, Out};
     use crate::mapper::system::{DbusArg, DbusCall, SysAction, SysCommand};
-    use evdev::{EventType, InputEvent, Key};
+    use evdev::{EventType, InputEvent, KeyCode};
     use std::collections::{HashMap, VecDeque};
     use std::time::Duration;
     use std::time::Instant;
@@ -465,7 +465,7 @@ mod tests {
     struct FakeDriver {
         now_values: VecDeque<Instant>,
         waits: VecDeque<Result<bool, String>>,
-        fetches: VecDeque<Result<Vec<(Key, bool)>, String>>,
+        fetches: VecDeque<Result<Vec<(KeyCode, bool)>, String>>,
         seen_waits: Vec<Duration>,
     }
 
@@ -473,7 +473,7 @@ mod tests {
         fn new(
             now_values: Vec<Instant>,
             waits: Vec<Result<bool, String>>,
-            fetches: Vec<Result<Vec<(Key, bool)>, String>>,
+            fetches: Vec<Result<Vec<(KeyCode, bool)>, String>>,
         ) -> Self {
             Self {
                 now_values: now_values.into(),
@@ -494,7 +494,7 @@ mod tests {
             self.waits.pop_front().expect("wait result")
         }
 
-        fn fetch_key_events(&mut self) -> Result<Vec<(Key, bool)>, String> {
+        fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
             self.fetches.pop_front().expect("fetch result")
         }
     }
@@ -515,14 +515,14 @@ mod tests {
         let mut effects = FakeEffects::default();
         let mut buf = vec![
             Out::KeyRaw {
-                key: Key::KEY_A,
+                key: KeyCode::KEY_A,
                 down: true,
             },
-            Out::ReleaseMods(vec![Key::KEY_LEFTSHIFT]),
+            Out::ReleaseMods(vec![KeyCode::KEY_LEFTSHIFT]),
             Out::Stroke {
                 ks: Keystroke {
-                    mods: vec![Key::KEY_LEFTCTRL],
-                    key: Key::KEY_C,
+                    mods: vec![KeyCode::KEY_LEFTCTRL],
+                    key: KeyCode::KEY_C,
                 },
                 mod_delay: Duration::from_millis(2),
             },
@@ -547,17 +547,26 @@ mod tests {
         assert_eq!(sink.batches.len(), 5);
         assert_eq!(
             key_events(&sink.batches[0]),
-            vec![(Key::KEY_A.code(), 1), (Key::KEY_LEFTSHIFT.code(), 0)]
+            vec![
+                (KeyCode::KEY_A.code(), 1),
+                (KeyCode::KEY_LEFTSHIFT.code(), 0)
+            ]
         );
         assert_eq!(
             key_events(&sink.batches[1]),
-            vec![(Key::KEY_LEFTCTRL.code(), 1)]
+            vec![(KeyCode::KEY_LEFTCTRL.code(), 1)]
         );
-        assert_eq!(key_events(&sink.batches[2]), vec![(Key::KEY_C.code(), 1)]);
-        assert_eq!(key_events(&sink.batches[3]), vec![(Key::KEY_C.code(), 0)]);
+        assert_eq!(
+            key_events(&sink.batches[2]),
+            vec![(KeyCode::KEY_C.code(), 1)]
+        );
+        assert_eq!(
+            key_events(&sink.batches[3]),
+            vec![(KeyCode::KEY_C.code(), 0)]
+        );
         assert_eq!(
             key_events(&sink.batches[4]),
-            vec![(Key::KEY_LEFTCTRL.code(), 0)]
+            vec![(KeyCode::KEY_LEFTCTRL.code(), 0)]
         );
         assert_eq!(
             effects.sleeps,
@@ -582,14 +591,14 @@ mod tests {
         let mut buf = vec![
             Out::ChordPress {
                 ks: Keystroke {
-                    mods: vec![Key::KEY_LEFTALT],
-                    key: Key::KEY_TAB,
+                    mods: vec![KeyCode::KEY_LEFTALT],
+                    key: KeyCode::KEY_TAB,
                 },
                 mod_delay: Duration::from_millis(3),
             },
             Out::ChordRelease {
-                key: Key::KEY_TAB,
-                mods: vec![Key::KEY_LEFTALT],
+                key: KeyCode::KEY_TAB,
+                mods: vec![KeyCode::KEY_LEFTALT],
                 mod_delay: Duration::from_millis(3),
             },
         ];
@@ -599,13 +608,19 @@ mod tests {
         assert_eq!(sink.batches.len(), 4);
         assert_eq!(
             key_events(&sink.batches[0]),
-            vec![(Key::KEY_LEFTALT.code(), 1)]
+            vec![(KeyCode::KEY_LEFTALT.code(), 1)]
         );
-        assert_eq!(key_events(&sink.batches[1]), vec![(Key::KEY_TAB.code(), 1)]);
-        assert_eq!(key_events(&sink.batches[2]), vec![(Key::KEY_TAB.code(), 0)]);
+        assert_eq!(
+            key_events(&sink.batches[1]),
+            vec![(KeyCode::KEY_TAB.code(), 1)]
+        );
+        assert_eq!(
+            key_events(&sink.batches[2]),
+            vec![(KeyCode::KEY_TAB.code(), 0)]
+        );
         assert_eq!(
             key_events(&sink.batches[3]),
-            vec![(Key::KEY_LEFTALT.code(), 0)]
+            vec![(KeyCode::KEY_LEFTALT.code(), 0)]
         );
         assert_eq!(
             effects.sleeps,
@@ -619,7 +634,7 @@ mod tests {
         let mut driver = FakeDriver::new(
             vec![start, start, start, start],
             vec![Ok(true)],
-            vec![Ok(vec![(Key::KEY_A, true), (Key::KEY_A, false)])],
+            vec![Ok(vec![(KeyCode::KEY_A, true), (KeyCode::KEY_A, false)])],
         );
         let mut engine = Engine::new(&empty_cfg());
         let mut sink = FakeSink::default();
@@ -637,8 +652,14 @@ mod tests {
 
         assert_eq!(driver.seen_waits, vec![Duration::from_millis(100)]);
         assert_eq!(sink.batches.len(), 2);
-        assert_eq!(key_events(&sink.batches[0]), vec![(Key::KEY_A.code(), 1)]);
-        assert_eq!(key_events(&sink.batches[1]), vec![(Key::KEY_A.code(), 0)]);
+        assert_eq!(
+            key_events(&sink.batches[0]),
+            vec![(KeyCode::KEY_A.code(), 1)]
+        );
+        assert_eq!(
+            key_events(&sink.batches[1]),
+            vec![(KeyCode::KEY_A.code(), 0)]
+        );
         assert!(effects.texts.is_empty());
         assert!(out_buf.is_empty());
     }
@@ -649,15 +670,15 @@ mod tests {
         let mut effects = FakeEffects::default();
         let mut buf = vec![
             Out::KeyRaw {
-                key: Key::BTN_LEFT,
+                key: KeyCode::BTN_LEFT,
                 down: true,
             },
             Out::KeyRaw {
-                key: Key::BTN_RIGHT,
+                key: KeyCode::BTN_RIGHT,
                 down: true,
             },
             Out::KeyRaw {
-                key: Key::KEY_A,
+                key: KeyCode::KEY_A,
                 down: true,
             },
         ];
@@ -666,7 +687,10 @@ mod tests {
 
         // Mouse buttons in range 272..=281 are filtered out
         assert_eq!(sink.batches.len(), 1);
-        assert_eq!(key_events(&sink.batches[0]), vec![(Key::KEY_A.code(), 1)]);
+        assert_eq!(
+            key_events(&sink.batches[0]),
+            vec![(KeyCode::KEY_A.code(), 1)]
+        );
     }
 
     #[test]
@@ -675,11 +699,11 @@ mod tests {
         let mut effects = FakeEffects::default();
         let mut buf = vec![
             Out::KeyRaw {
-                key: Key::KEY_A,
+                key: KeyCode::KEY_A,
                 down: true,
             },
             Out::KeyRaw {
-                key: Key::KEY_A,
+                key: KeyCode::KEY_A,
                 down: false,
             },
         ];
@@ -687,8 +711,14 @@ mod tests {
         flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
 
         assert_eq!(sink.batches.len(), 2);
-        assert_eq!(key_events(&sink.batches[0]), vec![(Key::KEY_A.code(), 1)]);
-        assert_eq!(key_events(&sink.batches[1]), vec![(Key::KEY_A.code(), 0)]);
+        assert_eq!(
+            key_events(&sink.batches[0]),
+            vec![(KeyCode::KEY_A.code(), 1)]
+        );
+        assert_eq!(
+            key_events(&sink.batches[1]),
+            vec![(KeyCode::KEY_A.code(), 0)]
+        );
     }
 
     #[test]
@@ -716,7 +746,7 @@ mod tests {
         let mut engine = Engine::new(&cfg);
         let mut pending = Vec::new();
         let start = Instant::now();
-        engine.handle(Key::KEY_LEFTALT, true, start, &mut pending);
+        engine.handle(KeyCode::KEY_LEFTALT, true, start, &mut pending);
 
         let mut driver = FakeDriver::new(
             vec![start, start + Duration::from_millis(20)],
@@ -739,7 +769,7 @@ mod tests {
         assert_eq!(sink.batches.len(), 1);
         assert_eq!(
             key_events(&sink.batches[0]),
-            vec![(Key::KEY_LEFTCTRL.code(), 1)]
+            vec![(KeyCode::KEY_LEFTCTRL.code(), 1)]
         );
     }
 }

@@ -1,7 +1,7 @@
 use super::super::action::{Keystroke, MacroStepItem};
 use super::super::config::GameModeCondition;
 use super::super::system::{SysAction, SysCommand};
-use evdev::Key;
+use evdev::KeyCode;
 use std::time::{Duration, Instant};
 
 /// Resolved action: single chord, macro, system function, or a
@@ -26,7 +26,7 @@ pub(super) struct MacroDef {
 #[derive(Clone)]
 pub(super) enum TapMode {
     Native,
-    NativeChord(Vec<Key>),
+    NativeChord(Vec<KeyCode>),
     Swallow,
     Action(ActionDef),
 }
@@ -40,17 +40,17 @@ pub(super) enum HoldMode {
 
 #[derive(Clone)]
 pub(super) struct RuleEntry {
-    pub(super) trigger_keys: Vec<Key>,
+    pub(super) trigger_keys: Vec<KeyCode>,
     pub(super) tap: TapMode,
     pub(super) layer_id: Option<String>,
     pub(super) hold: HoldMode,
-    pub(super) isolate_keys: Vec<Key>,
+    pub(super) isolate_keys: Vec<KeyCode>,
     /// Lazy-hold whitelist: the `hold` keystroke is *not* materialised to the
     /// app on layer entry. Instead it is emitted the first time one of these
     /// keys is pressed inside the layer, and held until the layer ends. Lets a
     /// held modifier (e.g. Alt for the task switcher) reach the app only
     /// together with its wanted key (Tab), never as a lone tap.
-    pub(super) whitelist_keys: Vec<Key>,
+    pub(super) whitelist_keys: Vec<KeyCode>,
     pub(super) long_hold: Option<ActionDef>,
     pub(super) long_hold_timeout: Duration,
     pub(super) double_tap: Option<ActionDef>,
@@ -64,11 +64,11 @@ pub(super) struct RuleEntry {
 
 #[derive(Clone)]
 pub(super) struct LayerTrigger {
-    pub(super) key: Key,
-    pub(super) isolate_keys: Vec<Key>,
+    pub(super) key: KeyCode,
+    pub(super) isolate_keys: Vec<KeyCode>,
     /// Keys that materialise the deferred lazy hold (see
     /// [`RuleEntry::whitelist_keys`]). Empty for a normal (eager) hold.
-    pub(super) whitelist: Vec<Key>,
+    pub(super) whitelist: Vec<KeyCode>,
     /// The deferred hold keystroke, present only while a lazy hold is pending
     /// and not yet materialised. `None` once emitted or for eager holds.
     pub(super) hold_ks: Option<Keystroke>,
@@ -127,7 +127,7 @@ pub(super) enum DecisionMode {
 /// carrying its original timestamp so downstream deadlines stay accurate.
 #[derive(Clone)]
 pub(super) struct BufferedEvent {
-    pub(super) key: Key,
+    pub(super) key: KeyCode,
     pub(super) down: bool,
     pub(super) at: Instant,
 }
@@ -135,19 +135,19 @@ pub(super) struct BufferedEvent {
 /// Outgoing action the engine asks the I/O layer to perform.
 pub enum Out {
     /// Press or release a single key (no modifiers).
-    KeyRaw { key: Key, down: bool },
+    KeyRaw { key: KeyCode, down: bool },
     /// Press/release a keystroke (mods + key), emitted atomically.
     Stroke { ks: Keystroke, mod_delay: Duration },
     /// Press a keystroke but keep the main key held until physical key-up.
     ChordPress { ks: Keystroke, mod_delay: Duration },
     /// Release a previously held keystroke.
     ChordRelease {
-        key: Key,
-        mods: Vec<Key>,
+        key: KeyCode,
+        mods: Vec<KeyCode>,
         mod_delay: Duration,
     },
     /// Release modifiers.
-    ReleaseMods(Vec<Key>),
+    ReleaseMods(Vec<KeyCode>),
     /// Execute a system function (DBus call or fire-and-forget spawn).
     RunSystem(SysAction),
     /// Execute a shell command defined by the current layout.
