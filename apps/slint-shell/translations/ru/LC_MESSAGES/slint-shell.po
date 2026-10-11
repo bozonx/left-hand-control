@@ -765,7 +765,7 @@ msgid "F1–F24"
 msgstr "F1–F24"
 
 msgid "Media and launch"
-msgstr "Мультимедиа и запуск"
+msgstr "Медиа и запуск"
 
 msgid "System and laptop"
 msgstr "Система и ноутбук"

@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .map(|entry| entry.count)
             .collect::<Vec<_>>(),
-        [15, 13, 38, 29, 24, 23, 17, 5, 25, 0, 0, 0, 0, 0, 0, 0]
+        [9, 48, 11, 27, 24, 23, 17, 5, 25, 0, 0, 0, 0, 0, 0, 0]
     );
     picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());

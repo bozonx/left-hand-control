@@ -252,7 +252,7 @@ mod tests {
     fn complete_catalog_has_unique_key_codes() {
         assert_eq!(
             CATEGORIES.iter().map(|c| c.len()).collect::<Vec<_>>(),
-            [15, 13, 38, 29, 24, 23, 17, 8, 25]
+            [9, 48, 11, 27, 24, 23, 17, 8, 25]
         );
         let keys: Vec<_> = CATEGORIES
             .iter()

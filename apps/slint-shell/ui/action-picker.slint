@@ -14,8 +14,7 @@ export component CategoryIcon inherits VerticalLayout {
     horizontal-stretch: 0; alignment: center;
     Image {
         width: root.size; height: root.size;
-        // The app's own actions show its colour icon, as in the tray.
-        image-fit: contain; colorize: root.category == PickerCategory.app ? transparent : Theme.muted;
+        image-fit: contain; colorize: Theme.muted;
         source: root.category == PickerCategory.modifiers ? @image-url("icons/arrow-big-up.svg")
             : root.category == PickerCategory.letters || root.category == PickerCategory.text ? @image-url("icons/text-cursor-input.svg")
             : root.category == PickerCategory.control-keys ? @image-url("icons/corner-down-left.svg")
@@ -27,7 +26,7 @@ export component CategoryIcon inherits VerticalLayout {
             : root.category == PickerCategory.other-keys ? @image-url("icons/ellipsis.svg")
             : root.category == PickerCategory.macros || root.category == PickerCategory.builtin-macros ? @image-url("icons/zap.svg")
             : root.category == PickerCategory.commands ? @image-url("icons/terminal.svg")
-            : root.category == PickerCategory.app ? @image-url("../assets/icon.png")
+            : root.category == PickerCategory.app ? @image-url("icons/hand.svg")
             : root.category == PickerCategory.system-actions ? @image-url("icons/settings-2.svg")
             : root.category == PickerCategory.pause ? @image-url("icons/clock.svg")
             : @image-url("icons/keyboard.svg");

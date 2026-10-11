@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for p in pixels.as_slice() { data.extend([p.r, p.g, p.b]); }
             std::fs::write(path, data).unwrap();
         }
-        println!("Macros smoke: passed (system copy, steps, pauses, order, cycle validation, delayed save and reload)");
+        println!("Macros smoke: passed (built-in copy, steps, pauses, order, cycle validation, delayed save and reload)");
         slint::quit_event_loop().unwrap();
     });
     slint::run_event_loop()?;
