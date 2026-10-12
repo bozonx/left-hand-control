@@ -3,7 +3,7 @@ import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
-import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel, FormField } from "controls.slint";
+import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel, FormField, Segmented } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LabelMode, LayerDialog, PickerCategory, PickerTarget } from "types.slint";
@@ -62,57 +62,6 @@ component ActionIcon inherits Image {
         : kind == ActionKind.system ? @image-url("icons/settings-2.svg")
         : kind == ActionKind.app ? @image-url("icons/app-window.svg")
         : @image-url("icons/text-cursor-input.svg");
-}
-
-/// Segmented keyboard view selector.
-component Segmented inherits Rectangle {
-    in property <[string]> labels;
-    in property <[string]> tooltips;
-    in property <int> selected-index;
-    callback selected(int);
-    background: Theme.surface;
-    border-radius: 6px;
-    HorizontalLayout {
-        padding: 2px;
-        spacing: 2px;
-        for label[index] in root.labels: Rectangle {
-            height: 28px;
-            border-radius: 4px;
-            background: root.selected-index == index ? Theme.text : seg-touch.has-hover || seg-focus.has-focus ? Theme.hover : transparent;
-            accessible-role: radio-button;
-            accessible-label: label;
-            accessible-checked: root.selected-index == index;
-            accessible-action-default => { root.selected(index); }
-            HorizontalLayout {
-                padding-left: 10px; padding-right: 10px;
-                Text {
-                    text: label;
-                    color: root.selected-index == index ? Theme.surface : Theme.text;
-                    font-size: 13px;
-                    font-weight: 600;
-                    vertical-alignment: center;
-                }
-            }
-            seg-focus := FocusScope {
-                key-pressed(event) => {
-                    if event.text == " " || event.text == "\n" { root.selected(index); return accept; }
-                    if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
-                    if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
-                    return reject;
-                }
-            }
-            if root.tooltips[index] != "": Tooltip {
-                Rectangle {
-                    background: Theme.card;
-                    border-radius: 4px;
-                    border-width: 1px;
-                    border-color: Theme.border;
-                    HorizontalLayout { padding: 6px; Text { text: root.tooltips[index]; color: Theme.text; font-size: 12px; } }
-                }
-            }
-            seg-touch := TouchArea { mouse-cursor: pointer; clicked => { root.selected(index); } }
-        }
-    }
 }
 
 component ActionText inherits HorizontalLayout {

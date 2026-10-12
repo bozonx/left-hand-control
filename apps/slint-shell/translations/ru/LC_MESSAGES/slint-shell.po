@@ -1887,9 +1887,6 @@ msgstr[0] "В {n} правиле"
 msgstr[1] "В {n} правилах"
 msgstr[2] "В {n} правилах"
 
-msgid "Add automatic rule: no layout in games"
-msgstr "Добавить авто-правило: без раскладки в играх"
-
 msgid "Auto — detect games"
 msgstr "Auto — определять игры"
 

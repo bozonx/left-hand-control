@@ -2,7 +2,7 @@ import { TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
-import { Badge, CardHeader, IconButton, InfoTip } from "controls.slint";
+import { Alert, Badge, CardHeader, IconButton, InfoTip, Segmented } from "controls.slint";
 import { LayoutLibrary } from "library.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
@@ -10,6 +10,7 @@ import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, RadioGroup, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericInput, SelectField } from "controls.slint";
 import { AppPicker, ConditionChoices } from "conditions.slint";
+import { GameModeControl } from "types.slint";
 
 /// `kind`: 0 rule, 1 layer key, 2 macro step, 3 quick action.
 export struct CommandPlaceRow { kind: int, layer: string, name: string }
@@ -368,20 +369,23 @@ export component SettingsPage inherits VerticalBox {
                     }
                 }
                 if SettingsEditor.tab == 3: Section {
-                    title: @tr("Game mode");
-                    Text { vertical-stretch: 0; text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."); color: Theme.muted; wrap: word-wrap; }
-                    Rectangle {
-                        vertical-stretch: 0; height: now-row.preferred-height; border-radius: 6px;
-                        background: AppState.game-active ? Theme.success.transparentize(0.85) : Theme.surface;
-                        border-width: 1px; border-color: AppState.game-active ? Theme.success : Theme.border;
-                        now-row := HorizontalLayout {
-                            padding: 10px; spacing: 8px;
-                            VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: AppState.game-active ? Theme.success : Theme.muted; } }
-                            Text { text: Locale.text(AppState.game-status); color: Theme.text; font-weight: 600; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
+                    HorizontalLayout {
+                        vertical-stretch: 0; spacing: 8px;
+                        Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; vertical-alignment: center; }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."); } }
+                        Rectangle { horizontal-stretch: 1; }
+                        VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: AppState.game-active ? Theme.success : Theme.muted; } }
+                        Text { text: Locale.text(AppState.game-status); color: AppState.game-active ? Theme.success : Theme.muted; font-weight: 600; vertical-alignment: center; }
+                    }
+                    HorizontalLayout {
+                        vertical-stretch: 0; alignment: start;
+                        Segmented {
+                            labels: [@tr("Game mode control" => "Off"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Auto")];
+                            selected-index: AppState.game-control == GameModeControl.off ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
+                            selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.off : index == 1 ? GameModeControl.on : GameModeControl.auto); }
                         }
                     }
-                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count == 0: Text { vertical-stretch: 0; text: @tr("Nothing uses game mode yet: no rule or automatic layout rule has a game-mode condition, so turning it on changes nothing."); color: Theme.warning; wrap: word-wrap; }
-                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count == 0: HorizontalLayout { vertical-stretch: 0; alignment: start; Button { text: @tr("Add automatic rule: no layout in games"); clicked => { LayoutLibrary.add-game-rule(); } } }
+                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count == 0: Alert { text: @tr("Nothing uses game mode yet: no rule or automatic layout rule has a game-mode condition, so turning it on changes nothing."); }
                     if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count > 0: Text {
                         vertical-stretch: 0; color: Theme.muted; wrap: word-wrap;
                         text: @tr("Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}.", SettingsEditor.game-rule-count, SettingsEditor.game-auto-rule-count);
@@ -393,23 +397,32 @@ export component SettingsPage inherits VerticalBox {
                     Text { vertical-stretch: 0; text: @tr("Automatic detection"); color: Theme.text; font-weight: 600; }
                     if AppState.is-linux: VerticalBox {
                         padding: 0px; spacing: 4px; vertical-stretch: 0;
-                        CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
+                        HorizontalLayout {
+                            spacing: 6px; alignment: start;
+                            CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
+                            VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); } }
+                        }
                         Text { text: @tr("GameMode daemon: ") + Locale.text(AppState.game-daemon-availability); color: Theme.muted; }
-                        Text { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                         if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: @tr("GameMode is not installed: install the gamemode package."); color: Theme.warning; wrap: word-wrap; }
                     }
                     VerticalBox {
                         padding: 0px; spacing: 4px; vertical-stretch: 0;
-                        CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
+                        HorizontalLayout {
+                            spacing: 6px; alignment: start;
+                            CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
+                            VerticalLayout { alignment: center; InfoTip { text: @tr("Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."); } }
+                        }
                         Text { text: @tr("Fullscreen detection: ") + Locale.text(AppState.game-fullscreen-availability); color: Theme.muted; }
-                        Text { text: @tr("Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                         if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.warning; wrap: word-wrap; }
                     }
                     if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }
                     if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { vertical-stretch: 0; text: @tr("Fullscreen detection tools are missing or could not query the session."); color: Theme.warning; wrap: word-wrap; }
 
-                    Text { vertical-stretch: 0; text: @tr("Games and exclusions"); color: Theme.text; font-weight: 600; }
-                    Text { vertical-stretch: 0; text: @tr("Exact process name or app ID; use * and ? for patterns. title:<text> matches the active window title. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."); color: Theme.muted; wrap: word-wrap; }
+                    HorizontalLayout {
+                        vertical-stretch: 0; spacing: 6px; alignment: start;
+                        Text { text: @tr("Games and exclusions"); color: Theme.text; font-weight: 600; vertical-alignment: center; }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Exact process name or app ID; use * and ? for patterns. title:<text> matches the active window title. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."); } }
+                    }
                     Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                     for item[index] in SettingsEditor.process-matchers: Rectangle {
                         vertical-stretch: 0; height: process-row.preferred-height; border-radius: 4px; background: Theme.card;
