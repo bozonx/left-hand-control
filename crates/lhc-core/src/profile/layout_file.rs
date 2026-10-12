@@ -7,7 +7,7 @@ use super::model::{
     MacroStep, QuickAction, QuickActionPage,
 };
 use serde_json::{Map, Value};
-use serde_yaml::{Mapping, Value as Yaml};
+use serde_norway::{Mapping, Value as Yaml};
 
 /// Parse a layout file. Returns `Ok(None)` for an empty document.
 pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
@@ -15,7 +15,7 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
         return Ok(None);
     }
     let doc: Value =
-        serde_yaml::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
+        serde_norway::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
     if let Some(object) = doc.as_object() {
         for rule in array(object, "rules") {
             for field in ["appsWhitelist", "appsBlacklist"] {
@@ -383,7 +383,7 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                 .collect(),
         ),
     );
-    serde_yaml::to_string(&Yaml::Mapping(doc)).unwrap_or_default()
+    serde_norway::to_string(&Yaml::Mapping(doc)).unwrap_or_default()
 }
 
 fn rule_yaml(rule: &LayerRule) -> Yaml {

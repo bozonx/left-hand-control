@@ -160,12 +160,12 @@ impl App {
             lhc_core::runtime_state::layout()
                 .map(|layout| {
                     let code = layout.short.to_uppercase();
-                    if layout.variant.is_empty()
-                        || layout.variant.eq_ignore_ascii_case(&layout.short)
-                    {
-                        code
+                    if code.chars().count() > 8 {
+                        let mut label: String = code.chars().take(7).collect();
+                        label.push('…');
+                        label
                     } else {
-                        format!("{code} ({})", layout.variant)
+                        code
                     }
                 })
                 .unwrap_or_default()
