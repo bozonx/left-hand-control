@@ -19,6 +19,7 @@ export global Theme {
     /// Cards, bars, dialogs.
     out property <color> card: eink ? #ffffff : hc ? (dark ? #0a0a0a : #ffffff) : dark ? #1c1c1f : #ffffff;
     out property <color> text: eink ? #000000 : hc ? (dark ? #ffffff : #000000) : dark ? #f4f4f5 : #18181b;
+    out property <color> placeholder: eink || hc ? muted : dark ? #71717a : #92929b;
     out property <color> muted: eink ? #333333 : hc ? (dark ? #e4e4e7 : #27272a) : dark ? #a1a1aa : #52525b;
     /// Primary action and focus color.
     out property <color> accent: eink ? #000000 : dark ? #4dccff : #0069a9;

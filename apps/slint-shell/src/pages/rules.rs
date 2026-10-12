@@ -321,6 +321,11 @@ fn set_hold_behavior(rule: &mut LayerRule, behavior: HoldBehavior) {
     if behavior != HoldBehavior::Action {
         rule.long_hold_action.clear();
     }
+    if behavior == HoldBehavior::None {
+        rule.hold_action = Some(String::new());
+        rule.isolate = None;
+        rule.hold_for = None;
+    }
     if behavior == HoldBehavior::Action {
         rule.hold_action = Some(String::new());
         rule.isolate = None;
@@ -756,6 +761,19 @@ mod tests {
         assert!(rule.layer_id.is_empty());
         set_property(&mut rule, RuleDialog::LongHold, "").unwrap();
         assert_eq!(rule.hold_behavior(), HoldBehavior::Action);
+    }
+
+    #[test]
+    fn choosing_nothing_clears_all_hold_assignments() {
+        let mut rule = LayerRule::new("r".into(), "Tab");
+        rule.layer_id = "nav".into();
+        rule.long_hold_action = "text:hello".into();
+        rule.hold_action = Some("AltLeft".into());
+        set_field(&mut rule, RuleField::HoldMode, "0", "");
+        assert_eq!(rule.hold_behavior(), HoldBehavior::None);
+        assert!(rule.layer_id.is_empty());
+        assert!(rule.long_hold_action.is_empty());
+        assert_eq!(rule.hold_action.as_deref(), Some(""));
     }
 
     #[test]

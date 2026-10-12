@@ -246,7 +246,7 @@ export component PickerOverlay inherits Rectangle {
                                         color: Theme.muted; font-size: 11px; font-weight: 700;
                                     }
                                     // Desktop shortcuts exist only where the session has a shortcut backend.
-                                    if ActionPicker.is-key(entry.category) || (!ActionPicker.key-only && !ActionPicker.hold-action && (entry.category != PickerCategory.pause || ActionPicker.macro-step) && (entry.category != PickerCategory.desktop-shortcuts || entry.count > 0)): CategoryButton {
+                                    if (ActionPicker.is-key(entry.category) && entry.count > 0) || (!ActionPicker.is-key(entry.category) && !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category != PickerCategory.pause || ActionPicker.macro-step) && (entry.category != PickerCategory.desktop-shortcuts || entry.count > 0)): CategoryButton {
                                         category: entry.category; count: entry.count;
                                     }
                                     }
@@ -289,7 +289,7 @@ export component PickerOverlay inherits Rectangle {
                         }
                         if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
                             VerticalLayout { spacing: 0px;
-                                for row in ceil(ActionPicker.items.length / catalog.columns): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
+                                for row in ceil(ActionPicker.items.length * 1.0 / catalog.columns): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
                                     for col in catalog.columns: PickerCell {
                                         item: ActionPicker.items[row * catalog.columns + col];
                                         visible: row * catalog.columns + col < ActionPicker.items.length;

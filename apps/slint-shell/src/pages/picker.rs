@@ -388,7 +388,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let allow_default = !key_only
             && (standalone_layer
                 || rule_action
-                || double_tap
+                || (double_tap && rule_field != crate::ui::RuleDialog::LongHold)
                 || matches!(target, PickerTarget::BaseKey));
         picker.set_allow_default(allow_default);
 
@@ -655,7 +655,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         picker.set_text_content(value.strip_prefix("text:").unwrap_or_default().into());
         picker.set_pause_content(value.strip_prefix("pause:").unwrap_or_default().into());
         let query = picker.get_query().to_lowercase();
-        let category = picker.get_category();
+        let mut category = picker.get_category();
+        if query.is_empty()
+            && is_key_category(category)
+            && !entries.iter().any(|entry| entry.category == category)
+            && let Some(entry) = entries.iter().find(|entry| is_key_category(entry.category))
+        {
+            category = entry.category;
+            picker.set_category(category);
+        }
         picker.set_items(ModelRc::new(VecModel::from(
             entries
                 .into_iter()

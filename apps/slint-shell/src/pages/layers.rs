@@ -8,7 +8,7 @@ use crate::{
     keyboard,
     ui::{
         ActionKind, ActionPicker, Assignment, LayerDialog, LayerExtraRow, LayerKeyCell,
-        LayersEditor, Locale, PickerTarget, SettingsWindow,
+        LayersEditor, Locale, PickerCategory, PickerTarget, SettingsWindow,
     },
 };
 use lhc_core::{
@@ -39,13 +39,26 @@ fn action_names(ui: &SettingsWindow, config: &ConfigDocument) -> HashMap<String,
 fn assignment(
     value: Option<&Option<String>>,
     names: &HashMap<String, String>,
-) -> (Assignment, String, ActionKind) {
+) -> (Assignment, String, ActionKind, PickerCategory) {
     match value {
-        None => (Assignment::Transparent, String::new(), ActionKind::None),
-        Some(None) => (Assignment::Swallow, String::new(), ActionKind::None),
-        Some(Some(action)) if action.is_empty() => {
-            (Assignment::Transparent, String::new(), ActionKind::None)
-        }
+        None => (
+            Assignment::Transparent,
+            String::new(),
+            ActionKind::None,
+            PickerCategory::None,
+        ),
+        Some(None) => (
+            Assignment::Swallow,
+            String::new(),
+            ActionKind::None,
+            PickerCategory::None,
+        ),
+        Some(Some(action)) if action.is_empty() => (
+            Assignment::Transparent,
+            String::new(),
+            ActionKind::None,
+            PickerCategory::None,
+        ),
         Some(Some(action)) => {
             let kind = action_kind(action);
             let label = match actions::Action::parse(Some(action)) {
@@ -58,7 +71,12 @@ fn assignment(
                 }
                 _ => names.get(action).cloned().unwrap_or_else(|| action.clone()),
             };
-            (Assignment::Action, label, kind)
+            (
+                Assignment::Action,
+                label,
+                kind,
+                super::picker::category_for_value(action),
+            )
         }
     }
 }
@@ -70,7 +88,7 @@ fn hand_cells(
     columns: usize,
     first: usize,
     offset: usize,
-    lookup: &dyn Fn(&str) -> (Assignment, String, ActionKind),
+    lookup: &dyn Fn(&str) -> (Assignment, String, ActionKind, PickerCategory),
 ) -> Vec<LayerKeyCell> {
     let empty = LayerKeyCell {
         index: -1,
@@ -86,13 +104,13 @@ fn hand_cells(
         };
         cells.extend(std::iter::repeat_n(empty.clone(), skip));
         for code in row.iter() {
-            let (kind, action, icon) = lookup(code);
+            let (kind, action, icon, category) = lookup(code);
             cells.push(LayerKeyCell {
                 index: index as i32,
                 label: keyboard::label(code).into(),
                 code: (*code).into(),
                 kind,
-                category: super::picker::category_for_value(&action),
+                category,
                 action: action.into(),
                 icon,
             });
@@ -183,11 +201,11 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
                 ordered_extra_entries(map)
                     .into_iter()
                     .map(|(key, value)| {
-                        let (kind, action, icon) = assignment(Some(&value), &names);
+                        let (kind, action, icon, category) = assignment(Some(&value), &names);
                         LayerExtraRow {
                             key: key.into(),
                             kind,
-                            category: super::picker::category_for_value(&action),
+                            category,
                             action: action.into(),
                             icon,
                         }
@@ -783,17 +801,34 @@ mod tests {
         assert_eq!(assignment(Some(&None), &names).0, Assignment::Swallow);
         assert_eq!(
             assignment(Some(&Some("macro:copyLine".into())), &names),
-            (Assignment::Action, "Copy line".into(), ActionKind::Macro)
+            (
+                Assignment::Action,
+                "Copy line".into(),
+                ActionKind::Macro,
+                PickerCategory::Macros
+            )
         );
         assert_eq!(
             assignment(Some(&Some("text:hi".into())), &names),
-            (Assignment::Action, "hi".into(), ActionKind::Text)
+            (
+                Assignment::Action,
+                "hi".into(),
+                ActionKind::Text,
+                PickerCategory::Text
+            )
         );
     }
 
     #[test]
     fn hand_grids_index_every_key() {
-        let lookup = |_: &str| (Assignment::Transparent, String::new(), ActionKind::None);
+        let lookup = |_: &str| {
+            (
+                Assignment::Transparent,
+                String::new(),
+                ActionKind::None,
+                PickerCategory::None,
+            )
+        };
         let left = hand_cells(&keyboard::LEFT_HAND, keyboard::LEFT_COLUMNS, 0, 2, &lookup);
         assert_eq!(left.len(), 30);
         let thumb = &left[24..];

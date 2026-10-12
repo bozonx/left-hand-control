@@ -109,6 +109,7 @@ export component SettingsWindow inherits Window {
                             alignment: center;
                             spacing: 4px;
                             TextField { preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
+                            if root.test-text != "": IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Clear"); clicked => { root.test-text = ""; } }
                         }
                     }
                     VerticalLayout { alignment: center; Badge {

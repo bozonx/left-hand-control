@@ -32,6 +32,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<_>>(),
         [48, 9, 35, 29, 36, 44, 5, 69, 0, 0, 0, 0, 0, 0, 0, 0]
     );
+    picker.set_category(PickerCategory::Modifiers);
+    picker.invoke_refresh();
+    assert_eq!(picker.get_items().row_count(), 9);
+    assert!(
+        picker
+            .get_items()
+            .iter()
+            .any(|item| item.value == "ControlLeft")
+    );
     picker.invoke_select_behavior(2);
     picker.set_value("Tab".into());
     picker.invoke_dismiss_picker();

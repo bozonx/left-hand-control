@@ -103,7 +103,7 @@ export global LayoutLibrary {
     callback add-game-rule();
 
     pure function create-base(source: LayoutSource) -> string {
-        if source == LayoutSource.author { return @tr("Ivan K layout"); }
+        if source == LayoutSource.author { return @tr("LHC by Ivan K"); }
         if source == LayoutSource.copy && self.create-copy-index < self.names.length {
             return @tr("{} (copy)", self.names[self.create-copy-index]);
         }
@@ -420,33 +420,11 @@ component AddRuleButton inherits Rectangle {
     in property <bool> compact: false;
     height: button.preferred-height;
     width: button.preferred-width;
-    function choose(kind: int) {
-        menu.close();
-        if kind == 0 {
-            LayoutLibrary.add-game-rule();
-        } else if kind == 1 {
-            LayoutLibrary.open-rule(-1, -1);
-        } else {
-            LayoutLibrary.open-rule(-1, LayoutLibrary.new-rule-target());
-        }
-    }
     button := Button {
         text: root.compact ? "" : @tr("Add rule");
-        icon: root.compact ? @image-url("icons/plus.svg") : @image-url("icons/chevron-down.svg");
+        icon: @image-url("icons/plus.svg");
         accessible-label: @tr("Add rule");
-        clicked => { menu.show(); }
-    }
-    menu := PopupWindow {
-        y: root.height + 4px;
-        width: 220px;
-        Rectangle {
-            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: 8px;
-            VerticalBox { padding: 4px; spacing: 0px;
-                LayoutMenuItem { text: @tr("For games"); clicked => { root.choose(0); } }
-                LayoutMenuItem { text: @tr("For an application"); clicked => { root.choose(1); } }
-                LayoutMenuItem { text: @tr("Custom rule"); clicked => { root.choose(2); } }
-            }
-        }
+        clicked => { LayoutLibrary.open-rule(-1, LayoutLibrary.new-rule-target()); }
     }
 }
 
@@ -464,14 +442,6 @@ component AutoRulesPanel inherits Rectangle {
             }
             Rectangle { horizontal-stretch: 1; }
             AddRuleButton { compact: true; }
-        }
-        Text {
-            vertical-stretch: 0;
-            text: LayoutLibrary.auto-matched >= 0 && LayoutLibrary.auto-matched < LayoutLibrary.auto-rules.length
-                ? @tr("Now: {} (rule {}: {})", LayoutLibrary.active-label == "" ? @tr("No layout") : LayoutLibrary.active-label, LayoutLibrary.auto-matched + 1,
-                    LayoutLibrary.rule-text(LayoutLibrary.auto-rules[LayoutLibrary.auto-matched].game, LayoutLibrary.auto-rules[LayoutLibrary.auto-matched].list))
-                : @tr("Now: {} (default)", LayoutLibrary.active-label == "" ? @tr("No layout") : LayoutLibrary.active-label);
-            color: Theme.accent; wrap: word-wrap;
         }
         ScrollView { viewport-width: self.visible-width; drag-scroll: true;
             vertical-stretch: 1;
@@ -498,8 +468,8 @@ component AutoRulesPanel inherits Rectangle {
             border-radius: 6px;
             height: default-row.preferred-height;
             border-width: 1px;
-            border-color: LayoutLibrary.auto-matched < 0 ? Theme.accent : transparent;
-            background: LayoutLibrary.auto-matched < 0 ? Theme.accent.transparentize(0.88) : transparent;
+            border-color: transparent;
+            background: transparent;
             default-row := VerticalLayout { padding: 8px; spacing: 6px;
                 Text { text: @tr("Otherwise (default)"); color: Theme.text; font-weight: 600; }
                 TargetPicker {
@@ -557,7 +527,7 @@ export component LibraryPage inherits VerticalBox {
         HorizontalLayout {
             spacing: 8px;
             Text { text: @tr("Add layout: "); color: Theme.text; vertical-alignment: center; }
-            Button { text: @tr("New"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+            Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
             Button { text: @tr("LHC Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
         }
     }
@@ -624,9 +594,9 @@ export component LibraryPage inherits VerticalBox {
                                 HorizontalLayout { spacing: 8px; alignment: start; vertical-stretch: 0;
                                     DragHandle { group: 0; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
                                     if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: 600; vertical-alignment: center; }
-                                    if !card.auto && !card.active: Button { text: @tr("Activate"); clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
+                                    if !card.auto && !card.active: Button { text: @tr("Activate"); icon: @image-url("icons/play.svg"); colorize-icon: true; clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
                                     if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
-                                    if !card.current: Button { text: @tr("Edit layout"); clicked => { LayoutLibrary.edit(index); } }
+                                    if !card.current: Button { text: @tr("Edit layout"); icon: @image-url("icons/pencil.svg"); colorize-icon: true; clicked => { LayoutLibrary.edit(index); } }
                                     Rectangle {
                                         width: 44px; height: 36px;
                                         Button {
@@ -658,7 +628,6 @@ export component LibraryPage inherits VerticalBox {
                                 if summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: 13px; }
                                 // Commands run shell scripts, so they stand out when reviewing a layout.
                                 if summary.commands > 0: HorizontalLayout { spacing: 6px; alignment: start;
-                                    Image { width: 14px; height: 14px; y: (parent.height - self.height) / 2; source: @image-url("icons/triangle-alert.svg"); colorize: Theme.warning; }
                                     Text { text: @tr("{n} command" | "{n} commands" % summary.commands); color: Theme.warning; font-size: 13px; font-weight: 600; }
                                 }
                             }
