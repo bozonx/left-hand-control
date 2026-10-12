@@ -1,6 +1,6 @@
+import { SearchField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
-import { LineEdit } from "std-widgets.slint";
 
 export enum DeviceGroup { unselected, suggested, other, manual }
 export struct DeviceChoice { label: string, path: string, group: DeviceGroup, source-index: int }
@@ -105,13 +105,14 @@ export component DevicePicker inherits Rectangle {
                                 return accept;
                 }
                 if event.text == "\n" { root.choose(root.highlighted); return accept; }
+                if event.text == Key.Escape && root.query != "" { search.clear(); return accept; }
                 if event.text == Key.Escape { menu.close(); focus.focus(); return accept; }
                 return reject;
             }
             Rectangle {
                 background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 6px;
                 VerticalLayout { padding: 8px; spacing: 8px;
-                    search := LineEdit { text <=> root.query; placeholder-text: @tr("Search devices"); }
+                    search := SearchField { text <=> root.query; placeholder-text: @tr("Search devices"); }
                     list := ScrollView {
                         viewport-width: self.visible-width;
                         viewport-y <=> root.scroll-y;

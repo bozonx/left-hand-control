@@ -1,4 +1,4 @@
-import { Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
+import { Button, TextEdit, ComboBox } from "std-widgets.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -79,6 +79,134 @@ export component InfoTip inherits Rectangle {
 export component SelectField inherits ComboBox {
     width: 180px;
     horizontal-stretch: 0;
+}
+
+/// Single-line text field for form values. Unlike the standard `LineEdit`
+/// it has no clear button, so a stray click cannot erase a value; search
+/// fields use `SearchField`. Children are placed after the text.
+export component TextField inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder-text;
+    in property <bool> enabled: true;
+    in property <bool> read-only <=> input.read-only;
+    in property <InputType> input-type <=> input.input-type;
+    in property <length> font-size <=> input.font-size;
+    in property <int> font-weight <=> input.font-weight;
+    in property <bool> invalid: false;
+    /// Shown before the text when set.
+    in property <image> icon;
+    out property <bool> has-focus: input.has-focus;
+    callback edited(string);
+    callback accepted(string);
+    /// Keys the text input does not handle; the default rejects them.
+    callback key-pressed(KeyEvent) -> EventResult;
+    public function select-all() { input.select-all(); }
+    public function clear() { input.text = ""; root.edited(""); input.focus(); }
+    min-width: 160px;
+    min-height: max(32px, input.preferred-height + 8px);
+    horizontal-stretch: 1;
+    vertical-stretch: 0;
+    forward-focus: input;
+    border-radius: 4px;
+    border-width: root.invalid || input.has-focus ? 2px : 1px;
+    border-color: root.invalid ? Theme.error : input.has-focus ? Theme.focus : Theme.border;
+    background: Theme.surface;
+    opacity: root.enabled ? 1.0 : 0.55;
+    accessible-role: text-input;
+    accessible-enabled: root.enabled;
+    accessible-value: root.text;
+    accessible-placeholder-text: root.placeholder-text;
+    accessible-read-only: root.read-only;
+    accessible-action-set-value(value) => { root.text = value; root.edited(value); }
+    HorizontalLayout {
+        padding-left: root.icon.width > 0 ? 8px : 10px;
+        padding-right: 10px;
+        spacing: 6px;
+        if root.icon.width > 0: Image {
+            width: 16px;
+            source: root.icon;
+            colorize: Theme.muted;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            min-width: 1px;
+            horizontal-stretch: 1;
+            clip: true;
+            Text {
+                width: 100%;
+                height: 100%;
+                text: root.text == "" ? root.placeholder-text : "";
+                font-size: input.font-size;
+                font-weight: input.font-weight;
+                color: Theme.muted;
+                vertical-alignment: center;
+                overflow: elide;
+                accessible-role: none;
+            }
+            ContextMenuArea {
+                enabled: root.enabled;
+                Menu {
+                    MenuItem { title: @tr("Cut"); enabled: root.enabled && !root.read-only && root.text != ""; activated => { input.cut(); } }
+                    MenuItem { title: @tr("Copy"); enabled: root.text != ""; activated => { input.copy(); } }
+                    MenuItem { title: @tr("Paste"); enabled: root.enabled && !root.read-only; activated => { input.paste(); } }
+                    MenuItem { title: @tr("Select all"); enabled: root.text != ""; activated => { input.select-all(); } }
+                }
+                FocusScope {
+                    focus-on-tab-navigation: false;
+                    key-pressed(event) => { return root.key-pressed(event); }
+                    input := TextInput {
+                        private property <length> scroll-x;
+                        x: min(0px, max(parent.width - self.width - self.text-cursor-width, self.scroll-x));
+                        width: max(parent.width - self.text-cursor-width, self.preferred-width);
+                        height: parent.height;
+                        enabled: root.enabled;
+                        single-line: true;
+                        vertical-alignment: center;
+                        color: Theme.text;
+                        selection-background-color: Theme.selected;
+                        selection-foreground-color: Theme.text;
+                        // The field itself is the accessible node.
+                        accessible-role: none;
+                        cursor-position-changed(position) => {
+                            if position.x + self.scroll-x < 4px {
+                                self.scroll-x = 4px - position.x;
+                            } else if position.x + self.scroll-x > parent.width - 4px - self.text-cursor-width {
+                                self.scroll-x = parent.width - position.x - 4px - self.text-cursor-width;
+                            }
+                        }
+                        edited => { root.edited(self.text); }
+                        accepted => { root.accepted(self.text); }
+                    }
+                }
+            }
+        }
+        @children
+    }
+}
+
+/// Search or filter field: a clear button is shown while it holds text,
+/// and Escape clears the text before it reaches the enclosing dialog.
+export component SearchField inherits TextField {
+    icon: @image-url("icons/search.svg");
+    key-pressed(event) => {
+        if event.text == Key.Escape && root.text != "" { root.clear(); return accept; }
+        return reject;
+    }
+    if root.text != "" && root.enabled && !root.read-only: clear-touch := TouchArea {
+        width: 20px;
+        mouse-cursor: pointer;
+        accessible-role: button;
+        accessible-label: @tr("Clear search");
+        accessible-action-default => { root.clear(); }
+        clicked => { root.clear(); }
+        Rectangle {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: clear-touch.has-hover ? Theme.hover : transparent;
+            Image { width: 14px; height: 14px; source: @image-url("icons/x.svg"); colorize: Theme.muted; }
+        }
+    }
 }
 
 /// Icon button; with `text` it grows into an icon + label button.
@@ -201,7 +329,7 @@ export component NumericInput inherits TouchArea {
         }
         accept
     }
-    edit := LineEdit {
+    edit := TextField {
         enabled: root.enabled;
         width: 100%;
         input-type: root.fractional ? decimal : number;
@@ -529,19 +657,15 @@ export component FormField inherits VerticalLayout {
     spacing: 4px;
     vertical-stretch: 0;
     if root.label != "": Text { text: root.label; color: Theme.text; }
-    Rectangle {
-        HorizontalLayout {
-            LineEdit {
-                text <=> root.text;
-                placeholder-text: root.placeholder;
-                accessible-label: root.label != "" ? root.label : root.placeholder;
-                accessible-description: root.show-error ? Locale.text(root.error) : "";
-                init => { if root.autofocus { self.focus(); self.select-all(); } }
-                edited => { root.touched = true; }
-                accepted => { root.accepted(); }
-            }
-        }
-        if root.show-error: Rectangle { border-radius: 4px; border-width: 2px; border-color: Theme.error; }
+    TextField {
+        text <=> root.text;
+        placeholder-text: root.placeholder;
+        invalid: root.show-error;
+        accessible-label: root.label != "" ? root.label : root.placeholder;
+        accessible-description: root.show-error ? Locale.text(root.error) : "";
+        init => { if root.autofocus { self.focus(); self.select-all(); } }
+        edited => { root.touched = true; }
+        accepted => { root.accepted(); }
     }
     if root.show-error: Text { text: Locale.text(root.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
 }
@@ -557,7 +681,6 @@ export component InlineTextField inherits FocusScope {
     in property <string> placeholder;
     in property <string> label;
     in property <bool> allow-empty: true;
-    in property <bool> clearable: false;
     in property <length> text-size: 14px;
     in property <int> text-weight: 400;
     in property <color> text-color: Theme.text;
@@ -639,60 +762,18 @@ export component InlineTextField inherits FocusScope {
                     }
                 }
             }
-            if root.editing && root.clearable: LineEdit {
-                min-width: 0px;
+            if root.editing: TextField {
+                min-width: 28px;
                 horizontal-stretch: 1;
                 text <=> root.draft;
                 placeholder-text: root.placeholder;
+                font-size: root.text-size;
+                invalid: root.issue.id != "";
                 accessible-label: root.label;
                 accessible-description: Locale.text(root.issue);
                 init => { self.focus(); self.select-all(); }
                 accepted => { root.save(); }
                 changed has-focus => { if !self.has-focus { root.blurred(); } }
-            }
-            if root.editing && !root.clearable: Rectangle {
-                min-width: 28px;
-                horizontal-stretch: 1;
-                height: 32px;
-                border-radius: 4px;
-                border-width: root.issue.id != "" ? 2px : 1px;
-                border-color: root.issue.id != "" ? Theme.error : input.has-focus ? Theme.focus : Theme.border;
-                background: Theme.surface;
-                clip: true;
-                HorizontalLayout {
-                    padding-left: 6px;
-                    padding-right: 6px;
-                    Rectangle {
-                        min-width: 0px;
-                        horizontal-stretch: 1;
-                        clip: true;
-                        input := TextInput {
-                            private property <length> scroll-x;
-                            x: min(0px, max(parent.width - self.width - self.text-cursor-width, self.scroll-x));
-                            width: max(parent.width - self.text-cursor-width, self.preferred-width);
-                            height: parent.height;
-                            cursor-position-changed(position) => {
-                                if position.x + self.scroll-x < 4px {
-                                    self.scroll-x = 4px - position.x;
-                                } else if position.x + self.scroll-x > parent.width - 4px - self.text-cursor-width {
-                                    self.scroll-x = parent.width - position.x - 4px - self.text-cursor-width;
-                                }
-                            }
-                            text <=> root.draft;
-                            single-line: true;
-                            color: Theme.text;
-                            font-size: root.text-size;
-                            vertical-alignment: center;
-                            selection-background-color: Theme.selected;
-                            selection-foreground-color: Theme.text;
-                            accessible-label: root.label;
-                            accessible-description: Locale.text(root.issue);
-                            init => { self.focus(); self.select-all(); }
-                            accepted => { root.save(); }
-                            changed has-focus => { if !self.has-focus { root.blurred(); } }
-                        }
-                    }
-                }
             }
             if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); enabled: root.can-save; clicked => { root.save(); } }
             if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }

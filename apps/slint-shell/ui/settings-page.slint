@@ -1,3 +1,4 @@
+import { TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
@@ -6,7 +7,7 @@ import { LayoutLibrary } from "library.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { Button, CheckBox, HorizontalBox, LineEdit, RadioGroup, VerticalBox } from "std-widgets.slint";
+import { Button, CheckBox, HorizontalBox, RadioGroup, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericInput, SelectField } from "controls.slint";
 import { AppPicker, ConditionChoices } from "conditions.slint";
 
@@ -299,12 +300,12 @@ export component SettingsPage inherits VerticalBox {
                             VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 6px; alignment: start;
                                 Text { vertical-stretch: 0; text: @tr("Keyboard device"); color: Theme.text; }
                                 DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); suggested-label: @tr("Looks like a keyboard"); enabled: !AppState.mapper-running && !AppState.mapper-busy; choices: SettingsEditor.input-devices; selected-index: SettingsEditor.selected-device; selected(index) => { SettingsEditor.select-device(index); } }
-                                if SettingsEditor.keyboard-manual: LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                                if SettingsEditor.keyboard-manual: TextField { enabled: !AppState.mapper-running; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                             }
                             VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 6px; alignment: start;
                                 Text { vertical-stretch: 0; text: @tr("Mouse (optional)"); color: Theme.text; }
                                 DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); suggested-label: @tr("Looks like a mouse"); enabled: !AppState.mapper-running && !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; selected-index: SettingsEditor.selected-mouse; selected(index) => { SettingsEditor.select-mouse(index); } }
-                                if SettingsEditor.mouse-manual: LineEdit { enabled: !AppState.mapper-running; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                                if SettingsEditor.mouse-manual: TextField { enabled: !AppState.mapper-running; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                             }
                         }
                         HorizontalBox { padding: 0px; vertical-stretch: 0; alignment: end;
@@ -445,12 +446,12 @@ export component SettingsPage inherits VerticalBox {
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
                         padding: 0px; spacing: 8px;
                         FormLabel { text: @tr("ydotool path"); }
-                        LineEdit { text <=> SettingsEditor.ydotool-path; accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        TextField { text <=> SettingsEditor.ydotool-path; accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalBox {
                         padding: 0px; spacing: 8px;
                         FormLabel { text: @tr("xdotool path"); }
-                        LineEdit { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        TextField { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
                 }
                 if SettingsEditor.tab == 4 && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }

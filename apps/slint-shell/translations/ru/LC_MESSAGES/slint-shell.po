@@ -2252,3 +2252,18 @@ msgstr "Показывать название раскладки на экран
 
 msgid "The app:activateLayout1…5 actions activate the layout with that number. In Auto mode they switch to Single mode."
 msgstr "Действия app:activateLayout1…5 активируют раскладку с этим номером. В автоматическом режиме они переключают в одиночный режим."
+
+msgid "Cut"
+msgstr "Вырезать"
+
+msgid "Copy"
+msgstr "Копировать"
+
+msgid "Paste"
+msgstr "Вставить"
+
+msgid "Select all"
+msgstr "Выделить всё"
+
+msgid "Clear search"
+msgstr "Очистить поиск"

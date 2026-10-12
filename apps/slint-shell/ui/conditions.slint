@@ -1,9 +1,10 @@
+import { SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { GameCondition } from "types.slint";
 import { AppState } from "app-state.slint";
 import { Badge, ButtonGroup, IconButton, InfoTip } from "controls.slint";
-import { Button, CheckBox, LineEdit, RadioGroup } from "std-widgets.slint";
+import { Button, CheckBox, RadioGroup } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
 
@@ -108,7 +109,7 @@ export component AppPicker inherits Rectangle {
             Text { text: root.title; color: Theme.text; font-weight: 600; vertical-alignment: center; horizontal-stretch: 1; }
             IconButton { text: @tr("Refresh"); enabled: !ConditionChoices.open-windows-loading; clicked => { ConditionChoices.refresh-open-windows(); } }
         }
-        search := LineEdit {
+        search := SearchField {
             text <=> root.query;
             placeholder-text: @tr("Search, or type an app ID or title text");
             accepted => {
@@ -305,7 +306,7 @@ export component ApplicationsField inherits VerticalLayout {
                     selected-index: root.title-mode ? 1 : 0;
                     selected(index) => { root.title-mode = index == 1; }
                 }
-                input := LineEdit {
+                input := TextField {
                     horizontal-stretch: 1;
                     text <=> root.query;
                     placeholder-text: root.title-mode ? @tr("Text the window title contains") : @tr("App ID or process, * and ? allowed");

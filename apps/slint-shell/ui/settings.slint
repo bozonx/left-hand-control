@@ -1,3 +1,4 @@
+import { TextField } from "controls.slint";
 import { NotificationCenter, ToastStack } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { ActionPicker, PickerOverlay } from "action-picker.slint";
@@ -14,7 +15,7 @@ import { ConfirmDialog, IconButton, Badge, InlineEditors, MapperToggle, NavButto
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
-import { Button, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
 
 export component SettingsWindow inherits Window {
     background: Theme.surface;
@@ -105,7 +106,7 @@ export component SettingsWindow inherits Window {
                         HorizontalLayout {
                             alignment: center;
                             spacing: 4px;
-                            LineEdit { preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
+                            TextField { preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
                         }
                     }
                     VerticalLayout { alignment: center; Badge {

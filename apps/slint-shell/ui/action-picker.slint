@@ -1,9 +1,10 @@
+import { SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { InfoTip } from "controls.slint";
 import { PickerCategory, PickerTarget, ShortcutDesktop } from "types.slint";
-import { Button, VerticalBox, HorizontalBox, LineEdit, TextEdit } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: PickerCategory, notice: Message }
 /// Picker category in sidebar order with the number of its catalog items.
 export struct PickerCategoryCount { category: PickerCategory, count: int }
@@ -220,7 +221,7 @@ export component PickerOverlay inherits Rectangle {
                 if ActionPicker.behavior == 2 && ActionPicker.value-category != PickerCategory.commands: HorizontalBox { vertical-stretch: 0;
                     Text { text: ActionPicker.key-only ? @tr("Trigger key:") : @tr("Action:"); color: Theme.muted; vertical-alignment: center; }
                     if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
-                    LineEdit { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
+                    TextField { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
                     Button { text: ActionPicker.capturing ? @tr("Stop") : @tr("Capture"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
                     InfoTip { text: ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
                 }
@@ -232,7 +233,7 @@ export component PickerOverlay inherits Rectangle {
                 if ActionPicker.behavior != 2: Rectangle { background: transparent; vertical-stretch: 1; }
                 if ActionPicker.behavior == 2: HorizontalBox { padding: 0px; spacing: 12px; vertical-stretch: 1;
                     VerticalBox { padding: 0px; spacing: 8px; width: min(250px, parent.width * 0.35); horizontal-stretch: 0;
-                        LineEdit { text <=> ActionPicker.query; placeholder-text: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); edited => { ActionPicker.list-scroll = 0px; ActionPicker.refresh(); } }
+                        SearchField { text <=> ActionPicker.query; placeholder-text: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); edited => { ActionPicker.list-scroll = 0px; ActionPicker.refresh(); } }
                         ScrollView { viewport-width: self.visible-width;
                             VerticalLayout { spacing: 0px;
                                 for entry in ActionPicker.categories: VerticalBox {
@@ -264,14 +265,14 @@ export component PickerOverlay inherits Rectangle {
                         }
                         if ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
                             HorizontalBox { vertical-stretch: 0;
-                                LineEdit { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name (optional)"); edited => { ActionPicker.edit-command(); } }
+                                TextField { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name (optional)"); edited => { ActionPicker.edit-command(); } }
                                 InfoTip { text: Locale.text(ActionPicker.command-help); }
                                 Button { horizontal-stretch: 0; text: @tr("Choose script…"); clicked => { ActionPicker.choose-command-file(); } }
                             }
                             TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; placeholder-text: @tr("Shell command or path to a script, e.g. playerctl play-pause"); edited => { ActionPicker.edit-command(); } }
                             if ActionPicker.command-notice.id != "": Text { text: Locale.text(ActionPicker.command-notice); color: Theme.warning; wrap: word-wrap; }
                             HorizontalBox { padding: 0px; spacing: 8px;
-                                LineEdit { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (home by default)"); edited => { ActionPicker.edit-command(); } }
+                                TextField { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (home by default)"); edited => { ActionPicker.edit-command(); } }
                                 Button { horizontal-stretch: 0; text: @tr("Choose folder…"); clicked => { ActionPicker.choose-command-directory(); } }
                             }
                         }
@@ -284,7 +285,7 @@ export component PickerOverlay inherits Rectangle {
                         }
                         if ActionPicker.query == "" && ActionPicker.category == PickerCategory.pause: VerticalBox { padding: 0px;
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
-                            LineEdit { text: ActionPicker.pause-content; edited => { ActionPicker.touched = true; ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
+                            TextField { text: ActionPicker.pause-content; edited => { ActionPicker.touched = true; ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
                         }
                         if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
                             VerticalLayout { spacing: 0px;

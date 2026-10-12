@@ -7,7 +7,7 @@ import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerCategory, PickerTarget } from "types.slint";
 import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, NumericInput } from "controls.slint";
-import { Button, LineEdit } from "std-widgets.slint";
+import { Button } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
 export struct MacroRow { id: string, name: string, step-pause: string, modifier-delay: string, usage: [string], error: Message, steps: [MacroStepRow] }

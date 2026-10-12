@@ -18,7 +18,7 @@ slint::slint! {
         // Stands in for the settings window's root FocusScope that takes focus on empty clicks.
         FocusScope { }
         VerticalLayout { padding: 20px; spacing: 12px; alignment: start;
-            field := InlineTextField { clearable: false; text: root.value; saved(value) => { root.value = value; } }
+            field := InlineTextField { text: root.value; saved(value) => { root.value = value; } }
             description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; } }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }

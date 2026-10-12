@@ -11,8 +11,8 @@ use std::{
 };
 
 slint::slint! {
-    import { LineEdit, TextEdit } from "std-widgets.slint";
-    import { InlineTextField, InlineTextArea } from "../ui/controls.slint";
+    import { TextEdit } from "std-widgets.slint";
+    import { InlineTextField, InlineTextArea, TextField } from "../ui/controls.slint";
     export component EditingWindow inherits Window {
         width: 500px; height: 480px;
         in-out property <int> active;
@@ -22,7 +22,6 @@ slint::slint! {
         in-out property <string> area-text;
         in-out property <string> inline-text: "исходный";
         in-out property <string> inline-area: "строка";
-        in-out property <bool> clearable;
         public function begin-inline() { inline.begin(); }
         public function begin-inline-area() { inline-area.begin(); }
         out property <int> cursor: raw.cursor-position-byte-offset;
@@ -35,9 +34,9 @@ slint::slint! {
         VerticalLayout {
             padding: 16px; spacing: 12px; alignment: start;
             raw := TextInput { text <=> root.raw-text; single-line: true; read-only: root.read-only; height: 36px; }
-            line := LineEdit { text <=> root.line-text; read-only: root.read-only; height: 32px; }
+            line := TextField { text <=> root.line-text; read-only: root.read-only; height: 32px; }
             area := TextEdit { text <=> root.area-text; read-only: root.read-only; height: 120px; }
-            inline := InlineTextField { text: root.inline-text; clearable: root.clearable; saved(value) => { root.inline-text = value; } }
+            inline := InlineTextField { text: root.inline-text; saved(value) => { root.inline-text = value; } }
             inline-area := InlineTextArea { text: root.inline-area; saved(value) => { root.inline-area = value; } }
         }
     }
@@ -258,10 +257,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match current {
             0 | 2 | 4 => { ui.set_active(current / 2); reset(&ui, "исходный"); }
             1 | 3 | 5 => { *pending_clipboard.borrow_mut() = Some(verify(&ui)); }
-            6 | 8 | 10 | 12 => {
-                ui.set_clearable(current >= 10);
-                ui.invoke_begin_inline();
-            }
+            6 | 8 | 10 | 12 => ui.invoke_begin_inline(),
             7 | 11 => {
                 let original = ui.get_inline_text();
                 shortcut(&ui, "ф", KeyCode::KeyA, false);
@@ -299,10 +295,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key_released(&ui, Key::Control);
                 assert_eq!(ui.get_inline_area(), "первая\nзамена🙂");
             }
-            16 => {
-                ui.set_clearable(false);
-                ui.set_inline_text(format!("{}END", "длинный текст ".repeat(24)).into());
-            }
+            16 => ui.set_inline_text(format!("{}END", "длинный текст ".repeat(24)).into()),
             17 => ui.invoke_begin_inline(),
             18 => key(&ui, Key::End),
             19 => {
@@ -314,7 +307,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert!(ui.get_inline_text().ends_with("EN"));
             }
             20 => {
-                println!("Undo/redo passed: TextInput, LineEdit, TextEdit, both inline fields, inline textarea, Russian shortcuts, atomic replacement, redo invalidation, selection, deletion, clipboard, read-only, multiline");
+                println!("Undo/redo passed: TextInput, TextField, TextEdit, inline field, inline textarea, Russian shortcuts, atomic replacement, redo invalidation, selection, deletion, clipboard, read-only, multiline");
                 slint::quit_event_loop().unwrap();
             }
             _ => unreachable!(),

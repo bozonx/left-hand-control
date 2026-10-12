@@ -1,3 +1,4 @@
+import { TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
@@ -6,7 +7,7 @@ import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButt
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LabelMode, LayerDialog, PickerCategory, PickerTarget } from "types.slint";
-import { Button, HorizontalBox, LineEdit, TextEdit, Palette, VerticalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, TextEdit, Palette, VerticalBox } from "std-widgets.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
@@ -532,7 +533,7 @@ export component LayerDialogOverlay inherits FocusScope {
                 if LayersEditor.dialog == LayerDialog.edit-key || LayersEditor.dialog == LayerDialog.extra-key: VerticalBox { spacing: 8px;
                     if LayersEditor.dialog == LayerDialog.extra-key: Text { text: @tr("Key code"); color: Theme.text; }
                     if LayersEditor.dialog == LayerDialog.extra-key: HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                        LineEdit { text <=> LayersEditor.dialog-key; horizontal-stretch: 1; }
+                        TextField { text <=> LayersEditor.dialog-key; horizontal-stretch: 1; }
                         Button { text: @tr("Choose trigger key"); clicked => { ActionPicker.open(PickerTarget.layer-key, 0, LayersEditor.dialog-key, true); } }
                     }
                     Text { text: @tr("Behavior"); color: Theme.muted; }
@@ -548,7 +549,7 @@ export component LayerDialogOverlay inherits FocusScope {
                         padding: 0px; spacing: 4px; vertical-stretch: 0;
                         Text { text: @tr("Action"); color: Theme.text; }
                         HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                            LineEdit { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
+                            TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
                             Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
                         }
                     }
