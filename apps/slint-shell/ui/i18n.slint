@@ -29,6 +29,7 @@ export global Locale {
         if m.id == "game-mode-auto-unavailable" { return @tr("Auto: detection unavailable"); }
         if m.id == "game-mode-auto-inactive" { return @tr("Auto: game mode inactive"); }
         if m.id == "game-mode-daemon-active" { return @tr("Auto: GameMode daemon active"); }
+        if m.id == "game-mode-known-game-active" { return @tr("Auto: known game {}", m.arg); }
         if m.id == "game-mode-process-active" { return @tr("Auto: matched {}", m.arg); }
         if m.id == "game-mode-fullscreen-active" { return @tr("Auto: fullscreen window active"); }
         if m.id == "game-mode-excluded" { return @tr("Auto: excluded by {}", m.arg); }

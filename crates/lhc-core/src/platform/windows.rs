@@ -16,18 +16,17 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
 };
+use windows::Win32::System::RemoteDesktop::ProcessIdToSessionId;
 use windows::Win32::System::Threading::{
-    GetCurrentThreadId, OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
-    QueryFullProcessImageNameW,
+    GetCurrentProcessId, GetCurrentThreadId, OpenProcess, PROCESS_NAME_WIN32,
+    PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
 };
 use windows::Win32::UI::Accessibility::{HWINEVENTHOOK, SetWinEventHook, UnhookWinEvent};
-use windows::Win32::UI::Shell::{
-    QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState,
-};
+use windows::Win32::UI::Shell::{QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState};
 use windows::Win32::UI::WindowsAndMessaging::{
     DispatchMessageW, EVENT_OBJECT_NAMECHANGE, EVENT_SYSTEM_FOREGROUND, EnumChildWindows,
-    EnumWindows, GW_OWNER, GWL_EXSTYLE, GetClientRect, GetForegroundWindow, GetMessageW,
-    GetShellWindow, GetWindow, GetWindowLongW, GetWindowTextLengthW, GetWindowTextW,
+    EnumWindows, GW_OWNER, GWL_EXSTYLE, GetClassNameW, GetClientRect, GetForegroundWindow,
+    GetMessageW, GetShellWindow, GetWindow, GetWindowLongW, GetWindowTextLengthW, GetWindowTextW,
     GetWindowThreadProcessId, IsIconic, IsWindowVisible, MSG, OBJID_WINDOW, PostThreadMessageW,
     TranslateMessage, WINEVENT_OUTOFCONTEXT, WINEVENT_SKIPOWNPROCESS, WM_QUIT, WS_EX_TOOLWINDOW,
 };
@@ -38,6 +37,18 @@ use crate::runtime_state::ActiveWindow;
 
 /// Host process of UWP app frames; the app runs in a child window.
 const UWP_FRAME_HOST: &str = "ApplicationFrameHost.exe";
+/// Window classes of the shell that cover a monitor without being an
+/// application: the desktop (`WorkerW` hosts it once a wallpaper is
+/// drawn), the taskbars and the task switchers.
+const SHELL_WINDOW_CLASSES: [&str; 7] = [
+    "Progman",
+    "WorkerW",
+    "Shell_TrayWnd",
+    "Shell_SecondaryTrayWnd",
+    "MultitaskingViewFrame",
+    "XamlExplorerHostIslandWindow",
+    "ForegroundStaging",
+];
 
 pub(crate) fn active_window(titles: bool) -> Option<ActiveWindow> {
     let window = unsafe { GetForegroundWindow() };
@@ -240,7 +251,10 @@ fn process_name(pid: u32) -> Option<String> {
         .map(str::to_owned)
 }
 
+/// Executable names of the processes in this logon session; services and
+/// other users' sessions are left out, as on Linux.
 pub(crate) fn running_process_names() -> Option<Vec<String>> {
+    let session = session_of(unsafe { GetCurrentProcessId() });
     let snapshot: Owned<HANDLE> =
         unsafe { Owned::new(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0).ok()?) };
     let mut entry = PROCESSENTRY32W {
@@ -256,7 +270,7 @@ pub(crate) fn running_process_names() -> Option<Vec<String>> {
             .position(|value| *value == 0)
             .unwrap_or(entry.szExeFile.len());
         let name = String::from_utf16_lossy(&entry.szExeFile[..length]);
-        if !name.is_empty() {
+        if !name.is_empty() && (session.is_none() || session_of(entry.th32ProcessID) == session) {
             names.push(name);
         }
         if unsafe { Process32NextW(*snapshot, &mut entry) }.is_err() {
@@ -266,19 +280,29 @@ pub(crate) fn running_process_names() -> Option<Vec<String>> {
     Some(names)
 }
 
+fn session_of(pid: u32) -> Option<u32> {
+    let mut session = 0;
+    unsafe { ProcessIdToSessionId(pid, &mut session) }.ok()?;
+    Some(session)
+}
+
 /// Whether the foreground window is fullscreen: exclusive Direct3D
 /// fullscreen as reported by the shell, or a window (often borderless)
-/// whose client area covers its monitor.
+/// whose client area covers its monitor. The desktop, the taskbar and
+/// the task switchers never count. Presentation mode (set by a slide
+/// show or by hand) says nothing about the foreground window, so the
+/// geometry decides then.
 pub(crate) fn fullscreen_active() -> Option<bool> {
-    match unsafe { SHQueryUserNotificationState() } {
-        Ok(state) if state == QUNS_RUNNING_D3D_FULL_SCREEN => return Some(true),
-        Ok(state) if state == QUNS_PRESENTATION_MODE => return Some(false),
-        _ => {}
+    if unsafe { SHQueryUserNotificationState() }
+        .is_ok_and(|state| state == QUNS_RUNNING_D3D_FULL_SCREEN)
+    {
+        return Some(true);
     }
     let window = unsafe { GetForegroundWindow() };
     if window.is_invalid()
         || window == unsafe { GetShellWindow() }
         || unsafe { IsIconic(window) }.as_bool()
+        || is_shell_window(window)
     {
         return Some(false);
     }
@@ -297,6 +321,13 @@ pub(crate) fn fullscreen_active() -> Option<bool> {
             && client.right >= info.rcMonitor.right
             && client.bottom >= info.rcMonitor.bottom,
     )
+}
+
+fn is_shell_window(window: HWND) -> bool {
+    let mut class = [0_u16; 64];
+    let length = unsafe { GetClassNameW(window, &mut class) }.max(0) as usize;
+    let class = String::from_utf16_lossy(&class[..length]);
+    SHELL_WINDOW_CLASSES.contains(&class.as_str())
 }
 
 fn client_rect_on_screen(window: HWND) -> Option<RECT> {

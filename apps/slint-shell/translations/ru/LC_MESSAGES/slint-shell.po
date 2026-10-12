@@ -2285,3 +2285,24 @@ msgstr "Выберите клавиатуру ниже, чтобы запуст�
 
 msgid "Changing a device restarts the mapper."
 msgstr "При смене устройства маппер перезапустится."
+
+msgid "Auto: known game {}"
+msgstr "Auto: известная игра {}"
+
+msgid "Built-in list. To count one of these anyway, add it under Games and exclusions."
+msgstr "Встроенный список. Чтобы всё же учитывать что-то из него, добавьте это в «Игры и исключения»."
+
+msgid "Ignored in fullscreen"
+msgstr "Не считаются играми в полноэкранном режиме"
+
+msgid "Recognize known games"
+msgstr "Распознавать известные игры"
+
+msgid "Turns on while a game started by Steam or Lutris runs, or while the active window belongs to an application of the Game category. On Windows also while a game from the Game Bar list runs. Launchers themselves never count."
+msgstr "Включается, пока запущена игра из Steam или Lutris или пока активно окно приложения из категории «Игры». В Windows — ещё и пока запущена игра из списка Game Bar. Сами лаунчеры играми не считаются."
+
+msgid "Known games cannot be recognized on this system."
+msgstr "В этой системе распознавание известных игр недоступно."
+
+msgid "Never counted as games"
+msgstr "Никогда не считаются играми"

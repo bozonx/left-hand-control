@@ -1,7 +1,8 @@
 //! Game mode: a global on/off state that rule and layout conditions use.
 //!
 //! The user picks Auto, On or Off. In Auto a watcher thread combines the
-//! enabled sources (GameMode daemon, process rules, fullscreen window) and
+//! enabled sources (GameMode daemon, games known to a launcher or to the
+//! system, process rules, fullscreen window) and
 //! keeps game mode on for [`OFF_DELAY`] after the last match, so Alt+Tab
 //! or a loading screen does not flip layouts back and forth. A state that
 //! cannot be detected counts as off.
@@ -15,11 +16,16 @@ use crate::runtime_state::ActiveWindow;
 use crate::storage::StoragePaths;
 
 #[cfg(target_os = "linux")]
+mod desktop_entries;
+#[cfg(target_os = "linux")]
 mod linux;
-#[cfg(any(target_os = "linux", target_os = "windows", test))]
+#[cfg(target_os = "macos")]
+mod macos;
 pub(crate) mod process;
 #[cfg(target_os = "windows")]
 mod windows;
+
+pub use process::{FULLSCREEN_NON_GAMES, GAME_LAUNCHERS};
 
 const WATCH_INTERVAL: Duration = Duration::from_secs(1);
 /// How long Auto keeps game mode on after the last detection.
@@ -39,6 +45,8 @@ pub struct GameModeDetectors {
     pub fullscreen: DetectorAvailability,
     pub processes: DetectorAvailability,
     pub active_window: DetectorAvailability,
+    /// Games recognised by a launcher or a system catalogue.
+    pub known_games: DetectorAvailability,
     /// Command-line tool the window sources need but which is missing,
     /// e.g. `kdotool` on KDE Wayland.
     pub missing_window_tool: Option<String>,
@@ -49,6 +57,9 @@ pub struct GameModeDetectors {
 pub enum GameModeMethod {
     Manual,
     Daemon,
+    /// A game a launcher runs or the system lists; the payload names it,
+    /// e.g. `steam_app_1091500` or `Game.exe`.
+    KnownGame(String),
     Fullscreen,
     /// A process rule; the payload is the rule's pattern.
     Process(String),
@@ -236,7 +247,9 @@ pub fn running_processes() -> Vec<String> {
     let names = linux::running_process_names();
     #[cfg(target_os = "windows")]
     let names = crate::platform::windows::running_process_names();
-    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    #[cfg(target_os = "macos")]
+    let names = macos::running_process_names();
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     let names: Option<Vec<String>> = None;
     let mut names = names.unwrap_or_default();
     names.sort_by_key(|name| name.to_lowercase());
@@ -286,7 +299,11 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                 }
                 let (settings, revision) = load_game_mode_settings(storage.as_ref());
                 let window = crate::active_window::cached_active_window();
-                let detection = evaluate(&settings, &observe(&settings), window.as_ref());
+                let detection = evaluate(
+                    &settings,
+                    &observe(&settings, window.as_ref()),
+                    window.as_ref(),
+                );
                 let now = Instant::now();
                 if detection.active {
                     last_match = Some(now);
@@ -358,23 +375,45 @@ fn hold_active(
 struct Observation {
     detectors: GameModeDetectors,
     running: Vec<String>,
+    /// Running games that a launcher or the system knows.
+    known_games: Vec<String>,
+    /// The active window's application when the system lists it as a game.
+    window_game: Option<String>,
     daemon: bool,
 }
 
-fn observe(settings: &GameModeSettings) -> Observation {
+fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>) -> Observation {
     #[cfg(target_os = "linux")]
     {
-        linux::observe(settings)
+        linux::observe(settings, window)
     }
     #[cfg(target_os = "windows")]
     {
+        let _ = window;
         windows::observe(settings)
     }
-    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    #[cfg(target_os = "macos")]
     {
-        let _ = settings;
+        macos::observe(settings, window)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    {
+        let _ = (settings, window);
         Observation::default()
     }
+}
+
+/// The first known game: running under a launcher or listed by the
+/// system, or shown in the active window. Launchers never count.
+fn known_game(observation: &Observation, window: Option<&ActiveWindow>) -> Option<String> {
+    let window = window.filter(|window| !process::launcher_window(window));
+    observation
+        .known_games
+        .iter()
+        .find(|name| !process::launcher_process(name))
+        .cloned()
+        .or_else(|| window.and_then(process::known_game_window))
+        .or_else(|| window.and(observation.window_game.clone()))
 }
 
 fn needs_running_processes(settings: &GameModeSettings) -> bool {
@@ -413,13 +452,18 @@ fn evaluate(
         .iter()
         .filter(|matcher| !matcher.is_blacklist && !matcher.name.trim().is_empty())
         .collect();
-    let enabled = settings.use_gamemoded || settings.use_fullscreen || !whitelist.is_empty();
+    let enabled = settings.use_gamemoded
+        || settings.use_fullscreen
+        || settings.use_known_games
+        || !whitelist.is_empty();
     let mut detection = Detection {
         enabled,
         // Nothing to detect is a known "off".
         available: !enabled
             || (settings.use_gamemoded && detectors.gamemoded == DetectorAvailability::Available)
             || (settings.use_fullscreen && detectors.fullscreen == DetectorAvailability::Available)
+            || (settings.use_known_games
+                && detectors.known_games == DetectorAvailability::Available)
             || whitelist.iter().any(|matcher| source_available(matcher)),
         detectors: detectors.clone(),
         ..Detection::default()
@@ -444,6 +488,12 @@ fn evaluate(
         && detectors.gamemoded == DetectorAvailability::Available
     {
         Some(GameModeMethod::Daemon)
+    } else if let Some(name) = (settings.use_known_games
+        && detectors.known_games == DetectorAvailability::Available)
+        .then(|| known_game(observation, window))
+        .flatten()
+    {
+        Some(GameModeMethod::KnownGame(name))
     } else if let Some(matcher) = whitelist.into_iter().find(|matcher| matches(matcher)) {
         Some(GameModeMethod::Process(matcher.name.trim().into()))
     } else if settings.use_fullscreen
@@ -495,9 +545,12 @@ mod tests {
                 fullscreen: DetectorAvailability::Available,
                 processes: DetectorAvailability::Available,
                 active_window: DetectorAvailability::Available,
+                known_games: DetectorAvailability::Available,
                 missing_window_tool: None,
             },
             running: running.iter().map(|name| name.to_string()).collect(),
+            known_games: Vec::new(),
+            window_game: None,
             daemon,
         }
     }
@@ -515,6 +568,7 @@ mod tests {
         GameModeSettings {
             use_gamemoded: false,
             use_fullscreen: false,
+            use_known_games: false,
             process_matchers: matchers,
             control: GameModeControl::Auto,
         }
@@ -595,6 +649,53 @@ mod tests {
         let mut windowed = fullscreen("steam_app_42");
         windowed.fullscreen = Some(false);
         assert!(!evaluate(&settings, &observed, Some(&windowed)).active);
+    }
+
+    #[test]
+    fn known_games_come_from_launchers_windows_and_categories() {
+        let mut settings = settings(Vec::new());
+        settings.use_known_games = true;
+        let mut observed = observation(&[], false);
+        assert!(!evaluate(&settings, &observed, None).active);
+        // A Steam game in the foreground, even windowed.
+        let mut window = fullscreen("steam_app_42");
+        window.fullscreen = Some(false);
+        assert_eq!(
+            evaluate(&settings, &observed, Some(&window)).method,
+            Some(GameModeMethod::KnownGame("steam_app_42".into()))
+        );
+        // A running game wins over the window; launchers never count.
+        observed.known_games = vec!["steamwebhelper".into(), "steam_app_7".into()];
+        assert_eq!(
+            evaluate(&settings, &observed, Some(&window)).method,
+            Some(GameModeMethod::KnownGame("steam_app_7".into()))
+        );
+        observed.known_games.clear();
+        observed.window_game = Some("org.example.puzzle".into());
+        assert_eq!(
+            evaluate(
+                &settings,
+                &observed,
+                Some(&fullscreen("org.example.puzzle"))
+            )
+            .method,
+            Some(GameModeMethod::KnownGame("org.example.puzzle".into()))
+        );
+        assert!(
+            !evaluate(
+                &settings,
+                &observed,
+                Some(&fullscreen("com.valvesoftware.Steam"))
+            )
+            .active
+        );
+        // An exclusion still wins, and the source can be turned off.
+        observed.running = vec!["obs".into()];
+        let mut excluded = settings.clone();
+        excluded.process_matchers = vec![matcher("obs", false, true)];
+        assert!(!evaluate(&excluded, &observed, Some(&window)).active);
+        settings.use_known_games = false;
+        assert!(!evaluate(&settings, &observed, Some(&window)).active);
     }
 
     #[test]

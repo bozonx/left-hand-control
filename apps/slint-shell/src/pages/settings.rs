@@ -43,6 +43,7 @@ struct Form {
     commands_enabled: bool,
     use_gamemoded: bool,
     use_fullscreen: bool,
+    use_known_games: bool,
     matchers: Vec<GameModeProcessMatcher>,
     text_mode: i32,
     ydotool: String,
@@ -80,6 +81,7 @@ impl Form {
             commands_enabled: settings.commands_enabled,
             use_gamemoded: settings.game_mode.use_gamemoded,
             use_fullscreen: settings.game_mode.use_fullscreen,
+            use_known_games: settings.game_mode.use_known_games,
             matchers: settings.game_mode.process_matchers.clone(),
             text_mode: choice_index(
                 &TEXT_MODES,
@@ -115,6 +117,7 @@ impl Form {
             commands_enabled: e.get_commands_enabled(),
             use_gamemoded: e.get_use_gamemoded(),
             use_fullscreen: e.get_use_fullscreen(),
+            use_known_games: e.get_use_known_games(),
             matchers: matchers.to_vec(),
             text_mode: e.get_text_mode_index(),
             ydotool: e.get_ydotool_path().into(),
@@ -143,6 +146,7 @@ impl Form {
         e.set_commands_enabled(self.commands_enabled);
         e.set_use_gamemoded(self.use_gamemoded);
         e.set_use_fullscreen(self.use_fullscreen);
+        e.set_use_known_games(self.use_known_games);
         show_matchers(&e, &self.matchers);
         e.set_text_mode_index(self.text_mode);
         e.set_ydotool_path(self.ydotool.clone().into());
@@ -191,6 +195,7 @@ impl Form {
         changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
+        changed!(use_known_games => settings.game_mode.use_known_games = self.use_known_games);
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
         changed!(text_mode => settings.linux_wayland_text_mode = Some(choice(&TEXT_MODES, self.text_mode).into()));
         changed!(ydotool => settings.linux_ydotool_path = self.ydotool.trim().into());
@@ -498,6 +503,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     choices.on_filter(|choices, query| filtered_devices(choices, &query));
     choices.on_offset(device_offset);
     e.set_text_modes(strings(TEXT_MODES));
+    e.set_fullscreen_non_games(lhc_core::gamemode::FULLSCREEN_NON_GAMES.join(", ").into());
+    e.set_game_launchers(lhc_core::gamemode::GAME_LAUNCHERS.join(", ").into());
     {
         let config = document.read();
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());

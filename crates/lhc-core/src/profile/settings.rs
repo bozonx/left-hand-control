@@ -118,6 +118,8 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             bool_or(game_mode, "useGamemoded", base.game_mode.use_gamemoded);
         settings.game_mode.use_fullscreen =
             bool_or(game_mode, "useFullscreen", base.game_mode.use_fullscreen);
+        settings.game_mode.use_known_games =
+            bool_or(game_mode, "useKnownGames", base.game_mode.use_known_games);
         settings.game_mode.control = match str_of(game_mode, "control") {
             Some("on") => GameModeControl::On,
             Some("off") => GameModeControl::Off,
@@ -234,7 +236,7 @@ mod tests {
             "defaultHoldTimeoutMs": "fast",
             "tapDecision": "holdOnOtherKeyPress",
             "linuxWaylandTextMode": "magic",
-            "gameMode": {"useGamemoded": false, "processMatchers": [{"name": " steam "}, 3]},
+            "gameMode": {"useGamemoded": false, "useKnownGames": false, "processMatchers": [{"name": " steam "}, 3]},
         })));
         assert_eq!(settings.appearance, Appearance::Dark);
         assert_eq!(settings.locale, LocalePreference::Auto);
@@ -242,6 +244,8 @@ mod tests {
         assert_eq!(settings.tap_decision, "holdOnOtherKeyPress");
         assert_eq!(settings.linux_wayland_text_mode, None);
         assert!(!settings.game_mode.use_gamemoded);
+        assert!(!settings.game_mode.use_known_games);
+        assert!(AppSettings::default().game_mode.use_known_games);
         assert_eq!(settings.game_mode.process_matchers.len(), 1);
         assert_eq!(settings.game_mode.process_matchers[0].name, "steam");
         assert_eq!(settings.game_mode.process_matchers[0].id, "process-0");

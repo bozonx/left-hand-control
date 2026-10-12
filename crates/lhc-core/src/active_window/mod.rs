@@ -3,8 +3,8 @@
 // A watcher thread caches the latest result in `runtime_state` and emits
 // `CoreEvent::ActiveWindowChanged`; the mapper engine reads the cache to
 // evaluate per-rule app conditions. Where the platform reports focus
-// changes (KWin script, Hyprland and Sway IPC, the X11 root property, a
-// Windows WinEvent hook) the watcher re-reads on every event and polls
+// changes (KWin script, Hyprland and Sway IPC, wlr foreign-toplevel
+// events, the X11 root property, a Windows WinEvent hook) the watcher re-reads on every event and polls
 // only as a slow fallback.
 //
 // Window titles are read only while some condition needs them
@@ -21,6 +21,8 @@ use std::time::Duration;
 mod kwin;
 #[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "linux")]
+mod wlr;
 
 pub use crate::runtime_state::ActiveWindow;
 
@@ -49,26 +51,20 @@ pub(crate) fn availability() -> crate::gamemode::DetectorAvailability {
     {
         linux::availability()
     }
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
     {
         crate::gamemode::DetectorAvailability::Available
     }
-    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
         crate::gamemode::DetectorAvailability::Unsupported
     }
 }
 
 /// Tool window detection needs but cannot find, e.g. `kdotool`.
+#[cfg(target_os = "linux")]
 pub(crate) fn missing_tool() -> Option<&'static str> {
-    #[cfg(target_os = "linux")]
-    {
-        linux::missing_tool()
-    }
-    #[cfg(not(target_os = "linux"))]
-    {
-        None
-    }
+    linux::missing_tool()
 }
 
 /// Whether the shell's conditions need window titles. Off by default.
@@ -264,7 +260,9 @@ fn detect_active_window_with_titles(titles: bool) -> Option<ActiveWindow> {
     let window = linux::detect(titles);
     #[cfg(target_os = "windows")]
     let window = crate::platform::windows::active_window(titles);
-    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    #[cfg(target_os = "macos")]
+    let window = crate::platform::macos::active_window();
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     let window: Option<ActiveWindow> = None;
     window.map(|mut window| {
         if !titles {

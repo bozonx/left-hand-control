@@ -342,6 +342,9 @@ pub struct GameModeProcessMatcher {
 pub struct GameModeSettings {
     pub use_gamemoded: bool,
     pub use_fullscreen: bool,
+    /// Recognise games by their launcher or system catalogue (Steam,
+    /// Lutris, application category, the Windows game list).
+    pub use_known_games: bool,
     pub process_matchers: Vec<GameModeProcessMatcher>,
     /// Last Auto/On/Off choice, restored on startup.
     pub control: GameModeControl,
@@ -481,6 +484,7 @@ impl Default for AppSettings {
             game_mode: GameModeSettings {
                 use_gamemoded: true,
                 use_fullscreen: false,
+                use_known_games: true,
                 process_matchers: Vec::new(),
                 control: GameModeControl::Auto,
             },

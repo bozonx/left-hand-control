@@ -4,8 +4,11 @@
 //   * KDE Wayland     -> KWin script over D-Bus (`kwin`), `kdotool` fallback
 //   * Hyprland        -> hyprctl activewindow -j, events from socket2
 //   * Sway            -> swaymsg get_tree, events from `swaymsg subscribe`
+//   * other Wayland   -> wlr foreign-toplevel events (`wlr`) where the
+//                        compositor offers them (niri, Wayfire, labwc, …)
 //   * X11 (any DE)    -> xprop (+ xdotool for titles), events from `xprop -spy`
-//   * everything else -> None (condition will not match)
+//   * everything else -> None (condition will not match); GNOME Wayland has
+//                        no public API for the active window
 
 use std::io::{BufRead, BufReader};
 use std::os::unix::process::CommandExt;
@@ -18,7 +21,7 @@ use std::time::Duration;
 use crate::exec::run_cmd_with_timeout;
 use crate::platform::linux::{Desktop, SessionType, command_available};
 
-use super::{ActiveWindow, OpenWindow, kwin};
+use super::{ActiveWindow, OpenWindow, kwin, wlr};
 
 static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 const COMMAND_TIMEOUT_MS: u64 = 1000;
@@ -32,9 +35,26 @@ try{var g=w.frameGeometry,o=w.output.geometry;r.fullscreen=r.fullscreen||(w.norm
 g.x<=o.x&&g.y<=o.y&&g.x+g.width>=o.x+o.width&&g.y+g.height>=o.y+o.height);}catch(e){}}\
 output_result(JSON.stringify(r));";
 
+/// Wayland sessions without a dedicated backend: the wlr protocol may
+/// serve them. GNOME does not offer it.
+fn uses_wlr(desktop: &Desktop, session: SessionType) -> bool {
+    session == SessionType::Wayland
+        && !matches!(
+            desktop,
+            Desktop::Kde | Desktop::Gnome | Desktop::Hyprland | Desktop::Sway
+        )
+}
+
 pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
     use crate::gamemode::DetectorAvailability;
     let session = crate::platform::linux::detect();
+    if uses_wlr(&session.desktop, session.session_type) {
+        return if wlr::active() {
+            DetectorAvailability::Available
+        } else {
+            DetectorAvailability::Unsupported
+        };
+    }
     let available = match (session.desktop, session.session_type) {
         (_, SessionType::X11) => {
             command_available("xprop") && (!super::titles_needed() || command_available("xdotool"))
@@ -81,6 +101,7 @@ pub fn detect(titles: bool) -> Option<ActiveWindow> {
         }
         (Desktop::Sway, SessionType::Wayland) => detect_sway(),
         (_, SessionType::X11) => detect_x11(titles),
+        (desktop, session) if uses_wlr(&desktop, session) => wlr::current().ok_or(()),
         _ => Err(()),
     };
     LAST_QUERY.store(if result.is_ok() { 1 } else { 2 }, Ordering::Relaxed);
@@ -90,6 +111,7 @@ pub fn detect(titles: bool) -> Option<ActiveWindow> {
 /// A running focus-event source.
 enum Events {
     Kwin,
+    Wlr,
     /// A long-running command printing a line per event.
     Command(Child, Arc<AtomicBool>),
     /// Hyprland's event socket, read by a thread until `stop`.
@@ -118,6 +140,7 @@ pub(super) fn start_events() -> bool {
             Command::new("xprop").args(["-root", "-spy", "_NET_ACTIVE_WINDOW"]),
             |_| true,
         ),
+        (desktop, session) if uses_wlr(&desktop, session) => wlr::start().then_some(Events::Wlr),
         _ => None,
     };
     let started = events.is_some();
@@ -131,6 +154,7 @@ pub(super) fn start_events() -> bool {
 pub(super) fn events_active() -> bool {
     match EVENTS.lock().ok().as_deref() {
         Some(Some(Events::Kwin)) => kwin::active(),
+        Some(Some(Events::Wlr)) => wlr::active(),
         Some(Some(Events::Command(_, alive) | Events::Socket { alive, .. })) => {
             alive.load(Ordering::SeqCst)
         }
@@ -142,6 +166,7 @@ pub(super) fn stop_events() {
     let events = EVENTS.lock().ok().and_then(|mut slot| slot.take());
     match events {
         Some(Events::Kwin) => kwin::stop(),
+        Some(Events::Wlr) => wlr::stop(),
         Some(Events::Command(mut child, _)) => {
             let _ = child.kill();
             let _ = child.wait();
@@ -413,17 +438,26 @@ fn detect_x11(titles: bool) -> Result<Option<ActiveWindow>, ()> {
     if !window_id.starts_with("0x") {
         return Err(());
     }
-    x11_window(window_id, titles)
+    x11_window(window_id, titles, true)
 }
 
-fn x11_window(window_id: &str, titles: bool) -> Result<Option<ActiveWindow>, ()> {
+/// One X11 window; `geometry` also checks whether a borderless window
+/// covers a monitor, which costs two more commands.
+fn x11_window(window_id: &str, titles: bool, geometry: bool) -> Result<Option<ActiveWindow>, ()> {
     let title = if titles {
         x11_title(window_id)?
     } else {
         String::new()
     };
     let class_output = run_cmd_with_timeout(
-        Command::new("xprop").args(["-id", window_id, "WM_CLASS", "_NET_WM_PID", "_NET_WM_STATE"]),
+        Command::new("xprop").args([
+            "-id",
+            window_id,
+            "WM_CLASS",
+            "_NET_WM_PID",
+            "_NET_WM_STATE",
+            "_NET_WM_BYPASS_COMPOSITOR",
+        ]),
         COMMAND_TIMEOUT_MS,
     )
     .ok_or(())?;
@@ -441,12 +475,119 @@ fn x11_window(window_id: &str, titles: bool) -> Result<Option<ActiveWindow>, ()>
     if title.is_empty() && app_id.is_empty() && process_name.is_none() {
         return Ok(None);
     }
+    let fullscreen = x11_fullscreen_hint(&stdout) || (geometry && x11_covers_monitor(window_id));
     Ok(Some(ActiveWindow {
         title,
         app_id,
         process_name,
-        fullscreen: Some(stdout.contains("_NET_WM_STATE_FULLSCREEN")),
+        fullscreen: Some(fullscreen),
     }))
+}
+
+/// Fullscreen as the window declares it: the EWMH state, or the request
+/// to bypass the compositor that SDL and most games make in fullscreen.
+fn x11_fullscreen_hint(xprop: &str) -> bool {
+    xprop.contains("_NET_WM_STATE_FULLSCREEN")
+        || xprop.lines().any(|line| {
+            line.starts_with("_NET_WM_BYPASS_COMPOSITOR")
+                && line
+                    .split_once('=')
+                    .is_some_and(|(_, value)| value.trim() == "1")
+        })
+}
+
+/// Whether the window covers a whole monitor: many games use a borderless
+/// window instead of real fullscreen. A decorated maximized window does
+/// not, its client area is smaller. Needs `xdotool`; monitors come from
+/// `xrandr`, or the whole screen without it.
+fn x11_covers_monitor(window_id: &str) -> bool {
+    let Some(window) = run_cmd_with_timeout(
+        Command::new("xdotool").args(["getwindowgeometry", "--shell", window_id]),
+        COMMAND_TIMEOUT_MS,
+    )
+    .filter(|output| output.status.success())
+    .and_then(|output| parse_xdotool_geometry(&String::from_utf8_lossy(&output.stdout))) else {
+        return false;
+    };
+    let monitors = run_cmd_with_timeout(
+        Command::new("xrandr").arg("--listactivemonitors"),
+        COMMAND_TIMEOUT_MS,
+    )
+    .filter(|output| output.status.success())
+    .map(|output| parse_xrandr_monitors(&String::from_utf8_lossy(&output.stdout)))
+    .filter(|monitors| !monitors.is_empty())
+    .or_else(|| {
+        run_cmd_with_timeout(
+            Command::new("xdotool").arg("getdisplaygeometry"),
+            COMMAND_TIMEOUT_MS,
+        )
+        .filter(|output| output.status.success())
+        .and_then(|output| {
+            let text = String::from_utf8_lossy(&output.stdout);
+            let mut size = text.split_whitespace().map(str::parse::<i64>);
+            Some(vec![Rect {
+                x: 0,
+                y: 0,
+                width: size.next()?.ok()?,
+                height: size.next()?.ok()?,
+            }])
+        })
+    })
+    .unwrap_or_default();
+    monitors.iter().any(|monitor| window.covers(monitor))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Rect {
+    x: i64,
+    y: i64,
+    width: i64,
+    height: i64,
+}
+
+impl Rect {
+    fn covers(&self, other: &Rect) -> bool {
+        self.x <= other.x
+            && self.y <= other.y
+            && self.x + self.width >= other.x + other.width
+            && self.y + self.height >= other.y + other.height
+    }
+}
+
+/// `xdotool getwindowgeometry --shell` prints `X=…`, `Y=…`, `WIDTH=…`,
+/// `HEIGHT=…` lines.
+fn parse_xdotool_geometry(text: &str) -> Option<Rect> {
+    let value = |name: &str| {
+        text.lines()
+            .find_map(|line| line.strip_prefix(name)?.strip_prefix('='))
+            .and_then(|value| value.trim().parse().ok())
+    };
+    Some(Rect {
+        x: value("X")?,
+        y: value("Y")?,
+        width: value("WIDTH")?,
+        height: value("HEIGHT")?,
+    })
+}
+
+/// Monitors from `xrandr --listactivemonitors`: lines like
+/// ` 0: +*DP-1 2560/597x1440/336+0+0  DP-1`.
+fn parse_xrandr_monitors(text: &str) -> Vec<Rect> {
+    text.lines()
+        .filter_map(|line| {
+            let geometry = line.split_whitespace().nth(2)?;
+            let (width, rest) = geometry.split_once('/')?;
+            let (_, rest) = rest.split_once('x')?;
+            let (height, rest) = rest.split_once('/')?;
+            let mut offsets = rest.splitn(3, '+').skip(1);
+            Some(Rect {
+                x: offsets.next()?.parse().ok()?,
+                y: offsets.next()?.parse().ok()?,
+                width: width.parse().ok()?,
+                height: height.parse().ok()?,
+            })
+        })
+        .collect()
 }
 
 fn x11_title(window_id: &str) -> Result<String, ()> {
@@ -481,7 +622,11 @@ pub(super) fn open_windows() -> Vec<OpenWindow> {
         }
         (_, SessionType::X11) => x11_client_ids()
             .iter()
-            .filter_map(|id| x11_window(id, command_available("xdotool")).ok().flatten())
+            .filter_map(|id| {
+                x11_window(id, command_available("xdotool"), false)
+                    .ok()
+                    .flatten()
+            })
             .collect(),
         _ => Vec::new(),
     };
@@ -596,6 +741,31 @@ mod tests {
         let xwayland = serde_json::json!({"floating_nodes": [{"focused": true, "name": "Game", "app_id": null, "window_properties": {"class": "Game.exe"}}]});
         assert_eq!(find_focused_window(&xwayland).unwrap().app_id, "Game.exe");
         assert!(find_focused_window(&serde_json::json!({"focused": true, "name": null})).is_none());
+    }
+
+    #[test]
+    fn x11_fullscreen_hints_and_geometry() {
+        assert!(x11_fullscreen_hint(
+            "_NET_WM_STATE(ATOM) = _NET_WM_STATE_FULLSCREEN, _NET_WM_STATE_FOCUSED"
+        ));
+        assert!(x11_fullscreen_hint(
+            "_NET_WM_BYPASS_COMPOSITOR(CARDINAL) = 1"
+        ));
+        assert!(!x11_fullscreen_hint(
+            "_NET_WM_BYPASS_COMPOSITOR(CARDINAL) = 2"
+        ));
+        assert!(!x11_fullscreen_hint(
+            "_NET_WM_BYPASS_COMPOSITOR:  not found.\n_NET_WM_STATE(ATOM) = _NET_WM_STATE_MAXIMIZED_VERT"
+        ));
+        let window =
+            parse_xdotool_geometry("WINDOW=1\nX=2560\nY=0\nWIDTH=1920\nHEIGHT=1080\nSCREEN=0\n")
+                .unwrap();
+        let monitors = parse_xrandr_monitors(
+            "Monitors: 2\n 0: +*DP-1 2560/597x1440/336+0+0  DP-1\n 1: +HDMI-1 1920/527x1080/296+2560+0  HDMI-1\n",
+        );
+        assert_eq!(monitors.len(), 2);
+        assert!(!window.covers(&monitors[0]));
+        assert!(window.covers(&monitors[1]));
     }
 
     #[test]

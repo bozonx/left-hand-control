@@ -79,6 +79,7 @@ pub(crate) fn refresh(ui: &SettingsWindow, status: &GameModeStatus) {
     state.set_game_processes_availability(availability_message(status.detectors.processes).to_ui());
     state
         .set_game_window_availability(availability_message(status.detectors.active_window).to_ui());
+    state.set_game_known_availability(availability_message(status.detectors.known_games).to_ui());
     state.set_game_missing_tool(
         status
             .detectors
@@ -106,6 +107,7 @@ fn automatic_message(status: &GameModeStatus) -> Msg {
     }
     match &status.automatic_method {
         Some(GameModeMethod::Daemon) => Msg::GameModeDaemonActive,
+        Some(GameModeMethod::KnownGame(name)) => Msg::GameModeKnownGameActive(name.clone()),
         Some(GameModeMethod::Fullscreen) => Msg::GameModeFullscreenActive,
         Some(GameModeMethod::Process(name)) => Msg::GameModeProcessActive(name.clone()),
         Some(GameModeMethod::Manual) | None if !status.automatic_available => {

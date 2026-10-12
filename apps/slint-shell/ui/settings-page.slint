@@ -45,6 +45,11 @@ export global SettingsEditor {
     in-out property <int> tab;
     in-out property <bool> use-gamemoded: true;
     in-out property <bool> use-fullscreen;
+    in-out property <bool> use-known-games: true;
+    /// Built-in lists, comma-separated: applications whose fullscreen
+    /// windows are not games, and launchers that never count as games.
+    in property <string> fullscreen-non-games;
+    in property <string> game-launchers;
     in property <[ProcessRow]> process-matchers;
     /// Names of `process-matchers`, for the application picker.
     in property <[string]> process-names;
@@ -81,6 +86,26 @@ export global SettingsEditor {
     /// Row index, only-active-window, exclude.
     callback set-process-flags(int, bool, bool);
     callback delete-process(int);
+}
+
+/// A built-in list behind a disclosure button, so users can see what the
+/// application decides on its own.
+component BuiltinList inherits VerticalLayout {
+    in property <string> title;
+    in property <string> items;
+    private property <bool> expanded;
+    spacing: 4px;
+    vertical-stretch: 0;
+    HorizontalLayout {
+        alignment: start;
+        IconButton {
+            icon: root.expanded ? @image-url("icons/chevron-down.svg") : @image-url("icons/chevron-right.svg");
+            text: root.title;
+            clicked => { root.expanded = !root.expanded; }
+        }
+    }
+    if root.expanded: Text { text: root.items; color: Theme.muted; wrap: word-wrap; }
+    if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it under Games and exclusions."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
 }
 
 component Section inherits Rectangle {
@@ -493,6 +518,17 @@ export component SettingsPage inherits VerticalBox {
                         }
                         if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.muted; wrap: word-wrap; }
                         if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("Fullscreen detection tools are missing or could not query the session."); color: SettingsEditor.use-fullscreen ? Theme.warning : Theme.muted; wrap: word-wrap; }
+                        BuiltinList { title: @tr("Ignored in fullscreen"); items: SettingsEditor.fullscreen-non-games; }
+                    }
+                    VerticalBox {
+                        padding: 0px; spacing: 4px; vertical-stretch: 0;
+                        HorizontalLayout {
+                            spacing: 6px; alignment: start;
+                            CheckBox { text: @tr("Recognize known games"); checked <=> SettingsEditor.use-known-games; toggled => { SettingsEditor.save(); } enabled: AppState.game-known-availability.id != "capability-unsupported"; }
+                            VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game started by Steam or Lutris runs, or while the active window belongs to an application of the Game category. On Windows also while a game from the Game Bar list runs. Launchers themselves never count."); } }
+                        }
+                        if AppState.game-known-availability.id == "capability-unsupported": Text { text: @tr("Known games cannot be recognized on this system."); color: Theme.muted; wrap: word-wrap; }
+                        BuiltinList { title: @tr("Never counted as games"); items: SettingsEditor.game-launchers; }
                     }
                     if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: "⚠ " + @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }
 
