@@ -351,14 +351,15 @@ export component RuleDialogOverlay inherits FocusScope {
         Rectangle {
             x: (parent.width - self.width) / 2;
             y: 32px;
-            width: min(parent.width - 48px, RulesEditor.dialog == RuleDialog.conditions ? 880px : 560px);
-            height: min(parent.height - 64px, 620px);
+            width: min(parent.width - 48px, RulesEditor.dialog == RuleDialog.conditions ? 680px : 560px);
+            // Conditions fit their content; the other dialogs keep a fixed height.
+            height: min(parent.height - 64px, RulesEditor.dialog == RuleDialog.conditions ? dialog-box.preferred-height : 620px);
             background: Theme.surface;
             border-color: Theme.border;
             border-width: 1px;
             border-radius: 12px;
             TouchArea {}
-            VerticalBox { padding: 22px; spacing: 10px;
+            dialog-box := VerticalBox { padding: 22px; spacing: 10px;
                 Text {
                     text: RulesEditor.dialog == RuleDialog.key ? @tr("Choose a key or combination for the trigger")
                         : RulesEditor.dialog == RuleDialog.layer ? @tr("Choose layer")
@@ -369,7 +370,8 @@ export component RuleDialogOverlay inherits FocusScope {
                     color: Theme.text; font-size: 22px; font-weight: 700;
                 }
                 if RulesEditor.dialog == RuleDialog.conditions: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                    ConditionsForm {
+                    preferred-height: conditions-form.preferred-height;
+                    conditions-form := ConditionsForm {
                         heading: @tr("If");
                         show-exclusions: true;
                         game <=> RulesEditor.game-mode; languages <=> RulesEditor.layouts;
@@ -416,7 +418,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold timeout, ms") : @tr("Double-tap ms");
                     accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
                 }
-                Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
+                if RulesEditor.status.id != "": Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
                 if RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.advanced: Rectangle { vertical-stretch: 1; }
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     if RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions: Button {

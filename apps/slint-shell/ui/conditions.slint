@@ -328,7 +328,7 @@ export component AppEntryOverlay inherits Rectangle {
                     Rectangle {
                         vertical-stretch: 1;
                         border-width: 1px; border-color: Theme.divider; border-radius: 8px; background: Theme.card;
-                        ScrollView { viewport-width: self.visible-width;
+                        ScrollView { width: 100%; height: 100%; viewport-width: self.visible-width;
                             VerticalLayout { padding: 6px; spacing: 2px; alignment: start;
                                 if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
                                 if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; wrap: word-wrap; }
@@ -450,7 +450,7 @@ export component ConditionsForm inherits VerticalLayout {
     /// Unknown until the first status counts as available.
     private property <bool> detection-available: AppState.game-window-availability.id != "capability-unavailable"
         && AppState.game-window-availability.id != "capability-unsupported";
-    spacing: 24px;
+    spacing: 16px;
     VerticalLayout { spacing: 12px;
         if root.heading != "": Text { text: root.heading; color: Theme.text; font-weight: 600; }
         HorizontalLayout { spacing: 24px;
