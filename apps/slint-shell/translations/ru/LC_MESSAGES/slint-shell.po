@@ -2264,3 +2264,15 @@ msgstr "Выделить всё"
 
 msgid "Clear search"
 msgstr "Очистить поиск"
+
+msgid "Add application"
+msgstr "Добавить приложение"
+
+msgid "Edit application"
+msgstr "Изменить приложение"
+
+msgid "Remove application?"
+msgstr "Удалить приложение?"
+
+msgid "“{}” will be removed from the list."
+msgstr "«{}» будет удалено из списка."

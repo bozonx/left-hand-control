@@ -3,7 +3,7 @@ import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { GameCondition } from "types.slint";
 import { AppState } from "app-state.slint";
-import { Badge, ButtonGroup, IconButton, InfoTip } from "controls.slint";
+import { Badge, ButtonGroup, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
 import { Button, CheckBox, RadioGroup } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
@@ -44,8 +44,6 @@ export global ConditionChoices {
     pure callback processes(windows: [WindowChoice], query: string) -> [string];
     /// How many open windows the pattern matches.
     pure callback open-count(windows: [WindowChoice], pattern: string) -> int;
-    /// Open applications and running processes containing the query, without `selected` ones.
-    pure callback suggest(windows: [WindowChoice], selected: [string], query: string) -> [WindowChoice];
     /// Text of a pattern without the title prefix.
     public pure function text(pattern: string) -> string {
         return self.is-title(pattern) ? self.title-text(pattern) : pattern;
@@ -158,44 +156,6 @@ export component AppPicker inherits Rectangle {
     }
 }
 
-/// Whether a pattern matches by app id / process or by window title;
-/// clicking switches it.
-component MatchKind inherits Rectangle {
-    in property <bool> title;
-    callback clicked();
-    width: 120px;
-    height: 24px;
-    border-radius: 5px;
-    background: touch.has-hover || focus.has-focus ? Theme.selected : Theme.hover;
-    border-width: focus.has-focus ? 2px : 0px;
-    border-color: Theme.focus;
-    accessible-role: button;
-    accessible-label: (root.title ? @tr("Window title") : @tr("Application")) + ". " + @tr("Click to switch");
-    accessible-action-default => { root.clicked(); }
-    HorizontalLayout {
-        padding-left: 7px; padding-right: 7px; spacing: 5px;
-        VerticalLayout { alignment: center;
-            Image { width: 14px; height: 14px; colorize: Theme.text; source: root.title ? @image-url("icons/text-cursor-input.svg") : @image-url("icons/app-window.svg"); }
-        }
-        Text { text: root.title ? @tr("Window title") : @tr("Application"); color: Theme.text; font-size: 12px; overflow: elide; vertical-alignment: center; horizontal-stretch: 1; }
-    }
-    focus := FocusScope {
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
-            return reject;
-        }
-    }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
-    if touch.has-hover: Tooltip {
-        Rectangle {
-            background: Theme.card; border-radius: 4px; border-width: 1px; border-color: Theme.border;
-            HorizontalLayout { padding: 6px;
-                Text { text: root.title ? @tr("Match by app ID or process instead") : @tr("Match by window title instead"); color: Theme.text; font-size: 12px; }
-            }
-        }
-    }
-}
-
 /// How many open windows a pattern matches; empty until the list is known.
 component OpenCount inherits Text {
     in property <string> pattern;
@@ -207,65 +167,245 @@ component OpenCount inherits Text {
     vertical-alignment: center;
 }
 
-/// A suggestion under the add field.
-component SuggestionRow inherits Rectangle {
-    in property <WindowChoice> choice;
+/// Whether a pattern matches by app id / process or by window title.
+component MatchKind inherits HorizontalLayout {
+    in property <bool> title;
+    width: 120px;
+    spacing: 5px;
+    VerticalLayout { alignment: center;
+        Image { width: 14px; height: 14px; colorize: Theme.muted; source: root.title ? @image-url("icons/text-cursor-input.svg") : @image-url("icons/app-window.svg"); }
+    }
+    Text { text: root.title ? @tr("Window title") : @tr("Application"); color: Theme.muted; font-size: 12px; overflow: elide; vertical-alignment: center; horizontal-stretch: 1; }
+}
+
+/// The add / edit dialog and the removal prompt of an applications list.
+/// They are drawn above the dialog holding the list, so the list hands
+/// over its value and applies `result` when `revision` changes.
+export global AppEntryDialog {
+    /// The add / edit dialog is open.
+    in-out property <bool> editing;
+    /// The removal prompt is open.
+    in-out property <bool> removing;
+    /// Which list opened the dialog: the exclusion list or the other one.
+    in-out property <bool> exclusion;
+    in-out property <string> value;
+    /// Edited item; -1 adds a new one.
+    in-out property <int> index: -1;
+    in-out property <bool> title-mode;
+    in-out property <string> text;
+    out property <string> result;
+    out property <int> revision;
+    private property <string> item;
+    public function open(value: string, exclusion: bool, index: int) {
+        root.value = value;
+        root.exclusion = exclusion;
+        root.index = index;
+        if index >= 0 {
+            root.item = ConditionChoices.items(value)[index];
+            root.title-mode = ConditionChoices.is-title(root.item);
+            root.text = ConditionChoices.text(root.item);
+        } else {
+            root.title-mode = false;
+            root.text = "";
+        }
+        root.removing = false;
+        root.editing = true;
+        ConditionChoices.refresh-open-windows();
+    }
+    public function confirm-remove(value: string, exclusion: bool, index: int) {
+        root.value = value;
+        root.exclusion = exclusion;
+        root.index = index;
+        root.editing = false;
+        root.removing = true;
+    }
+    public function close() { root.editing = false; root.removing = false; }
+    public function save() {
+        if root.valid() {
+            root.finish(root.index >= 0 ? ConditionChoices.replace(root.value, root.index, root.pattern()) : ConditionChoices.add(root.value, root.pattern()));
+        }
+    }
+    public function remove() { root.finish(ConditionChoices.remove(root.value, root.index)); }
+    function finish(value: string) {
+        root.result = value;
+        root.revision += 1;
+        root.close();
+    }
+    public pure function pattern() -> string { return ConditionChoices.make-pattern(root.text, root.title-mode); }
+    /// The other items of the list, to reject duplicates.
+    pure function others() -> [string] {
+        return ConditionChoices.items(root.index >= 0 ? ConditionChoices.remove(root.value, root.index) : root.value);
+    }
+    public pure function duplicate() -> bool { return ConditionChoices.has(root.others(), root.pattern()); }
+    public pure function valid() -> bool { return ConditionChoices.text(root.pattern()) != "" && !root.duplicate(); }
+}
+
+/// An open window to fill the dialog field with: the application, or in
+/// title mode one of its window titles.
+component WindowRow inherits Rectangle {
+    in property <string> text;
+    in property <string> detail;
+    in property <string> badge;
+    in property <bool> selected;
+    in property <image> icon: @image-url("icons/app-window.svg");
     callback clicked();
     height: row.preferred-height;
     border-radius: 6px;
-    background: touch.has-hover ? Theme.hover : transparent;
+    background: root.selected ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
     accessible-role: button;
-    accessible-label: root.choice.pattern;
+    accessible-label: root.text;
     accessible-action-default => { root.clicked(); }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
     row := HorizontalLayout {
         padding: 6px; spacing: 8px;
         VerticalLayout { alignment: center;
-            Image { width: 16px; height: 16px; colorize: Theme.muted; source: root.choice.app-id == "" ? @image-url("icons/terminal.svg") : @image-url("icons/app-window.svg"); }
+            Image { width: 16px; height: 16px; colorize: Theme.muted; source: root.icon; }
         }
         VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 2px;
-            Text {
-                text: root.choice.app-id == "" ? root.choice.process
-                    : root.choice.process == "" || root.choice.process == root.choice.app-id ? root.choice.app-id
-                    : root.choice.app-id + " · " + root.choice.process;
-                color: Theme.text; overflow: elide;
+            HorizontalLayout { spacing: 6px;
+                Text { text: root.text; color: Theme.text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+                if root.badge != "": Badge { text: root.badge; fill: Theme.accent.transparentize(0.75); }
             }
-            Text {
-                text: root.choice.app-id == "" ? @tr("Running process") : root.choice.title;
-                color: Theme.muted; font-size: 12px; overflow: elide;
-            }
+            if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: 12px; overflow: elide; }
+        }
+        if root.selected: VerticalLayout { alignment: center;
+            Image { width: 16px; height: 16px; colorize: Theme.accent; source: @image-url("icons/check.svg"); }
         }
     }
 }
 
+/// The add / edit dialog and the removal prompt of `AppEntryDialog`;
+/// placed over the whole settings window.
+export component AppEntryOverlay inherits Rectangle {
+    private property <string> typed: AppEntryDialog.pattern();
+    if AppEntryDialog.editing: Rectangle {
+        background: #00000099;
+        TouchArea { clicked => { AppEntryDialog.close(); } }
+        FocusScope {
+            focus-on-tab-navigation: false;
+            key-pressed(event) => {
+                if event.text == Key.Escape { AppEntryDialog.close(); return accept; }
+                return reject;
+            }
+            Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                width: min(parent.width - 48px, 520px);
+                height: min(parent.height - 64px, 600px);
+                background: Theme.surface;
+                border-color: Theme.border;
+                border-width: 1px;
+                border-radius: 12px;
+                TouchArea {}
+                VerticalLayout { padding: 20px; spacing: 10px;
+                    Text {
+                        text: AppEntryDialog.index >= 0 ? @tr("Edit application") : @tr("Add application");
+                        color: Theme.text; font-size: 18px; font-weight: 700;
+                    }
+                    ButtonGroup {
+                        labels: [@tr("Application"), @tr("Window title")];
+                        selected-index: AppEntryDialog.title-mode ? 1 : 0;
+                        selected(index) => { AppEntryDialog.title-mode = index == 1; input.focus(); }
+                    }
+                    input := TextField {
+                        text <=> AppEntryDialog.text;
+                        placeholder-text: AppEntryDialog.title-mode ? @tr("Text the window title contains") : @tr("App ID or process, * and ? allowed");
+                        invalid: AppEntryDialog.text != "" && AppEntryDialog.duplicate();
+                        init => { self.focus(); self.select-all(); }
+                        accepted => { AppEntryDialog.save(); }
+                    }
+                    if AppEntryDialog.text != "" && AppEntryDialog.duplicate(): Text { text: @tr("Already in the list"); color: Theme.error; font-size: 12px; }
+                    if AppEntryDialog.text != "" && !AppEntryDialog.duplicate() && ConditionChoices.open-windows-ready: Text {
+                        text: ConditionChoices.open-count(ConditionChoices.open-windows, root.typed) > 0
+                            ? @tr("Matches {n} open window" | "Matches {n} open windows" % ConditionChoices.open-count(ConditionChoices.open-windows, root.typed))
+                            : @tr("Matches no open window");
+                        color: Theme.muted; font-size: 12px;
+                    }
+                    HorizontalLayout { spacing: 8px; padding-top: 6px;
+                        Text { text: @tr("Open windows"); color: Theme.muted; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; }
+                        IconButton { text: @tr("Refresh"); enabled: !ConditionChoices.open-windows-loading; clicked => { ConditionChoices.refresh-open-windows(); } }
+                    }
+                    Rectangle {
+                        vertical-stretch: 1;
+                        border-width: 1px; border-color: Theme.divider; border-radius: 8px; background: Theme.card;
+                        ScrollView { viewport-width: self.visible-width;
+                            VerticalLayout { padding: 6px; spacing: 2px; alignment: start;
+                                if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
+                                if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; wrap: word-wrap; }
+                                if !AppEntryDialog.title-mode: VerticalLayout { spacing: 2px;
+                                    for window in ConditionChoices.open-windows: WindowRow {
+                                        text: window.process == "" || window.process == window.app-id ? window.pattern : window.app-id + " · " + window.process;
+                                        detail: window.count > 1 ? @tr("{n} window" | "{n} windows" % window.count) + " · " + window.title : window.title;
+                                        badge: window.recent ? @tr("Last active") : "";
+                                        selected: ConditionChoices.has([window.pattern], ConditionChoices.make-pattern(AppEntryDialog.text, false));
+                                        clicked => { AppEntryDialog.text = window.pattern; input.focus(); }
+                                    }
+                                }
+                                if AppEntryDialog.title-mode: VerticalLayout { spacing: 2px;
+                                    for window in ConditionChoices.open-windows: VerticalLayout { spacing: 2px;
+                                        for title in window.titles: WindowRow {
+                                            visible: title != "";
+                                            height: title != "" ? self.preferred-height : 0px;
+                                            text: title;
+                                            detail: window.pattern;
+                                            icon: @image-url("icons/text-cursor-input.svg");
+                                            badge: window.recent ? @tr("Last active") : "";
+                                            selected: AppEntryDialog.text == title;
+                                            clicked => { AppEntryDialog.text = title; input.focus(); }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    HorizontalLayout { spacing: 8px; alignment: end;
+                        Button { text: @tr("Cancel"); clicked => { AppEntryDialog.close(); } }
+                        Button {
+                            text: AppEntryDialog.index >= 0 ? @tr("Save") : @tr("Add");
+                            primary: true;
+                            enabled: AppEntryDialog.valid();
+                            clicked => { AppEntryDialog.save(); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if AppEntryDialog.removing: ConfirmDialog {
+        width: 100%; height: 100%;
+        title: @tr("Remove application?");
+        body: @tr("“{}” will be removed from the list.", ConditionChoices.label(ConditionChoices.items(AppEntryDialog.value)[AppEntryDialog.index]));
+        confirm-text: @tr("Remove");
+        cancel => { AppEntryDialog.close(); }
+        confirm => { AppEntryDialog.remove(); }
+    }
+}
+
 /// A flat list of window patterns: each row shows whether it matches by
-/// app or by title and how many open windows it matches; new patterns are
-/// typed with suggestions or chosen from the open windows.
+/// app or by title and how many open windows it matches; items are added
+/// and edited in `AppEntryOverlay`, removed after a prompt.
 export component ApplicationsField inherits VerticalLayout {
     in-out property <string> value;
     in property <string> label: @tr("Apply in windows");
     in property <bool> exclusion;
-    private property <bool> picking;
-    private property <bool> title-mode;
-    private property <string> query;
     private property <[string]> items: ConditionChoices.items(root.value);
-    private property <string> typed: ConditionChoices.make-pattern(root.query, root.title-mode);
-    private property <bool> duplicate: ConditionChoices.has(root.items, root.typed);
-    private property <[WindowChoice]> suggestions: root.title-mode ? [] : ConditionChoices.suggest(ConditionChoices.open-windows, root.items, root.query);
+    private property <int> revision: AppEntryDialog.revision;
     /// Unknown until the first status counts as available.
     private property <bool> detection-available: AppState.game-window-availability.id != "capability-unavailable"
         && AppState.game-window-availability.id != "capability-unsupported";
-    function add(pattern: string) {
-        if ConditionChoices.text(pattern) != "" {
-            root.value = ConditionChoices.add(root.value, pattern);
-        }
-        root.query = "";
+    changed revision => {
+        if AppEntryDialog.exclusion == root.exclusion { root.value = AppEntryDialog.result; }
     }
     init => { ConditionChoices.refresh-open-windows(); }
     spacing: 8px;
-    HorizontalLayout { spacing: 6px; alignment: start;
+    HorizontalLayout { spacing: 6px;
         Text { text: root.label; color: Theme.text; vertical-alignment: center; }
         InfoTip { text: @tr("An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions."); }
+        Rectangle { horizontal-stretch: 1; }
+        IconButton {
+            icon: @image-url("icons/plus.svg"); text: @tr("Add");
+            clicked => { AppEntryDialog.open(root.value, root.exclusion, -1); }
+        }
     }
     Text { text: root.exclusion ? @tr("A match blocks the rule, even if the window is in the allowed list.") : @tr("Any match allows the rule. An empty list allows all windows."); color: Theme.muted; wrap: word-wrap; }
     if !root.detection-available: Text {
@@ -284,68 +424,17 @@ export component ApplicationsField inherits VerticalLayout {
             for item[index] in root.items: Rectangle {
                 height: item-row.preferred-height; border-radius: 6px;
                 background: item-touch.has-hover ? Theme.hover : transparent;
-                item-touch := TouchArea { }
+                item-touch := TouchArea { mouse-cursor: pointer; clicked => { AppEntryDialog.open(root.value, root.exclusion, index); } }
                 item-row := HorizontalLayout {
-                    padding-left: 4px; padding-right: 2px; padding-top: 2px; padding-bottom: 2px; spacing: 10px;
-                    VerticalLayout { alignment: center;
-                        MatchKind {
-                            title: ConditionChoices.is-title(item);
-                            clicked => { root.value = ConditionChoices.replace(root.value, index, ConditionChoices.make-pattern(ConditionChoices.text(item), !self.title)); }
-                        }
-                    }
+                    padding-left: 6px; padding-right: 2px; padding-top: 2px; padding-bottom: 2px; spacing: 10px;
+                    MatchKind { title: ConditionChoices.is-title(item); }
                     Text { text: ConditionChoices.text(item); color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center; }
                     if root.detection-available: OpenCount { pattern: item; }
-                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); clicked => { root.value = ConditionChoices.remove(root.value, index); } } }
-                }
-            }
-            if !root.picking: Rectangle { height: 1px; background: Theme.divider; }
-            if !root.picking: HorizontalLayout {
-                padding-top: 4px; spacing: 8px;
-                ButtonGroup {
-                    labels: [@tr("Application"), @tr("Window title")];
-                    selected-index: root.title-mode ? 1 : 0;
-                    selected(index) => { root.title-mode = index == 1; }
-                }
-                input := TextField {
-                    horizontal-stretch: 1;
-                    text <=> root.query;
-                    placeholder-text: root.title-mode ? @tr("Text the window title contains") : @tr("App ID or process, * and ? allowed");
-                    accepted => { if !root.duplicate { root.add(root.typed); } }
-                    changed has-focus => { if self.has-focus { ConditionChoices.refresh-open-windows(); } }
-                }
-                VerticalLayout { alignment: center;
-                    IconButton {
-                        icon: @image-url("icons/plus.svg"); label: @tr("Add"); tooltip: root.duplicate ? @tr("Already in the list") : @tr("Add");
-                        enabled: root.typed != "" && ConditionChoices.text(root.typed) != "" && !root.duplicate;
-                        clicked => { root.add(root.typed); }
-                    }
-                }
-                VerticalLayout { alignment: center;
-                    IconButton {
-                        icon: @image-url("icons/app-window.svg"); label: @tr("Choose from open windows…"); tooltip: @tr("Choose from open windows…");
-                        clicked => { root.picking = true; ConditionChoices.refresh-open-windows(); }
-                    }
-                }
-            }
-            if !root.picking && root.query != "" && root.detection-available && ConditionChoices.open-windows-ready: Text {
-                text: ConditionChoices.open-count(ConditionChoices.open-windows, root.typed) > 0
-                    ? @tr("Matches {n} open window" | "Matches {n} open windows" % ConditionChoices.open-count(ConditionChoices.open-windows, root.typed))
-                    : @tr("Matches no open window");
-                color: Theme.muted; font-size: 12px;
-            }
-            if !root.picking && root.suggestions.length > 0: VerticalLayout { spacing: 2px;
-                for choice in root.suggestions: SuggestionRow {
-                    choice: choice;
-                    clicked => { root.add(choice.pattern); }
+                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/pencil.svg"); label: @tr("Edit"); tooltip: @tr("Edit"); clicked => { AppEntryDialog.open(root.value, root.exclusion, index); } } }
+                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); clicked => { AppEntryDialog.confirm-remove(root.value, root.exclusion, index); } } }
                 }
             }
         }
-    }
-    if root.picking: AppPicker {
-        selected: root.items;
-        title: root.exclusion ? @tr("Choose applications to exclude") : @tr("Choose applications");
-        toggled(pattern, on, window) => { root.value = ConditionChoices.toggle(root.value, pattern, on); }
-        done => { root.picking = false; }
     }
 }
 

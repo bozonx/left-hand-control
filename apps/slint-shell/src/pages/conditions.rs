@@ -8,8 +8,6 @@ use std::time::{Duration, Instant};
 
 /// How many running processes the picker lists.
 const PROCESSES: usize = 8;
-/// How many suggestions the add field shows.
-const SUGGESTIONS: usize = 6;
 
 thread_local! {
     /// Running processes, re-read when older than two seconds.
@@ -83,45 +81,6 @@ fn open_matches(windows: &[WindowChoice], pattern: &str) -> usize {
                 .count()
         })
         .sum()
-}
-
-/// Open applications, then running processes, containing `query` and not
-/// yet in `selected`; a process row has only `pattern` and `process`.
-fn suggestions(
-    windows: &[WindowChoice],
-    processes: &[String],
-    selected: &[String],
-    query: &str,
-) -> Vec<WindowChoice> {
-    let query = query.trim().to_lowercase();
-    if query.is_empty() {
-        return Vec::new();
-    }
-    let listed = |pattern: &str| {
-        selected
-            .iter()
-            .any(|item| item.eq_ignore_ascii_case(pattern))
-    };
-    let taken = windows
-        .iter()
-        .flat_map(|window| [window.pattern.to_string(), window.process.to_string()])
-        .chain(selected.iter().cloned())
-        .collect::<Vec<_>>();
-    windows
-        .iter()
-        .filter(|window| window_matches(window, &query) && !listed(&window.pattern))
-        .cloned()
-        .chain(
-            process_matches(processes, &taken, &query)
-                .into_iter()
-                .map(|name| WindowChoice {
-                    pattern: name.as_str().into(),
-                    process: name.into(),
-                    ..Default::default()
-                }),
-        )
-        .take(SUGGESTIONS)
-        .collect()
 }
 
 /// Mark the active application and put it first, the others by app id.
@@ -222,21 +181,6 @@ pub(super) fn bind(ui: &SettingsWindow) {
     choices.on_open_count(|windows, pattern| {
         let windows = windows.iter().collect::<Vec<_>>();
         i32::try_from(open_matches(&windows, &pattern)).unwrap_or(i32::MAX)
-    });
-    choices.on_suggest(|windows, selected, query| {
-        let windows = windows.iter().collect::<Vec<_>>();
-        let selected = selected
-            .iter()
-            .map(|item| item.to_string())
-            .collect::<Vec<_>>();
-        let processes = if query.trim().is_empty() {
-            Vec::new()
-        } else {
-            running_processes()
-        };
-        ModelRc::new(VecModel::from(suggestions(
-            &windows, &processes, &selected, &query,
-        )))
     });
     choices.on_is_title(|pattern| app_match::title_text(&pattern).is_some());
     choices.on_title_text(|pattern| app_match::title_text(&pattern).unwrap_or("").into());
@@ -427,22 +371,6 @@ mod tests {
         assert_eq!(open_matches(&rows, "title:youtube"), 1);
         assert_eq!(open_matches(&rows, "steam_app_*"), 0);
         assert_eq!(open_matches(&rows, " "), 0);
-    }
-
-    #[test]
-    fn suggestions_skip_selected_ones() {
-        let rows = group(vec![
-            open("org.kde.kate", "kate", ""),
-            open("org.kde.dolphin", "dolphin", ""),
-        ]);
-        let processes = ["kded6".to_owned(), "kate".into()];
-        let found = suggestions(&rows, &processes, &["org.kde.dolphin".into()], "kd");
-        let patterns = found
-            .iter()
-            .map(|row| row.pattern.as_str())
-            .collect::<Vec<_>>();
-        assert_eq!(patterns, ["org.kde.kate", "kded6"]);
-        assert!(suggestions(&rows, &processes, &[], " ").is_empty());
     }
 
     #[test]

@@ -9,6 +9,7 @@ import { LayoutLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton } fro
 import { MacroEditor, MacrosPage } from "macros.slint";
 import { MenuEditor, MenusPage } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
+import { AppEntryDialog, AppEntryOverlay } from "conditions.slint";
 import { DragDrop } from "reorder.slint";
 import { SettingsPage, SettingsEditor } from "settings-page.slint";
 import { ConfirmDialog, IconButton, Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
@@ -70,7 +71,8 @@ export component SettingsWindow inherits Window {
     }
 
     property <bool> modal-open: root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
-        || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none;
+        || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none
+        || AppEntryDialog.editing || AppEntryDialog.removing;
     property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings && !LayoutLibrary.automatic
         && LayoutLibrary.current-label != "" && LayoutLibrary.current-label != LayoutLibrary.active-label;
 
@@ -278,6 +280,7 @@ export component SettingsWindow inherits Window {
     LibraryDialogOverlay {}
     RuleDialogOverlay {}
     LayerDialogOverlay {}
+    AppEntryOverlay { width: 100%; height: 100%; }
     if ActionPicker.opened: PickerOverlay {}
     ToastStack {
         x: parent.width - self.width - 20px;
