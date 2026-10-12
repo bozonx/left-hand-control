@@ -84,14 +84,6 @@ impl App {
         Ok(())
     }
 
-    /// Global popup hotkeys are off while a game runs, if the user asked.
-    fn popups_blocked_by_game(&self) -> bool {
-        lhc_core::runtime_state::game_mode_active()
-            && self
-                .document()
-                .is_some_and(|document| document.read().settings().game_mode.block_popups)
-    }
-
     pub(super) fn show(
         &self,
         window: Window,
@@ -100,9 +92,10 @@ impl App {
         token: Option<String>,
         page: Option<u8>,
     ) {
+        // A popup would steal focus from the game, so hotkeys are ignored.
         if window.popup().is_some()
             && matches!(source, Source::Hotkey | Source::Evdev)
-            && self.popups_blocked_by_game()
+            && lhc_core::runtime_state::game_mode_active()
         {
             return;
         }

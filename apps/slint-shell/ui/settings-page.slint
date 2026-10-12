@@ -50,8 +50,6 @@ export global SettingsEditor {
     in property <[string]> process-names;
     /// The application picker is shown under the list.
     in-out property <bool> process-browsing;
-    in-out property <bool> remember-game-control;
-    in-out property <bool> block-game-popups;
     /// Enabled rules of the current layout with a game-mode condition.
     in property <int> game-rule-count;
     /// Enabled automatic layout rules with a game-mode condition.
@@ -391,8 +389,6 @@ export component SettingsPage inherits VerticalBox {
                         text: @tr("Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}.", SettingsEditor.game-rule-count, SettingsEditor.game-auto-rule-count);
                     }
                     if SettingsEditor.game-auto-rule-count > 0 && !LayoutLibrary.automatic: Text { vertical-stretch: 0; text: @tr("Automatic layout rules apply only when the layout is chosen automatically (Layouts page)."); color: Theme.warning; wrap: word-wrap; }
-                    CheckBox { text: @tr("Remember On and Off after restart"); checked <=> SettingsEditor.remember-game-control; toggled => { SettingsEditor.save(); } }
-                    CheckBox { text: @tr("Ignore popup hotkeys while game mode is on"); checked <=> SettingsEditor.block-game-popups; toggled => { SettingsEditor.save(); } }
 
                     Text { vertical-stretch: 0; text: @tr("Automatic detection"); color: Theme.text; font-weight: 600; }
                     if AppState.is-linux: VerticalBox {

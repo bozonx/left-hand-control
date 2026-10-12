@@ -42,11 +42,7 @@ pub(crate) fn apply(mode: GameMode, document: Option<&Document>) -> Result<GameM
     let Some(document) = document else {
         return Ok(status);
     };
-    let persist = {
-        let config = document.read();
-        let settings = &config.settings().game_mode;
-        settings.remember_control && settings.control != status.control
-    };
+    let persist = document.read().settings().game_mode.control != status.control;
     if persist {
         document
             .edit(View::Shell, |config| {

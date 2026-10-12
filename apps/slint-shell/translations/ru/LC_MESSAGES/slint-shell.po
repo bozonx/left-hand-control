@@ -1290,9 +1290,6 @@ msgid "Auto: excluded by {}"
 msgstr "Auto: исключён правилом {}"
 
 
-msgid "On and Off last until restart. Auto keeps detecting in the background."
-msgstr "On и Off действуют до перезапуска. Auto продолжает определение в фоне."
-
 msgid "GameMode daemon: "
 msgstr "Служба GameMode: "
 
@@ -1935,9 +1932,6 @@ msgstr "GameMode не установлен: установите пакет game
 msgid "Games and exclusions"
 msgstr "Игры и исключения"
 
-msgid "Ignore popup hotkeys while game mode is on"
-msgstr "Не открывать попапы по горячим клавишам в игровом режиме"
-
 msgid "Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules."
 msgstr "Установите {}, чтобы определять активное и полноэкранное окно. Он же нужен для условий по приложениям в правилах."
 
@@ -1946,9 +1940,6 @@ msgstr "Игровой режим пока ни на что не влияет: �
 
 msgid "On and Off are remembered after restart. Auto keeps detecting in the background."
 msgstr "On и Off сохраняются после перезапуска. В режиме Auto определение работает в фоне."
-
-msgid "Remember On and Off after restart"
-msgstr "Помнить On и Off после перезапуска"
 
 msgid "Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}."
 msgstr "Правил текущей раскладки с условием игрового режима: {}. Авто-правил раскладок с условием игрового режима: {}."

@@ -197,7 +197,7 @@ pub fn toggle() -> GameModeStatus {
 }
 
 /// Use `settings` for detection from now on. The first call also restores
-/// a remembered Auto/On/Off choice.
+/// the last Auto/On/Off choice.
 pub fn set_settings(settings: &GameModeSettings) {
     let restore = {
         let Ok(mut cache) = CACHED_SETTINGS.lock() else {
@@ -205,7 +205,7 @@ pub fn set_settings(settings: &GameModeSettings) {
         };
         cache.settings = Some(settings.clone());
         cache.revision += 1;
-        !std::mem::replace(&mut cache.control_restored, true) && settings.remember_control
+        !std::mem::replace(&mut cache.control_restored, true)
     };
     if restore {
         set_control(settings.control);
@@ -516,9 +516,7 @@ mod tests {
             use_gamemoded: false,
             use_fullscreen: false,
             process_matchers: matchers,
-            remember_control: false,
             control: GameModeControl::Auto,
-            block_popups: false,
         }
     }
 

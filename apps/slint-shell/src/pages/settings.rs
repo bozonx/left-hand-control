@@ -43,8 +43,6 @@ struct Form {
     commands_enabled: bool,
     use_gamemoded: bool,
     use_fullscreen: bool,
-    remember_game_control: bool,
-    block_game_popups: bool,
     matchers: Vec<GameModeProcessMatcher>,
     text_mode: i32,
     ydotool: String,
@@ -82,8 +80,6 @@ impl Form {
             commands_enabled: settings.commands_enabled,
             use_gamemoded: settings.game_mode.use_gamemoded,
             use_fullscreen: settings.game_mode.use_fullscreen,
-            remember_game_control: settings.game_mode.remember_control,
-            block_game_popups: settings.game_mode.block_popups,
             matchers: settings.game_mode.process_matchers.clone(),
             text_mode: choice_index(
                 &TEXT_MODES,
@@ -119,8 +115,6 @@ impl Form {
             commands_enabled: e.get_commands_enabled(),
             use_gamemoded: e.get_use_gamemoded(),
             use_fullscreen: e.get_use_fullscreen(),
-            remember_game_control: e.get_remember_game_control(),
-            block_game_popups: e.get_block_game_popups(),
             matchers: matchers.to_vec(),
             text_mode: e.get_text_mode_index(),
             ydotool: e.get_ydotool_path().into(),
@@ -149,8 +143,6 @@ impl Form {
         e.set_commands_enabled(self.commands_enabled);
         e.set_use_gamemoded(self.use_gamemoded);
         e.set_use_fullscreen(self.use_fullscreen);
-        e.set_remember_game_control(self.remember_game_control);
-        e.set_block_game_popups(self.block_game_popups);
         show_matchers(&e, &self.matchers);
         e.set_text_mode_index(self.text_mode);
         e.set_ydotool_path(self.ydotool.clone().into());
@@ -199,8 +191,6 @@ impl Form {
         changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
-        changed!(remember_game_control => settings.game_mode.remember_control = self.remember_game_control);
-        changed!(block_game_popups => settings.game_mode.block_popups = self.block_game_popups);
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
         changed!(text_mode => settings.linux_wayland_text_mode = Some(choice(&TEXT_MODES, self.text_mode).into()));
         changed!(ydotool => settings.linux_ydotool_path = self.ydotool.trim().into());
@@ -431,9 +421,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     if let Err(error) = form.apply(&base, &mut settings) {
         return error;
     }
-    if settings.game_mode.remember_control {
-        settings.game_mode.control = lhc_core::gamemode::status().control;
-    }
+    settings.game_mode.control = lhc_core::gamemode::status().control;
     let saved = document.edit(View::Settings, |config| {
         config.update_settings(|current| *current = settings)
     });

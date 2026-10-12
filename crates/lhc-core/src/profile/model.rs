@@ -343,12 +343,8 @@ pub struct GameModeSettings {
     pub use_gamemoded: bool,
     pub use_fullscreen: bool,
     pub process_matchers: Vec<GameModeProcessMatcher>,
-    /// Restore `control` on startup instead of starting in `Auto`.
-    pub remember_control: bool,
-    /// Last Auto/On/Off choice; only meaningful with `remember_control`.
+    /// Last Auto/On/Off choice, restored on startup.
     pub control: GameModeControl,
-    /// Ignore the global popup hotkeys while game mode is active.
-    pub block_popups: bool,
 }
 
 /// Who decides whether game mode is active: detection or the user.
@@ -486,9 +482,7 @@ impl Default for AppSettings {
                 use_gamemoded: true,
                 use_fullscreen: false,
                 process_matchers: Vec::new(),
-                remember_control: false,
                 control: GameModeControl::Auto,
-                block_popups: false,
             },
             linux_wayland_text_mode: Some("libei".into()),
             linux_ydotool_path: String::new(),
