@@ -161,12 +161,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "text:Привет\nмир"
     );
     let layers = ui.global::<LayersEditor>();
-    layers.set_dialog_key("F13".into());
-    picker.invoke_open(PickerTarget::LayerKey, 0, "F13".into(), true);
-    picker.invoke_select_behavior(2);
-    picker.set_value("NumpadEnter".into());
-    picker.invoke_apply();
-    assert_eq!(layers.get_dialog_key(), "NumpadEnter");
     layers.set_dialog(LayerDialog::EditKey);
     picker.invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
     picker.invoke_select_behavior(2);

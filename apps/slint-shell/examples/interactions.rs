@@ -454,17 +454,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().layer_keymaps[&second].keys.len(),
         3
     );
+    // Choosing the key only moves on to its action; cancelling there adds nothing.
     layers.invoke_add_extra();
     picker.invoke_select_behavior(2);
     picker.set_value("F16".into());
     picker.invoke_apply();
+    assert!(picker.get_opened());
+    assert!(!picker.get_key_only());
+    assert!(!picker.get_allow_default());
+    assert_eq!(picker.get_subject(), "F16");
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].keys.len(),
+        3
+    );
+    picker.invoke_dismiss_picker();
+    assert_eq!(
+        document.read().layout().layer_keymaps[&second].keys.len(),
+        3
+    );
+    layers.invoke_add_extra();
+    picker.invoke_select_behavior(2);
+    picker.set_value("F16".into());
+    picker.invoke_apply();
+    picker.invoke_select_behavior(2);
+    picker.set_value("F1".into());
+    picker.invoke_apply();
+    assert!(!picker.get_opened());
     assert_eq!(
         document.read().layout().layer_keymaps[&second].keys.len(),
         4
     );
     assert_eq!(
         document.read().layout().layer_keymaps[&second].keys["F16"].as_deref(),
-        Some("F16")
+        Some("F1")
     );
     layers.invoke_reorder_extra(3, 0);
     assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F16");

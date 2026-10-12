@@ -17,7 +17,7 @@ use crate::profile::model::{
     LocalePreference,
 };
 use crate::profile::names::{self, NameIssue, NameKind};
-use crate::profile::{app_match, layout_file, settings};
+use crate::profile::{app_match, key_catalog, layout_file, settings};
 use crate::storage::{StoragePaths, TrackedFile, WriteError};
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, fmt};
@@ -446,15 +446,7 @@ impl ConfigDocument {
                 "unknown layer \"{layer_id}\""
             )));
         }
-        if let KeyAssignment::Action(action) = &assignment {
-            let parsed = Action::parse(Some(action));
-            if matches!(parsed, Action::Native | Action::Swallow) {
-                return Err(ConfigError::InvalidAction(ActionIssue::InvalidSyntax));
-            }
-            if let Some(issue) = actions::validate(&parsed, &self.config()) {
-                return Err(ConfigError::InvalidAction(issue));
-            }
-        }
+        self.check_assignment(&assignment)?;
         self.update_layout(|layout| {
             let map = layout.layer_keymap_mut(layer_id);
             let keys = &mut map.keys;
@@ -471,6 +463,67 @@ impl ConfigDocument {
                 }
             }
         })
+    }
+
+    /// Set an additional key of `layer_id`, replacing the row of `previous`
+    /// when it is given. The row keeps its display position.
+    pub fn set_extra_key(
+        &mut self,
+        layer_id: &str,
+        previous: Option<&str>,
+        key: &str,
+        assignment: KeyAssignment,
+    ) -> Result<(), ConfigError> {
+        self.require_layer(layer_id)?;
+        if !key_catalog::valid_key(key) {
+            return Err(ConfigError::Invalid("invalid additional key".into()));
+        }
+        if previous != Some(key)
+            && self
+                .layout
+                .layer_keymaps
+                .get(layer_id)
+                .is_some_and(|map| map.keys.contains_key(key))
+        {
+            return Err(ConfigError::Invalid("key already assigned".into()));
+        }
+        self.check_assignment(&assignment)?;
+        self.update_layout(|layout| {
+            let map = layout.layer_keymap_mut(layer_id);
+            if let Some(previous) = previous {
+                map.keys.remove(previous);
+                for code in &mut map.extra_key_order {
+                    if code == previous {
+                        *code = key.to_owned();
+                    }
+                }
+            }
+            match assignment {
+                KeyAssignment::Transparent => {
+                    map.keys.remove(key);
+                    map.extra_key_order.retain(|code| code != key);
+                }
+                KeyAssignment::Swallow => {
+                    map.keys.insert(key.into(), None);
+                }
+                KeyAssignment::Action(action) => {
+                    map.keys.insert(key.into(), Some(action));
+                }
+            }
+        })
+    }
+
+    fn check_assignment(&self, assignment: &KeyAssignment) -> Result<(), ConfigError> {
+        if let KeyAssignment::Action(action) = assignment {
+            let parsed = Action::parse(Some(action));
+            if matches!(parsed, Action::Native | Action::Swallow) {
+                return Err(ConfigError::InvalidAction(ActionIssue::InvalidSyntax));
+            }
+            if let Some(issue) = actions::validate(&parsed, &self.config()) {
+                return Err(ConfigError::InvalidAction(issue));
+            }
+        }
+        Ok(())
     }
 
     /// Exchange the entries of keys `a` and `b` in the keymap of `layer_id`.
@@ -949,6 +1002,57 @@ mod tests {
                 .extra_key_order
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn extra_keys_are_validated_and_keep_their_position() {
+        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        for key in ["F13", "F14"] {
+            document
+                .set_extra_key("nav", None, key, KeyAssignment::Swallow)
+                .unwrap();
+        }
+        document
+            .reorder_extra_keys("nav", vec!["F13".into(), "F14".into()], 0, 1)
+            .unwrap();
+        assert!(
+            document
+                .set_extra_key("nav", None, "F13", KeyAssignment::Swallow)
+                .is_err()
+        );
+        assert!(
+            document
+                .set_extra_key("nav", None, "NoSuchKey", KeyAssignment::Swallow)
+                .is_err()
+        );
+        assert!(
+            document
+                .set_extra_key(
+                    "nav",
+                    None,
+                    "F15",
+                    KeyAssignment::Action("macro:none".into())
+                )
+                .is_err()
+        );
+        document
+            .set_extra_key(
+                "nav",
+                Some("F13"),
+                "F16",
+                KeyAssignment::Action("F1".into()),
+            )
+            .unwrap();
+        let map = &document.layout().layer_keymaps["nav"];
+        assert_eq!(map.extra_key_order, ["F14", "F16"]);
+        assert_eq!(map.keys["F16"].as_deref(), Some("F1"));
+        assert!(!map.keys.contains_key("F13"));
+        document
+            .set_extra_key("nav", Some("F16"), "F16", KeyAssignment::Transparent)
+            .unwrap();
+        let map = &document.layout().layer_keymaps["nav"];
+        assert_eq!(map.extra_key_order, ["F14"]);
+        assert!(!map.keys.contains_key("F16"));
     }
 
     #[test]

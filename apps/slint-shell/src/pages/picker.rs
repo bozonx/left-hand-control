@@ -339,6 +339,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
         picker.set_commands_enabled(doc.read().settings().commands_enabled);
         picker.set_command_only(target == PickerTarget::Command);
+        picker.set_subject("".into());
         picker.set_command_name("".into());
         picker.set_command_script("".into());
         picker.set_command_directory("".into());
@@ -380,19 +381,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     }),
         );
         let standalone_layer = picker.get_layer_action();
+        // An extra row exists only while it has an assignment, so it is
+        // removed with its delete button rather than by inheriting.
+        let extra_action = target == PickerTarget::ExtraAction;
         let double_tap = target == PickerTarget::Rule
             && matches!(
                 rule_field,
                 crate::ui::RuleDialog::DoubleTap | crate::ui::RuleDialog::LongHold
             );
         let allow_default = !key_only
-            && (standalone_layer
+            && ((standalone_layer && !extra_action)
                 || rule_action
                 || (double_tap && rule_field != crate::ui::RuleDialog::LongHold)
                 || matches!(target, PickerTarget::BaseKey));
         picker.set_allow_default(allow_default);
 
-        picker.set_inherit_default(standalone_layer);
+        picker.set_inherit_default(standalone_layer && !extra_action);
         picker.set_empty_default(double_tap);
         picker.set_quick_action(target == PickerTarget::QuickAction);
         picker.set_hold_action(rule_action && rule_field == crate::ui::RuleDialog::Hold);
@@ -785,6 +789,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some((target, index)) = target else {
             return;
         };
+        let mut next_step = false;
         match target {
             PickerTarget::Command => {}
             PickerTarget::Rule => {
@@ -799,7 +804,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             PickerTarget::QuickAction => ui
                 .global::<MenuEditor>()
                 .invoke_set_action(index, value, label),
-            PickerTarget::LayerKey => ui.global::<LayersEditor>().set_dialog_key(value),
             PickerTarget::LayerAction => {
                 if picker.get_layer_action() {
                     if let Err(error) = layers::assign(
@@ -816,7 +820,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 }
             }
             PickerTarget::ExtraKey | PickerTarget::ExtraAction => {
-                if let Err(error) = layers::assign_extra(
+                match layers::assign_extra(
                     &ui,
                     &doc,
                     index,
@@ -824,7 +828,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     target == PickerTarget::ExtraKey,
                     picker.get_ignore_key() && value.is_empty(),
                 ) {
-                    picker.set_error(error.to_ui());
+                    Ok(next) => next_step = next,
+                    Err(error) => picker.set_error(error.to_ui()),
                 }
             }
             PickerTarget::BaseKey => {
@@ -835,6 +840,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
         if picker.get_error().id.is_empty() {
             picker.invoke_dismiss_picker();
+            if next_step {
+                layers::pick_new_extra_action(&ui);
+            }
         }
     });
 }

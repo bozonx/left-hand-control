@@ -413,9 +413,6 @@ msgstr "Удалить слой?"
 msgid "Edit layer key"
 msgstr "Изменить клавишу слоя"
 
-msgid "Extra key"
-msgstr "Дополнительная клавиша"
-
 msgid "Name"
 msgstr "Имя"
 
@@ -424,9 +421,6 @@ msgstr "Описание"
 
 msgid "Rules using this layer will return to the base layer."
 msgstr "Правила этого слоя вернутся к базовому слою."
-
-msgid "Key code"
-msgstr "Код клавиши"
 
 msgid "Transparent"
 msgstr "Прозрачное действие"

@@ -238,7 +238,7 @@ fn change<T>(
     }
 }
 
-/// Fill the dialog for `dialog` on key or extra row `index`.
+/// Fill the dialog for `dialog` on key `index`.
 fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, index: i32) {
     let editor = ui.global::<LayersEditor>();
     let config = document.read();
@@ -270,41 +270,18 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
     editor.set_dialog_key("".into());
     editor.set_dialog_action("".into());
     editor.set_assignment(Assignment::Transparent);
-    match (dialog, layer) {
-        (LayerDialog::EditKey, Some(layer)) => {
-            let Some(key) = keyboard::layer_key(index) else {
-                return;
-            };
-            match config.layer_key(&layer.id, key) {
-                KeyAssignment::Transparent => {}
-                KeyAssignment::Swallow => editor.set_assignment(Assignment::Swallow),
-                KeyAssignment::Action(action) => {
-                    editor.set_assignment(Assignment::Action);
-                    editor.set_dialog_action(action.into());
-                }
+    if let (LayerDialog::EditKey, Some(layer)) = (dialog, layer) {
+        let Some(key) = keyboard::layer_key(index) else {
+            return;
+        };
+        match config.layer_key(&layer.id, key) {
+            KeyAssignment::Transparent => {}
+            KeyAssignment::Swallow => editor.set_assignment(Assignment::Swallow),
+            KeyAssignment::Action(action) => {
+                editor.set_assignment(Assignment::Action);
+                editor.set_dialog_action(action.into());
             }
         }
-        (LayerDialog::ExtraKey, Some(layer)) => {
-            let extra = usize::try_from(index).ok().and_then(|index| {
-                config
-                    .layout()
-                    .layer_keymaps
-                    .get(&layer.id)
-                    .and_then(|map| ordered_extra_entries(map).into_iter().nth(index))
-            });
-            if let Some(extra) = extra {
-                editor.set_dialog_key(extra.0.into());
-                match &extra.1 {
-                    None => editor.set_assignment(Assignment::Swallow),
-                    Some(action) if action.is_empty() => {}
-                    Some(action) => {
-                        editor.set_assignment(Assignment::Action);
-                        editor.set_dialog_action(action.clone().into());
-                    }
-                }
-            }
-        }
-        _ => {}
     }
     if dialog == LayerDialog::EditKey {
         editor.set_dialog(LayerDialog::None);
@@ -326,12 +303,9 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
     let index = editor.get_dialog_index();
     let name = editor.get_dialog_name().trim().to_owned();
     let description = editor.get_dialog_description().trim().to_owned();
-    let key = editor.get_dialog_key().trim().to_owned();
     let action = editor.get_dialog_action().to_string();
     let assignment = editor.get_assignment();
-    if matches!(dialog, LayerDialog::EditKey | LayerDialog::ExtraKey)
-        && assignment == Assignment::Action
-    {
+    if dialog == LayerDialog::EditKey && assignment == Assignment::Action {
         if action.trim().is_empty() {
             return Err(Msg::ActionRequired);
         }
@@ -372,20 +346,6 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
                 Assignment::Action => KeyAssignment::Action(action),
             };
             change(ui, document, |config| config.set_layer_key(&id, key, value))?
-        }
-        LayerDialog::ExtraKey => {
-            if !lhc_core::profile::key_catalog::valid_key(&key) {
-                return Err(Msg::KeyCodeRequired);
-            }
-            let value = match assignment {
-                Assignment::Transparent => KeyAssignment::Transparent,
-                Assignment::Swallow => KeyAssignment::Swallow,
-                Assignment::Action => KeyAssignment::Action(action),
-            };
-            let previous = extra_at(document, &id, index).map(|(key, _)| key);
-            change(ui, document, |config| {
-                set_extra(config, &id, previous.as_deref(), &key, value)
-            })?
         }
         LayerDialog::Create | LayerDialog::None => {}
     }
@@ -437,57 +397,6 @@ fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option
         .layer_keymaps
         .get(id)
         .and_then(|map| ordered_extra_entries(map).into_iter().nth(index))
-}
-
-fn set_extra(
-    config: &mut ConfigDocument,
-    id: &str,
-    previous: Option<&str>,
-    key: &str,
-    value: KeyAssignment,
-) -> Result<(), ConfigError> {
-    if !lhc_core::profile::key_catalog::valid_key(key)
-        || keyboard::layer_keys().any(|code| code == key)
-    {
-        return Err(ConfigError::Invalid("invalid additional key".into()));
-    }
-    if previous != Some(key)
-        && config
-            .layout()
-            .layer_keymaps
-            .get(id)
-            .is_some_and(|map| map.keys.contains_key(key))
-    {
-        return Err(ConfigError::Invalid("key already assigned".into()));
-    }
-    config.update_layout(|layout| {
-        let map = layout.layer_keymap_mut(id);
-        if let Some(previous) = previous {
-            for code in &mut map.extra_key_order {
-                if code == previous {
-                    *code = key.to_owned();
-                }
-            }
-        }
-        if value == KeyAssignment::Transparent {
-            map.extra_key_order.retain(|code| code != key);
-        }
-        let keys = &mut map.keys;
-        if let Some(previous) = previous {
-            keys.remove(previous);
-        }
-        match value {
-            KeyAssignment::Transparent => {
-                keys.remove(key);
-            }
-            KeyAssignment::Swallow => {
-                keys.insert(key.into(), None);
-            }
-            KeyAssignment::Action(action) => {
-                keys.insert(key.into(), Some(action));
-            }
-        }
-    })
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -574,7 +483,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let weak = ui.as_weak();
     editor.on_add_extra(move || {
         if let Some(ui) = weak.upgrade() {
-            ui.global::<LayersEditor>().set_dialog_key("".into());
+            let editor = ui.global::<LayersEditor>();
+            editor.set_dialog_key("".into());
+            editor.set_assignment(Assignment::Transparent);
             ui.global::<ActionPicker>()
                 .invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
         }
@@ -583,41 +494,31 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_pick_extra(move |index, key_only| {
         let Some(ui) = weak.upgrade() else { return };
-        open_dialog(&ui, &doc, LayerDialog::ExtraKey, index);
-        let editor = ui.global::<LayersEditor>();
-        editor.set_dialog(LayerDialog::None);
-        ui.global::<ActionPicker>().invoke_open(
-            if key_only {
-                PickerTarget::ExtraKey
-            } else {
-                PickerTarget::ExtraAction
-            },
-            index,
-            if key_only {
-                editor.get_dialog_key()
-            } else {
-                editor.get_dialog_action()
-            },
-            key_only,
-        );
-    });
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_update_extra_key(move |index, key| {
-        let Some(ui) = weak.upgrade() else { return };
-        if !lhc_core::profile::key_catalog::valid_key(key.trim()) {
-            ui.global::<LayersEditor>()
-                .set_status(crate::notifications::report(&ui, &Msg::KeyCodeRequired));
-            return;
-        }
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
-        if let Some((previous, action)) = extra_at(&doc, &id, index) {
-            let value = action.map_or(KeyAssignment::Swallow, KeyAssignment::Action);
-            let _ = change(&ui, &doc, |config| {
-                set_extra(config, &id, Some(&previous), key.trim(), value)
-            });
+        let Some((key, value)) = extra_at(&doc, &id, index) else {
+            return;
+        };
+        let editor = ui.global::<LayersEditor>();
+        editor.set_dialog(LayerDialog::None);
+        editor.set_dialog_key(key.clone().into());
+        editor.set_assignment(if value.is_none() {
+            Assignment::Swallow
+        } else {
+            Assignment::Action
+        });
+        let picker = ui.global::<ActionPicker>();
+        if key_only {
+            picker.invoke_open(PickerTarget::ExtraKey, index, key.into(), true);
+        } else {
+            picker.invoke_open(
+                PickerTarget::ExtraAction,
+                index,
+                value.unwrap_or_default().into(),
+                false,
+            );
+            picker.set_subject(key.into());
         }
     });
     let weak = ui.as_weak();
@@ -685,13 +586,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         };
         if let Some((key, _)) = extra_at(&doc, &id, index) {
-            if change(&ui, &doc, |config| {
+            let _ = change(&ui, &doc, |config| {
                 config.set_layer_key(&id, &key, KeyAssignment::Transparent)
-            })
-            .is_ok()
-            {
-                refresh(&ui, &doc);
-            }
+            });
         }
     });
 }
@@ -717,6 +614,9 @@ pub(super) fn assign(
     })
 }
 
+/// Apply a picker choice to extra row `index`; `-1` is a row being added.
+/// Returns `true` when a key was chosen for a new row and its action has to
+/// be picked next: nothing is saved until then.
 pub(super) fn assign_extra(
     ui: &SettingsWindow,
     document: &Document,
@@ -724,47 +624,64 @@ pub(super) fn assign_extra(
     value: &str,
     key_only: bool,
     ignore: bool,
-) -> Result<(), Msg> {
+) -> Result<bool, Msg> {
     let id = selected_id(ui, document).ok_or(Msg::None)?;
     let existing = extra_at(document, &id, index);
-    let (key, action) = if key_only {
-        if !lhc_core::profile::key_catalog::valid_key(value) {
+    let editor = ui.global::<LayersEditor>();
+    if key_only {
+        let previous = existing.as_ref().map(|(key, _)| key.as_str());
+        let taken = previous != Some(value)
+            && document
+                .read()
+                .layout()
+                .layer_keymaps
+                .get(&id)
+                .is_some_and(|map| map.keys.contains_key(value));
+        if !lhc_core::profile::key_catalog::valid_key(value)
+            || keyboard::layer_keys().any(|code| code == value)
+        {
             return Err(Msg::KeyCodeRequired);
         }
-        (
-            value.to_owned(),
-            existing.as_ref().map_or_else(
-                || KeyAssignment::Action(value.to_owned()),
-                |(_, action)| {
-                    action
-                        .clone()
-                        .map_or(KeyAssignment::Swallow, KeyAssignment::Action)
-                },
-            ),
-        )
+        if taken {
+            return Err(Msg::from(&ConfigError::Invalid(
+                "key already assigned".into(),
+            )));
+        }
+        let Some((previous, action)) = existing else {
+            editor.set_dialog_key(value.into());
+            return Ok(true);
+        };
+        let action = action.map_or(KeyAssignment::Swallow, KeyAssignment::Action);
+        change(ui, document, |config| {
+            config.set_extra_key(&id, Some(&previous), value, action)
+        })?;
+        return Ok(false);
+    }
+    let action = if ignore {
+        KeyAssignment::Swallow
+    } else if value.is_empty() {
+        return Err(Msg::ActionRequired);
     } else {
-        let (key, _) = existing.clone().ok_or(Msg::KeyCodeRequired)?;
-        (
-            key,
-            if ignore {
-                KeyAssignment::Swallow
-            } else if value.is_empty() {
-                KeyAssignment::Transparent
-            } else {
-                KeyAssignment::Action(value.to_owned())
-            },
-        )
+        KeyAssignment::Action(value.to_owned())
+    };
+    let (previous, key) = match existing {
+        Some((key, _)) => (Some(key.clone()), key),
+        None if index < 0 => (None, editor.get_dialog_key().to_string()),
+        None => return Err(Msg::KeyCodeRequired),
     };
     change(ui, document, |config| {
-        set_extra(
-            config,
-            &id,
-            existing.as_ref().map(|(key, _)| key.as_str()),
-            &key,
-            action,
-        )
+        config.set_extra_key(&id, previous.as_deref(), &key, action)
     })?;
-    Ok(())
+    Ok(false)
+}
+
+/// Second step of adding an extra row: choose the action of the key picked
+/// in the first one.
+pub(super) fn pick_new_extra_action(ui: &SettingsWindow) {
+    let key = ui.global::<LayersEditor>().get_dialog_key();
+    let picker = ui.global::<ActionPicker>();
+    picker.invoke_open(PickerTarget::ExtraAction, -1, "".into(), false);
+    picker.set_subject(key);
 }
 
 #[cfg(test)]

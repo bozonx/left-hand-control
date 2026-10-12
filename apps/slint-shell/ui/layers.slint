@@ -48,7 +48,6 @@ export global LayersEditor {
     /// Why `name` cannot be used for a new layer or, when `renaming`, for the selected one.
     pure callback name-error(name: string, renaming: bool) -> Message;
     callback add-extra();
-    callback update-extra-key(int, string);
     callback pick-extra(int, bool);
 }
 
@@ -89,6 +88,7 @@ component Segmented inherits Rectangle {
                     return reject;
                 }
             }
+            seg-touch := TouchArea { mouse-cursor: pointer; clicked => { root.selected(index); } }
             if root.tooltips[index] != "": Tooltip {
                 Rectangle {
                     background: Theme.card;
@@ -98,7 +98,6 @@ component Segmented inherits Rectangle {
                     HorizontalLayout { padding: 6px; Text { text: root.tooltips[index]; color: Theme.text; font-size: 12px; } }
                 }
             }
-            seg-touch := TouchArea { mouse-cursor: pointer; clicked => { root.selected(index); } }
         }
     }
 }
@@ -233,11 +232,6 @@ component KeyCap inherits Rectangle {
             ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; category: root.cell.category; }
         }
     }
-    if root.cell.kind == Assignment.action: Tooltip {
-        Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px;
-            HorizontalLayout { padding: 8px; spacing: 6px; CategoryIcon { category: root.cell.category; } Text { text: root.cell.action; color: Theme.text; } }
-        }
-    }
     focus := FocusScope {
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
@@ -269,6 +263,11 @@ component KeyCap inherits Rectangle {
                 DragDrop.pointer-y = self.absolute-position.y + self.mouse-y;
                 if abs(self.mouse-x - self.pressed-x) > 6px || abs(self.mouse-y - self.pressed-y) > 6px { DragDrop.dragging = true; }
             }
+        }
+    }
+    if root.cell.kind == Assignment.action: Tooltip {
+        Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px;
+            HorizontalLayout { padding: 8px; spacing: 6px; CategoryIcon { category: root.cell.category; } Text { text: root.cell.action; color: Theme.text; } }
         }
     }
 }
@@ -569,8 +568,7 @@ export component LayerDialogOverlay inherits FocusScope {
                     text: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
                         : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
                         : LayersEditor.dialog == LayerDialog.delete ? @tr("Delete layer?")
-                        : LayersEditor.dialog == LayerDialog.edit-key ? @tr("Edit layer key")
-                        : @tr("Extra key");
+                        : @tr("Edit layer key");
                     color: Theme.text; font-size: 22px; font-weight: 700;
                 }
                 if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
@@ -584,12 +582,7 @@ export component LayerDialogOverlay inherits FocusScope {
                     TextEdit { text <=> LayersEditor.dialog-description; height: 100px; }
                 }
                 if LayersEditor.dialog == LayerDialog.delete: Text { text: @tr("Rules using this layer will return to the base layer."); color: Theme.muted; wrap: word-wrap; }
-                if LayersEditor.dialog == LayerDialog.edit-key || LayersEditor.dialog == LayerDialog.extra-key: VerticalBox { spacing: 8px;
-                    if LayersEditor.dialog == LayerDialog.extra-key: Text { text: @tr("Key code"); color: Theme.text; }
-                    if LayersEditor.dialog == LayerDialog.extra-key: HorizontalBox { vertical-stretch: 0; spacing: 8px;
-                        TextField { text <=> LayersEditor.dialog-key; horizontal-stretch: 1; }
-                        Button { text: @tr("Choose trigger key"); clicked => { ActionPicker.open(PickerTarget.layer-key, 0, LayersEditor.dialog-key, true); } }
-                    }
+                if LayersEditor.dialog == LayerDialog.edit-key: VerticalBox { spacing: 8px;
                     Text { text: @tr("Behavior"); color: Theme.muted; }
                     HorizontalBox { spacing: 8px;
                         Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
@@ -613,7 +606,7 @@ export component LayerDialogOverlay inherits FocusScope {
                 HorizontalBox { vertical-stretch: 0; spacing: 8px;
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
-                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; enabled: ((LayersEditor.dialog != LayerDialog.create && LayersEditor.dialog != LayerDialog.duplicate) || LayersEditor.name-error(LayersEditor.dialog-name, false).id == "") && (LayersEditor.dialog != LayerDialog.extra-key || LayersEditor.dialog-key != "") && ((LayersEditor.dialog != LayerDialog.extra-key && LayersEditor.dialog != LayerDialog.edit-key) || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
+                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; enabled: ((LayersEditor.dialog != LayerDialog.create && LayersEditor.dialog != LayerDialog.duplicate) || LayersEditor.name-error(LayersEditor.dialog-name, false).id == "") && (LayersEditor.dialog != LayerDialog.edit-key || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
                 }
             }
         }
