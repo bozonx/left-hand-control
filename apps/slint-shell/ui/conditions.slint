@@ -164,18 +164,9 @@ component OpenCount inherits Text {
     text: root.count > 0 ? @tr("Open now: {n} window" | "Open now: {n} windows" % root.count) : @tr("Not open now");
     color: root.count > 0 ? Theme.success : Theme.muted;
     font-size: 12px;
+    overflow: elide;
+    min-width: 0px;
     vertical-alignment: center;
-}
-
-/// Whether a pattern matches by app id / process or by window title.
-component MatchKind inherits HorizontalLayout {
-    in property <bool> title;
-    width: 120px;
-    spacing: 5px;
-    VerticalLayout { alignment: center;
-        Image { width: 14px; height: 14px; colorize: Theme.muted; source: root.title ? @image-url("icons/text-cursor-input.svg") : @image-url("icons/app-window.svg"); }
-    }
-    Text { text: root.title ? @tr("Window title") : @tr("Application"); color: Theme.muted; font-size: 12px; overflow: elide; vertical-alignment: center; horizontal-stretch: 1; }
 }
 
 /// The add / edit dialog and the removal prompt of an applications list.
@@ -424,10 +415,17 @@ export component ApplicationsField inherits VerticalLayout {
                 background: item-touch.has-hover ? Theme.hover : transparent;
                 item-touch := TouchArea { mouse-cursor: pointer; clicked => { AppEntryDialog.open(root.value, root.exclusion, index); } }
                 item-row := HorizontalLayout {
-                    padding-left: 6px; padding-right: 2px; padding-top: 2px; padding-bottom: 2px; spacing: 10px;
-                    MatchKind { title: ConditionChoices.is-title(item); }
-                    Text { text: ConditionChoices.text(item); color: Theme.text; wrap: word-wrap; horizontal-stretch: 1; vertical-alignment: center; }
-                    if root.detection-available: OpenCount { pattern: item; }
+                    padding-left: 8px; padding-right: 2px; padding-top: 4px; padding-bottom: 4px; spacing: 8px;
+                    VerticalLayout { alignment: center;
+                        Image { width: 16px; height: 16px; colorize: Theme.muted; source: ConditionChoices.is-title(item) ? @image-url("icons/text-cursor-input.svg") : @image-url("icons/app-window.svg"); }
+                    }
+                    VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: 2px;
+                        Text { text: ConditionChoices.text(item); color: Theme.text; overflow: elide; min-width: 0px; }
+                        HorizontalLayout { spacing: 6px;
+                            Text { text: ConditionChoices.is-title(item) ? @tr("Window title") : @tr("Application"); color: Theme.muted; font-size: 12px; overflow: elide; min-width: 0px; }
+                            if root.detection-available: OpenCount { pattern: item; horizontal-stretch: 1; }
+                        }
+                    }
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/pencil.svg"); label: @tr("Edit"); tooltip: @tr("Edit"); clicked => { AppEntryDialog.open(root.value, root.exclusion, index); } } }
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); clicked => { AppEntryDialog.confirm-remove(root.value, root.exclusion, index); } } }
                 }
