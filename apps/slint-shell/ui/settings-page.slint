@@ -368,12 +368,9 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if SettingsEditor.tab == 3: Section {
                     HorizontalLayout {
-                        vertical-stretch: 0; spacing: 8px;
+                        vertical-stretch: 0; spacing: 8px; alignment: start;
                         Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; vertical-alignment: center; }
                         VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."); } }
-                        Rectangle { horizontal-stretch: 1; }
-                        VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: AppState.game-active ? Theme.success : Theme.muted; } }
-                        Text { text: Locale.text(AppState.game-status); color: AppState.game-active ? Theme.success : Theme.muted; font-weight: 600; vertical-alignment: center; }
                     }
                     HorizontalLayout {
                         vertical-stretch: 0; alignment: start;
@@ -398,8 +395,8 @@ export component SettingsPage inherits VerticalBox {
                             CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
                             VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); } }
                         }
-                        Text { text: @tr("GameMode daemon: ") + Locale.text(AppState.game-daemon-availability); color: Theme.muted; }
-                        if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: @tr("GameMode is not installed: install the gamemode package."); color: Theme.warning; wrap: word-wrap; }
+                        // Status is shown only when there is a problem; it is a warning only while the option is on.
+                        if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("GameMode is not installed: install the gamemode package."); color: SettingsEditor.use-gamemoded ? Theme.warning : Theme.muted; wrap: word-wrap; }
                     }
                     VerticalBox {
                         padding: 0px; spacing: 4px; vertical-stretch: 0;
@@ -408,18 +405,17 @@ export component SettingsPage inherits VerticalBox {
                             CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
                             VerticalLayout { alignment: center; InfoTip { text: @tr("Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."); } }
                         }
-                        Text { text: @tr("Fullscreen detection: ") + Locale.text(AppState.game-fullscreen-availability); color: Theme.muted; }
-                        if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.warning; wrap: word-wrap; }
+                        if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.muted; wrap: word-wrap; }
+                        if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("Fullscreen detection tools are missing or could not query the session."); color: SettingsEditor.use-fullscreen ? Theme.warning : Theme.muted; wrap: word-wrap; }
                     }
-                    if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }
-                    if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { vertical-stretch: 0; text: @tr("Fullscreen detection tools are missing or could not query the session."); color: Theme.warning; wrap: word-wrap; }
+                    if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: "⚠ " + @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }
 
                     HorizontalLayout {
                         vertical-stretch: 0; spacing: 6px; alignment: start;
                         Text { text: @tr("Games and exclusions"); color: Theme.text; font-weight: 600; vertical-alignment: center; }
                         VerticalLayout { alignment: center; InfoTip { text: @tr("Exact process name or app ID; use * and ? for patterns. title:<text> matches the active window title. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."); } }
                     }
-                    Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
+                    if AppState.game-processes-availability.id != "capability-available" || AppState.game-window-availability.id != "capability-available": Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                     for item[index] in SettingsEditor.process-matchers: Rectangle {
                         vertical-stretch: 0; height: process-row.preferred-height; border-radius: 4px; background: Theme.card;
                         process-row := HorizontalLayout {

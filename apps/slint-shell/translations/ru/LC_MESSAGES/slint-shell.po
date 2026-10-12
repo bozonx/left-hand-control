@@ -1290,12 +1290,6 @@ msgid "Auto: excluded by {}"
 msgstr "Auto: исключён правилом {}"
 
 
-msgid "GameMode daemon: "
-msgstr "Служба GameMode: "
-
-msgid "Fullscreen detection: "
-msgstr "Определение полноэкранного окна: "
-
 msgid "Fullscreen detection is not supported in this session. Use process rules or On/Off."
 msgstr "Определение полноэкранного окна не поддерживается в этой сессии. Используйте правила процессов или On/Off."
 
