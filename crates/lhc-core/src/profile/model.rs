@@ -414,8 +414,8 @@ pub enum LayoutMode {
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub launch_on_startup: bool,
-    /// Start the mapper when the app launches; only honoured together
-    /// with `launch_on_startup`.
+    /// Start the mapper when the app launches, whether by autostart or
+    /// manually.
     pub start_mapper_on_launch: bool,
     pub appearance: Appearance,
     pub high_contrast: bool,

@@ -307,10 +307,7 @@ impl App {
             let settings = config.settings();
             let device = config.input_device().is_some();
             let layouts = config.ordered_layout_ids().is_ok_and(|ids| !ids.is_empty());
-            (
-                device && settings.launch_on_startup && settings.start_mapper_on_launch,
-                device && layouts,
-            )
+            (device && settings.start_mapper_on_launch, device && layouts)
         });
         if start_mapper {
             self.toggle_mapper();

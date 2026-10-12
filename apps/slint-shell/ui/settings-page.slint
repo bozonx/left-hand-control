@@ -203,11 +203,13 @@ export component SettingsPage inherits VerticalBox {
                 spacing: 0px;
                 if SettingsEditor.tab == 0: Section {
                     title: @tr("General");
-                    if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                    if AppState.is-linux: HorizontalLayout { padding-left: 28px; alignment: start;
-                        CheckBox { text: @tr("Start the mapper on launch"); enabled: SettingsEditor.launch-on-startup; checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
+                    VerticalLayout { vertical-stretch: 0; spacing: 8px;
+                        HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
+                            VerticalLayout { alignment: center; Image { width: 16px; height: 16px; colorize: Theme.text; source: @image-url("icons/globe.svg"); } }
+                            Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
+                        }
+                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                     }
-                    if AppState.is-linux: CheckBox { text: @tr("Show the layout name on screen when the active layout changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                     VerticalLayout { vertical-stretch: 0; spacing: 8px;
                         Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
                         HorizontalLayout { alignment: start;
@@ -223,10 +225,9 @@ export component SettingsPage inherits VerticalBox {
                             }
                         }
                     }
-                    VerticalLayout { vertical-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Language"); color: Theme.text; }
-                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
-                    }
+                    if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
+                    if AppState.is-linux: CheckBox { text: @tr("Start the mapper on launch"); checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
+                    if AppState.is-linux: CheckBox { text: @tr("Show the layout name on screen when the active layout changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                 }
                 if SettingsEditor.tab == 1: Section {
                     title: @tr("Accessibility");
