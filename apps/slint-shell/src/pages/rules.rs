@@ -23,6 +23,23 @@ fn join(value: &Option<Vec<String>>) -> String {
         .unwrap_or_default()
 }
 
+/// Up to [`CHIP_ITEMS`] entries for a rule-card chip, then `+N` for the rest.
+fn chip_text(value: &Option<Vec<String>>) -> String {
+    let items = value.as_deref().unwrap_or_default();
+    let mut text = items
+        .iter()
+        .take(CHIP_ITEMS)
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join(", ");
+    if items.len() > CHIP_ITEMS {
+        text.push_str(&format!(" +{}", items.len() - CHIP_ITEMS));
+    }
+    text
+}
+
+const CHIP_ITEMS: usize = 3;
+
 fn optional_list(value: &str) -> Option<Vec<String>> {
     let items = parse_list(value);
     (!items.is_empty()).then_some(items)
@@ -137,8 +154,8 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             has_conditions: has_conditions(rule),
             game: game_condition(rule.condition_game_mode.as_deref()),
             languages: join(&rule.condition_layouts).into(),
-            applications: join(&rule.condition_apps_whitelist).into(),
-            excluded: join(&rule.condition_apps_blacklist).into(),
+            applications: chip_text(&rule.condition_apps_whitelist).into(),
+            excluded: chip_text(&rule.condition_apps_blacklist).into(),
             hold_timeout: if hold_mode(rule) == 2 {
                 String::new()
             } else {
@@ -693,6 +710,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn chip_text_shows_three_items_and_counts_the_rest() {
+        let list = |items: &[&str]| Some(items.iter().map(|item| item.to_string()).collect());
+        assert_eq!(chip_text(&None), "");
+        assert_eq!(chip_text(&list(&["a", "b", "c"])), "a, b, c");
+        assert_eq!(chip_text(&list(&["a", "b", "c", "d", "e"])), "a, b, c +2");
+    }
 
     #[test]
     fn hold_seconds_accept_decimals_and_reject_invalid_values() {

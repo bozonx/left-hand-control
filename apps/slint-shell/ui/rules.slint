@@ -77,40 +77,46 @@ export global RulesEditor {
     pure callback layer-name-error(name: string) -> Message;
 }
 
-component ConditionLine inherits HorizontalLayout {
+component ConditionChip inherits VerticalLayout {
     in property <image> icon;
     in property <string> text;
-    in property <color> tint: Theme.muted;
-    spacing: 6px;
+    in property <color> tint: Theme.accent;
+    alignment: center;
     min-width: 0px;
-    VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: root.icon; colorize: root.tint; } }
-    Text { min-width: 0px; horizontal-stretch: 1; text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+    horizontal-stretch: 0;
+    Rectangle {
+        min-width: 0px; max-width: 260px; height: 24px; border-radius: 12px;
+        background: Theme.selected; border-width: Theme.eink ? 1px : 0px; border-color: Theme.divider;
+        HorizontalLayout { padding-left: 8px; padding-right: 10px; spacing: 5px; min-width: 0px;
+            VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: root.icon; colorize: root.tint; } }
+            Text { min-width: 0px; text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+        }
+    }
 }
 
-/// Rule conditions as one line per kind; the whole block opens the editor.
-component ConditionsCell inherits HorizontalLayout {
+/// Rule conditions as one chip per kind; the whole group opens the editor.
+component ConditionsCell inherits Rectangle {
     in property <RuleRow> rule;
     in property <bool> enabled: true;
     callback clicked();
-    spacing: 8px;
     min-width: 0px;
-    horizontal-stretch: 1;
-    preferred-width: 0px;
-    FormLabel { horizontal-stretch: 0; text: @tr("Conditions"); }
-    Rectangle {
-        min-width: 0px; horizontal-stretch: 1; height: 32px; border-radius: 5px; border-width: 1px; border-color: Theme.border;
-        background: conditions-touch.has-hover ? Theme.hover : Theme.card;
-        accessible-role: button; accessible-label: @tr("Conditions");
-        accessible-action-default => { root.clicked(); }
-        HorizontalLayout { min-width: 0px; padding-left: 8px; padding-right: 8px; spacing: 8px;
-            if !root.rule.has-conditions: Text { text: @tr("Always"); color: Theme.muted; vertical-alignment: center; overflow: elide; }
-            if root.rule.game != GameCondition.any: ConditionLine { icon: @image-url("icons/gamepad-2.svg"); text: root.rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); }
-            if root.rule.languages != "": ConditionLine { icon: @image-url("icons/globe.svg"); text: root.rule.languages; }
-            if root.rule.applications != "": ConditionLine { icon: @image-url("icons/app-window.svg"); text: root.rule.applications; tint: Theme.success; }
-            if root.rule.excluded != "": ConditionLine { icon: @image-url("icons/ban.svg"); text: root.rule.excluded; tint: Theme.error; }
+    horizontal-stretch: 0;
+    height: 32px;
+    border-radius: 6px;
+    background: conditions-touch.has-hover ? Theme.hover : transparent;
+    accessible-role: button; accessible-label: @tr("Conditions");
+    accessible-action-default => { root.clicked(); }
+    HorizontalLayout { min-width: 0px; padding-left: 6px; padding-right: 6px; spacing: 6px;
+        VerticalLayout { alignment: center;
+            Image { width: 16px; height: 16px; source: @image-url("icons/list-filter.svg"); colorize: root.rule.has-conditions ? Theme.accent : Theme.muted; }
         }
-        conditions-touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.clicked(); } }
+        if !root.rule.has-conditions: Text { text: @tr("Always"); color: Theme.muted; vertical-alignment: center; }
+        if root.rule.game != GameCondition.any: ConditionChip { icon: @image-url("icons/gamepad-2.svg"); text: root.rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); }
+        if root.rule.languages != "": ConditionChip { icon: @image-url("icons/globe.svg"); text: root.rule.languages; }
+        if root.rule.applications != "": ConditionChip { icon: @image-url("icons/app-window.svg"); text: root.rule.applications; tint: Theme.success; }
+        if root.rule.excluded != "": ConditionChip { icon: @image-url("icons/ban.svg"); text: root.rule.excluded; tint: Theme.error; }
     }
+    conditions-touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
 component RuleCell inherits VerticalBox {
@@ -305,8 +311,9 @@ export component RulesPage inherits VerticalBox {
                         DragHandle { group: 1; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
                         CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
                         ConditionsCell { enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
+                        Rectangle { horizontal-stretch: 1; min-width: 12px; }
                         if rule.hold-timeout != "" || rule.double-timeout != "" || rule.isolate != "" || rule.hold-for != "": Text {
-                            min-width: 0px; max-width: 420px; overflow: elide; vertical-alignment: center;
+                            horizontal-stretch: 0; min-width: 0px; max-width: 420px; overflow: elide; vertical-alignment: center;
                             text: (rule.hold-timeout != "" ? @tr("Hold: {} ms", rule.hold-timeout) : "")
                                 + (rule.double-timeout != "" ? (rule.hold-timeout != "" ? " · " : "") + @tr("Double tap: {} ms", rule.double-timeout) : "")
                                 + (rule.isolate != "" ? ((rule.hold-timeout != "" || rule.double-timeout != "" ? " · " : "") + @tr("Release for {}", rule.isolate)) : "")

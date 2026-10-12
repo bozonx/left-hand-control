@@ -2,7 +2,7 @@ import { TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
-import { Alert, Badge, CardHeader, IconButton, InfoTip, Segmented } from "controls.slint";
+import { Alert, Badge, CardHeader, IconButton, InfoTip, ButtonGroup } from "controls.slint";
 import { LayoutLibrary } from "library.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
@@ -379,7 +379,7 @@ export component SettingsPage inherits VerticalBox {
                     }
                     HorizontalLayout {
                         vertical-stretch: 0; alignment: start;
-                        Segmented {
+                        ButtonGroup {
                             labels: [@tr("Game mode control" => "Off"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Auto")];
                             selected-index: AppState.game-control == GameModeControl.off ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
                             selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.off : index == 1 ? GameModeControl.on : GameModeControl.auto); }
