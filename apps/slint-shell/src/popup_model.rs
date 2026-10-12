@@ -232,7 +232,7 @@ impl ConfiguredMenus {
                         .quick_action_pages
                         .get(i)
                         .map(|p| p.name.clone())
-                        .unwrap_or_else(|| (i + 1).to_string())
+                        .unwrap_or_default()
                         .into()
                 })
                 .collect::<Vec<SharedString>>(),

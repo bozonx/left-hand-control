@@ -43,7 +43,7 @@ fn normalize(layout: &mut LayoutPreset) {
     if layout.emoji_pages.is_empty() {
         layout.emoji_pages.push(EmojiPage {
             id: ids::generate("emoji_"),
-            name: "1".into(),
+            name: String::new(),
             cells: Default::default(),
         });
     }
@@ -56,7 +56,7 @@ fn normalize(layout: &mut LayoutPreset) {
     while layout.quick_action_pages.len() < count {
         layout.quick_action_pages.push(QuickActionPage {
             id: ids::generate("page_"),
-            name: (layout.quick_action_pages.len() + 1).to_string(),
+            name: String::new(),
         });
     }
     layout
@@ -456,22 +456,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             e.set_selected_cell(target as i32);
         });
     });
-    e.on_page_name_error(|name| {
-        if name.trim().is_empty() {
-            Msg::PageNameRequired
-        } else {
-            Msg::None
-        }
-        .to_ui()
-    });
     let c = change.clone();
     e.on_rename_page(move || {
         c(true, &|e, layout| {
             let p = e.get_selected_page().max(0) as usize;
             let name = e.get_page_name().trim().to_owned();
-            if name.is_empty() {
-                return;
-            }
             if e.get_kind() == MenuKind::Emoji {
                 if let Some(page) = layout.emoji_pages.get_mut(p) {
                     page.name = name;

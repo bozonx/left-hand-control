@@ -185,6 +185,8 @@ pub struct QuickAction {
 #[serde(rename_all = "camelCase")]
 pub struct QuickActionPage {
     pub id: String,
+    /// Optional caption; an empty page is shown by its number.
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub name: String,
 }
 
@@ -192,6 +194,8 @@ pub struct QuickActionPage {
 #[serde(rename_all = "camelCase")]
 pub struct EmojiPage {
     pub id: String,
+    /// Optional caption; an empty page is shown by its number.
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub name: String,
     /// Hotkey from [`LEFT_HAND_HOTKEYS`] → inserted text.
     pub cells: BTreeMap<String, String>,
@@ -201,7 +205,7 @@ impl EmojiPage {
     pub fn default_page() -> Self {
         Self {
             id: "emoji_default".into(),
-            name: "Emoji 1".into(),
+            name: String::new(),
             cells: LEFT_HAND_HOTKEYS
                 .iter()
                 .zip(STANDARD_EMOJIS)
@@ -240,7 +244,7 @@ impl LayoutPreset {
         Self {
             quick_action_pages: vec![QuickActionPage {
                 id: "quick_default".into(),
-                name: "Page 1".into(),
+                name: String::new(),
             }],
             emoji_pages: vec![EmojiPage::default_page()],
             ..Self::default()

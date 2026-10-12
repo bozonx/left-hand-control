@@ -173,7 +173,8 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                     .map_or_else(|| next_id("qap_"), str::to_owned),
                 name: page
                     .and_then(|page| trimmed(page, "name"))
-                    .map_or_else(|| format!("Page {}", index + 1), str::to_owned),
+                    .unwrap_or_default()
+                    .into(),
             }
         })
         .collect();
@@ -182,7 +183,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
         .map(|page| {
             let id = trimmed(page, "id").map_or_else(|| next_id("emoji_"), str::to_owned);
             EmojiPage {
-                name: trimmed(page, "name").map_or_else(|| id.clone(), str::to_owned),
+                name: trimmed(page, "name").unwrap_or_default().into(),
                 cells: page
                     .get("cells")
                     .and_then(Value::as_object)
@@ -350,7 +351,9 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                 .map(|page| {
                     let mut out = Mapping::new();
                     put(&mut out, "id", page.id.as_str());
-                    put(&mut out, "name", page.name.as_str());
+                    if !page.name.is_empty() {
+                        put(&mut out, "name", page.name.as_str());
+                    }
                     Yaml::Mapping(out)
                 })
                 .collect(),
@@ -365,7 +368,9 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                 .map(|page| {
                     let mut out = Mapping::new();
                     put(&mut out, "id", page.id.as_str());
-                    put(&mut out, "name", page.name.as_str());
+                    if !page.name.is_empty() {
+                        put(&mut out, "name", page.name.as_str());
+                    }
                     out.insert(
                         "cells".into(),
                         Yaml::Mapping(
@@ -620,7 +625,7 @@ emojiPages:
         assert_eq!(preset.quick_actions[0].name, "Lock");
         assert!(preset.quick_actions[0].id.starts_with("qa_"));
         assert_eq!(preset.quick_action_pages.len(), 1);
-        assert_eq!(preset.quick_action_pages[0].name, "Page 1");
+        assert_eq!(preset.quick_action_pages[0].name, "");
         assert_eq!(preset.emoji_pages[0].cells.len(), 1);
     }
 

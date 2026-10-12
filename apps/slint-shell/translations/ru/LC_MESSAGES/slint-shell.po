@@ -443,9 +443,6 @@ msgstr "Слой с таким именем уже есть."
 msgid "Enter a layout name"
 msgstr "Введите имя раскладки"
 
-msgid "Enter a page name"
-msgstr "Введите имя страницы"
-
 msgid "Enter a key code"
 msgstr "Введите код клавиши"
 
@@ -982,9 +979,6 @@ msgstr "Открывается по вызову действий app:showQuickM
 
 msgid "Page"
 msgstr "Страница"
-
-msgid "Page {}"
-msgstr "Страница {}"
 
 msgid "Pause (ms)"
 msgstr "Пауза (мс)"
