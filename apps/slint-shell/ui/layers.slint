@@ -40,6 +40,8 @@ export global LayersEditor {
     callback apply-dialog();
     callback reorder(int, int);
     callback reorder-extra(int, int);
+    /// Exchange the assignments of layer keys `from` and `to`.
+    callback swap-keys(int, int);
     callback remove-extra(int);
     callback update-description(string);
     callback update-name(string);
@@ -202,14 +204,25 @@ component ExtraKeyLine inherits TouchArea {
     DropMarker { width: parent.width; group: 3; index: root.index; row-y: root.y; row-height: root.height; }
 }
 
+// Drag group of the keyboard grid, see `DragDrop`.
+global KeyDrag {
+    out property <int> group: 6;
+}
+
 component KeyCap inherits Rectangle {
     in property <LayerKeyCell> cell;
     in property <LabelMode> label-mode;
+    /// Layer key index under the pointer while a key is dragged, or -1.
+    in property <int> drop-target: -1;
     callback clicked();
+    callback dropped(int, int);
+    private property <bool> dragged: DragDrop.dragging && DragDrop.group == KeyDrag.group && DragDrop.source == root.cell.index;
+    private property <bool> drop-over: DragDrop.dragging && DragDrop.group == KeyDrag.group && root.drop-target == root.cell.index && !root.dragged;
     border-radius: 6px;
-    border-width: 1px;
-    border-color: touch.has-hover || focus.has-focus ? Theme.muted : Theme.border;
-    background: Theme.surface;
+    border-width: root.drop-over ? 2px : 1px;
+    border-color: root.drop-over ? Theme.link : (touch.has-hover && !DragDrop.dragging) || focus.has-focus ? Theme.muted : Theme.border;
+    background: root.drop-over ? Theme.hover : Theme.surface;
+    opacity: root.dragged ? 0.6 : 1;
     accessible-role: button;
     accessible-label: root.cell.label;
     accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.action;
@@ -238,7 +251,33 @@ component KeyCap inherits Rectangle {
             return reject;
         }
     }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    touch := TouchArea {
+        mouse-cursor: DragDrop.dragging && self.pressed ? grabbing : pointer;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                DragDrop.reset(); DragDrop.group = KeyDrag.group; DragDrop.source = root.cell.index; DragDrop.target = root.cell.index;
+            }
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == KeyDrag.group {
+                let from = DragDrop.source; let to = root.drop-target; let moved = DragDrop.dragging;
+                DragDrop.reset();
+                if moved { if to >= 0 && to != from { root.dropped(from, to); } }
+                else if self.has-hover { root.clicked(); }
+            }
+            if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
+        }
+        // While the key holds the grab, the wheel comes here instead of the ScrollView.
+        scroll-event(event) => {
+            if DragDrop.dragging && DragDrop.group == KeyDrag.group { DragDrop.request-scroll(event.delta-y); return accept; }
+            reject
+        }
+        moved => {
+            if self.pressed && DragDrop.group == KeyDrag.group {
+                DragDrop.pointer-x = self.absolute-position.x + self.mouse-x;
+                DragDrop.pointer-y = self.absolute-position.y + self.mouse-y;
+                if abs(self.mouse-x - self.pressed-x) > 6px || abs(self.mouse-y - self.pressed-y) > 6px { DragDrop.dragging = true; }
+            }
+        }
+    }
 }
 
 component HandGrid inherits VerticalLayout {
@@ -246,12 +285,25 @@ component HandGrid inherits VerticalLayout {
     in property <[LayerKeyCell]> cells;
     in property <int> columns;
     in property <LabelMode> label-mode;
+    in property <int> drop-target: -1;
     callback edit(int);
+    callback dropped(int, int);
+    private property <length> cell-width: (root.width - (root.columns - 1) * 6px) / root.columns;
+    /// Layer key index at window position (`x`, `y`), or -1 outside the keys.
+    public pure function key-at(x: length, y: length) -> int {
+        let local-x = x - root.absolute-position.x;
+        let local-y = y - root.absolute-position.y - title.height - 6px;
+        if local-x < 0px || local-y < 0px || local-x >= root.width { return -1; }
+        let col = floor(local-x / (root.cell-width + 6px));
+        let row = floor(local-y / 52px);
+        if row >= root.cells.length / root.columns { return -1; }
+        return root.cells[row * root.columns + col].index;
+    }
     horizontal-stretch: root.columns;
     preferred-width: 0px;
     min-width: 0px;
     spacing: 6px;
-    Text {
+    title := Text {
         text: root.title.to-uppercase();
         color: Theme.muted;
         font-size: 11px;
@@ -261,14 +313,16 @@ component HandGrid inherits VerticalLayout {
         spacing: 6px;
         for col in root.columns: Rectangle {
             height: 46px;
-            width: (root.width - (root.columns - 1) * 6px) / root.columns;
+            width: root.cell-width;
             horizontal-stretch: 0;
             if root.cells[row * root.columns + col].index >= 0: KeyCap {
                 width: parent.width;
                 height: parent.height;
                 cell: root.cells[row * root.columns + col];
                 label-mode: root.label-mode;
+                drop-target: root.drop-target;
                 clicked => { root.edit(self.cell.index); }
+                dropped(from, to) => { root.dropped(from, to); }
             }
         }
     }
@@ -427,26 +481,33 @@ export component LayersPage inherits VerticalLayout {
                         }
                     }
                     Divider {}
-                    HorizontalLayout {
+                    hands := HorizontalLayout {
+                        // Recomputed from the window position, so it follows auto-scroll under a still pointer.
+                        property <int> key-target: !DragDrop.dragging || DragDrop.group != KeyDrag.group ? -1
+                            : max(left-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y), right-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y));
                         padding: 20px;
                         spacing: 24px;
-                        HandGrid {
+                        left-hand := HandGrid {
                             width: (root.width - 16px - 40px - 24px) / 2;
                             horizontal-stretch: 0;
                             title: @tr("Left hand");
                             cells: LayersEditor.left-cells;
                             columns: 6;
                             label-mode: root.label-mode;
+                            drop-target: hands.key-target;
                             edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
+                            dropped(from, to) => { LayersEditor.swap-keys(from, to); }
                         }
-                        HandGrid {
+                        right-hand := HandGrid {
                             width: (root.width - 16px - 40px - 24px) / 2;
                             horizontal-stretch: 0;
                             title: @tr("Right hand");
                             cells: LayersEditor.right-cells;
                             columns: 6;
                             label-mode: root.label-mode;
+                            drop-target: hands.key-target;
                             edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
+                            dropped(from, to) => { LayersEditor.swap-keys(from, to); }
                         }
                     }
                 }

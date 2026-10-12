@@ -371,9 +371,6 @@ msgstr "Включён"
 msgid "Off"
 msgstr "Выключен"
 
-msgid "Milliseconds; empty uses default"
-msgstr "Миллисекунды; пусто — значение по умолчанию"
-
 msgid "Clear"
 msgstr "Очистить"
 

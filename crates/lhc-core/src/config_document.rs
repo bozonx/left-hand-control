@@ -473,6 +473,25 @@ impl ConfigDocument {
         })
     }
 
+    /// Exchange the entries of keys `a` and `b` in the keymap of `layer_id`.
+    pub fn swap_layer_keys(&mut self, layer_id: &str, a: &str, b: &str) -> Result<(), ConfigError> {
+        self.require_layer(layer_id)?;
+        if a == b {
+            return Ok(());
+        }
+        self.update_layout(|layout| {
+            let keys = &mut layout.layer_keymap_mut(layer_id).keys;
+            let first = keys.remove(a);
+            let second = keys.remove(b);
+            if let Some(value) = first {
+                keys.insert(b.into(), value);
+            }
+            if let Some(value) = second {
+                keys.insert(a.into(), value);
+            }
+        })
+    }
+
     pub(crate) fn ensure_files_unchanged(&mut self) -> Result<(), ConfigError> {
         if self
             .settings_file
@@ -930,6 +949,30 @@ mod tests {
                 .extra_key_order
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn swapping_layer_keys_exchanges_actions_and_suppression() {
+        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        document
+            .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
+            .unwrap();
+        document.swap_layer_keys("nav", "KeyH", "KeyJ").unwrap();
+        assert_eq!(document.layer_key("nav", "KeyH"), KeyAssignment::Swallow);
+        assert_eq!(
+            document.layer_key("nav", "KeyJ"),
+            KeyAssignment::Action("ArrowLeft".into())
+        );
+        document.swap_layer_keys("nav", "KeyJ", "KeyK").unwrap();
+        assert_eq!(
+            document.layer_key("nav", "KeyJ"),
+            KeyAssignment::Transparent
+        );
+        assert_eq!(
+            document.layer_key("nav", "KeyK"),
+            KeyAssignment::Action("ArrowLeft".into())
+        );
+        assert!(document.swap_layer_keys("missing", "KeyH", "KeyJ").is_err());
     }
 
     #[test]

@@ -512,6 +512,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 config.reorder_extra_keys(&id, keys, from, to)
             });
         });
+    let weak = ui.as_weak();
+    let doc = document.clone();
+    ui.global::<LayersEditor>().on_swap_keys(move |from, to| {
+        let Some(ui) = weak.upgrade() else { return };
+        let Some(id) = selected_id(&ui, &doc) else {
+            return;
+        };
+        let (Some(from), Some(to)) = (keyboard::layer_key(from), keyboard::layer_key(to)) else {
+            return;
+        };
+        let _ = change(&ui, &doc, |config| config.swap_layer_keys(&id, from, to));
+    });
     refresh(ui, document);
     let weak = ui.as_weak();
     document.subscribe(View::Layers, move |document| {

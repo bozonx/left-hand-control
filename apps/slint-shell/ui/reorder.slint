@@ -7,7 +7,8 @@ export global DragDrop {
     in-out property <int> count;
     in-out property <length> offset;
     in-out property <bool> dragging;
-    // Pointer position in window coordinates, for edge auto-scroll.
+    // Pointer position in window coordinates, for edge auto-scroll and 2D drop targets.
+    in-out property <length> pointer-x;
     in-out property <length> pointer-y;
     // Wheel deltas from the drag handle (it holds the mouse grab), consumed by the ScrollView.
     in-out property <length> wheel;

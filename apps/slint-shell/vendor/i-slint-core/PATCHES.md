@@ -13,3 +13,5 @@ The published crate's Cargo.toml and license files are preserved. The root Cargo
 The history implementation is exercised by `slint-shell` unit tests through the same source file, and by `examples/undo-redo.rs` and `examples/inline-edit.rs` with real Slint widgets.
 
 - Expose a reactive event-loop animation switch: disabled property transitions immediately reach their target, including standard Fluent widgets; animation-tick effects become static. The shell applies the accessibility preference in `ui::apply_theme`.
+
+- Flickable wheel handling (`items/flickable.rs`): a new wheel gesture (`TouchPhase::Started`) is forwarded to the children first, so a focused numeric field inside a scroll view can take it; the flickable scrolls when they ignore it. A wheel capture is released once the wheel has been idle for the filter duration or the pointer has moved, because winit never sends `Ended` for a mouse wheel whose first step is high-resolution (non-discrete); without this the capture lasted forever and the scroll view took every later wheel event.

@@ -328,13 +328,13 @@ export component SettingsPage inherits VerticalBox {
                             label: @tr("Hold timeout (ms)");
                             info: @tr("Used by rules without their own value. Release the key earlier to run the tap action; hold it longer to switch to the hold behavior.");
                             hint: @tr("Time before a key press becomes a hold.");
-                            NumericInput { minimum: 0; maximum: 2147483647; step: 10; text: SettingsEditor.hold-timeout; edited(value) => { SettingsEditor.hold-timeout = value; SettingsEditor.schedule-save(); } }
+                            NumericInput { label: @tr("Hold timeout (ms)"); text: SettingsEditor.hold-timeout; edited(value) => { SettingsEditor.hold-timeout = value; SettingsEditor.schedule-save(); } }
                         }
                         BehaviorField {
                             label: @tr("Long-hold duration (seconds)");
                             info: @tr("Default delay before a rule runs its long-hold action once. Each rule can override it in advanced options.");
                             hint: @tr("Holding a key this long runs its long-hold action.");
-                            NumericInput { minimum: 0; maximum: 2147483; step: 0.1; fractional: true; text: SettingsEditor.long-hold-timeout; edited(value) => { SettingsEditor.long-hold-timeout = value; SettingsEditor.schedule-save(); } }
+                            NumericInput { label: @tr("Long-hold duration (seconds)"); minimum: 0.1; maximum: 86400; step: 0.1; fractional: true; text: SettingsEditor.long-hold-timeout; edited(value) => { SettingsEditor.long-hold-timeout = value; SettingsEditor.schedule-save(); } }
                         }
                     }
                     HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
@@ -342,13 +342,13 @@ export component SettingsPage inherits VerticalBox {
                             label: @tr("Double tap timeout (ms)");
                             info: @tr("Used by rules without their own value. A second press within this window after the first release counts as a double tap. When a rule has a double-tap action, a single tap waits for this window before it runs.");
                             hint: @tr("Maximum interval between two taps.");
-                            NumericInput { minimum: 0; maximum: 2147483647; step: 10; text: SettingsEditor.double-tap-timeout; edited(value) => { SettingsEditor.double-tap-timeout = value; SettingsEditor.schedule-save(); } }
+                            NumericInput { label: @tr("Double tap timeout (ms)"); text: SettingsEditor.double-tap-timeout; edited(value) => { SettingsEditor.double-tap-timeout = value; SettingsEditor.schedule-save(); } }
                         }
                         BehaviorField {
                             label: @tr("Combination timeout (ms)");
                             info: @tr("For rules triggered by a key combination such as KeyJ+KeyK. All keys must be pressed within this window. Until then the first keys are held back, and if the combination is not completed they are typed as usual. Modifiers are never held back.");
                             hint: @tr("Maximum interval between the keys of a combination.");
-                            NumericInput { minimum: 0; maximum: 1000; step: 10; text: SettingsEditor.combo-timeout; edited(value) => { SettingsEditor.combo-timeout = value; SettingsEditor.schedule-save(); } }
+                            NumericInput { label: @tr("Combination timeout (ms)"); maximum: 1000; text: SettingsEditor.combo-timeout; edited(value) => { SettingsEditor.combo-timeout = value; SettingsEditor.schedule-save(); } }
                         }
                     }
                     SubsectionTitle { text: @tr("Macros"); }
@@ -357,13 +357,13 @@ export component SettingsPage inherits VerticalBox {
                             label: @tr("Macro step pause (ms)");
                             info: @tr("Used by macros without their own value.");
                             hint: @tr("Default pause between macro steps.");
-                            NumericInput { minimum: 0; maximum: 2147483647; step: 10; text: SettingsEditor.macro-pause; edited(value) => { SettingsEditor.macro-pause = value; SettingsEditor.schedule-save(); } }
+                            NumericInput { label: @tr("Macro step pause (ms)"); maximum: 2000; text: SettingsEditor.macro-pause; edited(value) => { SettingsEditor.macro-pause = value; SettingsEditor.schedule-save(); } }
                         }
                         BehaviorField {
                             label: @tr("Modifier delay (ms)");
                             info: @tr("Used by macros without their own value. How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of one step.");
                             hint: @tr("Delay after pressing macro modifiers.");
-                            NumericInput { minimum: 0; maximum: 2147483647; step: 1; text: SettingsEditor.modifier-delay; edited(value) => { SettingsEditor.modifier-delay = value; SettingsEditor.schedule-save(); } }
+                            NumericInput { label: @tr("Modifier delay (ms)"); maximum: 2000; step: 1; text: SettingsEditor.modifier-delay; edited(value) => { SettingsEditor.modifier-delay = value; SettingsEditor.schedule-save(); } }
                         }
                     }
                 }

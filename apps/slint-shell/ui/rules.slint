@@ -372,19 +372,22 @@ export component RuleDialogOverlay inherits FocusScope {
                         RuleCell { enabled: RulesEditor.hold-mode != 2; title: @tr("Held key"); info: @tr("Holds the selected key or combination while the trigger is held. It can be combined with layer activation. Leave empty to activate only the layer."); value: RulesEditor.hold; empty-text: RulesEditor.layer != "" ? @tr("+ Add key") : RulesEditor.swallow-hold ? @tr("Suppress") : @tr("Normal key behavior"); clicked => { RulesEditor.open-dialog(RulesEditor.selected, RuleDialog.hold); } }
                         VerticalLayout { spacing: 8px;
                             FormLabel { text: @tr("Long-hold duration, seconds"); info: @tr("The action runs once after continuous holding. Leave empty to use the global setting: {} s", RulesEditor.default-long-hold-timeout); }
-                            TextField { enabled: RulesEditor.hold-mode == 2; text <=> RulesEditor.long-hold-timeout; placeholder-text: @tr("Default: {} s", RulesEditor.default-long-hold-timeout); }
+                            HorizontalLayout { spacing: 12px; alignment: start;
+                                NumericInput { enabled: RulesEditor.hold-mode == 2; text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: 0.1; maximum: 86400; step: 0.1; fractional: true; label: @tr("Long-hold duration, seconds"); }
+                                Text { text: @tr("Default: {} s", RulesEditor.default-long-hold-timeout); color: Theme.muted; font-size: 12px; wrap: word-wrap; vertical-alignment: center; }
+                            }
                         }
                         VerticalLayout { spacing: 8px;
                             FormLabel { text: @tr("Hold timeout, ms"); info: @tr("Time before this rule becomes a hold. Leave empty to use the global setting: {} ms", RulesEditor.default-hold-timeout); }
                             HorizontalLayout { spacing: 12px; alignment: start;
-                                NumericInput { enabled: RulesEditor.hold-mode != 2; text <=> RulesEditor.hold-timeout; field-width: 144px; }
+                                NumericInput { enabled: RulesEditor.hold-mode != 2; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: @tr("Hold timeout, ms"); }
                                 Text { text: @tr("Global setting: {} ms", RulesEditor.default-hold-timeout); color: Theme.muted; font-size: 12px; wrap: word-wrap; vertical-alignment: center; }
                         }
                         }
                         VerticalLayout { spacing: 8px;
                         FormLabel { text: @tr("Double-tap ms"); info: @tr("Maximum interval between two taps for this rule. Leave empty to use the global setting: {} ms", RulesEditor.default-double-timeout); }
                         HorizontalLayout { spacing: 12px; alignment: start;
-                            NumericInput { enabled: !RulesEditor.is-chord && RulesEditor.double-tap != ""; text <=> RulesEditor.double-timeout; field-width: 144px; }
+                            NumericInput { enabled: !RulesEditor.is-chord && RulesEditor.double-tap != ""; text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: @tr("Double-tap ms"); }
                             Text { text: @tr("Global setting: {} ms", RulesEditor.default-double-timeout); color: Theme.muted; font-size: 12px; wrap: word-wrap; vertical-alignment: center; }
                         }
                         }
@@ -398,9 +401,10 @@ export component RuleDialogOverlay inherits FocusScope {
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.remove: Text { text: @tr("This rule will be removed from the current layout."); color: Theme.muted; }
-                if RulesEditor.dialog == RuleDialog.hold-timeout || RulesEditor.dialog == RuleDialog.double-timeout: TextField {
+                if RulesEditor.dialog == RuleDialog.hold-timeout || RulesEditor.dialog == RuleDialog.double-timeout: NumericInput {
                     text <=> RulesEditor.dialog-value;
-                    placeholder-text: @tr("Milliseconds; empty uses default");
+                    placeholder-text: RulesEditor.dialog == RuleDialog.hold-timeout ? RulesEditor.default-hold-timeout : RulesEditor.default-double-timeout;
+                    label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold timeout, ms") : @tr("Double-tap ms");
                     accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
                 }
                 Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }

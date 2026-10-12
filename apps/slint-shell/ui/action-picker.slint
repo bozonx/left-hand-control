@@ -1,4 +1,4 @@
-import { SearchField, TextField } from "controls.slint";
+import { NumericInput, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
@@ -285,7 +285,7 @@ export component PickerOverlay inherits Rectangle {
                         }
                         if ActionPicker.query == "" && ActionPicker.category == PickerCategory.pause: VerticalBox { padding: 0px;
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
-                            TextField { text: ActionPicker.pause-content; edited => { ActionPicker.touched = true; ActionPicker.value = "pause:" + self.text; ActionPicker.refresh(); } }
+                            NumericInput { text: ActionPicker.pause-content; minimum: 1; maximum: 10000; label: @tr("Pause (ms)"); edited(value) => { ActionPicker.touched = true; ActionPicker.value = "pause:" + value; ActionPicker.refresh(); } }
                         }
                         if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
                             VerticalLayout { spacing: 0px;

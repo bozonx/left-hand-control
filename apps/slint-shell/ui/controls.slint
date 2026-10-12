@@ -289,17 +289,21 @@ global NumericWheel {
 }
 
 // Text-backed numeric field: empty means "use the global default" (shown as the placeholder).
+// Every numeric value in the UI uses it. The wheel changes the value while the field has focus.
 export component NumericInput inherits TouchArea {
     in property <length> field-width: 124px;
     in-out property <string> text <=> edit.text;
     in property <string> placeholder-text <=> edit.placeholder-text;
     in property <string> label;
-    in property <int> minimum: 0;
-    in property <int> maximum: 2147483647;
+    in property <float> minimum: 0;
+    in property <float> maximum: 2147483647;
     in property <float> step: 10;
     in property <bool> fractional: false;
     callback edited(string);
+    callback accepted(string);
     private property <length> wheel;
+    private property <bool> focused: edit.has-focus;
+    changed focused => { root.wheel = 0; }
     width: root.field-width;
     height: 32px;
     horizontal-stretch: 0;
@@ -322,6 +326,8 @@ export component NumericInput inherits TouchArea {
     }
     scroll-event(event) => {
         if !root.enabled || !edit.has-focus || event.delta-y == 0 { return reject; }
+        // A reversed direction starts a new notch instead of cancelling the partial one.
+        if root.wheel != 0 && (root.wheel > 0) != (event.delta-y > 0) { root.wheel = 0; }
         root.wheel += event.delta-y;
         if abs(root.wheel) >= NumericWheel.notch {
             root.apply(root.current-value() + (root.wheel > 0 ? root.step : -root.step));
@@ -334,8 +340,11 @@ export component NumericInput inherits TouchArea {
         width: 100%;
         input-type: root.fractional ? decimal : number;
         accessible-label: root.label;
+        accepted(value) => { root.accepted(value); }
         edited(value) => {
-            if value.is-float() && (value.to-float() < root.minimum || value.to-float() > root.maximum) {
+            // Only the maximum is enforced while typing: a value below the minimum may still be
+            // the start of a valid one, e.g. "0" before "0.5".
+            if value.is-float() && value.to-float() > root.maximum {
                 root.apply(value.to-float());
             } else {
                 root.edited(value);

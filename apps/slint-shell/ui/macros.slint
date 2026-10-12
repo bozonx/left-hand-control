@@ -87,9 +87,9 @@ component StepRow inherits HorizontalLayout {
             CategoryIcon { category: PickerCategory.pause; }
             Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
             NumericInput {
-                field-width: 110px;
                 text: root.step.pause-ms;
-                step: 10;
+                minimum: 1;
+                maximum: 10000;
                 label: @tr("Pause (ms)");
                 edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
             }
@@ -182,6 +182,7 @@ component MacroCard inherits Card {
                         NumericInput {
                             text: root.item.step-pause;
                             placeholder-text: MacroEditor.default-step-pause;
+                            maximum: 2000;
                             label: @tr("Pause between steps");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
                         }
@@ -202,6 +203,7 @@ component MacroCard inherits Card {
                         NumericInput {
                             text: root.item.modifier-delay;
                             placeholder-text: MacroEditor.default-modifier-delay;
+                            maximum: 2000;
                             step: 1;
                             label: @tr("Modifier delay");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
