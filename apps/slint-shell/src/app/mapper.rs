@@ -203,6 +203,11 @@ impl App {
             return;
         }
         *self.last_mapper_status.borrow_mut() = Some(current);
+        if !status.running
+            && let Some(error) = &status.last_error
+        {
+            self.set_mapper_error(error.clone());
+        }
         let message = if status.running {
             Msg::MapperRunning(status.last_error)
         } else {
@@ -218,28 +223,56 @@ impl App {
     }
 
     pub(super) fn toggle_mapper(&self) {
-        let state = self.settings.global::<AppState>();
-        if state.get_mapper_busy() {
+        if self.settings.global::<AppState>().get_mapper_busy() {
             return;
         }
         if lhc_core::mapper::runtime::status().running {
-            self.set_mapper_busy(true);
-            std::thread::spawn(|| {
-                let result = lhc_core::mapper::runtime::stop();
-                post(move |app| {
-                    app.set_mapper_busy(false);
-                    match result {
-                        Ok(()) => {
-                            app.set_error(Msg::None);
-                            crate::notifications::send(&app.settings, Msg::MapperStopped(None));
-                        }
-                        Err(error) => app.set_error(Msg::Error(error)),
-                    }
-                    app.refresh_mapper_status();
-                });
-            });
-            return;
+            self.stop_mapper(false);
+        } else {
+            self.start_mapper();
         }
+    }
+
+    /// Restart a running mapper so it picks up the saved devices.
+    pub(super) fn restart_mapper(&self) {
+        if !self.settings.global::<AppState>().get_mapper_busy()
+            && lhc_core::mapper::runtime::status().running
+        {
+            self.stop_mapper(true);
+        }
+    }
+
+    fn stop_mapper(&self, restart: bool) {
+        self.set_mapper_busy(true);
+        std::thread::spawn(move || {
+            let result = lhc_core::mapper::runtime::stop();
+            post(move |app| {
+                app.set_mapper_busy(false);
+                match result {
+                    Ok(()) => {
+                        app.set_error(Msg::None);
+                        app.set_mapper_error(String::new());
+                        if restart {
+                            app.start_mapper();
+                            return;
+                        }
+                        crate::notifications::send(&app.settings, Msg::MapperStopped(None));
+                    }
+                    Err(error) => app.set_error(Msg::Error(error)),
+                }
+                app.refresh_mapper_status();
+            });
+        });
+    }
+
+    fn set_mapper_error(&self, error: String) {
+        self.settings
+            .global::<AppState>()
+            .set_mapper_error(error.into());
+    }
+
+    fn start_mapper(&self) {
+        let state = self.settings.global::<AppState>();
         let Some(document) = self.document() else {
             self.set_error(Msg::LoadConfigFirst);
             return;
@@ -272,6 +305,7 @@ impl App {
                 match result {
                     Ok(()) => {
                         app.set_error(Msg::None);
+                        app.set_mapper_error(String::new());
                         crate::notifications::send(&app.settings, Msg::MapperRunning(None));
                         if let Some(document) = app.document() {
                             document.mapper_started(runtime.layout_id);
@@ -281,7 +315,10 @@ impl App {
                             }
                         }
                     }
-                    Err(error) => app.set_error(Msg::Error(error)),
+                    Err(error) => {
+                        app.set_mapper_error(error.clone());
+                        app.set_error(Msg::Error(error));
+                    }
                 }
                 app.refresh_mapper_status();
             });

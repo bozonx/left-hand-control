@@ -134,6 +134,7 @@ export component DevicePicker inherits Rectangle {
                                     accessible-action-default => { root.choose(index); }
                                     HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 6px;
                                         Text { min-width: 0px; horizontal-stretch: 1; text: root.choice-label(choice); overflow: elide; color: Theme.text; vertical-alignment: center; }
+                                        if choice.path != "" && choice.path != choice.label: Text { horizontal-stretch: 0; text: choice.path; color: Theme.muted; font-size: 12px; vertical-alignment: center; }
                                         if root.selected-index == choice.source-index: VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: @image-url("icons/check.svg"); colorize: Theme.link; } }
                                     }
                                     row-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(index); } }

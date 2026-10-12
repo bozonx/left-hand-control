@@ -676,7 +676,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<f64>().unwrap();
                 // Scroll the long-hold field into view, then move to focus it: Flickable
                 // keeps consecutive wheel events at one position in the same gesture.
-                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(250.0, 450.0), delta_x: 0.0, delta_y: -240.0 });
+                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(250.0, 450.0), delta_x: 0.0, delta_y: -400.0 });
                 snapshot(&ui, "settings-behavior-timing");
                 assert!((duration() - 2.5).abs() < 0.0001);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }

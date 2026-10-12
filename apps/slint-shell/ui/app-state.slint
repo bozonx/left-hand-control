@@ -8,6 +8,8 @@ export global AppState {
     in property <bool> mapper-busy;
     /// A keyboard device is chosen, so the mapper can start.
     in property <bool> keyboard-selected;
+    /// Why the mapper failed to start or stopped; empty when it is fine.
+    in property <string> mapper-error;
     in property <bool> game-active;
     in property <bool> game-state-available;
     in property <GameModeControl> game-control: GameModeControl.auto;
@@ -25,6 +27,8 @@ export global AppState {
     in property <Message> backend-error;
     in property <Message> config-status;
     callback toggle-mapper();
+    /// Restart a running mapper after its devices changed.
+    callback restart-mapper();
     /// Open the settings tab where the keyboard device is chosen.
     callback open-keyboard-settings();
     callback set-game-control(GameModeControl);

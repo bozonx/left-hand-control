@@ -334,7 +334,7 @@ fn device_choices(
                 label: if device.name.is_empty() {
                     device.path.clone()
                 } else {
-                    format!("{} · {}", device.name, device.path)
+                    device.name.clone()
                 }
                 .into(),
                 path: device.path.clone().into(),

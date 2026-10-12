@@ -458,6 +458,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));
     app.settings
         .global::<AppState>()
+        .on_restart_mapper(|| with_app(|app| app.restart_mapper()));
+    app.settings
+        .global::<AppState>()
         .on_open_keyboard_settings(|| {
             with_app(|app| {
                 app.settings

@@ -124,12 +124,90 @@ component SubsectionTitle inherits Text {
     font-weight: 600;
 }
 
+/// Label column with an icon and a note, and the device controls on the right.
+component DeviceField inherits HorizontalLayout {
+    in property <image> icon;
+    in property <string> label;
+    in property <string> note;
+    vertical-stretch: 0;
+    max-width: 576px;
+    spacing: 16px;
+    VerticalLayout { width: 160px; horizontal-stretch: 0; alignment: start; padding-top: 8px; spacing: 2px;
+        HorizontalLayout { spacing: 8px; alignment: start;
+            VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: root.icon; colorize: Theme.text; } }
+            Text { text: root.label; color: Theme.text; vertical-alignment: center; }
+        }
+        Text { text: root.note; color: Theme.muted; font-size: 12px; }
+    }
+    VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 6px; alignment: start;
+        @children
+    }
+}
+
+/// Mapper state with the one action that changes it.
+component MapperStatusCard inherits Rectangle {
+    private property <bool> running: AppState.mapper-running;
+    private property <bool> busy: AppState.mapper-busy;
+    private property <bool> failed: !root.running && !root.busy && AppState.mapper-error != "";
+    private property <bool> ready: SettingsEditor.keyboard-device-path != "";
+    private property <string> keyboard-name: !SettingsEditor.keyboard-manual && SettingsEditor.selected-device > 0 && SettingsEditor.selected-device < SettingsEditor.input-devices.length
+        ? SettingsEditor.input-devices[SettingsEditor.selected-device].label : SettingsEditor.keyboard-device-path;
+    private property <string> mouse-name: !SettingsEditor.mouse-manual && SettingsEditor.selected-mouse > 0 && SettingsEditor.selected-mouse < SettingsEditor.mouse-devices.length
+        ? SettingsEditor.mouse-devices[SettingsEditor.selected-mouse].label : SettingsEditor.mouse-device-path;
+    private property <color> tone: root.busy ? Theme.warning : root.running ? Theme.success : root.failed ? Theme.error : Theme.muted;
+    vertical-stretch: 0;
+    max-width: 576px;
+    min-height: content.preferred-height;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: root.failed ? Theme.error.transparentize(0.5) : root.running ? Theme.success.transparentize(0.5) : Theme.divider;
+    background: root.failed ? Theme.error.transparentize(0.9) : root.running ? Theme.success.transparentize(0.9) : Theme.card;
+    content := HorizontalLayout {
+        padding: 12px;
+        padding-left: 14px;
+        spacing: 12px;
+        VerticalLayout { alignment: start; padding-top: 5px;
+            Rectangle { width: 10px; height: 10px; border-radius: 5px; background: root.tone; }
+        }
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 4px; alignment: center;
+            Text {
+                text: root.busy ? @tr("Please wait…") : root.running ? @tr("Running") : root.failed ? @tr("Failed to start") : @tr("Stopped");
+                color: Theme.text; font-weight: 700;
+            }
+            Text {
+                text: root.busy ? ""
+                    : root.running ? (root.mouse-name != "" ? @tr("Intercepting {} and {}", root.keyboard-name, root.mouse-name) : @tr("Intercepting {}", root.keyboard-name))
+                    : root.failed ? AppState.mapper-error
+                    : root.ready ? @tr("Keys work as usual. Start the mapper to apply your layouts.")
+                    : @tr("Select a keyboard below to start the mapper.");
+                color: root.failed ? Theme.text : Theme.muted; font-size: 12px; wrap: word-wrap;
+            }
+            if root.failed && AppState.is-linux: Text {
+                text: @tr("The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput.");
+                color: Theme.muted; font-size: 12px; wrap: word-wrap;
+            }
+        }
+        VerticalLayout { alignment: center;
+            Button {
+                text: root.running ? @tr("Stop") : @tr("Start");
+                primary: !root.running;
+                icon: root.running ? @image-url("icons/square.svg") : @image-url("icons/play.svg");
+                colorize-icon: true;
+                enabled: !root.busy && (root.running || root.ready);
+                clicked => { if root.running { AppState.toggle-mapper(); } else { SettingsEditor.save(); if SettingsEditor.message.id == "" { AppState.toggle-mapper(); } } }
+            }
+        }
+    }
+}
+
 export component SettingsPage inherits VerticalBox {
     padding: 0px;
     spacing: 10px;
     horizontal-stretch: 1;
     max-width: 100000px;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
+    /// A running mapper keeps the devices it started with: restart it once the new ones are saved.
+    function apply-devices() { if AppState.mapper-running && SettingsEditor.message.id == "" { AppState.restart-mapper(); } }
     function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
     if SettingsEditor.message.id != "": Text { text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
@@ -226,8 +304,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                    if AppState.is-linux: CheckBox { text: @tr("Start the mapper on launch"); checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
-                    if AppState.is-linux: CheckBox { text: @tr("Show the layout name on screen when the active layout changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
+                    if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                 }
                 if SettingsEditor.tab == 1: Section {
                     title: @tr("Accessibility");
@@ -290,27 +367,35 @@ export component SettingsPage inherits VerticalBox {
                     VerticalBox { padding: 0px; spacing: 16px;
                         CardHeader { vertical-stretch: 0;
                             title: @tr("Mapper");
-                            info: @tr("Pick the physical device whose events should be intercepted.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.") + "\n\n" + @tr("The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput.");
-                            VerticalLayout { alignment: center;
-                                Badge { text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Running") : @tr("Stopped"); fill: AppState.mapper-running ? Theme.success.transparentize(0.85) : Theme.hover; }
-                            }
-                            Button { text: @tr("Refresh device list"); enabled: !AppState.mapper-running && !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
+                            info: @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.");
                         }
-                        HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
-                            VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 6px; alignment: start;
-                                Text { vertical-stretch: 0; text: @tr("Keyboard device"); color: Theme.text; }
-                                DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); suggested-label: @tr("Looks like a keyboard"); enabled: !AppState.mapper-running && !AppState.mapper-busy; choices: SettingsEditor.input-devices; selected-index: SettingsEditor.selected-device; selected(index) => { SettingsEditor.select-device(index); } }
-                                if SettingsEditor.keyboard-manual: TextField { enabled: !AppState.mapper-running; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        MapperStatusCard { }
+                        if AppState.is-linux: CheckBox { text: @tr("Start the mapper on launch"); checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
+                        VerticalLayout { vertical-stretch: 0; max-width: 576px; spacing: 4px; padding-top: 8px;
+                            HorizontalLayout { spacing: 6px; height: 28px;
+                                SubsectionTitle { horizontal-stretch: 1; text: @tr("Devices"); vertical-alignment: center; }
+                                // Hidden while running: the list would then include the mapper's own virtual device.
+                                if !AppState.mapper-running: IconButton { icon: @image-url("icons/refresh-cw.svg"); tooltip: @tr("Refresh device list"); enabled: !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
                             }
-                            VerticalBox { padding: 0px; width: 280px; horizontal-stretch: 0; spacing: 6px; alignment: start;
-                                Text { vertical-stretch: 0; text: @tr("Mouse (optional)"); color: Theme.text; }
-                                DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); suggested-label: @tr("Looks like a mouse"); enabled: !AppState.mapper-running && !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; selected-index: SettingsEditor.selected-mouse; selected(index) => { SettingsEditor.select-mouse(index); } }
-                                if SettingsEditor.mouse-manual: TextField { enabled: !AppState.mapper-running; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
-                            }
+                            Text { vertical-stretch: 0; text: @tr("Pick the physical device whose events should be intercepted."); color: Theme.muted; wrap: word-wrap; }
                         }
-                        HorizontalBox { padding: 0px; vertical-stretch: 0; alignment: end;
-                            Button { text: AppState.mapper-running ? @tr("Stop") : @tr("Start"); primary: !AppState.mapper-running; icon: AppState.mapper-running ? @image-url("icons/square.svg") : @image-url("icons/play.svg"); colorize-icon: true; enabled: !AppState.mapper-busy && (AppState.mapper-running || SettingsEditor.keyboard-device-path != ""); clicked => { if AppState.mapper-running { AppState.toggle-mapper(); } else { SettingsEditor.save(); if SettingsEditor.message.id == "" { AppState.toggle-mapper(); } } } }
+                        DeviceField {
+                            icon: @image-url("icons/keyboard.svg");
+                            label: @tr("Keyboard");
+                            note: @tr("Required");
+                            DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); suggested-label: @tr("Looks like a keyboard"); enabled: !AppState.mapper-busy; choices: SettingsEditor.input-devices; selected-index: SettingsEditor.selected-device; selected(index) => { SettingsEditor.select-device(index); apply-devices(); } }
+                            if SettingsEditor.keyboard-manual: TextField { enabled: !AppState.mapper-busy; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); apply-devices(); } }
+                            if !SettingsEditor.keyboard-manual && SettingsEditor.keyboard-device-path != "": Text { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: 12px; overflow: elide; }
                         }
+                        DeviceField {
+                            icon: @image-url("icons/mouse.svg");
+                            label: @tr("Mouse");
+                            note: @tr("Optional");
+                            DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); suggested-label: @tr("Looks like a mouse"); enabled: !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; selected-index: SettingsEditor.selected-mouse; selected(index) => { SettingsEditor.select-mouse(index); apply-devices(); } }
+                            if SettingsEditor.mouse-manual: TextField { enabled: !AppState.mapper-busy; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); apply-devices(); } }
+                            if !SettingsEditor.mouse-manual && SettingsEditor.mouse-device-path != "": Text { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: 12px; overflow: elide; }
+                        }
+                        if AppState.mapper-running: Text { vertical-stretch: 0; max-width: 576px; text: @tr("Changing a device restarts the mapper."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                     }
                 }
                 if SettingsEditor.tab == 2: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }

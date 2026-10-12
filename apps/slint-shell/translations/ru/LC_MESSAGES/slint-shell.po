@@ -2226,8 +2226,8 @@ msgstr "Активировать раскладку {} (переключает �
 msgid "There is no layout number {}"
 msgstr "Нет раскладки с номером {}"
 
-msgid "Show the layout name on screen when the active layout changes"
-msgstr "Показывать название раскладки на экране при смене активной раскладки"
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "Показывать название раскладки Left Hand Control при её смене"
 
 msgid "The app:activateLayout1…5 actions activate the layout with that number. In Auto mode they switch to Single mode."
 msgstr "Действия app:activateLayout1…5 активируют раскладку с этим номером. В автоматическом режиме они переключают в одиночный режим."
@@ -2258,3 +2258,30 @@ msgstr "Удалить приложение?"
 
 msgid "“{}” will be removed from the list."
 msgstr "«{}» будет удалено из списка."
+
+msgid "Devices"
+msgstr "Устройства"
+
+msgid "Required"
+msgstr "Обязательно"
+
+msgid "Optional"
+msgstr "Необязательно"
+
+msgid "Failed to start"
+msgstr "Не удалось запустить"
+
+msgid "Intercepting {} and {}"
+msgstr "Перехватываются {} и {}"
+
+msgid "Intercepting {}"
+msgstr "Перехватывается {}"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr "Клавиши работают как обычно. Запустите маппер, чтобы применить раскладки."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "Выберите клавиатуру ниже, чтобы запустить маппер."
+
+msgid "Changing a device restarts the mapper."
+msgstr "При смене устройства маппер перезапустится."
