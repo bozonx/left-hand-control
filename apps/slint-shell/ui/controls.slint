@@ -674,6 +674,15 @@ export global InlineEditors {
     in-out property <int> commit-revision: 0; in-out property <int> revision; pure callback nonempty(string) -> bool;
     // Set from the winit window events: focus loss caused by switching windows must not commit.
     in-out property <bool> window-active: true;
+    // Buttons and other touch areas take presses without moving focus, so focus loss
+    // alone misses them: an open editor also commits on a press outside its bounds.
+    out property <length> press-x;
+    out property <length> press-y;
+    out property <int> press-revision;
+    public function pointer-pressed(x: length, y: length) { root.press-x = x; root.press-y = y; root.press-revision += 1; }
+    public pure function pressed-outside(x: length, y: length, width: length, height: length) -> bool {
+        return root.press-x < x || root.press-x >= x + width || root.press-y < y || root.press-y >= y + height;
+    }
 }
 
 export component InlineTextField inherits FocusScope {
@@ -688,11 +697,15 @@ export component InlineTextField inherits FocusScope {
     private property <string> draft;
     private property <int> revision: InlineEditors.revision;
     private property <int> commit-revision: InlineEditors.commit-revision;
+    private property <int> press-revision: InlineEditors.press-revision;
     private property <Message> no-issue;
     // Checked only while editing: validation may read the library from disk.
     private property <Message> issue: root.editing ? root.validate(root.draft) : root.no-issue;
     private property <bool> can-save: (root.allow-empty || InlineEditors.nonempty(root.draft)) && root.issue.id == "";
     changed commit-revision => { if root.editing { root.save(); } }
+    changed press-revision => {
+        if InlineEditors.pressed-outside(root.absolute-position.x, root.absolute-position.y, root.width, root.height) { root.blurred(); }
+    }
     changed revision => { root.editing = false; }
     changed text => { root.editing = false; }
     callback saved(string);
@@ -800,7 +813,11 @@ export component InlineTextArea inherits FocusScope {
     private property <string> draft;
     private property <int> revision: InlineEditors.revision;
     private property <int> commit-revision: InlineEditors.commit-revision;
+    private property <int> press-revision: InlineEditors.press-revision;
     changed commit-revision => { if root.editing { root.save(); } }
+    changed press-revision => {
+        if InlineEditors.pressed-outside(root.absolute-position.x, root.absolute-position.y, root.width, root.height) { root.blurred(); }
+    }
     changed revision => { root.editing = false; }
     changed text => { root.editing = false; }
     callback saved(string);

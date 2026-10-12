@@ -13,6 +13,8 @@ slint::slint! {
         public function edit() { field.begin(); }
         public function edit-description() { description-field.begin(); }
         public function set-window-active(active: bool) { InlineEditors.window-active = active; }
+        public function pointer-pressed(x: length, y: length) { InlineEditors.pointer-pressed(x, y); }
+        in-out property <bool> touched;
         out property <bool> editing: field.editing;
         out property <int> number: numeric.text.to-float();
         // Stands in for the settings window's root FocusScope that takes focus on empty clicks.
@@ -22,6 +24,8 @@ slint::slint! {
             description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; } }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }
+        // Stands in for a card's touch area: it takes the press without moving focus.
+        TouchArea { x: 20px; y: 220px; width: 200px; height: 30px; clicked => { root.touched = true; } }
         numeric := NumericInput { x: 300px; y: 260px; step: 10; text: "100"; }
         if root.confirming: ConfirmDialog {
             title: "Delete?"; body: "Confirm deletion."; confirm-text: "Delete";
@@ -72,6 +76,8 @@ fn redo(ui: &ControlsWindow) {
 fn click(ui: &ControlsWindow, x: f32, y: f32) {
     let position = slint::LogicalPosition::new(x, y);
     let button = slint::platform::PointerEventButton::Left;
+    // The settings window reports presses to the inline editors from its winit events.
+    ui.invoke_pointer_pressed(x, y);
     ui.window()
         .dispatch_event(WindowEvent::PointerMoved { position });
     ui.window()
@@ -133,12 +139,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             20 => { assert_eq!(ui.get_value(), "Blurred"); assert!(!ui.get_editing()); ui.invoke_edit(); }
             21 => { key(&ui, "Cancelled"); click(&ui, 486.0, 36.0); }
             22 => { assert_eq!(ui.get_value(), "Blurred"); assert!(!ui.get_editing()); ui.invoke_edit(); }
-            23 => { key(&ui, "Switched"); ui.invoke_set_window_active(false); ui.window().dispatch_event(WindowEvent::WindowActiveChanged(false)); }
-            24 => { assert!(ui.get_editing()); ui.window().dispatch_event(WindowEvent::WindowActiveChanged(true)); ui.invoke_set_window_active(true); }
-            25 => { assert!(ui.get_editing()); key(&ui, Key::Escape); assert_eq!(ui.get_value(), "Blurred"); }
-            26 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 100); click(&ui, 320.0, 276.0); }
-            27 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 110); wheel(&ui, 320.0, 276.0, -60.0); wheel(&ui, 320.0, 276.0, -60.0); assert_eq!(ui.get_number(), 90); }
-            28 => { println!("Focus loss passed: blur saves, cancel button, window switch, focused wheel steps"); slint::quit_event_loop().unwrap(); }
+            23 => { key(&ui, "Touched"); click(&ui, 120.0, 235.0); }
+            24 => { assert!(ui.get_touched()); assert_eq!(ui.get_value(), "Touched"); assert!(!ui.get_editing()); ui.invoke_edit(); }
+            25 => { key(&ui, "Switched"); ui.invoke_set_window_active(false); ui.window().dispatch_event(WindowEvent::WindowActiveChanged(false)); }
+            26 => { assert!(ui.get_editing()); ui.window().dispatch_event(WindowEvent::WindowActiveChanged(true)); ui.invoke_set_window_active(true); }
+            27 => { assert!(ui.get_editing()); key(&ui, Key::Escape); assert_eq!(ui.get_value(), "Touched"); }
+            28 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 100); click(&ui, 320.0, 276.0); }
+            29 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 110); wheel(&ui, 320.0, 276.0, -60.0); wheel(&ui, 320.0, 276.0, -60.0); assert_eq!(ui.get_number(), 90); }
+            30 => { println!("Focus loss passed: blur saves, press outside saves, cancel button, window switch, focused wheel steps"); slint::quit_event_loop().unwrap(); }
             _ => unreachable!(),
         }
         step.set(step.get() + 1);

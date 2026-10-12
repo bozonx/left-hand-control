@@ -2,6 +2,7 @@
 //! shared [`Document`] and refreshes it when the document changes.
 
 pub(crate) mod conditions;
+mod inline;
 mod keys;
 mod layers;
 mod library;
@@ -12,6 +13,7 @@ mod reorder;
 mod rules;
 mod settings;
 
+pub use inline::observe as observe_inline_editors;
 pub use library::refresh_active;
 pub use picker::capture;
 
