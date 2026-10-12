@@ -681,6 +681,17 @@ impl FlickableData {
         flick_rc: &ItemRc,
     ) -> InputEventFilterResult {
         let mut inner = self.inner.borrow_mut();
+        // Local patch: winit never ends a mouse wheel gesture that starts with a
+        // high-resolution (non-discrete) step, so a wheel capture would last forever and
+        // keep every later event from the children. Release it once the wheel has been
+        // idle for the filter duration or the pointer has moved.
+        if inner.capture_events == Some(CaptureEvents::MouseWheel)
+            && event.position().is_none_or(|position| {
+                !inner.should_capture_scroll(SCROLL_FILTER_DURATION, position)
+            })
+        {
+            inner.capture_events = None;
+        }
         match event {
             MouseEvent::Pressed { position, button: PointerEventButton::Left, .. } => {
                 inner.velocity_rb = VelocityRingBuffer::default();
@@ -739,7 +750,19 @@ impl FlickableData {
                             InputEventFilterResult::ForwardEvent
                         }
                     }
-                    TouchPhase::Started => InputEventFilterResult::Intercept,
+                    // Local patch: a new wheel gesture goes to the children first, so a focused
+                    // spin box under the pointer can take it; when they ignore it, the event
+                    // comes back to this flickable, which then captures the gesture.
+                    TouchPhase::Started => {
+                        let delta = Self::scroll_delta(window_adapter, *delta_x, *delta_y);
+                        if FlickableDataInner::is_allowed_scroll_direction(flick, delta, flick_rc)
+                            && inner.should_capture_scroll(SCROLL_FILTER_DURATION, *position)
+                        {
+                            InputEventFilterResult::Intercept
+                        } else {
+                            InputEventFilterResult::ForwardEvent
+                        }
+                    }
                     TouchPhase::Moved => {
                         if inner.capture_events.is_some() {
                             InputEventFilterResult::Intercept
