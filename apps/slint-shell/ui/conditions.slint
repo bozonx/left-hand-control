@@ -400,17 +400,15 @@ export component ApplicationsField inherits VerticalLayout {
     spacing: 8px;
     HorizontalLayout { spacing: 6px;
         Text { text: root.label; color: Theme.text; vertical-alignment: center; }
-        InfoTip { text: @tr("An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions."); }
+        InfoTip {
+            text: (root.exclusion ? @tr("A match blocks the rule, even if the window is in the allowed list.") : @tr("Any match allows the rule. An empty list allows all windows."))
+                + "\n\n" + @tr("An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions.");
+        }
         Rectangle { horizontal-stretch: 1; }
         IconButton {
             icon: @image-url("icons/plus.svg"); text: @tr("Add");
             clicked => { AppEntryDialog.open(root.value, root.exclusion, -1); }
         }
-    }
-    Text { text: root.exclusion ? @tr("A match blocks the rule, even if the window is in the allowed list.") : @tr("Any match allows the rule. An empty list allows all windows."); color: Theme.muted; wrap: word-wrap; }
-    if !root.detection-available: Text {
-        text: @tr("Active window detection is unavailable in this session, so application conditions do not match.");
-        color: Theme.warning; wrap: word-wrap;
     }
     Rectangle {
         border-width: 1px; border-color: Theme.divider; border-radius: 8px; background: Theme.card;
@@ -438,35 +436,61 @@ export component ApplicationsField inherits VerticalLayout {
     }
 }
 
+/// Conditions of a rule: a heading, game mode and system languages side
+/// by side, then the window lists — with `show-exclusions` the allowed and
+/// the excluded windows side by side.
 export component ConditionsForm inherits VerticalLayout {
+    in property <string> heading;
     in-out property <GameCondition> game;
     in-out property <string> languages;
     in-out property <string> applications;
+    in-out property <string> excluded;
     in property <bool> show-applications: true;
+    in property <bool> show-exclusions;
+    /// Unknown until the first status counts as available.
+    private property <bool> detection-available: AppState.game-window-availability.id != "capability-unavailable"
+        && AppState.game-window-availability.id != "capability-unsupported";
     spacing: 24px;
-    VerticalLayout { spacing: 10px;
-        Text { text: @tr("Game mode"); color: Theme.text; }
-        RadioGroup {
-            orientation: vertical;
-            selected(value) => { root.game = value == @tr("Game mode on") ? GameCondition.on : value == @tr("Game mode off") ? GameCondition.off : GameCondition.any; }
-            RadioButton { text: @tr("Does not matter"); checked: root.game == GameCondition.any; }
-            RadioButton { text: @tr("Game mode on"); checked: root.game == GameCondition.on; }
-            RadioButton { text: @tr("Game mode off"); checked: root.game == GameCondition.off; }
+    VerticalLayout { spacing: 12px;
+        if root.heading != "": Text { text: root.heading; color: Theme.text; font-weight: 600; }
+        HorizontalLayout { spacing: 24px;
+            VerticalLayout { spacing: 10px; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+                Text { text: @tr("System languages"); color: Theme.text; }
+                for language in ConditionChoices.languages: CheckBox {
+                    text: language.label;
+                    checked: ConditionChoices.contains(root.languages, language.code);
+                    toggled => { root.languages = ConditionChoices.toggle(root.languages, language.code, self.checked); }
+                }
+                if ConditionChoices.languages.length == 0: Text { text: @tr("No system languages detected"); color: Theme.muted; wrap: word-wrap; }
+                for code in ConditionChoices.unknown-languages(root.languages, ConditionChoices.languages): CheckBox {
+                    text: code;
+                    checked: ConditionChoices.contains(root.languages, code);
+                    toggled => { root.languages = ConditionChoices.toggle(root.languages, code, self.checked); }
+                }
+            }
+            VerticalLayout { spacing: 10px; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+                Text { text: @tr("Game mode"); color: Theme.text; }
+                RadioGroup {
+                    orientation: vertical;
+                    selected(value) => { root.game = value == @tr("Game mode on") ? GameCondition.on : value == @tr("Game mode off") ? GameCondition.off : GameCondition.any; }
+                    RadioButton { text: @tr("Does not matter"); checked: root.game == GameCondition.any; }
+                    RadioButton { text: @tr("Game mode on"); checked: root.game == GameCondition.on; }
+                    RadioButton { text: @tr("Game mode off"); checked: root.game == GameCondition.off; }
+                }
+            }
         }
     }
-    VerticalLayout { spacing: 10px;
-        Text { text: @tr("System languages"); color: Theme.text; }
-        for language in ConditionChoices.languages: CheckBox {
-            text: language.label;
-            checked: ConditionChoices.contains(root.languages, language.code);
-            toggled => { root.languages = ConditionChoices.toggle(root.languages, language.code, self.checked); }
+    if root.show-applications: VerticalLayout { spacing: 10px;
+        if !root.detection-available: Text {
+            text: @tr("Active window detection is unavailable in this session, so application conditions do not match.");
+            color: Theme.warning; wrap: word-wrap;
         }
-        if ConditionChoices.languages.length == 0: Text { text: @tr("No system languages detected"); color: Theme.muted; wrap: word-wrap; }
-        for code in ConditionChoices.unknown-languages(root.languages, ConditionChoices.languages): CheckBox {
-            text: code;
-            checked: ConditionChoices.contains(root.languages, code);
-            toggled => { root.languages = ConditionChoices.toggle(root.languages, code, self.checked); }
+        HorizontalLayout { spacing: 24px;
+            ApplicationsField { value <=> root.applications; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px; }
+            if root.show-exclusions: ApplicationsField {
+                exclusion: true; label: @tr("Do not apply in windows"); value <=> root.excluded;
+                horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+            }
         }
     }
-    if root.show-applications: ApplicationsField { value <=> root.applications; }
 }

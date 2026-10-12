@@ -683,8 +683,7 @@ export component LibraryDialogOverlay inherits Rectangle {
                     VerticalLayout { spacing: 12px;
                         Text { text: @tr("Use layout"); color: Theme.text; font-weight: 600; }
                         TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
-                        Text { text: @tr("When"); color: Theme.text; font-weight: 600; }
-                        ConditionsForm { game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; }
+                        ConditionsForm { heading: @tr("When"); game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; }
                         Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
                     }
                 }

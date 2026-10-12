@@ -2,7 +2,7 @@ import { SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
-import { ConditionsForm, ApplicationsField, ConditionChoices } from "conditions.slint";
+import { ConditionsForm, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput, FormLabel, FormField } from "controls.slint";
 import { Theme } from "theme.slint";
@@ -111,6 +111,7 @@ component ConditionsCell inherits Rectangle {
             Image { width: 16px; height: 16px; source: @image-url("icons/list-filter.svg"); colorize: root.rule.has-conditions ? Theme.accent : Theme.muted; }
         }
         if !root.rule.has-conditions: Text { text: @tr("Always"); color: Theme.muted; vertical-alignment: center; }
+        if root.rule.has-conditions: Text { text: @tr("If:"); color: Theme.muted; vertical-alignment: center; }
         if root.rule.game != GameCondition.any: ConditionChip { icon: @image-url("icons/gamepad-2.svg"); text: root.rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); }
         if root.rule.languages != "": ConditionChip { icon: @image-url("icons/globe.svg"); text: root.rule.languages; }
         if root.rule.applications != "": ConditionChip { icon: @image-url("icons/app-window.svg"); text: root.rule.applications; tint: Theme.success; }
@@ -350,7 +351,7 @@ export component RuleDialogOverlay inherits FocusScope {
         Rectangle {
             x: (parent.width - self.width) / 2;
             y: 32px;
-            width: min(parent.width - 48px, 560px);
+            width: min(parent.width - 48px, RulesEditor.dialog == RuleDialog.conditions ? 880px : 560px);
             height: min(parent.height - 64px, 620px);
             background: Theme.surface;
             border-color: Theme.border;
@@ -361,16 +362,18 @@ export component RuleDialogOverlay inherits FocusScope {
                 Text {
                     text: RulesEditor.dialog == RuleDialog.key ? @tr("Choose a key or combination for the trigger")
                         : RulesEditor.dialog == RuleDialog.layer ? @tr("Choose layer")
-                        : RulesEditor.dialog == RuleDialog.conditions ? @tr("Conditions")
+                        : RulesEditor.dialog == RuleDialog.conditions ? @tr("Trigger conditions")
                         : RulesEditor.dialog == RuleDialog.advanced ? @tr("Advanced rule options")
                         : RulesEditor.dialog == RuleDialog.remove ? @tr("Delete rule?")
                         : @tr("Choose action");
                     color: Theme.text; font-size: 22px; font-weight: 700;
                 }
                 if RulesEditor.dialog == RuleDialog.conditions: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                    VerticalLayout { spacing: 24px;
-                        ConditionsForm { game <=> RulesEditor.game-mode; languages <=> RulesEditor.layouts; applications <=> RulesEditor.apps-include; }
-                        ApplicationsField { exclusion: true; label: @tr("Do not apply in windows"); value <=> RulesEditor.apps-exclude; }
+                    ConditionsForm {
+                        heading: @tr("If");
+                        show-exclusions: true;
+                        game <=> RulesEditor.game-mode; languages <=> RulesEditor.layouts;
+                        applications <=> RulesEditor.apps-include; excluded <=> RulesEditor.apps-exclude;
                     }
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;

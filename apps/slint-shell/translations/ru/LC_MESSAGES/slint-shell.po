@@ -1815,6 +1815,15 @@ msgstr "Использовать раскладку"
 msgid "When"
 msgstr "Когда"
 
+msgid "If"
+msgstr "Если"
+
+msgid "If:"
+msgstr "Если:"
+
+msgid "Trigger conditions"
+msgstr "Условия срабатывания триггера"
+
 msgid "No layout"
 msgstr "Без раскладки"
 
