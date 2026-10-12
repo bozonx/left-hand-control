@@ -1160,6 +1160,15 @@ msgstr "Определение раскладки"
 msgid "Launch on startup"
 msgstr "Запускать вместе с системой"
 
+msgid "Start the mapper on launch"
+msgstr "Включать маппер при запуске"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "Клавиатура не выбрана, поэтому маппер не может запуститься."
+
+msgid "Choose a keyboard"
+msgstr "Выбрать клавиатуру"
+
 msgid "No active layout"
 msgstr "Нет активной раскладки"
 

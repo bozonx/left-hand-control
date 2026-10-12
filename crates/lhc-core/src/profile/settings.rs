@@ -47,6 +47,7 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
     let game_mode = raw.get("gameMode").and_then(Value::as_object);
     let mut settings = AppSettings {
         launch_on_startup: bool_or(raw, "launchOnStartup", base.launch_on_startup),
+        start_mapper_on_launch: bool_or(raw, "startMapperOnLaunch", base.start_mapper_on_launch),
         appearance: match str_of(raw, "appearance") {
             Some("light") => Appearance::Light,
             Some("dark") => Appearance::Dark,
@@ -252,6 +253,13 @@ mod tests {
         assert_eq!(settings.game_mode.process_matchers[0].name, "steam");
         assert_eq!(settings.game_mode.process_matchers[0].id, "process-0");
         assert!(settings.game_mode.process_matchers[0].only_active_window);
+    }
+
+    #[test]
+    fn mapper_start_on_launch_is_off_by_default() {
+        assert!(!AppSettings::default().start_mapper_on_launch);
+        let settings = from_value(Some(&json!({"startMapperOnLaunch": true})));
+        assert!(settings.start_mapper_on_launch);
     }
 
     #[test]

@@ -2,6 +2,7 @@ import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ScrollView } from "scroll.slint";
 import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
+import { AppState } from "app-state.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, PendingLayoutAction } from "types.slint";
@@ -520,6 +521,18 @@ export component LibraryPage inherits VerticalBox {
     spacing: 12px;
     private property <int> drag-from: -1;
     private property <int> drag-over: -1;
+    if !AppState.keyboard-selected: Rectangle {
+        vertical-stretch: 0;
+        background: Theme.warning.transparentize(0.88);
+        border-radius: 8px;
+        border-width: 1px;
+        border-color: Theme.warning;
+        HorizontalLayout {
+            padding: 12px; spacing: 12px;
+            Text { text: @tr("No keyboard is selected, so the mapper cannot start."); color: Theme.text; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
+            VerticalLayout { alignment: center; Button { text: @tr("Choose a keyboard"); clicked => { AppState.open-keyboard-settings(); } } }
+        }
+    }
     HorizontalLayout {
         vertical-stretch: 0;
         spacing: 32px;

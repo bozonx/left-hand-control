@@ -6,6 +6,8 @@ import { GameModeControl } from "types.slint";
 export global AppState {
     in property <bool> mapper-running;
     in property <bool> mapper-busy;
+    /// A keyboard device is chosen, so the mapper can start.
+    in property <bool> keyboard-selected;
     in property <bool> game-active;
     in property <bool> game-state-available;
     in property <GameModeControl> game-control: GameModeControl.auto;
@@ -23,5 +25,7 @@ export global AppState {
     in property <Message> backend-error;
     in property <Message> config-status;
     callback toggle-mapper();
+    /// Open the settings tab where the keyboard device is chosen.
+    callback open-keyboard-settings();
     callback set-game-control(GameModeControl);
 }

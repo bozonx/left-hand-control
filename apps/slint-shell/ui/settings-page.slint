@@ -23,6 +23,7 @@ export global SettingsEditor {
     in-out property <bool> keyboard-manual;
     in-out property <bool> mouse-manual;
     in-out property <bool> launch-on-startup;
+    in-out property <bool> start-mapper-on-launch;
     in-out property <int> appearance-index;
     in-out property <bool> high-contrast;
     in-out property <bool> reduce-motion;
@@ -203,6 +204,9 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == 0: Section {
                     title: @tr("General");
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
+                    if AppState.is-linux: HorizontalLayout { padding-left: 28px; alignment: start;
+                        CheckBox { text: @tr("Start the mapper on launch"); enabled: SettingsEditor.launch-on-startup; checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
+                    }
                     if AppState.is-linux: CheckBox { text: @tr("Show the layout name on screen when the active layout changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                     VerticalLayout { vertical-stretch: 0; spacing: 8px;
                         Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }

@@ -27,6 +27,7 @@ const TAP_DECISIONS: [&str; 2] = ["permissiveHold", "holdOnOtherKeyPress"];
 #[derive(Clone, Debug, PartialEq)]
 struct Form {
     launch_on_startup: bool,
+    start_mapper_on_launch: bool,
     appearance: i32,
     high_contrast: bool,
     reduce_motion: bool,
@@ -65,6 +66,7 @@ impl Form {
     fn from_settings(settings: &AppSettings) -> Self {
         Self {
             launch_on_startup: settings.launch_on_startup,
+            start_mapper_on_launch: settings.start_mapper_on_launch,
             appearance: choice_index(&APPEARANCES, &settings.appearance),
             high_contrast: settings.high_contrast,
             reduce_motion: settings.reduce_motion,
@@ -101,6 +103,7 @@ impl Form {
         let e = ui.global::<SettingsEditor>();
         Self {
             launch_on_startup: e.get_launch_on_startup(),
+            start_mapper_on_launch: e.get_start_mapper_on_launch(),
             appearance: e.get_appearance_index(),
             high_contrast: e.get_high_contrast(),
             reduce_motion: e.get_reduce_motion(),
@@ -130,6 +133,7 @@ impl Form {
     fn show(&self, ui: &SettingsWindow) {
         let e = ui.global::<SettingsEditor>();
         e.set_launch_on_startup(self.launch_on_startup);
+        e.set_start_mapper_on_launch(self.start_mapper_on_launch);
         e.set_appearance_index(self.appearance);
         e.set_high_contrast(self.high_contrast);
         e.set_reduce_motion(self.reduce_motion);
@@ -179,6 +183,7 @@ impl Form {
             };
         }
         changed!(launch_on_startup => settings.launch_on_startup = self.launch_on_startup);
+        changed!(start_mapper_on_launch => settings.start_mapper_on_launch = self.start_mapper_on_launch);
         changed!(appearance => settings.appearance = choice(&APPEARANCES, self.appearance));
         changed!(high_contrast => settings.high_contrast = self.high_contrast);
         changed!(reduce_motion => settings.reduce_motion = self.reduce_motion);

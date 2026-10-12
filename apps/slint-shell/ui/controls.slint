@@ -379,6 +379,7 @@ export component MapperToggle inherits Rectangle {
     in property <bool> busy;
     in property <string> text;
     in property <string> tooltip;
+    in property <bool> enabled: true;
     callback toggled();
     height: 36px;
     horizontal-stretch: 0;
@@ -389,12 +390,12 @@ export component MapperToggle inherits Rectangle {
         : touch.has-hover ? Theme.hover : Theme.card;
     border-width: focus.has-focus ? 2px : 1px;
     border-color: focus.has-focus ? Theme.focus : root.running ? Theme.success : Theme.border;
-    opacity: root.busy ? 0.7 : 1;
+    opacity: !root.enabled ? 0.5 : root.busy ? 0.7 : 1;
     accessible-role: button;
     accessible-label: root.text;
     accessible-checked: root.running;
-    accessible-enabled: !root.busy;
-    accessible-action-default => { if !root.busy { root.toggled(); } }
+    accessible-enabled: root.enabled && !root.busy;
+    accessible-action-default => { if root.enabled && !root.busy { root.toggled(); } }
     row := HorizontalLayout {
         padding-left: 5px; padding-right: 16px;
         spacing: 9px;
@@ -416,15 +417,15 @@ export component MapperToggle inherits Rectangle {
         Text { text: root.text; color: Theme.text; font-weight: 600; vertical-alignment: center; }
     }
     focus := FocusScope {
-        enabled: !root.busy;
+        enabled: root.enabled && !root.busy;
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.toggled(); return accept; }
             return reject;
         }
     }
     touch := TouchArea {
-        enabled: !root.busy;
-        mouse-cursor: root.busy ? default : pointer;
+        enabled: root.enabled && !root.busy;
+        mouse-cursor: root.enabled && !root.busy ? pointer : default;
         clicked => { root.toggled(); }
     }
     if root.tooltip != "": Tooltip {

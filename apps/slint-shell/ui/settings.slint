@@ -130,6 +130,8 @@ export component SettingsWindow inherits Window {
                         text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Stop") : @tr("Start");
                         running: AppState.mapper-running;
                         busy: AppState.mapper-busy;
+                        enabled: AppState.mapper-running || AppState.keyboard-selected;
+                        tooltip: AppState.mapper-running || AppState.keyboard-selected ? "" : @tr("Select a keyboard device in the settings");
                         toggled => { AppState.toggle-mapper(); }
                     } }
                 }

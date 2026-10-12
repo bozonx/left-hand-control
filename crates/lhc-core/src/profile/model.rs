@@ -418,6 +418,9 @@ pub enum LayoutMode {
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub launch_on_startup: bool,
+    /// Start the mapper when the app launches; only honoured together
+    /// with `launch_on_startup`.
+    pub start_mapper_on_launch: bool,
     pub appearance: Appearance,
     pub high_contrast: bool,
     pub reduce_motion: bool,
@@ -457,6 +460,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             launch_on_startup: false,
+            start_mapper_on_launch: false,
             appearance: Appearance::System,
             high_contrast: false,
             reduce_motion: false,

@@ -284,6 +284,9 @@ impl App {
         let Some(document) = self.document() else {
             return;
         };
+        self.settings
+            .global::<AppState>()
+            .set_keyboard_selected(document.read().input_device().is_some());
         let launch_on_startup = document.read().settings().launch_on_startup;
         if cfg!(target_os = "linux") && self.last_autostart.get() != Some(launch_on_startup) {
             match lhc_core::autostart::set_enabled(document.read().paths(), launch_on_startup) {
@@ -294,6 +297,27 @@ impl App {
         self.invalidate_menus();
         self.apply_preferences();
         self.announce_layout();
+    }
+
+    /// Start the mapper if configured to, and show the settings window
+    /// while setup is unfinished or there is no tray to open it from.
+    fn launched(&self, tray: bool) {
+        let (start_mapper, setup_done) = self.document().map_or((false, false), |document| {
+            let config = document.read();
+            let settings = config.settings();
+            let device = config.input_device().is_some();
+            let layouts = config.ordered_layout_ids().is_ok_and(|ids| !ids.is_empty());
+            (
+                device && settings.launch_on_startup && settings.start_mapper_on_launch,
+                device && layouts,
+            )
+        });
+        if start_mapper {
+            self.toggle_mapper();
+        }
+        if !tray || !setup_done {
+            self.show(Window::Settings, Source::Button, Instant::now(), None, None);
+        }
     }
 
     fn shutdown(&self) {
@@ -353,7 +377,9 @@ fn start_core() {
 }
 
 fn stop_core() {
-    if let Err(error) = lhc_core::mapper::runtime::stop() {
+    if lhc_core::mapper::runtime::status().running
+        && let Err(error) = lhc_core::mapper::runtime::stop()
+    {
         log::error!("stop mapper during shutdown: {error}");
     }
     lhc_core::layout::stop_watcher();
@@ -433,6 +459,17 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     app.settings
         .global::<AppState>()
         .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));
+    app.settings
+        .global::<AppState>()
+        .on_open_keyboard_settings(|| {
+            with_app(|app| {
+                app.settings
+                    .global::<crate::ui::SettingsEditor>()
+                    .set_tab(2);
+                app.settings
+                    .invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
+            })
+        });
     popups::bind(&app);
     app.config_watch
         .start(slint::TimerMode::Repeated, CONFIG_POLL, || {
@@ -450,16 +487,23 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     });
     server.start(dispatch.clone())?;
     slint::Timer::single_shot(Duration::ZERO, move || {
-        with_app(|app| match tray::start(dispatch.clone()) {
-            Ok(tray) => {
-                tray.set_english(app.preferences.get().language == Language::English);
-                tray.set_game(&lhc_core::gamemode::status());
-                *app.tray.borrow_mut() = Some(tray);
-                app.last_mapper_status.borrow_mut().take();
-                app.refresh_mapper_status();
-                app.metrics.borrow_mut().ready("tray");
-            }
-            Err(error) => log::error!("tray unavailable: {error}"),
+        with_app(|app| {
+            let tray = match tray::start(dispatch.clone()) {
+                Ok(tray) => {
+                    tray.set_english(app.preferences.get().language == Language::English);
+                    tray.set_game(&lhc_core::gamemode::status());
+                    *app.tray.borrow_mut() = Some(tray);
+                    app.last_mapper_status.borrow_mut().take();
+                    app.refresh_mapper_status();
+                    app.metrics.borrow_mut().ready("tray");
+                    true
+                }
+                Err(error) => {
+                    log::error!("tray unavailable: {error}");
+                    false
+                }
+            };
+            app.launched(tray);
         });
         hotkey::start(dispatch);
     });
