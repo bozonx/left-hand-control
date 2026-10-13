@@ -226,18 +226,6 @@ msgstr "Использовать GameMode"
 msgid "Detect fullscreen"
 msgstr "Определять полноэкранный режим"
 
-msgid "Include: "
-msgstr "Включить: "
-
-msgid "Exclude: "
-msgstr "Исключить: "
-
-msgid "Active window only"
-msgstr "Только активное окно"
-
-msgid "Exclude"
-msgstr "Исключить"
-
 
 msgid "Linux text injection"
 msgstr "Ввод текста в Linux"
@@ -1893,9 +1881,6 @@ msgstr "Авто-правила раскладок работают, тольк�
 msgid "Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."
 msgstr "Окна без рамки на весь экран тоже считаются. Браузеры, видеоплееры и презентации не учитываются."
 
-msgid "Exact process name or app ID; use * and ? for patterns. title:<text> matches the active window title. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. An exclusion keeps game mode off while it matches."
-msgstr "Точное имя процесса или ID приложения; для шаблонов используйте * и ?. title:<текст> проверяет заголовок активного окна. У игр Steam ID приложения — steam_app_<номер>; игры Proton находятся и по имени .exe. Пока совпадает исключение, игровой режим не включается."
-
 msgid "Game mode is off (set manually)"
 msgstr "Игровой режим выключен (вручную)"
 
@@ -2028,20 +2013,8 @@ msgstr "Совпадение запрещает правило, даже есл�
 msgid "Any match allows the rule. An empty list allows all windows."
 msgstr "Достаточно одного совпадения. Пустой список разрешает все окна."
 
-msgid "Add application…"
-msgstr "Добавить приложение…"
-
-msgid "Choose applications"
-msgstr "Выбор приложений"
-
 msgid "Choose applications to exclude"
 msgstr "Выбор приложений для исключения"
-
-msgid "Choose games and exclusions"
-msgstr "Выбор игр и исключений"
-
-msgid "Search, or type an app ID or title text"
-msgstr "Поиск или ID приложения / текст заголовка"
 
 msgid "Open windows"
 msgstr "Открытые окна"
@@ -2052,23 +2025,8 @@ msgstr "Запущенные процессы"
 msgid "Last active"
 msgstr "Последнее активное"
 
-msgid "Match by window title"
-msgstr "Условие по заголовку окна"
-
-msgid "Add “{}” as app ID or process"
-msgstr "Добавить «{}» как ID приложения или процесс"
-
-msgid "Add “{}” as window title text"
-msgstr "Добавить «{}» как текст в заголовке окна"
-
-msgid "Nothing found"
-msgstr "Ничего не найдено"
-
 msgid "Refresh"
 msgstr "Обновить"
-
-msgid "Done"
-msgstr "Готово"
 
 msgid "Nothing is excluded."
 msgstr "Ничего не исключено."
@@ -2321,3 +2279,42 @@ msgstr "Действие через {} мс удержания"
 
 msgid "These codes are specific to Left Hand Control, not universal keyboard codes (e.g. KeyA, ArrowLeft)."
 msgstr "Это коды приложения Left Hand Control, а не общепринятые коды клавиш (например, KeyA, ArrowLeft)."
+
+msgid "App ID: {}"
+msgstr "ID приложения: {}"
+
+msgid "Process: {}"
+msgstr "Процесс: {}"
+
+msgid "While its window is active"
+msgstr "Пока активно его окно"
+
+msgid "While the process runs"
+msgstr "Пока запущен процесс"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Учитывается, пока окно приложения в фокусе."
+
+msgid "Counts while a process with this name runs, even without a window or in the background."
+msgstr "Учитывается, пока запущен процесс с таким именем, даже без окна или в фоне."
+
+msgid "Application · while its window is active"
+msgstr "Приложение · пока активно его окно"
+
+msgid "Process · while it runs"
+msgstr "Процесс · пока запущен"
+
+msgid "Games"
+msgstr "Игры"
+
+msgid "Exclusions"
+msgstr "Исключения"
+
+msgid "No games added."
+msgstr "Игры не добавлены."
+
+msgid "Game mode turns on while any of these matches. An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. A window title item matches the active window whose title contains the text."
+msgstr "Игровой режим включается, пока совпадает любой из пунктов. Приложение сравнивается по ID или имени процесса: имя целиком, без учёта регистра, * и ? — шаблоны. У игр Steam ID приложения — steam_app_<номер>; игры Proton находятся и по имени .exe. Пункт с заголовком окна совпадает с активным окном, в заголовке которого есть этот текст."
+
+msgid "Game mode stays off while any of these matches, even if a game or another detector would turn it on."
+msgstr "Пока совпадает любой из пунктов, игровой режим не включается, даже если его включила бы игра или другой способ определения."

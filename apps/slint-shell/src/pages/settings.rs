@@ -1,10 +1,10 @@
-use super::{APPEARANCES, LOCALES, choice, choice_index, strings};
+use super::{APPEARANCES, LOCALES, choice, choice_index, condition_list, strings};
 use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
         CapabilityRow, CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices,
-        DeviceGroup, ProcessRow, SettingsEditor, SettingsWindow,
+        DeviceGroup, GameAppEntry, SettingsEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::menus::PlaceKind;
@@ -206,23 +206,64 @@ impl Form {
     }
 }
 
-/// Show the matchers and their names, which the application picker checks.
+/// Show the games and the exclusions, and all names for the duplicate check.
 fn show_matchers(e: &SettingsEditor, items: &[GameModeProcessMatcher]) {
-    e.set_process_matchers(rows(items));
-    e.set_process_names(strings(items.iter().map(|item| item.name.as_str())));
+    e.set_game_processes(entries(items, false));
+    e.set_excluded_processes(entries(items, true));
+    let names: Vec<String> = items.iter().map(|item| item.name.clone()).collect();
+    e.set_process_value(condition_list(&names).into());
 }
 
-fn rows(items: &[GameModeProcessMatcher]) -> ModelRc<ProcessRow> {
+/// The matchers of one list, with their indices among all of them.
+fn entries(items: &[GameModeProcessMatcher], blacklist: bool) -> ModelRc<GameAppEntry> {
     ModelRc::new(VecModel::from(
         items
             .iter()
-            .map(|item| ProcessRow {
-                name: item.name.clone().into(),
-                only_active: item.only_active_window,
-                blacklist: item.is_blacklist,
+            .enumerate()
+            .filter(|(_, item)| item.is_blacklist == blacklist)
+            .map(|(index, item)| GameAppEntry {
+                pattern: item.name.clone().into(),
+                window_only: item.only_active_window,
+                index: i32::try_from(index).unwrap_or(i32::MAX),
             })
             .collect::<Vec<_>>(),
     ))
+}
+
+/// Add (`index` -1) or change a matcher; a name another matcher has is
+/// not added twice.
+fn save_matcher(
+    items: &mut Vec<GameModeProcessMatcher>,
+    index: i32,
+    name: &str,
+    window_only: bool,
+    blacklist: bool,
+) -> bool {
+    let name = name.trim();
+    let index = usize::try_from(index).ok();
+    let duplicate = items
+        .iter()
+        .enumerate()
+        .any(|(at, item)| Some(at) != index && item.name.eq_ignore_ascii_case(name));
+    if name.is_empty() || duplicate {
+        return false;
+    }
+    let Some(index) = index else {
+        items.push(GameModeProcessMatcher {
+            id: lhc_core::profile::ids::generate("process-"),
+            name: name.to_owned(),
+            only_active_window: window_only,
+            is_blacklist: blacklist,
+        });
+        return true;
+    };
+    let Some(item) = items.get_mut(index) else {
+        return false;
+    };
+    item.name = name.to_owned();
+    item.only_active_window = window_only;
+    item.is_blacklist = blacklist;
+    true
 }
 
 /// The form as last loaded from the document, and the draft process list.
@@ -634,42 +675,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     let weak = ui.as_weak();
     let shared = state.clone();
-    e.on_toggle_process(move |name, on, window| {
-        let Some(ui) = weak.upgrade() else { return };
-        let e = ui.global::<SettingsEditor>();
-        let name = name.trim();
-        let mut state = shared.borrow_mut();
-        state
-            .matchers
-            .retain(|item| !item.name.eq_ignore_ascii_case(name));
-        if on && !name.is_empty() {
-            state.matchers.push(GameModeProcessMatcher {
-                id: lhc_core::profile::ids::generate("process-"),
-                name: name.to_owned(),
-                // A game picked by its window counts while it has the focus.
-                only_active_window: window,
-                is_blacklist: false,
-            });
-        }
-        show_matchers(&e, &state.matchers);
-        drop(state);
-        e.invoke_save();
-    });
-
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    e.on_set_process_flags(move |index, only_active, blacklist| {
+    e.on_save_process(move |index, name, window_only, blacklist| {
         let Some(ui) = weak.upgrade() else { return };
         let e = ui.global::<SettingsEditor>();
         let mut state = shared.borrow_mut();
-        let Some(item) = usize::try_from(index)
-            .ok()
-            .and_then(|index| state.matchers.get_mut(index))
-        else {
+        if !save_matcher(&mut state.matchers, index, &name, window_only, blacklist) {
             return;
-        };
-        item.only_active_window = only_active;
-        item.is_blacklist = blacklist;
+        }
         show_matchers(&e, &state.matchers);
         drop(state);
         e.invoke_save();
@@ -697,6 +709,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matchers_are_added_changed_and_kept_unique() {
+        let mut items = Vec::new();
+        assert!(save_matcher(&mut items, -1, " Game.exe ", false, false));
+        assert!(save_matcher(&mut items, -1, "steam", true, true));
+        assert!(!save_matcher(&mut items, -1, "game.EXE", true, true));
+        assert!(!save_matcher(&mut items, -1, "  ", true, false));
+        assert!(!save_matcher(&mut items, 0, "Steam", false, false));
+        assert!(save_matcher(&mut items, 0, "game.exe", true, false));
+        assert!(!save_matcher(&mut items, 5, "other", true, false));
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].name, "game.exe");
+        assert!(items[0].only_active_window && !items[0].is_blacklist);
+        assert!(items[1].only_active_window && items[1].is_blacklist);
+    }
 
     fn input_devices() -> Vec<lhc_core::mapper_types::InputDevice> {
         [

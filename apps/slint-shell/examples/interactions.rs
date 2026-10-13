@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_use_gamemoded(false);
     settings.set_text_mode_index(4);
     settings.set_ydotool_path("/usr/bin/ydotool".into());
-    settings.invoke_toggle_process("test-game".into(), true, true);
+    settings.invoke_save_process(-1, "test-game".into(), true, false);
     settings.invoke_save();
     assert_eq!(settings.get_message().id, "");
     let loaded = ConfigDocument::load(paths.clone())?;
@@ -119,8 +119,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded.settings().combo_timeout_ms, 80);
     assert_eq!(loaded.settings().game_mode.process_matchers.len(), 1);
     assert!(loaded.settings().game_mode.process_matchers[0].only_active_window);
-    assert_eq!(settings.get_process_names().row_count(), 1);
-    settings.invoke_set_process_flags(0, false, true);
+    assert_eq!(settings.get_game_processes().row_count(), 1);
+    settings.invoke_save_process(0, "test-game".into(), false, true);
+    assert_eq!(settings.get_game_processes().row_count(), 0);
+    assert_eq!(settings.get_excluded_processes().row_count(), 1);
     let loaded = ConfigDocument::load(paths.clone())?;
     let matcher = &loaded.settings().game_mode.process_matchers[0];
     assert!(!matcher.only_active_window && matcher.is_blacklist);
