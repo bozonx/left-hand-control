@@ -576,7 +576,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             -3 => {
                 let position = slint::LogicalPosition::new(100.0, 249.0);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
-                assert_eq!(ui.global::<SettingsEditor>().get_tab(), 2);
+                assert_eq!(ui.global::<SettingsEditor>().get_tab(), SettingsTab::Mapper);
                 ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
             }
             -2 => {
@@ -641,14 +641,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(ui.global::<AppState>().get_game_control(), GameModeControl::On);
             }
             16 => { snapshot(&ui, "game-mode-menu-selected"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_hold_timeout("321".into()); ui.global::<SettingsEditor>().invoke_schedule_save(); }
-            17 => ui.global::<SettingsEditor>().set_tab(3),
+            17 => ui.global::<SettingsEditor>().set_tab(SettingsTab::GameMode),
             18 => {
                 snapshot(&ui, "settings-game-mode");
                 let position = slint::LogicalPosition::new(500.0, 450.0);
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -900.0 });
                 snapshot(&ui, "settings-game-mode-bottom");
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 900.0 });
-                ui.global::<SettingsEditor>().set_tab(0); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
+                ui.global::<SettingsEditor>().set_tab(SettingsTab::General); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
             19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
             20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "timeout-invalid".into(), arg: "".into(), count: 0 }); }
             21 => {
@@ -688,18 +688,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 snapshot(&ui, "rules-conditions-exclusions");
                 ui.global::<RulesEditor>().set_dialog(RuleDialog::None);
                 ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
-                ui.global::<SettingsEditor>().set_tab(2);
+                ui.global::<SettingsEditor>().set_tab(SettingsTab::KeyBehavior);
                 ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
             }
             28 => {
                 snapshot(&ui, "settings-behavior");
-                let position = slint::LogicalPosition::new(560.0, 499.0);
+                let position = slint::LogicalPosition::new(590.0, 509.0);
                 let wheel = |delta_y| ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
                 let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<f64>().unwrap();
-                // Scroll the long-hold field into view, then move to focus it: Flickable
-                // keeps consecutive wheel events at one position in the same gesture.
-                ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(250.0, 450.0), delta_x: 0.0, delta_y: -400.0 });
-                snapshot(&ui, "settings-behavior-timing");
                 assert!((duration() - 2.5).abs() < 0.0001);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 wheel(60.0);

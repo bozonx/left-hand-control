@@ -559,7 +559,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     picker.on_open_command_settings(move || {
         let Some(ui) = weak.upgrade() else { return };
         ui.global::<ActionPicker>().invoke_dismiss_picker();
-        ui.global::<crate::ui::SettingsEditor>().set_tab(5);
+        ui.global::<crate::ui::SettingsEditor>()
+            .set_tab(crate::ui::SettingsTab::Commands);
         ui.invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
     });
 

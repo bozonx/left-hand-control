@@ -10,7 +10,7 @@ import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, RadioGroup, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericInput, SelectField } from "controls.slint";
 import { AppPicker, ConditionChoices } from "conditions.slint";
-import { GameModeControl } from "types.slint";
+import { GameModeControl, SettingsTab } from "types.slint";
 
 /// `kind`: 0 rule, 1 layer key, 2 macro step, 3 quick action.
 export struct CommandPlaceRow { kind: int, layer: string, name: string }
@@ -41,8 +41,7 @@ export global SettingsEditor {
     in-out property <bool> commands-enabled;
     in property <[CommandAssignmentRow]> command-assignments;
     callback edit-command(string, string);
-    /// Selected settings tab; 5 is Commands.
-    in-out property <int> tab;
+    in-out property <SettingsTab> tab;
     in-out property <bool> use-gamemoded: true;
     in-out property <bool> use-fullscreen;
     in-out property <bool> use-known-games: true;
@@ -246,8 +245,8 @@ export component SettingsPage inherits VerticalBox {
             width: 180px;
             horizontal-stretch: 0;
             alignment: start;
-            for label[index] in [@tr("Main"), @tr("Keyboard"), @tr("System"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
-                property <int> tab-id: [0, 2, 4, 3, 5, 1][index];
+            for label[index] in [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("System"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
+                property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.system, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
                 height: 38px;
                 border-radius: 6px;
                 border-width: focus.has-focus ? 2px : 0px;
@@ -304,7 +303,7 @@ export component SettingsPage inherits VerticalBox {
                 min-width: 0px;
                 max-width: 100000px;
                 spacing: 0px;
-                if SettingsEditor.tab == 0: Section {
+                if SettingsEditor.tab == SettingsTab.general: Section {
                     title: @tr("General");
                     VerticalLayout { vertical-stretch: 0; spacing: 8px;
                         HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
@@ -331,7 +330,7 @@ export component SettingsPage inherits VerticalBox {
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
                     if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                 }
-                if SettingsEditor.tab == 1: Section {
+                if SettingsEditor.tab == SettingsTab.accessibility: Section {
                     title: @tr("Accessibility");
                     VerticalLayout { vertical-stretch: 0; spacing: 8px;
                         CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance-index != 3; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
@@ -340,7 +339,7 @@ export component SettingsPage inherits VerticalBox {
                         CheckBox { text: @tr("Disable animations"); checked <=> SettingsEditor.reduce-motion; toggled => { SettingsEditor.save(); } }
                     }
                 }
-                if SettingsEditor.tab == 5: Section {
+                if SettingsEditor.tab == SettingsTab.commands: Section {
                     title: "";
                     HorizontalLayout { alignment: start; spacing: 6px;
                         CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
@@ -387,7 +386,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if SettingsEditor.tab == 2: Section {
+                if SettingsEditor.tab == SettingsTab.mapper: Section {
                     title: "";
                     VerticalBox { padding: 0px; spacing: 16px;
                         CardHeader { vertical-stretch: 0;
@@ -423,8 +422,26 @@ export component SettingsPage inherits VerticalBox {
                         if AppState.mapper-running: Text { vertical-stretch: 0; max-width: 576px; text: @tr("Changing a device restarts the mapper."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                     }
                 }
-                if SettingsEditor.tab == 2: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
-                if SettingsEditor.tab == 2: Section {
+                if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
+                if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Section {
+                    title: @tr("Linux text injection");
+                    VerticalBox {
+                        padding: 0px; spacing: 8px;
+                        FormLabel { text: @tr("Text injection method"); }
+                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                    }
+                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
+                        padding: 0px; spacing: 8px;
+                        FormLabel { text: @tr("ydotool path"); }
+                        TextField { text <=> SettingsEditor.ydotool-path; accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                    }
+                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalBox {
+                        padding: 0px; spacing: 8px;
+                        FormLabel { text: @tr("xdotool path"); }
+                        TextField { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                    }
+                }
+                if SettingsEditor.tab == SettingsTab.key-behavior: Section {
                     title: @tr("Key behavior");
                     Text { vertical-stretch: 0; text: @tr("Defaults for all rules and macros. Each rule or macro can override them in its own settings."); color: Theme.muted; wrap: word-wrap; }
                     VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
@@ -477,7 +494,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if SettingsEditor.tab == 3: Section {
+                if SettingsEditor.tab == SettingsTab.game-mode: Section {
                     HorizontalLayout {
                         vertical-stretch: 0; spacing: 8px; alignment: start;
                         Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; vertical-alignment: center; }
@@ -563,26 +580,7 @@ export component SettingsPage inherits VerticalBox {
                         done => { SettingsEditor.process-browsing = false; }
                     }
                 }
-                if SettingsEditor.tab == 4 && AppState.is-linux: Section {
-                    title: @tr("Linux text injection");
-                    VerticalBox {
-                        padding: 0px; spacing: 8px;
-                        FormLabel { text: @tr("Text injection method"); }
-                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
-                    }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
-                        padding: 0px; spacing: 8px;
-                        FormLabel { text: @tr("ydotool path"); }
-                        TextField { text <=> SettingsEditor.ydotool-path; accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
-                    }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalBox {
-                        padding: 0px; spacing: 8px;
-                        FormLabel { text: @tr("xdotool path"); }
-                        TextField { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
-                    }
-                }
-                if SettingsEditor.tab == 4 && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
-                if SettingsEditor.tab == 4: Section {
+                if SettingsEditor.tab == SettingsTab.system: Section {
                     title: @tr("Configuration and system");
                     HorizontalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
                         Text { text: SettingsEditor.platform-summary; color: Theme.muted; horizontal-stretch: 1; }

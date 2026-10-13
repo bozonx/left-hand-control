@@ -465,7 +465,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             with_app(|app| {
                 app.settings
                     .global::<crate::ui::SettingsEditor>()
-                    .set_tab(2);
+                    .set_tab(crate::ui::SettingsTab::Mapper);
                 app.settings
                     .invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
             })
