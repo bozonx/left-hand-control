@@ -361,8 +361,8 @@ export component AppEntryOverlay inherits Rectangle {
     }
 }
 
-/// A row of an applications list: the pattern, `kind` under it, how many
-/// open windows it matches, edit and remove buttons.
+/// A row of an applications list: the pattern, an optional `kind` under
+/// it, how many open windows it matches and a remove button; a click edits.
 component AppItemRow inherits Rectangle {
     in property <string> pattern;
     in property <string> kind;
@@ -381,11 +381,10 @@ component AppItemRow inherits Rectangle {
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: 2px;
             Text { text: ConditionChoices.text(root.pattern); color: Theme.text; overflow: elide; min-width: 0px; }
             HorizontalLayout { spacing: 6px;
-                Text { text: root.kind; color: Theme.muted; font-size: 12px; overflow: elide; min-width: 0px; }
+                if root.kind != "": Text { text: root.kind; color: Theme.muted; font-size: 12px; overflow: elide; min-width: 0px; }
                 if root.show-count: OpenCount { pattern: root.pattern; horizontal-stretch: 1; }
             }
         }
-        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/pencil.svg"); label: @tr("Edit"); tooltip: @tr("Edit"); clicked => { root.edit(); } } }
         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); clicked => { root.remove(); } } }
     }
 }
@@ -430,7 +429,6 @@ export component ApplicationsField inherits VerticalLayout {
             } }
             for item[index] in root.items: AppItemRow {
                 pattern: item;
-                kind: ConditionChoices.is-title(item) ? @tr("Window title") : @tr("Application");
                 show-count: root.detection-available;
                 edit => { AppEntryDialog.open(root.value, root.exclusion, index); }
                 remove => { AppEntryDialog.confirm-remove(root.value, root.exclusion, index); }
