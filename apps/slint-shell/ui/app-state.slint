@@ -10,6 +10,12 @@ export global AppState {
     in property <bool> keyboard-selected;
     /// Why the mapper failed to start or stopped; empty when it is fine.
     in property <string> mapper-error;
+    /// Whole minutes the mapper has been running; -1 when stopped.
+    in property <int> mapper-uptime: -1;
+    /// After the mapper stopped by itself: whole minutes it ran and
+    /// minutes since it stopped; -1 otherwise.
+    in property <int> mapper-ran: -1;
+    in property <int> mapper-stopped-ago: -1;
     in property <bool> game-active;
     in property <bool> game-state-available;
     in property <GameModeControl> game-control: GameModeControl.auto;

@@ -227,8 +227,6 @@ msgid "Detect fullscreen"
 msgstr "Определять полноэкранный режим"
 
 
-msgid "Linux text injection"
-msgstr "Ввод текста в Linux"
 
 msgid "ydotool path"
 msgstr "Путь к ydotool"
@@ -1503,8 +1501,6 @@ msgstr "Захватить"
 msgid "Unchanged"
 msgstr "Без изменений"
 
-msgid "Text injection method"
-msgstr "Способ ввода текста"
 
 msgid "Leave a delay empty to use the global setting."
 msgstr "Оставьте поле задержки пустым, чтобы использовать значение из общих настроек."
@@ -2226,11 +2222,7 @@ msgstr "Необязательно"
 msgid "Failed to start"
 msgstr "Не удалось запустить"
 
-msgid "Intercepting {} and {}"
-msgstr "Перехватываются {} и {}"
 
-msgid "Intercepting {}"
-msgstr "Перехватывается {}"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
 msgstr "Клавиши работают как обычно. Запустите маппер, чтобы применить раскладки."
@@ -2318,3 +2310,72 @@ msgstr "Игровой режим включается, пока совпада�
 
 msgid "Game mode stays off while any of these matches, even if a game or another detector would turn it on."
 msgstr "Пока совпадает любой из пунктов, игровой режим не включается, даже если его включила бы игра или другой способ определения."
+
+msgid "less than a minute"
+msgstr "меньше минуты"
+
+msgid "{} min"
+msgstr "{} мин"
+
+msgid "{} h {} min"
+msgstr "{} ч {} мин"
+
+msgid "Running for {}"
+msgstr "Работает {}"
+
+msgid "Stopped unexpectedly"
+msgstr "Неожиданно остановлен"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "Остановлен {} назад, проработав {}."
+
+msgid "Text input"
+msgstr "Ввод текста"
+
+msgid "How text actions in rules and macros are typed. Key remapping and the emoji popup do not use it."
+msgstr "Как печатаются текстовые действия в правилах и макросах. Переназначение клавиш и окно эмодзи этим способом не пользуются."
+
+msgid "Typing method"
+msgstr "Способ ввода"
+
+msgid "Automatic (recommended)"
+msgstr "Автоматически (рекомендуется)"
+
+msgid "Portal keys, no clipboard"
+msgstr "Клавиши через портал, без буфера обмена"
+
+msgid "Portal keys, legacy"
+msgstr "Клавиши через портал, старый способ"
+
+msgid "Paste from clipboard"
+msgstr "Вставка из буфера обмена"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid "Types through the desktop's remote input portal (libei) using the current keyboard layout. Text with characters the layout lacks is pasted through the clipboard, which needs wl-clipboard. Needs a recent KDE Plasma 6 or GNOME; elsewhere it falls back to legacy portal keys. The desktop asks for permission once."
+msgstr "Печатает через портал удалённого ввода рабочего стола (libei) в текущей раскладке. Текст с символами, которых нет в раскладке, вставляется через буфер обмена — для этого нужен wl-clipboard. Требует свежий KDE Plasma 6 или GNOME, иначе используется старый способ через портал. Рабочий стол один раз спросит разрешение."
+
+msgid "Like automatic, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."
+msgstr "Как автоматический, но никогда не трогает буфер обмена. Текст с символами, которых нет в текущей раскладке, не печатается совсем."
+
+msgid "Presses keys through the older portal interface. Try it if automatic does not work. Characters the current layout lacks may come out wrong on KDE."
+msgstr "Нажимает клавиши через старый интерфейс портала. Попробуйте, если автоматический способ не работает. В KDE символы, которых нет в текущей раскладке, могут печататься неверно."
+
+msgid "Pastes the whole text at once with wl-copy and Ctrl+V, then restores the clipboard. Fast for long text; needs wl-clipboard. Apps that paste with another shortcut, such as terminals, will not receive it."
+msgstr "Вставляет весь текст сразу через wl-copy и Ctrl+V, затем восстанавливает буфер обмена. Быстро для длинного текста; нужен wl-clipboard. Приложения с другим сочетанием для вставки, например терминалы, текст не получат."
+
+msgid "Runs \"ydotool type\". Works on any desktop but needs ydotool and its ydotoold service running. Reliable for Latin text only."
+msgstr "Запускает \"ydotool type\". Работает в любом окружении, но нужен ydotool с запущенной службой ydotoold. Надёжно печатает только латиницу."
+
+msgid "Runs \"xdotool type\". Works only in X11 sessions and XWayland windows."
+msgstr "Запускает \"xdotool type\". Работает только в сеансах X11 и окнах XWayland."
+
+msgid "ydotool from PATH"
+msgstr "ydotool из PATH"
+
+msgid "xdotool from PATH"
+msgstr "xdotool из PATH"

@@ -169,10 +169,8 @@ component MapperStatusCard inherits Rectangle {
     private property <bool> busy: AppState.mapper-busy;
     private property <bool> failed: !root.running && !root.busy && AppState.mapper-error != "";
     private property <bool> ready: SettingsEditor.keyboard-device-path != "";
-    private property <string> keyboard-name: !SettingsEditor.keyboard-manual && SettingsEditor.selected-device > 0 && SettingsEditor.selected-device < SettingsEditor.input-devices.length
-        ? SettingsEditor.input-devices[SettingsEditor.selected-device].label : SettingsEditor.keyboard-device-path;
-    private property <string> mouse-name: !SettingsEditor.mouse-manual && SettingsEditor.selected-mouse > 0 && SettingsEditor.selected-mouse < SettingsEditor.mouse-devices.length
-        ? SettingsEditor.mouse-devices[SettingsEditor.selected-mouse].label : SettingsEditor.mouse-device-path;
+    /// The mapper had been running and stopped by itself.
+    private property <bool> crashed: root.failed && AppState.mapper-ran >= 0;
     private property <color> tone: root.busy ? Theme.warning : root.running ? Theme.success : root.failed ? Theme.error : Theme.muted;
     vertical-stretch: 0;
     max-width: 576px;
@@ -181,6 +179,11 @@ component MapperStatusCard inherits Rectangle {
     border-width: 1px;
     border-color: root.failed ? Theme.error.transparentize(0.5) : root.running ? Theme.success.transparentize(0.5) : Theme.divider;
     background: root.failed ? Theme.error.transparentize(0.9) : root.running ? Theme.success.transparentize(0.9) : Theme.card;
+    function duration(minutes: int) -> string {
+        return minutes < 1 ? @tr("less than a minute")
+            : minutes < 60 ? @tr("{} min", minutes)
+            : @tr("{} h {} min", Math.floor(minutes / 60), Math.mod(minutes, 60));
+    }
     content := HorizontalLayout {
         padding: 12px;
         padding-left: 14px;
@@ -190,18 +193,22 @@ component MapperStatusCard inherits Rectangle {
         }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 4px; alignment: center;
             Text {
-                text: root.busy ? @tr("Please wait…") : root.running ? @tr("Running") : root.failed ? @tr("Failed to start") : @tr("Stopped");
+                text: root.busy ? @tr("Please wait…") : root.running ? @tr("Running") : root.crashed ? @tr("Stopped unexpectedly") : root.failed ? @tr("Failed to start") : @tr("Stopped");
                 color: Theme.text; font-weight: 700;
             }
             Text {
                 text: root.busy ? ""
-                    : root.running ? (root.mouse-name != "" ? @tr("Intercepting {} and {}", root.keyboard-name, root.mouse-name) : @tr("Intercepting {}", root.keyboard-name))
+                    : root.running ? @tr("Running for {}", root.duration(Math.max(AppState.mapper-uptime, 0)))
                     : root.failed ? AppState.mapper-error
                     : root.ready ? @tr("Keys work as usual. Start the mapper to apply your layouts.")
                     : @tr("Select a keyboard below to start the mapper.");
                 color: root.failed ? Theme.text : Theme.muted; font-size: 12px; wrap: word-wrap;
             }
-            if root.failed && AppState.is-linux: Text {
+            if root.crashed: Text {
+                text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
+                color: Theme.muted; font-size: 12px; wrap: word-wrap;
+            }
+            if root.failed && !root.crashed && AppState.is-linux: Text {
                 text: @tr("The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput.");
                 color: Theme.muted; font-size: 12px; wrap: word-wrap;
             }
@@ -393,8 +400,7 @@ export component SettingsPage inherits VerticalBox {
                         VerticalLayout { vertical-stretch: 0; max-width: 576px; spacing: 4px; padding-top: 8px;
                             HorizontalLayout { spacing: 6px; height: 28px;
                                 SubsectionTitle { horizontal-stretch: 1; text: @tr("Devices"); vertical-alignment: center; }
-                                // Hidden while running: the list would then include the mapper's own virtual device.
-                                if !AppState.mapper-running: IconButton { icon: @image-url("icons/refresh-cw.svg"); tooltip: @tr("Refresh device list"); enabled: !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
+                                IconButton { icon: @image-url("icons/refresh-cw.svg"); tooltip: @tr("Refresh device list"); enabled: !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
                             }
                             Text { vertical-stretch: 0; text: @tr("Pick the physical device whose events should be intercepted."); color: Theme.muted; wrap: word-wrap; }
                         }
@@ -419,21 +425,34 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                 if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Section {
-                    title: @tr("Linux text injection");
+                    title: @tr("Text input");
+                    Text { vertical-stretch: 0; max-width: 576px; text: @tr("How text actions in rules and macros are typed. Key remapping and the emoji popup do not use it."); color: Theme.muted; wrap: word-wrap; }
                     VerticalBox {
                         padding: 0px; spacing: 8px;
-                        FormLabel { text: @tr("Text injection method"); }
-                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: SettingsEditor.text-modes; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                        FormLabel { text: @tr("Typing method"); }
+                        // Same order as TEXT_MODES in src/pages/settings.rs.
+                        SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic (recommended)"), @tr("Portal keys, no clipboard"), @tr("Portal keys, legacy"), @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                        Text {
+                            vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap;
+                            text: [
+                                @tr("Types through the desktop's remote input portal (libei) using the current keyboard layout. Text with characters the layout lacks is pasted through the clipboard, which needs wl-clipboard. Needs a recent KDE Plasma 6 or GNOME; elsewhere it falls back to legacy portal keys. The desktop asks for permission once."),
+                                @tr("Like automatic, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."),
+                                @tr("Presses keys through the older portal interface. Try it if automatic does not work. Characters the current layout lacks may come out wrong on KDE."),
+                                @tr("Pastes the whole text at once with wl-copy and Ctrl+V, then restores the clipboard. Fast for long text; needs wl-clipboard. Apps that paste with another shortcut, such as terminals, will not receive it."),
+                                @tr("Runs \"ydotool type\". Works on any desktop but needs ydotool and its ydotoold service running. Reliable for Latin text only."),
+                                @tr("Runs \"xdotool type\". Works only in X11 sessions and XWayland windows."),
+                            ][SettingsEditor.text-mode-index];
+                        }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
                         padding: 0px; spacing: 8px;
                         FormLabel { text: @tr("ydotool path"); }
-                        TextField { text <=> SettingsEditor.ydotool-path; accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        TextField { text <=> SettingsEditor.ydotool-path; placeholder-text: @tr("ydotool from PATH"); accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalBox {
                         padding: 0px; spacing: 8px;
                         FormLabel { text: @tr("xdotool path"); }
-                        TextField { text <=> SettingsEditor.xdotool-path; accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        TextField { text <=> SettingsEditor.xdotool-path; placeholder-text: @tr("xdotool from PATH"); accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
                 }
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {

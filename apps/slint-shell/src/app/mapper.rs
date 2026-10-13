@@ -11,7 +11,15 @@ use lhc_core::{
     },
 };
 use slint::ComponentHandle;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+/// Attempts after the first one to start the mapper on launch. At login the
+/// keyboard or `/dev/input` permissions may not be ready yet, and a quickly
+/// restarted app may wait for the old process to release the devices.
+const LAUNCH_RETRIES: u32 = 15;
+const LAUNCH_RETRY_DELAY: Duration = Duration::from_secs(2);
+/// How often the shown uptime is updated.
+const UPTIME_TICK: Duration = Duration::from_secs(20);
 
 /// Forward core events to the UI thread. Subscribed once at startup.
 pub(super) fn forward_core_events() {
@@ -198,6 +206,7 @@ impl App {
         self.settings
             .global::<AppState>()
             .set_mapper_running(status.running);
+        self.track_uptime(status.running, status.last_error.is_some());
         let current = (status.running, status.last_error.clone());
         if self.last_mapper_status.borrow().as_ref() == Some(&current) {
             return;
@@ -218,6 +227,47 @@ impl App {
             .set_status(crate::notifications::report(&self.settings, &message));
     }
 
+    /// Remember when the mapper started and, when it stopped by itself, how
+    /// long it ran, so the settings can show it.
+    fn track_uptime(&self, running: bool, failed: bool) {
+        let now = Instant::now();
+        if running {
+            if self.mapper_since.get().is_none() {
+                self.mapper_since.set(Some(now));
+                self.mapper_crash.set(None);
+            }
+        } else if let Some(since) = self.mapper_since.take() {
+            self.mapper_crash.set(failed.then(|| (now - since, now)));
+        }
+        let shown = self.mapper_since.get().is_some() || self.mapper_crash.get().is_some();
+        if !shown {
+            self.uptime_clock.stop();
+        } else if !self.uptime_clock.running() {
+            self.uptime_clock
+                .start(slint::TimerMode::Repeated, UPTIME_TICK, || {
+                    super::with_app(|app| app.show_uptime())
+                });
+        }
+        self.show_uptime();
+    }
+
+    fn show_uptime(&self) {
+        let now = Instant::now();
+        let minutes = |time: Duration| i32::try_from(time.as_secs() / 60).unwrap_or(i32::MAX);
+        let (ran, ago) = self
+            .mapper_crash
+            .get()
+            .map_or((-1, -1), |(ran, at)| (minutes(ran), minutes(now - at)));
+        let state = self.settings.global::<AppState>();
+        state.set_mapper_uptime(
+            self.mapper_since
+                .get()
+                .map_or(-1, |since| minutes(now - since)),
+        );
+        state.set_mapper_ran(ran);
+        state.set_mapper_stopped_ago(ago);
+    }
+
     fn set_mapper_busy(&self, busy: bool) {
         self.settings.global::<AppState>().set_mapper_busy(busy);
     }
@@ -229,8 +279,13 @@ impl App {
         if lhc_core::mapper::runtime::status().running {
             self.stop_mapper(false);
         } else {
-            self.start_mapper();
+            self.start_mapper(0);
         }
+    }
+
+    /// Start the mapper as the settings ask on launch, retrying for a while.
+    pub(super) fn start_mapper_on_launch(&self) {
+        self.start_mapper(LAUNCH_RETRIES);
     }
 
     /// Restart a running mapper so it picks up the saved devices.
@@ -253,7 +308,7 @@ impl App {
                         app.set_error(Msg::None);
                         app.set_mapper_error(String::new());
                         if restart {
-                            app.start_mapper();
+                            app.start_mapper(0);
                             return;
                         }
                         crate::notifications::send(&app.settings, Msg::MapperStopped(None));
@@ -271,7 +326,8 @@ impl App {
             .set_mapper_error(error.into());
     }
 
-    fn start_mapper(&self) {
+    /// Start the mapper; a failed start is tried again `retries` times.
+    fn start_mapper(&self, retries: u32) {
         let state = self.settings.global::<AppState>();
         let Some(document) = self.document() else {
             self.set_error(Msg::LoadConfigFirst);
@@ -296,6 +352,7 @@ impl App {
             }
         };
         lhc_core::active_window::set_titles_needed(runtime.uses_titles);
+        self.mapper_crash.set(None);
         self.set_mapper_busy(true);
         state.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {
@@ -314,6 +371,18 @@ impl App {
                                 app.set_error(Msg::SavedMapperNotUpdated(error));
                             }
                         }
+                    }
+                    Err(error) if retries > 0 => {
+                        log::info!("mapper start failed, retrying: {error}");
+                        // Stay busy until the next attempt.
+                        app.set_mapper_busy(true);
+                        slint::Timer::single_shot(LAUNCH_RETRY_DELAY, move || {
+                            super::with_app(|app| {
+                                app.set_mapper_busy(false);
+                                app.start_mapper(retries - 1);
+                            })
+                        });
+                        return;
                     }
                     Err(error) => {
                         app.set_mapper_error(error.clone());

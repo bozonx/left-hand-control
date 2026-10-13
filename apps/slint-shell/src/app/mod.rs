@@ -63,6 +63,12 @@ pub(crate) struct App {
     config_watch: slint::Timer,
     worker_watch: slint::Timer,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
+    /// When the running mapper started.
+    mapper_since: Cell<Option<Instant>>,
+    /// How long the mapper ran before it stopped unexpectedly, and when.
+    mapper_crash: Cell<Option<(Duration, Instant)>>,
+    /// Keeps the shown uptime current.
+    uptime_clock: slint::Timer,
     /// Game-mode state the active layout was last chosen for.
     game_active: Cell<Option<bool>>,
     /// Active layout last seen for the OSD; `None` before the first look.
@@ -310,7 +316,7 @@ impl App {
             (device && settings.start_mapper_on_launch, device && layouts)
         });
         if start_mapper {
-            self.toggle_mapper();
+            self.start_mapper_on_launch();
         }
         if !tray || !setup_done {
             self.show(Window::Settings, Source::Button, Instant::now(), None, None);
@@ -436,6 +442,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         config_watch: slint::Timer::default(),
         worker_watch: slint::Timer::default(),
         last_mapper_status: RefCell::new(None),
+        mapper_since: Cell::new(None),
+        mapper_crash: Cell::new(None),
+        uptime_clock: slint::Timer::default(),
         game_active: Cell::new(None),
         announced_layout: RefCell::new(None),
         shutting_down: Cell::new(false),
