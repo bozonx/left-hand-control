@@ -304,17 +304,13 @@ fn load_script(
     if id < 0 {
         return Err(format!("KWin refused script {name}"));
     }
-    // Plasma 6 path first, then Plasma 5.
-    let run = |path: String| {
-        Proxy::new(connection, KWIN, path, "org.kde.kwin.Script")
-            .and_then(|script| script.call::<_, _, ()>("run", &()))
-    };
-    run(format!("/Scripting/Script{id}"))
-        .or_else(|_| run(format!("/{id}")))
-        .map_err(|error| {
-            unload_script(connection, name);
-            error.to_string()
-        })
+    // `start` runs every loaded script that is not running yet. The
+    // `Script<id>` object is not reliable: KWin numbers scripts by their
+    // count, so after an unload the new id can name another live script.
+    scripting.call::<_, _, ()>("start", &()).map_err(|error| {
+        unload_script(connection, name);
+        error.to_string()
+    })
 }
 
 fn unload_script(connection: &Connection, name: &str) {
