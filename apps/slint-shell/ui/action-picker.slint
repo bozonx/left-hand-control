@@ -186,7 +186,7 @@ component CategoryButton inherits Rectangle {
 
 export component PickerOverlay inherits Rectangle {
     background: #00000099;
-    TouchArea { clicked => { ActionPicker.dismiss-picker(); } }
+    TouchArea { clicked => { ActionPicker.dismiss-picker(); } scroll-event(event) => { accept } }
     focus := FocusScope {
         init => { self.focus(); }
         key-pressed(event) => {

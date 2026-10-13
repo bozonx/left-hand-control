@@ -227,7 +227,7 @@ export component SettingsWindow inherits Window {
     }
     if LayoutLibrary.dialog == LibraryDialog.conflict: Rectangle {
         background: #00000099;
-        TouchArea { }
+        TouchArea { scroll-event(event) => { accept } }
         FocusScope {
             focus-on-tab-navigation: false;
             init => { self.focus(); }

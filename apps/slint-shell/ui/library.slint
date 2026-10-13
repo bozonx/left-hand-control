@@ -645,7 +645,7 @@ export component LibraryPage inherits VerticalBox {
 export component LibraryDialogOverlay inherits Rectangle {
     if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete && LayoutLibrary.dialog != LibraryDialog.delete-rule && LayoutLibrary.dialog != LibraryDialog.conflict: Rectangle {
         background: #00000099;
-        TouchArea { }
+        TouchArea { scroll-event(event) => { accept } }
         FocusScope {
             focus-on-tab-navigation: false;
             key-pressed(event) => {
@@ -736,7 +736,7 @@ export component LibraryDialogOverlay inherits Rectangle {
     }
     if LayoutLibrary.save-as-open: Rectangle {
         background: #00000099;
-        TouchArea { }
+        TouchArea { scroll-event(event) => { accept } }
         Rectangle {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: 480px; height: 250px; background: Theme.card; border-radius: 12px;

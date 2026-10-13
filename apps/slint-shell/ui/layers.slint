@@ -560,7 +560,7 @@ export component LayerDialogOverlay inherits FocusScope {
     key-pressed(event) => { if event.text == Key.Escape { LayersEditor.dialog = LayerDialog.none; LayersEditor.delete-extra = -1; return accept; } return reject; }
     if LayersEditor.dialog != LayerDialog.none && LayersEditor.dialog != LayerDialog.delete: Rectangle {
         background: #00000099;
-        TouchArea { clicked => { LayersEditor.dialog = LayerDialog.none; } }
+        TouchArea { clicked => { LayersEditor.dialog = LayerDialog.none; } scroll-event(event) => { accept } }
         Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: 12px;
             TouchArea {}
             VerticalBox { padding: 20px; spacing: 12px;

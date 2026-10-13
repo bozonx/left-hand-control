@@ -614,7 +614,7 @@ export component ConfirmDialog inherits Rectangle {
     callback confirm();
     callback cancel();
     background: #00000099;
-    TouchArea { clicked => { root.cancel(); } }
+    TouchArea { clicked => { root.cancel(); } scroll-event(event) => { accept } }
     FocusScope {
         focus-on-tab-navigation: false;
         key-pressed(event) => {

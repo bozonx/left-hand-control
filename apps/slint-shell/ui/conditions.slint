@@ -235,7 +235,7 @@ export component AppEntryOverlay inherits Rectangle {
         ? ConditionChoices.processes(ConditionChoices.open-windows, AppEntryDialog.text) : [];
     if AppEntryDialog.editing: Rectangle {
         background: #00000099;
-        TouchArea { clicked => { AppEntryDialog.close(); } }
+        TouchArea { clicked => { AppEntryDialog.close(); } scroll-event(event) => { accept } }
         FocusScope {
             focus-on-tab-navigation: false;
             key-pressed(event) => {

@@ -347,7 +347,7 @@ export component RuleDialogOverlay inherits FocusScope {
     key-pressed(event) => { if event.text == Key.Escape { RulesEditor.dialog = RuleDialog.none; return accept; } return reject; }
     if RulesEditor.dialog != RuleDialog.none && RulesEditor.dialog != RuleDialog.remove && RulesEditor.dialog != RuleDialog.layer: Rectangle {
         background: #00000099;
-        TouchArea { clicked => { RulesEditor.dialog = RuleDialog.none; } }
+        TouchArea { clicked => { RulesEditor.dialog = RuleDialog.none; } scroll-event(event) => { accept } }
         Rectangle {
             x: (parent.width - self.width) / 2;
             y: 32px;
