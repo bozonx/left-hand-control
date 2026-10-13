@@ -262,12 +262,21 @@ export component AppEntryOverlay inherits Rectangle {
                         selected-index: AppEntryDialog.title-mode ? 1 : 0;
                         selected(index) => { AppEntryDialog.title-mode = index == 1; input.focus(); }
                     }
-                    input := TextField {
-                        text <=> AppEntryDialog.text;
-                        placeholder-text: AppEntryDialog.title-mode ? @tr("Text the window title contains") : @tr("App ID or process, * and ? allowed");
-                        invalid: AppEntryDialog.text != "" && AppEntryDialog.duplicate();
-                        init => { self.focus(); self.select-all(); }
-                        accepted => { AppEntryDialog.save(); }
+                    HorizontalLayout { spacing: 8px;
+                        input := TextField {
+                            text <=> AppEntryDialog.text;
+                            placeholder-text: AppEntryDialog.title-mode ? @tr("Text the window title contains") : @tr("App ID or process, * and ? allowed");
+                            invalid: AppEntryDialog.text != "" && AppEntryDialog.duplicate();
+                            init => { self.focus(); self.select-all(); }
+                            accepted => { AppEntryDialog.save(); }
+                        }
+                        VerticalLayout { alignment: center;
+                            InfoTip {
+                                text: @tr("Each item is compared with the active window. Pick a window from the list below to fill in the field.")
+                                    + "\n\n" + @tr("Application: the app ID (Wayland app id or X11 WM_CLASS) or the process name. The whole name must match, case is ignored, .exe is optional. * stands for any characters and ? for one, e.g. steam_app_*. The ID is stable, so prefer it.")
+                                    + "\n\n" + @tr("Window title: matches when the title contains the text, case is ignored. With * or ? the pattern must cover the whole title. A title changes with the open tab or document, and it never matches a process without a window.");
+                            }
+                        }
                     }
                     if AppEntryDialog.text != "" && AppEntryDialog.duplicate(): Text { text: @tr("Already in the list"); color: Theme.error; font-size: 12px; }
                     if AppEntryDialog.text != "" && !AppEntryDialog.duplicate() && ConditionChoices.open-windows-ready: Text {

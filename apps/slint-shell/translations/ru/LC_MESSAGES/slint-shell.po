@@ -2376,3 +2376,12 @@ msgstr "ydotool из PATH"
 
 msgid "xdotool from PATH"
 msgstr "xdotool из PATH"
+
+msgid "Each item is compared with the active window. Pick a window from the list below to fill in the field."
+msgstr "Каждый пункт сравнивается с активным окном. Выберите окно в списке ниже, чтобы заполнить поле."
+
+msgid "Application: the app ID (Wayland app id or X11 WM_CLASS) or the process name. The whole name must match, case is ignored, .exe is optional. * stands for any characters and ? for one, e.g. steam_app_*. The ID is stable, so prefer it."
+msgstr "Приложение: ID приложения (app id в Wayland или WM_CLASS в X11) или имя процесса. Имя должно совпасть целиком, регистр не учитывается, .exe можно не указывать. * означает любые символы, ? — один символ, например steam_app_*. ID не меняется, поэтому лучше использовать его."
+
+msgid "Window title: matches when the title contains the text, case is ignored. With * or ? the pattern must cover the whole title. A title changes with the open tab or document, and it never matches a process without a window."
+msgstr "Заголовок окна: совпадает, если заголовок содержит текст, регистр не учитывается. С * или ? шаблон должен охватывать весь заголовок. Заголовок меняется вместе с открытой вкладкой или документом и никогда не совпадает с процессом без окна."
