@@ -12,7 +12,7 @@ Desktop keyboard mapper на Rust и Slint. Перехватывает физи�
 
 Нужен Rust stable ≥ 1.85. На Linux установите clang, cmake, ninja, Python,
 библиотеки D-Bus, Fontconfig, Wayland и xkbcommon. Подробные команды и настройка
-доступа к `/dev/input` и `/dev/uinput` — в [руководстве Linux](docs/slint-dev-linux.md).
+доступа к `/dev/input` и `/dev/uinput` — в [руководстве Linux](docs/development/linux.md).
 
 Все команды выполняются из корня репозитория:
 
@@ -72,18 +72,18 @@ CI проверяет core и оболочку на Linux, Windows и macOS. Р�
 - `crates/lhc-core/` — конфигурация, хранение, mapper и системные интеграции;
   `assets/` содержит встроенную раскладку, `tests/fixtures/` — образцы для тестирования парсера.
 - `apps/slint-shell/` — UI, IPC, трей, платформенные адаптеры и Spell worker;
-  `assets/` содержит иконку приложения.
-- `docs/` — настройка разработки и тестовых стендов.
-- `dev_docs/` — планы функций и платформенной приёмки.
-- `scripts/` — диагностика оболочки и экспериментальные XKB-проверки.
+  `assets/` содержит иконку приложения и каталог emoji.
+- `docs/` — [индекс документации](docs/README.md): разработка, проектирование и тестирование.
+- `apps/slint-shell/scripts/` — диагностика и проверки оболочки.
+- `scripts/experimental/` — экспериментальные XKB-проверки.
 
 ## Документация
 
 - [Инструкции для агентов](AGENTS.md)
-- [Разработка на Linux](docs/slint-dev-linux.md)
+- [Разработка на Linux](docs/development/linux.md)
 - [Оболочка, сценарии и диагностика](apps/slint-shell/README.md)
-- [Windows-стенд](docs/windows-testing.md)
-- [Кроссплатформенная приёмка](dev_docs/cross-platform-product-validation-plan.md)
+- [Windows-стенд](docs/testing/windows.md)
+- [Кроссплатформенная приёмка](docs/testing/cross-platform-product-validation-plan.md)
 - [Политика безопасности](SECURITY.md)
 
 Лицензия: [GPL-3.0-or-later](LICENSE).

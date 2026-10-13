@@ -10,7 +10,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bind_document(&ui, &document);
     document.edit(slint_shell::document::View::Library, |config| {
         config.update_layout(|layout| {
-            layout.rules = vec![lhc_core::profile::model::LayerRule::new("r".to_string(), "F13")];
+            layout.rules = vec![lhc_core::profile::model::LayerRule::new(
+                "r".to_string(),
+                "F13",
+            )];
         })
     })?;
     ui.set_page(Page::Rules);
@@ -33,22 +36,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }])));
         choices.set_open_windows_ready(true);
     });
-    for (i, name) in ["org.kde.konsole", "firefox", "a-very-long-application-identifier.with.many.parts"].into_iter().enumerate() {
+    for (i, name) in [
+        "org.kde.konsole",
+        "firefox",
+        "a-very-long-application-identifier.with.many.parts",
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let weak = ui.as_weak();
-        slint::Timer::single_shot(std::time::Duration::from_millis(1700 + 400 * i as u64), move || {
-            let ui = weak.unwrap();
-            let d = ui.global::<AppEntryDialog>();
-            let rules = ui.global::<RulesEditor>();
-            d.invoke_open(rules.get_apps_include(), false, -1);
-            d.set_text(name.into());
-            println!("valid {name}: {} rev {}", d.invoke_valid(), d.get_revision());
-            d.invoke_save();
-        });
+        slint::Timer::single_shot(
+            std::time::Duration::from_millis(1700 + 400 * i as u64),
+            move || {
+                let ui = weak.unwrap();
+                let d = ui.global::<AppEntryDialog>();
+                let rules = ui.global::<RulesEditor>();
+                d.invoke_open(rules.get_apps_include(), false, -1);
+                d.set_text(name.into());
+                println!(
+                    "valid {name}: {} rev {}",
+                    d.invoke_valid(),
+                    d.get_revision()
+                );
+                d.invoke_save();
+            },
+        );
         let weak = ui.as_weak();
-        slint::Timer::single_shot(std::time::Duration::from_millis(1900 + 400 * i as u64), move || {
-            let ui = weak.unwrap();
-            println!("after {name}: {:?}", ui.global::<RulesEditor>().get_apps_include());
-        });
+        slint::Timer::single_shot(
+            std::time::Duration::from_millis(1900 + 400 * i as u64),
+            move || {
+                let ui = weak.unwrap();
+                println!(
+                    "after {name}: {:?}",
+                    ui.global::<RulesEditor>().get_apps_include()
+                );
+            },
+        );
     }
     let weak = ui.as_weak();
     slint::Timer::single_shot(std::time::Duration::from_millis(3000), move || {

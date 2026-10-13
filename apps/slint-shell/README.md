@@ -1,7 +1,9 @@
 # Slint Shell
 
 Основная desktop-оболочка Left Hand Control на Slint и `lhc-core`.
-Оболочка входит в Cargo workspace вместе с `lhc-core`. Slint 1.17.1 /
+Оболочка входит в Cargo workspace вместе с `lhc-core` и явно включённым
+vendored-пакетом `spell-framework`. Патч `i-slint-core` остаётся внешней для
+workspace зависимостью. Slint 1.17.1 /
 winit 0.30, ksni (D-Bus StatusNotifierItem без GTK), evdev. Редактор настроек
 работает с реальными назначениями клавиш, слоями, правилами, макросами,
 командами и Quick/Emoji. Библиотека поддерживает раздельные редактирование и
@@ -12,7 +14,7 @@ winit 0.30, ksni (D-Bus StatusNotifierItem без GTK), evdev. Редактор 
 перечитываются с защитой от перезаписи непрочитанных изменений.
 
 Повседневный запуск, зависимости, переменные окружения и проверки описаны в
-[руководстве разработчика для Linux](../../docs/slint-dev-linux.md). Этот файл
+[руководстве разработчика для Linux](../../docs/development/linux.md). Этот файл
 содержит подробности стендов и измерений приложения.
 
 Общий Slint UI также компилируется для Windows и macOS. Linux-native код ограничен
@@ -276,3 +278,32 @@ SLINT_BACKEND=winit-software \
 задерживает ввод примерно на 2,6 с в debug. Полная матрица приложений/способов
 вызова, GNOME fallback и Hyprland ещё требуют приёмки. CSV для новых запусков
 сохраняйте вне исходников, например в `/tmp/lhc-bench/`.
+
+## Каталог сценариев и инструментов
+
+Все команды выполняются из корня репозитория. UI-сценарии запускаются через
+`cargo run --locked -p slint-shell --example <name>` и используют временный конфиг.
+
+| Назначение | Примеры |
+| --- | --- |
+| Общая проверка UI | `editor -- --smoke`, `interactions` |
+| Страницы и диалоги | `action-picker`, `library`, `macros`, `menus`, `conditions`, `layer-keys` |
+| Общие контролы | `undo-redo`, `inline-edit`, `drag-scroll`, `notifications` |
+| Измерение ввода и возврата фокуса | `bench-evdev` (feature `spell`), `bench-return` (feature `probes`) |
+| Вспомогательные окна и диагностика | `window-fixture`, `panel-fixture` (feature `spell`), `focus-window`, `inspect-geometry` (feature `probes`) |
+
+`conditions` дополнительно требует путь для снимка:
+`SNAP=/tmp/lhc-conditions.ppm cargo run --locked -p slint-shell --example conditions`.
+
+`bench-*` остаются исполняемыми примерами: они работают с реальными окнами и
+устройствами и не используют стандартный Cargo benchmark harness.
+
+| Скрипты | Назначение |
+| --- | --- |
+| `check-recovery.py` | Восстановление конфигурации, worker и Live Preview |
+| `check-worker-crash.py`, `check-preferences.py` | Проверки worker и настроек |
+| `check-windows-automated.ps1`, `check-windows-lifecycle.ps1`, `windows-receiver.ps1` | Windows-приёмка и окно получения ввода |
+| `bench-open.sh`, `bench-virtual.sh`, `bench-geometry.py`, `bench-lifecycle.py` | Измерительные прогоны |
+| `mem.sh`, `summarize.py` | Сбор памяти и сводка результатов |
+
+Общие экспериментальные XKB-инструменты описаны в [scripts/README.md](../../scripts/README.md).

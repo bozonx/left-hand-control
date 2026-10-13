@@ -18,13 +18,13 @@ env_logger = "0.11"
 png = "0.17"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = { version = "0.3.6", features = ["blocking"] }
-evdev = "0.13"
+evdev.workspace = true
 raw-window-handle = "0.6"
-wayland-client = "0.31"
+wayland-client.workspace = true
 wayland-backend = { version = "0.3", features = ["client_system"] }
 wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 
@@ -50,11 +50,11 @@ path = "vendor/spell-framework"
 optional = true
 
 [target.'cfg(target_os = "linux")'.dependencies.zbus]
-version = "5"
+workspace = true
 optional = true
 
 [target.'cfg(target_os = "linux")'.dependencies.tempfile]
-version = "3"
+workspace = true
 optional = true
 
 [build-dependencies]
@@ -87,4 +87,4 @@ features = ["client"]
 optional = true
 
 [dev-dependencies]
-tempfile = "3"
+tempfile.workspace = true

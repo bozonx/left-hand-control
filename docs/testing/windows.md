@@ -392,7 +392,7 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
-The complete Slint checklist is in [Windows Slint validation](../dev_docs/slint-windows-validation.md). Product-level mapper, layouts, macros, and `text:` validation are in the [cross-platform validation plan](../dev_docs/cross-platform-product-validation-plan.md).
+The complete Slint checklist is in [Windows Slint validation](slint-windows-validation.md). Product-level mapper, layouts, macros, and `text:` validation are in the [cross-platform validation plan](cross-platform-product-validation-plan.md).
 
 ## Snapshots and result recording
 

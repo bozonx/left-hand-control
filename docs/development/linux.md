@@ -101,7 +101,7 @@ SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview
 SLINT_LIVE_PREVIEW=1 cargo run --locked -p slint-shell --features slint/live-preview --example interactions
 SLINT_LIVE_PREVIEW=1 cargo run --locked -p slint-shell --features slint/live-preview --example editor -- --smoke
 SLINT_LIVE_PREVIEW=1 cargo build --locked -p slint-shell --features slint/live-preview
-python scripts/check-slint-shell-recovery.py --popups winit --live-preview
+python apps/slint-shell/scripts/check-recovery.py --popups winit --live-preview
 ```
 
 Последняя проверка временно добавляет пустую строку в `settings-page.slint`, проверяет перезагрузку и восстанавливает файл. В обычной сборке переводы встроены Slint-компилятором, а в Live Preview тот же русский PO-каталог подключается через переводчик времени выполнения. Переключение русского и английского, включая формы множественного числа, проверяется сценарием `editor -- --smoke` в обоих режимах. Выбор языка применяется кнопкой «Сохранить настройки». Spell вместе с Live Preview отдельно не проверен.
@@ -385,8 +385,8 @@ LHC_PICKER_SNAPSHOT=/tmp/lhc-picker.ppm cargo run --locked -p slint-shell --exam
 
 ```sh
 cargo build --locked -p slint-shell --features spell
-python scripts/check-slint-shell-recovery.py --popups winit
-python scripts/check-slint-shell-recovery.py --popups spell
+python apps/slint-shell/scripts/check-recovery.py --popups winit
+python apps/slint-shell/scripts/check-recovery.py --popups spell
 ```
 
 ## История текстовых полей
@@ -406,3 +406,15 @@ cargo run --locked -p slint-shell --example inline-edit
 ```
 
 Описание локального патча и исходной версии: `apps/slint-shell/vendor/i-slint-core/PATCHES.md`. При обновлении Slint нужно перенести необходимые исправления либо удалить патч после проверки эквивалентного поведения upstream.
+
+## Common pitfalls
+
+- **`slint-shell is already running`** — another instance owns the socket: `target/debug/slint-shell quit` or set `SLINT_SHELL_SOCKET`.
+- **First build is slow or fails in Skia** — Skia is built from source; install clang, cmake, ninja and Python.
+- **`No readable Ctrl+Alt+F11/F12 evdev devices`** — no access to `/dev/input`; fix permissions or run with `SLINT_SHELL_HOTKEYS=off`.
+- **Monochrome or missing emoji** — install Noto Color Emoji; in winit windows only `SLINT_BACKEND=winit-skia` draws colour emoji.
+- **`compositor does not advertise zwlr_layer_shell_v1`** — GNOME has no layer-shell; use `SLINT_SHELL_POPUPS=auto` or `winit`.
+- **Save rejected: "configuration changed by another application"** — the file changed externally; the document is already reloaded, repeat the edit.
+- **`RefCell` already borrowed panic in a page** — a `Document::read()` borrow is alive while a callback edits; drop it before calling into the UI.
+- **CLI replies `queued`** — the command is queued on the UI thread; the window is not necessarily ready for input yet.
+

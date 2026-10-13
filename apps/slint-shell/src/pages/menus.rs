@@ -229,7 +229,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }
         }
     });
-    match serde_json::from_str::<Vec<Category>>(include_str!("../../ui/emoji-catalog.json")) {
+    match serde_json::from_str::<Vec<Category>>(include_str!("../../assets/emoji-catalog.json")) {
         Ok(categories) => e.set_catalog(ModelRc::new(VecModel::from(
             categories
                 .into_iter()

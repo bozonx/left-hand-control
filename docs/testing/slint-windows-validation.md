@@ -4,7 +4,7 @@
 приёмка ограничена особенностями Slint shell и его Windows-адаптеров.
 
 Воспроизводимая настройка стенда описана в
-[руководстве по Windows-тестированию](../docs/windows-testing.md).
+[руководстве по Windows-тестированию](windows.md).
 
 ## Цель
 
@@ -77,7 +77,7 @@ VM не сравнивать с Linux-стендом.
 Единый автоматический Windows-suite повторно пройден 2026-09-24 на Windows 11
 build 26200: native tests, release-сборка, portable interactions, 100 циклов
 show/hide, контроль working set/handles, shutdown и отключённые hotkeys успешны.
-[Краткий протокол запуска](windows-results/2026-09-24.txt).
+[Краткий протокол запуска](results/windows/2026-09-24.txt).
 
 ## Автоматическая приёмка
 

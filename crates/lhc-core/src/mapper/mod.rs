@@ -17,7 +17,7 @@ pub mod system;
 #[cfg(target_os = "linux")]
 pub mod validation;
 
-pub use crate::mapper_types::{InputDevice, KeyboardDevice};
+pub use devices::{InputDevice, KeyboardDevice};
 
 #[cfg(target_os = "linux")]
 pub(crate) fn notify_mapper_stopped(error: &str) {
@@ -36,6 +36,5 @@ pub(crate) fn refresh_layout() {
     let _ = crate::layout::refresh_cache();
 }
 
-pub mod config {
-    pub use crate::mapper_config::*;
-}
+pub mod config;
+pub mod devices;

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guide for AI coding agents working in this repository. Read it before making changes. Day-to-day developer details (system packages, env vars, run modes, troubleshooting) live in [`docs/slint-dev-linux.md`](docs/slint-dev-linux.md); this file is the short, prescriptive version.
+Guide for AI coding agents working in this repository. Read it before making changes. Day-to-day developer details (system packages, env vars, run modes, troubleshooting) live in [`docs/development/linux.md`](docs/development/linux.md); this file is the short, prescriptive version.
 
 ## Project at a glance
 
@@ -79,7 +79,7 @@ apps/slint-shell/
 ├── examples/                 # UI scenarios and benchmarks
 └── vendor/                   # patched i-slint-core and spell-framework (see PATCHES.md in each)
 
-docs/                         # slint-dev-linux.md, windows-testing.md
+docs/                         # development/, design/, testing/; README.md index
 ```
 
 ## Architecture
@@ -122,35 +122,21 @@ docs/                         # slint-dev-linux.md, windows-testing.md
 - Keep diffs minimal and focused; no drive-by refactors.
 
 **Slint UI**
-- Each settings page is one Slint global bound by one module in `src/pages/`. Shared widgets live in `controls.slint`, colours and metrics in `theme.slint` (system, light, dark and E-ink themes must all work).
+- Each settings page is one Slint global bound by one module in `src/pages/`. Shared widgets are exported by `controls.slint` (base widgets in `controls-base.slint`, inline editors in `controls-inline.slint`), colours and metrics in `theme.slint` (system, light, dark and E-ink themes must all work).
 - All user-visible text goes through `@tr(...)`. Rust never formats UI text: it sends an `i18n::Msg` (`Message { id, arg, count }`) and `Locale.text()` in `ui/i18n.slint` translates it.
 - Adding a message means updating `src/i18n.rs`, `ui/i18n.slint` and the Russian PO file together. The test `every_slint_string_has_a_russian_translation` enforces coverage; Russian plural forms must be filled.
 - Changing a property or callback used from Rust requires a rebuild; Live Preview only reloads pure `.slint` changes.
 
 **Vendored crates**
+- `spell-framework` is an explicit workspace member: workspace tests cover it. `i-slint-core` is a patched dependency, excluded from workspace membership.
 - `vendor/i-slint-core` (via `[patch.crates-io]`, text-field undo/redo and shortcut fixes) and `vendor/spell-framework` are patched copies. Any change there must be recorded in that directory's `PATCHES.md`. When upgrading Slint, port or drop the patch and keep the `=1.17.1` pins (`slint`, `i-slint-core`, `slint-build`) in sync.
 
 ## Platform support
 
-| Concern | KDE | GNOME | Sway | X11 generic | Windows | macOS |
-| --- | --- | --- | --- | --- | --- | --- |
-| Key interception (evdev+uinput) | ✅ | ✅ | ✅ | ✅ | ❌ stub | ❌ stub |
-| Literal text (xdg-desktop-portal) | ✅ | ✅ | ✅ | ⚠ if portal present | ❌ | ❌ |
-| Layout detection | ✅ DBus `org.kde.keyboard` | 🚧 | 🚧 | 🚧 | 🚧 | 🚧 |
-| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`) | ✅ KWin DBus | 🚧 | 🚧 | 🚧 | ❌ | ❌ |
-| KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
-| Layer-shell popups (Spell) | ✅ | ❌ winit fallback | ✅ not accepted | ❌ winit | — | — |
-| Game mode: GameMode daemon | ✅ D-Bus | ✅ | ✅ | ✅ | — | — |
-| Game mode: fullscreen / active window | ✅ KWin script | ❌ no public API | ✅ IPC (Hyprland too); other wlroots compositors via `wlr-foreign-toplevel` | ⚠ `xprop` (+ `xdotool`, `xrandr` for borderless) | ✅ Win32 | ⚠ untested (`NSWorkspace`, `CGWindowList`) |
-| Game mode: known games | ✅ Steam/Lutris processes, `.desktop` `Game` category | ✅ | ✅ | ✅ | ✅ Steam `RunningAppID`, Game Bar list (untested) | ⚠ `Info.plist` category (untested) |
-
-🚧 = skeleton module returning `Ok(None)`/`None` with a planned-implementation note; ❌ stub = explicit "not implemented" error. Both compile and are safe to ship.
-
-**Adding a Linux DE backend:** add a variant to `platform::linux::Desktop` and `classify_desktop()`; create `layout/linux_<de>.rs` with `current()` and `start_watcher()` that report through `super::publish(&info)`; wire it into `layout/mod.rs`; add `mod <de>` with `resolve(name) -> Option<SysAction>` in `mapper/system.rs` and wire it into the dispatcher.
-
-**Adding Windows/macOS interception:** replace the non-Linux stubs in `mapper/runtime.rs` with `mapper/windows.rs` / `mapper/macos.rs` mirroring `mapper::linux` (`list_keyboards()`, `spawn()`, `Handle`). The engine currently uses `evdev::Key`; introduce a generic key type first. Windows: `SetWindowsHookExW(WH_KEYBOARD_LL)` + `SendInput`. macOS: `CGEventTapCreate` + `CGEventPost` (requires Accessibility permission). Test Windows in a VM as described in `docs/windows-testing.md`.
-
-**Linux runtime requirements:** read access to `/dev/input/event*` and rw to `/dev/uinput` (group `input` + udev rule), `xdg-desktop-portal` with the DE backend for literal text, `xprop` (+ `xdotool` for title conditions) on X11, `hyprctl` / `swaymsg` on Hyprland / Sway (other wlroots compositors need `zwlr_foreign_toplevel_manager_v1`, nothing to install); KDE Wayland needs nothing extra (a KWin script reports focus over D-Bus, `kdotool` is only a fallback). Setup commands are in `docs/slint-dev-linux.md`.
+The primary accepted environment is KDE Plasma 6 on Wayland. Windows/macOS
+interception is not implemented; their shell adapters compile but are not accepted.
+See [platform support and backend development](docs/development/platforms.md)
+for the capability matrix and backend extension instructions.
 
 ## Definition of done
 
@@ -187,20 +173,9 @@ Report the exact commands you ran and their results. If something could not be r
 Do not use its code or instructions as the product specification, add dependencies
 on it, or try to keep it building. Work only in `lhc-core` and `apps/slint-shell`.
 
-## Common pitfalls
-
-- **`slint-shell is already running`** — another instance owns the socket: `target/debug/slint-shell quit` or set `SLINT_SHELL_SOCKET`.
-- **First build is slow or fails in Skia** — Skia is built from source; install clang, cmake, ninja and Python.
-- **`No readable Ctrl+Alt+F11/F12 evdev devices`** — no access to `/dev/input`; fix permissions or run with `SLINT_SHELL_HOTKEYS=off`.
-- **Monochrome or missing emoji** — install Noto Color Emoji; in winit windows only `SLINT_BACKEND=winit-skia` draws colour emoji.
-- **`compositor does not advertise zwlr_layer_shell_v1`** — GNOME has no layer-shell; use `SLINT_SHELL_POPUPS=auto` or `winit`.
-- **Save rejected: "configuration changed by another application"** — the file changed externally; the document is already reloaded, repeat the edit.
-- **`RefCell` already borrowed panic in a page** — a `Document::read()` borrow is alive while a callback edits; drop it before calling into the UI.
-- **CLI replies `queued`** — the command is queued on the UI thread; the window is not necessarily ready for input yet.
-
 ## Further reading
 
-- [`docs/slint-dev-linux.md`](docs/slint-dev-linux.md) — setup, run modes, env vars, feature behaviour, troubleshooting.
+- [`docs/development/linux.md`](docs/development/linux.md) — setup, run modes, env vars, feature behaviour, troubleshooting.
 - [`apps/slint-shell/README.md`](apps/slint-shell/README.md) — popup invocation paths, benchmarks, diagnostic stands, Windows/macOS notes.
-- [`docs/windows-testing.md`](docs/windows-testing.md) — Windows VM test environment.
+- [`docs/testing/windows.md`](docs/testing/windows.md) — Windows VM test environment.
 - `apps/slint-shell/vendor/*/PATCHES.md` — what the vendored crates change and why.

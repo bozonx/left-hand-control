@@ -5,7 +5,7 @@
 //
 // Only actions a key cannot express live here (switch to desktop / layout N,
 // move window to desktop N); everything else is a standard key, a chord or
-// a `kde:` global shortcut. See `dev_docs/removed-system-actions.md`.
+// a `kde:` global shortcut. See `docs/design/removed-system-actions.md`.
 //
 // Two action shapes are supported:
 //   * `SysAction::Dbus` — direct session-bus method call. Preferred when

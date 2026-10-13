@@ -773,7 +773,7 @@ fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
 
 /// Run the mapper's own validation, which also checks key names.
 fn validate_for_mapper(json: &str) -> Result<(), ConfigError> {
-    let config: crate::mapper_config::AppConfig =
+    let config: crate::mapper::config::AppConfig =
         serde_json::from_str(json).map_err(|error| ConfigError::Invalid(error.to_string()))?;
     #[cfg(target_os = "linux")]
     crate::mapper::validation::validate_config(&config).map_err(ConfigError::Invalid)?;

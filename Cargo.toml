@@ -1,9 +1,10 @@
 [workspace]
-resolver = "2"
-exclude = ["_old"]
+resolver = "3"
+exclude = ["_old", "apps/slint-shell/vendor/i-slint-core"]
 members = [
     "crates/lhc-core",
     "apps/slint-shell",
+    "apps/slint-shell/vendor/spell-framework",
 ]
 
 [workspace.package]
@@ -13,6 +14,11 @@ rust-version = "1.85"
 license = "GPL-3.0-or-later"
 
 [workspace.dependencies]
+evdev = "0.13"
+libc = "0.2"
+wayland-client = "0.31"
+zbus = "5"
+tempfile = "3"
 dirs = "6"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
