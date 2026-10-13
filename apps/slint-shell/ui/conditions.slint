@@ -41,6 +41,9 @@ export global ConditionChoices {
     pure callback make-pattern(string, bool) -> string;
     /// Whether a list of patterns has the pattern, ignoring case.
     pure callback has(patterns: [string], pattern: string) -> bool;
+    /// Whether a process name says more than the app id: not empty and
+    /// not part of it, as `spectacle` is of `org.kde.spectacle`.
+    pure callback distinct-process(app-id: string, process: string) -> bool;
     /// Windows whose app id, process or title contains the query.
     pure callback matching(windows: [WindowChoice], query: string) -> [WindowChoice];
     /// Running processes containing the query, without those of the windows.
@@ -180,8 +183,8 @@ component Chip inherits Rectangle {
 }
 
 /// An open window to fill the dialog field with: the application, or in
-/// title mode one of its window titles. With both `app-id` and a
-/// different `process` it offers to match by either.
+/// title mode one of its window titles. A click picks the application;
+/// a `process` that says more than `app-id` can be picked instead.
 component WindowRow inherits Rectangle {
     in property <string> text;
     in property <string> detail;
@@ -192,7 +195,7 @@ component WindowRow inherits Rectangle {
     in property <string> process;
     /// Pattern typed in the dialog, to mark the chosen chip.
     in property <string> typed;
-    private property <bool> offers-choice: root.app-id != "" && root.process != "" && !ConditionChoices.has([root.app-id], root.process);
+    private property <bool> offers-process: root.app-id != "" && ConditionChoices.distinct-process(root.app-id, root.process);
     callback clicked();
     callback choose(string);
     height: row.preferred-height;
@@ -213,8 +216,7 @@ component WindowRow inherits Rectangle {
                 if root.badge != "": Badge { text: root.badge; fill: Theme.accent.transparentize(0.75); }
             }
             if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: 12px; overflow: elide; }
-            if root.offers-choice: HorizontalLayout { spacing: 6px; alignment: start; padding-top: 2px;
-                Chip { text: @tr("App ID: {}", root.app-id); selected: ConditionChoices.has([root.app-id], root.typed); clicked => { root.choose(root.app-id); } }
+            if root.offers-process: HorizontalLayout { alignment: start; padding-top: 2px;
                 Chip { text: @tr("Process: {}", root.process); selected: ConditionChoices.has([root.process], root.typed); clicked => { root.choose(root.process); } }
             }
         }
@@ -308,7 +310,9 @@ export component AppEntryOverlay inherits Rectangle {
                                         app-id: window.app-id;
                                         process: window.process;
                                         typed: root.typed;
-                                        selected: ConditionChoices.has([window.pattern, window.app-id, window.process], root.typed);
+                                        // A process offered separately has its own chip.
+                                        selected: ConditionChoices.has([window.pattern], root.typed)
+                                            || (!ConditionChoices.distinct-process(window.app-id, window.process) && ConditionChoices.has([window.process], root.typed));
                                         // A game picked by its window counts while it has the focus.
                                         clicked => { AppEntryDialog.text = window.pattern; AppEntryDialog.window-only = true; input.focus(); }
                                         choose(name) => { AppEntryDialog.text = name; AppEntryDialog.window-only = true; input.focus(); }
@@ -394,7 +398,7 @@ component AppItemRow inherits Rectangle {
 /// and edited in `AppEntryOverlay`, removed after a prompt.
 export component ApplicationsField inherits VerticalLayout {
     in-out property <string> value;
-    in property <string> label: @tr("Apply in windows");
+    in property <string> label: @tr("Only in applications");
     in property <bool> exclusion;
     private property <[string]> items: ConditionChoices.items(root.value);
     private property <int> revision: AppEntryDialog.revision;
@@ -489,7 +493,7 @@ export component ConditionsForm inherits VerticalLayout {
         HorizontalLayout { spacing: 24px;
             ApplicationsField { value <=> root.applications; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px; }
             if root.show-exclusions: ApplicationsField {
-                exclusion: true; label: @tr("Do not apply in windows"); value <=> root.excluded;
+                exclusion: true; label: @tr("Except applications"); value <=> root.excluded;
                 horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
             }
         }

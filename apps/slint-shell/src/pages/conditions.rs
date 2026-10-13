@@ -144,6 +144,11 @@ fn running_processes() -> Vec<String> {
 
 /// The pattern a condition stores for a window: its app id, or the
 /// process when there is none.
+/// Whether `process` is not empty and not part of `app_id`, ignoring case.
+fn distinct_process(app_id: &str, process: &str) -> bool {
+    !process.is_empty() && !app_id.to_lowercase().contains(&process.to_lowercase())
+}
+
 fn window_pattern(app_id: &str, process: Option<&str>) -> String {
     if app_id.is_empty() {
         process.unwrap_or_default().to_owned()
@@ -159,6 +164,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
             .iter()
             .any(|item| item.eq_ignore_ascii_case(&pattern))
     });
+    choices.on_distinct_process(|app_id, process| distinct_process(&app_id, &process));
     choices.on_matching(|windows, query| {
         let query = query.trim().to_lowercase();
         ModelRc::new(VecModel::from(
@@ -332,6 +338,14 @@ mod tests {
         assert_eq!(rows.len(), 2);
         assert_eq!((rows[0].count, rows[0].title.as_str()), (2, "Docs"));
         assert_eq!(rows[1].pattern, "kate");
+    }
+
+    #[test]
+    fn process_is_offered_when_it_says_more_than_the_app_id() {
+        assert!(!distinct_process("org.kde.Spectacle", "spectacle"));
+        assert!(!distinct_process("orca", ""));
+        assert!(distinct_process("md.obsidian.Obsidian", "electron"));
+        assert!(distinct_process("orca", "orca-ide"));
     }
 
     #[test]

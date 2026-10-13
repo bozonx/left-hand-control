@@ -1997,11 +1997,11 @@ msgstr "В правиле «{}» указана неизвестная клав�
 msgid "Automatic switching rule deleted"
 msgstr "Правило автопереключения удалено"
 
-msgid "Apply in windows"
-msgstr "Применять в окнах"
+msgid "Only in applications"
+msgstr "Только в приложениях"
 
-msgid "Do not apply in windows"
-msgstr "Не применять в окнах"
+msgid "Except applications"
+msgstr "Кроме приложений"
 
 msgid "A match blocks the rule, even if the window is in the allowed list."
 msgstr "Совпадение запрещает правило, даже если окно входит в список разрешённых."
@@ -2271,9 +2271,6 @@ msgstr "Действие через {} мс удержания"
 
 msgid "These codes are specific to Left Hand Control, not universal keyboard codes (e.g. KeyA, ArrowLeft)."
 msgstr "Это коды приложения Left Hand Control, а не общепринятые коды клавиш (например, KeyA, ArrowLeft)."
-
-msgid "App ID: {}"
-msgstr "ID приложения: {}"
 
 msgid "Process: {}"
 msgstr "Процесс: {}"
