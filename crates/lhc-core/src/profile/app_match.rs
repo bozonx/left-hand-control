@@ -98,6 +98,23 @@ pub fn uses_title<'a>(patterns: impl IntoIterator<Item = &'a String>) -> bool {
         .any(|pattern| matches!(AppMatcher::parse(pattern), Some(AppMatcher::Title(_))))
 }
 
+/// Runtimes that run many different applications under their own process
+/// name, so the name says little about the application.
+const SHARED_RUNTIMES: &[&str] = &[
+    "electron", "java", "node", "python", "python3", "mono", "dotnet", "wine", "wine64", "bwrap",
+    "sh", "bash",
+];
+
+/// Whether the process `name` is a runtime shared by many applications,
+/// such as `electron` or `java`; its app id identifies the application.
+pub fn is_shared_runtime(name: &str) -> bool {
+    let name = name.trim();
+    let name = name.strip_suffix(".exe").unwrap_or(name);
+    SHARED_RUNTIMES
+        .iter()
+        .any(|runtime| runtime.eq_ignore_ascii_case(name))
+}
+
 /// Whether `outer` matches every window `inner` matches. Conservative:
 /// `false` when it cannot tell.
 pub fn covers(outer: &str, inner: &str) -> bool {
@@ -242,6 +259,13 @@ mod tests {
                 .unwrap()
                 .matches_process("game")
         );
+    }
+
+    #[test]
+    fn shared_runtimes() {
+        assert!(is_shared_runtime("electron"));
+        assert!(is_shared_runtime(" Java.exe "));
+        assert!(!is_shared_runtime("orca-ide"));
     }
 
     #[test]

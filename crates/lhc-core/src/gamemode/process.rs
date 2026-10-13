@@ -158,16 +158,28 @@ pub(crate) fn proc_names(dir: &std::path::Path, args: &[String]) -> Vec<String> 
     if let Ok(comm) = std::fs::read_to_string(dir.join("comm")) {
         names.push(comm.trim().to_owned());
     }
-    if let Ok(exe) = std::fs::read_link(dir.join("exe"))
-        && let Some(name) = exe.file_name().and_then(|name| name.to_str())
-    {
-        names.push(name.to_owned());
+    if let Some(name) = exe_name(dir) {
+        names.push(name);
     }
     if let Some(argv0) = args.first() {
         names.push(file_name(argv0).to_owned());
     }
     names.retain(|name| !name.is_empty());
     names
+}
+
+/// File name of the executable of a `/proc/<pid>` entry. The kernel adds
+/// ` (deleted)` to the link once the file is replaced, as by a rebuild.
+#[cfg(target_os = "linux")]
+fn exe_name(dir: &std::path::Path) -> Option<String> {
+    let exe = std::fs::read_link(dir.join("exe")).ok()?;
+    let name = exe.file_name()?.to_str()?;
+    Some(without_deleted(name).to_owned())
+}
+
+/// `name` without the ` (deleted)` the kernel adds to a replaced executable.
+pub(crate) fn without_deleted(name: &str) -> &str {
+    name.strip_suffix(" (deleted)").unwrap_or(name)
 }
 
 /// The command line of a `/proc/<pid>` entry, one string per argument.
@@ -251,10 +263,7 @@ pub(crate) fn launched_game(args: &[String]) -> Option<String> {
 #[cfg(target_os = "linux")]
 pub(crate) fn proc_display_name(pid: u64) -> Option<String> {
     let dir = std::path::PathBuf::from(format!("/proc/{pid}"));
-    let exe = std::fs::read_link(dir.join("exe"))
-        .ok()
-        .and_then(|exe| exe.file_name()?.to_str().map(str::to_owned));
-    match exe {
+    match exe_name(&dir) {
         Some(exe) if !is_wine_loader(&exe) => Some(exe),
         _ => proc_argv0(&dir)
             .map(|argv0| file_name(&argv0).to_owned())
@@ -294,6 +303,12 @@ mod tests {
             only_active_window: false,
             is_blacklist: false,
         }
+    }
+
+    #[test]
+    fn replaced_executables_keep_their_name() {
+        assert_eq!(without_deleted("slint-shell (deleted)"), "slint-shell");
+        assert_eq!(without_deleted("kate"), "kate");
     }
 
     #[test]

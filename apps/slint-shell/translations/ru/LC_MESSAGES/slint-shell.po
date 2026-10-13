@@ -2015,9 +2015,6 @@ msgstr "Выбор приложений для исключения"
 msgid "Open windows"
 msgstr "Открытые окна"
 
-msgid "Running processes"
-msgstr "Запущенные процессы"
-
 msgid "Last active"
 msgstr "Последнее активное"
 
@@ -2144,9 +2141,6 @@ msgstr "Запущенный процесс"
 msgid "Text the window title contains"
 msgstr "Текст, который есть в заголовке окна"
 
-msgid "App ID or process, * and ? allowed"
-msgstr "ID приложения или процесс, можно * и ?"
-
 msgid "Already in the list"
 msgstr "Уже в списке"
 
@@ -2272,9 +2266,6 @@ msgstr "Действие через {} мс удержания"
 msgid "These codes are specific to Left Hand Control, not universal keyboard codes (e.g. KeyA, ArrowLeft)."
 msgstr "Это коды приложения Left Hand Control, а не общепринятые коды клавиш (например, KeyA, ArrowLeft)."
 
-msgid "Process: {}"
-msgstr "Процесс: {}"
-
 msgid "While its window is active"
 msgstr "Пока активно его окно"
 
@@ -2385,3 +2376,54 @@ msgstr "Приложение: ID приложения (app id в Wayland или 
 
 msgid "Window title: matches when the title contains the text, case is ignored. With * or ? the pattern must cover the whole title. A title changes with the open tab or document, and it never matches a process without a window."
 msgstr "Заголовок окна: совпадает, если заголовок содержит текст, регистр не учитывается. С * или ? шаблон должен охватывать весь заголовок. Заголовок меняется вместе с открытой вкладкой или документом и никогда не совпадает с процессом без окна."
+
+msgid "Match by"
+msgstr "Узнавать по"
+
+msgid "Process"
+msgstr "Процесс"
+
+msgid "Process name, * and ? allowed"
+msgstr "Имя процесса, можно * и ?"
+
+msgid "App ID, * and ? allowed"
+msgstr "ID приложения, можно * и ?"
+
+msgid "The item is compared with the names of running processes. Pick one from the list below to fill in the field."
+msgstr "Элемент сравнивается с именами запущенных процессов. Выберите процесс в списке ниже, чтобы заполнить поле."
+
+msgid "Process: the executable name, as the list below shows it. The whole name must match, case is ignored, .exe is optional. * stands for any characters and ? for one."
+msgstr "Процесс: имя исполняемого файла, как в списке ниже. Имя должно совпасть целиком, регистр не учитывается, .exe можно не указывать. * означает любые символы, ? — один символ."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "Совпадает с {n} запущенным процессом"
+msgstr[1] "Совпадает с {n} запущенными процессами"
+msgstr[2] "Совпадает с {n} запущенными процессами"
+
+msgid "Matches no running process"
+msgstr "Не совпадает ни с одним запущенным процессом"
+
+msgid "Many applications run as “{}”, so the name matches all of them. The application ID is more precise."
+msgstr "Под именем «{}» работают многие приложения, и оно совпадёт со всеми. ID приложения точнее."
+
+msgid "When it counts"
+msgstr "Когда учитывать"
+
+msgid "Window titles"
+msgstr "Заголовки окон"
+
+msgid "Processes of open windows"
+msgstr "Процессы открытых окон"
+
+msgid "Shared process"
+msgstr "Общий процесс"
+
+msgid "Running without a window"
+msgstr "Запущены без окна"
+
+msgid "Type a name to find processes running without a window."
+msgstr "Введите имя, чтобы найти процессы, запущенные без окна."
+
+msgid "Process · while its window is active"
+msgstr "Процесс · пока активно его окно"

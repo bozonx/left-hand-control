@@ -60,6 +60,59 @@ fn group(windows: Vec<OpenWindow>) -> Vec<WindowChoice> {
         .collect()
 }
 
+/// One row per process of the open windows, in the order of `rows`;
+/// `app_id` lists the app ids of the process, `pattern` is its name.
+fn by_process(rows: &[WindowChoice]) -> Vec<WindowChoice> {
+    let mut processes: Vec<(WindowChoice, Vec<SharedString>, Vec<SharedString>)> = Vec::new();
+    for row in rows.iter().filter(|row| !row.process.is_empty()) {
+        let index = match processes
+            .iter()
+            .position(|(process, ..)| process.pattern.eq_ignore_ascii_case(&row.process))
+        {
+            Some(index) => index,
+            None => {
+                processes.push((
+                    WindowChoice {
+                        pattern: row.process.clone(),
+                        process: row.process.clone(),
+                        title: row.title.clone(),
+                        ..Default::default()
+                    },
+                    Vec::new(),
+                    Vec::new(),
+                ));
+                processes.len() - 1
+            }
+        };
+        let (process, app_ids, titles) = &mut processes[index];
+        process.count += row.count;
+        process.recent |= row.recent;
+        if !row.app_id.is_empty() && !row.app_id.eq_ignore_ascii_case(&row.process) {
+            app_ids.push(row.app_id.clone());
+        }
+        titles.extend(row.titles.iter());
+    }
+    processes
+        .into_iter()
+        .map(|(mut process, app_ids, titles)| {
+            process.app_id = app_ids.join(", ").into();
+            process.titles = strings(titles);
+            process
+        })
+        .collect()
+}
+
+/// Whether `pattern` names the process of an open window rather than its
+/// app id, so the dialog opens it as a process.
+fn names_process(rows: &[WindowChoice], pattern: &str) -> bool {
+    let Some(matcher @ app_match::AppMatcher::App(_)) = app_match::AppMatcher::parse(pattern)
+    else {
+        return false;
+    };
+    rows.iter()
+        .any(|row| matcher.matches_process(&row.process) && !matcher.matches_process(&row.app_id))
+}
+
 /// How many of the open windows `pattern` matches.
 fn open_matches(windows: &[WindowChoice], pattern: &str) -> usize {
     let Some(matcher) = app_match::AppMatcher::parse(pattern) else {
@@ -144,11 +197,6 @@ fn running_processes() -> Vec<String> {
 
 /// The pattern a condition stores for a window: its app id, or the
 /// process when there is none.
-/// Whether `process` is not empty and not part of `app_id`, ignoring case.
-fn distinct_process(app_id: &str, process: &str) -> bool {
-    !process.is_empty() && !app_id.to_lowercase().contains(&process.to_lowercase())
-}
-
 fn window_pattern(app_id: &str, process: Option<&str>) -> String {
     if app_id.is_empty() {
         process.unwrap_or_default().to_owned()
@@ -164,7 +212,6 @@ pub(super) fn bind(ui: &SettingsWindow) {
             .iter()
             .any(|item| item.eq_ignore_ascii_case(&pattern))
     });
-    choices.on_distinct_process(|app_id, process| distinct_process(&app_id, &process));
     choices.on_matching(|windows, query| {
         let query = query.trim().to_lowercase();
         ModelRc::new(VecModel::from(
@@ -183,6 +230,24 @@ pub(super) fn bind(ui: &SettingsWindow) {
             .flat_map(|window| [window.pattern.to_string(), window.process.to_string()])
             .collect::<Vec<_>>();
         strings(process_matches(&running_processes(), &taken, &query))
+    });
+    choices.on_by_process(|windows| {
+        let rows = windows.iter().collect::<Vec<_>>();
+        ModelRc::new(VecModel::from(by_process(&rows)))
+    });
+    choices.on_names_process(|windows, pattern| {
+        names_process(&windows.iter().collect::<Vec<_>>(), &pattern)
+    });
+    choices.on_shared_runtime(|name| app_match::is_shared_runtime(&name));
+    choices.on_running_count(|pattern| {
+        let Some(matcher) = app_match::AppMatcher::parse(&pattern) else {
+            return 0;
+        };
+        let count = running_processes()
+            .iter()
+            .filter(|name| matcher.matches_process(name))
+            .count();
+        i32::try_from(count).unwrap_or(i32::MAX)
     });
     choices.on_open_count(|windows, pattern| {
         let windows = windows.iter().collect::<Vec<_>>();
@@ -341,11 +406,33 @@ mod tests {
     }
 
     #[test]
-    fn process_is_offered_when_it_says_more_than_the_app_id() {
-        assert!(!distinct_process("org.kde.Spectacle", "spectacle"));
-        assert!(!distinct_process("orca", ""));
-        assert!(distinct_process("md.obsidian.Obsidian", "electron"));
-        assert!(distinct_process("orca", "orca-ide"));
+    fn windows_are_listed_by_process() {
+        let rows = group(vec![
+            open("md.obsidian.Obsidian", "electron", "Notes"),
+            open("com.slack.Slack", "electron", "Chat"),
+            open("kate", "kate", "a.txt"),
+            open("x", "", "untitled"),
+        ]);
+        let processes = by_process(&rows);
+        assert_eq!(processes.len(), 2);
+        assert_eq!(processes[0].pattern, "electron");
+        assert_eq!(processes[0].count, 2);
+        assert_eq!(processes[0].app_id, "md.obsidian.Obsidian, com.slack.Slack");
+        assert_eq!(processes[0].titles.row_count(), 2);
+        assert_eq!(processes[1].pattern, "kate");
+        assert_eq!(processes[1].app_id, "");
+    }
+
+    #[test]
+    fn process_patterns_are_told_from_app_ids() {
+        let rows = group(vec![
+            open("md.obsidian.Obsidian", "electron", ""),
+            open("kate", "kate", ""),
+        ]);
+        assert!(names_process(&rows, "Electron"));
+        assert!(!names_process(&rows, "md.obsidian.Obsidian"));
+        assert!(!names_process(&rows, "kate"));
+        assert!(!names_process(&rows, "title:electron"));
     }
 
     #[test]

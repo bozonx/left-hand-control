@@ -84,7 +84,7 @@ fn is_own_process(process: Option<&str>) -> bool {
             .ok()?
             .file_name()?
             .to_str()
-            .map(str::to_lowercase)
+            .map(|name| crate::gamemode::process::without_deleted(name).to_lowercase())
     });
     matches!((own, process), (Some(own), Some(process)) if *own == process.to_lowercase())
 }

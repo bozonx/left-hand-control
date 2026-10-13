@@ -1,7 +1,7 @@
 import { SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
-import { GameCondition } from "types.slint";
+import { AppEntryKind, GameCondition } from "types.slint";
 import { AppState } from "app-state.slint";
 import { Badge, ButtonGroup, ConfirmDialog, IconButton, InfoTip } from "controls.slint";
 import { Button, CheckBox, RadioGroup } from "std-widgets.slint";
@@ -41,9 +41,15 @@ export global ConditionChoices {
     pure callback make-pattern(string, bool) -> string;
     /// Whether a list of patterns has the pattern, ignoring case.
     pure callback has(patterns: [string], pattern: string) -> bool;
-    /// Whether a process name says more than the app id: not empty and
-    /// not part of it, as `spectacle` is of `org.kde.spectacle`.
-    pure callback distinct-process(app-id: string, process: string) -> bool;
+    /// The open windows by process: `pattern` is the process name,
+    /// `app-id` the app ids of its windows, comma-separated.
+    pure callback by-process(windows: [WindowChoice]) -> [WindowChoice];
+    /// Whether the pattern names the process of an open window, not its app id.
+    pure callback names-process(windows: [WindowChoice], pattern: string) -> bool;
+    /// Whether the process name is a runtime many applications share, like `electron`.
+    pure callback shared-runtime(name: string) -> bool;
+    /// How many running processes the pattern matches.
+    pure callback running-count(pattern: string) -> int;
     /// Windows whose app id, process or title contains the query.
     pure callback matching(windows: [WindowChoice], query: string) -> [WindowChoice];
     /// Running processes containing the query, without those of the windows.
@@ -86,12 +92,12 @@ export global AppEntryDialog {
     in-out property <string> value;
     /// Edited item; -1 adds a new one.
     in-out property <int> index: -1;
-    in-out property <bool> title-mode;
+    in-out property <AppEntryKind> kind;
     in-out property <string> text;
     /// Opened from a game-mode list: offers running processes and the scope.
     in-out property <bool> game;
-    /// Game mode: the item counts only while its window is active,
-    /// otherwise while its process runs.
+    /// Game mode: a process counts only while its window is active,
+    /// otherwise while it runs. App ids and titles always need the window.
     in-out property <bool> window-only;
     out property <string> result;
     out property <int> revision;
@@ -101,27 +107,35 @@ export global AppEntryDialog {
     out property <bool> result-window-only;
     private property <string> item;
     public function open(value: string, exclusion: bool, index: int) {
-        root.game = false;
+        root.start(value, exclusion, index, false, true);
+    }
+    /// `open` for a game-mode list; `value` lists all matchers.
+    public function open-game(value: string, exclusion: bool, index: int, window-only: bool) {
+        root.start(value, exclusion, index, true, window-only);
+    }
+    function start(value: string, exclusion: bool, index: int, game: bool, window-only: bool) {
+        root.game = game;
+        root.window-only = window-only;
         root.value = value;
         root.exclusion = exclusion;
         root.index = index;
         if index >= 0 {
             root.item = ConditionChoices.items(value)[index];
-            root.title-mode = ConditionChoices.is-title(root.item);
+            root.kind = ConditionChoices.is-title(root.item) ? AppEntryKind.title
+                : (game && !window-only) || ConditionChoices.names-process(ConditionChoices.open-windows, root.item) ? AppEntryKind.process
+                : AppEntryKind.application;
             root.text = ConditionChoices.text(root.item);
         } else {
-            root.title-mode = false;
+            root.kind = AppEntryKind.application;
             root.text = "";
         }
         root.removing = false;
         root.editing = true;
         ConditionChoices.refresh-open-windows();
     }
-    /// `open` for a game-mode list; `value` lists all matchers.
-    public function open-game(value: string, exclusion: bool, index: int, window-only: bool) {
-        root.open(value, exclusion, index);
-        root.game = true;
-        root.window-only = window-only;
+    /// Game mode: the item counts while its process runs, window or not.
+    public pure function in-background() -> bool {
+        return root.game && root.kind == AppEntryKind.process && !root.window-only;
     }
     public function confirm-remove(value: string, exclusion: bool, index: int) {
         root.game = false;
@@ -140,8 +154,8 @@ export global AppEntryDialog {
         if root.valid() {
             root.result-removed = false;
             root.result-pattern = root.pattern();
-            // A title belongs to a window, so title patterns always look at the active one.
-            root.result-window-only = root.window-only || root.title-mode;
+            // App ids and titles belong to a window, so they always look at the active one.
+            root.result-window-only = !root.in-background();
             root.finish(root.index >= 0 ? ConditionChoices.replace(root.value, root.index, root.pattern()) : ConditionChoices.add(root.value, root.pattern()));
         }
     }
@@ -154,7 +168,7 @@ export global AppEntryDialog {
         root.revision += 1;
         root.close();
     }
-    public pure function pattern() -> string { return ConditionChoices.make-pattern(root.text, root.title-mode); }
+    public pure function pattern() -> string { return ConditionChoices.make-pattern(root.text, root.kind == AppEntryKind.title); }
     /// The other items of the list, to reject duplicates.
     pure function others() -> [string] {
         return ConditionChoices.items(root.index >= 0 ? ConditionChoices.remove(root.value, root.index) : root.value);
@@ -163,41 +177,16 @@ export global AppEntryDialog {
     public pure function valid() -> bool { return ConditionChoices.text(root.pattern()) != "" && !root.duplicate(); }
 }
 
-/// A small toggle inside a window row.
-component Chip inherits Rectangle {
-    in property <string> text;
-    in property <bool> selected;
-    callback clicked();
-    height: label.preferred-height + 4px;
-    width: min(label.preferred-width + 12px, 260px);
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: root.selected ? Theme.accent : Theme.divider;
-    background: root.selected ? Theme.accent.transparentize(0.8) : touch.has-hover ? Theme.hover : transparent;
-    accessible-role: button;
-    accessible-label: root.text;
-    accessible-checked: root.selected;
-    accessible-action-default => { root.clicked(); }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
-    label := Text { x: 6px; width: parent.width - 12px; text: root.text; color: Theme.text; font-size: 12px; overflow: elide; vertical-alignment: center; }
-}
-
-/// An open window to fill the dialog field with: the application, or in
-/// title mode one of its window titles. A click picks the application;
-/// a `process` that says more than `app-id` can be picked instead.
+/// An item to fill the dialog field with: an application, a process or
+/// a window title; `warning` marks the badge as a caution.
 component WindowRow inherits Rectangle {
     in property <string> text;
     in property <string> detail;
     in property <string> badge;
+    in property <bool> warning;
     in property <bool> selected;
     in property <image> icon: @image-url("icons/app-window.svg");
-    in property <string> app-id;
-    in property <string> process;
-    /// Pattern typed in the dialog, to mark the chosen chip.
-    in property <string> typed;
-    private property <bool> offers-process: root.app-id != "" && ConditionChoices.distinct-process(root.app-id, root.process);
     callback clicked();
-    callback choose(string);
     height: row.preferred-height;
     border-radius: 6px;
     background: root.selected ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
@@ -210,15 +199,12 @@ component WindowRow inherits Rectangle {
         VerticalLayout { alignment: center;
             Image { width: 16px; height: 16px; colorize: Theme.muted; source: root.icon; }
         }
-        VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 2px;
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: 2px;
             HorizontalLayout { spacing: 6px;
-                Text { text: root.text; color: Theme.text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
-                if root.badge != "": Badge { text: root.badge; fill: Theme.accent.transparentize(0.75); }
+                Text { text: root.text; color: Theme.text; overflow: elide; min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; }
+                if root.badge != "": Badge { text: root.badge; fill: root.warning ? Theme.warning.transparentize(0.75) : Theme.accent.transparentize(0.75); }
             }
-            if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: 12px; overflow: elide; }
-            if root.offers-process: HorizontalLayout { alignment: start; padding-top: 2px;
-                Chip { text: @tr("Process: {}", root.process); selected: ConditionChoices.has([root.process], root.typed); clicked => { root.choose(root.process); } }
-            }
+            if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: 12px; overflow: elide; min-width: 0px; }
         }
         if root.selected: VerticalLayout { alignment: center;
             Image { width: 16px; height: 16px; colorize: Theme.accent; source: @image-url("icons/check.svg"); }
@@ -230,9 +216,22 @@ component WindowRow inherits Rectangle {
 /// placed over the whole settings window.
 export component AppEntryOverlay inherits Rectangle {
     private property <string> typed: AppEntryDialog.pattern();
+    private property <AppEntryKind> kind: AppEntryDialog.kind;
+    private property <[WindowChoice]> by-process: root.kind == AppEntryKind.process ? ConditionChoices.by-process(ConditionChoices.open-windows) : [];
     /// Game mode: running processes without an open window that contain the typed text.
-    private property <[string]> processes: AppEntryDialog.game && !AppEntryDialog.title-mode
+    private property <[string]> processes: AppEntryDialog.game && root.kind == AppEntryKind.process
         ? ConditionChoices.processes(ConditionChoices.open-windows, AppEntryDialog.text) : [];
+    private property <bool> duplicate: AppEntryDialog.text != "" && AppEntryDialog.duplicate();
+    /// A process in the background has no window, so it is looked up among the running ones.
+    private property <int> matches: AppEntryDialog.in-background()
+        ? ConditionChoices.running-count(root.typed) : ConditionChoices.open-count(ConditionChoices.open-windows, root.typed);
+    private property <string> status: root.duplicate ? @tr("Already in the list")
+        : AppEntryDialog.text == "" ? ""
+        : AppEntryDialog.in-background()
+            ? (root.matches > 0 ? @tr("Matches {n} running process" | "Matches {n} running processes" % root.matches) : @tr("Matches no running process"))
+        : !ConditionChoices.open-windows-ready ? ""
+        : root.matches > 0 ? @tr("Matches {n} open window" | "Matches {n} open windows" % root.matches) : @tr("Matches no open window");
+    private property <bool> shared: root.kind != AppEntryKind.title && ConditionChoices.shared-runtime(AppEntryDialog.text);
     if AppEntryDialog.editing: Rectangle {
         background: #00000099;
         TouchArea { clicked => { AppEntryDialog.close(); } scroll-event(event) => { accept } }
@@ -246,7 +245,7 @@ export component AppEntryOverlay inherits Rectangle {
                 x: (parent.width - self.width) / 2;
                 y: (parent.height - self.height) / 2;
                 width: min(parent.width - 48px, 520px);
-                height: min(parent.height - 64px, 600px);
+                height: min(parent.height - 64px, 640px);
                 background: Theme.surface;
                 border-color: Theme.border;
                 border-width: 1px;
@@ -257,41 +256,59 @@ export component AppEntryOverlay inherits Rectangle {
                         text: AppEntryDialog.index >= 0 ? @tr("Edit application") : @tr("Add application");
                         color: Theme.text; font-size: 18px; font-weight: 700;
                     }
-                    ButtonGroup {
-                        labels: [@tr("Application"), @tr("Window title")];
-                        selected-index: AppEntryDialog.title-mode ? 1 : 0;
-                        selected(index) => { AppEntryDialog.title-mode = index == 1; input.focus(); }
-                    }
-                    HorizontalLayout { spacing: 8px;
-                        input := TextField {
-                            text <=> AppEntryDialog.text;
-                            placeholder-text: AppEntryDialog.title-mode ? @tr("Text the window title contains") : @tr("App ID or process, * and ? allowed");
-                            invalid: AppEntryDialog.text != "" && AppEntryDialog.duplicate();
-                            init => { self.focus(); self.select-all(); }
-                            accepted => { AppEntryDialog.save(); }
-                        }
-                        VerticalLayout { alignment: center;
-                            InfoTip {
-                                text: @tr("Each item is compared with the active window. Pick a window from the list below to fill in the field.")
-                                    + "\n\n" + @tr("Application: the app ID (Wayland app id or X11 WM_CLASS) or the process name. The whole name must match, case is ignored, .exe is optional. * stands for any characters and ? for one, e.g. steam_app_*. The ID is stable, so prefer it.")
-                                    + "\n\n" + @tr("Window title: matches when the title contains the text, case is ignored. With * or ? the pattern must cover the whole title. A title changes with the open tab or document, and it never matches a process without a window.");
+                    VerticalLayout { spacing: 6px;
+                        Text { text: @tr("Match by"); color: Theme.muted; font-size: 12px; }
+                        ButtonGroup {
+                            labels: [@tr("Application"), @tr("Process"), @tr("Window title")];
+                            selected-index: root.kind == AppEntryKind.application ? 0 : root.kind == AppEntryKind.process ? 1 : 2;
+                            selected(index) => {
+                                AppEntryDialog.kind = index == 0 ? AppEntryKind.application : index == 1 ? AppEntryKind.process : AppEntryKind.title;
+                                input.focus();
                             }
                         }
                     }
-                    if AppEntryDialog.text != "" && AppEntryDialog.duplicate(): Text { text: @tr("Already in the list"); color: Theme.error; font-size: 12px; }
-                    if AppEntryDialog.text != "" && !AppEntryDialog.duplicate() && ConditionChoices.open-windows-ready: Text {
-                        text: ConditionChoices.open-count(ConditionChoices.open-windows, root.typed) > 0
-                            ? @tr("Matches {n} open window" | "Matches {n} open windows" % ConditionChoices.open-count(ConditionChoices.open-windows, root.typed))
-                            : @tr("Matches no open window");
-                        color: Theme.muted; font-size: 12px;
-                    }
-                    if AppEntryDialog.game && !AppEntryDialog.title-mode: VerticalLayout { spacing: 6px; padding-top: 4px;
-                        HorizontalLayout { alignment: start;
-                            ButtonGroup {
-                                labels: [@tr("While its window is active"), @tr("While the process runs")];
-                                selected-index: AppEntryDialog.window-only ? 0 : 1;
-                                selected(index) => { AppEntryDialog.window-only = index == 0; }
+                    VerticalLayout { spacing: 4px;
+                        HorizontalLayout { spacing: 8px;
+                            input := TextField {
+                                text <=> AppEntryDialog.text;
+                                placeholder-text: root.kind == AppEntryKind.title ? @tr("Text the window title contains")
+                                    : root.kind == AppEntryKind.process ? @tr("Process name, * and ? allowed")
+                                    : @tr("App ID, * and ? allowed");
+                                invalid: root.duplicate;
+                                init => { self.focus(); self.select-all(); }
+                                accepted => { AppEntryDialog.save(); }
                             }
+                            VerticalLayout { alignment: center;
+                                InfoTip {
+                                    text: (AppEntryDialog.in-background()
+                                            ? @tr("The item is compared with the names of running processes. Pick one from the list below to fill in the field.")
+                                            : @tr("Each item is compared with the active window. Pick a window from the list below to fill in the field."))
+                                        + "\n\n" + (root.kind == AppEntryKind.title
+                                            ? @tr("Window title: matches when the title contains the text, case is ignored. With * or ? the pattern must cover the whole title. A title changes with the open tab or document, and it never matches a process without a window.")
+                                            : root.kind == AppEntryKind.process
+                                            ? @tr("Process: the executable name, as the list below shows it. The whole name must match, case is ignored, .exe is optional. * stands for any characters and ? for one.")
+                                            : @tr("Application: the app ID (Wayland app id or X11 WM_CLASS) or the process name. The whole name must match, case is ignored, .exe is optional. * stands for any characters and ? for one, e.g. steam_app_*. The ID is stable, so prefer it."));
+                                }
+                            }
+                        }
+                        // The line keeps its height, so the dialog does not jump while typing.
+                        Text {
+                            height: 16px;
+                            text: root.status;
+                            color: root.duplicate ? Theme.error : root.matches > 0 ? Theme.success : Theme.muted;
+                            font-size: 12px; overflow: elide; vertical-alignment: center;
+                        }
+                        if root.shared: Text {
+                            text: @tr("Many applications run as “{}”, so the name matches all of them. The application ID is more precise.", AppEntryDialog.text);
+                            color: Theme.warning; font-size: 12px; wrap: word-wrap;
+                        }
+                    }
+                    if AppEntryDialog.game && root.kind == AppEntryKind.process: VerticalLayout { spacing: 6px;
+                        Text { text: @tr("When it counts"); color: Theme.muted; font-size: 12px; }
+                        ButtonGroup {
+                            labels: [@tr("While its window is active"), @tr("While the process runs")];
+                            selected-index: AppEntryDialog.window-only ? 0 : 1;
+                            selected(index) => { AppEntryDialog.window-only = index == 0; }
                         }
                         Text {
                             text: AppEntryDialog.window-only
@@ -300,9 +317,16 @@ export component AppEntryOverlay inherits Rectangle {
                             color: Theme.muted; font-size: 12px; wrap: word-wrap;
                         }
                     }
-                    HorizontalLayout { spacing: 8px; padding-top: 6px;
-                        Text { text: @tr("Open windows"); color: Theme.muted; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; }
-                        IconButton { text: @tr("Refresh"); enabled: !ConditionChoices.open-windows-loading; clicked => { ConditionChoices.refresh-open-windows(); } }
+                    HorizontalLayout { spacing: 8px; padding-top: 4px;
+                        Text {
+                            text: root.kind == AppEntryKind.title ? @tr("Window titles") : root.kind == AppEntryKind.process ? @tr("Processes of open windows") : @tr("Open windows");
+                            color: Theme.muted; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1;
+                        }
+                        IconButton {
+                            icon: @image-url("icons/refresh-cw.svg"); label: @tr("Refresh"); tooltip: @tr("Refresh");
+                            enabled: !ConditionChoices.open-windows-loading;
+                            clicked => { ConditionChoices.refresh-open-windows(); }
+                        }
                     }
                     Rectangle {
                         vertical-stretch: 1;
@@ -311,30 +335,38 @@ export component AppEntryOverlay inherits Rectangle {
                             VerticalLayout { padding: 6px; spacing: 2px; alignment: start;
                                 if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
                                 if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; wrap: word-wrap; }
-                                if !AppEntryDialog.title-mode: VerticalLayout { spacing: 2px;
+                                if root.kind == AppEntryKind.application: VerticalLayout { spacing: 2px;
                                     for window in ConditionChoices.open-windows: WindowRow {
                                         text: window.pattern;
                                         detail: window.count > 1 ? @tr("{n} window" | "{n} windows" % window.count) + " · " + window.title : window.title;
                                         badge: window.recent ? @tr("Last active") : "";
-                                        app-id: window.app-id;
-                                        process: window.process;
-                                        typed: root.typed;
-                                        // A process offered separately has its own chip.
-                                        selected: ConditionChoices.has([window.pattern], root.typed)
-                                            || (!ConditionChoices.distinct-process(window.app-id, window.process) && ConditionChoices.has([window.process], root.typed));
-                                        // A game picked by its window counts while it has the focus.
-                                        clicked => { AppEntryDialog.text = window.pattern; AppEntryDialog.window-only = true; input.focus(); }
-                                        choose(name) => { AppEntryDialog.text = name; AppEntryDialog.window-only = true; input.focus(); }
-                                    }
-                                    if root.processes.length > 0: Text { text: @tr("Running processes"); color: Theme.muted; font-size: 12px; }
-                                    for process in root.processes: WindowRow {
-                                        text: process;
-                                        icon: @image-url("icons/terminal.svg");
-                                        selected: ConditionChoices.has([process], root.typed);
-                                        clicked => { AppEntryDialog.text = process; AppEntryDialog.window-only = false; input.focus(); }
+                                        selected: ConditionChoices.has([window.pattern], root.typed);
+                                        clicked => { AppEntryDialog.text = window.pattern; input.focus(); }
                                     }
                                 }
-                                if AppEntryDialog.title-mode: VerticalLayout { spacing: 2px;
+                                if root.kind == AppEntryKind.process: VerticalLayout { spacing: 2px;
+                                    for process in root.by-process: WindowRow {
+                                        text: process.pattern;
+                                        detail: (process.app-id != "" ? process.app-id + " · " : "")
+                                            + (process.count > 1 ? @tr("{n} window" | "{n} windows" % process.count) + " · " : "") + process.title;
+                                        icon: @image-url("icons/terminal.svg");
+                                        badge: ConditionChoices.shared-runtime(process.pattern) ? @tr("Shared process") : process.recent ? @tr("Last active") : "";
+                                        warning: ConditionChoices.shared-runtime(process.pattern);
+                                        selected: ConditionChoices.has([process.pattern], root.typed);
+                                        clicked => { AppEntryDialog.text = process.pattern; input.focus(); }
+                                    }
+                                    if AppEntryDialog.game: VerticalLayout { spacing: 2px; padding-top: 6px;
+                                        Text { text: @tr("Running without a window"); color: Theme.muted; font-size: 12px; }
+                                        if AppEntryDialog.text == "": Text { text: @tr("Type a name to find processes running without a window."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                                        for process in root.processes: WindowRow {
+                                            text: process;
+                                            icon: @image-url("icons/terminal.svg");
+                                            selected: ConditionChoices.has([process], root.typed);
+                                            clicked => { AppEntryDialog.text = process; input.focus(); }
+                                        }
+                                    }
+                                }
+                                if root.kind == AppEntryKind.title: VerticalLayout { spacing: 2px;
                                     for window in ConditionChoices.open-windows: VerticalLayout { spacing: 2px;
                                         for title in window.titles: WindowRow {
                                             visible: title != "";
@@ -552,7 +584,10 @@ export component GameAppsField inherits VerticalLayout {
             if root.entries.length == 0: HorizontalLayout { padding: 6px; Text { text: root.empty-text; color: Theme.muted; wrap: word-wrap; } }
             for entry in root.entries: AppItemRow {
                 pattern: entry.pattern;
-                kind: ConditionChoices.is-title(entry.pattern) ? @tr("Window title") : entry.window-only ? @tr("Application · while its window is active") : @tr("Process · while it runs");
+                kind: ConditionChoices.is-title(entry.pattern) ? @tr("Window title")
+                    : !entry.window-only ? @tr("Process · while it runs")
+                    : ConditionChoices.names-process(ConditionChoices.open-windows, entry.pattern) ? @tr("Process · while its window is active")
+                    : @tr("Application · while its window is active");
                 icon: ConditionChoices.is-title(entry.pattern) ? @image-url("icons/text-cursor-input.svg") : entry.window-only ? @image-url("icons/app-window.svg") : @image-url("icons/terminal.svg");
                 // A process without a window is not among the open windows.
                 show-count: root.detection-available && entry.window-only;
