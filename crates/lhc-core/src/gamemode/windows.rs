@@ -21,7 +21,7 @@ use super::{DetectorAvailability, GameModeDetectors, GameModeSettings, Observati
 const CATALOG_TTL: Duration = Duration::from_secs(60);
 
 pub(super) fn observe(settings: &GameModeSettings) -> Observation {
-    let need_running = super::needs_running_processes(settings) || settings.use_known_games;
+    let need_running = super::needs_polling(settings);
     let running = need_running
         .then(crate::platform::windows::running_process_names)
         .flatten();

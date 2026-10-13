@@ -6,11 +6,12 @@
 // Every successful read goes through `super::publish`, which updates the
 // mapper cache and emits `LayoutChanged` only on real changes.
 //
-// The watcher polls the DBus interface at a short interval so it can stop
-// promptly during app shutdown. Switching the active layout goes through
-// the same DBus interface (`setLayout(uint)`).
+// The watcher listens to the interface's signals (`layoutChanged`,
+// `layoutListChanged`) and re-reads the layout on each, so nothing is
+// polled. Switching the active layout goes through the same DBus interface
+// (`setLayout(uint)`).
 
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 
@@ -24,9 +25,23 @@ const SERVICE: &str = "org.kde.keyboard";
 const OBJECT: &str = "/Layouts";
 const IFACE: &str = "org.kde.KeyboardLayouts";
 
+/// Session-bus connection for one-shot calls, opened once: layout
+/// actions call in from the key path.
+fn session_bus() -> Result<&'static Connection, String> {
+    static BUS: OnceLock<Connection> = OnceLock::new();
+    if let Some(bus) = BUS.get() {
+        return Ok(bus);
+    }
+    let bus = Connection::session().map_err(|e| format!("Cannot connect to session bus: {e}"))?;
+    Ok(BUS.get_or_init(|| bus))
+}
+
+fn keyboard_proxy(conn: &Connection) -> Result<Proxy<'static>, String> {
+    Proxy::new(conn, SERVICE, OBJECT, IFACE).map_err(|e| format!("create keyboard proxy: {e}"))
+}
+
 pub fn current() -> Result<Option<LayoutInfo>, String> {
-    let conn = Connection::session().map_err(|e| format!("Cannot connect to session bus: {e}"))?;
-    current_with_conn(&conn)
+    current_with_proxy(&keyboard_proxy(session_bus()?)?)
 }
 
 pub fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
@@ -34,9 +49,7 @@ pub fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
 }
 
 pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
-    let conn = Connection::session().map_err(|e| format!("Cannot connect to session bus: {e}"))?;
-    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
-        .map_err(|e| format!("Cannot create keyboard proxy: {e}"))?;
+    let proxy = keyboard_proxy(session_bus()?)?;
     let list = match call_list(&proxy)? {
         Some(v) => v,
         None => return Ok(vec![]),
@@ -61,9 +74,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
 /// that as an error so the shell can fall back to refreshing the
 /// list and retrying.
 pub fn set_layout(index: u32) -> Result<(), String> {
-    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
-    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
-        .map_err(|e| format!("create keyboard proxy: {e}"))?;
+    let proxy = keyboard_proxy(session_bus()?)?;
     let msg = proxy
         .call_method("setLayout", &(index,))
         .map_err(|e| format!("Failed to switch layout to {index}: {e}"))?;
@@ -74,33 +85,16 @@ pub fn set_layout(index: u32) -> Result<(), String> {
     if !ok {
         return Err(format!("Layout switch to {index} was rejected by KDE"));
     }
-    let _ = current_with_conn(&conn);
+    let _ = current_with_proxy(&proxy);
     Ok(())
 }
 
 pub fn start_watcher() {
     super::register_watcher(
         thread::Builder::new()
-            .name("layout-kde-watcher".into())
-            .spawn(run_watcher),
-    );
-    super::register_watcher(
-        thread::Builder::new()
             .name("layout-kde-signal".into())
             .spawn(run_signal_watcher),
     );
-}
-
-fn run_watcher() {
-    while !super::watcher_stop_requested() {
-        match watch_once() {
-            Ok(()) => return,
-            Err(e) => {
-                log::debug!("[layout/kde] watcher error: {e}; retrying in 2s");
-                thread::sleep(Duration::from_secs(2));
-            }
-        }
-    }
 }
 
 fn run_signal_watcher() {
@@ -115,11 +109,6 @@ fn run_signal_watcher() {
     }
 }
 
-// The 500 ms poll loop leaves a window where key presses right after a
-// layout switch are evaluated against the previous layout, so rules with a
-// layout condition fire (or stay silent) wrongly. Subscribing to KDE's
-// `layoutChanged` signal refreshes the cache the moment the layout changes;
-// the poll loop stays as a fallback.
 /// Connection the signal watcher blocks on; closed to wake it for stop.
 static SIGNAL_CONNECTION: Mutex<Option<Connection>> = Mutex::new(None);
 
@@ -145,11 +134,13 @@ fn signal_watch_once() -> Result<(), String> {
     if super::watcher_stop_requested() {
         return Ok(());
     }
-    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
-        .map_err(|e| format!("create keyboard proxy: {e}"))?;
+    let proxy = keyboard_proxy(&conn)?;
+    // Both a switch and an edited layout list can change the result.
     let signals = proxy
-        .receive_signal("layoutChanged")
-        .map_err(|e| format!("subscribe to layoutChanged: {e}"))?;
+        .receive_all_signals()
+        .map_err(|e| format!("subscribe to keyboard signals: {e}"))?;
+    // Read once after subscribing, so a change in between is not lost.
+    emit_current(&proxy);
     for _msg in signals {
         if super::watcher_stop_requested() {
             return Ok(());
@@ -159,31 +150,13 @@ fn signal_watch_once() -> Result<(), String> {
     if super::watcher_stop_requested() {
         return Ok(());
     }
-    Err("layoutChanged signal stream ended".to_string())
-}
-
-fn watch_once() -> Result<(), String> {
-    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
-    let proxy = Proxy::new(&conn, SERVICE, OBJECT, IFACE)
-        .map_err(|e| format!("create keyboard proxy: {e}"))?;
-
-    while !super::watcher_stop_requested() {
-        emit_current(&proxy);
-        thread::sleep(Duration::from_millis(500));
-    }
-    Ok(())
+    Err("keyboard signal stream ended".to_string())
 }
 
 fn emit_current(proxy: &Proxy<'_>) {
     if let Err(e) = current_with_proxy(proxy) {
-        log::debug!("[layout/kde] poll error: {e}");
+        log::debug!("[layout/kde] read error: {e}");
     }
-}
-
-fn current_with_conn(conn: &Connection) -> Result<Option<LayoutInfo>, String> {
-    let proxy = Proxy::new(conn, SERVICE, OBJECT, IFACE)
-        .map_err(|e| format!("create keyboard proxy: {e}"))?;
-    current_with_proxy(&proxy)
 }
 
 fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<LayoutInfo>, String> {

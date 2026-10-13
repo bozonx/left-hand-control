@@ -27,7 +27,10 @@ mod windows;
 
 pub use process::{FULLSCREEN_NON_GAMES, GAME_LAUNCHERS};
 
+/// Poll interval while running processes are watched or game mode is on.
 const WATCH_INTERVAL: Duration = Duration::from_secs(1);
+/// Safety re-check otherwise: window and daemon changes wake the watcher.
+const IDLE_INTERVAL: Duration = Duration::from_secs(30);
 /// How long Auto keeps game mode on after the last detection.
 pub const OFF_DELAY: Duration = Duration::from_secs(3);
 
@@ -268,6 +271,8 @@ pub fn stop_watcher() {
             log::error!("[gamemode] watcher panicked: {error:?}");
         }
     }
+    #[cfg(target_os = "linux")]
+    linux::stop();
 }
 
 pub fn start_watcher(storage: Option<StoragePaths>) {
@@ -310,6 +315,13 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                 }
                 // A settings change applies at once; detection gaps wait.
                 let settings_changed = last_revision.replace(revision) != Some(revision);
+                // Processes have no change events, and a held state must
+                // expire on time; everything else wakes the watcher.
+                let mut interval = if needs_polling(&settings) {
+                    WATCH_INTERVAL
+                } else {
+                    IDLE_INTERVAL
+                };
                 if let Ok(cache) = CACHED_SETTINGS.lock()
                     && cache.revision == revision
                     && let Ok(control) = thread_control.0.lock()
@@ -322,6 +334,9 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                         hold_active(&state.detection, detection, last_match, now)
                     };
                     let result = state.update(|state| state.detection = detection);
+                    if state.detection.active {
+                        interval = WATCH_INTERVAL;
+                    }
                     drop(state);
                     drop(control);
                     drop(cache);
@@ -333,7 +348,7 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                 let Ok((control, _)) =
                     thread_control
                         .1
-                        .wait_timeout_while(control, WATCH_INTERVAL, |control| {
+                        .wait_timeout_while(control, interval, |control| {
                             !control.stop && !control.refresh
                         })
                 else {
@@ -414,6 +429,12 @@ fn known_game(observation: &Observation, window: Option<&ActiveWindow>) -> Optio
         .cloned()
         .or_else(|| window.and_then(process::known_game_window))
         .or_else(|| window.and(observation.window_game.clone()))
+}
+
+/// Whether detection reads sources that report no changes: running
+/// processes, and on Windows the game Steam runs.
+fn needs_polling(settings: &GameModeSettings) -> bool {
+    needs_running_processes(settings) || settings.use_known_games
 }
 
 fn needs_running_processes(settings: &GameModeSettings) -> bool {

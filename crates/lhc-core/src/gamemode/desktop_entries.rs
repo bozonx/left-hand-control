@@ -14,11 +14,16 @@ use crate::runtime_state::ActiveWindow;
 /// name: whether each is a game.
 #[derive(Default)]
 struct Index {
-    /// Modification times of the `applications` directories it was built
-    /// from; a change rebuilds it.
-    stamp: Vec<Option<SystemTime>>,
+    /// The `applications` directories and their subdirectories it was
+    /// built from, with modification times; a change rebuilds it. Entries
+    /// are added, removed and replaced by renaming, which touches the
+    /// directory that holds them.
+    stamp: Stamp,
     games: HashMap<String, bool>,
 }
+
+/// Directories with their modification times.
+type Stamp = Vec<(PathBuf, Option<SystemTime>)>;
 
 static INDEX: Mutex<Option<Index>> = Mutex::new(None);
 
@@ -27,14 +32,10 @@ pub(super) fn game_window(window: &ActiveWindow) -> Option<String> {
     if super::process::launcher_window(window) {
         return None;
     }
-    let dirs = application_dirs();
-    let stamp = stamp(&dirs);
     let mut index = INDEX.lock().ok()?;
-    if index.as_ref().is_none_or(|index| index.stamp != stamp) {
-        *index = Some(Index {
-            games: build(&dirs),
-            stamp,
-        });
+    if index.as_ref().is_none_or(|index| !current(&index.stamp)) {
+        let (games, stamp) = build(&application_dirs());
+        *index = Some(Index { games, stamp });
     }
     let games = &index.as_ref()?.games;
     let app_id = window.app_id.trim().to_lowercase();
@@ -63,19 +64,23 @@ fn application_dirs() -> Vec<PathBuf> {
         .collect()
 }
 
-fn stamp(dirs: &[PathBuf]) -> Vec<Option<SystemTime>> {
-    dirs.iter()
-        .map(|dir| std::fs::metadata(dir).and_then(|meta| meta.modified()).ok())
-        .collect()
+fn modified(dir: &Path) -> Option<SystemTime> {
+    std::fs::metadata(dir).and_then(|meta| meta.modified()).ok()
+}
+
+/// Whether no directory of `stamp` changed since.
+fn current(stamp: &[(PathBuf, Option<SystemTime>)]) -> bool {
+    stamp.iter().all(|(dir, time)| modified(dir) == *time)
 }
 
 /// Index the entries of `dirs`; an id found earlier hides later ones, as
-/// XDG lookup does.
-fn build(dirs: &[PathBuf]) -> HashMap<String, bool> {
+/// XDG lookup does. Also returns the directories read, with their times.
+fn build(dirs: &[PathBuf]) -> (HashMap<String, bool>, Stamp) {
     let mut games = HashMap::new();
+    let mut stamp = Vec::new();
     for dir in dirs {
         let mut entries = Vec::new();
-        collect(dir, "", &mut entries);
+        collect(dir, "", &mut entries, &mut stamp);
         for (id, path) in entries {
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
@@ -90,12 +95,14 @@ fn build(dirs: &[PathBuf]) -> HashMap<String, bool> {
             }
         }
     }
-    games
+    (games, stamp)
 }
 
 /// Desktop files under `dir` with their ids: subdirectories join the id
-/// with `-`.
-fn collect(dir: &Path, prefix: &str, out: &mut Vec<(String, PathBuf)>) {
+/// with `-`. Each directory, even a missing one, goes to `stamp` before
+/// it is read.
+fn collect(dir: &Path, prefix: &str, out: &mut Vec<(String, PathBuf)>, stamp: &mut Stamp) {
+    stamp.push((dir.to_owned(), modified(dir)));
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -105,7 +112,7 @@ fn collect(dir: &Path, prefix: &str, out: &mut Vec<(String, PathBuf)>) {
             continue;
         };
         if entry.file_type().is_ok_and(|kind| kind.is_dir()) {
-            collect(&path, &format!("{prefix}{name}-"), out);
+            collect(&path, &format!("{prefix}{name}-"), out, stamp);
         } else if let Some(stem) = name.strip_suffix(".desktop") {
             out.push((format!("{prefix}{stem}").to_lowercase(), path));
         }
@@ -222,7 +229,7 @@ mod tests {
             "hidden.desktop",
             "[Desktop Entry]\nCategories=Game;\n",
         );
-        let games = build(&[user.path().into(), system.path().into()]);
+        let (games, stamp) = build(&[user.path().into(), system.path().into()]);
         assert_eq!(games.get("org.example.puzzle"), Some(&true));
         assert_eq!(games.get("editor"), Some(&false));
         assert_eq!(games.get("vendor-shooter"), Some(&true));
@@ -230,5 +237,14 @@ mod tests {
         assert_eq!(games.get("hidden"), Some(&false));
         assert_eq!(games.get("fgfs"), Some(&true));
         assert!(!games.contains_key("env"));
+        // A new entry in a subdirectory is noticed.
+        assert!(current(&stamp));
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        write(
+            system.path(),
+            "vendor/racer.desktop",
+            "[Desktop Entry]\nCategories=Game\n",
+        );
+        assert!(!current(&stamp));
     }
 }

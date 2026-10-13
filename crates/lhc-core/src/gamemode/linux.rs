@@ -7,11 +7,13 @@
 use std::collections::{HashMap, HashSet};
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use zbus::blocking::{Connection, Proxy, fdo::DBusProxy};
+use zbus::blocking::{Connection, MessageIterator, Proxy, fdo::DBusProxy};
 use zbus::names::BusName;
+use zbus::proxy::CacheProperties;
+use zbus::{MatchRule, message};
 
 use super::{
     DetectorAvailability, GameModeDetectors, GameModeSettings, Observation, desktop_entries,
@@ -29,7 +31,7 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
     } else {
         daemon_installed().then_some(false)
     };
-    let need_running = super::needs_running_processes(settings) || settings.use_known_games;
+    let need_running = super::needs_polling(settings);
     let scan = need_running.then(scan_processes).flatten();
     let processes_available = if need_running {
         scan.is_some()
@@ -97,25 +99,154 @@ fn daemon_installed() -> bool {
     installed
 }
 
-/// Whether a game registered with GameMode. Asks the bus who owns the
-/// name first, so polling never D-Bus-activates the daemon; an absent
-/// daemon that is installed simply means "no game". `None` when GameMode
-/// is not installed or the bus does not answer.
+/// GameMode as the signal listener last read it.
+#[derive(Debug, Clone, Copy)]
+enum Daemon {
+    Stopped,
+    Running {
+        clients: bool,
+    },
+    /// Running, but its client count could not be read.
+    Unknown,
+}
+
+/// A connection subscribed to GameMode's signals and the state it keeps.
+struct Listener {
+    connection: Connection,
+    /// `None` once the listener's thread ended.
+    state: Arc<Mutex<Option<Daemon>>>,
+}
+
+static LISTENER: Mutex<Option<Listener>> = Mutex::new(None);
+
+/// Whether a game registered with GameMode. A listener follows the
+/// daemon's signals, so polling costs no D-Bus calls and never
+/// D-Bus-activates it; an absent daemon that is installed simply means
+/// "no game". `None` when GameMode is not installed or the bus does not
+/// answer.
 fn gamemoded_active() -> Option<bool> {
-    let bus = session_bus()?;
-    let name = BusName::try_from(GAMEMODE_NAME).ok()?;
-    let running = DBusProxy::new(bus).ok()?.name_has_owner(name).ok()?;
-    if !running {
-        return daemon_installed().then_some(false);
+    match daemon_state()? {
+        Daemon::Stopped => daemon_installed().then_some(false),
+        Daemon::Running { clients } => Some(clients),
+        Daemon::Unknown => None,
     }
-    let proxy = Proxy::new(bus, GAMEMODE_NAME, GAMEMODE_PATH, GAMEMODE_NAME).ok()?;
-    let clients: i32 = proxy.get_property("ClientCount").ok()?;
-    Some(clients > 0)
+}
+
+/// The daemon state, (re)starting the listener when none runs.
+fn daemon_state() -> Option<Daemon> {
+    let mut listener = LISTENER.lock().ok()?;
+    if let Some(state) = listener
+        .as_ref()
+        .and_then(|listener| *listener.state.lock().ok()?)
+    {
+        return Some(state);
+    }
+    if let Some(old) = listener.take() {
+        let _ = old.connection.close();
+    }
+    let started = listen()?;
+    let state = *started.state.lock().ok()?;
+    *listener = Some(started);
+    state
+}
+
+/// Stop the listener; the next detection starts a new one.
+pub(super) fn stop() {
+    let listener = LISTENER.lock().ok().and_then(|mut slot| slot.take());
+    if let Some(listener) = listener
+        && let Err(error) = listener.connection.close()
+    {
+        log::debug!("[gamemode] close listener connection: {error}");
+    }
+}
+
+/// Subscribe to GameMode's owner changes and signals (`PropertiesChanged`
+/// of `ClientCount`, `GameRegistered`, `GameUnregistered`) and re-read
+/// the state on each, waking the watcher.
+fn listen() -> Option<Listener> {
+    let connection = Connection::session()
+        .inspect_err(|error| log::debug!("[gamemode] listener bus: {error}"))
+        .ok()?;
+    // Created before subscribing, so no signal is missed.
+    let messages = MessageIterator::from(&connection);
+    let dbus = DBusProxy::new(&connection).ok()?;
+    let rules = [
+        MatchRule::builder()
+            .msg_type(message::Type::Signal)
+            .sender("org.freedesktop.DBus")
+            .and_then(|rule| rule.member("NameOwnerChanged"))
+            .and_then(|rule| rule.arg(0, GAMEMODE_NAME))
+            .map(|rule| rule.build()),
+        MatchRule::builder()
+            .msg_type(message::Type::Signal)
+            .path(GAMEMODE_PATH)
+            .map(|rule| rule.build()),
+    ];
+    for rule in rules {
+        dbus.add_match_rule(rule.ok()?)
+            .inspect_err(|error| log::debug!("[gamemode] subscribe: {error}"))
+            .ok()?;
+    }
+    let state = Arc::new(Mutex::new(Some(read_daemon(&connection))));
+    let thread_state = state.clone();
+    let thread_connection = connection.clone();
+    std::thread::Builder::new()
+        .name("gamemode-dbus".into())
+        .spawn(move || {
+            for message in messages {
+                let Ok(message) = message else {
+                    break;
+                };
+                // Replies to the reads below arrive here too.
+                if message.message_type() != message::Type::Signal {
+                    continue;
+                }
+                let daemon = read_daemon(&thread_connection);
+                if let Ok(mut state) = thread_state.lock() {
+                    *state = Some(daemon);
+                }
+                super::wake();
+            }
+            if let Ok(mut state) = thread_state.lock() {
+                *state = None;
+            }
+        })
+        .inspect_err(|error| log::debug!("[gamemode] listener thread: {error}"))
+        .ok()?;
+    Some(Listener { connection, state })
+}
+
+fn read_daemon(connection: &Connection) -> Daemon {
+    let Ok(name) = BusName::try_from(GAMEMODE_NAME) else {
+        return Daemon::Unknown;
+    };
+    let running = DBusProxy::new(connection)
+        .ok()
+        .and_then(|dbus| dbus.name_has_owner(name).ok());
+    match running {
+        Some(false) => Daemon::Stopped,
+        Some(true) => client_count(connection).map_or(Daemon::Unknown, |clients| Daemon::Running {
+            clients: clients > 0,
+        }),
+        None => Daemon::Unknown,
+    }
+}
+
+fn client_count(connection: &Connection) -> zbus::Result<i32> {
+    // Without a property cache the proxy costs no bus traffic of its own.
+    zbus::blocking::proxy::Builder::<Proxy>::new(connection)
+        .destination(GAMEMODE_NAME)?
+        .path(GAMEMODE_PATH)?
+        .interface(GAMEMODE_NAME)?
+        .cache_properties(CacheProperties::No)
+        .build()?
+        .get_property("ClientCount")
 }
 
 /// What one process is known by; read once per process.
 struct ProcInfo {
     /// Start time in clock ticks: tells a reused pid from the old process.
+    /// Zero for another user's process, which is never read.
     start: u64,
     names: Vec<String>,
     game: Option<String>,
@@ -131,16 +262,31 @@ pub(super) struct Scan {
     pub games: Vec<String>,
 }
 
-/// Processes of the previous scan by pid.
-static PROCESSES: Mutex<Option<HashMap<u32, ProcInfo>>> = Mutex::new(None);
+/// Processes of the previous scan by pid, other users' ones included.
+#[derive(Default)]
+struct ProcessCache {
+    processes: HashMap<u32, ProcInfo>,
+    scanned: Option<Instant>,
+}
+
+/// Within this time the kernel does not hand out a pid again (it would
+/// have to cycle through all of `pid_max`), so a pid seen in the previous
+/// scan is the same process. Older caches are checked again.
+const PID_REUSE_GUARD: Duration = Duration::from_secs(5);
+
+static PROCESSES: Mutex<Option<ProcessCache>> = Mutex::new(None);
 
 /// Scan the current user's processes. Only processes started since the
-/// previous scan are read in full, so polling costs one `stat` per process.
+/// previous scan are read, so frequent polling costs a directory listing.
 pub(super) fn scan_processes() -> Option<Scan> {
     let entries = std::fs::read_dir("/proc").ok()?;
     let uid = unsafe { libc::geteuid() };
     let mut cache = PROCESSES.lock().ok()?;
-    let mut previous = cache.take().unwrap_or_default();
+    let previous = cache.take().unwrap_or_default();
+    let trust = previous
+        .scanned
+        .is_some_and(|at| at.elapsed() < PID_REUSE_GUARD);
+    let mut previous = previous.processes;
     let mut current = HashMap::with_capacity(previous.len());
     for entry in entries.flatten() {
         let Some(pid) = entry
@@ -150,16 +296,26 @@ pub(super) fn scan_processes() -> Option<Scan> {
         else {
             continue;
         };
-        if !entry.metadata().is_ok_and(|metadata| metadata.uid() == uid) {
-            continue;
-        }
-        let dir = entry.path();
-        let Some(start) = start_time(&dir) else {
-            continue;
-        };
-        let info = match previous.remove(&pid) {
-            Some(info) if info.start == start => info,
-            _ => read_process(&dir, start),
+        let known = previous.remove(&pid);
+        let info = match known {
+            Some(info) if trust => info,
+            known => {
+                let Ok(metadata) = entry.metadata() else {
+                    continue;
+                };
+                if metadata.uid() != uid {
+                    current.insert(pid, ProcInfo::foreign());
+                    continue;
+                }
+                let dir = entry.path();
+                let Some(start) = start_time(&dir) else {
+                    continue;
+                };
+                match known {
+                    Some(info) if info.start == start => info,
+                    _ => read_process(&dir, start),
+                }
+            }
         };
         current.insert(pid, info);
     }
@@ -174,13 +330,26 @@ pub(super) fn scan_processes() -> Option<Scan> {
             games.push(game.clone());
         }
     }
-    *cache = Some(current);
+    *cache = Some(ProcessCache {
+        processes: current,
+        scanned: Some(Instant::now()),
+    });
     games.sort();
     games.dedup();
     Some(Scan {
         names: names.into_iter().collect(),
         games,
     })
+}
+
+impl ProcInfo {
+    fn foreign() -> Self {
+        ProcInfo {
+            start: 0,
+            names: Vec::new(),
+            game: None,
+        }
+    }
 }
 
 fn read_process(dir: &Path, start: u64) -> ProcInfo {
