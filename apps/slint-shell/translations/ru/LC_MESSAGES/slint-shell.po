@@ -1173,59 +1173,23 @@ msgstr "Поглощать клавишу"
 msgid "Pass through"
 msgstr "Обычное поведение"
 
-msgid "Hold: {} ms"
-msgstr "Удержание: {} мс"
-
 msgid "Double tap: {} ms"
 msgstr "Двойное нажатие: {} мс"
-
-msgid "Time before this rule becomes a hold. Leave empty to use the global setting: {} ms"
-msgstr "Время до срабатывания удержания для этого правила. Оставьте пустым, чтобы использовать общее значение: {} мс"
-
-msgid "Maximum interval between two taps for this rule. Leave empty to use the global setting: {} ms"
-msgstr "Максимальный интервал между нажатиями для этого правила. Оставьте пустым, чтобы использовать общее значение: {} мс"
-
-msgid "Temporarily releases the held key or modifier while these keys are pressed in the layer. First set a hold action for this rule."
-msgstr "Временно отпускает удерживаемую клавишу или модификатор, пока в слое нажаты указанные клавиши. Сначала задайте действие удержания для этого правила."
-
-msgid "Defers the hold action until one of these keys is pressed in the layer. First set both a hold action and a layer for this rule."
-msgstr "Откладывает действие удержания, пока в слое не нажата одна из указанных клавиш. Сначала задайте для правила действие удержания и слой."
 
 msgid "Custom hold options"
 msgstr "Особые параметры удержания"
 
-msgid "Release for {}"
-msgstr "Отпускать при {}"
-
-msgid "Hold with {}"
-msgstr "Удержание с {}"
-
 msgid "Leave empty to use the global timing settings."
 msgstr "Оставьте пустым, чтобы использовать общие настройки времени."
 
-msgid "Release held action for these keys"
-msgstr "Отпускать удерживаемую клавишу для"
-
-msgid "For example: KeyW, KeyE"
-msgstr "Например: KeyW, KeyE"
-
 msgid "Temporarily releases the held key or modifier while these keys are pressed in the layer."
 msgstr "Временно отпускает удерживаемую клавишу или модификатор, пока эти клавиши нажаты в слое."
-
-msgid "Activate held action only with these keys"
-msgstr "Активировать удержание только вместе с"
-
-msgid "For example: Tab"
-msgstr "Например: Tab"
 
 msgid "Defers the held action until one of these keys is pressed in the layer. Requires a hold action and a layer."
 msgstr "Откладывает удержание до нажатия одной из этих клавиш в слое. Нужны действие удержания и слой."
 
 msgid "Delete rule"
 msgstr "Удалить правило"
-
-msgid "Default: {} ms"
-msgstr "По умолчанию: {} мс"
 
 msgid "Clear restores normal key behavior. Swallow prevents the key from reaching the application."
 msgstr "Очистка возвращает обычное поведение клавиши. Поглощение не передаёт клавишу приложению."
@@ -1480,12 +1444,6 @@ msgstr "Изменить назначение"
 msgid "Holding also activates the selected layer."
 msgstr "Удержание также активирует выбранный слой."
 
-msgid "Global setting: {} ms"
-msgstr "Из общих настроек: {} мс"
-
-msgid "Leave a timeout empty to use the global setting."
-msgstr "Оставьте поле времени пустым, чтобы использовать значение из общих настроек."
-
 msgid "Block"
 msgstr "Блокировать"
 
@@ -1559,15 +1517,6 @@ msgstr "Действие после удержания"
 msgid "Runs once after {} s"
 msgstr "Выполняется один раз через {} с"
 
-msgid "Long-hold duration, seconds"
-msgstr "Длительность удержания, секунды"
-
-msgid "The action runs once after continuous holding. Leave empty to use the global setting: {} s"
-msgstr "Действие выполняется один раз после непрерывного удержания. Оставьте поле пустым, чтобы использовать значение из настроек: {} с"
-
-msgid "Default: {} s"
-msgstr "По умолчанию: {} с"
-
 msgid "Hold another key / combination"
 msgstr "Удерживать другую клавишу / сочетание"
 
@@ -1585,12 +1534,6 @@ msgstr "Удерживаемая клавиша: {}"
 
 msgid "Assigned to"
 msgstr "Где назначена"
-
-msgid "Held key"
-msgstr "Удерживать клавишу"
-
-msgid "Holds the selected key or combination while the trigger is held. It can be combined with layer activation. Leave empty to activate only the layer."
-msgstr "Удерживает выбранную клавишу или сочетание, пока удерживается клавиша правила. Можно использовать вместе с включением слоя. Оставьте поле пустым, чтобы только активировать слой."
 
 msgid "Languages"
 msgstr "Языки"
@@ -2427,3 +2370,81 @@ msgstr "Введите имя, чтобы найти процессы, запу�
 
 msgid "Process · while its window is active"
 msgstr "Процесс · пока активно его окно"
+
+msgid "While the trigger is held"
+msgstr "Пока триггер зажат"
+
+msgid "Press key"
+msgstr "Нажимать клавишу"
+
+msgid "Which key stays pressed while you hold the trigger, together with the layer. “Nothing” only switches the layer."
+msgstr "Какая клавиша будет зажата, пока вы держите триггер, вместе со слоем. «Ничего» — только переключить слой."
+
+msgid "Which key stays pressed while you hold the trigger. “Trigger itself” keeps the usual behavior of the key."
+msgstr "Какая клавиша будет зажата, пока вы держите триггер. «Сам триггер» — клавиша ведёт себя как обычно."
+
+msgid "Trigger itself"
+msgstr "Сам триггер"
+
+msgid "Other key…"
+msgstr "Другая клавиша…"
+
+msgid "When to press"
+msgstr "Когда нажимать"
+
+msgid "Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nOnly with: the key is pressed only together with the listed layer keys. For example, Alt is pressed only for Tab (Alt+Tab), so a lone Alt does not open application menus."
+msgstr "Сразу: клавиша нажимается в начале удержания.\nКроме: клавиша отпускается, пока нажаты указанные клавиши слоя. Например, Alt зажат, но W и E срабатывают без Alt.\nТолько с: клавиша нажимается только вместе с указанными клавишами слоя. Например, Alt нажимается только для Tab (Alt+Tab), и одиночный Alt не открывает меню в приложениях."
+
+msgid "Right away"
+msgstr "Сразу"
+
+msgid "Except…"
+msgstr "Кроме…"
+
+msgid "Only with…"
+msgstr "Только с…"
+
+msgid "Release the key while these layer keys are pressed:"
+msgstr "Отпускать клавишу, пока нажаты эти клавиши слоя:"
+
+msgid "Press the key only together with these layer keys:"
+msgstr "Нажимать клавишу только вместе с этими клавишами слоя:"
+
+msgid "Treat as hold after, ms"
+msgstr "Считать удержанием через, мс"
+
+msgid "Released earlier, the trigger counts as a tap; held longer, as a hold. Empty uses the global setting: {} ms."
+msgstr "Если отпустить триггер раньше — это нажатие, если позже — удержание. Пустое поле — значение из общих настроек: {} мс."
+
+msgid "Long hold after, s"
+msgstr "Долгое удержание через, с"
+
+msgid "Seconds of continuous holding before the action runs. Empty uses the global setting: {} s."
+msgstr "Через сколько секунд непрерывного удержания выполнится действие. Пустое поле — значение из общих настроек: {} с."
+
+msgid "Double-tap interval, ms"
+msgstr "Интервал двойного нажатия, мс"
+
+msgid "Longest pause between two taps. Empty uses the global setting: {} ms."
+msgstr "Максимальная пауза между двумя нажатиями. Пустое поле — значение из общих настроек: {} мс."
+
+msgid "Holds {}"
+msgstr "Зажимает {}"
+
+msgid "Holds nothing"
+msgstr "Ничего не зажимает"
+
+msgid "Only with {}"
+msgstr "Только с {}"
+
+msgid "Released for {}"
+msgstr "Отпускается для {}"
+
+msgid "Hold after {} ms"
+msgstr "Удержание через {} мс"
+
+msgid "Long hold after {} s"
+msgstr "Долгое удержание через {} с"
+
+msgid "Choose a layer key"
+msgstr "Выберите клавишу слоя"

@@ -17,7 +17,10 @@ export enum Assignment { transparent, swallow, action }
 export enum ActionKind { none, keys, macro, command, system, app, text }
 
 /// Dialog of the rules page; also the rule property being edited.
-export enum RuleDialog { none, key, layer, tap, hold, long-hold, double-tap, conditions, hold-timeout, double-timeout, advanced, remove }
+export enum RuleDialog { none, key, layer, tap, hold, long-hold, double-tap, conditions, hold-timeout, double-timeout, advanced, remove, release-key }
+
+/// When a rule's held key is pressed while its layer is active.
+export enum HoldRelease { always, except, only-with }
 
 /// Rule property changed in place (without a dialog).
 export enum RuleField { enabled, hold-mode, swallow-tap, swallow-hold, isolate, hold-for }

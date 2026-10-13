@@ -359,6 +359,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 crate::ui::RuleDialog::Tap => 2,
                 crate::ui::RuleDialog::Hold => 3,
                 crate::ui::RuleDialog::LongHold => 5,
+                crate::ui::RuleDialog::ReleaseKey => 6,
                 _ => 0,
             }
         } else {
@@ -389,9 +390,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 rule_field,
                 crate::ui::RuleDialog::DoubleTap | crate::ui::RuleDialog::LongHold
             );
+        // The advanced rule dialog chooses "trigger itself" / "nothing" for
+        // the held key; the picker only picks the key.
+        let held_key = rule_action && rule_field == crate::ui::RuleDialog::Hold;
         let allow_default = !key_only
             && ((standalone_layer && !extra_action)
-                || rule_action
+                || (rule_action && !held_key)
                 || (double_tap && rule_field != crate::ui::RuleDialog::LongHold)
                 || matches!(target, PickerTarget::BaseKey));
         picker.set_allow_default(allow_default);
@@ -404,7 +408,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             picker.get_hold_action()
                 && !ui.global::<crate::ui::RulesEditor>().get_layer().is_empty(),
         );
-        picker.set_allow_swallow(standalone_layer || (rule_action && !picker.get_hold_layer()));
+        picker.set_allow_swallow(
+            standalone_layer || (rule_action && !held_key && !picker.get_hold_layer()),
+        );
         picker.set_behavior(if picker.get_ignore_key() && picker.get_allow_swallow() {
             1
         } else if allow_default && (value.is_empty() || picker.get_ignore_key()) {
@@ -416,7 +422,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         picker.set_touched(false);
         picker.set_error(Msg::None.to_ui());
         picker.set_key_only(key_only);
-        picker.set_trigger_chords(key_only && target == PickerTarget::Rule);
+        picker.set_trigger_chords(
+            key_only && target == PickerTarget::Rule && rule_field == crate::ui::RuleDialog::Key,
+        );
         picker.set_macro_step(target == PickerTarget::MacroStep);
         let original = if picker.get_behavior() == 1 {
             ui.global::<Locale>()
