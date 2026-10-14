@@ -263,7 +263,7 @@ quickActionPages:
     cells:
       KeyQ: { name: Sleep, action: Sleep }
       KeyW: { name: Lock screen, action: LockScreen }
-      KeyE: { name: Screen off, action: DisplayOff }
+      KeyE: { name: Screen off, action: "kde:org_kde_powerdevil/Turn Off Screen" }
       KeyR: { name: Mute, action: AudioVolumeMute }
       KeyT: { name: Mute microphone, action: MicrophoneMuteToggle }
       KeyA: { name: Grid view, action: kde:kwin/Grid View }
