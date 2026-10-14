@@ -259,4 +259,78 @@ rules:
   - key: ShiftRight
     tap: 'text:-'
 macros: []
-quickActions: []
+quickActions:
+  # Page 1 — windows and session (Q W E R T / A S D F G / Z X C V B)
+  - { id: qa_overview, name: Overview, action: kde:kwin/Overview }
+  - { id: qa_present, name: Present windows, action: kde:kwin/Expose }
+  - { id: qa_grid, name: Grid view, action: kde:kwin/Grid View }
+  - { id: qa_desktop, name: Show desktop, action: kde:kwin/Show Desktop }
+  - { id: qa_above, name: Keep above, action: kde:kwin/Window Above Other Windows }
+  - { id: qa_maximize, name: Maximize, action: kde:kwin/Window Maximize }
+  - { id: qa_minimize, name: Minimize, action: kde:kwin/Window Minimize }
+  - { id: qa_fullscreen, name: Fullscreen, action: kde:kwin/Window Fullscreen }
+  - { id: qa_close, name: Close window, action: kde:kwin/Window Close }
+  - { id: qa_tiles, name: Edit tiles, action: kde:kwin/Edit Tiles }
+  - { id: qa_lock, name: Lock screen, action: kde:ksmserver/Lock Session }
+  - { id: qa_screen_off, name: Screen off, action: kde:org_kde_powerdevil/Turn Off Screen }
+  - { id: qa_sleep, name: Sleep, action: kde:org_kde_powerdevil/Sleep }
+  - { id: qa_logout, name: Log out, action: kde:ksmserver/Log Out }
+  - { id: qa_kill, name: Kill window, action: kde:kwin/Kill Window }
+  # Page 2 — media, screenshots and apps
+  - { id: qa_play, name: Play / pause, action: kde:mediacontrol/playpausemedia }
+  - { id: qa_prev, name: Previous track, action: kde:mediacontrol/previousmedia }
+  - { id: qa_next, name: Next track, action: kde:mediacontrol/nextmedia }
+  - { id: qa_mute, name: Mute, action: kde:kmix/mute }
+  - { id: qa_mic, name: Mute microphone, action: kde:kmix/mic_mute }
+  - { id: qa_shot_region, name: Screenshot region, action: kde:org.kde.spectacle.desktop/RectangularRegionScreenShot }
+  - { id: qa_shot_window, name: Screenshot window, action: kde:org.kde.spectacle.desktop/ActiveWindowScreenShot }
+  - { id: qa_shot_full, name: Screenshot screen, action: kde:org.kde.spectacle.desktop/FullScreenScreenShot }
+  - { id: qa_record, name: Record region, action: kde:org.kde.spectacle.desktop/RecordRegion }
+  - { id: qa_clipboard, name: Clipboard history, action: kde:plasmashell/show-on-mouse-pos }
+  - { id: qa_krunner, name: KRunner, action: kde:org.kde.krunner.desktop/_launch }
+  - { id: qa_launcher, name: App launcher, action: kde:plasmashell/activate application launcher }
+  - { id: qa_terminal, name: Terminal, action: kde:org.kde.konsole.desktop/_launch }
+  - { id: qa_files, name: Files, action: kde:org.kde.dolphin.desktop/_launch }
+  - { id: qa_night, name: Night light, action: kde:kwin/Toggle Night Color }
+quickActionPages:
+  - id: qap_system
+    name: System
+  - id: qap_media
+    name: Media & apps
+emojiPages:
+  - id: emoji_faces
+    name: Faces
+    cells:
+      KeyQ: "😀"
+      KeyW: "😂"
+      KeyE: "🤣"
+      KeyR: "😊"
+      KeyT: "😉"
+      KeyA: "😍"
+      KeyS: "😘"
+      KeyD: "😎"
+      KeyF: "🤔"
+      KeyG: "🙃"
+      KeyZ: "😅"
+      KeyX: "😢"
+      KeyC: "😭"
+      KeyV: "😡"
+      KeyB: "🤯"
+  - id: emoji_gestures
+    name: Gestures & symbols
+    cells:
+      KeyQ: "👍"
+      KeyW: "👎"
+      KeyE: "👌"
+      KeyR: "🙏"
+      KeyT: "👏"
+      KeyA: "🤝"
+      KeyS: "💪"
+      KeyD: "👀"
+      KeyF: "🔥"
+      KeyG: "❤️"
+      KeyZ: "✅"
+      KeyX: "❌"
+      KeyC: "🎉"
+      KeyV: "🚀"
+      KeyB: "💯"
