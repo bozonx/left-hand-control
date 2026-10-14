@@ -297,24 +297,6 @@ quickActionPages:
       KeyV: { name: Files, action: kde:org.kde.dolphin.desktop/_launch }
       KeyB: { name: Night light, action: kde:kwin/Toggle Night Color }
 emojiPages:
-  - id: emoji_chat
-    name: Chat
-    cells:
-      KeyQ: "👆"
-      KeyW: "🙏"
-      KeyE: "🤝"
-      KeyR: "🔥"
-      KeyT: "👌"
-      KeyA: "😅"
-      KeyS: "😉"
-      KeyD: "😂"
-      KeyF: "😀"
-      KeyG: "😆"
-      KeyZ: "🤷‍♂️"
-      KeyX: "💯"
-      KeyC: "🤯"
-      KeyV: "🤔"
-      KeyB: "😘"
   - id: emoji_text
     name: Texts and lists
     cells:
@@ -333,3 +315,22 @@ emojiPages:
       KeyC: "⏩"
       KeyV: "✅"
       KeyB: "ℹ️"
+  - id: emoji_chat
+    name: Chat
+    cells:
+      KeyQ: "👆"
+      KeyW: "🙏"
+      KeyE: "🤝"
+      KeyR: "🔥"
+      KeyT: "👌"
+      KeyA: "😅"
+      KeyS: "😉"
+      KeyD: "😂"
+      KeyF: "😀"
+      KeyG: "😆"
+      KeyZ: "🤷‍♂️"
+      KeyX: "💯"
+      KeyC: "🤯"
+      KeyV: "🤔"
+      KeyB: "😘"
+
