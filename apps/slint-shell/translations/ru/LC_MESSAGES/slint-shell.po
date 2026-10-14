@@ -2242,23 +2242,23 @@ msgstr "ydotool"
 msgid "xdotool"
 msgstr "xdotool"
 
-msgid "Types through the desktop's remote input portal (libei) using the current keyboard layout. Text with characters the layout lacks is pasted through the clipboard, which needs wl-clipboard. Needs a recent KDE Plasma 6 or GNOME; elsewhere it falls back to legacy portal keys. The desktop asks for permission once."
-msgstr "Печатает через портал удалённого ввода рабочего стола (libei) в текущей раскладке. Текст с символами, которых нет в раскладке, вставляется через буфер обмена — для этого нужен wl-clipboard. Требует свежий KDE Plasma 6 или GNOME, иначе используется старый способ через портал. Рабочий стол один раз спросит разрешение."
+msgid "Types through libei using the current keyboard layout. Only if the layout lacks a character, pastes the whole text with wl-copy and Ctrl+V, then restores the clipboard. Requires a working libei portal (recent KDE Plasma 6 or GNOME); clipboard fallback also needs wl-clipboard. If libei or paste fails, stops without switching to NotifyKeyboardKeycode or another method. The desktop asks for permission."
+msgstr "Вводит текст через libei с текущей раскладкой. Только если в раскладке нет нужного символа, вставляет весь текст через wl-copy и Ctrl+V, затем восстанавливает буфер обмена. Требуется работающий портал libei (современная KDE Plasma 6 или GNOME); для резервной вставки также нужен wl-clipboard. При ошибке libei или вставки ввод прекращается без перехода на NotifyKeyboardKeycode или другой способ. Рабочий стол запрашивает разрешение."
 
-msgid "Like libei + wl-copy fallback, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."
-msgstr "Как libei + wl-copy fallback, но никогда не трогает буфер обмена. Текст с символами, которых нет в текущей раскладке, не печатается совсем."
+msgid "Types only through libei using the current keyboard layout. Never uses the clipboard or NotifyKeyboardKeycode. Requires a working libei portal (recent KDE Plasma 6 or GNOME). If the layout lacks a character, skips the whole text. On a backend error, stops without switching methods. The desktop asks for permission."
+msgstr "Вводит текст только через libei с текущей раскладкой. Не использует буфер обмена или NotifyKeyboardKeycode. Требуется работающий портал libei (современная KDE Plasma 6 или GNOME). Если в раскладке нет нужного символа, весь текст пропускается. При ошибке ввод прекращается без смены способа. Рабочий стол запрашивает разрешение."
 
-msgid "Presses keys through the older portal interface. Try it if libei does not work. Characters the current layout lacks may come out wrong on KDE."
-msgstr "Нажимает клавиши через старый интерфейс портала. Попробуйте, если libei не работает. В KDE символы, которых нет в текущей раскладке, могут печататься неверно."
+msgid "Types only through the portal's NotifyKeyboardKeycode interface using the current keyboard layout. Never uses libei, NotifyKeyboardKeysym or the clipboard. If the layout lacks a character, skips the whole text. On a portal error, stops without switching methods. The desktop asks for permission."
+msgstr "Вводит текст только через интерфейс портала NotifyKeyboardKeycode с текущей раскладкой. Не использует libei, NotifyKeyboardKeysym или буфер обмена. Если в раскладке нет нужного символа, весь текст пропускается. При ошибке портала ввод прекращается без смены способа. Рабочий стол запрашивает разрешение."
 
-msgid "Pastes the whole text at once with wl-copy and Ctrl+V, then restores the clipboard. Fast for long text; needs wl-clipboard. Apps that paste with another shortcut, such as terminals, will not receive it."
-msgstr "Вставляет весь текст сразу через wl-copy и Ctrl+V, затем восстанавливает буфер обмена. Быстро для длинного текста; нужен wl-clipboard. Приложения с другим сочетанием для вставки, например терминалы, текст не получат."
+msgid "Pastes the whole text with wl-copy and Ctrl+V through the portal, then restores the clipboard. Requires wl-clipboard and portal permission. Apps that use another paste shortcut, such as terminals, will not receive it. On an error, stops without switching to typing."
+msgstr "Вставляет весь текст через wl-copy и Ctrl+V через портал, затем восстанавливает буфер обмена. Требуются wl-clipboard и разрешение портала. Приложения с другим сочетанием для вставки, например терминалы, не получат текст. При ошибке ввод прекращается без перехода на печать клавишами."
 
-msgid "Runs \"ydotool type\". Works on any desktop but needs ydotool and its ydotoold service running. Reliable for Latin text only."
-msgstr "Запускает \"ydotool type\". Работает в любом окружении, но нужен ydotool с запущенной службой ydotoold. Надёжно печатает только латиницу."
+msgid "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."
+msgstr "Использует только «ydotool type». Требуются ydotool и запущенная служба ydotoold. Надёжно работает только с латиницей. При ошибке ввод прекращается без смены способа."
 
-msgid "Runs \"xdotool type\". Works only in X11 sessions and XWayland windows."
-msgstr "Запускает \"xdotool type\". Работает только в сеансах X11 и окнах XWayland."
+msgid "Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows. On an error, stops without switching methods."
+msgstr "Использует только «xdotool type». Работает только в сеансах X11 и окнах XWayland. При ошибке ввод прекращается без смены способа."
 
 msgid "ydotool from PATH"
 msgstr "ydotool из PATH"

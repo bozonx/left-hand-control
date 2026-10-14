@@ -14,8 +14,8 @@
 //                                 the consent dialog again.
 //   3. `Start()`                – shows the permission dialog (only once
 //                                 per machine if persist mode + token work).
-//   4. `NotifyKeyboardKeysym()` – fires X keysyms; theoretically
-//      layout-independent but in practice compositor-dependent (see below).
+//   4. `NotifyKeyboardKeycode()` – injects keycodes for the explicitly selected
+//      legacy portal mode and clipboard paste shortcut.
 //
 // The session and its DBus connection are owned by a process-wide
 // singleton: it is created lazily on the first injection request and
@@ -36,10 +36,12 @@
 //   2. For each character, look it up in the table and inject via
 //      `NotifyKeyboardKeycode` with the appropriate modifier keys — this is
 //      truly layout-driven and always correct for characters in the layout.
-//   3. If the character is absent from the current layout (e.g. typing `?`
-//      while Russian is active), fall back to `wl-copy` + Ctrl+V paste.
-//   4. If `wl-copy` is unavailable, fall back to `NotifyKeyboardKeysym`
-//      (original behaviour, works on compositors with correct implementations).
+//
+// Text modes must never silently switch injection mechanisms: hidden fallbacks
+// mask failures and make backend debugging unreliable. The only allowed fallback
+// is the explicitly selected libei + wl-copy mode, which pastes the whole text
+// when the keymap lacks a character. It still requires a working libei session.
+// Backend failures must be logged, not retried through another input method.
 
 #![cfg(target_os = "linux")]
 
@@ -271,10 +273,10 @@ static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
     ydotool_path: None,
     xdotool_path: None,
 });
-static LIBEI_FALLBACK_LOGGED: AtomicBool = AtomicBool::new(false);
-/// Set when the libei handshake failed, so every later literal goes straight
-/// to RemoteDesktop keycodes instead of repeating a handshake that can block
-/// for seconds and open extra portal sessions. Cleared on config updates.
+static LIBEI_BACKEND_LOGGED: AtomicBool = AtomicBool::new(false);
+/// Set when the libei handshake failed, so later literals are skipped instead
+/// of repeating a handshake that can block and open extra portal sessions.
+/// Cleared on config updates; never switches to another input backend.
 static LIBEI_UNAVAILABLE: AtomicBool = AtomicBool::new(false);
 
 /// Switch between text injection strategies.
@@ -331,14 +333,10 @@ pub fn set_token_dir(dir: PathBuf) {
 /// the actual portal handshake (and its consent dialog) runs on a
 /// dedicated thread.
 pub fn type_text(text: &str) {
-    let cfg = TEXT_BACKEND
-        .lock()
-        .map(|guard| guard.clone())
-        .unwrap_or(TextBackendConfig {
-            backend: TextBackend::Keycode,
-            ydotool_path: None,
-            xdotool_path: None,
-        });
+    let Ok(cfg) = TEXT_BACKEND.lock().map(|guard| guard.clone()) else {
+        log::warn!("[text] text skipped: backend configuration lock poisoned");
+        return;
+    };
     match cfg.backend {
         TextBackend::Ydotool => {
             type_text_ydotool(text, cfg.ydotool_path);
@@ -349,18 +347,18 @@ pub fn type_text(text: &str) {
             return;
         }
         TextBackend::Libei | TextBackend::LibeiPure => {
-            if !LIBEI_FALLBACK_LOGGED.swap(true, Ordering::Relaxed) {
+            if !LIBEI_BACKEND_LOGGED.swap(true, Ordering::Relaxed) {
                 log::debug!(
                     "[portal] libei text backend is selected; using RemoteDesktop.ConnectToEIS when available"
                 );
             }
             let clipboard_fallback = matches!(cfg.backend, TextBackend::Libei);
-            if type_text_libei(text, clipboard_fallback) {
-                return;
+            if !type_text_libei(text, clipboard_fallback) {
+                log::warn!("[libei] text skipped: selected backend unavailable");
             }
-            log::debug!(
-                "[portal] libei backend unavailable; falling back to RemoteDesktop keycode injection"
-            );
+            // Do not route libei failures to the legacy portal, even in the
+            // clipboard-fallback mode: that mode only permits missing-keymap paste.
+            return;
         }
         TextBackend::Clipboard | TextBackend::Keycode => {}
     }
@@ -463,11 +461,11 @@ fn start_libei_singleton() -> Option<Sender<Cmd>> {
         Ok(_join) => match ready_rx.recv_timeout(Duration::from_secs(10)) {
             Ok(Ok(())) => Some(tx),
             Ok(Err(e)) => {
-                log::warn!("[libei] backend unavailable, using NotifyKeyboardKeycode: {e}");
+                log::warn!("[libei] backend unavailable: {e}");
                 None
             }
             Err(e) => {
-                log::warn!("[libei] backend init timed out, using NotifyKeyboardKeycode: {e}");
+                log::warn!("[libei] backend init timed out: {e}");
                 None
             }
         },
@@ -838,17 +836,16 @@ fn ei_handshake_with_timeout(
 }
 
 fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    let backend = TEXT_BACKEND
-        .lock()
-        .map(|guard| guard.backend)
-        .unwrap_or(TextBackend::Keycode);
+    let Ok(backend) = TEXT_BACKEND.lock().map(|guard| guard.backend) else {
+        log::warn!("[portal] text skipped: backend configuration lock poisoned");
+        return;
+    };
     match backend {
         TextBackend::Clipboard => inject_full_text_via_clipboard(portal, session, text),
-        TextBackend::Libei
-        | TextBackend::LibeiPure
-        | TextBackend::Keycode
-        | TextBackend::Ydotool
-        | TextBackend::Xdotool => inject_text_keycode(portal, session, text),
+        TextBackend::Keycode => inject_text_keycode(portal, session, text),
+        // A queued request may outlive a settings change. Never reinterpret it
+        // as legacy keycodes for a mode that does not select that mechanism.
+        _ => log::warn!("[portal] text skipped: selected backend changed"),
     }
 }
 
@@ -864,15 +861,26 @@ fn text_keysym(ch: char) -> u32 {
 fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
     let table = keymap_table();
     let empty: HashMap<String, Value> = HashMap::new();
-    for ch in text.replace("\r\n", "\n").chars() {
-        let keysym: u32 = text_keysym(ch);
-        if let Some(entry) = table.get(&keysym) {
-            let mods = level_to_mods(entry.level);
-            if inject_keycode_combo(portal, session, &empty, mods, entry.evdev) {
-                continue;
-            }
+    let text = text.replace("\r\n", "\n");
+    if text.chars().any(|ch| !table.contains_key(&text_keysym(ch))) {
+        log::warn!("[portal] text skipped: it has characters the keyboard layout lacks");
+        return;
+    }
+    for ch in text.chars() {
+        if let Some(entry) = table.get(&text_keysym(ch))
+            && !inject_keycode_combo(
+                portal,
+                session,
+                &empty,
+                level_to_mods(entry.level),
+                entry.evdev,
+            )
+        {
+            // Do not substitute NotifyKeyboardKeysym: it hides keycode failures
+            // and can produce different characters depending on the compositor.
+            log::warn!("[portal] text injection stopped: NotifyKeyboardKeycode failed");
+            return;
         }
-        inject_keysym(portal, session, &empty, keysym);
     }
 }
 
@@ -883,10 +891,8 @@ fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, tex
     match set_wayland_clipboard_text(text) {
         Ok(()) => {}
         Err(e) => {
-            log::debug!(
-                "[portal] wl-copy unavailable in clipboard mode ({e}), falling back to keycode"
-            );
-            inject_text_keycode(portal, session, text);
+            // Clipboard mode must fail visibly rather than silently type keys.
+            log::warn!("[portal] text skipped: wl-copy unavailable in clipboard mode: {e}");
             return;
         }
     }
@@ -1046,27 +1052,6 @@ fn inject_keycode_combo(
         );
     }
     ok
-}
-
-fn inject_keysym(
-    portal: &Proxy,
-    session: &OwnedObjectPath,
-    empty: &HashMap<String, Value>,
-    keysym: u32,
-) {
-    for state in [STATE_PRESSED, STATE_RELEASED] {
-        if let Err(e) = notify_key(
-            portal,
-            session,
-            empty,
-            "NotifyKeyboardKeysym",
-            keysym,
-            state,
-        ) {
-            log::debug!("[portal] NotifyKeyboardKeysym failed: {e}");
-            break;
-        }
-    }
 }
 
 fn close_session(conn: &Connection, session: &OwnedObjectPath) {

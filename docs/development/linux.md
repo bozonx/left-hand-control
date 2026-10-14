@@ -88,7 +88,7 @@ cargo build -p slint-shell --release --features spell
 Slint поддерживает обновление `.slint` без перезапуска приложения через [Live Preview](https://docs.slint.dev/latest/docs/slint/guide/tooling/live-preview/). Для запуска из корня репозитория:
 
 ```sh
-SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview
+SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview --features spell
 ```
 
 Перед запуском завершите уже работающий экземпляр. Откройте настройки через трей или командой `target/debug/slint-shell show settings` в другом терминале. После сохранения `.slint` интерфейс перезагружается; связь с Rust, свойства, callbacks и модели сохраняются. При синтаксической ошибке остаётся предыдущая версия интерфейса до исправления.

@@ -533,12 +533,12 @@ export component SettingsPage inherits VerticalBox {
                         Text {
                             vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap;
                             text: [
-                                @tr("Types through the desktop's remote input portal (libei) using the current keyboard layout. Text with characters the layout lacks is pasted through the clipboard, which needs wl-clipboard. Needs a recent KDE Plasma 6 or GNOME; elsewhere it falls back to legacy portal keys. The desktop asks for permission once."),
-                                @tr("Like libei + wl-copy fallback, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."),
-                                @tr("Presses keys through the older portal interface. Try it if libei does not work. Characters the current layout lacks may come out wrong on KDE."),
-                                @tr("Pastes the whole text at once with wl-copy and Ctrl+V, then restores the clipboard. Fast for long text; needs wl-clipboard. Apps that paste with another shortcut, such as terminals, will not receive it."),
-                                @tr("Runs \"ydotool type\". Works on any desktop but needs ydotool and its ydotoold service running. Reliable for Latin text only."),
-                                @tr("Runs \"xdotool type\". Works only in X11 sessions and XWayland windows."),
+                                @tr("Types through libei using the current keyboard layout. Only if the layout lacks a character, pastes the whole text with wl-copy and Ctrl+V, then restores the clipboard. Requires a working libei portal (recent KDE Plasma 6 or GNOME); clipboard fallback also needs wl-clipboard. If libei or paste fails, stops without switching to NotifyKeyboardKeycode or another method. The desktop asks for permission."),
+                                @tr("Types only through libei using the current keyboard layout. Never uses the clipboard or NotifyKeyboardKeycode. Requires a working libei portal (recent KDE Plasma 6 or GNOME). If the layout lacks a character, skips the whole text. On a backend error, stops without switching methods. The desktop asks for permission."),
+                                @tr("Types only through the portal's NotifyKeyboardKeycode interface using the current keyboard layout. Never uses libei, NotifyKeyboardKeysym or the clipboard. If the layout lacks a character, skips the whole text. On a portal error, stops without switching methods. The desktop asks for permission."),
+                                @tr("Pastes the whole text with wl-copy and Ctrl+V through the portal, then restores the clipboard. Requires wl-clipboard and portal permission. Apps that use another paste shortcut, such as terminals, will not receive it. On an error, stops without switching to typing."),
+                                @tr("Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."),
+                                @tr("Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows. On an error, stops without switching methods."),
                             ][SettingsEditor.text-mode-index];
                         }
                     }
