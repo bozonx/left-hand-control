@@ -65,6 +65,7 @@ pub(super) fn forward_core_events() {
             let layer = layer.clone();
             post(move |app| app.layer_changed(layer));
         }
+        CoreEvent::LayerKeyPressed => post(|app| app.layer_key_pressed()),
         CoreEvent::GameModeChanged(status) => {
             let status = status.clone();
             post(move |app| app.game_mode_changed(&status));

@@ -523,6 +523,7 @@ impl Engine {
             isolated_holds: HashMap::new(),
             active_macro: None,
             text_pending: false,
+            layer_presses: 0,
         }
     }
 }

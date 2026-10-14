@@ -51,15 +51,21 @@ impl App {
         }
     }
 
+    /// A key was pressed inside the held layer: whoever presses keys in it
+    /// knows the layer, so its hint is cancelled or closed until the next
+    /// layer change.
+    pub(super) fn layer_key_pressed(&self) {
+        if self.held_layer.borrow().is_some() {
+            self.hide_layer_hint();
+        }
+    }
+
     fn show_layer_hint(&self) {
         let Some(id) = self.held_layer.borrow().clone() else {
             return;
         };
-        {
-            let supervisor = self.supervisor.borrow();
-            if !supervisor.hint || !supervisor.running() {
-                return;
-            }
+        if !self.supervisor.borrow().hint {
+            return;
         }
         if lhc_core::runtime_state::game_mode_active() {
             self.hide_layer_hint();
@@ -74,20 +80,33 @@ impl App {
             self.hide_layer_hint();
             return;
         };
-        match self.send_worker(
+        // Marked before sending: a send that fails after the worker took
+        // the command must not leave the hint up with nothing to hide it.
+        // A worker that is still starting gets the hint once it is up.
+        self.layer_hint_shown.set(true);
+        if !self.supervisor.borrow().running() {
+            return;
+        }
+        if let Err(error) = self.send_worker(
             &Command::LayerHint(Some(hint)),
             Source::Mapper,
             Instant::now(),
             None,
         ) {
-            Ok(()) => self.layer_hint_shown.set(true),
-            Err(error) => log::warn!("layer hint: {error:?}"),
+            log::warn!("layer hint: {error:?}");
+        }
+    }
+
+    /// Send the hint again to a worker that just started.
+    pub(super) fn resend_layer_hint(&self) {
+        if self.layer_hint_shown.get() {
+            self.show_layer_hint();
         }
     }
 
     pub(super) fn hide_layer_hint(&self) {
         self.layer_hint_timer.stop();
-        if self.layer_hint_shown.replace(false) {
+        if self.layer_hint_shown.replace(false) && self.supervisor.borrow().running() {
             let _ = self.send_worker(
                 &Command::LayerHint(None),
                 Source::Mapper,

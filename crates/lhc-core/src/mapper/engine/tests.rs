@@ -1526,6 +1526,50 @@ fn chords_are_inactive_inside_a_layer() {
 }
 
 #[test]
+fn layer_presses_count_only_keys_pressed_inside_a_layer() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        {"key": "Space", "layerId": "nav", "tapAction": "Space"},
+    ]}))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle(KeyCode::KEY_A, false, now, &mut out);
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    assert_eq!(engine.layer_presses(), 0);
+    // The press that resolves the layer key as a hold is used inside it.
+    engine.handle(
+        KeyCode::KEY_J,
+        true,
+        now + Duration::from_millis(10),
+        &mut out,
+    );
+    engine.handle(
+        KeyCode::KEY_J,
+        false,
+        now + Duration::from_millis(20),
+        &mut out,
+    );
+    assert_eq!(engine.top_layer(), Some("nav"));
+    assert_eq!(engine.layer_presses(), 1);
+    engine.handle(
+        KeyCode::KEY_SPACE,
+        false,
+        now + Duration::from_millis(30),
+        &mut out,
+    );
+    assert_eq!(engine.top_layer(), None);
+    engine.handle(
+        KeyCode::KEY_A,
+        true,
+        now + Duration::from_millis(40),
+        &mut out,
+    );
+    assert_eq!(engine.layer_presses(), 1);
+}
+
+#[test]
 fn duplicate_chords_use_first_matching_rule() {
     let mut cfg = empty_cfg();
     let mut first = tap_hold_rule(

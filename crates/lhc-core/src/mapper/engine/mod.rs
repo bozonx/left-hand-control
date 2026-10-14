@@ -126,11 +126,19 @@ pub struct Engine {
     /// Currently executing macro (if any)
     active_macro: Option<self::model::ActiveMacro>,
     text_pending: bool,
+    /// Key presses handled while a layer was active.
+    layer_presses: u64,
 }
 impl Engine {
     /// The topmost active layer, if any layer is held.
     pub fn top_layer(&self) -> Option<&str> {
         self.active_layers.last().map(String::as_str)
+    }
+
+    /// Number of key presses handled while a layer was active; changes
+    /// whenever a key is pressed inside a held layer.
+    pub fn layer_presses(&self) -> u64 {
+        self.layer_presses
     }
 
     /// Time until the nearest pending deadline (hold-decision,
@@ -544,6 +552,9 @@ impl Engine {
             self.commit_waiting_decisions(out);
         }
 
+        if !self.active_layers.is_empty() {
+            self.layer_presses += 1;
+        }
         if self.active_layers.is_empty() {
             if let Some(rule) = self.active_rule_for_key(key) {
                 self.start_rule(key, rule, now, out);

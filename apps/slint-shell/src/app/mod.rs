@@ -76,7 +76,7 @@ pub(crate) struct App {
     announced_layout: RefCell<Option<Option<String>>>,
     /// Topmost layer the mapper holds now.
     held_layer: RefCell<Option<String>>,
-    /// The worker shows the layer hint.
+    /// The layer hint is up, or due as soon as the worker starts.
     layer_hint_shown: Cell<bool>,
     /// Delays the hint after a layer is taken.
     layer_hint_timer: slint::Timer,

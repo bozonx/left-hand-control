@@ -100,6 +100,8 @@ impl App {
             return;
         }
         if let Some(popup) = window.popup() {
+            // Both are anchored at the bottom centre; the popup wins.
+            self.hide_layer_hint();
             if self.supervisor.borrow().enabled {
                 let command =
                     page.map_or(Command::Show(window), |page| Command::ShowPage(popup, page));

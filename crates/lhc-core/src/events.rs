@@ -22,6 +22,8 @@ pub enum CoreEvent {
     MapperStopped(String),
     /// The topmost held mapper layer changed; `None` when no layer is held.
     ActiveLayerChanged(Option<String>),
+    /// A key was pressed inside the held layer.
+    LayerKeyPressed,
     /// An `app:` action fired inside the mapper, e.g. `show_quick_menu_1`.
     AppAction(String),
     CommandFinished {

@@ -346,6 +346,8 @@ fn run_loop<D: LoopDriver>(
     let mut hold = OutputHold::default();
     // Topmost layer last reported to the shell.
     let mut reported_layer: Option<String> = None;
+    // Engine layer-press count last reported to the shell.
+    let mut reported_presses = 0;
 
     let result = (|| {
         while !stop.load(Ordering::SeqCst) {
@@ -371,6 +373,7 @@ fn run_loop<D: LoopDriver>(
                         engine.shutdown(&mut out_buf);
                         flush_out(&mut virt, &mut out_buf)?;
                         engine = Engine::new(&next_cfg);
+                        reported_presses = 0;
                     }
                     MapperControl::Execute(action) => {
                         log::debug!("[mapper] remote execute requested");
@@ -384,6 +387,14 @@ fn run_loop<D: LoopDriver>(
             if engine.top_layer() != reported_layer.as_deref() {
                 reported_layer = engine.top_layer().map(str::to_owned);
                 super::notify_active_layer(reported_layer.clone());
+            }
+            // After the layer change: a press may both activate a layer and
+            // be the first key used inside it.
+            if engine.layer_presses() != reported_presses {
+                reported_presses = engine.layer_presses();
+                if reported_layer.is_some() {
+                    super::notify_layer_key_pressed();
+                }
             }
         }
         Ok(())

@@ -205,8 +205,8 @@ impl App {
                 }
                 self.supervisor.borrow_mut().worker = Some(worker);
                 self.menus_sent.borrow_mut().take();
-                self.layer_hint_shown.set(false);
                 self.flush_worker_show();
+                self.resend_layer_hint();
             }
             Err(error) => {
                 log::error!("Spell worker: {error}");
