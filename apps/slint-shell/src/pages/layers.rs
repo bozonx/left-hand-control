@@ -139,7 +139,17 @@ fn is_emoji(text: &str) -> bool {
             0x200D | 0xFE0E | 0xFE0F | 0x20E3 | 0xE0020..=0xE007F
         )
     };
-    text.chars().any(pictographic) && text.chars().all(|c| pictographic(c) || modifier(c))
+    let mut chars = text.chars().peekable();
+    let mut any = false;
+    while let Some(c) = chars.next() {
+        // U+FE0F asks for emoji presentation of an otherwise textual symbol, like ℹ️.
+        if pictographic(c) || chars.peek() == Some(&'\u{FE0F}') {
+            any = true;
+        } else if !modifier(c) {
+            return false;
+        }
+    }
+    any
 }
 
 /// Index of the selected layer, if it exists.
@@ -712,9 +722,11 @@ mod tests {
         assert!(is_emoji("⚡"));
         assert!(is_emoji("👍🏽"));
         assert!(is_emoji("❤️"));
+        assert!(is_emoji("ℹ️"));
         assert!(is_emoji("👨‍👩‍👧"));
         assert!(!is_emoji("≠"));
         assert!(!is_emoji("№"));
+        assert!(!is_emoji("ℹ"));
         assert!(!is_emoji("ok 👍"));
         assert!(!is_emoji(""));
     }
