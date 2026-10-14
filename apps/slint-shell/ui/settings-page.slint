@@ -17,8 +17,6 @@ export struct CommandPlaceRow { kind: int, layer: string, name: string }
 /// `first` marks the first row of a layout, which shows its header.
 export struct CommandAssignmentRow { layout-id: string, layout-name: string, current: bool, first: bool, command-id: string, name: string, script: string, directory: string, places: [CommandPlaceRow] }
 
-export struct CapabilityRow { supported: bool, available: bool, status: Message, detail: string }
-
 export global SettingsEditor {
     in-out property <bool> keyboard-manual;
     in-out property <bool> mouse-manual;
@@ -67,10 +65,8 @@ export global SettingsEditor {
     in-out property <int> selected-mouse;
     in property <string> settings-dir;
     in property <string> layouts-dir;
-    in property <string> platform-summary;
-    in property <[CapabilityRow]> capabilities;
-    in property <bool> platform-busy;
-    callback refresh-platform();
+    /// Why the mapper cannot use the input devices; empty when it can.
+    in property <[Message]> input-issues;
     in property <Message> message;
     callback save();
     callback schedule-save();
@@ -208,7 +204,13 @@ component MapperStatusCard inherits Rectangle {
                 text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
                 color: Theme.muted; font-size: 12px; wrap: word-wrap;
             }
-            if root.failed && !root.crashed && AppState.is-linux: Text {
+            if !root.running && !root.busy: VerticalLayout { spacing: 4px;
+                for issue in SettingsEditor.input-issues: Text {
+                    text: "⚠ " + Locale.text(issue);
+                    color: Theme.warning; font-size: 12px; wrap: word-wrap;
+                }
+            }
+            if root.failed && !root.crashed && AppState.is-linux && SettingsEditor.input-issues.length == 0: Text {
                 text: @tr("The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput.");
                 color: Theme.muted; font-size: 12px; wrap: word-wrap;
             }
@@ -247,8 +249,8 @@ export component SettingsPage inherits VerticalBox {
             width: 180px;
             horizontal-stretch: 0;
             alignment: start;
-            for label[index] in [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("System"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
-                property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.system, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
+            for label[index] in [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
+                property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
                 height: 38px;
                 border-radius: 6px;
                 border-width: focus.has-focus ? 2px : 0px;
@@ -331,6 +333,14 @@ export component SettingsPage inherits VerticalBox {
                     }
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
                     if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
+                    HorizontalBox { padding: 0px; vertical-stretch: 0;
+                        Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                        Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }
+                    }
+                    HorizontalBox { padding: 0px; vertical-stretch: 0;
+                        Text { vertical-stretch: 0; text: @tr("Layouts directory: ") + SettingsEditor.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                        Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
+                    }
                 }
                 if SettingsEditor.tab == SettingsTab.accessibility: Section {
                     title: @tr("Accessibility");
@@ -588,28 +598,6 @@ export component SettingsPage inherits VerticalBox {
                             saved(index, pattern, window-only) => { SettingsEditor.save-process(index, pattern, window-only, true); }
                             removed(index) => { SettingsEditor.delete-process(index); }
                         }
-                    }
-                }
-                if SettingsEditor.tab == SettingsTab.system: Section {
-                    title: @tr("Configuration and system");
-                    HorizontalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
-                        Text { text: SettingsEditor.platform-summary; color: Theme.muted; horizontal-stretch: 1; }
-                        Button { text: @tr("Refresh status"); enabled: !SettingsEditor.platform-busy; clicked => { SettingsEditor.refresh-platform(); } }
-                    }
-                    for capability[index] in SettingsEditor.capabilities: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
-                        HorizontalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
-                            Text { text: [@tr("Key interception"), @tr("Text injection"), @tr("Layout detection"), @tr("System actions")][index]; color: Theme.text; horizontal-stretch: 1; }
-                            Text { text: Locale.text(capability.status); color: capability.available ? Theme.link : Theme.muted; }
-                        }
-                        if capability.detail != "": Text { text: capability.detail; color: Theme.muted; wrap: word-wrap; }
-                    }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0;
-                        Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                        Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }
-                    }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0;
-                        Text { vertical-stretch: 0; text: @tr("Layouts directory: ") + SettingsEditor.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                        Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
                     }
                 }
             }

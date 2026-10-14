@@ -387,6 +387,7 @@ impl App {
                     Err(error) => {
                         app.set_mapper_error(error.clone());
                         app.set_error(Msg::Error(error));
+                        pages::check_input_access(&app.settings);
                     }
                 }
                 app.refresh_mapper_status();

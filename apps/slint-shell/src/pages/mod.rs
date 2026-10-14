@@ -16,6 +16,7 @@ mod settings;
 pub use inline::observe as observe_inline_editors;
 pub use library::refresh_active;
 pub use picker::capture;
+pub(crate) use settings::check_input_access;
 
 use crate::{
     document::Document,

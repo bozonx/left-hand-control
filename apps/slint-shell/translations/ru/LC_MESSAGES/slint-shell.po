@@ -234,9 +234,6 @@ msgstr "Путь к ydotool"
 msgid "xdotool path"
 msgstr "Путь к xdotool"
 
-msgid "Configuration and system"
-msgstr "Конфигурация и система"
-
 msgid "Settings directory: "
 msgstr "Каталог настроек: "
 
@@ -1116,17 +1113,20 @@ msgstr "Недоступно"
 msgid "Not implemented"
 msgstr "Не реализовано"
 
-msgid "Refresh status"
-msgstr "Обновить статус"
+msgid "No input devices were found in /dev/input."
+msgstr "В /dev/input не найдено ни одного устройства ввода."
 
-msgid "Key interception"
-msgstr "Перехват клавиш"
+msgid "The selected keyboard is not connected. Connect it or pick another one below."
+msgstr "Выбранная клавиатура не подключена. Подключите её или выберите другую ниже."
 
-msgid "Text injection"
-msgstr "Ввод текста"
+msgid "No permission to read keyboard events. Add your user to the input group and log in again."
+msgstr "Нет прав на чтение событий клавиатуры. Добавьте пользователя в группу input и войдите в систему заново."
 
-msgid "Layout detection"
-msgstr "Определение раскладки"
+msgid "/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe uinput."
+msgstr "/dev/uinput не существует. Загрузите модуль ядра uinput: sudo modprobe uinput."
+
+msgid "No permission to write to /dev/uinput. Add a udev rule that gives the input group access to it."
+msgstr "Нет прав на запись в /dev/uinput. Добавьте udev-правило, которое даёт к нему доступ группе input."
 
 msgid "Launch on startup"
 msgstr "Запускать вместе с системой"

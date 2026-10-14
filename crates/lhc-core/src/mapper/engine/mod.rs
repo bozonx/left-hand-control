@@ -161,17 +161,18 @@ impl Engine {
 
     /// Resume macro timing only after the text worker has completed injection.
     pub fn set_text_pending(&mut self, pending: bool, now: Instant) {
-        if self.text_pending && !pending {
-            if let Some(am) = self.active_macro.as_mut() {
-                let previous = am.current_step.checked_sub(1).and_then(|i| am.steps.get(i));
-                if matches!(am.phase, self::model::MacroPhase::NextStep)
-                    && matches!(
-                        previous,
-                        Some(crate::mapper::action::MacroStepItem::Literal(_))
-                    )
-                {
-                    am.next_wake = next_macro_wake(now, am);
-                }
+        if self.text_pending
+            && !pending
+            && let Some(am) = self.active_macro.as_mut()
+        {
+            let previous = am.current_step.checked_sub(1).and_then(|i| am.steps.get(i));
+            if matches!(am.phase, self::model::MacroPhase::NextStep)
+                && matches!(
+                    previous,
+                    Some(crate::mapper::action::MacroStepItem::Literal(_))
+                )
+            {
+                am.next_wake = next_macro_wake(now, am);
             }
         }
         self.text_pending = pending;
@@ -578,31 +579,29 @@ impl Engine {
                     }
 
                     if let Some(trigger) = self.layer_triggers.get(&layer_id).and_then(|v| v.last())
+                        && trigger.isolate_keys.contains(&key)
+                        && let Some(ks) = self.emitted.get(&trigger.key).cloned()
                     {
-                        if trigger.isolate_keys.contains(&key) {
-                            if let Some(ks) = self.emitted.get(&trigger.key).cloned() {
-                                let mut suppressed = Vec::new();
-                                for target_key in ks.mods.iter().chain(std::iter::once(&ks.key)) {
-                                    // Another isolate key may already have
-                                    // suppressed this target — record the
-                                    // entry (so release bookkeeping stays
-                                    // balanced) but don't emit a second up.
-                                    // Refcounts are left untouched: they keep
-                                    // tracking chord ownership while the key
-                                    // is physically up, so unrelated chords
-                                    // release correctly afterwards.
-                                    if !self.is_suppressed(*target_key) {
-                                        out.push(Out::KeyRaw {
-                                            key: *target_key,
-                                            down: false,
-                                        });
-                                    }
-                                    suppressed.push(*target_key);
-                                }
-                                if !suppressed.is_empty() {
-                                    self.isolated_holds.insert(key, suppressed);
-                                }
+                        let mut suppressed = Vec::new();
+                        for target_key in ks.mods.iter().chain(std::iter::once(&ks.key)) {
+                            // Another isolate key may already have
+                            // suppressed this target — record the
+                            // entry (so release bookkeeping stays
+                            // balanced) but don't emit a second up.
+                            // Refcounts are left untouched: they keep
+                            // tracking chord ownership while the key
+                            // is physically up, so unrelated chords
+                            // release correctly afterwards.
+                            if !self.is_suppressed(*target_key) {
+                                out.push(Out::KeyRaw {
+                                    key: *target_key,
+                                    down: false,
+                                });
                             }
+                            suppressed.push(*target_key);
+                        }
+                        if !suppressed.is_empty() {
+                            self.isolated_holds.insert(key, suppressed);
                         }
                     }
 
@@ -805,10 +804,10 @@ impl Engine {
 
     fn lookup_mapping(&self, key: KeyCode) -> Option<(String, ActionDef)> {
         for l in self.active_layers.iter().rev() {
-            if let Some(m) = self.layer_maps.get(l) {
-                if let Some(def) = m.get(&key) {
-                    return Some((l.clone(), def.clone()));
-                }
+            if let Some(m) = self.layer_maps.get(l)
+                && let Some(def) = m.get(&key)
+            {
+                return Some((l.clone(), def.clone()));
             }
         }
         None
@@ -1034,11 +1033,11 @@ impl Engine {
                 out.push(Out::RunSystem(app));
                 available = true;
             }
-        } else if let Some(rest) = action.trim().strip_prefix("kde:") {
-            if let Some(sys) = super::system::resolve_kde_shortcut(rest) {
-                out.push(Out::RunSystem(sys));
-                available = true;
-            }
+        } else if let Some(rest) = action.trim().strip_prefix("kde:")
+            && let Some(sys) = super::system::resolve_kde_shortcut(rest)
+        {
+            out.push(Out::RunSystem(sys));
+            available = true;
         }
         if !available {
             crate::events::emit(crate::events::CoreEvent::CommandFinished {

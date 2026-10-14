@@ -25,6 +25,11 @@ export global Locale {
         if m.id == "capability-available" { return @tr("Available"); }
         if m.id == "capability-unavailable" { return @tr("Unavailable"); }
         if m.id == "capability-unsupported" { return @tr("Not implemented"); }
+        if m.id == "input-access-no-devices" { return @tr("No input devices were found in /dev/input."); }
+        if m.id == "input-access-keyboard-missing" { return @tr("The selected keyboard is not connected. Connect it or pick another one below."); }
+        if m.id == "input-access-input-denied" { return @tr("No permission to read keyboard events. Add your user to the input group and log in again."); }
+        if m.id == "input-access-uinput-missing" { return @tr("/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe uinput."); }
+        if m.id == "input-access-uinput-denied" { return @tr("No permission to write to /dev/uinput. Add a udev rule that gives the input group access to it."); }
         if m.id == "game-mode-auto-disabled" { return @tr("Auto: no detection sources enabled"); }
         if m.id == "game-mode-auto-unavailable" { return @tr("Auto: detection unavailable"); }
         if m.id == "game-mode-auto-inactive" { return @tr("Auto: game mode inactive"); }

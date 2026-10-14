@@ -77,12 +77,12 @@ impl<B: MapperBackend> MapperRuntime<B> {
 
     /// Reserve the "starting" slot. Must be paired with `finish_start`.
     fn begin_start(&mut self) -> Result<(), String> {
-        if let Some(handle) = self.handle.as_mut() {
-            if handle.reap_if_finished() {
-                self.handle = None;
-                self.status.running = false;
-                self.config_json = None;
-            }
+        if let Some(handle) = self.handle.as_mut()
+            && handle.reap_if_finished()
+        {
+            self.handle = None;
+            self.status.running = false;
+            self.config_json = None;
         }
         if self.handle.is_some() || self.starting {
             return Err("mapper already running".into());

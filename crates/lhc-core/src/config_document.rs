@@ -7,7 +7,8 @@
 //! Settings keep the raw JSON next to the typed view, so edits change only
 //! the fields they own and settings a shell does not know survive a save.
 //! Every save goes through [`TrackedFile`], which refuses to overwrite a
-//! file another process changed since this document read it.
+//! file another process changed before the save check. Concurrent external
+//! writes after that check are not serialized; see [`TrackedFile`].
 
 use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::auto_switch::{self, AutoSwitchContext};

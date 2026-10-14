@@ -5,7 +5,7 @@ pub fn rgba(enabled: bool) -> (Vec<u8>, u32, u32) {
     match decode(include_bytes!("../../assets/icon.png")) {
         Ok((mut pixels, width, height)) => {
             if !enabled {
-                for pixel in pixels.chunks_exact_mut(4) {
+                for pixel in pixels.as_chunks_mut::<4>().0 {
                     let grey = ((u16::from(pixel[0]) + u16::from(pixel[1]) + u16::from(pixel[2]))
                         / 3) as u8;
                     pixel[..3].fill(grey);

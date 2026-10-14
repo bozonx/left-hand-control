@@ -5,6 +5,7 @@
 ## Разработка
 
 - [Linux: установка, запуск и диагностика](development/linux.md)
+- [Linux: выпуск, установка и удаление](development/linux-release.md)
 - [Поддержка платформ и добавление backend](development/platforms.md)
 - [Оболочка, UI-сценарии и измерительные стенды](../apps/slint-shell/README.md)
 - [Правила работы с кодом](../AGENTS.md)

@@ -9,7 +9,7 @@ Guide for AI coding agents working in this repository. Read it before making cha
 - **The product is the Slint shell** in `apps/slint-shell/` on top of the shared Rust crate `crates/lhc-core/`. All new work goes here.
 - Primary target: **Linux, KDE Plasma 6 on Wayland**. The Slint UI also compiles for Windows and macOS with minimal portable adapters; those platforms are not accepted yet.
 
-Stack: Rust stable ≥ 1.85 (edition 2024), Cargo workspace, Slint **1.17.1** (pinned, `=1.17.1`) with winit 0.30, `ksni` tray, `evdev`/`uinput`, `zbus`, vendored `spell-framework` for layer-shell popups.
+Stack: Rust stable ≥ 1.92 (edition 2024), Cargo workspace, Slint **1.17.1** (pinned, `=1.17.1`) with winit 0.30, `ksni` tray, `evdev`/`uinput`, `zbus`, vendored `spell-framework` for layer-shell popups.
 
 ## Commands
 
@@ -90,9 +90,9 @@ docs/                         # development/, design/, testing/; README.md index
 
 **Config writes.** Pages change the configuration only through `Document::edit` (`src/document.rs`). It applies the edit, saves, pushes the result to a running mapper and notifies the other views via `Document::subscribe`. Never hold a `Document::read()` borrow across UI calls that may edit — it causes `RefCell` conflicts.
 
-**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. External changes are detected and reloaded; a save over unread external changes is rejected. Paths come from `StoragePaths::resolve()`: debug builds use `<repo>/dev-files/<os>/` (or the same OS layout under `LHC_DEV_DIR`), release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
+**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. External changes are detected and reloaded; unread external changes present at the save check are rejected. This optimistic check does not serialize concurrent writes by external editors. Paths come from `StoragePaths::resolve()`: debug builds use `<repo>/dev-files/<os>/` (or the same OS layout under `LHC_DEV_DIR`), release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
 
-**Processes.** One binary, three roles: the settings process, the Spell popup worker (`--spell-worker`) and a CLI client that sends a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-signed loopback TCP on Windows). The mapper holds a cross-process lock, so only one process can grab keyboards.
+**Processes.** One binary, three roles: the settings process, the Spell popup worker (`--spell-worker`) and a CLI client that sends a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-authenticated loopback TCP on Windows). The mapper holds a cross-process lock, so only one process can grab keyboards.
 
 **Popups.** `SLINT_SHELL_POPUPS=winit` (default) shows borderless winit windows in-process; `auto` uses Spell layer-shell when the compositor supports `zwlr_layer_shell_v1` and falls back to winit otherwise; `spell` requires layer-shell. Popup data and key handling live in `popup_model.rs` so both paths behave identically.
 

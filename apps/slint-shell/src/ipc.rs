@@ -102,21 +102,22 @@ fn token_path() -> std::io::Result<PathBuf> {
     Ok(dir.join("ipc-token"))
 }
 
-/// 128 random bits from the standard library's OS-seeded hasher keys.
+/// Generate a token with the Windows system cryptographic RNG.
 #[cfg(windows)]
-fn random_token() -> String {
-    use std::hash::{BuildHasher, Hasher};
-    let part = || {
-        let mut hasher = std::collections::hash_map::RandomState::new().build_hasher();
-        hasher.write_u128(
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_or(0, |time| time.as_nanos()),
-        );
-        hasher.write_u32(std::process::id());
-        hasher.finish()
+fn random_token() -> std::io::Result<String> {
+    use windows::Win32::Security::Cryptography::{
+        BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptGenRandom,
     };
-    format!("{:016x}{:016x}", part(), part())
+    let mut bytes = [0u8; 16];
+    // SAFETY: the system RNG needs no algorithm handle and receives a valid buffer.
+    let status = unsafe { BCryptGenRandom(None, &mut bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) };
+    if status.0 < 0 {
+        return Err(std::io::Error::other(format!(
+            "generate IPC token: NTSTATUS {:#010x}",
+            status.0
+        )));
+    }
+    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
 pub struct Server {
@@ -158,7 +159,7 @@ impl Server {
     #[cfg(windows)]
     pub fn bind() -> std::io::Result<Self> {
         let listener = TcpListener::bind(tcp_address())?;
-        let token = random_token();
+        let token = random_token()?;
         std::fs::write(token_path()?, &token)?;
         Ok(Self {
             listener,
@@ -190,7 +191,14 @@ impl Server {
                         break;
                     }
                 };
-                let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
+                let timeout = Some(Duration::from_secs(1));
+                if let Err(error) = stream
+                    .set_read_timeout(timeout)
+                    .and_then(|()| stream.set_write_timeout(timeout))
+                {
+                    log::warn!("IPC timeout: {error}");
+                    continue;
+                }
                 let reply = reply(receive(&stream, &dispatch, auth.as_deref()));
                 let _ = stream.write_all(reply.as_bytes());
             }
@@ -206,12 +214,11 @@ impl Server {
 impl Server {
     pub fn stop(&self) {
         self.stopped.store(true, Ordering::Release);
-        if let Ok(mut thread) = self.thread.lock() {
-            if let Some(thread) = thread.take() {
-                if thread.join().is_err() {
-                    log::error!("IPC server thread panicked");
-                }
-            }
+        if let Ok(mut thread) = self.thread.lock()
+            && let Some(thread) = thread.take()
+            && thread.join().is_err()
+        {
+            log::error!("IPC server thread panicked");
         }
     }
 }
@@ -313,14 +320,16 @@ trait Stream: Read + Write {
 #[cfg(unix)]
 impl Stream for UnixStream {
     fn set_timeout(&self, timeout: Duration) -> std::io::Result<()> {
-        self.set_read_timeout(Some(timeout))
+        self.set_read_timeout(Some(timeout))?;
+        self.set_write_timeout(Some(timeout))
     }
 }
 
 #[cfg(windows)]
 impl Stream for TcpStream {
     fn set_timeout(&self, timeout: Duration) -> std::io::Result<()> {
-        self.set_read_timeout(Some(timeout))
+        self.set_read_timeout(Some(timeout))?;
+        self.set_write_timeout(Some(timeout))
     }
 }
 
@@ -345,7 +354,7 @@ fn exchange(
     };
     writeln!(stream, "{}", serde_json::to_string(&request)?)?;
     let mut reply = String::new();
-    BufReader::new(stream).read_line(&mut reply)?;
+    BufReader::new(stream.take(4096)).read_line(&mut reply)?;
     if reply != "queued\n" {
         return Err(reply.trim_end().to_owned().into());
     }

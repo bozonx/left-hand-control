@@ -10,6 +10,7 @@
 
 use crate::ui::Message;
 use lhc_core::config_document::ConfigError;
+use lhc_core::platform::InputAccessIssue;
 use lhc_core::profile::actions::ActionIssue;
 use lhc_core::profile::diagnostics::{RuleIssue, RuleIssueCode};
 use lhc_core::profile::model::LocalePreference;
@@ -217,6 +218,8 @@ pub enum Msg {
     CapabilityAvailable,
     CapabilityUnavailable,
     CapabilityUnsupported,
+    /// Why the mapper cannot use the input devices.
+    InputAccess(InputAccessIssue),
     GameModeAutoDisabled,
     GameModeAutoUnavailable,
     GameModeAutoInactive,
@@ -315,6 +318,17 @@ impl Msg {
             Self::CapabilityAvailable => ("capability-available", empty(), 0),
             Self::CapabilityUnavailable => ("capability-unavailable", empty(), 0),
             Self::CapabilityUnsupported => ("capability-unsupported", empty(), 0),
+            Self::InputAccess(issue) => (
+                match issue {
+                    InputAccessIssue::NoInputDevices => "input-access-no-devices",
+                    InputAccessIssue::KeyboardMissing => "input-access-keyboard-missing",
+                    InputAccessIssue::InputDenied => "input-access-input-denied",
+                    InputAccessIssue::UinputMissing => "input-access-uinput-missing",
+                    InputAccessIssue::UinputDenied => "input-access-uinput-denied",
+                },
+                empty(),
+                0,
+            ),
             Self::GameModeAutoDisabled => ("game-mode-auto-disabled", empty(), 0),
             Self::GameModeAutoUnavailable => ("game-mode-auto-unavailable", empty(), 0),
             Self::GameModeAutoInactive => ("game-mode-auto-inactive", empty(), 0),

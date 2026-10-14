@@ -74,10 +74,10 @@ impl Engine {
             } else {
                 self.pending.remove(member)
             };
-            if let Some(pending) = pending {
-                if matches!(pending.phase, Phase::HoldActive) {
-                    self.release_hold_with(&pending.rule, *member, out);
-                }
+            if let Some(pending) = pending
+                && matches!(pending.phase, Phase::HoldActive)
+            {
+                self.release_hold_with(&pending.rule, *member, out);
             }
             if let Some(stroke) = self.emitted.get(member).cloned() {
                 suppressed.push((*member, stroke));
@@ -88,20 +88,20 @@ impl Engine {
         }
         self.active_chords.insert(owner, keys);
         self.chord_suppressed.insert(owner, suppressed);
-        if let Some(previous) = previous {
-            if let Phase::WaitingSecond { deadline } = previous.phase {
-                if now <= deadline {
-                    self.fire_action(
-                        previous.rule.double_tap.as_ref(),
-                        self.default_mod_delay,
-                        now,
-                        out,
-                    );
-                    self.oneshot_consumed.insert(owner);
-                    return true;
-                }
-                self.fire_tap(owner, &previous.rule.tap, now, out);
+        if let Some(previous) = previous
+            && let Phase::WaitingSecond { deadline } = previous.phase
+        {
+            if now <= deadline {
+                self.fire_action(
+                    previous.rule.double_tap.as_ref(),
+                    self.default_mod_delay,
+                    now,
+                    out,
+                );
+                self.oneshot_consumed.insert(owner);
+                return true;
             }
+            self.fire_tap(owner, &previous.rule.tap, now, out);
         }
         self.start_rule(owner, rule, now, out);
         self.drain_decision_buffer(out);

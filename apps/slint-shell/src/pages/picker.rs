@@ -769,13 +769,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .command
             .clone()
             .filter(|command| value == format!("cmd:{}", command.id));
-        if let Some(command) = command {
-            if let Err(error) = doc.edit(crate::document::View::Shell, |config| {
+        if let Some(command) = command
+            && let Err(error) = doc.edit(crate::document::View::Shell, |config| {
                 config.save_command(command)
-            }) {
-                picker.set_error(Msg::from(&error).to_ui());
-                return;
-            }
+            })
+        {
+            picker.set_error(Msg::from(&error).to_ui());
+            return;
         }
         let (target, label) = {
             let state = session.borrow();

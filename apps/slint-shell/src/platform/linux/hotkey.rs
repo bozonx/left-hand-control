@@ -124,7 +124,7 @@ pub fn start(dispatch: Dispatch) {
         let mut ignored = HashSet::new();
         let mut scan = 0u64;
         loop {
-            if scan % 30 == 0 {
+            if scan.is_multiple_of(30) {
                 ignored.clear();
             }
             scan += 1;

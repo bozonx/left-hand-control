@@ -7,7 +7,6 @@
 //! Used by:
 //!   * `layout` — to pick the right layout-detection implementation.
 //!   * `mapper::system` — to pick the right "system function" resolver.
-//!   * `platform::info` — for UI diagnostics.
 
 #![cfg(target_os = "linux")]
 

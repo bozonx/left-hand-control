@@ -363,19 +363,18 @@ pub(super) fn bind(ui: &SettingsWindow) {
         if let Some(slot) = usize::try_from(index)
             .ok()
             .and_then(|index| values.get_mut(index))
+            && !item.is_empty()
         {
-            if !item.is_empty() {
-                *slot = item.to_owned();
-            }
+            *slot = item.to_owned();
         }
         condition_list(&values).into()
     });
     choices.on_remove(|value, index| {
         let mut values = parse_list(&value);
-        if let Ok(index) = usize::try_from(index) {
-            if index < values.len() {
-                values.remove(index);
-            }
+        if let Ok(index) = usize::try_from(index)
+            && index < values.len()
+        {
+            values.remove(index);
         }
         condition_list(&values).into()
     });

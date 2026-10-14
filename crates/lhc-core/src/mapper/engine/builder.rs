@@ -421,28 +421,26 @@ impl Engine {
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_double_tap);
             let mut isolate_keys = parse_key_list(&r.isolate);
-            if isolate_keys.is_empty() {
-                if let Some(layer_id) = &layer_id {
-                    if let Some(km) = cfg.layer_keymaps.get(layer_id) {
-                        isolate_keys = km
-                            .isolate
-                            .iter()
-                            .filter_map(|code| code_to_key(code))
-                            .collect();
-                    }
-                }
+            if isolate_keys.is_empty()
+                && let Some(layer_id) = &layer_id
+                && let Some(km) = cfg.layer_keymaps.get(layer_id)
+            {
+                isolate_keys = km
+                    .isolate
+                    .iter()
+                    .filter_map(|code| code_to_key(code))
+                    .collect();
             }
             let mut whitelist_keys = parse_key_list(&r.hold_for);
-            if whitelist_keys.is_empty() {
-                if let Some(layer_id) = &layer_id {
-                    if let Some(km) = cfg.layer_keymaps.get(layer_id) {
-                        whitelist_keys = km
-                            .hold_for
-                            .iter()
-                            .filter_map(|code| code_to_key(code))
-                            .collect();
-                    }
-                }
+            if whitelist_keys.is_empty()
+                && let Some(layer_id) = &layer_id
+                && let Some(km) = cfg.layer_keymaps.get(layer_id)
+            {
+                whitelist_keys = km
+                    .hold_for
+                    .iter()
+                    .filter_map(|code| code_to_key(code))
+                    .collect();
             }
 
             let entry = RuleEntry {

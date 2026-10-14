@@ -3,8 +3,8 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        CapabilityRow, CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices,
-        DeviceGroup, GameAppEntry, SettingsEditor, SettingsWindow,
+        CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices, DeviceGroup,
+        GameAppEntry, SettingsEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::menus::PlaceKind;
@@ -453,6 +453,7 @@ fn refresh_devices(ui: &SettingsWindow) {
     e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
     e.set_selected_mouse(selected);
     e.set_mouse_manual(manual);
+    check_input_access(ui);
 }
 
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
@@ -481,60 +482,17 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     }
 }
 
-fn refresh_platform(ui: &SettingsWindow) {
-    let editor = ui.global::<SettingsEditor>();
-    if editor.get_platform_busy() {
-        return;
-    }
-    editor.set_platform_busy(true);
-    let weak = ui.as_weak();
-    std::thread::spawn(move || {
-        let platform = lhc_core::platform::info();
-        if let Err(error) = weak.upgrade_in_event_loop(move |ui| {
-            let editor = ui.global::<SettingsEditor>();
-            editor.set_platform_summary(
-                platform
-                    .linux
-                    .map_or_else(
-                        || platform.os.to_owned(),
-                        |linux| {
-                            format!(
-                                "{} · {} · {}",
-                                platform.os, linux.desktop, linux.session_type
-                            )
-                        },
-                    )
-                    .into(),
-            );
-            let capabilities = platform.capabilities;
-            editor.set_capabilities(ModelRc::new(VecModel::from(
-                [
-                    capabilities.key_interception,
-                    capabilities.literal_injection,
-                    capabilities.layout_detection,
-                    capabilities.system_actions,
-                ]
-                .into_iter()
-                .map(|capability| CapabilityRow {
-                    supported: capability.supported,
-                    available: capability.available,
-                    status: if !capability.supported {
-                        Msg::CapabilityUnsupported
-                    } else if capability.available {
-                        Msg::CapabilityAvailable
-                    } else {
-                        Msg::CapabilityUnavailable
-                    }
-                    .to_ui(),
-                    detail: capability.detail.unwrap_or_default().into(),
-                })
-                .collect::<Vec<_>>(),
-            )));
-            editor.set_platform_busy(false);
-        }) {
-            log::warn!("platform status: {error}");
-        }
-    });
+/// Show what keeps the mapper from using the input devices, if anything.
+pub(crate) fn check_input_access(ui: &SettingsWindow) {
+    let e = ui.global::<SettingsEditor>();
+    let keyboard = e.get_keyboard_device_path();
+    let keyboard = keyboard.trim();
+    let issues: Vec<_> =
+        lhc_core::platform::input_access_issues((!keyboard.is_empty()).then_some(keyboard))
+            .into_iter()
+            .map(|issue| Msg::InputAccess(issue).to_ui())
+            .collect();
+    e.set_input_issues(ModelRc::new(VecModel::from(issues)));
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -585,13 +543,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             format!("cmd:{command_id}").into(),
             false,
         );
-    });
-    refresh_platform(ui);
-    let weak = ui.as_weak();
-    e.on_refresh_platform(move || {
-        if let Some(ui) = weak.upgrade() {
-            refresh_platform(&ui);
-        }
     });
     refresh(ui, document, &mut state.borrow_mut(), true);
 

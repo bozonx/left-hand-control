@@ -164,10 +164,10 @@ fn keymap_table() -> Arc<HashMap<u32, KeycodeEntry>> {
     let cache_key = format!("{}\0{}", layout, variant.as_deref().unwrap_or(""));
 
     if let Ok(mut guard) = KEYMAP_CACHE.lock() {
-        if let Some((ref k, ref t)) = *guard {
-            if *k == cache_key {
-                return Arc::clone(t);
-            }
+        if let Some((ref k, ref t)) = *guard
+            && *k == cache_key
+        {
+            return Arc::clone(t);
         }
         let t = Arc::new(build_keymap_table(&layout, variant.as_deref()));
         *guard = Some((cache_key, Arc::clone(&t)));
@@ -895,10 +895,10 @@ fn set_wayland_clipboard_text(text: &str) -> Result<(), String> {
 fn restore_wayland_clipboard_text(previous: Option<String>) {
     // Keep the paste data available before reporting completion to the macro.
     thread::sleep(Duration::from_millis(120));
-    if let Some(previous) = previous {
-        if let Err(e) = set_wayland_clipboard_text(&previous) {
-            log::warn!("[portal] clipboard restore failed: {e}");
-        }
+    if let Some(previous) = previous
+        && let Err(e) = set_wayland_clipboard_text(&previous)
+    {
+        log::warn!("[portal] clipboard restore failed: {e}");
     }
 }
 
@@ -1167,10 +1167,10 @@ fn restore_token_path() -> Option<PathBuf> {
 static TOKEN_CACHE: Mutex<Option<String>> = Mutex::new(None);
 
 fn load_restore_token() -> Option<String> {
-    if let Ok(guard) = TOKEN_CACHE.lock() {
-        if let Some(cached) = guard.clone() {
-            return Some(cached);
-        }
+    if let Ok(guard) = TOKEN_CACHE.lock()
+        && let Some(cached) = guard.clone()
+    {
+        return Some(cached);
     }
     let path = restore_token_path()?;
     let raw = std::fs::read_to_string(&path).ok()?;

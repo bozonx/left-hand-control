@@ -31,7 +31,10 @@ keyboard interception and system integration; the Slint shell handles presentati
 - Unix IPC uses a private `0700` runtime directory; Windows uses token-authenticated
   loopback TCP. There is no remote service.
 - Layout names and Linux device paths are validated in `lhc-core`.
-- Configuration writes validate changes and reject overwriting unread external edits.
+- Configuration writes validate changes and check for unread external edits before
+  replacement. This optimistic check does not serialize writes by external editors.
+- Files are synced before replacement; Unix writes also sync the parent directory.
+  Unix config and layout files are created with private `0600` permissions.
 - The mapper loads user-defined commands only when commands are enabled in configuration.
 - Debug builds use isolated development storage; tests and UI scenarios use temporary directories.
 

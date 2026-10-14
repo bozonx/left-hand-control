@@ -157,39 +157,36 @@ mod kde {
     }
 
     pub fn resolve(name: &str) -> Option<SysAction> {
-        if let Some(rest) = name.strip_prefix("switchDesktop") {
-            if let Ok(n) = rest.parse::<u32>() {
-                if (1..=20).contains(&n) {
-                    // org.kde.KWin /KWin setCurrentDesktop(i)
-                    return Some(SysAction::Dbus(DbusCall {
-                        destination: "org.kde.KWin".into(),
-                        path: "/KWin".into(),
-                        interface: Some("org.kde.KWin".into()),
-                        method: "setCurrentDesktop".into(),
-                        args: vec![DbusArg::I32(n as i32)],
-                    }));
-                }
-            }
+        if let Some(rest) = name.strip_prefix("switchDesktop")
+            && let Ok(n) = rest.parse::<u32>()
+            && (1..=20).contains(&n)
+        {
+            // org.kde.KWin /KWin setCurrentDesktop(i)
+            return Some(SysAction::Dbus(DbusCall {
+                destination: "org.kde.KWin".into(),
+                path: "/KWin".into(),
+                interface: Some("org.kde.KWin".into()),
+                method: "setCurrentDesktop".into(),
+                args: vec![DbusArg::I32(n as i32)],
+            }));
         }
-        if let Some(rest) = name.strip_prefix("switchLayout") {
-            if let Ok(n) = rest.parse::<u32>() {
-                if (1..=10).contains(&n) {
-                    return Some(SysAction::Dbus(DbusCall {
-                        destination: "org.kde.keyboard".into(),
-                        path: "/Layouts".into(),
-                        interface: Some("org.kde.KeyboardLayouts".into()),
-                        method: "setLayout".into(),
-                        args: vec![DbusArg::U32(n - 1)],
-                    }));
-                }
-            }
+        if let Some(rest) = name.strip_prefix("switchLayout")
+            && let Ok(n) = rest.parse::<u32>()
+            && (1..=10).contains(&n)
+        {
+            return Some(SysAction::Dbus(DbusCall {
+                destination: "org.kde.keyboard".into(),
+                path: "/Layouts".into(),
+                interface: Some("org.kde.KeyboardLayouts".into()),
+                method: "setLayout".into(),
+                args: vec![DbusArg::U32(n - 1)],
+            }));
         }
-        if let Some(rest) = name.strip_prefix("windowToDesktop") {
-            if let Ok(n) = rest.parse::<u32>() {
-                if (1..=20).contains(&n) {
-                    return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
-                }
-            }
+        if let Some(rest) = name.strip_prefix("windowToDesktop")
+            && let Ok(n) = rest.parse::<u32>()
+            && (1..=20).contains(&n)
+        {
+            return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
         }
         None
     }
