@@ -171,10 +171,11 @@ pub struct Command {
     pub working_directory: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuickAction {
-    pub id: String,
+    /// Caption in the menu; the action is shown when it is empty.
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub name: String,
     pub action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -188,6 +189,18 @@ pub struct QuickActionPage {
     /// Optional caption; an empty page is shown by its number.
     #[serde(skip_serializing_if = "String::is_empty")]
     pub name: String,
+    /// Hotkey from [`LEFT_HAND_HOTKEYS`] → action; empty cells are absent.
+    pub cells: BTreeMap<String, QuickAction>,
+}
+
+impl QuickActionPage {
+    pub fn new(id: String, name: String) -> Self {
+        Self {
+            id,
+            name,
+            cells: BTreeMap::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -226,7 +239,6 @@ pub struct LayoutPreset {
     pub layer_keymaps: BTreeMap<String, LayerKeymap>,
     pub macros: Vec<Macro>,
     pub commands: Vec<Command>,
-    pub quick_actions: Vec<QuickAction>,
     pub quick_action_pages: Vec<QuickActionPage>,
     pub emoji_pages: Vec<EmojiPage>,
 }
@@ -242,10 +254,7 @@ impl LayoutPreset {
     /// Preset of a new installation, as `createDefaultConfig()` builds it.
     pub fn initial() -> Self {
         Self {
-            quick_action_pages: vec![QuickActionPage {
-                id: "quick_default".into(),
-                name: String::new(),
-            }],
+            quick_action_pages: vec![QuickActionPage::new("quick_default".into(), String::new())],
             emoji_pages: vec![EmojiPage::default_page()],
             ..Self::default()
         }
@@ -519,7 +528,6 @@ pub struct AppConfig {
     pub layer_keymaps: BTreeMap<String, LayerKeymap>,
     pub macros: Vec<Macro>,
     pub commands: Vec<Command>,
-    pub quick_actions: Vec<QuickAction>,
     pub quick_action_pages: Vec<QuickActionPage>,
     pub emoji_pages: Vec<EmojiPage>,
     pub settings: AppSettings,
@@ -546,7 +554,6 @@ impl AppConfig {
             layer_keymaps,
             macros: preset.macros,
             commands: preset.commands,
-            quick_actions: preset.quick_actions,
             quick_action_pages: preset.quick_action_pages,
             emoji_pages: preset.emoji_pages,
             settings: AppSettings {

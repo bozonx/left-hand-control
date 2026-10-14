@@ -84,20 +84,23 @@
       "linux": "playerctl play-pause"
     }
   ],
-  "quickActions": [
-    {
-      "id": "qa1",
-      "name": "Lock",
-      "action": "kde:ksmserver/Lock Session"
-    }
-  ],
   "quickActionPages": [
     {
       "id": "qap1",
-      "name": "First"
+      "name": "First",
+      "cells": {
+        "KeyQ": {
+          "name": "Lock",
+          "action": "kde:ksmserver/Lock Session"
+        },
+        "KeyW": {
+          "action": "Ctrl+KeyC"
+        }
+      }
     },
     {
-      "id": "qap2"
+      "id": "qap2",
+      "cells": {}
     }
   ],
   "emojiPages": [

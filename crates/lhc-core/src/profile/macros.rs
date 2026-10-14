@@ -130,9 +130,14 @@ pub fn action_usage(config: &AppConfig, action: &str) -> Vec<String> {
             places.push(format!("macro:{}", item.id));
         }
     }
-    for item in &config.quick_actions {
+    for (key, item) in config.quick_action_pages.iter().flat_map(|p| &p.cells) {
         if item.action.trim() == action {
-            places.push(format!("quick:{}", item.name));
+            let name = if item.name.is_empty() {
+                key
+            } else {
+                &item.name
+            };
+            places.push(format!("quick:{name}"));
         }
     }
     places
@@ -166,8 +171,10 @@ fn rename_references(layout: &mut LayoutPreset, renames: &[(String, String)]) {
     for item in &mut layout.macros {
         item.steps.iter_mut().for_each(|s| fix(&mut s.action));
     }
-    for item in &mut layout.quick_actions {
-        fix(&mut item.action);
+    for page in &mut layout.quick_action_pages {
+        page.cells
+            .values_mut()
+            .for_each(|item| fix(&mut item.action));
     }
 }
 

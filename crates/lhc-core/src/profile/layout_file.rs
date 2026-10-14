@@ -148,36 +148,26 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
         })
         .collect::<Vec<_>>();
 
-    let quick_actions: Vec<QuickAction> = array(doc, "quickActions")
-        .map(|item| {
-            let id = trimmed(item, "id").map_or_else(|| next_id("qa_"), str::to_owned);
-            QuickAction {
-                name: trimmed(item, "name").map_or_else(|| id.clone(), str::to_owned),
-                action: str_of(item, "action").unwrap_or("").into(),
-                icon: trimmed(item, "icon").map(str::to_owned),
-                id,
-            }
+    let mut quick_action_pages: Vec<QuickActionPage> = array(doc, "quickActionPages")
+        .map(|page| QuickActionPage {
+            id: trimmed(page, "id").map_or_else(|| next_id("qap_"), str::to_owned),
+            name: trimmed(page, "name").unwrap_or_default().into(),
+            cells: page
+                .get("cells")
+                .and_then(Value::as_object)
+                .map(|cells| {
+                    cells
+                        .iter()
+                        .filter(|(key, _)| LEFT_HAND_HOTKEYS.contains(&key.as_str()))
+                        .filter_map(|(key, value)| Some((key.clone(), quick_action(value)?)))
+                        .collect()
+                })
+                .unwrap_or_default(),
         })
         .collect();
-
-    let declared_pages: Vec<&Map<String, Value>> = array(doc, "quickActionPages").collect();
-    let page_count = 1
-        .max(quick_actions.len().div_ceil(LEFT_HAND_HOTKEYS.len()))
-        .max(declared_pages.len());
-    let quick_action_pages = (0..page_count)
-        .map(|index| {
-            let page = declared_pages.get(index);
-            QuickActionPage {
-                id: page
-                    .and_then(|page| trimmed(page, "id"))
-                    .map_or_else(|| next_id("qap_"), str::to_owned),
-                name: page
-                    .and_then(|page| trimmed(page, "name"))
-                    .unwrap_or_default()
-                    .into(),
-            }
-        })
-        .collect();
+    if quick_action_pages.is_empty() {
+        quick_action_pages.push(QuickActionPage::new(next_id("qap_"), String::new()));
+    }
 
     let mut emoji_pages: Vec<EmojiPage> = array(doc, "emojiPages")
         .map(|page| {
@@ -210,7 +200,6 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
         layer_keymaps,
         macros,
         commands,
-        quick_actions,
         quick_action_pages,
         emoji_pages,
     }
@@ -324,25 +313,6 @@ pub fn serialize(preset: &LayoutPreset) -> String {
         ),
     );
     doc.insert(
-        "quickActions".into(),
-        Yaml::Sequence(
-            preset
-                .quick_actions
-                .iter()
-                .map(|action| {
-                    let mut out = Mapping::new();
-                    put(&mut out, "id", action.id.as_str());
-                    put(&mut out, "name", action.name.as_str());
-                    put(&mut out, "action", action.action.as_str());
-                    if let Some(icon) = action.icon.as_deref().filter(|icon| !icon.is_empty()) {
-                        put(&mut out, "icon", icon);
-                    }
-                    Yaml::Mapping(out)
-                })
-                .collect(),
-        ),
-    );
-    doc.insert(
         "quickActionPages".into(),
         Yaml::Sequence(
             preset
@@ -354,6 +324,21 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                     if !page.name.is_empty() {
                         put(&mut out, "name", page.name.as_str());
                     }
+                    out.insert(
+                        "cells".into(),
+                        Yaml::Mapping(
+                            LEFT_HAND_HOTKEYS
+                                .iter()
+                                .filter_map(|key| {
+                                    let item = page
+                                        .cells
+                                        .get(*key)
+                                        .filter(|item| !item.action.trim().is_empty())?;
+                                    Some(((*key).into(), quick_action_yaml(item)))
+                                })
+                                .collect(),
+                        ),
+                    );
                     Yaml::Mapping(out)
                 })
                 .collect(),
@@ -464,6 +449,40 @@ fn rule_yaml(rule: &LayerRule) -> Yaml {
     Yaml::Mapping(out)
 }
 
+/// A quick action cell: either the action itself or `{ name, action, icon }`.
+/// Cells without an action are empty.
+fn quick_action(value: &Value) -> Option<QuickAction> {
+    let item = match value {
+        Value::String(action) => QuickAction {
+            action: action.clone(),
+            ..QuickAction::default()
+        },
+        Value::Object(item) => QuickAction {
+            name: trimmed(item, "name").unwrap_or_default().into(),
+            action: str_of(item, "action").unwrap_or_default().into(),
+            icon: trimmed(item, "icon").map(str::to_owned),
+        },
+        _ => return None,
+    };
+    (!item.action.trim().is_empty()).then_some(item)
+}
+
+fn quick_action_yaml(item: &QuickAction) -> Yaml {
+    let icon = item.icon.as_deref().filter(|icon| !icon.is_empty());
+    if item.name.is_empty() && icon.is_none() {
+        return item.action.as_str().into();
+    }
+    let mut out = Mapping::new();
+    if !item.name.is_empty() {
+        put(&mut out, "name", item.name.as_str());
+    }
+    put(&mut out, "action", item.action.as_str());
+    if let Some(icon) = icon {
+        put(&mut out, "icon", icon);
+    }
+    Yaml::Mapping(out)
+}
+
 fn put(map: &mut Mapping, name: &str, value: &str) {
     map.insert(name.into(), value.into());
 }
@@ -555,7 +574,7 @@ mod tests {
 
     #[test]
     fn parsing_is_deterministic_without_ids() {
-        let text = "rules:\n- key: CapsLock\nquickActions:\n- action: KeyA\n";
+        let text = "rules:\n- key: CapsLock\nquickActionPages:\n- cells: { KeyQ: KeyA }\n";
         assert_eq!(super::parse(text), super::parse(text));
     }
 
@@ -590,9 +609,12 @@ macros:
 commands:
   - id: music
     linux: " playerctl play-pause "
-quickActions:
-  - name: Lock
-    action: kde:ksmserver/Lock Session
+quickActionPages:
+  - cells:
+      KeyQ: { name: Lock, action: kde:ksmserver/Lock Session }
+      KeyW: Ctrl+KeyC
+      KeyE: { name: Empty }
+      Other: KeyA
 emojiPages:
   - name: Faces
     cells: { KeyQ: "😀", Other: "x" }
@@ -622,10 +644,15 @@ emojiPages:
         assert_eq!(preset.macros[0].steps.len(), 3);
         assert_eq!(preset.commands[0].name, "music");
         assert_eq!(preset.commands[0].linux, "playerctl play-pause");
-        assert_eq!(preset.quick_actions[0].name, "Lock");
-        assert!(preset.quick_actions[0].id.starts_with("qa_"));
         assert_eq!(preset.quick_action_pages.len(), 1);
-        assert_eq!(preset.quick_action_pages[0].name, "");
+        let quick = &preset.quick_action_pages[0];
+        assert!(quick.id.starts_with("qap_"));
+        assert_eq!(quick.name, "");
+        assert_eq!(quick.cells.len(), 2, "empty and unknown cells are dropped");
+        assert_eq!(quick.cells["KeyQ"].name, "Lock");
+        assert_eq!(quick.cells["KeyQ"].action, "kde:ksmserver/Lock Session");
+        assert_eq!(quick.cells["KeyW"].name, "");
+        assert_eq!(quick.cells["KeyW"].action, "Ctrl+KeyC");
         assert_eq!(preset.emoji_pages[0].cells.len(), 1);
     }
 

@@ -157,7 +157,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(menus.get_value(), "text:Привет\nмир");
     assert_eq!(menus.get_selected_cell(), 1);
     assert_eq!(
-        document.read().layout().quick_actions[1].action,
+        quick_action(document.read().layout(), 0, "KeyW"),
         "text:Привет\nмир"
     );
     let layers = ui.global::<LayersEditor>();
@@ -240,4 +240,13 @@ fn parse_category(name: &str) -> Result<PickerCategory, String> {
         "pause" => C::Pause,
         other => return Err(format!("unknown picker category: {other}")),
     })
+}
+
+/// Action of quick action cell `key` on `page`, empty when the cell is empty.
+fn quick_action(layout: &lhc_core::profile::model::LayoutPreset, page: usize, key: &str) -> String {
+    layout.quick_action_pages[page]
+        .cells
+        .get(key)
+        .map(|item| item.action.clone())
+        .unwrap_or_default()
 }

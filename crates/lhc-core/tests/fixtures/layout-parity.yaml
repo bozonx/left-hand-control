@@ -45,14 +45,17 @@ macros:
 commands:
   - id: music
     linux: " playerctl play-pause "
-quickActions:
-  - id: qa1
-    name: " Lock "
-    action: kde:ksmserver/Lock Session
-    icon: " "
 quickActionPages:
   - id: qap1
     name: First
+    cells:
+      KeyQ:
+        name: " Lock "
+        action: kde:ksmserver/Lock Session
+        icon: " "
+      KeyW: Ctrl+KeyC
+      KeyE: { name: No action }
+      Other: KeyA
   - id: qap2
 emojiPages:
   - id: e1

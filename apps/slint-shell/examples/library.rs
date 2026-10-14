@@ -281,10 +281,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|_| lhc_core::profile::model::EmojiPage::default_page())
         .collect();
     menus.layout.quick_action_pages = (0..5)
-        .map(|i| lhc_core::profile::model::QuickActionPage {
-            id: i.to_string(),
-            name: format!("Page {i}"),
-        })
+        .map(|i| lhc_core::profile::model::QuickActionPage::new(i.to_string(), format!("Page {i}")))
         .collect();
     menus.apply_emoji(&emoji);
     menus.apply_quick(&quick);

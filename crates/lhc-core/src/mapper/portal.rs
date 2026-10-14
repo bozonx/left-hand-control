@@ -920,14 +920,34 @@ fn inject_paste(portal: &Proxy, session: &OwnedObjectPath, empty: &HashMap<Strin
         (KEY_V_EVDEV, STATE_RELEASED, "V release"),
         (KEY_LEFTCTRL_EVDEV, STATE_RELEASED, "Ctrl release"),
     ] {
-        if let Err(e) =
-            portal.call_method("NotifyKeyboardKeycode", &(session, empty, keycode, state))
-        {
+        if let Err(e) = notify_key(
+            portal,
+            session,
+            empty,
+            "NotifyKeyboardKeycode",
+            keycode,
+            state,
+        ) {
             log::debug!("[portal] paste: {label} failed: {e}");
             return false;
         }
     }
     true
+}
+
+/// Call a RemoteDesktop `NotifyKeyboard*` method. The portal declares the
+/// key argument as `i` (signed); sending `u` is rejected with InvalidArgs.
+fn notify_key(
+    portal: &Proxy,
+    session: &OwnedObjectPath,
+    empty: &HashMap<String, Value>,
+    method: &str,
+    key: u32,
+    state: u32,
+) -> zbus::Result<zbus::message::Message> {
+    let key =
+        i32::try_from(key).map_err(|_| zbus::Error::Failure(format!("key {key} out of range")))?;
+    portal.call_method(method, &(session, empty, key, state))
 }
 
 fn inject_keycode_combo(
@@ -938,35 +958,54 @@ fn inject_keycode_combo(
     key: u32,
 ) -> bool {
     for &m in mods {
-        if let Err(e) =
-            portal.call_method("NotifyKeyboardKeycode", &(session, empty, m, STATE_PRESSED))
-        {
+        if let Err(e) = notify_key(
+            portal,
+            session,
+            empty,
+            "NotifyKeyboardKeycode",
+            m,
+            STATE_PRESSED,
+        ) {
             log::debug!("[portal] modifier press failed: {e}");
             for &m2 in mods {
-                let _ = portal.call_method(
+                let _ = notify_key(
+                    portal,
+                    session,
+                    empty,
                     "NotifyKeyboardKeycode",
-                    &(session, empty, m2, STATE_RELEASED),
+                    m2,
+                    STATE_RELEASED,
                 );
             }
             return false;
         }
     }
-    let ok = portal
-        .call_method(
+    let ok = notify_key(
+        portal,
+        session,
+        empty,
+        "NotifyKeyboardKeycode",
+        key,
+        STATE_PRESSED,
+    )
+    .is_ok()
+        && notify_key(
+            portal,
+            session,
+            empty,
             "NotifyKeyboardKeycode",
-            &(session, empty, key, STATE_PRESSED),
+            key,
+            STATE_RELEASED,
         )
-        .is_ok()
-        && portal
-            .call_method(
-                "NotifyKeyboardKeycode",
-                &(session, empty, key, STATE_RELEASED),
-            )
-            .is_ok();
+        .is_ok();
     for &m in mods.iter().rev() {
-        let _ = portal.call_method(
+        let _ = notify_key(
+            portal,
+            session,
+            empty,
             "NotifyKeyboardKeycode",
-            &(session, empty, m, STATE_RELEASED),
+            m,
+            STATE_RELEASED,
         );
     }
     ok
@@ -979,8 +1018,14 @@ fn inject_keysym(
     keysym: u32,
 ) {
     for state in [STATE_PRESSED, STATE_RELEASED] {
-        if let Err(e) = portal.call_method("NotifyKeyboardKeysym", &(session, empty, keysym, state))
-        {
+        if let Err(e) = notify_key(
+            portal,
+            session,
+            empty,
+            "NotifyKeyboardKeysym",
+            keysym,
+            state,
+        ) {
             log::debug!("[portal] NotifyKeyboardKeysym failed: {e}");
             break;
         }

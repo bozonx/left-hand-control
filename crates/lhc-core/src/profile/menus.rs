@@ -9,10 +9,10 @@ pub enum MenuIssue {
 
 use super::{
     actions::{self, Action},
-    ids,
     model::*,
 };
 use crate::config_document::{ConfigDocument, ConfigError};
+use std::collections::BTreeMap;
 
 impl ConfigDocument {
     pub fn save_menu_pages(
@@ -35,12 +35,29 @@ impl ConfigDocument {
             candidate.clone(),
             self.settings().current_layout_id.as_deref(),
         );
-        for item in &candidate.quick_actions {
-            if baseline
-                .quick_actions
-                .iter()
-                .any(|old| old.id == item.id && old.action == item.action)
+        for page in &candidate.quick_action_pages {
+            if page
+                .cells
+                .keys()
+                .any(|key| !LEFT_HAND_HOTKEYS.contains(&key.as_str()))
             {
+                return Err(ConfigError::Menu(MenuIssue::UnknownKey));
+            }
+        }
+        let unchanged = |action: &str| {
+            baseline
+                .quick_action_pages
+                .iter()
+                .flat_map(|page| page.cells.values())
+                .any(|old| old.action == action)
+        };
+        for item in candidate
+            .quick_action_pages
+            .iter()
+            .flat_map(|page| page.cells.values())
+        {
+            // Actions kept from the saved menus are not checked again.
+            if unchanged(&item.action) {
                 continue;
             }
             if item.action.trim().is_empty() {
@@ -60,7 +77,6 @@ impl ConfigDocument {
         self.ensure_files_unchanged()?;
         self.update_layout(|layout| {
             layout.emoji_pages = candidate.emoji_pages.clone();
-            layout.quick_actions = candidate.quick_actions.clone();
             layout.quick_action_pages = candidate.quick_action_pages.clone();
         })?;
         Ok(())
@@ -114,26 +130,16 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
 
 /// Move a page and its cells together, preserving the order of other pages.
 pub fn reorder_page(layout: &mut LayoutPreset, emoji: bool, from: usize, to: usize) {
+    fn reorder<T>(pages: &mut Vec<T>, from: usize, to: usize) {
+        if from < pages.len() && to < pages.len() {
+            let page = pages.remove(from);
+            pages.insert(to, page);
+        }
+    }
     if emoji {
-        if from < layout.emoji_pages.len() && to < layout.emoji_pages.len() {
-            let page = layout.emoji_pages.remove(from);
-            layout.emoji_pages.insert(to, page);
-        }
+        reorder(&mut layout.emoji_pages, from, to);
     } else {
-        let size = LEFT_HAND_HOTKEYS.len();
-        if from >= layout.quick_action_pages.len()
-            || to >= layout.quick_action_pages.len()
-            || layout.quick_actions.len() < layout.quick_action_pages.len() * size
-        {
-            return;
-        }
-        let page = layout.quick_action_pages.remove(from);
-        layout.quick_action_pages.insert(to, page);
-        let cells: Vec<_> = layout
-            .quick_actions
-            .drain(from * size..(from + 1) * size)
-            .collect();
-        layout.quick_actions.splice(to * size..to * size, cells);
+        reorder(&mut layout.quick_action_pages, from, to);
     }
 }
 
@@ -146,50 +152,41 @@ pub fn transfer_cell(
     target_page: usize,
     target: usize,
 ) {
-    let size = LEFT_HAND_HOTKEYS.len();
-    if source >= size || target >= size || source_page == target_page {
-        return;
-    }
-    if emoji {
-        if source_page >= layout.emoji_pages.len() || target_page >= layout.emoji_pages.len() {
+    fn transfer<T, V>(
+        pages: &mut [T],
+        cells: impl Fn(&mut T) -> &mut BTreeMap<String, V>,
+        (source_page, source): (usize, &str),
+        (target_page, target): (usize, &str),
+    ) {
+        if source_page >= pages.len() || target_page >= pages.len() {
             return;
         }
-        let source_key = LEFT_HAND_HOTKEYS[source];
-        let target_key = LEFT_HAND_HOTKEYS[target];
-        let Some(value) = layout.emoji_pages[source_page].cells.remove(source_key) else {
+        let Some(value) = cells(&mut pages[source_page]).remove(source) else {
             return;
         };
-        if let Some(previous) = layout.emoji_pages[target_page]
-            .cells
-            .insert(target_key.into(), value)
-        {
-            layout.emoji_pages[source_page]
-                .cells
-                .insert(source_key.into(), previous);
-        }
-    } else {
-        if source_page >= layout.quick_action_pages.len()
-            || target_page >= layout.quick_action_pages.len()
-        {
-            return;
-        }
-        let from = source_page * size + source;
-        let to = target_page * size + target;
-        if from < layout.quick_actions.len()
-            && to < layout.quick_actions.len()
-            && !layout.quick_actions[from].action.is_empty()
-        {
-            layout.quick_actions.swap(from, to);
+        if let Some(previous) = cells(&mut pages[target_page]).insert(target.into(), value) {
+            cells(&mut pages[source_page]).insert(source.into(), previous);
         }
     }
-}
-
-pub fn empty_quick_action() -> QuickAction {
-    QuickAction {
-        id: ids::generate("quick_"),
-        name: String::new(),
-        action: String::new(),
-        icon: None,
+    if source_page == target_page {
+        return;
+    }
+    let (Some(source), Some(target)) =
+        (LEFT_HAND_HOTKEYS.get(source), LEFT_HAND_HOTKEYS.get(target))
+    else {
+        return;
+    };
+    let source = (source_page, *source);
+    let target = (target_page, *target);
+    if emoji {
+        transfer(&mut layout.emoji_pages, |p| &mut p.cells, source, target);
+    } else {
+        transfer(
+            &mut layout.quick_action_pages,
+            |p| &mut p.cells,
+            source,
+            target,
+        );
     }
 }
 
@@ -214,16 +211,9 @@ mod tests {
                 },
             ],
             quick_action_pages: vec![
-                QuickActionPage {
-                    id: "a".into(),
-                    name: "A".into(),
-                },
-                QuickActionPage {
-                    id: "b".into(),
-                    name: "B".into(),
-                },
+                QuickActionPage::new("a".into(), "A".into()),
+                QuickActionPage::new("b".into(), "B".into()),
             ],
-            quick_actions: (0..30).map(|_| empty_quick_action()).collect(),
             ..LayoutPreset::default()
         };
         transfer_cell(&mut layout, true, 0, 0, 1, 1);
@@ -236,22 +226,28 @@ mod tests {
         assert_eq!(layout.emoji_pages[1].id, "a");
         assert_eq!(layout.emoji_pages[1].cells["KeyE"], "😀");
 
-        layout.quick_actions[0] = QuickAction {
-            id: "source".into(),
+        let source = QuickAction {
             name: "Label".into(),
             action: "text:hello".into(),
             icon: Some("icon".into()),
         };
-        layout.quick_actions[16].action = "text:previous".into();
-        let source = layout.quick_actions[0].clone();
-        let previous = layout.quick_actions[16].clone();
+        let previous = QuickAction {
+            action: "text:previous".into(),
+            ..QuickAction::default()
+        };
+        layout.quick_action_pages[0]
+            .cells
+            .insert("KeyQ".into(), source.clone());
+        layout.quick_action_pages[1]
+            .cells
+            .insert("KeyW".into(), previous.clone());
         transfer_cell(&mut layout, false, 0, 0, 1, 1);
-        assert_eq!(layout.quick_actions[16], source);
-        assert_eq!(layout.quick_actions[0], previous);
+        assert_eq!(layout.quick_action_pages[1].cells["KeyW"], source);
+        assert_eq!(layout.quick_action_pages[0].cells["KeyQ"], previous);
         reorder_page(&mut layout, false, 1, 0);
         assert_eq!(layout.quick_action_pages[0].id, "b");
-        assert_eq!(layout.quick_actions[1], source);
-        assert_eq!(layout.quick_actions[15], previous);
+        assert_eq!(layout.quick_action_pages[0].cells["KeyW"], source);
+        assert_eq!(layout.quick_action_pages[1].cells["KeyQ"], previous);
         let unchanged = layout.clone();
         transfer_cell(&mut layout, false, 99, 0, 0, 1);
         transfer_cell(&mut layout, true, 0, 15, 1, 0);
@@ -479,14 +475,20 @@ pub fn command_places(config: &AppConfig, action: &str) -> Vec<CommandPlace> {
             });
         }
     }
-    for item in &config.quick_actions {
-        if item.action.trim() == action {
-            places.push(CommandPlace {
-                kind: PlaceKind::QuickAction,
-                layer: String::new(),
-                name: item.name.clone(),
-                enabled: true,
-            });
+    for page in &config.quick_action_pages {
+        for (key, item) in &page.cells {
+            if item.action.trim() == action {
+                places.push(CommandPlace {
+                    kind: PlaceKind::QuickAction,
+                    layer: String::new(),
+                    name: if item.name.is_empty() {
+                        key.clone()
+                    } else {
+                        item.name.clone()
+                    },
+                    enabled: true,
+                });
+            }
         }
     }
     places

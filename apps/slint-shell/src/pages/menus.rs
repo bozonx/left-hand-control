@@ -10,10 +10,10 @@ use crate::{
 };
 use lhc_core::{
     config_document::ConfigError,
-    profile::{ids, menus::empty_quick_action, model::*},
+    profile::{ids, model::*},
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::{cell::RefCell, collections::BTreeMap, rc::Rc, time::Duration};
 
 const PAGE: usize = LEFT_HAND_HOTKEYS.len();
 const TYPING_DELAY: Duration = Duration::from_millis(400);
@@ -37,8 +37,7 @@ fn key_label(key: &str) -> SharedString {
     key.trim_start_matches("Key").into()
 }
 
-/// Every quick action page has `PAGE` slots and there is at least one
-/// page of each menu.
+/// There is at least one page of each menu.
 fn normalize(layout: &mut LayoutPreset) {
     if layout.emoji_pages.is_empty() {
         layout.emoji_pages.push(EmojiPage {
@@ -47,21 +46,11 @@ fn normalize(layout: &mut LayoutPreset) {
             cells: Default::default(),
         });
     }
-    let count = layout
-        .quick_actions
-        .len()
-        .div_ceil(PAGE)
-        .max(layout.quick_action_pages.len())
-        .max(1);
-    while layout.quick_action_pages.len() < count {
-        layout.quick_action_pages.push(QuickActionPage {
-            id: ids::generate("page_"),
-            name: String::new(),
-        });
+    if layout.quick_action_pages.is_empty() {
+        layout
+            .quick_action_pages
+            .push(QuickActionPage::new(ids::generate("page_"), String::new()));
     }
-    layout
-        .quick_actions
-        .resize_with(count * PAGE, empty_quick_action);
 }
 
 fn page_count(kind: MenuKind, layout: &LayoutPreset) -> usize {
@@ -73,10 +62,31 @@ fn page_count(kind: MenuKind, layout: &LayoutPreset) -> usize {
 
 fn first_filled(layout: &LayoutPreset, page: usize) -> i32 {
     layout
-        .quick_actions
-        .get(page * PAGE..(page + 1) * PAGE)
-        .and_then(|cells| cells.iter().position(|item| !item.action.trim().is_empty()))
+        .quick_action_pages
+        .get(page)
+        .and_then(|page| {
+            LEFT_HAND_HOTKEYS.iter().position(|key| {
+                page.cells
+                    .get(*key)
+                    .is_some_and(|item| !item.action.trim().is_empty())
+            })
+        })
         .map_or(-1, |i| i as i32)
+}
+
+/// Move the cell at hotkey index `from` to `to`, shifting the cells between.
+fn move_cell<V>(cells: &mut BTreeMap<String, V>, from: usize, to: usize) {
+    let mut values: Vec<_> = LEFT_HAND_HOTKEYS
+        .iter()
+        .map(|key| cells.remove(*key))
+        .collect();
+    let item = values.remove(from);
+    values.insert(to, item);
+    for (key, value) in LEFT_HAND_HOTKEYS.iter().zip(values) {
+        if let Some(value) = value {
+            cells.insert((*key).into(), value);
+        }
+    }
 }
 
 /// Push the draft to the UI. `fields` also resets the bound text fields,
@@ -127,18 +137,18 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
             .collect()
     } else {
         e.set_selected_cell(c);
+        let page = &layout.quick_action_pages[p];
         if fields {
             let item = usize::try_from(c)
                 .ok()
-                .and_then(|c| layout.quick_actions.get(p * PAGE + c));
+                .and_then(|c| page.cells.get(LEFT_HAND_HOTKEYS[c]));
             e.set_value(item.map(|i| i.action.clone()).unwrap_or_default().into());
             e.set_name(item.map(|i| i.name.clone()).unwrap_or_default().into());
         }
         LEFT_HAND_HOTKEYS
             .iter()
-            .enumerate()
-            .map(|(i, key)| {
-                let item = &layout.quick_actions[p * PAGE + i];
+            .map(|key| {
+                let item = page.cells.get(*key).cloned().unwrap_or_default();
                 MenuCell {
                     key: key_label(key),
                     value: item.action.clone().into(),
@@ -352,10 +362,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 });
                 layout.emoji_pages.len() - 1
             } else {
-                layout.quick_action_pages.push(QuickActionPage {
-                    id: ids::generate("page_"),
-                    name: name.to_string(),
-                });
+                layout.quick_action_pages.push(QuickActionPage::new(
+                    ids::generate("page_"),
+                    name.to_string(),
+                ));
                 layout.quick_action_pages.len() - 1
             };
             e.set_selected_page(index as i32);
@@ -376,8 +386,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 }
                 MenuKind::Quick if p < layout.quick_action_pages.len() => {
                     layout.quick_action_pages.remove(p);
-                    let end = ((p + 1) * PAGE).min(layout.quick_actions.len());
-                    layout.quick_actions.drain((p * PAGE).min(end)..end);
                 }
                 _ => {}
             }
@@ -402,9 +410,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 layout.emoji_pages.swap(p, n);
             } else {
                 layout.quick_action_pages.swap(p, n);
-                for c in 0..PAGE {
-                    layout.quick_actions.swap(p * PAGE + c, n * PAGE + c);
-                }
             }
             e.set_selected_page(n as i32);
         });
@@ -494,7 +499,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             ) else {
                 return;
             };
-            if let Some(item) = layout.quick_actions.get_mut(page * PAGE + cell) {
+            if let Some(item) = layout
+                .quick_action_pages
+                .get_mut(page)
+                .zip(LEFT_HAND_HOTKEYS.get(cell))
+                .and_then(|(page, key)| page.cells.get_mut(*key))
+            {
                 item.name = e.get_name().to_string();
             }
         });
@@ -508,20 +518,24 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             ) else {
                 return;
             };
-            let Some(item) = layout.quick_actions.get_mut(page * PAGE + cell_index) else {
+            let (Some(page), Some(key)) = (
+                layout.quick_action_pages.get_mut(page),
+                LEFT_HAND_HOTKEYS.get(cell_index),
+            ) else {
                 return;
             };
             if action.is_empty() {
-                *item = empty_quick_action();
+                page.cells.remove(*key);
                 e.set_selected_cell(-1);
                 return;
             }
+            let item = page.cells.entry((*key).into()).or_default();
             let automatic = item.name.trim().is_empty() || item.name == item.action;
             if item.action.trim().is_empty() {
                 *item = QuickAction {
                     name: action_name(&label, &action),
                     action: action.to_string(),
-                    ..empty_quick_action()
+                    icon: None,
                 };
             } else {
                 item.action = action.to_string();
@@ -541,8 +555,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 if let Some(page) = layout.emoji_pages.get_mut(p) {
                     page.cells.remove(LEFT_HAND_HOTKEYS[cell]);
                 }
-            } else if let Some(item) = layout.quick_actions.get_mut(p * PAGE + cell) {
-                *item = empty_quick_action();
+            } else if let Some(page) = layout.quick_action_pages.get_mut(p) {
+                page.cells.remove(LEFT_HAND_HOTKEYS[cell]);
                 e.set_selected_cell(-1);
             }
         });
@@ -556,23 +570,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             let (from, to) = (from as usize, to as usize);
             let p = e.get_selected_page().max(0) as usize;
             if e.get_kind() == MenuKind::Emoji {
-                let Some(page) = layout.emoji_pages.get_mut(p) else {
-                    return;
-                };
-                let mut values: Vec<_> = LEFT_HAND_HOTKEYS
-                    .iter()
-                    .map(|key| page.cells.remove(*key))
-                    .collect();
-                let item = values.remove(from);
-                values.insert(to, item);
-                for (key, value) in LEFT_HAND_HOTKEYS.iter().zip(values) {
-                    if let Some(value) = value {
-                        page.cells.insert((*key).into(), value);
-                    }
+                if let Some(page) = layout.emoji_pages.get_mut(p) {
+                    move_cell(&mut page.cells, from, to);
                 }
-            } else if p * PAGE + PAGE <= layout.quick_actions.len() {
-                let item = layout.quick_actions.remove(p * PAGE + from);
-                layout.quick_actions.insert(p * PAGE + to, item);
+            } else if let Some(page) = layout.quick_action_pages.get_mut(p) {
+                move_cell(&mut page.cells, from, to);
             }
             e.set_selected_cell(to as i32);
         });
@@ -589,7 +591,6 @@ mod tests {
         normalize(&mut layout);
         assert_eq!(layout.emoji_pages.len(), 1);
         assert_eq!(layout.quick_action_pages.len(), 1);
-        assert_eq!(layout.quick_actions.len(), PAGE);
         assert_eq!(first_filled(&layout, 0), -1);
         assert_eq!(first_filled(&layout, 5), -1, "missing pages are empty");
     }

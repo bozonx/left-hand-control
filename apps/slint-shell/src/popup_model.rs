@@ -5,7 +5,7 @@ use crate::{
     command::Popup,
     ui::{EmojiPopup, QuickPopup},
 };
-use lhc_core::profile::model::{LEFT_HAND_HOTKEYS, LayoutPreset};
+use lhc_core::profile::model::{LEFT_HAND_HOTKEYS, LayoutPreset, QuickAction};
 use slint::{Model, ModelRc, SharedString, VecModel};
 
 /// Cells per menu page: one per left-hand hotkey, 3 rows × 5 columns.
@@ -219,22 +219,12 @@ impl ConfiguredMenus {
     }
 
     pub fn apply_quick(&self, ui: &QuickPopup) {
-        let count = self
-            .layout
-            .quick_actions
-            .len()
-            .div_ceil(PAGE_CELLS)
-            .max(self.layout.quick_action_pages.len());
+        let count = self.layout.quick_action_pages.len();
         ui.set_page_names(ModelRc::new(VecModel::from(
-            (0..count)
-                .map(|i| {
-                    self.layout
-                        .quick_action_pages
-                        .get(i)
-                        .map(|p| p.name.clone())
-                        .unwrap_or_default()
-                        .into()
-                })
+            self.layout
+                .quick_action_pages
+                .iter()
+                .map(|p| p.name.as_str().into())
                 .collect::<Vec<SharedString>>(),
         )));
         ui.set_page(ui.get_page().clamp(0, count.saturating_sub(1) as i32));
@@ -293,15 +283,18 @@ impl ConfiguredMenus {
     }
 
     pub fn quick_cell(&self, page: i32, index: i32) -> Option<String> {
-        let page = usize::try_from(page).ok()?;
-        let index = usize::try_from(index)
-            .ok()
-            .filter(|index| *index < PAGE_CELLS)?;
-        self.layout
-            .quick_actions
-            .get(page.checked_mul(PAGE_CELLS)?.checked_add(index)?)
+        self.quick_item(page, index).map(|item| item.action.clone())
+    }
+
+    fn quick_item(&self, page: i32, index: i32) -> Option<&QuickAction> {
+        let page = self
+            .layout
+            .quick_action_pages
+            .get(usize::try_from(page).ok()?)?;
+        let key = LEFT_HAND_HOTKEYS.get(usize::try_from(index).ok()?)?;
+        page.cells
+            .get(*key)
             .filter(|item| !item.action.trim().is_empty())
-            .map(|item| item.action.clone())
     }
 
     /// Labels of the 15 cells of quick action `page`; empty cells have
@@ -309,12 +302,11 @@ impl ConfiguredMenus {
     pub fn quick_labels(&self, page: i32) -> Vec<String> {
         (0..PAGE_CELLS as i32)
             .map(|index| {
-                let Some(action) = self.quick_cell(page, index) else {
+                let Some(item) = self.quick_item(page, index) else {
                     return String::new();
                 };
-                let item = &self.layout.quick_actions[page as usize * PAGE_CELLS + index as usize];
                 if item.name.trim().is_empty() {
-                    action
+                    item.action.clone()
                 } else {
                     item.name.clone()
                 }
@@ -375,7 +367,7 @@ pub fn select_page(popup: Popup, page: u8, emoji: &EmojiPopup, quick: &QuickPopu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lhc_core::profile::{menus::empty_quick_action, model::*};
+    use lhc_core::profile::model::*;
 
     #[test]
     fn physical_shortcuts_pick_cells_and_cycle_pages() {
@@ -441,14 +433,24 @@ mod tests {
     #[test]
     fn quick_cells_follow_hotkey_positions() {
         let mut layout = LayoutPreset::initial();
-        layout.quick_action_pages.push(QuickActionPage {
-            id: "second".into(),
-            name: "Вторая".into(),
-        });
-        layout.quick_actions.resize_with(30, empty_quick_action);
-        layout.quick_actions[2].name = "Имя".into();
-        layout.quick_actions[2].action = "text:first".into();
-        layout.quick_actions[19].action = "text:second".into();
+        layout
+            .quick_action_pages
+            .push(QuickActionPage::new("second".into(), "Вторая".into()));
+        layout.quick_action_pages[0].cells.insert(
+            "KeyE".into(),
+            QuickAction {
+                name: "Имя".into(),
+                action: "text:first".into(),
+                icon: None,
+            },
+        );
+        layout.quick_action_pages[1].cells.insert(
+            "KeyT".into(),
+            QuickAction {
+                action: "text:second".into(),
+                ..QuickAction::default()
+            },
+        );
         let menus = ConfiguredMenus { layout };
         let first = menus.quick_labels(0);
         assert_eq!(first.len(), PAGE_CELLS);

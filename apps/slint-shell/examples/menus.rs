@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reference = picker.get_value().to_string();
     picker.invoke_apply();
     assert_eq!(loaded().layout().commands.len(), 1);
-    assert_eq!(loaded().layout().quick_actions[0].action, reference);
+    assert_eq!(quick_action(loaded().layout(), 0, "KeyQ"), reference);
     settings.set_commands_enabled(false);
     settings.invoke_save();
     picker.invoke_open(
@@ -106,25 +106,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_add_page("Second".into());
     e.invoke_transfer_cell(0, 2, 4);
     assert_eq!(
-        loaded().layout().quick_actions[19].action,
+        quick_action(loaded().layout(), 1, "KeyT"),
         "text:Здравствуйте"
     );
-    assert!(loaded().layout().quick_actions[2].action.is_empty());
+    assert!(quick_action(loaded().layout(), 0, "KeyE").is_empty());
     e.invoke_reorder_page(1, 0);
     assert_eq!(e.get_selected_page(), 0);
     e.invoke_select_page(1);
     e.invoke_transfer_cell(0, 4, 2);
     e.invoke_reorder_page(1, 0);
     let layout = loaded().layout().clone();
-    assert_eq!(layout.quick_actions[2].action, "text:Здравствуйте");
-    assert_eq!(layout.quick_actions[2].name, "text:Здравствуйте");
+    assert_eq!(quick_action(&layout, 0, "KeyE"), "text:Здравствуйте");
+    assert_eq!(
+        layout.quick_action_pages[0].cells["KeyE"].name,
+        "text:Здравствуйте"
+    );
     let menus = slint_shell::popup_model::ConfiguredMenus { layout };
     assert_eq!(menus.quick_labels(0)[0], "Запуск");
     assert_eq!(menus.quick_cell(0, 0).as_deref(), Some(reference.as_str()));
     e.invoke_set_action(0, "macro:missing".into(), "".into());
     assert_ne!(e.get_status().id.as_str(), "");
     assert_eq!(
-        loaded().layout().quick_actions[0].action,
+        quick_action(loaded().layout(), 0, "KeyQ"),
         reference.as_str()
     );
     e.invoke_open(MenuKind::Quick);
@@ -151,7 +154,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_set_action(0, reference.clone().into(), "Плеер".into());
     e.invoke_set_action(6, "Ctrl+KeyC".into(), "Ctrl+KeyC".into());
     assert_eq!(
-        document.read().layout().quick_actions[6].action,
+        quick_action(document.read().layout(), 0, "KeyS"),
         "Ctrl+KeyC"
     );
     e.invoke_open(match std::env::var("LHC_MENUS_PAGE").as_deref() {
@@ -220,8 +223,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 7 => { press(100.0, 285.0); move_to(140.0, 184.0); }
                 8 => { assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0); release(230.0, 285.0); }
                 9 => {
-                    assert_eq!(document.read().layout().quick_actions[16].action, "text:drag");
-                    assert!(document.read().layout().quick_actions[0].action.is_empty());
+                    assert_eq!(quick_action(document.read().layout(), 1, "KeyW"), "text:drag");
+                    assert!(quick_action(document.read().layout(), 0, "KeyQ").is_empty());
                     println!("Menus pointer DnD passed: page reorder, hover switching, emoji palette and cross-page emoji/quick moves");
                     slint::quit_event_loop().unwrap();
                 }
@@ -259,4 +262,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     slint::run_event_loop()?;
     Ok(())
+}
+
+/// Action of quick action cell `key` on `page`, empty when the cell is empty.
+fn quick_action(layout: &lhc_core::profile::model::LayoutPreset, page: usize, key: &str) -> String {
+    layout.quick_action_pages[page]
+        .cells
+        .get(key)
+        .map(|item| item.action.clone())
+        .unwrap_or_default()
 }

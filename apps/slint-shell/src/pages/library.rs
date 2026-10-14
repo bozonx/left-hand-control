@@ -252,7 +252,6 @@ fn refresh_context(ui: &SettingsWindow, document: &Document) {
         ..Default::default()
     }));
     library.set_quick_dirty(changed(|layout| LayoutPreset {
-        quick_actions: layout.quick_actions.clone(),
         quick_action_pages: layout.quick_action_pages.clone(),
         ..Default::default()
     }));
