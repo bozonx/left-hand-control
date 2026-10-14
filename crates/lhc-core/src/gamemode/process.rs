@@ -1,5 +1,6 @@
 //! Process and window names as game-mode rules see them.
 
+use super::GameSource;
 use crate::profile::app_match::AppMatcher;
 use crate::profile::model::GameModeProcessMatcher;
 use crate::runtime_state::ActiveWindow;
@@ -128,12 +129,16 @@ fn in_list(list: &[&str], candidates: &[&str]) -> bool {
 
 /// A game recognised by its window alone: a Steam game (`steam_app_<id>`,
 /// X11 and XWayland) or a nested gamescope session.
-pub(crate) fn known_game_window(window: &ActiveWindow) -> Option<String> {
+pub(crate) fn known_game_window(window: &ActiveWindow) -> Option<(GameSource, String)> {
     let app_id = window.app_id.trim().to_lowercase();
     let steam = app_id
         .strip_prefix("steam_app_")
         .is_some_and(|id| !id.is_empty() && id.bytes().all(|byte| byte.is_ascii_digit()));
-    (steam || app_id == "gamescope").then_some(app_id)
+    if steam {
+        Some((GameSource::Steam, app_id))
+    } else {
+        (app_id == "gamescope").then_some((GameSource::Gamescope, app_id))
+    }
 }
 
 /// Last component of a Unix or Windows path: Wine and Proton games show
@@ -230,7 +235,7 @@ fn proc_argv0(dir: &std::path::Path) -> Option<String> {
 /// `lutris-wrapper <title>`. Steam games are named `steam_app_<id>`, like
 /// their windows.
 #[cfg(target_os = "linux")]
-pub(crate) fn launched_game(args: &[String]) -> Option<String> {
+pub(crate) fn launched_game(args: &[String]) -> Option<(GameSource, String)> {
     let program = |arg: &String| file_name(arg).to_owned();
     if args.first().map(program).as_deref() == Some("reaper")
         && args.iter().any(|arg| arg == "SteamLaunch")
@@ -239,7 +244,7 @@ pub(crate) fn launched_game(args: &[String]) -> Option<String> {
             .iter()
             .find_map(|arg| arg.strip_prefix("AppId="))
             .filter(|id| !id.is_empty() && id.bytes().all(|byte| byte.is_ascii_digit()))
-            .map(|id| format!("steam_app_{id}"));
+            .map(|id| (GameSource::Steam, format!("steam_app_{id}")));
     }
     // A Python script: the interpreter may come first.
     let interpreter = args
@@ -249,13 +254,14 @@ pub(crate) fn launched_game(args: &[String]) -> Option<String> {
     if args.get(wrapper).map(program).as_deref() != Some("lutris-wrapper") {
         return None;
     }
-    Some(
+    Some((
+        GameSource::Lutris,
         args.get(wrapper + 1)
             .map(|title| title.trim())
             .filter(|title| !title.is_empty())
             .unwrap_or("lutris-wrapper")
             .to_owned(),
-    )
+    ))
 }
 
 /// The single most useful name of a process for display and matching:
@@ -360,18 +366,16 @@ mod tests {
         assert_eq!(
             launched_game(&args(
                 "/home/u/.steam/ubuntu12_32/reaper SteamLaunch AppId=1091500 -- /x/proton waitforexitandrun"
-            ))
-            .as_deref(),
-            Some("steam_app_1091500")
+            )),
+            Some((GameSource::Steam, "steam_app_1091500".into()))
         );
         assert_eq!(launched_game(&args("reaper SteamLaunch AppId=abc")), None);
         assert_eq!(launched_game(&args("/usr/bin/reaper --help")), None);
         assert_eq!(
             launched_game(&args(
                 "/usr/bin/python3 /usr/bin/lutris-wrapper Celeste 0 0 /x/wine"
-            ))
-            .as_deref(),
-            Some("Celeste")
+            )),
+            Some((GameSource::Lutris, "Celeste".into()))
         );
         assert_eq!(launched_game(&args("vim lutris-wrapper")), None);
         assert_eq!(launched_game(&args("/usr/bin/vim notes.txt")), None);
@@ -385,12 +389,12 @@ mod tests {
             ..ActiveWindow::default()
         };
         assert_eq!(
-            known_game_window(&window("steam_app_42", None)).as_deref(),
-            Some("steam_app_42")
+            known_game_window(&window("steam_app_42", None)),
+            Some((GameSource::Steam, "steam_app_42".into()))
         );
         assert_eq!(
-            known_game_window(&window("gamescope", None)).as_deref(),
-            Some("gamescope")
+            known_game_window(&window("gamescope", None)),
+            Some((GameSource::Gamescope, "gamescope".into()))
         );
         assert_eq!(known_game_window(&window("steam_app_", None)), None);
         assert_eq!(known_game_window(&window("steam", None)), None);

@@ -25,7 +25,12 @@ export global AppState {
     in property <Message> game-fullscreen-availability;
     in property <Message> game-processes-availability;
     in property <Message> game-window-availability;
-    in property <Message> game-known-availability;
+    /// Known-game sources; "capability-unsupported" hides a source on this OS.
+    in property <Message> game-steam-availability;
+    in property <Message> game-lutris-availability;
+    in property <Message> game-gamescope-availability;
+    in property <Message> game-category-availability;
+    in property <Message> game-bar-availability;
     /// Tool window detection needs but cannot find, e.g. "kdotool".
     in property <string> game-missing-tool;
     in property <string> keyboard-language;

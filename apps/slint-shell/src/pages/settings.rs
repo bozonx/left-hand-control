@@ -43,7 +43,11 @@ struct Form {
     commands_enabled: bool,
     use_gamemoded: bool,
     use_fullscreen: bool,
-    use_known_games: bool,
+    use_steam: bool,
+    use_lutris: bool,
+    use_gamescope: bool,
+    use_app_category: bool,
+    use_game_bar: bool,
     matchers: Vec<GameModeProcessMatcher>,
     text_mode: i32,
     ydotool: String,
@@ -81,7 +85,11 @@ impl Form {
             commands_enabled: settings.commands_enabled,
             use_gamemoded: settings.game_mode.use_gamemoded,
             use_fullscreen: settings.game_mode.use_fullscreen,
-            use_known_games: settings.game_mode.use_known_games,
+            use_steam: settings.game_mode.use_steam,
+            use_lutris: settings.game_mode.use_lutris,
+            use_gamescope: settings.game_mode.use_gamescope,
+            use_app_category: settings.game_mode.use_app_category,
+            use_game_bar: settings.game_mode.use_game_bar,
             matchers: settings.game_mode.process_matchers.clone(),
             text_mode: choice_index(
                 &TEXT_MODES,
@@ -117,7 +125,11 @@ impl Form {
             commands_enabled: e.get_commands_enabled(),
             use_gamemoded: e.get_use_gamemoded(),
             use_fullscreen: e.get_use_fullscreen(),
-            use_known_games: e.get_use_known_games(),
+            use_steam: e.get_use_steam(),
+            use_lutris: e.get_use_lutris(),
+            use_gamescope: e.get_use_gamescope(),
+            use_app_category: e.get_use_app_category(),
+            use_game_bar: e.get_use_game_bar(),
             matchers: matchers.to_vec(),
             text_mode: e.get_text_mode_index(),
             ydotool: e.get_ydotool_path().into(),
@@ -146,7 +158,11 @@ impl Form {
         e.set_commands_enabled(self.commands_enabled);
         e.set_use_gamemoded(self.use_gamemoded);
         e.set_use_fullscreen(self.use_fullscreen);
-        e.set_use_known_games(self.use_known_games);
+        e.set_use_steam(self.use_steam);
+        e.set_use_lutris(self.use_lutris);
+        e.set_use_gamescope(self.use_gamescope);
+        e.set_use_app_category(self.use_app_category);
+        e.set_use_game_bar(self.use_game_bar);
         show_matchers(&e, &self.matchers);
         e.set_text_mode_index(self.text_mode);
         e.set_ydotool_path(self.ydotool.clone().into());
@@ -195,7 +211,11 @@ impl Form {
         changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
-        changed!(use_known_games => settings.game_mode.use_known_games = self.use_known_games);
+        changed!(use_steam => settings.game_mode.use_steam = self.use_steam);
+        changed!(use_lutris => settings.game_mode.use_lutris = self.use_lutris);
+        changed!(use_gamescope => settings.game_mode.use_gamescope = self.use_gamescope);
+        changed!(use_app_category => settings.game_mode.use_app_category = self.use_app_category);
+        changed!(use_game_bar => settings.game_mode.use_game_bar = self.use_game_bar);
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
         changed!(text_mode => settings.linux_wayland_text_mode = Some(choice(&TEXT_MODES, self.text_mode).into()));
         changed!(ydotool => settings.linux_ydotool_path = self.ydotool.trim().into());

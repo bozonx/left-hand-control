@@ -25,11 +25,7 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
     let running = need_running
         .then(crate::platform::windows::running_process_names)
         .flatten();
-    let known_games = if settings.use_known_games {
-        known_games(running.as_deref().unwrap_or_default())
-    } else {
-        Vec::new()
-    };
+    let known_games = known_games(settings, running.as_deref().unwrap_or_default());
     Observation {
         detectors: GameModeDetectors {
             gamemoded: DetectorAvailability::Unsupported,
@@ -40,7 +36,6 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
                 DetectorAvailability::Available
             },
             active_window: crate::active_window::availability(),
-            known_games: DetectorAvailability::Available,
             missing_window_tool: None,
         },
         running: running.unwrap_or_default(),
@@ -50,12 +45,19 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
     }
 }
 
-/// The game Steam runs, then running executables from the Game Bar list.
-fn known_games(running: &[String]) -> Vec<String> {
-    let mut games: Vec<String> = steam_running_app()
+/// The game Steam runs, then running executables from the Game Bar list;
+/// each source only when enabled.
+fn known_games(settings: &GameModeSettings, running: &[String]) -> Vec<String> {
+    let mut games: Vec<String> = settings
+        .use_steam
+        .then(steam_running_app)
+        .flatten()
         .map(|id| format!("steam_app_{id}"))
         .into_iter()
         .collect();
+    if !settings.use_game_bar {
+        return games;
+    }
     let catalog = catalog();
     games.extend(
         running

@@ -16,7 +16,8 @@ use zbus::proxy::CacheProperties;
 use zbus::{MatchRule, message};
 
 use super::{
-    DetectorAvailability, GameModeDetectors, GameModeSettings, Observation, desktop_entries,
+    DetectorAvailability, GameModeDetectors, GameModeSettings, GameSource, Observation,
+    desktop_entries,
 };
 use crate::runtime_state::ActiveWindow;
 
@@ -39,20 +40,24 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
         std::fs::read_dir("/proc").is_ok()
     };
     let window_game = settings
-        .use_known_games
+        .use_app_category
         .then(|| window.and_then(desktop_entries::game_window))
         .flatten();
     let active_window = crate::active_window::availability();
-    let (running, known_games) = scan
+    let (running, games) = scan
         .map(|scan| (scan.names, scan.games))
         .unwrap_or_default();
+    let known_games = games
+        .into_iter()
+        .filter(|(source, _)| source.enabled(settings))
+        .map(|(_, name)| name)
+        .collect();
     Observation {
         detectors: GameModeDetectors {
             gamemoded: availability(daemon.is_some()),
             fullscreen: active_window,
             processes: availability(processes_available),
             active_window,
-            known_games: availability(processes_available),
             missing_window_tool: crate::active_window::missing_tool().map(str::to_owned),
         },
         running,
@@ -249,7 +254,7 @@ struct ProcInfo {
     /// Zero for another user's process, which is never read.
     start: u64,
     names: Vec<String>,
-    game: Option<String>,
+    game: Option<(GameSource, String)>,
 }
 
 /// The current user's processes.
@@ -259,7 +264,7 @@ pub(super) struct Scan {
     /// plus `steam_app_<id>` for running Steam games.
     pub names: Vec<String>,
     /// Games that a launcher runs, sorted.
-    pub games: Vec<String>,
+    pub games: Vec<(GameSource, String)>,
 }
 
 /// Processes of the previous scan by pid, other users' ones included.
@@ -323,11 +328,11 @@ pub(super) fn scan_processes() -> Option<Scan> {
     let mut games = Vec::new();
     for info in current.values() {
         names.extend(info.names.iter().cloned());
-        if let Some(game) = &info.game {
-            if game.starts_with("steam_app_") {
+        if let Some((source, game)) = &info.game {
+            if *source == GameSource::Steam {
                 names.insert(game.clone());
             }
-            games.push(game.clone());
+            games.push((*source, game.clone()));
         }
     }
     *cache = Some(ProcessCache {

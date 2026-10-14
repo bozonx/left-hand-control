@@ -118,8 +118,14 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             bool_or(game_mode, "useGamemoded", base.game_mode.use_gamemoded);
         settings.game_mode.use_fullscreen =
             bool_or(game_mode, "useFullscreen", base.game_mode.use_fullscreen);
-        settings.game_mode.use_known_games =
-            bool_or(game_mode, "useKnownGames", base.game_mode.use_known_games);
+        settings.game_mode.use_steam = bool_or(game_mode, "useSteam", base.game_mode.use_steam);
+        settings.game_mode.use_lutris = bool_or(game_mode, "useLutris", base.game_mode.use_lutris);
+        settings.game_mode.use_gamescope =
+            bool_or(game_mode, "useGamescope", base.game_mode.use_gamescope);
+        settings.game_mode.use_app_category =
+            bool_or(game_mode, "useAppCategory", base.game_mode.use_app_category);
+        settings.game_mode.use_game_bar =
+            bool_or(game_mode, "useGameBar", base.game_mode.use_game_bar);
         settings.game_mode.control = match str_of(game_mode, "control") {
             Some("on") => GameModeControl::On,
             Some("off") => GameModeControl::Off,
@@ -236,7 +242,7 @@ mod tests {
             "defaultHoldTimeoutMs": "fast",
             "tapDecision": "holdOnOtherKeyPress",
             "linuxWaylandTextMode": "magic",
-            "gameMode": {"useGamemoded": false, "useKnownGames": false, "processMatchers": [{"name": " steam "}, 3]},
+            "gameMode": {"useGamemoded": false, "useLutris": false, "processMatchers": [{"name": " steam "}, 3]},
         })));
         assert_eq!(settings.appearance, Appearance::Dark);
         assert_eq!(settings.locale, LocalePreference::Auto);
@@ -244,8 +250,9 @@ mod tests {
         assert_eq!(settings.tap_decision, "holdOnOtherKeyPress");
         assert_eq!(settings.linux_wayland_text_mode, None);
         assert!(!settings.game_mode.use_gamemoded);
-        assert!(!settings.game_mode.use_known_games);
-        assert!(AppSettings::default().game_mode.use_known_games);
+        assert!(!settings.game_mode.use_lutris);
+        assert!(settings.game_mode.use_steam);
+        assert!(AppSettings::default().game_mode.use_lutris);
         assert_eq!(settings.game_mode.process_matchers.len(), 1);
         assert_eq!(settings.game_mode.process_matchers[0].name, "steam");
         assert_eq!(settings.game_mode.process_matchers[0].id, "process-0");

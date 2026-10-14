@@ -40,7 +40,11 @@ export global SettingsEditor {
     in-out property <SettingsTab> tab;
     in-out property <bool> use-gamemoded: true;
     in-out property <bool> use-fullscreen;
-    in-out property <bool> use-known-games: true;
+    in-out property <bool> use-steam: true;
+    in-out property <bool> use-lutris: true;
+    in-out property <bool> use-gamescope: true;
+    in-out property <bool> use-app-category: true;
+    in-out property <bool> use-game-bar: true;
     /// Built-in lists, comma-separated: applications whose fullscreen
     /// windows are not games, and launchers that never count as games.
     in property <string> fullscreen-non-games;
@@ -96,6 +100,26 @@ component BuiltinList inherits VerticalLayout {
     }
     if root.expanded: Text { text: root.items; color: Theme.muted; wrap: word-wrap; }
     if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it under Games and exclusions."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+}
+
+/// One known-game source: a check box, its explanation and, when the
+/// session cannot read it, a note. Children add settings of the source.
+component GameSourceOption inherits VerticalBox {
+    in property <string> text;
+    in property <string> info;
+    in property <Message> availability;
+    in-out property <bool> checked;
+    callback toggled();
+    padding: 0px;
+    spacing: 4px;
+    vertical-stretch: 0;
+    HorizontalLayout {
+        spacing: 6px; alignment: start;
+        CheckBox { text: root.text; checked <=> root.checked; toggled => { root.toggled(); } }
+        VerticalLayout { alignment: center; InfoTip { text: root.info; } }
+    }
+    if root.availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("Not available in this session."); color: root.checked ? Theme.warning : Theme.muted; wrap: word-wrap; }
+    @children
 }
 
 component Section inherits Rectangle {
@@ -557,14 +581,46 @@ export component SettingsPage inherits VerticalBox {
                         if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("Fullscreen detection tools are missing or could not query the session."); color: SettingsEditor.use-fullscreen ? Theme.warning : Theme.muted; wrap: word-wrap; }
                         BuiltinList { title: @tr("Ignored in fullscreen"); items: SettingsEditor.fullscreen-non-games; }
                     }
-                    VerticalBox {
-                        padding: 0px; spacing: 4px; vertical-stretch: 0;
-                        HorizontalLayout {
-                            spacing: 6px; alignment: start;
-                            CheckBox { text: @tr("Recognize known games"); checked <=> SettingsEditor.use-known-games; toggled => { SettingsEditor.save(); } enabled: AppState.game-known-availability.id != "capability-unsupported"; }
-                            VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game started by Steam or Lutris runs, or while the active window belongs to an application of the Game category. On Windows also while a game from the Game Bar list runs. Launchers themselves never count."); } }
-                        }
-                        if AppState.game-known-availability.id == "capability-unsupported": Text { text: @tr("Known games cannot be recognized on this system."); color: Theme.muted; wrap: word-wrap; }
+                    Text { vertical-stretch: 0; text: @tr("Known games"); color: Theme.text; font-weight: 600; }
+                    // Each OS shows only the sources it has.
+                    if AppState.game-steam-availability.id != "capability-unsupported": GameSourceOption {
+                        text: @tr("Steam games");
+                        info: AppState.is-linux
+                            ? @tr("Turns on while Steam runs a game: Steam starts every game through reaper SteamLaunch, and game windows have the ID steam_app_<number>.")
+                            : @tr("Turns on while Steam reports a running game.");
+                        availability: AppState.game-steam-availability;
+                        checked <=> SettingsEditor.use-steam;
+                        toggled => { SettingsEditor.save(); }
+                    }
+                    if AppState.game-lutris-availability.id != "capability-unsupported": GameSourceOption {
+                        text: @tr("Lutris games");
+                        info: @tr("Turns on while a game started by Lutris runs: Lutris starts every game through lutris-wrapper.");
+                        availability: AppState.game-lutris-availability;
+                        checked <=> SettingsEditor.use-lutris;
+                        toggled => { SettingsEditor.save(); }
+                    }
+                    if AppState.game-gamescope-availability.id != "capability-unsupported": GameSourceOption {
+                        text: @tr("Gamescope sessions");
+                        info: @tr("Turns on while the active window is a nested gamescope session.");
+                        availability: AppState.game-gamescope-availability;
+                        checked <=> SettingsEditor.use-gamescope;
+                        toggled => { SettingsEditor.save(); }
+                    }
+                    if AppState.game-bar-availability.id != "capability-unsupported": GameSourceOption {
+                        text: @tr("Games from the Game Bar list");
+                        info: @tr("Turns on while a program that Windows recognized as a game (the Game Bar list) runs.");
+                        availability: AppState.game-bar-availability;
+                        checked <=> SettingsEditor.use-game-bar;
+                        toggled => { SettingsEditor.save(); }
+                    }
+                    if AppState.game-category-availability.id != "capability-unsupported": GameSourceOption {
+                        text: @tr("Applications of the Game category");
+                        info: AppState.is-linux
+                            ? @tr("Turns on while the active window belongs to an application whose .desktop file lists the Game category. Launchers are tagged as games too, so they are skipped.")
+                            : @tr("Turns on while the active application declares the Games category in its Info.plist. Launchers are skipped.");
+                        availability: AppState.game-category-availability;
+                        checked <=> SettingsEditor.use-app-category;
+                        toggled => { SettingsEditor.save(); }
                         BuiltinList { title: @tr("Never counted as games"); items: SettingsEditor.game-launchers; }
                     }
                     if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: "⚠ " + @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }

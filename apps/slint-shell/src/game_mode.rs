@@ -7,7 +7,7 @@ use crate::{
     i18n::Msg,
     ui::{AppState, GameModeControl, SettingsWindow},
 };
-use lhc_core::gamemode::{self, DetectorAvailability, GameModeMethod, GameModeStatus};
+use lhc_core::gamemode::{self, DetectorAvailability, GameModeMethod, GameModeStatus, GameSource};
 use slint::ComponentHandle;
 
 /// Show the current state and apply the top-bar choice. The settings
@@ -79,7 +79,13 @@ pub(crate) fn refresh(ui: &SettingsWindow, status: &GameModeStatus) {
     state.set_game_processes_availability(availability_message(status.detectors.processes).to_ui());
     state
         .set_game_window_availability(availability_message(status.detectors.active_window).to_ui());
-    state.set_game_known_availability(availability_message(status.detectors.known_games).to_ui());
+    let source =
+        |source: GameSource| availability_message(source.availability(&status.detectors)).to_ui();
+    state.set_game_steam_availability(source(GameSource::Steam));
+    state.set_game_lutris_availability(source(GameSource::Lutris));
+    state.set_game_gamescope_availability(source(GameSource::Gamescope));
+    state.set_game_category_availability(source(GameSource::AppCategory));
+    state.set_game_bar_availability(source(GameSource::GameBar));
     state.set_game_missing_tool(
         status
             .detectors

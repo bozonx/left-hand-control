@@ -48,11 +48,87 @@ pub struct GameModeDetectors {
     pub fullscreen: DetectorAvailability,
     pub processes: DetectorAvailability,
     pub active_window: DetectorAvailability,
-    /// Games recognised by a launcher or a system catalogue.
-    pub known_games: DetectorAvailability,
     /// Command-line tool the window sources need but which is missing,
     /// e.g. `kdotool` on KDE Wayland.
     pub missing_window_tool: Option<String>,
+}
+
+/// A way to recognise a running game without a rule. Each platform
+/// supports some of them, see [`GameSource::SUPPORTED`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum GameSource {
+    /// Linux: games Steam starts (`reaper SteamLaunch AppId=<id>`) and
+    /// `steam_app_<id>` windows. Windows: the game Steam reports running.
+    Steam,
+    /// Linux: games Lutris starts through `lutris-wrapper`.
+    Lutris,
+    /// Linux: a nested gamescope session in the active window.
+    Gamescope,
+    /// The active window's application category: `.desktop` files on
+    /// Linux, `Info.plist` on macOS. Launchers are skipped
+    /// ([`GAME_LAUNCHERS`]).
+    AppCategory,
+    /// Windows: running executables from the Game Bar list.
+    GameBar,
+}
+
+impl GameSource {
+    #[cfg(target_os = "linux")]
+    pub const SUPPORTED: &[Self] = &[
+        Self::Steam,
+        Self::Lutris,
+        Self::Gamescope,
+        Self::AppCategory,
+    ];
+    #[cfg(target_os = "windows")]
+    pub const SUPPORTED: &[Self] = &[Self::Steam, Self::GameBar];
+    #[cfg(target_os = "macos")]
+    pub const SUPPORTED: &[Self] = &[Self::AppCategory];
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    pub const SUPPORTED: &[Self] = &[];
+
+    /// Whether the user turned this source on.
+    pub fn enabled(self, settings: &GameModeSettings) -> bool {
+        match self {
+            Self::Steam => settings.use_steam,
+            Self::Lutris => settings.use_lutris,
+            Self::Gamescope => settings.use_gamescope,
+            Self::AppCategory => settings.use_app_category,
+            Self::GameBar => settings.use_game_bar,
+        }
+    }
+
+    /// Whether the source can be read now. `Unsupported` means this OS has
+    /// no such source; one the current session cannot read is
+    /// `Unavailable`.
+    pub fn availability(self, detectors: &GameModeDetectors) -> DetectorAvailability {
+        if !Self::SUPPORTED.contains(&self) {
+            return DetectorAvailability::Unsupported;
+        }
+        let detector = match self {
+            Self::Gamescope | Self::AppCategory => detectors.active_window,
+            // Steam keeps the running game in the registry.
+            Self::Steam if cfg!(target_os = "windows") => DetectorAvailability::Available,
+            Self::Steam | Self::Lutris | Self::GameBar => detectors.processes,
+        };
+        match detector {
+            DetectorAvailability::Unsupported => DetectorAvailability::Unavailable,
+            available => available,
+        }
+    }
+
+    /// Sources that have no change events and are polled.
+    fn polled(self) -> bool {
+        matches!(self, Self::Steam | Self::Lutris | Self::GameBar)
+    }
+}
+
+/// The supported sources the user turned on.
+fn enabled_sources(settings: &GameModeSettings) -> impl Iterator<Item = GameSource> + '_ {
+    GameSource::SUPPORTED
+        .iter()
+        .copied()
+        .filter(|source| source.enabled(settings))
 }
 
 /// What turned game mode on.
@@ -390,7 +466,8 @@ fn hold_active(
 struct Observation {
     detectors: GameModeDetectors,
     running: Vec<String>,
-    /// Running games that a launcher or the system knows.
+    /// Running games that a launcher or the system knows, from enabled
+    /// sources only.
     known_games: Vec<String>,
     /// The active window's application when the system lists it as a game.
     window_game: Option<String>,
@@ -418,23 +495,33 @@ fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>) -> Observ
     }
 }
 
-/// The first known game: running under a launcher or listed by the
-/// system, or shown in the active window. Launchers never count.
-fn known_game(observation: &Observation, window: Option<&ActiveWindow>) -> Option<String> {
+/// The first known game from an enabled source: running under a launcher
+/// or listed by the system, or shown in the active window. Launchers
+/// never count.
+fn known_game(
+    settings: &GameModeSettings,
+    observation: &Observation,
+    window: Option<&ActiveWindow>,
+) -> Option<String> {
     let window = window.filter(|window| !process::launcher_window(window));
     observation
         .known_games
         .iter()
         .find(|name| !process::launcher_process(name))
         .cloned()
-        .or_else(|| window.and_then(process::known_game_window))
+        .or_else(|| {
+            window
+                .and_then(process::known_game_window)
+                .filter(|(source, _)| source.enabled(settings))
+                .map(|(_, name)| name)
+        })
         .or_else(|| window.and(observation.window_game.clone()))
 }
 
 /// Whether detection reads sources that report no changes: running
 /// processes, and on Windows the game Steam runs.
 fn needs_polling(settings: &GameModeSettings) -> bool {
-    needs_running_processes(settings) || settings.use_known_games
+    needs_running_processes(settings) || enabled_sources(settings).any(GameSource::polled)
 }
 
 fn needs_running_processes(settings: &GameModeSettings) -> bool {
@@ -473,18 +560,17 @@ fn evaluate(
         .iter()
         .filter(|matcher| !matcher.is_blacklist && !matcher.name.trim().is_empty())
         .collect();
-    let enabled = settings.use_gamemoded
-        || settings.use_fullscreen
-        || settings.use_known_games
-        || !whitelist.is_empty();
+    let known_games = enabled_sources(settings).next().is_some();
+    let enabled =
+        settings.use_gamemoded || settings.use_fullscreen || known_games || !whitelist.is_empty();
     let mut detection = Detection {
         enabled,
         // Nothing to detect is a known "off".
         available: !enabled
             || (settings.use_gamemoded && detectors.gamemoded == DetectorAvailability::Available)
             || (settings.use_fullscreen && detectors.fullscreen == DetectorAvailability::Available)
-            || (settings.use_known_games
-                && detectors.known_games == DetectorAvailability::Available)
+            || enabled_sources(settings)
+                .any(|source| source.availability(detectors) == DetectorAvailability::Available)
             || whitelist.iter().any(|matcher| source_available(matcher)),
         detectors: detectors.clone(),
         ..Detection::default()
@@ -509,9 +595,8 @@ fn evaluate(
         && detectors.gamemoded == DetectorAvailability::Available
     {
         Some(GameModeMethod::Daemon)
-    } else if let Some(name) = (settings.use_known_games
-        && detectors.known_games == DetectorAvailability::Available)
-        .then(|| known_game(observation, window))
+    } else if let Some(name) = known_games
+        .then(|| known_game(settings, observation, window))
         .flatten()
     {
         Some(GameModeMethod::KnownGame(name))
@@ -566,7 +651,6 @@ mod tests {
                 fullscreen: DetectorAvailability::Available,
                 processes: DetectorAvailability::Available,
                 active_window: DetectorAvailability::Available,
-                known_games: DetectorAvailability::Available,
                 missing_window_tool: None,
             },
             running: running.iter().map(|name| name.to_string()).collect(),
@@ -589,7 +673,11 @@ mod tests {
         GameModeSettings {
             use_gamemoded: false,
             use_fullscreen: false,
-            use_known_games: false,
+            use_steam: false,
+            use_lutris: false,
+            use_gamescope: false,
+            use_app_category: false,
+            use_game_bar: false,
             process_matchers: matchers,
             control: GameModeControl::Auto,
         }
@@ -675,7 +763,8 @@ mod tests {
     #[test]
     fn known_games_come_from_launchers_windows_and_categories() {
         let mut settings = settings(Vec::new());
-        settings.use_known_games = true;
+        settings.use_steam = true;
+        settings.use_app_category = true;
         let mut observed = observation(&[], false);
         assert!(!evaluate(&settings, &observed, None).active);
         // A Steam game in the foreground, even windowed.
@@ -715,8 +804,23 @@ mod tests {
         let mut excluded = settings.clone();
         excluded.process_matchers = vec![matcher("obs", false, true)];
         assert!(!evaluate(&excluded, &observed, Some(&window)).active);
-        settings.use_known_games = false;
+        settings.use_steam = false;
+        settings.use_app_category = false;
         assert!(!evaluate(&settings, &observed, Some(&window)).active);
+    }
+
+    #[test]
+    fn window_sources_turn_off_separately() {
+        let mut settings = settings(Vec::new());
+        settings.use_steam = true;
+        let observed = observation(&[], false);
+        assert!(evaluate(&settings, &observed, Some(&fullscreen("steam_app_42"))).active);
+        assert!(!evaluate(&settings, &observed, Some(&fullscreen("gamescope"))).active);
+        settings.use_gamescope = true;
+        assert_eq!(
+            evaluate(&settings, &observed, Some(&fullscreen("gamescope"))).method,
+            Some(GameModeMethod::KnownGame("gamescope".into()))
+        );
     }
 
     #[test]

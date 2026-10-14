@@ -2179,14 +2179,47 @@ msgstr "Встроенный список. Чтобы всё же учитыва
 msgid "Ignored in fullscreen"
 msgstr "Не считаются играми в полноэкранном режиме"
 
-msgid "Recognize known games"
-msgstr "Распознавать известные игры"
+msgid "Known games"
+msgstr "Известные игры"
 
-msgid "Turns on while a game started by Steam or Lutris runs, or while the active window belongs to an application of the Game category. On Windows also while a game from the Game Bar list runs. Launchers themselves never count."
-msgstr "Включается, пока запущена игра из Steam или Lutris или пока активно окно приложения из категории «Игры». В Windows — ещё и пока запущена игра из списка Game Bar. Сами лаунчеры играми не считаются."
+msgid "Not available in this session."
+msgstr "Недоступно в этом сеансе."
 
-msgid "Known games cannot be recognized on this system."
-msgstr "В этой системе распознавание известных игр недоступно."
+msgid "Steam games"
+msgstr "Игры Steam"
+
+msgid "Turns on while Steam runs a game: Steam starts every game through reaper SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr "Включается, пока Steam запускает игру: Steam запускает каждую игру через reaper SteamLaunch, а окна игр имеют ID steam_app_<номер>."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Включается, пока Steam сообщает о запущенной игре."
+
+msgid "Lutris games"
+msgstr "Игры Lutris"
+
+msgid "Turns on while a game started by Lutris runs: Lutris starts every game through lutris-wrapper."
+msgstr "Включается, пока запущена игра из Lutris: Lutris запускает каждую игру через lutris-wrapper."
+
+msgid "Gamescope sessions"
+msgstr "Сеансы gamescope"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "Включается, пока активно окно вложенного сеанса gamescope."
+
+msgid "Games from the Game Bar list"
+msgstr "Игры из списка Game Bar"
+
+msgid "Turns on while a program that Windows recognized as a game (the Game Bar list) runs."
+msgstr "Включается, пока запущена программа, которую Windows распознала как игру (список Game Bar)."
+
+msgid "Applications of the Game category"
+msgstr "Приложения из категории «Игры»"
+
+msgid "Turns on while the active window belongs to an application whose .desktop file lists the Game category. Launchers are tagged as games too, so they are skipped."
+msgstr "Включается, пока активно окно приложения, у которого в .desktop-файле указана категория Game. Лаунчеры тоже помечены как игры, поэтому они пропускаются."
+
+msgid "Turns on while the active application declares the Games category in its Info.plist. Launchers are skipped."
+msgstr "Включается, пока активно приложение, у которого в Info.plist указана категория «Игры». Лаунчеры пропускаются."
 
 msgid "Never counted as games"
 msgstr "Никогда не считаются играми"
