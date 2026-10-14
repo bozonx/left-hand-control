@@ -102,7 +102,7 @@ export component DevicePicker inherits Rectangle {
                 if event.text == Key.DownArrow || event.text == Key.UpArrow {
                     root.highlighted = mod(root.highlighted + root.filtered.length + (event.text == Key.DownArrow ? 1 : -1), root.filtered.length);
                     root.scroll-to-highlight();
-                                return accept;
+                    return accept;
                 }
                 if event.text == "\n" { root.choose(root.highlighted); return accept; }
                 if event.text == Key.Escape && root.query != "" { search.clear(); return accept; }
@@ -120,8 +120,9 @@ export component DevicePicker inherits Rectangle {
                             for choice[index] in root.filtered: Rectangle {
                                 private property <bool> heading: choice.group != DeviceGroup.unselected && (index == 0 || root.filtered[index - 1].group != choice.group);
                                 height: 36px + (self.heading ? 28px : 0px);
+                                vertical-stretch: 0;
                                 if self.heading: Text {
-                                    x: 8px; height: 28px; width: parent.width - 16px;
+                                    x: 8px; y: 0px; height: 28px; width: parent.width - 16px;
                                     text: choice.group == DeviceGroup.suggested ? root.suggested-label : choice.group == DeviceGroup.other ? @tr("Other devices") : @tr("Manual");
                                     color: Theme.muted; font-size: 12px; font-weight: 600; vertical-alignment: center;
                                 }

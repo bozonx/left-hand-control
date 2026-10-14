@@ -152,7 +152,7 @@ component DeviceField inherits HorizontalLayout {
             VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: root.icon; colorize: Theme.text; } }
             Text { text: root.label; color: Theme.text; vertical-alignment: center; }
         }
-        Text { text: root.note; color: Theme.muted; font-size: 12px; }
+        if root.note != "": Text { text: root.note; color: Theme.muted; font-size: 12px; }
     }
     VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 6px; alignment: start;
         @children
@@ -412,12 +412,10 @@ export component SettingsPage inherits VerticalBox {
                                 SubsectionTitle { horizontal-stretch: 1; text: @tr("Devices"); vertical-alignment: center; }
                                 IconButton { icon: @image-url("icons/refresh-cw.svg"); tooltip: @tr("Refresh device list"); enabled: !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
                             }
-                            Text { vertical-stretch: 0; text: @tr("Pick the physical device whose events should be intercepted."); color: Theme.muted; wrap: word-wrap; }
                         }
                         DeviceField {
                             icon: @image-url("icons/keyboard.svg");
                             label: @tr("Keyboard");
-                            note: @tr("Required");
                             DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); suggested-label: @tr("Looks like a keyboard"); enabled: !AppState.mapper-busy; choices: SettingsEditor.input-devices; selected-index: SettingsEditor.selected-device; selected(index) => { SettingsEditor.select-device(index); apply-devices(); } }
                             if SettingsEditor.keyboard-manual: TextField { enabled: !AppState.mapper-busy; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); apply-devices(); } }
                             if !SettingsEditor.keyboard-manual && SettingsEditor.keyboard-device-path != "": Text { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: 12px; overflow: elide; }
@@ -430,13 +428,11 @@ export component SettingsPage inherits VerticalBox {
                             if SettingsEditor.mouse-manual: TextField { enabled: !AppState.mapper-busy; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); apply-devices(); } }
                             if !SettingsEditor.mouse-manual && SettingsEditor.mouse-device-path != "": Text { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: 12px; overflow: elide; }
                         }
-                        if AppState.mapper-running: Text { vertical-stretch: 0; max-width: 576px; text: @tr("Changing a device restarts the mapper."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                     }
                 }
                 if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                 if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Section {
                     title: @tr("Text input");
-                    Text { vertical-stretch: 0; max-width: 576px; text: @tr("How text actions in rules and macros are typed. Key remapping and the emoji popup do not use it."); color: Theme.muted; wrap: word-wrap; }
                     VerticalBox {
                         padding: 0px; spacing: 8px;
                         FormLabel { text: @tr("Typing method"); }
