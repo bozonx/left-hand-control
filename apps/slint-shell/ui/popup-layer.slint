@@ -1,5 +1,5 @@
 import { Theme } from "theme.slint";
-import { ActionText, LayerKeyCell } from "layers.slint";
+import { LayerKeyCell } from "layers.slint";
 import { Assignment } from "types.slint";
 
 /// One read-only key of the hint: its label and what it does in the layer.
@@ -9,7 +9,7 @@ component HintKey inherits Rectangle {
     border-width: 1px;
     border-color: Theme.border;
     background: Theme.card;
-    opacity: root.cell.kind == Assignment.transparent ? 0.55 : 1;
+    opacity: root.cell.kind == Assignment.action ? 1 : 0.55;
     VerticalLayout {
         padding: 4px;
         spacing: 2px;
@@ -21,11 +21,22 @@ component HintKey inherits Rectangle {
             font-size: 12px;
             font-weight: 600;
             horizontal-alignment: center;
-            overflow: elide;
+            overflow: clip;
         }
         HorizontalLayout {
             alignment: center;
-            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; emoji: root.cell.emoji; text-size: 11px; }
+            Text {
+                min-width: 0px;
+                horizontal-stretch: 1;
+                text: root.cell.kind == Assignment.action ? root.cell.action : "";
+                color: Theme.text;
+                font-family: root.cell.emoji ? "Noto Color Emoji" : "";
+                font-size: root.cell.emoji ? 14px : 11px;
+                font-weight: 500;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                overflow: clip;
+            }
         }
     }
 }
@@ -37,7 +48,7 @@ component HintHand inherits VerticalLayout {
     for row in root.cells.length / root.columns: HorizontalLayout {
         spacing: 6px;
         for col in root.columns: Rectangle {
-            width: 60px;
+            width: 90px;
             height: 44px;
             if root.cells[row * root.columns + col].index >= 0: HintKey {
                 cell: root.cells[row * root.columns + col];
@@ -50,7 +61,7 @@ component HintHand inherits VerticalLayout {
 /// keyboard focus and lets the pointer through (see `spell.rs`).
 export component LayerHintPopup inherits Window {
     title: @tr("Layer");
-    width: 860px;
+    width: 1290px;
     height: 330px;
     no-frame: true;
     always-on-top: true;
@@ -74,7 +85,7 @@ export component LayerHintPopup inherits Window {
                 font-size: 15px;
                 font-weight: 700;
                 horizontal-alignment: center;
-                overflow: elide;
+                overflow: clip;
             }
             HorizontalLayout {
                 alignment: center;

@@ -80,7 +80,7 @@ fn height(_popup: Popup) -> u32 {
 }
 
 /// Size of the layer hint surface; matches `LayerHintPopup`.
-const HINT_WIDTH: u32 = 860;
+const HINT_WIDTH: u32 = 1290;
 const HINT_HEIGHT: u32 = 330;
 
 fn configuration(width: u32, height: u32) -> Result<WindowConf, Box<dyn std::error::Error>> {
