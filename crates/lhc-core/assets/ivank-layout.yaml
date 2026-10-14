@@ -1,7 +1,6 @@
 layers:
   - id: navigation
     keys:
-      Tab: CapsLock
       MetaLeft: Ctrl+KeyX
       AltLeft: Delete
       Space: Backspace
@@ -44,8 +43,6 @@ layers:
     keys:
       CapsLock: null
       AltLeft: Ctrl+Enter
-      # ❓
-      Space: macro:replaceWordWidthBuffer
 
       Digit1: sys:switchLayout1
       Digit2: sys:switchLayout2
@@ -235,6 +232,8 @@ rules:
   - key: ShiftLeft
     tap: Ctrl+KeyC
     dtap: Ctrl+KeyX
+  - key: ShiftLeft+CapsLock
+    tap: CapsLock
   - key: ControlLeft
     hold: AltLeft
     tap: app:showQuickMenu1
