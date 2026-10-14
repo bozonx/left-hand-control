@@ -187,36 +187,6 @@ msgstr "Автоматически"
 msgid "Key behavior"
 msgstr "Поведение клавиш"
 
-msgid "Tap decision"
-msgstr "Распознавание нажатия"
-
-msgid "Permissive hold (recommended)"
-msgstr "Удержание после отпускания (рекомендуется)"
-
-msgid "Hold on other key press"
-msgstr "Удержание при нажатии другой клавиши"
-
-msgid "Hold timeout (ms)"
-msgstr "Задержка удержания (мс)"
-
-msgid "Double tap timeout (ms)"
-msgstr "Окно двойного нажатия (мс)"
-
-msgid "Combination timeout (ms)"
-msgstr "Окно сочетания (мс)"
-
-msgid "For rules triggered by a key combination such as KeyJ+KeyK. All keys must be pressed within this window. Until then the first keys are held back, and if the combination is not completed they are typed as usual. Modifiers are never held back."
-msgstr "Для правил, у которых триггер — сочетание клавиш, например KeyJ+KeyK. Все клавиши нужно нажать в пределах этого окна. До этого первые клавиши придерживаются, а если сочетание не набрано, вводятся как обычно. Модификаторы не придерживаются."
-
-msgid "Maximum interval between the keys of a combination."
-msgstr "Максимальный интервал между клавишами сочетания."
-
-msgid "Macro step pause (ms)"
-msgstr "Пауза между шагами макроса (мс)"
-
-msgid "Modifier delay (ms)"
-msgstr "Задержка модификатора (мс)"
-
 msgid "Game mode"
 msgstr "Игровой режим"
 
@@ -312,17 +282,11 @@ msgstr "Не задано"
 msgid "Layer (hold)"
 msgstr "Слой (удержание)"
 
-msgid "Hold timeout, ms"
-msgstr "Порог удержания, мс"
-
 msgid "Double-tap action"
 msgstr "Двойное нажатие"
 
 msgid "Hold button"
 msgstr "Удержание"
-
-msgid "Double-tap ms"
-msgstr "Двойное нажатие, мс"
 
 msgid "Default"
 msgstr "По умолчанию"
@@ -1261,24 +1225,6 @@ msgstr "E-ink"
 msgid "Enter device path manually"
 msgstr "Ввести путь устройства вручную"
 
-msgid "Hold only when another key is pressed and released before this one, or the hold timeout expires. Fast key rolls while typing stay taps."
-msgstr "Удержание, только если другая клавиша нажата и отпущена раньше этой или истекло время удержания. Быстрые переборы клавиш при печати остаются нажатиями."
-
-msgid "Hold as soon as another key is pressed. Reacts faster, but fast typing can trigger the hold by mistake."
-msgstr "Удержание сразу при нажатии другой клавиши. Реагирует быстрее, но при быстрой печати удержание может сработать по ошибке."
-
-msgid "Time before a key press becomes a hold."
-msgstr "Время до перехода нажатия в удержание."
-
-msgid "Maximum interval between two taps."
-msgstr "Максимальный интервал между двумя нажатиями."
-
-msgid "Default pause between macro steps."
-msgstr "Пауза между шагами макроса по умолчанию."
-
-msgid "Delay after pressing macro modifiers."
-msgstr "Задержка после нажатия модификаторов макроса."
-
 msgid "Mode"
 msgstr "Режим"
 
@@ -1490,9 +1436,6 @@ msgstr "Создать слой…"
 msgid "Create “{}”"
 msgstr "Создать «{}»"
 
-msgid "Enter a hold duration between 0.001 and 86400 seconds."
-msgstr "Введите длительность удержания от 0,001 до 86400 секунд."
-
 msgid "A trigger can be a single key or a combination, such as ShiftLeft+ControlLeft. The combination works in either press order and ends when any key is released."
 msgstr "Триггером может быть клавиша или сочетание, например ShiftLeft+ControlLeft. Порядок нажатия не важен; удержание заканчивается при отпускании любой клавиши."
 
@@ -1519,12 +1462,6 @@ msgstr "Выполняется один раз через {} с"
 
 msgid "Hold another key / combination"
 msgstr "Удерживать другую клавишу / сочетание"
-
-msgid "Long-hold duration (seconds)"
-msgstr "Время до действия после удержания (секунды)"
-
-msgid "Default delay before a rule runs its long-hold action once. Each rule can override it in advanced options."
-msgstr "Задержка перед однократным выполнением действия после удержания. В дополнительных параметрах правила можно задать своё значение."
 
 msgid "Press one key or hold a combination, then release a key to capture it."
 msgstr "Нажмите клавишу или удерживайте сочетание, затем отпустите клавишу для захвата."
@@ -1886,23 +1823,8 @@ msgstr "Открытые окна не найдены"
 msgid "Window title contains: {}"
 msgstr "Заголовок окна содержит: {}"
 
-msgid "Defaults for all rules and macros. Each rule or macro can override them in its own settings."
-msgstr "Значения по умолчанию для всех правил и макросов. Каждое правило или макрос может переопределить их в своих настройках."
-
-msgid "Decides what a rule key does when another key is pressed while it is held: stay a tap or switch to hold."
-msgstr "Определяет, что делает клавиша правила, если во время её удержания нажата другая клавиша: остаётся нажатием или переходит в удержание."
-
 msgid "Timing"
 msgstr "Тайминги"
-
-msgid "Used by rules without their own value. Release the key earlier to run the tap action; hold it longer to switch to the hold behavior."
-msgstr "Используется правилами без собственного значения. Отпустите клавишу раньше, чтобы выполнить действие нажатия; держите дольше, чтобы включить удержание."
-
-msgid "Holding a key this long runs its long-hold action."
-msgstr "Если держать клавишу так долго, выполнится действие после удержания."
-
-msgid "Used by rules without their own value. A second press within this window after the first release counts as a double tap. When a rule has a double-tap action, a single tap waits for this window before it runs."
-msgstr "Используется правилами без собственного значения. Второе нажатие в пределах этого окна после первого отпускания считается двойным. Если у правила есть действие двойного нажатия, одиночное нажатие выполняется только после окончания окна."
 
 msgid "Used by macros without their own value."
 msgstr "Используется макросами без собственного значения."
@@ -2443,24 +2365,6 @@ msgstr "Отпускать клавишу, пока нажаты эти клав
 msgid "Press the key only together with these layer keys:"
 msgstr "Нажимать клавишу только вместе с этими клавишами слоя:"
 
-msgid "Treat as hold after, ms"
-msgstr "Считать удержанием через, мс"
-
-msgid "Released earlier, the trigger counts as a tap; held longer, as a hold. Empty uses the global setting: {} ms."
-msgstr "Если отпустить триггер раньше — это нажатие, если позже — удержание. Пустое поле — значение из общих настроек: {} мс."
-
-msgid "Long hold after, s"
-msgstr "Долгое удержание через, с"
-
-msgid "Seconds of continuous holding before the action runs. Empty uses the global setting: {} s."
-msgstr "Через сколько секунд непрерывного удержания выполнится действие. Пустое поле — значение из общих настроек: {} с."
-
-msgid "Double-tap interval, ms"
-msgstr "Интервал двойного нажатия, мс"
-
-msgid "Longest pause between two taps. Empty uses the global setting: {} ms."
-msgstr "Максимальная пауза между двумя нажатиями. Пустое поле — значение из общих настроек: {} мс."
-
 msgid "Holds {}"
 msgstr "Зажимает {}"
 
@@ -2475,9 +2379,6 @@ msgstr "Отпускается для {}"
 
 msgid "Hold after {} ms"
 msgstr "Удержание через {} мс"
-
-msgid "Long hold after {} s"
-msgstr "Долгое удержание через {} с"
 
 msgid "Choose a layer key"
 msgstr "Выберите клавишу слоя"
@@ -2500,12 +2401,6 @@ msgstr "Нажмите для выбора режима (Авто / Вкл / В�
 msgid "The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device."
 msgstr "Маппер перехватывает ввод с клавиатуры, применяет слои, правила и макросы и отправляет результат через виртуальное устройство."
 
-msgid "Default pause between sequential steps in a macro. Used by macros without their own value. Increase if target applications miss fast keystrokes."
-msgstr "Пауза по умолчанию между последовательными шагами макроса. Используется макросами без собственного значения. Увеличьте, если целевые приложения пропускают быстрые нажатия."
-
-msgid "How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of a step. Used by macros without their own value. Increase if shortcuts in applications register without modifiers."
-msgstr "Пауза между нажатием модификаторов (Shift, Ctrl и др.) и основной клавиши шага. Используется макросами без собственного значения. Увеличьте, если сочетания клавиш в приложениях срабатывают без модификаторов."
-
 msgid "Opened by the app:showQuickMenu1...5 actions. Each cell can hold any action (shortcut, macro, shell command, or system action) invoked quickly by clicking or pressing the grid hotkey (1-9, Q-P, etc.)."
 msgstr "Открывается действиями app:showQuickMenu1...5. В каждой ячейке настраивается любое действие (сочетание клавиш, макрос, команда или системное действие), которое быстро вызывается кликом или клавишей сетки (1-9, Q-P и др.)."
 
@@ -2523,3 +2418,103 @@ msgstr "Показывать стандартные обозначения кл�
 
 msgid "Show internal key codes used in Left Hand Control profiles (e.g. KeyA, ArrowLeft)."
 msgstr "Показывать внутренние коды клавиш профилей Left Hand Control (например, KeyA, ArrowLeft)."
+
+
+msgid "Hold detection"
+msgstr "Распознавание удержания"
+
+msgid "When a key becomes a hold"
+msgstr "Когда клавиша становится удержанием"
+
+msgid "Decides when a rule key that is still down counts as a hold if you press another key meanwhile. Applies to all rules."
+msgstr "Определяет, когда нажатая клавиша правила считается удержанием, если, пока она нажата, вы нажимаете другую клавишу. Действует для всех правил."
+
+msgid "After another key is released: the key becomes a hold once another key is pressed and released while it is down, or when the hold threshold passes. Fast rolls while typing stay taps."
+msgstr "После отпускания другой клавиши: клавиша становится удержанием, когда другую клавишу нажали и отпустили, пока эта нажата, или когда истёк порог удержания. Быстрые переборы клавиш при печати остаются нажатиями."
+
+msgid "As soon as another key is pressed: reacts faster, but fast typing can trigger the hold by mistake."
+msgstr "Сразу при нажатии другой клавиши: реагирует быстрее, но при быстрой печати удержание может сработать по ошибке."
+
+msgid "After another key is released (recommended)"
+msgstr "После отпускания другой клавиши (рекомендуется)"
+
+msgid "As soon as another key is pressed"
+msgstr "Сразу при нажатии другой клавиши"
+
+msgid "Rule defaults"
+msgstr "Значения по умолчанию для правил"
+
+msgid "Used by rules that leave the field empty. A rule can set its own value in its advanced options."
+msgstr "Применяются к правилам, в которых поле оставлено пустым. Своё значение можно задать в дополнительных параметрах правила."
+
+msgid "Reset to defaults"
+msgstr "Вернуть стандартные"
+
+msgid "Hold threshold, ms"
+msgstr "Порог удержания, мс"
+
+msgid "How long to hold a rule key before it counts as a hold: its layer or hold action. Released earlier, the key runs its tap action."
+msgstr "Сколько держать клавишу правила, чтобы это считалось удержанием: включается слой или действие удержания. Если отпустить раньше, выполнится действие нажатия."
+
+msgid "Lower: layers turn on faster, but fast typing may trigger them by mistake. Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr "Меньше — слои включаются быстрее, но при быстрой печати возможны ложные срабатывания. Больше — меньше ложных удержаний, но дольше ждать. Обычно 150–250 мс."
+
+msgid "Standard value: {} ms."
+msgstr "Стандартное значение: {} мс."
+
+msgid "Long hold, ms"
+msgstr "Долгое удержание, мс"
+
+msgid "How long to keep holding a rule key before its long-hold action runs once. Applies to rules whose hold runs an action instead of a layer."
+msgstr "Сколько держать клавишу правила, чтобы один раз выполнилось действие долгого удержания. Относится к правилам, у которых удержание запускает действие, а не слой."
+
+msgid "Double-tap window, ms"
+msgstr "Окно двойного нажатия, мс"
+
+msgid "A second tap within this time after the first release counts as a double tap."
+msgstr "Второе нажатие в течение этого времени после отпускания первого считается двойным."
+
+msgid "A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed."
+msgstr "Одиночное нажатие клавиши, у которой есть действие двойного нажатия, срабатывает только после окончания окна, поэтому большое значение делает такие клавиши медленными. Клавиши без действия двойного нажатия не задерживаются."
+
+msgid "Macro defaults"
+msgstr "Значения по умолчанию для макросов"
+
+msgid "Used by macros that leave the field empty. A macro can set its own value on the Macros page."
+msgstr "Применяются к макросам, в которых поле оставлено пустым. Своё значение можно задать на странице «Макросы»."
+
+msgid "Pause between steps, ms"
+msgstr "Пауза между шагами, мс"
+
+msgid "Pause between consecutive steps of a macro. Increase it if an application misses keystrokes."
+msgstr "Пауза между соседними шагами макроса. Увеличьте, если приложение пропускает нажатия."
+
+msgid "Simultaneous press window, ms"
+msgstr "Окно одновременного нажатия, мс"
+
+msgid "For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back."
+msgstr "Для правил, триггер которых — несколько клавиш, нажатых вместе, например KeyJ+KeyK. Все клавиши нужно нажать в течение этого времени, в любом порядке. До этого первая клавиша придерживается; если сочетание не набрано, она вводится как обычно. Модификаторы не придерживаются."
+
+msgid "Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it."
+msgstr "Больше — сочетание легче набрать, но печать этими клавишами слегка запаздывает. Действует для всех правил; в правиле не переопределяется."
+
+msgid "Modifier delay, ms"
+msgstr "Задержка модификатора, мс"
+
+msgid "Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty."
+msgstr "Пауза между нажатием модификаторов (Shift, Ctrl, …) и основной клавиши в шаге макроса. Увеличьте, если приложение получает сочетание без модификатора. Применяется к макросам, в которых поле оставлено пустым."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "Введите долгое удержание от 100 до 60000 мс."
+
+msgid "Long hold after {} ms"
+msgstr "Долгое удержание через {} мс"
+
+msgid "Released earlier, the trigger counts as a tap; held longer, as a hold. Empty uses the default from Settings: {} ms."
+msgstr "Если отпустить триггер раньше — это нажатие, если позже — удержание. Пустое поле — значение по умолчанию из настроек: {} мс."
+
+msgid "How long to keep holding before the action runs. Empty uses the default from Settings: {} ms."
+msgstr "Сколько держать клавишу до выполнения действия. Пустое поле — значение по умолчанию из настроек: {} мс."
+
+msgid "Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr "Максимальная пауза между двумя нажатиями. Пустое поле — значение по умолчанию из настроек: {} мс."

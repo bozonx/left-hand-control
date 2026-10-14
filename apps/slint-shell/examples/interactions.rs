@@ -400,14 +400,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rules.invoke_open_dialog(0, RuleDialog::Advanced);
     rules.set_long_hold_timeout("0".into());
     rules.invoke_apply_advanced();
-    assert_eq!(rules.get_status().id, "hold-seconds-invalid");
-    rules.set_long_hold_timeout("1,5".into());
+    assert_eq!(rules.get_status().id, "long-hold-invalid");
+    rules.set_long_hold_timeout("1500".into());
     rules.invoke_apply_advanced();
     assert_eq!(
         document.read().layout().rules[0].long_hold_timeout_ms,
         Some(1500)
     );
-    settings.set_long_hold_timeout("2.5".into());
+    settings.set_long_hold_timeout("2500".into());
     settings.invoke_save();
     assert_eq!(
         document.read().settings().default_long_hold_timeout_ms,
@@ -695,15 +695,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             28 => {
                 snapshot(&ui, "settings-behavior");
-                let position = slint::LogicalPosition::new(590.0, 509.0);
+                let position = slint::LogicalPosition::new(590.0, 483.0);
                 let wheel = |delta_y| ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
-                let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<f64>().unwrap();
-                assert!((duration() - 2.5).abs() < 0.0001);
+                let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<u64>().unwrap();
+                assert_eq!(duration(), 2500);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 wheel(60.0);
-                assert!((duration() - 2.6).abs() < 0.0001, "duration after wheel: {}", duration());
+                assert_eq!(duration(), 2600, "duration after wheel");
                 wheel(-60.0);
-                assert!((duration() - 2.5).abs() < 0.0001);
+                assert_eq!(duration(), 2500);
                 println!("Interactions passed: settings, numeric wheel, rules, long-hold actions, chord triggers, extra-key sorting, persistence, validation, navigation and game mode");
                 slint::quit_event_loop().unwrap();
             }

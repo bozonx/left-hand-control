@@ -77,7 +77,7 @@ impl Form {
             locale: choice_index(&LOCALES, &settings.locale),
             tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision.as_str()),
             hold: settings.default_hold_timeout_ms.to_string(),
-            long_hold: super::rules::seconds_text(settings.default_long_hold_timeout_ms),
+            long_hold: settings.default_long_hold_timeout_ms.to_string(),
             double_tap: settings.default_double_tap_timeout_ms.to_string(),
             combo: settings.combo_timeout_ms.to_string(),
             macro_pause: settings.default_macro_step_pause_ms.to_string(),
@@ -179,7 +179,6 @@ impl Form {
 
     /// Write the fields that differ from `base` into `settings`.
     fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Msg> {
-        let long_hold = super::rules::parse_seconds(&self.long_hold)?;
         let numbers = [
             parse_ms(&self.hold)?,
             parse_ms(&self.double_tap)?,
@@ -202,7 +201,7 @@ impl Form {
         changed!(layout_osd => settings.layout_osd = self.layout_osd);
         changed!(locale => settings.locale = choice(&LOCALES, self.locale));
         changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision).into());
-        changed!(long_hold => settings.default_long_hold_timeout_ms = long_hold);
+        changed!(long_hold => settings.default_long_hold_timeout_ms = super::rules::parse_long_hold(&self.long_hold)?);
         changed!(hold => settings.default_hold_timeout_ms = numbers[0]);
         changed!(double_tap => settings.default_double_tap_timeout_ms = numbers[1]);
         changed!(macro_pause => settings.default_macro_step_pause_ms = numbers[2]);
@@ -524,6 +523,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     e.set_text_modes(strings(TEXT_MODES));
     e.set_fullscreen_non_games(lhc_core::gamemode::FULLSCREEN_NON_GAMES.join(", ").into());
     e.set_game_launchers(lhc_core::gamemode::GAME_LAUNCHERS.join(", ").into());
+    let defaults = Form::from_settings(&AppSettings::default());
+    e.set_default_hold_timeout(defaults.hold.clone().into());
+    e.set_default_long_hold_timeout(defaults.long_hold.clone().into());
+    e.set_default_double_tap_timeout(defaults.double_tap.clone().into());
+    e.set_default_combo_timeout(defaults.combo.clone().into());
+    e.set_default_macro_pause(defaults.macro_pause.clone().into());
+    e.set_default_modifier_delay(defaults.modifier_delay.clone().into());
     {
         let config = document.read();
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());
@@ -565,6 +571,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         );
     });
     refresh(ui, document, &mut state.borrow_mut(), true);
+    // Changed advanced values stay visible instead of hiding behind the disclosure.
+    if let Some(form) = &state.borrow().base {
+        e.set_behavior_advanced(
+            form.combo != defaults.combo || form.modifier_delay != defaults.modifier_delay,
+        );
+    }
 
     let weak = ui.as_weak();
     let shared = state.clone();

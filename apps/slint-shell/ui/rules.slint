@@ -269,7 +269,7 @@ component HoldField inherits VerticalBox {
                             VerticalLayout { alignment: start; Button { text: @tr("Create layer"); enabled: RulesEditor.layer-name-error(RulesEditor.new-layer-name).id == ""; clicked => { RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } } }
                         }
                         Rectangle { height: 1px; background: Theme.divider; }
-                        Text { text: @tr("Action after {} ms of holding", RulesEditor.long-hold-timeout.is-float() ? round(RulesEditor.long-hold-timeout.to-float() * 1000) : round(RulesEditor.default-long-hold-timeout.to-float() * 1000)); color: Theme.muted; font-size: 11px; }
+                        Text { text: @tr("Action after {} ms of holding", RulesEditor.long-hold-timeout != "" ? RulesEditor.long-hold-timeout : RulesEditor.default-long-hold-timeout); color: Theme.muted; font-size: 11px; }
                         Rectangle { height: 36px; border-radius: 4px; background: action-touch.has-hover || RulesEditor.layer-highlight == root.count + 1 ? Theme.hover : transparent;
                             HorizontalLayout { padding-left: 8px; padding-right: 8px; spacing: 8px;
                                 VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; } }
@@ -292,7 +292,7 @@ export component RulesPage inherits VerticalBox {
     pure function summary(rule: RuleRow) -> string {
         return join(join(join(join(held-text(rule), release-text(rule)),
             rule.hold-timeout != "" ? @tr("Hold after {} ms", rule.hold-timeout) : ""),
-            rule.hold-mode == 2 && rule.long-hold-timeout != "" ? @tr("Long hold after {} s", rule.long-hold-timeout) : ""),
+            rule.hold-mode == 2 && rule.long-hold-timeout != "" ? @tr("Long hold after {} ms", rule.long-hold-timeout) : ""),
             rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "");
     }
     pure function held-text(rule: RuleRow) -> string {
@@ -463,16 +463,16 @@ export component RuleDialogOverlay inherits FocusScope {
                         VerticalLayout { spacing: 12px; alignment: start; vertical-stretch: 0;
                             SectionTitle { text: @tr("Timing"); }
                             if RulesEditor.hold-mode != 2: VerticalLayout { spacing: 6px; alignment: start; vertical-stretch: 0;
-                                FormLabel { text: @tr("Treat as hold after, ms"); info: @tr("Released earlier, the trigger counts as a tap; held longer, as a hold. Empty uses the global setting: {} ms.", RulesEditor.default-hold-timeout); }
-                                HorizontalLayout { alignment: start; NumericInput { text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: @tr("Treat as hold after, ms"); } }
+                                FormLabel { text: @tr("Hold threshold, ms"); info: @tr("Released earlier, the trigger counts as a tap; held longer, as a hold. Empty uses the default from Settings: {} ms.", RulesEditor.default-hold-timeout); }
+                                HorizontalLayout { alignment: start; NumericInput { text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: @tr("Hold threshold, ms"); minimum: 50; maximum: 1000; } }
                             }
                             if RulesEditor.hold-mode == 2: VerticalLayout { spacing: 6px; alignment: start; vertical-stretch: 0;
-                                FormLabel { text: @tr("Long hold after, s"); info: @tr("Seconds of continuous holding before the action runs. Empty uses the global setting: {} s.", RulesEditor.default-long-hold-timeout); }
-                                HorizontalLayout { alignment: start; NumericInput { text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: 0.1; maximum: 86400; step: 0.1; fractional: true; label: @tr("Long hold after, s"); } }
+                                FormLabel { text: @tr("Long hold, ms"); info: @tr("How long to keep holding before the action runs. Empty uses the default from Settings: {} ms.", RulesEditor.default-long-hold-timeout); }
+                                HorizontalLayout { alignment: start; NumericInput { text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: 100; maximum: 60000; step: 100; label: @tr("Long hold, ms"); } }
                             }
                             if !RulesEditor.is-chord && (RulesEditor.double-tap != "" || RulesEditor.original-double-timeout != ""): VerticalLayout { spacing: 6px; alignment: start; vertical-stretch: 0;
-                                FormLabel { text: @tr("Double-tap interval, ms"); info: @tr("Longest pause between two taps. Empty uses the global setting: {} ms.", RulesEditor.default-double-timeout); }
-                                HorizontalLayout { alignment: start; NumericInput { text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: @tr("Double-tap interval, ms"); } }
+                                FormLabel { text: @tr("Double-tap window, ms"); info: @tr("Longest pause between two taps. Empty uses the default from Settings: {} ms.", RulesEditor.default-double-timeout); }
+                                HorizontalLayout { alignment: start; NumericInput { text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: @tr("Double-tap window, ms"); minimum: 50; maximum: 1000; } }
                             }
                         }
                     }
@@ -481,7 +481,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 if RulesEditor.dialog == RuleDialog.hold-timeout || RulesEditor.dialog == RuleDialog.double-timeout: NumericInput {
                     text <=> RulesEditor.dialog-value;
                     placeholder-text: RulesEditor.dialog == RuleDialog.hold-timeout ? RulesEditor.default-hold-timeout : RulesEditor.default-double-timeout;
-                    label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold timeout, ms") : @tr("Double-tap ms");
+                    label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold threshold, ms") : @tr("Double-tap window, ms");
                     accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
                 }
                 if RulesEditor.status.id != "": Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }

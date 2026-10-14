@@ -63,27 +63,21 @@ fn parse_timeout(value: &str) -> Result<Option<u64>, Msg> {
     value.parse().map(Some).map_err(|_| Msg::TimeoutInvalid)
 }
 
-pub(super) fn seconds_text(ms: u64) -> String {
-    format!("{}", ms as f64 / 1000.0)
-}
-
-pub(super) fn parse_seconds(value: &str) -> Result<u64, Msg> {
-    let seconds: f64 = value
+/// Long-hold duration in milliseconds, as entered in a rule or in Settings.
+pub(super) fn parse_long_hold(value: &str) -> Result<u64, Msg> {
+    value
         .trim()
-        .replace(',', ".")
         .parse()
-        .map_err(|_| Msg::HoldSecondsInvalid)?;
-    if !seconds.is_finite() || !(0.001..=86400.0).contains(&seconds) {
-        return Err(Msg::HoldSecondsInvalid);
-    }
-    Ok((seconds * 1000.0).round() as u64)
+        .ok()
+        .filter(|ms| (100..=60_000).contains(ms))
+        .ok_or(Msg::LongHoldInvalid)
 }
 
-fn optional_seconds(value: &str) -> Result<Option<u64>, Msg> {
+fn optional_long_hold(value: &str) -> Result<Option<u64>, Msg> {
     if value.trim().is_empty() {
         Ok(None)
     } else {
-        parse_seconds(value).map(Some)
+        parse_long_hold(value).map(Some)
     }
 }
 
@@ -144,7 +138,11 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     let layout = config.layout();
     let editor = ui.global::<RulesEditor>();
     editor.set_default_long_hold_timeout(
-        seconds_text(config.settings().default_long_hold_timeout_ms).into(),
+        config
+            .settings()
+            .default_long_hold_timeout_ms
+            .to_string()
+            .into(),
     );
     editor.set_default_hold_timeout(config.settings().default_hold_timeout_ms.to_string().into());
     editor.set_default_double_timeout(
@@ -162,11 +160,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             tap: rule.tap_action.clone().unwrap_or_default().into(),
             hold: rule.hold_action.clone().unwrap_or_default().into(),
             long_hold: rule.long_hold_action.clone().into(),
-            long_hold_timeout: rule
-                .long_hold_timeout_ms
-                .map(seconds_text)
-                .unwrap_or_default()
-                .into(),
+            long_hold_timeout: timeout_text(rule.long_hold_timeout_ms).into(),
             hold_mode: hold_mode(rule),
             is_chord: rule.key.contains('+'),
             double_tap: rule.double_tap_action.clone().into(),
@@ -230,10 +224,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_hold(rule.hold_action.clone().unwrap_or_default().into());
     editor.set_long_hold(rule.long_hold_action.clone().into());
     editor.set_hold_mode(hold_mode(rule));
-    let long_timeout = rule
-        .long_hold_timeout_ms
-        .map(seconds_text)
-        .unwrap_or_default();
+    let long_timeout = timeout_text(rule.long_hold_timeout_ms);
     editor.set_long_hold_timeout(long_timeout.clone().into());
     editor.set_original_long_hold_timeout(long_timeout.into());
     editor.set_swallow_hold(rule.hold_action.is_none());
@@ -723,7 +714,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 return;
             }
         };
-        let long_hold_timeout = match optional_seconds(&editor.get_long_hold_timeout()) {
+        // An unchanged value is kept even if it lies outside the range the editor offers.
+        let long_hold = editor.get_long_hold_timeout();
+        let long_hold_timeout = if long_hold == editor.get_original_long_hold_timeout() {
+            parse_timeout(&long_hold)
+        } else {
+            optional_long_hold(&long_hold)
+        };
+        let long_hold_timeout = match long_hold_timeout {
             Ok(value) => value,
             Err(error) => {
                 editor.set_status(crate::notifications::report(&ui, &error));
