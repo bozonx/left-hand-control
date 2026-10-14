@@ -2221,14 +2221,8 @@ msgstr "Как печатаются текстовые действия в пр�
 msgid "Typing method"
 msgstr "Способ ввода"
 
-msgid "Automatic (recommended)"
-msgstr "Автоматически (рекомендуется)"
-
-msgid "Portal keys, no clipboard"
-msgstr "Клавиши через портал, без буфера обмена"
-
-msgid "Portal keys, legacy"
-msgstr "Клавиши через портал, старый способ"
+msgid "libei + wl-copy fallback (recommended)"
+msgstr "libei + wl-copy fallback (рекомендуется)"
 
 msgid "Paste from clipboard"
 msgstr "Вставка из буфера обмена"
@@ -2242,11 +2236,11 @@ msgstr "xdotool"
 msgid "Types through the desktop's remote input portal (libei) using the current keyboard layout. Text with characters the layout lacks is pasted through the clipboard, which needs wl-clipboard. Needs a recent KDE Plasma 6 or GNOME; elsewhere it falls back to legacy portal keys. The desktop asks for permission once."
 msgstr "Печатает через портал удалённого ввода рабочего стола (libei) в текущей раскладке. Текст с символами, которых нет в раскладке, вставляется через буфер обмена — для этого нужен wl-clipboard. Требует свежий KDE Plasma 6 или GNOME, иначе используется старый способ через портал. Рабочий стол один раз спросит разрешение."
 
-msgid "Like automatic, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."
-msgstr "Как автоматический, но никогда не трогает буфер обмена. Текст с символами, которых нет в текущей раскладке, не печатается совсем."
+msgid "Like libei + wl-copy fallback, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."
+msgstr "Как libei + wl-copy fallback, но никогда не трогает буфер обмена. Текст с символами, которых нет в текущей раскладке, не печатается совсем."
 
-msgid "Presses keys through the older portal interface. Try it if automatic does not work. Characters the current layout lacks may come out wrong on KDE."
-msgstr "Нажимает клавиши через старый интерфейс портала. Попробуйте, если автоматический способ не работает. В KDE символы, которых нет в текущей раскладке, могут печататься неверно."
+msgid "Presses keys through the older portal interface. Try it if libei does not work. Characters the current layout lacks may come out wrong on KDE."
+msgstr "Нажимает клавиши через старый интерфейс портала. Попробуйте, если libei не работает. В KDE символы, которых нет в текущей раскладке, могут печататься неверно."
 
 msgid "Pastes the whole text at once with wl-copy and Ctrl+V, then restores the clipboard. Fast for long text; needs wl-clipboard. Apps that paste with another shortcut, such as terminals, will not receive it."
 msgstr "Вставляет весь текст сразу через wl-copy и Ctrl+V, затем восстанавливает буфер обмена. Быстро для длинного текста; нужен wl-clipboard. Приложения с другим сочетанием для вставки, например терминалы, текст не получат."

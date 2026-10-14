@@ -522,13 +522,13 @@ export component SettingsPage inherits VerticalBox {
                         padding: 0px; spacing: 8px;
                         FormLabel { text: @tr("Typing method"); }
                         // Same order as TEXT_MODES in src/pages/settings.rs.
-                        SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic (recommended)"), @tr("Portal keys, no clipboard"), @tr("Portal keys, legacy"), @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                        SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: [@tr("libei + wl-copy fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
                         Text {
                             vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap;
                             text: [
                                 @tr("Types through the desktop's remote input portal (libei) using the current keyboard layout. Text with characters the layout lacks is pasted through the clipboard, which needs wl-clipboard. Needs a recent KDE Plasma 6 or GNOME; elsewhere it falls back to legacy portal keys. The desktop asks for permission once."),
-                                @tr("Like automatic, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."),
-                                @tr("Presses keys through the older portal interface. Try it if automatic does not work. Characters the current layout lacks may come out wrong on KDE."),
+                                @tr("Like libei + wl-copy fallback, but never touches the clipboard. Text with characters the current keyboard layout lacks is not typed at all."),
+                                @tr("Presses keys through the older portal interface. Try it if libei does not work. Characters the current layout lacks may come out wrong on KDE."),
                                 @tr("Pastes the whole text at once with wl-copy and Ctrl+V, then restores the clipboard. Fast for long text; needs wl-clipboard. Apps that paste with another shortcut, such as terminals, will not receive it."),
                                 @tr("Runs \"ydotool type\". Works on any desktop but needs ydotool and its ydotoold service running. Reliable for Latin text only."),
                                 @tr("Runs \"xdotool type\". Works only in X11 sessions and XWayland windows."),

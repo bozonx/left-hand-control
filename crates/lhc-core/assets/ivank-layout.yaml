@@ -232,8 +232,6 @@ rules:
   - key: ShiftLeft
     tap: Ctrl+KeyC
     dtap: Ctrl+KeyX
-  - key: ShiftLeft+CapsLock
-    tap: CapsLock
   - key: ControlLeft
     hold: AltLeft
     tap: app:showQuickMenu1
@@ -263,39 +261,21 @@ quickActionPages:
   - id: qap_system
     name: System
     cells:
-      KeyQ: { name: Overview, action: kde:kwin/Overview }
-      KeyW: { name: Present windows, action: kde:kwin/Expose }
-      KeyE: { name: Grid view, action: kde:kwin/Grid View }
-      KeyR: { name: Show desktop, action: kde:kwin/Show Desktop }
-      KeyT: { name: Keep above, action: kde:kwin/Window Above Other Windows }
-      KeyA: { name: Maximize, action: kde:kwin/Window Maximize }
-      KeyS: { name: Minimize, action: kde:kwin/Window Minimize }
-      KeyD: { name: Fullscreen, action: kde:kwin/Window Fullscreen }
-      KeyF: { name: Close window, action: kde:kwin/Window Close }
-      KeyG: { name: Edit tiles, action: kde:kwin/Edit Tiles }
-      KeyZ: { name: Lock screen, action: kde:ksmserver/Lock Session }
-      KeyX: { name: Screen off, action: kde:org_kde_powerdevil/Turn Off Screen }
-      KeyC: { name: Sleep, action: kde:org_kde_powerdevil/Sleep }
-      KeyV: { name: Log out, action: kde:ksmserver/Log Out }
-      KeyB: { name: Kill window, action: kde:kwin/Kill Window }
-  - id: qap_media
-    name: Media & apps
-    cells:
-      KeyQ: { name: Play / pause, action: kde:mediacontrol/playpausemedia }
-      KeyW: { name: Previous track, action: kde:mediacontrol/previousmedia }
-      KeyE: { name: Next track, action: kde:mediacontrol/nextmedia }
-      KeyR: { name: Mute, action: kde:kmix/mute }
-      KeyT: { name: Mute microphone, action: kde:kmix/mic_mute }
-      KeyA: { name: Screenshot region, action: kde:org.kde.spectacle.desktop/RectangularRegionScreenShot }
-      KeyS: { name: Screenshot window, action: kde:org.kde.spectacle.desktop/ActiveWindowScreenShot }
-      KeyD: { name: Screenshot screen, action: kde:org.kde.spectacle.desktop/FullScreenScreenShot }
-      KeyF: { name: Record region, action: kde:org.kde.spectacle.desktop/RecordRegion }
-      KeyG: { name: Clipboard history, action: kde:plasmashell/show-on-mouse-pos }
-      KeyZ: { name: KRunner, action: kde:org.kde.krunner.desktop/_launch }
-      KeyX: { name: App launcher, action: kde:plasmashell/activate application launcher }
-      KeyC: { name: Terminal, action: kde:org.kde.konsole.desktop/_launch }
-      KeyV: { name: Files, action: kde:org.kde.dolphin.desktop/_launch }
-      KeyB: { name: Night light, action: kde:kwin/Toggle Night Color }
+      KeyQ: { name: Sleep, action: Sleep }
+      KeyW: { name: Lock screen, action: LockScreen }
+      KeyE: { name: Screen off, action: DisplayOff }
+      KeyR: { name: Mute, action: AudioVolumeMute }
+      KeyT: { name: Mute microphone, action: MicrophoneMuteToggle }
+      KeyA: { name: Grid view, action: kde:kwin/Grid View }
+      KeyS: { name: Overview, action: kde:kwin/Overview }
+      KeyD: { name: Show desktop, action: kde:kwin/Show Desktop }
+      KeyF: { name: Fullscreen, action: kde:kwin/Window Fullscreen }
+      KeyG: { name: Play / pause, action: MediaPlay }
+      KeyZ: { name: BrightnessDown, action: BrightnessDown }
+      KeyX: { name: BrightnessUp, action: BrightnessUp }
+      KeyC: { name: AudioVolumeDown, action: AudioVolumeDown }
+      KeyV: { name: AudioVolumeUp, action: AudioVolumeUp }
+      KeyB: { name: AudioVolumeUp, action: TouchpadToggle }
 emojiPages:
   - id: emoji_text
     name: Texts and lists

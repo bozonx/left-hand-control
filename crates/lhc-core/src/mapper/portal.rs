@@ -272,6 +272,10 @@ static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
     xdotool_path: None,
 });
 static LIBEI_FALLBACK_LOGGED: AtomicBool = AtomicBool::new(false);
+/// Set when the libei handshake failed, so every later literal goes straight
+/// to RemoteDesktop keycodes instead of repeating a handshake that can block
+/// for seconds and open extra portal sessions. Cleared on config updates.
+static LIBEI_UNAVAILABLE: AtomicBool = AtomicBool::new(false);
 
 /// Switch between text injection strategies.
 ///   "libei"     — default Wayland-native backend via XDG Desktop Portal EIS.
@@ -303,6 +307,7 @@ pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>, xdotool_path: Op
             xdotool_path,
         };
     }
+    LIBEI_UNAVAILABLE.store(false, Ordering::Relaxed);
     log::debug!("[portal] text backend: {:?}", backend);
 }
 
@@ -364,19 +369,28 @@ pub fn type_text(text: &str) {
 
 fn type_text_ydotool(text: &str, ydotool_path: Option<String>) {
     let program = ydotool_path.unwrap_or_else(|| "ydotool".to_string());
-    run_text_command(&program, &["type", "--escape=0", "--", text]);
+    run_text_command(&program, &["type", "--escape=0", "--", text], text);
 }
 
 fn type_text_xdotool(text: &str, xdotool_path: Option<String>) {
     let program = xdotool_path.unwrap_or_else(|| "xdotool".to_string());
-    run_text_command(&program, &["type", "--clearmodifiers", "--", text]);
+    run_text_command(&program, &["type", "--clearmodifiers", "--", text], text);
 }
 
-fn run_text_command(program: &str, args: &[&str]) {
-    match std::process::Command::new(program).args(args).status() {
-        Ok(status) if status.success() => {}
-        Ok(status) => log::warn!("[text] {program:?} exited with {status}"),
-        Err(e) => log::warn!("[text] failed to run {program:?}: {e}"),
+/// Run a typing tool with a deadline that grows with the text, so a hung
+/// tool (e.g. ydotool without ydotoold) cannot stall the text queue forever.
+fn run_text_command(program: &str, args: &[&str], text: &str) {
+    let timeout_ms = 5_000 + 50 * text.chars().count() as u64;
+    let mut cmd = std::process::Command::new(program);
+    cmd.args(args);
+    match crate::exec::run_cmd_with_timeout(&mut cmd, timeout_ms) {
+        Some(output) if output.status.success() => {}
+        Some(output) => log::warn!(
+            "[text] {program:?} exited with {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        ),
+        None => log::warn!("[text] {program:?} failed to start or timed out"),
     }
 }
 
@@ -402,7 +416,14 @@ fn type_text_libei(text: &str, clipboard_fallback: bool) -> bool {
         return false;
     };
     if slot.is_none() {
+        if LIBEI_UNAVAILABLE.load(Ordering::Relaxed) {
+            return false;
+        }
         *slot = start_libei_singleton();
+        if slot.is_none() {
+            LIBEI_UNAVAILABLE.store(true, Ordering::Relaxed);
+            return false;
+        }
     }
     let (done_tx, done_rx) = mpsc::channel();
     let cmd = Cmd::Type(text.to_owned(), clipboard_fallback, done_tx);
@@ -410,9 +431,10 @@ fn type_text_libei(text: &str, clipboard_fallback: bool) -> bool {
         *slot = None;
         return false;
     }
+    // A dropped completion means the worker hit a fatal EI error and exited;
+    // forget it so the next literal reconnects.
     if done_rx.recv().is_err() {
         *slot = None;
-        log::warn!("[libei] text injection failed (worker unavailable)");
     }
     true
 }
@@ -441,11 +463,11 @@ fn start_libei_singleton() -> Option<Sender<Cmd>> {
         Ok(_join) => match ready_rx.recv_timeout(Duration::from_secs(10)) {
             Ok(Ok(())) => Some(tx),
             Ok(Err(e)) => {
-                log::debug!("[libei] backend unavailable: {e}");
+                log::warn!("[libei] backend unavailable, using NotifyKeyboardKeycode: {e}");
                 None
             }
             Err(e) => {
-                log::debug!("[libei] backend init timed out: {e}");
+                log::warn!("[libei] backend init timed out, using NotifyKeyboardKeycode: {e}");
                 None
             }
         },
@@ -493,7 +515,12 @@ fn portal_worker(rx: Receiver<Cmd>) {
 fn libei_worker(rx: Receiver<Cmd>, ready_tx: mpsc::SyncSender<Result<(), String>>) {
     let mut backend = match LibeiBackend::new() {
         Ok(backend) => {
-            let _ = ready_tx.send(Ok(()));
+            // The caller gave up waiting (init timeout): do not leave an
+            // orphaned portal session behind.
+            if ready_tx.send(Ok(())).is_err() {
+                backend.close();
+                return;
+            }
             backend
         }
         Err(e) => {
@@ -507,7 +534,11 @@ fn libei_worker(rx: Receiver<Cmd>, ready_tx: mpsc::SyncSender<Result<(), String>
         match cmd {
             Cmd::Type(text, clipboard_fallback, done) => {
                 if let Err(e) = backend.type_text(&text, clipboard_fallback) {
-                    log::warn!("[libei] text injection failed: {e}");
+                    // Errors from the EI connection are not recoverable on
+                    // this session; exit so the next literal reconnects.
+                    log::warn!("[libei] text injection failed, closing session: {e}");
+                    drop(done);
+                    break;
                 }
                 let _ = done.send(());
             }
@@ -581,6 +612,9 @@ impl LibeiBackend {
         Ok(backend)
     }
 
+    /// Type `text`. `Err` means the EI connection is unusable; problems that
+    /// do not affect the session (missing characters, no wl-copy) are logged
+    /// and reported as `Ok`.
     fn type_text(&mut self, text: &str, clipboard_fallback: bool) -> Result<(), String> {
         self.pump_events()?;
         if !self.has_keyboard() {
@@ -592,7 +626,8 @@ impl LibeiBackend {
             if clipboard_fallback {
                 return self.type_text_via_clipboard(text);
             }
-            return Err("text contains characters unavailable in the keyboard map".into());
+            log::warn!("[libei] text skipped: it has characters the keyboard layout lacks");
+            return Ok(());
         }
         for ch in text.replace("\r\n", "\n").chars() {
             let keysym = text_keysym(ch);
@@ -608,8 +643,10 @@ impl LibeiBackend {
 
     fn type_text_via_clipboard(&mut self, text: &str) -> Result<(), String> {
         let previous_clipboard = read_wayland_clipboard_text();
-        set_wayland_clipboard_text(text)
-            .map_err(|e| format!("wl-copy unavailable for libei clipboard fallback: {e}"))?;
+        if let Err(e) = set_wayland_clipboard_text(text) {
+            log::warn!("[libei] text skipped: wl-copy unavailable for clipboard fallback: {e}");
+            return Ok(());
+        }
         thread::sleep(Duration::from_millis(50));
         // EI only supports keycode injection. Look up which evdev keycode produces
         // 'v' in the current XKB layout. Falls back to physical key 47 (Latin V)
