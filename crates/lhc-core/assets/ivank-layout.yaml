@@ -165,11 +165,10 @@ layers:
       Slash: "text:\\"
   - id: desktop
     keys:
-      F4: F4
       Tab: Tab
-      Backspace: kde:org_kde_powerdevil/Turn Off Screen
       CapsLock: kde:kwin/Walk Through Windows Alternative
-      #ShiftLeft: Alt+Backquote
+      Backspace: kde:org_kde_powerdevil/Turn Off Screen
+      ShiftLeft: Alt+Backquote
 
       Digit1: Meta+Digit1
       Digit2: Meta+Digit2
@@ -187,14 +186,12 @@ layers:
       KeyE: null
       KeyR: null
       KeyT: kde:kwin/Window Above Other Windows
-      KeyY: sys:switchLayout1
-      KeyU: sys:switchLayout2
-      KeyI: sys:switchLayout3
-      KeyO: sys:switchLayout4
-      KeyP: sys:switchLayout5
-      BracketLeft: sys:switchLayout6
-      BracketRight: sys:switchLayout7
-      #Backslash: kde:org_kde_powerdevil/Turn Off Screen
+      KeyY: kde:kwin/Window Close
+      KeyU: kde:kwin/Window Maximize
+      KeyI: kde:kwin/Window Minimize
+      KeyO: ZoomIn
+      KeyP: ZoomOut
+      BracketLeft: kde:plasmashell/activate application launcher
 
       KeyA: sys:switchDesktop4
       KeyS: sys:switchDesktop3
@@ -213,8 +210,6 @@ layers:
       KeyX: sys:switchLayout2
       KeyC: sys:switchLayout1
       KeyV: Meta+KeyV
-      # use alt+F4
-      # KeyB: F4
       KeyB: PrintScreen
       KeyN: BrightnessDown
       KeyM: BrightnessUp
