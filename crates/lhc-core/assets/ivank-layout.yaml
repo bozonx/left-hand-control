@@ -271,11 +271,11 @@ quickActionPages:
       KeyD: { name: Show desktop, action: kde:kwin/Show Desktop }
       KeyF: { name: Fullscreen, action: kde:kwin/Window Fullscreen }
       KeyG: { name: Play / pause, action: MediaPlay }
-      KeyZ: { name: BrightnessDown, action: BrightnessDown }
-      KeyX: { name: BrightnessUp, action: BrightnessUp }
-      KeyC: { name: AudioVolumeDown, action: AudioVolumeDown }
-      KeyV: { name: AudioVolumeUp, action: AudioVolumeUp }
-      KeyB: { name: AudioVolumeUp, action: TouchpadToggle }
+      KeyZ: { name: Brightness Down, action: BrightnessDown }
+      KeyX: { name: Brightness Up, action: BrightnessUp }
+      KeyC: { name: Volume Down, action: AudioVolumeDown }
+      KeyV: { name: Volume Up, action: AudioVolumeUp }
+      KeyB: { name: Touchpad Toggle, action: TouchpadToggle }
 emojiPages:
   - id: emoji_text
     name: Texts and lists
