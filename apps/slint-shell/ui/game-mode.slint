@@ -41,7 +41,7 @@ export component GameModeButton inherits Rectangle {
     Tooltip {
         Rectangle {
             background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px;
-            HorizontalLayout { padding: 8px; Text { text: Locale.text(AppState.game-status); color: Theme.text; } }
+            HorizontalLayout { padding: 8px; Text { text: Locale.text(AppState.game-status) + "\n" + @tr("Click to change mode (Auto / On / Off)"); color: Theme.text; } }
         }
     }
     menu := PopupWindow {

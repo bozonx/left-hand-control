@@ -313,7 +313,7 @@ export component RulesPage inherits VerticalBox {
     HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
         HorizontalBox { padding: 0px; spacing: 6px;
             Text { text: @tr("Triggers"); color: Theme.text; font-size: 22px; font-weight: 700; }
-            InfoTip { text: @tr("Define how physical keys activate layers or run actions."); }
+            InfoTip { text: @tr("Define how physical keys behave: tap for a key or action, hold to switch layers, or double-tap for extra shortcuts."); }
         }
         Rectangle { horizontal-stretch: 1; }
         Button { max-height: 36px; text: @tr("Add rule"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
@@ -352,9 +352,9 @@ export component RulesPage inherits VerticalBox {
                     HorizontalLayout { min-width: 0px; spacing: 12px;
                         RuleCell { width: 180px; horizontal-stretch: 0; title: @tr("Trigger"); info: @tr("A trigger can be a single key or a combination, such as ShiftLeft+ControlLeft. The combination works in either press order and ends when any key is released."); value: rule.key; category: rule.key-category; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                         Rectangle { width: 1px; background: Theme.divider; }
-                        RuleCell { title: @tr("Tap action"); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Do not process"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
+                        RuleCell { title: @tr("Tap action"); info: @tr("Action performed when the trigger is pressed and released quickly without holding."); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Do not process"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
                         HoldField { enabled: rule.key != ""; rule-index: index; rule: rule; }
-                        if !rule.is-chord: RuleCell { title: @tr("Double-tap action"); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                        if !rule.is-chord: RuleCell { title: @tr("Double-tap action"); info: @tr("Action performed when the trigger is pressed twice quickly within the double-tap timeout."); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
                         if rule.is-chord: Rectangle { horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
                     }
                 }

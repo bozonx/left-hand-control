@@ -403,7 +403,7 @@ export component SettingsPage inherits VerticalBox {
                     VerticalBox { padding: 0px; spacing: 16px;
                         CardHeader { vertical-stretch: 0;
                             title: @tr("Mapper");
-                            info: @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.");
+                            info: @tr("The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.");
                         }
                         MapperStatusCard { }
                         if AppState.is-linux: CheckBox { text: @tr("Start the mapper on launch"); checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
@@ -506,13 +506,13 @@ export component SettingsPage inherits VerticalBox {
                     HorizontalBox { padding: 0px; vertical-stretch: 0; max-width: 576px; spacing: 16px;
                         BehaviorField {
                             label: @tr("Macro step pause (ms)");
-                            info: @tr("Used by macros without their own value.");
+                            info: @tr("Default pause between sequential steps in a macro. Used by macros without their own value. Increase if target applications miss fast keystrokes.");
                             hint: @tr("Default pause between macro steps.");
                             NumericInput { label: @tr("Macro step pause (ms)"); maximum: 2000; text: SettingsEditor.macro-pause; edited(value) => { SettingsEditor.macro-pause = value; SettingsEditor.schedule-save(); } }
                         }
                         BehaviorField {
                             label: @tr("Modifier delay (ms)");
-                            info: @tr("Used by macros without their own value. How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of one step.");
+                            info: @tr("How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of a step. Used by macros without their own value. Increase if shortcuts in applications register without modifiers.");
                             hint: @tr("Delay after pressing macro modifiers.");
                             NumericInput { label: @tr("Modifier delay (ms)"); maximum: 2000; step: 1; text: SettingsEditor.modifier-delay; edited(value) => { SettingsEditor.modifier-delay = value; SettingsEditor.schedule-save(); } }
                         }

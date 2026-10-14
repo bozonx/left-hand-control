@@ -127,7 +127,7 @@ export component SettingsWindow inherits Window {
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
                         TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { LayoutLibrary.refresh(); active-menu.show(); } }
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (automatic)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
@@ -135,7 +135,11 @@ export component SettingsWindow inherits Window {
                         running: AppState.mapper-running;
                         busy: AppState.mapper-busy;
                         enabled: AppState.mapper-running || AppState.keyboard-selected;
-                        tooltip: AppState.mapper-running || AppState.keyboard-selected ? "" : @tr("Select a keyboard device in the settings");
+                        tooltip: AppState.mapper-running
+                            ? @tr("Stop mapper (restore native keyboard behavior)")
+                            : !AppState.keyboard-selected
+                            ? @tr("Select a keyboard device in the settings to start the mapper")
+                            : @tr("Start mapper to intercept keys and apply layouts");
                         toggled => { AppState.toggle-mapper(); }
                     } }
                 }

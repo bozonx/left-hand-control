@@ -2448,3 +2448,45 @@ msgstr "Долгое удержание через {} с"
 
 msgid "Choose a layer key"
 msgstr "Выберите клавишу слоя"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "Остановить маппер (вернуть стандартное поведение клавиатуры)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "Выберите клавиатуру в настройках, чтобы запустить маппер"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "Запустить маппер для перехвата клавиш и применения раскладок"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "Текущая активная раскладка (выбирается автоматически по правилам)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "Нажмите для выбора режима (Авто / Вкл / Выкл)"
+
+msgid "The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device."
+msgstr "Маппер перехватывает ввод с клавиатуры, применяет слои, правила и макросы и отправляет результат через виртуальное устройство."
+
+msgid "Default pause between sequential steps in a macro. Used by macros without their own value. Increase if target applications miss fast keystrokes."
+msgstr "Пауза по умолчанию между последовательными шагами макроса. Используется макросами без собственного значения. Увеличьте, если целевые приложения пропускают быстрые нажатия."
+
+msgid "How long to wait between pressing modifiers (Shift, Ctrl, …) and the main key of a step. Used by macros without their own value. Increase if shortcuts in applications register without modifiers."
+msgstr "Пауза между нажатием модификаторов (Shift, Ctrl и др.) и основной клавиши шага. Используется макросами без собственного значения. Увеличьте, если сочетания клавиш в приложениях срабатывают без модификаторов."
+
+msgid "Opened by the app:showQuickMenu1...5 actions. Each cell can hold any action (shortcut, macro, shell command, or system action) invoked quickly by clicking or pressing the grid hotkey (1-9, Q-P, etc.)."
+msgstr "Открывается действиями app:showQuickMenu1...5. В каждой ячейке настраивается любое действие (сочетание клавиш, макрос, команда или системное действие), которое быстро вызывается кликом или клавишей сетки (1-9, Q-P и др.)."
+
+msgid "Define how physical keys behave: tap for a key or action, hold to switch layers, or double-tap for extra shortcuts."
+msgstr "Настройка поведения физических клавиш: одиночное нажатие для ввода или действия, удержание для переключения слоёв, двойное нажатие для дополнительных действий."
+
+msgid "Action performed when the trigger is pressed and released quickly without holding."
+msgstr "Действие при обычном быстром нажатии и отпускании триггера без удержания."
+
+msgid "Action performed when the trigger is pressed twice quickly within the double-tap timeout."
+msgstr "Действие при быстром двойном нажатии триггера в пределах интервала двойного нажатия."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Показывать стандартные обозначения клавиш QWERTY для наглядности."
+
+msgid "Show internal key codes used in Left Hand Control profiles (e.g. KeyA, ArrowLeft)."
+msgstr "Показывать внутренние коды клавиш профилей Left Hand Control (например, KeyA, ArrowLeft)."

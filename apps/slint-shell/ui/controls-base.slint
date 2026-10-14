@@ -215,7 +215,7 @@ export component IconButton inherits Rectangle {
     /// Accessible name when there is no visible text.
     in property <string> label;
     in property <string> text;
-    in property <string> tooltip;
+    in property <string> tooltip: root.text == "" ? root.label : "";
     in property <bool> enabled: true;
     in property <bool> primary: false;
     in property <bool> danger: false;

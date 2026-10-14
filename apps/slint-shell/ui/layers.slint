@@ -467,7 +467,7 @@ export component LayersPage inherits VerticalLayout {
                         Rectangle { horizontal-stretch: 1; }
                         Segmented {
                             labels: [@tr("US layout"), @tr("LHC codes")];
-                            tooltips: ["", @tr("These codes are specific to Left Hand Control, not universal keyboard codes (e.g. KeyA, ArrowLeft).")];
+                            tooltips: [@tr("Show standard QWERTY letter labels for visual reference."), @tr("Show internal key codes used in Left Hand Control profiles (e.g. KeyA, ArrowLeft).")];
                             selected-index: root.label-mode == LabelMode.code ? 1 : 0;
                             selected(index) => { root.label-mode = index == 1 ? LabelMode.code : LabelMode.label; }
                         }
