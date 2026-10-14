@@ -110,6 +110,7 @@ fn hand_cells(
                 label: keyboard::label(code).into(),
                 code: (*code).into(),
                 kind,
+                emoji: category == PickerCategory::Text && is_emoji(&action),
                 category,
                 action: action.into(),
                 icon,
@@ -122,6 +123,23 @@ fn hand_cells(
         ));
     }
     cells
+}
+
+/// Whether `text` consists only of emoji, so the key shows it in the colour
+/// emoji font; mixed text keeps the regular font, whose digits stay plain.
+fn is_emoji(text: &str) -> bool {
+    let pictographic = |c: char| {
+        matches!(c as u32,
+            0x1F000..=0x1FAFF | 0x2300..=0x23FF | 0x2600..=0x27BF | 0x2B00..=0x2BFF)
+    };
+    // Joiners, variation selectors, skin tones and tag characters only extend a glyph.
+    let modifier = |c: char| {
+        matches!(
+            c as u32,
+            0x200D | 0xFE0E | 0xFE0F | 0x20E3 | 0xE0020..=0xE007F
+        )
+    };
+    text.chars().any(pictographic) && text.chars().all(|c| pictographic(c) || modifier(c))
 }
 
 /// Index of the selected layer, if it exists.
@@ -687,6 +705,19 @@ pub(super) fn pick_new_extra_action(ui: &SettingsWindow) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_emoji_text_uses_the_emoji_font() {
+        assert!(is_emoji("👍"));
+        assert!(is_emoji("⚡"));
+        assert!(is_emoji("👍🏽"));
+        assert!(is_emoji("❤️"));
+        assert!(is_emoji("👨‍👩‍👧"));
+        assert!(!is_emoji("≠"));
+        assert!(!is_emoji("№"));
+        assert!(!is_emoji("ok 👍"));
+        assert!(!is_emoji(""));
+    }
 
     #[test]
     fn bundled_additional_keys_preserve_actions_and_suppression() {

@@ -11,7 +11,7 @@ import { Button, HorizontalBox, TextEdit, Palette, VerticalBox } from "std-widge
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
-export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory }
+export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, emoji: bool }
 export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory }
 
 /// Layers of the layout being edited and their keymaps.
@@ -106,6 +106,8 @@ component ActionText inherits HorizontalLayout {
     in property <Assignment> kind;
     in property <string> action;
     in property <PickerCategory> category;
+    /// The action is emoji-only text, drawn with the colour emoji font.
+    in property <bool> emoji;
     in property <length> text-size: 10px;
     in property <TextHorizontalAlignment> text-alignment: center;
     spacing: 3px;
@@ -115,7 +117,8 @@ component ActionText inherits HorizontalLayout {
         horizontal-stretch: 1;
         text: root.kind == Assignment.transparent ? "" : root.kind == Assignment.swallow ? @tr("Suppress") : root.action;
         color: root.kind == Assignment.action ? Theme.text : Theme.muted;
-        font-size: root.text-size;
+        font-family: root.emoji ? "Noto Color Emoji" : "";
+        font-size: root.emoji ? root.text-size + 3px : root.text-size;
         font-weight: root.kind == Assignment.transparent ? 400 : 500;
         horizontal-alignment: root.text-alignment;
         vertical-alignment: center;
@@ -229,7 +232,7 @@ component KeyCap inherits Rectangle {
         }
         HorizontalLayout {
             alignment: center;
-            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; category: root.cell.category; }
+            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; category: root.cell.category; emoji: root.cell.emoji; }
         }
     }
     focus := FocusScope {

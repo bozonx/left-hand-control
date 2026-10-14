@@ -201,20 +201,24 @@ impl ConfigDocument {
             .delete_user_layout(name)
             .map_err(ConfigError::Io)?;
         let id = user_layout_id(name);
-        let result = self.update_settings(|settings| {
-            settings.layout_order.retain(|item| item != &id);
-            settings
-                .auto_rules
-                .retain(|rule| rule.layout_id.as_ref() != Some(&id));
-            if settings.auto_default_layout_id.as_ref() == Some(&id) {
-                settings.auto_default_layout_id = None;
-            }
-            if settings.current_layout_id.as_ref() == Some(&id) {
-                settings.current_layout_id = None;
-            }
-            if settings.manual_active_layout_id.as_ref() == Some(&id) {
-                settings.manual_active_layout_id = None;
-            }
+        // Deleting the single-mode layout hands activation to the first
+        // remaining one; auto mode re-chooses when the mapper is updated.
+        let result = self.ordered_layout_ids().and_then(|remaining| {
+            self.update_settings(|settings| {
+                settings.layout_order.retain(|item| item != &id);
+                settings
+                    .auto_rules
+                    .retain(|rule| rule.layout_id.as_ref() != Some(&id));
+                if settings.auto_default_layout_id.as_ref() == Some(&id) {
+                    settings.auto_default_layout_id = None;
+                }
+                if settings.current_layout_id.as_ref() == Some(&id) {
+                    settings.current_layout_id = None;
+                }
+                if settings.manual_active_layout_id.as_ref() == Some(&id) {
+                    settings.manual_active_layout_id = remaining.first().cloned();
+                }
+            })
         });
         if result.is_err() {
             self.paths()
@@ -426,6 +430,40 @@ mod tests {
         assert_eq!(reloaded.settings().layout_order, ["user:A"]);
         assert!(reloaded.settings().auto_rules.is_empty());
         assert!(reloaded.settings().auto_default_layout_id.is_none());
+    }
+
+    #[test]
+    fn deleting_single_mode_layout_activates_first_remaining() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut document = ConfigDocument::load(paths.clone()).unwrap();
+        for name in ["A", "B", "C"] {
+            paths.save_user_layout(name, "rules: []\n", false).unwrap();
+        }
+        document
+            .update_settings(|settings| {
+                settings.manual_active_layout_id = Some("user:B".into());
+                settings.layout_order = vec!["user:C".into(), "user:B".into(), "user:A".into()];
+            })
+            .unwrap();
+        document
+            .remove_library_layout("A", &paths.load_user_layout("A").unwrap())
+            .unwrap();
+        assert_eq!(
+            document.settings().manual_active_layout_id.as_deref(),
+            Some("user:B")
+        );
+        document
+            .remove_library_layout("B", &paths.load_user_layout("B").unwrap())
+            .unwrap();
+        assert_eq!(
+            document.settings().manual_active_layout_id.as_deref(),
+            Some("user:C")
+        );
+        document
+            .remove_library_layout("C", &paths.load_user_layout("C").unwrap())
+            .unwrap();
+        assert!(document.settings().manual_active_layout_id.is_none());
     }
 
     #[test]
