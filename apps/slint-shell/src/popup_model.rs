@@ -342,6 +342,23 @@ fn moved_page(previous: &[String], page: i32, current: &[String]) -> Option<i32>
         .and_then(|index| i32::try_from(index).ok())
 }
 
+/// Open command for an already visible popup: the page shown now (or no
+/// page at all) turns to the next one like Tab, another page opens directly.
+pub fn repeat_open(popup: Popup, page: Option<u8>, emoji: &EmojiPopup, quick: &QuickPopup) {
+    let current = match popup {
+        Popup::Emoji => emoji.get_page(),
+        Popup::Quick => quick.get_page(),
+    };
+    match page {
+        Some(page) if i32::from(page.saturating_sub(1)) != current => {
+            select_page(popup, page, emoji, quick);
+        }
+        _ => {
+            apply_shortcut(popup, Shortcut::ChangePage(1), emoji, quick);
+        }
+    }
+}
+
 /// Open `page` (1-based) of `popup`.
 pub fn select_page(popup: Popup, page: u8, emoji: &EmojiPopup, quick: &QuickPopup) {
     let index = i32::from(page.saturating_sub(1));

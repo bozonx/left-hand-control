@@ -551,14 +551,8 @@ fn show(
     source: Source,
     start: Instant,
 ) {
-    // Repeating the open command turns the page like Tab does.
-    if page.is_none() && *visible == Some(popup) {
-        popup_model::apply_shortcut(
-            popup,
-            popup_model::Shortcut::ChangePage(1),
-            &layers.emoji,
-            &layers.quick,
-        );
+    if *visible == Some(popup) {
+        popup_model::repeat_open(popup, page, &layers.emoji, &layers.quick);
         layers.filter();
         return;
     }
