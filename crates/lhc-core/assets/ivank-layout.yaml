@@ -133,13 +133,13 @@ layers:
       KeyW: 'text:}'
       KeyE: 'text:]'
       KeyR: 'text:)'
-      KeyT: 'text:TODO: '
+      KeyT: 'text:☝️'
       KeyY: F12
       KeyU: F7
       KeyI: F8
       KeyO: F9
-      KeyP: null
-      BracketLeft: 'text:ℹ️'
+      KeyP: 'text:👍'
+      BracketLeft: 'text:👎'
 
       KeyA: 'text:№'
       KeyS: 'text:;'
@@ -151,13 +151,13 @@ layers:
       KeyK: F5
       KeyL: F6
       Semicolon: 'text:≠'
-      Quote: 'text:☝️'
+      Quote: 'text:⚡'
 
       KeyZ: 'text:€'
       KeyX: 'text:~'
       KeyC: 'text:⏩'
       KeyV: 'text:✅'
-      KeyB: null
+      KeyB: 'text:ℹ️'
       KeyN: F10
       KeyM: F1
       Comma: F2
