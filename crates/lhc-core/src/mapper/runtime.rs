@@ -19,6 +19,7 @@ trait BackendHandle: Send {
     fn stop(self: Box<Self>);
     fn update_config(&self, cfg: config::AppConfig) -> Result<(), String>;
     fn execute_action(&self, action: String) -> Result<(), String>;
+    fn popup_focused(&self) -> Result<(), String>;
     fn last_error(&self) -> Option<String>;
     fn reap_if_finished(&mut self) -> bool;
 }
@@ -170,6 +171,12 @@ impl<B: MapperBackend> MapperRuntime<B> {
         handle.execute_action(action)
     }
 
+    fn popup_focused(&self) -> Result<(), String> {
+        self.handle
+            .as_ref()
+            .map_or(Ok(()), |handle| handle.popup_focused())
+    }
+
     fn status(&mut self) -> MapperStatus {
         if let Some(handle) = self.handle.as_mut() {
             let err = handle.last_error();
@@ -199,6 +206,10 @@ impl BackendHandle for linux::Handle {
 
     fn execute_action(&self, action: String) -> Result<(), String> {
         self.execute_action(action)
+    }
+
+    fn popup_focused(&self) -> Result<(), String> {
+        self.popup_focused()
     }
 
     fn last_error(&self) -> Option<String> {
@@ -384,6 +395,13 @@ pub fn execute_action(action: String) -> Result<(), String> {
     lock_state().execute_action(action)
 }
 
+/// A popup opened by a mapper action took the keyboard focus. The mapper
+/// holds the keys typed after that action until this call (or a timeout),
+/// so they reach the popup instead of the window below it.
+pub fn popup_focused() -> Result<(), String> {
+    lock_state().popup_focused()
+}
+
 pub fn status() -> MapperStatus {
     lock_state().status()
 }
@@ -432,6 +450,10 @@ mod tests {
             if let Ok(mut slot) = self.executed_actions.lock() {
                 slot.push(action);
             }
+            Ok(())
+        }
+
+        fn popup_focused(&self) -> Result<(), String> {
             Ok(())
         }
 

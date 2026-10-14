@@ -16,6 +16,64 @@ use std::time::{Duration, Instant};
 /// `EV_SYN` frame is treated as zero-duration by some apps and dropped.
 const KEY_TAP_GAP: Duration = Duration::from_millis(1);
 
+/// Longest time output stays held after an action opened a popup when the
+/// shell never reports that the popup took the keyboard focus.
+const POPUP_HOLD_MAX: Duration = Duration::from_millis(1000);
+
+/// Output that follows a popup-opening action, held until the popup has the
+/// keyboard focus. Keys typed right after the hotkey would otherwise reach
+/// the window the popup is about to cover.
+#[derive(Default)]
+pub(super) struct OutputHold {
+    held: Vec<Out>,
+    until: Option<Instant>,
+    released: bool,
+}
+
+impl OutputHold {
+    /// The popup took the focus: replay held output on the next iteration.
+    pub(super) fn release(&mut self) {
+        self.released = true;
+    }
+
+    /// Stop holding and put held output in front of `buf`.
+    pub(super) fn take(&mut self, buf: &mut Vec<Out>) {
+        self.until = None;
+        if !self.held.is_empty() {
+            let mut held = std::mem::take(&mut self.held);
+            held.append(buf);
+            *buf = held;
+        }
+    }
+
+    fn deadline(&self) -> Option<Instant> {
+        self.until
+    }
+
+    /// Leave in `buf` only what may be emitted now.
+    fn gate(&mut self, buf: &mut Vec<Out>, now: Instant) {
+        if self
+            .until
+            .is_some_and(|until| self.released || now >= until)
+        {
+            self.take(buf);
+        }
+        // A release that arrives while nothing is held belongs to no popup.
+        self.released = false;
+        if self.until.is_some() {
+            self.held.append(buf);
+            return;
+        }
+        if let Some(index) = buf
+            .iter()
+            .position(|out| matches!(out, Out::RunSystem(action) if action.opens_popup()))
+        {
+            self.held = buf.split_off(index + 1);
+            self.until = Some(now + POPUP_HOLD_MAX);
+        }
+    }
+}
+
 pub(super) trait EventSink {
     fn emit(&mut self, events: &[InputEvent]) -> Result<(), String>;
 }
@@ -249,17 +307,19 @@ impl LoopDriver for MultiDeviceLoopDriver {
 pub(super) fn process_iteration<D: LoopDriver>(
     driver: &mut D,
     engine: &mut Engine,
+    hold: &mut OutputHold,
     virt: &mut VirtualDevice,
     out_buf: &mut Vec<Out>,
 ) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };
     let mut effects = RuntimeSideEffects;
-    process_iteration_with(driver, engine, &mut sink, &mut effects, out_buf)
+    process_iteration_with(driver, engine, hold, &mut sink, &mut effects, out_buf)
 }
 
 pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects>(
     driver: &mut D,
     engine: &mut Engine,
+    hold: &mut OutputHold,
     sink: &mut S,
     effects: &mut E,
     out_buf: &mut Vec<Out>,
@@ -268,10 +328,13 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
 
     let now = driver.now();
     engine.set_text_pending(effects.text_pending(), now);
-    let wait = engine
+    let mut wait = engine
         .next_deadline(now)
         .map(|d| d.min(MAX_WAIT))
         .unwrap_or(MAX_WAIT);
+    if let Some(until) = hold.deadline() {
+        wait = wait.min(until.saturating_duration_since(now));
+    }
 
     if driver.wait(wait)? {
         for (key, down) in driver.fetch_key_events()? {
@@ -279,7 +342,9 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
         }
     }
 
-    engine.tick(driver.now(), out_buf);
+    let now = driver.now();
+    engine.tick(now, out_buf);
+    hold.gate(out_buf, now);
     flush_out_with(sink, effects, out_buf)?;
     Ok(())
 }

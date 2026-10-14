@@ -275,13 +275,13 @@ emojiPages:
   - id: emoji_text
     name: Texts and lists
     cells:
-      KeyQ: "👍"
-      KeyW: "🎯"
+      KeyQ: "🤦"
+      KeyW: "👍"
       KeyE: "👀"
-      KeyR: "⏰"
+      KeyR: "💪"
       KeyT: "☝️"
-      KeyA: "🤦"
-      KeyS: "💪"
+      KeyA: "⏰"
+      KeyS: "🎯"
       KeyD: "‼️"
       KeyF: "❓️️️"
       KeyG: "❌"

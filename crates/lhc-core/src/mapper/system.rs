@@ -62,6 +62,15 @@ pub enum SysAction {
     AppEvent(String),
 }
 
+impl SysAction {
+    /// Whether the shell answers this action by showing a popup that takes
+    /// the keyboard focus.
+    pub fn opens_popup(&self) -> bool {
+        matches!(self, Self::AppEvent(event)
+            if event.starts_with("show_quick_menu_") || event.starts_with("show_emoji_menu_"))
+    }
+}
+
 /// Resolve a system-function id (e.g. "switchDesktop3") into a concrete
 /// action to run on this machine, or `None` if the function is not
 /// available under the current desktop environment.

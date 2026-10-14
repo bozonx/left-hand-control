@@ -115,6 +115,8 @@ impl App {
                 return;
             }
             if self.window(window).is_visible() {
+                // The popup already has the focus, so no focus event follows.
+                release_mapper_input();
                 popup_model::repeat_open(popup, page, &self.emoji, &self.quick);
                 self.popup_outcome(popup, KeyOutcome::PageChanged);
                 return;
@@ -258,6 +260,14 @@ impl App {
     }
 }
 
+/// Let the mapper emit the keys typed after a popup hotkey; it holds them
+/// until the popup can receive them.
+fn release_mapper_input() {
+    if let Err(error) = lhc_core::mapper::runtime::popup_focused() {
+        log::warn!("release held input: {error}");
+    }
+}
+
 fn observe(app: &Rc<App>, window: Window) {
     let weak = Rc::downgrade(app);
     app.window(window).on_close_requested(move || {
@@ -345,7 +355,10 @@ fn observe(app: &Rc<App>, window: Window) {
             }
             match event {
                 WindowEvent::Focused(true) => {
-                    app.metrics.borrow_mut().mark(window.name(), "t4_focused")
+                    app.metrics.borrow_mut().mark(window.name(), "t4_focused");
+                    if window.popup().is_some() {
+                        release_mapper_input();
+                    }
                 }
                 WindowEvent::Focused(false) => {
                     if let Some(popup) = window.popup() {

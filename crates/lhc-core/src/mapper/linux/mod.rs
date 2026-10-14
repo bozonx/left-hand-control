@@ -9,7 +9,7 @@ use evdev::uinput::VirtualDevice;
 use evdev::{AttributeSet, BusType, Device, InputId, KeyCode};
 #[cfg(test)]
 use io::{EventSink, SideEffects, flush_out_with, process_iteration_with};
-use io::{LoopDriver, MultiDeviceLoopDriver, flush_out, process_iteration};
+use io::{LoopDriver, MultiDeviceLoopDriver, OutputHold, flush_out, process_iteration};
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::os::unix::fs::OpenOptionsExt;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -24,6 +24,8 @@ const START_TIMEOUT: Duration = Duration::from_secs(5);
 pub enum MapperControl {
     Config(Box<AppConfig>),
     Execute(String),
+    /// A popup took the keyboard focus; emit the output held for it.
+    PopupFocused,
 }
 
 /// Handle to a running mapper thread.
@@ -79,6 +81,14 @@ impl Handle {
     pub fn execute_action(&self, action: String) -> Result<(), String> {
         self.control_tx
             .send(MapperControl::Execute(action))
+            .map_err(|e| format!("mapper update channel closed: {e}"))?;
+        self.wake();
+        Ok(())
+    }
+
+    pub fn popup_focused(&self) -> Result<(), String> {
+        self.control_tx
+            .send(MapperControl::PopupFocused)
             .map_err(|e| format!("mapper update channel closed: {e}"))?;
         self.wake();
         Ok(())
@@ -333,6 +343,7 @@ fn run_loop<D: LoopDriver>(
 ) -> Result<(), String> {
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
+    let mut hold = OutputHold::default();
 
     let result = (|| {
         while !stop.load(Ordering::SeqCst) {
@@ -354,6 +365,7 @@ fn run_loop<D: LoopDriver>(
                             next_cfg.settings.linux_ydotool_path.as_deref(),
                             next_cfg.settings.linux_xdotool_path.as_deref(),
                         );
+                        hold.take(&mut out_buf);
                         engine.shutdown(&mut out_buf);
                         flush_out(&mut virt, &mut out_buf)?;
                         engine = Engine::new(&next_cfg);
@@ -363,13 +375,15 @@ fn run_loop<D: LoopDriver>(
                         engine.execute_remote(&action, &mut out_buf);
                         flush_out(&mut virt, &mut out_buf)?;
                     }
+                    MapperControl::PopupFocused => hold.release(),
                 }
             }
-            process_iteration(&mut driver, &mut engine, &mut virt, &mut out_buf)?;
+            process_iteration(&mut driver, &mut engine, &mut hold, &mut virt, &mut out_buf)?;
         }
         Ok(())
     })();
 
+    hold.take(&mut out_buf);
     engine.shutdown(&mut out_buf);
     let _ = flush_out(&mut virt, &mut out_buf);
     result
@@ -377,7 +391,9 @@ fn run_loop<D: LoopDriver>(
 
 #[cfg(test)]
 mod tests {
-    use super::{EventSink, LoopDriver, SideEffects, flush_out_with, process_iteration_with};
+    use super::{
+        EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
+    };
     use crate::mapper::action::Keystroke;
     use crate::mapper::config::{ActionSpec, AppConfig, Rule, Settings};
     use crate::mapper::engine::{Engine, Out};
@@ -644,6 +660,7 @@ mod tests {
         process_iteration_with(
             &mut driver,
             &mut engine,
+            &mut OutputHold::default(),
             &mut sink,
             &mut effects,
             &mut out_buf,
@@ -662,6 +679,65 @@ mod tests {
         );
         assert!(effects.texts.is_empty());
         assert!(out_buf.is_empty());
+    }
+
+    #[test]
+    fn output_after_popup_action_waits_for_focus_or_timeout() {
+        let start = Instant::now();
+        let key_a = |down| Out::KeyRaw {
+            key: KeyCode::KEY_A,
+            down,
+        };
+        let mut hold = OutputHold::default();
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        fn run(
+            hold: &mut OutputHold,
+            sink: &mut FakeSink,
+            effects: &mut FakeEffects,
+            now: Instant,
+            mut out_buf: Vec<Out>,
+        ) -> Duration {
+            let mut driver = FakeDriver::new(vec![now, now], vec![Ok(false)], Vec::new());
+            let mut engine = Engine::new(&empty_cfg());
+            process_iteration_with(&mut driver, &mut engine, hold, sink, effects, &mut out_buf)
+                .expect("iteration");
+            driver.seen_waits[0]
+        }
+        macro_rules! iterate {
+            ($hold:expr, $now:expr, $out:expr) => {
+                run($hold, &mut sink, &mut effects, $now, $out)
+            };
+        }
+
+        let popup = Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into()));
+        iterate!(&mut hold, start, vec![popup, key_a(true)]);
+        let wait = iterate!(&mut hold, start, vec![key_a(false)]);
+        assert_eq!(effects.systems, vec!["app:show_quick_menu_1"]);
+        assert!(sink.batches.is_empty(), "keys wait for the popup");
+        assert_eq!(wait, Duration::from_millis(100));
+
+        hold.release();
+        iterate!(&mut hold, start + Duration::from_millis(5), Vec::new());
+        assert_eq!(
+            sink.batches,
+            vec![
+                vec![(KeyCode::KEY_A.code(), 1)],
+                vec![(KeyCode::KEY_A.code(), 0)]
+            ]
+        );
+
+        let popup = Out::RunSystem(SysAction::AppEvent("show_emoji_menu_last".into()));
+        iterate!(&mut hold, start, vec![popup, key_a(true)]);
+        assert_eq!(sink.batches.len(), 2);
+        iterate!(&mut hold, start + Duration::from_secs(1), Vec::new());
+        assert_eq!(sink.batches.len(), 3, "released after the timeout");
+
+        // Other app actions and releases with nothing held change nothing.
+        hold.release();
+        let settings = Out::RunSystem(SysAction::AppEvent("show_settings".into()));
+        iterate!(&mut hold, start, vec![settings, key_a(false)]);
+        assert_eq!(sink.batches.len(), 4);
     }
 
     #[test]
@@ -759,6 +835,7 @@ mod tests {
         process_iteration_with(
             &mut driver,
             &mut engine,
+            &mut OutputHold::default(),
             &mut sink,
             &mut effects,
             &mut pending,
