@@ -1032,6 +1032,21 @@ msgstr "Задано"
 msgid "Start the mapper to run actions from the menus"
 msgstr "Запустите маппер, чтобы выполнять действия из меню"
 
+msgid "The text was not typed: the keyboard layout lacks some of its characters, such as emoji. Choose a typing method with the clipboard."
+msgstr "Текст не введён: в раскладке клавиатуры нет некоторых его символов, например эмодзи. Выберите способ ввода с буфером обмена."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "Текст не введён: текущая раскладка клавиатуры неизвестна."
+
+msgid "The text was not typed: the typing method is unavailable ({}). Restart the mapper to try again."
+msgstr "Текст не введён: способ ввода недоступен ({}). Перезапустите маппер, чтобы попробовать снова."
+
+msgid "The text was not typed: the clipboard is unavailable ({}). Install wl-clipboard."
+msgstr "Текст не введён: буфер обмена недоступен ({}). Установите wl-clipboard."
+
+msgid "The text was not typed: {}"
+msgstr "Текст не введён: {}"
+
 msgid "The layout file is empty"
 msgstr "Файл раскладки пуст"
 

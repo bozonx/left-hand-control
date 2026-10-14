@@ -41,10 +41,12 @@ mod windows;
 pub struct LayoutInfo {
     /// Short code, e.g. "us", "ru".
     pub short: String,
-    /// Optional display/variant name, e.g. "lat".
+    /// Optional user-visible label, e.g. "lat"; not an XKB variant.
     pub display: String,
     /// Long human-readable name, e.g. "English (US)".
     pub long: String,
+    /// XKB variant, e.g. "dvorak"; empty for the base layout or when unknown.
+    pub variant: String,
     /// Zero-based index among the configured layouts.
     pub index: u32,
     /// Which backend produced this info.
@@ -92,7 +94,8 @@ fn watcher_stop_requested() -> bool {
 pub(crate) fn publish(info: &LayoutInfo) {
     crate::runtime_state::set_layout(Some(crate::runtime_state::LayoutSelection {
         short: info.short.clone(),
-        variant: info.display.clone(),
+        variant: info.variant.clone(),
+        index: info.index,
     }));
     if should_publish(info) {
         crate::events::emit(crate::events::CoreEvent::LayoutChanged(info.clone()));
@@ -228,6 +231,7 @@ mod tests {
             short: short.into(),
             display: display.into(),
             long: String::new(),
+            variant: String::new(),
             index: 0,
             backend: "test",
         }

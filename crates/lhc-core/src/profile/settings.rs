@@ -5,18 +5,9 @@
 
 use super::model::{
     AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, LayoutConditionSet,
-    LayoutMode, LocalePreference,
+    LayoutMode, LocalePreference, TextMode,
 };
 use serde_json::{Map, Value};
-
-const TEXT_MODES: [&str; 6] = [
-    "libei",
-    "libei-pure",
-    "keycode",
-    "clipboard",
-    "ydotool",
-    "xdotool",
-];
 
 /// Reject unsupported configuration fields before loading settings.
 pub fn validate(raw: Option<&Value>) -> Result<(), String> {
@@ -109,8 +100,8 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
         commands_enabled: bool_or(raw, "commandsEnabled", base.commands_enabled),
         game_mode: base.game_mode.clone(),
         linux_wayland_text_mode: str_of(raw, "linuxWaylandTextMode")
-            .filter(|mode| TEXT_MODES.contains(mode))
-            .map(str::to_owned),
+            .and_then(TextMode::parse)
+            .unwrap_or_default(),
         linux_ydotool_path: str_of(raw, "linuxYdotoolPath").unwrap_or("").into(),
         linux_xdotool_path: str_of(raw, "linuxXdotoolPath").unwrap_or("").into(),
     };
@@ -249,7 +240,7 @@ mod tests {
         assert_eq!(settings.locale, LocalePreference::Auto);
         assert_eq!(settings.default_hold_timeout_ms, 200);
         assert_eq!(settings.tap_decision, "holdOnOtherKeyPress");
-        assert_eq!(settings.linux_wayland_text_mode, None);
+        assert_eq!(settings.linux_wayland_text_mode, TextMode::Libei);
         assert!(!settings.game_mode.use_gamemoded);
         assert!(!settings.game_mode.use_lutris);
         assert!(settings.game_mode.use_steam);

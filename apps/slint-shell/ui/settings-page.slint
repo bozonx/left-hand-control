@@ -528,7 +528,7 @@ export component SettingsPage inherits VerticalBox {
                     VerticalBox {
                         padding: 0px; spacing: 8px;
                         FormLabel { text: @tr("Typing method"); }
-                        // Same order as TEXT_MODES in src/pages/settings.rs.
+                        // Same order as TextMode::ALL in lhc-core.
                         SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: [@tr("libei + wl-copy fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
                         Text {
                             vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap;

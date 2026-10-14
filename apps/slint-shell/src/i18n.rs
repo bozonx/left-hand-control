@@ -274,6 +274,8 @@ pub enum Msg {
     InvalidAction(ActionIssue),
     Rule(RuleIssue),
     ActionFailed(String),
+    /// A `text:` action was not typed.
+    TextInputFailed(lhc_core::events::TextInputFailure),
     /// Untranslated detail from the core or the OS.
     Error(String),
 }
@@ -437,6 +439,18 @@ impl Msg {
                 0,
             ),
             Self::ActionFailed(error) => ("action-failed", error.clone(), 0),
+            Self::TextInputFailed(failure) => {
+                use lhc_core::events::TextInputFailure as F;
+                match failure {
+                    F::MissingCharacters => ("text-missing-characters", empty(), 0),
+                    F::LayoutUnknown => ("text-layout-unknown", empty(), 0),
+                    F::BackendUnavailable(detail) => {
+                        ("text-backend-unavailable", detail.clone(), 0)
+                    }
+                    F::Clipboard(detail) => ("text-clipboard-failed", detail.clone(), 0),
+                    F::Tool(detail) => ("text-tool-failed", detail.clone(), 0),
+                }
+            }
             Self::Error(error) => ("error", error.clone(), 0),
         };
         Message {

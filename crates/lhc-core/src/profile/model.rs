@@ -421,6 +421,50 @@ impl LocalePreference {
     }
 }
 
+/// How `text:` actions reach the focused application on Linux.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TextMode {
+    /// libei; pastes through the clipboard when the layout lacks a character.
+    #[default]
+    Libei,
+    /// libei only.
+    LibeiPure,
+    /// RemoteDesktop portal `NotifyKeyboardKeycode`.
+    Keycode,
+    /// wl-copy and Ctrl+V through the RemoteDesktop portal.
+    Clipboard,
+    Ydotool,
+    Xdotool,
+}
+
+impl TextMode {
+    /// Every mode, in the order the settings page lists them.
+    pub const ALL: [Self; 6] = [
+        Self::Libei,
+        Self::LibeiPure,
+        Self::Keycode,
+        Self::Clipboard,
+        Self::Ydotool,
+        Self::Xdotool,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Libei => "libei",
+            Self::LibeiPure => "libei-pure",
+            Self::Keycode => "keycode",
+            Self::Clipboard => "clipboard",
+            Self::Ydotool => "ydotool",
+            Self::Xdotool => "xdotool",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|mode| mode.as_str() == value)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LayoutMode {
@@ -468,8 +512,7 @@ pub struct AppSettings {
     pub auto_default_layout_id: Option<String>,
     pub commands_enabled: bool,
     pub game_mode: GameModeSettings,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub linux_wayland_text_mode: Option<String>,
+    pub linux_wayland_text_mode: TextMode,
     pub linux_ydotool_path: String,
     pub linux_xdotool_path: String,
 }
@@ -512,7 +555,7 @@ impl Default for AppSettings {
                 process_matchers: Vec::new(),
                 control: GameModeControl::Auto,
             },
-            linux_wayland_text_mode: Some("libei".into()),
+            linux_wayland_text_mode: TextMode::Libei,
             linux_ydotool_path: String::new(),
             linux_xdotool_path: String::new(),
         }

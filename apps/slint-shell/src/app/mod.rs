@@ -164,7 +164,14 @@ impl App {
         let error = self.settings.global::<AppState>().get_backend_error();
         if matches!(
             error.id.as_str(),
-            "action-failed" | "mapper-required" | "commands-disabled"
+            "action-failed"
+                | "mapper-required"
+                | "commands-disabled"
+                | "text-missing-characters"
+                | "text-layout-unknown"
+                | "text-backend-unavailable"
+                | "text-clipboard-failed"
+                | "text-tool-failed"
         ) {
             self.set_error(Msg::None);
         }

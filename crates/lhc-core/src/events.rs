@@ -30,6 +30,23 @@ pub enum CoreEvent {
         script: String,
         result: Result<(), String>,
     },
+    /// A `text:` action was not typed.
+    TextInputFailed(TextInputFailure),
+}
+
+/// Why a `text:` action was not typed. Details are untranslated.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TextInputFailure {
+    /// The active keyboard layout lacks a character of the text.
+    MissingCharacters,
+    /// The active keyboard layout is unknown, so keys cannot be chosen.
+    LayoutUnknown,
+    /// The input backend could not start or stopped working.
+    BackendUnavailable(String),
+    /// wl-clipboard is missing or failed.
+    Clipboard(String),
+    /// The external typing tool failed.
+    Tool(String),
 }
 
 type Listener = Arc<dyn Fn(&CoreEvent) + Send + Sync>;

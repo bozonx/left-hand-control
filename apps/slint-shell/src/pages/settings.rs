@@ -8,19 +8,10 @@ use crate::{
     },
 };
 use lhc_core::profile::menus::PlaceKind;
-use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher};
+use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher, TextMode};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
-/// Linux text injection backends, in the order the page lists them.
-const TEXT_MODES: [&str; 6] = [
-    "libei",
-    "libei-pure",
-    "keycode",
-    "clipboard",
-    "ydotool",
-    "xdotool",
-];
 const TAP_DECISIONS: [&str; 2] = ["permissiveHold", "holdOnOtherKeyPress"];
 
 /// The form as the user sees it. Numbers stay text until saved.
@@ -93,13 +84,7 @@ impl Form {
             use_app_category: settings.game_mode.use_app_category,
             use_game_bar: settings.game_mode.use_game_bar,
             matchers: settings.game_mode.process_matchers.clone(),
-            text_mode: choice_index(
-                &TEXT_MODES,
-                &settings
-                    .linux_wayland_text_mode
-                    .as_deref()
-                    .unwrap_or(TEXT_MODES[0]),
-            ),
+            text_mode: choice_index(&TextMode::ALL, &settings.linux_wayland_text_mode),
             ydotool: settings.linux_ydotool_path.clone(),
             xdotool: settings.linux_xdotool_path.clone(),
             keyboard: settings.input_device_path.clone().unwrap_or_default(),
@@ -221,7 +206,7 @@ impl Form {
         changed!(use_app_category => settings.game_mode.use_app_category = self.use_app_category);
         changed!(use_game_bar => settings.game_mode.use_game_bar = self.use_game_bar);
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
-        changed!(text_mode => settings.linux_wayland_text_mode = Some(choice(&TEXT_MODES, self.text_mode).into()));
+        changed!(text_mode => settings.linux_wayland_text_mode = choice(&TextMode::ALL, self.text_mode));
         changed!(ydotool => settings.linux_ydotool_path = self.ydotool.trim().into());
         changed!(xdotool => settings.linux_xdotool_path = self.xdotool.trim().into());
         changed!(keyboard => settings.input_device_path = path(&self.keyboard));
@@ -526,7 +511,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let choices = ui.global::<DeviceChoices>();
     choices.on_filter(|choices, query| filtered_devices(choices, &query));
     choices.on_offset(device_offset);
-    e.set_text_modes(strings(TEXT_MODES));
+    e.set_text_modes(strings(TextMode::ALL.map(TextMode::as_str)));
     e.set_fullscreen_non_games(lhc_core::gamemode::FULLSCREEN_NON_GAMES.join(", ").into());
     e.set_game_launchers(lhc_core::gamemode::GAME_LAUNCHERS.join(", ").into());
     let defaults = Form::from_settings(&AppSettings::default());

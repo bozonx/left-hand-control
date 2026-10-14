@@ -21,7 +21,10 @@ static LAYOUT: Mutex<Option<LayoutSelection>> = Mutex::new(None);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LayoutSelection {
     pub short: String,
+    /// XKB variant; empty for the base layout or when unknown.
     pub variant: String,
+    /// Zero-based index among the configured layouts (the XKB group).
+    pub index: u32,
 }
 
 pub fn active_window() -> Option<ActiveWindow> {

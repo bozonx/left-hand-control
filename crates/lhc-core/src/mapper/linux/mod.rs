@@ -111,13 +111,13 @@ pub fn spawn(
     cfg: AppConfig,
 ) -> Result<Handle, String> {
     super::portal::set_text_backend(
-        cfg.settings
-            .linux_wayland_text_mode
-            .as_deref()
-            .unwrap_or("libei"),
+        cfg.settings.linux_wayland_text_mode,
         cfg.settings.linux_ydotool_path.as_deref(),
         cfg.settings.linux_xdotool_path.as_deref(),
     );
+    // Starting the mapper is an explicit user action: give a backend that
+    // failed before (e.g. a declined portal dialog) another chance.
+    super::portal::retry_text_backend();
     #[cfg(debug_assertions)]
     {
         log::debug!(
@@ -361,11 +361,7 @@ fn run_loop<D: LoopDriver>(
                             next_cfg.layer_keymaps.len()
                         );
                         super::portal::set_text_backend(
-                            next_cfg
-                                .settings
-                                .linux_wayland_text_mode
-                                .as_deref()
-                                .unwrap_or("libei"),
+                            next_cfg.settings.linux_wayland_text_mode,
                             next_cfg.settings.linux_ydotool_path.as_deref(),
                             next_cfg.settings.linux_xdotool_path.as_deref(),
                         );

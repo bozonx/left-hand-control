@@ -54,6 +54,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
         Some(v) => v,
         None => return Ok(vec![]),
     };
+    let variants = configured_variants(&list);
     Ok(list
         .into_iter()
         .enumerate()
@@ -61,6 +62,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
             short: entry.0,
             display: entry.1,
             long: entry.2,
+            variant: variants.get(idx).cloned().unwrap_or_default(),
             index: idx as u32,
             backend: "linux-kde",
         })
@@ -165,20 +167,78 @@ fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<LayoutInfo>, String> {
         None => return Ok(None),
     };
     let idx = call_index(proxy)?.unwrap_or(0);
+    let position = if (idx as usize) < list.len() {
+        idx as usize
+    } else {
+        0
+    };
     let entry = list
-        .get(idx as usize)
-        .or_else(|| list.first())
+        .get(position)
         .cloned()
         .ok_or_else(|| "No keyboard layouts configured".to_string())?;
+    let variant = configured_variants(&list)
+        .get(position)
+        .cloned()
+        .unwrap_or_default();
     let info = LayoutInfo {
         short: entry.0,
         display: entry.1,
         long: entry.2,
+        variant,
         index: idx,
         backend: "linux-kde",
     };
     super::publish(&info);
     Ok(Some(info))
+}
+
+/// XKB variants of the configured layouts, by index. The DBus API only
+/// gives layout codes and user labels, so they come from `kxkbrc`, and only
+/// when its layout list matches `list`; otherwise none are known.
+fn configured_variants(list: &LayoutList) -> Vec<String> {
+    let Some(path) = dirs::config_dir().map(|dir| dir.join("kxkbrc")) else {
+        return Vec::new();
+    };
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return Vec::new();
+    };
+    variants_from_kxkbrc(&text, list)
+}
+
+fn variants_from_kxkbrc(text: &str, list: &LayoutList) -> Vec<String> {
+    let mut in_layout = false;
+    let mut layouts = None;
+    let mut variants = None;
+    for line in text.lines().map(str::trim) {
+        if line.starts_with('[') {
+            in_layout = line == "[Layout]";
+            continue;
+        }
+        if !in_layout {
+            continue;
+        }
+        if let Some(value) = line.strip_prefix("LayoutList=") {
+            layouts = Some(value);
+        } else if let Some(value) = line.strip_prefix("VariantList=") {
+            variants = Some(value);
+        }
+    }
+    let split =
+        |value: &str| -> Vec<String> { value.split(',').map(|v| v.trim().to_owned()).collect() };
+    let (Some(layouts), Some(variants)) = (layouts.map(split), variants.map(split)) else {
+        return Vec::new();
+    };
+    let matches = layouts.len() == list.len()
+        && layouts
+            .iter()
+            .zip(list)
+            .all(|(layout, entry)| *layout == entry.0);
+    if !matches {
+        return Vec::new();
+    }
+    (0..list.len())
+        .map(|idx| variants.get(idx).cloned().unwrap_or_default())
+        .collect()
 }
 
 fn call_index(proxy: &Proxy<'_>) -> Result<Option<u32>, String> {
@@ -213,4 +273,34 @@ fn call_list(proxy: &Proxy<'_>) -> Result<Option<LayoutList>, String> {
         .deserialize()
         .map_err(|e| format!("Failed to decode getLayoutsList response: {e}"))?;
     Ok(Some(list))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn list(codes: &[&str]) -> LayoutList {
+        codes
+            .iter()
+            .map(|code| (code.to_string(), String::new(), String::new()))
+            .collect()
+    }
+
+    #[test]
+    fn variants_come_from_matching_kxkbrc() {
+        let text =
+            "[Layout]\nDisplayNames=,lat\nLayoutList=us,latam\nVariantList=dvorak,\nUse=true\n";
+        assert_eq!(
+            variants_from_kxkbrc(text, &list(&["us", "latam"])),
+            ["dvorak", ""]
+        );
+    }
+
+    #[test]
+    fn variants_are_unknown_when_kxkbrc_differs() {
+        let text = "[Layout]\nLayoutList=us,ru\nVariantList=dvorak,\n";
+        assert!(variants_from_kxkbrc(text, &list(&["ru", "us"])).is_empty());
+        let other_section = "[Other]\nLayoutList=us\nVariantList=dvorak\n";
+        assert!(variants_from_kxkbrc(other_section, &list(&["us"])).is_empty());
+    }
 }

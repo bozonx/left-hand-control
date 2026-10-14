@@ -135,8 +135,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .is_empty()
     );
     assert_eq!(
-        loaded.settings().linux_wayland_text_mode.as_deref(),
-        Some("ydotool")
+        loaded.settings().linux_wayland_text_mode,
+        lhc_core::profile::model::TextMode::Ydotool
     );
     assert!(settings.get_keyboard_manual());
     assert!(settings.get_mouse_manual());

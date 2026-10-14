@@ -1,3 +1,4 @@
+use crate::profile::model::TextMode;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
@@ -168,7 +169,7 @@ pub struct Settings {
     #[serde(default)]
     pub commands_enabled: bool,
     #[serde(default)]
-    pub linux_wayland_text_mode: Option<String>,
+    pub linux_wayland_text_mode: TextMode,
     #[serde(default)]
     pub linux_ydotool_path: Option<String>,
     #[serde(default)]
@@ -202,7 +203,7 @@ impl Default for Settings {
             combo_timeout_ms: default_combo_timeout(),
             current_layout_id: None,
             commands_enabled: false,
-            linux_wayland_text_mode: Some("libei".into()),
+            linux_wayland_text_mode: TextMode::Libei,
             linux_ydotool_path: None,
             linux_xdotool_path: None,
         }
@@ -294,7 +295,7 @@ mod tests {
         assert_eq!(s.default_double_tap_timeout_ms, 200);
         assert_eq!(s.combo_timeout_ms, 50);
         assert_eq!(s.tap_decision, TapDecision::PermissiveHold);
-        assert_eq!(s.linux_wayland_text_mode.as_deref(), Some("libei"));
+        assert_eq!(s.linux_wayland_text_mode, TextMode::Libei);
         assert!(s.linux_ydotool_path.is_none());
     }
 }

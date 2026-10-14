@@ -1,10 +1,9 @@
-// XDG Desktop Portal RemoteDesktop backend.
+// Text injection on Linux for `text:` actions.
 //
-// Why this instead of `zwp_virtual_keyboard_v1` on Wayland: in recent
-// versions of KDE Plasma (6.x) and GNOME the virtual-keyboard Wayland
-// protocol is not advertised to ordinary clients, so any attempt to bind
-// it fails with "global not found in registry". The RemoteDesktop portal
-// is the officially blessed, cross-compositor way to inject input:
+// Two of the modes go through the XDG Desktop Portal RemoteDesktop
+// interface, the cross-compositor way to inject input on Wayland (the
+// `zwp_virtual_keyboard_v1` protocol is not offered to ordinary clients on
+// KDE Plasma 6 or GNOME):
 //
 //   1. `CreateSession()`        – async, via a `Request` object + `Response` signal.
 //   2. `SelectDevices(keyboard)`– declares what we plan to inject; this is
@@ -14,39 +13,33 @@
 //                                 the consent dialog again.
 //   3. `Start()`                – shows the permission dialog (only once
 //                                 per machine if persist mode + token work).
-//   4. `NotifyKeyboardKeycode()` – injects keycodes for the explicitly selected
-//      legacy portal mode and clipboard paste shortcut.
+//   4. `ConnectToEIS()` (libei modes) or `NotifyKeyboardKeycode()` (keycode
+//      mode and the Ctrl+V of the clipboard mode).
 //
-// The session and its DBus connection are owned by a process-wide
-// singleton: it is created lazily on the first injection request and
-// lives until the process exits. This means the consent dialog is shown
-// once per *process*, not once per `start_mapper`/`stop_mapper` cycle —
-// which used to retrigger it on every config change.
+// Each backend owns one session on its own worker thread. The session is
+// created on the first text and kept until the mode changes or the session
+// breaks, so the consent dialog is not shown on every mapper restart. The
+// `restore_token` from `Start` is persisted next to the user data, so later
+// app launches restore the permission silently.
 //
-// On top of that we read `restore_token` from the `Start` response and
-// persist it next to the user data, so subsequent app launches can
-// restore the permission silently.
-//
-// Text injection strategy (to work around a KDE Plasma bug where
-// `NotifyKeyboardKeysym` looks up the physical key for the keysym in the
-// current layout but emits it without the required modifier, producing the
-// wrong character when a non-Latin layout is active):
-//
-//   1. Load the current XKB keymap and build a keysym→(keycode, level) table.
-//   2. For each character, look it up in the table and inject via
-//      `NotifyKeyboardKeycode` with the appropriate modifier keys — this is
-//      truly layout-driven and always correct for characters in the layout.
+// Characters are typed as keycodes of the active layout (`NotifyKeyboardKeysym`
+// emits keysyms without the needed modifier on KDE, giving wrong characters
+// in non-Latin layouts). libei uses the keymap and layout group the
+// compositor sends; the keycode mode rebuilds the keymap from the active
+// layout name and variant.
 //
 // Text modes must never silently switch injection mechanisms: hidden fallbacks
 // mask failures and make backend debugging unreliable. The only allowed fallback
 // is the explicitly selected libei + wl-copy mode, which pastes the whole text
 // when the keymap lacks a character. It still requires a working libei session.
-// Backend failures must be logged, not retried through another input method.
+// Every failure is reported as `CoreEvent::TextInputFailed`, never retried
+// through another input method.
 
 #![cfg(target_os = "linux")]
 
 use std::collections::HashMap;
 use std::ffi::{CString, c_char};
+use std::os::unix::fs::FileExt;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -61,8 +54,12 @@ use reis::event::{DeviceCapability, EiEvent, EiEventConverter};
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
+use crate::events::{CoreEvent, TextInputFailure};
+use crate::profile::model::TextMode;
+
 enum XkbContext {}
 enum XkbKeymap {}
+enum XkbState {}
 
 #[repr(C)]
 struct XkbRuleNames {
@@ -72,6 +69,9 @@ struct XkbRuleNames {
     variant: *const c_char,
     options: *const c_char,
 }
+
+const XKB_KEYMAP_FORMAT_TEXT_V1: u32 = 1;
+const XKB_LAYOUT_INVALID: u32 = 0xffff_ffff;
 
 #[link(name = "xkbcommon")]
 unsafe extern "C" {
@@ -83,10 +83,16 @@ unsafe extern "C" {
         names: *const XkbRuleNames,
         flags: u32,
     ) -> *mut XkbKeymap;
+    fn xkb_keymap_new_from_buffer(
+        ctx: *mut XkbContext,
+        buffer: *const c_char,
+        length: usize,
+        format: u32,
+        flags: u32,
+    ) -> *mut XkbKeymap;
     fn xkb_keymap_unref(keymap: *mut XkbKeymap);
     fn xkb_keymap_min_keycode(keymap: *mut XkbKeymap) -> u32;
     fn xkb_keymap_max_keycode(keymap: *mut XkbKeymap) -> u32;
-    fn xkb_keymap_num_layouts_for_key(keymap: *mut XkbKeymap, key: u32) -> u32;
     fn xkb_keymap_num_levels_for_key(keymap: *mut XkbKeymap, key: u32, layout: u32) -> u32;
     fn xkb_keymap_key_get_syms_by_level(
         keymap: *mut XkbKeymap,
@@ -95,6 +101,18 @@ unsafe extern "C" {
         level: u32,
         syms_out: *mut *const u32,
     ) -> i32;
+    fn xkb_state_new(keymap: *mut XkbKeymap) -> *mut XkbState;
+    fn xkb_state_unref(state: *mut XkbState);
+    fn xkb_state_update_mask(
+        state: *mut XkbState,
+        depressed_mods: u32,
+        latched_mods: u32,
+        locked_mods: u32,
+        depressed_layout: u32,
+        latched_layout: u32,
+        locked_layout: u32,
+    ) -> u32;
+    fn xkb_state_key_get_layout(state: *mut XkbState, key: u32) -> u32;
 }
 
 // --- Portal DBus identifiers --------------------------------------------
@@ -111,6 +129,11 @@ const DEVICE_TYPE_KEYBOARD: u32 = 1;
 /// `persist_mode` for SelectDevices: 2 = persist until explicitly revoked.
 const PERSIST_MODE_PERMANENT: u32 = 2;
 
+/// Wait for portal responses that need no user decision.
+const PORTAL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
+/// `Start` may show the consent dialog: leave the user time to read it.
+const CONSENT_TIMEOUT: Duration = Duration::from_secs(180);
+
 const STATE_RELEASED: u32 = 0;
 const STATE_PRESSED: u32 = 1;
 
@@ -124,9 +147,6 @@ const KEY_RIGHTALT_EVDEV: u32 = 100; // AltGr
 const KEY_LEFTCTRL_EVDEV: u32 = 29;
 const KEY_V_EVDEV: u32 = 47;
 
-// XKB keysym for Latin lowercase 'v'. Used for the Ctrl+V paste shortcut
-// instead of the evdev keycode so that the compositor sees the correct keysym
-// regardless of the currently active keyboard layout (e.g. Russian 'м' ≠ 'v').
 const XKB_KEY_V_LOWER: u32 = 0x0076;
 
 // Map XKB level index to the evdev modifier keys that must be held.
@@ -147,176 +167,215 @@ struct KeycodeEntry {
     level: u32,
 }
 
-type KeymapCache = Option<(String, Arc<HashMap<u32, KeycodeEntry>>)>;
+/// keysym → the key and level that type it.
+type KeyTable = HashMap<u32, KeycodeEntry>;
+
+type KeymapCache = Option<(String, Arc<KeyTable>)>;
 static KEYMAP_CACHE: Mutex<KeymapCache> = Mutex::new(None);
 
-fn keymap_table() -> Arc<HashMap<u32, KeycodeEntry>> {
-    let cached = crate::runtime_state::layout();
-    let layout = cached
-        .as_ref()
-        .map(|info| info.short.clone())
-        .or_else(|| std::env::var("XKB_DEFAULT_LAYOUT").ok())
-        .unwrap_or_else(|| "us".to_string());
-    let variant = cached
-        .as_ref()
-        .map(|info| info.variant.trim().to_string())
-        .filter(|v| !v.is_empty())
-        .or_else(|| std::env::var("XKB_DEFAULT_VARIANT").ok())
-        .filter(|v| !v.is_empty());
-    let cache_key = format!("{}\0{}", layout, variant.as_deref().unwrap_or(""));
-
-    if let Ok(mut guard) = KEYMAP_CACHE.lock() {
-        if let Some((ref k, ref t)) = *guard
-            && *k == cache_key
-        {
-            return Arc::clone(t);
-        }
-        let t = Arc::new(build_keymap_table(&layout, variant.as_deref()));
-        *guard = Some((cache_key, Arc::clone(&t)));
-        return t;
+/// Key table of the active layout, rebuilt from its XKB name and variant.
+/// Fails when the layout is unknown (only the KDE backend reports it) or
+/// XKB cannot compile it: guessing a layout would type wrong characters.
+fn layout_key_table() -> Result<Arc<KeyTable>, TextInputFailure> {
+    let layout = crate::runtime_state::layout().ok_or(TextInputFailure::LayoutUnknown)?;
+    let variant = layout.variant.trim();
+    let cache_key = format!("{}\0{variant}", layout.short);
+    let mut cache = KEYMAP_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((key, table)) = cache.as_ref()
+        && *key == cache_key
+    {
+        return Ok(Arc::clone(table));
     }
-    Arc::new(HashMap::new())
+    let table = Arc::new(
+        table_from_names(&layout.short, (!variant.is_empty()).then_some(variant))
+            .ok_or(TextInputFailure::LayoutUnknown)?,
+    );
+    *cache = Some((cache_key, Arc::clone(&table)));
+    Ok(table)
 }
 
-fn build_keymap_table(layout: &str, variant: Option<&str>) -> HashMap<u32, KeycodeEntry> {
-    let mut map: HashMap<u32, KeycodeEntry> = HashMap::new();
-
-    let Ok(layout_c) = CString::new(layout) else {
-        return map;
+fn table_from_names(layout: &str, variant: Option<&str>) -> Option<KeyTable> {
+    let layout_c = CString::new(layout).ok()?;
+    let variant_c = match variant {
+        Some(variant) => Some(CString::new(variant).ok()?),
+        None => None,
     };
-    let variant_c = variant.and_then(|v| CString::new(v).ok());
-    let variant_ptr = variant_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
-
+    let names = XkbRuleNames {
+        rules: std::ptr::null(),
+        model: std::ptr::null(),
+        layout: layout_c.as_ptr(),
+        variant: variant_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+        options: std::ptr::null(),
+    };
+    // SAFETY: the context and keymap are checked for null and released
+    // before returning; `names` points to strings that outlive the call.
     unsafe {
         let ctx = xkb_context_new(0);
         if ctx.is_null() {
-            return map;
+            return None;
         }
-        let names = XkbRuleNames {
-            rules: std::ptr::null(),
-            model: std::ptr::null(),
-            layout: layout_c.as_ptr(),
-            variant: variant_ptr,
-            options: std::ptr::null(),
-        };
         let keymap = xkb_keymap_new_from_names(ctx, &names, 0);
         xkb_context_unref(ctx);
         if keymap.is_null() {
-            log::debug!("[portal] xkb_keymap_new_from_names({layout:?}, {variant:?}) failed");
+            log::warn!("[text] XKB cannot compile layout {layout:?} variant {variant:?}");
+            return None;
+        }
+        let table = table_from_keymap(keymap, 0);
+        xkb_keymap_unref(keymap);
+        Some(table)
+    }
+}
+
+/// Key table of `group` in a keymap the compositor sent as XKB text.
+fn table_from_keymap_text(text: &[u8], group: u32) -> Option<KeyTable> {
+    let text = text.split(|byte| *byte == 0).next().unwrap_or_default();
+    // SAFETY: `text` outlives the call; context and keymap are checked for
+    // null and released before returning.
+    unsafe {
+        let ctx = xkb_context_new(0);
+        if ctx.is_null() {
+            return None;
+        }
+        let keymap = xkb_keymap_new_from_buffer(
+            ctx,
+            text.as_ptr().cast(),
+            text.len(),
+            XKB_KEYMAP_FORMAT_TEXT_V1,
+            0,
+        );
+        xkb_context_unref(ctx);
+        if keymap.is_null() {
+            return None;
+        }
+        let table = table_from_keymap(keymap, group);
+        xkb_keymap_unref(keymap);
+        Some(table)
+    }
+}
+
+/// Index the keysyms `group` types, keeping for each the entry that needs
+/// the fewest modifiers.
+///
+/// # Safety
+/// `keymap` must be a valid keymap.
+unsafe fn table_from_keymap(keymap: *mut XkbKeymap, group: u32) -> KeyTable {
+    let mut map = KeyTable::new();
+    // SAFETY: the caller guarantees `keymap`; the state is released below
+    // and `syms` is only read within the length XKB returns.
+    unsafe {
+        let state = xkb_state_new(keymap);
+        if state.is_null() {
             return map;
         }
-
-        let min_kc = xkb_keymap_min_keycode(keymap);
-        let max_kc = xkb_keymap_max_keycode(keymap);
-
-        for kc in min_kc..=max_kc {
-            if xkb_keymap_num_layouts_for_key(keymap, kc) == 0 {
+        // Locking the group lets XKB apply each key's group wrapping rules.
+        xkb_state_update_mask(state, 0, 0, 0, 0, 0, group);
+        for kc in xkb_keymap_min_keycode(keymap)..=xkb_keymap_max_keycode(keymap) {
+            let evdev = kc.saturating_sub(8);
+            let layout = xkb_state_key_get_layout(state, kc);
+            if evdev == 0 || layout == XKB_LAYOUT_INVALID {
                 continue;
             }
-            let nlevels = xkb_keymap_num_levels_for_key(keymap, kc, 0).min(4);
+            let nlevels = xkb_keymap_num_levels_for_key(keymap, kc, layout).min(4);
             for level in 0..nlevels {
                 let mut syms: *const u32 = std::ptr::null();
-                let nsyms = xkb_keymap_key_get_syms_by_level(keymap, kc, 0, level, &mut syms);
+                let nsyms = xkb_keymap_key_get_syms_by_level(keymap, kc, layout, level, &mut syms);
                 if nsyms <= 0 || syms.is_null() {
                     continue;
                 }
                 for i in 0..nsyms as usize {
                     let sym = *syms.add(i);
-                    if sym == 0 {
-                        continue;
+                    if sym != 0 {
+                        map.entry(sym).or_insert(KeycodeEntry { evdev, level });
                     }
-                    let evdev = kc.saturating_sub(8);
-                    if evdev == 0 {
-                        continue;
-                    }
-                    // Keep lowest-level entry (fewest modifiers needed).
-                    map.entry(sym).or_insert(KeycodeEntry { evdev, level });
                 }
             }
         }
-
-        xkb_keymap_unref(keymap);
-        log::debug!(
-            "[portal] XKB keymap {:?}: {} keysyms indexed",
-            layout,
-            map.len()
-        );
-        map
+        xkb_state_unref(state);
     }
+    map
+}
+
+// Text control characters need keyboard keysyms, not Unicode keysyms.
+fn text_keysym(ch: char) -> u32 {
+    match ch {
+        '\n' | '\r' => 0xff0d, // Return
+        '\t' => 0xff09,        // Tab
+        // SAFETY: a pure lookup without pointers.
+        _ => unsafe { xkb_utf32_to_keysym(ch as u32) },
+    }
+}
+
+fn missing_characters(table: &KeyTable, text: &str) -> bool {
+    text.chars().any(|ch| !table.contains_key(&text_keysym(ch)))
+}
+
+/// Key that types `v` in the layout, for the Ctrl+V paste shortcut:
+/// applications match shortcuts by keysym, so in Dvorak it is not the
+/// physical V. Layouts without a Latin `v` (Russian) use the physical V key,
+/// which toolkits map back to the Latin shortcut.
+fn paste_key(table: Option<&KeyTable>) -> u32 {
+    table
+        .and_then(|table| table.get(&XKB_KEY_V_LOWER))
+        .filter(|entry| entry.level == 0)
+        .map_or(KEY_V_EVDEV, |entry| entry.evdev)
+}
+
+fn report(failure: TextInputFailure) {
+    log::warn!("[text] text not typed: {failure:?}");
+    crate::events::emit(CoreEvent::TextInputFailed(failure));
 }
 
 // --- Public API ---------------------------------------------------------
 
-enum Cmd {
-    Type(String, bool, Sender<()>), // (text, clipboard_fallback, completion)
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum TextBackend {
-    Libei,     // libei + clipboard fallback for chars not in keymap (default)
-    LibeiPure, // libei only, no clipboard fallback
-    Keycode,
-    Clipboard,
-    Ydotool,
-    Xdotool,
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct TextBackendConfig {
-    backend: TextBackend,
+    mode: TextMode,
     ydotool_path: Option<String>,
     xdotool_path: Option<String>,
 }
 
 static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
-    backend: TextBackend::Libei,
+    mode: TextMode::Libei,
     ydotool_path: None,
     xdotool_path: None,
 });
-static LIBEI_BACKEND_LOGGED: AtomicBool = AtomicBool::new(false);
-/// Set when the libei handshake failed, so later literals are skipped instead
-/// of repeating a handshake that can block and open extra portal sessions.
-/// Cleared on config updates; never switches to another input backend.
-static LIBEI_UNAVAILABLE: AtomicBool = AtomicBool::new(false);
 
-/// Switch between text injection strategies.
-///   "libei"     — default Wayland-native backend via XDG Desktop Portal EIS.
-///   "clipboard" — use wl-copy + Ctrl+V for the whole string at once.
-///   "ydotool"   — run a ydotool-compatible executable as `type <text>`.
-///   "xdotool"   — run xdotool as `type --clearmodifiers <text>` (X11/XWayland).
-///   anything else — XKB keycode injection via RemoteDesktop portal.
-pub fn set_text_backend(mode: &str, ydotool_path: Option<&str>, xdotool_path: Option<&str>) {
-    let backend = match mode {
-        "libei" => TextBackend::Libei,
-        "libei-pure" => TextBackend::LibeiPure,
-        "clipboard" => TextBackend::Clipboard,
-        "ydotool" => TextBackend::Ydotool,
-        "xdotool" => TextBackend::Xdotool,
-        _ => TextBackend::Keycode,
+/// Select the text injection mode and external tool paths.
+///
+/// Changing the mode closes the open portal sessions and forgets earlier
+/// start failures; the same mode keeps them, so pushing an unrelated config
+/// change neither reopens a declined consent dialog nor drops the session.
+pub fn set_text_backend(mode: TextMode, ydotool_path: Option<&str>, xdotool_path: Option<&str>) {
+    let path = |path: Option<&str>| {
+        path.map(str::trim)
+            .filter(|path| !path.is_empty())
+            .map(ToOwned::to_owned)
     };
-    let ydotool_path = ydotool_path
-        .map(str::trim)
-        .filter(|path| !path.is_empty())
-        .map(ToOwned::to_owned);
-    let xdotool_path = xdotool_path
-        .map(str::trim)
-        .filter(|path| !path.is_empty())
-        .map(ToOwned::to_owned);
-    if let Ok(mut cfg) = TEXT_BACKEND.lock() {
-        *cfg = TextBackendConfig {
-            backend,
-            ydotool_path,
-            xdotool_path,
-        };
+    let next = TextBackendConfig {
+        mode,
+        ydotool_path: path(ydotool_path),
+        xdotool_path: path(xdotool_path),
+    };
+    let mode_changed = {
+        let mut cfg = TEXT_BACKEND.lock().unwrap_or_else(|e| e.into_inner());
+        let changed = cfg.mode != next.mode;
+        *cfg = next;
+        changed
+    };
+    if mode_changed {
+        LIBEI.stop();
+        PORTAL.stop();
+        retry_text_backend();
     }
-    LIBEI_UNAVAILABLE.store(false, Ordering::Relaxed);
-    log::debug!("[portal] text backend: {:?}", backend);
+    log::debug!("[text] text mode: {}", mode.as_str());
 }
 
-/// Sender to the current portal worker thread. Cleared when the worker is
-/// gone so a later literal injection can retry the portal handshake.
-static PORTAL_TX: Mutex<Option<Sender<Cmd>>> = Mutex::new(None);
-static LIBEI_TX: Mutex<Option<Sender<Cmd>>> = Mutex::new(None);
+/// Forget earlier backend start failures, so the next text starts the
+/// backend (and possibly its consent dialog) again.
+pub fn retry_text_backend() {
+    LIBEI.clear_failure();
+    PORTAL.clear_failure();
+}
 
 /// Path of the directory where we persist the restore token.
 static TOKEN_DIR: OnceLock<PathBuf> = OnceLock::new();
@@ -328,221 +387,226 @@ pub fn set_token_dir(dir: PathBuf) {
     let _ = TOKEN_DIR.set(dir);
 }
 
-/// Send a literal string to the active session. Lazily starts the
-/// singleton worker on first call. Non-blocking: returns immediately,
-/// the actual portal handshake (and its consent dialog) runs on a
-/// dedicated thread.
+/// Type `text` with the selected mode and return when the backend is done.
+/// The first call may block on the portal consent dialog, so run it off the
+/// mapper thread. Failures are reported as `CoreEvent::TextInputFailed`.
 pub fn type_text(text: &str) {
-    let Ok(cfg) = TEXT_BACKEND.lock().map(|guard| guard.clone()) else {
-        log::warn!("[text] text skipped: backend configuration lock poisoned");
-        return;
-    };
-    match cfg.backend {
-        TextBackend::Ydotool => {
-            type_text_ydotool(text, cfg.ydotool_path);
-            return;
-        }
-        TextBackend::Xdotool => {
-            type_text_xdotool(text, cfg.xdotool_path);
-            return;
-        }
-        TextBackend::Libei | TextBackend::LibeiPure => {
-            if !LIBEI_BACKEND_LOGGED.swap(true, Ordering::Relaxed) {
-                log::debug!(
-                    "[portal] libei text backend is selected; using RemoteDesktop.ConnectToEIS when available"
-                );
-            }
-            let clipboard_fallback = matches!(cfg.backend, TextBackend::Libei);
-            if !type_text_libei(text, clipboard_fallback) {
-                log::warn!("[libei] text skipped: selected backend unavailable");
-            }
-            // Do not route libei failures to the legacy portal, even in the
-            // clipboard-fallback mode: that mode only permits missing-keymap paste.
-            return;
-        }
-        TextBackend::Clipboard | TextBackend::Keycode => {}
+    let cfg = TEXT_BACKEND
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone();
+    match cfg.mode {
+        TextMode::Ydotool => run_text_tool(
+            cfg.ydotool_path.as_deref().unwrap_or("ydotool"),
+            &["type", "--escape=0", "--", text],
+            text,
+        ),
+        TextMode::Xdotool => run_text_tool(
+            cfg.xdotool_path.as_deref().unwrap_or("xdotool"),
+            &["type", "--clearmodifiers", "--", text],
+            text,
+        ),
+        TextMode::Libei | TextMode::LibeiPure => LIBEI.type_text(text, cfg.mode),
+        TextMode::Keycode | TextMode::Clipboard => PORTAL.type_text(text, cfg.mode),
     }
-    type_text_portal(text);
-}
-
-fn type_text_ydotool(text: &str, ydotool_path: Option<String>) {
-    let program = ydotool_path.unwrap_or_else(|| "ydotool".to_string());
-    run_text_command(&program, &["type", "--escape=0", "--", text], text);
-}
-
-fn type_text_xdotool(text: &str, xdotool_path: Option<String>) {
-    let program = xdotool_path.unwrap_or_else(|| "xdotool".to_string());
-    run_text_command(&program, &["type", "--clearmodifiers", "--", text], text);
 }
 
 /// Run a typing tool with a deadline that grows with the text, so a hung
 /// tool (e.g. ydotool without ydotoold) cannot stall the text queue forever.
-fn run_text_command(program: &str, args: &[&str], text: &str) {
+fn run_text_tool(program: &str, args: &[&str], text: &str) {
     let timeout_ms = 5_000 + 50 * text.chars().count() as u64;
     let mut cmd = std::process::Command::new(program);
     cmd.args(args);
     match crate::exec::run_cmd_with_timeout(&mut cmd, timeout_ms) {
         Some(output) if output.status.success() => {}
-        Some(output) => log::warn!(
-            "[text] {program:?} exited with {}: {}",
+        Some(output) => report(TextInputFailure::Tool(format!(
+            "{program} exited with {}: {}",
             output.status,
             String::from_utf8_lossy(&output.stderr).trim()
-        ),
-        None => log::warn!("[text] {program:?} failed to start or timed out"),
+        ))),
+        None => report(TextInputFailure::Tool(format!(
+            "{program} failed to start or timed out"
+        ))),
     }
 }
 
-fn type_text_portal(text: &str) {
-    let Ok(mut slot) = PORTAL_TX.lock() else {
-        log::warn!("[portal] text injection dropped (worker lock poisoned)");
-        return;
-    };
-    if slot.is_none() {
-        *slot = start_portal_singleton();
-    }
-    let (done_tx, done_rx) = mpsc::channel();
-    let cmd = Cmd::Type(text.to_owned(), false, done_tx);
-    let sent = slot.as_ref().is_some_and(|tx| tx.send(cmd).is_ok());
-    if !sent || done_rx.recv().is_err() {
-        *slot = None;
-        log::warn!("[portal] text injection failed (worker unavailable)");
-    }
+// --- Backend workers ----------------------------------------------------
+
+struct Cmd {
+    text: String,
+    mode: TextMode,
+    /// Dropped without a send when the worker hit a fatal error and exits.
+    done: Sender<()>,
 }
 
-fn type_text_libei(text: &str, clipboard_fallback: bool) -> bool {
-    let Ok(mut slot) = LIBEI_TX.lock() else {
-        return false;
-    };
-    if slot.is_none() {
-        if LIBEI_UNAVAILABLE.load(Ordering::Relaxed) {
-            return false;
+/// A portal session on its own thread, started on first use.
+struct Worker {
+    tx: Mutex<Option<Sender<Cmd>>>,
+    /// Why the last start failed. Later texts are reported as failed instead
+    /// of starting again, which could block and show the dialog every time.
+    failure: Mutex<Option<String>>,
+    /// Set by `stop` while a text holds `tx`, e.g. during the consent dialog.
+    stop_pending: AtomicBool,
+    start: fn() -> Result<Sender<Cmd>, String>,
+}
+
+static LIBEI: Worker = Worker::new(|| start_worker("lhc-libei", LibeiBackend::new, libei_worker));
+static PORTAL: Worker =
+    Worker::new(|| start_worker("lhc-portal", PortalBackend::new, portal_worker));
+
+impl Worker {
+    const fn new(start: fn() -> Result<Sender<Cmd>, String>) -> Self {
+        Self {
+            tx: Mutex::new(None),
+            failure: Mutex::new(None),
+            stop_pending: AtomicBool::new(false),
+            start,
         }
-        *slot = start_libei_singleton();
+    }
+
+    fn type_text(&self, text: &str, mode: TextMode) {
+        let mut slot = self.tx.lock().unwrap_or_else(|e| e.into_inner());
         if slot.is_none() {
-            LIBEI_UNAVAILABLE.store(true, Ordering::Relaxed);
-            return false;
-        }
-    }
-    let (done_tx, done_rx) = mpsc::channel();
-    let cmd = Cmd::Type(text.to_owned(), clipboard_fallback, done_tx);
-    if !slot.as_ref().is_some_and(|tx| tx.send(cmd).is_ok()) {
-        *slot = None;
-        return false;
-    }
-    // A dropped completion means the worker hit a fatal EI error and exited;
-    // forget it so the next literal reconnects.
-    if done_rx.recv().is_err() {
-        *slot = None;
-    }
-    true
-}
-
-fn start_portal_singleton() -> Option<Sender<Cmd>> {
-    let (tx, rx) = mpsc::channel::<Cmd>();
-    let spawn_result = thread::Builder::new()
-        .name("lhc-portal".into())
-        .spawn(move || portal_worker(rx));
-    match spawn_result {
-        Ok(_join) => Some(tx),
-        Err(e) => {
-            log::debug!("[portal] could not spawn worker thread: {e}");
-            None
-        }
-    }
-}
-
-fn start_libei_singleton() -> Option<Sender<Cmd>> {
-    let (tx, rx) = mpsc::channel::<Cmd>();
-    let (ready_tx, ready_rx) = mpsc::sync_channel::<Result<(), String>>(1);
-    let spawn_result = thread::Builder::new()
-        .name("lhc-libei".into())
-        .spawn(move || libei_worker(rx, ready_tx));
-    match spawn_result {
-        Ok(_join) => match ready_rx.recv_timeout(Duration::from_secs(10)) {
-            Ok(Ok(())) => Some(tx),
-            Ok(Err(e)) => {
-                log::warn!("[libei] backend unavailable: {e}");
-                None
-            }
-            Err(e) => {
-                log::warn!("[libei] backend init timed out: {e}");
-                None
-            }
-        },
-        Err(e) => {
-            log::debug!("[libei] could not spawn worker thread: {e}");
-            None
-        }
-    }
-}
-
-fn portal_worker(rx: Receiver<Cmd>) {
-    let (conn, session_handle) = match init_portal() {
-        Ok(v) => {
-            log::debug!("[portal] backend online");
-            v
-        }
-        Err(e) => {
-            log::debug!("[portal] backend unavailable: {e}");
-            drop(rx);
-            return;
-        }
-    };
-
-    let portal = match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
-        Ok(p) => p,
-        Err(e) => {
-            log::debug!("[portal] could not re-create RemoteDesktop proxy: {e}");
-            close_session(&conn, &session_handle);
-            return;
-        }
-    };
-
-    while let Ok(cmd) = rx.recv() {
-        match cmd {
-            Cmd::Type(text, _, done) => {
-                inject_text(&portal, &session_handle, &text);
-                let _ = done.send(());
-            }
-        }
-    }
-
-    close_session(&conn, &session_handle);
-}
-
-fn libei_worker(rx: Receiver<Cmd>, ready_tx: mpsc::SyncSender<Result<(), String>>) {
-    let mut backend = match LibeiBackend::new() {
-        Ok(backend) => {
-            // The caller gave up waiting (init timeout): do not leave an
-            // orphaned portal session behind.
-            if ready_tx.send(Ok(())).is_err() {
-                backend.close();
+            if let Some(error) = self
+                .failure
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone()
+            {
+                report(TextInputFailure::BackendUnavailable(error));
                 return;
             }
-            backend
+            match (self.start)() {
+                Ok(tx) => *slot = Some(tx),
+                Err(error) => {
+                    *self.failure.lock().unwrap_or_else(|e| e.into_inner()) = Some(error.clone());
+                    report(TextInputFailure::BackendUnavailable(error));
+                    return;
+                }
+            }
         }
-        Err(e) => {
-            let _ = ready_tx.send(Err(e));
-            drop(rx);
+        let (done, done_rx) = mpsc::channel();
+        let cmd = Cmd {
+            text: text.to_owned(),
+            mode,
+            done,
+        };
+        if !slot.as_ref().is_some_and(|tx| tx.send(cmd).is_ok()) {
+            *slot = None;
+            report(TextInputFailure::BackendUnavailable(
+                "the input session has ended".into(),
+            ));
             return;
         }
-    };
+        // The worker reports its own fatal error; forget it so the next
+        // text opens a new session.
+        if done_rx.recv().is_err() || self.stop_pending.swap(false, Ordering::SeqCst) {
+            *slot = None;
+        }
+    }
 
-    while let Ok(cmd) = rx.recv() {
-        match cmd {
-            Cmd::Type(text, clipboard_fallback, done) => {
-                if let Err(e) = backend.type_text(&text, clipboard_fallback) {
-                    // Errors from the EI connection are not recoverable on
-                    // this session; exit so the next literal reconnects.
-                    log::warn!("[libei] text injection failed, closing session: {e}");
-                    drop(done);
-                    break;
-                }
-                let _ = done.send(());
+    /// Close the session; the worker exits after its current text. Never
+    /// blocks: it is called from the mapper thread.
+    fn stop(&self) {
+        match self.tx.try_lock() {
+            Ok(mut slot) => {
+                slot.take();
+            }
+            Err(std::sync::TryLockError::Poisoned(e)) => {
+                e.into_inner().take();
+            }
+            Err(std::sync::TryLockError::WouldBlock) => {
+                self.stop_pending.store(true, Ordering::SeqCst);
             }
         }
     }
 
+    fn clear_failure(&self) {
+        self.failure
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+    }
+}
+
+/// Start a worker thread and wait until its session is ready. There is no
+/// outer deadline: `init` is bounded by the portal timeouts, and giving up
+/// earlier would fail the text while the user is still reading the consent
+/// dialog.
+fn start_worker<B: 'static>(
+    name: &'static str,
+    init: fn() -> Result<B, String>,
+    run: fn(B, Receiver<Cmd>),
+) -> Result<Sender<Cmd>, String> {
+    let (tx, rx) = mpsc::channel();
+    let (ready_tx, ready_rx) = mpsc::sync_channel(1);
+    thread::Builder::new()
+        .name(name.into())
+        .spawn(move || match init() {
+            Ok(backend) => {
+                let _ = ready_tx.send(Ok(()));
+                run(backend, rx);
+            }
+            Err(error) => {
+                let _ = ready_tx.send(Err(error));
+            }
+        })
+        .map_err(|e| format!("start {name}: {e}"))?;
+    ready_rx
+        .recv()
+        .map_err(|_| format!("{name} stopped while starting"))??;
+    Ok(tx)
+}
+
+struct PortalBackend {
+    conn: Connection,
+    session_handle: OwnedObjectPath,
+    portal: Proxy<'static>,
+}
+
+impl PortalBackend {
+    fn new() -> Result<Self, String> {
+        let (conn, session_handle) = init_portal()?;
+        match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
+            Ok(portal) => Ok(Self {
+                conn,
+                session_handle,
+                portal,
+            }),
+            Err(e) => {
+                close_session(&conn, &session_handle);
+                Err(format!("create RemoteDesktop proxy: {e}"))
+            }
+        }
+    }
+}
+
+fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
+    log::debug!("[portal] backend online");
+    for cmd in rx {
+        let session = &backend.session_handle;
+        match cmd.mode {
+            TextMode::Clipboard => paste_text(&backend.portal, session, &cmd.text),
+            TextMode::Keycode => type_text_keycode(&backend.portal, session, &cmd.text),
+            mode => log::error!("[portal] text mode {} sent to the portal", mode.as_str()),
+        }
+        let _ = cmd.done.send(());
+    }
+    close_session(&backend.conn, &backend.session_handle);
+}
+
+fn libei_worker(mut backend: LibeiBackend, rx: Receiver<Cmd>) {
+    log::debug!("[libei] backend online");
+    for cmd in rx {
+        let clipboard_fallback = cmd.mode == TextMode::Libei;
+        if let Err(e) = backend.type_text(&cmd.text, clipboard_fallback) {
+            // Errors from the EI connection are not recoverable on this
+            // session; exit so the next text reconnects.
+            report(TextInputFailure::BackendUnavailable(e));
+            break;
+        }
+        let _ = cmd.done.send(());
+    }
     backend.close();
 }
 
@@ -555,6 +619,12 @@ struct LibeiBackend {
     keyboard_device: Option<(ei::Device, ei::Keyboard)>,
     keyboard_emulating: bool,
     sequence: u32,
+    /// XKB keymap text of the keyboard device, as the compositor sent it.
+    keymap: Option<Vec<u8>>,
+    /// Active layout group the compositor reported.
+    group: Option<u32>,
+    /// Key table built from `keymap` for a group.
+    table: Option<(u32, Arc<KeyTable>)>,
 }
 
 impl LibeiBackend {
@@ -601,63 +671,91 @@ impl LibeiBackend {
             keyboard_device: None,
             keyboard_emulating: false,
             sequence: 1,
+            keymap: None,
+            group: None,
+            table: None,
         };
-        if let Err(e) = backend.wait_for_keyboard(Duration::from_secs(5)) {
+        if let Err(e) = backend.wait_until(Duration::from_secs(5), Self::has_keyboard) {
             close_session(&backend.conn, &backend.session_handle);
             return Err(e);
         }
-        log::debug!("[libei] backend online");
         Ok(backend)
     }
 
-    /// Type `text`. `Err` means the EI connection is unusable; problems that
-    /// do not affect the session (missing characters, no wl-copy) are logged
-    /// and reported as `Ok`.
+    /// Type `text`. `Err` means the EI connection is unusable; other
+    /// failures are reported and leave the session open.
     fn type_text(&mut self, text: &str, clipboard_fallback: bool) -> Result<(), String> {
         self.pump_events()?;
         if !self.has_keyboard() {
-            self.wait_for_keyboard(Duration::from_secs(2))?;
+            self.wait_until(Duration::from_secs(2), Self::has_keyboard)?;
         }
-        let table = keymap_table();
-        let has_missing = text.chars().any(|ch| !table.contains_key(&text_keysym(ch)));
-        if has_missing {
-            if clipboard_fallback {
-                return self.type_text_via_clipboard(text);
-            }
-            log::warn!("[libei] text skipped: it has characters the keyboard layout lacks");
+        // Events sent while the compositor paused the device are a protocol
+        // error, e.g. on the lock screen.
+        if !self.keyboard_emulating
+            && self
+                .wait_until(Duration::from_secs(1), |backend| backend.keyboard_emulating)
+                .is_err()
+        {
+            report(TextInputFailure::BackendUnavailable(
+                "the compositor paused the input device".into(),
+            ));
             return Ok(());
         }
-        for ch in text.replace("\r\n", "\n").chars() {
-            let keysym = text_keysym(ch);
-            let Some(entry) = table.get(&keysym) else {
-                log::debug!("[libei] no keycode for a character, skipping");
-                continue;
-            };
-            self.inject_keycode_combo(level_to_mods(entry.level), entry.evdev)?;
+        let table = match self.key_table() {
+            Ok(table) => table,
+            Err(failure) => {
+                report(failure);
+                return Ok(());
+            }
+        };
+        let text = text.replace("\r\n", "\n");
+        if missing_characters(&table, &text) {
+            if clipboard_fallback {
+                return self.paste_text(&text, &table);
+            }
+            report(TextInputFailure::MissingCharacters);
+            return Ok(());
         }
-        self.context.flush().map_err(|e| format!("EI flush: {e}"))?;
+        for ch in text.chars() {
+            if let Some(entry) = table.get(&text_keysym(ch)) {
+                self.inject_keycode_combo(level_to_mods(entry.level), entry.evdev)?;
+            }
+        }
         Ok(())
     }
 
-    fn type_text_via_clipboard(&mut self, text: &str) -> Result<(), String> {
-        let previous_clipboard = read_wayland_clipboard_text();
-        if let Err(e) = set_wayland_clipboard_text(text) {
-            log::warn!("[libei] text skipped: wl-copy unavailable for clipboard fallback: {e}");
+    /// Key table of the layout the compositor uses now. Without a keymap
+    /// from the compositor, fall back to the active layout's name; without
+    /// a reported group, to the active layout's index.
+    fn key_table(&mut self) -> Result<Arc<KeyTable>, TextInputFailure> {
+        let Some(keymap) = self.keymap.as_deref() else {
+            return layout_key_table();
+        };
+        let group = self
+            .group
+            .or_else(|| crate::runtime_state::layout().map(|layout| layout.index))
+            .ok_or(TextInputFailure::LayoutUnknown)?;
+        if let Some((cached, table)) = &self.table
+            && *cached == group
+        {
+            return Ok(Arc::clone(table));
+        }
+        let table = Arc::new(table_from_keymap_text(keymap, group).ok_or_else(|| {
+            TextInputFailure::BackendUnavailable("cannot read the compositor keymap".into())
+        })?);
+        self.table = Some((group, Arc::clone(&table)));
+        Ok(table)
+    }
+
+    fn paste_text(&mut self, text: &str, table: &KeyTable) -> Result<(), String> {
+        let saved = save_clipboard();
+        if let Err(e) = set_clipboard_text(text, true) {
+            report(TextInputFailure::Clipboard(e));
             return Ok(());
         }
         thread::sleep(Duration::from_millis(50));
-        // EI only supports keycode injection. Look up which evdev keycode produces
-        // 'v' in the current XKB layout. Falls back to physical key 47 (Latin V)
-        // which compositors typically honour for Ctrl+V even in non-Latin layouts.
-        let table = keymap_table();
-        let v_keycode = table
-            .get(&XKB_KEY_V_LOWER)
-            .map(|e| e.evdev)
-            .unwrap_or(KEY_V_EVDEV);
-        let result = self
-            .inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], v_keycode)
-            .and_then(|()| self.context.flush().map_err(|e| format!("EI flush: {e}")));
-        restore_wayland_clipboard_text(previous_clipboard);
+        let result = self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], paste_key(Some(table)));
+        restore_clipboard(saved);
         result
     }
 
@@ -682,16 +780,18 @@ impl LibeiBackend {
         self.context.flush().map_err(|e| format!("EI flush: {e}"))
     }
 
-    fn wait_for_keyboard(&mut self, timeout: Duration) -> Result<(), String> {
+    fn wait_until(&mut self, timeout: Duration, ready: fn(&Self) -> bool) -> Result<(), String> {
         let deadline = Instant::now() + timeout;
-        while Instant::now() < deadline {
+        loop {
             self.pump_events()?;
-            if self.has_keyboard() {
+            if ready(self) {
                 return Ok(());
+            }
+            if Instant::now() >= deadline {
+                return Err("EI keyboard device is not available".into());
             }
             thread::sleep(Duration::from_millis(10));
         }
-        Err("EI keyboard device was not advertised".into())
     }
 
     fn pump_events(&mut self) -> Result<(), String> {
@@ -717,6 +817,12 @@ impl LibeiBackend {
         Ok(())
     }
 
+    fn is_keyboard(&self, device: &ei::Device) -> bool {
+        self.keyboard_device
+            .as_ref()
+            .is_some_and(|(keyboard, _)| keyboard == device)
+    }
+
     fn handle_event(&mut self, event: EiEvent) -> Result<(), String> {
         match event {
             EiEvent::Disconnected(e) => {
@@ -729,36 +835,27 @@ impl LibeiBackend {
             EiEvent::DeviceAdded(e) => {
                 if let Some(keyboard) = e.device.interface::<ei::Keyboard>() {
                     let device = e.device.device().clone();
+                    self.keymap = e.device.keymap().and_then(read_keymap);
+                    self.table = None;
+                    self.keyboard_emulating = false;
                     self.start_keyboard_emulation(&device);
                     self.keyboard_device = Some((device, keyboard));
                 }
             }
-            EiEvent::DevicePaused(e) => {
-                if self
-                    .keyboard_device
-                    .as_ref()
-                    .is_some_and(|(device, _)| device == e.device.device())
-                {
-                    self.keyboard_emulating = false;
-                }
+            EiEvent::KeyboardModifiers(e) if self.is_keyboard(e.device.device()) => {
+                self.group = Some(e.group);
             }
-            EiEvent::DeviceResumed(e) => {
-                if self
-                    .keyboard_device
-                    .as_ref()
-                    .is_some_and(|(device, _)| device == e.device.device())
-                {
-                    self.start_keyboard_emulation(e.device.device());
-                }
+            EiEvent::DevicePaused(e) if self.is_keyboard(e.device.device()) => {
+                self.keyboard_emulating = false;
             }
-            EiEvent::DeviceRemoved(e)
-                if self
-                    .keyboard_device
-                    .as_ref()
-                    .is_some_and(|(device, _)| device == e.device.device()) =>
-            {
+            EiEvent::DeviceResumed(e) if self.is_keyboard(e.device.device()) => {
+                self.start_keyboard_emulation(e.device.device());
+            }
+            EiEvent::DeviceRemoved(e) if self.is_keyboard(e.device.device()) => {
                 self.keyboard_device = None;
                 self.keyboard_emulating = false;
+                self.keymap = None;
+                self.table = None;
             }
             _ => {}
         }
@@ -780,6 +877,22 @@ impl LibeiBackend {
 
     fn close(self) {
         close_session(&self.conn, &self.session_handle);
+    }
+}
+
+/// Read the XKB keymap an EI keyboard device carries.
+fn read_keymap(keymap: &reis::event::Keymap) -> Option<Vec<u8>> {
+    if keymap.type_ != ei::keyboard::KeymapType::Xkb {
+        return None;
+    }
+    let file = std::fs::File::from(keymap.fd.try_clone().ok()?);
+    let mut text = vec![0; keymap.size as usize];
+    match file.read_exact_at(&mut text, 0) {
+        Ok(()) => Some(text),
+        Err(e) => {
+            log::warn!("[libei] cannot read the device keymap: {e}");
+            None
+        }
     }
 }
 
@@ -835,94 +948,104 @@ fn ei_handshake_with_timeout(
     Err("EI handshake timed out".into())
 }
 
-fn inject_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    let Ok(backend) = TEXT_BACKEND.lock().map(|guard| guard.backend) else {
-        log::warn!("[portal] text skipped: backend configuration lock poisoned");
-        return;
+fn type_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
+    let table = match layout_key_table() {
+        Ok(table) => table,
+        Err(failure) => return report(failure),
     };
-    match backend {
-        TextBackend::Clipboard => inject_full_text_via_clipboard(portal, session, text),
-        TextBackend::Keycode => inject_text_keycode(portal, session, text),
-        // A queued request may outlive a settings change. Never reinterpret it
-        // as legacy keycodes for a mode that does not select that mechanism.
-        _ => log::warn!("[portal] text skipped: selected backend changed"),
-    }
-}
-
-// Text control characters need keyboard keysyms, not Unicode keysyms.
-fn text_keysym(ch: char) -> u32 {
-    match ch {
-        '\n' | '\r' => 0xff0d, // Return
-        '\t' => 0xff09,        // Tab
-        _ => unsafe { xkb_utf32_to_keysym(ch as u32) },
-    }
-}
-
-fn inject_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    let table = keymap_table();
-    let empty: HashMap<String, Value> = HashMap::new();
     let text = text.replace("\r\n", "\n");
-    if text.chars().any(|ch| !table.contains_key(&text_keysym(ch))) {
-        log::warn!("[portal] text skipped: it has characters the keyboard layout lacks");
-        return;
+    if missing_characters(&table, &text) {
+        return report(TextInputFailure::MissingCharacters);
     }
     for ch in text.chars() {
         if let Some(entry) = table.get(&text_keysym(ch))
-            && !inject_keycode_combo(
-                portal,
-                session,
-                &empty,
-                level_to_mods(entry.level),
-                entry.evdev,
-            )
+            && let Err(e) =
+                inject_keycode_combo(portal, session, level_to_mods(entry.level), entry.evdev)
         {
             // Do not substitute NotifyKeyboardKeysym: it hides keycode failures
             // and can produce different characters depending on the compositor.
-            log::warn!("[portal] text injection stopped: NotifyKeyboardKeycode failed");
-            return;
+            return report(TextInputFailure::BackendUnavailable(format!(
+                "NotifyKeyboardKeycode: {e}"
+            )));
         }
     }
 }
 
-fn inject_full_text_via_clipboard(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    let empty: HashMap<String, Value> = HashMap::new();
-
-    let previous_clipboard = read_wayland_clipboard_text();
-    match set_wayland_clipboard_text(text) {
-        Ok(()) => {}
-        Err(e) => {
-            // Clipboard mode must fail visibly rather than silently type keys.
-            log::warn!("[portal] text skipped: wl-copy unavailable in clipboard mode: {e}");
-            return;
-        }
+fn paste_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
+    let saved = save_clipboard();
+    if let Err(e) = set_clipboard_text(text, true) {
+        // Clipboard mode must fail visibly rather than silently type keys.
+        return report(TextInputFailure::Clipboard(e));
     }
-
-    thread::sleep(std::time::Duration::from_millis(50));
-    if !inject_paste(portal, session, &empty) {
-        log::debug!("[portal] clipboard paste: Ctrl+V injection failed");
+    thread::sleep(Duration::from_millis(50));
+    let table = layout_key_table().ok();
+    if let Err(e) = inject_keycode_combo(
+        portal,
+        session,
+        &[KEY_LEFTCTRL_EVDEV],
+        paste_key(table.as_deref()),
+    ) {
+        report(TextInputFailure::BackendUnavailable(format!(
+            "NotifyKeyboardKeycode: {e}"
+        )));
     }
-    restore_wayland_clipboard_text(previous_clipboard);
+    restore_clipboard(saved);
 }
 
-fn read_wayland_clipboard_text() -> Option<String> {
+// --- Clipboard ----------------------------------------------------------
+
+/// Clipboard content before a paste.
+enum SavedClipboard {
+    Text(String),
+    Empty,
+    /// Content that cannot be read back as text (an image, files) or an
+    /// unreadable clipboard.
+    Other,
+}
+
+const TEXT_MIME: &str = "text/plain;charset=utf-8";
+
+fn save_clipboard() -> SavedClipboard {
     use std::process::Command;
 
-    let output =
-        crate::exec::run_cmd_with_timeout(Command::new("wl-paste").args(["--no-newline"]), 1000)?;
-    if !output.status.success() {
-        return None;
+    let Some(types) =
+        crate::exec::run_cmd_with_timeout(Command::new("wl-paste").arg("--list-types"), 1000)
+    else {
+        return SavedClipboard::Other;
+    };
+    // wl-paste fails when nothing is copied.
+    if !types.status.success() || types.stdout.trim_ascii().is_empty() {
+        return SavedClipboard::Empty;
     }
-    String::from_utf8(output.stdout).ok()
+    // Without --no-newline wl-paste appends a line break to text.
+    let text = crate::exec::run_cmd_with_timeout(
+        Command::new("wl-paste").args(["--no-newline", "--type", "text"]),
+        1000,
+    );
+    match text {
+        Some(output) if output.status.success() => {
+            String::from_utf8(output.stdout).map_or(SavedClipboard::Other, SavedClipboard::Text)
+        }
+        _ => SavedClipboard::Other,
+    }
 }
 
-fn set_wayland_clipboard_text(text: &str) -> Result<(), String> {
+/// Copy `text` as plain text. `sensitive` asks clipboard managers such as
+/// Klipper not to keep it in their history.
+fn set_clipboard_text(text: &str, sensitive: bool) -> Result<(), String> {
     use std::io::Write as _;
     use std::process::{Command, Stdio};
 
-    let mut child = Command::new("wl-copy")
+    let mut cmd = Command::new("wl-copy");
+    // Without a type wl-copy guesses one from the content.
+    cmd.args(["--type", TEXT_MIME]);
+    if sensitive && wl_copy_supports_sensitive() {
+        cmd.arg("--sensitive");
+    }
+    let mut child = cmd
         .stdin(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("{e}"))?;
+        .map_err(|e| format!("wl-copy: {e}"))?;
     if let Some(mut stdin) = child.stdin.take() {
         stdin
             .write_all(text.as_bytes())
@@ -935,123 +1058,83 @@ fn set_wayland_clipboard_text(text: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn restore_wayland_clipboard_text(previous: Option<String>) {
+/// `--sensitive` appeared in wl-clipboard 2.2; older versions reject it.
+fn wl_copy_supports_sensitive() -> bool {
+    static SUPPORTED: OnceLock<bool> = OnceLock::new();
+    *SUPPORTED.get_or_init(|| {
+        crate::exec::run_cmd_with_timeout(std::process::Command::new("wl-copy").arg("--help"), 1000)
+            .is_some_and(|output| {
+                let help = [output.stdout, output.stderr].concat();
+                String::from_utf8_lossy(&help).contains("--sensitive")
+            })
+    })
+}
+
+fn restore_clipboard(saved: SavedClipboard) {
     // Keep the paste data available before reporting completion to the macro.
     thread::sleep(Duration::from_millis(120));
-    if let Some(previous) = previous
-        && let Err(e) = set_wayland_clipboard_text(&previous)
-    {
-        log::warn!("[portal] clipboard restore failed: {e}");
+    let result = match saved {
+        SavedClipboard::Text(text) => set_clipboard_text(&text, false),
+        // Do not leave the typed text behind in the clipboard.
+        SavedClipboard::Empty | SavedClipboard::Other => clear_clipboard(),
+    };
+    if let Err(e) = result {
+        log::warn!("[text] clipboard restore failed: {e}");
     }
 }
 
-/// Inject Ctrl+V to paste clipboard content.
-///
-/// Both Ctrl and V are injected via keycodes (not keysyms).  KDE Plasma 6.x
-/// matches keyboard shortcuts by physical key position (scancode / evdev
-/// keycode), so keycode 47 triggers Ctrl+V paste even when a non-Latin
-/// layout is active — the compositor recognises the shortcut before
-/// translating the keycode through the active layout group.
-///
-/// The previous keysym-based approach (NotifyKeyboardKeysym for V) was
-/// silently dropped by KDE when no key in the active layout maps to the
-/// XK_v keysym (e.g. Russian layout), causing paste to never fire.
-fn inject_paste(portal: &Proxy, session: &OwnedObjectPath, empty: &HashMap<String, Value>) -> bool {
-    for (keycode, state, label) in [
-        (KEY_LEFTCTRL_EVDEV, STATE_PRESSED, "Ctrl press"),
-        (KEY_V_EVDEV, STATE_PRESSED, "V press"),
-        (KEY_V_EVDEV, STATE_RELEASED, "V release"),
-        (KEY_LEFTCTRL_EVDEV, STATE_RELEASED, "Ctrl release"),
-    ] {
-        if let Err(e) = notify_key(
-            portal,
-            session,
-            empty,
-            "NotifyKeyboardKeycode",
-            keycode,
-            state,
-        ) {
-            log::debug!("[portal] paste: {label} failed: {e}");
-            return false;
-        }
+fn clear_clipboard() -> Result<(), String> {
+    let output = crate::exec::run_cmd_with_timeout(
+        std::process::Command::new("wl-copy").arg("--clear"),
+        1000,
+    )
+    .ok_or("wl-copy --clear failed to start or timed out")?;
+    if !output.status.success() {
+        return Err(format!("wl-copy --clear exited with {}", output.status));
     }
-    true
+    Ok(())
 }
 
-/// Call a RemoteDesktop `NotifyKeyboard*` method. The portal declares the
-/// key argument as `i` (signed); sending `u` is rejected with InvalidArgs.
+/// Call `NotifyKeyboardKeycode`. The portal declares the key argument as
+/// `i` (signed); sending `u` is rejected with InvalidArgs.
 fn notify_key(
     portal: &Proxy,
     session: &OwnedObjectPath,
-    empty: &HashMap<String, Value>,
-    method: &str,
     key: u32,
     state: u32,
 ) -> zbus::Result<zbus::message::Message> {
+    let empty: HashMap<String, Value> = HashMap::new();
     let key =
         i32::try_from(key).map_err(|_| zbus::Error::Failure(format!("key {key} out of range")))?;
-    portal.call_method(method, &(session, empty, key, state))
+    portal.call_method("NotifyKeyboardKeycode", &(session, empty, key, state))
 }
 
+/// Press `mods`, tap `key` and release `mods`. Pressed modifiers are
+/// released even when a later call fails.
 fn inject_keycode_combo(
     portal: &Proxy,
     session: &OwnedObjectPath,
-    empty: &HashMap<String, Value>,
     mods: &[u32],
     key: u32,
-) -> bool {
+) -> zbus::Result<()> {
+    let mut pressed = 0;
+    let mut result = Ok(());
     for &m in mods {
-        if let Err(e) = notify_key(
-            portal,
-            session,
-            empty,
-            "NotifyKeyboardKeycode",
-            m,
-            STATE_PRESSED,
-        ) {
-            log::debug!("[portal] modifier press failed: {e}");
-            for &m2 in mods {
-                let _ = notify_key(
-                    portal,
-                    session,
-                    empty,
-                    "NotifyKeyboardKeycode",
-                    m2,
-                    STATE_RELEASED,
-                );
-            }
-            return false;
+        if let Err(e) = notify_key(portal, session, m, STATE_PRESSED) {
+            result = Err(e);
+            break;
         }
+        pressed += 1;
     }
-    let ok = notify_key(
-        portal,
-        session,
-        empty,
-        "NotifyKeyboardKeycode",
-        key,
-        STATE_PRESSED,
-    )
-    .is_ok()
-        && notify_key(
-            portal,
-            session,
-            empty,
-            "NotifyKeyboardKeycode",
-            key,
-            STATE_RELEASED,
-        )
-        .is_ok();
-    for &m in mods.iter().rev() {
-        let _ = notify_key(
-            portal,
-            session,
-            empty,
-            "NotifyKeyboardKeycode",
-            m,
-            STATE_RELEASED,
-        );
+    if result.is_ok() {
+        result = notify_key(portal, session, key, STATE_PRESSED)
+            .and_then(|_| notify_key(portal, session, key, STATE_RELEASED))
+            .map(|_| ());
     }
-    ok
+    for &m in mods[..pressed].iter().rev() {
+        let _ = notify_key(portal, session, m, STATE_RELEASED);
+    }
+    result
 }
 
 fn close_session(conn: &Connection, session: &OwnedObjectPath) {
@@ -1089,7 +1172,14 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
             "session_handle_token".into(),
             Value::from(session_token.clone()),
         );
-        call_with_response(&conn, &portal, "CreateSession", &(opts,), &request_path)?
+        call_with_response(
+            &conn,
+            &portal,
+            "CreateSession",
+            &(opts,),
+            &request_path,
+            PORTAL_RESPONSE_TIMEOUT,
+        )?
     };
     let session_handle = extract_session_handle(&results)?;
     log::debug!("[portal] session: {}", session_handle.as_str());
@@ -1116,6 +1206,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
             "SelectDevices",
             &(&session_handle, opts),
             &request_path,
+            PORTAL_RESPONSE_TIMEOUT,
         )?;
     }
 
@@ -1131,6 +1222,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
             "Start",
             &(&session_handle, "", opts),
             &request_path,
+            CONSENT_TIMEOUT,
         )?;
         results
     };
@@ -1145,7 +1237,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
         clear_restore_token();
     }
 
-    log::debug!("[portal] handshake: complete, ready to inject keysyms");
+    log::debug!("[portal] handshake: complete");
     Ok((conn, session_handle))
 }
 
@@ -1159,6 +1251,7 @@ fn call_with_response<T>(
     method: &'static str,
     args: &T,
     request_path: &str,
+    timeout: Duration,
 ) -> Result<(u32, HashMap<String, OwnedValue>), String>
 where
     T: serde::Serialize + zbus::zvariant::DynamicType,
@@ -1178,7 +1271,7 @@ where
     thread::spawn(move || {
         let _ = sig_tx.send(signals.next());
     });
-    let msg = match sig_rx.recv_timeout(Duration::from_secs(30)) {
+    let msg = match sig_rx.recv_timeout(timeout) {
         Ok(Some(msg)) => msg,
         Ok(None) => return Err(format!("{method}: Response stream closed")),
         Err(_) => return Err(format!("{method}: portal response timed out")),
@@ -1325,6 +1418,57 @@ mod tests {
 
     use super::*;
     use std::collections::HashMap;
+
+    fn has(table: &KeyTable, ch: char) -> bool {
+        table.contains_key(&text_keysym(ch))
+    }
+
+    #[test]
+    fn layout_tables_follow_layout_and_variant() {
+        let us = table_from_names("us", None).expect("us layout");
+        let ru = table_from_names("ru", None).expect("ru layout");
+        let dvorak = table_from_names("us", Some("dvorak")).expect("us(dvorak) layout");
+        assert!(has(&us, 'q') && !has(&us, 'й'));
+        assert!(has(&ru, 'й') && !has(&ru, 'q'));
+        assert!(missing_characters(&us, "hi 👋"));
+        assert!(!missing_characters(&us, "Hello,\tworld!\n"));
+        // A user label such as "lat" is not an XKB variant.
+        assert!(table_from_names("latam", Some("lat")).is_none());
+        assert_eq!(paste_key(Some(&us)), KEY_V_EVDEV);
+        assert_eq!(paste_key(Some(&ru)), KEY_V_EVDEV);
+        assert_ne!(paste_key(Some(&dvorak)), KEY_V_EVDEV);
+        assert_eq!(paste_key(None), KEY_V_EVDEV);
+    }
+
+    #[test]
+    fn keymap_tables_use_the_requested_group() {
+        let layout = CString::new("us,ru").expect("layout");
+        let names = XkbRuleNames {
+            rules: std::ptr::null(),
+            model: std::ptr::null(),
+            layout: layout.as_ptr(),
+            variant: std::ptr::null(),
+            options: std::ptr::null(),
+        };
+        // SAFETY: test-only FFI with null checks; everything is released.
+        let (latin, cyrillic) = unsafe {
+            let ctx = xkb_context_new(0);
+            assert!(!ctx.is_null());
+            let keymap = xkb_keymap_new_from_names(ctx, &names, 0);
+            xkb_context_unref(ctx);
+            assert!(!keymap.is_null());
+            let tables = (table_from_keymap(keymap, 0), table_from_keymap(keymap, 1));
+            xkb_keymap_unref(keymap);
+            tables
+        };
+        assert!(has(&latin, 'q') && !has(&latin, 'й'));
+        assert!(has(&cyrillic, 'й') && !has(&cyrillic, 'q'));
+        // Both groups share the same key.
+        assert_eq!(
+            latin[&text_keysym('q')].evdev,
+            cyrillic[&text_keysym('й')].evdev
+        );
+    }
 
     #[test]
     fn level_to_mods_maps_common_levels() {

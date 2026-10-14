@@ -70,6 +70,10 @@ pub(super) fn forward_core_events() {
             let status = status.clone();
             post(move |app| app.game_mode_changed(&status));
         }
+        CoreEvent::TextInputFailed(failure) => {
+            let failure = failure.clone();
+            post(move |app| app.set_error(Msg::TextInputFailed(failure)));
+        }
         CoreEvent::LayoutChanged(_) | CoreEvent::ActiveWindowChanged(_) => {
             post(|app| app.context_changed())
         }
