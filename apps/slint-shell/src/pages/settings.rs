@@ -318,7 +318,6 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
     game_usage(ui, document);
     // Listed even while commands are off, so they can be reviewed first.
     let assignments = document.read().command_assignments();
-    let current = document.read().settings().current_layout_id.clone();
     match assignments {
         Ok(rows) => {
             let mut previous = None;
@@ -327,30 +326,32 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
                 .map(|row| {
                     let first = previous.as_ref() != Some(&row.layout_id);
                     previous = Some(row.layout_id.clone());
-                    let layout_id = row.layout_id.unwrap_or_default();
                     CommandAssignmentRow {
-                        layout_name: lhc_core::profile::model::user_layout_name(&layout_id)
+                        layout_name: row
+                            .layout_id
+                            .as_deref()
+                            .and_then(lhc_core::profile::model::user_layout_name)
                             .unwrap_or_default()
                             .into(),
-                        current: current.as_deref().unwrap_or("") == layout_id,
                         first,
-                        layout_id: layout_id.into(),
-                        command_id: row.command.id.into(),
                         name: row.command.name.into(),
                         script: row.command.linux.into(),
-                        directory: row.command.working_directory.unwrap_or_default().into(),
                         places: ModelRc::new(VecModel::from(
                             row.places
                                 .into_iter()
                                 .map(|place| CommandPlaceRow {
                                     kind: match place.kind {
-                                        PlaceKind::Rule => 0,
-                                        PlaceKind::LayerKey => 1,
-                                        PlaceKind::Macro => 2,
-                                        PlaceKind::QuickAction => 3,
+                                        PlaceKind::RuleTap => 0,
+                                        PlaceKind::RuleHold => 1,
+                                        PlaceKind::RuleLongHold => 2,
+                                        PlaceKind::RuleDoubleTap => 3,
+                                        PlaceKind::LayerKey => 4,
+                                        PlaceKind::Macro => 5,
+                                        PlaceKind::QuickAction => 6,
                                     },
                                     layer: place.layer.into(),
                                     name: place.name.into(),
+                                    enabled: place.enabled,
                                 })
                                 .collect::<Vec<_>>(),
                         )),
@@ -535,41 +536,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());
         e.set_layouts_dir(config.paths().layouts_dir().display().to_string().into());
     }
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    e.on_edit_command(move |layout_id, command_id| {
-        let Some(ui) = weak.upgrade() else { return };
-        if doc
-            .read()
-            .settings()
-            .current_layout_id
-            .as_deref()
-            .unwrap_or("")
-            != layout_id.as_str()
-        {
-            if ui.global::<crate::ui::LayoutLibrary>().get_dirty() {
-                ui.global::<SettingsEditor>()
-                    .set_message(crate::notifications::report(&ui, &Msg::SaveLayoutFirst));
-                return;
-            }
-            let Some(name) = layout_id.strip_prefix("user:") else {
-                return;
-            };
-            if let Err(error) =
-                doc.edit(View::Shell, |config| config.load_library_for_editing(name))
-            {
-                ui.global::<SettingsEditor>()
-                    .set_message(crate::notifications::report(&ui, &Msg::from(&error)));
-                return;
-            }
-        }
-        ui.global::<crate::ui::ActionPicker>().invoke_open(
-            crate::ui::PickerTarget::Command,
-            0,
-            format!("cmd:{command_id}").into(),
-            false,
-        );
-    });
     refresh(ui, document, &mut state.borrow_mut(), true);
     // Changed advanced values stay visible instead of hiding behind the disclosure.
     if let Some(form) = &state.borrow().base {

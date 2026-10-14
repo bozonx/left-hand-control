@@ -11,7 +11,7 @@ import { MenuEditor, MenusPage } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
 import { AppEntryDialog, AppEntryOverlay } from "conditions.slint";
 import { DragDrop } from "reorder.slint";
-import { SettingsPage, SettingsEditor } from "settings-page.slint";
+import { CommandDialogOverlay, SettingsPage, SettingsEditor } from "settings-page.slint";
 import { ConfirmDialog, IconButton, Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -286,6 +286,7 @@ export component SettingsWindow inherits Window {
     RuleDialogOverlay {}
     LayerDialogOverlay {}
     AppEntryOverlay { width: 100%; height: 100%; }
+    CommandDialogOverlay {}
     if ActionPicker.opened: PickerOverlay {}
     ToastStack {
         x: parent.width - self.width - 20px;

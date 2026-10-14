@@ -338,7 +338,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             Msg::CommandHelpLinux.to_ui()
         });
         picker.set_commands_enabled(doc.read().settings().commands_enabled);
-        picker.set_command_only(target == PickerTarget::Command);
         picker.set_subject("".into());
         picker.set_command_name("".into());
         picker.set_command_script("".into());
@@ -800,7 +799,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         let mut next_step = false;
         match target {
-            PickerTarget::Command => {}
             PickerTarget::Rule => {
                 if let Err(error) = rules::choose(&ui, &doc, &value) {
                     picker.set_error(error.to_ui());

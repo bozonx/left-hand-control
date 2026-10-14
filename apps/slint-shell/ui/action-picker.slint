@@ -63,7 +63,6 @@ export global ActionPicker {
     in-out property <string> text-content;
     in-out property <string> pause-content;
     in property <bool> commands-enabled;
-    in property <bool> command-only;
     in-out property <string> command-name;
     in-out property <string> command-script;
     in-out property <string> command-directory;
@@ -243,7 +242,7 @@ export component PickerOverlay inherits Rectangle {
                                 for entry in ActionPicker.categories: VerticalBox {
                                     private property <bool> commands: entry.category == PickerCategory.commands;
                                     padding: 0px; padding-bottom: 4px;
-                                    if (!ActionPicker.command-only || commands) && (!commands || ActionPicker.commands-enabled): VerticalBox { padding: 0px;
+                                    if !commands || ActionPicker.commands-enabled: VerticalBox { padding: 0px;
                                     // Section headings only when keys and actions share the sidebar.
                                     if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.letters || entry.category == PickerCategory.macros): Text {
                                         text: entry.category == PickerCategory.letters ? @tr("Keys") : @tr("Actions");
@@ -291,7 +290,7 @@ export component PickerOverlay inherits Rectangle {
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
                             NumericInput { text: ActionPicker.pause-content; minimum: 1; maximum: 10000; label: @tr("Pause (ms)"); edited(value) => { ActionPicker.touched = true; ActionPicker.value = "pause:" + value; ActionPicker.refresh(); } }
                         }
-                        if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
+                        if ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
                             VerticalLayout { spacing: 0px;
                                 for row in ceil(ActionPicker.items.length * 1.0 / catalog.columns): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
                                     for col in catalog.columns: PickerCell {
@@ -302,7 +301,7 @@ export component PickerOverlay inherits Rectangle {
                                 }
                             }
                         }
-                        if !ActionPicker.command-only && (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
+                        if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
                     }
                 }
                 HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;

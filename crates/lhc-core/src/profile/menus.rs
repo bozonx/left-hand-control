@@ -290,6 +290,54 @@ mod tests {
     }
 
     #[test]
+    fn command_places_name_rule_triggers_not_the_hold_layer() {
+        let mut tap = LayerRule::new("r1".into(), "F1");
+        tap.layer_id = "sel".into();
+        tap.tap_action = Some("cmd:ls".into());
+        // Long hold is ignored while holding switches a layer.
+        tap.hold_behavior = Some(HoldBehavior::Layer);
+        tap.long_hold_action = "cmd:ls".into();
+        let mut double = LayerRule::new("r2".into(), "KeyQ");
+        double.enabled = Some(false);
+        double.double_tap_action = "cmd:ls".into();
+        let config = AppConfig::from_parts(
+            AppSettings::default(),
+            LayoutPreset {
+                layers: vec![Layer {
+                    id: "sel".into(),
+                    name: "Select".into(),
+                    description: None,
+                }],
+                rules: vec![tap, double],
+                layer_keymaps: [(
+                    "sel".into(),
+                    LayerKeymap {
+                        extra_key_order: Vec::new(),
+                        keys: [("KeyW".into(), Some("cmd:ls".into()))].into(),
+                    },
+                )]
+                .into(),
+                ..Default::default()
+            },
+            None,
+        );
+        let place = |kind, layer: &str, name: &str, enabled| CommandPlace {
+            kind,
+            layer: layer.into(),
+            name: name.into(),
+            enabled,
+        };
+        assert_eq!(
+            command_places(&config, "cmd:ls"),
+            vec![
+                place(PlaceKind::RuleTap, "", "F1", true),
+                place(PlaceKind::RuleDoubleTap, "", "KeyQ", false),
+                place(PlaceKind::LayerKey, "Select", "KeyW", true),
+            ]
+        );
+    }
+
+    #[test]
     fn command_overview_lists_only_assignments_across_saved_layouts() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
@@ -316,9 +364,10 @@ mod tests {
         assert_eq!(
             rows[0].places,
             vec![CommandPlace {
-                kind: PlaceKind::Rule,
+                kind: PlaceKind::RuleTap,
                 layer: String::new(),
                 name: "KeyQ".into(),
+                enabled: true,
             }]
         );
         assert!(
@@ -345,7 +394,10 @@ pub struct CommandAssignment {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum PlaceKind {
-    Rule,
+    RuleTap,
+    RuleHold,
+    RuleLongHold,
+    RuleDoubleTap,
     LayerKey,
     Macro,
     QuickAction,
@@ -355,10 +407,12 @@ pub enum PlaceKind {
 #[serde(rename_all = "camelCase")]
 pub struct CommandPlace {
     pub kind: PlaceKind,
-    /// Layer name for rules and layer keys, empty for the base layer.
+    /// Layer name for layer keys, empty otherwise.
     pub layer: String,
-    /// Key, macro name or quick action name.
+    /// Trigger key, macro name or quick action name.
     pub name: String,
+    /// False for a disabled rule, which the mapper skips.
+    pub enabled: bool,
 }
 
 /// Every binding of `action`, named for people rather than by id.
@@ -372,23 +426,31 @@ pub fn command_places(config: &AppConfig, action: &str) -> Vec<CommandPlace> {
     };
     let mut places = Vec::new();
     for rule in &config.rules {
-        if [
-            rule.tap_action.as_deref(),
-            rule.hold_action.as_deref(),
-            Some(rule.long_hold_action.as_str()),
-            Some(rule.double_tap_action.as_str()),
-        ]
-        .contains(&Some(action))
-        {
-            places.push(CommandPlace {
-                kind: PlaceKind::Rule,
-                layer: if rule.layer_id.is_empty() {
-                    String::new()
-                } else {
-                    layer_name(&rule.layer_id)
-                },
-                name: rule.key.clone(),
-            });
+        // The mapper ignores the action of the hold mode that is not selected.
+        let long_hold = rule.hold_behavior() == HoldBehavior::Action;
+        for (kind, value) in [
+            (PlaceKind::RuleTap, rule.tap_action.as_deref()),
+            (
+                PlaceKind::RuleHold,
+                rule.hold_action.as_deref().filter(|_| !long_hold),
+            ),
+            (
+                PlaceKind::RuleLongHold,
+                long_hold.then_some(rule.long_hold_action.as_str()),
+            ),
+            (
+                PlaceKind::RuleDoubleTap,
+                Some(rule.double_tap_action.as_str()),
+            ),
+        ] {
+            if value.map(str::trim) == Some(action) {
+                places.push(CommandPlace {
+                    kind,
+                    layer: String::new(),
+                    name: rule.key.clone(),
+                    enabled: rule.is_enabled(),
+                });
+            }
         }
     }
     for (layer, map) in &config.layer_keymaps {
@@ -398,6 +460,7 @@ pub fn command_places(config: &AppConfig, action: &str) -> Vec<CommandPlace> {
                     kind: PlaceKind::LayerKey,
                     layer: layer_name(layer),
                     name: key.clone(),
+                    enabled: true,
                 });
             }
         }
@@ -412,6 +475,7 @@ pub fn command_places(config: &AppConfig, action: &str) -> Vec<CommandPlace> {
                 } else {
                     item.name.clone()
                 },
+                enabled: true,
             });
         }
     }
@@ -421,6 +485,7 @@ pub fn command_places(config: &AppConfig, action: &str) -> Vec<CommandPlace> {
                 kind: PlaceKind::QuickAction,
                 layer: String::new(),
                 name: item.name.clone(),
+                enabled: true,
             });
         }
     }

@@ -1595,23 +1595,29 @@ msgstr "Выберите скрипт"
 msgid "Choose a working directory"
 msgstr "Выберите рабочую папку"
 
-msgid "Commands run with sh -lc in the background and are not awaited. Edit one to change its script or working directory."
-msgstr "Команды запускаются через sh -lc в фоне и не ожидаются. Нажмите «Изменить», чтобы поменять скрипт или рабочую папку."
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "Команды запускаются через sh -lc в фоне и не ожидаются."
 
 msgid "Commands stay off until you allow execution. Review below what your layouts would run."
 msgstr "Команды не запускаются, пока выполнение не разрешено. Ниже видно, что запускали бы ваши лэйауты."
 
-msgid "editing now"
-msgstr "редактируется"
-
 msgid "Command"
 msgstr "Команда"
 
-msgid "Rule in {}"
-msgstr "Правило в слое {}"
+msgid "Rule {} · tap"
+msgstr "Правило {} · нажатие"
 
-msgid "Rule"
-msgstr "Правило"
+msgid "Rule {} · hold"
+msgstr "Правило {} · удержание"
+
+msgid "Rule {} · long hold"
+msgstr "Правило {} · долгое удержание"
+
+msgid "Rule {} · double tap"
+msgstr "Правило {} · двойное нажатие"
+
+msgid "disabled"
+msgstr "отключено"
 
 msgid "Layer {}"
 msgstr "Слой {}"
@@ -1622,8 +1628,11 @@ msgstr "Макрос"
 msgid "Quick action"
 msgstr "Быстрое действие"
 
-msgid "Folder: {}"
-msgstr "Папка: {}"
+msgid "Show all"
+msgstr "Показать полностью"
+
+msgid "Close"
+msgstr "Закрыть"
 
 msgid "Choose a key or key combination"
 msgstr "Выберите клавишу или сочетание клавиш"
