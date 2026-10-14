@@ -78,11 +78,31 @@ pub const GAME_LAUNCHERS: &[&str] = &[
     "upc",
     "playnite.desktopapp",
     "playnite.fullscreenapp",
+    "cartridges",
+    "rare",
+    "faugus-launcher",
+    "steamtinkerlaunch",
+    "goverlay",
 ];
 
 /// Whether `window` most likely shows a video or a page, not a game.
 pub(crate) fn fullscreen_non_game(window: &ActiveWindow) -> bool {
     window_in(FULLSCREEN_NON_GAMES, window)
+}
+
+/// The name a window is shown by: its app id, else its process name.
+pub(crate) fn window_name(window: &ActiveWindow) -> String {
+    let app_id = window.app_id.trim();
+    if app_id.is_empty() {
+        window
+            .process_name
+            .as_deref()
+            .unwrap_or("")
+            .trim()
+            .to_owned()
+    } else {
+        app_id.to_owned()
+    }
 }
 
 /// Whether `window` belongs to a launcher, not to a game.
@@ -91,6 +111,7 @@ pub(crate) fn launcher_window(window: &ActiveWindow) -> bool {
 }
 
 /// Whether the process `name` is a launcher, not a game.
+#[cfg(any(target_os = "windows", test))]
 pub(crate) fn launcher_process(name: &str) -> bool {
     let name = name.trim().to_lowercase();
     in_list(
@@ -233,7 +254,7 @@ fn proc_argv0(dir: &std::path::Path) -> Option<String> {
 /// A game a launcher runs, from one process's command line: Steam starts
 /// every game under `reaper SteamLaunch AppId=<id>`, Lutris under
 /// `lutris-wrapper <title>`. Steam games are named `steam_app_<id>`, like
-/// their windows.
+/// their windows; a Lutris game without a title is `lutris`.
 #[cfg(target_os = "linux")]
 pub(crate) fn launched_game(args: &[String]) -> Option<(GameSource, String)> {
     let program = |arg: &String| file_name(arg).to_owned();
@@ -259,7 +280,7 @@ pub(crate) fn launched_game(args: &[String]) -> Option<(GameSource, String)> {
         args.get(wrapper + 1)
             .map(|title| title.trim())
             .filter(|title| !title.is_empty())
-            .unwrap_or("lutris-wrapper")
+            .unwrap_or("lutris")
             .to_owned(),
     ))
 }
@@ -376,6 +397,10 @@ mod tests {
                 "/usr/bin/python3 /usr/bin/lutris-wrapper Celeste 0 0 /x/wine"
             )),
             Some((GameSource::Lutris, "Celeste".into()))
+        );
+        assert_eq!(
+            launched_game(&args("/usr/bin/lutris-wrapper")),
+            Some((GameSource::Lutris, "lutris".into()))
         );
         assert_eq!(launched_game(&args("vim lutris-wrapper")), None);
         assert_eq!(launched_game(&args("/usr/bin/vim notes.txt")), None);

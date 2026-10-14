@@ -38,6 +38,7 @@ export global Locale {
         if m.id == "game-mode-process-active" { return @tr("Auto: matched {}", m.arg); }
         if m.id == "game-mode-fullscreen-active" { return @tr("Auto: fullscreen window active"); }
         if m.id == "game-mode-excluded" { return @tr("Auto: excluded by {}", m.arg); }
+        if m.id == "game-mode-window-skipped" { return @tr("Auto: {} is not counted as a game (built-in list)", m.arg); }
         if m.id == "game-mode-manual-on" { return @tr("Game mode is on (set manually)"); }
         if m.id == "game-mode-manual-off" { return @tr("Game mode is off (set manually)"); }
         if m.id == "picker-action" && m.arg == "showQuickMenu" { return @tr("Show Quick Action Menu page {}", m.count); }

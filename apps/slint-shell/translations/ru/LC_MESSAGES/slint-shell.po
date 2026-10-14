@@ -1757,9 +1757,6 @@ msgstr "On — всегда"
 msgid "Off — never"
 msgstr "Off — никогда"
 
-msgid "Automatic detection"
-msgstr "Автоопределение"
-
 msgid "Automatic layout rules apply only when the layout is chosen automatically (Layouts page)."
 msgstr "Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»)."
 
@@ -2110,9 +2107,6 @@ msgstr "Встроенный список. Чтобы всё же учитыва
 msgid "Ignored in fullscreen"
 msgstr "Не считаются играми в полноэкранном режиме"
 
-msgid "Known games"
-msgstr "Известные игры"
-
 msgid "Not available in this session."
 msgstr "Недоступно в этом сеансе."
 
@@ -2140,9 +2134,6 @@ msgstr "Включается, пока активно окно вложенно�
 msgid "Games from the Game Bar list"
 msgstr "Игры из списка Game Bar"
 
-msgid "Turns on while a program that Windows recognized as a game (the Game Bar list) runs."
-msgstr "Включается, пока запущена программа, которую Windows распознала как игру (список Game Bar)."
-
 msgid "Applications of the Game category"
 msgstr "Приложения из категории «Игры»"
 
@@ -2151,9 +2142,6 @@ msgstr "Включается, пока активно окно приложен�
 
 msgid "Turns on while the active application declares the Games category in its Info.plist. Launchers are skipped."
 msgstr "Включается, пока активно приложение, у которого в Info.plist указана категория «Игры». Лаунчеры пропускаются."
-
-msgid "Never counted as games"
-msgstr "Никогда не считаются играми"
 
 msgid "Auto — according to settings"
 msgstr "Авто — согласно настройкам"
@@ -2527,3 +2515,24 @@ msgstr "Сколько держать клавишу до выполнения �
 
 msgid "Longest pause between two taps. Empty uses the default from Settings: {} ms."
 msgstr "Максимальная пауза между двумя нажатиями. Пустое поле — значение по умолчанию из настроек: {} мс."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Auto: {} не считается игрой (встроенный список)"
+
+msgid "Running games"
+msgstr "Запущенные игры"
+
+msgid "A launcher or the system reports the game it runs, so these do not guess."
+msgstr "Лаунчер или система сами сообщают о запущенной игре, поэтому здесь нет догадок."
+
+msgid "Applications that look like games"
+msgstr "Приложения, похожие на игры"
+
+msgid "These sources can take another application for a game, so each skips a built-in list of applications."
+msgstr "Эти источники могут принять за игру другое приложение, поэтому каждый пропускает встроенный список приложений."
+
+msgid "Turns on while a program that Windows recognized as a game (the Game Bar list) runs. Launchers are listed there too, so they are skipped."
+msgstr "Включается, пока запущена программа, которую Windows распознала как игру (список Game Bar). Лаунчеры тоже попадают в этот список, поэтому они пропускаются."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Лаунчеры и игровые утилиты — не считаются играми"

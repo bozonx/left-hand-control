@@ -68,7 +68,8 @@ pub enum GameSource {
     /// Linux, `Info.plist` on macOS. Launchers are skipped
     /// ([`GAME_LAUNCHERS`]).
     AppCategory,
-    /// Windows: running executables from the Game Bar list.
+    /// Windows: running executables from the Game Bar list. Launchers
+    /// are skipped ([`GAME_LAUNCHERS`]).
     GameBar,
 }
 
@@ -160,6 +161,10 @@ pub struct GameModeStatus {
     pub automatic_available: bool,
     pub automatic_method: Option<GameModeMethod>,
     pub excluded_by: Option<String>,
+    /// The active window would look like a game to a heuristic source but
+    /// is on its built-in list (a launcher, a browser, a player); it names
+    /// the window's application.
+    pub skipped_window: Option<String>,
     pub detectors: GameModeDetectors,
 }
 
@@ -170,6 +175,7 @@ struct Detection {
     enabled: bool,
     available: bool,
     excluded_by: Option<String>,
+    skipped_window: Option<String>,
     detectors: GameModeDetectors,
 }
 
@@ -202,6 +208,7 @@ impl State {
             automatic_available: self.detection.available,
             automatic_method: self.detection.method.clone(),
             excluded_by: self.detection.excluded_by.clone(),
+            skipped_window: self.detection.skipped_window.clone(),
             detectors: self.detection.detectors.clone(),
         }
     }
@@ -496,18 +503,17 @@ fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>) -> Observ
 }
 
 /// The first known game from an enabled source: running under a launcher
-/// or listed by the system, or shown in the active window. Launchers
-/// never count.
+/// or listed by the system, or shown in the active window. What a
+/// launcher reports always counts; the application category skips
+/// launchers ([`GAME_LAUNCHERS`]), which are tagged as games too.
 fn known_game(
     settings: &GameModeSettings,
     observation: &Observation,
     window: Option<&ActiveWindow>,
 ) -> Option<String> {
-    let window = window.filter(|window| !process::launcher_window(window));
     observation
         .known_games
-        .iter()
-        .find(|name| !process::launcher_process(name))
+        .first()
         .cloned()
         .or_else(|| {
             window
@@ -515,7 +521,30 @@ fn known_game(
                 .filter(|(source, _)| source.enabled(settings))
                 .map(|(_, name)| name)
         })
-        .or_else(|| window.and(observation.window_game.clone()))
+        .or_else(|| {
+            window
+                .filter(|window| !process::launcher_window(window))
+                .and(observation.window_game.clone())
+        })
+}
+
+/// The active window's application when a heuristic source would
+/// consider it but its built-in list skips it.
+fn skipped_window(
+    settings: &GameModeSettings,
+    detectors: &GameModeDetectors,
+    window: &ActiveWindow,
+) -> Option<String> {
+    let category = settings.use_app_category
+        && GameSource::AppCategory.availability(detectors) == DetectorAvailability::Available
+        && process::launcher_window(window);
+    let fullscreen = settings.use_fullscreen
+        && detectors.fullscreen == DetectorAvailability::Available
+        && window.fullscreen == Some(true)
+        && process::fullscreen_non_game(window);
+    (category || fullscreen)
+        .then(|| process::window_name(window))
+        .filter(|name| !name.is_empty())
 }
 
 /// Whether detection reads sources that report no changes: running
@@ -611,6 +640,10 @@ fn evaluate(
         None
     };
     detection.active = detection.method.is_some();
+    if !detection.active {
+        detection.skipped_window =
+            window.and_then(|window| skipped_window(settings, detectors, window));
+    }
     detection
 }
 
@@ -754,7 +787,9 @@ mod tests {
         settings.use_fullscreen = true;
         let observed = observation(&[], false);
         assert!(evaluate(&settings, &observed, Some(&fullscreen("steam_app_42"))).active);
-        assert!(!evaluate(&settings, &observed, Some(&fullscreen("firefox"))).active);
+        let browser = evaluate(&settings, &observed, Some(&fullscreen("firefox")));
+        assert!(!browser.active);
+        assert_eq!(browser.skipped_window.as_deref(), Some("firefox"));
         let mut windowed = fullscreen("steam_app_42");
         windowed.fullscreen = Some(false);
         assert!(!evaluate(&settings, &observed, Some(&windowed)).active);
@@ -774,11 +809,23 @@ mod tests {
             evaluate(&settings, &observed, Some(&window)).method,
             Some(GameModeMethod::KnownGame("steam_app_42".into()))
         );
-        // A running game wins over the window; launchers never count.
-        observed.known_games = vec!["steamwebhelper".into(), "steam_app_7".into()];
+        // A running game wins over the window.
+        observed.known_games = vec!["steam_app_7".into()];
         assert_eq!(
             evaluate(&settings, &observed, Some(&window)).method,
             Some(GameModeMethod::KnownGame("steam_app_7".into()))
+        );
+        // What a launcher runs counts even when it is a launcher itself,
+        // like Battle.net installed in Lutris, and in front of a launcher.
+        observed.known_games = vec!["Battle.net".into()];
+        assert_eq!(
+            evaluate(
+                &settings,
+                &observed,
+                Some(&fullscreen("com.valvesoftware.Steam"))
+            )
+            .method,
+            Some(GameModeMethod::KnownGame("Battle.net".into()))
         );
         observed.known_games.clear();
         observed.window_game = Some("org.example.puzzle".into());
@@ -791,13 +838,15 @@ mod tests {
             .method,
             Some(GameModeMethod::KnownGame("org.example.puzzle".into()))
         );
-        assert!(
-            !evaluate(
-                &settings,
-                &observed,
-                Some(&fullscreen("com.valvesoftware.Steam"))
-            )
-            .active
+        let launcher = evaluate(
+            &settings,
+            &observed,
+            Some(&fullscreen("com.valvesoftware.Steam")),
+        );
+        assert!(!launcher.active);
+        assert_eq!(
+            launcher.skipped_window.as_deref(),
+            Some("com.valvesoftware.Steam")
         );
         // An exclusion still wins, and the source can be turned off.
         observed.running = vec!["obs".into()];

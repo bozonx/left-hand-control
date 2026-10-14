@@ -45,8 +45,9 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
     }
 }
 
-/// The game Steam runs, then running executables from the Game Bar list;
-/// each source only when enabled.
+/// The game Steam runs, then running executables from the Game Bar list
+/// except launchers ([`super::GAME_LAUNCHERS`]); each source only when
+/// enabled.
 fn known_games(settings: &GameModeSettings, running: &[String]) -> Vec<String> {
     let mut games: Vec<String> = settings
         .use_steam
@@ -62,7 +63,10 @@ fn known_games(settings: &GameModeSettings, running: &[String]) -> Vec<String> {
     games.extend(
         running
             .iter()
-            .filter(|name| catalog.contains(&name.to_lowercase()))
+            // Windows lists launchers as games too.
+            .filter(|name| {
+                catalog.contains(&name.to_lowercase()) && !super::process::launcher_process(name)
+            })
             .cloned(),
     );
     games

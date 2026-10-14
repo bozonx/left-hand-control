@@ -119,6 +119,9 @@ fn automatic_message(status: &GameModeStatus) -> Msg {
         Some(GameModeMethod::Manual) | None if !status.automatic_available => {
             Msg::GameModeAutoUnavailable
         }
-        Some(GameModeMethod::Manual) | None => Msg::GameModeAutoInactive,
+        Some(GameModeMethod::Manual) | None => match &status.skipped_window {
+            Some(name) => Msg::GameModeWindowSkipped(name.clone()),
+            None => Msg::GameModeAutoInactive,
+        },
     }
 }
