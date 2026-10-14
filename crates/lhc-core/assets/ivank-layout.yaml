@@ -301,8 +301,8 @@ emojiPages:
   - id: emoji_chat
     name: Chat
     cells:
-      KeyQ: "🙏"
-      KeyW: "👆"
+      KeyQ: "👆"
+      KeyW: "🙏"
       KeyE: "🤝"
       KeyR: "🔥"
       KeyT: "👌"
@@ -317,7 +317,7 @@ emojiPages:
       KeyV: "🤔"
       KeyB: "😘"
   - id: emoji_text
-    name: For texts and lists
+    name: Texts and lists
     cells:
       KeyQ: "🤦"
       KeyW: "🉑"

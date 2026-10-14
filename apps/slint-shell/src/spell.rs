@@ -551,6 +551,17 @@ fn show(
     source: Source,
     start: Instant,
 ) {
+    // Repeating the open command turns the page like Tab does.
+    if page.is_none() && *visible == Some(popup) {
+        popup_model::apply_shortcut(
+            popup,
+            popup_model::Shortcut::ChangePage(1),
+            &layers.emoji,
+            &layers.quick,
+        );
+        layers.filter();
+        return;
+    }
     layers.filter();
     if let Some(page) = page {
         popup_model::select_page(popup, page, &layers.emoji, &layers.quick);
@@ -559,9 +570,6 @@ fn show(
     if let Some(previous) = visible.take() {
         layers.conceal(previous);
         metrics.end(previous.name());
-        if previous == popup && page.is_none() {
-            return;
-        }
     }
     metrics.begin(popup.name(), source.as_str(), start);
     *focused = None;

@@ -114,6 +114,17 @@ impl App {
                 self.flush_worker_show();
                 return;
             }
+            // Repeating the open command turns the page like Tab does.
+            if page.is_none() && self.window(window).is_visible() {
+                let outcome = popup_model::apply_shortcut(
+                    popup,
+                    popup_model::Shortcut::ChangePage(1),
+                    &self.emoji,
+                    &self.quick,
+                );
+                self.popup_outcome(popup, outcome);
+                return;
+            }
             #[cfg(not(target_os = "linux"))]
             {
                 // The tray opens interactive UI but never returns input.
