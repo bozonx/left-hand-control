@@ -1,5 +1,5 @@
 layers:
-  - id: nav
+  - id: navigation
     keys:
       Tab: CapsLock
       MetaLeft: Ctrl+KeyX
@@ -17,8 +17,6 @@ layers:
       KeyO: End
       KeyP: macro:up5Times
       BracketLeft: null
-      BracketRight: null
-      Backslash: null
 
       KeyA: app:showEmojiMenu1
       KeyS: macro:duplicateLine
@@ -42,7 +40,7 @@ layers:
       Comma: macro:upHome
       Period: Ctrl+ArrowRight
       Slash: macro:down5Times
-  - id: sel
+  - id: select
     keys:
       CapsLock: null
       AltLeft: Ctrl+Enter
@@ -71,8 +69,6 @@ layers:
       KeyO: Shift+End
       KeyP: macro:select5LinesUp
       BracketLeft: null
-      BracketRight: null
-      Backslash: null
 
       KeyA: Ctrl+Slash
       KeyS: macro:copyToStart
@@ -96,7 +92,7 @@ layers:
       Comma: Shift+PageUp
       Period: Ctrl+Shift+ArrowRight
       Slash: macro:select5LinesDown
-  - id: sym
+  - id: symbols
     keys:
       KeyQ: 'text:<'
       KeyW: 'text:{'
@@ -109,8 +105,6 @@ layers:
       KeyO: Digit9
       KeyP: 'text:+'
       BracketLeft: null
-      BracketRight: null
-      Backslash: null
 
       KeyA: 'text:#'
       KeyS: 'text::'
@@ -136,7 +130,7 @@ layers:
       Slash: 'text:/'
 
       ShiftRight: 'text:_'
-  - id: fkeys
+  - id: f-keys
     keys:
       KeyQ: 'text:>'
       KeyW: 'text:}'
@@ -149,8 +143,6 @@ layers:
       KeyO: F9
       KeyP: null
       BracketLeft: 'text:ℹ️'
-      BracketRight: null
-      Backslash: null
 
       KeyA: 'text:№'
       KeyS: 'text:;'
@@ -174,7 +166,7 @@ layers:
       Comma: F2
       Period: F3
       Slash: "text:\\"
-  - id: win
+  - id: desktop
     keys:
       F4: F4
       Tab: Tab
@@ -233,20 +225,12 @@ layers:
       Period: AudioVolumeUp
       Slash: AudioVolumeMute
       ShiftRight: MicrophoneMuteToggle
-  # - id: space
-  #   keys:
-  #     Tab: sys:switchLayout1
-  #     CapsLock: sys:switchLayout2
-  #     ShiftLeft: sys:switchLayout3
-  #     ShiftRight: sys:switchLayout4
-  #     Enter: sys:switchLayout5
-  #     Backslash: sys:switchLayout6
 rules:
   - key: Tab
-    layer: sel
+    layer: select
   - key: CapsLock
     tap: Ctrl+KeyV
-    layer: nav
+    layer: navigation
     holdMs: 180
   - key: ShiftLeft
     tap: Ctrl+KeyC
@@ -259,22 +243,20 @@ rules:
     hold: ControlLeft
   - key: AltLeft
     tap: Enter
-    layer: win
+    layer: desktop
     hold: AltLeft
     # Lazy hold: Alt is materialised to the app only when Tab is pressed
     # (native Alt+Tab switcher). Every other win-layer key runs without Alt,
     # so language switching (KeyC/KeyX/KeyZ/ShiftLeft) never leaks a lone Alt
     # release → no more Firefox menu bar popping open.
     holdFor: Tab
-  # - key: Space
-  #   layer: space
   - key: AltRight
     tap: 'text:,'
     dtap: 'text:.'
-    layer: sym
+    layer: symbols
   - key: ControlRight
     tap: 'text:.'
-    layer: fkeys
+    layer: f-keys
   - key: ShiftRight
     tap: 'text:-'
 macros: []
