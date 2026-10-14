@@ -298,39 +298,39 @@ quickActionPages:
   - id: qap_media
     name: Media & apps
 emojiPages:
-  - id: emoji_faces
-    name: Faces
+  - id: emoji_chat
+    name: Chat
     cells:
-      KeyQ: "😀"
-      KeyW: "😂"
-      KeyE: "🤣"
-      KeyR: "😊"
-      KeyT: "😉"
-      KeyA: "😍"
-      KeyS: "😘"
-      KeyD: "😎"
-      KeyF: "🤔"
-      KeyG: "🙃"
-      KeyZ: "😅"
-      KeyX: "😢"
-      KeyC: "😭"
-      KeyV: "😡"
-      KeyB: "🤯"
-  - id: emoji_gestures
-    name: Gestures & symbols
-    cells:
-      KeyQ: "👍"
-      KeyW: "👎"
+      KeyQ: "🙏"
+      KeyW: "👆"
       KeyE: "👌"
-      KeyR: "🙏"
-      KeyT: "👏"
-      KeyA: "🤝"
-      KeyS: "💪"
-      KeyD: "👀"
-      KeyF: "🔥"
-      KeyG: "❤️"
-      KeyZ: "✅"
-      KeyX: "❌"
-      KeyC: "🎉"
-      KeyV: "🚀"
-      KeyB: "💯"
+      KeyR: "🔥"
+      KeyT: "🤝"
+      KeyA: "😅"
+      KeyS: "😉"
+      KeyD: "😂"
+      KeyF: "😀"
+      KeyG: "😆"
+      KeyZ: "🤷‍♂️"
+      KeyX: "💯"
+      KeyC: "🤯"
+      KeyV: "🤔"
+      KeyB: "😘"
+  - id: emoji_text
+    name: For texts and lists
+    cells:
+      KeyQ: "🤦"
+      KeyW: "🉑"
+      KeyE: "👀"
+      KeyR: "💪"
+      KeyT: "☝️"
+      KeyA: "⬇️"
+      KeyS: "⬆️"
+      KeyD: "‼️"
+      KeyF: "❓️️️"
+      KeyG: "❌"
+      KeyZ: "👎"
+      KeyX: "👍"
+      KeyC: "⏩"
+      KeyV: "✅"
+      KeyB: "ℹ️"
