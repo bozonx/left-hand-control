@@ -128,6 +128,11 @@ pub struct Engine {
     text_pending: bool,
 }
 impl Engine {
+    /// The topmost active layer, if any layer is held.
+    pub fn top_layer(&self) -> Option<&str> {
+        self.active_layers.last().map(String::as_str)
+    }
+
     /// Time until the nearest pending deadline (hold-decision,
     /// waiting-for-second-press, or the next macro step wake-up), or None.
     pub fn next_deadline(&self, now: Instant) -> Option<Duration> {

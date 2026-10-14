@@ -17,4 +17,5 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Layer hint (Settings → General, off by default): while a layer is held, its keys appear in a layer-shell overlay above all windows that takes neither the keyboard focus nor the pointer; never shown in game mode.
 - `kde:<component>/<shortcut>` action and a "KDE shortcuts" picker category listing every global shortcut of the running KDE session.

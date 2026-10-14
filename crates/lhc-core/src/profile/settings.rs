@@ -57,6 +57,7 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
         high_contrast: bool_or(raw, "highContrast", base.high_contrast),
         reduce_motion: bool_or(raw, "reduceMotion", base.reduce_motion),
         layout_osd: bool_or(raw, "layoutOsd", base.layout_osd),
+        layer_hint: bool_or(raw, "layerHint", base.layer_hint),
         locale: match str_of(raw, "locale") {
             Some("en-US") => LocalePreference::English,
             Some("ru-RU") => LocalePreference::Russian,

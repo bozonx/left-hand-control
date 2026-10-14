@@ -55,6 +55,7 @@ mod game_mode;
 mod i18n;
 mod ipc;
 pub mod keyboard;
+mod layer_hint;
 mod metrics;
 mod notifications;
 pub mod pages;

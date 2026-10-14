@@ -35,7 +35,7 @@ impl App {
     }
 
     /// Menus of the active layout, loaded once per change.
-    fn menus(&self) -> Rc<ConfiguredMenus> {
+    pub(super) fn menus(&self) -> Rc<ConfiguredMenus> {
         if let Some(menus) = self.menus.borrow().as_ref() {
             return menus.clone();
         }

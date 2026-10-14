@@ -155,6 +155,8 @@ pub enum Command {
     ShowPage(Popup, u8),
     PopupLayout(Option<String>),
     PopupContents(String),
+    /// Show the keys of the held layer in the Spell worker; `None` hides them.
+    LayerHint(Option<crate::layer_hint::LayerHint>),
     Hide,
     ToggleSettings,
     ToggleMapper,
@@ -221,6 +223,11 @@ impl Command {
         if let Some(layout) = value.strip_prefix("popup-layout ") {
             return serde_json::from_str(layout)
                 .map(Self::PopupLayout)
+                .map_err(|_| USAGE.into());
+        }
+        if let Some(hint) = value.strip_prefix("layer-hint ") {
+            return serde_json::from_str(hint)
+                .map(Self::LayerHint)
                 .map_err(|_| USAGE.into());
         }
         if let Some(action) = value.strip_prefix("execute ") {
@@ -299,6 +306,11 @@ impl fmt::Display for Command {
                 "popup-contents {}",
                 serde_json::to_string(contents).map_err(|_| fmt::Error)?
             ),
+            Self::LayerHint(hint) => write!(
+                f,
+                "layer-hint {}",
+                serde_json::to_string(hint).map_err(|_| fmt::Error)?
+            ),
             Self::Hide => f.write_str("hide"),
             Self::ToggleSettings => f.write_str("toggle-settings"),
             Self::ToggleMapper => f.write_str("toggle-mapper"),
@@ -338,6 +350,25 @@ mod tests {
             Command::PopupLayout(Some("user:Привет".into())),
             Command::PopupLayout(None),
             Command::PopupContents("rules: []\nname: Привет\n".into()),
+            Command::LayerHint(None),
+            Command::LayerHint(Some(crate::layer_hint::LayerHint {
+                name: "Навигация".into(),
+                left: vec![
+                    None,
+                    Some(crate::layer_hint::HintKey {
+                        label: "Q".into(),
+                        kind: crate::layer_hint::HintKind::Action,
+                        action: "text: 👋".into(),
+                        emoji: false,
+                    }),
+                ],
+                right: vec![Some(crate::layer_hint::HintKey {
+                    label: "H".into(),
+                    kind: crate::layer_hint::HintKind::Suppress,
+                    action: String::new(),
+                    emoji: false,
+                })],
+            })),
             Command::ShowPage(Popup::Quick, 3),
             Command::ShowPage(Popup::Emoji, 5),
             Command::Hide,

@@ -27,6 +27,11 @@ pub fn spell_requested() -> Result<bool, Box<dyn std::error::Error>> {
     }
 }
 
+/// The layer hint needs layer-shell, which exists only on Linux.
+pub fn layer_shell_supported() -> bool {
+    false
+}
+
 pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {
     Err("Spell worker is unavailable on this platform".into())
 }

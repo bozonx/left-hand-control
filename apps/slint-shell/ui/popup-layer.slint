@@ -1,0 +1,87 @@
+import { Theme } from "theme.slint";
+import { ActionText, LayerKeyCell } from "layers.slint";
+import { Assignment } from "types.slint";
+
+/// One read-only key of the hint: its label and what it does in the layer.
+component HintKey inherits Rectangle {
+    in property <LayerKeyCell> cell;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Theme.border;
+    background: Theme.card;
+    opacity: root.cell.kind == Assignment.transparent ? 0.55 : 1;
+    VerticalLayout {
+        padding: 4px;
+        spacing: 2px;
+        alignment: center;
+        Text {
+            min-width: 0px;
+            text: root.cell.label;
+            color: Theme.link;
+            font-size: 12px;
+            font-weight: 600;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        HorizontalLayout {
+            alignment: center;
+            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; emoji: root.cell.emoji; text-size: 11px; }
+        }
+    }
+}
+
+component HintHand inherits VerticalLayout {
+    in property <[LayerKeyCell]> cells;
+    in property <int> columns: 6;
+    spacing: 6px;
+    for row in root.cells.length / root.columns: HorizontalLayout {
+        spacing: 6px;
+        for col in root.columns: Rectangle {
+            width: 60px;
+            height: 44px;
+            if root.cells[row * root.columns + col].index >= 0: HintKey {
+                cell: root.cells[row * root.columns + col];
+            }
+        }
+    }
+}
+
+/// Keys of the held layer, shown while it is held. It never takes the
+/// keyboard focus and lets the pointer through (see `spell.rs`).
+export component LayerHintPopup inherits Window {
+    title: @tr("Layer");
+    width: 860px;
+    height: 330px;
+    no-frame: true;
+    always-on-top: true;
+    background: transparent;
+    in property <string> name;
+    in property <[LayerKeyCell]> left-cells;
+    in property <[LayerKeyCell]> right-cells;
+    in property <bool> presented: true;
+    Rectangle {
+        visible: root.presented;
+        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+        background: Theme.surface; border-radius: 16px;
+        border-width: 1px; border-color: Theme.divider;
+        VerticalLayout {
+            padding: 16px;
+            spacing: 12px;
+            alignment: center;
+            Text {
+                text: root.name;
+                color: Theme.text;
+                font-size: 15px;
+                font-weight: 700;
+                horizontal-alignment: center;
+                overflow: elide;
+            }
+            HorizontalLayout {
+                alignment: center;
+                spacing: 32px;
+                HintHand { cells: root.left-cells; }
+                HintHand { cells: root.right-cells; }
+            }
+        }
+    }
+}

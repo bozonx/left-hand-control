@@ -121,6 +121,17 @@ pub fn spell_requested() -> Result<bool, Box<dyn std::error::Error>> {
     Ok(true)
 }
 
+/// Whether the worker can show layer-shell surfaces, whatever popup mode was
+/// requested: a Spell build on a compositor with layer-shell.
+pub fn layer_shell_supported() -> bool {
+    cfg!(feature = "spell")
+        && std::env::var_os("WAYLAND_DISPLAY").is_some()
+        && layer_shell_available().unwrap_or_else(|error| {
+            log::warn!("layer-shell check: {error}");
+            false
+        })
+}
+
 /// Start the worker and wait until it answers. Blocks; call it off the UI
 /// thread.
 pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {

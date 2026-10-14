@@ -13,14 +13,17 @@ use crate::{
 };
 use lhc_core::{
     config_document::{ConfigDocument, ConfigError, KeyAssignment},
-    profile::actions,
+    profile::{
+        actions,
+        model::{AppConfig, LayerKeymap, LayoutPreset},
+    },
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{collections::HashMap, rc::Rc};
 
 /// Display names of catalog actions (macros, commands, built-ins).
-fn action_names(ui: &SettingsWindow, config: &ConfigDocument) -> HashMap<String, String> {
-    let mut names: HashMap<String, String> = actions::catalog(&config.config())
+fn action_names(ui: &SettingsWindow, config: &AppConfig) -> HashMap<String, String> {
+    let mut names: HashMap<String, String> = actions::catalog(config)
         .into_iter()
         .filter_map(|entry| Some((entry.action.format()?, action_label(ui, entry.name)?)))
         .collect();
@@ -125,6 +128,46 @@ fn hand_cells(
     cells
 }
 
+/// Both hand grids of a layer with `keymap`.
+fn hands(
+    keymap: Option<&LayerKeymap>,
+    names: &HashMap<String, String>,
+) -> (Vec<LayerKeyCell>, Vec<LayerKeyCell>) {
+    let lookup = |code: &str| assignment(keymap.and_then(|map| map.keys.get(code)), names);
+    let left_len: usize = keyboard::LEFT_HAND.iter().map(|row| row.len()).sum();
+    (
+        hand_cells(&keyboard::LEFT_HAND, keyboard::LEFT_COLUMNS, 0, 2, &lookup),
+        hand_cells(
+            &keyboard::RIGHT_HAND,
+            keyboard::RIGHT_COLUMNS,
+            left_len,
+            0,
+            &lookup,
+        ),
+    )
+}
+
+/// The keys of layer `id` of the running `layout` for the layer hint, or
+/// `None` when the layout has no such layer.
+pub(crate) fn hint(
+    ui: &SettingsWindow,
+    config: &ConfigDocument,
+    layout: &LayoutPreset,
+    id: &str,
+) -> Option<crate::layer_hint::LayerHint> {
+    let layer = layout.layers.iter().find(|layer| layer.id == id)?;
+    let names = action_names(
+        ui,
+        &AppConfig::from_parts(config.settings().clone(), layout.clone(), None),
+    );
+    let (left, right) = hands(layout.layer_keymaps.get(id), &names);
+    Some(crate::layer_hint::LayerHint::from_cells(
+        layer.name.clone(),
+        &left,
+        &right,
+    ))
+}
+
 /// Whether `text` consists only of emoji, so the key shows it in the colour
 /// emoji font; mixed text keeps the regular font, whose digits stay plain.
 fn is_emoji(text: &str) -> bool {
@@ -205,23 +248,10 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
             .into(),
     );
     let keymap = layer.and_then(|layer| layout.layer_keymaps.get(&layer.id));
-    let names = action_names(ui, &config);
-    let lookup = |code: &str| assignment(keymap.and_then(|map| map.keys.get(code)), &names);
-    let left_len: usize = keyboard::LEFT_HAND.iter().map(|row| row.len()).sum();
-    editor.set_left_cells(ModelRc::new(VecModel::from(hand_cells(
-        &keyboard::LEFT_HAND,
-        keyboard::LEFT_COLUMNS,
-        0,
-        2,
-        &lookup,
-    ))));
-    editor.set_right_cells(ModelRc::new(VecModel::from(hand_cells(
-        &keyboard::RIGHT_HAND,
-        keyboard::RIGHT_COLUMNS,
-        left_len,
-        0,
-        &lookup,
-    ))));
+    let names = action_names(ui, &config.config());
+    let (left, right) = hands(keymap, &names);
+    editor.set_left_cells(ModelRc::new(VecModel::from(left)));
+    editor.set_right_cells(ModelRc::new(VecModel::from(right)));
     editor.set_extras(ModelRc::new(VecModel::from(
         layer
             .and_then(|layer| layout.layer_keymaps.get(&layer.id))

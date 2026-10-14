@@ -20,6 +20,8 @@ pub enum CoreEvent {
     ActiveWindowChanged(Option<ActiveWindow>),
     /// The mapper thread stopped on its own; the payload is the reason.
     MapperStopped(String),
+    /// The topmost held mapper layer changed; `None` when no layer is held.
+    ActiveLayerChanged(Option<String>),
     /// An `app:` action fired inside the mapper, e.g. `show_quick_menu_1`.
     AppAction(String),
     CommandFinished {

@@ -4,7 +4,7 @@
 pub(crate) mod conditions;
 mod inline;
 mod keys;
-mod layers;
+pub(crate) mod layers;
 mod library;
 mod macros;
 mod menus;

@@ -5,6 +5,7 @@
 //! threads reach it only through `slint::invoke_from_event_loop` +
 //! [`with_app`]; nothing here is shared across threads.
 
+mod layer_hint;
 mod mapper;
 mod popups;
 mod worker;
@@ -73,6 +74,12 @@ pub(crate) struct App {
     game_active: Cell<Option<bool>>,
     /// Active layout last seen for the OSD; `None` before the first look.
     announced_layout: RefCell<Option<Option<String>>>,
+    /// Topmost layer the mapper holds now.
+    held_layer: RefCell<Option<String>>,
+    /// The worker shows the layer hint.
+    layer_hint_shown: Cell<bool>,
+    /// Delays the hint after a layer is taken.
+    layer_hint_timer: slint::Timer,
     shutting_down: Cell<bool>,
 }
 
@@ -192,7 +199,10 @@ impl App {
                 }
             }
             Command::Preferences(preferences) => self.set_preferences(preferences),
-            Command::Ping | Command::PopupLayout(_) | Command::PopupContents(_) => {}
+            Command::Ping
+            | Command::PopupLayout(_)
+            | Command::PopupContents(_)
+            | Command::LayerHint(_) => {}
             Command::Execute(action) => {
                 if !lhc_core::mapper::runtime::status().running {
                     self.set_error(Msg::MapperRequired);
@@ -303,6 +313,7 @@ impl App {
         self.invalidate_menus();
         self.apply_preferences();
         self.announce_layout();
+        self.sync_layer_hint_setting();
     }
 
     /// Start the mapper if configured to, and show the settings window
@@ -401,6 +412,7 @@ impl Drop for CoreGuard {
 pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let server = ipc::Server::bind()?;
     let use_spell = backend::spell_requested()?;
+    let layer_shell = use_spell || backend::layer_shell_supported();
     let popup_attributes = Rc::new(Cell::new(false));
     select_backend(popup_attributes.clone())?;
     // Core watchers post to the UI via `invoke_from_event_loop`, which fails
@@ -436,7 +448,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         menu_generation: Cell::new(0),
         menus_sent: RefCell::default(),
         pending_action: RefCell::default(),
-        supervisor: RefCell::new(worker::Supervisor::new(use_spell)),
+        supervisor: RefCell::new(worker::Supervisor::new(use_spell, layer_shell)),
         preferences: Cell::new(Preferences::default()),
         last_autostart: Cell::new(None),
         config_watch: slint::Timer::default(),
@@ -447,6 +459,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         uptime_clock: slint::Timer::default(),
         game_active: Cell::new(None),
         announced_layout: RefCell::new(None),
+        held_layer: RefCell::new(None),
+        layer_hint_shown: Cell::new(false),
+        layer_hint_timer: slint::Timer::default(),
         shutting_down: Cell::new(false),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
@@ -484,8 +499,13 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         .start(slint::TimerMode::Repeated, CONFIG_POLL, || {
             with_app(|app| app.reload_config())
         });
+    app.settings
+        .global::<crate::ui::SettingsEditor>()
+        .set_layer_hint_available(layer_shell);
     if use_spell {
         app.start_worker(false);
+    }
+    if layer_shell {
         app.worker_watch
             .start(slint::TimerMode::Repeated, WORKER_POLL, || {
                 with_app(|app| app.check_worker())

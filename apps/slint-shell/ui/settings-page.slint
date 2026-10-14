@@ -28,6 +28,9 @@ export global SettingsEditor {
     in-out property <bool> high-contrast;
     in-out property <bool> reduce-motion;
     in-out property <bool> layout-osd;
+    in-out property <bool> layer-hint;
+    /// The layer hint can be shown: layer-shell is available.
+    in property <bool> layer-hint-available;
     in-out property <int> locale-index;
     in-out property <int> tap-decision-index;
     in-out property <string> hold-timeout;
@@ -388,6 +391,10 @@ export component SettingsPage inherits VerticalBox {
                     }
                     if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
                     if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
+                    if AppState.is-linux: VerticalLayout { vertical-stretch: 0; spacing: 4px;
+                        CheckBox { text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
+                        Text { vertical-stretch: 0; text: SettingsEditor.layer-hint-available ? @tr("For learning a layout: the hint appears above all windows and is never shown in game mode.") : @tr("Unavailable: the hint needs a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); color: Theme.muted; wrap: word-wrap; }
+                    }
                     HorizontalBox { padding: 0px; vertical-stretch: 0;
                         Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
                         Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }

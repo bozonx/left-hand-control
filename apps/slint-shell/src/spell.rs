@@ -1,4 +1,5 @@
-//! Spell worker process: both popups as wlr layer-shell surfaces.
+//! Spell worker process: both popups and the layer hint as wlr layer-shell
+//! surfaces.
 //!
 //! Runs as `slint-shell --spell-worker`, started and supervised by the
 //! settings process. It owns its own IPC socket (`SLINT_SHELL_SOCKET`),
@@ -8,9 +9,11 @@
 use crate::{
     command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
     i18n::Language,
-    ipc, metrics,
+    ipc,
+    layer_hint::LayerHint,
+    metrics,
     popup_model::{self, ConfiguredMenus, KeyOutcome},
-    ui::{EmojiPopup, Locale, QuickPopup, Theme},
+    ui::{EmojiPopup, LayerHintPopup, Locale, QuickPopup, Theme},
 };
 use slint::ComponentHandle;
 use spell_framework::{
@@ -76,11 +79,15 @@ fn height(_popup: Popup) -> u32 {
     350
 }
 
-fn configuration(popup: Popup) -> Result<WindowConf, Box<dyn std::error::Error>> {
+/// Size of the layer hint surface; matches `LayerHintPopup`.
+const HINT_WIDTH: u32 = 860;
+const HINT_HEIGHT: u32 = 330;
+
+fn configuration(width: u32, height: u32) -> Result<WindowConf, Box<dyn std::error::Error>> {
     let mut builder = WindowConf::builder();
     builder
-        .width(width(popup))
-        .height(height(popup))
+        .width(width)
+        .height(height)
         .anchor_1(LayerAnchor::BOTTOM)
         .margins(0, 0, 24, 0)
         .layer_type(LayerType::Overlay)
@@ -92,12 +99,14 @@ fn configuration(popup: Popup) -> Result<WindowConf, Box<dyn std::error::Error>>
     builder.build()
 }
 
-/// The two layer surfaces, their Slint components and the menus they show.
+/// The layer surfaces, their Slint components and the menus they show.
 struct Layers {
     emoji_way: SpellWin,
     quick_way: SpellWin,
+    hint_way: SpellWin,
     emoji: EmojiPopup,
     quick: QuickPopup,
+    hint: LayerHintPopup,
     /// `unmap` lifecycle: hidden layers commit an empty buffer.
     unmap: bool,
     menus: ConfiguredMenus,
@@ -149,6 +158,7 @@ impl Layers {
         for (theme, locale) in [
             (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
             (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
+            (self.hint.global::<Theme>(), self.hint.global::<Locale>()),
         ] {
             theme.set_dark(preferences.theme == ThemeMode::Dark);
             theme.set_eink(preferences.theme == ThemeMode::EInk);
@@ -156,6 +166,28 @@ impl Layers {
             theme.set_reduce_motion(preferences.reduce_motion);
             crate::ui::apply_theme(&theme);
             locale.set_english(preferences.language == Language::English);
+        }
+    }
+
+    /// Show `hint`, or hide the hint for `None`. The surface never takes
+    /// the keyboard focus and its input region stays empty.
+    fn set_hint(&mut self, hint: Option<LayerHint>) {
+        match hint {
+            Some(hint) => {
+                self.hint.set_name(hint.name.as_str().into());
+                self.hint.set_left_cells(hint.left_cells());
+                self.hint.set_right_cells(hint.right_cells());
+                self.hint.set_presented(true);
+                if self.unmap {
+                    self.hint_way.show_again();
+                }
+            }
+            None => {
+                self.hint.set_presented(false);
+                if self.unmap {
+                    self.hint_way.hide();
+                }
+            }
         }
     }
 
@@ -182,8 +214,8 @@ impl Layers {
 }
 
 /// Initial state: hidden without removing focus that was never granted.
-fn start_hidden(way: &mut SpellWin, popup: Popup, unmap: bool) {
-    way.subtract_input_region(0, 0, width(popup) as i32, height(popup) as i32);
+fn start_hidden(way: &mut SpellWin, width: u32, height: u32, unmap: bool) {
+    way.subtract_input_region(0, 0, width as i32, height as i32);
     if unmap {
         way.hide();
     }
@@ -272,30 +304,51 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         pipe: Arc::new(wake_write),
     };
     let mut metrics = metrics::Metrics::from_env(start)?;
-    let mut emoji_way = SpellWin::invoke_spell("lhc-slint-emoji", configuration(Popup::Emoji)?);
+    let popup_configuration = |popup| configuration(width(popup), height(popup));
+    let mut emoji_way =
+        SpellWin::invoke_spell("lhc-slint-emoji", popup_configuration(Popup::Emoji)?);
     let emoji = EmojiPopup::new()?;
     emoji.set_presented(initial == Some(Popup::Emoji));
     if initial != Some(Popup::Emoji) {
-        start_hidden(&mut emoji_way, Popup::Emoji, unmap);
+        let popup = Popup::Emoji;
+        start_hidden(&mut emoji_way, width(popup), height(popup), unmap);
     }
     metrics.ready("emoji");
-    let mut quick_way = SpellWin::invoke_spell("lhc-slint-quick", configuration(Popup::Quick)?);
+    let mut quick_way =
+        SpellWin::invoke_spell("lhc-slint-quick", popup_configuration(Popup::Quick)?);
     let quick = QuickPopup::new()?;
     quick.set_presented(initial == Some(Popup::Quick));
     if initial != Some(Popup::Quick) {
-        start_hidden(&mut quick_way, Popup::Quick, unmap);
+        let popup = Popup::Quick;
+        start_hidden(&mut quick_way, width(popup), height(popup), unmap);
     }
-    let wayland = [emoji_way.get_fd_owned(), quick_way.get_fd_owned()];
+    // The hint is never interactive: it keeps an empty input region and
+    // never asks for the keyboard focus.
+    let mut hint_way = SpellWin::invoke_spell(
+        "lhc-slint-layer-hint",
+        configuration(HINT_WIDTH, HINT_HEIGHT)?,
+    );
+    let hint = LayerHintPopup::new()?;
+    hint.set_presented(false);
+    start_hidden(&mut hint_way, HINT_WIDTH, HINT_HEIGHT, unmap);
+    let wayland = [
+        emoji_way.get_fd_owned(),
+        quick_way.get_fd_owned(),
+        hint_way.get_fd_owned(),
+    ];
     let fds = [
         wayland[0].as_raw_fd(),
         wayland[1].as_raw_fd(),
+        wayland[2].as_raw_fd(),
         wake_read.as_raw_fd(),
     ];
     let mut layers = Layers {
         emoji_way,
         quick_way,
+        hint_way,
         emoji,
         quick,
+        hint,
         unmap,
         menus: ConfiguredMenus::default(),
     };
@@ -356,6 +409,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         for popup in Popup::ALL {
             layers.way(popup).on_call()?;
         }
+        layers.hint_way.on_call()?;
         let mut active = false;
         while let Ok(event) = rx.try_recv() {
             active = true;
@@ -376,6 +430,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     for popup in Popup::ALL {
                         layers.way(popup).hide();
                     }
+                    layers.hint_way.hide();
                     return Ok(());
                 }
                 Event::Command(Command::PopupContents(contents), _, _) => {
@@ -421,6 +476,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         start,
                     );
                 }
+                Event::Command(Command::LayerHint(hint), _, _) => layers.set_hint(hint),
                 Event::Command(Command::Hide, _, _) => dismiss = visible,
                 Event::Command(_, _, _) => {}
                 Event::Focus(popup, active) => {

@@ -1,4 +1,4 @@
-//! Supervision of the Spell popup worker: starting it off the UI thread,
+//! Supervision of the Spell worker: starting it off the UI thread,
 //! forwarding commands and restarting it after a crash, at most three times
 //! a minute. Past that limit it is restarted only when the user asks for a
 //! popup again.
@@ -48,6 +48,11 @@ pub(super) struct Supervisor {
     pub(super) pending_show: Option<PendingShow>,
     /// Popups run in the worker (layer-shell available and requested).
     pub(super) enabled: bool,
+    /// The worker can run: layer-shell is available in a Spell build.
+    pub(super) layer_shell: bool,
+    /// The layer hint is turned on; it needs the worker even when the
+    /// popups are winit windows.
+    pub(super) hint: bool,
     worker: Option<Worker>,
     starting: bool,
     /// The restart limit was hit; wait for the user to ask again.
@@ -56,10 +61,28 @@ pub(super) struct Supervisor {
 }
 
 impl Supervisor {
-    pub(super) fn new(enabled: bool) -> Self {
+    pub(super) fn new(enabled: bool, layer_shell: bool) -> Self {
         Self {
             enabled,
+            layer_shell: enabled || layer_shell,
             ..Self::default()
+        }
+    }
+
+    /// Whether the worker should be running.
+    pub(super) fn wanted(&self) -> bool {
+        self.enabled || (self.layer_shell && self.hint)
+    }
+
+    pub(super) fn running(&self) -> bool {
+        self.worker.is_some()
+    }
+
+    /// Stop a worker that is no longer wanted.
+    pub(super) fn stop_unwanted(&mut self) {
+        if !self.wanted() {
+            self.shutdown();
+            self.worker = None;
         }
     }
 
@@ -150,7 +173,7 @@ impl App {
     pub(super) fn start_worker(&self, user: bool) {
         {
             let mut supervisor = self.supervisor.borrow_mut();
-            if !supervisor.enabled || supervisor.starting || supervisor.worker.is_some() {
+            if !supervisor.wanted() || supervisor.starting || supervisor.worker.is_some() {
                 return;
             }
             if supervisor.gave_up && !user {
@@ -182,6 +205,7 @@ impl App {
                 }
                 self.supervisor.borrow_mut().worker = Some(worker);
                 self.menus_sent.borrow_mut().take();
+                self.layer_hint_shown.set(false);
                 self.flush_worker_show();
             }
             Err(error) => {

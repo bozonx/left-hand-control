@@ -442,6 +442,8 @@ pub struct AppSettings {
     pub reduce_motion: bool,
     /// Show an on-screen display when the active layout changes.
     pub layout_osd: bool,
+    /// While a layer is held, show its keys in an overlay above all windows.
+    pub layer_hint: bool,
     pub locale: LocalePreference,
     pub default_hold_timeout_ms: u64,
     pub default_long_hold_timeout_ms: u64,
@@ -481,6 +483,7 @@ impl Default for AppSettings {
             high_contrast: false,
             reduce_motion: false,
             layout_osd: false,
+            layer_hint: false,
             locale: LocalePreference::Auto,
             default_long_hold_timeout_ms: 1000,
             default_hold_timeout_ms: 200,

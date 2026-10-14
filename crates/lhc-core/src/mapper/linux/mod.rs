@@ -344,6 +344,8 @@ fn run_loop<D: LoopDriver>(
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
     let mut hold = OutputHold::default();
+    // Topmost layer last reported to the shell.
+    let mut reported_layer: Option<String> = None;
 
     let result = (|| {
         while !stop.load(Ordering::SeqCst) {
@@ -379,9 +381,16 @@ fn run_loop<D: LoopDriver>(
                 }
             }
             process_iteration(&mut driver, &mut engine, &mut hold, &mut virt, &mut out_buf)?;
+            if engine.top_layer() != reported_layer.as_deref() {
+                reported_layer = engine.top_layer().map(str::to_owned);
+                super::notify_active_layer(reported_layer.clone());
+            }
         }
         Ok(())
     })();
+    if reported_layer.is_some() {
+        super::notify_active_layer(None);
+    }
 
     hold.take(&mut out_buf);
     engine.shutdown(&mut out_buf);

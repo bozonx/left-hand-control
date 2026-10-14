@@ -29,6 +29,11 @@ pub(crate) fn emit_app_event(name: &str) {
     crate::events::emit(crate::events::CoreEvent::AppAction(name.to_string()));
 }
 
+#[cfg(target_os = "linux")]
+pub(crate) fn notify_active_layer(layer: Option<String>) {
+    crate::events::emit(crate::events::CoreEvent::ActiveLayerChanged(layer));
+}
+
 /// Layout-switching actions refresh the cached layout immediately so the
 /// next key is evaluated against the new layout.
 #[cfg(target_os = "linux")]
