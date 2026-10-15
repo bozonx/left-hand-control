@@ -1457,7 +1457,9 @@ where
     use zbus::export::futures_core::Stream;
     let deadline = Instant::now() + timeout;
     let valid = || text_request.check_lifetime().map_err(|e| format!("{e:?}"));
-    let response = (|| {
+    // Cargo feature unification can select zbus's Tokio executor (via ksni).
+    // Keep polling and SignalStream destruction inside the matching runtime.
+    let response = zbus::block_on(async {
         let mut signals = poll_until(request.inner().receive_signal("Response"), deadline, valid)?
             .map_err(|e| format!("{method}: subscribe Response: {e}"))?;
         poll_until(portal.inner().call_method(method, args), deadline, valid)?
@@ -1468,7 +1470,7 @@ where
             valid,
         )?
         .ok_or_else(|| format!("{method}: Response stream closed"))
-    })();
+    });
     let msg = match response {
         Ok(msg) => msg,
         Err(error) => {
