@@ -638,6 +638,7 @@ fn sel_layer_q_emits_ctrl_key_z() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -688,6 +689,7 @@ fn active_layer_bypasses_rule_for_same_key() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -707,6 +709,7 @@ fn active_layer_bypasses_rule_for_same_key() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -757,6 +760,7 @@ fn unmapped_key_in_active_layer_passthroughs() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -819,6 +823,7 @@ fn explicit_null_in_layer_keymap_swallows_key() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -868,6 +873,7 @@ fn hold_can_activate_layer_and_modifier_together() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -924,6 +930,7 @@ fn lazy_alt_win_cfg() -> AppConfig {
         isolate: String::new(),
         hold_for: "Tab".into(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1048,6 +1055,7 @@ fn layer_only_rule_is_not_treated_as_passthrough() {
         isolate: "KeyW".into(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1085,6 +1093,7 @@ static APPS_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 fn rule_with_apps(whitelist: Option<Vec<String>>, blacklist: Option<Vec<String>>) -> RuleEntry {
     RuleEntry {
+        tap_decision: TapDecision::PermissiveHold,
         trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
@@ -1171,6 +1180,7 @@ fn undetected_game_mode_counts_as_off() {
     let _g = APPS_TEST_LOCK.lock().unwrap();
     crate::runtime_state::set_game_mode_active(false);
     let mut rule = RuleEntry {
+        tap_decision: TapDecision::PermissiveHold,
         trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
@@ -1206,6 +1216,7 @@ fn game_mode_condition_passes_when_cached_state_matches() {
     let _g = APPS_TEST_LOCK.lock().unwrap();
     crate::runtime_state::set_game_mode_active(true);
     let rule = RuleEntry {
+        tap_decision: TapDecision::PermissiveHold,
         trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
@@ -1249,6 +1260,7 @@ fn duplicate_key_rules_use_first_matching_condition() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1268,6 +1280,7 @@ fn duplicate_key_rules_use_first_matching_condition() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1627,6 +1640,7 @@ fn mouse_button_commits_pending_hold() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1694,6 +1708,7 @@ fn extra_mouse_button_commits_pending_keystroke_hold() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1760,6 +1775,7 @@ fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1832,6 +1848,7 @@ fn extra_mouse_button_can_be_rule_trigger() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1872,6 +1889,7 @@ fn primary_mouse_button_can_be_layer_mapping() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1931,6 +1949,7 @@ fn explicit_null_mouse_key_in_layer_keymap_swallows_key() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -1982,6 +2001,7 @@ fn isolate_suppresses_and_restores_layer_trigger_modifier() {
         isolate: "KeyW".into(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -2055,6 +2075,7 @@ fn tap_on_release_fires_tap_action() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: Some(200),
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -2096,6 +2117,7 @@ fn hold_timeout_commits_hold_via_tick() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: Some(50),
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -2132,6 +2154,7 @@ fn double_tap_fires_double_tap_action() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: "KeyB".into(),
         double_tap_timeout_ms: None,
     });
@@ -2191,6 +2214,7 @@ fn double_tap_window_expired_fires_tap() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: "KeyB".into(),
         double_tap_timeout_ms: None,
     });
@@ -2233,6 +2257,7 @@ fn double_tap_flush_on_other_key_press() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: "KeyB".into(),
         double_tap_timeout_ms: None,
     });
@@ -2290,6 +2315,7 @@ fn double_tap_late_second_press_is_tap_not_double_tap() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: "KeyB".into(),
         double_tap_timeout_ms: None,
     });
@@ -2407,6 +2433,7 @@ fn shutdown_releases_all_emitted_keys_and_mods() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -2463,6 +2490,7 @@ fn layer_missing_key_is_transparent() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -2514,6 +2542,7 @@ fn mod_refs_shared_by_two_keys() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -2610,6 +2639,7 @@ fn commit_waiting_decisions_on_other_key_press() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: Some(200),
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -2656,6 +2686,7 @@ fn tap_hold_rule(key: &str, tap: ActionSpec, hold: ActionSpec) -> Rule {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: Some(200),
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     }
@@ -3026,6 +3057,7 @@ fn builder_skips_unknown_rule_key() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -3053,6 +3085,7 @@ fn builder_skips_primary_mouse_buttons_as_triggers() {
             isolate: String::new(),
             hold_for: String::new(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
@@ -3082,6 +3115,7 @@ fn builder_unknown_tap_action_falls_back_to_swallow() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -3119,6 +3153,7 @@ fn builder_resolves_builtin_macro() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -3266,6 +3301,7 @@ fn chord_release_keeps_mod_held_as_main_key() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -3345,6 +3381,7 @@ fn overlapping_isolate_keys_restore_only_after_last_release() {
         isolate: "KeyW,KeyE".into(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -3431,6 +3468,7 @@ fn empty_macro_does_not_crash() {
         isolate: String::new(),
         hold_for: String::new(),
         hold_timeout_ms: None,
+        tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
@@ -3518,4 +3556,112 @@ fn failed_text_aborts_macro_before_enter() {
     engine.set_text_pending(false, now);
     engine.tick(now + Duration::from_secs(1), &mut out);
     assert!(out.is_empty());
+}
+
+#[test]
+fn rule_hold_detection_overrides_default_and_can_mix_in_one_layout() {
+    for default in [
+        TapDecision::PermissiveHold,
+        TapDecision::HoldOnOtherKeyPress,
+    ] {
+        let mut cfg = empty_cfg();
+        cfg.settings.tap_decision = default;
+        for (key, decision) in [
+            ("KeyF", Some(TapDecision::PermissiveHold)),
+            ("Space", Some(TapDecision::HoldOnOtherKeyPress)),
+            ("KeyD", None),
+        ] {
+            let mut rule = tap_hold_rule(
+                key,
+                ActionSpec::Native,
+                ActionSpec::Action("ControlLeft".into()),
+            );
+            rule.tap_decision = decision;
+            cfg.rules.push(rule);
+        }
+        let mut engine = Engine::new(&cfg);
+        for (key, press_hold) in [
+            (KeyCode::KEY_F, false),
+            (KeyCode::KEY_SPACE, true),
+            (KeyCode::KEY_D, default == TapDecision::HoldOnOtherKeyPress),
+        ] {
+            let mut out = Vec::new();
+            let now = Instant::now();
+            engine.handle(key, true, now, &mut out);
+            engine.handle(
+                KeyCode::KEY_C,
+                true,
+                now + Duration::from_millis(10),
+                &mut out,
+            );
+            if press_hold {
+                assert!(
+                    matches!(out.as_slice(), [Out::ChordPress { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == KeyCode::KEY_LEFTCTRL)
+                );
+            } else {
+                assert!(
+                    out.is_empty(),
+                    "release detection must buffer the second key"
+                );
+            }
+            engine.handle(key, false, now + Duration::from_millis(20), &mut out);
+            if !press_hold {
+                assert!(
+                    matches!(out.as_slice(), [Out::Stroke { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == key)
+                );
+            }
+            engine.handle(
+                KeyCode::KEY_C,
+                false,
+                now + Duration::from_millis(30),
+                &mut out,
+            );
+        }
+    }
+}
+
+#[test]
+fn buffered_rule_keeps_its_own_hold_detection_after_replay() {
+    let mut cfg = empty_cfg();
+    let mut letter = tap_hold_rule(
+        "KeyF",
+        ActionSpec::Native,
+        ActionSpec::Action("ShiftLeft".into()),
+    );
+    letter.tap_decision = Some(TapDecision::PermissiveHold);
+    let mut layer_key = tap_hold_rule(
+        "Space",
+        ActionSpec::Native,
+        ActionSpec::Action("ControlLeft".into()),
+    );
+    layer_key.tap_decision = Some(TapDecision::HoldOnOtherKeyPress);
+    cfg.rules = vec![letter, layer_key];
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    let now = Instant::now();
+    engine.handle(KeyCode::KEY_F, true, now, &mut out);
+    engine.handle(
+        KeyCode::KEY_SPACE,
+        true,
+        now + Duration::from_millis(10),
+        &mut out,
+    );
+    assert!(out.is_empty());
+    engine.handle(
+        KeyCode::KEY_F,
+        false,
+        now + Duration::from_millis(20),
+        &mut out,
+    );
+    assert!(matches!(out.as_slice(), [Out::Stroke { ks, .. }] if ks.key == KeyCode::KEY_F));
+    out.clear();
+    engine.handle(
+        KeyCode::KEY_C,
+        true,
+        now + Duration::from_millis(30),
+        &mut out,
+    );
+    assert!(
+        matches!(out.as_slice(), [Out::ChordPress { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == KeyCode::KEY_LEFTCTRL)
+    );
 }

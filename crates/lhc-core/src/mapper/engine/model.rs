@@ -40,6 +40,7 @@ pub(super) enum HoldMode {
 
 #[derive(Clone)]
 pub(super) struct RuleEntry {
+    pub(super) tap_decision: crate::mapper::config::TapDecision,
     pub(super) trigger_keys: Vec<KeyCode>,
     pub(super) tap: TapMode,
     pub(super) layer_id: Option<String>,
@@ -107,19 +108,6 @@ pub(super) enum Phase {
 pub(super) struct Pending {
     pub(super) rule: RuleEntry,
     pub(super) phase: Phase,
-}
-
-/// How the engine decides tap vs hold when another key is pressed while a
-/// rule key is still waiting for its decision.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum DecisionMode {
-    /// QMK-style "permissive hold": an interrupting key press is buffered
-    /// and only commits the hold if that key is released before the rule
-    /// key (nested press+release) or the hold timeout elapses. Rolling
-    /// overlaps during fast typing resolve as taps.
-    PermissiveHold,
-    /// Behaviour: any other key press commits the hold immediately.
-    HoldOnOtherKeyPress,
 }
 
 /// A key event deferred while a rule key is in `WaitingDecision`

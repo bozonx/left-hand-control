@@ -97,6 +97,10 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                 hold_for: key_list(rule.get("holdFor")),
                 double_tap_action: rule.get("dtap").and_then(scalar).unwrap_or_default(),
                 hold_timeout_ms: rule.get("holdMs").and_then(Value::as_u64),
+                tap_decision: rule
+                    .get("tapDecision")
+                    .cloned()
+                    .and_then(|value| serde_json::from_value(value).ok()),
                 double_tap_timeout_ms: rule.get("dtapMs").and_then(Value::as_u64),
             })
         })
@@ -440,6 +444,16 @@ fn rule_yaml(rule: &LayerRule) -> Yaml {
     if !rule.double_tap_action.is_empty() {
         put(&mut out, "dtap", rule.double_tap_action.as_str());
     }
+    if let Some(mode) = rule.tap_decision {
+        put(
+            &mut out,
+            "tapDecision",
+            match mode {
+                super::model::TapDecision::PermissiveHold => "permissiveHold",
+                super::model::TapDecision::HoldOnOtherKeyPress => "holdOnOtherKeyPress",
+            },
+        );
+    }
     if let Some(ms) = rule.hold_timeout_ms {
         out.insert("holdMs".into(), ms.into());
     }
@@ -559,6 +573,29 @@ fn key_list(value: Option<&Value>) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn per_rule_hold_detection_round_trips_through_yaml_and_mapper_json() {
+        use super::super::model::TapDecision;
+        for (value, expected) in [
+            ("permissiveHold", TapDecision::PermissiveHold),
+            ("holdOnOtherKeyPress", TapDecision::HoldOnOtherKeyPress),
+        ] {
+            let preset = parse(&format!(
+                "rules:\n  - key: Space\n    tapDecision: {value}\n"
+            ))
+            .unwrap()
+            .unwrap();
+            assert_eq!(preset.rules[0].tap_decision, Some(expected));
+            assert_eq!(parse(&serialize(&preset)).unwrap().unwrap(), preset);
+            let mapper: crate::mapper::config::Rule =
+                serde_json::from_value(serde_json::to_value(&preset.rules[0]).unwrap()).unwrap();
+            assert_eq!(mapper.tap_decision, Some(expected));
+        }
+        let preset = parse("rules:\n  - key: Space\n").unwrap().unwrap();
+        assert_eq!(preset.rules[0].tap_decision, None);
+        assert!(!serialize(&preset).contains("tapDecision"));
+    }
+
     #[test]
     fn chord_and_long_hold_options_round_trip() {
         let preset = parse("rules:\n  - key: ShiftLeft+ControlRight\n    onHold: action\n    longHold: 'text:hello'\n    longHoldMs: 1500\n").unwrap().unwrap();

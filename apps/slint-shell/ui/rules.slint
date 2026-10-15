@@ -4,10 +4,10 @@ import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { ConditionsForm, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
-import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, NumericInput, FormLabel, FormField, ButtonGroup } from "controls.slint";
+import { IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { RuleDialog, RuleField, GameCondition, PickerCategory, HoldRelease } from "types.slint";
+import { RuleDialog, RuleField, GameCondition, PickerCategory, HoldRelease, HoldDetection } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, CheckBox } from "std-widgets.slint";
 
 export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
@@ -42,6 +42,8 @@ export global RulesEditor {
     in-out property <HoldRelease> release-mode;
     in property <string> release-keys;
     in property <[string]> release-key-items;
+    in-out property <HoldDetection> hold-detection;
+    in-out property <HoldDetection> original-hold-detection;
     in-out property <string> hold-timeout;
     in-out property <string> double-timeout;
     in property <string> original-hold;
@@ -50,7 +52,7 @@ export global RulesEditor {
     in property <string> original-release-keys;
     in-out property <string> original-hold-timeout;
     in-out property <string> original-double-timeout;
-    out property <bool> advanced-dirty: long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || release-mode != original-release-mode || release-keys != original-release-keys || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
+    out property <bool> advanced-dirty: hold-detection != original-hold-detection || long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || release-mode != original-release-mode || release-keys != original-release-keys || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
     in-out property <bool> enabled: true;
     in-out property <bool> swallow-tap;
     in-out property <bool> swallow-hold;
@@ -462,6 +464,10 @@ export component RuleDialogOverlay inherits FocusScope {
                         }
                         VerticalLayout { spacing: 12px; alignment: start; vertical-stretch: 0;
                             SectionTitle { text: @tr("Timing"); }
+                            if !RulesEditor.is-chord && RulesEditor.hold-mode != 2: VerticalLayout { spacing: 6px; alignment: start; vertical-stretch: 0;
+                                FormLabel { text: @tr("When a key becomes a hold"); info: @tr("Overrides the default hold detection for this rule. Use release detection for typing keys and press detection for dedicated layer or modifier keys. This does not change chord detection."); }
+                                SelectField { width: 500px; height: 32px; model: [@tr("Use default from Settings"), @tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: RulesEditor.hold-detection == HoldDetection.release ? 1 : RulesEditor.hold-detection == HoldDetection.press ? 2 : 0; selected(value) => { RulesEditor.hold-detection = self.current-index == 1 ? HoldDetection.release : self.current-index == 2 ? HoldDetection.press : HoldDetection.inherit; } }
+                            }
                             if RulesEditor.hold-mode != 2: VerticalLayout { spacing: 6px; alignment: start; vertical-stretch: 0;
                                 FormLabel { text: @tr("Hold threshold, ms"); info: @tr("Released earlier, the trigger counts as a tap; held longer, as a hold. Empty uses the default from Settings: {} ms.", RulesEditor.default-hold-timeout); }
                                 HorizontalLayout { alignment: start; NumericInput { text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: @tr("Hold threshold, ms"); minimum: 50; maximum: 1000; } }

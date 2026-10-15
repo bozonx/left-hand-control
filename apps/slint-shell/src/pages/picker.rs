@@ -644,6 +644,29 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 })
                 .collect::<Vec<_>>(),
         )));
+        if picker.get_macro_step()
+            && picker.get_category() == PickerCategory::Pause
+            && !matches!(
+                Action::parse(Some(picker.get_value().as_str())),
+                Action::Pause(_)
+            )
+        {
+            let editor = ui.global::<MacroEditor>();
+            let pause = slint::Model::row_data(
+                &editor.get_macros(),
+                editor.get_picker_macro().max(0) as usize,
+            )
+            .and_then(|row| row.step_pause.trim().parse::<u64>().ok())
+            .unwrap_or_else(|| doc.read().settings().default_macro_step_pause_ms)
+            .clamp(1, u64::from(MAX_PAUSE_MS));
+            picker.set_value(
+                Action::Pause(pause.to_string())
+                    .format()
+                    .unwrap_or_default()
+                    .into(),
+            );
+            picker.set_touched(true);
+        }
         let value = picker.get_value();
         if let Some(command) = doc
             .read()

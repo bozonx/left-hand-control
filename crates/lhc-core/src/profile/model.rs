@@ -7,6 +7,19 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+/// How the mapper resolves tap vs hold when another key is pressed while a
+/// tap/hold rule key is still held and undecided.
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum TapDecision {
+    /// QMK-style permissive hold: buffer the interrupting key and only
+    /// commit the hold on a nested release or timeout.
+    #[default]
+    PermissiveHold,
+    /// Behaviour: any other key press commits the hold immediately.
+    HoldOnOtherKeyPress,
+}
+
 /// Keys that address cells of the Quick and Emoji menus, row by row.
 pub const LEFT_HAND_HOTKEYS: [&str; 15] = [
     "KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyA", "KeyS", "KeyD", "KeyF", "KeyG", "KeyZ", "KeyX",
@@ -83,6 +96,8 @@ pub struct LayerRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hold_timeout_ms: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub tap_decision: Option<TapDecision>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub double_tap_timeout_ms: Option<u64>,
 }
 
@@ -118,6 +133,7 @@ impl LayerRule {
             hold_for: None,
             double_tap_action: String::new(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_timeout_ms: None,
         }
     }

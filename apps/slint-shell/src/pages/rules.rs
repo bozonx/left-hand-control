@@ -5,13 +5,13 @@ use crate::{
     document::{Document, Saved, View},
     i18n::Msg,
     ui::{
-        ActionPicker, HoldRelease, PickerTarget, RuleDialog, RuleField, RuleLayerChoice, RuleRow,
-        RulesEditor, SettingsWindow,
+        ActionPicker, HoldDetection, HoldRelease, PickerTarget, RuleDialog, RuleField,
+        RuleLayerChoice, RuleRow, RulesEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::{
     diagnostics, ids,
-    model::{HoldBehavior, Layer, LayerRule, LayoutPreset},
+    model::{HoldBehavior, Layer, LayerRule, LayoutPreset, TapDecision},
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
@@ -187,7 +187,9 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             enabled: rule.is_enabled(),
             swallow_tap: rule.tap_action.is_none(),
             swallow_hold: rule.hold_action.is_none(),
-            advanced: rule.isolate.is_some() || rule.hold_for.is_some(),
+            advanced: rule.isolate.is_some()
+                || rule.hold_for.is_some()
+                || rule.tap_decision.is_some(),
             key_category: super::picker::category_for_value(&rule.key),
             tap_category: super::picker::category_for_value(
                 rule.tap_action.as_deref().unwrap_or_default(),
@@ -242,6 +244,13 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_original_release_keys(keys.join(", ").into());
     editor.set_original_hold(rule.hold_action.clone().unwrap_or_default().into());
     editor.set_original_swallow_hold(rule.hold_action.is_none());
+    let decision = match rule.tap_decision {
+        None => HoldDetection::Inherit,
+        Some(TapDecision::PermissiveHold) => HoldDetection::Release,
+        Some(TapDecision::HoldOnOtherKeyPress) => HoldDetection::Press,
+    };
+    editor.set_hold_detection(decision);
+    editor.set_original_hold_detection(decision);
     editor.set_hold_timeout(timeout_text(rule.hold_timeout_ms).into());
     editor.set_double_timeout(timeout_text(rule.double_tap_timeout_ms).into());
     editor.set_original_hold_timeout(timeout_text(rule.hold_timeout_ms).into());
@@ -741,6 +750,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         if change_rule(&ui, &doc, index, true, |rule| {
             rule.long_hold_timeout_ms = long_hold_timeout;
             rule.hold_timeout_ms = hold;
+            rule.tap_decision = match editor.get_hold_detection() {
+                HoldDetection::Release => Some(TapDecision::PermissiveHold),
+                HoldDetection::Press => Some(TapDecision::HoldOnOtherKeyPress),
+                HoldDetection::Inherit => None,
+            };
             rule.double_tap_timeout_ms = double;
             if rule.hold_behavior() != HoldBehavior::Action {
                 rule.hold_action = held;

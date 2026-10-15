@@ -131,6 +131,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_apply();
     assert!(picker.get_opened(), "a macro cannot call itself");
     picker.invoke_select_behavior(2);
+    picker.set_category(PickerCategory::Pause);
+    picker.invoke_refresh();
+    assert_eq!(picker.get_value(), "pause:20");
+    macros.invoke_set_field(0, MacroField::StepPause, "75".into());
+    picker.set_category(PickerCategory::Modifiers);
+    picker.set_value("KeyA".into());
+    picker.invoke_refresh();
+    picker.set_category(PickerCategory::Pause);
+    picker.invoke_refresh();
+    assert_eq!(picker.get_value(), "pause:75");
+    picker.set_value("pause:250".into());
+    picker.invoke_refresh();
+    assert_eq!(
+        picker.get_value(),
+        "pause:250",
+        "refresh preserves explicit pauses"
+    );
+    picker.set_value("pause:".into());
+    picker.invoke_refresh();
+    assert!(!picker.get_valid(), "a pause requires an explicit duration");
     picker.set_value("pause:250".into());
     picker.invoke_apply();
     assert_eq!(

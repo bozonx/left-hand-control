@@ -1,3 +1,4 @@
+pub use crate::profile::model::TapDecision;
 use crate::profile::model::TextMode;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
@@ -120,6 +121,8 @@ pub struct Rule {
     #[serde(default)]
     pub hold_timeout_ms: Option<u64>,
     #[serde(default)]
+    pub tap_decision: Option<TapDecision>,
+    #[serde(default)]
     pub double_tap_action: String,
     #[serde(default)]
     pub double_tap_timeout_ms: Option<u64>,
@@ -132,19 +135,6 @@ pub struct LayerKeymap {
     pub isolate: Vec<String>,
     #[serde(default)]
     pub hold_for: Vec<String>,
-}
-
-/// How the mapper resolves tap vs hold when another key is pressed while a
-/// tap/hold rule key is still held and undecided.
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
-#[serde(rename_all = "camelCase")]
-pub enum TapDecision {
-    /// QMK-style permissive hold: buffer the interrupting key and only
-    /// commit the hold on a nested release or timeout.
-    #[default]
-    PermissiveHold,
-    /// Behaviour: any other key press commits the hold immediately.
-    HoldOnOtherKeyPress,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -823,6 +823,7 @@ mod tests {
             isolate: String::new(),
             hold_for: String::new(),
             hold_timeout_ms: Some(10),
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });

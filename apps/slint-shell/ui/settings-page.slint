@@ -559,12 +559,12 @@ export component SettingsPage inherits VerticalBox {
                         SubsectionTitle { text: @tr("Hold detection"); }
                         VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
                             FormLabel {
-                                text: @tr("When a key becomes a hold");
-                                info: @tr("Decides when a rule key that is still down counts as a hold if you press another key meanwhile. Applies to all rules.")
+                                text: @tr("Default hold detection");
+                                info: @tr("Decides when a dual-role key counts as a hold if another key is pressed. Rules can override this default in advanced options. Chord detection is configured separately.")
                                     + "\n\n" + @tr("After another key is released: the key becomes a hold once another key is pressed and released while it is down, or when the hold threshold passes. Fast rolls while typing stay taps.")
-                                    + "\n\n" + @tr("As soon as another key is pressed: reacts faster, but fast typing can trigger the hold by mistake.");
+                                    + "\n\n" + @tr("As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake.");
                             }
-                            SelectField { width: 440px; height: 32px; vertical-stretch: 0; model: [@tr("After another key is released (recommended)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
+                            SelectField { width: 500px; height: 32px; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
                         }
                     }
                     BehaviorGroup {
@@ -603,13 +603,19 @@ export component SettingsPage inherits VerticalBox {
                     BehaviorGroup {
                         title: @tr("Macro defaults");
                         note: @tr("Used by macros that leave the field empty. A macro can set its own value on the Macros page.");
-                        changed: SettingsEditor.macro-pause != SettingsEditor.default-macro-pause;
-                        reset => { SettingsEditor.macro-pause = SettingsEditor.default-macro-pause; SettingsEditor.save(); }
+                        changed: SettingsEditor.macro-pause != SettingsEditor.default-macro-pause || SettingsEditor.modifier-delay != SettingsEditor.default-modifier-delay;
+                        reset => { SettingsEditor.macro-pause = SettingsEditor.default-macro-pause; SettingsEditor.modifier-delay = SettingsEditor.default-modifier-delay; SettingsEditor.save(); }
                         BehaviorField {
                             label: @tr("Pause between steps, ms");
                             info: @tr("Pause between consecutive steps of a macro. Increase it if an application misses keystrokes.")
                                 + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-pause);
                             NumericInput { label: @tr("Pause between steps, ms"); maximum: 2000; text: SettingsEditor.macro-pause; edited(value) => { SettingsEditor.macro-pause = value; SettingsEditor.schedule-save(); } }
+                        }
+                        BehaviorField {
+                            label: @tr("Modifier delay, ms");
+                            info: @tr("Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty.")
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
+                            NumericInput { label: @tr("Modifier delay, ms"); maximum: 2000; step: 1; text: SettingsEditor.modifier-delay; edited(value) => { SettingsEditor.modifier-delay = value; SettingsEditor.schedule-save(); } }
                         }
                     }
                     VerticalLayout { vertical-stretch: 0; max-width: 576px; spacing: 12px;
@@ -623,10 +629,9 @@ export component SettingsPage inherits VerticalBox {
                             Rectangle { horizontal-stretch: 1; }
                             if SettingsEditor.behavior-advanced: Button {
                                 text: @tr("Reset to defaults");
-                                enabled: SettingsEditor.combo-timeout != SettingsEditor.default-combo-timeout || SettingsEditor.modifier-delay != SettingsEditor.default-modifier-delay;
+                                enabled: SettingsEditor.combo-timeout != SettingsEditor.default-combo-timeout;
                                 clicked => {
                                     SettingsEditor.combo-timeout = SettingsEditor.default-combo-timeout;
-                                    SettingsEditor.modifier-delay = SettingsEditor.default-modifier-delay;
                                     SettingsEditor.save();
                                 }
                             }
@@ -638,12 +643,6 @@ export component SettingsPage inherits VerticalBox {
                                     + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
                                 NumericInput { label: @tr("Simultaneous press window, ms"); minimum: 10; maximum: 500; text: SettingsEditor.combo-timeout; edited(value) => { SettingsEditor.combo-timeout = value; SettingsEditor.schedule-save(); } }
-                            }
-                            BehaviorField {
-                                label: @tr("Modifier delay, ms");
-                                info: @tr("Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
-                                NumericInput { label: @tr("Modifier delay, ms"); maximum: 2000; step: 1; text: SettingsEditor.modifier-delay; edited(value) => { SettingsEditor.modifier-delay = value; SettingsEditor.schedule-save(); } }
                             }
                         }
                     }

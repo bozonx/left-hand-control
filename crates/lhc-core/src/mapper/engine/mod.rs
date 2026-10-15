@@ -30,7 +30,7 @@
 //         WaitingSecond (delay the tap by double_tap_window).
 //       - deadline expires while still held                → commit hold.
 //       - another key is pressed while we're still in this phase — behaviour
-//         depends on `decision_mode`:
+//         depends on the rule’s `tap_decision`:
 //           * PermissiveHold (default, QMK-style): the interrupting key is
 //             buffered (see `permissive_intercept`). The hold commits only
 //             if that key is *released* before the rule key (nested
@@ -56,8 +56,7 @@ mod model;
 
 pub use self::model::Out;
 use self::model::{
-    ActionDef, BufferedEvent, DecisionMode, HoldMode, LayerTrigger, Pending, Phase, RuleEntry,
-    TapMode,
+    ActionDef, BufferedEvent, HoldMode, LayerTrigger, Pending, Phase, RuleEntry, TapMode,
 };
 use super::action::Keystroke;
 use super::config::GameModeCondition;
@@ -82,12 +81,9 @@ pub struct Engine {
     default_hold: Duration,
     default_mod_delay: Duration,
 
-    /// Tap-vs-hold resolution strategy (permissive hold vs the
-    /// commit-on-other-key-press).
-    decision_mode: DecisionMode,
     /// Events deferred while a rule key is in `WaitingDecision`
     /// (permissive-hold mode only). Replayed in order once the decision
-    /// resolves. Always empty in `HoldOnOtherKeyPress` mode.
+    /// resolves.
     decision_buffer: Vec<BufferedEvent>,
     /// Events deferred while a non-modifier chord member waits for the rest
     /// of its chord (see `combo_term`). Replayed in order when the chord
@@ -536,11 +532,8 @@ impl Engine {
                 // Other keys' deferred taps happened physically before this
                 // second press — flush them first so output stays in order.
                 self.flush_waiting_second(now, out);
-                // Legacy mode: any rule still deciding must commit its hold
-                // before this key-down's action (same as the normal path).
-                if matches!(self.decision_mode, DecisionMode::HoldOnOtherKeyPress) {
-                    self.commit_waiting_decisions(out);
-                }
+                // Permissive rules already intercepted this event above.
+                self.commit_waiting_decisions(out);
                 let dtap = pending.and_then(|p| p.rule.double_tap);
                 self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
                 // The matching release must not emit anything (fire-and-forget).
@@ -567,10 +560,8 @@ impl Engine {
         //
         // In permissive-hold mode this is a no-op: interrupting presses are
         // buffered in `handle` before ever reaching `on_press`, so no rule is
-        // in WaitingDecision here. Skipping keeps the intent explicit.
-        if matches!(self.decision_mode, DecisionMode::HoldOnOtherKeyPress) {
-            self.commit_waiting_decisions(out);
-        }
+        // in WaitingDecision here.
+        self.commit_waiting_decisions(out);
 
         if !self.active_layers.is_empty() {
             self.layer_presses += 1;

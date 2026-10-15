@@ -58,12 +58,14 @@ impl Engine {
         now: Instant,
         out: &mut Vec<Out>,
     ) -> bool {
-        if !matches!(self.decision_mode, DecisionMode::PermissiveHold) {
-            return false;
-        }
         let Some(deciding) = self.deciding_key() else {
             return false;
         };
+        if !self.pending.get(&deciding).is_some_and(|p| {
+            p.rule.tap_decision == crate::mapper::config::TapDecision::PermissiveHold
+        }) {
+            return false;
+        }
         // The deciding key's own events (its release / repeat) flow normally.
         if key == deciding {
             return false;

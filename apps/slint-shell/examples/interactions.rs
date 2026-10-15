@@ -377,6 +377,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().rules[0].double_tap_timeout_ms,
         Some(300)
     );
+    for (selection, expected) in [
+        (
+            HoldDetection::Release,
+            Some(lhc_core::profile::model::TapDecision::PermissiveHold),
+        ),
+        (
+            HoldDetection::Press,
+            Some(lhc_core::profile::model::TapDecision::HoldOnOtherKeyPress),
+        ),
+        (HoldDetection::Inherit, None),
+    ] {
+        rules.invoke_open_dialog(0, RuleDialog::Advanced);
+        rules.set_hold_detection(selection);
+        assert!(rules.get_advanced_dirty());
+        rules.invoke_apply_advanced();
+        assert_eq!(document.read().layout().rules[0].tap_decision, expected);
+        rules.invoke_open_dialog(0, RuleDialog::Advanced);
+        assert_eq!(rules.get_hold_detection(), selection);
+        assert!(!rules.get_advanced_dirty());
+        rules.set_dialog(RuleDialog::None);
+    }
     rules.invoke_open_dialog(0, RuleDialog::Key);
     picker.invoke_select_behavior(2);
     picker.set_value("ShiftLeft+ControlRight".into());
@@ -680,8 +701,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let id = document.read().layout().layers[0].id.clone();
                 rules.invoke_choose(id.into());
             }
-            24 => { snapshot(&ui, "rules-layer"); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Advanced); }
-            25 => { snapshot(&ui, "rules-layer-advanced"); ui.global::<RulesEditor>().set_dialog(RuleDialog::None); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Conditions); }
+            24 => { snapshot(&ui, "rules-layer"); ui.global::<RulesEditor>().invoke_open_dialog(1, RuleDialog::Advanced); ui.global::<RulesEditor>().set_hold_detection(HoldDetection::Release); }
+            25 => { snapshot(&ui, "rules-hold-detection"); ui.global::<RulesEditor>().set_dialog(RuleDialog::None); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Conditions); }
             26 => {
                 snapshot(&ui, "rules-conditions");
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(700.0, 450.0), delta_x: 0.0, delta_y: -700.0 });

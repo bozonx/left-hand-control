@@ -402,6 +402,7 @@ mod tests {
             isolate: String::new(),
             hold_for: String::new(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
@@ -429,6 +430,7 @@ mod tests {
             isolate: "KeyA, KeyQQ".into(),
             hold_for: "KeyTab".into(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
@@ -568,6 +570,7 @@ mod tests {
             isolate: String::new(),
             hold_for: String::new(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
@@ -619,6 +622,7 @@ mod tests {
             isolate: String::new(),
             hold_for: String::new(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
@@ -645,6 +649,7 @@ mod tests {
             isolate: String::new(),
             hold_for: String::new(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });
@@ -732,6 +737,7 @@ mod tests {
             isolate: String::new(),
             hold_for: String::new(),
             hold_timeout_ms: None,
+            tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,
         });

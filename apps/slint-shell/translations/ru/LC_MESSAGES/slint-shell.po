@@ -2554,3 +2554,21 @@ msgstr "Включается, пока запущена программа, ко
 
 msgid "Launchers and game tools — not counted as games"
 msgstr "Лаунчеры и игровые утилиты — не считаются играми"
+
+msgid "Default hold detection"
+msgstr "Распознавание удержания по умолчанию"
+
+msgid "Decides when a dual-role key counts as a hold if another key is pressed. Rules can override this default in advanced options. Chord detection is configured separately."
+msgstr "Определяет, когда клавиша с двумя ролями считается удерживаемой при нажатии другой клавиши. Для отдельного правила режим можно изменить в дополнительных параметрах. Распознавание аккордов настраивается отдельно."
+
+msgid "After another key is released (better for typing)"
+msgstr "После отпускания другой клавиши (лучше для набора текста)"
+
+msgid "As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake."
+msgstr "Сразу при нажатии другой клавиши: удобно для выделенных клавиш слоя или модификаторов. Реагирует быстрее, но перекрытие букв при наборе может вызвать удержание по ошибке."
+
+msgid "Use default from Settings"
+msgstr "По умолчанию из настроек"
+
+msgid "Overrides the default hold detection for this rule. Use release detection for typing keys and press detection for dedicated layer or modifier keys. This does not change chord detection."
+msgstr "Заменяет режим распознавания удержания для этого правила. Для букв используйте распознавание по отпусканию, для выделенных клавиш слоя или модификаторов — по нажатию. На распознавание аккордов не влияет."

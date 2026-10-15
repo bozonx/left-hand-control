@@ -1,5 +1,5 @@
 use super::Engine;
-use super::model::{ActionDef, DecisionMode, HoldMode, MacroDef, RuleEntry, TapMode};
+use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
 use crate::mapper::action::{MacroStepItem, explicit_pause, explicit_text, parse_action};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, AppConfig};
@@ -444,6 +444,7 @@ impl Engine {
             }
 
             let entry = RuleEntry {
+                tap_decision: r.tap_decision.unwrap_or(cfg.settings.tap_decision),
                 trigger_keys: keys.clone(),
                 long_hold,
                 long_hold_timeout,
@@ -505,12 +506,6 @@ impl Engine {
             layer_maps,
             default_hold,
             default_mod_delay,
-            decision_mode: match cfg.settings.tap_decision {
-                crate::mapper::config::TapDecision::PermissiveHold => DecisionMode::PermissiveHold,
-                crate::mapper::config::TapDecision::HoldOnOtherKeyPress => {
-                    DecisionMode::HoldOnOtherKeyPress
-                }
-            },
             decision_buffer: Vec::new(),
             combo_buffer: Vec::new(),
             combo_term: Duration::from_millis(cfg.settings.combo_timeout_ms),
