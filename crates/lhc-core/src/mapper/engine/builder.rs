@@ -524,6 +524,8 @@ impl Engine {
             active_macro: None,
             text_pending: false,
             layer_presses: 0,
+            layer_hold_id: 0,
+            layer_used: false,
         }
     }
 }

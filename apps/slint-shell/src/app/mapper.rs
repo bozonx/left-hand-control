@@ -61,11 +61,9 @@ pub(super) fn forward_core_events() {
             };
             post(move |app| app.command(command, Source::Mapper, Instant::now(), None));
         }
-        CoreEvent::ActiveLayerChanged(layer) => {
-            let layer = layer.clone();
-            post(move |app| app.layer_changed(layer));
+        CoreEvent::ActiveLayerChanged(_) | CoreEvent::LayerKeyPressed => {
+            post(|app| app.sync_held_layer());
         }
-        CoreEvent::LayerKeyPressed => post(|app| app.layer_key_pressed()),
         CoreEvent::GameModeChanged(status) => {
             let status = status.clone();
             post(move |app| app.game_mode_changed(&status));

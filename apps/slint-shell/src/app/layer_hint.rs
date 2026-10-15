@@ -10,7 +10,8 @@ use std::time::{Duration, Instant};
 
 /// How long a layer must stay held before its hint appears, so quick layer
 /// use by someone who knows the layout does not flash it.
-const HINT_DELAY: Duration = Duration::from_millis(100);
+const HINT_DELAY: Duration = Duration::from_secs(2);
+const RETRY_DELAY: Duration = Duration::from_millis(100);
 
 /// A used layer stays suppressed until all layer triggers are released.
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
@@ -62,6 +63,23 @@ impl App {
         }
     }
 
+    /// Queued core events are wakeups: read the latest snapshot so an old
+    /// event cannot revive a released or already used hold.
+    pub(super) fn sync_held_layer(&self) {
+        let state = lhc_core::mapper::layer_state::current();
+        let new_hold = self.layer_hint_hold_id.replace(state.hold_id) != state.hold_id;
+        if new_hold {
+            self.hide_layer_hint();
+            self.layer_hint_session.set(HintSession::Idle);
+        }
+        if new_hold || *self.held_layer.borrow() != state.layer {
+            self.layer_changed(state.layer);
+        }
+        if state.used {
+            self.layer_key_pressed();
+        }
+    }
+
     /// The mapper's topmost held layer changed.
     pub(super) fn layer_changed(&self, layer: Option<String>) {
         self.layer_hint_timer.stop();
@@ -104,6 +122,11 @@ impl App {
         if self.layer_hint_session.get() != HintSession::Ready || !self.supervisor.borrow().hint {
             return;
         }
+        if !lhc_core::mapper::layer_state::current().allows_hint(&id, self.layer_hint_hold_id.get())
+        {
+            self.hide_layer_hint();
+            return;
+        }
         let Some(document) = self.document() else {
             return;
         };
@@ -113,6 +136,12 @@ impl App {
             self.hide_layer_hint();
             return;
         };
+        // The mapper can handle a release while captions are being built.
+        if !lhc_core::mapper::layer_state::current().allows_hint(&id, self.layer_hint_hold_id.get())
+        {
+            self.hide_layer_hint();
+            return;
+        }
         // Marked before sending: a send that fails after the worker took
         // the command must not leave the hint up with nothing to hide it.
         // A worker that is still starting gets the hint once it is up.
@@ -127,7 +156,10 @@ impl App {
             None,
         ) {
             log::warn!("layer hint: {error:?}");
-            self.schedule_layer_hint();
+            self.layer_hint_timer
+                .start(slint::TimerMode::SingleShot, RETRY_DELAY, || {
+                    super::with_app(|app| app.show_layer_hint())
+                });
         }
     }
 
@@ -152,7 +184,7 @@ impl App {
         {
             log::warn!("hide layer hint: {error:?}");
             self.layer_hint_timer
-                .start(slint::TimerMode::SingleShot, HINT_DELAY, || {
+                .start(slint::TimerMode::SingleShot, RETRY_DELAY, || {
                     super::with_app(|app| app.hide_layer_hint())
                 });
         }

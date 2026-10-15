@@ -7,6 +7,7 @@ pub mod commands;
 pub mod engine;
 #[cfg(target_os = "linux")]
 pub mod keys;
+pub mod layer_state;
 #[cfg(target_os = "linux")]
 pub mod linux;
 #[cfg(target_os = "linux")]
@@ -21,6 +22,7 @@ pub use devices::{InputDevice, KeyboardDevice};
 
 #[cfg(target_os = "linux")]
 pub(crate) fn notify_mapper_stopped(error: &str) {
+    layer_state::publish(layer_state::HeldLayerState::default());
     crate::events::emit(crate::events::CoreEvent::MapperStopped(error.to_string()));
 }
 

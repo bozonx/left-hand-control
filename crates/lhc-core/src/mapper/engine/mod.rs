@@ -128,11 +128,23 @@ pub struct Engine {
     text_pending: bool,
     /// Key presses handled while a layer was active.
     layer_presses: u64,
+    layer_hold_id: u64,
+    layer_used: bool,
 }
 impl Engine {
     /// The topmost active layer, if any layer is held.
     pub fn top_layer(&self) -> Option<&str> {
         self.active_layers.last().map(String::as_str)
+    }
+
+    /// Snapshot for delayed shell notifications; separate presses of the same
+    /// trigger remain distinguishable even within one input batch.
+    pub fn held_layer_state(&self) -> super::layer_state::HeldLayerState {
+        super::layer_state::HeldLayerState {
+            layer: self.top_layer().map(str::to_owned),
+            hold_id: self.layer_hold_id,
+            used: self.top_layer().is_some() && self.layer_used,
+        }
     }
 
     /// Number of key presses handled while a layer was active; changes
@@ -421,6 +433,9 @@ impl Engine {
             if !self.physical_down.insert(key) {
                 return;
             }
+            if !self.active_layers.is_empty() {
+                self.layer_used = true;
+            }
         } else {
             self.physical_down.remove(&key);
         }
@@ -554,6 +569,7 @@ impl Engine {
 
         if !self.active_layers.is_empty() {
             self.layer_presses += 1;
+            self.layer_used = true;
         }
         if self.active_layers.is_empty() {
             if let Some(rule) = self.active_rule_for_key(key) {

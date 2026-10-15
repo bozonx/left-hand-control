@@ -3442,3 +3442,51 @@ fn empty_macro_does_not_crash() {
     // Empty macro resolves to nothing → fast path Swallow+Swallow, no crash
     assert!(engine.active_macro.is_none());
 }
+
+#[test]
+fn held_layer_snapshot_distinguishes_fast_represses_and_mapper_restarts() {
+    let cfg =
+        config_with_rule(serde_json::json!({"key": "Space", "layerId": "nav", "tapAction": null}));
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    let first = engine.held_layer_state();
+    assert!(first.allows_hint("nav", first.hold_id));
+    // Both events may arrive in the same fetch_key_events batch.
+    engine.handle(KeyCode::KEY_SPACE, false, now, &mut out);
+    assert!(engine.held_layer_state().layer.is_none());
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    let second = engine.held_layer_state();
+    assert_eq!(second.layer, first.layer);
+    assert!(!second.allows_hint("nav", first.hold_id));
+    assert!(second.allows_hint("nav", second.hold_id));
+    engine.handle(KeyCode::KEY_J, true, now, &mut out);
+    engine.handle(KeyCode::KEY_J, false, now, &mut out);
+    assert!(!engine.held_layer_state().allows_hint("nav", second.hold_id));
+    engine.handle(KeyCode::KEY_SPACE, false, now, &mut out);
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    let third = engine.held_layer_state();
+    assert!(third.allows_hint("nav", third.hold_id));
+    let mut restarted = Engine::new(&cfg);
+    restarted.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    assert_ne!(restarted.held_layer_state().hold_id, third.hold_id);
+}
+
+#[test]
+fn nested_layers_keep_usage_suppressed_until_all_triggers_are_released() {
+    let mut engine = Engine::new(&empty_cfg());
+    let mut out = Vec::new();
+    engine.push_layer("nav".into());
+    let first = engine.held_layer_state();
+    engine.handle(KeyCode::KEY_J, true, Instant::now(), &mut out);
+    engine.push_layer("symbols".into());
+    assert_eq!(engine.held_layer_state().hold_id, first.hold_id);
+    assert!(engine.held_layer_state().used);
+    engine.pop_layer("symbols");
+    assert!(engine.held_layer_state().used);
+    engine.pop_layer("nav");
+    engine.push_layer("nav".into());
+    assert!(!engine.held_layer_state().used);
+    assert_ne!(engine.held_layer_state().hold_id, first.hold_id);
+}

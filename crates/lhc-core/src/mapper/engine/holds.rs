@@ -4,6 +4,10 @@ use super::*;
 
 impl Engine {
     pub(super) fn push_layer(&mut self, id: String) {
+        if self.active_layers.is_empty() {
+            self.layer_hold_id = super::super::layer_state::next_hold_id();
+            self.layer_used = false;
+        }
         self.active_layers.push(id);
     }
 

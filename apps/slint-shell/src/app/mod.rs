@@ -79,6 +79,7 @@ pub(crate) struct App {
     /// The layer hint is up, or due as soon as the worker starts.
     layer_hint_shown: Cell<bool>,
     layer_hint_session: Cell<layer_hint::HintSession>,
+    layer_hint_hold_id: Cell<u64>,
     /// Delays the hint after a layer is taken.
     layer_hint_timer: slint::Timer,
     shutting_down: Cell<bool>,
@@ -470,6 +471,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         held_layer: RefCell::new(None),
         layer_hint_shown: Cell::new(false),
         layer_hint_session: Cell::default(),
+        layer_hint_hold_id: Cell::new(0),
         layer_hint_timer: slint::Timer::default(),
         shutting_down: Cell::new(false),
     });

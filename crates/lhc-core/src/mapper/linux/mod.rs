@@ -344,11 +344,6 @@ fn run_loop<D: LoopDriver>(
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
     let mut hold = OutputHold::default();
-    // Topmost layer last reported to the shell.
-    let mut reported_layer: Option<String> = None;
-    // Engine layer-press count last reported to the shell.
-    let mut reported_presses = 0;
-
     let result = (|| {
         while !stop.load(Ordering::SeqCst) {
             while let Ok(ctrl) = control_rx.try_recv() {
@@ -367,9 +362,9 @@ fn run_loop<D: LoopDriver>(
                         );
                         hold.take(&mut out_buf);
                         engine.shutdown(&mut out_buf);
+                        super::layer_state::publish(engine.held_layer_state());
                         flush_out(&mut virt, &mut out_buf)?;
                         engine = Engine::new(&next_cfg);
-                        reported_presses = 0;
                     }
                     MapperControl::Execute(action) => {
                         log::debug!("[mapper] remote execute requested");
@@ -380,24 +375,10 @@ fn run_loop<D: LoopDriver>(
                 }
             }
             process_iteration(&mut driver, &mut engine, &mut hold, &mut virt, &mut out_buf)?;
-            if engine.top_layer() != reported_layer.as_deref() {
-                reported_layer = engine.top_layer().map(str::to_owned);
-                super::notify_active_layer(reported_layer.clone());
-            }
-            // After the layer change: a press may both activate a layer and
-            // be the first key used inside it.
-            if engine.layer_presses() != reported_presses {
-                reported_presses = engine.layer_presses();
-                if reported_layer.is_some() {
-                    super::notify_layer_key_pressed();
-                }
-            }
         }
         Ok(())
     })();
-    if reported_layer.is_some() {
-        super::notify_active_layer(None);
-    }
+    super::layer_state::publish(super::layer_state::HeldLayerState::default());
 
     hold.take(&mut out_buf);
     engine.shutdown(&mut out_buf);
@@ -455,9 +436,14 @@ mod tests {
         texts: Vec<String>,
         systems: Vec<String>,
         commands: Vec<String>,
+        held_layers: Vec<crate::mapper::layer_state::HeldLayerState>,
     }
 
     impl SideEffects for FakeEffects {
+        fn held_layer_changed(&mut self, state: crate::mapper::layer_state::HeldLayerState) {
+            self.held_layers.push(state);
+        }
+
         fn sleep(&mut self, duration: Duration) {
             if !duration.is_zero() {
                 self.sleeps.push(duration);
@@ -864,5 +850,44 @@ mod tests {
             key_events(&sink.batches[0]),
             vec![(KeyCode::KEY_LEFTCTRL.code(), 1)]
         );
+    }
+
+    #[test]
+    fn one_input_batch_reports_release_repress_and_usage_separately() {
+        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+            {"key": "Space", "layerId": "nav", "tapAction": null}
+        ]}))
+        .unwrap();
+        let now = Instant::now();
+        let mut driver = FakeDriver::new(
+            vec![now; 6],
+            vec![Ok(true)],
+            vec![Ok(vec![
+                (KeyCode::KEY_SPACE, true),
+                (KeyCode::KEY_SPACE, false),
+                (KeyCode::KEY_SPACE, true),
+                (KeyCode::KEY_J, true),
+            ])],
+        );
+        let mut engine = Engine::new(&cfg);
+        let mut effects = FakeEffects::default();
+        process_iteration_with(
+            &mut driver,
+            &mut engine,
+            &mut OutputHold::default(),
+            &mut FakeSink::default(),
+            &mut effects,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let states = &effects.held_layers;
+        assert_eq!(states.len(), 5);
+        assert_eq!(states[0].layer.as_deref(), Some("nav"));
+        assert!(states[1].layer.is_none());
+        assert_eq!(states[2].layer, states[0].layer);
+        assert_ne!(states[2].hold_id, states[0].hold_id);
+        assert!(!states[2].used);
+        assert!(states[3].used);
+        assert!(states[4].used);
     }
 }

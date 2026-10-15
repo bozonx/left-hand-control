@@ -79,6 +79,7 @@ pub(super) trait EventSink {
 }
 
 pub(super) trait SideEffects {
+    fn held_layer_changed(&mut self, _state: super::super::layer_state::HeldLayerState) {}
     fn sleep(&mut self, duration: Duration);
     fn type_text(&mut self, text: &str);
     fn text_pending(&self) -> bool {
@@ -109,6 +110,9 @@ impl EventSink for VirtualEventSink<'_> {
 pub(super) struct RuntimeSideEffects;
 
 impl SideEffects for RuntimeSideEffects {
+    fn held_layer_changed(&mut self, state: super::super::layer_state::HeldLayerState) {
+        super::super::layer_state::publish(state);
+    }
     fn sleep(&mut self, duration: Duration) {
         if !duration.is_zero() {
             thread::sleep(duration);
@@ -339,11 +343,13 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     if driver.wait(wait)? {
         for (key, down) in driver.fetch_key_events()? {
             engine.handle(key, down, driver.now(), out_buf);
+            effects.held_layer_changed(engine.held_layer_state());
         }
     }
 
     let now = driver.now();
     engine.tick(now, out_buf);
+    effects.held_layer_changed(engine.held_layer_state());
     hold.gate(out_buf, now);
     flush_out_with(sink, effects, out_buf)?;
     Ok(())
