@@ -527,12 +527,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_layouts_dir(config.paths().layouts_dir().display().to_string().into());
     }
     refresh(ui, document, &mut state.borrow_mut(), true);
-    // Changed advanced values stay visible instead of hiding behind the disclosure.
-    if let Some(form) = &state.borrow().base {
-        e.set_behavior_advanced(
-            form.combo != defaults.combo || form.modifier_delay != defaults.modifier_delay,
-        );
-    }
 
     let weak = ui.as_weak();
     let shared = state.clone();

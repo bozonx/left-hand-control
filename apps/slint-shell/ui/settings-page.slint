@@ -47,7 +47,6 @@ export global SettingsEditor {
     in property <string> default-macro-pause;
     in property <string> default-modifier-delay;
     /// The advanced key behavior settings are shown.
-    in-out property <bool> behavior-advanced;
     in-out property <bool> commands-enabled;
     in property <[CommandAssignmentRow]> command-assignments;
     /// The command shown in full in a dialog; empty when it is closed.
@@ -601,6 +600,22 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                     BehaviorGroup {
+                        title: @tr("Simultaneous presses");
+                        note: @tr("For rules with several keys, such as J+K. Shared by all rules.");
+                        changed: SettingsEditor.combo-timeout != SettingsEditor.default-combo-timeout;
+                        reset => {
+                            SettingsEditor.combo-timeout = SettingsEditor.default-combo-timeout;
+                            SettingsEditor.save();
+                        }
+                        BehaviorField {
+                            label: @tr("Press window, ms");
+                            info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
+                                + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
+                            NumericInput { label: @tr("Press window, ms"); minimum: 10; maximum: 500; text: SettingsEditor.combo-timeout; edited(value) => { SettingsEditor.combo-timeout = value; SettingsEditor.schedule-save(); } }
+                        }
+                    }
+                    BehaviorGroup {
                         title: @tr("Macro defaults");
                         note: @tr("Used by macros that leave the field empty. A macro can set its own value on the Macros page.");
                         changed: SettingsEditor.macro-pause != SettingsEditor.default-macro-pause || SettingsEditor.modifier-delay != SettingsEditor.default-modifier-delay;
@@ -616,34 +631,6 @@ export component SettingsPage inherits VerticalBox {
                             info: @tr("Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty.")
                                 + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
                             NumericInput { label: @tr("Modifier delay, ms"); maximum: 2000; step: 1; text: SettingsEditor.modifier-delay; edited(value) => { SettingsEditor.modifier-delay = value; SettingsEditor.schedule-save(); } }
-                        }
-                    }
-                    VerticalLayout { vertical-stretch: 0; max-width: 576px; spacing: 12px;
-                        HorizontalLayout {
-                            spacing: 8px;
-                            IconButton {
-                                icon: SettingsEditor.behavior-advanced ? @image-url("icons/chevron-down.svg") : @image-url("icons/chevron-right.svg");
-                                text: @tr("Advanced");
-                                clicked => { SettingsEditor.behavior-advanced = !SettingsEditor.behavior-advanced; }
-                            }
-                            Rectangle { horizontal-stretch: 1; }
-                            if SettingsEditor.behavior-advanced: Button {
-                                text: @tr("Reset to defaults");
-                                enabled: SettingsEditor.combo-timeout != SettingsEditor.default-combo-timeout;
-                                clicked => {
-                                    SettingsEditor.combo-timeout = SettingsEditor.default-combo-timeout;
-                                    SettingsEditor.save();
-                                }
-                            }
-                        }
-                        if SettingsEditor.behavior-advanced: HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 16px;
-                            BehaviorField {
-                                label: @tr("Simultaneous press window, ms");
-                                info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
-                                    + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
-                                NumericInput { label: @tr("Simultaneous press window, ms"); minimum: 10; maximum: 500; text: SettingsEditor.combo-timeout; edited(value) => { SettingsEditor.combo-timeout = value; SettingsEditor.schedule-save(); } }
-                            }
                         }
                     }
                 }

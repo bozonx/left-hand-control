@@ -2504,8 +2504,14 @@ msgstr "Пауза между шагами, мс"
 msgid "Pause between consecutive steps of a macro. Increase it if an application misses keystrokes."
 msgstr "Пауза между соседними шагами макроса. Увеличьте, если приложение пропускает нажатия."
 
-msgid "Simultaneous press window, ms"
-msgstr "Окно одновременного нажатия, мс"
+msgid "Simultaneous presses"
+msgstr "Одновременные нажатия"
+
+msgid "For rules with several keys, such as J+K. Shared by all rules."
+msgstr "Для правил с несколькими клавишами, например J+K. Общее для всех правил."
+
+msgid "Press window, ms"
+msgstr "Окно нажатия, мс"
 
 msgid "For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back."
 msgstr "Для правил, триггер которых — несколько клавиш, нажатых вместе, например KeyJ+KeyK. Все клавиши нужно нажать в течение этого времени, в любом порядке. До этого первая клавиша придерживается; если сочетание не набрано, она вводится как обычно. Модификаторы не придерживаются."
