@@ -1,5 +1,5 @@
 //! Layer hint: while a mapper layer is held, the Spell worker shows its keys
-//! above all windows. Never shown in game mode.
+//! above all windows without taking focus.
 
 use super::App;
 use crate::{
@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 /// How long a layer must stay held before its hint appears, so quick layer
 /// use by someone who knows the layout does not flash it.
-const HINT_DELAY: Duration = Duration::from_millis(300);
+const HINT_DELAY: Duration = Duration::from_millis(100);
 
 impl App {
     /// Apply the saved hint setting: start or stop the worker it needs.
@@ -27,6 +27,9 @@ impl App {
         }
         if enabled {
             self.start_worker(true);
+            if self.held_layer.borrow().is_some() {
+                self.schedule_layer_hint();
+            }
         } else {
             self.hide_layer_hint();
             self.supervisor.borrow_mut().stop_unwanted();
@@ -44,20 +47,16 @@ impl App {
             // Another layer took over while the hint is up.
             self.show_layer_hint();
         } else {
-            self.layer_hint_timer
-                .start(slint::TimerMode::SingleShot, HINT_DELAY, || {
-                    super::with_app(|app| app.show_layer_hint())
-                });
+            self.start_worker(true);
+            self.schedule_layer_hint();
         }
     }
 
-    /// A key was pressed inside the held layer: whoever presses keys in it
-    /// knows the layer, so its hint is cancelled or closed until the next
-    /// layer change.
-    pub(super) fn layer_key_pressed(&self) {
-        if self.held_layer.borrow().is_some() {
-            self.hide_layer_hint();
-        }
+    fn schedule_layer_hint(&self) {
+        self.layer_hint_timer
+            .start(slint::TimerMode::SingleShot, HINT_DELAY, || {
+                super::with_app(|app| app.show_layer_hint())
+            });
     }
 
     fn show_layer_hint(&self) {
@@ -65,10 +64,6 @@ impl App {
             return;
         };
         if !self.supervisor.borrow().hint {
-            return;
-        }
-        if lhc_core::runtime_state::game_mode_active() {
-            self.hide_layer_hint();
             return;
         }
         let Some(document) = self.document() else {
@@ -94,6 +89,7 @@ impl App {
             None,
         ) {
             log::warn!("layer hint: {error:?}");
+            self.schedule_layer_hint();
         }
     }
 
@@ -106,13 +102,21 @@ impl App {
 
     pub(super) fn hide_layer_hint(&self) {
         self.layer_hint_timer.stop();
-        if self.layer_hint_shown.replace(false) && self.supervisor.borrow().running() {
-            let _ = self.send_worker(
+        self.layer_hint_shown.set(false);
+        let running = self.supervisor.borrow().running();
+        if running
+            && let Err(error) = self.send_worker(
                 &Command::LayerHint(None),
                 Source::Mapper,
                 Instant::now(),
                 None,
-            );
+            )
+        {
+            log::warn!("hide layer hint: {error:?}");
+            self.layer_hint_timer
+                .start(slint::TimerMode::SingleShot, HINT_DELAY, || {
+                    super::with_app(|app| app.hide_layer_hint())
+                });
         }
     }
 }

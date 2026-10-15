@@ -393,7 +393,7 @@ export component SettingsPage inherits VerticalBox {
                     if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                     if AppState.is-linux: VerticalLayout { vertical-stretch: 0; spacing: 4px;
                         CheckBox { text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
-                        Text { vertical-stretch: 0; text: SettingsEditor.layer-hint-available ? @tr("For learning a layout: the hint appears above all windows and is never shown in game mode.") : @tr("Unavailable: the hint needs a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); color: Theme.muted; wrap: word-wrap; }
+                        Text { vertical-stretch: 0; text: SettingsEditor.layer-hint-available ? @tr("The hint appears 100 ms after the layer activates and stays until release, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); color: Theme.muted; wrap: word-wrap; }
                     }
                     HorizontalBox { padding: 0px; vertical-stretch: 0;
                         Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }

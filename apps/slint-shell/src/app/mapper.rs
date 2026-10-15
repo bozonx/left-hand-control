@@ -65,7 +65,7 @@ pub(super) fn forward_core_events() {
             let layer = layer.clone();
             post(move |app| app.layer_changed(layer));
         }
-        CoreEvent::LayerKeyPressed => post(|app| app.layer_key_pressed()),
+        CoreEvent::LayerKeyPressed => {}
         CoreEvent::GameModeChanged(status) => {
             let status = status.clone();
             post(move |app| app.game_mode_changed(&status));
@@ -85,9 +85,6 @@ impl App {
     /// whether game mode is on, not on which detector reported it.
     pub(super) fn game_mode_changed(&self, status: &lhc_core::gamemode::GameModeStatus) {
         crate::game_mode::refresh(&self.settings, status);
-        if status.active {
-            self.hide_layer_hint();
-        }
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_game(status);
         }
