@@ -310,17 +310,20 @@ fn serve(
         return result;
     }
     own(&manager, &device, &qh, &mut state, saved);
-    connection.flush().map_err(|e| e.to_string())?;
+    barrier(&connection, &mut queue, &mut state)?;
     let _ = completed.send(result);
     while !state.cancelled {
-        if pump(
+        if let Err(error) = pump(
             &connection,
             &mut queue,
             &mut state,
             Instant::now() + Duration::from_secs(1),
-        )
-        .is_err()
-        {
+        ) {
+            super::portal::report(crate::events::TextInputFailure::Clipboard(format!(
+                "restored clipboard connection failed: {error}"
+            )));
+            #[cfg(test)]
+            eprintln!("restored clipboard connection failed: {error}");
             break;
         }
     }
@@ -369,22 +372,18 @@ fn snapshot(
     let mut result = Contents::new();
     let mut size = 0;
     for mime in types {
-        let (mut read, write) = UnixStream::pair().map_err(|e| e.to_string())?;
-        read.set_read_timeout(Some(TRANSFER_TIMEOUT))
-            .map_err(|e| e.to_string())?;
+        let (read, write) = UnixStream::pair().map_err(|e| e.to_string())?;
         offer.receive(mime.clone(), write.as_fd());
         drop(write);
         connection.flush().map_err(|e| e.to_string())?;
         let (tx, rx) = mpsc::channel();
-        std::thread::spawn(move || {
-            let mut bytes = Vec::new();
-            let result = (&mut read)
-                .take((MAX_CLIPBOARD_BYTES + 1) as u64)
-                .read_to_end(&mut bytes)
-                .map(|_| bytes)
-                .map_err(|e| e.to_string());
-            let _ = tx.send(result);
-        });
+        let limit = MAX_CLIPBOARD_BYTES - size;
+        std::thread::Builder::new()
+            .name("lhc-clipboard-read".into())
+            .spawn(move || {
+                let _ = tx.send(read_transfer(read, limit, deadline));
+            })
+            .map_err(|e| format!("start clipboard reader: {e}"))?;
         let bytes = loop {
             if let Ok(result) = rx.try_recv() {
                 break result?;
@@ -451,20 +450,44 @@ fn pump(
             Ok((_, Err(_))) | Err(mpsc::TryRecvError::Disconnected) => false,
             Err(mpsc::TryRecvError::Empty) => true,
         });
-    connection.flush().map_err(|e| e.to_string())?;
+    use wayland_client::backend::WaylandError;
+    let needs_write = match connection.flush() {
+        Ok(()) => false,
+        Err(WaylandError::Io(error))
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::WouldBlock | std::io::ErrorKind::Interrupted
+            ) =>
+        {
+            true
+        }
+        Err(error) => return Err(error.to_string()),
+    };
     let Some(guard) = queue.prepare_read() else {
         return Ok(());
     };
-    let mut fds = [PollFd::new(guard.connection_fd(), PollFlags::POLLIN)];
+    let interest = PollFlags::POLLIN
+        | if needs_write {
+            PollFlags::POLLOUT
+        } else {
+            PollFlags::empty()
+        };
+    let mut fds = [PollFd::new(guard.connection_fd(), interest)];
     let timeout = deadline
         .saturating_duration_since(Instant::now())
         .as_millis()
         .min(10) as u16;
     match poll(&mut fds, PollTimeout::from(timeout)) {
         Ok(0) => drop(guard),
-        Ok(_) => {
-            guard.read().map_err(|e| e.to_string())?;
-        }
+        Ok(_) => match guard.read() {
+            Ok(_) => {}
+            Err(WaylandError::Io(error))
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::WouldBlock | std::io::ErrorKind::Interrupted
+                ) => {}
+            Err(error) => return Err(error.to_string()),
+        },
         Err(nix::errno::Errno::EINTR) => drop(guard),
         Err(e) => return Err(e.to_string()),
     }
@@ -578,6 +601,35 @@ dispatch_clipboard!(
     Wlr
 );
 
+fn read_transfer(
+    mut stream: UnixStream,
+    limit: usize,
+    deadline: Instant,
+) -> Result<Vec<u8>, String> {
+    let mut bytes = Vec::new();
+    let mut buffer = [0; 8192];
+    loop {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err("clipboard owner timed out".into());
+        }
+        stream
+            .set_read_timeout(Some(remaining))
+            .map_err(|e| e.to_string())?;
+        match stream.read(&mut buffer) {
+            Ok(0) => return Ok(bytes),
+            Ok(count) => {
+                if count > limit.saturating_sub(bytes.len()) {
+                    return Err("clipboard is too large to preserve".into());
+                }
+                bytes.extend_from_slice(&buffer[..count]);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+}
+
 fn write_transfer(fd: OwnedFd, bytes: &[u8]) -> Result<(), String> {
     use std::os::fd::AsRawFd;
     let raw = fd.as_raw_fd();
@@ -592,6 +644,9 @@ fn write_transfer(fd: OwnedFd, bytes: &[u8]) -> Result<(), String> {
     let mut remaining = bytes;
     let deadline = Instant::now() + TRANSFER_TIMEOUT;
     while !remaining.is_empty() {
+        if Instant::now() >= deadline {
+            return Err("clipboard reader timed out".into());
+        }
         match file.write(remaining) {
             Ok(0) => return Err("clipboard reader closed the transfer".into()),
             Ok(count) => remaining = &remaining[count..],
@@ -741,6 +796,31 @@ mod tests {
         paste.arm().unwrap();
         assert!(paste.finish(true).is_err());
         assert_eq!(read_all(), newer);
+    }
+
+    #[test]
+    fn a_trickling_owner_cannot_extend_the_snapshot_deadline() {
+        let (reader, mut writer) = UnixStream::pair().unwrap();
+        let thread = std::thread::spawn(move || {
+            for _ in 0..100 {
+                if writer.write_all(b"x").is_err() {
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        });
+        let start = Instant::now();
+        assert!(read_transfer(reader, 1024, start + Duration::from_millis(40)).is_err());
+        assert!(start.elapsed() < Duration::from_millis(500));
+        thread.join().unwrap();
+    }
+
+    #[test]
+    fn oversized_snapshot_is_rejected_before_allocating_the_whole_offer() {
+        let (reader, mut writer) = UnixStream::pair().unwrap();
+        writer.write_all(b"12345").unwrap();
+        drop(writer);
+        assert!(read_transfer(reader, 4, Instant::now() + Duration::from_secs(1)).is_err());
     }
 
     #[test]

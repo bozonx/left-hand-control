@@ -768,20 +768,28 @@ mod tests {
         ))
         .unwrap()
         .unwrap();
-        for id in ["nav", "sel", "sym", "fkeys"] {
-            assert_eq!(
-                extra_entries(&layout.layer_keymaps[id]),
-                vec![("BracketRight".into(), None), ("Backslash".into(), None),]
-            );
+        for id in ["navigation", "select", "symbols", "f-keys"] {
+            assert!(extra_entries(&layout.layer_keymaps[id]).is_empty());
         }
-        let win = extra_entries(&layout.layer_keymaps["win"]);
-        assert_eq!(win.len(), 3);
-        assert!(win.contains(&(
-            "Backspace".into(),
-            Some("kde:org_kde_powerdevil/Turn Off Screen".into())
-        )));
-        assert!(win.contains(&("F4".into(), Some("F4".into()))));
-        assert!(win.contains(&("BracketRight".into(), Some("sys:switchLayout7".into()))));
+        assert_eq!(
+            extra_entries(&layout.layer_keymaps["desktop"]),
+            vec![(
+                "Backspace".into(),
+                Some("kde:org_kde_powerdevil/Turn Off Screen".into())
+            )]
+        );
+    }
+
+    #[test]
+    fn additional_key_suppression_is_preserved() {
+        let layout = lhc_core::profile::layout_file::parse(
+            "layers:\n  - id: extra\n    keys:\n      BracketRight: null\n      Backslash: null\n      F4: F4\n"
+        ).unwrap().unwrap();
+        let entries = extra_entries(&layout.layer_keymaps["extra"]);
+        assert_eq!(entries.len(), 3);
+        assert!(entries.contains(&("BracketRight".into(), None)));
+        assert!(entries.contains(&("Backslash".into(), None)));
+        assert!(entries.contains(&("F4".into(), Some("F4".into()))));
     }
 
     #[test]
