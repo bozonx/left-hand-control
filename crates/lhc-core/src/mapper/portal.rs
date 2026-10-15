@@ -14,7 +14,7 @@
 //   3. `Start()`                – shows the permission dialog (only once
 //                                 per machine if persist mode + token work).
 //   4. `ConnectToEIS()` (libei modes) or `NotifyKeyboardKeycode()` (keycode
-//      mode and the Ctrl+V of the clipboard mode).
+//      mode and the Shift+Insert of the clipboard mode).
 //
 // Each backend owns one session on its own worker thread. The session is
 // created on the first text and kept until the mode changes or the session
@@ -30,7 +30,7 @@
 //
 // Text modes must never silently switch injection mechanisms: hidden fallbacks
 // mask failures and make backend debugging unreliable. The only allowed fallback
-// is the explicitly selected libei + wl-copy mode, which pastes the whole text
+// is the explicitly selected libei + clipboard mode, which pastes the whole text
 // when the keymap lacks a character. It still requires a working libei session.
 // Every failure is reported as `CoreEvent::TextInputFailed`, never retried
 // through another input method.
@@ -54,6 +54,7 @@ use reis::event::{DeviceCapability, EiEvent, EiEventConverter};
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
+use super::text_job::TextRequest;
 use crate::events::{CoreEvent, TextInputFailure};
 use crate::profile::model::TextMode;
 
@@ -71,7 +72,6 @@ struct XkbRuleNames {
 }
 
 const XKB_KEYMAP_FORMAT_TEXT_V1: u32 = 1;
-const XKB_LAYOUT_INVALID: u32 = 0xffff_ffff;
 
 #[link(name = "xkbcommon")]
 unsafe extern "C" {
@@ -93,14 +93,6 @@ unsafe extern "C" {
     fn xkb_keymap_unref(keymap: *mut XkbKeymap);
     fn xkb_keymap_min_keycode(keymap: *mut XkbKeymap) -> u32;
     fn xkb_keymap_max_keycode(keymap: *mut XkbKeymap) -> u32;
-    fn xkb_keymap_num_levels_for_key(keymap: *mut XkbKeymap, key: u32, layout: u32) -> u32;
-    fn xkb_keymap_key_get_syms_by_level(
-        keymap: *mut XkbKeymap,
-        key: u32,
-        layout: u32,
-        level: u32,
-        syms_out: *mut *const u32,
-    ) -> i32;
     fn xkb_state_new(keymap: *mut XkbKeymap) -> *mut XkbState;
     fn xkb_state_unref(state: *mut XkbState);
     fn xkb_state_update_mask(
@@ -112,7 +104,10 @@ unsafe extern "C" {
         latched_layout: u32,
         locked_layout: u32,
     ) -> u32;
-    fn xkb_state_key_get_layout(state: *mut XkbState, key: u32) -> u32;
+    fn xkb_state_update_key(state: *mut XkbState, key: u32, direction: u32) -> u32;
+    fn xkb_state_key_get_one_sym(state: *mut XkbState, key: u32) -> u32;
+    fn xkb_state_serialize_mods(state: *mut XkbState, components: u32) -> u32;
+    fn xkb_state_serialize_layout(state: *mut XkbState, components: u32) -> u32;
 }
 
 // --- Portal DBus identifiers --------------------------------------------
@@ -143,28 +138,12 @@ const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
 
 // evdev keycodes for modifier keys used in text injection.
 const KEY_LEFTSHIFT_EVDEV: u32 = 42;
-const KEY_RIGHTALT_EVDEV: u32 = 100; // AltGr
-const KEY_LEFTCTRL_EVDEV: u32 = 29;
-const KEY_V_EVDEV: u32 = 47;
+const KEY_INSERT_EVDEV: u32 = 110;
 
-const XKB_KEY_V_LOWER: u32 = 0x0076;
-
-// Map XKB level index to the evdev modifier keys that must be held.
-// Covers the vast majority of European layouts:
-//   level 0 = base (no mods), 1 = Shift, 2 = AltGr, 3 = Shift+AltGr.
-fn level_to_mods(level: u32) -> &'static [u32] {
-    match level {
-        0 => &[],
-        1 => &[KEY_LEFTSHIFT_EVDEV],
-        2 => &[KEY_RIGHTALT_EVDEV],
-        3 => &[KEY_LEFTSHIFT_EVDEV, KEY_RIGHTALT_EVDEV],
-        _ => &[],
-    }
-}
-
+#[derive(Clone)]
 struct KeycodeEntry {
     evdev: u32,
-    level: u32,
+    mods: Vec<u32>,
 }
 
 /// keysym → the key and level that type it.
@@ -179,7 +158,9 @@ static KEYMAP_CACHE: Mutex<KeymapCache> = Mutex::new(None);
 fn layout_key_table() -> Result<Arc<KeyTable>, TextInputFailure> {
     let layout = crate::runtime_state::layout().ok_or(TextInputFailure::LayoutUnknown)?;
     let variant = layout.variant.trim();
-    let cache_key = format!("{}\0{variant}", layout.short);
+    let caps_lock = caps_lock_state()?;
+    let options = crate::layout::xkb_options();
+    let cache_key = format!("{}\0{variant}\0{caps_lock}\0{options}", layout.short);
     let mut cache = KEYMAP_CACHE.lock().unwrap_or_else(|e| e.into_inner());
     if let Some((key, table)) = cache.as_ref()
         && *key == cache_key
@@ -187,14 +168,35 @@ fn layout_key_table() -> Result<Arc<KeyTable>, TextInputFailure> {
         return Ok(Arc::clone(table));
     }
     let table = Arc::new(
-        table_from_names(&layout.short, (!variant.is_empty()).then_some(variant))
-            .ok_or(TextInputFailure::LayoutUnknown)?,
+        table_from_names_with_options(
+            &layout.short,
+            (!variant.is_empty()).then_some(variant),
+            caps_lock,
+            &options,
+        )
+        .ok_or(TextInputFailure::LayoutUnknown)?,
     );
     *cache = Some((cache_key, Arc::clone(&table)));
     Ok(table)
 }
 
+#[cfg(test)]
 fn table_from_names(layout: &str, variant: Option<&str>) -> Option<KeyTable> {
+    table_from_names_with_caps(layout, variant, false)
+}
+
+#[cfg(test)]
+fn table_from_names_with_caps(layout: &str, variant: Option<&str>, caps: bool) -> Option<KeyTable> {
+    table_from_names_with_options(layout, variant, caps, "")
+}
+
+fn table_from_names_with_options(
+    layout: &str,
+    variant: Option<&str>,
+    caps: bool,
+    options: &str,
+) -> Option<KeyTable> {
+    let options = CString::new(options).ok()?;
     let layout_c = CString::new(layout).ok()?;
     let variant_c = match variant {
         Some(variant) => Some(CString::new(variant).ok()?),
@@ -205,7 +207,7 @@ fn table_from_names(layout: &str, variant: Option<&str>) -> Option<KeyTable> {
         model: std::ptr::null(),
         layout: layout_c.as_ptr(),
         variant: variant_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
-        options: std::ptr::null(),
+        options: options.as_ptr(),
     };
     // SAFETY: the context and keymap are checked for null and released
     // before returning; `names` points to strings that outlive the call.
@@ -220,14 +222,35 @@ fn table_from_names(layout: &str, variant: Option<&str>) -> Option<KeyTable> {
             log::warn!("[text] XKB cannot compile layout {layout:?} variant {variant:?}");
             return None;
         }
-        let table = table_from_keymap(keymap, 0);
+        let mut locked = 0;
+        if caps {
+            let state = xkb_state_new(keymap);
+            if state.is_null() {
+                xkb_keymap_unref(keymap);
+                return None;
+            }
+            // Caps Lock may be configured as Shift Lock; derive its actual action.
+            let lock_key = (xkb_keymap_min_keycode(keymap)..=xkb_keymap_max_keycode(keymap))
+                .find(|key| matches!(xkb_state_key_get_one_sym(state, *key), 0xffe5 | 0xffe6));
+            if let Some(key) = lock_key {
+                xkb_state_update_key(state, key, 1);
+                xkb_state_update_key(state, key, 0);
+                locked = xkb_state_serialize_mods(state, 1 << 2);
+            }
+            xkb_state_unref(state);
+            if locked == 0 {
+                xkb_keymap_unref(keymap);
+                return None;
+            }
+        }
+        let table = table_from_keymap(keymap, 0, locked);
         xkb_keymap_unref(keymap);
         Some(table)
     }
 }
 
 /// Key table of `group` in a keymap the compositor sent as XKB text.
-fn table_from_keymap_text(text: &[u8], group: u32) -> Option<KeyTable> {
+fn table_from_keymap_text(text: &[u8], group: u32, locked: u32) -> Option<KeyTable> {
     let text = text.split(|byte| *byte == 0).next().unwrap_or_default();
     // SAFETY: `text` outlives the call; context and keymap are checked for
     // null and released before returning.
@@ -247,7 +270,7 @@ fn table_from_keymap_text(text: &[u8], group: u32) -> Option<KeyTable> {
         if keymap.is_null() {
             return None;
         }
-        let table = table_from_keymap(keymap, group);
+        let table = table_from_keymap(keymap, group, locked);
         xkb_keymap_unref(keymap);
         Some(table)
     }
@@ -258,41 +281,140 @@ fn table_from_keymap_text(text: &[u8], group: u32) -> Option<KeyTable> {
 ///
 /// # Safety
 /// `keymap` must be a valid keymap.
-unsafe fn table_from_keymap(keymap: *mut XkbKeymap, group: u32) -> KeyTable {
+unsafe fn table_from_keymap(keymap: *mut XkbKeymap, group: u32, locked: u32) -> KeyTable {
     let mut map = KeyTable::new();
-    // SAFETY: the caller guarantees `keymap`; the state is released below
-    // and `syms` is only read within the length XKB returns.
+    // SAFETY: the caller owns a live keymap. The state is released before return.
     unsafe {
         let state = xkb_state_new(keymap);
         if state.is_null() {
             return map;
         }
-        // Locking the group lets XKB apply each key's group wrapping rules.
+        let keys = xkb_keymap_min_keycode(keymap)..=xkb_keymap_max_keycode(keymap);
+        // Discover actual modifier key actions instead of assuming that level N
+        // always means Shift/AltGr. This also supports remapped and level-5 keys.
         xkb_state_update_mask(state, 0, 0, 0, 0, 0, group);
-        for kc in xkb_keymap_min_keycode(keymap)..=xkb_keymap_max_keycode(keymap) {
-            let evdev = kc.saturating_sub(8);
-            let layout = xkb_state_key_get_layout(state, kc);
-            if evdev == 0 || layout == XKB_LAYOUT_INVALID {
-                continue;
+        let mut modifiers = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+        for key in keys.clone() {
+            let sym = match xkb_state_key_get_one_sym(state, key) {
+                0xffe2 => 0xffe1,
+                sym => sym,
+            };
+            if matches!(sym, 0xffe1 | 0xffe2 | 0xfe03 | 0xfe11 | 0xff7e) && seen.insert(sym) {
+                modifiers.push(key);
             }
-            let nlevels = xkb_keymap_num_levels_for_key(keymap, kc, layout).min(4);
-            for level in 0..nlevels {
-                let mut syms: *const u32 = std::ptr::null();
-                let nsyms = xkb_keymap_key_get_syms_by_level(keymap, kc, layout, level, &mut syms);
-                if nsyms <= 0 || syms.is_null() {
-                    continue;
+        }
+        // Duplicate left/right Shift adds no characters. Keep enumeration bounded
+        // even with hostile or unusual compositor keymaps.
+        modifiers.truncate(5);
+        let mut combinations: Vec<Vec<u32>> = (0usize..(1 << modifiers.len()))
+            .map(|mask| {
+                modifiers
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, key)| (mask & (1 << i) != 0).then_some(*key))
+                    .collect()
+            })
+            .collect();
+        combinations.sort_by_key(Vec::len);
+        for mods in combinations {
+            for key in keys
+                .clone()
+                .filter(|key| *key >= 9 && !modifiers.contains(key))
+            {
+                xkb_state_update_mask(state, 0, 0, locked, 0, 0, group);
+                let baseline_locked = xkb_state_serialize_mods(state, 1 << 2);
+                let baseline_group = xkb_state_serialize_layout(state, 1 << 7);
+                for modifier in &mods {
+                    xkb_state_update_key(state, *modifier, 1);
                 }
-                for i in 0..nsyms as usize {
-                    let sym = *syms.add(i);
-                    if sym != 0 {
-                        map.entry(sym).or_insert(KeycodeEntry { evdev, level });
-                    }
+                let sym = xkb_state_key_get_one_sym(state, key);
+                for modifier in mods.iter().rev() {
+                    xkb_state_update_key(state, *modifier, 0);
+                }
+                // A typing chord must not toggle a lock or leave another group active.
+                if sym != 0
+                    && xkb_state_serialize_mods(state, 1 << 2) == baseline_locked
+                    && xkb_state_serialize_layout(state, 1 << 7) == baseline_group
+                {
+                    map.entry(sym).or_insert_with(|| KeycodeEntry {
+                        evdev: key - 8,
+                        mods: mods.iter().map(|key| key - 8).collect(),
+                    });
                 }
             }
         }
         xkb_state_unref(state);
     }
     map
+}
+
+/// Portal keycode mode has no modifier feed: require readable keyboard LEDs
+/// rather than silently assuming Caps Lock is off.
+fn caps_lock_state() -> Result<bool, TextInputFailure> {
+    HardwareState::capture().caps_lock_state()
+}
+
+struct HardwareState(Vec<evdev::Device>);
+
+impl HardwareState {
+    fn capture() -> Self {
+        Self(evdev::enumerate().map(|(_, device)| device).collect())
+    }
+
+    fn caps_lock_state(&self) -> Result<bool, TextInputFailure> {
+        let mut caps = None;
+        for device in &self.0 {
+            if device
+                .supported_leds()
+                .is_some_and(|leds| leds.contains(evdev::LedCode::LED_CAPSL))
+            {
+                let leds = device.get_led_state().map_err(|e| {
+                    TextInputFailure::BackendUnavailable(format!("read Caps Lock state: {e}"))
+                })?;
+                let value = leds.contains(evdev::LedCode::LED_CAPSL);
+                if caps.is_some_and(|previous| previous != value) {
+                    return Err(TextInputFailure::BackendUnavailable(
+                        "keyboard Caps Lock states disagree".into(),
+                    ));
+                }
+                caps = Some(value);
+            }
+        }
+        caps.ok_or_else(|| {
+            TextInputFailure::BackendUnavailable(
+                "Caps Lock state is unavailable; use the libei backend".into(),
+            )
+        })
+    }
+
+    fn modifiers_released(&self) -> Result<(), TextInputFailure> {
+        let modifiers = [29, 42, 54, 56, 97, 100, 125, 126];
+        for device in &self.0 {
+            if device.supported_keys().is_some_and(|keys| {
+                modifiers
+                    .iter()
+                    .any(|key| keys.contains(evdev::KeyCode::new(*key)))
+            }) {
+                let keys = device.get_key_state().map_err(|e| {
+                    TextInputFailure::BackendUnavailable(format!("read held modifiers: {e}"))
+                })?;
+                if modifiers
+                    .iter()
+                    .any(|key| keys.contains(evdev::KeyCode::new(*key)))
+                {
+                    return Err(TextInputFailure::BackendUnavailable(
+                        "release keyboard modifiers before text input".into(),
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+fn modifiers_released() -> Result<(), TextInputFailure> {
+    HardwareState::capture().modifiers_released()
 }
 
 // Text control characters need keyboard keysyms, not Unicode keysyms.
@@ -309,18 +431,7 @@ fn missing_characters(table: &KeyTable, text: &str) -> bool {
     text.chars().any(|ch| !table.contains_key(&text_keysym(ch)))
 }
 
-/// Key that types `v` in the layout, for the Ctrl+V paste shortcut:
-/// applications match shortcuts by keysym, so in Dvorak it is not the
-/// physical V. Layouts without a Latin `v` (Russian) use the physical V key,
-/// which toolkits map back to the Latin shortcut.
-fn paste_key(table: Option<&KeyTable>) -> u32 {
-    table
-        .and_then(|table| table.get(&XKB_KEY_V_LOWER))
-        .filter(|entry| entry.level == 0)
-        .map_or(KEY_V_EVDEV, |entry| entry.evdev)
-}
-
-fn report(failure: TextInputFailure) {
+pub(super) fn report(failure: TextInputFailure) {
     log::warn!("[text] text not typed: {failure:?}");
     crate::events::emit(CoreEvent::TextInputFailed(failure));
 }
@@ -390,7 +501,17 @@ pub fn set_token_dir(dir: PathBuf) {
 /// Type `text` with the selected mode and return when the backend is done.
 /// The first call may block on the portal consent dialog, so run it off the
 /// mapper thread. Failures are reported as `CoreEvent::TextInputFailed`.
-pub fn type_text(text: &str) {
+pub(super) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInputFailure> {
+    request.check()?;
+    let released = Instant::now() + Duration::from_secs(2);
+    let hardware = HardwareState::capture();
+    while let Err(error) = hardware.modifiers_released() {
+        request.check()?;
+        if Instant::now() >= released {
+            return Err(error);
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
     let cfg = TEXT_BACKEND
         .lock()
         .unwrap_or_else(|e| e.into_inner())
@@ -400,31 +521,39 @@ pub fn type_text(text: &str) {
             cfg.ydotool_path.as_deref().unwrap_or("ydotool"),
             &["type", "--escape=0", "--", text],
             text,
+            &request,
         ),
         TextMode::Xdotool => run_text_tool(
             cfg.xdotool_path.as_deref().unwrap_or("xdotool"),
             &["type", "--clearmodifiers", "--", text],
             text,
+            &request,
         ),
-        TextMode::Libei | TextMode::LibeiPure => LIBEI.type_text(text, cfg.mode),
-        TextMode::Keycode | TextMode::Clipboard => PORTAL.type_text(text, cfg.mode),
+        TextMode::Libei | TextMode::LibeiPure => LIBEI.type_text(text, cfg.mode, request),
+        TextMode::Keycode | TextMode::Clipboard => PORTAL.type_text(text, cfg.mode, request),
     }
 }
 
 /// Run a typing tool with a deadline that grows with the text, so a hung
 /// tool (e.g. ydotool without ydotoold) cannot stall the text queue forever.
-fn run_text_tool(program: &str, args: &[&str], text: &str) {
+fn run_text_tool(
+    program: &str,
+    args: &[&str],
+    text: &str,
+    request: &TextRequest,
+) -> Result<(), TextInputFailure> {
+    request.check()?;
     let timeout_ms = 5_000 + 50 * text.chars().count() as u64;
     let mut cmd = std::process::Command::new(program);
     cmd.args(args);
-    match crate::exec::run_cmd_with_timeout(&mut cmd, timeout_ms) {
-        Some(output) if output.status.success() => {}
-        Some(output) => report(TextInputFailure::Tool(format!(
+    match crate::exec::run_cmd_with_cancel(&mut cmd, timeout_ms, || request.check().is_err()) {
+        Some(output) if output.status.success() => request.check(),
+        Some(output) => Err(TextInputFailure::Tool(format!(
             "{program} exited with {}: {}",
             output.status,
             String::from_utf8_lossy(&output.stderr).trim()
         ))),
-        None => report(TextInputFailure::Tool(format!(
+        None => Err(TextInputFailure::Tool(format!(
             "{program} failed to start or timed out"
         ))),
     }
@@ -436,7 +565,8 @@ struct Cmd {
     text: String,
     mode: TextMode,
     /// Dropped without a send when the worker hit a fatal error and exits.
-    done: Sender<()>,
+    done: Sender<Result<(), TextInputFailure>>,
+    request: TextRequest,
 }
 
 /// A portal session on its own thread, started on first use.
@@ -447,15 +577,16 @@ struct Worker {
     failure: Mutex<Option<String>>,
     /// Set by `stop` while a text holds `tx`, e.g. during the consent dialog.
     stop_pending: AtomicBool,
-    start: fn() -> Result<Sender<Cmd>, String>,
+    start: fn(TextRequest) -> Result<Sender<Cmd>, String>,
 }
 
-static LIBEI: Worker = Worker::new(|| start_worker("lhc-libei", LibeiBackend::new, libei_worker));
+static LIBEI: Worker =
+    Worker::new(|request| start_worker("lhc-libei", LibeiBackend::new, libei_worker, request));
 static PORTAL: Worker =
-    Worker::new(|| start_worker("lhc-portal", PortalBackend::new, portal_worker));
+    Worker::new(|request| start_worker("lhc-portal", PortalBackend::new, portal_worker, request));
 
 impl Worker {
-    const fn new(start: fn() -> Result<Sender<Cmd>, String>) -> Self {
+    const fn new(start: fn(TextRequest) -> Result<Sender<Cmd>, String>) -> Self {
         Self {
             tx: Mutex::new(None),
             failure: Mutex::new(None),
@@ -464,7 +595,12 @@ impl Worker {
         }
     }
 
-    fn type_text(&self, text: &str, mode: TextMode) {
+    fn type_text(
+        &self,
+        text: &str,
+        mode: TextMode,
+        request: TextRequest,
+    ) -> Result<(), TextInputFailure> {
         let mut slot = self.tx.lock().unwrap_or_else(|e| e.into_inner());
         if slot.is_none() {
             if let Some(error) = self
@@ -473,36 +609,56 @@ impl Worker {
                 .unwrap_or_else(|e| e.into_inner())
                 .clone()
             {
-                report(TextInputFailure::BackendUnavailable(error));
-                return;
+                return Err(TextInputFailure::BackendUnavailable(error));
             }
-            match (self.start)() {
+            match (self.start)(request.clone()) {
                 Ok(tx) => *slot = Some(tx),
                 Err(error) => {
+                    request.check()?;
                     *self.failure.lock().unwrap_or_else(|e| e.into_inner()) = Some(error.clone());
-                    report(TextInputFailure::BackendUnavailable(error));
-                    return;
+                    return Err(TextInputFailure::BackendUnavailable(error));
                 }
             }
         }
+        request.wait_for_target()?;
         let (done, done_rx) = mpsc::channel();
         let cmd = Cmd {
             text: text.to_owned(),
             mode,
             done,
+            request: request.clone(),
         };
         if !slot.as_ref().is_some_and(|tx| tx.send(cmd).is_ok()) {
             *slot = None;
-            report(TextInputFailure::BackendUnavailable(
+            return Err(TextInputFailure::BackendUnavailable(
                 "the input session has ended".into(),
             ));
-            return;
         }
         // The worker reports its own fatal error; forget it so the next
         // text opens a new session.
-        if done_rx.recv().is_err() || self.stop_pending.swap(false, Ordering::SeqCst) {
+        let result = loop {
+            match done_rx.recv_timeout(Duration::from_millis(20)) {
+                Ok(result) => break result,
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    *slot = None;
+                    break Err(TextInputFailure::BackendUnavailable(
+                        "the input session has ended".into(),
+                    ));
+                }
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    if let Err(error) = request.check() {
+                        *slot = None;
+                        break Err(error);
+                    }
+                }
+            }
+        };
+        if self.stop_pending.swap(false, Ordering::SeqCst)
+            || matches!(result, Err(TextInputFailure::BackendUnavailable(_)))
+        {
             *slot = None;
         }
+        result
     }
 
     /// Close the session; the worker exits after its current text. Never
@@ -530,19 +686,19 @@ impl Worker {
 }
 
 /// Start a worker thread and wait until its session is ready. There is no
-/// outer deadline: `init` is bounded by the portal timeouts, and giving up
-/// earlier would fail the text while the user is still reading the consent
-/// dialog.
+/// cancellation delay: waiting for readiness periodically checks the job lifetime.
 fn start_worker<B: 'static>(
     name: &'static str,
-    init: fn() -> Result<B, String>,
+    init: fn(&TextRequest) -> Result<B, String>,
     run: fn(B, Receiver<Cmd>),
+    request: TextRequest,
 ) -> Result<Sender<Cmd>, String> {
     let (tx, rx) = mpsc::channel();
     let (ready_tx, ready_rx) = mpsc::sync_channel(1);
+    let init_request = request.clone();
     thread::Builder::new()
         .name(name.into())
-        .spawn(move || match init() {
+        .spawn(move || match init(&init_request) {
             Ok(backend) => {
                 let _ = ready_tx.send(Ok(()));
                 run(backend, rx);
@@ -552,10 +708,22 @@ fn start_worker<B: 'static>(
             }
         })
         .map_err(|e| format!("start {name}: {e}"))?;
-    ready_rx
-        .recv()
-        .map_err(|_| format!("{name} stopped while starting"))??;
-    Ok(tx)
+    loop {
+        match ready_rx.recv_timeout(Duration::from_millis(20)) {
+            Ok(result) => {
+                result?;
+                return Ok(tx);
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(format!("{name} stopped while starting"));
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // Consent can temporarily move focus; only lifetime cancellation
+                // is checked until Start returns and the original window is restored.
+                request.check_lifetime().map_err(|e| format!("{e:?}"))?;
+            }
+        }
+    }
 }
 
 struct PortalBackend {
@@ -565,8 +733,8 @@ struct PortalBackend {
 }
 
 impl PortalBackend {
-    fn new() -> Result<Self, String> {
-        let (conn, session_handle) = init_portal()?;
+    fn new(request: &TextRequest) -> Result<Self, String> {
+        let (conn, session_handle) = init_portal(request)?;
         match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
             Ok(portal) => Ok(Self {
                 conn,
@@ -585,12 +753,20 @@ fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
     log::debug!("[portal] backend online");
     for cmd in rx {
         let session = &backend.session_handle;
-        match cmd.mode {
-            TextMode::Clipboard => paste_text(&backend.portal, session, &cmd.text),
-            TextMode::Keycode => type_text_keycode(&backend.portal, session, &cmd.text),
-            mode => log::error!("[portal] text mode {} sent to the portal", mode.as_str()),
+        let result = cmd.request.check().and_then(|()| match cmd.mode {
+            TextMode::Clipboard => paste_text(&backend.portal, session, &cmd.text, &cmd.request),
+            TextMode::Keycode => {
+                type_text_keycode(&backend.portal, session, &cmd.text, &cmd.request)
+            }
+            _ => Err(TextInputFailure::BackendUnavailable(
+                "invalid portal mode".into(),
+            )),
+        });
+        let fatal = matches!(result, Err(TextInputFailure::BackendUnavailable(_)));
+        let _ = cmd.done.send(result);
+        if fatal {
+            break;
         }
-        let _ = cmd.done.send(());
     }
     close_session(&backend.conn, &backend.session_handle);
 }
@@ -598,14 +774,12 @@ fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
 fn libei_worker(mut backend: LibeiBackend, rx: Receiver<Cmd>) {
     log::debug!("[libei] backend online");
     for cmd in rx {
-        let clipboard_fallback = cmd.mode == TextMode::Libei;
-        if let Err(e) = backend.type_text(&cmd.text, clipboard_fallback) {
-            // Errors from the EI connection are not recoverable on this
-            // session; exit so the next text reconnects.
-            report(TextInputFailure::BackendUnavailable(e));
+        let result = backend.type_text(&cmd.text, cmd.mode == TextMode::Libei, &cmd.request);
+        let fatal = matches!(result, Err(TextInputFailure::BackendUnavailable(_)));
+        let _ = cmd.done.send(result);
+        if fatal {
             break;
         }
-        let _ = cmd.done.send(());
     }
     backend.close();
 }
@@ -624,12 +798,15 @@ struct LibeiBackend {
     /// Active layout group the compositor reported.
     group: Option<u32>,
     /// Key table built from `keymap` for a group.
-    table: Option<(u32, Arc<KeyTable>)>,
+    table: Option<((u32, u32), Arc<KeyTable>)>,
+    locked: u32,
+    depressed: u32,
+    latched: u32,
 }
 
 impl LibeiBackend {
-    fn new() -> Result<Self, String> {
-        let (conn, session_handle) = init_portal()?;
+    fn new(request: &TextRequest) -> Result<Self, String> {
+        let (conn, session_handle) = init_portal(request)?;
         let portal = match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
             Ok(portal) => portal,
             Err(e) => {
@@ -674,6 +851,9 @@ impl LibeiBackend {
             keymap: None,
             group: None,
             table: None,
+            locked: 0,
+            depressed: 0,
+            latched: 0,
         };
         if let Err(e) = backend.wait_until(Duration::from_secs(5), Self::has_keyboard) {
             close_session(&backend.conn, &backend.session_handle);
@@ -684,10 +864,18 @@ impl LibeiBackend {
 
     /// Type `text`. `Err` means the EI connection is unusable; other
     /// failures are reported and leave the session open.
-    fn type_text(&mut self, text: &str, clipboard_fallback: bool) -> Result<(), String> {
-        self.pump_events()?;
+    fn type_text(
+        &mut self,
+        text: &str,
+        clipboard_fallback: bool,
+        request: &TextRequest,
+    ) -> Result<(), TextInputFailure> {
+        request.check()?;
+        self.pump_events()
+            .map_err(TextInputFailure::BackendUnavailable)?;
         if !self.has_keyboard() {
-            self.wait_until(Duration::from_secs(2), Self::has_keyboard)?;
+            self.wait_until(Duration::from_secs(2), Self::has_keyboard)
+                .map_err(TextInputFailure::BackendUnavailable)?;
         }
         // Events sent while the compositor paused the device are a protocol
         // error, e.g. on the lock screen.
@@ -696,77 +884,147 @@ impl LibeiBackend {
                 .wait_until(Duration::from_secs(1), |backend| backend.keyboard_emulating)
                 .is_err()
         {
-            report(TextInputFailure::BackendUnavailable(
+            return Err(TextInputFailure::BackendUnavailable(
                 "the compositor paused the input device".into(),
             ));
-            return Ok(());
         }
-        let table = match self.key_table() {
-            Ok(table) => table,
-            Err(failure) => {
-                report(failure);
-                return Ok(());
-            }
-        };
+        if self.depressed != 0 || self.latched != 0 {
+            return Err(TextInputFailure::BackendUnavailable(
+                "release or unlatch keyboard modifiers before text input".into(),
+            ));
+        }
+        self.synchronize(request)
+            .map_err(TextInputFailure::BackendUnavailable)?;
+        let hardware = HardwareState::capture();
+        hardware.modifiers_released()?;
+        let table = self.key_table()?;
+        request.check()?;
         let text = text.replace("\r\n", "\n");
         if missing_characters(&table, &text) {
             if clipboard_fallback {
-                return self.paste_text(&text, &table);
+                return self.paste_text(&text, &table, request);
             }
-            report(TextInputFailure::MissingCharacters);
-            return Ok(());
+            return Err(TextInputFailure::MissingCharacters);
         }
         for ch in text.chars() {
+            self.pump_events()
+                .map_err(TextInputFailure::BackendUnavailable)?;
+            request.check()?;
+            if self.group.is_some_and(|group| {
+                self.table
+                    .as_ref()
+                    .is_some_and(|(cached, _)| cached.0 != group || cached.1 != self.locked)
+            }) || self.depressed != 0
+                || self.latched != 0
+            {
+                return Err(TextInputFailure::BackendUnavailable(
+                    "keyboard state changed during text input".into(),
+                ));
+            }
+            hardware.modifiers_released()?;
             if let Some(entry) = table.get(&text_keysym(ch)) {
-                self.inject_keycode_combo(level_to_mods(entry.level), entry.evdev)?;
+                self.inject_keycode_combo(&entry.mods, entry.evdev, request)
+                    .map_err(TextInputFailure::BackendUnavailable)?;
             }
         }
         Ok(())
     }
 
     /// Key table of the layout the compositor uses now. Without a keymap
-    /// from the compositor, fall back to the active layout's name; without
-    /// a reported group, to the active layout's index.
+    /// from the compositor, fail rather than guess its options. Without
+    /// a reported group, use the active layout's index.
     fn key_table(&mut self) -> Result<Arc<KeyTable>, TextInputFailure> {
         let Some(keymap) = self.keymap.as_deref() else {
-            return layout_key_table();
+            return Err(TextInputFailure::BackendUnavailable(
+                "the compositor did not provide a keyboard keymap".into(),
+            ));
         };
         let group = self
             .group
             .or_else(|| crate::runtime_state::layout().map(|layout| layout.index))
             .ok_or(TextInputFailure::LayoutUnknown)?;
         if let Some((cached, table)) = &self.table
-            && *cached == group
+            && *cached == (group, self.locked)
         {
             return Ok(Arc::clone(table));
         }
-        let table = Arc::new(table_from_keymap_text(keymap, group).ok_or_else(|| {
-            TextInputFailure::BackendUnavailable("cannot read the compositor keymap".into())
-        })?);
-        self.table = Some((group, Arc::clone(&table)));
+        let table = Arc::new(
+            table_from_keymap_text(keymap, group, self.locked).ok_or_else(|| {
+                TextInputFailure::BackendUnavailable("cannot read the compositor keymap".into())
+            })?,
+        );
+        self.table = Some(((group, self.locked), Arc::clone(&table)));
         Ok(table)
     }
 
-    fn paste_text(&mut self, text: &str, table: &KeyTable) -> Result<(), String> {
-        let saved = save_clipboard();
-        if let Err(e) = set_clipboard_text(text, true) {
-            report(TextInputFailure::Clipboard(e));
-            return Ok(());
-        }
-        thread::sleep(Duration::from_millis(50));
-        let result = self.inject_keycode_combo(&[KEY_LEFTCTRL_EVDEV], paste_key(Some(table)));
-        restore_clipboard(saved);
-        result
+    fn paste_text(
+        &mut self,
+        text: &str,
+        _table: &KeyTable,
+        request: &TextRequest,
+    ) -> Result<(), TextInputFailure> {
+        let clipboard =
+            super::clipboard::Paste::prepare(text).map_err(TextInputFailure::Clipboard)?;
+        request.check()?;
+        modifiers_released()?;
+        clipboard.arm().map_err(TextInputFailure::Clipboard)?;
+        let result = self
+            .inject_keycode_combo(&[KEY_LEFTSHIFT_EVDEV], KEY_INSERT_EVDEV, request)
+            .map_err(TextInputFailure::BackendUnavailable);
+        let transfer = clipboard
+            .finish(result.is_ok())
+            .map_err(TextInputFailure::Clipboard);
+        result.and(transfer)
     }
 
-    fn inject_keycode_combo(&mut self, mods: &[u32], key: u32) -> Result<(), String> {
-        for &m in mods {
-            self.inject_key(m, KeyState::Press)?;
+    fn inject_keycode_combo(
+        &mut self,
+        mods: &[u32],
+        key: u32,
+        request: &TextRequest,
+    ) -> Result<(), String> {
+        let mut pressed = Vec::new();
+        let mut result = (|| {
+            for &m in mods {
+                self.inject_key(m, KeyState::Press)?;
+                pressed.push(m);
+            }
+            self.inject_key(key, KeyState::Press)?;
+            self.inject_key(key, KeyState::Released)
+        })();
+        if result.is_err() {
+            let _ = self.inject_key(key, KeyState::Released);
         }
-        self.inject_key(key, KeyState::Press)?;
-        self.inject_key(key, KeyState::Released)?;
-        for &m in mods.iter().rev() {
-            self.inject_key(m, KeyState::Released)?;
+        for m in pressed.into_iter().rev() {
+            if let Err(error) = self.inject_key(m, KeyState::Released)
+                && result.is_ok()
+            {
+                result = Err(error);
+            }
+        }
+        result?;
+        self.synchronize(request)
+    }
+
+    fn synchronize(&mut self, request: &TextRequest) -> Result<(), String> {
+        let done = Arc::new(AtomicBool::new(false));
+        let completed = done.clone();
+        let callback = self.connection.connection().sync(1);
+        self.converter
+            .add_callback_handler(callback, move |_| completed.store(true, Ordering::SeqCst));
+        self.context
+            .flush()
+            .map_err(|e| format!("EI sync flush: {e}"))?;
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while !done.load(Ordering::SeqCst) {
+            request.check().map_err(|e| format!("{e:?}"))?;
+            self.pump_events()?;
+            if Instant::now() >= deadline {
+                return Err("EI input acknowledgement timed out".into());
+            }
+            if !done.load(Ordering::SeqCst) {
+                thread::sleep(Duration::from_millis(1));
+            }
         }
         Ok(())
     }
@@ -837,6 +1095,10 @@ impl LibeiBackend {
                     let device = e.device.device().clone();
                     self.keymap = e.device.keymap().and_then(read_keymap);
                     self.table = None;
+                    self.group = None;
+                    self.locked = 0;
+                    self.depressed = 0;
+                    self.latched = 0;
                     self.keyboard_emulating = false;
                     self.start_keyboard_emulation(&device);
                     self.keyboard_device = Some((device, keyboard));
@@ -844,9 +1106,17 @@ impl LibeiBackend {
             }
             EiEvent::KeyboardModifiers(e) if self.is_keyboard(e.device.device()) => {
                 self.group = Some(e.group);
+                self.locked = e.locked;
+                self.depressed = e.depressed;
+                self.latched = e.latched;
             }
             EiEvent::DevicePaused(e) if self.is_keyboard(e.device.device()) => {
                 self.keyboard_emulating = false;
+                self.depressed = 0;
+                self.latched = 0;
+                self.locked = 0;
+                self.group = None;
+                self.table = None;
             }
             EiEvent::DeviceResumed(e) if self.is_keyboard(e.device.device()) => {
                 self.start_keyboard_emulation(e.device.device());
@@ -856,6 +1126,10 @@ impl LibeiBackend {
                 self.keyboard_emulating = false;
                 self.keymap = None;
                 self.table = None;
+                self.group = None;
+                self.locked = 0;
+                self.depressed = 0;
+                self.latched = 0;
             }
             _ => {}
         }
@@ -948,151 +1222,54 @@ fn ei_handshake_with_timeout(
     Err("EI handshake timed out".into())
 }
 
-fn type_text_keycode(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    let table = match layout_key_table() {
-        Ok(table) => table,
-        Err(failure) => return report(failure),
-    };
+fn type_text_keycode(
+    portal: &Proxy,
+    session: &OwnedObjectPath,
+    text: &str,
+    request: &TextRequest,
+) -> Result<(), TextInputFailure> {
+    let hardware = HardwareState::capture();
+    hardware.modifiers_released()?;
+    let table = layout_key_table()?;
+    let layout = crate::runtime_state::layout();
+    let caps = hardware.caps_lock_state()?;
     let text = text.replace("\r\n", "\n");
     if missing_characters(&table, &text) {
-        return report(TextInputFailure::MissingCharacters);
+        return Err(TextInputFailure::MissingCharacters);
     }
     for ch in text.chars() {
-        if let Some(entry) = table.get(&text_keysym(ch))
-            && let Err(e) =
-                inject_keycode_combo(portal, session, level_to_mods(entry.level), entry.evdev)
-        {
-            // Do not substitute NotifyKeyboardKeysym: it hides keycode failures
-            // and can produce different characters depending on the compositor.
-            return report(TextInputFailure::BackendUnavailable(format!(
-                "NotifyKeyboardKeycode: {e}"
-            )));
+        request.check()?;
+        hardware.modifiers_released()?;
+        if layout != crate::runtime_state::layout() || caps != hardware.caps_lock_state()? {
+            return Err(TextInputFailure::BackendUnavailable(
+                "keyboard state changed during text input".into(),
+            ));
         }
-    }
-}
-
-fn paste_text(portal: &Proxy, session: &OwnedObjectPath, text: &str) {
-    let saved = save_clipboard();
-    if let Err(e) = set_clipboard_text(text, true) {
-        // Clipboard mode must fail visibly rather than silently type keys.
-        return report(TextInputFailure::Clipboard(e));
-    }
-    thread::sleep(Duration::from_millis(50));
-    let table = layout_key_table().ok();
-    if let Err(e) = inject_keycode_combo(
-        portal,
-        session,
-        &[KEY_LEFTCTRL_EVDEV],
-        paste_key(table.as_deref()),
-    ) {
-        report(TextInputFailure::BackendUnavailable(format!(
-            "NotifyKeyboardKeycode: {e}"
-        )));
-    }
-    restore_clipboard(saved);
-}
-
-// --- Clipboard ----------------------------------------------------------
-
-/// Clipboard content before a paste.
-enum SavedClipboard {
-    Text(String),
-    Empty,
-    /// Content that cannot be read back as text (an image, files) or an
-    /// unreadable clipboard.
-    Other,
-}
-
-const TEXT_MIME: &str = "text/plain;charset=utf-8";
-
-fn save_clipboard() -> SavedClipboard {
-    use std::process::Command;
-
-    let Some(types) =
-        crate::exec::run_cmd_with_timeout(Command::new("wl-paste").arg("--list-types"), 1000)
-    else {
-        return SavedClipboard::Other;
-    };
-    // wl-paste fails when nothing is copied.
-    if !types.status.success() || types.stdout.trim_ascii().is_empty() {
-        return SavedClipboard::Empty;
-    }
-    // Without --no-newline wl-paste appends a line break to text.
-    let text = crate::exec::run_cmd_with_timeout(
-        Command::new("wl-paste").args(["--no-newline", "--type", "text"]),
-        1000,
-    );
-    match text {
-        Some(output) if output.status.success() => {
-            String::from_utf8(output.stdout).map_or(SavedClipboard::Other, SavedClipboard::Text)
+        if let Some(entry) = table.get(&text_keysym(ch)) {
+            inject_keycode_combo(portal, session, &entry.mods, entry.evdev).map_err(|e| {
+                TextInputFailure::BackendUnavailable(format!("NotifyKeyboardKeycode: {e}"))
+            })?;
         }
-        _ => SavedClipboard::Other,
-    }
-}
-
-/// Copy `text` as plain text. `sensitive` asks clipboard managers such as
-/// Klipper not to keep it in their history.
-fn set_clipboard_text(text: &str, sensitive: bool) -> Result<(), String> {
-    use std::io::Write as _;
-    use std::process::{Command, Stdio};
-
-    let mut cmd = Command::new("wl-copy");
-    // Without a type wl-copy guesses one from the content.
-    cmd.args(["--type", TEXT_MIME]);
-    if sensitive && wl_copy_supports_sensitive() {
-        cmd.arg("--sensitive");
-    }
-    let mut child = cmd
-        .stdin(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("wl-copy: {e}"))?;
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin
-            .write_all(text.as_bytes())
-            .map_err(|e| format!("write wl-copy stdin: {e}"))?;
-    }
-    let status = child.wait().map_err(|e| format!("wait wl-copy: {e}"))?;
-    if !status.success() {
-        return Err(format!("wl-copy exited with {status}"));
     }
     Ok(())
 }
 
-/// `--sensitive` appeared in wl-clipboard 2.2; older versions reject it.
-fn wl_copy_supports_sensitive() -> bool {
-    static SUPPORTED: OnceLock<bool> = OnceLock::new();
-    *SUPPORTED.get_or_init(|| {
-        crate::exec::run_cmd_with_timeout(std::process::Command::new("wl-copy").arg("--help"), 1000)
-            .is_some_and(|output| {
-                let help = [output.stdout, output.stderr].concat();
-                String::from_utf8_lossy(&help).contains("--sensitive")
-            })
-    })
-}
-
-fn restore_clipboard(saved: SavedClipboard) {
-    // Keep the paste data available before reporting completion to the macro.
-    thread::sleep(Duration::from_millis(120));
-    let result = match saved {
-        SavedClipboard::Text(text) => set_clipboard_text(&text, false),
-        // Do not leave the typed text behind in the clipboard.
-        SavedClipboard::Empty | SavedClipboard::Other => clear_clipboard(),
-    };
-    if let Err(e) = result {
-        log::warn!("[text] clipboard restore failed: {e}");
-    }
-}
-
-fn clear_clipboard() -> Result<(), String> {
-    let output = crate::exec::run_cmd_with_timeout(
-        std::process::Command::new("wl-copy").arg("--clear"),
-        1000,
-    )
-    .ok_or("wl-copy --clear failed to start or timed out")?;
-    if !output.status.success() {
-        return Err(format!("wl-copy --clear exited with {}", output.status));
-    }
-    Ok(())
+fn paste_text(
+    portal: &Proxy,
+    session: &OwnedObjectPath,
+    text: &str,
+    request: &TextRequest,
+) -> Result<(), TextInputFailure> {
+    let clipboard = super::clipboard::Paste::prepare(text).map_err(TextInputFailure::Clipboard)?;
+    request.check()?;
+    modifiers_released()?;
+    clipboard.arm().map_err(TextInputFailure::Clipboard)?;
+    let result = inject_keycode_combo(portal, session, &[KEY_LEFTSHIFT_EVDEV], KEY_INSERT_EVDEV)
+        .map_err(|e| TextInputFailure::BackendUnavailable(format!("NotifyKeyboardKeycode: {e}")));
+    let transfer = clipboard
+        .finish(result.is_ok())
+        .map_err(TextInputFailure::Clipboard);
+    result.and(transfer)
 }
 
 /// Call `NotifyKeyboardKeycode`. The portal declares the key argument as
@@ -1131,8 +1308,15 @@ fn inject_keycode_combo(
             .and_then(|_| notify_key(portal, session, key, STATE_RELEASED))
             .map(|_| ());
     }
+    if result.is_err() {
+        let _ = notify_key(portal, session, key, STATE_RELEASED);
+    }
     for &m in mods[..pressed].iter().rev() {
-        let _ = notify_key(portal, session, m, STATE_RELEASED);
+        if let Err(error) = notify_key(portal, session, m, STATE_RELEASED)
+            && result.is_ok()
+        {
+            result = Err(error);
+        }
     }
     result
 }
@@ -1150,7 +1334,7 @@ fn close_session(conn: &Connection, session: &OwnedObjectPath) {
 
 // --- Portal handshake ---------------------------------------------------
 
-fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
+fn init_portal(text_request: &TextRequest) -> Result<(Connection, OwnedObjectPath), String> {
     let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
     let unique_name = conn
         .unique_name()
@@ -1179,9 +1363,15 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
             &(opts,),
             &request_path,
             PORTAL_RESPONSE_TIMEOUT,
+            text_request,
         )?
     };
     let session_handle = extract_session_handle(&results)?;
+    let mut pending = PendingSession {
+        conn: &conn,
+        handle: &session_handle,
+        active: true,
+    };
     log::debug!("[portal] session: {}", session_handle.as_str());
 
     let saved_token = load_restore_token();
@@ -1207,6 +1397,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
             &(&session_handle, opts),
             &request_path,
             PORTAL_RESPONSE_TIMEOUT,
+            text_request,
         )?;
     }
 
@@ -1223,6 +1414,7 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
             &(&session_handle, "", opts),
             &request_path,
             CONSENT_TIMEOUT,
+            text_request,
         )?;
         results
     };
@@ -1238,6 +1430,8 @@ fn init_portal() -> Result<(Connection, OwnedObjectPath), String> {
     }
 
     log::debug!("[portal] handshake: complete");
+    pending.active = false;
+    drop(pending);
     Ok((conn, session_handle))
 }
 
@@ -1252,6 +1446,7 @@ fn call_with_response<T>(
     args: &T,
     request_path: &str,
     timeout: Duration,
+    text_request: &TextRequest,
 ) -> Result<(u32, HashMap<String, OwnedValue>), String>
 where
     T: serde::Serialize + zbus::zvariant::DynamicType,
@@ -1259,22 +1454,27 @@ where
     // Subscribe BEFORE calling to avoid racing the signal.
     let request = Proxy::new(conn, PORTAL_DEST, request_path, IFACE_REQUEST)
         .map_err(|e| format!("{method}: create Request proxy: {e}"))?;
-    let mut signals = request
-        .receive_signal("Response")
-        .map_err(|e| format!("{method}: subscribe Response: {e}"))?;
-
-    portal
-        .call_method(method, args)
-        .map_err(|e| format!("{method}: call: {e}"))?;
-
-    let (sig_tx, sig_rx) = mpsc::channel();
-    thread::spawn(move || {
-        let _ = sig_tx.send(signals.next());
-    });
-    let msg = match sig_rx.recv_timeout(timeout) {
-        Ok(Some(msg)) => msg,
-        Ok(None) => return Err(format!("{method}: Response stream closed")),
-        Err(_) => return Err(format!("{method}: portal response timed out")),
+    use zbus::export::futures_core::Stream;
+    let deadline = Instant::now() + timeout;
+    let valid = || text_request.check_lifetime().map_err(|e| format!("{e:?}"));
+    let response = (|| {
+        let mut signals = poll_until(request.inner().receive_signal("Response"), deadline, valid)?
+            .map_err(|e| format!("{method}: subscribe Response: {e}"))?;
+        poll_until(portal.inner().call_method(method, args), deadline, valid)?
+            .map_err(|e| format!("{method}: call: {e}"))?;
+        poll_until(
+            std::future::poll_fn(|cx| std::pin::Pin::new(&mut signals).poll_next(cx)),
+            deadline,
+            valid,
+        )?
+        .ok_or_else(|| format!("{method}: Response stream closed"))
+    })();
+    let msg = match response {
+        Ok(msg) => msg,
+        Err(error) => {
+            let _ = request.call_noreply("Close", &());
+            return Err(error);
+        }
     };
     let body = msg.body();
     let (status, results): (u32, HashMap<String, OwnedValue>) = body
@@ -1291,6 +1491,40 @@ where
         ));
     }
     Ok((status, results))
+}
+
+struct PendingSession<'a> {
+    conn: &'a Connection,
+    handle: &'a OwnedObjectPath,
+    active: bool,
+}
+
+impl Drop for PendingSession<'_> {
+    fn drop(&mut self) {
+        if self.active {
+            close_session(self.conn, self.handle);
+        }
+    }
+}
+
+/// Poll the bus's asynchronous operations without retaining a blocked signal-reader thread.
+fn poll_until<T>(
+    future: impl std::future::Future<Output = T>,
+    deadline: Instant,
+    valid: impl Fn() -> Result<(), String>,
+) -> Result<T, String> {
+    let mut future = std::pin::pin!(future);
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    loop {
+        valid()?;
+        if Instant::now() >= deadline {
+            return Err("portal operation timed out".into());
+        }
+        if let std::task::Poll::Ready(value) = future.as_mut().poll(&mut context) {
+            return Ok(value);
+        }
+        thread::sleep(Duration::from_millis(5));
+    }
 }
 
 fn extract_session_handle(
@@ -1434,10 +1668,7 @@ mod tests {
         assert!(!missing_characters(&us, "Hello,\tworld!\n"));
         // A user label such as "lat" is not an XKB variant.
         assert!(table_from_names("latam", Some("lat")).is_none());
-        assert_eq!(paste_key(Some(&us)), KEY_V_EVDEV);
-        assert_eq!(paste_key(Some(&ru)), KEY_V_EVDEV);
-        assert_ne!(paste_key(Some(&dvorak)), KEY_V_EVDEV);
-        assert_eq!(paste_key(None), KEY_V_EVDEV);
+        assert!(has(&dvorak, 'v'));
     }
 
     #[test]
@@ -1457,7 +1688,10 @@ mod tests {
             let keymap = xkb_keymap_new_from_names(ctx, &names, 0);
             xkb_context_unref(ctx);
             assert!(!keymap.is_null());
-            let tables = (table_from_keymap(keymap, 0), table_from_keymap(keymap, 1));
+            let tables = (
+                table_from_keymap(keymap, 0, 0),
+                table_from_keymap(keymap, 1, 0),
+            );
             xkb_keymap_unref(keymap);
             tables
         };
@@ -1471,12 +1705,62 @@ mod tests {
     }
 
     #[test]
-    fn level_to_mods_maps_common_levels() {
-        assert_eq!(level_to_mods(0), &[] as &[u32]);
-        assert_eq!(level_to_mods(1), &[KEY_LEFTSHIFT_EVDEV]);
-        assert_eq!(level_to_mods(2), &[KEY_RIGHTALT_EVDEV]);
-        assert_eq!(level_to_mods(3), &[KEY_LEFTSHIFT_EVDEV, KEY_RIGHTALT_EVDEV]);
-        assert_eq!(level_to_mods(99), &[] as &[u32]);
+    fn caps_lock_uses_shift_to_type_lowercase() {
+        let table = table_from_names_with_caps("us", None, true).expect("us layout");
+        assert_eq!(table[&text_keysym('a')].mods, vec![KEY_LEFTSHIFT_EVDEV]);
+        assert!(table[&text_keysym('A')].mods.is_empty());
+    }
+
+    #[test]
+    fn shift_lock_is_not_mistaken_for_caps_lock() {
+        let table = table_from_names_with_options("us", None, true, "caps:shiftlock")
+            .expect("Shift Lock layout");
+        assert!(table[&text_keysym('A')].mods.is_empty());
+        assert!(table[&text_keysym('!')].mods.is_empty());
+        assert!(!has(&table, 'a'));
+    }
+
+    #[test]
+    fn extended_levels_and_remapped_modifiers_are_discovered() {
+        let neo = table_from_names("de", Some("neo")).expect("Neo layout");
+        assert!(has(&neo, '∀'), "level 7 must not be discarded");
+        let remapped =
+            table_from_names_with_options("us", Some("altgr-intl"), false, "lv3:caps_switch")
+                .expect("remapped AltGr");
+        assert!(has(&remapped, 'é'));
+        assert!(
+            remapped[&text_keysym('é')]
+                .mods
+                .iter()
+                .any(|key| *key == 58 || *key == 100)
+        );
+    }
+
+    #[test]
+    fn portal_wait_is_cancellable_without_a_signal_reader_thread() {
+        let start = Instant::now();
+        let result = poll_until(
+            std::future::pending::<()>(),
+            start + Duration::from_secs(5),
+            || {
+                if start.elapsed() >= Duration::from_millis(20) {
+                    Err("cancelled".into())
+                } else {
+                    Ok(())
+                }
+            },
+        );
+        assert_eq!(result.unwrap_err(), "cancelled");
+        assert!(start.elapsed() < Duration::from_secs(1));
+        assert_eq!(
+            poll_until(
+                std::future::ready(42),
+                Instant::now() + Duration::from_secs(1),
+                || Ok(())
+            )
+            .unwrap(),
+            42
+        );
     }
 
     #[test]

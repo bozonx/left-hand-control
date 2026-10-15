@@ -1041,8 +1041,8 @@ msgstr "Текст не введён: текущая раскладка клав
 msgid "The text was not typed: the typing method is unavailable ({}). Restart the mapper to try again."
 msgstr "Текст не введён: способ ввода недоступен ({}). Перезапустите маппер, чтобы попробовать снова."
 
-msgid "The text was not typed: the clipboard is unavailable ({}). Install wl-clipboard."
-msgstr "Текст не введён: буфер обмена недоступен ({}). Установите wl-clipboard."
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "Текст не введён: ошибка безопасного доступа к буферу обмена ({})."
 
 msgid "The text was not typed: {}"
 msgstr "Текст не введён: {}"
@@ -2245,8 +2245,8 @@ msgstr "Как печатаются текстовые действия в пр�
 msgid "Typing method"
 msgstr "Способ ввода"
 
-msgid "libei + wl-copy fallback (recommended)"
-msgstr "libei + wl-copy fallback (рекомендуется)"
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + буфер обмена (рекомендуется)"
 
 msgid "Paste from clipboard"
 msgstr "Вставка из буфера обмена"
@@ -2257,17 +2257,17 @@ msgstr "ydotool"
 msgid "xdotool"
 msgstr "xdotool"
 
-msgid "Types through libei using the current keyboard layout. Only if the layout lacks a character, pastes the whole text with wl-copy and Ctrl+V, then restores the clipboard. Requires a working libei portal (recent KDE Plasma 6 or GNOME); clipboard fallback also needs wl-clipboard. If libei or paste fails, stops without switching to NotifyKeyboardKeycode or another method. The desktop asks for permission."
-msgstr "Вводит текст через libei с текущей раскладкой. Только если в раскладке нет нужного символа, вставляет весь текст через wl-copy и Ctrl+V, затем восстанавливает буфер обмена. Требуется работающий портал libei (современная KDE Plasma 6 или GNOME); для резервной вставки также нужен wl-clipboard. При ошибке libei или вставки ввод прекращается без перехода на NotifyKeyboardKeycode или другой способ. Рабочий стол запрашивает разрешение."
+msgid "Types with the current layout, or pastes the whole text when a character is unavailable. Paste requires clipboard access and Shift+Insert support. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."
+msgstr "Вводит текст с текущей раскладкой или вставляет весь текст, если символ недоступен. Для вставки нужны доступ к буферу обмена и поддержка Shift+Insert. Сохраняет форматы буфера и отменяет ввод при смене окна назначения. Требуются разрешение портала и определение активного окна."
 
-msgid "Types only through libei using the current keyboard layout. Never uses the clipboard or NotifyKeyboardKeycode. Requires a working libei portal (recent KDE Plasma 6 or GNOME). If the layout lacks a character, skips the whole text. On a backend error, stops without switching methods. The desktop asks for permission."
-msgstr "Вводит текст только через libei с текущей раскладкой. Не использует буфер обмена или NotifyKeyboardKeycode. Требуется работающий портал libei (современная KDE Plasma 6 или GNOME). Если в раскладке нет нужного символа, весь текст пропускается. При ошибке ввод прекращается без смены способа. Рабочий стол запрашивает разрешение."
+msgid "Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."
+msgstr "Вводит текст только через libei с учётом текущей раскладки и Caps Lock. Пропускает текст с недоступными символами. Требуются разрешение портала и определение активного окна. Отменяет ввод при смене окна назначения."
 
-msgid "Types only through the portal's NotifyKeyboardKeycode interface using the current keyboard layout. Never uses libei, NotifyKeyboardKeysym or the clipboard. If the layout lacks a character, skips the whole text. On a portal error, stops without switching methods. The desktop asks for permission."
-msgstr "Вводит текст только через интерфейс портала NotifyKeyboardKeycode с текущей раскладкой. Не использует libei, NotifyKeyboardKeysym или буфер обмена. Если в раскладке нет нужного символа, весь текст пропускается. При ошибке портала ввод прекращается без смены способа. Рабочий стол запрашивает разрешение."
+msgid "Types only through NotifyKeyboardKeycode using the KDE layout and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."
+msgstr "Вводит текст только через NotifyKeyboardKeycode с раскладкой KDE и доступным состоянием клавиатуры. Пропускает текст с недоступными символами. Требуются разрешение портала и определение активного окна. Отменяет ввод при смене окна назначения."
 
-msgid "Pastes the whole text with wl-copy and Ctrl+V through the portal, then restores the clipboard. Requires wl-clipboard and portal permission. Apps that use another paste shortcut, such as terminals, will not receive it. On an error, stops without switching to typing."
-msgstr "Вставляет весь текст через wl-copy и Ctrl+V через портал, затем восстанавливает буфер обмена. Требуются wl-clipboard и разрешение портала. Приложения с другим сочетанием для вставки, например терминалы, не получат текст. При ошибке ввод прекращается без перехода на печать клавишами."
+msgid "Pastes with Shift+Insert through the portal. Requires clipboard access, active-window detection and an app supporting Shift+Insert. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."
+msgstr "Вставляет текст через портал сочетанием Shift+Insert. Нужны доступ к буферу обмена, определение активного окна и поддержка Shift+Insert в приложении. Сохраняет все форматы буфера; новое копирование пользователя имеет приоритет. Сообщает об ошибке, если передача текста не обнаружена."
 
 msgid "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."
 msgstr "Использует только «ydotool type». Требуются ydotool и запущенная служба ydotoold. Надёжно работает только с латиницей. При ошибке ввод прекращается без смены способа."

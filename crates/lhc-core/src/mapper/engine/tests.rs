@@ -3490,3 +3490,32 @@ fn nested_layers_keep_usage_suppressed_until_all_triggers_are_released() {
     assert!(!engine.held_layer_state().used);
     assert_ne!(engine.held_layer_state().hold_id, first.hold_id);
 }
+
+#[test]
+fn failed_text_aborts_macro_before_enter() {
+    let mut cfg = empty_cfg();
+    cfg.macros.push(Macro {
+        id: "text".into(),
+        steps: vec![
+            MacroStep {
+                action: "text:hello".into(),
+            },
+            MacroStep {
+                action: "Enter".into(),
+            },
+        ],
+        step_pause_ms: Some(0),
+        modifier_delay_ms: Some(0),
+    });
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    engine.execute_remote("macro:text", &mut out);
+    let now = Instant::now();
+    engine.tick(now, &mut out);
+    assert!(matches!(out.as_slice(), [Out::Literal(_)]));
+    out.clear();
+    engine.text_input_failed(&mut out);
+    engine.set_text_pending(false, now);
+    engine.tick(now + Duration::from_secs(1), &mut out);
+    assert!(out.is_empty());
+}

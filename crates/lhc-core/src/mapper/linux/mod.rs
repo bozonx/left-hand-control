@@ -52,6 +52,7 @@ impl Handle {
     }
 
     pub fn stop(mut self) {
+        super::text_job::cancel();
         self.stop.store(true, Ordering::SeqCst);
         self.wake();
         if let Some(j) = self.join.take() {
@@ -110,6 +111,7 @@ pub fn spawn(
     mouse_path: Option<String>,
     cfg: AppConfig,
 ) -> Result<Handle, String> {
+    super::text_job::start();
     super::portal::set_text_backend(
         cfg.settings.linux_wayland_text_mode,
         cfg.settings.linux_ydotool_path.as_deref(),
@@ -349,6 +351,7 @@ fn run_loop<D: LoopDriver>(
             while let Ok(ctrl) = control_rx.try_recv() {
                 match ctrl {
                     MapperControl::Config(next_cfg) => {
+                        super::text_job::cancel();
                         let next_cfg = *next_cfg;
                         log::debug!(
                             "[mapper] live config update: rules={} layers={}",
@@ -365,6 +368,7 @@ fn run_loop<D: LoopDriver>(
                         super::layer_state::publish(engine.held_layer_state());
                         flush_out(&mut virt, &mut out_buf)?;
                         engine = Engine::new(&next_cfg);
+                        super::text_job::start();
                     }
                     MapperControl::Execute(action) => {
                         log::debug!("[mapper] remote execute requested");
@@ -378,6 +382,7 @@ fn run_loop<D: LoopDriver>(
         }
         Ok(())
     })();
+    super::text_job::cancel();
     super::layer_state::publish(super::layer_state::HeldLayerState::default());
 
     hold.take(&mut out_buf);

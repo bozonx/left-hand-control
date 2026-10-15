@@ -275,6 +275,25 @@ fn call_list(proxy: &Proxy<'_>) -> Result<Option<LayoutList>, String> {
     Ok(Some(list))
 }
 
+pub(super) fn xkb_options() -> String {
+    dirs::config_dir()
+        .and_then(|dir| std::fs::read_to_string(dir.join("kxkbrc")).ok())
+        .map(|text| options_from_kxkbrc(&text))
+        .unwrap_or_default()
+}
+
+fn options_from_kxkbrc(text: &str) -> String {
+    let mut in_layout = false;
+    for line in text.lines().map(str::trim) {
+        if line.starts_with('[') {
+            in_layout = line == "[Layout]";
+        } else if in_layout && let Some(options) = line.strip_prefix("Options=") {
+            return options.trim().into();
+        }
+    }
+    String::new()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

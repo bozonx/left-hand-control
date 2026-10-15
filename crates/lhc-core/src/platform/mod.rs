@@ -200,3 +200,8 @@ mod tests {
         assert_eq!(issues, [InputAccessIssue::KeyboardMissing]);
     }
 }
+
+#[cfg(target_os = "macos")]
+pub use macos::{
+    NativeTextTarget, capture_text_target, restore_text_target, text_modifiers_released,
+};

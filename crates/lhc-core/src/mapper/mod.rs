@@ -50,3 +50,8 @@ pub(crate) fn refresh_layout() {
 
 pub mod config;
 pub mod devices;
+
+#[cfg(target_os = "linux")]
+pub mod clipboard;
+#[cfg(target_os = "linux")]
+mod text_job;

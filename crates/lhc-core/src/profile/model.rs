@@ -432,7 +432,7 @@ pub enum TextMode {
     LibeiPure,
     /// RemoteDesktop portal `NotifyKeyboardKeycode`.
     Keycode,
-    /// wl-copy and Ctrl+V through the RemoteDesktop portal.
+    /// MIME-preserving clipboard ownership and Shift+Insert through the portal.
     Clipboard,
     Ydotool,
     Xdotool,

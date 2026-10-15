@@ -3197,6 +3197,7 @@ dependencies = [
  "serde_norway",
  "tempfile",
  "wayland-client",
+ "wayland-protocols",
  "wayland-protocols-wlr",
  "windows 0.61.3",
  "zbus",

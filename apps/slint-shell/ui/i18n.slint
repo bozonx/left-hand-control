@@ -112,7 +112,7 @@ export global Locale {
         if m.id == "text-missing-characters" { return @tr("The text was not typed: the keyboard layout lacks some of its characters, such as emoji. Choose a typing method with the clipboard."); }
         if m.id == "text-layout-unknown" { return @tr("The text was not typed: the active keyboard layout is unknown."); }
         if m.id == "text-backend-unavailable" { return @tr("The text was not typed: the typing method is unavailable ({}). Restart the mapper to try again.", m.arg); }
-        if m.id == "text-clipboard-failed" { return @tr("The text was not typed: the clipboard is unavailable ({}). Install wl-clipboard.", m.arg); }
+        if m.id == "text-clipboard-failed" { return @tr("The text was not typed: safe clipboard access failed ({}).", m.arg); }
         if m.id == "text-tool-failed" { return @tr("The text was not typed: {}", m.arg); }
         if m.id == "mapper-required" { return @tr("Start the mapper to run actions from the menus"); }
         if m.id == "layer-name-required" { return @tr("Enter a layer name"); }

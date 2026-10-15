@@ -6,7 +6,6 @@ use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, KeyCode, KeyEvent};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::sync::OnceLock;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -82,6 +81,9 @@ pub(super) trait SideEffects {
     fn held_layer_changed(&mut self, _state: super::super::layer_state::HeldLayerState) {}
     fn sleep(&mut self, duration: Duration);
     fn type_text(&mut self, text: &str);
+    fn text_failed(&mut self) -> bool {
+        false
+    }
     fn text_pending(&self) -> bool {
         false
     }
@@ -123,14 +125,26 @@ impl SideEffects for RuntimeSideEffects {
         // portal::type_text can block for seconds on its first call (libei
         // handshake / consent dialog) — never run it on the mapper thread
         // while the keyboard is grabbed.
-        TEXT_PENDING.fetch_add(1, Ordering::SeqCst);
-        if !enqueue_side_effect(SideEffectJob::Text(text.to_string())) {
-            TEXT_PENDING.fetch_sub(1, Ordering::SeqCst);
+        match super::super::text_job::TextRequest::enqueue(text) {
+            Ok(request) => {
+                let job = SideEffectJob::Text(text.to_owned(), request.clone());
+                if !enqueue_side_effect(job) {
+                    request.complete(true);
+                    portal::report(crate::events::TextInputFailure::BackendUnavailable(
+                        "text input queue is unavailable or full".into(),
+                    ));
+                }
+            }
+            Err(error) => portal::report(error),
         }
     }
 
     fn text_pending(&self) -> bool {
-        TEXT_PENDING.load(Ordering::SeqCst) != 0
+        super::super::text_job::pending()
+    }
+
+    fn text_failed(&mut self) -> bool {
+        super::super::text_job::take_failure()
     }
 
     fn run_system(&mut self, action: &SysAction) {
@@ -142,17 +156,15 @@ impl SideEffects for RuntimeSideEffects {
     }
 }
 
-static TEXT_PENDING: AtomicUsize = AtomicUsize::new(0);
-
 enum SideEffectJob {
     System(SysAction),
-    Text(String),
+    Text(String, super::super::text_job::TextRequest),
 }
 
-fn side_effect_tx() -> &'static mpsc::Sender<SideEffectJob> {
-    static TX: OnceLock<mpsc::Sender<SideEffectJob>> = OnceLock::new();
+fn side_effect_tx() -> &'static mpsc::SyncSender<SideEffectJob> {
+    static TX: OnceLock<mpsc::SyncSender<SideEffectJob>> = OnceLock::new();
     TX.get_or_init(|| {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::sync_channel(32);
         match thread::Builder::new()
             .name("lhc-side-effects".into())
             .spawn(move || run_side_effect_worker(rx))
@@ -165,7 +177,7 @@ fn side_effect_tx() -> &'static mpsc::Sender<SideEffectJob> {
 }
 
 fn enqueue_side_effect(job: SideEffectJob) -> bool {
-    if let Err(e) = side_effect_tx().send(job) {
+    if let Err(e) = side_effect_tx().try_send(job) {
         log::warn!("[mapper] side-effect queue unavailable: {e}");
         return false;
     }
@@ -176,9 +188,12 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
     for job in rx {
         match job {
             SideEffectJob::System(action) => run_sys_action(&action),
-            SideEffectJob::Text(text) => {
-                portal::type_text(&text);
-                TEXT_PENDING.fetch_sub(1, Ordering::SeqCst);
+            SideEffectJob::Text(text, request) => {
+                let result = portal::type_text(&text, request.clone());
+                request.complete(result.is_err());
+                if let Err(error) = result {
+                    portal::report(error);
+                }
             }
         }
     }
@@ -331,7 +346,11 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     const MAX_WAIT: Duration = Duration::from_millis(100);
 
     let now = driver.now();
-    engine.set_text_pending(effects.text_pending(), now);
+    let pending = effects.text_pending();
+    if effects.text_failed() {
+        engine.text_input_failed(out_buf);
+    }
+    engine.set_text_pending(pending, now);
     let mut wait = engine
         .next_deadline(now)
         .map(|d| d.min(MAX_WAIT))

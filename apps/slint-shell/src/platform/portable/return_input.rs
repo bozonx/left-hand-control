@@ -1,5 +1,11 @@
+//! Return popup text to the captured native window without using the clipboard.
+
 #[cfg(target_os = "macos")]
 use enigo::{Enigo, Keyboard, Settings};
+
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Default)]
 pub struct ReturnInput {
@@ -8,10 +14,19 @@ pub struct ReturnInput {
 
 impl ReturnInput {
     pub fn capture(&mut self) {
-        self.target = capture_target();
+        GENERATION.fetch_add(1, Ordering::SeqCst);
+        let target = capture_target();
+        if target
+            .as_ref()
+            .is_some_and(|target| target.process_id as u32 == std::process::id())
+        {
+            return;
+        }
+        self.target = target;
     }
 
     pub fn discard(&mut self) {
+        GENERATION.fetch_add(1, Ordering::SeqCst);
         self.target = None;
     }
 
@@ -20,23 +35,38 @@ impl ReturnInput {
             return;
         };
         let selection_context = capture_selection_context();
-        // Give the popup time to hide, restore the target, then let it settle
-        // before typing; timers keep the UI thread free meanwhile.
-        slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {
-            if let Err(error) = restore_target(target, selection_context) {
-                log::error!("native focus restore failed: {error}");
-                return;
-            }
-            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
-                if !target_is_foreground(target) {
-                    log::warn!("native return input cancelled: foreground changed before paste");
+        let generation = GENERATION.load(Ordering::SeqCst);
+        let result = std::thread::Builder::new()
+            .name("lhc-native-text".into())
+            .spawn(move || {
+                let valid = || GENERATION.load(Ordering::SeqCst) == generation;
+                std::thread::sleep(std::time::Duration::from_millis(300));
+                if !valid() {
                     return;
                 }
-                if let Err(error) = type_text(&text) {
+                if let Err(error) = restore_target(&target, selection_context) {
+                    log::error!("native focus restore failed: {error}");
+                    return;
+                }
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+                while valid() && target_is_foreground(&target) && !modifiers_released() {
+                    if std::time::Instant::now() >= deadline {
+                        log::warn!("native text input cancelled: modifiers remain held");
+                        return;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                }
+                let check = || valid() && target_is_foreground(&target) && modifiers_released();
+                if !check() {
+                    return;
+                }
+                if let Err(error) = type_text(&text, check) {
                     log::error!("native return input unavailable: {error}");
                 }
             });
-        });
+        if let Err(error) = result {
+            log::error!("start native text input: {error}");
+        }
     }
 }
 
@@ -81,7 +111,7 @@ fn capture_selection_context() -> SelectionContext {
 
 #[cfg(target_os = "windows")]
 fn restore_target(
-    target: Target,
+    target: &Target,
     selection_context: SelectionContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use windows::Win32::{
@@ -113,7 +143,7 @@ fn restore_target(
 }
 
 #[cfg(target_os = "windows")]
-fn target_is_valid(target: Target) -> bool {
+fn target_is_valid(target: &Target) -> bool {
     use windows::Win32::{
         Foundation::HWND,
         UI::WindowsAndMessaging::{GetWindowThreadProcessId, IsWindow},
@@ -129,171 +159,126 @@ fn target_is_valid(target: Target) -> bool {
 }
 
 #[cfg(target_os = "windows")]
-fn target_is_foreground(target: Target) -> bool {
+fn target_is_foreground(target: &Target) -> bool {
     use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 
     target_is_valid(target) && unsafe { GetForegroundWindow() }.0 as isize == target.window
 }
 
 #[cfg(target_os = "windows")]
-fn type_text(text: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let previous = clipboard_text();
-    set_clipboard_text(text)?;
-    let result = paste();
-    if result.is_ok() {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-    }
-    if let Some(previous) = previous {
-        set_clipboard_text(&previous)?;
-    }
-    result
+fn modifiers_released() -> bool {
+    use windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
+    [0x10, 0x11, 0x12, 0x5b, 0x5c]
+        .iter()
+        .all(|key| unsafe { GetAsyncKeyState(*key) } >= 0)
 }
 
 #[cfg(target_os = "windows")]
-fn paste() -> Result<(), Box<dyn std::error::Error>> {
+fn type_text(text: &str, valid: impl Fn() -> bool) -> Result<(), Box<dyn std::error::Error>> {
     use windows::Win32::UI::Input::KeyboardAndMouse::{
-        INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, SendInput, VK_CONTROL, VK_V,
+        INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, SendInput,
+        VIRTUAL_KEY, VK_RETURN, VK_TAB,
     };
 
-    let keyboard_input = |key, flags| INPUT {
+    if text.contains('\0') {
+        return Err("NUL cannot be typed into native text fields".into());
+    }
+    let text = text.replace("\r\n", "\n");
+    let keyboard_input = |key, scan, flags| INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {
             ki: KEYBDINPUT {
                 wVk: key,
+                wScan: scan,
                 dwFlags: flags,
                 ..Default::default()
             },
         },
     };
-    let inputs = [
-        keyboard_input(VK_CONTROL, Default::default()),
-        keyboard_input(VK_V, Default::default()),
-        keyboard_input(VK_V, KEYEVENTF_KEYUP),
-        keyboard_input(VK_CONTROL, KEYEVENTF_KEYUP),
-    ];
-    let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
-    if sent != inputs.len() as u32 {
-        return Err(format!("SendInput accepted {sent} of {} events", inputs.len()).into());
+    for ch in text.chars() {
+        if !valid() {
+            return Err("native text input cancelled: focus or modifiers changed".into());
+        }
+        let mut units = [0; 2];
+        let inputs: Vec<INPUT> = match ch {
+            '\n' | '\r' | '\t' => {
+                let key = if ch == '\t' { VK_TAB } else { VK_RETURN };
+                vec![
+                    keyboard_input(key, 0, Default::default()),
+                    keyboard_input(key, 0, KEYEVENTF_KEYUP),
+                ]
+            }
+            _ => ch
+                .encode_utf16(&mut units)
+                .iter()
+                .flat_map(|unit| {
+                    [
+                        keyboard_input(VIRTUAL_KEY(0), *unit, KEYEVENTF_UNICODE),
+                        keyboard_input(VIRTUAL_KEY(0), *unit, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP),
+                    ]
+                })
+                .collect(),
+        };
+        let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
+        if sent != inputs.len() as u32 {
+            // Release any accepted key-down before reporting partial injection.
+            let releases: Vec<INPUT> = inputs.into_iter().skip(1).step_by(2).collect();
+            unsafe {
+                SendInput(&releases, std::mem::size_of::<INPUT>() as i32);
+            }
+            return Err(
+                format!("SendInput accepted {sent} events; native text input stopped").into(),
+            );
+        }
     }
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
-fn clipboard_text() -> Option<String> {
-    use windows::Win32::{
-        Foundation::HGLOBAL,
-        System::{
-            DataExchange::{CloseClipboard, GetClipboardData, OpenClipboard},
-            Memory::{GlobalLock, GlobalSize, GlobalUnlock},
-            Ole::CF_UNICODETEXT,
-        },
-    };
-
-    unsafe {
-        OpenClipboard(None).ok()?;
-        let result = (|| {
-            let handle = GetClipboardData(CF_UNICODETEXT.0 as u32).ok()?;
-            let memory = HGLOBAL(handle.0);
-            let pointer = GlobalLock(memory).cast::<u16>();
-            if pointer.is_null() {
-                return None;
-            }
-            let capacity = GlobalSize(memory) / std::mem::size_of::<u16>();
-            let slice = std::slice::from_raw_parts(pointer, capacity);
-            let length = slice.iter().position(|unit| *unit == 0).unwrap_or(capacity);
-            let text = String::from_utf16(slice.get(..length)?).ok();
-            let _ = GlobalUnlock(memory);
-            text
-        })();
-        let _ = CloseClipboard();
-        result
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn set_clipboard_text(text: &str) -> Result<(), Box<dyn std::error::Error>> {
-    use windows::Win32::{
-        Foundation::HANDLE,
-        System::{
-            DataExchange::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData},
-            Memory::{GHND, GlobalAlloc, GlobalLock, GlobalUnlock},
-            Ole::CF_UNICODETEXT,
-        },
-    };
-
-    let encoded = text
-        .encode_utf16()
-        .chain(std::iter::once(0))
-        .collect::<Vec<_>>();
-    unsafe {
-        OpenClipboard(None)?;
-        let result = (|| -> Result<(), Box<dyn std::error::Error>> {
-            EmptyClipboard()?;
-            let memory = GlobalAlloc(GHND, encoded.len() * std::mem::size_of::<u16>())?;
-            let pointer = GlobalLock(memory).cast::<u16>();
-            if pointer.is_null() {
-                return Err("GlobalLock rejected clipboard allocation".into());
-            }
-            std::ptr::copy_nonoverlapping(encoded.as_ptr(), pointer, encoded.len());
-            let _ = GlobalUnlock(memory);
-            SetClipboardData(CF_UNICODETEXT.0 as u32, Some(HANDLE(memory.0)))?;
-            Ok(())
-        })();
-        let _ = CloseClipboard();
-        result
-    }
-}
+#[cfg(target_os = "macos")]
+type Target = lhc_core::platform::NativeTextTarget;
 
 #[cfg(target_os = "macos")]
-type Target = i32;
-
-#[cfg(target_os = "macos")]
-type SelectionContext = ();
+type SelectionContext = u32;
 
 #[cfg(target_os = "macos")]
 fn capture_target() -> Option<Target> {
-    let output = std::process::Command::new("osascript")
-        .args([
-            "-e",
-            "tell application \"System Events\" to get unix id of first application process whose frontmost is true",
-        ])
-        .output()
-        .ok()?;
-    output
-        .status
-        .success()
-        .then(|| String::from_utf8_lossy(&output.stdout).trim().parse().ok())
-        .flatten()
+    lhc_core::platform::capture_text_target()
 }
 
 #[cfg(target_os = "macos")]
-fn capture_selection_context() -> SelectionContext {}
+fn capture_selection_context() -> SelectionContext {
+    std::process::id()
+}
 
 #[cfg(target_os = "macos")]
 fn restore_target(
-    target: Target,
-    _selection_context: SelectionContext,
+    target: &Target,
+    selection_context: SelectionContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let script = format!(
-        "tell application \"System Events\" to set frontmost of first application process whose unix id is {target} to true"
-    );
-    let status = std::process::Command::new("osascript")
-        .args(["-e", &script])
-        .status()?;
-    status
-        .success()
-        .then_some(())
-        .ok_or_else(|| format!("osascript exited with {status}").into())
+    lhc_core::platform::restore_text_target(*target, selection_context).map_err(Into::into)
 }
 
 #[cfg(target_os = "macos")]
-fn target_is_foreground(_target: Target) -> bool {
-    true
+fn target_is_foreground(target: &Target) -> bool {
+    capture_target() == Some(*target)
 }
 
 #[cfg(target_os = "macos")]
-fn type_text(text: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn modifiers_released() -> bool {
+    lhc_core::platform::text_modifiers_released()
+}
+
+#[cfg(target_os = "macos")]
+fn type_text(text: &str, valid: impl Fn() -> bool) -> Result<(), Box<dyn std::error::Error>> {
+    if text.contains('\0') {
+        return Err("NUL cannot be typed into native text fields".into());
+    }
     let mut enigo = Enigo::new(&Settings::default())?;
-    enigo.text(text)?;
+    for ch in text.replace("\r\n", "\n").chars() {
+        if !valid() {
+            return Err("native text input cancelled: focus or modifiers changed".into());
+        }
+        enigo.text(&ch.to_string())?;
+    }
     Ok(())
 }

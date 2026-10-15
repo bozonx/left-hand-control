@@ -43,6 +43,7 @@ function report() {
   if (w) {
     r.appId = String(w.resourceClass || "");
     r.pid = w.pid;
+    r.windowId = String(w.internalId || w.windowId || "");
     r.fullscreen = fullscreen(w);
     if (TITLES) r.title = String(w.caption || "");
   }
@@ -81,6 +82,28 @@ callDBus(SERVICE, PATH, IFACE, "Windows", JSON.stringify(out));
 "#;
 
 /// What the script reported last; `None` before the first report.
+#[derive(Default)]
+struct Focus {
+    current: Option<String>,
+    external: Option<String>,
+}
+
+static FOCUS: Mutex<Focus> = Mutex::new(Focus {
+    current: None,
+    external: None,
+});
+
+pub(super) fn text_target() -> Option<String> {
+    FOCUS.lock().ok()?.external.clone()
+}
+
+pub(super) fn target_is_current(target: &str) -> bool {
+    FOCUS
+        .lock()
+        .ok()
+        .is_some_and(|focus| focus.current.as_deref() == Some(target))
+}
+
 static PUSHED: Mutex<Option<Option<ActiveWindow>>> = Mutex::new(None);
 /// Receiver of the next window list.
 static LIST_REPLY: Mutex<Option<mpsc::Sender<String>>> = Mutex::new(None);
@@ -104,6 +127,22 @@ impl Service {
     fn active(&self, json: String, #[zbus(header)] header: Header<'_>) {
         if !self.sent_by_kwin(&header) {
             return;
+        }
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&json) {
+            let window = super::linux::window_from_json(&value, "title", "appId");
+            let own = window
+                .as_ref()
+                .is_some_and(|window| super::is_own_process(window.process_name.as_deref()));
+            if let Ok(mut focus) = FOCUS.lock() {
+                focus.current = value
+                    .get("windowId")
+                    .and_then(|id| id.as_str())
+                    .filter(|id| !id.is_empty())
+                    .map(str::to_owned);
+                if !own {
+                    focus.external = focus.current.clone();
+                }
+            }
         }
         let window = serde_json::from_str::<serde_json::Value>(&json)
             .ok()

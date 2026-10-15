@@ -5,7 +5,6 @@
 use evdev::{AttributeSet, KeyCode, KeyEvent};
 use std::{
     io::Write,
-    process::{Command, Stdio},
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -161,48 +160,22 @@ impl ReturnInput {
 }
 
 fn paste(device: &mut crate::test_keyboard::Keyboard, text: &str) -> std::io::Result<()> {
-    let previous = Command::new("wl-paste")
-        .arg("--no-newline")
-        .output()
-        .ok()
-        .filter(|output| output.status.success())
-        .map(|output| output.stdout);
-    set_clipboard(text.as_bytes())?;
-    std::thread::sleep(Duration::from_millis(50));
-    device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 1)])?;
-    let insert = device.emit(&[
-        *KeyEvent::new(KeyCode::KEY_INSERT, 1),
-        *KeyEvent::new(KeyCode::KEY_INSERT, 0),
-    ]);
-    let release = device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 0)]);
-    insert?;
-    release?;
-    if let Some(previous) = previous {
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(500));
-            if let Err(error) = set_clipboard(&previous) {
-                log::warn!("restore clipboard: {error}");
-            }
-        });
-    }
-    Ok(())
-}
-
-fn set_clipboard(text: &[u8]) -> std::io::Result<()> {
-    let mut child = Command::new("wl-copy").stdin(Stdio::piped()).spawn()?;
-    child
-        .stdin
-        .take()
-        .ok_or_else(|| std::io::Error::other("wl-copy stdin unavailable"))?
-        .write_all(text)?;
-    let status = child.wait()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(std::io::Error::other(format!(
-            "wl-copy exited with {status}"
-        )))
-    }
+    let clipboard =
+        lhc_core::mapper::clipboard::Paste::prepare(text).map_err(std::io::Error::other)?;
+    clipboard.arm().map_err(std::io::Error::other)?;
+    let result = (|| {
+        device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 1)])?;
+        let insert = device.emit(&[
+            *KeyEvent::new(KeyCode::KEY_INSERT, 1),
+            *KeyEvent::new(KeyCode::KEY_INSERT, 0),
+        ]);
+        let release = device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 0)]);
+        insert.and(release)
+    })();
+    let transfer = clipboard
+        .finish(result.is_ok())
+        .map_err(std::io::Error::other);
+    result.and(transfer)
 }
 
 impl Drop for ReturnInput {

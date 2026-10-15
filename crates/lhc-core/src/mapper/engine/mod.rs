@@ -184,6 +184,11 @@ impl Engine {
             .min()
     }
 
+    /// A failed text step must not submit incomplete input with subsequent keys.
+    pub fn text_input_failed(&mut self, out: &mut Vec<Out>) {
+        self.abort_active_macro(out);
+    }
+
     /// Resume macro timing only after the text worker has completed injection.
     pub fn set_text_pending(&mut self, pending: bool, now: Instant) {
         if self.text_pending

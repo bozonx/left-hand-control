@@ -43,7 +43,7 @@ pub enum TextInputFailure {
     LayoutUnknown,
     /// The input backend could not start or stopped working.
     BackendUnavailable(String),
-    /// wl-clipboard is missing or failed.
+    /// Safe clipboard access or the paste transfer failed.
     Clipboard(String),
     /// The external typing tool failed.
     Tool(String),

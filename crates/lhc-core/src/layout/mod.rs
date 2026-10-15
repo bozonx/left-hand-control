@@ -222,6 +222,18 @@ pub fn start_watcher() {
     }
 }
 
+#[cfg(target_os = "linux")]
+pub(crate) fn xkb_options() -> String {
+    if matches!(
+        crate::platform::linux::detect().desktop,
+        crate::platform::linux::Desktop::Kde
+    ) {
+        linux_kde::xkb_options()
+    } else {
+        String::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

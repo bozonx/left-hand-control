@@ -37,6 +37,7 @@ static TITLES_FOR_SHELL: AtomicBool = AtomicBool::new(false);
 static TITLES_FOR_GAME_MODE: AtomicBool = AtomicBool::new(false);
 /// Windows of this application do not count as the active window.
 static IGNORE_OWN_WINDOWS: AtomicBool = AtomicBool::new(false);
+static ACTUAL_WINDOW: Mutex<Option<ActiveWindow>> = Mutex::new(None);
 
 /// An application with an open window, for picking a condition.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -178,6 +179,9 @@ pub fn start_watcher() {
                     control.refresh = false;
                 }
                 let current = detect_active_window();
+                if let Ok(mut actual) = ACTUAL_WINDOW.lock() {
+                    *actual = current.clone();
+                }
                 if current != last && !current.as_ref().is_some_and(is_ignored) {
                     crate::runtime_state::set_active_window(current.clone());
                     crate::events::emit(crate::events::CoreEvent::ActiveWindowChanged(
@@ -276,6 +280,9 @@ fn detect_active_window_with_titles(titles: bool) -> Option<ActiveWindow> {
 /// An own window (see [`ignore_own_windows`]) leaves the cache as is.
 pub fn detect_active_window_now() -> Option<ActiveWindow> {
     let current = detect_active_window();
+    if let Ok(mut actual) = ACTUAL_WINDOW.lock() {
+        *actual = current.clone();
+    }
     if current.as_ref().is_some_and(is_ignored) {
         return cached_active_window();
     }
@@ -316,6 +323,41 @@ pub fn open_windows() -> Vec<OpenWindow> {
             && a.title == b.title
     });
     windows
+}
+
+/// A text destination, captured before a popup or an asynchronous backend starts.
+#[cfg(target_os = "linux")]
+#[derive(Clone)]
+pub(crate) enum TextTarget {
+    Kwin(String),
+    Cached(ActiveWindow),
+    Unknown,
+}
+
+#[cfg(target_os = "linux")]
+impl TextTarget {
+    pub(crate) fn capture() -> Self {
+        if kwin::active() {
+            return kwin::text_target().map_or(Self::Unknown, Self::Kwin);
+        }
+        cached_active_window().map_or(Self::Unknown, Self::Cached)
+    }
+
+    pub(crate) fn is_current(&self) -> bool {
+        match self {
+            Self::Kwin(id) => kwin::target_is_current(id),
+            Self::Cached(target) => ACTUAL_WINDOW
+                .lock()
+                .ok()
+                .and_then(|current| current.clone())
+                .is_some_and(|current| {
+                    current.app_id == target.app_id
+                        && current.process_name == target.process_name
+                        && current.title == target.title
+                }),
+            Self::Unknown => false,
+        }
+    }
 }
 
 #[cfg(test)]
