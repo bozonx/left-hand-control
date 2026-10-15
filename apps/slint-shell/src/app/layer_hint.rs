@@ -12,6 +12,32 @@ use std::time::{Duration, Instant};
 /// use by someone who knows the layout does not flash it.
 const HINT_DELAY: Duration = Duration::from_millis(100);
 
+/// A used layer stays suppressed until all layer triggers are released.
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+pub(super) enum HintSession {
+    #[default]
+    Idle,
+    Ready,
+    Used,
+}
+
+impl HintSession {
+    fn layer_changed(self, held: bool) -> Self {
+        match (self, held) {
+            (_, false) => Self::Idle,
+            (Self::Idle, true) => Self::Ready,
+            (session, true) => session,
+        }
+    }
+
+    fn key_pressed(self) -> Self {
+        match self {
+            Self::Idle => Self::Idle,
+            _ => Self::Used,
+        }
+    }
+}
+
 impl App {
     /// Apply the saved hint setting: start or stop the worker it needs.
     pub(super) fn sync_layer_hint_setting(&self) {
@@ -40,8 +66,10 @@ impl App {
     pub(super) fn layer_changed(&self, layer: Option<String>) {
         self.layer_hint_timer.stop();
         let held = layer.is_some();
+        self.layer_hint_session
+            .set(self.layer_hint_session.get().layer_changed(held));
         *self.held_layer.borrow_mut() = layer;
-        if !held {
+        if self.layer_hint_session.get() != HintSession::Ready {
             self.hide_layer_hint();
         } else if self.layer_hint_shown.get() {
             // Another layer took over while the hint is up.
@@ -52,7 +80,17 @@ impl App {
         }
     }
 
+    /// Cancel both a visible hint and its pending timer for this hold.
+    pub(super) fn layer_key_pressed(&self) {
+        self.layer_hint_session
+            .set(self.layer_hint_session.get().key_pressed());
+        self.hide_layer_hint();
+    }
+
     fn schedule_layer_hint(&self) {
+        if self.layer_hint_session.get() != HintSession::Ready {
+            return;
+        }
         self.layer_hint_timer
             .start(slint::TimerMode::SingleShot, HINT_DELAY, || {
                 super::with_app(|app| app.show_layer_hint())
@@ -63,7 +101,7 @@ impl App {
         let Some(id) = self.held_layer.borrow().clone() else {
             return;
         };
-        if !self.supervisor.borrow().hint {
+        if self.layer_hint_session.get() != HintSession::Ready || !self.supervisor.borrow().hint {
             return;
         }
         let Some(document) = self.document() else {
@@ -118,5 +156,33 @@ impl App {
                     super::with_app(|app| app.hide_layer_hint())
                 });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::HintSession;
+
+    #[test]
+    fn pressing_a_layer_key_blocks_pending_and_visible_hints_until_release() {
+        let held = HintSession::default().layer_changed(true);
+        assert_eq!(held, HintSession::Ready);
+        let used = held.key_pressed();
+        assert_eq!(used, HintSession::Used);
+        // Neither another layer taking over nor returning to the lower
+        // held layer may re-enable a timer or a worker resend.
+        assert_eq!(used.layer_changed(true), HintSession::Used);
+        assert_eq!(used.key_pressed(), HintSession::Used);
+        let released = used.layer_changed(false);
+        assert_eq!(released, HintSession::Idle);
+        assert_eq!(released.layer_changed(true), HintSession::Ready);
+    }
+
+    #[test]
+    fn presses_without_a_held_layer_do_not_suppress_the_next_hold() {
+        assert_eq!(
+            HintSession::Idle.key_pressed().layer_changed(true),
+            HintSession::Ready
+        );
     }
 }

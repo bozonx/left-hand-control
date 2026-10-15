@@ -2063,8 +2063,8 @@ msgstr "Показывать название раскладки Left Hand Contr
 msgid "Show the keys of a layer while it is held"
 msgstr "Показывать клавиши слоя, пока он удерживается"
 
-msgid "The hint appears 100 ms after the layer activates and stays until release, including in game mode."
-msgstr "Подсказка появляется через 100 мс после активации слоя и остаётся до отпускания, в том числе в игровом режиме."
+msgid "The hint appears 100 ms after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode."
+msgstr "Подсказка появляется через 100 мс после активации слоя. Нажатие клавиши слоя скрывает или отменяет её до отпускания триггера, в том числе в игровом режиме."
 
 msgid "Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."
 msgstr "Недоступно: нужна сборка с функцией spell и Wayland-композитор с layer-shell (KDE Plasma, Sway, Hyprland)."
