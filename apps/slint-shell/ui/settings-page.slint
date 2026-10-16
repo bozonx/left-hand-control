@@ -699,7 +699,7 @@ export component SettingsPage inherits VerticalBox {
                                 VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); } }
                             }
                             // Status is shown only when there is a problem; it is a warning only while the option is on.
-                            if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("GameMode is not installed: install the gamemode package."); color: SettingsEditor.use-gamemoded ? Theme.warning : Theme.muted; wrap: word-wrap; }
+                            if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("GameMode daemon unavailable: check the gamemode package and session D-Bus."); color: SettingsEditor.use-gamemoded ? Theme.warning : Theme.muted; wrap: word-wrap; }
                         }
                         // Each OS shows only the sources it has.
                         if AppState.game-gamescope-availability.id != "capability-unsupported": GameSourceOption {

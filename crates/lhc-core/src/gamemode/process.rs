@@ -52,6 +52,13 @@ pub const FULLSCREEN_NON_GAMES: &[&str] = &[
     "soffice.bin",
     "okular",
     "explorer",
+    "safari",
+    "quicktime player",
+    "quicktimeplayerx",
+    "keynote",
+    "powerpoint",
+    "microsoft powerpoint",
+    "com.microsoft.powerpoint",
 ];
 
 /// Launchers and game tools: they are tagged as games or start them, but
@@ -485,6 +492,14 @@ mod tests {
         assert!(fullscreen_non_game(&window("mpv", None)));
         assert!(fullscreen_non_game(&window("brave-browser", None)));
         assert!(fullscreen_non_game(&window("org.kde.haruna", None)));
+        for app in [
+            "com.apple.Safari",
+            "com.apple.QuickTimePlayerX",
+            "com.apple.iWork.Keynote",
+            "com.microsoft.Powerpoint",
+        ] {
+            assert!(fullscreen_non_game(&window(app, None)), "{app}");
+        }
         assert!(!fullscreen_non_game(&window(
             "",
             Some("OperationFlashpoint.exe")

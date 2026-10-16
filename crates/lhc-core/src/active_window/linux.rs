@@ -152,6 +152,10 @@ pub(super) fn start_events() -> bool {
 
 /// Whether the started source still delivers events.
 pub(super) fn events_active() -> bool {
+    // A script may have recovered after the initial start failed.
+    if kwin::active() {
+        return true;
+    }
     match EVENTS.lock().ok().as_deref() {
         Some(Some(Events::Kwin)) => kwin::active(),
         Some(Some(Events::Wlr)) => wlr::active(),

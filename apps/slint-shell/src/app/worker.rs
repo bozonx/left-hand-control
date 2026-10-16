@@ -61,6 +61,16 @@ pub(super) struct Supervisor {
 }
 
 impl Supervisor {
+    pub(super) fn cancel_blocked_show(&mut self, game_active: bool) {
+        if self
+            .pending_show
+            .as_ref()
+            .is_some_and(|pending| pending.source.popup_blocked(game_active))
+        {
+            self.pending_show.take();
+        }
+    }
+
     pub(super) fn new(enabled: bool, layer_shell: bool) -> Self {
         Self {
             enabled,
@@ -97,7 +107,8 @@ impl Supervisor {
 impl App {
     pub(super) fn flush_worker_show(&self) {
         let pending = {
-            let supervisor = self.supervisor.borrow();
+            let mut supervisor = self.supervisor.borrow_mut();
+            supervisor.cancel_blocked_show(lhc_core::runtime_state::game_mode_active());
             if supervisor.worker.is_none() {
                 return;
             }
@@ -223,6 +234,31 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn game_mode_cancels_shortcuts_waiting_for_worker_start_or_restart() {
+        for source in [Source::Hotkey, Source::Evdev, Source::Mapper, Source::Ipc] {
+            let mut supervisor = Supervisor::new(true, true);
+            supervisor.pending_show = Some(PendingShow {
+                command: Command::Show(crate::command::Window::EMOJI),
+                source,
+                start: Instant::now(),
+                token: None,
+            });
+            supervisor.cancel_blocked_show(false);
+            assert!(supervisor.pending_show.is_some());
+            supervisor.cancel_blocked_show(true);
+            assert_eq!(
+                supervisor.pending_show.is_none(),
+                matches!(source, Source::Hotkey | Source::Evdev)
+            );
+            supervisor.cancel_blocked_show(false);
+            assert_eq!(
+                supervisor.pending_show.is_none(),
+                matches!(source, Source::Hotkey | Source::Evdev)
+            );
+        }
+    }
 
     #[test]
     fn restarts_are_limited_per_minute() {

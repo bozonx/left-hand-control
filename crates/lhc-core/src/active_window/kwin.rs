@@ -7,7 +7,7 @@
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use zbus::blocking::{Connection, Proxy, fdo::DBusProxy};
 use zbus::message::Header;
@@ -114,6 +114,8 @@ struct Session {
     /// Whether the loaded script reports titles.
     titles: bool,
     file: PathBuf,
+    owner: String,
+    checked: Instant,
 }
 
 struct Service {
@@ -190,8 +192,14 @@ pub(super) fn start(titles: bool) -> bool {
 }
 
 fn open(titles: bool) -> Result<Session, String> {
-    let connection = connect()?;
-    let file = script_path("active");
+    open_connection(connect()?, script_path("active"), titles)
+}
+
+fn open_connection(
+    (connection, owner): (Connection, String),
+    file: PathBuf,
+    titles: bool,
+) -> Result<Session, String> {
     load_script(
         &connection,
         &file,
@@ -203,16 +211,26 @@ fn open(titles: bool) -> Result<Session, String> {
         connection,
         titles,
         file,
+        owner,
+        checked: Instant::now(),
     })
 }
 
 /// A session-bus connection serving the callback object.
-fn connect() -> Result<Connection, String> {
+fn connect() -> Result<(Connection, String), String> {
+    connect_builder(
+        zbus::blocking::connection::Builder::session().map_err(|error| error.to_string())?,
+    )
+}
+
+fn connect_builder(
+    builder: zbus::blocking::connection::Builder<'_>,
+) -> Result<(Connection, String), String> {
     let kwin = Arc::new(OnceLock::new());
     // Serving through the builder keeps zbus inside its own runtime when
     // another crate enabled its `tokio` feature.
-    let connection = zbus::blocking::connection::Builder::session()
-        .and_then(|builder| builder.serve_at(OBJECT_PATH, Service { kwin: kwin.clone() }))
+    let connection = builder
+        .serve_at(OBJECT_PATH, Service { kwin: kwin.clone() })
         .and_then(|builder| builder.build())
         .map_err(|error| error.to_string())?;
     let name = BusName::try_from(KWIN).map_err(|error| error.to_string())?;
@@ -221,7 +239,7 @@ fn connect() -> Result<Connection, String> {
         .get_name_owner(name)
         .map_err(|error| format!("KWin is not on the session bus: {error}"))?;
     let _ = kwin.set(owner.to_string());
-    Ok(connection)
+    Ok((connection, owner.to_string()))
 }
 
 /// Whether the script runs and reports.
@@ -229,17 +247,67 @@ pub(super) fn active() -> bool {
     SESSION.lock().is_ok_and(|session| session.is_some())
 }
 
-/// Reload the script when whether titles are needed changed.
+fn owner(connection: &Connection) -> Option<String> {
+    DBusProxy::new(connection)
+        .ok()?
+        .get_name_owner(BusName::try_from(KWIN).ok()?)
+        .ok()
+        .map(|owner| owner.to_string())
+}
+
+fn reset_reports() {
+    if let Ok(mut pushed) = PUSHED.lock() {
+        *pushed = None;
+    }
+    if let Ok(mut focus) = FOCUS.lock() {
+        *focus = Focus::default();
+    }
+}
+
+/// Recover after a compositor/bus restart and retry failed initial loads.
 pub(super) fn sync(titles: bool) {
-    let Ok(mut slot) = SESSION.lock() else {
+    static RETRY: Mutex<Option<Instant>> = Mutex::new(None);
+    let Ok(mut slot) = SESSION.lock() else { return };
+    let Ok(mut retry) = RETRY.lock() else { return };
+    sync_session(&mut slot, &mut retry, titles, Instant::now(), open);
+}
+
+fn sync_session(
+    slot: &mut Option<Session>,
+    retry: &mut Option<Instant>,
+    titles: bool,
+    now: Instant,
+    open: impl FnOnce(bool) -> Result<Session, String>,
+) {
+    if let Some(session) = slot.as_mut()
+        && now.duration_since(session.checked) >= Duration::from_secs(1)
+    {
+        session.checked = now;
+        if owner(&session.connection).as_deref() != Some(session.owner.as_str()) {
+            // Never expose the old compositor's cached window or target.
+            reset_reports();
+            close(slot.take());
+        }
+    }
+    if slot.is_none() {
+        if retry.is_some_and(|at| now.duration_since(at) < Duration::from_secs(3)) {
+            return;
+        }
+        *retry = Some(now);
+        match open(titles) {
+            Ok(session) => {
+                *slot = Some(session);
+                *retry = None;
+            }
+            Err(error) => log::debug!("[active-window] KWin reconnect: {error}"),
+        }
         return;
-    };
-    let Some(session) = slot.as_mut() else {
-        return;
-    };
+    }
+    let Some(session) = slot.as_mut() else { return };
     if session.titles == titles {
         return;
     }
+    reset_reports();
     match load_script(
         &session.connection,
         &session.file,
@@ -263,15 +331,14 @@ pub(super) fn current() -> Option<Option<ActiveWindow>> {
 pub(super) fn stop() {
     let session = SESSION.lock().ok().and_then(|mut slot| slot.take());
     close(session);
-    if let Ok(mut pushed) = PUSHED.lock() {
-        *pushed = None;
-    }
+    reset_reports();
 }
 
 fn close(session: Option<Session>) {
     if let Some(session) = session {
         unload_script(&session.connection, ACTIVE_SCRIPT);
         let _ = std::fs::remove_file(&session.file);
+        let _ = session.connection.close();
     }
 }
 
@@ -284,7 +351,7 @@ pub(super) fn open_windows() -> Option<Vec<ActiveWindow>> {
     let connection = match session_connection {
         Some(connection) => connection,
         // Without the watcher's session a temporary one serves the reply.
-        None => connect().ok()?,
+        None => connect().ok()?.0,
     };
     let (sender, receiver) = mpsc::channel();
     *LIST_REPLY.lock().ok()? = Some(sender);
@@ -365,4 +432,134 @@ fn scripting(connection: &Connection) -> Result<Proxy<'static>, String> {
 
 fn json_string(text: &str) -> String {
     serde_json::Value::String(text.into()).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{BufRead, BufReader};
+    use std::process::{Command, Stdio};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct Bus(std::process::Child);
+    impl Drop for Bus {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+
+    struct Scripting(Arc<AtomicUsize>);
+    #[zbus::interface(name = "org.kde.kwin.Scripting")]
+    impl Scripting {
+        #[zbus(name = "loadScript")]
+        fn load_script(&self, _file: &str, _name: &str) -> i32 {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            0
+        }
+        #[zbus(name = "unloadScript")]
+        fn unload_script(&self, _name: &str) -> bool {
+            true
+        }
+        #[zbus(name = "start")]
+        fn start(&self) {}
+    }
+
+    #[test]
+    fn compositor_owner_restart_recovers_and_discards_old_reports() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut daemon = Bus(Command::new("dbus-daemon")
+            .args(["--session", "--nofork", "--print-address=1"])
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("dbus-daemon is needed for the private bus test"));
+        let mut address = String::new();
+        BufReader::new(daemon.0.stdout.take().unwrap())
+            .read_line(&mut address)
+            .unwrap();
+        let address = address.trim();
+        let loads = Arc::new(AtomicUsize::new(0));
+        let server = || {
+            zbus::blocking::connection::Builder::address(address)
+                .unwrap()
+                .name(KWIN)
+                .unwrap()
+                .serve_at("/Scripting", Scripting(loads.clone()))
+                .unwrap()
+                .build()
+                .unwrap()
+        };
+        let open = |titles| {
+            let connection =
+                connect_builder(zbus::blocking::connection::Builder::address(address).unwrap())?;
+            open_connection(connection, directory.path().join("active.js"), titles)
+        };
+        let now = Instant::now();
+        let mut slot = None;
+        let mut retry = None;
+        // A missing compositor is retried rather than disabling the source forever.
+        sync_session(&mut slot, &mut retry, false, now, open);
+        assert!(slot.is_none());
+        let first = server();
+        sync_session(
+            &mut slot,
+            &mut retry,
+            false,
+            now + Duration::from_secs(4),
+            open,
+        );
+        let old_owner = slot.as_ref().unwrap().owner.clone();
+        *PUSHED.lock().unwrap() = Some(Some(ActiveWindow {
+            app_id: "old-game".into(),
+            fullscreen: Some(true),
+            ..ActiveWindow::default()
+        }));
+        FOCUS.lock().unwrap().current = Some("old-window".into());
+        first.close().unwrap();
+        let second = server();
+        sync_session(
+            &mut slot,
+            &mut retry,
+            false,
+            now + Duration::from_secs(8),
+            open,
+        );
+        assert_ne!(slot.as_ref().unwrap().owner, old_owner);
+        assert!(current().is_none());
+        assert!(!target_is_current("old-window"));
+        assert_eq!(loads.load(Ordering::SeqCst), 2);
+        // Fresh owner callbacks work, while other senders are still rejected.
+        let connection = slot.as_ref().unwrap().connection.clone();
+        let proxy = Proxy::new(
+            &second,
+            connection.unique_name().unwrap().as_str(),
+            OBJECT_PATH,
+            INTERFACE,
+        )
+        .unwrap();
+        proxy
+            .call::<_, _, ()>(
+                "Active",
+                &(r#"{"appId":"new-game","fullscreen":true,"windowId":"new-window"}"#,),
+            )
+            .unwrap();
+        assert_eq!(current().unwrap().unwrap().app_id, "new-game");
+        let impostor = zbus::blocking::connection::Builder::address(address)
+            .unwrap()
+            .build()
+            .unwrap();
+        let proxy = Proxy::new(
+            &impostor,
+            connection.unique_name().unwrap().as_str(),
+            OBJECT_PATH,
+            INTERFACE,
+        )
+        .unwrap();
+        proxy
+            .call::<_, _, ()>("Active", &(r#"{"appId":"impostor"}"#,))
+            .unwrap();
+        assert_eq!(current().unwrap().unwrap().app_id, "new-game");
+        close(slot.take());
+        reset_reports();
+    }
 }

@@ -5,7 +5,7 @@
 //! which the Slint event loop does. Window titles would need the Screen
 //! Recording permission, so they are not read.
 
-use std::ffi::c_void;
+use std::ffi::{c_int, c_void};
 
 use objc2_app_kit::{NSRunningApplication, NSWorkspace};
 use objc2_core_foundation::{CFDictionary, CFNumber, CFString, CGRect};
@@ -43,21 +43,73 @@ fn executable_name(app: &NSRunningApplication) -> Option<String> {
         .filter(|name| !name.is_empty())
 }
 
-/// Executable names of the running applications.
-pub(crate) fn running_process_names() -> Option<Vec<String>> {
-    let apps = NSWorkspace::sharedWorkspace().runningApplications();
-    Some(
-        apps.iter()
-            .filter(|app| !app.isTerminated())
-            .filter_map(|app| executable_name(&app))
-            .collect(),
-    )
+#[link(name = "proc")]
+unsafe extern "C" {
+    fn proc_listpids(kind: u32, uid: u32, buffer: *mut c_void, size: c_int) -> c_int;
+    fn proc_pidpath(pid: c_int, buffer: *mut c_void, size: u32) -> c_int;
+    fn proc_name(pid: c_int, buffer: *mut c_void, size: u32) -> c_int;
+    fn geteuid() -> u32;
 }
 
-/// The frontmost application's name when its `Info.plist` files it under
-/// games (`public.app-category.games` or a `*-games` subcategory).
-pub(crate) fn frontmost_game() -> Option<String> {
-    let app = NSWorkspace::sharedWorkspace().frontmostApplication()?;
+/// Executable names of all current-user processes, including CLI applications.
+pub(crate) fn running_process_names() -> Option<Vec<String>> {
+    const PROC_UID_ONLY: u32 = 4;
+    let uid = unsafe { geteuid() };
+    let size = unsafe { proc_listpids(PROC_UID_ONLY, uid, std::ptr::null_mut(), 0) };
+    if size <= 0 {
+        return None;
+    }
+    let mut pids = vec![0_i32; size as usize / size_of::<i32>() + 64];
+    for _ in 0..4 {
+        let bytes = i32::try_from(pids.len() * size_of::<i32>()).ok()?;
+        let read = unsafe { proc_listpids(PROC_UID_ONLY, uid, pids.as_mut_ptr().cast(), bytes) };
+        if read <= 0 {
+            return None;
+        }
+        if read >= bytes {
+            pids.resize(pids.len() * 2, 0);
+            continue;
+        }
+        pids.truncate(read as usize / size_of::<i32>());
+        return Some(
+            pids.into_iter()
+                .filter(|pid| *pid > 0)
+                .filter_map(|pid| {
+                    let mut path = [0_u8; 4096];
+                    let mut length =
+                        unsafe { proc_pidpath(pid, path.as_mut_ptr().cast(), path.len() as u32) };
+                    if length <= 0 {
+                        length =
+                            unsafe { proc_name(pid, path.as_mut_ptr().cast(), path.len() as u32) };
+                    }
+                    if length <= 0 {
+                        return None;
+                    }
+                    let end = path
+                        .iter()
+                        .position(|byte| *byte == 0)
+                        .unwrap_or(path.len());
+                    let path = String::from_utf8_lossy(&path[..end]);
+                    let name = path.rsplit('/').next()?.trim();
+                    (!name.is_empty()).then(|| name.to_owned())
+                })
+                .collect(),
+        );
+    }
+    None
+}
+
+/// Category of the cached application, including while our own UI has focus.
+pub(crate) fn game_window(window: &ActiveWindow) -> Option<String> {
+    let apps = NSWorkspace::sharedWorkspace().runningApplications();
+    let app = apps.iter().find(|app| {
+        if !window.app_id.is_empty() {
+            app.bundleIdentifier()
+                .is_some_and(|id| id.to_string() == window.app_id)
+        } else {
+            executable_name(app).as_deref() == window.process_name.as_deref()
+        }
+    })?;
     let url = app.bundleURL()?;
     let bundle = NSBundle::bundleWithURL(&url)?;
     let category =
@@ -75,14 +127,14 @@ pub(crate) fn frontmost_game() -> Option<String> {
     })
 }
 
-/// Whether a normal-level window of `pid` covers a whole display.
+/// Whether the frontmost normal window of `pid` covers a whole display.
 /// Window bounds need no permission, unlike window titles.
 fn covers_display(pid: i32) -> Option<bool> {
     let windows = CGWindowListCopyWindowInfo(
         CGWindowListOption::OptionOnScreenOnly | CGWindowListOption::ExcludeDesktopElements,
         kCGNullWindowID,
     )?;
-    let displays = display_bounds();
+    let displays = display_bounds()?;
     for index in 0..windows.count() {
         // SAFETY: the window list holds one dictionary per window.
         let window = unsafe { &*(windows.value_at_index(index) as *const CFDictionary) };
@@ -100,11 +152,11 @@ fn covers_display(pid: i32) -> Option<bool> {
         if !unsafe { CGRectMakeWithDictionaryRepresentation(Some(&*bounds), &mut rect) } {
             continue;
         }
-        if displays.iter().any(|display| covers(&rect, display)) {
-            return Some(true);
-        }
+        // CGWindowList is ordered front to back. Other windows of this
+        // application (e.g. on a second monitor) must not affect the result.
+        return Some(displays.iter().any(|display| covers(&rect, display)));
     }
-    Some(false)
+    None
 }
 
 fn covers(window: &CGRect, display: &CGRect) -> bool {
@@ -114,17 +166,18 @@ fn covers(window: &CGRect, display: &CGRect) -> bool {
         && window.origin.y + window.size.height >= display.origin.y + display.size.height
 }
 
-fn display_bounds() -> Vec<CGRect> {
+fn display_bounds() -> Option<Vec<CGRect>> {
     let mut ids: [CGDirectDisplayID; 16] = [0; 16];
     let mut count = 0_u32;
     let status = unsafe { CGGetActiveDisplayList(ids.len() as u32, ids.as_mut_ptr(), &mut count) };
     if status.0 != 0 {
-        return Vec::new();
+        return None;
     }
-    ids[..(count as usize).min(ids.len())]
+    let bounds: Vec<_> = ids[..(count as usize).min(ids.len())]
         .iter()
         .map(|id| CGDisplayBounds(*id))
-        .collect()
+        .collect();
+    (!bounds.is_empty()).then_some(bounds)
 }
 
 fn key(name: &CFString) -> *const c_void {
@@ -208,4 +261,22 @@ pub fn text_modifiers_released() -> bool {
     }
     let flags = unsafe { CGEventSourceFlagsState(0) };
     flags & ((1 << 17) | (1 << 18) | (1 << 19) | (1 << 20)) == 0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn process_list_includes_the_cli_test_process() {
+        // A Cargo test executable has no NSRunningApplication entry.
+        let executable = std::env::current_exe().unwrap();
+        let name = executable.file_name().unwrap().to_string_lossy();
+        assert!(
+            running_process_names()
+                .unwrap()
+                .iter()
+                .any(|process| process == name.as_ref())
+        );
+    }
 }

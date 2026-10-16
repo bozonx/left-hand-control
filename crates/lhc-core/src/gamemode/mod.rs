@@ -48,6 +48,9 @@ pub struct GameModeDetectors {
     pub fullscreen: DetectorAvailability,
     pub processes: DetectorAvailability,
     pub active_window: DetectorAvailability,
+    /// Registry sources have separate health from process enumeration.
+    pub steam: Option<DetectorAvailability>,
+    pub game_bar: Option<DetectorAvailability>,
     /// Command-line tool the window sources need but which is missing,
     /// e.g. `kdotool` on KDE Wayland.
     pub missing_window_tool: Option<String>,
@@ -118,7 +121,12 @@ impl GameSource {
         let detector = match self {
             Self::Gamescope | Self::AppCategory => detectors.active_window,
             // Steam keeps the running game in the registry.
-            Self::Steam if cfg!(target_os = "windows") => DetectorAvailability::Available,
+            Self::Steam if cfg!(target_os = "windows") => {
+                detectors.steam.unwrap_or(DetectorAvailability::Unavailable)
+            }
+            Self::GameBar if cfg!(target_os = "windows") => detectors
+                .game_bar
+                .unwrap_or(DetectorAvailability::Unavailable),
             Self::Steam | Self::Lutris | Self::Heroic | Self::Umu | Self::GameBar => {
                 detectors.processes
             }
@@ -244,10 +252,9 @@ impl State {
 
 #[derive(Default)]
 struct SettingsCache {
+    control_restored: bool,
     settings: Option<GameModeSettings>,
     revision: u64,
-    /// The remembered Auto/On/Off choice was applied once at startup.
-    control_restored: bool,
 }
 
 #[derive(Default)]
@@ -263,9 +270,9 @@ struct Watcher {
 
 static STATE: OnceLock<Mutex<State>> = OnceLock::new();
 static CACHED_SETTINGS: Mutex<SettingsCache> = Mutex::new(SettingsCache {
+    control_restored: false,
     settings: None,
     revision: 0,
-    control_restored: false,
 });
 static WATCHER: Mutex<Option<Watcher>> = Mutex::new(None);
 
@@ -307,27 +314,62 @@ pub fn toggle() -> GameModeStatus {
     })
 }
 
-/// Use `settings` for detection from now on. The first call also restores
-/// the last Auto/On/Off choice.
+impl SettingsCache {
+    /// Control changes do not invalidate detection or its grace period.
+    fn update(&mut self, settings: &GameModeSettings) -> (bool, bool) {
+        let apply_control = !self.control_restored
+            || self
+                .settings
+                .as_ref()
+                .is_none_or(|old| old.control != settings.control);
+        self.control_restored = true;
+        let mut detection_settings = settings.clone();
+        detection_settings.control = GameModeControl::Auto;
+        let changed = self.settings.as_ref().is_none_or(|old| {
+            let mut old = old.clone();
+            old.control = GameModeControl::Auto;
+            old != detection_settings
+        });
+        if changed {
+            self.revision += 1;
+        }
+        self.settings = Some(settings.clone());
+        (apply_control, changed)
+    }
+}
+
+/// Apply detection settings and a changed persisted Auto/On/Off choice.
 pub fn set_settings(settings: &GameModeSettings) {
-    let restore = {
+    let (result, changed) = {
         let Ok(mut cache) = CACHED_SETTINGS.lock() else {
             return;
         };
-        cache.settings = Some(settings.clone());
-        cache.revision += 1;
-        !std::mem::replace(&mut cache.control_restored, true)
+        let (apply_control, changed) = cache.update(settings);
+        // Serialize persisted choices with cache updates, including startup.
+        let result = apply_control
+            .then(|| {
+                state()
+                    .lock()
+                    .ok()
+                    .map(|mut state| state.update(|state| state.control = settings.control))
+            })
+            .flatten();
+        (result, changed)
     };
-    if restore {
-        set_control(settings.control);
+    if let Some(result) = result {
+        publish(result);
     }
-    crate::active_window::set_titles_needed_by_game_mode(crate::profile::app_match::uses_title(
-        settings
-            .process_matchers
-            .iter()
-            .map(|matcher| &matcher.name),
-    ));
-    wake();
+    if changed {
+        crate::active_window::set_titles_needed_by_game_mode(
+            crate::profile::app_match::uses_title(
+                settings
+                    .process_matchers
+                    .iter()
+                    .map(|matcher| &matcher.name),
+            ),
+        );
+        wake();
+    }
 }
 
 /// Re-run detection now, e.g. after the focused window changed.
@@ -532,7 +574,9 @@ fn known_game(
         .or_else(|| {
             window
                 .and_then(process::known_game_window)
-                .filter(|(source, _)| source.enabled(settings))
+                .filter(|(source, _)| {
+                    GameSource::SUPPORTED.contains(source) && source.enabled(settings)
+                })
                 .map(|(_, name)| name)
         })
         .or_else(|| {
@@ -604,8 +648,11 @@ fn evaluate(
         .filter(|matcher| !matcher.is_blacklist && !matcher.name.trim().is_empty())
         .collect();
     let known_games = enabled_sources(settings).next().is_some();
-    let enabled =
-        settings.use_gamemoded || settings.use_fullscreen || known_games || !whitelist.is_empty();
+    let enabled = (settings.use_gamemoded
+        && detectors.gamemoded != DetectorAvailability::Unsupported)
+        || settings.use_fullscreen
+        || known_games
+        || !whitelist.is_empty();
     let mut detection = Detection {
         enabled,
         // Nothing to detect is a known "off".
@@ -672,8 +719,28 @@ fn load_game_mode_settings(storage: Option<&StoragePaths>) -> (GameModeSettings,
         .and_then(|raw| parse_game_mode_settings(&raw))
         .unwrap_or_else(|| crate::profile::model::AppSettings::default().game_mode);
     if let Ok(mut cache) = CACHED_SETTINGS.lock() {
-        let settings = cache.settings.get_or_insert(settings).clone();
-        return (settings, cache.revision);
+        if let Some(settings) = &cache.settings {
+            return (settings.clone(), cache.revision);
+        }
+        cache.update(&settings);
+        let revision = cache.revision;
+        let result = state()
+            .lock()
+            .ok()
+            .map(|mut state| state.update(|state| state.control = settings.control));
+        drop(cache);
+        if let Some(result) = result {
+            publish(result);
+        }
+        crate::active_window::set_titles_needed_by_game_mode(
+            crate::profile::app_match::uses_title(
+                settings
+                    .process_matchers
+                    .iter()
+                    .map(|matcher| &matcher.name),
+            ),
+        );
+        return (settings, revision);
     }
     (settings, 0)
 }
@@ -699,6 +766,7 @@ mod tests {
                 processes: DetectorAvailability::Available,
                 active_window: DetectorAvailability::Available,
                 missing_window_tool: None,
+                ..GameModeDetectors::default()
             },
             running: running.iter().map(|name| name.to_string()).collect(),
             known_games: Vec::new(),
@@ -738,6 +806,35 @@ mod tests {
             fullscreen: Some(true),
             ..ActiveWindow::default()
         }
+    }
+
+    #[test]
+    fn persisted_control_changes_do_not_invalidate_detection() {
+        let mut cache = SettingsCache::default();
+        let mut settings = settings(vec![]);
+        assert_eq!(cache.update(&settings), (true, true));
+        let revision = cache.revision;
+        assert_eq!(cache.update(&settings), (false, false));
+        settings.control = GameModeControl::On;
+        assert_eq!(cache.update(&settings), (true, false));
+        assert_eq!(cache.revision, revision);
+        settings.control = GameModeControl::Off;
+        assert_eq!(cache.update(&settings), (true, false));
+        settings.use_fullscreen = true;
+        assert_eq!(cache.update(&settings), (false, true));
+        assert_eq!(cache.revision, revision + 1);
+    }
+
+    #[test]
+    fn watcher_preloaded_settings_still_restore_control() {
+        let mut settings = settings(vec![]);
+        settings.control = GameModeControl::On;
+        let mut cache = SettingsCache {
+            settings: Some(settings.clone()),
+            ..SettingsCache::default()
+        };
+        assert!(cache.update(&settings).0);
+        assert!(!cache.update(&settings).0);
     }
 
     #[test]
@@ -812,6 +909,25 @@ mod tests {
     }
 
     #[test]
+    fn unsupported_window_sources_do_not_leak_into_other_platforms() {
+        let mut settings = settings(Vec::new());
+        settings.use_steam = true;
+        settings.use_gamescope = true;
+        settings.use_app_category = true;
+        let observed = observation(&[], false);
+        for (source, app_id) in [
+            (GameSource::Steam, "steam_app_42"),
+            (GameSource::Gamescope, "gamescope"),
+        ] {
+            assert_eq!(
+                evaluate(&settings, &observed, Some(&fullscreen(app_id))).active,
+                GameSource::SUPPORTED.contains(&source)
+            );
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
     fn known_games_come_from_launchers_windows_and_categories() {
         let mut settings = settings(Vec::new());
         settings.use_steam = true;
@@ -874,6 +990,7 @@ mod tests {
         assert!(!evaluate(&settings, &observed, Some(&window)).active);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn window_sources_turn_off_separately() {
         let mut settings = settings(Vec::new());

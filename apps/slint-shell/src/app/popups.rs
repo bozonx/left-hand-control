@@ -94,8 +94,7 @@ impl App {
     ) {
         // A popup would steal focus from the game, so hotkeys are ignored.
         if window.popup().is_some()
-            && matches!(source, Source::Hotkey | Source::Evdev)
-            && lhc_core::runtime_state::game_mode_active()
+            && source.popup_blocked(lhc_core::runtime_state::game_mode_active())
         {
             return;
         }

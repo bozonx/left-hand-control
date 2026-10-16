@@ -33,23 +33,24 @@ pub(crate) fn from_ui(control: GameModeControl) -> GameMode {
 
 /// Apply `mode` and, when the user asked for it, remember the choice.
 pub(crate) fn apply(mode: GameMode, document: Option<&Document>) -> Result<GameModeStatus, Msg> {
-    let status = match mode {
-        GameMode::Auto => gamemode::set_control(gamemode::GameModeControl::Auto),
-        GameMode::On => gamemode::set_control(gamemode::GameModeControl::On),
-        GameMode::Off => gamemode::set_control(gamemode::GameModeControl::Off),
-        GameMode::Toggle => gamemode::toggle(),
+    let control = match mode {
+        GameMode::Auto => gamemode::GameModeControl::Auto,
+        GameMode::On => gamemode::GameModeControl::On,
+        GameMode::Off => gamemode::GameModeControl::Off,
+        GameMode::Toggle if gamemode::status().active => gamemode::GameModeControl::Off,
+        GameMode::Toggle => gamemode::GameModeControl::On,
     };
-    let Some(document) = document else {
-        return Ok(status);
-    };
-    let persist = document.read().settings().game_mode.control != status.control;
-    if persist {
-        document
-            .edit(View::Shell, |config| {
-                config.update_settings(|settings| settings.game_mode.control = status.control)
-            })
-            .map_err(|error| Msg::from(&error))?;
+    if let Some(document) = document {
+        let persist = document.read().settings().game_mode.control != control;
+        if persist {
+            document
+                .edit(View::Shell, |config| {
+                    config.update_settings(|settings| settings.game_mode.control = control)
+                })
+                .map_err(|error| Msg::from(&error))?;
+        }
     }
+    let status = gamemode::set_control(control);
     Ok(status)
 }
 
@@ -125,5 +126,58 @@ fn automatic_message(status: &GameModeStatus) -> Msg {
             Some(name) => Msg::GameModeWindowSkipped(name.clone()),
             None => Msg::GameModeAutoInactive,
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn persisted_control_is_atomic() {
+        // ConfigDocument/game mode are process globals; isolate the regression
+        // from other document tests rather than depending on test ordering.
+        const CHILD: &str = "LHC_GAME_MODE_ATOMIC_TEST";
+        if std::env::var_os(CHILD).is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "game_mode::tests::persisted_control_is_atomic",
+                    "--nocapture",
+                ])
+                .env(CHILD, "1")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let paths =
+            lhc_core::StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+        let document = Document::load(paths.clone()).unwrap();
+        apply(GameMode::On, Some(&document)).unwrap();
+        assert_eq!(gamemode::status().control, gamemode::GameModeControl::On);
+        let mut raw: serde_json::Value =
+            serde_json::from_str(&paths.load_config().unwrap()).unwrap();
+        assert_eq!(raw["settings"]["gameMode"]["control"], "on");
+        raw["settings"]["gameMode"]["control"] = "off".into();
+        paths.save_config(&raw.to_string()).unwrap();
+        // A conflicting save reloads the external choice, never applies Auto.
+        assert!(apply(GameMode::Auto, Some(&document)).is_err());
+        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Off);
+        assert_eq!(
+            document.read().settings().game_mode.control,
+            gamemode::GameModeControl::Off
+        );
+        // Also cover an I/O failure, independent of conflict handling.
+        std::fs::remove_file(paths.config_path()).unwrap();
+        std::fs::create_dir(paths.config_path()).unwrap();
+        assert!(apply(GameMode::On, Some(&document)).is_err());
+        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Off);
     }
 }

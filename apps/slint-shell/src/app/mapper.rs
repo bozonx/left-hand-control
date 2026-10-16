@@ -86,7 +86,18 @@ impl App {
     /// Show the game-mode status; the active layout only depends on
     /// whether game mode is on, not on which detector reported it.
     pub(super) fn game_mode_changed(&self, status: &lhc_core::gamemode::GameModeStatus) {
+        // Events from different watcher threads can reach the UI out of order.
+        let current = lhc_core::gamemode::status();
+        let status = if status.revision < current.revision {
+            &current
+        } else {
+            status
+        };
         crate::game_mode::refresh(&self.settings, status);
+        crate::platform::hotkey::set_game_active(status.active);
+        self.supervisor
+            .borrow_mut()
+            .cancel_blocked_show(status.active);
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_game(status);
         }

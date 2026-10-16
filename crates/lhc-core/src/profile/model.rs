@@ -381,7 +381,7 @@ pub struct GameModeSettings {
     pub use_app_category: bool,
     pub use_game_bar: bool,
     pub process_matchers: Vec<GameModeProcessMatcher>,
-    /// Last Auto/On/Off choice, restored on startup.
+    /// Persisted Auto/On/Off choice, also applied on external reload.
     pub control: GameModeControl,
 }
 
@@ -563,14 +563,14 @@ impl Default for AppSettings {
             auto_default_layout_id: None,
             commands_enabled: false,
             game_mode: GameModeSettings {
-                use_gamemoded: true,
+                use_gamemoded: cfg!(target_os = "linux"),
                 use_fullscreen: false,
-                use_steam: true,
-                use_lutris: true,
-                use_heroic: true,
-                use_umu: true,
-                use_gamescope: true,
-                use_app_category: false,
+                use_steam: cfg!(any(target_os = "linux", target_os = "windows")),
+                use_lutris: cfg!(target_os = "linux"),
+                use_heroic: cfg!(target_os = "linux"),
+                use_umu: cfg!(target_os = "linux"),
+                use_gamescope: cfg!(target_os = "linux"),
+                use_app_category: cfg!(target_os = "macos"),
                 use_game_bar: false,
                 process_matchers: Vec::new(),
                 control: GameModeControl::Auto,

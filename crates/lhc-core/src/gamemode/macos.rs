@@ -8,13 +8,18 @@ use crate::runtime_state::ActiveWindow;
 pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>) -> Observation {
     let need_running = super::needs_running_processes(settings);
     let running = need_running.then(running_process_names).flatten();
-    let window_game = (settings.use_app_category && window.is_some())
-        .then(crate::platform::macos::frontmost_game)
+    let window_game = settings
+        .use_app_category
+        .then(|| window.and_then(crate::platform::macos::game_window))
         .flatten();
     Observation {
         detectors: GameModeDetectors {
             gamemoded: DetectorAvailability::Unsupported,
-            fullscreen: DetectorAvailability::Available,
+            fullscreen: if window.and_then(|window| window.fullscreen).is_some() {
+                DetectorAvailability::Available
+            } else {
+                DetectorAvailability::Unavailable
+            },
             processes: if need_running && running.is_none() {
                 DetectorAvailability::Unavailable
             } else {
@@ -22,6 +27,7 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
             },
             active_window: crate::active_window::availability(),
             missing_window_tool: None,
+            ..GameModeDetectors::default()
         },
         running: running.unwrap_or_default(),
         known_games: Vec::new(),

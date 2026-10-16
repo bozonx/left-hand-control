@@ -17,6 +17,8 @@
 
 ## Тестирование
 
+- [Игровой режим: регрессии и нативная приёмка](testing/game-mode.md)
+
 - [Windows: настройка стенда](testing/windows.md)
 - [Приёмка Slint-оболочки на Windows](testing/slint-windows-validation.md)
 - [План кроссплатформенной продуктовой приёмки](testing/cross-platform-product-validation-plan.md)

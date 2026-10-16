@@ -7,8 +7,8 @@
 
 use std::collections::{HashMap, HashSet};
 use std::os::unix::fs::MetadataExt;
-use std::path::Path;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use zbus::blocking::{Connection, MessageIterator, Proxy, fdo::DBusProxy};
@@ -60,6 +60,7 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
             processes: availability(processes_available),
             active_window,
             missing_window_tool: crate::active_window::missing_tool().map(str::to_owned),
+            ..GameModeDetectors::default()
         },
         running,
         known_games,
@@ -76,14 +77,10 @@ fn availability(available: bool) -> DetectorAvailability {
     }
 }
 
-fn session_bus() -> Option<&'static Connection> {
-    static BUS: OnceLock<Option<Connection>> = OnceLock::new();
-    BUS.get_or_init(|| {
-        Connection::session()
-            .inspect_err(|error| log::debug!("[gamemode] session bus: {error}"))
-            .ok()
-    })
-    .as_ref()
+fn session_bus() -> Option<Connection> {
+    Connection::session()
+        .inspect_err(|error| log::debug!("[gamemode] session bus: {error}"))
+        .ok()
 }
 
 /// Whether the session bus can start GameMode, i.e. its D-Bus service is
@@ -97,7 +94,7 @@ fn daemon_installed() -> bool {
         return installed;
     }
     let installed = session_bus()
-        .and_then(|bus| DBusProxy::new(bus).ok()?.list_activatable_names().ok())
+        .and_then(|bus| DBusProxy::new(&bus).ok()?.list_activatable_names().ok())
         .is_some_and(|names| names.iter().any(|name| name.as_str() == GAMEMODE_NAME));
     if let Ok(mut cache) = CACHE.lock() {
         *cache = Some((Instant::now(), installed));
@@ -145,6 +142,12 @@ fn daemon_state() -> Option<Daemon> {
         .as_ref()
         .and_then(|listener| *listener.state.lock().ok()?)
     {
+        if matches!(state, Daemon::Unknown) {
+            let listener = listener.as_ref()?;
+            let state = read_daemon(&listener.connection);
+            *listener.state.lock().ok()? = Some(state);
+            return Some(state);
+        }
         return Some(state);
     }
     if let Some(old) = listener.take() {
@@ -252,10 +255,11 @@ fn client_count(connection: &Connection) -> zbus::Result<i32> {
 /// What one process is known by; read once per process.
 struct ProcInfo {
     /// Start time in clock ticks: tells a reused pid from the old process.
-    /// Zero for another user's process, which is never read.
     start: u64,
+    executable: Option<PathBuf>,
+    refreshed: Instant,
     names: Vec<String>,
-    game: Option<(GameSource, String)>,
+    games: Vec<(GameSource, String)>,
 }
 
 /// The current user's processes.
@@ -268,30 +272,25 @@ pub(super) struct Scan {
     pub games: Vec<(GameSource, String)>,
 }
 
-/// Processes of the previous scan by pid, other users' ones included.
+/// Processes of the previous scan by pid.
 #[derive(Default)]
 struct ProcessCache {
     processes: HashMap<u32, ProcInfo>,
-    scanned: Option<Instant>,
 }
 
-/// Within this time the kernel does not hand out a pid again (it would
-/// have to cycle through all of `pid_max`), so a pid seen in the previous
-/// scan is the same process. Older caches are checked again.
-const PID_REUSE_GUARD: Duration = Duration::from_secs(5);
+/// Also refresh argv/environ: applications may rewrite them without exec.
+const PROCESS_REFRESH: Duration = Duration::from_secs(5);
 
 static PROCESSES: Mutex<Option<ProcessCache>> = Mutex::new(None);
 
-/// Scan the current user's processes. Only processes started since the
-/// previous scan are read, so frequent polling costs a directory listing.
+/// Scan the current user's processes, detecting exec and periodically
+/// refreshing mutable argv/environ metadata.
 pub(super) fn scan_processes() -> Option<Scan> {
     let entries = std::fs::read_dir("/proc").ok()?;
     let uid = unsafe { libc::geteuid() };
     let mut cache = PROCESSES.lock().ok()?;
     let previous = cache.take().unwrap_or_default();
-    let trust = previous
-        .scanned
-        .is_some_and(|at| at.elapsed() < PID_REUSE_GUARD);
+    let now = Instant::now();
     let mut previous = previous.processes;
     let mut current = HashMap::with_capacity(previous.len());
     for entry in entries.flatten() {
@@ -302,26 +301,9 @@ pub(super) fn scan_processes() -> Option<Scan> {
         else {
             continue;
         };
-        let known = previous.remove(&pid);
-        let info = match known {
-            Some(info) if trust => info,
-            known => {
-                let Ok(metadata) = entry.metadata() else {
-                    continue;
-                };
-                if metadata.uid() != uid {
-                    current.insert(pid, ProcInfo::foreign());
-                    continue;
-                }
-                let dir = entry.path();
-                let Some(start) = start_time(&dir) else {
-                    continue;
-                };
-                match known {
-                    Some(info) if info.start == start => info,
-                    _ => read_process(&dir, start),
-                }
-            }
+        let dir = entry.path();
+        let Some(info) = cached_process(&dir, uid, previous.remove(&pid), now) else {
+            continue;
         };
         current.insert(pid, info);
     }
@@ -329,17 +311,14 @@ pub(super) fn scan_processes() -> Option<Scan> {
     let mut games = Vec::new();
     for info in current.values() {
         names.extend(info.names.iter().cloned());
-        if let Some((source, game)) = &info.game {
+        for (source, game) in &info.games {
             if *source == GameSource::Steam {
                 names.insert(game.clone());
             }
             games.push((*source, game.clone()));
         }
     }
-    *cache = Some(ProcessCache {
-        processes: current,
-        scanned: Some(Instant::now()),
-    });
+    *cache = Some(ProcessCache { processes: current });
     games.sort();
     games.dedup();
     Some(Scan {
@@ -348,27 +327,34 @@ pub(super) fn scan_processes() -> Option<Scan> {
     })
 }
 
-impl ProcInfo {
-    fn foreign() -> Self {
-        ProcInfo {
-            start: 0,
-            names: Vec::new(),
-            game: None,
-        }
+fn cached_process(dir: &Path, uid: u32, known: Option<ProcInfo>, now: Instant) -> Option<ProcInfo> {
+    if std::fs::metadata(dir).ok()?.uid() != uid {
+        return None;
     }
-}
-
-fn read_process(dir: &Path, start: u64) -> ProcInfo {
+    let start = start_time(dir)?;
+    let executable = std::fs::read_link(dir.join("exe")).ok();
+    if let Some(info) = known
+        && info.start == start
+        && info.executable == executable
+        && now.duration_since(info.refreshed) < PROCESS_REFRESH
+    {
+        return Some(info);
+    }
     let args = super::process::proc_args(dir);
-    ProcInfo {
+    Some(ProcInfo {
         start,
+        executable,
+        refreshed: now,
         names: super::process::proc_names(dir, &args),
-        game: super::process::launched_game(&args).or_else(|| {
-            std::fs::read(dir.join("environ"))
-                .ok()
-                .and_then(|environ| super::process::heroic_game(&environ))
-        }),
-    }
+        games: super::process::launched_game(&args)
+            .into_iter()
+            .chain(
+                std::fs::read(dir.join("environ"))
+                    .ok()
+                    .and_then(|environ| super::process::heroic_game(&environ)),
+            )
+            .collect(),
+    })
 }
 
 /// Field 22 of `/proc/<pid>/stat`. The command name before it may hold
@@ -392,6 +378,40 @@ pub(super) fn running_process_names() -> Option<Vec<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn process_cache_detects_exec_and_refreshes_mutable_metadata() {
+        use std::os::unix::fs::symlink;
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let stat = "42 (game) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 999 20";
+        std::fs::write(root.join("stat"), stat).unwrap();
+        std::fs::write(root.join("cmdline"), b"/bin/sh\0").unwrap();
+        std::fs::write(root.join("environ"), b"").unwrap();
+        symlink("/bin/sh", root.join("exe")).unwrap();
+        let uid = unsafe { libc::geteuid() };
+        let now = Instant::now();
+        let first = cached_process(root, uid, None, now).unwrap();
+        std::fs::remove_file(root.join("exe")).unwrap();
+        symlink("/games/Game.exe", root.join("exe")).unwrap();
+        std::fs::write(root.join("cmdline"), b"/games/Game.exe\0").unwrap();
+        let next = cached_process(root, uid, Some(first), now).unwrap();
+        assert!(next.names.iter().any(|name| name == "Game.exe"));
+        std::fs::write(root.join("environ"), b"HEROIC_APP_NAME=NewGame\0").unwrap();
+        let next = cached_process(root, uid, Some(next), now + PROCESS_REFRESH).unwrap();
+        assert_eq!(next.games, vec![(GameSource::Heroic, "NewGame".into())]);
+        // Heroic and umu are independent toggles even on the same process.
+        std::fs::write(root.join("cmdline"), b"umu-run\0Game.exe\0").unwrap();
+        let next = cached_process(root, uid, Some(next), now + PROCESS_REFRESH * 2).unwrap();
+        assert_eq!(
+            next.games,
+            vec![
+                (GameSource::Umu, "Game.exe".into()),
+                (GameSource::Heroic, "NewGame".into())
+            ]
+        );
+        assert!(cached_process(root, uid.wrapping_add(1), Some(next), now).is_none());
+    }
 
     #[test]
     fn start_time_skips_odd_command_names() {

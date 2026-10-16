@@ -69,7 +69,7 @@ pub(crate) fn active_window(titles: bool) -> Option<ActiveWindow> {
         title,
         app_id,
         process_name,
-        fullscreen: fullscreen_active(),
+        fullscreen: fullscreen_for_window(window),
     })
 }
 
@@ -292,19 +292,18 @@ fn session_of(pid: u32) -> Option<u32> {
 /// the task switchers never count. Presentation mode (set by a slide
 /// show or by hand) says nothing about the foreground window, so the
 /// geometry decides then.
-pub(crate) fn fullscreen_active() -> Option<bool> {
-    if unsafe { SHQueryUserNotificationState() }
-        .is_ok_and(|state| state == QUNS_RUNNING_D3D_FULL_SCREEN)
-    {
-        return Some(true);
-    }
-    let window = unsafe { GetForegroundWindow() };
+fn fullscreen_for_window(window: HWND) -> Option<bool> {
     if window.is_invalid()
         || window == unsafe { GetShellWindow() }
         || unsafe { IsIconic(window) }.as_bool()
         || is_shell_window(window)
     {
         return Some(false);
+    }
+    if unsafe { SHQueryUserNotificationState() }
+        .is_ok_and(|state| state == QUNS_RUNNING_D3D_FULL_SCREEN)
+    {
+        return Some(true);
     }
     let client = client_rect_on_screen(window)?;
     let monitor = unsafe { MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST) };

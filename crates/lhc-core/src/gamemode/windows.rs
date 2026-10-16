@@ -8,7 +8,9 @@ use std::collections::HashSet;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use windows::Win32::Foundation::ERROR_MORE_DATA;
+use windows::Win32::Foundation::{
+    ERROR_FILE_NOT_FOUND, ERROR_MORE_DATA, ERROR_NO_MORE_ITEMS, ERROR_PATH_NOT_FOUND,
+};
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CURRENT_USER, KEY_READ, RRF_RT_REG_DWORD, RRF_RT_REG_SZ, RegCloseKey, RegEnumKeyExW,
     RegGetValueW, RegOpenKeyExW,
@@ -21,21 +23,37 @@ use super::{DetectorAvailability, GameModeDetectors, GameModeSettings, Observati
 const CATALOG_TTL: Duration = Duration::from_secs(60);
 
 pub(super) fn observe(settings: &GameModeSettings) -> Observation {
-    let need_running = super::needs_polling(settings);
-    let running = need_running
-        .then(crate::platform::windows::running_process_names)
-        .flatten();
-    let known_games = known_games(settings, running.as_deref().unwrap_or_default());
+    let running = crate::platform::windows::running_process_names();
+    let steam = steam_running_app();
+    let catalog = catalog();
+    let mut known_games = Vec::new();
+    if settings.use_steam
+        && let Ok(Some(id)) = steam
+    {
+        known_games.push(format!("steam_app_{id}"));
+    }
+    if settings.use_game_bar
+        && let (Some(running), Ok(catalog)) = (&running, &catalog)
+    {
+        known_games.extend(
+            running
+                .iter()
+                .filter(|name| {
+                    catalog.contains(&name.to_lowercase())
+                        && !super::process::launcher_process(name)
+                })
+                .cloned(),
+        );
+    }
+    let window = crate::active_window::cached_active_window();
     Observation {
         detectors: GameModeDetectors {
             gamemoded: DetectorAvailability::Unsupported,
-            fullscreen: DetectorAvailability::Available,
-            processes: if need_running && running.is_none() {
-                DetectorAvailability::Unavailable
-            } else {
-                DetectorAvailability::Available
-            },
+            fullscreen: availability(window.and_then(|window| window.fullscreen).is_some()),
+            processes: availability(running.is_some()),
             active_window: crate::active_window::availability(),
+            steam: Some(availability(steam.is_ok())),
+            game_bar: Some(availability(catalog.is_ok() && running.is_some())),
             missing_window_tool: None,
         },
         running: running.unwrap_or_default(),
@@ -45,41 +63,42 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
     }
 }
 
-/// The game Steam runs, then running executables from the Game Bar list
-/// except launchers ([`super::GAME_LAUNCHERS`]); each source only when
-/// enabled.
-fn known_games(settings: &GameModeSettings, running: &[String]) -> Vec<String> {
-    let mut games: Vec<String> = settings
-        .use_steam
-        .then(steam_running_app)
-        .flatten()
-        .map(|id| format!("steam_app_{id}"))
-        .into_iter()
-        .collect();
-    if !settings.use_game_bar {
-        return games;
+fn availability(available: bool) -> DetectorAvailability {
+    if available {
+        DetectorAvailability::Available
+    } else {
+        DetectorAvailability::Unavailable
     }
-    let catalog = catalog();
-    games.extend(
-        running
-            .iter()
-            // Windows lists launchers as games too.
-            .filter(|name| {
-                catalog.contains(&name.to_lowercase()) && !super::process::launcher_process(name)
-            })
-            .cloned(),
-    );
-    games
+}
+
+struct RegistryKey(HKEY);
+impl Drop for RegistryKey {
+    fn drop(&mut self) {
+        let _ = unsafe { RegCloseKey(self.0) };
+    }
 }
 
 /// The app id of the game Steam runs now; Steam keeps it in the registry.
-fn steam_running_app() -> Option<u32> {
+fn steam_running_app() -> Result<Option<u32>, ()> {
+    let mut key = HKEY::default();
+    unsafe {
+        RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            w!(r"Software\Valve\Steam"),
+            None,
+            KEY_READ,
+            &mut key,
+        )
+    }
+    .ok()
+    .map_err(|_| ())?;
+    let key = RegistryKey(key);
     let mut id = 0_u32;
     let mut size = std::mem::size_of::<u32>() as u32;
     let status = unsafe {
         RegGetValueW(
-            HKEY_CURRENT_USER,
-            w!(r"Software\Valve\Steam"),
+            key.0,
+            None,
             w!("RunningAppID"),
             RRF_RT_REG_DWORD,
             None,
@@ -87,18 +106,32 @@ fn steam_running_app() -> Option<u32> {
             Some(&mut size),
         )
     };
-    (status.is_ok() && id != 0).then_some(id)
+    if status == ERROR_FILE_NOT_FOUND {
+        return Ok(None);
+    }
+    status.ok().map_err(|_| ())?;
+    Ok((id != 0).then_some(id))
 }
 
 /// Lowercase executable names from the Game Bar list, cached for
 /// [`CATALOG_TTL`].
-fn catalog() -> HashSet<String> {
-    static CACHE: Mutex<Option<(Instant, HashSet<String>)>> = Mutex::new(None);
+fn catalog() -> Result<HashSet<String>, ()> {
+    type CatalogResult = Result<HashSet<String>, ()>;
+    static CACHE: Mutex<Option<(Instant, CatalogResult)>> = Mutex::new(None);
     let Ok(mut cache) = CACHE.lock() else {
-        return HashSet::new();
+        return Err(());
     };
     match cache.as_ref() {
-        Some((at, names)) if at.elapsed() < CATALOG_TTL => names.clone(),
+        Some((at, names))
+            if at.elapsed()
+                < if names.is_ok() {
+                    CATALOG_TTL
+                } else {
+                    Duration::from_secs(3)
+                } =>
+        {
+            names.clone()
+        }
         _ => {
             let names = read_catalog();
             *cache = Some((Instant::now(), names.clone()));
@@ -109,7 +142,7 @@ fn catalog() -> HashSet<String> {
 
 /// `HKCU\System\GameConfigStore\Children\<id>\MatchedExeFullPath`: the
 /// executables Windows recognised as games.
-fn read_catalog() -> HashSet<String> {
+fn read_catalog() -> Result<HashSet<String>, ()> {
     let mut names = HashSet::new();
     let mut key = HKEY::default();
     let opened = unsafe {
@@ -121,15 +154,17 @@ fn read_catalog() -> HashSet<String> {
             &mut key,
         )
     };
-    if opened.is_err() {
-        return names;
+    if opened == ERROR_FILE_NOT_FOUND || opened == ERROR_PATH_NOT_FOUND {
+        return Ok(names);
     }
+    opened.ok().map_err(|_| ())?;
+    let key = RegistryKey(key);
     for index in 0_u32.. {
         let mut child = [0_u16; 256];
         let mut length = child.len() as u32;
         let status = unsafe {
             RegEnumKeyExW(
-                key,
+                key.0,
                 index,
                 Some(PWSTR(child.as_mut_ptr())),
                 &mut length,
@@ -142,14 +177,15 @@ fn read_catalog() -> HashSet<String> {
         if status == ERROR_MORE_DATA {
             continue;
         }
-        if status.is_err() {
+        if status == ERROR_NO_MORE_ITEMS {
             break;
         }
-        let mut path = [0_u16; 1024];
-        let mut size = std::mem::size_of_val(&path) as u32;
+        status.ok().map_err(|_| ())?;
+        let mut path = vec![0_u16; 32768];
+        let mut size = (path.len() * std::mem::size_of::<u16>()) as u32;
         let status = unsafe {
             RegGetValueW(
-                key,
+                key.0,
                 PCWSTR(child.as_ptr()),
                 w!("MatchedExeFullPath"),
                 RRF_RT_REG_SZ,
@@ -158,9 +194,10 @@ fn read_catalog() -> HashSet<String> {
                 Some(&mut size),
             )
         };
-        if status.is_err() {
+        if status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND {
             continue;
         }
+        status.ok().map_err(|_| ())?;
         let length = path
             .iter()
             .position(|unit| *unit == 0)
@@ -171,6 +208,5 @@ fn read_catalog() -> HashSet<String> {
             names.insert(name);
         }
     }
-    let _ = unsafe { RegCloseKey(key) };
-    names
+    Ok(names)
 }

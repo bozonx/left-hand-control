@@ -73,6 +73,11 @@ pub enum Source {
 }
 
 impl Source {
+    /// Explicit mapper actions and IPC remain usable while gaming.
+    pub(crate) fn popup_blocked(self, game_active: bool) -> bool {
+        game_active && matches!(self, Self::Hotkey | Self::Evdev)
+    }
+
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Button => "button",
@@ -340,6 +345,17 @@ impl fmt::Display for Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn game_mode_blocks_shortcuts_but_preserves_explicit_popup_actions() {
+        for source in [Source::Hotkey, Source::Evdev] {
+            assert!(!source.popup_blocked(false));
+            assert!(source.popup_blocked(true));
+        }
+        for source in [Source::Mapper, Source::Ipc, Source::Tray, Source::Button] {
+            assert!(!source.popup_blocked(true));
+        }
+    }
 
     #[test]
     fn wire_format_round_trips() {

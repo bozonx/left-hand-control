@@ -1799,8 +1799,8 @@ msgstr "Игровой режим: определять автоматическ
 msgid "Toggle game mode"
 msgstr "Переключить игровой режим"
 
-msgid "GameMode is not installed: install the gamemode package."
-msgstr "GameMode не установлен: установите пакет gamemode."
+msgid "GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr "Служба GameMode недоступна: проверьте пакет gamemode и сеансовую шину D-Bus."
 
 msgid "Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules."
 msgstr "Установите {}, чтобы определять активное и полноэкранное окно. Он же нужен для условий по приложениям в правилах."

@@ -54,7 +54,11 @@ pub(crate) fn availability() -> crate::gamemode::DetectorAvailability {
     }
     #[cfg(any(target_os = "windows", target_os = "macos"))]
     {
-        crate::gamemode::DetectorAvailability::Available
+        if cached_active_window().is_some() {
+            crate::gamemode::DetectorAvailability::Available
+        } else {
+            crate::gamemode::DetectorAvailability::Unavailable
+        }
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -240,7 +244,8 @@ fn start_events() -> bool {
 fn events_active(started: bool) -> bool {
     #[cfg(target_os = "linux")]
     {
-        started && linux::events_active()
+        let _ = started;
+        linux::events_active()
     }
     #[cfg(not(target_os = "linux"))]
     {

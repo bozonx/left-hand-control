@@ -104,6 +104,8 @@ fn listen(
     });
 }
 
+pub fn set_game_active(_active: bool) {}
+
 pub fn start(dispatch: Dispatch) {
     if std::env::var("SLINT_SHELL_HOTKEYS").as_deref() == Ok("off") {
         return;

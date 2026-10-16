@@ -245,8 +245,14 @@ mod tests {
         assert_eq!(settings.linux_wayland_text_mode, TextMode::Libei);
         assert!(!settings.game_mode.use_gamemoded);
         assert!(!settings.game_mode.use_lutris);
-        assert!(settings.game_mode.use_steam);
-        assert!(AppSettings::default().game_mode.use_lutris);
+        assert_eq!(
+            settings.game_mode.use_steam,
+            cfg!(any(target_os = "linux", target_os = "windows"))
+        );
+        assert_eq!(
+            AppSettings::default().game_mode.use_lutris,
+            cfg!(target_os = "linux")
+        );
         assert_eq!(settings.game_mode.process_matchers.len(), 1);
         assert_eq!(settings.game_mode.process_matchers[0].name, "steam");
         assert_eq!(settings.game_mode.process_matchers[0].id, "process-0");

@@ -4,26 +4,51 @@
 //! ([`super::process::GAME_LAUNCHERS`]).
 
 use std::collections::HashMap;
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::SystemTime;
 
 use crate::runtime_state::ActiveWindow;
 
-/// Applications by lowercase desktop id, `StartupWMClass` and program
-/// name: whether each is a game.
 #[derive(Default)]
 struct Index {
-    /// The `applications` directories and their subdirectories it was
-    /// built from, with modification times; a change rebuilds it. Entries
-    /// are added, removed and replaced by renaming, which touches the
-    /// directory that holds them.
     stamp: Stamp,
-    games: HashMap<String, bool>,
+    games: Catalog,
 }
 
-/// Directories with their modification times.
-type Stamp = Vec<(PathBuf, Option<SystemTime>)>;
+#[derive(Default)]
+struct Catalog {
+    ids: HashMap<String, bool>,
+    aliases: HashMap<String, bool>,
+}
+
+impl Catalog {
+    fn get(&self, name: &str) -> Option<&bool> {
+        self.ids.get(name).or_else(|| self.aliases.get(name))
+    }
+
+    fn game(&self, window: &ActiveWindow) -> Option<String> {
+        let app_id = window.app_id.trim().to_lowercase();
+        // An explicit desktop id wins, even when it says "not a game".
+        if let Some(game) = self.ids.get(&app_id) {
+            return game.then_some(app_id);
+        }
+        let process = window
+            .process_name
+            .as_deref()
+            .unwrap_or("")
+            .trim()
+            .to_lowercase();
+        [app_id, process]
+            .into_iter()
+            .find(|key| !key.is_empty() && self.get(key) == Some(&true))
+    }
+}
+
+type Fingerprint = (SystemTime, u64, i64, i64);
+/// Directories and files: in-place writes do not touch the parent directory.
+type Stamp = Vec<(PathBuf, Option<Fingerprint>)>;
 
 static INDEX: Mutex<Option<Index>> = Mutex::new(None);
 
@@ -37,15 +62,7 @@ pub(super) fn game_window(window: &ActiveWindow) -> Option<String> {
         let (games, stamp) = build(&application_dirs());
         *index = Some(Index { games, stamp });
     }
-    let games = &index.as_ref()?.games;
-    let app_id = window.app_id.trim().to_lowercase();
-    let process = window.process_name.as_deref().map(str::to_lowercase);
-    [Some(app_id.as_str()), process.as_deref()]
-        .into_iter()
-        .flatten()
-        .filter(|key| !key.is_empty())
-        .find(|key| games.get(*key) == Some(&true))
-        .map(str::to_owned)
+    index.as_ref()?.games.game(window)
 }
 
 /// `applications` directories in XDG order: the user's first.
@@ -64,34 +81,46 @@ fn application_dirs() -> Vec<PathBuf> {
         .collect()
 }
 
-fn modified(dir: &Path) -> Option<SystemTime> {
-    std::fs::metadata(dir).and_then(|meta| meta.modified()).ok()
+fn modified(path: &Path) -> Option<Fingerprint> {
+    let meta = std::fs::metadata(path).ok()?;
+    Some((
+        meta.modified().ok()?,
+        meta.len(),
+        meta.ctime(),
+        meta.ctime_nsec(),
+    ))
 }
 
-/// Whether no directory of `stamp` changed since.
-fn current(stamp: &[(PathBuf, Option<SystemTime>)]) -> bool {
+/// Whether no directory or file of `stamp` changed since.
+fn current(stamp: &[(PathBuf, Option<Fingerprint>)]) -> bool {
     stamp.iter().all(|(dir, time)| modified(dir) == *time)
 }
 
 /// Index the entries of `dirs`; an id found earlier hides later ones, as
 /// XDG lookup does. Also returns the directories read, with their times.
-fn build(dirs: &[PathBuf]) -> (HashMap<String, bool>, Stamp) {
-    let mut games = HashMap::new();
+fn build(dirs: &[PathBuf]) -> (Catalog, Stamp) {
+    let mut games = Catalog::default();
     let mut stamp = Vec::new();
     for dir in dirs {
         let mut entries = Vec::new();
         collect(dir, "", &mut entries, &mut stamp);
+        entries.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
         for (id, path) in entries {
+            stamp.push((path.clone(), modified(&path)));
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
             };
             let entry = parse(&text);
-            if games.contains_key(&id) {
+            if games.ids.contains_key(&id) {
                 continue;
             }
-            games.insert(id, entry.game);
+            games.ids.insert(id, entry.game);
             for key in [entry.wm_class, entry.program].into_iter().flatten() {
-                games.entry(key).or_insert(entry.game);
+                games
+                    .aliases
+                    .entry(key)
+                    .and_modify(|game| *game &= entry.game)
+                    .or_insert(entry.game);
             }
         }
     }
@@ -121,7 +150,7 @@ fn collect(dir: &Path, prefix: &str, out: &mut Vec<(String, PathBuf)>, stamp: &m
 
 /// Programs that only start another one: their name says nothing about
 /// the application.
-const WRAPPERS: [&str; 16] = [
+const WRAPPERS: [&str; 20] = [
     "env",
     "sh",
     "bash",
@@ -138,6 +167,10 @@ const WRAPPERS: [&str; 16] = [
     "prime-run",
     "mangohud",
     "dbus-send",
+    "python",
+    "python3",
+    "node",
+    "ruby",
 ];
 
 #[derive(Default)]
@@ -184,6 +217,42 @@ fn parse(text: &str) -> Entry {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn in_place_edits_and_alias_collisions_do_not_stale_or_override_ids() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("a.desktop");
+        std::fs::write(
+            &file,
+            "[Desktop Entry]\nCategories=Game;\nStartupWMClass=editor\nExec=shared\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("editor.desktop"),
+            "[Desktop Entry]\nCategories=Utility;\nExec=shared\n",
+        )
+        .unwrap();
+        let (games, stamp) = build(&[dir.path().to_owned()]);
+        assert_eq!(games.get("editor"), Some(&false));
+        assert_eq!(games.get("shared"), Some(&false));
+        assert_eq!(
+            games.game(&ActiveWindow {
+                app_id: "editor".into(),
+                process_name: Some("a".into()),
+                ..ActiveWindow::default()
+            }),
+            None
+        );
+        let directory_time = std::fs::metadata(dir.path()).unwrap().modified().unwrap();
+        std::fs::write(&file, "[Desktop Entry]\nCategories=Utility;\n").unwrap();
+        assert_eq!(
+            directory_time,
+            std::fs::metadata(dir.path()).unwrap().modified().unwrap()
+        );
+        assert!(!current(&stamp));
+        let (games, _) = build(&[dir.path().to_owned()]);
+        assert_eq!(games.get("a"), Some(&false));
+    }
 
     #[test]
     fn games_are_found_by_id_and_window_class() {
@@ -236,7 +305,7 @@ mod tests {
         assert_eq!(games.get("shooterwindow"), Some(&true));
         assert_eq!(games.get("hidden"), Some(&false));
         assert_eq!(games.get("fgfs"), Some(&true));
-        assert!(!games.contains_key("env"));
+        assert_eq!(games.get("env"), None);
         // A new entry in a subdirectory is noticed.
         assert!(current(&stamp));
         std::thread::sleep(std::time::Duration::from_millis(20));

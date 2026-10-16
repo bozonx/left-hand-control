@@ -499,7 +499,6 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     if let Err(error) = form.apply(&base, &mut settings) {
         return error;
     }
-    settings.game_mode.control = lhc_core::gamemode::status().control;
     let saved = document.edit(View::Settings, |config| {
         config.update_settings(|current| *current = settings)
     });
