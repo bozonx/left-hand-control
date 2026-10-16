@@ -672,7 +672,7 @@ export component SettingsPage inherits VerticalBox {
                     HorizontalLayout {
                         vertical-stretch: 0; spacing: 8px; alignment: start;
                         Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; vertical-alignment: center; }
-                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."); } }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
                     VerticalBox {
                         padding: 0px; spacing: 12px; vertical-stretch: 0;
@@ -684,21 +684,7 @@ export component SettingsPage inherits VerticalBox {
                                 selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.off : index == 1 ? GameModeControl.on : GameModeControl.auto); }
                             }
                         }
-                        // What decides the state right now, so a wrong detection is easy to trace.
-                        HorizontalLayout {
-                            vertical-stretch: 0; spacing: 8px; alignment: start;
-                            VerticalLayout { alignment: center;
-                                Rectangle { width: 8px; height: 8px; border-radius: 4px; background: !AppState.game-state-available ? Theme.warning : AppState.game-active ? Theme.success : Theme.muted; }
-                            }
-                            Text { text: Locale.text(AppState.game-status); color: Theme.text; wrap: word-wrap; vertical-alignment: center; }
-                        }
                     }
-                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count == 0: Alert { text: @tr("Nothing uses game mode yet: no rule or automatic layout rule has a game-mode condition, so turning it on changes nothing."); }
-                    if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count > 0: Text {
-                        vertical-stretch: 0; color: Theme.muted; wrap: word-wrap;
-                        text: @tr("Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}.", SettingsEditor.game-rule-count, SettingsEditor.game-auto-rule-count);
-                    }
-                    if SettingsEditor.game-auto-rule-count > 0 && !LayoutLibrary.automatic: Text { vertical-stretch: 0; text: @tr("Automatic layout rules apply only when the layout is chosen automatically (Layouts page)."); color: Theme.warning; wrap: word-wrap; }
 
                     BehaviorCard {
                         title: @tr("Automatic game detection");
@@ -758,7 +744,6 @@ export component SettingsPage inherits VerticalBox {
                         Divider { vertical-stretch: 0; }
                         // Heuristics: each skips its built-in list.
                         FieldLabel { text: @tr("Guesses — can be wrong"); }
-                        Text { vertical-stretch: 0; text: @tr("These sources can take another application for a game, so each skips a built-in list of applications."); color: Theme.muted; wrap: word-wrap; }
                         if AppState.game-bar-availability.id != "capability-unsupported": GameSourceOption {
                             text: @tr("Games from the Game Bar list");
                             info: @tr("Turns on while a program that Windows recognized as a game (the Game Bar list) runs. Launchers are listed there too, so they are skipped.");
@@ -793,7 +778,6 @@ export component SettingsPage inherits VerticalBox {
 
                     BehaviorCard {
                         title: @tr("Your rules");
-                        Text { vertical-stretch: 0; text: @tr("“Never a game” wins over everything else, automatic detection included."); color: Theme.muted; wrap: word-wrap; }
                         if AppState.game-processes-availability.id != "capability-available" || AppState.game-window-availability.id != "capability-available": Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                         HorizontalLayout {
                             vertical-stretch: 0; spacing: 24px;

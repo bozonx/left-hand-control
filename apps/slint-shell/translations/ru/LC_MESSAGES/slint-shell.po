@@ -1784,8 +1784,8 @@ msgstr "Игровой режим выключен (вручную)"
 msgid "Game mode is on (set manually)"
 msgstr "Игровой режим включён (вручную)"
 
-msgid "Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."
-msgstr "Игровой режим включает правила и авто-правила раскладок с условием «игровой режим». Переключайте Auto, On и Off в верхней панели, в меню трея или клавишей с действием игрового режима."
+msgid "Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Игровой режим включает правила и авто-правила раскладок с условием игрового режима. Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»). Auto использует источники автоопределения и свои правила ниже; On и Off задают состояние вручную. «Никогда не игра» важнее автоопределения и «Всегда игра». Режим также можно переключать в верхней панели, меню трея или клавишей с действием игрового режима."
 
 msgid "Game mode: always off"
 msgstr "Игровой режим: всегда выключен"
