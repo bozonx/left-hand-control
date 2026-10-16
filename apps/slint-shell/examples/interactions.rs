@@ -110,6 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_use_gamemoded(false);
     settings.set_text_mode_index(4);
     settings.set_ydotool_path("/usr/bin/ydotool".into());
+    settings.set_paste_shortcut_index(2);
     settings.invoke_save_process(-1, "test-game".into(), true, false);
     settings.invoke_save();
     assert_eq!(settings.get_message().id, "");
@@ -137,6 +138,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         loaded.settings().linux_wayland_text_mode,
         lhc_core::profile::model::TextMode::Ydotool
+    );
+    assert_eq!(
+        loaded.settings().linux_paste_shortcut,
+        lhc_core::profile::model::PasteShortcut::CtrlShiftV
     );
     assert!(settings.get_keyboard_manual());
     assert!(settings.get_mouse_manual());

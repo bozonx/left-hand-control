@@ -483,6 +483,37 @@ impl TextMode {
     }
 }
 
+/// Shortcut that pastes clipboard text into the focused application.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PasteShortcut {
+    /// Common in GUI apps and terminals; some terminals paste the primary selection.
+    #[default]
+    ShiftInsert,
+    CtrlV,
+    /// Terminal paste.
+    CtrlShiftV,
+}
+
+impl PasteShortcut {
+    /// Every shortcut, in the order the settings page lists them.
+    pub const ALL: [Self; 3] = [Self::ShiftInsert, Self::CtrlV, Self::CtrlShiftV];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::ShiftInsert => "shift-insert",
+            Self::CtrlV => "ctrl-v",
+            Self::CtrlShiftV => "ctrl-shift-v",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|shortcut| shortcut.as_str() == value)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LayoutMode {
@@ -531,6 +562,8 @@ pub struct AppSettings {
     pub commands_enabled: bool,
     pub game_mode: GameModeSettings,
     pub linux_wayland_text_mode: TextMode,
+    /// Shortcut the clipboard text modes send to paste.
+    pub linux_paste_shortcut: PasteShortcut,
     pub linux_ydotool_path: String,
     pub linux_xdotool_path: String,
 }
@@ -576,6 +609,7 @@ impl Default for AppSettings {
                 control: GameModeControl::Auto,
             },
             linux_wayland_text_mode: TextMode::Libei,
+            linux_paste_shortcut: PasteShortcut::ShiftInsert,
             linux_ydotool_path: String::new(),
             linux_xdotool_path: String::new(),
         }

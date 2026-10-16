@@ -66,7 +66,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let picker = ui.global::<slint_shell::ui::ActionPicker>();
     picker.set_value("KeyA".into());
     picker.invoke_apply();
-    for _ in 0..12 { editor.invoke_add_step(0, "KeyB".into()); }
+    for _ in 0..12 {
+        editor.invoke_add_step(0, "KeyB".into());
+    }
     ui.show()?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();

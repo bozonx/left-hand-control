@@ -2245,8 +2245,8 @@ msgstr "ydotool"
 msgid "xdotool"
 msgstr "xdotool"
 
-msgid "Types with the current layout, or pastes the whole text when a character is unavailable. Paste requires clipboard access and Shift+Insert support. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."
-msgstr "Вводит текст с текущей раскладкой или вставляет весь текст, если символ недоступен. Для вставки нужны доступ к буферу обмена и поддержка Shift+Insert. Сохраняет форматы буфера и отменяет ввод при смене окна назначения. Требуются разрешение портала и определение активного окна."
+msgid "Types with the current layout, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."
+msgstr "Вводит текст с текущей раскладкой или вставляет весь текст, если символ недоступен. Для вставки нужны доступ к буферу обмена и поддержка сочетания вставки. Сохраняет форматы буфера и отменяет ввод при смене окна назначения. Требуются разрешение портала и определение активного окна."
 
 msgid "Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."
 msgstr "Вводит текст только через libei с учётом текущей раскладки и Caps Lock. Пропускает текст с недоступными символами. Требуются разрешение портала и определение активного окна. Отменяет ввод при смене окна назначения."
@@ -2254,8 +2254,14 @@ msgstr "Вводит текст только через libei с учётом т
 msgid "Types only through NotifyKeyboardKeycode using the KDE layout and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."
 msgstr "Вводит текст только через NotifyKeyboardKeycode с раскладкой KDE и доступным состоянием клавиатуры. Пропускает текст с недоступными символами. Требуются разрешение портала и определение активного окна. Отменяет ввод при смене окна назначения."
 
-msgid "Pastes with Shift+Insert through the portal. Requires clipboard access, active-window detection and an app supporting Shift+Insert. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."
-msgstr "Вставляет текст через портал сочетанием Shift+Insert. Нужны доступ к буферу обмена, определение активного окна и поддержка Shift+Insert в приложении. Сохраняет все форматы буфера; новое копирование пользователя имеет приоритет. Сообщает об ошибке, если передача текста не обнаружена."
+msgid "Pastes with the paste shortcut through the portal. Requires clipboard access, active-window detection and an app supporting that shortcut. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."
+msgstr "Вставляет текст через портал сочетанием вставки. Нужны доступ к буферу обмена, определение активного окна и поддержка этого сочетания в приложении. Сохраняет все форматы буфера; новое копирование пользователя имеет приоритет. Сообщает об ошибке, если передача текста не обнаружена."
+
+msgid "Paste shortcut"
+msgstr "Сочетание вставки"
+
+msgid "Sent to the focused app to paste the text. Terminals usually need Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and Ctrl+V does not paste there."
+msgstr "Отправляется активному приложению, чтобы вставить текст. Терминалам обычно нужно Ctrl+Shift+V: некоторые из них по Shift+Insert вставляют выделение мышью, а Ctrl+V там не вставляет."
 
 msgid "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."
 msgstr "Использует только «ydotool type». Требуются ydotool и запущенная служба ydotoold. Надёжно работает только с латиницей. При ошибке ввод прекращается без смены способа."

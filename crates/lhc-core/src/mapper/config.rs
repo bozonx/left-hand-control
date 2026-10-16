@@ -1,5 +1,5 @@
 pub use crate::profile::model::TapDecision;
-use crate::profile::model::TextMode;
+use crate::profile::model::{PasteShortcut, TextMode};
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
@@ -161,6 +161,8 @@ pub struct Settings {
     #[serde(default)]
     pub linux_wayland_text_mode: TextMode,
     #[serde(default)]
+    pub linux_paste_shortcut: PasteShortcut,
+    #[serde(default)]
     pub linux_ydotool_path: Option<String>,
     #[serde(default)]
     pub linux_xdotool_path: Option<String>,
@@ -194,6 +196,7 @@ impl Default for Settings {
             current_layout_id: None,
             commands_enabled: false,
             linux_wayland_text_mode: TextMode::Libei,
+            linux_paste_shortcut: PasteShortcut::ShiftInsert,
             linux_ydotool_path: None,
             linux_xdotool_path: None,
         }
@@ -286,6 +289,7 @@ mod tests {
         assert_eq!(s.combo_timeout_ms, 50);
         assert_eq!(s.tap_decision, TapDecision::PermissiveHold);
         assert_eq!(s.linux_wayland_text_mode, TextMode::Libei);
+        assert_eq!(s.linux_paste_shortcut, PasteShortcut::ShiftInsert);
         assert!(s.linux_ydotool_path.is_none());
     }
 }

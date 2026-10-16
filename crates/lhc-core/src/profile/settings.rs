@@ -5,7 +5,7 @@
 
 use super::model::{
     AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, LayoutConditionSet,
-    LayoutMode, LocalePreference, TextMode,
+    LayoutMode, LocalePreference, PasteShortcut, TextMode,
 };
 use serde_json::{Map, Value};
 
@@ -101,6 +101,9 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
         game_mode: base.game_mode.clone(),
         linux_wayland_text_mode: str_of(raw, "linuxWaylandTextMode")
             .and_then(TextMode::parse)
+            .unwrap_or_default(),
+        linux_paste_shortcut: str_of(raw, "linuxPasteShortcut")
+            .and_then(PasteShortcut::parse)
             .unwrap_or_default(),
         linux_ydotool_path: str_of(raw, "linuxYdotoolPath").unwrap_or("").into(),
         linux_xdotool_path: str_of(raw, "linuxXdotoolPath").unwrap_or("").into(),
@@ -229,6 +232,20 @@ mod tests {
     }
 
     #[test]
+    fn paste_shortcut_round_trips() {
+        let settings = AppSettings {
+            linux_paste_shortcut: PasteShortcut::CtrlShiftV,
+            ..AppSettings::default()
+        };
+        let raw = serde_json::to_value(&settings).unwrap();
+        assert_eq!(raw["linuxPasteShortcut"], "ctrl-shift-v");
+        assert_eq!(
+            from_value(Some(&raw)).linux_paste_shortcut,
+            PasteShortcut::CtrlShiftV
+        );
+    }
+
+    #[test]
     fn invalid_values_fall_back_per_field() {
         let settings = from_value(Some(&json!({
             "appearance": "dark",
@@ -236,6 +253,7 @@ mod tests {
             "defaultHoldTimeoutMs": "fast",
             "tapDecision": "holdOnOtherKeyPress",
             "linuxWaylandTextMode": "magic",
+            "linuxPasteShortcut": "alt-v",
             "gameMode": {"useGamemoded": false, "useLutris": false, "processMatchers": [{"name": " steam "}, 3]},
         })));
         assert_eq!(settings.appearance, Appearance::Dark);
@@ -243,6 +261,7 @@ mod tests {
         assert_eq!(settings.default_hold_timeout_ms, 200);
         assert_eq!(settings.tap_decision, "holdOnOtherKeyPress");
         assert_eq!(settings.linux_wayland_text_mode, TextMode::Libei);
+        assert_eq!(settings.linux_paste_shortcut, PasteShortcut::ShiftInsert);
         assert!(!settings.game_mode.use_gamemoded);
         assert!(!settings.game_mode.use_lutris);
         assert_eq!(

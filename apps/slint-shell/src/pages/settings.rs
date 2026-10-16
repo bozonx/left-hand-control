@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use lhc_core::profile::menus::PlaceKind;
-use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher, TextMode};
+use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher, PasteShortcut, TextMode};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
@@ -44,6 +44,7 @@ struct Form {
     use_game_bar: bool,
     matchers: Vec<GameModeProcessMatcher>,
     text_mode: i32,
+    paste_shortcut: i32,
     ydotool: String,
     xdotool: String,
     keyboard: String,
@@ -89,6 +90,7 @@ impl Form {
             use_game_bar: settings.game_mode.use_game_bar,
             matchers: settings.game_mode.process_matchers.clone(),
             text_mode: choice_index(&TextMode::ALL, &settings.linux_wayland_text_mode),
+            paste_shortcut: choice_index(&PasteShortcut::ALL, &settings.linux_paste_shortcut),
             ydotool: settings.linux_ydotool_path.clone(),
             xdotool: settings.linux_xdotool_path.clone(),
             keyboard: settings.input_device_path.clone().unwrap_or_default(),
@@ -126,6 +128,7 @@ impl Form {
             use_game_bar: e.get_use_game_bar(),
             matchers: matchers.to_vec(),
             text_mode: e.get_text_mode_index(),
+            paste_shortcut: e.get_paste_shortcut_index(),
             ydotool: e.get_ydotool_path().into(),
             xdotool: e.get_xdotool_path().into(),
             keyboard: e.get_keyboard_device_path().into(),
@@ -162,6 +165,7 @@ impl Form {
         e.set_use_game_bar(self.use_game_bar);
         show_matchers(&e, &self.matchers);
         e.set_text_mode_index(self.text_mode);
+        e.set_paste_shortcut_index(self.paste_shortcut);
         e.set_ydotool_path(self.ydotool.clone().into());
         e.set_xdotool_path(self.xdotool.clone().into());
         if e.get_keyboard_device_path() != self.keyboard {
@@ -217,6 +221,7 @@ impl Form {
         changed!(use_game_bar => settings.game_mode.use_game_bar = self.use_game_bar);
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
         changed!(text_mode => settings.linux_wayland_text_mode = choice(&TextMode::ALL, self.text_mode));
+        changed!(paste_shortcut => settings.linux_paste_shortcut = choice(&PasteShortcut::ALL, self.paste_shortcut));
         changed!(ydotool => settings.linux_ydotool_path = self.ydotool.trim().into());
         changed!(xdotool => settings.linux_xdotool_path = self.xdotool.trim().into());
         changed!(keyboard => settings.input_device_path = path(&self.keyboard));

@@ -14,7 +14,7 @@
 //   3. `Start()`                – shows the permission dialog (only once
 //                                 per machine if persist mode + token work).
 //   4. `ConnectToEIS()` (libei modes) or `NotifyKeyboardKeycode()` (keycode
-//      mode and the Shift+Insert of the clipboard mode).
+//      mode and the paste shortcut of the clipboard mode).
 //
 // Each backend owns one session on its own worker thread. The session is
 // created on the first text and kept until the mode changes or the session
@@ -56,7 +56,7 @@ use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
 use super::text_job::TextRequest;
 use crate::events::{CoreEvent, TextInputFailure};
-use crate::profile::model::TextMode;
+use crate::profile::model::{PasteShortcut, TextMode};
 
 enum XkbContext {}
 enum XkbKeymap {}
@@ -137,8 +137,19 @@ const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
 // --- XKB keymap lookup for layout-aware text injection ------------------
 
 // evdev keycodes for modifier keys used in text injection.
+const KEY_LEFTCTRL_EVDEV: u32 = 29;
 const KEY_LEFTSHIFT_EVDEV: u32 = 42;
+const KEY_V_EVDEV: u32 = 47;
 const KEY_INSERT_EVDEV: u32 = 110;
+
+/// Modifiers and key of a paste shortcut as evdev codes.
+fn paste_keys(shortcut: PasteShortcut) -> (&'static [u32], u32) {
+    match shortcut {
+        PasteShortcut::ShiftInsert => (&[KEY_LEFTSHIFT_EVDEV], KEY_INSERT_EVDEV),
+        PasteShortcut::CtrlV => (&[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV),
+        PasteShortcut::CtrlShiftV => (&[KEY_LEFTCTRL_EVDEV, KEY_LEFTSHIFT_EVDEV], KEY_V_EVDEV),
+    }
+}
 
 #[derive(Clone)]
 struct KeycodeEntry {
@@ -441,22 +452,29 @@ pub(super) fn report(failure: TextInputFailure) {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct TextBackendConfig {
     mode: TextMode,
+    paste: PasteShortcut,
     ydotool_path: Option<String>,
     xdotool_path: Option<String>,
 }
 
 static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
     mode: TextMode::Libei,
+    paste: PasteShortcut::ShiftInsert,
     ydotool_path: None,
     xdotool_path: None,
 });
 
-/// Select the text injection mode and external tool paths.
+/// Select the text injection mode, paste shortcut and external tool paths.
 ///
 /// Changing the mode closes the open portal sessions and forgets earlier
 /// start failures; the same mode keeps them, so pushing an unrelated config
 /// change neither reopens a declined consent dialog nor drops the session.
-pub fn set_text_backend(mode: TextMode, ydotool_path: Option<&str>, xdotool_path: Option<&str>) {
+pub fn set_text_backend(
+    mode: TextMode,
+    paste: PasteShortcut,
+    ydotool_path: Option<&str>,
+    xdotool_path: Option<&str>,
+) {
     let path = |path: Option<&str>| {
         path.map(str::trim)
             .filter(|path| !path.is_empty())
@@ -464,6 +482,7 @@ pub fn set_text_backend(mode: TextMode, ydotool_path: Option<&str>, xdotool_path
     };
     let next = TextBackendConfig {
         mode,
+        paste,
         ydotool_path: path(ydotool_path),
         xdotool_path: path(xdotool_path),
     };
@@ -529,8 +548,12 @@ pub(super) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInpu
             text,
             &request,
         ),
-        TextMode::Libei | TextMode::LibeiPure => LIBEI.type_text(text, cfg.mode, request),
-        TextMode::Keycode | TextMode::Clipboard => PORTAL.type_text(text, cfg.mode, request),
+        TextMode::Libei | TextMode::LibeiPure => {
+            LIBEI.type_text(text, cfg.mode, cfg.paste, request)
+        }
+        TextMode::Keycode | TextMode::Clipboard => {
+            PORTAL.type_text(text, cfg.mode, cfg.paste, request)
+        }
     }
 }
 
@@ -564,6 +587,7 @@ fn run_text_tool(
 struct Cmd {
     text: String,
     mode: TextMode,
+    paste: PasteShortcut,
     /// Dropped without a send when the worker hit a fatal error and exits.
     done: Sender<Result<(), TextInputFailure>>,
     request: TextRequest,
@@ -599,6 +623,7 @@ impl Worker {
         &self,
         text: &str,
         mode: TextMode,
+        paste: PasteShortcut,
         request: TextRequest,
     ) -> Result<(), TextInputFailure> {
         let mut slot = self.tx.lock().unwrap_or_else(|e| e.into_inner());
@@ -625,6 +650,7 @@ impl Worker {
         let cmd = Cmd {
             text: text.to_owned(),
             mode,
+            paste,
             done,
             request: request.clone(),
         };
@@ -754,7 +780,9 @@ fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
     for cmd in rx {
         let session = &backend.session_handle;
         let result = cmd.request.check().and_then(|()| match cmd.mode {
-            TextMode::Clipboard => paste_text(&backend.portal, session, &cmd.text, &cmd.request),
+            TextMode::Clipboard => {
+                paste_text(&backend.portal, session, &cmd.text, cmd.paste, &cmd.request)
+            }
             TextMode::Keycode => {
                 type_text_keycode(&backend.portal, session, &cmd.text, &cmd.request)
             }
@@ -774,7 +802,8 @@ fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
 fn libei_worker(mut backend: LibeiBackend, rx: Receiver<Cmd>) {
     log::debug!("[libei] backend online");
     for cmd in rx {
-        let result = backend.type_text(&cmd.text, cmd.mode == TextMode::Libei, &cmd.request);
+        let fallback = (cmd.mode == TextMode::Libei).then_some(cmd.paste);
+        let result = backend.type_text(&cmd.text, fallback, &cmd.request);
         let fatal = matches!(result, Err(TextInputFailure::BackendUnavailable(_)));
         let _ = cmd.done.send(result);
         if fatal {
@@ -862,12 +891,13 @@ impl LibeiBackend {
         Ok(backend)
     }
 
-    /// Type `text`. `Err` means the EI connection is unusable; other
+    /// Type `text`, pasting it with `clipboard_fallback` when the layout
+    /// lacks a character. `Err` means the EI connection is unusable; other
     /// failures are reported and leave the session open.
     fn type_text(
         &mut self,
         text: &str,
-        clipboard_fallback: bool,
+        clipboard_fallback: Option<PasteShortcut>,
         request: &TextRequest,
     ) -> Result<(), TextInputFailure> {
         request.check()?;
@@ -901,8 +931,8 @@ impl LibeiBackend {
         request.check()?;
         let text = text.replace("\r\n", "\n");
         if missing_characters(&table, &text) {
-            if clipboard_fallback {
-                return self.paste_text(&text, &table, request);
+            if let Some(shortcut) = clipboard_fallback {
+                return self.paste_text(&text, shortcut, request);
             }
             return Err(TextInputFailure::MissingCharacters);
         }
@@ -960,7 +990,7 @@ impl LibeiBackend {
     fn paste_text(
         &mut self,
         text: &str,
-        _table: &KeyTable,
+        shortcut: PasteShortcut,
         request: &TextRequest,
     ) -> Result<(), TextInputFailure> {
         let clipboard =
@@ -968,8 +998,9 @@ impl LibeiBackend {
         request.check()?;
         modifiers_released()?;
         clipboard.arm().map_err(TextInputFailure::Clipboard)?;
+        let (mods, key) = paste_keys(shortcut);
         let result = self
-            .inject_keycode_combo(&[KEY_LEFTSHIFT_EVDEV], KEY_INSERT_EVDEV, request)
+            .inject_keycode_combo(mods, key, request)
             .map_err(TextInputFailure::BackendUnavailable);
         let transfer = clipboard
             .finish(result.is_ok())
@@ -1258,13 +1289,15 @@ fn paste_text(
     portal: &Proxy,
     session: &OwnedObjectPath,
     text: &str,
+    shortcut: PasteShortcut,
     request: &TextRequest,
 ) -> Result<(), TextInputFailure> {
     let clipboard = super::clipboard::Paste::prepare(text).map_err(TextInputFailure::Clipboard)?;
     request.check()?;
     modifiers_released()?;
     clipboard.arm().map_err(TextInputFailure::Clipboard)?;
-    let result = inject_keycode_combo(portal, session, &[KEY_LEFTSHIFT_EVDEV], KEY_INSERT_EVDEV)
+    let (mods, key) = paste_keys(shortcut);
+    let result = inject_keycode_combo(portal, session, mods, key)
         .map_err(|e| TextInputFailure::BackendUnavailable(format!("NotifyKeyboardKeycode: {e}")));
     let transfer = clipboard
         .finish(result.is_ok())

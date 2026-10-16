@@ -76,6 +76,8 @@ export global SettingsEditor {
     in property <int> game-auto-rule-count;
     in property <[string]> text-modes;
     in-out property <int> text-mode-index;
+    /// Same order as PasteShortcut::ALL in lhc-core.
+    in-out property <int> paste-shortcut-index;
     in-out property <string> ydotool-path;
     in-out property <string> xdotool-path;
     in-out property <string> keyboard-device-path;
@@ -582,14 +584,21 @@ export component SettingsPage inherits VerticalBox {
                         Text {
                             vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap;
                             text: [
-                                @tr("Types with the current layout, or pastes the whole text when a character is unavailable. Paste requires clipboard access and Shift+Insert support. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."),
+                                @tr("Types with the current layout, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."),
                                 @tr("Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
                                 @tr("Types only through NotifyKeyboardKeycode using the KDE layout and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
-                                @tr("Pastes with Shift+Insert through the portal. Requires clipboard access, active-window detection and an app supporting Shift+Insert. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."),
+                                @tr("Pastes with the paste shortcut through the portal. Requires clipboard access, active-window detection and an app supporting that shortcut. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."),
                                 @tr("Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."),
                                 @tr("Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows. On an error, stops without switching methods."),
                             ][SettingsEditor.text-mode-index];
                         }
+                    }
+                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalBox {
+                        padding: 0px; spacing: 8px;
+                        FormLabel { text: @tr("Paste shortcut"); }
+                        // Same order as PasteShortcut::ALL in lhc-core.
+                        SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
+                        Text { vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap; text: @tr("Sent to the focused app to paste the text. Terminals usually need Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and Ctrl+V does not paste there."); }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
                         padding: 0px; spacing: 8px;
