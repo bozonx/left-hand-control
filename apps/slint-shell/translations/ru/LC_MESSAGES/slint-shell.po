@@ -2456,14 +2456,8 @@ msgstr "После отпускания другой клавиши (реком�
 msgid "As soon as another key is pressed"
 msgstr "Сразу при нажатии другой клавиши"
 
-msgid "Rule defaults"
-msgstr "Значения по умолчанию для правил"
-
 msgid "Used by rules that leave the field empty. A rule can set its own value in its advanced options."
 msgstr "Применяются к правилам, в которых поле оставлено пустым. Своё значение можно задать в дополнительных параметрах правила."
-
-msgid "Reset to defaults"
-msgstr "Вернуть стандартные"
 
 msgid "Hold threshold, ms"
 msgstr "Порог удержания, мс"
@@ -2492,14 +2486,8 @@ msgstr "Второе нажатие в течение этого времени 
 msgid "A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed."
 msgstr "Одиночное нажатие клавиши, у которой есть действие двойного нажатия, срабатывает только после окончания окна, поэтому большое значение делает такие клавиши медленными. Клавиши без действия двойного нажатия не задерживаются."
 
-msgid "Macro defaults"
-msgstr "Значения по умолчанию для макросов"
-
 msgid "Used by macros that leave the field empty. A macro can set its own value on the Macros page."
 msgstr "Применяются к макросам, в которых поле оставлено пустым. Своё значение можно задать на странице «Макросы»."
-
-msgid "Pause between steps, ms"
-msgstr "Пауза между шагами, мс"
 
 msgid "Pause between consecutive steps of a macro. Increase it if an application misses keystrokes."
 msgstr "Пауза между соседними шагами макроса. Увеличьте, если приложение пропускает нажатия."
@@ -2507,20 +2495,11 @@ msgstr "Пауза между соседними шагами макроса. У
 msgid "Simultaneous presses"
 msgstr "Одновременные нажатия"
 
-msgid "For rules with several keys, such as J+K. Shared by all rules."
-msgstr "Для правил с несколькими клавишами, например J+K. Общее для всех правил."
-
-msgid "Press window, ms"
-msgstr "Окно нажатия, мс"
-
 msgid "For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back."
 msgstr "Для правил, триггер которых — несколько клавиш, нажатых вместе, например KeyJ+KeyK. Все клавиши нужно нажать в течение этого времени, в любом порядке. До этого первая клавиша придерживается; если сочетание не набрано, она вводится как обычно. Модификаторы не придерживаются."
 
 msgid "Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it."
 msgstr "Больше — сочетание легче набрать, но печать этими клавишами слегка запаздывает. Действует для всех правил; в правиле не переопределяется."
-
-msgid "Modifier delay, ms"
-msgstr "Задержка модификатора, мс"
 
 msgid "Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty."
 msgstr "Пауза между нажатием модификаторов (Shift, Ctrl, …) и основной клавиши в шаге макроса. Увеличьте, если приложение получает сочетание без модификатора. Применяется к макросам, в которых поле оставлено пустым."
@@ -2561,9 +2540,6 @@ msgstr "Включается, пока запущена программа, ко
 msgid "Launchers and game tools — not counted as games"
 msgstr "Лаунчеры и игровые утилиты — не считаются играми"
 
-msgid "Default hold detection"
-msgstr "Распознавание удержания по умолчанию"
-
 msgid "Decides when a dual-role key counts as a hold if another key is pressed. Rules can override this default in advanced options. Chord detection is configured separately."
 msgstr "Определяет, когда клавиша с двумя ролями считается удерживаемой при нажатии другой клавиши. Для отдельного правила режим можно изменить в дополнительных параметрах. Распознавание аккордов настраивается отдельно."
 
@@ -2584,3 +2560,21 @@ msgstr "Не удалось получить список устройств в�
 
 msgid "Keyboard interception is not implemented on this operating system."
 msgstr "Перехват клавиатуры в этой операционной системе не реализован."
+
+msgid "Defaults"
+msgstr "Значения по умолчанию"
+
+msgid "Shared by all rules"
+msgstr "Общие для всех правил"
+
+msgid "Hold threshold"
+msgstr "Порог удержания"
+
+msgid "Long hold"
+msgstr "Долгое удержание"
+
+msgid "Double-tap window"
+msgstr "Окно двойного нажатия"
+
+msgid "Reset to {} ms"
+msgstr "Вернуть {} мс"

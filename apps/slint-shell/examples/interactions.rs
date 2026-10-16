@@ -716,7 +716,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             28 => {
                 snapshot(&ui, "settings-behavior");
-                let position = slint::LogicalPosition::new(590.0, 483.0);
+                let position = slint::LogicalPosition::new(490.0, 471.0);
                 let wheel = |delta_y| ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
                 let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<u64>().unwrap();
                 assert_eq!(duration(), 2500);

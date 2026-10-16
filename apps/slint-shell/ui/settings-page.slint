@@ -2,7 +2,7 @@ import { TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
-import { Alert, Badge, CardHeader, IconButton, InfoTip, ButtonGroup } from "controls.slint";
+import { Alert, Badge, Card, CardHeader, Divider, FieldLabel, IconButton, InfoTip, ButtonGroup } from "controls.slint";
 import { LayoutLibrary } from "library.slint";
 import { DeviceChoice, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
@@ -157,17 +157,37 @@ component Section inherits Rectangle {
     }
 }
 
-/// Labelled setting with an info tooltip and a control below.
-component BehaviorField inherits VerticalLayout {
+/// Millisecond setting with an info tooltip, and a reset button while it
+/// differs from its standard value.
+component TimingField inherits VerticalLayout {
     in property <string> label;
     in property <string> info;
-    width: 280px;
+    in property <string> standard;
+    in property <float> minimum: 0;
+    in property <float> maximum: 2147483647;
+    in property <float> step: 10;
+    in-out property <string> value;
+    callback edited();
+    /// The value was set back to `standard`.
+    callback reset();
+    width: 176px;
     horizontal-stretch: 0;
     vertical-stretch: 0;
     spacing: 8px;
     alignment: start;
     FormLabel { text: root.label; info: root.info; }
-    @children
+    HorizontalLayout { spacing: 6px; alignment: start;
+        NumericInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
+        Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+        // The slot keeps its width so fields do not shift when the button appears.
+        Rectangle { width: 28px;
+            if root.value != root.standard: IconButton {
+                icon: @image-url("icons/rotate-ccw.svg");
+                tooltip: @tr("Reset to {} ms", root.standard);
+                clicked => { root.value = root.standard; root.reset(); }
+            }
+        }
+    }
 }
 
 component SubsectionTitle inherits Text {
@@ -177,24 +197,19 @@ component SubsectionTitle inherits Text {
     font-weight: 600;
 }
 
-/// A group of key behavior settings: a title with a reset button, an
-/// optional note and the fields.
-component BehaviorGroup inherits VerticalLayout {
+/// A card of key behavior settings with a title.
+component BehaviorCard inherits VerticalLayout {
     in property <string> title;
-    in property <string> note;
-    /// Some field differs from its standard value.
-    in property <bool> changed;
-    callback reset();
     vertical-stretch: 0;
-    max-width: 576px;
-    spacing: 12px;
-    HorizontalLayout {
-        spacing: 8px;
-        SubsectionTitle { horizontal-stretch: 1; text: root.title; vertical-alignment: center; }
-        Button { text: @tr("Reset to defaults"); enabled: root.changed; clicked => { root.reset(); } }
+    max-width: 608px;
+    Card {
+        VerticalLayout {
+            padding: 16px;
+            spacing: 12px;
+            SubsectionTitle { text: root.title; }
+            @children
+        }
     }
-    if root.note != "": Text { vertical-stretch: 0; text: root.note; color: Theme.muted; wrap: word-wrap; }
-    @children
 }
 
 /// Label column with an icon and a note, and the device controls on the right.
@@ -560,83 +575,94 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {
                     title: @tr("Key behavior");
-                    VerticalLayout { vertical-stretch: 0; max-width: 576px; spacing: 12px;
-                        SubsectionTitle { text: @tr("Hold detection"); }
+                    BehaviorCard {
+                        title: @tr("Rules");
+                        FieldLabel { text: @tr("Defaults"); }
+                        Text { vertical-stretch: 0; text: @tr("Used by rules that leave the field empty. A rule can set its own value in its advanced options."); color: Theme.muted; wrap: word-wrap; }
                         VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
                             FormLabel {
-                                text: @tr("Default hold detection");
+                                text: @tr("Hold detection");
                                 info: @tr("Decides when a dual-role key counts as a hold if another key is pressed. Rules can override this default in advanced options. Chord detection is configured separately.")
                                     + "\n\n" + @tr("After another key is released: the key becomes a hold once another key is pressed and released while it is down, or when the hold threshold passes. Fast rolls while typing stay taps.")
                                     + "\n\n" + @tr("As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake.");
                             }
-                            SelectField { width: 500px; height: 32px; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
+                            HorizontalLayout { alignment: start;
+                                SelectField { width: 500px; height: 32px; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
+                            }
                         }
-                    }
-                    BehaviorGroup {
-                        title: @tr("Rule defaults");
-                        note: @tr("Used by rules that leave the field empty. A rule can set its own value in its advanced options.");
-                        changed: SettingsEditor.hold-timeout != SettingsEditor.default-hold-timeout || SettingsEditor.long-hold-timeout != SettingsEditor.default-long-hold-timeout || SettingsEditor.double-tap-timeout != SettingsEditor.default-double-tap-timeout;
-                        reset => {
-                            SettingsEditor.hold-timeout = SettingsEditor.default-hold-timeout;
-                            SettingsEditor.long-hold-timeout = SettingsEditor.default-long-hold-timeout;
-                            SettingsEditor.double-tap-timeout = SettingsEditor.default-double-tap-timeout;
-                            SettingsEditor.save();
-                        }
-                        HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 16px;
-                            BehaviorField {
-                                label: @tr("Hold threshold, ms");
+                        HorizontalLayout { vertical-stretch: 0; spacing: 16px; alignment: start;
+                            TimingField {
+                                label: @tr("Hold threshold");
                                 info: @tr("How long to hold a rule key before it counts as a hold: its layer or hold action. Released earlier, the key runs its tap action.")
                                     + "\n\n" + @tr("Lower: layers turn on faster, but fast typing may trigger them by mistake. Higher: fewer false holds, but a longer wait. Usually 150–250 ms.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-hold-timeout);
-                                NumericInput { label: @tr("Hold threshold, ms"); minimum: 50; maximum: 1000; text: SettingsEditor.hold-timeout; edited(value) => { SettingsEditor.hold-timeout = value; SettingsEditor.schedule-save(); } }
+                                minimum: 50; maximum: 1000;
+                                value <=> SettingsEditor.hold-timeout;
+                                standard: SettingsEditor.default-hold-timeout;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
                             }
-                            BehaviorField {
-                                label: @tr("Long hold, ms");
+                            TimingField {
+                                label: @tr("Long hold");
                                 info: @tr("How long to keep holding a rule key before its long-hold action runs once. Applies to rules whose hold runs an action instead of a layer.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-long-hold-timeout);
-                                NumericInput { label: @tr("Long hold, ms"); minimum: 100; maximum: 60000; step: 100; text: SettingsEditor.long-hold-timeout; edited(value) => { SettingsEditor.long-hold-timeout = value; SettingsEditor.schedule-save(); } }
+                                minimum: 100; maximum: 60000; step: 100;
+                                value <=> SettingsEditor.long-hold-timeout;
+                                standard: SettingsEditor.default-long-hold-timeout;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
+                            }
+                            TimingField {
+                                label: @tr("Double-tap window");
+                                info: @tr("A second tap within this time after the first release counts as a double tap.")
+                                    + "\n\n" + @tr("A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed.")
+                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-double-tap-timeout);
+                                minimum: 50; maximum: 1000;
+                                value <=> SettingsEditor.double-tap-timeout;
+                                standard: SettingsEditor.default-double-tap-timeout;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
                             }
                         }
-                        BehaviorField {
-                            label: @tr("Double-tap window, ms");
-                            info: @tr("A second tap within this time after the first release counts as a double tap.")
-                                + "\n\n" + @tr("A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed.")
-                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-double-tap-timeout);
-                            NumericInput { label: @tr("Double-tap window, ms"); minimum: 50; maximum: 1000; text: SettingsEditor.double-tap-timeout; edited(value) => { SettingsEditor.double-tap-timeout = value; SettingsEditor.schedule-save(); } }
-                        }
-                    }
-                    BehaviorGroup {
-                        title: @tr("Simultaneous presses");
-                        note: @tr("For rules with several keys, such as J+K. Shared by all rules.");
-                        changed: SettingsEditor.combo-timeout != SettingsEditor.default-combo-timeout;
-                        reset => {
-                            SettingsEditor.combo-timeout = SettingsEditor.default-combo-timeout;
-                            SettingsEditor.save();
-                        }
-                        BehaviorField {
-                            label: @tr("Press window, ms");
+                        Divider { vertical-stretch: 0; }
+                        FieldLabel { text: @tr("Shared by all rules"); }
+                        TimingField {
+                            label: @tr("Simultaneous presses");
                             info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
                                 + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
                                 + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
-                            NumericInput { label: @tr("Press window, ms"); minimum: 10; maximum: 500; text: SettingsEditor.combo-timeout; edited(value) => { SettingsEditor.combo-timeout = value; SettingsEditor.schedule-save(); } }
+                            minimum: 10; maximum: 500;
+                            value <=> SettingsEditor.combo-timeout;
+                            standard: SettingsEditor.default-combo-timeout;
+                            edited => { SettingsEditor.schedule-save(); }
+                            reset => { SettingsEditor.save(); }
                         }
                     }
-                    BehaviorGroup {
-                        title: @tr("Macro defaults");
-                        note: @tr("Used by macros that leave the field empty. A macro can set its own value on the Macros page.");
-                        changed: SettingsEditor.macro-pause != SettingsEditor.default-macro-pause || SettingsEditor.modifier-delay != SettingsEditor.default-modifier-delay;
-                        reset => { SettingsEditor.macro-pause = SettingsEditor.default-macro-pause; SettingsEditor.modifier-delay = SettingsEditor.default-modifier-delay; SettingsEditor.save(); }
-                        BehaviorField {
-                            label: @tr("Pause between steps, ms");
-                            info: @tr("Pause between consecutive steps of a macro. Increase it if an application misses keystrokes.")
-                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-pause);
-                            NumericInput { label: @tr("Pause between steps, ms"); maximum: 2000; text: SettingsEditor.macro-pause; edited(value) => { SettingsEditor.macro-pause = value; SettingsEditor.schedule-save(); } }
-                        }
-                        BehaviorField {
-                            label: @tr("Modifier delay, ms");
-                            info: @tr("Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty.")
-                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
-                            NumericInput { label: @tr("Modifier delay, ms"); maximum: 2000; step: 1; text: SettingsEditor.modifier-delay; edited(value) => { SettingsEditor.modifier-delay = value; SettingsEditor.schedule-save(); } }
+                    BehaviorCard {
+                        title: @tr("Macros");
+                        FieldLabel { text: @tr("Defaults"); }
+                        Text { vertical-stretch: 0; text: @tr("Used by macros that leave the field empty. A macro can set its own value on the Macros page."); color: Theme.muted; wrap: word-wrap; }
+                        HorizontalLayout { vertical-stretch: 0; spacing: 16px; alignment: start;
+                            TimingField {
+                                label: @tr("Pause between steps");
+                                info: @tr("Pause between consecutive steps of a macro. Increase it if an application misses keystrokes.")
+                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-pause);
+                                maximum: 2000;
+                                value <=> SettingsEditor.macro-pause;
+                                standard: SettingsEditor.default-macro-pause;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
+                            }
+                            TimingField {
+                                label: @tr("Modifier delay");
+                                info: @tr("Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty.")
+                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
+                                maximum: 2000; step: 1;
+                                value <=> SettingsEditor.modifier-delay;
+                                standard: SettingsEditor.default-modifier-delay;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
+                            }
                         }
                     }
                 }
