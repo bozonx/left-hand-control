@@ -22,10 +22,15 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
         paths.len()
     );
 
+    let mut first_error = None;
     for path in paths {
-        let Ok(dev) = Device::open(&path) else {
-            log::debug!("[mapper]   {}: open failed", path.display());
-            continue;
+        let dev = match Device::open(&path) {
+            Ok(dev) => dev,
+            Err(error) => {
+                log::debug!("[mapper]   {}: open failed: {error}", path.display());
+                first_error.get_or_insert_with(|| format!("open {}: {error}", path.display()));
+                continue;
+            }
         };
         let name = dev.name().unwrap_or("(unknown)").to_string();
         let is_keyboard = is_keyboard(&dev);
@@ -46,6 +51,11 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
             is_keyboard,
             is_mouse,
         });
+    }
+    if out.is_empty()
+        && let Some(error) = first_error
+    {
+        return Err(error);
     }
     log::debug!("[mapper] list_input_devices -> {} devices", out.len());
     Ok(out)
@@ -96,6 +106,6 @@ fn is_mouse(dev: &Device) -> bool {
     };
     // Heuristic: mouse has left/right buttons but NOT letter keys.
     // We also skip devices that already pass the keyboard heuristic
-    // (combined keyboard+mouse combos should be grabbed as a keyboard).
+    // (mixed interfaces cannot safely be grabbed by the keyboard backend).
     keys.contains(KeyCode::BTN_LEFT) && keys.contains(KeyCode::BTN_RIGHT) && !is_keyboard(dev)
 }

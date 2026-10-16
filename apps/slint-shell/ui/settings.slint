@@ -134,7 +134,7 @@ export component SettingsWindow inherits Window {
                         text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Stop") : @tr("Start");
                         running: AppState.mapper-running;
                         busy: AppState.mapper-busy;
-                        enabled: AppState.mapper-running || AppState.keyboard-selected;
+                        enabled: AppState.is-linux && (AppState.mapper-running || AppState.keyboard-selected);
                         tooltip: AppState.mapper-running
                             ? @tr("Stop mapper (restore native keyboard behavior)")
                             : !AppState.keyboard-selected

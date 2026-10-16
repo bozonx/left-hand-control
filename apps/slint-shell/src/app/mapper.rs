@@ -72,6 +72,10 @@ pub(super) fn forward_core_events() {
             let failure = failure.clone();
             post(move |app| app.set_error(Msg::TextInputFailed(failure)));
         }
+        CoreEvent::MapperActionFailed(error) => {
+            let error = error.clone();
+            post(move |app| app.set_error(Msg::ActionFailed(error)));
+        }
         CoreEvent::LayoutChanged(_) | CoreEvent::ActiveWindowChanged(_) => {
             post(|app| app.context_changed())
         }
@@ -335,6 +339,10 @@ impl App {
 
     /// Start the mapper; a failed start is tried again `retries` times.
     fn start_mapper(&self, retries: u32) {
+        if !cfg!(target_os = "linux") {
+            self.set_error(Msg::MapperUnsupported);
+            return;
+        }
         let state = self.settings.global::<AppState>();
         let Some(document) = self.document() else {
             self.set_error(Msg::LoadConfigFirst);

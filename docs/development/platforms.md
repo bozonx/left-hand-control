@@ -22,3 +22,30 @@
 
 
 Text input cancels stale jobs and checks the destination before emitting input. KDE uses KWin window ids; other backends can only compare their available active-window metadata, so identical windows may not be distinguishable. Clipboard paste requires `ext_data_control_manager_v1` or `zwlr_data_control_manager_v1` and Shift+Insert support in the destination. All offered MIME formats are preserved within bounded size/time limits; failure to snapshot leaves the clipboard unchanged. Transfer completion confirms that bytes were requested, not which client requested them. Windows popup text uses Unicode `SendInput` without the clipboard; macOS uses Enigo after foreground/window checks. Neither portable path implements keyboard interception or mapper macros. Windows/macOS adapters still require native acceptance testing.
+
+## Mapper runtime guarantees
+
+Live configuration updates retain held virtual keys and layer triggers until their
+physical release; new presses use the updated bindings. Identical runtime configs
+are ignored, so saving unrelated preferences does not interrupt a macro. Changed
+configs cancel the active macro, stale text jobs and side effects waiting for popup
+focus. Shutdown discards buffered popup input. Disabling commands also
+revokes commands from decisions that were already pending.
+
+The Linux keyboard backend rejects interfaces that also advertise pointer axes or
+non-keyboard buttons, before grabbing them. Select a separate keyboard interface;
+this backend cannot relay pointer input. Keyboard and optional mouse must resolve
+to different devices. Their events use a common monotonic clock and are merged by
+capture time. Native mouse clicks still cannot be suppressed or reliably delayed
+until a virtual modifier reaches the compositor.
+
+Macro expansion is limited to 1000 entries (including nested references) and ten
+nesting levels, before execution. Portable file validation still accepts known
+system actions for other desktops. Starting or updating the mapper rejects an
+unavailable action reachable from an enabled binding; remote execution checks the
+requested macro too. Unused desktop-specific macros do not prevent startup.
+System-action failures reach the shell through core events. Popup actions bypass
+the text worker, so a portal permission dialog cannot block popup dispatch.
+
+Windows/macOS show the missing interception capability and disable mapper device
+controls. These changes do not implement their interception backends.

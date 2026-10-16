@@ -86,7 +86,7 @@ pub fn is_known(name: &str) -> bool {
     // This keeps config validation portable: a config created on KDE
     // (or using KDE-known ids) is not rejected when the mapper starts
     // on GNOME / Sway / X11 generic. At runtime `resolve()` will return
-    // None there and the action becomes a no-op with a log line.
+    // None there; runtime capability validation reports that before execution.
     resolve_for_desktop(name, &Desktop::Kde).is_some()
 }
 

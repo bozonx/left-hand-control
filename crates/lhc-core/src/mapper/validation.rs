@@ -6,6 +6,7 @@ use super::builtin_macros::BUILTIN_MACROS;
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system;
+use crate::profile::actions::Action;
 use std::collections::{HashMap, HashSet};
 
 pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
@@ -137,6 +138,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         }
     }
     validate_macro_cycles(cfg, &mut errors);
+    validate_macro_sizes(cfg, &mut errors);
 
     if errors.is_empty() {
         Ok(())
@@ -150,6 +152,113 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                 .collect::<Vec<_>>()
                 .join("\n")
         ))
+    }
+}
+
+/// Portable files may contain actions for another desktop. Refuse to run
+/// reachable unavailable actions rather than silently dropping macro steps.
+pub fn validate_runtime_capabilities(cfg: &AppConfig) -> Result<(), String> {
+    let mut actions = Vec::new();
+    for rule in cfg.rules.iter().filter(|r| r.enabled) {
+        for spec in [&rule.tap_action, &rule.hold_action] {
+            if let ActionSpec::Action(action) = spec {
+                actions.push(action.as_str());
+            }
+        }
+        actions.extend([
+            rule.long_hold_action.as_str(),
+            rule.double_tap_action.as_str(),
+        ]);
+    }
+    for keymap in cfg.layer_keymaps.values() {
+        actions.extend(keymap.keys.values().flatten().map(String::as_str));
+    }
+    validate_runtime_actions(cfg, actions)
+}
+
+pub fn validate_runtime_action(cfg: &AppConfig, action: &str) -> Result<(), String> {
+    validate_runtime_actions(cfg, vec![action])
+}
+
+fn validate_runtime_actions<'a>(
+    cfg: &'a AppConfig,
+    mut actions: Vec<&'a str>,
+) -> Result<(), String> {
+    let mut visited = HashSet::new();
+    while let Some(action) = actions.pop() {
+        let action = action.trim();
+        let available = match Action::parse(Some(action)) {
+            Action::Macro(id) => {
+                if visited.insert(id.clone()) {
+                    if let Some(m) = cfg.macros.iter().find(|m| m.id.trim() == id) {
+                        actions.extend(m.steps.iter().map(|step| step.action.as_str()));
+                    } else if let Some(m) = BUILTIN_MACROS.iter().find(|m| m.id == id) {
+                        actions.extend(m.steps.iter().copied());
+                    }
+                }
+                continue;
+            }
+            Action::System(id) => system::resolve(&id).is_some(),
+            Action::KdeShortcut(id) => system::resolve_kde_shortcut(&id).is_some(),
+            _ => true,
+        };
+        if !available {
+            return Err(format!("Action is unavailable on this desktop: {action}"));
+        }
+    }
+    Ok(())
+}
+
+fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
+    let mut definitions: HashMap<&str, Vec<&str>> = BUILTIN_MACROS
+        .iter()
+        .map(|m| (m.id, m.steps.to_vec()))
+        .collect();
+    for m in &cfg.macros {
+        definitions.insert(
+            m.id.trim(),
+            m.steps.iter().map(|s| s.action.as_str()).collect(),
+        );
+    }
+    fn size<'a>(
+        id: &'a str,
+        depth: usize,
+        definitions: &HashMap<&'a str, Vec<&'a str>>,
+        memo: &mut HashMap<(&'a str, usize), usize>,
+    ) -> usize {
+        if depth > 10 {
+            return 1001;
+        }
+        if let Some(size) = memo.get(&(id, depth)) {
+            return *size;
+        }
+        let mut total = 0;
+        for step in definitions.get(id).into_iter().flatten() {
+            let step = step.trim();
+            total += match Action::parse(Some(step)) {
+                Action::Macro(nested) => {
+                    1 + definitions
+                        .get_key_value(nested.as_str())
+                        .map_or(0, |(id, _)| size(id, depth + 1, definitions, memo))
+                }
+                _ => usize::from(!step.is_empty()),
+            };
+            if total > 1000 {
+                total = 1001;
+                break;
+            }
+        }
+        memo.insert((id, depth), total);
+        total
+    }
+    let mut memo = HashMap::new();
+    for m in &cfg.macros {
+        if size(m.id.trim(), 0, &definitions, &mut memo) > 1000 {
+            errors.push(format!(
+                "Macro \"{}\": expansion exceeds 1000 entries or 10 nesting levels",
+                m.id
+            ));
+        }
     }
 }
 
@@ -353,15 +462,13 @@ fn macro_path_reaches(
     graph: &HashMap<String, Vec<String>>,
     visited: &mut HashSet<String>,
 ) -> bool {
-    if current == source {
-        return true;
-    }
-    if !visited.insert(current.to_string()) {
-        return false;
-    }
-    for next in graph.get(current).into_iter().flatten() {
-        if macro_path_reaches(source, next, graph, visited) {
+    let mut pending = vec![current];
+    while let Some(current) = pending.pop() {
+        if current == source {
             return true;
+        }
+        if visited.insert(current.to_string()) {
+            pending.extend(graph.get(current).into_iter().flatten().map(String::as_str));
         }
     }
     false
@@ -758,5 +865,27 @@ mod tests {
         cfg.layer_keymaps.insert("nav".into(), km);
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("unknown action \"BadAction!!!\""));
+    }
+    #[test]
+    fn unavailable_steps_are_checked_only_when_reachable_including_remote_macros() {
+        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"macros": [
+            {"id": "outer", "steps": [{"action": "macro:inner"}]},
+            {"id": "inner", "steps": [{"action": "sys:switchDesktop999"}]}
+        ]}))
+        .unwrap();
+        assert!(validate_runtime_capabilities(&cfg).is_ok());
+        assert!(
+            validate_runtime_action(&cfg, "macro:outer")
+                .unwrap_err()
+                .contains("unavailable")
+        );
+        let mut cfg = cfg;
+        cfg.rules = serde_json::from_value(serde_json::json!([
+            {"key": "KeyA", "tapAction": "macro:outer"}
+        ]))
+        .unwrap();
+        assert!(validate_runtime_capabilities(&cfg).is_err());
+        cfg.rules[0].enabled = false;
+        assert!(validate_runtime_capabilities(&cfg).is_ok());
     }
 }

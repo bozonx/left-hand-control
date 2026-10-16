@@ -25,6 +25,8 @@ export global Locale {
         if m.id == "capability-available" { return @tr("Available"); }
         if m.id == "capability-unavailable" { return @tr("Unavailable"); }
         if m.id == "capability-unsupported" { return @tr("Not implemented"); }
+        if m.id == "input-discovery-failed" { return @tr("Cannot list input devices: {}", m.arg); }
+        if m.id == "mapper-unsupported" { return @tr("Keyboard interception is not implemented on this operating system."); }
         if m.id == "input-access-no-devices" { return @tr("No input devices were found in /dev/input."); }
         if m.id == "input-access-keyboard-missing" { return @tr("The selected keyboard is not connected. Connect it or pick another one below."); }
         if m.id == "input-access-input-denied" { return @tr("No permission to read keyboard events. Add your user to the input group and log in again."); }

@@ -17,7 +17,7 @@ use std::collections::HashMap;
 ///   ""                   => Native
 ///   non-empty string       => Action(s)
 /// Missing fields default to Native via #[serde(default)].
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum ActionSpec {
     #[default]
     Native,
@@ -40,7 +40,7 @@ impl<'de> Deserialize<'de> for ActionSpec {
     }
 }
 
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Default, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     #[serde(default)]
@@ -55,7 +55,7 @@ pub struct AppConfig {
     pub settings: Settings,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Command {
     pub id: String,
@@ -65,7 +65,7 @@ pub struct Command {
     pub working_directory: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Macro {
     pub id: String,
@@ -77,14 +77,14 @@ pub struct Macro {
     pub modifier_delay_ms: Option<u64>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MacroStep {
     #[serde(default)]
     pub action: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Rule {
     #[serde(default = "default_true")]
@@ -127,7 +127,7 @@ pub struct Rule {
     #[serde(default)]
     pub double_tap_timeout_ms: Option<u64>,
 }
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Default, Clone, PartialEq, Eq)]
 pub struct LayerKeymap {
     #[serde(default)]
     pub keys: HashMap<String, Option<String>>,
@@ -137,7 +137,7 @@ pub struct LayerKeymap {
     pub hold_for: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     #[serde(default = "default_hold")]

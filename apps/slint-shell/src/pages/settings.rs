@@ -444,10 +444,21 @@ fn device_offset(choices: ModelRc<DeviceChoice>, index: i32) -> i32 {
 
 fn refresh_devices(ui: &SettingsWindow) {
     let e = ui.global::<SettingsEditor>();
-    let devices = lhc_core::mapper::runtime::list_input_devices().unwrap_or_else(|error| {
-        log::warn!("input device discovery: {error}");
-        Vec::new()
-    });
+    let (devices, error) = match lhc_core::mapper::runtime::list_input_devices() {
+        Ok(devices) => (devices, Msg::None),
+        Err(error) => {
+            log::warn!("input device discovery: {error}");
+            (
+                Vec::new(),
+                if cfg!(target_os = "linux") {
+                    Msg::InputDiscoveryFailed(error)
+                } else {
+                    Msg::MapperUnsupported
+                },
+            )
+        }
+    };
+    e.set_device_discovery_error(error.to_ui());
     let keyboards = device_choices(&devices, false);
     let (selected, manual) = device_selection(
         &keyboards,

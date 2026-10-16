@@ -501,9 +501,8 @@ fn macro_pause_step_delays_following_steps() {
     });
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();
-    let now = Instant::now();
-
     engine.execute_remote("macro:hello", &mut out);
+    let now = Instant::now();
     engine.tick(now + Duration::from_millis(1), &mut out);
     assert!(matches!(
         out.as_slice(),
@@ -3664,4 +3663,254 @@ fn buffered_rule_keeps_its_own_hold_detection_after_replay() {
     assert!(
         matches!(out.as_slice(), [Out::ChordPress { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == KeyCode::KEY_LEFTCTRL)
     );
+}
+
+#[test]
+fn shared_main_key_is_released_only_by_the_last_owner() {
+    for target in ["ControlLeft", "KeyC"] {
+        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+            {"key": "KeyA", "tapAction": null, "holdAction": target},
+            {"key": "KeyB", "tapAction": null, "holdAction": target}
+        ]}))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle(KeyCode::KEY_B, true, now, &mut out);
+        out.clear();
+        engine.handle(KeyCode::KEY_A, false, now, &mut out);
+        assert!(out.is_empty());
+        engine.handle(KeyCode::KEY_B, false, now, &mut out);
+        assert!(matches!(out.as_slice(), [Out::KeyRaw { down: false, .. }]));
+    }
+}
+
+#[test]
+fn macro_and_physical_modifier_ownership_survives_either_release_order() {
+    for physical_first in [false, true] {
+        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"macros": [
+            {"id": "m", "steps": [{"action": "Ctrl+KeyC"}], "modifierDelayMs": 20}
+        ]}))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        let now = Instant::now();
+        if physical_first {
+            engine.handle(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
+        }
+        engine.execute_remote("macro:m", &mut out);
+        let now = Instant::now();
+        engine.tick(now, &mut out);
+        if physical_first {
+            engine.handle(
+                KeyCode::KEY_LEFTCTRL,
+                false,
+                now + Duration::from_millis(1),
+                &mut out,
+            );
+            assert!(!out.iter().any(|o| matches!(
+                o,
+                Out::KeyRaw {
+                    key: KeyCode::KEY_LEFTCTRL,
+                    down: false
+                }
+            )));
+        } else {
+            engine.handle(
+                KeyCode::KEY_LEFTCTRL,
+                true,
+                now + Duration::from_millis(1),
+                &mut out,
+            );
+        }
+        engine.tick(now + Duration::from_millis(25), &mut out);
+        out.clear();
+        engine.tick(now + Duration::from_millis(50), &mut out);
+        assert_eq!(
+            out.iter().any(|o| matches!(
+                o,
+                Out::KeyRaw {
+                    key: KeyCode::KEY_LEFTCTRL,
+                    down: false
+                }
+            )),
+            physical_first
+        );
+        if !physical_first {
+            engine.handle(
+                KeyCode::KEY_LEFTCTRL,
+                false,
+                now + Duration::from_millis(60),
+                &mut out,
+            );
+            assert!(matches!(
+                out.last(),
+                Some(Out::KeyRaw {
+                    key: KeyCode::KEY_LEFTCTRL,
+                    down: false
+                })
+            ));
+        }
+    }
+}
+
+#[test]
+fn release_after_hold_deadline_commits_hold_before_release() {
+    let cfg = config_with_rule(serde_json::json!({
+        "key": "KeyA", "tapAction": "Escape", "holdAction": "ControlLeft", "holdTimeoutMs": 10
+    }));
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle(
+        KeyCode::KEY_A,
+        false,
+        now + Duration::from_millis(20),
+        &mut out,
+    );
+    assert!(
+        matches!(out.as_slice(), [Out::ChordPress { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }] if ks.key == KeyCode::KEY_LEFTCTRL)
+    );
+}
+
+#[test]
+fn reconfigure_preserves_held_keys_layers_and_original_release_mapping() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+        "rules": [{"key": "Space", "tapAction": null, "layerId": "nav"}],
+        "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle(KeyCode::KEY_J, true, now, &mut out);
+    out.clear();
+    engine.reconfigure(&AppConfig::default(), &mut out);
+    assert!(out.is_empty());
+    assert_eq!(engine.top_layer(), Some("nav"));
+    engine.handle(KeyCode::KEY_J, false, now, &mut out);
+    assert!(matches!(
+        out.last(),
+        Some(Out::KeyRaw {
+            key: KeyCode::KEY_LEFT,
+            down: false
+        })
+    ));
+    engine.handle(KeyCode::KEY_SPACE, false, now, &mut out);
+    assert_eq!(engine.top_layer(), None);
+    engine.handle(KeyCode::KEY_LEFTSHIFT, false, now, &mut out);
+    assert!(matches!(
+        out.last(),
+        Some(Out::KeyRaw {
+            key: KeyCode::KEY_LEFTSHIFT,
+            down: false
+        })
+    ));
+}
+
+#[test]
+fn unchecked_exponential_macro_expansion_is_bounded() {
+    let mut cfg = AppConfig::default();
+    for n in 0..11 {
+        cfg.macros.push(Macro {
+            id: format!("m{n}"),
+            steps: (0..10)
+                .map(|_| MacroStep {
+                    action: if n == 0 {
+                        "KeyA".into()
+                    } else {
+                        format!("macro:m{}", n - 1)
+                    },
+                })
+                .collect(),
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+    }
+    assert!(
+        super::super::validation::validate_config(&cfg)
+            .unwrap_err()
+            .contains("expansion exceeds")
+    );
+    let engine = Engine::new(&cfg);
+    assert!(engine.macros.values().all(|m| m.steps.len() <= 1000));
+}
+
+#[test]
+fn cancelling_a_macro_keeps_a_new_physical_modifier_owner() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"macros": [
+        {"id": "m", "steps": [{"action": "Ctrl+KeyC"}], "modifierDelayMs": 20}
+    ]}))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    engine.execute_remote("macro:m", &mut out);
+    let now = Instant::now();
+    engine.tick(now, &mut out);
+    engine.handle(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
+    out.clear();
+    engine.reconfigure(&AppConfig::default(), &mut out);
+    assert!(out.is_empty());
+    engine.handle(KeyCode::KEY_LEFTCTRL, false, now, &mut out);
+    assert!(matches!(
+        out.as_slice(),
+        [Out::KeyRaw {
+            key: KeyCode::KEY_LEFTCTRL,
+            down: false
+        }]
+    ));
+}
+
+#[test]
+fn disabling_commands_revokes_a_pending_tap_without_releasing_other_keys() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+        "settings": {"commandsEnabled": true},
+        "commands": [{"id": "test", "linux": "true"}],
+        "rules": [{"key": "KeyA", "tapAction": "cmd:test"}]
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.reconfigure(&AppConfig::default(), &mut out);
+    engine.handle(
+        KeyCode::KEY_A,
+        false,
+        now + Duration::from_millis(10),
+        &mut out,
+    );
+    assert!(out.is_empty());
+}
+
+#[test]
+fn late_release_replays_buffered_keys_before_releasing_the_hold() {
+    let cfg = config_with_rule(serde_json::json!({
+        "key": "KeyA", "tapAction": "Escape", "holdAction": "ControlLeft", "holdTimeoutMs": 10
+    }));
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle(
+        KeyCode::KEY_B,
+        true,
+        now + Duration::from_millis(5),
+        &mut out,
+    );
+    engine.handle(
+        KeyCode::KEY_A,
+        false,
+        now + Duration::from_millis(20),
+        &mut out,
+    );
+    assert!(matches!(out.as_slice(), [
+        Out::ChordPress { ks, .. },
+        Out::KeyRaw { key: KeyCode::KEY_B, down: true },
+        Out::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }
+    ] if ks.key == KeyCode::KEY_LEFTCTRL));
 }

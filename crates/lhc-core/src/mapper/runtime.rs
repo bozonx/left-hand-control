@@ -2,7 +2,10 @@ use super::{InputDevice, KeyboardDevice, config};
 #[cfg(target_os = "linux")]
 use super::{linux, portal, validation};
 use serde::Serialize;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{
+    Arc, Mutex, MutexGuard,
+    atomic::{AtomicBool, Ordering},
+};
 
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct MapperStatus {
@@ -33,6 +36,7 @@ trait MapperBackend: Send + Sync + 'static {
         device_path: String,
         mouse_path: Option<String>,
         cfg: config::AppConfig,
+        stop: Arc<AtomicBool>,
     ) -> Result<Box<dyn BackendHandle>, String>;
 }
 
@@ -44,6 +48,7 @@ struct MapperRuntime<B> {
     /// True while a start is in flight outside the state lock (spawn can
     /// wait seconds for readiness and must not block status()/stop()).
     starting: bool,
+    start_stop: Option<Arc<AtomicBool>>,
 }
 
 impl<B> MapperRuntime<B> {
@@ -59,6 +64,7 @@ impl<B> MapperRuntime<B> {
             },
             config_json: None,
             starting: false,
+            start_stop: None,
         }
     }
 }
@@ -89,6 +95,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
             return Err("mapper already running".into());
         }
         self.starting = true;
+        self.start_stop = Some(Arc::new(AtomicBool::new(false)));
         Ok(())
     }
 
@@ -98,8 +105,17 @@ impl<B: MapperBackend> MapperRuntime<B> {
         result: Result<Box<dyn BackendHandle>, String>,
         device_path: &str,
         mouse_path: Option<&str>,
-    ) -> Result<(), String> {
+    ) -> Result<Option<Box<dyn BackendHandle>>, String> {
         self.starting = false;
+        let cancelled = self
+            .start_stop
+            .take()
+            .is_some_and(|stop| stop.load(Ordering::SeqCst));
+        if cancelled {
+            return result
+                .map(Some)
+                .map_err(|_| "mapper start cancelled".into());
+        }
         let handle = result?;
         self.handle = Some(handle);
         self.status = MapperStatus {
@@ -108,7 +124,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
             mouse_device_path: mouse_path.map(|s| s.to_string()),
             last_error: None,
         };
-        Ok(())
+        Ok(None)
     }
 
     #[cfg(test)]
@@ -123,8 +139,13 @@ impl<B: MapperBackend> MapperRuntime<B> {
             device_path.to_string(),
             mouse_path.map(|s| s.to_string()),
             cfg,
+            self.start_stop.as_ref().expect("starting flag").clone(),
         );
-        self.finish_start(result, device_path, mouse_path)
+        if let Some(handle) = self.finish_start(result, device_path, mouse_path)? {
+            handle.stop();
+            return Err("mapper start cancelled".into());
+        }
+        Ok(())
     }
 
     /// Detach the running handle so the caller can join it without
@@ -250,8 +271,9 @@ impl MapperBackend for LinuxBackend {
         device_path: String,
         mouse_path: Option<String>,
         cfg: config::AppConfig,
+        stop: Arc<AtomicBool>,
     ) -> Result<Box<dyn BackendHandle>, String> {
-        linux::spawn(device_path, mouse_path, cfg)
+        linux::spawn(device_path, mouse_path, cfg, stop)
             .map(|handle| Box::new(handle) as Box<dyn BackendHandle>)
     }
 }
@@ -285,6 +307,7 @@ impl MapperBackend for UnsupportedBackend {
         _device_path: String,
         _mouse_path: Option<String>,
         _cfg: config::AppConfig,
+        _stop: Arc<AtomicBool>,
     ) -> Result<Box<dyn BackendHandle>, String> {
         Err(unsupported_os_msg("starting mapper"))
     }
@@ -339,18 +362,34 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     #[cfg(target_os = "linux")]
-    validation::validate_config(&cfg)?;
+    {
+        validation::validate_config(&cfg)?;
+        validation::validate_runtime_capabilities(&cfg)?;
+    }
     // Spawn outside the state lock: waiting for the worker to grab the
     // device and report readiness can take seconds and must not block
     // concurrent status()/stop() calls from the shell.
-    lock_state().begin_start()?;
+    let stop = {
+        let mut state = lock_state();
+        state.begin_start()?;
+        state
+            .start_stop
+            .as_ref()
+            .ok_or("missing mapper start flag")?
+            .clone()
+    };
     let result = OsBackend::new().spawn(
         device_path.to_string(),
         mouse_path.map(|s| s.to_string()),
         cfg,
+        stop,
     );
     let mut state = lock_state();
-    state.finish_start(result, device_path, mouse_path)?;
+    if let Some(handle) = state.finish_start(result, device_path, mouse_path)? {
+        drop(state);
+        handle.stop();
+        return Err("mapper start cancelled".into());
+    }
     state.config_json = Some(config_json.to_owned());
     Ok(())
 }
@@ -358,7 +397,14 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
 pub fn stop() -> Result<(), String> {
     // Join the worker thread outside the state lock so status polling
     // does not freeze while the mapper shuts down.
-    let handle = lock_state().take_handle()?;
+    let handle = {
+        let mut state = lock_state();
+        if let Some(stop) = &state.start_stop {
+            stop.store(true, Ordering::SeqCst);
+            return Ok(());
+        }
+        state.take_handle()?
+    };
     handle.stop();
     Ok(())
 }
@@ -367,7 +413,10 @@ pub fn update_config(config_json: &str) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     #[cfg(target_os = "linux")]
-    validation::validate_config(&cfg)?;
+    {
+        validation::validate_config(&cfg)?;
+        validation::validate_runtime_capabilities(&cfg)?;
+    }
     let mut state = lock_state();
     state.update_config(cfg)?;
     state.config_json = Some(config_json.to_owned());
@@ -392,7 +441,13 @@ pub fn config_json() -> Option<String> {
 }
 
 pub fn execute_action(action: String) -> Result<(), String> {
-    lock_state().execute_action(action)
+    let mut state = lock_state();
+    #[cfg(target_os = "linux")]
+    if let Some(json) = &state.config_json {
+        let cfg = serde_json::from_str(json).map_err(|e| format!("parse config: {e}"))?;
+        validation::validate_runtime_action(&cfg, &action)?;
+    }
+    state.execute_action(action)
 }
 
 /// A popup opened by a mapper action took the keyboard focus. The mapper
@@ -512,6 +567,7 @@ mod tests {
             _device_path: String,
             _mouse_path: Option<String>,
             _cfg: AppConfig,
+            _stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
         ) -> Result<Box<dyn BackendHandle>, String> {
             self.next_handles
                 .lock()
@@ -702,5 +758,46 @@ mod tests {
             .start("/dev/input/event2", None, empty_cfg())
             .expect_err("second start");
         assert!(err.contains("already running"));
+    }
+    #[test]
+    fn cancelled_start_never_commits_running_state_and_can_be_retried() {
+        let mut runtime = MapperRuntime::new(FakeBackend::new(Vec::new(), Vec::new()));
+        runtime.begin_start().unwrap();
+        runtime
+            .start_stop
+            .as_ref()
+            .unwrap()
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        assert!(runtime.begin_start().is_err());
+        let stopped = Arc::new(Mutex::new(false));
+        let handle = Box::new(FakeHandle {
+            stop_called: stopped.clone(),
+            finished: false,
+            last_error: None,
+            update_configs: Arc::new(Mutex::new(Vec::new())),
+            executed_actions: Arc::new(Mutex::new(Vec::new())),
+        });
+        let cancelled = runtime
+            .finish_start(Ok(handle), "keyboard", None)
+            .unwrap()
+            .unwrap();
+        assert!(!runtime.status().running);
+        assert!(runtime.handle.is_none());
+        cancelled.stop();
+        assert!(*stopped.lock().unwrap());
+        runtime.begin_start().unwrap();
+        assert!(
+            !runtime
+                .start_stop
+                .as_ref()
+                .unwrap()
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
+        assert!(
+            runtime
+                .finish_start(Err("open failed".into()), "keyboard", None)
+                .is_err()
+        );
+        assert!(!runtime.starting);
     }
 }

@@ -128,6 +128,48 @@ pub struct Engine {
     layer_used: bool,
 }
 impl Engine {
+    /// Apply new bindings without releasing keys already held by the user.
+    /// Pending decisions retain their original rule until physical release.
+    pub fn reconfigure(&mut self, cfg: &super::config::AppConfig, out: &mut Vec<Out>) {
+        self.flush_combo_buffer(out);
+        self.abort_active_macro(out);
+        if !cfg.settings.commands_enabled {
+            fn revoke(action: &mut ActionDef) {
+                match action {
+                    ActionDef::Command(_) => *action = ActionDef::Swallow,
+                    ActionDef::Macro(m) => m.steps.retain(|step| {
+                        !matches!(step, crate::mapper::action::MacroStepItem::Command(_))
+                    }),
+                    _ => {}
+                }
+            }
+            for pending in self.pending.values_mut() {
+                if let TapMode::Action(action) = &mut pending.rule.tap {
+                    revoke(action);
+                }
+                for action in [&mut pending.rule.double_tap, &mut pending.rule.long_hold]
+                    .into_iter()
+                    .flatten()
+                {
+                    revoke(action);
+                }
+            }
+            for (_, action) in self.long_holds.values_mut() {
+                revoke(action);
+            }
+        }
+        let next = Self::new(cfg);
+        self.rules = next.rules;
+        self.chord_rules = next.chord_rules;
+        self.macros = next.macros;
+        self.commands = next.commands;
+        self.layer_maps = next.layer_maps;
+        self.default_hold = next.default_hold;
+        self.default_mod_delay = next.default_mod_delay;
+        self.combo_term = next.combo_term;
+        self.text_pending = false;
+    }
+
     /// The topmost active layer, if any layer is held.
     pub fn top_layer(&self) -> Option<&str> {
         self.active_layers.last().map(String::as_str)
@@ -248,7 +290,7 @@ impl Engine {
                         if let MacroPhase::StrokeModDelayPress(ref ks)
                         | MacroPhase::StrokeModDelayRelease(ref ks) = am.phase
                         {
-                            for m in ks.mods.iter().rev() {
+                            for m in self.take_releasable_mods(&ks.mods).iter().rev() {
                                 out.push(Out::KeyRaw {
                                     key: *m,
                                     down: false,
@@ -267,30 +309,26 @@ impl Engine {
                                     // passthrough key): pressing them again is
                                     // redundant, and releasing them at the end
                                     // of the stroke would break the hold.
-                                    let mods = self.mods_not_held(&ks.mods);
-                                    if !mods.is_empty() {
-                                        for m in &mods {
+                                    let press = self.mods_not_held(&ks.mods);
+                                    for m in &ks.mods {
+                                        *self.mod_refs.entry(*m).or_insert(0) += 1;
+                                    }
+                                    if !ks.mods.is_empty() {
+                                        for m in &press {
                                             out.push(Out::KeyRaw {
                                                 key: *m,
                                                 down: true,
                                             });
                                         }
                                         am.phase = MacroPhase::StrokeModDelayPress(Keystroke {
-                                            mods,
+                                            mods: ks.mods.clone(),
                                             key: ks.key,
                                         });
                                         am.next_wake = now + am.mod_delay;
                                         self.active_macro = Some(am);
                                         break;
                                     } else {
-                                        out.push(Out::KeyRaw {
-                                            key: ks.key,
-                                            down: true,
-                                        });
-                                        out.push(Out::KeyRaw {
-                                            key: ks.key,
-                                            down: false,
-                                        });
+                                        self.emit_macro_key(ks.key, out);
                                         am.steps_emitted += 1;
                                         am.current_step += 1;
                                         if am.current_step < am.steps.len() {
@@ -344,21 +382,14 @@ impl Engine {
                         }
                         MacroPhase::StrokeModDelayPress(ref ks) => {
                             let ks = ks.clone();
-                            out.push(Out::KeyRaw {
-                                key: ks.key,
-                                down: true,
-                            });
-                            out.push(Out::KeyRaw {
-                                key: ks.key,
-                                down: false,
-                            });
+                            self.emit_macro_key(ks.key, out);
                             am.phase = MacroPhase::StrokeModDelayRelease(ks.clone());
                             am.next_wake = now + am.mod_delay;
                             self.active_macro = Some(am);
                             break;
                         }
                         MacroPhase::StrokeModDelayRelease(ref ks) => {
-                            for m in ks.mods.iter().rev() {
+                            for m in self.take_releasable_mods(&ks.mods).iter().rev() {
                                 out.push(Out::KeyRaw {
                                     key: *m,
                                     down: false,
@@ -407,6 +438,13 @@ impl Engine {
         }
     }
 
+    fn emit_macro_key(&self, key: KeyCode, out: &mut Vec<Out>) {
+        if !self.is_virtually_held(key) {
+            out.push(Out::KeyRaw { key, down: true });
+            out.push(Out::KeyRaw { key, down: false });
+        }
+    }
+
     /// Abort the in-flight macro (if any). A stroke step presses its
     /// modifiers first and releases them only in a later phase, so an
     /// abort mid-stroke must release them here or they stay stuck down.
@@ -417,7 +455,7 @@ impl Engine {
         match am.phase {
             self::model::MacroPhase::StrokeModDelayPress(ks)
             | self::model::MacroPhase::StrokeModDelayRelease(ks) => {
-                for m in ks.mods.iter().rev() {
+                for m in self.take_releasable_mods(&ks.mods).iter().rev() {
                     out.push(Out::KeyRaw {
                         key: *m,
                         down: false,
@@ -500,7 +538,9 @@ impl Engine {
             && !self.emitted.contains_key(&key)
             && !self.oneshot_consumed.contains(&key)
         {
-            out.push(Out::KeyRaw { key, down });
+            if !self.is_virtually_held(key) {
+                out.push(Out::KeyRaw { key, down });
+            }
             return;
         }
 
@@ -678,6 +718,12 @@ impl Engine {
     }
 
     fn on_release(&mut self, key: KeyCode, now: Instant, out: &mut Vec<Out>) {
+        if self.pending.get(&key).is_some_and(
+            |p| matches!(p.phase, Phase::WaitingDecision { deadline } if now >= deadline),
+        ) {
+            self.commit_hold(key, out);
+            self.drain_decision_buffer(out);
+        }
         self.long_holds.remove(&key);
         if let Some(suppressed) = self.isolated_holds.remove(&key) {
             for target_key in suppressed {
@@ -767,6 +813,12 @@ impl Engine {
             return;
         };
         let mods = self.take_releasable_mods(&ks.mods);
+        if self.is_virtually_held(ks.key) || self.is_suppressed(ks.key) {
+            if !mods.is_empty() {
+                out.push(Out::ReleaseMods(mods));
+            }
+            return;
+        }
         if ks.mods.is_empty() {
             out.push(Out::KeyRaw {
                 key: ks.key,
@@ -901,6 +953,9 @@ impl Engine {
     ) {
         match action {
             Some(ActionDef::Stroke(ks)) => {
+                if self.is_virtually_held(ks.key) {
+                    return;
+                }
                 // Don't press — and above all don't release — modifiers that
                 // are already virtually held (hold rules, active chords):
                 // the stroke's trailing mod-release would break the hold.

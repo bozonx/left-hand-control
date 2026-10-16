@@ -400,9 +400,9 @@ fn start_core() {
 }
 
 fn stop_core() {
-    if lhc_core::mapper::runtime::status().running
-        && let Err(error) = lhc_core::mapper::runtime::stop()
-    {
+    let running = lhc_core::mapper::runtime::status().running;
+    let result = lhc_core::mapper::runtime::stop();
+    if running && let Err(error) = result {
         log::error!("stop mapper during shutdown: {error}");
     }
     lhc_core::layout::stop_watcher();

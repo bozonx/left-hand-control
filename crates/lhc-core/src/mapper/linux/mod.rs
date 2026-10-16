@@ -110,6 +110,7 @@ pub fn spawn(
     device_path: String,
     mouse_path: Option<String>,
     cfg: AppConfig,
+    stop: Arc<AtomicBool>,
 ) -> Result<Handle, String> {
     super::text_job::start();
     super::portal::set_text_backend(
@@ -144,7 +145,6 @@ pub fn spawn(
         }
     }
 
-    let stop = Arc::new(AtomicBool::new(false));
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let stop_thread = stop.clone();
     let err_thread = error.clone();
@@ -161,12 +161,15 @@ pub fn spawn(
                     device_path,
                     mouse_path,
                     cfg,
-                    stop_thread,
+                    stop_thread.clone(),
                     ready_tx,
                     control_rx,
                     wake_rx,
                 )
             }));
+            if stop_thread.load(Ordering::SeqCst) {
+                return;
+            }
             match result {
                 Ok(Ok(())) => {}
                 Ok(Err(e)) => {
@@ -283,8 +286,21 @@ fn run(
     control_rx: mpsc::Receiver<MapperControl>,
     wake_rx: OwnedFd,
 ) -> Result<(), String> {
+    if stop.load(Ordering::SeqCst) {
+        return Err("mapper start cancelled".into());
+    }
     let _mapper_lock = acquire_mapper_lock()?;
     let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
+    validate_keyboard_capabilities(device.supported_events(), device.supported_keys())?;
+    if let Some(mouse_path) = &mouse_path {
+        use std::os::unix::fs::MetadataExt;
+        let keyboard =
+            std::fs::metadata(&device_path).map_err(|e| format!("stat keyboard: {e}"))?;
+        let mouse = std::fs::metadata(mouse_path).map_err(|e| format!("stat mouse: {e}"))?;
+        if keyboard.rdev() == mouse.rdev() && keyboard.ino() == mouse.ino() {
+            return Err("Keyboard and mouse must use different input devices".into());
+        }
+    }
     device
         .grab()
         .map_err(|e| format!("grab {device_path} (need perms? add user to input group): {e}"))?;
@@ -336,6 +352,19 @@ fn run(
     run_loop(driver, virt, cfg, stop, control_rx)
 }
 
+fn validate_keyboard_capabilities(
+    events: &evdev::AttributeSetRef<evdev::EventType>,
+    keys: Option<&evdev::AttributeSetRef<KeyCode>>,
+) -> Result<(), String> {
+    if events.contains(evdev::EventType::RELATIVE)
+        || events.contains(evdev::EventType::ABSOLUTE)
+        || keys.is_some_and(|keys| keys.iter().any(|key| (256..=351).contains(&key.code())))
+    {
+        return Err("This input device also provides pointer movement or non-keyboard buttons; select its separate keyboard interface to avoid blocking those inputs".into());
+    }
+    Ok(())
+}
+
 fn run_loop<D: LoopDriver>(
     mut driver: D,
     mut virt: VirtualDevice,
@@ -343,6 +372,7 @@ fn run_loop<D: LoopDriver>(
     stop: Arc<AtomicBool>,
     control_rx: mpsc::Receiver<MapperControl>,
 ) -> Result<(), String> {
+    let mut cfg = cfg;
     let mut engine = Engine::new(&cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
     let mut hold = OutputHold::default();
@@ -351,8 +381,12 @@ fn run_loop<D: LoopDriver>(
             while let Ok(ctrl) = control_rx.try_recv() {
                 match ctrl {
                     MapperControl::Config(next_cfg) => {
-                        super::text_job::cancel();
                         let next_cfg = *next_cfg;
+                        if next_cfg == cfg {
+                            continue;
+                        }
+                        hold.cancel_actions(&mut out_buf);
+                        super::text_job::cancel();
                         log::debug!(
                             "[mapper] live config update: rules={} layers={}",
                             next_cfg.rules.len(),
@@ -363,21 +397,20 @@ fn run_loop<D: LoopDriver>(
                             next_cfg.settings.linux_ydotool_path.as_deref(),
                             next_cfg.settings.linux_xdotool_path.as_deref(),
                         );
-                        hold.take(&mut out_buf);
-                        engine.shutdown(&mut out_buf);
+                        engine.reconfigure(&next_cfg, &mut out_buf);
                         super::layer_state::publish(engine.held_layer_state());
-                        flush_out(&mut virt, &mut out_buf)?;
-                        engine = Engine::new(&next_cfg);
                         super::text_job::start();
+                        cfg = next_cfg;
                     }
                     MapperControl::Execute(action) => {
                         log::debug!("[mapper] remote execute requested");
                         engine.execute_remote(&action, &mut out_buf);
-                        flush_out(&mut virt, &mut out_buf)?;
                     }
                     MapperControl::PopupFocused => hold.release(),
                 }
             }
+            hold.gate(&mut out_buf, std::time::Instant::now());
+            flush_out(&mut virt, &mut out_buf)?;
             process_iteration(&mut driver, &mut engine, &mut hold, &mut virt, &mut out_buf)?;
         }
         Ok(())
@@ -385,7 +418,7 @@ fn run_loop<D: LoopDriver>(
     super::text_job::cancel();
     super::layer_state::publish(super::layer_state::HeldLayerState::default());
 
-    hold.take(&mut out_buf);
+    hold.discard();
     engine.shutdown(&mut out_buf);
     let _ = flush_out(&mut virt, &mut out_buf);
     result
@@ -404,6 +437,21 @@ mod tests {
     use std::collections::{HashMap, VecDeque};
     use std::time::Duration;
     use std::time::Instant;
+
+    #[test]
+    fn pointer_interfaces_are_rejected_before_grabbing() {
+        let mut events = evdev::AttributeSet::new();
+        events.insert(evdev::EventType::KEY);
+        assert!(super::validate_keyboard_capabilities(&events, None).is_ok());
+        let mut keys = evdev::AttributeSet::new();
+        keys.insert(evdev::KeyCode::BTN_LEFT);
+        assert!(super::validate_keyboard_capabilities(&events, Some(&keys)).is_err());
+        for axis in [evdev::EventType::RELATIVE, evdev::EventType::ABSOLUTE] {
+            let mut pointer = events.clone();
+            pointer.insert(axis);
+            assert!(super::validate_keyboard_capabilities(&pointer, None).is_err());
+        }
+    }
 
     #[test]
     fn mapper_lock_excludes_another_instance() {

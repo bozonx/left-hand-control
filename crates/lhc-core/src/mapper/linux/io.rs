@@ -4,11 +4,12 @@ use super::super::portal;
 use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
 use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, KeyCode, KeyEvent};
+use std::collections::{HashMap, HashSet};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::sync::OnceLock;
 use std::sync::mpsc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 /// Gap inserted between a synthetic key-down and key-up so the receiving
 /// app sees a non-zero hold duration. A bare down+up pair in a single
@@ -18,6 +19,23 @@ const KEY_TAP_GAP: Duration = Duration::from_millis(1);
 /// Longest time output stays held after an action opened a popup when the
 /// shell never reports that the popup took the keyboard focus.
 const POPUP_HOLD_MAX: Duration = Duration::from_millis(1000);
+
+nix::ioctl_write_ptr!(set_event_clock, b'E', 0xa0, libc::c_int);
+
+fn event_clock_now() -> Result<SystemTime, String> {
+    let mut time = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    // SAFETY: `time` is writable and CLOCK_MONOTONIC is a valid clock id.
+    if unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, &mut time) } != 0 {
+        return Err(format!(
+            "clock_gettime: {}",
+            std::io::Error::last_os_error()
+        ));
+    }
+    Ok(SystemTime::UNIX_EPOCH + Duration::new(time.tv_sec as u64, time.tv_nsec as u32))
+}
 
 /// Output that follows a popup-opening action, held until the popup has the
 /// keyboard focus. Keys typed right after the hotkey would otherwise reach
@@ -45,12 +63,32 @@ impl OutputHold {
         }
     }
 
+    /// Shutdown must not replay input or actions waiting for popup focus.
+    pub(super) fn discard(&mut self) {
+        self.held.clear();
+        self.until = None;
+        self.released = false;
+    }
+
+    /// Config changes revoke pending side effects, while key transitions
+    /// must remain balanced with presses already emitted before the popup.
+    pub(super) fn cancel_actions(&mut self, buf: &mut Vec<Out>) {
+        let key_transition = |out: &Out| {
+            !matches!(
+                out,
+                Out::Literal(_) | Out::RunCommand(_) | Out::RunSystem(_)
+            )
+        };
+        self.held.retain(key_transition);
+        buf.retain(key_transition);
+    }
+
     fn deadline(&self) -> Option<Instant> {
         self.until
     }
 
     /// Leave in `buf` only what may be emitted now.
-    fn gate(&mut self, buf: &mut Vec<Out>, now: Instant) {
+    pub(super) fn gate(&mut self, buf: &mut Vec<Out>, now: Instant) {
         if self
             .until
             .is_some_and(|until| self.released || now >= until)
@@ -95,6 +133,13 @@ pub(super) trait LoopDriver {
     fn now(&mut self) -> Instant;
     fn wait(&mut self, timeout: Duration) -> Result<bool, String>;
     fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String>;
+    fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
+        let events = self.fetch_key_events()?;
+        Ok(events
+            .into_iter()
+            .map(|(key, down)| (key, down, self.now()))
+            .collect())
+    }
 }
 
 pub(super) struct VirtualEventSink<'a> {
@@ -148,7 +193,7 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn run_system(&mut self, action: &SysAction) {
-        enqueue_side_effect(SideEffectJob::System(action.clone()));
+        run_sys_action(action);
     }
 
     fn run_command(&mut self, command: &SysCommand) {
@@ -157,7 +202,6 @@ impl SideEffects for RuntimeSideEffects {
 }
 
 enum SideEffectJob {
-    System(SysAction),
     Text(String, super::super::text_job::TextRequest),
 }
 
@@ -187,7 +231,6 @@ fn enqueue_side_effect(job: SideEffectJob) -> bool {
 fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
     for job in rx {
         match job {
-            SideEffectJob::System(action) => run_sys_action(&action),
             SideEffectJob::Text(text, request) => {
                 let result = portal::type_text(&text, request.clone());
                 request.complete(result.is_err());
@@ -201,6 +244,8 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
 
 pub(super) struct MultiDeviceLoopDriver {
     devices: Vec<Device>,
+    keys: DeviceKeys,
+    last_event: Instant,
     /// Read end of the control wake pipe. The `Handle` writes a byte after
     /// queuing a control message so the poll below returns immediately
     /// instead of sleeping out its full timeout.
@@ -214,6 +259,11 @@ impl MultiDeviceLoopDriver {
     ) -> Result<Self, String> {
         for device in &devices {
             let fd = device.as_raw_fd();
+            // All sources must use one clock; wall-clock adjustments must not
+            // change tap/hold duration or reorder keyboard and mouse events.
+            // SAFETY: the device owns this fd; the ioctl reads a valid clock id.
+            unsafe { set_event_clock(fd, &libc::CLOCK_MONOTONIC) }
+                .map_err(|e| format!("set input event clock: {e}"))?;
             // SAFETY: `fd` is a valid raw file descriptor obtained from an
             // `evdev::Device` that is still alive; `fcntl` only queries and
             // modifies the open-file description flags, never the device itself.
@@ -227,7 +277,12 @@ impl MultiDeviceLoopDriver {
                 }
             }
         }
-        Ok(Self { devices, wake_rx })
+        Ok(Self {
+            devices,
+            wake_rx,
+            keys: DeviceKeys::default(),
+            last_event: Instant::now(),
+        })
     }
 
     fn drain_wake_pipe(&self) {
@@ -300,8 +355,17 @@ impl LoopDriver for MultiDeviceLoopDriver {
     }
 
     fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
-        let mut out = Vec::new();
-        for device in &mut self.devices {
+        self.fetch_timed_key_events().map(|events| {
+            events
+                .into_iter()
+                .map(|(key, down, _)| (key, down))
+                .collect()
+        })
+    }
+
+    fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
+        let mut events = Vec::new();
+        for (source, device) in self.devices.iter_mut().enumerate() {
             match device.fetch_events() {
                 Ok(iter) => {
                     for ev in iter {
@@ -312,14 +376,66 @@ impl LoopDriver for MultiDeviceLoopDriver {
                         if value == 2 {
                             continue;
                         }
-                        out.push((KeyCode::new(ev.code()), value == 1));
+                        events.push((ev.timestamp(), source, KeyCode::new(ev.code()), value == 1));
                     }
                 }
                 Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
                 Err(e) => return Err(format!("fetch_events: {e}")),
             }
         }
-        Ok(out)
+        Ok(self.keys.merge(
+            &mut events,
+            event_clock_now()?,
+            Instant::now(),
+            &mut self.last_event,
+        ))
+    }
+}
+
+/// Merge equal key codes from independent devices without releasing another
+/// device's held key. Ordering is established before ownership is updated.
+#[derive(Default)]
+struct DeviceKeys {
+    held: HashSet<(usize, KeyCode)>,
+    owners: HashMap<KeyCode, usize>,
+}
+
+impl DeviceKeys {
+    fn merge(
+        &mut self,
+        events: &mut [(SystemTime, usize, KeyCode, bool)],
+        wall: SystemTime,
+        now: Instant,
+        last: &mut Instant,
+    ) -> Vec<(KeyCode, bool, Instant)> {
+        events.sort_by_key(|(at, ..)| *at);
+        let mut out = Vec::new();
+        for &(at, source, key, down) in events.iter() {
+            let age = wall.duration_since(at).unwrap_or_default();
+            let at = now.checked_sub(age).unwrap_or(*last).max(*last).min(now);
+            *last = at;
+            if self.transition(source, key, down) {
+                out.push((key, down, at));
+            }
+        }
+        out
+    }
+
+    fn transition(&mut self, source: usize, key: KeyCode, down: bool) -> bool {
+        if down {
+            if !self.held.insert((source, key)) {
+                return false;
+            }
+            let owners = self.owners.entry(key).or_default();
+            *owners += 1;
+            *owners == 1
+        } else {
+            if self.held.remove(&(source, key)) {
+                let owners = self.owners.entry(key).or_default();
+                *owners = owners.saturating_sub(1);
+            }
+            self.owners.get(&key).copied().unwrap_or(0) == 0
+        }
     }
 }
 
@@ -360,8 +476,8 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     }
 
     if driver.wait(wait)? {
-        for (key, down) in driver.fetch_key_events()? {
-            engine.handle(key, down, driver.now(), out_buf);
+        for (key, down, at) in driver.fetch_timed_key_events()? {
+            engine.handle(key, down, at, out_buf);
             effects.held_layer_changed(engine.held_layer_state());
         }
     }
@@ -575,6 +691,7 @@ fn spawn_system(cmd: &SysCommand) {
         }
         Err(e) => {
             log::debug!("[mapper] spawn system {:?} failed: {}", cmd.program, e);
+            report_action_failure(format!("Cannot start {}: {e}", cmd.program));
         }
     }
 }
@@ -584,7 +701,11 @@ fn spawn_system(cmd: &SysCommand) {
 /// side-effect worker, so a hung DBus service cannot stall text
 /// injection or shell commands queued after it.
 fn call_dbus(call: &DbusCall) {
-    if dbus_tx().send(call.clone()).is_err() {
+    if dbus_tx().try_send(call.clone()).is_err() {
+        report_action_failure(format!(
+            "System action queue unavailable or full: {}.{}",
+            call.destination, call.method
+        ));
         log::debug!(
             "[mapper] dbus {}.{} dropped (worker unavailable)",
             call.destination,
@@ -593,10 +714,10 @@ fn call_dbus(call: &DbusCall) {
     }
 }
 
-fn dbus_tx() -> &'static mpsc::Sender<DbusCall> {
-    static TX: OnceLock<mpsc::Sender<DbusCall>> = OnceLock::new();
+fn dbus_tx() -> &'static mpsc::SyncSender<DbusCall> {
+    static TX: OnceLock<mpsc::SyncSender<DbusCall>> = OnceLock::new();
     TX.get_or_init(|| {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::sync_channel(32);
         match thread::Builder::new()
             .name("lhc-dbus".into())
             .spawn(move || run_dbus_worker(rx))
@@ -621,6 +742,7 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
                 }
                 Err(e) => {
                     log::debug!("[mapper] dbus connect session bus failed: {e}");
+                    report_action_failure(format!("Cannot connect to session bus: {e}"));
                     continue;
                 }
             },
@@ -645,6 +767,7 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
                 );
             }
             Ok(Err(e)) => {
+                report_action_failure(format!("{}.{} failed: {e}", call.destination, call.method));
                 log::debug!(
                     "[mapper] dbus {}.{} failed: {}",
                     call.destination,
@@ -658,6 +781,7 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
                 }
             }
             Err(_) => {
+                report_action_failure(format!("{}.{} timed out", call.destination, call.method));
                 log::debug!(
                     "[mapper] dbus {}.{} timed out after 5s",
                     call.destination,
@@ -667,6 +791,10 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
             }
         }
     }
+}
+
+fn report_action_failure(error: String) {
+    crate::events::emit(crate::events::CoreEvent::MapperActionFailed(error));
 }
 
 fn dispatch_dbus_call(conn: &zbus::blocking::Connection, call: &DbusCall) -> zbus::Result<()> {
@@ -700,4 +828,168 @@ fn dispatch_dbus_call(conn: &zbus::blocking::Connection, call: &DbusCall) -> zbu
         &body,
     )?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_changes_revoke_buffered_actions_without_losing_key_releases() {
+        let command = || {
+            Out::RunCommand(SysCommand {
+                program: "sh".into(),
+                args: vec!["-c".into(), "true".into()],
+                working_directory: None,
+            })
+        };
+        let mut hold = OutputHold::default();
+        let mut out = vec![
+            Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
+            Out::KeyRaw {
+                key: KeyCode::KEY_LEFTCTRL,
+                down: false,
+            },
+            Out::Literal("stale".into()),
+            command(),
+            Out::RunSystem(SysAction::AppEvent("game_mode_toggle".into())),
+        ];
+        let now = Instant::now();
+        hold.gate(&mut out, now);
+        out.clear();
+        out.push(command());
+        hold.cancel_actions(&mut out);
+        hold.release();
+        hold.gate(&mut out, now);
+        assert!(matches!(
+            out.as_slice(),
+            [Out::KeyRaw {
+                key: KeyCode::KEY_LEFTCTRL,
+                down: false
+            }]
+        ));
+    }
+
+    #[test]
+    fn shutdown_discards_actions_waiting_for_popup_focus() {
+        let mut hold = OutputHold::default();
+        let mut out = vec![
+            Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
+            Out::Literal("must not be typed on shutdown".into()),
+        ];
+        hold.gate(&mut out, Instant::now());
+        out.clear();
+        hold.discard();
+        hold.take(&mut out);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    #[ignore = "requires /dev/uinput and access to synthetic /dev/input devices"]
+    fn synthetic_devices_use_monotonic_timestamps_and_preserve_cross_device_order() {
+        fn synthetic() -> (VirtualDevice, Device) {
+            let mut keys = evdev::AttributeSet::new();
+            keys.insert(KeyCode::KEY_A);
+            keys.insert(KeyCode::KEY_B);
+            let mut virt = VirtualDevice::builder()
+                .unwrap()
+                .name("LHC isolated mapper test")
+                .with_keys(&keys)
+                .unwrap()
+                .build()
+                .unwrap();
+            let deadline = Instant::now() + Duration::from_secs(2);
+            let mut device = loop {
+                let candidate = virt
+                    .enumerate_dev_nodes_blocking()
+                    .unwrap()
+                    .filter_map(Result::ok)
+                    .find_map(|path| Device::open(path).ok());
+                if let Some(device) = candidate {
+                    break device;
+                }
+                assert!(
+                    Instant::now() < deadline,
+                    "synthetic device did not become readable"
+                );
+                thread::sleep(Duration::from_millis(10));
+            };
+            // Grab our synthetic device before emitting anything: no test
+            // keystroke may reach the user's compositor or focused window.
+            device.grab().unwrap();
+            (virt, device)
+        }
+        let (mut first, first_input) = synthetic();
+        let (mut second, second_input) = synthetic();
+        let mut driver = MultiDeviceLoopDriver::new(vec![first_input, second_input], None).unwrap();
+        second.emit(&[*KeyEvent::new(KeyCode::KEY_B, 1)]).unwrap();
+        thread::sleep(Duration::from_millis(2));
+        first.emit(&[*KeyEvent::new(KeyCode::KEY_A, 1)]).unwrap();
+        thread::sleep(Duration::from_millis(2));
+        second.emit(&[*KeyEvent::new(KeyCode::KEY_B, 0)]).unwrap();
+        thread::sleep(Duration::from_millis(2));
+        first.emit(&[*KeyEvent::new(KeyCode::KEY_A, 0)]).unwrap();
+        assert!(driver.wait(Duration::from_secs(1)).unwrap());
+        let events = driver.fetch_timed_key_events().unwrap();
+        assert_eq!(
+            events
+                .iter()
+                .map(|(key, down, _)| (*key, *down))
+                .collect::<Vec<_>>(),
+            vec![
+                (KeyCode::KEY_B, true),
+                (KeyCode::KEY_A, true),
+                (KeyCode::KEY_B, false),
+                (KeyCode::KEY_A, false)
+            ]
+        );
+        for pair in events.windows(2) {
+            assert!(pair[1].2 > pair[0].2);
+        }
+    }
+
+    #[test]
+    fn events_are_merged_by_capture_time_and_keep_their_original_spacing() {
+        let now = Instant::now();
+        let wall = SystemTime::now();
+        let mut events = vec![
+            (wall - Duration::from_millis(5), 0, KeyCode::KEY_A, false),
+            (wall - Duration::from_millis(25), 1, KeyCode::BTN_SIDE, true),
+            (wall - Duration::from_millis(40), 0, KeyCode::KEY_A, true),
+        ];
+        let mut last = now - Duration::from_secs(1);
+        let events = DeviceKeys::default().merge(&mut events, wall, now, &mut last);
+        assert_eq!(
+            events,
+            vec![
+                (KeyCode::KEY_A, true, now - Duration::from_millis(40)),
+                (KeyCode::BTN_SIDE, true, now - Duration::from_millis(25)),
+                (KeyCode::KEY_A, false, now - Duration::from_millis(5)),
+            ]
+        );
+    }
+
+    #[test]
+    fn independent_devices_share_ownership_without_duplicate_transitions() {
+        let mut keys = DeviceKeys::default();
+        assert!(keys.transition(0, KeyCode::KEY_A, true));
+        assert!(!keys.transition(0, KeyCode::KEY_A, true));
+        assert!(!keys.transition(1, KeyCode::KEY_A, true));
+        assert!(!keys.transition(0, KeyCode::KEY_A, false));
+        assert!(!keys.transition(0, KeyCode::KEY_A, false));
+        assert!(keys.transition(1, KeyCode::KEY_A, false));
+    }
+
+    #[test]
+    fn app_actions_bypass_the_text_worker() {
+        let received = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let flag = received.clone();
+        crate::events::bus().subscribe(move |event| {
+            if matches!(event, crate::events::CoreEvent::AppAction(name) if name == "audit-popup-test") {
+                flag.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        });
+        RuntimeSideEffects.run_system(&SysAction::AppEvent("audit-popup-test".into()));
+        assert!(received.load(std::sync::atomic::Ordering::SeqCst));
+    }
 }

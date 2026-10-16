@@ -77,6 +77,7 @@ impl Engine {
             raw_user_macros: &HashMap<String, &crate::mapper::config::Macro>,
             commands: &HashMap<String, SysCommand>,
             depth: usize,
+            remaining: &mut usize,
         ) -> Vec<MacroStepItem> {
             let mut steps: Vec<MacroStepItem> = Vec::new();
             if depth > 10 {
@@ -84,10 +85,14 @@ impl Engine {
                 return steps;
             }
             for raw in raw_steps {
+                if *remaining == 0 {
+                    break;
+                }
                 let raw = raw.trim_start();
                 if raw.is_empty() {
                     continue;
                 }
+                *remaining -= 1;
                 if let Some(rest) = raw.strip_prefix("sys:") {
                     match system::resolve(rest.trim()) {
                         Some(cmd) => steps.push(MacroStepItem::System(cmd)),
@@ -132,6 +137,7 @@ impl Engine {
                             raw_user_macros,
                             commands,
                             depth + 1,
+                            remaining,
                         );
                         steps.extend(nested_steps);
                         found = true;
@@ -142,6 +148,7 @@ impl Engine {
                             raw_user_macros,
                             commands,
                             depth + 1,
+                            remaining,
                         );
                         steps.extend(nested_steps);
                         found = true;
@@ -184,8 +191,14 @@ impl Engine {
         }
 
         for sys in BUILTIN_MACROS {
-            let steps =
-                resolve_macro_steps(sys.id, sys.steps.to_vec(), &raw_user_macros, &commands, 0);
+            let steps = resolve_macro_steps(
+                sys.id,
+                sys.steps.to_vec(),
+                &raw_user_macros,
+                &commands,
+                0,
+                &mut 1000,
+            );
             if steps.is_empty() {
                 log::debug!(
                     "[mapper] built-in macro {} has no usable steps — skipped",
@@ -208,7 +221,8 @@ impl Engine {
                 continue;
             }
             let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.action.as_str()).collect();
-            let steps = resolve_macro_steps(&m.id, raw_steps, &raw_user_macros, &commands, 0);
+            let steps =
+                resolve_macro_steps(&m.id, raw_steps, &raw_user_macros, &commands, 0, &mut 1000);
             if steps.is_empty() {
                 log::debug!("[mapper] macro {} has no usable steps — skipped", m.id);
                 continue;

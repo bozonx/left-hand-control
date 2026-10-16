@@ -32,6 +32,8 @@ pub enum CoreEvent {
     },
     /// A `text:` action was not typed.
     TextInputFailed(TextInputFailure),
+    /// A mapper system action could not be submitted or executed.
+    MapperActionFailed(String),
 }
 
 /// Why a `text:` action was not typed. Details are untranslated.

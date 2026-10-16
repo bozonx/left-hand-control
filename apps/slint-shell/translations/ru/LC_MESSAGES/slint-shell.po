@@ -2578,3 +2578,9 @@ msgstr "По умолчанию из настроек"
 
 msgid "Overrides the default hold detection for this rule. Use release detection for typing keys and press detection for dedicated layer or modifier keys. This does not change chord detection."
 msgstr "Заменяет режим распознавания удержания для этого правила. Для букв используйте распознавание по отпусканию, для выделенных клавиш слоя или модификаторов — по нажатию. На распознавание аккордов не влияет."
+
+msgid "Cannot list input devices: {}"
+msgstr "Не удалось получить список устройств ввода: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr "Перехват клавиатуры в этой операционной системе не реализован."
