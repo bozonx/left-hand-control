@@ -439,7 +439,8 @@ fn pump(
     state: &mut State,
     deadline: Instant,
 ) -> Result<(), String> {
-    queue.dispatch_pending(state).map_err(|e| e.to_string())?;
+    let dispatched = queue.dispatch_pending(state).map_err(|e| e.to_string())?;
+    let transfers_before = state.transfers.len();
     state
         .transfers
         .retain(|transfer| match transfer.try_recv() {
@@ -463,6 +464,11 @@ fn pump(
         }
         Err(error) => return Err(error.to_string()),
     };
+    // Let callers check acknowledgements and completed transfers before waiting
+    // for another event: the event they needed may have just been dispatched.
+    if !needs_write && (dispatched > 0 || state.transfers.len() != transfers_before) {
+        return Ok(());
+    }
     let Some(guard) = queue.prepare_read() else {
         return Ok(());
     };
