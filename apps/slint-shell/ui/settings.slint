@@ -195,6 +195,8 @@ export component SettingsWindow inherits Window {
             VerticalLayout {
                 vertical-stretch: 1;
                 padding: Theme.page-padding;
+                // Pages scroll to the window edge; their content keeps the bottom gap (PageContent).
+                padding-bottom: 0px;
                 spacing: 12px;
                 if root.problem.id != "": Text { text: Locale.text(root.problem); color: NotificationCenter.is-warning(root.problem.id) ? Theme.warning : Theme.error; wrap: word-wrap; max-height: 96px; overflow: elide; }
                 if root.page == Page.layouts: LibraryPage {}

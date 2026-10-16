@@ -1,5 +1,5 @@
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
-import { ScrollView } from "scroll.slint";
+import { PageContent, ScrollView } from "scroll.slint";
 import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { AppState } from "app-state.slint";
@@ -552,7 +552,7 @@ export component LibraryPage inherits VerticalBox {
             }
             if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width; drag-scroll: true;
                 vertical-stretch: 1;
-                VerticalLayout { padding: 0px; spacing: 0px;
+                PageContent { spacing: 0px;
                     for name[index] in LayoutLibrary.names: card := Rectangle {
                         property <bool> active: LayoutLibrary.active-label == name;
                         property <bool> current: LayoutLibrary.editor-open && LayoutLibrary.current-label == name;
@@ -639,7 +639,7 @@ export component LibraryPage inherits VerticalBox {
                 }
             }
         }
-        if LayoutLibrary.automatic: AutoRulesPanel { width: 340px; }
+        if LayoutLibrary.automatic: VerticalLayout { width: 340px; padding-bottom: Theme.page-padding; AutoRulesPanel {} }
     }
 }
 

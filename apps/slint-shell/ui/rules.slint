@@ -1,5 +1,5 @@
 import { SearchField, TextField } from "controls.slint";
-import { ScrollView } from "scroll.slint";
+import { PageContent, ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { ConditionsForm, ConditionChoices } from "conditions.slint";
@@ -321,7 +321,7 @@ export component RulesPage inherits VerticalBox {
         Button { max-height: 36px; text: @tr("Add rule"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
     }
     rule-scroll := ScrollView { viewport-width: self.visible-width; drag-scroll: true; vertical-stretch: 1;
-        VerticalLayout { padding: 0px; width: rule-scroll.visible-width; spacing: 10px; alignment: start;
+        PageContent { width: rule-scroll.visible-width; spacing: 10px; alignment: start;
             for rule[index] in RulesEditor.rows: Rectangle {
                 vertical-stretch: 0;
                 min-height: rule-content.preferred-height;

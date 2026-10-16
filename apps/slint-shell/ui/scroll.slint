@@ -51,6 +51,13 @@ component ScrollBar inherits Rectangle {
     }
 }
 
+/// Content of a page-level ScrollView: keeps the page gap after the last item,
+/// since the page container has no bottom padding.
+export component PageContent inherits VerticalLayout {
+    padding: 0px;
+    padding-bottom: Theme.page-padding;
+}
+
 export component ScrollView {
     in property <bool> enabled: true;
     out property <length> visible-width <=> content.width;

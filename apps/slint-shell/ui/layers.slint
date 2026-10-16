@@ -1,5 +1,5 @@
 import { TextField } from "controls.slint";
-import { ScrollView } from "scroll.slint";
+import { PageContent, ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
@@ -392,7 +392,7 @@ export component LayersPage inherits VerticalLayout {
         drag-scroll: true;
         viewport-width: self.visible-width;
         vertical-stretch: 1;
-        VerticalLayout { padding: 0px;
+        PageContent {
             spacing: 16px;
             // Layer toolbar
             Card {

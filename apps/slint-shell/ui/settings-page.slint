@@ -1,6 +1,6 @@
 import { TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
-import { ScrollView } from "scroll.slint";
+import { PageContent, ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
 import { Alert, Badge, Card, CardHeader, Divider, FieldLabel, IconButton, InfoTip, ButtonGroup } from "controls.slint";
 import { LayoutLibrary } from "library.slint";
@@ -374,10 +374,9 @@ export component SettingsPage inherits VerticalBox {
             horizontal-stretch: 1;
             max-width: 100000px;
             vertical-stretch: 1;
-            settings-content := VerticalLayout {
+            settings-content := PageContent {
                 x: 0px;
                 y: 0px;
-                padding: 0px;
                 width: content.visible-width;
                 alignment: start;
                 min-width: 0px;
@@ -385,41 +384,69 @@ export component SettingsPage inherits VerticalBox {
                 spacing: 0px;
                 if SettingsEditor.tab == SettingsTab.general: Section {
                     title: @tr("General");
-                    VerticalLayout { vertical-stretch: 0; spacing: 8px;
-                        HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
-                            VerticalLayout { alignment: center; Image { width: 16px; height: 16px; colorize: Theme.text; source: @image-url("icons/globe.svg"); } }
-                            Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
-                        }
-                        SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
-                    }
-                    VerticalLayout { vertical-stretch: 0; spacing: 8px;
-                        Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
-                        HorizontalLayout { alignment: start;
-                            RadioGroup {
-                                vertical-stretch: 0;
-                                horizontal-stretch: 0;
-                                orientation: horizontal;
-                                selected(value) => { SettingsEditor.appearance-index = value == @tr("System") ? 0 : value == @tr("Light") ? 1 : value == @tr("Dark") ? 2 : 3; SettingsEditor.save(); }
-                                RadioButton { text: @tr("System"); checked: SettingsEditor.appearance-index == 0; }
-                                RadioButton { text: @tr("Light"); checked: SettingsEditor.appearance-index == 1; }
-                                RadioButton { text: @tr("Dark"); checked: SettingsEditor.appearance-index == 2; }
-                                RadioButton { text: @tr("E-ink"); checked: SettingsEditor.appearance-index == 3; }
+                    Card {
+                        vertical-stretch: 0;
+                        VerticalLayout {
+                            padding: 16px;
+                            spacing: 20px;
+                            VerticalLayout { vertical-stretch: 0; spacing: 8px;
+                                HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
+                                    VerticalLayout { alignment: center; Image { width: 16px; height: 16px; colorize: Theme.text; source: @image-url("icons/globe.svg"); } }
+                                    Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
+                                }
+                                SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
+                            }
+                            VerticalLayout { vertical-stretch: 0; spacing: 8px;
+                                Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
+                                HorizontalLayout { alignment: start;
+                                    RadioGroup {
+                                        vertical-stretch: 0;
+                                        horizontal-stretch: 0;
+                                        orientation: horizontal;
+                                        selected(value) => { SettingsEditor.appearance-index = value == @tr("System") ? 0 : value == @tr("Light") ? 1 : value == @tr("Dark") ? 2 : 3; SettingsEditor.save(); }
+                                        RadioButton { text: @tr("System"); checked: SettingsEditor.appearance-index == 0; }
+                                        RadioButton { text: @tr("Light"); checked: SettingsEditor.appearance-index == 1; }
+                                        RadioButton { text: @tr("Dark"); checked: SettingsEditor.appearance-index == 2; }
+                                        RadioButton { text: @tr("E-ink"); checked: SettingsEditor.appearance-index == 3; }
+                                    }
+                                }
                             }
                         }
                     }
-                    if AppState.is-linux: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                    if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
-                    if AppState.is-linux: VerticalLayout { vertical-stretch: 0; spacing: 4px;
-                        CheckBox { text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
-                        Text { vertical-stretch: 0; text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); color: Theme.muted; wrap: word-wrap; }
+                    if AppState.is-linux: Card {
+                        vertical-stretch: 0;
+                        VerticalLayout {
+                            padding: 16px;
+                            spacing: 20px;
+                            CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
+                            CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
+                            VerticalLayout { vertical-stretch: 0; spacing: 4px;
+                                CheckBox { text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
+                                Text { vertical-stretch: 0; text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); color: Theme.muted; wrap: word-wrap; }
+                            }
+                        }
                     }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0;
-                        Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                        Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }
+                    Card {
+                        vertical-stretch: 0;
+                        VerticalLayout {
+                            padding: 16px;
+                            spacing: 20px;
+                            HorizontalBox { padding: 0px; vertical-stretch: 0;
+                                Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                                Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }
+                            }
+                        }
                     }
-                    HorizontalBox { padding: 0px; vertical-stretch: 0;
-                        Text { vertical-stretch: 0; text: @tr("Layouts directory: ") + SettingsEditor.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                        Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
+                    Card {
+                        vertical-stretch: 0;
+                        VerticalLayout {
+                            padding: 16px;
+                            spacing: 20px;
+                            HorizontalBox { padding: 0px; vertical-stretch: 0;
+                                Text { vertical-stretch: 0; text: @tr("Layouts directory: ") + SettingsEditor.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                                Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
+                            }
+                        }
                     }
                 }
                 if SettingsEditor.tab == SettingsTab.accessibility: Section {

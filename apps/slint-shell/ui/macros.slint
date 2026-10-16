@@ -1,5 +1,5 @@
 import { NotificationCenter } from "notifications.slint";
-import { ScrollView } from "scroll.slint";
+import { PageContent, ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
@@ -380,8 +380,7 @@ export component MacrosPage inherits Rectangle {
             drag-scroll: true;
             viewport-width: self.visible-width;
             vertical-stretch: 1;
-            VerticalLayout {
-                padding: 0px;
+            PageContent {
                 alignment: start;
                 spacing: 16px;
                 if MacroEditor.has-errors: Text { text: @tr("Fix the existing macro errors first"); color: Theme.muted; font-size: 12px; }

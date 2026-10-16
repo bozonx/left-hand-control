@@ -1,6 +1,6 @@
 import { TextField } from "controls.slint";
 import { InlineTextArea } from "controls.slint";
-import { ScrollView } from "scroll.slint";
+import { PageContent, ScrollView } from "scroll.slint";
 import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
@@ -399,6 +399,7 @@ export component EmojiPage inherits Rectangle {
         padding: 0px;
         padding-left: 8px;
         padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+        padding-bottom: Theme.page-padding;
         spacing: 16px;
         CardHeader {
             title: @tr("Emoji & Symbols");
@@ -516,7 +517,7 @@ export component QuickActionsPage inherits Rectangle {
         ScrollView {
             vertical-stretch: 1;
             viewport-width: self.visible-width;
-            VerticalLayout { padding: 0px;
+            PageContent {
                 alignment: start;
                 Rectangle {
                     VerticalLayout {
