@@ -1,5 +1,6 @@
 //! Linux game-mode sources: the Feral GameMode daemon over D-Bus, the
-//! user's processes from `/proc` (with games that Steam and Lutris run)
+//! user's processes from `/proc` (with games that Steam, Lutris, Heroic
+//! and umu run)
 //! and the application category of the active window. Fullscreen comes
 //! with the active window (`active_window::linux`), which already asks
 //! the compositor.
@@ -362,7 +363,11 @@ fn read_process(dir: &Path, start: u64) -> ProcInfo {
     ProcInfo {
         start,
         names: super::process::proc_names(dir, &args),
-        game: super::process::launched_game(&args),
+        game: super::process::launched_game(&args).or_else(|| {
+            std::fs::read(dir.join("environ"))
+                .ok()
+                .and_then(|environ| super::process::heroic_game(&environ))
+        }),
     }
 }
 

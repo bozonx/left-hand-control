@@ -375,6 +375,8 @@ pub struct GameModeSettings {
     /// platform uses only the ones it supports.
     pub use_steam: bool,
     pub use_lutris: bool,
+    pub use_heroic: bool,
+    pub use_umu: bool,
     pub use_gamescope: bool,
     pub use_app_category: bool,
     pub use_game_bar: bool,
@@ -565,6 +567,8 @@ impl Default for AppSettings {
                 use_fullscreen: false,
                 use_steam: true,
                 use_lutris: true,
+                use_heroic: true,
+                use_umu: true,
                 use_gamescope: true,
                 use_app_category: true,
                 use_game_bar: true,

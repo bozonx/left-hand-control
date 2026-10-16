@@ -112,6 +112,8 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             bool_or(game_mode, "useFullscreen", base.game_mode.use_fullscreen);
         settings.game_mode.use_steam = bool_or(game_mode, "useSteam", base.game_mode.use_steam);
         settings.game_mode.use_lutris = bool_or(game_mode, "useLutris", base.game_mode.use_lutris);
+        settings.game_mode.use_heroic = bool_or(game_mode, "useHeroic", base.game_mode.use_heroic);
+        settings.game_mode.use_umu = bool_or(game_mode, "useUmu", base.game_mode.use_umu);
         settings.game_mode.use_gamescope =
             bool_or(game_mode, "useGamescope", base.game_mode.use_gamescope);
         settings.game_mode.use_app_category =

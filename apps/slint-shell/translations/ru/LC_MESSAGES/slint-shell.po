@@ -1802,9 +1802,6 @@ msgstr "Переключить игровой режим"
 msgid "GameMode is not installed: install the gamemode package."
 msgstr "GameMode не установлен: установите пакет gamemode."
 
-msgid "Games and exclusions"
-msgstr "Игры и исключения"
-
 msgid "Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules."
 msgstr "Установите {}, чтобы определять активное и полноэкранное окно. Он же нужен для условий по приложениям в правилах."
 
@@ -2125,9 +2122,6 @@ msgstr "При смене устройства маппер перезапуст
 msgid "Auto: known game {}"
 msgstr "Auto: известная игра {}"
 
-msgid "Built-in list. To count one of these anyway, add it under Games and exclusions."
-msgstr "Встроенный список. Чтобы всё же учитывать что-то из него, добавьте это в «Игры и исключения»."
-
 msgid "Ignored in fullscreen"
 msgstr "Не считаются играми в полноэкранном режиме"
 
@@ -2202,12 +2196,6 @@ msgstr "Приложение · пока активно его окно"
 
 msgid "Process · while it runs"
 msgstr "Процесс · пока запущен"
-
-msgid "Games"
-msgstr "Игры"
-
-msgid "Exclusions"
-msgstr "Исключения"
 
 msgid "No games added."
 msgstr "Игры не добавлены."
@@ -2522,15 +2510,6 @@ msgstr "Максимальная пауза между двумя нажатия
 msgid "Auto: {} is not counted as a game (built-in list)"
 msgstr "Auto: {} не считается игрой (встроенный список)"
 
-msgid "Running games"
-msgstr "Запущенные игры"
-
-msgid "A launcher or the system reports the game it runs, so these do not guess."
-msgstr "Лаунчер или система сами сообщают о запущенной игре, поэтому здесь нет догадок."
-
-msgid "Applications that look like games"
-msgstr "Приложения, похожие на игры"
-
 msgid "These sources can take another application for a game, so each skips a built-in list of applications."
 msgstr "Эти источники могут принять за игру другое приложение, поэтому каждый пропускает встроенный список приложений."
 
@@ -2578,3 +2557,45 @@ msgstr "Окно двойного нажатия"
 
 msgid "Reset to {} ms"
 msgstr "Вернуть {} мс"
+
+msgid "Automatic game detection"
+msgstr "Автоопределение игр"
+
+msgid "Works only in Auto mode."
+msgstr "Работает только в режиме «Авто»."
+
+msgid "System signals"
+msgstr "Системные сигналы"
+
+msgid "Launchers"
+msgstr "Лаунчеры"
+
+msgid "Heroic games"
+msgstr "Игры Heroic"
+
+msgid "Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it starts."
+msgstr "Включается, пока запущена игра из Heroic Games Launcher (Epic, GOG, Amazon и добавленные вручную): Heroic передаёт HEROIC_APP_NAME каждой запущенной игре."
+
+msgid "Games run through umu-launcher"
+msgstr "Игры через umu-launcher"
+
+msgid "Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher and other launchers use it to start Windows games with Proton."
+msgstr "Включается, пока игра запущена через umu-run. Через него Heroic, Lutris, Faugus Launcher и другие лаунчеры запускают Windows-игры в Proton."
+
+msgid "Guesses — can be wrong"
+msgstr "Догадки — могут ошибаться"
+
+msgid "Your rules"
+msgstr "Свои правила"
+
+msgid "“Never a game” wins over everything else, automatic detection included."
+msgstr "«Никогда не игра» важнее всего остального, в том числе автоопределения."
+
+msgid "Always a game"
+msgstr "Всегда игра"
+
+msgid "Never a game"
+msgstr "Никогда не игра"
+
+msgid "Built-in list. To count one of these anyway, add it to Always a game under Your rules."
+msgstr "Встроенный список. Чтобы всё же считать что-то из него игрой, добавьте это во «Всегда игра» в блоке «Свои правила»."

@@ -57,6 +57,8 @@ export global SettingsEditor {
     in-out property <bool> use-fullscreen;
     in-out property <bool> use-steam: true;
     in-out property <bool> use-lutris: true;
+    in-out property <bool> use-heroic: true;
+    in-out property <bool> use-umu: true;
     in-out property <bool> use-gamescope: true;
     in-out property <bool> use-app-category: true;
     in-out property <bool> use-game-bar: true;
@@ -115,7 +117,7 @@ component BuiltinList inherits VerticalLayout {
         }
     }
     if root.expanded: Text { text: root.items; color: Theme.muted; wrap: word-wrap; }
-    if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it under Games and exclusions."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+    if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it to Always a game under Your rules."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
 }
 
 /// One game-detection source: a check box, its explanation and, when the
@@ -672,12 +674,23 @@ export component SettingsPage inherits VerticalBox {
                         Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; vertical-alignment: center; }
                         VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Switch between Auto, On and Off in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
-                    HorizontalLayout {
-                        vertical-stretch: 0; alignment: start;
-                        ButtonGroup {
-                            labels: [@tr("Game mode control" => "Off"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Auto")];
-                            selected-index: AppState.game-control == GameModeControl.off ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
-                            selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.off : index == 1 ? GameModeControl.on : GameModeControl.auto); }
+                    VerticalBox {
+                        padding: 0px; spacing: 12px; vertical-stretch: 0;
+                        HorizontalLayout {
+                            vertical-stretch: 0; alignment: start;
+                            ButtonGroup {
+                                labels: [@tr("Game mode control" => "Off"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Auto")];
+                                selected-index: AppState.game-control == GameModeControl.off ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
+                                selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.off : index == 1 ? GameModeControl.on : GameModeControl.auto); }
+                            }
+                        }
+                        // What decides the state right now, so a wrong detection is easy to trace.
+                        HorizontalLayout {
+                            vertical-stretch: 0; spacing: 8px; alignment: start;
+                            VerticalLayout { alignment: center;
+                                Rectangle { width: 8px; height: 8px; border-radius: 4px; background: !AppState.game-state-available ? Theme.warning : AppState.game-active ? Theme.success : Theme.muted; }
+                            }
+                            Text { text: Locale.text(AppState.game-status); color: Theme.text; wrap: word-wrap; vertical-alignment: center; }
                         }
                     }
                     if SettingsEditor.game-rule-count + SettingsEditor.game-auto-rule-count == 0: Alert { text: @tr("Nothing uses game mode yet: no rule or automatic layout rule has a game-mode condition, so turning it on changes nothing."); }
@@ -687,101 +700,124 @@ export component SettingsPage inherits VerticalBox {
                     }
                     if SettingsEditor.game-auto-rule-count > 0 && !LayoutLibrary.automatic: Text { vertical-stretch: 0; text: @tr("Automatic layout rules apply only when the layout is chosen automatically (Layouts page)."); color: Theme.warning; wrap: word-wrap; }
 
-                    // Exact sources: a launcher or the system reports the running game; no built-in list applies.
-                    Text { vertical-stretch: 0; text: @tr("Running games"); color: Theme.text; font-weight: 600; }
-                    Text { vertical-stretch: 0; text: @tr("A launcher or the system reports the game it runs, so these do not guess."); color: Theme.muted; wrap: word-wrap; }
-                    if AppState.is-linux: VerticalBox {
-                        padding: 0px; spacing: 4px; vertical-stretch: 0;
-                        HorizontalLayout {
-                            spacing: 6px; alignment: start;
-                            CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
-                            VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); } }
+                    BehaviorCard {
+                        title: @tr("Automatic game detection");
+                        if AppState.game-control != GameModeControl.auto: Text { vertical-stretch: 0; text: @tr("Works only in Auto mode."); color: Theme.muted; wrap: word-wrap; }
+                        // Exact sources: the system or a launcher reports the running game; no built-in list applies.
+                        if AppState.is-linux || AppState.game-gamescope-availability.id != "capability-unsupported": FieldLabel { text: @tr("System signals"); }
+                        if AppState.is-linux: VerticalBox {
+                            padding: 0px; spacing: 4px; vertical-stretch: 0;
+                            HorizontalLayout {
+                                spacing: 6px; alignment: start;
+                                CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
+                                VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); } }
+                            }
+                            // Status is shown only when there is a problem; it is a warning only while the option is on.
+                            if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("GameMode is not installed: install the gamemode package."); color: SettingsEditor.use-gamemoded ? Theme.warning : Theme.muted; wrap: word-wrap; }
                         }
-                        // Status is shown only when there is a problem; it is a warning only while the option is on.
-                        if AppState.game-daemon-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("GameMode is not installed: install the gamemode package."); color: SettingsEditor.use-gamemoded ? Theme.warning : Theme.muted; wrap: word-wrap; }
-                    }
-                    // Each OS shows only the sources it has.
-                    if AppState.game-steam-availability.id != "capability-unsupported": GameSourceOption {
-                        text: @tr("Steam games");
-                        info: AppState.is-linux
-                            ? @tr("Turns on while Steam runs a game: Steam starts every game through reaper SteamLaunch, and game windows have the ID steam_app_<number>.")
-                            : @tr("Turns on while Steam reports a running game.");
-                        availability: AppState.game-steam-availability;
-                        checked <=> SettingsEditor.use-steam;
-                        toggled => { SettingsEditor.save(); }
-                    }
-                    if AppState.game-lutris-availability.id != "capability-unsupported": GameSourceOption {
-                        text: @tr("Lutris games");
-                        info: @tr("Turns on while a game started by Lutris runs: Lutris starts every game through lutris-wrapper.");
-                        availability: AppState.game-lutris-availability;
-                        checked <=> SettingsEditor.use-lutris;
-                        toggled => { SettingsEditor.save(); }
-                    }
-                    if AppState.game-gamescope-availability.id != "capability-unsupported": GameSourceOption {
-                        text: @tr("Gamescope sessions");
-                        info: @tr("Turns on while the active window is a nested gamescope session.");
-                        availability: AppState.game-gamescope-availability;
-                        checked <=> SettingsEditor.use-gamescope;
-                        toggled => { SettingsEditor.save(); }
-                    }
-                    // Heuristics: each skips its built-in list.
-                    Text { vertical-stretch: 0; text: @tr("Applications that look like games"); color: Theme.text; font-weight: 600; }
-                    Text { vertical-stretch: 0; text: @tr("These sources can take another application for a game, so each skips a built-in list of applications."); color: Theme.muted; wrap: word-wrap; }
-                    if AppState.game-bar-availability.id != "capability-unsupported": GameSourceOption {
-                        text: @tr("Games from the Game Bar list");
-                        info: @tr("Turns on while a program that Windows recognized as a game (the Game Bar list) runs. Launchers are listed there too, so they are skipped.");
-                        availability: AppState.game-bar-availability;
-                        checked <=> SettingsEditor.use-game-bar;
-                        toggled => { SettingsEditor.save(); }
-                        if SettingsEditor.use-game-bar: BuiltinList { title: @tr("Launchers and game tools — not counted as games"); items: SettingsEditor.game-launchers; }
-                    }
-                    if AppState.game-category-availability.id != "capability-unsupported": GameSourceOption {
-                        text: @tr("Applications of the Game category");
-                        info: AppState.is-linux
-                            ? @tr("Turns on while the active window belongs to an application whose .desktop file lists the Game category. Launchers are tagged as games too, so they are skipped.")
-                            : @tr("Turns on while the active application declares the Games category in its Info.plist. Launchers are skipped.");
-                        availability: AppState.game-category-availability;
-                        checked <=> SettingsEditor.use-app-category;
-                        toggled => { SettingsEditor.save(); }
-                        if SettingsEditor.use-app-category: BuiltinList { title: @tr("Launchers and game tools — not counted as games"); items: SettingsEditor.game-launchers; }
-                    }
-                    VerticalBox {
-                        padding: 0px; spacing: 4px; vertical-stretch: 0;
-                        HorizontalLayout {
-                            spacing: 6px; alignment: start;
-                            CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
-                            VerticalLayout { alignment: center; InfoTip { text: @tr("Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."); } }
+                        // Each OS shows only the sources it has.
+                        if AppState.game-gamescope-availability.id != "capability-unsupported": GameSourceOption {
+                            text: @tr("Gamescope sessions");
+                            info: @tr("Turns on while the active window is a nested gamescope session.");
+                            availability: AppState.game-gamescope-availability;
+                            checked <=> SettingsEditor.use-gamescope;
+                            toggled => { SettingsEditor.save(); }
                         }
-                        if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.muted; wrap: word-wrap; }
-                        if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("Fullscreen detection tools are missing or could not query the session."); color: SettingsEditor.use-fullscreen ? Theme.warning : Theme.muted; wrap: word-wrap; }
-                        if SettingsEditor.use-fullscreen: BuiltinList { title: @tr("Ignored in fullscreen"); items: SettingsEditor.fullscreen-non-games; }
+                        Divider { vertical-stretch: 0; }
+                        FieldLabel { text: @tr("Launchers"); }
+                        if AppState.game-steam-availability.id != "capability-unsupported": GameSourceOption {
+                            text: @tr("Steam games");
+                            info: AppState.is-linux
+                                ? @tr("Turns on while Steam runs a game: Steam starts every game through reaper SteamLaunch, and game windows have the ID steam_app_<number>.")
+                                : @tr("Turns on while Steam reports a running game.");
+                            availability: AppState.game-steam-availability;
+                            checked <=> SettingsEditor.use-steam;
+                            toggled => { SettingsEditor.save(); }
+                        }
+                        if AppState.game-lutris-availability.id != "capability-unsupported": GameSourceOption {
+                            text: @tr("Lutris games");
+                            info: @tr("Turns on while a game started by Lutris runs: Lutris starts every game through lutris-wrapper.");
+                            availability: AppState.game-lutris-availability;
+                            checked <=> SettingsEditor.use-lutris;
+                            toggled => { SettingsEditor.save(); }
+                        }
+                        if AppState.game-heroic-availability.id != "capability-unsupported": GameSourceOption {
+                            text: @tr("Heroic games");
+                            info: @tr("Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it starts.");
+                            availability: AppState.game-heroic-availability;
+                            checked <=> SettingsEditor.use-heroic;
+                            toggled => { SettingsEditor.save(); }
+                        }
+                        if AppState.game-umu-availability.id != "capability-unsupported": GameSourceOption {
+                            text: @tr("Games run through umu-launcher");
+                            info: @tr("Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher and other launchers use it to start Windows games with Proton.");
+                            availability: AppState.game-umu-availability;
+                            checked <=> SettingsEditor.use-umu;
+                            toggled => { SettingsEditor.save(); }
+                        }
+                        Divider { vertical-stretch: 0; }
+                        // Heuristics: each skips its built-in list.
+                        FieldLabel { text: @tr("Guesses — can be wrong"); }
+                        Text { vertical-stretch: 0; text: @tr("These sources can take another application for a game, so each skips a built-in list of applications."); color: Theme.muted; wrap: word-wrap; }
+                        if AppState.game-bar-availability.id != "capability-unsupported": GameSourceOption {
+                            text: @tr("Games from the Game Bar list");
+                            info: @tr("Turns on while a program that Windows recognized as a game (the Game Bar list) runs. Launchers are listed there too, so they are skipped.");
+                            availability: AppState.game-bar-availability;
+                            checked <=> SettingsEditor.use-game-bar;
+                            toggled => { SettingsEditor.save(); }
+                            if SettingsEditor.use-game-bar: BuiltinList { title: @tr("Launchers and game tools — not counted as games"); items: SettingsEditor.game-launchers; }
+                        }
+                        if AppState.game-category-availability.id != "capability-unsupported": GameSourceOption {
+                            text: @tr("Applications of the Game category");
+                            info: AppState.is-linux
+                                ? @tr("Turns on while the active window belongs to an application whose .desktop file lists the Game category. Launchers are tagged as games too, so they are skipped.")
+                                : @tr("Turns on while the active application declares the Games category in its Info.plist. Launchers are skipped.");
+                            availability: AppState.game-category-availability;
+                            checked <=> SettingsEditor.use-app-category;
+                            toggled => { SettingsEditor.save(); }
+                            if SettingsEditor.use-app-category: BuiltinList { title: @tr("Launchers and game tools — not counted as games"); items: SettingsEditor.game-launchers; }
+                        }
+                        VerticalBox {
+                            padding: 0px; spacing: 4px; vertical-stretch: 0;
+                            HorizontalLayout {
+                                spacing: 6px; alignment: start;
+                                CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
+                                VerticalLayout { alignment: center; InfoTip { text: @tr("Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."); } }
+                            }
+                            if AppState.game-fullscreen-availability.id == "capability-unsupported": Text { text: @tr("Fullscreen detection is not supported in this session. Use process rules or On/Off."); color: Theme.muted; wrap: word-wrap; }
+                            if AppState.game-missing-tool == "" && AppState.game-fullscreen-availability.id == "capability-unavailable": Text { text: "⚠ " + @tr("Fullscreen detection tools are missing or could not query the session."); color: SettingsEditor.use-fullscreen ? Theme.warning : Theme.muted; wrap: word-wrap; }
+                            if SettingsEditor.use-fullscreen: BuiltinList { title: @tr("Ignored in fullscreen"); items: SettingsEditor.fullscreen-non-games; }
+                        }
+                        if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: "⚠ " + @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }
                     }
-                    if AppState.game-missing-tool != "": Text { vertical-stretch: 0; text: "⚠ " + @tr("Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules.", AppState.game-missing-tool); color: Theme.warning; wrap: word-wrap; }
 
-                    Text { vertical-stretch: 0; text: @tr("Games and exclusions"); color: Theme.text; font-size: 15px; font-weight: 600; }
-                    if AppState.game-processes-availability.id != "capability-available" || AppState.game-window-availability.id != "capability-available": Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
-                    HorizontalLayout {
-                        vertical-stretch: 0; spacing: 24px;
-                        GameAppsField {
-                            horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
-                            label: @tr("Games");
-                            info: @tr("Game mode turns on while any of these matches. An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. A window title item matches the active window whose title contains the text.");
-                            empty-text: @tr("No games added.");
-                            value: SettingsEditor.process-value;
-                            entries: SettingsEditor.game-processes;
-                            saved(index, pattern, window-only) => { SettingsEditor.save-process(index, pattern, window-only, false); }
-                            removed(index) => { SettingsEditor.delete-process(index); }
-                        }
-                        GameAppsField {
-                            horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
-                            exclusion: true;
-                            label: @tr("Exclusions");
-                            info: @tr("Game mode stays off while any of these matches, even if a game or another detector would turn it on.");
-                            empty-text: @tr("Nothing is excluded.");
-                            value: SettingsEditor.process-value;
-                            entries: SettingsEditor.excluded-processes;
-                            saved(index, pattern, window-only) => { SettingsEditor.save-process(index, pattern, window-only, true); }
-                            removed(index) => { SettingsEditor.delete-process(index); }
+                    BehaviorCard {
+                        title: @tr("Your rules");
+                        Text { vertical-stretch: 0; text: @tr("“Never a game” wins over everything else, automatic detection included."); color: Theme.muted; wrap: word-wrap; }
+                        if AppState.game-processes-availability.id != "capability-available" || AppState.game-window-availability.id != "capability-available": Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
+                        HorizontalLayout {
+                            vertical-stretch: 0; spacing: 24px;
+                            GameAppsField {
+                                horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+                                label: @tr("Always a game");
+                                info: @tr("Game mode turns on while any of these matches. An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. A window title item matches the active window whose title contains the text.");
+                                empty-text: @tr("No games added.");
+                                value: SettingsEditor.process-value;
+                                entries: SettingsEditor.game-processes;
+                                saved(index, pattern, window-only) => { SettingsEditor.save-process(index, pattern, window-only, false); }
+                                removed(index) => { SettingsEditor.delete-process(index); }
+                            }
+                            GameAppsField {
+                                horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+                                exclusion: true;
+                                label: @tr("Never a game");
+                                info: @tr("Game mode stays off while any of these matches, even if a game or another detector would turn it on.");
+                                empty-text: @tr("Nothing is excluded.");
+                                value: SettingsEditor.process-value;
+                                entries: SettingsEditor.excluded-processes;
+                                saved(index, pattern, window-only) => { SettingsEditor.save-process(index, pattern, window-only, true); }
+                                removed(index) => { SettingsEditor.delete-process(index); }
+                            }
                         }
                     }
                 }

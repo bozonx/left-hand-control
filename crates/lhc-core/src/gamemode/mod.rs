@@ -62,6 +62,11 @@ pub enum GameSource {
     Steam,
     /// Linux: games Lutris starts through `lutris-wrapper`.
     Lutris,
+    /// Linux: games Heroic starts; they inherit `HEROIC_APP_NAME`.
+    Heroic,
+    /// Linux: games run through `umu-run`, which Heroic, Lutris, Faugus
+    /// and other launchers use for Proton.
+    Umu,
     /// Linux: a nested gamescope session in the active window.
     Gamescope,
     /// The active window's application category: `.desktop` files on
@@ -78,6 +83,8 @@ impl GameSource {
     pub const SUPPORTED: &[Self] = &[
         Self::Steam,
         Self::Lutris,
+        Self::Heroic,
+        Self::Umu,
         Self::Gamescope,
         Self::AppCategory,
     ];
@@ -93,6 +100,8 @@ impl GameSource {
         match self {
             Self::Steam => settings.use_steam,
             Self::Lutris => settings.use_lutris,
+            Self::Heroic => settings.use_heroic,
+            Self::Umu => settings.use_umu,
             Self::Gamescope => settings.use_gamescope,
             Self::AppCategory => settings.use_app_category,
             Self::GameBar => settings.use_game_bar,
@@ -110,7 +119,9 @@ impl GameSource {
             Self::Gamescope | Self::AppCategory => detectors.active_window,
             // Steam keeps the running game in the registry.
             Self::Steam if cfg!(target_os = "windows") => DetectorAvailability::Available,
-            Self::Steam | Self::Lutris | Self::GameBar => detectors.processes,
+            Self::Steam | Self::Lutris | Self::Heroic | Self::Umu | Self::GameBar => {
+                detectors.processes
+            }
         };
         match detector {
             DetectorAvailability::Unsupported => DetectorAvailability::Unavailable,
@@ -120,7 +131,10 @@ impl GameSource {
 
     /// Sources that have no change events and are polled.
     fn polled(self) -> bool {
-        matches!(self, Self::Steam | Self::Lutris | Self::GameBar)
+        matches!(
+            self,
+            Self::Steam | Self::Lutris | Self::Heroic | Self::Umu | Self::GameBar
+        )
     }
 }
 
@@ -708,6 +722,8 @@ mod tests {
             use_fullscreen: false,
             use_steam: false,
             use_lutris: false,
+            use_heroic: false,
+            use_umu: false,
             use_gamescope: false,
             use_app_category: false,
             use_game_bar: false,

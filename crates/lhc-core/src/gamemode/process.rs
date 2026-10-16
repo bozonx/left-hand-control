@@ -253,8 +253,9 @@ fn proc_argv0(dir: &std::path::Path) -> Option<String> {
 
 /// A game a launcher runs, from one process's command line: Steam starts
 /// every game under `reaper SteamLaunch AppId=<id>`, Lutris under
-/// `lutris-wrapper <title>`. Steam games are named `steam_app_<id>`, like
-/// their windows; a Lutris game without a title is `lutris`.
+/// `lutris-wrapper <title>`, umu under `umu-run <game>`. Steam games are
+/// named `steam_app_<id>`, like their windows; a Lutris game without a
+/// title is `lutris`, an umu one without an executable is `umu`.
 #[cfg(target_os = "linux")]
 pub(crate) fn launched_game(args: &[String]) -> Option<(GameSource, String)> {
     let program = |arg: &String| file_name(arg).to_owned();
@@ -272,6 +273,15 @@ pub(crate) fn launched_game(args: &[String]) -> Option<(GameSource, String)> {
         .first()
         .is_some_and(|arg| program(arg).starts_with("python"));
     let wrapper = usize::from(interpreter);
+    if args.get(wrapper).map(program).as_deref() == Some("umu-run") {
+        let game = args[wrapper + 1..]
+            .iter()
+            .find(|arg| !arg.starts_with('-'))
+            .map(|arg| file_name(arg).trim())
+            .filter(|name| !name.is_empty())
+            .unwrap_or("umu");
+        return Some((GameSource::Umu, game.to_owned()));
+    }
     if args.get(wrapper).map(program).as_deref() != Some("lutris-wrapper") {
         return None;
     }
@@ -283,6 +293,18 @@ pub(crate) fn launched_game(args: &[String]) -> Option<(GameSource, String)> {
             .unwrap_or("lutris")
             .to_owned(),
     ))
+}
+
+/// A game Heroic runs, from one process's `environ`: Heroic passes
+/// `HEROIC_APP_NAME` to the game and everything it starts.
+#[cfg(any(target_os = "linux", test))]
+pub(crate) fn heroic_game(environ: &[u8]) -> Option<(GameSource, String)> {
+    environ
+        .split(|byte| *byte == 0)
+        .find_map(|entry| entry.strip_prefix(b"HEROIC_APP_NAME="))
+        .map(|name| String::from_utf8_lossy(name).trim().to_owned())
+        .filter(|name| !name.is_empty())
+        .map(|name| (GameSource::Heroic, name))
 }
 
 /// The single most useful name of a process for display and matching:
@@ -403,7 +425,27 @@ mod tests {
             Some((GameSource::Lutris, "lutris".into()))
         );
         assert_eq!(launched_game(&args("vim lutris-wrapper")), None);
+        assert_eq!(
+            launched_game(&args(
+                "/usr/bin/python3 /usr/bin/umu-run /games/Hades/Hades.exe -x"
+            )),
+            Some((GameSource::Umu, "Hades.exe".into()))
+        );
+        assert_eq!(
+            launched_game(&args("/opt/umu-run")),
+            Some((GameSource::Umu, "umu".into()))
+        );
         assert_eq!(launched_game(&args("/usr/bin/vim notes.txt")), None);
+    }
+
+    #[test]
+    fn games_started_by_heroic() {
+        assert_eq!(
+            heroic_game(b"HOME=/home/u\0HEROIC_APP_NAME=Sugar\0HEROIC_APP_SOURCE=epic\0"),
+            Some((GameSource::Heroic, "Sugar".into()))
+        );
+        assert_eq!(heroic_game(b"HEROIC_APP_NAME=\0"), None);
+        assert_eq!(heroic_game(b"HOME=/home/u\0"), None);
     }
 
     #[test]

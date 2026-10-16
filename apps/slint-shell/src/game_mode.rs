@@ -83,6 +83,8 @@ pub(crate) fn refresh(ui: &SettingsWindow, status: &GameModeStatus) {
         |source: GameSource| availability_message(source.availability(&status.detectors)).to_ui();
     state.set_game_steam_availability(source(GameSource::Steam));
     state.set_game_lutris_availability(source(GameSource::Lutris));
+    state.set_game_heroic_availability(source(GameSource::Heroic));
+    state.set_game_umu_availability(source(GameSource::Umu));
     state.set_game_gamescope_availability(source(GameSource::Gamescope));
     state.set_game_category_availability(source(GameSource::AppCategory));
     state.set_game_bar_availability(source(GameSource::GameBar));

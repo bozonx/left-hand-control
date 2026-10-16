@@ -37,6 +37,8 @@ struct Form {
     use_fullscreen: bool,
     use_steam: bool,
     use_lutris: bool,
+    use_heroic: bool,
+    use_umu: bool,
     use_gamescope: bool,
     use_app_category: bool,
     use_game_bar: bool,
@@ -80,6 +82,8 @@ impl Form {
             use_fullscreen: settings.game_mode.use_fullscreen,
             use_steam: settings.game_mode.use_steam,
             use_lutris: settings.game_mode.use_lutris,
+            use_heroic: settings.game_mode.use_heroic,
+            use_umu: settings.game_mode.use_umu,
             use_gamescope: settings.game_mode.use_gamescope,
             use_app_category: settings.game_mode.use_app_category,
             use_game_bar: settings.game_mode.use_game_bar,
@@ -115,6 +119,8 @@ impl Form {
             use_fullscreen: e.get_use_fullscreen(),
             use_steam: e.get_use_steam(),
             use_lutris: e.get_use_lutris(),
+            use_heroic: e.get_use_heroic(),
+            use_umu: e.get_use_umu(),
             use_gamescope: e.get_use_gamescope(),
             use_app_category: e.get_use_app_category(),
             use_game_bar: e.get_use_game_bar(),
@@ -149,6 +155,8 @@ impl Form {
         e.set_use_fullscreen(self.use_fullscreen);
         e.set_use_steam(self.use_steam);
         e.set_use_lutris(self.use_lutris);
+        e.set_use_heroic(self.use_heroic);
+        e.set_use_umu(self.use_umu);
         e.set_use_gamescope(self.use_gamescope);
         e.set_use_app_category(self.use_app_category);
         e.set_use_game_bar(self.use_game_bar);
@@ -202,6 +210,8 @@ impl Form {
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
         changed!(use_steam => settings.game_mode.use_steam = self.use_steam);
         changed!(use_lutris => settings.game_mode.use_lutris = self.use_lutris);
+        changed!(use_heroic => settings.game_mode.use_heroic = self.use_heroic);
+        changed!(use_umu => settings.game_mode.use_umu = self.use_umu);
         changed!(use_gamescope => settings.game_mode.use_gamescope = self.use_gamescope);
         changed!(use_app_category => settings.game_mode.use_app_category = self.use_app_category);
         changed!(use_game_bar => settings.game_mode.use_game_bar = self.use_game_bar);
