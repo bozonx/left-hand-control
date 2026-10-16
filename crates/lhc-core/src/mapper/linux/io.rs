@@ -20,6 +20,13 @@ const KEY_TAP_GAP: Duration = Duration::from_millis(1);
 /// shell never reports that the popup took the keyboard focus.
 const POPUP_HOLD_MAX: Duration = Duration::from_millis(1000);
 
+/// Longest time output stays held behind text that is still being typed;
+/// a slower backend then lets the keys through rather than lose them.
+const TEXT_HOLD_MAX: Duration = Duration::from_millis(2000);
+
+/// How often the mapper loop checks whether held text has been typed.
+const TEXT_HOLD_POLL: Duration = Duration::from_millis(5);
+
 nix::ioctl_write_ptr!(set_event_clock, b'E', 0xa0, libc::c_int);
 
 fn event_clock_now() -> Result<SystemTime, String> {
@@ -40,11 +47,16 @@ fn event_clock_now() -> Result<SystemTime, String> {
 /// Output that follows a popup-opening action, held until the popup has the
 /// keyboard focus. Keys typed right after the hotkey would otherwise reach
 /// the window the popup is about to cover.
+///
+/// Output that follows text is held until the text worker has typed it, so
+/// keys typed meanwhile land after the text instead of before it.
 #[derive(Default)]
 pub(super) struct OutputHold {
     held: Vec<Out>,
     until: Option<Instant>,
     released: bool,
+    after_text: Vec<Out>,
+    text_until: Option<Instant>,
 }
 
 impl OutputHold {
@@ -68,6 +80,8 @@ impl OutputHold {
         self.held.clear();
         self.until = None;
         self.released = false;
+        self.after_text.clear();
+        self.text_until = None;
     }
 
     /// Config changes revoke pending side effects, while key transitions
@@ -80,15 +94,27 @@ impl OutputHold {
             )
         };
         self.held.retain(key_transition);
+        self.after_text.retain(key_transition);
         buf.retain(key_transition);
     }
 
-    fn deadline(&self) -> Option<Instant> {
-        self.until
+    fn deadline(&self, now: Instant) -> Option<Instant> {
+        // Text completion does not wake the loop, so poll for it.
+        let text = self.text_until.map(|until| until.min(now + TEXT_HOLD_POLL));
+        match (self.until, text) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (a, b) => a.or(b),
+        }
     }
 
-    /// Leave in `buf` only what may be emitted now.
-    pub(super) fn gate(&mut self, buf: &mut Vec<Out>, now: Instant) {
+    /// Leave in `buf` only what may be emitted now. `text_pending` tells
+    /// whether text sent to the text worker is still being typed.
+    pub(super) fn gate(&mut self, buf: &mut Vec<Out>, now: Instant, text_pending: bool) {
+        self.gate_popup(buf, now);
+        self.gate_text(buf, now, text_pending);
+    }
+
+    fn gate_popup(&mut self, buf: &mut Vec<Out>, now: Instant) {
         if self
             .until
             .is_some_and(|until| self.released || now >= until)
@@ -108,6 +134,59 @@ impl OutputHold {
             self.held = buf.split_off(index + 1);
             self.until = Some(now + POPUP_HOLD_MAX);
         }
+    }
+
+    fn gate_text(&mut self, buf: &mut Vec<Out>, now: Instant, text_pending: bool) {
+        if self
+            .text_until
+            .is_some_and(|until| !text_pending || now >= until)
+        {
+            self.text_until = None;
+            let mut held = std::mem::take(&mut self.after_text);
+            held.append(buf);
+            *buf = held;
+        }
+        let rest = if self.text_until.is_some() {
+            std::mem::take(buf)
+        } else if let Some(index) = buf.iter().position(|out| matches!(out, Out::Literal(_))) {
+            self.text_until = Some(now + TEXT_HOLD_MAX);
+            buf.split_off(index + 1)
+        } else {
+            return;
+        };
+        for out in rest {
+            // Releases of keys pressed before the text pass: a modifier
+            // still down in the compositor would make the text fail.
+            if is_release(&out) && !releases_held_press(&self.after_text, &out) {
+                buf.push(out);
+            } else {
+                self.after_text.push(out);
+            }
+        }
+    }
+}
+
+fn is_release(out: &Out) -> bool {
+    matches!(
+        out,
+        Out::KeyRaw { down: false, .. } | Out::ChordRelease { .. } | Out::ReleaseMods(_)
+    )
+}
+
+/// Whether `release` belongs to a press that is itself held in `held`.
+fn releases_held_press(held: &[Out], release: &Out) -> bool {
+    let pressed = |key: KeyCode| {
+        held.iter().any(|out| match out {
+            Out::KeyRaw { key: k, down: true } => *k == key,
+            Out::ChordPress { ks, .. } => ks.key == key || ks.mods.contains(&key),
+            _ => false,
+        })
+    };
+    match release {
+        Out::KeyRaw { key, .. } => pressed(*key),
+        Out::ChordRelease { key, .. } => pressed(*key),
+        Out::ReleaseMods(mods) => mods.iter().any(|key| pressed(*key)),
+        _ => false,
     }
 }
 
@@ -232,7 +311,9 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
     for job in rx {
         match job {
             SideEffectJob::Text(text, request) => {
+                let started = Instant::now();
                 let result = portal::type_text(&text, request.clone());
+                log::debug!("[text] input took {} ms", started.elapsed().as_millis());
                 request.complete(result.is_err());
                 if let Err(error) = result {
                     portal::report(error);
@@ -471,7 +552,7 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
         .next_deadline(now)
         .map(|d| d.min(MAX_WAIT))
         .unwrap_or(MAX_WAIT);
-    if let Some(until) = hold.deadline() {
+    if let Some(until) = hold.deadline(now) {
         wait = wait.min(until.saturating_duration_since(now));
     }
 
@@ -485,7 +566,7 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     let now = driver.now();
     engine.tick(now, out_buf);
     effects.held_layer_changed(engine.held_layer_state());
-    hold.gate(out_buf, now);
+    hold.gate(out_buf, now, effects.text_pending());
     flush_out_with(sink, effects, out_buf)?;
     Ok(())
 }
@@ -855,12 +936,12 @@ mod tests {
             Out::RunSystem(SysAction::AppEvent("game_mode_toggle".into())),
         ];
         let now = Instant::now();
-        hold.gate(&mut out, now);
+        hold.gate(&mut out, now, false);
         out.clear();
         out.push(command());
         hold.cancel_actions(&mut out);
         hold.release();
-        hold.gate(&mut out, now);
+        hold.gate(&mut out, now, false);
         assert!(matches!(
             out.as_slice(),
             [Out::KeyRaw {
@@ -877,7 +958,7 @@ mod tests {
             Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
             Out::Literal("must not be typed on shutdown".into()),
         ];
-        hold.gate(&mut out, Instant::now());
+        hold.gate(&mut out, Instant::now(), false);
         out.clear();
         hold.discard();
         hold.take(&mut out);

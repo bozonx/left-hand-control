@@ -409,7 +409,11 @@ fn run_loop<D: LoopDriver>(
                     MapperControl::PopupFocused => hold.release(),
                 }
             }
-            hold.gate(&mut out_buf, std::time::Instant::now());
+            hold.gate(
+                &mut out_buf,
+                std::time::Instant::now(),
+                super::text_job::pending(),
+            );
             flush_out(&mut virt, &mut out_buf)?;
             process_iteration(&mut driver, &mut engine, &mut hold, &mut virt, &mut out_buf)?;
         }
@@ -490,9 +494,14 @@ mod tests {
         systems: Vec<String>,
         commands: Vec<String>,
         held_layers: Vec<crate::mapper::layer_state::HeldLayerState>,
+        text_pending: bool,
     }
 
     impl SideEffects for FakeEffects {
+        fn text_pending(&self) -> bool {
+            self.text_pending
+        }
+
         fn held_layer_changed(&mut self, state: crate::mapper::layer_state::HeldLayerState) {
             self.held_layers.push(state);
         }
@@ -793,6 +802,72 @@ mod tests {
         let settings = Out::RunSystem(SysAction::AppEvent("show_settings".into()));
         iterate!(&mut hold, start, vec![settings, key_a(false)]);
         assert_eq!(sink.batches.len(), 4);
+    }
+
+    #[test]
+    fn output_after_text_waits_until_it_is_typed() {
+        let start = Instant::now();
+        let key = |key, down| Out::KeyRaw { key, down };
+        let mut hold = OutputHold::default();
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        fn run(
+            hold: &mut OutputHold,
+            sink: &mut FakeSink,
+            effects: &mut FakeEffects,
+            now: Instant,
+            mut out_buf: Vec<Out>,
+        ) -> Duration {
+            let mut driver = FakeDriver::new(vec![now, now], vec![Ok(false)], Vec::new());
+            let mut engine = Engine::new(&empty_cfg());
+            process_iteration_with(&mut driver, &mut engine, hold, sink, effects, &mut out_buf)
+                .expect("iteration");
+            driver.seen_waits[0]
+        }
+        macro_rules! iterate {
+            ($now:expr, $out:expr $(,)?) => {
+                run(&mut hold, &mut sink, &mut effects, $now, $out)
+            };
+        }
+
+        // Shift was pressed before the text, A after it.
+        iterate!(
+            start,
+            vec![
+                Out::Literal("🙂".into()),
+                key(KeyCode::KEY_A, true),
+                key(KeyCode::KEY_LEFTSHIFT, false),
+            ],
+        );
+        effects.text_pending = true;
+        let wait = iterate!(start, vec![key(KeyCode::KEY_A, false)],);
+        assert_eq!(effects.texts, vec!["🙂"]);
+        assert_eq!(
+            sink.batches,
+            vec![vec![(KeyCode::KEY_LEFTSHIFT.code(), 0)]],
+            "only the earlier press is released"
+        );
+        assert_eq!(wait, Duration::from_millis(5), "polls for the text");
+
+        effects.text_pending = false;
+        iterate!(start, Vec::new());
+        assert_eq!(
+            sink.batches[1..],
+            [
+                vec![(KeyCode::KEY_A.code(), 1)],
+                vec![(KeyCode::KEY_A.code(), 0)]
+            ]
+        );
+
+        effects.text_pending = true;
+        iterate!(
+            start,
+            vec![Out::Literal("x".into()), key(KeyCode::KEY_B, true)],
+        );
+        iterate!(start, Vec::new());
+        assert_eq!(sink.batches.len(), 3);
+        iterate!(start + Duration::from_secs(2), Vec::new(),);
+        assert_eq!(sink.batches.len(), 4, "released after the timeout");
     }
 
     #[test]

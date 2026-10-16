@@ -483,6 +483,10 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     if !active && pending.as_ref().is_some_and(|p| p.popup == popup) {
                         metrics.mark(popup.name(), "keyboard_released");
                         if let Some(action) = pending.take() {
+                            log::info!(
+                                "Spell focus left {} ms after the choice",
+                                action.hidden.elapsed().as_millis()
+                            );
                             execute(action.action);
                         }
                     }
@@ -572,6 +576,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         }
         if let Some(action) = pending.take_if(|p| p.hidden.elapsed() >= FOCUS_RETURN_TIMEOUT) {
             metrics.mark(action.popup.name(), "focus_return_timeout");
+            log::info!("Spell focus did not leave the popup, running the choice anyway");
             execute(action.action);
         }
         #[cfg(feature = "probes")]
