@@ -365,7 +365,7 @@ mod tests {
             Command::Show(Window::Settings),
             Command::PopupLayout(Some("user:Привет".into())),
             Command::PopupLayout(None),
-            Command::PopupContents("rules: []\nname: Привет\n".into()),
+            Command::PopupContents(r#"{"rules": [], "description": "Привет"}"#.into()),
             Command::LayerHint(None),
             Command::LayerHint(Some(crate::layer_hint::LayerHint {
                 name: "Навигация".into(),

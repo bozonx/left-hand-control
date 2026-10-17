@@ -2,7 +2,7 @@
 //!
 //! Serialising [`AppConfig`] with `serde_json` produces the JSON consumed
 //! by the mapper runtime; the persisted formats (`config.json` settings and
-//! YAML layouts) are handled by [`super::settings`] and [`super::layout_file`].
+//! JSON layouts) are handled by [`super::settings`] and [`super::layout_file`].
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -244,7 +244,7 @@ impl EmojiPage {
     }
 }
 
-/// The portable keyboard configuration stored in layout YAML files.
+/// The portable keyboard configuration stored in layout JSON files.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LayoutPreset {

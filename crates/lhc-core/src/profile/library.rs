@@ -43,7 +43,7 @@ impl ConfigDocument {
         let mut preset = match source {
             LibrarySource::Empty => LayoutPreset::default(),
             LibrarySource::IvanK => {
-                layout_file::parse(include_str!("../../assets/ivank-layout.yaml"))
+                layout_file::parse(include_str!("../../assets/ivank-layout.json"))
                     .map_err(ConfigError::Parse)?
                     .ok_or_else(|| ConfigError::Invalid("Bundled layout is empty".into()))?
             }
@@ -260,7 +260,7 @@ mod tests {
         paths
             .save_user_layout(
                 "Test",
-                "commands:\n  - id: hello\n    linux: printf hello\n",
+                r#"{"commands": [{"id": "hello", "linux": "printf hello"}]}"#,
                 true,
             )
             .unwrap();
@@ -323,7 +323,9 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C", "D"] {
-            paths.save_user_layout(name, "rules: []\n", false).unwrap();
+            paths
+                .save_user_layout(name, r#"{"rules": []}"#, false)
+                .unwrap();
         }
         document.move_library_layout("user:A", 3).unwrap();
         assert_eq!(
@@ -363,7 +365,7 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B"] {
             paths
-                .save_user_layout(name, "description: original\nrules: []\n", false)
+                .save_user_layout(name, r#"{"description": "original", "rules": []}"#, false)
                 .unwrap();
         }
         document
@@ -438,7 +440,9 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C"] {
-            paths.save_user_layout(name, "rules: []\n", false).unwrap();
+            paths
+                .save_user_layout(name, r#"{"rules": []}"#, false)
+                .unwrap();
         }
         document
             .update_settings(|settings| {
@@ -472,7 +476,11 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         paths
-            .save_user_layout("Editor", "rules:\n  - key: KeyA\n    tap: KeyB\n", false)
+            .save_user_layout(
+                "Editor",
+                r#"{"rules": [{"key": "KeyA", "tap": "KeyB"}]}"#,
+                false,
+            )
             .unwrap();
         document
             .update_settings(|settings| {
@@ -531,10 +539,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
-        let original = "description: original\nrules: []\n";
+        let original = r#"{"description": "original", "rules": []}"#;
         paths.save_user_layout("A", original, false).unwrap();
         paths
-            .save_config("{\"settings\":{\"appearance\":\"light\"}}")
+            .save_config(r#"{"settings":{"appearance":"light"}}"#)
             .unwrap();
         assert_eq!(
             document.edit_library_metadata("A", "B", "changed", original),

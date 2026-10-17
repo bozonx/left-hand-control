@@ -247,7 +247,7 @@ mod tests {
     fn external_library_edits_refresh_views_and_runtime_configuration() {
         let (_dir, document) = document();
         let paths = document.read().paths().clone();
-        let layout = "layers: []\nrules:\n  - key: KeyQ\n    tap: Escape\n";
+        let layout = r#"{"layers": [], "rules": [{"key": "KeyQ", "tap": "Escape"}]}"#;
         paths.save_user_layout("Nav", layout, false).unwrap();
         document
             .edit(View::Library, |config| {

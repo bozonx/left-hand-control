@@ -32,60 +32,113 @@ TEXT_UNICODE = "Привет, ёж 😀"
 
 # Every rule maps a physical key to a result the host can read back from the
 # receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
-E2E_LAYOUT = f"""\
-description: VM e2e
-layers:
-  - id: nav
-    keys:
-      KeyJ: KeyK
-rules:
-  - key: KeyA
-    tap: KeyB
-  - key: KeyD
-    tap: Shift+KeyX
-  - key: KeyT
-    tap: "text:lhc-ok"
-  - key: KeyF
-    layer: nav
-    tap: KeyG
-  - key: KeyY
-    tap: "text:{TEXT_UNICODE}"
-  - key: KeyM
-    tap: macro:e2e
-  - key: KeyN
-    tap: cmd:touch
-  - key: KeyE
-    tap: app:showQuickMenu1
-  - key: KeyG
-    gameMode: "on"
-    tap: KeyH
-  - key: KeyG
-    gameMode: "off"
-    tap: KeyJ
-  - key: Digit1
-    tap: sys:switchDesktop2
-  - key: Digit2
-    tap: "kde:kwin/Switch to Desktop 1"
-  - key: Digit3
-    tap: sys:switchLayout2
-  - key: Digit4
-    tap: sys:switchLayout1
-macros:
-  - id: e2e
-    steps: [KeyN, "pause:300", "text:mac", Shift+KeyO]
-commands:
-  - id: touch
-    linux: touch lhc-e2e/cmd-ran
-emojiPages:
-  - id: e2e
-    name: E2E
-    cells: {{KeyQ: "🙂"}}
-quickActionPages:
-  - id: e2e
-    name: E2E
-    cells:
-      KeyQ: "text:quick-ok"
-"""
+E2E_LAYOUT = f'''{{
+  "description": "VM e2e",
+  "layers": [
+    {{
+      "id": "nav",
+      "keys": {{
+        "KeyJ": "KeyK"
+      }}
+    }}
+  ],
+  "rules": [
+    {{
+      "key": "KeyA",
+      "tap": "KeyB"
+    }},
+    {{
+      "key": "KeyD",
+      "tap": "Shift+KeyX"
+    }},
+    {{
+      "key": "KeyT",
+      "tap": "text:lhc-ok"
+    }},
+    {{
+      "key": "KeyF",
+      "layer": "nav",
+      "tap": "KeyG"
+    }},
+    {{
+      "key": "KeyY",
+      "tap": "text:{TEXT_UNICODE}"
+    }},
+    {{
+      "key": "KeyM",
+      "tap": "macro:e2e"
+    }},
+    {{
+      "key": "KeyN",
+      "tap": "cmd:touch"
+    }},
+    {{
+      "key": "KeyE",
+      "tap": "app:showQuickMenu1"
+    }},
+    {{
+      "key": "KeyG",
+      "gameMode": "on",
+      "tap": "KeyH"
+    }},
+    {{
+      "key": "KeyG",
+      "gameMode": "off",
+      "tap": "KeyJ"
+    }},
+    {{
+      "key": "Digit1",
+      "tap": "sys:switchDesktop2"
+    }},
+    {{
+      "key": "Digit2",
+      "tap": "kde:kwin/Switch to Desktop 1"
+    }},
+    {{
+      "key": "Digit3",
+      "tap": "sys:switchLayout2"
+    }},
+    {{
+      "key": "Digit4",
+      "tap": "sys:switchLayout1"
+    }}
+  ],
+  "macros": [
+    {{
+      "id": "e2e",
+      "steps": [
+        "KeyN",
+        "pause:300",
+        "text:mac",
+        "Shift+KeyO"
+      ]
+    }}
+  ],
+  "commands": [
+    {{
+      "id": "touch",
+      "linux": "touch lhc-e2e/cmd-ran"
+    }}
+  ],
+  "emojiPages": [
+    {{
+      "id": "e2e",
+      "name": "E2E",
+      "cells": {{
+        "KeyQ": "🙂"
+      }}
+    }}
+  ],
+  "quickActionPages": [
+    {{
+      "id": "e2e",
+      "name": "E2E",
+      "cells": {{
+        "KeyQ": "text:quick-ok"
+      }}
+    }}
+  ]
+}}'''
 
 
 def fail(message):
@@ -244,7 +297,7 @@ def cmd_probe_keyboard(args):
 
 def cmd_write_config(args):
     (DATA_DIR / "layouts").mkdir(parents=True, exist_ok=True)
-    (DATA_DIR / "layouts/E2E.yaml").write_text(E2E_LAYOUT, encoding="utf-8")
+    (DATA_DIR / "layouts/E2E.json").write_text(E2E_LAYOUT, encoding="utf-8")
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     settings = {
         "inputDevicePath": args.device,

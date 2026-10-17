@@ -764,7 +764,7 @@ mod tests {
     #[test]
     fn bundled_additional_keys_preserve_actions_and_suppression() {
         let layout = lhc_core::profile::layout_file::parse(include_str!(
-            "../../../../crates/lhc-core/assets/ivank-layout.yaml"
+            "../../../../crates/lhc-core/assets/ivank-layout.json"
         ))
         .unwrap()
         .unwrap();
@@ -780,7 +780,7 @@ mod tests {
     #[test]
     fn additional_key_suppression_is_preserved() {
         let layout = lhc_core::profile::layout_file::parse(
-            "layers:\n  - id: extra\n    keys:\n      BracketRight: null\n      Backslash: null\n      F4: F4\n"
+            r#"{"layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
         ).unwrap().unwrap();
         let entries = extra_entries(&layout.layer_keymaps["extra"]);
         assert_eq!(entries.len(), 3);

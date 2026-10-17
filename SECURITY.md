@@ -23,7 +23,7 @@ keyboard interception and system integration; the Slint shell handles presentati
 - Local IPC used by CLI clients and popup workers.
 - Linux evdev/uinput device access and virtual input generation.
 - D-Bus, compositor and desktop portal integrations.
-- JSON configuration and YAML layouts parsed by Rust code.
+- JSON configuration and JSON layouts parsed by Rust code.
 - User-defined commands and application launching.
 
 **Controls in place:**

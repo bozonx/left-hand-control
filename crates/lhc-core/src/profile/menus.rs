@@ -337,7 +337,7 @@ mod tests {
     fn command_overview_lists_only_assignments_across_saved_layouts() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        paths.save_user_layout("Test", "commands:\n  - id: hello\n    linux: printf hello\n  - id: unused\n    linux: true\nrules:\n  - key: KeyQ\n    tap: cmd:hello\n", true).unwrap();
+        paths.save_user_layout("Test", r#"{"commands": [{"id": "hello", "linux": "printf hello"}, {"id": "unused", "linux": true}], "rules": [{"key": "KeyQ", "tap": "cmd:hello"}]}"#, true).unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         doc.update_layout(|layout| {
             *layout = super::super::layout_file::parse(&paths.load_user_layout("Test").unwrap())

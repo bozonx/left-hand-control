@@ -1,4 +1,4 @@
-//! Saved layout YAML files in the user library.
+//! Saved layout JSON files in the user library.
 //!
 //! Window conditions use `windows` and `excludeWindows` patterns.
 
@@ -7,7 +7,6 @@ use super::model::{
     MacroStep, QuickAction, QuickActionPage,
 };
 use serde_json::{Map, Value};
-use serde_norway::{Mapping, Value as Yaml};
 
 /// Parse a layout file. Returns `Ok(None)` for an empty document.
 pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
@@ -15,7 +14,7 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
         return Ok(None);
     }
     let doc: Value =
-        serde_norway::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
+        serde_json::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
     if let Some(object) = doc.as_object() {
         for rule in array(object, "rules") {
             for field in ["appsWhitelist", "appsBlacklist"] {
@@ -209,20 +208,20 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
     }
 }
 
-/// Serialise a preset in the established field order.
+/// Serialise a preset as formatted JSON.
 pub fn serialize(preset: &LayoutPreset) -> String {
-    let mut doc = Mapping::new();
+    let mut doc = Map::new();
     if let Some(description) = &preset.description {
         put(&mut doc, "description", description.as_str());
     }
     doc.insert(
         "layers".into(),
-        Yaml::Sequence(
+        Value::Array(
             preset
                 .layers
                 .iter()
                 .map(|layer| {
-                    let mut out = Mapping::new();
+                    let mut out = Map::new();
                     put(&mut out, "id", layer.id.as_str());
                     put(&mut out, "name", layer.name.as_str());
                     if let Some(description) =
@@ -234,11 +233,11 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                         if !keymap.extra_key_order.is_empty() {
                             out.insert(
                                 "extraKeyOrder".into(),
-                                Yaml::Sequence(
+                                Value::Array(
                                     keymap
                                         .extra_key_order
                                         .iter()
-                                        .map(|key| Yaml::from(key.as_str()))
+                                        .map(|key| Value::from(key.as_str()))
                                         .collect(),
                                 ),
                             );
@@ -246,7 +245,7 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                         if !keymap.keys.is_empty() {
                             out.insert(
                                 "keys".into(),
-                                Yaml::Mapping(
+                                Value::Object(
                                     keymap
                                         .keys
                                         .iter()
@@ -258,23 +257,23 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                             );
                         }
                     }
-                    Yaml::Mapping(out)
+                    Value::Object(out)
                 })
                 .collect(),
         ),
     );
     doc.insert(
         "rules".into(),
-        Yaml::Sequence(preset.rules.iter().map(rule_yaml).collect()),
+        Value::Array(preset.rules.iter().map(rule_json).collect()),
     );
     doc.insert(
         "macros".into(),
-        Yaml::Sequence(
+        Value::Array(
             preset
                 .macros
                 .iter()
                 .map(|item| {
-                    let mut out = Mapping::new();
+                    let mut out = Map::new();
                     put(&mut out, "id", item.id.as_str());
                     put(&mut out, "name", item.name.as_str());
                     if let Some(pause) = item.step_pause_ms {
@@ -285,52 +284,52 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                     }
                     out.insert(
                         "steps".into(),
-                        Yaml::Sequence(
+                        Value::Array(
                             item.steps
                                 .iter()
                                 .map(|step| step.action.as_str().into())
                                 .collect(),
                         ),
                     );
-                    Yaml::Mapping(out)
+                    Value::Object(out)
                 })
                 .collect(),
         ),
     );
     doc.insert(
         "commands".into(),
-        Yaml::Sequence(
+        Value::Array(
             preset
                 .commands
                 .iter()
                 .map(|command| {
-                    let mut out = Mapping::new();
+                    let mut out = Map::new();
                     put(&mut out, "id", command.id.as_str());
                     put(&mut out, "name", command.name.as_str());
                     put(&mut out, "linux", command.linux.as_str());
                     if let Some(directory) = &command.working_directory {
                         put(&mut out, "workingDirectory", directory.as_str());
                     }
-                    Yaml::Mapping(out)
+                    Value::Object(out)
                 })
                 .collect(),
         ),
     );
     doc.insert(
         "quickActionPages".into(),
-        Yaml::Sequence(
+        Value::Array(
             preset
                 .quick_action_pages
                 .iter()
                 .map(|page| {
-                    let mut out = Mapping::new();
+                    let mut out = Map::new();
                     put(&mut out, "id", page.id.as_str());
                     if !page.name.is_empty() {
                         put(&mut out, "name", page.name.as_str());
                     }
                     out.insert(
                         "cells".into(),
-                        Yaml::Mapping(
+                        Value::Object(
                             LEFT_HAND_HOTKEYS
                                 .iter()
                                 .filter_map(|key| {
@@ -338,31 +337,31 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                                         .cells
                                         .get(*key)
                                         .filter(|item| !item.action.trim().is_empty())?;
-                                    Some(((*key).into(), quick_action_yaml(item)))
+                                    Some(((*key).into(), quick_action_json(item)))
                                 })
                                 .collect(),
                         ),
                     );
-                    Yaml::Mapping(out)
+                    Value::Object(out)
                 })
                 .collect(),
         ),
     );
     doc.insert(
         "emojiPages".into(),
-        Yaml::Sequence(
+        Value::Array(
             preset
                 .emoji_pages
                 .iter()
                 .map(|page| {
-                    let mut out = Mapping::new();
+                    let mut out = Map::new();
                     put(&mut out, "id", page.id.as_str());
                     if !page.name.is_empty() {
                         put(&mut out, "name", page.name.as_str());
                     }
                     out.insert(
                         "cells".into(),
-                        Yaml::Mapping(
+                        Value::Object(
                             LEFT_HAND_HOTKEYS
                                 .iter()
                                 .filter_map(|key| {
@@ -372,16 +371,16 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                                 .collect(),
                         ),
                     );
-                    Yaml::Mapping(out)
+                    Value::Object(out)
                 })
                 .collect(),
         ),
     );
-    serde_norway::to_string(&Yaml::Mapping(doc)).unwrap_or_default()
+    serde_json::to_string_pretty(&Value::Object(doc)).unwrap_or_default()
 }
 
-fn rule_yaml(rule: &LayerRule) -> Yaml {
-    let mut out = Mapping::new();
+fn rule_json(rule: &LayerRule) -> Value {
+    let mut out = Map::new();
     put(&mut out, "id", rule.id.as_str());
     put(&mut out, "key", rule.key.as_str());
     if rule.enabled == Some(false) {
@@ -402,7 +401,7 @@ fn rule_yaml(rule: &LayerRule) -> Yaml {
         if let Some(list) = list.as_ref().filter(|list| !list.is_empty()) {
             out.insert(
                 name.into(),
-                Yaml::Sequence(list.iter().map(|item| item.as_str().into()).collect()),
+                Value::Array(list.iter().map(|item| item.as_str().into()).collect()),
             );
         }
     }
@@ -460,7 +459,7 @@ fn rule_yaml(rule: &LayerRule) -> Yaml {
     if let Some(ms) = rule.double_tap_timeout_ms {
         out.insert("dtapMs".into(), ms.into());
     }
-    Yaml::Mapping(out)
+    Value::Object(out)
 }
 
 /// A quick action cell: either the action itself or `{ name, action, icon }`.
@@ -481,12 +480,12 @@ fn quick_action(value: &Value) -> Option<QuickAction> {
     (!item.action.trim().is_empty()).then_some(item)
 }
 
-fn quick_action_yaml(item: &QuickAction) -> Yaml {
+fn quick_action_json(item: &QuickAction) -> Value {
     let icon = item.icon.as_deref().filter(|icon| !icon.is_empty());
     if item.name.is_empty() && icon.is_none() {
         return item.action.as_str().into();
     }
-    let mut out = Mapping::new();
+    let mut out = Map::new();
     if !item.name.is_empty() {
         put(&mut out, "name", item.name.as_str());
     }
@@ -494,15 +493,15 @@ fn quick_action_yaml(item: &QuickAction) -> Yaml {
     if let Some(icon) = icon {
         put(&mut out, "icon", icon);
     }
-    Yaml::Mapping(out)
+    Value::Object(out)
 }
 
-fn put(map: &mut Mapping, name: &str, value: &str) {
+fn put(map: &mut Map<String, Value>, name: &str, value: &str) {
     map.insert(name.into(), value.into());
 }
 
-fn optional(value: &Option<String>) -> Yaml {
-    value.as_deref().map_or(Yaml::Null, Into::into)
+fn optional(value: &Option<String>) -> Value {
+    value.as_deref().map_or(Value::Null, Into::into)
 }
 
 fn array<'a>(
@@ -531,7 +530,7 @@ fn trimmed<'a>(object: &'a Map<String, Value>, name: &str) -> Option<&'a str> {
         .filter(|value| !value.is_empty())
 }
 
-/// Convert supported YAML scalars to their string representation.
+/// Convert supported JSON scalars to their string representation.
 fn scalar(value: &Value) -> Option<String> {
     match value {
         Value::String(text) => Some(text.clone()),
@@ -574,14 +573,14 @@ fn key_list(value: Option<&Value>) -> Option<String> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn per_rule_hold_detection_round_trips_through_yaml_and_mapper_json() {
+    fn per_rule_hold_detection_round_trips_through_json_and_mapper_json() {
         use super::super::model::TapDecision;
         for (value, expected) in [
             ("permissiveHold", TapDecision::PermissiveHold),
             ("holdOnOtherKeyPress", TapDecision::HoldOnOtherKeyPress),
         ] {
             let preset = parse(&format!(
-                "rules:\n  - key: Space\n    tapDecision: {value}\n"
+                "{{\"rules\": [{{\"key\": \"Space\", \"tapDecision\": \"{value}\"}}]}}"
             ))
             .unwrap()
             .unwrap();
@@ -591,14 +590,14 @@ mod tests {
                 serde_json::from_value(serde_json::to_value(&preset.rules[0]).unwrap()).unwrap();
             assert_eq!(mapper.tap_decision, Some(expected));
         }
-        let preset = parse("rules:\n  - key: Space\n").unwrap().unwrap();
+        let preset = parse(r#"{"rules": [{"key": "Space"}]}"#).unwrap().unwrap();
         assert_eq!(preset.rules[0].tap_decision, None);
         assert!(!serialize(&preset).contains("tapDecision"));
     }
 
     #[test]
     fn chord_and_long_hold_options_round_trip() {
-        let preset = parse("rules:\n  - key: ShiftLeft+ControlRight\n    onHold: action\n    longHold: 'text:hello'\n    longHoldMs: 1500\n").unwrap().unwrap();
+        let preset = parse(r#"{"rules": [{"key": "ShiftLeft+ControlRight", "onHold": "action", "longHold": "text:hello", "longHoldMs": 1500}]}"#).unwrap().unwrap();
         let rule = &preset.rules[0];
         assert_eq!(
             rule.hold_behavior(),
@@ -611,50 +610,96 @@ mod tests {
 
     #[test]
     fn parsing_is_deterministic_without_ids() {
-        let text = "rules:\n- key: CapsLock\nquickActionPages:\n- cells: { KeyQ: KeyA }\n";
+        let text = r#"{"rules": [{"key": "CapsLock"}], "quickActionPages": [{"cells": {"KeyQ": "KeyA"}}]}"#;
         assert_eq!(super::parse(text), super::parse(text));
     }
 
     use super::*;
 
     const SAMPLE: &str = r#"
-description: Sample
-layers:
-  - id: nav
-    name: Navigation
-    keys:
-      KeyH: ArrowLeft
-      KeyQ: null
-      Digit1: 5
-      MouseForward: Ctrl+KeyC
-rules:
-  - key: CapsLock
-    layer: nav
-    tap: Escape
-  - key: Space
-    hold: null
-    layouts: [us, ""]
-    gameMode: on
-    isolate: [KeyA, KeyB]
-    holdMs: 250
-  - key: ""
-    tap: KeyA
-macros:
-  - id: copyLine
-    name: Copy line
-    steps: [Home, "Shift+End", { action: Ctrl+KeyC }]
-commands:
-  - id: music
-    linux: " playerctl play-pause "
-quickActionPages:
-  - cells:
-      KeyQ: { name: Lock, action: kde:ksmserver/Lock Session }
-      KeyW: Ctrl+KeyC
-      KeyE: { name: Empty }
-      Other: KeyA
-emojiPages:
-  - name: Faces
-    cells: { KeyQ: "😀", Other: "x" }
+{
+  "description": "Sample",
+  "layers": [
+    {
+      "id": "nav",
+      "name": "Navigation",
+      "keys": {
+        "KeyH": "ArrowLeft",
+        "KeyQ": null,
+        "Digit1": 5,
+        "MouseForward": "Ctrl+KeyC"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "key": "CapsLock",
+      "layer": "nav",
+      "tap": "Escape"
+    },
+    {
+      "key": "Space",
+      "hold": null,
+      "layouts": [
+        "us",
+        ""
+      ],
+      "gameMode": "on",
+      "isolate": [
+        "KeyA",
+        "KeyB"
+      ],
+      "holdMs": 250
+    },
+    {
+      "key": "",
+      "tap": "KeyA"
+    }
+  ],
+  "macros": [
+    {
+      "id": "copyLine",
+      "name": "Copy line",
+      "steps": [
+        "Home",
+        "Shift+End",
+        {
+          "action": "Ctrl+KeyC"
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "id": "music",
+      "linux": " playerctl play-pause "
+    }
+  ],
+  "quickActionPages": [
+    {
+      "cells": {
+        "KeyQ": {
+          "name": "Lock",
+          "action": "kde:ksmserver/Lock Session"
+        },
+        "KeyW": "Ctrl+KeyC",
+        "KeyE": {
+          "name": "Empty"
+        },
+        "Other": "KeyA"
+      }
+    }
+  ],
+  "emojiPages": [
+    {
+      "name": "Faces",
+      "cells": {
+        "KeyQ": "😀",
+        "Other": "x"
+      }
+    }
+  ]
+}
 "#;
 
     #[test]
@@ -697,7 +742,7 @@ emojiPages:
     #[test]
     fn matches_the_recorded_layout_fixture() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-        let text = std::fs::read_to_string(root.join("layout-parity.yaml")).unwrap();
+        let text = std::fs::read_to_string(root.join("layout-parity.json")).unwrap();
         let expected: Value = serde_json::from_str(
             &std::fs::read_to_string(root.join("layout-parity.expected.json")).unwrap(),
         )
@@ -718,14 +763,16 @@ emojiPages:
     #[test]
     fn unsupported_window_conditions_are_rejected() {
         for field in ["appsWhitelist", "appsBlacklist"] {
-            let text = format!("rules:\n  - key: KeyA\n    {field}: [kate]\n    windows: [kate]\n");
+            let text = format!(
+                "{{\"rules\": [{{\"key\": \"KeyA\", \"{field}\": [\"kate\"], \"windows\": [\"kate\"]}}]}}"
+            );
             assert!(parse(&text).unwrap_err().contains(field));
         }
     }
 
     #[test]
     fn window_patterns_round_trip_without_substring_expansion() {
-        let preset = parse("rules:\n  - key: KeyA\n    windows: [org.kde.kate, 'title:Doc']\n    excludeWindows: [firefox]\n").unwrap().unwrap();
+        let preset = parse(r#"{"rules": [{"key": "KeyA", "windows": ["org.kde.kate", "title:Doc"], "excludeWindows": ["firefox"]}]}"#).unwrap().unwrap();
         assert_eq!(
             preset.rules[0].condition_apps_whitelist,
             Some(vec!["org.kde.kate".into(), "title:Doc".into()])
@@ -765,19 +812,27 @@ emojiPages:
         assert_eq!(again.macros[0].steps.len(), 3);
         assert_eq!(again.quick_action_pages, preset.quick_action_pages);
         assert_eq!(again.emoji_pages, preset.emoji_pages);
-        assert!(text.starts_with("description: Sample\nlayers:\n"));
+        assert_eq!(
+            serde_json::from_str::<Value>(&text).unwrap()["description"],
+            "Sample"
+        );
     }
 
     #[test]
     fn empty_or_scalar_documents_have_no_preset() {
         assert_eq!(parse("").unwrap(), None);
-        assert_eq!(parse("just text").unwrap(), None);
-        assert!(parse("layers: [").is_err());
+        assert_eq!(parse(r#""just text""#).unwrap(), None);
+        assert!(parse("{\"layers\": [").is_err());
+    }
+
+    #[test]
+    fn non_json_layouts_are_rejected() {
+        assert!(parse("layers: []\nrules: []\n").is_err());
     }
 
     #[test]
     fn missing_emoji_pages_get_the_default_page() {
-        let preset = parse("layers: []").unwrap().unwrap();
+        let preset = parse(r#"{"layers": []}"#).unwrap().unwrap();
         assert_eq!(preset.emoji_pages, vec![EmojiPage::default_page()]);
     }
 }

@@ -98,7 +98,7 @@ impl StoragePaths {
             if !p.is_file() {
                 continue;
             }
-            if p.extension().and_then(|s| s.to_str()) != Some("yaml") {
+            if p.extension().and_then(|s| s.to_str()) != Some("json") {
                 continue;
             }
             if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
@@ -128,7 +128,7 @@ impl StoragePaths {
         let dir = self.layouts_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let safe = validate_layout_name(name)?;
-        let path = dir.join(format!("{safe}.yaml"));
+        let path = dir.join(format!("{safe}.json"));
         if path.exists() && !overwrite {
             return Err(format!("Layout \"{safe}\" already exists"));
         }
@@ -151,7 +151,7 @@ impl StoragePaths {
         let new_safe = validate_layout_name(new_name)?;
         let dir = self.layouts_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
-        let new_path = dir.join(format!("{new_safe}.yaml"));
+        let new_path = dir.join(format!("{new_safe}.json"));
         if new_path.exists() && old_path != new_path && !overwrite {
             return Err(format!("Layout \"{new_safe}\" already exists"));
         }
@@ -178,7 +178,7 @@ impl StoragePaths {
 
     pub fn layout_path(&self, name: &str) -> Result<PathBuf, String> {
         let safe = validate_layout_name(name)?;
-        Ok(self.layouts_dir().join(format!("{safe}.yaml")))
+        Ok(self.layouts_dir().join(format!("{safe}.json")))
     }
 }
 
@@ -468,9 +468,9 @@ mod tests {
             PathBuf::from("/repo/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json")
         );
         assert_eq!(
-            linux.layouts_dir().join("Test.yaml"),
+            linux.layouts_dir().join("Test.json"),
             PathBuf::from(
-                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/layouts/Test.yaml"
+                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/layouts/Test.json"
             )
         );
         let windows = StoragePaths::dev(base, "windows");
@@ -578,7 +578,7 @@ mod tests {
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
         let saved = storage
-            .save_user_layout("My layout", "description: test", false)
+            .save_user_layout("My layout", r#"{"description":"test"}"#, false)
             .expect("save layout");
         assert_eq!(saved, "My layout");
         assert_eq!(
@@ -587,7 +587,7 @@ mod tests {
         );
         assert_eq!(
             storage.load_user_layout("My layout").expect("load layout"),
-            "description: test"
+            r#"{"description":"test"}"#
         );
     }
 
@@ -597,25 +597,25 @@ mod tests {
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
         storage
-            .save_user_layout("Old", "description: one", false)
+            .save_user_layout("Old", r#"{"description":"one"}"#, false)
             .expect("save old");
         storage
-            .save_user_layout("New", "description: two", false)
+            .save_user_layout("New", r#"{"description":"two"}"#, false)
             .expect("save new");
 
         assert!(
             storage
-                .rename_user_layout("Old", "New", "description: updated", false)
+                .rename_user_layout("Old", "New", r#"{"description":"updated"}"#, false)
                 .is_err()
         );
 
         let renamed = storage
-            .rename_user_layout("Old", "New", "description: updated", true)
+            .rename_user_layout("Old", "New", r#"{"description":"updated"}"#, true)
             .expect("rename");
         assert_eq!(renamed, "New");
         assert_eq!(
             storage.load_user_layout("New").expect("load new"),
-            "description: updated"
+            r#"{"description":"updated"}"#
         );
         assert!(storage.load_user_layout("Old").is_err());
     }
@@ -637,7 +637,7 @@ mod tests {
     #[test]
     fn new_file_publication_never_overwrites_an_existing_destination() {
         let dir = tempfile::tempdir().unwrap();
-        let destination = dir.path().join("layout.yaml");
+        let destination = dir.path().join("layout.json");
         fs::write(&destination, "external").unwrap();
         assert!(super::write_file(&destination, b"replacement", false).is_err());
         assert_eq!(fs::read_to_string(destination).unwrap(), "external");

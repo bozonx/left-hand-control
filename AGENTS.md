@@ -167,7 +167,7 @@ Report the exact commands you ran and their results. If something could not be r
 **Always**
 - Put domain and platform logic in `lhc-core`; keep the shell thin.
 - Edit config through `Document::edit`; resolve paths through `StoragePaths::resolve()`.
-- Support the current `config.json` and layout YAML formats only; do not add migrations or fallbacks for retired formats.
+- Support the current `config.json` and layout JSON formats only; do not add migrations or fallbacks for retired formats.
 
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.

@@ -262,7 +262,7 @@ mod tests {
         paths
             .save_user_layout(
                 "Test",
-                "rules:\n  - key: KeyA\n    tap: macro:outer\n",
+                r#"{"rules": [{"key": "KeyA", "tap": "macro:outer"}]}"#,
                 true,
             )
             .unwrap();

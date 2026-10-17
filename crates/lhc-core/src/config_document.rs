@@ -2,7 +2,7 @@
 //!
 //! Global settings live in `config.json`; the current keyboard layout
 //! stays in memory. Saved layouts live in the user
-//! library (`layouts/<name>.yaml`, id `user:<name>`).
+//! library (`layouts/<name>.json`, id `user:<name>`).
 //!
 //! Settings keep the raw JSON next to the typed view, so edits change only
 //! the fields they own and settings a shell does not know survive a save.
@@ -126,7 +126,7 @@ impl ConfigDocument {
             .map_err(ConfigError::Io)?
             .into_iter()
             .map(|name| {
-                TrackedFile::open(paths.layouts_dir().join(format!("{name}.yaml")))
+                TrackedFile::open(paths.layouts_dir().join(format!("{name}.json")))
                     .map(|(file, _)| (name, file))
             })
             .collect::<Result<_, _>>()
@@ -599,7 +599,7 @@ impl ConfigDocument {
                 }
             } else {
                 let (file, text) =
-                    TrackedFile::open(self.paths.layouts_dir().join(format!("{name}.yaml")))
+                    TrackedFile::open(self.paths.layouts_dir().join(format!("{name}.json")))
                         .map_err(ConfigError::Io)?;
                 parse_layout(&text)?;
                 added.insert(name.clone(), file);
@@ -788,7 +788,7 @@ mod tests {
     use crate::profile::diagnostics::RuleIssueCode;
     use std::fs;
 
-    const LAYOUT: &str = "layers:\n  - id: nav\n    name: Navigation\n    keys:\n      KeyH: ArrowLeft\nrules:\n  - key: CapsLock\n    layer: nav\n    tap: Escape\n";
+    const LAYOUT: &str = r#"{"layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "layer": "nav", "tap": "Escape"}]}"#;
 
     fn document(mut settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
@@ -836,7 +836,7 @@ mod tests {
             .save_config(r#"{"settings":{"appearance":"light","currentLayoutId":"user:Test"}}"#)
             .unwrap();
         doc.paths
-            .save_user_layout("Test", "layers: [", true)
+            .save_user_layout("Test", "{\"layers\": [", true)
             .unwrap();
         assert!(doc.reload_if_changed().is_err());
         assert_eq!(doc.settings().appearance, Appearance::Dark);
@@ -871,7 +871,7 @@ mod tests {
             LAYOUT,
         );
         let layout_before =
-            fs::read_to_string(document.paths.layouts_dir().join("Test.yaml")).unwrap();
+            fs::read_to_string(document.paths.layouts_dir().join("Test.json")).unwrap();
         document.set_input_device("/dev/input/event7").unwrap();
         document.set_locale(LocalePreference::English).unwrap();
         let saved: Value =
@@ -883,7 +883,7 @@ mod tests {
         assert_eq!(saved["settings"]["locale"], "en-US");
         assert!(saved.get("rules").is_none());
         assert_eq!(
-            fs::read_to_string(document.paths.layouts_dir().join("Test.yaml")).unwrap(),
+            fs::read_to_string(document.paths.layouts_dir().join("Test.json")).unwrap(),
             layout_before
         );
     }
@@ -912,7 +912,7 @@ mod tests {
     fn commands_require_explicit_permission_on_load_and_reload() {
         let (_dir, mut document) = document(
             json!({"version": 1, "settings": {}}),
-            "commands:\n  - id: hello\n    linux: printf hello\n",
+            r#"{"commands": [{"id": "hello", "linux": "printf hello"}]}"#,
         );
         assert!(!document.settings().commands_enabled);
         document
@@ -946,7 +946,7 @@ mod tests {
         assert_eq!(saved["settings"]["futureOption"], 7);
         assert_eq!(saved["settings"]["defaultHoldTimeoutMs"], 350);
         assert_eq!(saved["settings"]["gameMode"]["useFullscreen"], true);
-        fs::write(document.paths.config_path(), "{}").unwrap();
+        fs::write(document.paths.config_path(), r#"{}"#).unwrap();
         assert_eq!(
             document.update_settings(|settings| settings.launch_on_startup = true),
             Err(ConfigError::ExternalChange)
@@ -1138,7 +1138,11 @@ mod tests {
             .unwrap();
         document
             .paths
-            .save_user_layout("Test", "layers:\n  - id: nav\n    name: Changed\n", true)
+            .save_user_layout(
+                "Test",
+                r#"{"layers": [{"id": "nav", "name": "Changed"}]}"#,
+                true,
+            )
             .unwrap();
         assert_eq!(
             document.set_layer_key("nav", "KeyJ", KeyAssignment::Swallow),
@@ -1211,7 +1215,7 @@ mod tests {
         let save = |document: &ConfigDocument, rules: &str| {
             document
                 .paths
-                .save_user_layout("Other", &format!("rules:\n{rules}"), true)
+                .save_user_layout("Other", &format!("{{\"rules\":{rules}}}"), true)
                 .unwrap();
         };
         let uses_titles = |document: &ConfigDocument| {
@@ -1222,18 +1226,18 @@ mod tests {
         };
         save(
             &document,
-            "  - key: KeyA\n    tap: KeyB\n    windows: [kate]\n",
+            r#"[{"key": "KeyA", "tap": "KeyB", "windows": ["kate"]}]"#,
         );
         assert!(!uses_titles(&document));
         save(
             &document,
-            "  - key: KeyA\n    tap: KeyB\n    excludeWindows: ['title:Secret']\n",
+            r#"[{"key": "KeyA", "tap": "KeyB", "excludeWindows": ["title:Secret"]}]"#,
         );
         assert!(uses_titles(&document));
         // Disabled rules never run, so they need no titles.
         save(
             &document,
-            "  - key: KeyA\n    enabled: false\n    tap: KeyB\n    windows: ['title:x']\n",
+            r#"[{"key": "KeyA", "enabled": false, "tap": "KeyB", "windows": ["title:x"]}]"#,
         );
         assert!(!uses_titles(&document));
         // Auto rules count only in auto mode.
@@ -1265,7 +1269,7 @@ mod tests {
         );
         document
             .paths
-            .save_user_layout("Other", "rules:\n  - key: KeyA\n    tap: KeyB\n  - key: KeyC\n    enabled: false\n    tap: KeyD\n", true)
+            .save_user_layout("Other", r#"{"rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyC", "enabled": false, "tap": "KeyD"}]}"#, true)
             .unwrap();
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1305,7 +1309,7 @@ mod tests {
     #[test]
     fn bundled_layout_runs_in_the_mapper() {
         let path =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/ivank-layout.yaml");
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/ivank-layout.json");
         let (_dir, document) = document(
             json!({"version": 1, "settings": {}}),
             &fs::read_to_string(path).unwrap(),
@@ -1333,7 +1337,7 @@ mod tests {
     fn blocking_rule_issues_refuse_runtime_config() {
         let (_dir, document) = document(
             json!({"version": 1, "settings": {}}),
-            "rules:\n  - key: UnknownKey\n    tap: KeyB\n",
+            r#"{"rules": [{"key": "UnknownKey", "tap": "KeyB"}]}"#,
         );
         match document.runtime_config(&AutoSwitchContext::default()) {
             Err(ConfigError::Rules(issues)) => {
@@ -1351,7 +1355,7 @@ mod tests {
     fn repeated_triggers_keep_both_rules_in_runtime_order() {
         let (_dir, document) = document(
             json!({"version": 1, "settings": {}}),
-            "rules:\n  - key: KeyA\n    tap: KeyB\n  - key: KeyA\n    tap: KeyC\n",
+            r#"{"rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyA", "tap": "KeyC"}]}"#,
         );
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
