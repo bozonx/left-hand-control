@@ -507,6 +507,15 @@ pub fn retry_text_backend() {
     PORTAL.clear_failure();
 }
 
+/// Read the clipboard ahead of a likely text input, e.g. when a popup opens,
+/// if the selected mode may paste through it.
+pub fn prepare_text_input() {
+    let mode = TEXT_BACKEND.lock().unwrap_or_else(|e| e.into_inner()).mode;
+    if matches!(mode, TextMode::Libei | TextMode::Clipboard) {
+        super::clipboard::warm();
+    }
+}
+
 /// Path of the directory where we persist the restore token.
 static TOKEN_DIR: OnceLock<PathBuf> = OnceLock::new();
 

@@ -99,6 +99,9 @@ impl App {
             return;
         }
         if let Some(popup) = window.popup() {
+            // A choice may paste text; save the clipboard while the user picks.
+            #[cfg(target_os = "linux")]
+            lhc_core::mapper::portal::prepare_text_input();
             // Both are anchored at the bottom centre; the popup wins.
             self.hide_layer_hint();
             if self.supervisor.borrow().enabled {
@@ -227,19 +230,33 @@ impl App {
             return;
         }
         // Run once the popup no longer has the keyboard focus.
-        *self.pending_action.borrow_mut() = Some((popup, action));
+        *self.pending_action.borrow_mut() = Some((popup, action, Instant::now()));
         slint::Timer::single_shot(FOCUS_RETURN_TIMEOUT, move || {
-            with_app(|app| app.run_pending_action(popup));
+            with_app(|app| app.run_pending_action(popup, false));
         });
     }
 
-    fn run_pending_action(&self, popup: Popup) {
+    fn run_pending_action(&self, popup: Popup, focus_left: bool) {
         let action = self
             .pending_action
             .borrow_mut()
-            .take_if(|(pending, _)| *pending == popup)
-            .map(|(_, action)| action);
-        if let Some(action) = action {
+            .take_if(|(pending, _, _)| *pending == popup);
+        if let Some((_, action, chosen)) = action {
+            if focus_left {
+                log::info!(
+                    "focus left {} {} ms after the choice",
+                    popup.name(),
+                    chosen.elapsed().as_millis()
+                );
+            } else {
+                self.metrics
+                    .borrow_mut()
+                    .mark(popup.name(), "focus_return_timeout");
+                log::info!(
+                    "focus did not leave {}, running the choice anyway",
+                    popup.name()
+                );
+            }
             self.command(
                 Command::Execute(action),
                 Source::Button,
@@ -364,7 +381,7 @@ fn observe(app: &Rc<App>, window: Window) {
                 WindowEvent::Focused(false) => {
                     if let Some(popup) = window.popup() {
                         app.defer_hide(window);
-                        app.run_pending_action(popup);
+                        app.run_pending_action(popup, true);
                     }
                 }
                 WindowEvent::ThemeChanged(_) if window == Window::Settings => {

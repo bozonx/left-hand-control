@@ -57,7 +57,7 @@ pub(crate) struct App {
     /// Layout and generation last sent to the Spell worker.
     menus_sent: RefCell<Option<(Option<String>, u64)>>,
     /// Action chosen in a popup, run once the popup lost the focus.
-    pending_action: RefCell<Option<(Popup, String)>>,
+    pending_action: RefCell<Option<(Popup, String, Instant)>>,
     supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
     last_autostart: Cell<Option<bool>>,
