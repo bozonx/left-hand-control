@@ -1,0 +1,33 @@
+Date: 2026-10-17 16:21:00 -0300
+Commit: 8e59f6c (with uncommitted changes)
+VM: fedora44-kde (/mnt/disk2/vm/lhc-fedora-kde/base.qcow2)
+Package: left-hand-control-0.3.0-1.x86_64.rpm
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Host: ivan, 7.2.3-2-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-fedora-kde/runs/20261017-161800/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install: passed
+- installed-files: passed — /usr/bin/left-hand-control: left-hand-control 0.3.0
+- keyboard-probe: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- test-config: passed
+- start-without-input: passed
+- tray-item: passed — org.kde.StatusNotifierItem-2759-1/StatusNotifierItem
+- no-mapper-without-input: passed
+- autostart-entry: passed — Exec="/usr/bin/left-hand-control"
+- relogin-with-input: passed
+- autostart-launch: passed
+- tray-after-login: passed — org.kde.StatusNotifierItem-3759-1/StatusNotifierItem
+- mapper-running: passed
+- portal-consent: passed — received: 'lhc-ok'
+- mapper-keys-and-text: passed — bXclhc-ok
+- popups: passed
+- mapper-stop: passed
+- mapper-start: passed
+- upgrade-over-running: passed — reinstalled over the running instance
+- quit: passed
+- remove: passed
+
+Passed: 23, failed: 0

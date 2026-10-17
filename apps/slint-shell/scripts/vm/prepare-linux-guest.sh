@@ -1,6 +1,6 @@
 #!/bin/sh
 # Prepare a freshly installed KDE Plasma VM once, before its base image is frozen:
-# ssh key login, passwordless sudo, SDDM autologin into Plasma Wayland, no
+# ssh key login, passwordless sudo, SDDM or Plasma Login autologin into Plasma Wayland, no
 # screen lock or suspend, tools used by linux-guest.py. Run inside the guest as root:
 #   sh prepare-linux-guest.sh <user> '<ssh public key>'
 set -eu
@@ -43,9 +43,12 @@ chmod 440 /etc/sudoers.d/lhc-e2e
 
 session=plasma
 [ -e /usr/share/wayland-sessions/plasma.desktop ] || session=plasmawayland
-install -d /etc/sddm.conf.d
+# Plasma Login Manager (Fedora 44+) is an SDDM fork with the same [Autologin] keys.
+dm_conf=/etc/sddm.conf.d
+[ -e /usr/lib/systemd/system/plasmalogin.service ] && dm_conf=/etc/plasmalogin.conf.d
+install -d "$dm_conf"
 printf '[Autologin]\nUser=%s\nSession=%s\n' "$user" "$session" \
-    > /etc/sddm.conf.d/zz-lhc-e2e.conf
+    > "$dm_conf/zz-lhc-e2e.conf"
 
 # A locked screen or a suspended guest would swallow the injected keys.
 config="$home/.config"
@@ -54,6 +57,9 @@ printf '[Daemon]\nAutolock=false\nLockOnResume=false\n' > "$config/kscreenlocker
 printf '[AC][SuspendAndShutdown]\nAutoSuspendAction=0\n[AC][Display]\nTurnOffDisplayWhenIdle=false\n' \
     > "$config/powerdevilrc"
 chown "$user:$(id -gn "$user")" "$config/kscreenlockerrc" "$config/powerdevilrc"
+
+# A cloud image would otherwise search for a datasource on every disposable boot.
+[ -d /etc/cloud ] && touch /etc/cloud/cloud-init.disabled
 
 # The stand checks the behaviour without input permissions first.
 gpasswd -d "$user" input 2>/dev/null || true

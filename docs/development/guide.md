@@ -305,8 +305,10 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 `--show` показывает экран VM в окне GTK, по умолчанию VM работает без окна.
 
 **Хост.** Нужны `qemu-system-x86_64`, `qemu-img`, доступ к `/dev/kvm`, `ssh`/`scp`,
-для Linux-гостей с Plasma — модуль `virtio-vga` (на Arch/Manjaro пакет
-`qemu-hw-display-virtio-vga`), для Windows — OVMF с Secure Boot и `swtpm`. Ключ
+для Windows — OVMF с Secure Boot и `swtpm`. Для Linux-гостей с Plasma хватает
+стандартного `VGA` (Plasma работает на llvmpipe). `virtio-vga` на Arch/Manjaro
+требует двух пакетов, `qemu-hw-display-virtio-vga` и `qemu-hw-display-virtio-gpu`:
+без второго QEMU 11 падает с SIGSEGV при создании устройства. Ключ
 доступа к гостям создаётся один раз: `ssh-keygen -t ed25519 -N '' -f ~/.ssh/lhc-vm`.
 Образы лежат вне репозитория, по каталогу на VM, например `/mnt/disk2/vm/lhc-fedora-kde/`.
 
@@ -314,12 +316,12 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 
 ```json
 {
-  "name": "fedora-kde",
+  "name": "fedora44-kde",
   "base": "base.qcow2",
   "user": "tester",
   "ssh_key": "~/.ssh/lhc-vm",
   "ssh_port": 2231,
-  "vga": "virtio-vga",
+  "vga": "VGA",
   "memory": 6144,
   "cpus": 4,
   "install": "sudo dnf install -y {package}",
@@ -356,13 +358,51 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 
 Начинать с Fedora KDE и Debian 13 KDE.
 
+**Fedora KDE из облачного образа** — без интерактивного установщика, около 15 минут
+(так собран `/mnt/disk2/vm/lhc-fedora-kde`, Fedora 44, Plasma 6.7):
+
+```sh
+repo=$PWD; vm=/mnt/disk2/vm/lhc-fedora-kde; mkdir -p "$vm/install" && cd "$vm/install"
+u=https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images
+curl -fLO "$u/Fedora-Cloud-44-1.7-x86_64-CHECKSUM" -fLO "$u/Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2"
+sha256sum -c --ignore-missing Fedora-Cloud-44-1.7-x86_64-CHECKSUM
+qemu-img convert -O qcow2 Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2 ../base.qcow2
+qemu-img resize ../base.qcow2 40G
+mkdir -p seed
+printf 'instance-id: lhc-fedora-kde\nlocal-hostname: lhc-fedora-kde\n' > seed/meta-data
+cat > seed/user-data <<EOF
+#cloud-config
+users:
+  - name: tester
+    groups: [wheel]
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+    ssh_authorized_keys: ["$(cat ~/.ssh/lhc-vm.pub)"]
+EOF
+xorriso -as mkisofs -o seed.iso -V cidata -J -r seed
+qemu-system-x86_64 -enable-kvm -machine q35 -cpu host -smp 4 -m 6144 \
+  -drive file=../base.qcow2,if=virtio -drive file=seed.iso,media=cdrom \
+  -vga none -device VGA -display none -device qemu-xhci -device usb-tablet \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:2231-:22 -daemonize -pidfile qemu.pid
+ssh='ssh -i ~/.ssh/lhc-vm -p 2231 -o StrictHostKeyChecking=no tester@127.0.0.1'
+$ssh 'sudo dnf -y install @kde-desktop-environment && sudo systemctl set-default graphical.target'
+$ssh 'cat > /tmp/prep.sh' < "$repo/apps/slint-shell/scripts/vm/prepare-linux-guest.sh"
+$ssh "sudo sh /tmp/prep.sh tester '$(cat ~/.ssh/lhc-vm.pub)' && sudo systemctl reboot"
+```
+
+Затем шаги 3–4 ниже. Fedora 44 KDE использует Plasma Login Manager вместо SDDM;
+`prepare-linux-guest.sh` пишет автологин в `/etc/plasmalogin.conf.d/` и отключает
+cloud-init, чтобы одноразовые загрузки не искали источник данных.
+
+**Другие дистрибутивы с установочного ISO:**
+
 1. Создайте диск и установите дистрибутив с KDE Plasma 6 и обычным пользователем:
    ```sh
-   vm=/mnt/disk2/vm/lhc-fedora-kde; mkdir -p "$vm"
+   vm=/mnt/disk2/vm/lhc-debian13-kde; mkdir -p "$vm"
    qemu-img create -f qcow2 "$vm/base.qcow2" 40G
    qemu-system-x86_64 -enable-kvm -machine q35 -cpu host -smp 4 -m 6144 \
      -drive file="$vm/base.qcow2",if=virtio -cdrom <iso> -boot d \
-     -vga none -device virtio-vga -display gtk,gl=off \
+     -vga none -device VGA -display gtk,gl=off \
      -device qemu-xhci -device usb-tablet -nic user,model=virtio-net-pci
    ```
 2. В госте от root выполните подготовку (скрипт можно передать через
@@ -371,11 +411,12 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
    sh prepare-linux-guest.sh tester "$(cat ~/.ssh/lhc-vm.pub)"   # ключ — содержимое lhc-vm.pub с хоста
    ```
    Скрипт ставит `openssh-server`, `python3`, `kdialog`, `desktop-file-utils`,
-   даёт пользователю `sudo` без пароля, включает автологин SDDM в Plasma Wayland,
+   даёт пользователю `sudo` без пароля, включает автологин SDDM или Plasma Login в Plasma Wayland,
    отключает блокировку экрана и сон, убирает пользователя из группы `input`.
 3. Перезагрузите гостя и убедитесь, что он сам входит в Plasma. Приложение не
    устанавливайте. Выключите VM и больше не запускайте `base.qcow2` напрямую:
-   прогоны используют его как неизменяемую основу overlay.
+   прогоны используют его как неизменяемую основу overlay (`chmod a-w base.qcow2`
+   защищает от случайного запуска).
 4. Создайте `vm.json`.
 
 #### Linux VM: прогон
@@ -390,7 +431,7 @@ apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde \
 
 | Шаг | Что проверяется |
 | --- | --- |
-| `boot`, `plasma-session`, `upload`, `install` | Загрузка, автологин в Plasma Wayland, установка штатным менеджером или `install-linux.sh` |
+| `boot`, `upload`, `plasma-session`, `install` | Загрузка, автологин в Plasma Wayland, установка штатным менеджером или `install-linux.sh` |
 | `installed-files` | `.desktop` (и `desktop-file-validate`), metainfo, иконки hicolor; для пакетов — udev-правило и запись в `/dev/uinput` для сессии через `uaccess` |
 | `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `inputDevicePath` |
 | `test-config` | Тестовый профиль: `KeyA → KeyB`, `KeyD → Shift+KeyX`, `KeyT → text:lhc-ok`, автозапуск включён |

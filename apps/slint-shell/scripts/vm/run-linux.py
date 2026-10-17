@@ -140,8 +140,8 @@ def main():
 
     try:
         report.step("boot", boot, fatal=True)
-        report.step("plasma-session", session, fatal=True)
         report.step("upload", upload, fatal=True)
+        report.step("plasma-session", session, fatal=True)
         report.step("install", install, fatal=True)
         report.step("installed-files", check_install)
         report.step("keyboard-probe", probe_keyboard, fatal=True)
