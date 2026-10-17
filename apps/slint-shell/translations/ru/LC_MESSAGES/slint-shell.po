@@ -2605,3 +2605,6 @@ msgstr "Никогда не игра"
 
 msgid "Built-in list. To count one of these anyway, add it to Always a game under Your rules."
 msgstr "Встроенный список. Чтобы всё же считать что-то из него игрой, добавьте это во «Всегда игра» в блоке «Свои правила»."
+
+msgid "Hold"
+msgstr "Удержание"

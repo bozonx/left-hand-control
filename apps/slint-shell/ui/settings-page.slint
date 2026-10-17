@@ -201,7 +201,7 @@ component SubsectionTitle inherits Text {
     font-weight: 600;
 }
 
-/// A card of key behavior settings with a title.
+/// A card of settings with an optional title.
 component BehaviorCard inherits VerticalLayout {
     in property <string> title;
     vertical-stretch: 0;
@@ -210,7 +210,7 @@ component BehaviorCard inherits VerticalLayout {
         VerticalLayout {
             padding: 16px;
             spacing: 12px;
-            SubsectionTitle { text: root.title; }
+            if root.title != "": SubsectionTitle { text: root.title; }
             @children
         }
     }
@@ -614,9 +614,33 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {
                     title: @tr("Key behavior");
                     BehaviorCard {
-                        title: @tr("Rules");
-                        FieldLabel { text: @tr("Defaults"); }
-                        Text { vertical-stretch: 0; text: @tr("Used by rules that leave the field empty. A rule can set its own value in its advanced options."); color: Theme.muted; wrap: word-wrap; }
+                        TimingField {
+                            label: @tr("Simultaneous presses");
+                            info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
+                                + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
+                            minimum: 10; maximum: 500;
+                            value <=> SettingsEditor.combo-timeout;
+                            standard: SettingsEditor.default-combo-timeout;
+                            edited => { SettingsEditor.schedule-save(); }
+                            reset => { SettingsEditor.save(); }
+                        }
+                    }
+                    BehaviorCard {
+                        title: @tr("Defaults");
+                        TimingField {
+                            label: @tr("Double-tap window");
+                            info: @tr("A second tap within this time after the first release counts as a double tap.")
+                                + "\n\n" + @tr("A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed.")
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-double-tap-timeout);
+                            minimum: 50; maximum: 1000;
+                            value <=> SettingsEditor.double-tap-timeout;
+                            standard: SettingsEditor.default-double-tap-timeout;
+                            edited => { SettingsEditor.schedule-save(); }
+                            reset => { SettingsEditor.save(); }
+                        }
+                        Divider { vertical-stretch: 0; }
+                        SubsectionTitle { text: @tr("Hold"); }
                         VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
                             FormLabel {
                                 text: @tr("Hold detection");
@@ -650,36 +674,9 @@ export component SettingsPage inherits VerticalBox {
                                 edited => { SettingsEditor.schedule-save(); }
                                 reset => { SettingsEditor.save(); }
                             }
-                            TimingField {
-                                label: @tr("Double-tap window");
-                                info: @tr("A second tap within this time after the first release counts as a double tap.")
-                                    + "\n\n" + @tr("A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-double-tap-timeout);
-                                minimum: 50; maximum: 1000;
-                                value <=> SettingsEditor.double-tap-timeout;
-                                standard: SettingsEditor.default-double-tap-timeout;
-                                edited => { SettingsEditor.schedule-save(); }
-                                reset => { SettingsEditor.save(); }
-                            }
                         }
                         Divider { vertical-stretch: 0; }
-                        FieldLabel { text: @tr("Shared by all rules"); }
-                        TimingField {
-                            label: @tr("Simultaneous presses");
-                            info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
-                                + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
-                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
-                            minimum: 10; maximum: 500;
-                            value <=> SettingsEditor.combo-timeout;
-                            standard: SettingsEditor.default-combo-timeout;
-                            edited => { SettingsEditor.schedule-save(); }
-                            reset => { SettingsEditor.save(); }
-                        }
-                    }
-                    BehaviorCard {
-                        title: @tr("Macros");
-                        FieldLabel { text: @tr("Defaults"); }
-                        Text { vertical-stretch: 0; text: @tr("Used by macros that leave the field empty. A macro can set its own value on the Macros page."); color: Theme.muted; wrap: word-wrap; }
+                        SubsectionTitle { text: @tr("Macros"); }
                         HorizontalLayout { vertical-stretch: 0; spacing: 16px; alignment: start;
                             TimingField {
                                 label: @tr("Pause between steps");
