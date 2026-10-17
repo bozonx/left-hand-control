@@ -3914,3 +3914,150 @@ fn late_release_replays_buffered_keys_before_releasing_the_hold() {
         Out::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }
     ] if ks.key == KeyCode::KEY_LEFTCTRL));
 }
+
+#[test]
+fn nested_release_must_not_leave_key_pressed() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        {"key":"KeyA", "tapAction":"Escape", "holdAction":"ControlLeft", "holdTimeoutMs":200},
+        {"key":"KeyB", "tapAction":"Tab", "holdAction":"ShiftLeft", "holdTimeoutMs":200}
+    ]}))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = vec![];
+    for (key, down, ms) in [
+        (KeyCode::KEY_A, true, 0),
+        (KeyCode::KEY_B, true, 10),
+        (KeyCode::KEY_C, true, 20),
+        (KeyCode::KEY_C, false, 30),
+        (KeyCode::KEY_B, false, 40),
+        (KeyCode::KEY_A, false, 50),
+    ] {
+        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.tick(now + Duration::from_millis(ms), &mut out);
+    }
+    engine.tick(now + Duration::from_secs(1), &mut out);
+    assert!(engine.emitted.is_empty(), "all physical keys were released");
+    let c_events: Vec<_> = out
+        .iter()
+        .filter_map(|event| match event {
+            Out::KeyRaw {
+                key: KeyCode::KEY_C,
+                down,
+            } => Some(*down),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(c_events, vec![true, false]);
+}
+
+#[test]
+fn buffered_long_hold_must_fire() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        {"key":"KeyA", "tapAction":"Escape", "holdAction":"ControlLeft", "holdTimeoutMs":200},
+        {"key":"KeyB", "tapAction":"Tab", "longHoldAction":"text:long", "longHoldTimeoutMs":100}
+    ]}))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = vec![];
+    for (key, down, ms) in [
+        (KeyCode::KEY_A, true, 0),
+        (KeyCode::KEY_B, true, 10),
+        (KeyCode::KEY_B, false, 150),
+        (KeyCode::KEY_A, false, 160),
+    ] {
+        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.tick(now + Duration::from_millis(ms), &mut out);
+    }
+    engine.tick(now + Duration::from_secs(1), &mut out);
+    assert_eq!(
+        out.iter()
+            .filter(|o| matches!(o, Out::Literal(s) if s == "long"))
+            .count(),
+        1
+    );
+    assert!(
+        !out.iter()
+            .any(|o| matches!(o, Out::Stroke { ks, .. } if ks.key == KeyCode::KEY_TAB))
+    );
+}
+
+#[test]
+fn chord_must_not_fire_single_key_double_tap() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        {"key":"KeyA", "tapAction":"text:single", "doubleTapAction":"text:double"},
+        {"key":"KeyA+KeyB", "tapAction":"text:chord"}
+    ]}))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = vec![];
+    for (key, down, ms) in [
+        (KeyCode::KEY_A, true, 0),
+        (KeyCode::KEY_A, false, 10),
+        (KeyCode::KEY_A, true, 20),
+        (KeyCode::KEY_B, true, 25),
+        (KeyCode::KEY_B, false, 30),
+        (KeyCode::KEY_A, false, 35),
+    ] {
+        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.tick(now + Duration::from_millis(ms), &mut out);
+    }
+    engine.tick(now + Duration::from_secs(1), &mut out);
+    let texts: Vec<_> = out
+        .iter()
+        .filter_map(|o| match o {
+            Out::Literal(s) => Some(s.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(texts, vec!["single", "chord"]);
+}
+
+#[test]
+fn combo_buffered_long_hold_resolves_at_release_timestamp() {
+    for release_ms in [19, 20, 21] {
+        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+            {"key":"KeyA", "tapAction":"text:tap", "longHoldAction":"text:long", "longHoldTimeoutMs":20},
+            {"key":"KeyA+KeyB", "tapAction":"text:chord"}
+        ]})).unwrap();
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle(
+            KeyCode::KEY_A,
+            false,
+            now + Duration::from_millis(release_ms),
+            &mut out,
+        );
+        engine.tick(now + Duration::from_secs(1), &mut out);
+        let expected = if release_ms < 20 { "tap" } else { "long" };
+        assert!(matches!(out.as_slice(), [Out::Literal(s)] if s == expected));
+    }
+}
+
+#[test]
+fn chord_long_hold_fires_on_late_member_release_without_tick() {
+    for released in [KeyCode::KEY_A, KeyCode::KEY_B] {
+        let cfg = config_with_rule(serde_json::json!({
+            "key":"KeyA+KeyB", "tapAction":"text:tap", "longHoldAction":"text:long", "longHoldTimeoutMs":100
+        }));
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle(
+            KeyCode::KEY_B,
+            true,
+            now + Duration::from_millis(10),
+            &mut out,
+        );
+        engine.handle(released, false, now + Duration::from_millis(110), &mut out);
+        assert!(matches!(out.as_slice(), [Out::Literal(s)] if s == "long"));
+        out.clear();
+        engine.tick(now + Duration::from_secs(1), &mut out);
+        assert!(out.is_empty());
+    }
+}

@@ -79,9 +79,9 @@ impl Engine {
         // press+release → the deciding key is a hold.
         if self.decision_buffer.iter().any(|e| e.key == key && e.down) {
             self.resolve_deciding_as_hold(out);
-            // Fall through so this release is processed after the replayed
-            // buffer (which re-pressed `key`).
-            return false;
+            // Replay may start another decision and buffer this key's press
+            // again. Resolve that decision before allowing its release through.
+            return self.permissive_intercept(key, down, now, out);
         }
         // Release of a key held *before* the decision started does not
         // resolve the decision. But if presses are already buffered behind

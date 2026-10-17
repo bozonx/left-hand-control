@@ -62,18 +62,16 @@ impl Engine {
                 self.handle_event(ev.key, ev.down, ev.at, out);
             }
         }
+        // A completed chord is a different trigger from any member's
+        // pending single tap, even inside that member's double-tap window.
+        self.flush_waiting_second(now, out);
         let owner = keys[0];
-        let previous = self.pending.remove(&owner);
         let mut suppressed = Vec::new();
         self.decision_buffer
             .retain(|event| !keys.contains(&event.key));
         for member in &keys {
             self.long_holds.remove(member);
-            let pending = if *member == owner {
-                previous.clone()
-            } else {
-                self.pending.remove(member)
-            };
+            let pending = self.pending.remove(member);
             if let Some(pending) = pending
                 && matches!(pending.phase, Phase::HoldActive)
             {
@@ -88,21 +86,6 @@ impl Engine {
         }
         self.active_chords.insert(owner, keys);
         self.chord_suppressed.insert(owner, suppressed);
-        if let Some(previous) = previous
-            && let Phase::WaitingSecond { deadline } = previous.phase
-        {
-            if now <= deadline {
-                self.fire_action(
-                    previous.rule.double_tap.as_ref(),
-                    self.default_mod_delay,
-                    now,
-                    out,
-                );
-                self.oneshot_consumed.insert(owner);
-                return true;
-            }
-            self.fire_tap(owner, &previous.rule.tap, now, out);
-        }
         self.start_rule(owner, rule, now, out);
         self.drain_decision_buffer(out);
         true

@@ -478,18 +478,6 @@ impl Engine {
         } else {
             self.physical_down.remove(&key);
         }
-        if !down
-            && self.long_holds.iter().any(|(owner, (deadline, _))| {
-                now >= *deadline
-                    && (*owner == key
-                        || self
-                            .active_chords
-                            .get(owner)
-                            .is_some_and(|keys| keys.contains(&key)))
-            })
-        {
-            self.tick(now, out);
-        }
         // A press arriving after the combo window but before the next tick
         // must not extend the stale combo.
         if self
@@ -718,6 +706,17 @@ impl Engine {
     }
 
     fn on_release(&mut self, key: KeyCode, now: Instant, out: &mut Vec<Out>) {
+        // Releases can arrive through replay or a chord owner, bypassing
+        // `handle`. Resolve only this key's timer at the event timestamp.
+        if self
+            .long_holds
+            .get(&key)
+            .is_some_and(|(deadline, _)| now >= *deadline)
+            && let Some((_, action)) = self.long_holds.remove(&key)
+        {
+            self.commit_hold(key, out);
+            self.fire_action(Some(&action), self.default_mod_delay, now, out);
+        }
         if self.pending.get(&key).is_some_and(
             |p| matches!(p.phase, Phase::WaitingDecision { deadline } if now >= deadline),
         ) {
