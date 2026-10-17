@@ -1,0 +1,26 @@
+Date: 2026-10-17 20:46:13 -0300
+Commit: ecb0a70
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: smoke
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261017-204208/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: smoke
+- smoke: FAILED (exit 1, see automated.log)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 749 files
+- windows-smoke: FAILED — Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: smoke
+- smoke: FAILED (exit 1, see automated.log)
+
+Passed: 3, failed: 1
