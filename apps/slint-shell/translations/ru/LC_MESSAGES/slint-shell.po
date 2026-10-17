@@ -22,12 +22,6 @@ msgstr[0] "Конфигурация загружена: {n} правило"
 msgstr[1] "Конфигурация загружена: {n} правила"
 msgstr[2] "Конфигурация загружена: {n} правил"
 
-msgid "Configuration reloaded from disk: {n} rule"
-msgid_plural "Configuration reloaded from disk: {n} rules"
-msgstr[0] "Конфигурация перечитана с диска: {n} правило"
-msgstr[1] "Конфигурация перечитана с диска: {n} правила"
-msgstr[2] "Конфигурация перечитана с диска: {n} правил"
-
 msgid "Configuration saved: {n} rule"
 msgid_plural "Configuration saved: {n} rules"
 msgstr[0] "Конфигурация сохранена: {n} правило"
@@ -136,8 +130,8 @@ msgstr "Система"
 msgid "Text"
 msgstr "Текст"
 
-msgid "The configuration was changed by another application and has been reloaded; repeat the change"
-msgstr "Конфигурация изменена другим приложением и перечитана; повторите изменение"
+msgid "The configuration changed since editing started; repeat the change"
+msgstr "Конфигурация изменилась с начала редактирования; повторите изменение"
 
 msgid "Unknown action type"
 msgstr "Неизвестный тип действия"
@@ -723,14 +717,8 @@ msgstr "Прочие"
 msgid "Actions"
 msgstr "Действия"
 
-msgid "Back side button on most mice"
-msgstr "Боковая «назад» у большинства мышей"
-
-msgid "Forward side button on most mice"
-msgstr "Боковая «вперёд» у большинства мышей"
-
-msgid "Rare: most mice send Side/Extra"
-msgstr "Редко: обычно мыши шлют Side/Extra"
+msgid "Extra button on some gaming mice"
+msgstr "Доп. кнопка у некоторых игровых мышей"
 
 msgid "Keys"
 msgstr "Клавиши"

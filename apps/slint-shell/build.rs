@@ -1,4 +1,15 @@
 fn main() {
+    // The Slint compiler recurses deeply on this UI tree; the default 1 MiB
+    // main-thread stack on Windows overflows (STATUS_STACK_OVERFLOW).
+    std::thread::Builder::new()
+        .stack_size(64 * 1024 * 1024)
+        .spawn(build)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn build() {
     use rspolib::AsBytes;
 
     println!("cargo:rerun-if-changed=translations");

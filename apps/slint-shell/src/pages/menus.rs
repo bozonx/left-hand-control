@@ -186,7 +186,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
             saved.message(Msg::None)
         }
         Err(error) => {
-            if error == ConfigError::ExternalChange {
+            if error == ConfigError::EditConflict {
                 reload(ui, document, state);
             }
             Msg::from(&error)

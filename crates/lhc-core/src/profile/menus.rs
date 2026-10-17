@@ -21,7 +21,7 @@ impl ConfigDocument {
         candidate: &LayoutPreset,
     ) -> Result<(), ConfigError> {
         if self.layout() != baseline {
-            return Err(ConfigError::ExternalChange);
+            return Err(ConfigError::EditConflict);
         }
         for page in &candidate.emoji_pages {
             if page.cells.iter().any(|(key, value)| {
@@ -74,7 +74,6 @@ impl ConfigDocument {
                 return Err(ConfigError::Menu(MenuIssue::UnknownKey));
             }
         }
-        self.ensure_files_unchanged()?;
         self.update_layout(|layout| {
             layout.emoji_pages = candidate.emoji_pages.clone();
             layout.quick_action_pages = candidate.quick_action_pages.clone();
@@ -102,7 +101,6 @@ impl ConfigDocument {
         if let Some(issue) = command_issue(&commands, index) {
             return Err(ConfigError::Menu(issue));
         }
-        self.ensure_files_unchanged()?;
         self.update_layout(|layout| layout.commands = commands)
     }
 }

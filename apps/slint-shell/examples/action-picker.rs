@@ -59,9 +59,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(document.read().layout().rules[index as usize].key, "Tab");
     rules.invoke_open_dialog(index, RuleDialog::Tap);
     picker.set_category(PickerCategory::Text);
-    picker.set_query("es".into());
+    picker.set_query("ck".into());
     picker.invoke_refresh();
-    // Escape, BrowserFavorites and MouseSide.
+    // Backspace, MediaTrackNext and MouseBack.
     for category in [
         PickerCategory::ControlKeys,
         PickerCategory::Media,

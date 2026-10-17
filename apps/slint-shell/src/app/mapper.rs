@@ -420,41 +420,4 @@ impl App {
             });
         });
     }
-
-    /// Pick up external configuration edits. A file that cannot
-    /// be read right now (for example mid-write) leaves the mapper running.
-    pub(super) fn reload_config(self: &std::rc::Rc<Self>) {
-        let Some(document) = self.document() else {
-            if let Some(document) = super::load_document(&self.settings) {
-                self.install_document(document);
-                log::info!("configuration recovered");
-            }
-            return;
-        };
-        let state = self.settings.global::<AppState>();
-        match document.reload() {
-            Ok(None) => {
-                // Readable again after a failed read.
-                if state.get_config_status().id == "config-unavailable" {
-                    state.set_config_status(Msg::None.to_ui());
-                }
-            }
-            Ok(Some(saved)) => {
-                let rules = document.read().layout().rules.len();
-                state.set_config_status(Msg::ConfigReloaded(rules).to_ui());
-                match saved.runtime {
-                    Ok(()) => self.clear_runtime_error(),
-                    Err(error) => self.set_error(Msg::SavedMapperNotUpdated(error)),
-                }
-            }
-            Err(error) => {
-                log::warn!("reload config: {error}");
-                state.set_config_status(crate::notifications::report_changed(
-                    &self.settings,
-                    &Msg::ConfigUnavailable(error.to_string()),
-                    state.get_config_status(),
-                ));
-            }
-        }
-    }
 }

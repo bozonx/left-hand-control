@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (id, arg) in [
         ("copied", ""),
         ("layout-saved", "Тест"),
-        ("config-external-change", ""),
+        ("config-edit-conflict", ""),
         ("error", "Проверьте доступ к устройству ввода."),
     ] {
         center.invoke_send(message(id, arg));
@@ -90,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<_>>();
         assert_eq!(
             ids,
-            ["copied", "layout-saved", "config-external-change", "error"]
+            ["copied", "layout-saved", "config-edit-conflict", "error"]
         );
         let size = ui.window().size();
         let scale = ui.window().scale_factor();

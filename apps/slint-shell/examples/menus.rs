@@ -134,11 +134,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(e.get_cells().row_count(), 15);
     assert_eq!(e.get_value().as_str(), reference.as_str());
     paths.save_config("{}")?;
-    e.set_name("conflict".into());
+    e.set_name("Updated".into());
     e.invoke_set_name();
     settle();
-    // The conflicting save reloads the document from disk.
-    assert_eq!(e.get_status().id.as_str(), "config-external-change");
+    // Manual config changes do not prevent edits in the running application.
+    assert_eq!(e.get_status().id.as_str(), "");
+    assert_eq!(e.get_name().as_str(), "Updated");
     settings.set_commands_enabled(true);
     settings.invoke_save();
 

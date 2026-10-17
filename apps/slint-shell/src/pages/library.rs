@@ -335,7 +335,7 @@ fn edit<T>(
     let saved = document.edit(View::Library, change).map_err(|error| {
         let _ = refresh(ui, document, &mut state.borrow_mut());
         match error {
-            ConfigError::ExternalChange => Msg::LibraryChanged,
+            ConfigError::EditConflict => Msg::LibraryChanged,
             other => config_error(other),
         }
     })?;
@@ -359,7 +359,7 @@ fn edit_auto(
         .map_err(|error| {
             let _ = refresh(ui, document, &mut state.borrow_mut());
             match error {
-                ConfigError::ExternalChange => Msg::LibraryChanged,
+                ConfigError::EditConflict => Msg::LibraryChanged,
                 other => config_error(other),
             }
         })?;

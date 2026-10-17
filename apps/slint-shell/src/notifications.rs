@@ -22,7 +22,7 @@ fn policy(message: &Message, backend: bool) -> Option<(ToastKind, Duration)> {
         "rule-duplicate-trigger"
         | "rule-shadowed-trigger"
         | "rule-missing-trigger"
-        | "config-external-change"
+        | "config-edit-conflict"
         | "library-changed"
         | "worker-restarting"
         | "commands-disabled"

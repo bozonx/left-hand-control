@@ -201,9 +201,8 @@ pub enum Msg {
     MapperStarting,
     ConfigLoaded(usize),
     ConfigSaved(usize),
-    ConfigReloaded(usize),
     ConfigUnavailable(String),
-    ConfigExternalChange,
+    ConfigEditConflict,
     DeviceSaved(String),
     LoadConfigFirst,
     SelectInputDevice,
@@ -306,9 +305,8 @@ impl Msg {
             Self::MapperStarting => ("mapper-starting", empty(), 0),
             Self::ConfigLoaded(rules) => ("config-loaded", empty(), *rules),
             Self::ConfigSaved(rules) => ("config-saved", empty(), *rules),
-            Self::ConfigReloaded(rules) => ("config-reloaded", empty(), *rules),
             Self::ConfigUnavailable(error) => ("config-unavailable", error.clone(), 0),
-            Self::ConfigExternalChange => ("config-external-change", empty(), 0),
+            Self::ConfigEditConflict => ("config-edit-conflict", empty(), 0),
             Self::DeviceSaved(path) => ("device-saved", path.clone(), 0),
             Self::LoadConfigFirst => ("load-config-first", empty(), 0),
             Self::SelectInputDevice => ("select-input-device", empty(), 0),
@@ -471,7 +469,7 @@ impl Msg {
 impl From<&ConfigError> for Msg {
     fn from(error: &ConfigError) -> Self {
         match error {
-            ConfigError::ExternalChange => Self::ConfigExternalChange,
+            ConfigError::EditConflict => Self::ConfigEditConflict,
             ConfigError::Menu(issue) => Self::MenuIssue(*issue),
             ConfigError::Macro(issue) => Self::MacroIssue(*issue),
             ConfigError::Name(kind, issue) => Self::Name(*kind, *issue),

@@ -1788,7 +1788,7 @@ fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
         ..Default::default()
     };
     sp.keys
-        .insert("MouseSide".into(), Some("BrowserBack".into()));
+        .insert("MouseBack".into(), Some("BrowserBack".into()));
     cfg.layer_keymaps.insert("sp".into(), sp);
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();
@@ -1842,7 +1842,7 @@ fn extra_mouse_button_can_be_rule_trigger() {
         condition_layouts: None,
         condition_apps_whitelist: None,
         condition_apps_blacklist: None,
-        key: "MouseSide".into(),
+        key: "MouseBack".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("BrowserBack".into()),
         hold_behavior: None,
@@ -1961,7 +1961,7 @@ fn explicit_null_mouse_key_in_layer_keymap_swallows_key() {
         keys: HashMap::new(),
         ..Default::default()
     };
-    mouse.keys.insert("MouseSide".into(), None);
+    mouse.keys.insert("MouseBack".into(), None);
     cfg.layer_keymaps.insert("mouse".into(), mouse);
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();

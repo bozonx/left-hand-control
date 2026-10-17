@@ -167,17 +167,17 @@ mod tests {
         assert_eq!(raw["settings"]["gameMode"]["control"], "on");
         raw["settings"]["gameMode"]["control"] = "off".into();
         paths.save_config(&raw.to_string()).unwrap();
-        // A conflicting save reloads the external choice, never applies Auto.
-        assert!(apply(GameMode::Auto, Some(&document)).is_err());
-        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Off);
+        // Application saves overwrite manual changes using the current document.
+        apply(GameMode::Auto, Some(&document)).unwrap();
+        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Auto);
         assert_eq!(
             document.read().settings().game_mode.control,
-            gamemode::GameModeControl::Off
+            gamemode::GameModeControl::Auto
         );
-        // Also cover an I/O failure, independent of conflict handling.
+        // A failed write must leave the applied control unchanged.
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
         assert!(apply(GameMode::On, Some(&document)).is_err());
-        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Off);
+        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Auto);
     }
 }

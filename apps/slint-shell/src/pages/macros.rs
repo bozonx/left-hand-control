@@ -209,8 +209,8 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
             saved.message(Msg::None)
         }
         Err(error) => {
-            // The document reloaded the files; show what is on disk now.
-            if error == ConfigError::ExternalChange {
+            // Refresh the draft from the current document.
+            if error == ConfigError::EditConflict {
                 state.draft = load(document);
                 render(ui, document, &state.draft);
             }

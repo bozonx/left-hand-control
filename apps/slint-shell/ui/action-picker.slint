@@ -125,12 +125,10 @@ export global ActionPicker {
             : category == PickerCategory.pause ? @tr("Pause")
             : "";
     }
-    /// Which physical button a mouse code is: mice name their side
-    /// buttons differently from the evdev codes.
+    /// Which physical button a mouse code is: only Back and Forward are
+    /// common, buttons 6–8 exist on some gaming mice.
     public pure function key-hint(value: string) -> string {
-        return value == "MouseSide" ? @tr("Back side button on most mice")
-            : value == "MouseExtra" ? @tr("Forward side button on most mice")
-            : value == "MouseBack" || value == "MouseForward" ? @tr("Rare: most mice send Side/Extra")
+        return value == "Mouse6" || value == "Mouse7" || value == "Mouse8" ? @tr("Extra button on some gaming mice")
             : "";
     }
 }

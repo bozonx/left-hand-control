@@ -27,7 +27,7 @@ impl Drop for Watcher {
 }
 
 #[test]
-fn startup_external_reload_and_watcher_restart_follow_persisted_control() {
+fn startup_and_watcher_restart_follow_persisted_control() {
     let directory = tempfile::tempdir().unwrap();
     let paths = StoragePaths::new(
         directory.path().join("settings"),
@@ -42,7 +42,8 @@ fn startup_external_reload_and_watcher_restart_follow_persisted_control() {
     let mut raw: serde_json::Value = serde_json::from_str(&paths.load_config().unwrap()).unwrap();
     raw["settings"]["gameMode"]["control"] = "off".into();
     paths.save_config(&raw.to_string()).unwrap();
-    assert!(document.reload_if_changed().unwrap());
+    assert_eq!(document.settings().game_mode.control, GameModeControl::On);
+    document = ConfigDocument::load(paths.clone()).unwrap();
     assert_eq!(gamemode::status().control, GameModeControl::Off);
     assert!(!gamemode::status().active);
     document

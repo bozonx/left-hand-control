@@ -151,15 +151,17 @@ pub fn code_to_key(code: &str) -> Option<KeyCode> {
         "NumpadParenLeft" => KeyCode::KEY_KPLEFTPAREN,
         "NumpadParenRight" => KeyCode::KEY_KPRIGHTPAREN,
 
-        // Mouse buttons
+        // Mouse buttons, named by HID button number as on every OS
+        // (Windows XBUTTON1/2, X11 buttons 8/9): the kernel's BTN_FORWARD
+        // and BTN_BACK are HID buttons 6 and 7, not the back/forward pair.
         "MouseLeft" => KeyCode::BTN_LEFT,
         "MouseRight" => KeyCode::BTN_RIGHT,
         "MouseMiddle" => KeyCode::BTN_MIDDLE,
-        "MouseSide" => KeyCode::BTN_SIDE,
-        "MouseExtra" => KeyCode::BTN_EXTRA,
-        "MouseForward" => KeyCode::BTN_FORWARD,
-        "MouseBack" => KeyCode::BTN_BACK,
-        "MouseTask" => KeyCode::BTN_TASK,
+        "MouseBack" => KeyCode::BTN_SIDE,
+        "MouseForward" => KeyCode::BTN_EXTRA,
+        "Mouse6" => KeyCode::BTN_FORWARD,
+        "Mouse7" => KeyCode::BTN_BACK,
+        "Mouse8" => KeyCode::BTN_TASK,
 
         // Media, browser and launch
         "AudioVolumeUp" => KeyCode::KEY_VOLUMEUP,
@@ -427,9 +429,11 @@ mod tests {
         assert_eq!(code_to_key("MouseLeft"), Some(KeyCode::BTN_LEFT));
         assert_eq!(code_to_key("MouseRight"), Some(KeyCode::BTN_RIGHT));
         assert_eq!(code_to_key("MouseMiddle"), Some(KeyCode::BTN_MIDDLE));
-        assert_eq!(code_to_key("MouseForward"), Some(KeyCode::BTN_FORWARD));
-        assert_eq!(code_to_key("MouseBack"), Some(KeyCode::BTN_BACK));
-        assert_eq!(code_to_key("MouseTask"), Some(KeyCode::BTN_TASK));
+        assert_eq!(code_to_key("MouseBack"), Some(KeyCode::BTN_SIDE));
+        assert_eq!(code_to_key("MouseForward"), Some(KeyCode::BTN_EXTRA));
+        assert_eq!(code_to_key("Mouse6"), Some(KeyCode::BTN_FORWARD));
+        assert_eq!(code_to_key("Mouse7"), Some(KeyCode::BTN_BACK));
+        assert_eq!(code_to_key("Mouse8"), Some(KeyCode::BTN_TASK));
     }
 
     #[test]

@@ -83,40 +83,15 @@ impl Document {
 
     /// Change the document on behalf of `origin`, update a running mapper
     /// and refresh every other view.
-    /// When another process changed the files first, the document reloads
-    /// them, refreshes every view and returns [`ConfigError::ExternalChange`].
     pub fn edit<T>(
         &self,
         origin: View,
         edit: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
     ) -> Result<Saved<T>, ConfigError> {
-        let result = edit(&mut self.config.borrow_mut());
-        match result {
-            Ok(value) => {
-                let runtime = self.sync_runtime(true);
-                self.notify(Some(origin));
-                Ok(Saved { value, runtime })
-            }
-            Err(ConfigError::ExternalChange) => {
-                if let Err(error) = self.reload() {
-                    log::warn!("reload after external change: {error}");
-                }
-                Err(ConfigError::ExternalChange)
-            }
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Pick up changes other processes made. `Ok(None)` when nothing
-    /// changed; otherwise every view was refreshed.
-    pub fn reload(&self) -> Result<Option<Saved<()>>, ConfigError> {
-        let changed = self.config.borrow_mut().reload_if_changed()?;
-        if !changed {
-            return Ok(None);
-        }
+        let value = edit(&mut self.config.borrow_mut())?;
         let runtime = self.sync_runtime(true);
-        self.notify(None);
-        Ok(Some(Saved { value: (), runtime }))
+        self.notify(Some(origin));
+        Ok(Saved { value, runtime })
     }
 
     /// Mapper input for the current system state.
@@ -223,57 +198,5 @@ mod tests {
             .edit(View::Rules, |config| config.create_layer("First", ""))
             .unwrap();
         assert_eq!(document.read().layout().layers.len(), 2);
-    }
-
-    #[test]
-    fn external_changes_reload_and_refresh_the_origin_too() {
-        let (_dir, document) = document();
-        let other = ConfigDocument::load(document.read().paths().clone()).unwrap();
-        let mut other = other;
-        other.create_layer("Elsewhere", "").unwrap();
-        other.save_current_layout_as("Elsewhere").unwrap();
-        let refreshed = Rc::new(Cell::new(0));
-        let counter = refreshed.clone();
-        document.subscribe(View::Rules, move |_| counter.set(counter.get() + 1));
-        let error = document
-            .edit(View::Rules, |config| config.create_layer("Here", ""))
-            .unwrap_err();
-        assert_eq!(error, ConfigError::ExternalChange);
-        assert_eq!(refreshed.get(), 1);
-        assert_eq!(document.read().layout().layers[0].name, "Elsewhere");
-    }
-
-    #[test]
-    fn external_library_edits_refresh_views_and_runtime_configuration() {
-        let (_dir, document) = document();
-        let paths = document.read().paths().clone();
-        let layout = r#"{"layers": [], "rules": [{"key": "KeyQ", "tap": "Escape"}]}"#;
-        paths.save_user_layout("Nav", layout, false).unwrap();
-        document
-            .edit(View::Library, |config| {
-                config.update_settings(|settings| {
-                    settings.manual_active_layout_id = Some("user:Nav".into());
-                })
-            })
-            .unwrap();
-        document.reload().unwrap();
-        let refreshed = Rc::new(Cell::new(0));
-        let count = refreshed.clone();
-        document.subscribe(View::Shell, move |_| count.set(count.get() + 1));
-        paths
-            .save_user_layout("Nav", &layout.replace("Escape", "Enter"), true)
-            .unwrap();
-        assert!(document.reload().unwrap().unwrap().runtime.is_ok());
-        assert_eq!(refreshed.get(), 1);
-        let config: serde_json::Value =
-            serde_json::from_str(&document.runtime_config().unwrap().json).unwrap();
-        assert_eq!(config["rules"][0]["tapAction"], "Enter");
-        assert!(document.reload().unwrap().is_none());
-    }
-
-    #[test]
-    fn reload_reports_unchanged_files() {
-        let (_dir, document) = document();
-        assert!(document.reload().unwrap().is_none());
     }
 }

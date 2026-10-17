@@ -74,9 +74,8 @@ export global Locale {
         if m.id == "mapper-starting" { return @tr("Mapper is starting…"); }
         if m.id == "config-loaded" { return @tr("Configuration loaded: {n} rule" | "Configuration loaded: {n} rules" % m.count); }
         if m.id == "config-saved" { return @tr("Configuration saved: {n} rule" | "Configuration saved: {n} rules" % m.count); }
-        if m.id == "config-reloaded" { return @tr("Configuration reloaded from disk: {n} rule" | "Configuration reloaded from disk: {n} rules" % m.count); }
         if m.id == "config-unavailable" { return @tr("Configuration unavailable: {}", m.arg); }
-        if m.id == "config-external-change" { return @tr("The configuration was changed by another application and has been reloaded; repeat the change"); }
+        if m.id == "config-edit-conflict" { return @tr("The configuration changed since editing started; repeat the change"); }
         if m.id == "config-conditional" { return @tr("Key {} only has conditional or layer rules; edit it in the full editor", m.arg); }
         if m.id == "device-saved" { return @tr("Device saved: {}", m.arg); }
         if m.id == "load-config-first" { return @tr("Load a valid configuration before starting the mapper"); }

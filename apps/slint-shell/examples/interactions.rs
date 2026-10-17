@@ -167,11 +167,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(settings.get_mouse_device_path(), "/dev/input/test-mouse");
 
-    // Another process changes a setting while the form has an unsaved edit:
-    // saving keeps the other change.
-    let mut other = ConfigDocument::load(paths.clone())?;
-    other.update_settings(|s| s.default_double_tap_timeout_ms = 999)?;
-    document.reload()?;
+    // Changes through the document refresh the settings form.
+    document.edit(slint_shell::document::View::Shell, |config| {
+        config.update_settings(|s| s.default_double_tap_timeout_ms = 999)
+    })?;
     settings.set_macro_pause("40".into());
     settings.invoke_save();
     assert_eq!(settings.get_message().id, "");

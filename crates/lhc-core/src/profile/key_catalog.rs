@@ -231,11 +231,11 @@ pub const CATEGORIES: &[&[&str]] = &[
         "MouseLeft",
         "MouseRight",
         "MouseMiddle",
-        "MouseSide",
-        "MouseExtra",
-        "MouseForward",
         "MouseBack",
-        "MouseTask",
+        "MouseForward",
+        "Mouse6",
+        "Mouse7",
+        "Mouse8",
     ],
     // Legacy editing, office, programmable, international and CD keys.
     &[

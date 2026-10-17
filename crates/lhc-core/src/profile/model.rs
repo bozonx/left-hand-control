@@ -381,7 +381,7 @@ pub struct GameModeSettings {
     pub use_app_category: bool,
     pub use_game_bar: bool,
     pub process_matchers: Vec<GameModeProcessMatcher>,
-    /// Persisted Auto/On/Off choice, also applied on external reload.
+    /// Persisted Auto/On/Off choice, restored at startup.
     pub control: GameModeControl,
 }
 

@@ -8,10 +8,10 @@ export global NotificationCenter {
     in property <[ToastItem]> items;
     in-out property <bool> initialized;
     public pure function is-problem(id: string) -> bool {
-        return id == "error" || id == "action-failed" || id == "saved-mapper-not-updated" || id == "config-unavailable" || id == "library-changed" || id == "config-external-change";
+        return id == "error" || id == "action-failed" || id == "saved-mapper-not-updated" || id == "config-unavailable" || id == "library-changed" || id == "config-edit-conflict";
     }
     public pure function is-warning(id: string) -> bool {
-        return id == "saved-mapper-not-updated" || id == "library-changed" || id == "config-external-change" || id == "worker-restarting" || id == "commands-disabled" || id == "action-unavailable" || id == "save-layout-first" || id == "select-input-device";
+        return id == "saved-mapper-not-updated" || id == "library-changed" || id == "config-edit-conflict" || id == "worker-restarting" || id == "commands-disabled" || id == "action-unavailable" || id == "save-layout-first" || id == "select-input-device";
     }
     callback send(Message);
     callback backend(Message);

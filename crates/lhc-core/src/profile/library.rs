@@ -83,7 +83,6 @@ impl ConfigDocument {
     }
 
     pub fn save_current_layout_as(&mut self, name: &str) -> Result<String, ConfigError> {
-        self.ensure_files_unchanged()?;
         let name = &self.checked_layout_name(name, None)?;
         let saved = self
             .paths()
@@ -139,7 +138,7 @@ impl ConfigDocument {
             .map_err(ConfigError::Io)?
             != expected
         {
-            return Err(ConfigError::ExternalChange);
+            return Err(ConfigError::EditConflict);
         }
         let mut preset = layout_file::parse(expected)
             .map_err(ConfigError::Parse)?
@@ -195,7 +194,7 @@ impl ConfigDocument {
             .map_err(ConfigError::Io)?
             != expected
         {
-            return Err(ConfigError::ExternalChange);
+            return Err(ConfigError::EditConflict);
         }
         self.paths()
             .delete_user_layout(name)
@@ -418,7 +417,7 @@ mod tests {
         assert_eq!(document.ordered_layout_ids().unwrap(), ["user:C", "user:A"]);
         assert_eq!(
             document.remove_library_layout("C", &original),
-            Err(ConfigError::ExternalChange)
+            Err(ConfigError::EditConflict)
         );
         document
             .remove_library_layout("C", &paths.load_user_layout("C").unwrap())
@@ -535,7 +534,7 @@ mod tests {
     }
 
     #[test]
-    fn rename_rolls_back_when_settings_were_changed_externally() {
+    fn rename_saves_settings_from_the_running_document() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
@@ -544,11 +543,15 @@ mod tests {
         paths
             .save_config(r#"{"settings":{"appearance":"light"}}"#)
             .unwrap();
+        document
+            .edit_library_metadata("A", "B", "changed", original)
+            .unwrap();
+        assert!(paths.load_user_layout("A").is_err());
+        assert!(paths.load_user_layout("B").unwrap().contains("changed"));
+        let restarted = ConfigDocument::load(paths).unwrap();
         assert_eq!(
-            document.edit_library_metadata("A", "B", "changed", original),
-            Err(ConfigError::ExternalChange)
+            restarted.settings().appearance,
+            document.settings().appearance
         );
-        assert_eq!(paths.load_user_layout("A").unwrap(), original);
-        assert!(paths.load_user_layout("B").is_err());
     }
 }

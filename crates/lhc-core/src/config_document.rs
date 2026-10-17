@@ -6,9 +6,6 @@
 //!
 //! Settings keep the raw JSON next to the typed view, so edits change only
 //! the fields they own and settings a shell does not know survive a save.
-//! Every save goes through [`TrackedFile`], which refuses to overwrite a
-//! file another process changed before the save check. Concurrent external
-//! writes after that check are not serialized; see [`TrackedFile`].
 
 use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::auto_switch::{self, AutoSwitchContext};
@@ -19,9 +16,9 @@ use crate::profile::model::{
 };
 use crate::profile::names::{self, NameIssue, NameKind};
 use crate::profile::{app_match, key_catalog, layout_file, settings};
-use crate::storage::{StoragePaths, TrackedFile, WriteError};
+use crate::storage::StoragePaths;
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, fmt};
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConfigError {
@@ -39,8 +36,8 @@ pub enum ConfigError {
     Name(NameKind, NameIssue),
     /// Rules have blocking problems; the mapper cannot start.
     Rules(Vec<RuleIssue>),
-    /// Another process changed a file after this document read it.
-    ExternalChange,
+    /// The edited data no longer matches the editor snapshot.
+    EditConflict,
 }
 
 impl fmt::Display for ConfigError {
@@ -57,21 +54,12 @@ impl fmt::Display for ConfigError {
                 Some(issue) => write!(f, "{issue}"),
                 None => write!(f, "invalid rules"),
             },
-            Self::ExternalChange => write!(f, "configuration was changed by another process"),
+            Self::EditConflict => write!(f, "configuration changed since editing started"),
         }
     }
 }
 
 impl std::error::Error for ConfigError {}
-
-impl From<WriteError> for ConfigError {
-    fn from(error: WriteError) -> Self {
-        match error {
-            WriteError::ExternalChange => Self::ExternalChange,
-            WriteError::Io(error) => Self::Io(error),
-        }
-    }
-}
 
 /// What a key does inside a layer keymap.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,19 +85,15 @@ pub struct RuntimeConfig {
 
 pub struct ConfigDocument {
     paths: StoragePaths,
-    settings_file: TrackedFile,
     settings_raw: Value,
     settings: AppSettings,
     layout: LayoutPreset,
-    saved_layout: LayoutPreset,
-    library_files: BTreeMap<String, TrackedFile>,
 }
 
 impl ConfigDocument {
     pub fn load(paths: StoragePaths) -> Result<Self, ConfigError> {
         paths.ensure().map_err(ConfigError::Io)?;
-        let (settings_file, settings_text) =
-            TrackedFile::open(paths.config_path()).map_err(ConfigError::Io)?;
+        let settings_text = paths.load_config().map_err(ConfigError::Io)?;
         let settings_raw = parse_settings(&settings_text)?;
         let settings = settings::from_value(settings_raw.get("settings"));
         let layout = match settings.current_layout_id.as_deref() {
@@ -121,22 +105,9 @@ impl ConfigDocument {
             None => LayoutPreset::initial(),
         };
         crate::gamemode::set_settings(&settings.game_mode);
-        let library_files = paths
-            .list_user_layouts()
-            .map_err(ConfigError::Io)?
-            .into_iter()
-            .map(|name| {
-                TrackedFile::open(paths.layouts_dir().join(format!("{name}.json")))
-                    .map(|(file, _)| (name, file))
-            })
-            .collect::<Result<_, _>>()
-            .map_err(ConfigError::Io)?;
         Ok(Self {
-            library_files,
             settings,
             settings_raw,
-            settings_file,
-            saved_layout: layout.clone(),
             layout,
             paths,
         })
@@ -224,25 +195,17 @@ impl ConfigDocument {
         let autostart_changed = cfg!(target_os = "linux")
             && updated.launch_on_startup != self.settings.launch_on_startup;
         if autostart_changed {
-            if self
-                .settings_file
-                .changed()
-                .map_err(ConfigError::Io)?
-                .is_some()
-            {
-                return Err(ConfigError::ExternalChange);
-            }
             crate::autostart::set_enabled(&self.paths, updated.launch_on_startup)
                 .map_err(ConfigError::Io)?;
         }
-        if let Err(error) = self.settings_file.write(&text) {
+        if let Err(error) = self.paths.save_config(&text) {
             if autostart_changed
                 && let Err(rollback) =
                     crate::autostart::set_enabled(&self.paths, self.settings.launch_on_startup)
             {
                 log::error!("restore autostart registration: {rollback}");
             }
-            return Err(error.into());
+            return Err(ConfigError::Io(error));
         }
         crate::gamemode::set_settings(&updated.game_mode);
         self.settings = updated;
@@ -546,85 +509,16 @@ impl ConfigDocument {
         })
     }
 
-    pub(crate) fn ensure_files_unchanged(&mut self) -> Result<(), ConfigError> {
-        if self
-            .settings_file
-            .changed()
-            .map_err(ConfigError::Io)?
-            .is_some()
-        {
-            return Err(ConfigError::ExternalChange);
-        }
-        Ok(())
-    }
-
     /// Apply `edit` to a copy of the current layout.
     pub fn update_layout(
         &mut self,
         edit: impl FnOnce(&mut LayoutPreset),
     ) -> Result<(), ConfigError> {
-        self.ensure_files_unchanged()?;
         let mut candidate = self.layout.clone();
         edit(&mut candidate);
 
         self.layout = candidate;
         Ok(())
-    }
-
-    /// Re-read files other processes changed. Returns `true` when the
-    /// document now reflects new contents.
-    pub fn reload_if_changed(&mut self) -> Result<bool, ConfigError> {
-        let settings_text = self.settings_file.changed().map_err(ConfigError::Io)?;
-
-        let settings_raw = settings_text.as_deref().map(parse_settings).transpose()?;
-
-        let next_settings = settings_raw
-            .as_ref()
-            .map(|raw| settings::from_value(raw.get("settings")))
-            .unwrap_or_else(|| self.settings.clone());
-        let next_layout = match next_settings.current_layout_id.as_deref() {
-            Some(id) => self.load_layout(id)?,
-            None => LayoutPreset::initial(),
-        };
-        let replace_layout = next_settings.current_layout_id != self.settings.current_layout_id
-            || layout_file::serialize(&self.layout) == layout_file::serialize(&self.saved_layout);
-        let names = self.paths.list_user_layouts().map_err(ConfigError::Io)?;
-        let mut added = BTreeMap::new();
-        let mut updates = Vec::new();
-        for name in &names {
-            if let Some(file) = self.library_files.get_mut(name) {
-                if let Some(text) = file.changed().map_err(ConfigError::Io)? {
-                    parse_layout(&text)?;
-                    updates.push((name.clone(), text));
-                }
-            } else {
-                let (file, text) =
-                    TrackedFile::open(self.paths.layouts_dir().join(format!("{name}.json")))
-                        .map_err(ConfigError::Io)?;
-                parse_layout(&text)?;
-                added.insert(name.clone(), file);
-            }
-        }
-        let changed = settings_text.is_some()
-            || !added.is_empty()
-            || !updates.is_empty()
-            || self.library_files.keys().any(|name| !names.contains(name));
-        if let (Some(text), Some(raw)) = (settings_text, settings_raw) {
-            self.settings = settings::from_value(raw.get("settings"));
-            crate::gamemode::set_settings(&self.settings.game_mode);
-            self.settings_raw = raw;
-            self.settings_file.mark_read(text);
-        }
-        if replace_layout {
-            self.layout = next_layout.clone();
-        }
-        self.saved_layout = next_layout;
-        self.library_files.retain(|name, _| names.contains(name));
-        self.library_files.extend(added);
-        for (name, text) in updates {
-            self.library_files.get_mut(&name).unwrap().mark_read(text);
-        }
-        Ok(changed)
     }
 
     /// Ids (`user:<name>`) of the layouts in the user library.
@@ -739,7 +633,7 @@ impl ConfigDocument {
             .insert(name.into(), value);
         let text = serde_json::to_string_pretty(&candidate)
             .map_err(|error| ConfigError::Parse(error.to_string()))?;
-        self.settings_file.write(&text)?;
+        self.paths.save_config(&text).map_err(ConfigError::Io)?;
         self.settings = settings::from_value(candidate.get("settings"));
         crate::gamemode::set_settings(&self.settings.game_mode);
         self.settings_raw = candidate;
@@ -813,42 +707,6 @@ mod tests {
     }
 
     #[test]
-    fn reload_detects_library_additions_edits_and_deletions() {
-        let (_dir, mut doc) = document(json!({"settings": {}}), LAYOUT);
-        assert!(!doc.reload_if_changed().unwrap());
-        doc.paths.save_user_layout("Nav", LAYOUT, false).unwrap();
-        assert!(doc.reload_if_changed().unwrap());
-        assert!(!doc.reload_if_changed().unwrap());
-        doc.paths
-            .save_user_layout("Nav", &LAYOUT.replace("Escape", "Enter"), true)
-            .unwrap();
-        assert!(doc.reload_if_changed().unwrap());
-        assert!(!doc.reload_if_changed().unwrap());
-        doc.paths.delete_user_layout("Nav").unwrap();
-        assert!(doc.reload_if_changed().unwrap());
-        assert!(!doc.reload_if_changed().unwrap());
-    }
-
-    #[test]
-    fn failed_reload_does_not_accept_only_part_of_the_changes() {
-        let (_dir, mut doc) = document(json!({"settings": {"appearance": "dark"}}), LAYOUT);
-        doc.paths
-            .save_config(r#"{"settings":{"appearance":"light","currentLayoutId":"user:Test"}}"#)
-            .unwrap();
-        doc.paths
-            .save_user_layout("Test", "{\"layers\": [", true)
-            .unwrap();
-        assert!(doc.reload_if_changed().is_err());
-        assert_eq!(doc.settings().appearance, Appearance::Dark);
-        doc.paths
-            .save_user_layout("Test", &LAYOUT.replace("Escape", "Enter"), true)
-            .unwrap();
-        assert!(doc.reload_if_changed().unwrap());
-        assert_eq!(doc.settings().appearance, Appearance::Light);
-        assert_eq!(doc.layout().rules[0].tap_action.as_deref(), Some("Enter"));
-    }
-
-    #[test]
     fn reads_settings_and_layout_from_their_own_files() {
         let (_dir, document) = document(
             json!({"version": 1, "settings": {"inputDevicePath": "/dev/input/event3", "appearance": "dark"}}),
@@ -909,7 +767,7 @@ mod tests {
     }
 
     #[test]
-    fn commands_require_explicit_permission_on_load_and_reload() {
+    fn commands_require_explicit_permission_on_load() {
         let (_dir, mut document) = document(
             json!({"version": 1, "settings": {}}),
             r#"{"commands": [{"id": "hello", "linux": "printf hello"}]}"#,
@@ -924,12 +782,12 @@ mod tests {
                 .to_string(),
             )
             .unwrap();
-        assert!(document.reload_if_changed().unwrap());
+        document = ConfigDocument::load(document.paths().clone()).unwrap();
         assert!(!document.settings().commands_enabled);
     }
 
     #[test]
-    fn settings_batch_keeps_unknown_fields_and_refuses_external_changes() {
+    fn settings_batch_keeps_unknown_fields_and_overwrites_external_changes() {
         let (_dir, mut document) = document(
             json!({"version": 1, "settings": {"futureOption": 7}}),
             LAYOUT,
@@ -947,10 +805,13 @@ mod tests {
         assert_eq!(saved["settings"]["defaultHoldTimeoutMs"], 350);
         assert_eq!(saved["settings"]["gameMode"]["useFullscreen"], true);
         fs::write(document.paths.config_path(), r#"{}"#).unwrap();
-        assert_eq!(
-            document.update_settings(|settings| settings.launch_on_startup = true),
-            Err(ConfigError::ExternalChange)
-        );
+        document
+            .update_settings(|settings| settings.default_hold_timeout_ms = 400)
+            .unwrap();
+        assert_eq!(document.settings().default_hold_timeout_ms, 400);
+        let saved: Value = serde_json::from_str(&document.paths.load_config().unwrap()).unwrap();
+        assert_eq!(saved["settings"]["futureOption"], 7);
+        assert_eq!(saved["settings"]["defaultHoldTimeoutMs"], 400);
     }
 
     #[test]
@@ -1130,30 +991,22 @@ mod tests {
     }
 
     #[test]
-    fn external_change_blocks_save_until_reload() {
-        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+    fn manual_settings_changes_require_restart_and_do_not_block_layout_edits() {
+        let (_dir, mut document) = document(json!({"settings": {"appearance": "dark"}}), LAYOUT);
         document
             .paths
-            .save_config(r#"{"settings":{"currentLayoutId":"user:Test","locale":"ru-RU"}}"#)
+            .save_config(r#"{"settings":{"currentLayoutId":"user:Test","appearance":"light"}}"#)
             .unwrap();
-        document
-            .paths
-            .save_user_layout(
-                "Test",
-                r#"{"layers": [{"id": "nav", "name": "Changed"}]}"#,
-                true,
-            )
-            .unwrap();
-        assert_eq!(
-            document.set_layer_key("nav", "KeyJ", KeyAssignment::Swallow),
-            Err(ConfigError::ExternalChange)
-        );
-        assert!(document.reload_if_changed().unwrap());
-        assert!(!document.reload_if_changed().unwrap());
-        assert_eq!(document.layout().layers[0].name, "Changed");
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
             .unwrap();
+        assert_eq!(document.settings().appearance, Appearance::Dark);
+        let restarted = ConfigDocument::load(document.paths().clone()).unwrap();
+        assert_eq!(restarted.settings().appearance, Appearance::Light);
+        document.set_locale(LocalePreference::English).unwrap();
+        let restarted = ConfigDocument::load(document.paths().clone()).unwrap();
+        assert_eq!(restarted.settings().appearance, Appearance::Dark);
+        assert_eq!(restarted.settings().locale, LocalePreference::English);
     }
 
     #[test]
@@ -1171,30 +1024,6 @@ mod tests {
         document.set_base_tap_action("KeyA", "Tab").unwrap();
         let restarted = ConfigDocument::load(paths).unwrap();
         assert_eq!(restarted.base_tap_action("KeyA"), Some("Enter"));
-    }
-
-    #[test]
-    fn external_settings_keep_drafts_and_discard_uses_latest_saved_layout() {
-        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
-        document.set_base_tap_action("KeyA", "Enter").unwrap();
-        document
-            .paths
-            .save_config(r#"{"settings":{"currentLayoutId":"user:Test","locale":"ru-RU"}}"#)
-            .unwrap();
-        document
-            .paths
-            .save_user_layout("Test", &LAYOUT.replace("Escape", "Tab"), true)
-            .unwrap();
-        assert!(document.reload_if_changed().unwrap());
-        assert_eq!(document.base_tap_action("KeyA"), Some("Enter"));
-        assert_eq!(document.settings().locale, LocalePreference::Russian);
-        let saved = document.load_layout("user:Test").unwrap();
-        document.update_layout(|layout| *layout = saved).unwrap();
-        assert_eq!(document.base_tap_action("KeyA"), None);
-        assert_eq!(
-            document.layout().rules[0].tap_action.as_deref(),
-            Some("Tab")
-        );
     }
 
     #[test]

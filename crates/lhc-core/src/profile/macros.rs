@@ -332,10 +332,7 @@ mod tests {
             super::super::layout_file::serialize(&before)
         );
         paths.save_config("{}").unwrap();
-        assert_eq!(
-            document.save_macro(None, item("new", &[])),
-            Err(ConfigError::ExternalChange)
-        );
+        document.save_macro(None, item("new", &[])).unwrap();
     }
 
     #[test]

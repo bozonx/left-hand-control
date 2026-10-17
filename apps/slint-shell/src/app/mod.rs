@@ -29,9 +29,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-/// How often the configuration files are checked for changes made by
-/// other processes. Unchanged files are not read (see `TrackedFile`).
-const CONFIG_POLL: Duration = Duration::from_secs(1);
 /// How often a running Spell worker is checked for crashes.
 const WORKER_POLL: Duration = Duration::from_secs(1);
 
@@ -61,7 +58,6 @@ pub(crate) struct App {
     supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
     last_autostart: Cell<Option<bool>>,
-    config_watch: slint::Timer,
     worker_watch: slint::Timer,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
     /// When the running mapper started.
@@ -477,7 +473,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         supervisor: RefCell::new(worker::Supervisor::new(use_spell, layer_shell)),
         preferences: Cell::new(Preferences::default()),
         last_autostart: Cell::new(None),
-        config_watch: slint::Timer::default(),
         worker_watch: slint::Timer::default(),
         last_mapper_status: RefCell::new(None),
         mapper_since: Cell::new(None),
@@ -523,10 +518,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             })
         });
     popups::bind(&app);
-    app.config_watch
-        .start(slint::TimerMode::Repeated, CONFIG_POLL, || {
-            with_app(|app| app.reload_config())
-        });
     app.settings
         .global::<crate::ui::SettingsEditor>()
         .set_layer_hint_available(layer_shell);

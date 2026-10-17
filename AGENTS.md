@@ -68,7 +68,7 @@ crates/lhc-core/assets/       # bundled default layout
 crates/lhc-core/tests/fixtures/ # layout parser fixtures
 crates/lhc-core/src/          # UI-independent domain + platform code (no UI framework)
 ├── profile/                  # config model: settings, layouts, actions, macros, menus, auto-switch
-├── config_document.rs        # editable config.json: validation, external-change guard, reload
+├── config_document.rs        # editable config.json: validation and saving
 ├── storage.rs                # StoragePaths::resolve(): dev vs release directories
 ├── events.rs                 # CoreEvent bus — the only core → shell channel
 ├── mapper/                   # engine/, linux/ (evdev+uinput), portal.rs, system.rs, runtime.rs
@@ -103,7 +103,7 @@ docs/                         # development/, design/, testing/; README.md index
 
 **Config writes.** Pages change the configuration only through `Document::edit` (`src/document.rs`). It applies the edit, saves, pushes the result to a running mapper and notifies the other views via `Document::subscribe`. Never hold a `Document::read()` borrow across UI calls that may edit — it causes `RefCell` conflicts.
 
-**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. External changes are detected and reloaded; unread external changes present at the save check are rejected. This optimistic check does not serialize concurrent writes by external editors. Paths come from `StoragePaths::resolve()`: debug builds use `<repo>/dev-files/<os>/` (or the same OS layout under `LHC_DEV_DIR`), release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
+**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. Configuration is read at startup and edited through the application. Manual changes require an application restart and may be overwritten by application saves. Paths come from `StoragePaths::resolve()`: debug builds use `<repo>/dev-files/<os>/` (or the same OS layout under `LHC_DEV_DIR`), release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
 
 **Processes.** One binary, three roles: the settings process, the Spell popup worker (`--spell-worker`) and a CLI client that sends a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-authenticated loopback TCP on Windows). The mapper holds a cross-process lock, so only one process can grab keyboards.
 
