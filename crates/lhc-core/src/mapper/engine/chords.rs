@@ -99,6 +99,13 @@ impl Engine {
             && !keys
                 .iter()
                 .any(|member| self.chord_consumed.contains(member))
+            // An unrelated deferred press must reach the old context first.
+            // Claiming a chord now would overtake it or replay it in the new
+            // layer. Keep typing buffered rather than force a tap/hold choice.
+            && !self
+                .decision_buffer
+                .iter()
+                .any(|event| event.down && !keys.contains(&event.key))
             && rule_passes_apps(rule)
             && rule_passes_conditions(rule)
     }
