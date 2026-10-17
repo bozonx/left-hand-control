@@ -27,9 +27,17 @@ RECEIVER_OUT = WORK / "receiver.txt"
 CONFIG_DIR = HOME / ".config" / APP_ID
 DATA_DIR = HOME / ".local/share" / APP_ID
 
-# KEY_A, KEY_D, KEY_T are remapped by the e2e layout; KEY_C passes through.
-E2E_LAYOUT = """\
+FAKE_GAME = "lhc-fake-game"
+TEXT_UNICODE = "Привет, ёж 😀"
+
+# Every rule maps a physical key to a result the host can read back from the
+# receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
+E2E_LAYOUT = f"""\
 description: VM e2e
+layers:
+  - id: nav
+    keys:
+      KeyJ: KeyK
 rules:
   - key: KeyA
     tap: KeyB
@@ -37,6 +45,46 @@ rules:
     tap: Shift+KeyX
   - key: KeyT
     tap: "text:lhc-ok"
+  - key: KeyF
+    layer: nav
+    tap: KeyG
+  - key: KeyY
+    tap: "text:{TEXT_UNICODE}"
+  - key: KeyM
+    tap: macro:e2e
+  - key: KeyN
+    tap: cmd:touch
+  - key: KeyE
+    tap: app:showQuickMenu1
+  - key: KeyG
+    gameMode: "on"
+    tap: KeyH
+  - key: KeyG
+    gameMode: "off"
+    tap: KeyJ
+  - key: Digit1
+    tap: sys:switchDesktop2
+  - key: Digit2
+    tap: "kde:kwin/Switch to Desktop 1"
+  - key: Digit3
+    tap: sys:switchLayout2
+  - key: Digit4
+    tap: sys:switchLayout1
+macros:
+  - id: e2e
+    steps: [KeyN, "pause:300", "text:mac", Shift+KeyO]
+commands:
+  - id: touch
+    linux: touch lhc-e2e/cmd-ran
+emojiPages:
+  - id: e2e
+    name: E2E
+    cells: {{KeyQ: "🙂"}}
+quickActionPages:
+  - id: e2e
+    name: E2E
+    cells:
+      KeyQ: "text:quick-ok"
 """
 
 
@@ -206,9 +254,24 @@ def cmd_write_config(args):
         "startMapperOnLaunch": True,
         "launchOnStartup": True,
         "locale": "en-US",
+        "commandsEnabled": True,
+        "gameMode": {
+            "control": "off",
+            "processMatchers": [{"name": FAKE_GAME, "onlyActiveWindow": False}],
+        },
     }
     (CONFIG_DIR / "config.json").write_text(
         json.dumps({"version": 1, "settings": settings}, indent=2), encoding="utf-8")
+    # Read by Plasma at the next login: two keyboard layouts and two desktops
+    # for the `sys:` and `kde:` actions.
+    config = HOME / ".config"
+    (config / "kxkbrc").write_text(
+        "[Layout]\nDisplayNames=,\nLayoutList=us,ru\nUse=true\nVariantList=,\n",
+        encoding="utf-8")
+    subprocess.run(["kwriteconfig6", "--file", "kwinrc", "--group", "Desktops",
+                    "--key", "Number", "2"], check=True)
+    subprocess.run(["kwriteconfig6", "--file", "kwinrc", "--group", "Desktops",
+                    "--key", "Rows", "1"], check=True)
 
 
 def cmd_start_app(args):
@@ -322,6 +385,133 @@ def cmd_popups(args):
         fail("the instance stopped answering after the popups")
 
 
+def busctl(*arguments):
+    result = subprocess.run(["busctl", "--user", *arguments], capture_output=True, text=True)
+    if result.returncode:
+        fail(f"busctl {' '.join(arguments)}: {result.stderr.strip()}")
+    return result.stdout.split()
+
+
+def cmd_kde_state(args):
+    """Current virtual desktop (1-based) and keyboard layout index."""
+    desktop = busctl("call", "org.kde.KWin", "/KWin", "org.kde.KWin", "currentDesktop")[1]
+    layout = busctl("call", "org.kde.keyboard", "/Layouts", "org.kde.KeyboardLayouts",
+                    "getLayout")[1]
+    print(f"desktop={desktop} layout={layout}")
+
+
+def cmd_screen_locked(args):
+    print("yes" if busctl("call", "org.freedesktop.ScreenSaver", "/ScreenSaver",
+                          "org.freedesktop.ScreenSaver", "GetActive")[1] == "true" else "no")
+
+
+def cmd_lock_screen(args):
+    busctl("call", "org.freedesktop.ScreenSaver", "/ScreenSaver",
+           "org.freedesktop.ScreenSaver", "Lock")
+
+
+def cmd_game(args):
+    result = app("game", args.mode)
+    if result.returncode:
+        fail(f"game {args.mode}: {result.stdout}{result.stderr}")
+
+
+def cmd_fake_game(args):
+    """A process named like a configured game, for game mode Auto."""
+    unit = "lhc-e2e-fake-game"
+    if args.action == "stop":
+        subprocess.run(["systemctl", "--user", "stop", unit], capture_output=True)
+        return
+    path = WORK / FAKE_GAME
+    shutil.copy2(shutil.which("sleep"), path)
+    systemd_run(unit, [str(path), "600"], WORK / "fake-game.log")
+
+
+def cmd_command_marker(args):
+    marker = WORK / "cmd-ran"
+    if args.action == "reset":
+        marker.unlink(missing_ok=True)
+    else:
+        wait(f"{marker} from cmd:touch", 10, marker.exists)
+
+
+def cmd_text_failures(args):
+    """Number of `text:` failures with `reason` in the application logs: an
+    instance started by the stand writes APP_LOG, an autostarted one the journal."""
+    text = APP_LOG.read_text(errors="replace") if APP_LOG.exists() else ""
+    text += subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat"],
+                           capture_output=True, text=True).stdout
+    print(sum(1 for line in text.splitlines()
+              if "text not typed" in line and args.reason in line))
+
+
+def cmd_kill_app(args):
+    subprocess.run(["pkill", "-KILL", "-u", str(os.getuid()), "-x", "left-hand-contr"])
+    wait("the killed process to exit", 10,
+         lambda: subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "left-hand-contr"],
+                                capture_output=True).returncode != 0)
+
+
+def cmd_suspend_count(args):
+    """Completed suspend cycles in this boot's kernel log."""
+    log = subprocess.run(["journalctl", "-k", "-b", "--no-pager", "-o", "cat"],
+                         capture_output=True, text=True).stdout
+    print(log.count("PM: suspend exit"))
+
+
+def processes():
+    return subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "left-hand-contr"],
+                          capture_output=True, text=True).stdout.split()
+
+
+def virtual_keyboards():
+    try:
+        return Path("/proc/bus/input/devices").read_text().count(f'N: Name="{MAPPER_DEVICE}"')
+    except OSError:
+        return 0
+
+
+def cmd_cli(args):
+    """A second launch hands over to the running instance; client commands
+    and --version/--help answer without starting another one."""
+    before = processes()
+    second = subprocess.run([binary()], capture_output=True, text=True, timeout=20)
+    if second.returncode:
+        fail(f"a second launch exited with {second.returncode}: {second.stderr}")
+    time.sleep(2)
+    if processes() != before:
+        fail(f"a second launch left processes {processes()} (before {before})")
+    for arguments in (("hide",), ("ping",), ("--version",), ("--help",)):
+        result = app(*arguments)
+        if result.returncode:
+            fail(f"{' '.join(arguments)}: {result.stdout}{result.stderr}")
+    print(app("--version").stdout.strip())
+
+
+def cmd_second_instance(args):
+    """Another instance (own IPC socket) must not take the keyboard while
+    this one's mapper holds the cross-process lock."""
+    unit = "lhc-e2e-second"
+    log = WORK / "second.log"
+    log.unlink(missing_ok=True)
+    systemd_run(unit, [binary()], log, ["LHC_SOCKET=lhc-e2e-second", "RUST_LOG=info"])
+    try:
+        os.environ["LHC_SOCKET"] = "lhc-e2e-second"
+        wait("the second instance to answer", 30, lambda: app("ping").returncode == 0)
+        time.sleep(5)
+        if virtual_keyboards() != 1:
+            fail(f"{virtual_keyboards()} mapper virtual keyboards with two instances")
+        if "already active in another process" not in log.read_text(errors="replace"):
+            fail("the second instance did not report the mapper lock; see second.log")
+    finally:
+        app("quit")
+        del os.environ["LHC_SOCKET"]
+        time.sleep(2)
+        subprocess.run(["systemctl", "--user", "stop", unit], capture_output=True)
+    if app("ping").returncode or not mapper_running():
+        fail("the first instance or its mapper stopped")
+
+
 def cmd_check_removed(args):
     if shutil.which("left-hand-control") or (HOME / ".local/bin/left-hand-control").exists():
         fail("the binary is still installed")
@@ -362,6 +552,21 @@ def main():
     p.add_argument("--expect")
     p.add_argument("--timeout", type=float, default=10)
     sub.add_parser("popups")
+    sub.add_parser("kde-state")
+    sub.add_parser("screen-locked")
+    sub.add_parser("lock-screen")
+    p = sub.add_parser("game")
+    p.add_argument("mode", choices=["auto", "on", "off"])
+    p = sub.add_parser("fake-game")
+    p.add_argument("action", choices=["start", "stop"])
+    p = sub.add_parser("command-marker")
+    p.add_argument("action", choices=["reset", "check"])
+    p = sub.add_parser("text-failures")
+    p.add_argument("--reason", default="")
+    sub.add_parser("kill-app")
+    sub.add_parser("suspend-count")
+    sub.add_parser("cli")
+    sub.add_parser("second-instance")
     sub.add_parser("check-removed")
     args = parser.parse_args()
     globals()["cmd_" + args.command.replace("-", "_")](args)

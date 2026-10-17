@@ -217,7 +217,7 @@ layers:
       Period: AudioVolumeUp
       Slash: AudioVolumeMute
       ShiftRight: MicrophoneMuteToggle
-rules:    
+rules:
   - key: Tab
     layer: select
   - key: CapsLock

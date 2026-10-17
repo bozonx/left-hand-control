@@ -15,6 +15,7 @@ import tempfile
 import time
 
 REPO = Path(__file__).resolve().parents[4]
+KEYBOARD_PORT = "2"
 
 
 class StepFailed(Exception):
@@ -64,8 +65,9 @@ class Vm:
             "qemu-system-x86_64", "-name", f"lhc-e2e-{self.name}",
             "-enable-kvm", "-cpu", self.get("cpu", "host"),
             "-smp", str(self.get("cpus", 4)), "-m", str(self.get("memory", 6144)),
-            "-device", "qemu-xhci", "-device", "usb-tablet",
-            "-device", "usb-kbd,id=kbd0",
+            # Fixed ports: a replugged keyboard keeps its /dev/input/by-id name.
+            "-device", "qemu-xhci", "-device", "usb-tablet,port=1",
+            "-device", f"usb-kbd,id=kbd0,port={KEYBOARD_PORT}",
             "-netdev", f"user,id=net0,hostfwd=tcp:127.0.0.1:{self.port}-:22",
             "-device", f"{self.get('nic', 'virtio-net-pci')},netdev=net0",
             "-device", "virtio-rng-pci",
@@ -244,6 +246,41 @@ class Qmp:
                                            "key": {"type": "qcode", "data": key}}}
                   for key in keys]
         self.execute("input-send-event", events=events)
+
+    def press(self, key):
+        self._keys([key], True)
+
+    def release(self, key):
+        self._keys([key], False)
+
+    def sequence(self, *events):
+        """`("f", True)` presses, `("f", False)` releases, a number sleeps:
+        exact timing for tap/hold decisions."""
+        for event in events:
+            if isinstance(event, (int, float)):
+                time.sleep(event)
+            else:
+                self._keys([event[0]], event[1])
+
+    def click(self, x, y):
+        """Left click at (x, y), fractions of the screen size (usb-tablet)."""
+        self.execute("input-send-event", events=[
+            {"type": "abs", "data": {"axis": "x", "value": int(x * 32767)}},
+            {"type": "abs", "data": {"axis": "y", "value": int(y * 32767)}}])
+        time.sleep(0.2)
+        for down in (True, False):
+            self.execute("input-send-event", events=[
+                {"type": "btn", "data": {"down": down, "button": "left"}}])
+            time.sleep(0.1)
+
+    def replug_keyboard(self, away=3):
+        """Unplug the USB keyboard and plug it back into the same port."""
+        self.execute("device_del", id="kbd0")
+        time.sleep(away)
+        self.execute("device_add", driver="usb-kbd", id="kbd0", port=KEYBOARD_PORT)
+
+    def status(self):
+        return self.execute("query-status")["status"]
 
     def tap(self, *chords, delay=0.08):
         """Tap QEMU qcodes; `shift-x` presses a chord. Pauses keep the

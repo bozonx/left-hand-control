@@ -337,7 +337,8 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 | `user`, `ssh_key`, `ssh_port` | Пользователь с автологином; ключ; порт хоста, проброшенный на 22 гостя (у каждой VM свой) |
 | `vga`, `nic`, `cpu`, `disk_bus` | Устройства QEMU; по умолчанию без `vga`, `virtio-net-pci`, `host`, `virtio` |
 | `install`, `reinstall`, `remove` | Команды пакетного менеджера; `{package}` — путь к пакету в госте. Для `.tar.gz` не нужны: используется `install-linux.sh`. Без `reinstall` шаг обновления пропускается |
-| `portal_keys` | Клавиши QEMU (qcode), подтверждающие диалог RemoteDesktop portal при первом `text:` |
+| `portal_keys` | Клавиши QEMU (qcode), подтверждающие диалог RemoteDesktop portal |
+| `portal_deny_click` | Точка кнопки Deny в этом диалоге, доли ширины и высоты экрана; по умолчанию `[0.738, 0.659]` (1280×800, Plasma 6.7) |
 | `uefi`, `cache_disk` | Для Windows: `{"code", "vars", "tpm"}` и постоянный диск кэша сборки |
 
 Для Debian/Kubuntu: `"install": "sudo apt-get install -y {package}"`,
@@ -429,27 +430,52 @@ apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde \
   --package target/release-artifacts/left-hand-control-<версия>-1.x86_64.rpm
 ```
 
+Опция `--previous <старый .rpm/.deb>` сначала ставит предыдущий релиз, запускает
+его с тестовым конфигом и обновляет до проверяемого пакета: версия должна смениться,
+`config.json` — остаться байт в байт, приложение — запуститься с ним.
+
+Каждый шаг ввода открывает окно `kdialog`, нажимает клавиши через QMP (как настоящая
+USB-клавиатура) и сравнивает полученный текст с ожидаемым. Скриншот каждого окна
+сохраняется в `logs/<шаг>.png`.
+
 | Шаг | Что проверяется |
 | --- | --- |
 | `boot`, `upload`, `plasma-session`, `install` | Загрузка, автологин в Plasma Wayland, установка штатным менеджером или `install-linux.sh` |
 | `installed-files` | `.desktop` (и `desktop-file-validate`), metainfo, иконки hicolor; для пакетов — udev-правило и запись в `/dev/uinput` для сессии через `uaccess` |
 | `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `inputDevicePath` |
-| `test-config` | Тестовый профиль: `KeyA → KeyB`, `KeyD → Shift+KeyX`, `KeyT → text:lhc-ok`, автозапуск включён |
+| `test-config` | Тестовый профиль (`E2E_LAYOUT` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
+| `previous-release`, `upgrade-from-previous` | Только с `--previous`: обновление с сохранением конфига |
 | `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `lhc-slint-shell`), а mapper не создаёт виртуальную клавиатуру |
 | `autostart-entry` | XDG Autostart указывает на установленный бинарник |
 | `relogin-with-input`, `autostart-launch`, `tray-after-login`, `mapper-running` | После добавления в `input` и перелогина приложение запускается автозапуском, трей на месте, mapper работает |
-| `portal-consent` | Первый `text:` запрашивает согласие RemoteDesktop; стенд подтверждает его клавишами `portal_keys` и сохраняет `portal-consent.png` |
-| `mapper-keys-and-text` | В окне `kdialog` нажатия QEMU `a d c t` дают ровно `bXclhc-ok`: remap, chord, passthrough и текст через portal |
-| `popups` | `show quick|emoji` и `hide` по IPC, экземпляр продолжает отвечать |
+| `portal-deny` | Первый `text:` открывает диалог RemoteDesktop; стенд нажимает Deny мышью (`portal_deny_click`). Текст не вводится, следующий `text:` сразу завершается ошибкой «user cancelled» без нового диалога, приложение отвечает |
+| `portal-consent` | После перезапуска mapper диалог появляется снова; подтверждение (`portal_keys`) — и текст вводится |
+| `mapper-keys-and-text` | `a d c t` → `bXclhc-ok`: remap, chord, passthrough, `text:` |
+| `text-unicode` | `text:Привет, ёж 😀` в раскладке us (символов нет в keymap) |
+| `layer-tap-hold` | Слой на `F`: tap → `g`, hold + `j` → `k`, быстрый вложенный набор → `k`, «перекат» (F отпущена раньше J) → `gj`, `j` вне слоя → `j` (permissive hold, 200 мс) |
+| `macro`, `command` | Макрос `KeyN, pause:300, text:mac, Shift+KeyO` → `nmacO`; `cmd:` создаёт файл-маркер |
+| `system-actions` | `sys:switchDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
+| `russian-layout` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
+| `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `app:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
+| `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |
+| `game-mode` | Правило с `gameMode`: Off, On (`game on`), Auto без игры и с процессом из `processMatchers` |
+| `screen-lock` | Пароль `qbXc` набирается только через mapper (`q a d c`) и разблокирует экран; набранное на экране блокировки не попадает в окно за ним |
+| `suspend-resume` | S3 и пробуждение через QMP, после этого mapper и `text:` работают |
+| `cli`, `second-instance` | Повторный запуск передаёт управление работающему экземпляру; `hide`, `ping`, `--version`, `--help`; второй экземпляр со своим `LHC_SOCKET` не захватывает клавиатуру (блокировка mapper) |
+| `keyboard-replug` | USB-клавиатура отключается и подключается в тот же порт; mapper должен продолжить работу. Если нет — проверяется нативный ввод, mapper перезапускается |
 | `mapper-stop`, `mapper-start` | `toggle-mapper` останавливает и запускает mapper |
+| `stuck-keys-on-stop`, `stuck-keys-on-kill` | Остановка mapper и `kill -9` при зажатых Shift и клавише слоя: после этого `abc` вводится без модификатора |
 | `upgrade-over-running` | Переустановка пакета поверх запущенного приложения |
 | `quit`, `remove` | Выход по IPC, удаление; конфиг пользователя остаётся |
 
-Если `portal-consent` или `mapper-keys-and-text` падают, сначала откройте скриншоты
-в `logs/`: у разных версий xdg-desktop-portal-kde кнопка подтверждения по
-умолчанию может отличаться — подберите `portal_keys` (например `["tab", "ret"]`).
-Стенд не проверяет визуальный вид трея и попапов, раскладки RU, `sys:`/`kde:`
-действия и сон/пробуждение — это L5.
+Если шаги с диалогом portal падают, сначала откройте `portal-deny-*.png` и
+`portal-consent.png`: у разных версий xdg-desktop-portal-kde размер диалога и кнопка
+по умолчанию могут отличаться — подберите `portal_deny_click`/`portal_keys`. Отказ
+нажимается мышью: нажатия клавиш во время ожидания `text:` отменяют само задание, и
+отказ с клавиатуры не запоминается — следующий `text:` спрашивает снова. Разрешение
+KDE запоминает и без токена приложения, поэтому `portal-deny` проверяется только на
+чистом образе первым обращением к portal. Визуальный вид трея и попапов, клики по меню
+трея и X11-сессия остаются на L5.
 
 #### Windows VM
 

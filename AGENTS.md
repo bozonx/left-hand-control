@@ -55,7 +55,7 @@ Mapper, e2e and release checks (desktop e2e run only locally, never in GitHub Ac
 cargo test --locked -p lhc-core --test mapper_e2e -- --ignored  # real evdev → engine → uinput path; needs /dev/uinput and /dev/input
 apps/slint-shell/scripts/e2e-local.sh                           # all UI scenarios + mapper e2e; writes docs/testing/results/linux/<date>.txt
 apps/slint-shell/scripts/release-linux.sh                       # tar.gz, deb, rpm, vendor archive, SHA256SUMS (needs nfpm)
-apps/slint-shell/scripts/vm/run-linux.py --vm <dir> --package <file>  # L4: package in a disposable KDE VM (mapper, text:, tray, autostart)
+apps/slint-shell/scripts/vm/run-linux.py --vm <dir> --package <file>  # L4: package in a disposable KDE VM (mapper, text:, popups, lock, suspend, replug, upgrade)
 apps/slint-shell/scripts/vm/run-windows.py --vm <dir>                  # L4: Windows shell acceptance in a disposable VM
 ```
 
