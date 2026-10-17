@@ -1,12 +1,18 @@
 //! Fire-and-forget shell commands: each one starts in its own process
 //! group and is never waited on by the mapper. Only a failure to start
-//! is reported; exit status and output are not collected.
+//! is reported; exit status and output are not collected. Execution is Linux-only;
+//! command draft validation and POSIX quoting are also available to portable shells.
 
+#[cfg(target_os = "linux")]
 use super::system::SysCommand;
+#[cfg(target_os = "linux")]
 use crate::events::{self, CoreEvent};
+#[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
+#[cfg(target_os = "linux")]
 use std::process::{Command, Stdio};
 
+#[cfg(target_os = "linux")]
 fn report(command: &SysCommand, result: Result<(), String>) {
     events::emit(CoreEvent::CommandFinished {
         script: command
@@ -20,6 +26,7 @@ fn report(command: &SysCommand, result: Result<(), String>) {
 
 /// Starts `command` and returns at once; a reaper thread collects the
 /// exit status so finished commands do not linger as zombies.
+#[cfg(target_os = "linux")]
 pub(super) fn spawn(command: SysCommand) {
     let result = start(&command).map(|mut child| {
         let _ = std::thread::Builder::new()
@@ -31,6 +38,7 @@ pub(super) fn spawn(command: SysCommand) {
     report(&command, result);
 }
 
+#[cfg(target_os = "linux")]
 fn start(command: &SysCommand) -> Result<std::process::Child, String> {
     Command::new(&command.program)
         .args(&command.args)
@@ -78,34 +86,42 @@ pub enum DraftIssue {
 }
 
 pub fn draft_issue(script: &str, directory: Option<&str>) -> Option<DraftIssue> {
-    use std::os::unix::fs::PermissionsExt;
     let directory = working_directory(directory).ok();
     if directory.is_none() {
         return Some(DraftIssue::MissingDirectory);
     }
-    let script = script.trim();
-    let path = script
-        .strip_prefix('\'')
-        .and_then(|rest| rest.strip_suffix('\''))
-        .or_else(|| {
-            script
-                .strip_prefix('"')
-                .and_then(|rest| rest.strip_suffix('"'))
-        })
-        .unwrap_or(script);
-    if path.is_empty() || (path == script && path.contains(char::is_whitespace)) {
-        return None;
+    #[cfg(not(unix))]
+    {
+        let _ = script;
+        None
     }
-    let path = match path.strip_prefix("~/") {
-        Some(rest) => dirs::home_dir()?.join(rest),
-        None => directory?.join(path),
-    };
-    let mode = std::fs::metadata(&path)
-        .ok()
-        .filter(|m| m.is_file())?
-        .permissions()
-        .mode();
-    (mode & 0o111 == 0).then_some(DraftIssue::NotExecutable)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let script = script.trim();
+        let path = script
+            .strip_prefix('\'')
+            .and_then(|rest| rest.strip_suffix('\''))
+            .or_else(|| {
+                script
+                    .strip_prefix('"')
+                    .and_then(|rest| rest.strip_suffix('"'))
+            })
+            .unwrap_or(script);
+        if path.is_empty() || (path == script && path.contains(char::is_whitespace)) {
+            return None;
+        }
+        let path = match path.strip_prefix("~/") {
+            Some(rest) => dirs::home_dir()?.join(rest),
+            None => directory?.join(path),
+        };
+        let mode = std::fs::metadata(&path)
+            .ok()
+            .filter(|m| m.is_file())?
+            .permissions()
+            .mode();
+        (mode & 0o111 == 0).then_some(DraftIssue::NotExecutable)
+    }
 }
 
 /// `path` quoted for `sh`, so spaces and quotes survive.
@@ -113,7 +129,7 @@ pub fn shell_quote(path: &str) -> String {
     format!("'{}'", path.replace('\'', "'\\''"))
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
     use std::time::{Duration, Instant};
@@ -198,5 +214,23 @@ mod tests {
         assert!(begun.elapsed() < Duration::from_millis(200));
         assert!(!marker.exists());
         assert!(wait_for(&marker));
+    }
+}
+
+#[cfg(test)]
+mod portable_tests {
+    use super::*;
+
+    #[test]
+    fn validates_working_directories_without_a_mapper_backend() {
+        let dir = tempfile::tempdir().unwrap();
+        let existing = dir.path().to_str().unwrap();
+        assert_eq!(working_directory(Some(existing)).unwrap(), dir.path());
+        assert_eq!(draft_issue("echo hello", Some(existing)), None);
+        let missing = dir.path().join("missing");
+        assert_eq!(
+            draft_issue("echo hello", missing.to_str()),
+            Some(DraftIssue::MissingDirectory)
+        );
     }
 }

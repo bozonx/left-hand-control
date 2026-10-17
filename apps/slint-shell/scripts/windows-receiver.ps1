@@ -1,10 +1,17 @@
 param(
-    [string]$Output = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path 'windows-runtime\receiver')
+    [string]$Output = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path 'windows-runtime\receiver'),
+    [string]$InputLocale
 )
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+if ($InputLocale) {
+    $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
+        Where-Object { $_.Culture.Name -eq $InputLocale } | Select-Object -First 1
+    if (-not $language) { throw "Input language is not installed: $InputLocale" }
+    [System.Windows.Forms.InputLanguage]::CurrentInputLanguage = $language
+}
 
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
 $eventsPath = Join-Path $Output 'events.jsonl'
@@ -39,7 +46,7 @@ $script:formActive = $false
 $script:editorFocused = $false
 
 function Write-ReceiverState {
-    param([string]$Event)
+    param([string]$Event, $KeyEvent = $null)
 
     $text = $editor.Text
     $units = [System.Collections.Generic.List[int]]::new()
@@ -59,22 +66,30 @@ function Write-ReceiverState {
     $state = [ordered]@{
         timestamp = [DateTimeOffset]::Now.ToString('o')
         event = $Event
+        input_locale = [System.Windows.Forms.InputLanguage]::CurrentInputLanguage.Culture.Name
         form_active = $script:formActive
         editor_focused = $script:editorFocused
+        key_code = if ($KeyEvent) { [int]$KeyEvent.KeyCode } else { $null }
+        modifiers = if ($KeyEvent) { [int]$KeyEvent.Modifiers } else { $null }
         text = $text
         utf16 = $units
         code_points = $codePoints
     }
     $json = $state | ConvertTo-Json -Compress
-    [System.IO.File]::WriteAllText($snapshotPath, $json, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText("$snapshotPath.tmp", $json, [System.Text.UTF8Encoding]::new($false))
+    if (Test-Path $snapshotPath) {
+        # PowerShell 5.1 otherwise coerces $null to an invalid empty backup path.
+        [System.IO.File]::Replace("$snapshotPath.tmp", $snapshotPath, [NullString]::Value)
+    } else {
+        [System.IO.File]::Move("$snapshotPath.tmp", $snapshotPath)
+    }
     [System.IO.File]::AppendAllText($eventsPath, "$json`n", [System.Text.UTF8Encoding]::new($false))
     $status.Text = "Event: $Event | UTF-16 units: $($units.Count) | Code points: $($state.code_points.Count)"
 }
 
 $form.Add_Shown({
-    $script:formActive = $true
-    $script:editorFocused = $true
-    $editor.Focus()
+    $editor.Focus() | Out-Null
+    $script:editorFocused = $editor.Focused
     Write-ReceiverState 'shown'
 })
 $form.Add_Activated({
@@ -95,6 +110,8 @@ $editor.Add_Leave({
     $script:editorFocused = $false
     Write-ReceiverState 'editor-blur'
 })
+$editor.Add_KeyDown({ param($sender, $eventArgs) Write-ReceiverState 'key-down' $eventArgs })
+$editor.Add_KeyUp({ param($sender, $eventArgs) Write-ReceiverState 'key-up' $eventArgs })
 $editor.Add_TextChanged({ Write-ReceiverState 'text-changed' })
 $form.Add_FormClosed({ Write-ReceiverState 'closed' })
 

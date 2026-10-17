@@ -18,7 +18,11 @@
 
 **Adding a system action:** a `sys:` id must have a documented API (or a fixed system shortcut) on Linux desktops and Windows; undocumented APIs are not used. Add it to `PLAIN_SYSTEM_ACTIONS` in `profile/actions.rs`, list it in `MACOS_UNSUPPORTED_SYSTEM_ACTIONS` when macOS has no public API for it, implement it in every backend of `mapper/system.rs` that can, and add its picker label (`picker-action` in `ui/i18n.slint` plus the Russian PO). Desktop-specific actions stay in `kde:` and similar backend categories.
 
-**Adding Windows/macOS interception:** replace the non-Linux stubs in `mapper/runtime.rs` with `mapper/windows.rs` / `mapper/macos.rs` mirroring `mapper::linux` (`list_keyboards()`, `spawn()`, `Handle`). The engine currently uses `evdev::Key`; introduce a generic key type first. Windows: `SetWindowsHookExW(WH_KEYBOARD_LL)` + `SendInput`. macOS: `CGEventTapCreate` + `CGEventPost` (requires Accessibility permission). Test Windows in a VM as described in [Windows test environment](../testing/windows.md).
+**Windows mapper preparation:** see [implementation stages and VM acceptance matrix](windows-mapper.md).
+
+Command draft directory checks and POSIX shell quoting are portable; execute-bit hints apply only on Unix. File/folder selection currently uses the Linux XDG portal; Windows/macOS return an explicit unsupported error. Command execution remains part of the Linux mapper.
+
+**Adding Windows/macOS interception:** replace the non-Linux stubs in `mapper/runtime.rs` with `mapper/windows.rs` / `mapper/macos.rs` mirroring `mapper::linux` (`list_keyboards()`, `spawn()`, `Handle`). The engine currently uses `evdev::KeyCode`; introduce a generic key type first. Windows: `SetWindowsHookExW(WH_KEYBOARD_LL)` + `SendInput`. macOS: `CGEventTapCreate` + `CGEventPost` (requires Accessibility permission). Test Windows in a VM as described in [Windows test environment](../testing/windows.md).
 
 **Linux runtime requirements:** read access to `/dev/input/event*` and rw to `/dev/uinput` (group `input` + udev rule), `xdg-desktop-portal` with the DE backend for literal text, `xprop` (+ `xdotool` for title conditions) on X11, `hyprctl` / `swaymsg` on Hyprland / Sway (other wlroots compositors need `zwlr_foreign_toplevel_manager_v1`, nothing to install); KDE Wayland needs nothing extra (a KWin script reports focus over D-Bus, `kdotool` is only a fallback). Setup commands are in the [developer guide](guide.md#1-окружение).
 

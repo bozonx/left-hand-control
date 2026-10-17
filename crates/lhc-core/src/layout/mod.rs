@@ -71,6 +71,7 @@ pub fn stop_watcher() {
     }
 }
 
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn register_watcher(watcher: std::io::Result<std::thread::JoinHandle<()>>) {
     match watcher {
         Ok(watcher) => {

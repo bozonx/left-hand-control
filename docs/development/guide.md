@@ -479,9 +479,15 @@ KDE запоминает и без токена приложения, поэто
 
 #### Windows VM
 
-Mapper на Windows не реализован, поэтому Windows-стенд проверяет оболочку:
-нативные тесты, release-сборку, сценарий `interactions`, IPC lifecycle, 100 циклов
-попапов, отключение хоткеев, освобождение ресурсов (`check-windows-automated.ps1`).
+Mapper на Windows не реализован, поэтому Windows-стенд проверяет оболочку.
+По умолчанию запускается `--suite smoke`: нативные тесты `lhc-core --lib`,
+debug-сборка, `editor --smoke`,
+`interactions`, CLI, второй экземпляр, по три цикла каждого попапа с ожиданием
+метрик показа/скрытия, команды темы/языка и штатный выход. Конфиг изолирован
+через `LHC_DEV_DIR`. Затем QMP проверяет нативный клавиатурный ввод в
+`windows-receiver.ps1` (текст, Shift, Ctrl+Home, Shift+End, down/up). `--suite full` запускает прежний набор: нативные тесты,
+release-сборку, `interactions`, IPC lifecycle, 100 циклов попапов, отключение
+хоткеев и освобождение ресурсов (`check-windows-automated.ps1`).
 
 Подготовка (один раз) поверх VM из [windows.md](../testing/windows.md) с
 установленными MSVC Build Tools и Rust:
@@ -514,8 +520,13 @@ Mapper на Windows не реализован, поэтому Windows-стенд
    -device ide-hd,drive=cache,bus=ahci.1` вместо ISO). В PowerShell от
    администратора выполните:
    ```powershell
-   .\prepare-windows-guest.ps1 -User user -Password '<пароль user>' -PublicKey '<содержимое ~/.ssh/lhc-vm.pub>'
+   .\prepare-windows-guest.ps1 -User user -Password '<пароль user>' -PublicKey '<содержимое ~/.ssh/lhc-vm.pub>' -CacheDiskNumber 1
    ```
+   Номер пустого диска проверьте через `Get-Disk`: скрипт форматирует только явно
+   указанный RAW-диск, который не является системным. Если Windows Update
+   не загружает OpenSSH, можно явно передать `-OpenSshArchive <OpenSSH-Win64.zip>`
+   из официального Win32-OpenSSH; скрипт проверит подпись Microsoft перед установкой. При уже настроенном
+   автологоне `-Password` можно опустить.
    Скрипт включает OpenSSH Server с PowerShell по умолчанию, ключ, автологон,
    отключает сон, размечает диск кэша как `D:` и регистрирует интерактивную задачу
    планировщика `LHC-E2E`. Перезагрузите, проверьте автологон, выключите VM.
@@ -528,8 +539,8 @@ apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-
 
 Раннер упаковывает рабочее дерево (`git ls-files` вместе с неотслеживаемыми, но не
 игнорируемыми файлами — незакоммиченные правки попадают в прогон), копирует его
-в `D:\lhc-e2e\src` (каталог `target\` сохраняется), запускает задачу `LHC-E2E` в
-сессии пользователя и ждёт `D:\lhc-e2e\out\done.txt`. Первая сборка в VM занимает
+в `D:\lhc-e2e\src` (каталог `target\` и Cargo cache на D: сохраняются), запускает задачу `LHC-E2E` в
+сессии пользователя и ждёт `D:\lhc-e2e\out\done.txt` с кодом завершения (0 — успех). Первая сборка в VM занимает
 десятки минут (`--timeout` в минутах, по умолчанию 150). Логи гостя копируются в
 `runs/<время>/logs/guest/`. Трей, DPI, цветные emoji и вставка после хоткея
 проверяются вручную (раздел 14 чек-листа).

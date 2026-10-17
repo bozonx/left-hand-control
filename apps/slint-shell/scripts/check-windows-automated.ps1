@@ -15,7 +15,7 @@ function Invoke-Checked {
 
 Push-Location $root
 try {
-    Invoke-Checked 'cargo' @('test', '--locked', '--manifest-path', $manifest, '--lib', '--bins')
+    Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--lib', '--bins')
     Invoke-Checked 'cargo' @(
         'build', '--release', '--locked', '--manifest-path', $manifest,
         '--bin', 'left-hand-control', '--example', 'interactions'

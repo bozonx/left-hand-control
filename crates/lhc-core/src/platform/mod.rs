@@ -23,6 +23,13 @@
 
 #[cfg(target_os = "linux")]
 pub mod file_chooser;
+#[cfg(not(target_os = "linux"))]
+pub mod file_chooser {
+    /// Native file selection is not implemented outside the Linux portal backend.
+    pub fn pick(_title: &str, _directory: bool) -> Result<Option<std::path::PathBuf>, String> {
+        Err("File selection is not implemented on this platform".into())
+    }
+}
 #[cfg(target_os = "linux")]
 pub mod kde_shortcuts;
 #[cfg(target_os = "linux")]

@@ -260,7 +260,52 @@ $exe = 'C:\lhc\target\release\left-hand-control.exe'
 
 A connection-refused response means the server is not running or has not finished startup. It is not a popup rendering failure. Wait for `ping` to succeed before issuing UI commands.
 
+## Offline OpenSSH preparation
+
+`prepare-windows-guest.ps1` normally installs the Windows OpenSSH Server capability.
+If Windows Update cannot download it, explicitly pass `-OpenSshArchive <path>` with
+`OpenSSH-Win64.zip` from the [official Win32-OpenSSH releases](https://github.com/PowerShell/Win32-OpenSSH/releases).
+Record the release tag and SHA-256 alongside the VM preparation result. The script
+requires a valid Microsoft signature on `sshd.exe` before installing the service
+under Program Files. An already installed service is reused.
+See the [official installation instructions](https://github.com/PowerShell/Win32-OpenSSH/wiki/Install-Win32-OpenSSH).
+
+The cache disk is formatted only when its explicit `-CacheDiskNumber` refers to a
+RAW non-system disk. On subsequent runs omit that argument and reuse the NTFS
+volume labelled `LHC-CACHE` on D:. Omit `-Password` to retain existing autologon
+for the named test user.
+
 ## Automated smoke tests
+
+The VM runner defaults to the isolated debug smoke suite:
+
+```bash
+python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows-vm --suite smoke
+```
+
+After the one-time VM preparation, it runs native `lhc-core` library tests, builds
+the current working tree and runs
+`editor --smoke`, `interactions`, CLI help/version, single-instance delegation,
+three show/hide cycles for each popup, theme/language commands and shutdown.
+Popup checks wait for `t2_shown` and `hidden` metrics rather than only IPC replies.
+Debug configuration lives in a fresh `LHC_DEV_DIR`; the IPC port is selected per run.
+Run with no other application instance: Windows IPC authentication uses a shared token.
+The VM smoke also opens the native receiver after application checks: QMP sends
+`abc`, Shift+X, Ctrl+Home, Shift+End and `ok`; the host compares text and key-down/up records.
+The receiver selects its installed English (US) input language and must be focused.
+Logs and metrics are collected under the run's `logs/guest/runtime/smoke` directory.
+This is shell smoke coverage; mapper, tray appearance, focus return and Unicode
+insertion remain outside this suite.
+
+For a local run in an interactive Windows desktop:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\slint-shell\scripts\check-windows-smoke.ps1
+```
+
+Use `-SkipBuild` only with already built debug binaries. Use `--suite full` on the
+VM runner for native tests, release build and the existing 100-cycle acceptance suite.
+
 
 The portable `interactions` example exercises clipboard, keyboard input, modal behavior, DnD, cancellation, edge scrolling, theme, locale, and hidden popups:
 
@@ -432,3 +477,6 @@ VM results establish functional compatibility. Final claims about physical media
 | IPC says connection refused | Start the persistent server and wait for `ping`; a CLI invocation alone cannot contact a stopped server. |
 | Quick inserts repeated final digits | Reproduce with the exact mixed-language string; investigate foreground readiness and Unicode/clipboard insertion, not just popup rendering. |
 | `qemu-img snapshot` reports a write lock | Shut down the guest and wait for QEMU to exit before manipulating the qcow2 file. |
+
+The next development stages and future mapper acceptance cases are tracked in
+[Windows mapper preparation](../development/windows-mapper.md).

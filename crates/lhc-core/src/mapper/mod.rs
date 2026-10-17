@@ -1,7 +1,6 @@
 #[cfg(target_os = "linux")]
 pub mod action;
 pub mod builtin_macros;
-#[cfg(target_os = "linux")]
 pub mod commands;
 #[cfg(target_os = "linux")]
 pub mod engine;
