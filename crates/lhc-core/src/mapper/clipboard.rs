@@ -115,6 +115,9 @@ impl Source {
 }
 
 const TRANSFER_TIMEOUT: Duration = Duration::from_secs(2);
+// Data-control cannot identify the reader. A watcher may read before the target
+// processes the shortcut, so a completed transfer alone cannot trigger restore.
+const PASTE_GRACE: Duration = Duration::from_millis(200);
 const MAX_CLIPBOARD_BYTES: usize = 64 * 1024 * 1024;
 const MAX_MIME_TYPES: usize = 128;
 const TEXT_MIME: &str = "text/plain;charset=utf-8";
@@ -195,6 +198,7 @@ fn submit(request: Request) -> Result<Arc<Waker>, String> {
     requests
         .send(request)
         .map_err(|_| "clipboard owner stopped")?;
+    waker.wake();
     *service = Some(Service {
         requests,
         waker: waker.clone(),
@@ -518,8 +522,13 @@ impl Session {
             Err("paste cancelled before injection".into())
         };
         if injected {
-            let deadline = Instant::now() + TRANSFER_TIMEOUT;
-            while !self.state.cancelled && !self.state.transferred {
+            let injected_at = Instant::now();
+            let deadline = injected_at + TRANSFER_TIMEOUT;
+            while !self.state.cancelled
+                && (!self.state.transferred
+                    || injected_at.elapsed() < PASTE_GRACE
+                    || !self.state.transfers.is_empty())
+            {
                 if let Err(error) =
                     pump(&self.connection, &mut self.queue, &mut self.state, deadline)
                 {
@@ -527,7 +536,7 @@ impl Session {
                     break;
                 }
                 if Instant::now() >= deadline {
-                    result = Err("application did not read the pasted text".into());
+                    result = Err("clipboard text transfer did not complete in time".into());
                     break;
                 }
             }
@@ -1029,11 +1038,40 @@ mod tests {
         paste.finish(true).unwrap();
         assert_eq!(read_all(), saved);
 
+        // A clipboard watcher can read before the target handles the shortcut.
+        // Finish must keep serving the text for the delayed target as well.
+        let paste = Paste::prepare("delayed target 👋").unwrap();
+        paste.arm().unwrap();
+        assert_eq!(&*read_all()[TEXT_MIME], "delayed target 👋".as_bytes());
+        let finish = std::thread::spawn(move || paste.finish(true));
+        std::thread::sleep(Duration::from_millis(80));
+        let delayed = read_all();
+        let result = finish.join().unwrap();
+        assert_eq!(
+            delayed.get(TEXT_MIME).map(|bytes| bytes.as_ref()),
+            Some("delayed target 👋".as_bytes()),
+            "a background reader must not restore the clipboard ahead of the target"
+        );
+        result.unwrap();
+        assert_eq!(read_all(), saved);
+
+        for _ in 0..3 {
+            warm();
+            let paste = Paste::prepare("cached 👋").unwrap();
+            paste.arm().unwrap();
+            assert_eq!(&*read_all()[TEXT_MIME], "cached 👋".as_bytes());
+            paste.finish(true).unwrap();
+            assert_eq!(read_all(), saved);
+        }
+
         let paste = Paste::prepare("must not replace a new user copy").unwrap();
         paste.arm().unwrap();
+        let _ = read_all();
+        let finish = std::thread::spawn(move || paste.finish(true));
+        std::thread::sleep(Duration::from_millis(80));
         let newer = HashMap::from([("image/png".into(), Arc::from(b"new image".as_slice()))]);
         let _new_owner = Owner::new(newer.clone());
-        assert!(paste.finish(false).is_err());
+        assert!(finish.join().unwrap().is_err());
         assert_eq!(read_all(), newer);
 
         let paste = Paste::prepare("cancelled").unwrap();
