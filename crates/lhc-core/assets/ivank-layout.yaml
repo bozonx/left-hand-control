@@ -217,7 +217,7 @@ layers:
       Period: AudioVolumeUp
       Slash: AudioVolumeMute
       ShiftRight: MicrophoneMuteToggle
-rules:
+rules:    
   - key: Tab
     layer: select
   - key: CapsLock
@@ -272,9 +272,9 @@ emojiPages:
     name: Texts and lists
     cells:
       KeyQ: "🤦"
-      KeyW: "👍"
+      KeyW: "💪"
       KeyE: "👀"
-      KeyR: "💪"
+      KeyR: "👍"
       KeyT: "☝️"
       KeyA: "⏰"
       KeyS: "🎯"
