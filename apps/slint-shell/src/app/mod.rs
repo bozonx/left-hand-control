@@ -112,6 +112,12 @@ fn system_dark(settings: &SettingsWindow) -> bool {
         .unwrap_or(true)
 }
 
+/// Whether `action` is a `sys:` action macOS cannot run.
+fn unsupported_on_macos(action: &str) -> bool {
+    use lhc_core::profile::actions::{self, Action};
+    matches!(Action::parse(Some(action)), Action::System(id) if actions::unsupported_on_macos(&id))
+}
+
 impl App {
     fn document(&self) -> Option<Rc<Document>> {
         self.document.borrow().clone()
@@ -213,7 +219,9 @@ impl App {
             | Command::PopupContents(_)
             | Command::LayerHint(_) => {}
             Command::Execute(action) => {
-                if !lhc_core::mapper::runtime::status().running {
+                if cfg!(target_os = "macos") && unsupported_on_macos(&action) {
+                    self.set_error(Msg::ActionUnsupportedMacos);
+                } else if !lhc_core::mapper::runtime::status().running {
                     self.set_error(Msg::MapperRequired);
                 } else {
                     match lhc_core::mapper::runtime::execute_action(action) {

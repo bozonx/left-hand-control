@@ -53,6 +53,14 @@ export global Locale {
         if m.id == "picker-action" && m.arg == "gameModeAuto" { return @tr("Game mode: detect automatically"); }
         if m.id == "picker-action" && m.arg == "gameModeOn" { return @tr("Game mode: always on"); }
         if m.id == "picker-action" && m.arg == "gameModeOff" { return @tr("Game mode: always off"); }
+        if m.id == "picker-action" && m.arg == "windowClose" { return @tr("Close window"); }
+        if m.id == "picker-action" && m.arg == "windowMinimize" { return @tr("Minimize window"); }
+        if m.id == "picker-action" && m.arg == "windowMaximize" { return @tr("Maximize window"); }
+        if m.id == "picker-action" && m.arg == "windowKeepAbove" { return @tr("Keep window above others"); }
+        if m.id == "picker-action" && m.arg == "showDesktop" { return @tr("Show desktop"); }
+        if m.id == "picker-action" && m.arg == "overview" { return @tr("Window overview"); }
+        if m.id == "picker-action" && m.arg == "appLauncher" { return @tr("Open application launcher"); }
+        if m.id == "picker-action" && m.arg == "screenOff" { return @tr("Turn off screen"); }
         if m.id == "picker-action" && m.arg == "switchDesktop" { return @tr("Switch to desktop {}", m.count); }
         if m.id == "picker-action" && m.arg == "switchLayout" { return @tr("Switch to layout {}", m.count); }
         if m.id == "picker-action" && m.arg == "windowToDesktop" { return @tr("Move window to desktop {}", m.count); }
@@ -96,6 +104,7 @@ export global Locale {
         if m.id == "choose-command-script" { return @tr("Choose a script"); }
         if m.id == "choose-command-directory" { return @tr("Choose a working directory"); }
         if m.id == "action-unavailable" { return @tr("Unavailable on this platform or desktop"); }
+        if m.id == "action-unsupported-macos" { return @tr("This action is not supported on macOS"); }
         if m.id == "save-layout-first" { return @tr("Save layout changes before opening another layout."); }
         if m.id == "commands-disabled" { return @tr("Commands are disabled in Settings."); }
         if m.id == "layer-saved" { return @tr("Layer saved"); }

@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Cross-platform system actions `sys:windowClose`, `windowMinimize`, `windowMaximize`, `windowKeepAbove`, `showDesktop`, `overview`, `appLauncher` and `screenOff` (KDE implementation through kglobalaccel). On macOS, `sys:` actions without a public API there are ignored with a notification.
+- The KDE shortcuts category of the action picker explains where its list comes from.
+
+### Changed
+
+- The bundled layout uses the new system actions instead of the matching `kde:` shortcuts.
+
 ## [0.3.0] - 2026-10-17
 
 ### Changed

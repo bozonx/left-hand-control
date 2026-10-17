@@ -253,6 +253,8 @@ pub enum Msg {
     ChooseCommandScript,
     ChooseCommandDirectory,
     ActionUnavailable,
+    /// A `sys:` action macOS has no API for was ignored.
+    ActionUnsupportedMacos,
     CommandsDisabled,
     SaveLayoutFirst,
     MenuIssue(lhc_core::profile::menus::MenuIssue),
@@ -382,6 +384,7 @@ impl Msg {
             Self::ChooseCommandScript => ("choose-command-script", empty(), 0),
             Self::ChooseCommandDirectory => ("choose-command-directory", empty(), 0),
             Self::ActionUnavailable => ("action-unavailable", empty(), 0),
+            Self::ActionUnsupportedMacos => ("action-unsupported-macos", empty(), 0),
             Self::SaveLayoutFirst => ("save-layout-first", empty(), 0),
             Self::CommandsDisabled => ("commands-disabled", empty(), 0),
             Self::LayerSaved => ("layer-saved", empty(), 0),

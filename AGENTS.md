@@ -109,7 +109,7 @@ docs/                         # development/, design/, testing/; README.md index
 
 **Popups.** `LHC_POPUPS=winit` (default) shows borderless winit windows in-process; `auto` uses Spell layer-shell when the compositor supports `zwlr_layer_shell_v1` and falls back to winit otherwise; `spell` requires layer-shell. Popup data and key handling live in `popup_model.rs` so both paths behave identically.
 
-**Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `cmd:<id>`, `sys:<id>` (only `switchDesktopN`, `switchLayoutN`, `windowToDesktopN`), `app:<id>`, `kde:<component>/<shortcut>` (any KDE global shortcut via kglobalaccel), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them through the `Action` type in `lhc_core::profile::actions`, not ad-hoc string handling.
+**Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `cmd:<id>`, `sys:<id>` (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN` and cross-platform window/shell actions such as `windowClose`, `showDesktop`, `screenOff`; see `PLAIN_SYSTEM_ACTIONS`), `app:<id>`, `kde:<component>/<shortcut>` (any KDE global shortcut via kglobalaccel), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them through the `Action` type in `lhc_core::profile::actions`, not ad-hoc string handling.
 
 ### Where does a change go?
 

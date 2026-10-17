@@ -266,6 +266,10 @@ export component PickerOverlay inherits Rectangle {
                             }
                             TextEdit { text: ActionPicker.text-content; edited => { ActionPicker.touched = true; ActionPicker.value = "text:" + self.text; ActionPicker.refresh(); } }
                         }
+                        if ActionPicker.query == "" && ActionPicker.category == PickerCategory.desktop-shortcuts: HorizontalBox { vertical-stretch: 0;
+                            Text { text: @tr("Global shortcuts registered in this KDE session:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                            InfoTip { text: @tr("The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."); }
+                        }
                         if ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
                             HorizontalBox { vertical-stretch: 0;
                                 TextField { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name (optional)"); edited => { ActionPicker.edit-command(); } }

@@ -167,7 +167,7 @@ layers:
     keys:
       Tab: Tab
       CapsLock: kde:kwin/Walk Through Windows Alternative
-      Backspace: kde:org_kde_powerdevil/Turn Off Screen
+      Backspace: sys:screenOff
       ShiftLeft: Alt+Backquote
 
       Digit1: Meta+Digit1
@@ -185,13 +185,13 @@ layers:
       KeyW: Ctrl+KeyA
       KeyE: null
       KeyR: null
-      KeyT: kde:kwin/Window Above Other Windows
-      KeyY: kde:kwin/Window Close
-      KeyU: kde:kwin/Window Maximize
-      KeyI: kde:kwin/Window Minimize
+      KeyT: sys:windowKeepAbove
+      KeyY: sys:windowClose
+      KeyU: sys:windowMaximize
+      KeyI: sys:windowMinimize
       KeyO: ZoomIn
       KeyP: ZoomOut
-      BracketLeft: kde:plasmashell/activate application launcher
+      BracketLeft: sys:appLauncher
 
       KeyA: sys:switchDesktop4
       KeyS: sys:switchDesktop3
@@ -254,12 +254,12 @@ quickActionPages:
     cells:
       KeyQ: { name: Sleep, action: Sleep }
       KeyW: { name: Lock screen, action: LockScreen }
-      KeyE: { name: Screen off, action: "kde:org_kde_powerdevil/Turn Off Screen" }
+      KeyE: { name: Screen off, action: sys:screenOff }
       KeyR: { name: Mute, action: AudioVolumeMute }
       KeyT: { name: Mute microphone, action: MicrophoneMuteToggle }
       KeyA: { name: Grid view, action: kde:kwin/Grid View }
-      KeyS: { name: Overview, action: kde:kwin/Overview }
-      KeyD: { name: Show desktop, action: kde:kwin/Show Desktop }
+      KeyS: { name: Overview, action: sys:overview }
+      KeyD: { name: Show desktop, action: sys:showDesktop }
       KeyF: { name: Fullscreen, action: kde:kwin/Window Fullscreen }
       KeyG: { name: Play / pause, action: MediaPlay }
       KeyZ: { name: Brightness Down, action: BrightnessDown }

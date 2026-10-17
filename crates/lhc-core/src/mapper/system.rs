@@ -3,9 +3,12 @@
 // cross-platform; the concrete action (DBus call or shell command) is
 // picked per OS/DE by dispatching through `crate::platform::linux::detect()`.
 //
-// Only actions a key cannot express live here (switch to desktop / layout N,
-// move window to desktop N); everything else is a standard key, a chord or
-// a `kde:` global shortcut. See `docs/design/removed-system-actions.md`.
+// Only actions a key cannot express live here: switch to desktop / layout N,
+// move window to desktop N, and window/shell actions that every supported
+// platform documents (close, minimize, maximize, keep above, show desktop,
+// overview, application launcher, screen off). Everything else is a
+// standard key, a chord or a `kde:` global shortcut. See
+// `docs/design/removed-system-actions.md`.
 //
 // Two action shapes are supported:
 //   * `SysAction::Dbus` — direct session-bus method call. Preferred when
@@ -197,7 +200,18 @@ mod kde {
         {
             return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
         }
-        None
+        let (component, shortcut) = match name {
+            "windowClose" => ("kwin", "Window Close"),
+            "windowMinimize" => ("kwin", "Window Minimize"),
+            "windowMaximize" => ("kwin", "Window Maximize"),
+            "windowKeepAbove" => ("kwin", "Window Above Other Windows"),
+            "showDesktop" => ("kwin", "Show Desktop"),
+            "overview" => ("kwin", "Overview"),
+            "appLauncher" => ("plasmashell", "activate application launcher"),
+            "screenOff" => ("org_kde_powerdevil", "Turn Off Screen"),
+            _ => return None,
+        };
+        Some(invoke_shortcut(component, shortcut))
     }
 }
 
@@ -298,9 +312,27 @@ mod tests {
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Turn Off Screen"));
         assert!(kde_shortcut("Turn Off Screen").is_none());
 
-        for removed in ["taskEntry1", "lockSession", "volumeUp", "screenOff"] {
+        for removed in ["taskEntry1", "lockSession", "volumeUp", "toggleOverview"] {
             assert!(resolve_for_desktop(removed, &Desktop::Kde).is_none());
         }
+    }
+
+    #[test]
+    fn plain_system_actions_resolve_on_kde() {
+        for id in crate::profile::actions::PLAIN_SYSTEM_ACTIONS {
+            assert!(
+                matches!(
+                    resolve_for_desktop(id, &Desktop::Kde),
+                    Some(SysAction::Dbus(_))
+                ),
+                "{id} has no KDE implementation"
+            );
+        }
+        let Some(SysAction::Dbus(call)) = resolve_for_desktop("screenOff", &Desktop::Kde) else {
+            panic!("screenOff did not resolve to a DBus action");
+        };
+        assert_eq!(call.path, "/component/org_kde_powerdevil");
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Turn Off Screen"));
     }
 }
 

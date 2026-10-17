@@ -773,10 +773,7 @@ mod tests {
         }
         assert_eq!(
             extra_entries(&layout.layer_keymaps["desktop"]),
-            vec![(
-                "Backspace".into(),
-                Some("kde:org_kde_powerdevil/Turn Off Screen".into())
-            )]
+            vec![("Backspace".into(), Some("sys:screenOff".into()))]
         );
     }
 

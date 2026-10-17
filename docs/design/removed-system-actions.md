@@ -6,6 +6,11 @@ desktop environment did not scale. What remains in `sys:` is the small set
 that cannot be expressed with a key: `switchDesktopN`, `switchLayoutN` and
 `windowToDesktopN`.
 
+Later, a few common window and shell actions came back as cross-platform
+abstractions (see "Kept or added"): each has a documented counterpart on
+Linux desktops and Windows, so `sys:` holds platform-neutral ids while
+`kde:` stays the place for KDE-specific shortcuts.
+
 Each removed action is now covered by one of:
 
 - **Key** — a standard evdev key that every desktop handles itself.
@@ -84,6 +89,18 @@ as `kde:` if its key or chord does not work.
 | `switchDesktopN` (1–10) | `org.kde.KWin /KWin org.kde.KWin.setCurrentDesktop(i32 N)` |
 | `switchLayoutN` (1–10) | `org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout(u32 N-1)` |
 | `windowToDesktopN` (1–10) | `kde:kwin/Window to Desktop N` |
+| `windowClose` | `kde:kwin/Window Close` |
+| `windowMinimize` | `kde:kwin/Window Minimize` |
+| `windowMaximize` | `kde:kwin/Window Maximize` |
+| `windowKeepAbove` | `kde:kwin/Window Above Other Windows` |
+| `showDesktop` | `kde:kwin/Show Desktop` |
+| `overview` | `kde:kwin/Overview` |
+| `appLauncher` | `kde:plasmashell/activate application launcher` |
+| `screenOff` | `kde:org_kde_powerdevil/Turn Off Screen` |
+
+On macOS, `switchDesktopN`, `windowToDesktopN`, `windowKeepAbove`,
+`showDesktop` and `appLauncher` have no public API; running them there is
+ignored with a notification.
 
 ## Notes
 

@@ -765,6 +765,30 @@ msgstr "Переключиться на рабочий стол {}"
 msgid "Move window to desktop {}"
 msgstr "Переместить окно на рабочий стол {}"
 
+msgid "Close window"
+msgstr "Закрыть окно"
+
+msgid "Minimize window"
+msgstr "Свернуть окно"
+
+msgid "Maximize window"
+msgstr "Развернуть окно"
+
+msgid "Keep window above others"
+msgstr "Окно поверх остальных"
+
+msgid "Show desktop"
+msgstr "Показать рабочий стол"
+
+msgid "Window overview"
+msgstr "Обзор окон"
+
+msgid "Open application launcher"
+msgstr "Открыть меню запуска приложений"
+
+msgid "Turn off screen"
+msgstr "Выключить экран"
+
 msgid "Switch to layout {}"
 msgstr "Переключить раскладку на {}"
 
@@ -1260,6 +1284,9 @@ msgstr "Команда запущена: {}"
 
 msgid "Unavailable on this platform or desktop"
 msgstr "Недоступно на этой платформе или в этом окружении"
+
+msgid "This action is not supported on macOS"
+msgstr "Это действие не поддерживается в macOS"
 
 msgid "Approve commands on the Commands tab before running this action"
 msgstr "Разрешите команды на вкладке «Команды» перед выполнением этого действия"
@@ -2644,3 +2671,9 @@ msgstr "Лимит времени макроса"
 
 msgid "A macro still running after this time is stopped and counts as finished. A macro started while another one runs waits for it; up to 3 runs can wait, further presses are ignored."
 msgstr "Макрос, который выполняется дольше этого времени, прерывается и считается завершённым. Макрос, запущенный во время выполнения другого, ждёт своей очереди; в очереди может быть до 3 запусков, следующие нажатия игнорируются."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "Глобальные комбинации клавиш, зарегистрированные в этом сеансе KDE:"
+
+msgid "The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."
+msgstr "Список читается из службы глобальных комбинаций клавиш KDE (kglobalaccel): там свои действия регистрируют KWin, Plasma и приложения. Выбранное действие вызывается как есть, будто нажата его комбинация, даже если клавиши ему не назначены. Набор действий и их поведение зависят от версии Plasma и установленных приложений, поэтому Left Hand Control не гарантирует их работу. Распространённые действия с окнами и рабочим столом, которые работают и на других платформах, находятся в разделе «Системные действия»."

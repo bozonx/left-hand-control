@@ -92,6 +92,29 @@ pub struct CatalogEntry {
 
 const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = ["switchDesktop", "switchLayout", "windowToDesktop"];
 
+/// System actions without a number. Each has a documented counterpart on
+/// Linux desktops and Windows; see [`unsupported_on_macos`] for macOS.
+pub const PLAIN_SYSTEM_ACTIONS: [&str; 8] = [
+    "windowClose",
+    "windowMinimize",
+    "windowMaximize",
+    "windowKeepAbove",
+    "showDesktop",
+    "overview",
+    "appLauncher",
+    "screenOff",
+];
+
+/// `sys:` ids (numbered ones without their number) that macOS has no
+/// public API for. Running one there is ignored with a notice.
+const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 5] = [
+    "switchDesktop",
+    "windowToDesktop",
+    "windowKeepAbove",
+    "showDesktop",
+    "appLauncher",
+];
+
 /// Numbered actions have ids 1…10 (system), 1…5 (app menus) and 1…5
 /// (layouts in library order).
 const SYSTEM_NUMBERED_COUNT: u32 = 10;
@@ -108,7 +131,19 @@ fn numbered(id: &str, names: &[&'static str], max: u32) -> Option<(&'static str,
 
 pub fn system_action_name(id: &str) -> Option<ActionName> {
     numbered(id, &NUMBERED_SYSTEM_ACTIONS, SYSTEM_NUMBERED_COUNT)
+        .or_else(|| {
+            PLAIN_SYSTEM_ACTIONS
+                .iter()
+                .find(|known| **known == id)
+                .map(|known| (*known, 0))
+        })
         .map(|(name, n)| ActionName::System { id: name, n })
+}
+
+/// Whether the `sys:` action `id` cannot run on macOS.
+pub fn unsupported_on_macos(id: &str) -> bool {
+    matches!(system_action_name(id), Some(ActionName::System { id, .. })
+        if MACOS_UNSUPPORTED_SYSTEM_ACTIONS.contains(&id))
 }
 
 /// Split a `kde:` id into its kglobalaccel component and shortcut name.
@@ -161,14 +196,18 @@ pub fn menu_page(app_id: &str) -> Option<(bool, u32)> {
 }
 
 pub fn system_actions() -> Vec<CatalogEntry> {
-    NUMBERED_SYSTEM_ACTIONS
+    PLAIN_SYSTEM_ACTIONS
         .into_iter()
-        .flat_map(|name| {
+        .map(|id| CatalogEntry {
+            action: Action::System(id.into()),
+            name: ActionName::System { id, n: 0 },
+        })
+        .chain(NUMBERED_SYSTEM_ACTIONS.into_iter().flat_map(|name| {
             (1..=SYSTEM_NUMBERED_COUNT).map(move |n| CatalogEntry {
                 action: Action::System(format!("{name}{n}")),
                 name: ActionName::System { id: name, n },
             })
-        })
+        }))
         .collect()
 }
 
@@ -370,7 +409,7 @@ mod tests {
 
     #[test]
     fn catalogs_preserve_builtin_action_ids() {
-        assert_eq!(system_actions().len(), 30);
+        assert_eq!(system_actions().len(), 38);
         assert_eq!(app_actions().len(), 22);
         assert_eq!(
             system_action_name("switchDesktop10"),
@@ -381,6 +420,18 @@ mod tests {
         );
         assert_eq!(system_action_name("switchDesktop11"), None);
         assert_eq!(system_action_name("lockSession"), None);
+        assert_eq!(
+            system_action_name("screenOff"),
+            Some(ActionName::System {
+                id: "screenOff",
+                n: 0
+            })
+        );
+        assert!(unsupported_on_macos("switchDesktop3"));
+        assert!(unsupported_on_macos("windowKeepAbove"));
+        assert!(!unsupported_on_macos("switchLayout2"));
+        assert!(!unsupported_on_macos("windowClose"));
+        assert!(!unsupported_on_macos("lockSession"));
         assert_eq!(
             kde_shortcut_parts("org_kde_powerdevil/Turn Off Screen"),
             Some(("org_kde_powerdevil", "Turn Off Screen"))

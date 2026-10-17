@@ -1325,7 +1325,7 @@ mod tests {
         assert_eq!(quick.len(), 1);
         assert!(quick.iter().all(|page| page.cells.len() == 15));
         assert_eq!(quick[0].cells["KeyQ"].action, "Sleep");
-        assert_eq!(quick[0].cells["KeyS"].action, "kde:kwin/Overview");
+        assert_eq!(quick[0].cells["KeyS"].action, "sys:overview");
         assert_eq!(reparsed.quick_action_pages, *quick);
     }
 
