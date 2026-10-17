@@ -6,6 +6,7 @@ import { Locale, Message } from "i18n.slint";
 export component ButtonGroup inherits HorizontalLayout {
     in property <[string]> labels;
     in property <int> selected-index;
+    in property <bool> enabled: true;
     callback selected(int);
     spacing: 0px;
     vertical-stretch: 0;
@@ -16,12 +17,14 @@ export component ButtonGroup inherits HorizontalLayout {
         border-top-right-radius: index == root.labels.length - 1 ? 4px : 0px;
         border-bottom-right-radius: index == root.labels.length - 1 ? 4px : 0px;
         background: root.selected-index == index ? Theme.selected : touch.has-hover ? Theme.hover : Theme.card;
+        opacity: root.enabled ? 1 : 0.5;
         border-width: focus.has-focus ? 2px : 1px;
         border-color: focus.has-focus ? Theme.focus : root.selected-index == index ? Theme.accent : Theme.border;
         accessible-role: radio-button;
         accessible-label: label;
         accessible-checked: root.selected-index == index;
-        accessible-action-default => { root.selected(index); }
+        accessible-enabled: root.enabled;
+        accessible-action-default => { if root.enabled { root.selected(index); } }
         HorizontalLayout {
             padding-left: 12px; padding-right: 12px;
             Text {
@@ -33,6 +36,7 @@ export component ButtonGroup inherits HorizontalLayout {
             }
         }
         focus := FocusScope {
+            enabled: root.enabled;
             key-pressed(event) => {
                 if event.text == " " || event.text == "\n" { root.selected(index); return accept; }
                 if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
@@ -40,7 +44,7 @@ export component ButtonGroup inherits HorizontalLayout {
                 return reject;
             }
         }
-        touch := TouchArea { clicked => { focus.focus(); root.selected(index); } }
+        touch := TouchArea { enabled: root.enabled; clicked => { focus.focus(); root.selected(index); } }
     }
 }
 

@@ -89,6 +89,14 @@ fn hold_mode(rule: &LayerRule) -> i32 {
     }
 }
 
+fn hold_detection(rule: &LayerRule) -> HoldDetection {
+    match rule.tap_decision {
+        None => HoldDetection::Inherit,
+        Some(TapDecision::PermissiveHold) => HoldDetection::Release,
+        Some(TapDecision::HoldOnOtherKeyPress) => HoldDetection::Press,
+    }
+}
+
 /// When the held key is pressed and the layer keys it applies to; a rule
 /// with both lists set shows the stricter `only-with` list.
 fn hold_release(rule: &LayerRule) -> (HoldRelease, String) {
@@ -145,6 +153,11 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             .into(),
     );
     editor.set_default_hold_timeout(config.settings().default_hold_timeout_ms.to_string().into());
+    editor.set_default_hold_detection(if config.settings().tap_decision == "holdOnOtherKeyPress" {
+        HoldDetection::Press
+    } else {
+        HoldDetection::Release
+    });
     editor.set_default_double_timeout(
         config
             .settings()
@@ -176,6 +189,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 timeout_text(rule.hold_timeout_ms)
             }
             .into(),
+            hold_detection: hold_detection(rule),
             double_timeout: timeout_text(if rule.key.contains('+') {
                 None
             } else {
@@ -244,11 +258,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_original_release_keys(keys.join(", ").into());
     editor.set_original_hold(rule.hold_action.clone().unwrap_or_default().into());
     editor.set_original_swallow_hold(rule.hold_action.is_none());
-    let decision = match rule.tap_decision {
-        None => HoldDetection::Inherit,
-        Some(TapDecision::PermissiveHold) => HoldDetection::Release,
-        Some(TapDecision::HoldOnOtherKeyPress) => HoldDetection::Press,
-    };
+    let decision = hold_detection(rule);
     editor.set_hold_detection(decision);
     editor.set_original_hold_detection(decision);
     editor.set_hold_timeout(timeout_text(rule.hold_timeout_ms).into());
@@ -766,6 +776,20 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         {
             editor.set_dialog(RuleDialog::None);
         }
+    });
+
+    let weak = ui.as_weak();
+    editor.on_reset_advanced(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let editor = ui.global::<RulesEditor>();
+        editor.set_hold(Default::default());
+        editor.set_swallow_hold(false);
+        editor.set_release_mode(HoldRelease::Always);
+        set_release_keys(&editor, &[]);
+        editor.set_hold_detection(HoldDetection::Inherit);
+        editor.set_hold_timeout(Default::default());
+        editor.set_long_hold_timeout(Default::default());
+        editor.set_double_timeout(Default::default());
     });
 
     let weak = ui.as_weak();

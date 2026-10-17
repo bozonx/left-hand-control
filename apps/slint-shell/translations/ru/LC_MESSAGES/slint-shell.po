@@ -2341,8 +2341,8 @@ msgstr "Пока триггер зажат"
 msgid "Press key"
 msgstr "Нажимать клавишу"
 
-msgid "Which key stays pressed while you hold the trigger, together with the layer. “Nothing” only switches the layer."
-msgstr "Какая клавиша будет зажата, пока вы держите триггер, вместе со слоем. «Ничего» — только переключить слой."
+msgid "Which key stays pressed while you hold the trigger, together with the layer. “Don't press” only switches the layer."
+msgstr "Какая клавиша будет зажата, пока вы держите триггер, вместе со слоем. «Не нажимать» — только переключить слой."
 
 msgid "Which key stays pressed while you hold the trigger. “Trigger itself” keeps the usual behavior of the key."
 msgstr "Какая клавиша будет зажата, пока вы держите триггер. «Сам триггер» — клавиша ведёт себя как обычно."
@@ -2534,8 +2534,14 @@ msgstr "После отпускания другой клавиши (лучше 
 msgid "As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake."
 msgstr "Сразу при нажатии другой клавиши: удобно для выделенных клавиш слоя или модификаторов. Реагирует быстрее, но перекрытие букв при наборе может вызвать удержание по ошибке."
 
-msgid "Use default from Settings"
-msgstr "По умолчанию из настроек"
+msgid "Default from Settings: {}"
+msgstr "По умолчанию из настроек: {}"
+
+msgid "after another key is released"
+msgstr "после отпускания другой клавиши"
+
+msgid "as soon as another key is pressed"
+msgstr "при нажатии другой клавиши"
 
 msgid "Overrides the default hold detection for this rule. Use release detection for typing keys and press detection for dedicated layer or modifier keys. This does not change chord detection."
 msgstr "Заменяет режим распознавания удержания для этого правила. Для букв используйте распознавание по отпусканию, для выделенных клавиш слоя или модификаторов — по нажатию. На распознавание аккордов не влияет."
@@ -2608,3 +2614,27 @@ msgstr "Встроенный список. Чтобы всё же считать
 
 msgid "Hold"
 msgstr "Удержание"
+
+msgid "Don't press"
+msgstr "Не нажимать"
+
+msgid "{} — change…"
+msgstr "{} — изменить…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "Выберите другую клавишу выше, чтобы настроить, когда её нажимать."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr "Назначьте правилу действие на двойное нажатие, чтобы изменить это окно."
+
+msgid "Hold on other key release"
+msgstr "Удержание по отпусканию другой"
+
+msgid "Hold on other key press"
+msgstr "Удержание по нажатию другой"
+
+msgid "Reset"
+msgstr "Сбросить"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr "Вернуть все параметры этого окна к значениям по умолчанию"
