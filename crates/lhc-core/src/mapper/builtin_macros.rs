@@ -79,7 +79,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
     BuiltinMacro {
         id: "replaceWordWidthBuffer",
         name: "Replace word with buffer",
-        steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyC"],
+        steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyV"],
     },
     BuiltinMacro {
         id: "downHome",
