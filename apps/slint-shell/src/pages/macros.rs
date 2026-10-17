@@ -155,13 +155,26 @@ fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
     let rows = ui.global::<MacroEditor>().get_macros();
     for (index, entry) in draft.iter().enumerate() {
         if let Some(current) = rows.row_data(index) {
-            rows.set_row_data(
-                index,
-                MacroRow {
-                    steps: current.steps,
-                    ..row(&config, entry)
-                },
-            );
+            let next = row(&config, entry);
+            // Models compare by identity, so compare usage by content. Skipping
+            // unchanged rows matters for the interpreter (live preview): it wraps
+            // the step model anew on every row update, which recreates the step
+            // rows and drops their focus.
+            let unchanged = next.usage.iter().eq(current.usage.iter())
+                && MacroRow {
+                    steps: current.steps.clone(),
+                    usage: current.usage.clone(),
+                    ..next.clone()
+                } == current;
+            if !unchanged {
+                rows.set_row_data(
+                    index,
+                    MacroRow {
+                        steps: current.steps,
+                        ..next
+                    },
+                );
+            }
         }
     }
 }
