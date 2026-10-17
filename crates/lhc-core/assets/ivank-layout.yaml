@@ -41,7 +41,7 @@ layers:
       Slash: macro:down5Times
   - id: select
     keys:
-      CapsLock: null
+      CapsLock: Capslock
       AltLeft: Ctrl+Enter
 
       Digit1: sys:switchLayout1
@@ -58,11 +58,11 @@ layers:
       KeyQ: Ctrl+KeyZ
       KeyW: macro:cutToStart
       KeyE: macro:cutToEnd
-      KeyR: null
-      KeyT: null
+      KeyR: PageDown
+      KeyT: PageUp
       KeyY: Shift+Home
-      KeyU: PageDown
-      KeyI: PageUp
+      KeyU: Shift+PageDown
+      KeyI: Shift+PageUp
       KeyO: Shift+End
       KeyP: macro:select5LinesUp
       BracketLeft: null
@@ -82,8 +82,8 @@ layers:
       KeyZ: null
       KeyX: macro:replaceToStartWithBuffer
       KeyC: macro:replaceToEndWithBuffer
-      KeyV: null
-      KeyB: macro:replaceLineWidthBuffer
+      KeyV: macro:replaceLineWidthBuffer
+      KeyB: macro:replaceWordWidthBuffer
       KeyN: Ctrl+Shift+ArrowLeft
       KeyM: Shift+PageDown
       Comma: Shift+PageUp
