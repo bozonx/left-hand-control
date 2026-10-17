@@ -11,7 +11,7 @@ use evdev::{AttributeSet, BusType, Device, InputId, KeyCode};
 use io::{EventSink, SideEffects, flush_out_with, process_iteration_with};
 use io::{LoopDriver, MultiDeviceLoopDriver, OutputHold, flush_out, process_iteration};
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
-use std::os::unix::fs::OpenOptionsExt;
+use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -20,6 +20,31 @@ use std::time::Duration;
 
 const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
 const START_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Device number of the keyboard the mapper holds grabbed. Its physical key
+/// state never reaches the compositor: held layer keys must not delay text.
+static GRABBED_KEYBOARD: Mutex<Option<u64>> = Mutex::new(None);
+
+/// Whether `rdev` is the keyboard the running mapper grabbed.
+pub(super) fn is_grabbed_keyboard(rdev: u64) -> bool {
+    *GRABBED_KEYBOARD.lock().unwrap_or_else(|e| e.into_inner()) == Some(rdev)
+}
+
+/// Registers the grabbed keyboard until dropped with the mapper loop.
+struct GrabbedKeyboard;
+
+impl GrabbedKeyboard {
+    fn register(rdev: u64) -> Self {
+        *GRABBED_KEYBOARD.lock().unwrap_or_else(|e| e.into_inner()) = Some(rdev);
+        Self
+    }
+}
+
+impl Drop for GrabbedKeyboard {
+    fn drop(&mut self) {
+        *GRABBED_KEYBOARD.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    }
+}
 
 pub enum MapperControl {
     Config(Box<AppConfig>),
@@ -293,10 +318,8 @@ fn run(
     let _mapper_lock = acquire_mapper_lock()?;
     let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
     validate_keyboard_capabilities(device.supported_events(), device.supported_keys())?;
+    let keyboard = std::fs::metadata(&device_path).map_err(|e| format!("stat keyboard: {e}"))?;
     if let Some(mouse_path) = &mouse_path {
-        use std::os::unix::fs::MetadataExt;
-        let keyboard =
-            std::fs::metadata(&device_path).map_err(|e| format!("stat keyboard: {e}"))?;
         let mouse = std::fs::metadata(mouse_path).map_err(|e| format!("stat mouse: {e}"))?;
         if keyboard.rdev() == mouse.rdev() && keyboard.ino() == mouse.ino() {
             return Err("Keyboard and mouse must use different input devices".into());
@@ -305,6 +328,8 @@ fn run(
     device
         .grab()
         .map_err(|e| format!("grab {device_path} (need perms? add user to input group): {e}"))?;
+    // Declared before the loop driver, so it is cleared after the grab ends.
+    let _grabbed = GrabbedKeyboard::register(keyboard.rdev());
 
     let mut devices = vec![device];
     if let Some(ref mp) = mouse_path {

@@ -366,16 +366,26 @@ fn caps_lock_state() -> Result<bool, TextInputFailure> {
     HardwareState::capture().caps_lock_state()
 }
 
-struct HardwareState(Vec<evdev::Device>);
+/// Input devices with whether the mapper grabbed each one.
+struct HardwareState(Vec<(bool, evdev::Device)>);
 
 impl HardwareState {
     fn capture() -> Self {
-        Self(evdev::enumerate().map(|(_, device)| device).collect())
+        use std::os::unix::fs::MetadataExt;
+        Self(
+            evdev::enumerate()
+                .map(|(path, device)| {
+                    let grabbed = std::fs::metadata(path)
+                        .is_ok_and(|meta| super::linux::is_grabbed_keyboard(meta.rdev()));
+                    (grabbed, device)
+                })
+                .collect(),
+        )
     }
 
     fn caps_lock_state(&self) -> Result<bool, TextInputFailure> {
         let mut caps = None;
-        for device in &self.0 {
+        for (_, device) in &self.0 {
             if device
                 .supported_leds()
                 .is_some_and(|leds| leds.contains(evdev::LedCode::LED_CAPSL))
@@ -401,7 +411,8 @@ impl HardwareState {
 
     fn modifiers_released(&self) -> Result<(), TextInputFailure> {
         let modifiers = [29, 42, 54, 56, 97, 100, 125, 126];
-        for device in &self.0 {
+        // What a grabbed keyboard passes on is checked on the virtual device.
+        for (_, device) in self.0.iter().filter(|(grabbed, _)| !grabbed) {
             if device.supported_keys().is_some_and(|keys| {
                 modifiers
                     .iter()
