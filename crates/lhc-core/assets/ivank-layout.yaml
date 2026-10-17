@@ -41,7 +41,7 @@ layers:
       Slash: macro:down5Times
   - id: select
     keys:
-      CapsLock: Capslock
+      CapsLock: CapsLock
       AltLeft: Ctrl+Enter
 
       Digit1: sys:switchLayout1
