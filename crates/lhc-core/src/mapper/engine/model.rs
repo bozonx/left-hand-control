@@ -84,6 +84,8 @@ pub(super) struct ActiveMacro {
     pub(super) steps_emitted: usize,
     pub(super) phase: MacroPhase,
     pub(super) next_wake: Instant,
+    /// The run is aborted and counts as finished at this time.
+    pub(super) deadline: Instant,
 }
 
 #[derive(Clone)]

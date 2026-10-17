@@ -32,6 +32,7 @@ struct Form {
     combo: String,
     macro_pause: String,
     modifier_delay: String,
+    macro_timeout: String,
     commands_enabled: bool,
     use_gamemoded: bool,
     use_fullscreen: bool,
@@ -78,6 +79,7 @@ impl Form {
             combo: settings.combo_timeout_ms.to_string(),
             macro_pause: settings.default_macro_step_pause_ms.to_string(),
             modifier_delay: settings.default_macro_modifier_delay_ms.to_string(),
+            macro_timeout: settings.macro_timeout_ms.to_string(),
             commands_enabled: settings.commands_enabled,
             use_gamemoded: settings.game_mode.use_gamemoded,
             use_fullscreen: settings.game_mode.use_fullscreen,
@@ -116,6 +118,7 @@ impl Form {
             combo: e.get_combo_timeout().into(),
             macro_pause: e.get_macro_pause().into(),
             modifier_delay: e.get_modifier_delay().into(),
+            macro_timeout: e.get_macro_timeout().into(),
             commands_enabled: e.get_commands_enabled(),
             use_gamemoded: e.get_use_gamemoded(),
             use_fullscreen: e.get_use_fullscreen(),
@@ -153,6 +156,7 @@ impl Form {
         e.set_combo_timeout(self.combo.clone().into());
         e.set_macro_pause(self.macro_pause.clone().into());
         e.set_modifier_delay(self.modifier_delay.clone().into());
+        e.set_macro_timeout(self.macro_timeout.clone().into());
         e.set_commands_enabled(self.commands_enabled);
         e.set_use_gamemoded(self.use_gamemoded);
         e.set_use_fullscreen(self.use_fullscreen);
@@ -186,6 +190,7 @@ impl Form {
             parse_ms(&self.macro_pause)?,
             parse_ms(&self.modifier_delay)?,
             parse_ms(&self.combo)?,
+            parse_ms(&self.macro_timeout)?,
         ];
         macro_rules! changed {
             ($field:ident => $apply:expr) => {
@@ -209,6 +214,7 @@ impl Form {
         changed!(macro_pause => settings.default_macro_step_pause_ms = numbers[2]);
         changed!(modifier_delay => settings.default_macro_modifier_delay_ms = numbers[3]);
         changed!(combo => settings.combo_timeout_ms = numbers[4]);
+        changed!(macro_timeout => settings.macro_timeout_ms = numbers[5]);
         changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
@@ -546,6 +552,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     e.set_default_combo_timeout(defaults.combo.clone().into());
     e.set_default_macro_pause(defaults.macro_pause.clone().into());
     e.set_default_modifier_delay(defaults.modifier_delay.clone().into());
+    e.set_default_macro_timeout(defaults.macro_timeout.clone().into());
     {
         let config = document.read();
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());

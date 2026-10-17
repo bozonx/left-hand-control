@@ -39,6 +39,7 @@ export global SettingsEditor {
     in-out property <string> combo-timeout;
     in-out property <string> macro-pause;
     in-out property <string> modifier-delay;
+    in-out property <string> macro-timeout;
     /// Standard values of the key behavior fields, for reset and tooltips.
     in property <string> default-hold-timeout;
     in property <string> default-long-hold-timeout;
@@ -46,6 +47,7 @@ export global SettingsEditor {
     in property <string> default-combo-timeout;
     in property <string> default-macro-pause;
     in property <string> default-modifier-delay;
+    in property <string> default-macro-timeout;
     /// The advanced key behavior settings are shown.
     in-out property <bool> commands-enabled;
     in property <[CommandAssignmentRow]> command-assignments;
@@ -695,6 +697,16 @@ export component SettingsPage inherits VerticalBox {
                                 maximum: 2000; step: 1;
                                 value <=> SettingsEditor.modifier-delay;
                                 standard: SettingsEditor.default-modifier-delay;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
+                            }
+                            TimingField {
+                                label: @tr("Macro time limit");
+                                info: @tr("A macro still running after this time is stopped and counts as finished. A macro started while another one runs waits for it; up to 3 runs can wait, further presses are ignored.")
+                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-timeout);
+                                minimum: 1000; maximum: 600000; step: 1000;
+                                value <=> SettingsEditor.macro-timeout;
+                                standard: SettingsEditor.default-macro-timeout;
                                 edited => { SettingsEditor.schedule-save(); }
                                 reset => { SettingsEditor.save(); }
                             }

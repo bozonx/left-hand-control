@@ -347,7 +347,12 @@ fn macro_waits_for_text_completion_before_next_step_and_pause() {
         let completed = now + Duration::from_secs(5);
         engine.tick(completed, &mut out);
         assert!(out.is_empty());
-        assert_eq!(engine.next_deadline(completed), None);
+        // Only the run's time limit is left to wake the loop.
+        assert!(
+            engine
+                .next_deadline(completed)
+                .is_some_and(|wait| wait > Duration::from_secs(4))
+        );
         engine.set_text_pending(false, completed);
         engine.tick(completed, &mut out);
         assert!(out.is_empty());
@@ -3174,9 +3179,9 @@ fn builder_resolves_builtin_macro() {
 }
 
 #[test]
-fn starting_macro_mid_stroke_releases_pending_mods() {
-    // A macro interrupted between its mod-press and mod-release phases
-    // must release the pressed modifiers before the new macro starts.
+fn starting_macro_mid_stroke_queues_it_after_the_stroke() {
+    // A macro started while another is between its mod-press and
+    // mod-release phases waits: the running stroke completes first.
     let mut cfg = empty_cfg();
     cfg.macros.push(Macro {
         id: "a".into(),
@@ -3201,24 +3206,136 @@ fn starting_macro_mid_stroke_releases_pending_mods() {
     engine.execute_remote("macro:a", &mut out);
     // First tick presses Ctrl and enters the mod-delay phase.
     engine.tick(now + Duration::from_millis(1), &mut out);
-    assert!(matches!(
-        out.as_slice(),
-        [Out::KeyRaw {
-            key: KeyCode::KEY_LEFTCTRL,
-            down: true
-        }]
-    ));
     out.clear();
 
-    // Starting another macro mid-stroke must release Ctrl.
     engine.execute_remote("macro:b", &mut out);
-    assert!(matches!(
-        out.as_slice(),
-        [Out::KeyRaw {
-            key: KeyCode::KEY_LEFTCTRL,
-            down: false
-        }]
-    ));
+    assert!(out.is_empty());
+    for ms in [10, 20, 30] {
+        engine.tick(now + Duration::from_millis(ms), &mut out);
+    }
+    assert_eq!(
+        raw_keys(&out),
+        [
+            (KeyCode::KEY_C, true),
+            (KeyCode::KEY_C, false),
+            (KeyCode::KEY_LEFTCTRL, false),
+            (KeyCode::KEY_H, true),
+            (KeyCode::KEY_H, false),
+        ]
+    );
+}
+
+/// A held `nav` layer on Space whose KeyJ runs macro `m`.
+fn layer_macro_cfg(steps: serde_json::Value) -> AppConfig {
+    serde_json::from_value(serde_json::json!({
+        "rules": [{"key": "Space", "layerId": "nav", "holdAction": null}],
+        "layerKeymaps": {"nav": {"keys": {"KeyJ": "macro:m"}}},
+        "macros": [{"id": "m", "steps": steps, "stepPauseMs": 10}],
+        "settings": {"defaultHoldTimeoutMs": 50, "macroTimeoutMs": 1000}
+    }))
+    .unwrap()
+}
+
+/// Run the engine clock from `from` to `to` in 5 ms ticks.
+fn run_ticks(engine: &mut Engine, from: Instant, to: Instant, out: &mut Vec<Out>) {
+    let mut at = from;
+    while at <= to {
+        engine.tick(at, out);
+        at += Duration::from_millis(5);
+    }
+}
+
+#[test]
+fn macro_repeats_inside_a_held_layer_and_queues_at_most_three_runs() {
+    let mut engine = Engine::new(&layer_macro_cfg(serde_json::json!([
+        {"action": "KeyH"}, {"action": "KeyI"}
+    ])));
+    let now = Instant::now();
+    let at = |ms| now + Duration::from_millis(ms);
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.tick(at(60), &mut out);
+    assert_eq!(engine.top_layer(), Some("nav"));
+
+    // Five quick presses: one run, three queued, one dropped.
+    for i in 0..5 {
+        engine.handle(KeyCode::KEY_J, true, at(61 + 2 * i), &mut out);
+        engine.handle(KeyCode::KEY_J, false, at(62 + 2 * i), &mut out);
+    }
+    run_ticks(&mut engine, at(71), at(500), &mut out);
+    let presses = raw_keys(&out)
+        .into_iter()
+        .filter(|(key, down)| *down && [KeyCode::KEY_H, KeyCode::KEY_I].contains(key))
+        .map(|(key, _)| key)
+        .collect::<Vec<_>>();
+    assert_eq!(presses, [KeyCode::KEY_H, KeyCode::KEY_I].repeat(4));
+    assert_eq!(engine.top_layer(), Some("nav"));
+
+    // Finished runs leave room: the layer is still held, so it runs again.
+    out.clear();
+    engine.handle(KeyCode::KEY_J, true, at(600), &mut out);
+    engine.handle(KeyCode::KEY_J, false, at(601), &mut out);
+    run_ticks(&mut engine, at(600), at(700), &mut out);
+    assert_eq!(raw_keys(&out).len(), 4);
+}
+
+#[test]
+fn macro_over_the_time_limit_is_aborted_and_the_queue_continues() {
+    let mut engine = Engine::new(&layer_macro_cfg(serde_json::json!([
+        {"action": "KeyH"}, {"action": "pause:5000"}, {"action": "KeyI"}
+    ])));
+    let now = Instant::now();
+    let at = |ms| now + Duration::from_millis(ms);
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.tick(at(60), &mut out);
+    engine.handle(KeyCode::KEY_J, true, at(100), &mut out);
+    engine.handle(KeyCode::KEY_J, false, at(101), &mut out);
+    engine.handle(KeyCode::KEY_J, true, at(102), &mut out);
+    engine.handle(KeyCode::KEY_J, false, at(103), &mut out);
+    engine.tick(at(100), &mut out);
+    engine.tick(at(110), &mut out);
+    assert_eq!(
+        engine.next_deadline(at(120)),
+        Some(Duration::from_millis(980))
+    );
+
+    // The first run times out before KeyI; the queued run starts at once.
+    engine.tick(at(1100), &mut out);
+    engine.tick(at(1100), &mut out);
+    assert_eq!(
+        raw_keys(&out),
+        [
+            (KeyCode::KEY_H, true),
+            (KeyCode::KEY_H, false),
+            (KeyCode::KEY_H, true),
+            (KeyCode::KEY_H, false),
+        ]
+    );
+    assert!(engine.active_macro.is_some());
+    assert!(engine.macro_queue.is_empty());
+}
+
+#[test]
+fn shutdown_and_reconfigure_drop_queued_macro_runs() {
+    let cfg = layer_macro_cfg(serde_json::json!([{"action": "KeyH"}, {"action": "KeyI"}]));
+    for reconfigure in [false, true] {
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.execute_remote("macro:m", &mut out);
+        engine.execute_remote("macro:m", &mut out);
+        assert_eq!(engine.macro_queue.len(), 1);
+        if reconfigure {
+            engine.reconfigure(&cfg, &mut out);
+        } else {
+            engine.shutdown(&mut out);
+        }
+        assert!(engine.active_macro.is_none());
+        assert!(engine.macro_queue.is_empty());
+        run_ticks(&mut engine, now, now + Duration::from_millis(100), &mut out);
+        assert!(raw_keys(&out).is_empty());
+    }
 }
 
 #[test]
@@ -4060,4 +4177,99 @@ fn chord_long_hold_fires_on_late_member_release_without_tick() {
         engine.tick(now + Duration::from_secs(1), &mut out);
         assert!(out.is_empty());
     }
+}
+
+/// Exercise both live delivery and a batch drained before the next timer tick.
+fn space_audit_presses(
+    rule: Option<serde_json::Value>,
+    events: &[(KeyCode, bool, u64)],
+) -> Vec<KeyCode> {
+    let cfg = rule.map(config_with_rule).unwrap_or_else(empty_cfg);
+    let mut results = Vec::new();
+    for tick_each in [false, true] {
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        for &(key, down, ms) in events {
+            let at = now + Duration::from_millis(ms);
+            engine.handle(key, down, at, &mut out);
+            if tick_each {
+                engine.tick(at, &mut out);
+            }
+        }
+        engine.tick(now + Duration::from_secs(2), &mut out);
+        let presses: Vec<_> = out
+            .iter()
+            .filter_map(|event| match event {
+                Out::KeyRaw { key, down: true } => Some(*key),
+                Out::Stroke { ks, .. } | Out::ChordPress { ks, .. } => Some(ks.key),
+                _ => None,
+            })
+            .collect();
+        assert!(engine.pending.is_empty());
+        assert!(engine.emitted.is_empty());
+        results.push(presses);
+    }
+    assert_eq!(results[0], results[1], "batch delivery changed typing");
+    results.remove(0)
+}
+
+#[test]
+fn space_audit_plain_and_layer_roll_preserve_order() {
+    for rule in [
+        None,
+        Some(serde_json::json!({"key": "Space", "layerId": "nav"})),
+        Some(serde_json::json!({"key": "Space", "layerId": "nav", "doubleTapAction": "Escape"})),
+    ] {
+        for gap in [1, 5, 20, 50] {
+            assert_eq!(
+                space_audit_presses(
+                    rule.clone(),
+                    &[
+                        (KeyCode::KEY_A, true, 0),
+                        (KeyCode::KEY_SPACE, true, gap),
+                        (KeyCode::KEY_B, true, gap * 2),
+                        (KeyCode::KEY_A, false, gap * 3),
+                        (KeyCode::KEY_SPACE, false, gap * 3 + 1),
+                        (KeyCode::KEY_B, false, gap * 3 + 2),
+                    ]
+                ),
+                vec![KeyCode::KEY_A, KeyCode::KEY_SPACE, KeyCode::KEY_B]
+            );
+        }
+    }
+}
+
+#[test]
+fn space_audit_nested_letter_selects_layer_without_space() {
+    assert_eq!(
+        space_audit_presses(
+            Some(serde_json::json!({"key": "Space", "layerId": "nav"})),
+            &[
+                (KeyCode::KEY_SPACE, true, 0),
+                (KeyCode::KEY_B, true, 10),
+                (KeyCode::KEY_B, false, 20),
+                (KeyCode::KEY_SPACE, false, 30),
+            ]
+        ),
+        vec![KeyCode::KEY_B]
+    );
+}
+
+#[test]
+fn space_audit_long_hold_action_allows_letter_to_overtake_space() {
+    // Long-action rules deliberately do not buffer other keys. A native
+    // tap therefore appears at release, after a later physical key press.
+    assert_eq!(
+        space_audit_presses(
+            Some(serde_json::json!({"key": "Space", "longHoldAction": "Escape"})),
+            &[
+                (KeyCode::KEY_SPACE, true, 0),
+                (KeyCode::KEY_B, true, 10),
+                (KeyCode::KEY_SPACE, false, 20),
+                (KeyCode::KEY_B, false, 30),
+            ]
+        ),
+        vec![KeyCode::KEY_B, KeyCode::KEY_SPACE]
+    );
 }

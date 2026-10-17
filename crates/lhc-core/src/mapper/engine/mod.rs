@@ -63,8 +63,11 @@ use super::config::GameModeCondition;
 use super::system::SysCommand;
 use crate::profile::app_match::any_matches_window;
 use evdev::KeyCode;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::{Duration, Instant};
+
+/// Macro runs that may wait behind the active one; further runs are dropped.
+const MACRO_QUEUE_LIMIT: usize = 3;
 
 pub struct Engine {
     rules: HashMap<KeyCode, Vec<RuleEntry>>,
@@ -121,6 +124,11 @@ pub struct Engine {
 
     /// Currently executing macro (if any)
     active_macro: Option<self::model::ActiveMacro>,
+    /// Runs waiting for the active macro, oldest first; at most
+    /// `MACRO_QUEUE_LIMIT`.
+    macro_queue: VecDeque<self::model::MacroDef>,
+    /// Longest a single macro run may take before it is aborted.
+    macro_timeout: Duration,
     text_pending: bool,
     /// Key presses handled while a layer was active.
     layer_presses: u64,
@@ -132,7 +140,7 @@ impl Engine {
     /// Pending decisions retain their original rule until physical release.
     pub fn reconfigure(&mut self, cfg: &super::config::AppConfig, out: &mut Vec<Out>) {
         self.flush_combo_buffer(out);
-        self.abort_active_macro(out);
+        self.cancel_macros(out);
         if !cfg.settings.commands_enabled {
             fn revoke(action: &mut ActionDef) {
                 match action {
@@ -167,6 +175,7 @@ impl Engine {
         self.default_hold = next.default_hold;
         self.default_mod_delay = next.default_mod_delay;
         self.combo_term = next.combo_term;
+        self.macro_timeout = next.macro_timeout;
         self.text_pending = false;
     }
 
@@ -192,7 +201,8 @@ impl Engine {
     }
 
     /// Time until the nearest pending deadline (hold-decision,
-    /// waiting-for-second-press, or the next macro step wake-up), or None.
+    /// waiting-for-second-press, the next macro step wake-up or the macro
+    /// timeout), or None.
     pub fn next_deadline(&self, now: Instant) -> Option<Duration> {
         self.pending
             .values()
@@ -214,6 +224,16 @@ impl Engine {
                         !self.text_pending || !matches!(am.phase, self::model::MacroPhase::NextStep)
                     })
                     .map(|am| am.next_wake.saturating_duration_since(now)),
+            )
+            .chain(
+                self.active_macro
+                    .as_ref()
+                    .map(|am| am.deadline.saturating_duration_since(now)),
+            )
+            .chain(
+                // A queued run starts on the next tick.
+                (self.active_macro.is_none() && !self.macro_queue.is_empty())
+                    .then_some(Duration::ZERO),
             )
             .chain(
                 self.combo_deadline()
@@ -267,6 +287,18 @@ impl Engine {
                 self.fire_action(Some(&action), self.default_mod_delay, now, out);
             }
         }
+        if self
+            .active_macro
+            .as_ref()
+            .is_some_and(|am| now >= am.deadline)
+        {
+            log::warn!(
+                "[mapper] macro exceeded {} ms, aborting",
+                self.macro_timeout.as_millis()
+            );
+            self.abort_active_macro(out);
+        }
+        self.start_queued_macro(now);
         if let Some(mut am) = self.active_macro.take() {
             if now >= am.next_wake
                 && (!self.text_pending || !matches!(am.phase, self::model::MacroPhase::NextStep))
@@ -410,6 +442,7 @@ impl Engine {
                 self.active_macro = Some(am);
             }
         }
+        self.start_queued_macro(now);
 
         let mut expired_hold: Vec<KeyCode> = Vec::new();
         let mut expired_second: Vec<KeyCode> = Vec::new();
@@ -463,6 +496,48 @@ impl Engine {
                 }
             }
             self::model::MacroPhase::NextStep => {}
+        }
+    }
+
+    /// Abort the active macro and drop the queued runs.
+    fn cancel_macros(&mut self, out: &mut Vec<Out>) {
+        self.macro_queue.clear();
+        self.abort_active_macro(out);
+    }
+
+    /// Start a macro run, or queue it behind the active one: a run that is
+    /// cut short leaves the application half-edited.
+    fn run_macro(&mut self, md: self::model::MacroDef, now: Instant) {
+        if md.steps.is_empty() {
+            return;
+        }
+        if self.active_macro.is_none() {
+            self.active_macro = Some(self.begin_macro(md, now));
+        } else if self.macro_queue.len() < MACRO_QUEUE_LIMIT {
+            self.macro_queue.push_back(md);
+        } else {
+            log::debug!("[mapper] macro queue is full, dropping the run");
+        }
+    }
+
+    fn start_queued_macro(&mut self, now: Instant) {
+        if self.active_macro.is_none()
+            && let Some(md) = self.macro_queue.pop_front()
+        {
+            self.active_macro = Some(self.begin_macro(md, now));
+        }
+    }
+
+    fn begin_macro(&self, md: self::model::MacroDef, now: Instant) -> self::model::ActiveMacro {
+        self::model::ActiveMacro {
+            steps: md.steps,
+            step_pause: md.step_pause,
+            mod_delay: md.mod_delay,
+            current_step: 0,
+            steps_emitted: 0,
+            phase: self::model::MacroPhase::NextStep,
+            next_wake: now,
+            deadline: now + self.macro_timeout,
         }
     }
 
@@ -670,18 +745,7 @@ impl Engine {
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Macro(md) => {
-                            if !md.steps.is_empty() {
-                                self.abort_active_macro(out);
-                                self.active_macro = Some(self::model::ActiveMacro {
-                                    steps: md.steps,
-                                    step_pause: md.step_pause,
-                                    mod_delay: md.mod_delay,
-                                    current_step: 0,
-                                    steps_emitted: 0,
-                                    phase: self::model::MacroPhase::NextStep,
-                                    next_wake: now,
-                                });
-                            }
+                            self.run_macro(md, now);
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::System(action) => {
@@ -965,19 +1029,7 @@ impl Engine {
                 out.push(Out::Stroke { ks, mod_delay });
             }
             Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
-            Some(ActionDef::Macro(md)) if !md.steps.is_empty() => {
-                self.abort_active_macro(out);
-                self.active_macro = Some(self::model::ActiveMacro {
-                    steps: md.steps.clone(),
-                    step_pause: md.step_pause,
-                    mod_delay: md.mod_delay,
-                    current_step: 0,
-                    steps_emitted: 0,
-                    phase: self::model::MacroPhase::NextStep,
-                    next_wake: now,
-                });
-            }
-            Some(ActionDef::Macro(_)) => {}
+            Some(ActionDef::Macro(md)) => self.run_macro(md.clone(), now),
             Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
             Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
             Some(ActionDef::Swallow) => {}
@@ -1043,7 +1095,7 @@ impl Engine {
 
     /// Generic shutdown helper — release everything that is currently held.
     pub fn shutdown(&mut self, out: &mut Vec<Out>) {
-        self.abort_active_macro(out);
+        self.cancel_macros(out);
         // HashMap drain order is arbitrary; release plain keys before
         // modifier keys so a chord's main key never outlives its modifier.
         let mut held: Vec<KeyCode> = self.emitted.drain().map(|(_, ks)| ks.key).collect();

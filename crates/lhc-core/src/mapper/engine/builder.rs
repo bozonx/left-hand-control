@@ -6,7 +6,7 @@ use crate::mapper::config::{ActionSpec, AppConfig};
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
 use evdev::KeyCode;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Duration;
 
 fn parse_key_list(raw: &str) -> Vec<KeyCode> {
@@ -531,6 +531,11 @@ impl Engine {
             layer_triggers: HashMap::new(),
             isolated_holds: HashMap::new(),
             active_macro: None,
+            macro_queue: VecDeque::new(),
+            // Hand-edited configs may hold 0 or a value that overflows `Instant`.
+            macro_timeout: Duration::from_millis(
+                cfg.settings.macro_timeout_ms.clamp(1_000, 600_000),
+            ),
             text_pending: false,
             layer_presses: 0,
             layer_hold_id: 0,

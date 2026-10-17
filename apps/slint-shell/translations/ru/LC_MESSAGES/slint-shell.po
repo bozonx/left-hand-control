@@ -2638,3 +2638,9 @@ msgstr "Сбросить"
 
 msgid "Return all options in this dialog to their defaults"
 msgstr "Вернуть все параметры этого окна к значениям по умолчанию"
+
+msgid "Macro time limit"
+msgstr "Лимит времени макроса"
+
+msgid "A macro still running after this time is stopped and counts as finished. A macro started while another one runs waits for it; up to 3 runs can wait, further presses are ignored."
+msgstr "Макрос, который выполняется дольше этого времени, прерывается и считается завершённым. Макрос, запущенный во время выполнения другого, ждёт своей очереди; в очереди может быть до 3 запусков, следующие нажатия игнорируются."

@@ -80,6 +80,7 @@ pub fn from_value(raw: Option<&Value>) -> AppSettings {
             "defaultMacroModifierDelayMs",
             base.default_macro_modifier_delay_ms,
         ),
+        macro_timeout_ms: u64_or(raw, "macroTimeoutMs", base.macro_timeout_ms),
         input_device_path: match raw.get("inputDevicePath") {
             Some(Value::String(path)) => Some(path.clone()),
             _ => base.input_device_path,

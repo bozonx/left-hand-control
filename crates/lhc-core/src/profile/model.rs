@@ -546,6 +546,8 @@ pub struct AppSettings {
     pub combo_timeout_ms: u64,
     pub default_macro_step_pause_ms: u64,
     pub default_macro_modifier_delay_ms: u64,
+    /// A macro run still going after this time is aborted.
+    pub macro_timeout_ms: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input_device_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -586,6 +588,7 @@ impl Default for AppSettings {
             combo_timeout_ms: 50,
             default_macro_step_pause_ms: 20,
             default_macro_modifier_delay_ms: 5,
+            macro_timeout_ms: 10_000,
             input_device_path: Some(String::new()),
             input_mouse_device_path: None,
             current_layout_id: None,
