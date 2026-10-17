@@ -18,7 +18,7 @@ try {
     Invoke-Checked 'cargo' @('test', '--locked', '--manifest-path', $manifest, '--lib', '--bins')
     Invoke-Checked 'cargo' @(
         'build', '--release', '--locked', '--manifest-path', $manifest,
-        '--bin', 'slint-shell', '--example', 'interactions'
+        '--bin', 'left-hand-control', '--example', 'interactions'
     )
 
     $env:SLINT_BACKEND = 'winit-software'

@@ -25,7 +25,7 @@ SLINT_SHELL_POPUPS=auto cargo run --locked -p slint-shell --features spell
 Приложение запускается со скрытыми окнами и остаётся в трее. Открыть настройки:
 
 ```sh
-target/debug/slint-shell show settings
+target/debug/left-hand-control show settings
 ```
 
 В одном runtime-каталоге работает один экземпляр. Команды `show emoji`,

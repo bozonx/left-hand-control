@@ -15,7 +15,7 @@ SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell   # попап
 Окна при старте скрыты — приложение живёт в трее. Настройки открываются кликом по иконке трея или командой:
 
 ```sh
-target/debug/slint-shell show settings
+target/debug/left-hand-control show settings
 ```
 
 ## Требования
@@ -50,14 +50,26 @@ sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
 | Условия по активному окну | KDE Wayland — ничего (KWin-скрипт через D-Bus, `kdotool` только запасной путь); Hyprland — `hyprctl`; Sway — `swaymsg`; niri, Wayfire, labwc, river и другие wlroots-композиторы — ничего (протокол `wlr-foreign-toplevel`); X11 — `xprop`, для условий по заголовку и окон без рамки ещё `xdotool` (+ `xrandr` для нескольких мониторов) |
 | Ввод литерального текста mapper'ом | `xdg-desktop-portal` и бэкенд окружения (`xdg-desktop-portal-kde` и т. п.) |
 
-Доступ к устройствам ввода (после изменения нужен перезаход в сессию):
+Доступ к устройствам ввода. Правило из `apps/slint-shell/packaging/linux/` даёт
+активной локальной сессии (`uaccess`) и группе `input` запись в `/dev/uinput`.
+Чтение `/dev/input/event*` по-прежнему требует группы `input`. После добавления
+в группу нужен перезаход в сессию:
 
 ```sh
+sudo install -D -m 644 apps/slint-shell/packaging/linux/60-left-hand-control.rules \
+  /etc/udev/rules.d/60-left-hand-control.rules
+sudo install -D -m 644 apps/slint-shell/packaging/linux/modules-load.conf \
+  /etc/modules-load.d/left-hand-control.conf
+sudo modprobe uinput
+sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=misc --sysname-match=uinput
 sudo usermod -aG input "$USER"
-echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' \
-  | sudo tee /etc/udev/rules.d/99-lhc-uinput.rules
-sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
+
+Группа `input` даёт всем процессам пользователя чтение любых клавиатур и мышей,
+то есть права уровня кейлоггера. Поэтому ни инсталлятор, ни пакеты не добавляют
+пользователя в группу без явной команды. Установленный архив делает те же шаги командой
+`install-linux.sh permissions` (см. [выпуск для Linux](linux-release.md)).
 
 ## Сборка и запуск
 
@@ -81,7 +93,7 @@ cargo build -p slint-shell --release --features spell
 
 Рендерер окна настроек задаётся стандартной переменной Slint `SLINT_BACKEND`: `winit-software`, `winit-femtovg` или `winit-skia`. На Spell-попапы она не влияет, у них всегда Skia software. Цветные emoji в окнах winit рисует только `winit-skia`.
 
-Одновременно работает один экземпляр на `XDG_RUNTIME_DIR`. Второй запуск без аргументов завершится с ошибкой `slint-shell is already running`.
+Одновременно работает один экземпляр на `XDG_RUNTIME_DIR`. Второй запуск без аргументов завершится с ошибкой `left-hand-control is already running`.
 
 ## Hot reload интерфейса (Live Preview)
 
@@ -91,7 +103,7 @@ Slint поддерживает обновление `.slint` без переза
 SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview --features spell
 ```
 
-Перед запуском завершите уже работающий экземпляр. Откройте настройки через трей или командой `target/debug/slint-shell show settings` в другом терминале. После сохранения `.slint` интерфейс перезагружается; связь с Rust, свойства, callbacks и модели сохраняются. При синтаксической ошибке остаётся предыдущая версия интерфейса до исправления.
+Перед запуском завершите уже работающий экземпляр. Откройте настройки через трей или командой `target/debug/left-hand-control show settings` в другом терминале. После сохранения `.slint` интерфейс перезагружается; связь с Rust, свойства, callbacks и модели сохраняются. При синтаксической ошибке остаётся предыдущая версия интерфейса до исправления.
 
 Изменения Rust-кода и интерфейса между Slint и Rust (например, переименование используемого свойства или callback) требуют пересборки и перезапуска. Live Preview предназначен только для разработки: включайте `slint/live-preview` через командную строку, не добавляя его в обычные или release-сборки.
 
@@ -126,15 +138,15 @@ Release-сборки используют `~/.config/dev.bozonx.left-hand-contro
 Бинарник с аргументами работает как клиент: отправляет команду запущенному экземпляру через Unix-сокет и завершается.
 
 ```sh
-target/debug/slint-shell show settings
-target/debug/slint-shell show emoji
-target/debug/slint-shell show quick
-target/debug/slint-shell hide
-target/debug/slint-shell toggle-mapper
-target/debug/slint-shell game toggle             # auto|on|off|toggle
-target/debug/slint-shell preferences dark ru    # dark|light, ru|en
-target/debug/slint-shell ping
-target/debug/slint-shell quit
+target/debug/left-hand-control show settings
+target/debug/left-hand-control show emoji
+target/debug/left-hand-control show quick
+target/debug/left-hand-control hide
+target/debug/left-hand-control toggle-mapper
+target/debug/left-hand-control game toggle             # auto|on|off|toggle
+target/debug/left-hand-control preferences dark ru    # dark|light, ru|en
+target/debug/left-hand-control ping
+target/debug/left-hand-control quit
 ```
 
 Ответ `queued` означает, что команда поставлена в очередь UI, а не что окно уже готово к вводу.
@@ -142,7 +154,7 @@ target/debug/slint-shell quit
 ## Mapper
 
 1. Откройте настройки, выберите «Устройство клавиатуры». Путь сохраняется в `settings.inputDevicePath` конфига.
-2. Нажмите «Mapper вкл / выкл» (или `slint-shell toggle-mapper`, или пункт меню трея).
+2. Нажмите «Mapper вкл / выкл» (или `left-hand-control toggle-mapper`, или пункт меню трея).
 
 Mapper, раскладка, game mode и активное окно работают через `lhc-core`. Linux-бэкенд держит межпроцессную блокировку: одновременно mapper может работать только в одном процессе. Сохранение назначения клавиши в редакторе сразу передаётся запущенному mapper.
 
@@ -154,7 +166,7 @@ Mapper, раскладка, game mode и активное окно работа�
 
 **On** и **Off** сразу влияют на условия правил и автоматический выбор раскладки, даже когда все детекторы отключены. Выбор сохраняется в `gameMode.control`; внешнее изменение этого поля применяется при перезагрузке конфига. При ошибке сохранения новый выбор не применяется. **Auto** возвращает управление детекторам, которые продолжают работать в фоне. Исключения процессов применяются только в Auto.
 
-Игровой режим переключается Auto/On/Off в верхней панели, в подменю трея, командой `slint-shell game auto|on|off|toggle` и действиями `app:gameModeToggle|gameModeAuto|gameModeOn|gameModeOff`. Последний выбор Auto/On/Off сохраняется между перезапусками (`gameMode.control`), а в игровом режиме горячие клавиши попапов не срабатывают. Неопределимое состояние считается выключенным, а Auto держит режим включённым ещё 3 секунды после последнего срабатывания. Источники Auto: служба GameMode (D-Bus `com.feralinteractive.GameMode`, без опроса через `gamemoded -s`; установленность проверяется через `ListActivatableNames`), известные игры, список процессов текущего пользователя (включая имя `.exe` игр Wine/Proton из командной строки) и полноэкранное активное окно. Известные игры распознаются несколькими источниками, каждый включается отдельно (`gameMode.useSteam`, `useLutris`, `useHeroic`, `useUmu`, `useGamescope`, `useAppCategory`, `useGameBar`; страница настроек показывает только источники текущей ОС). В Linux: Steam — процесс `reaper SteamLaunch AppId=<id>` и окно `steam_app_<id>` (имя `steam_app_<id>` можно использовать в правилах и исключениях); Lutris — `lutris-wrapper`; Heroic — процессы с переменной окружения `HEROIC_APP_NAME`; umu — процесс `umu-run` (им пользуются Heroic, Lutris, Faugus и другие лаунчеры для Proton); gamescope — вложенное окно `gamescope`; категория — активное окно приложения с категорией `Game` в `.desktop`-файле, лаунчеры из встроенного списка при этом не считаются. Кэш процессов проверяет PID, время запуска и исполняемый файл, поэтому замечает `exec`; изменяемые argv и окружение перечитываются не реже раза в 5 секунд. После смены D-Bus owner KWin старое окно и цель возврата ввода сбрасываются, скрипт загружается заново; неудачный запуск повторяется с интервалом 3 секунды. Полноэкранность берётся из детектора активного окна: KDE Wayland (KWin-скрипт, также окна без рамки на весь экран), Hyprland (`hyprctl`), Sway (`swaymsg`), другие wlroots-композиторы (`wlr-foreign-toplevel`), X11 (`_NET_WM_STATE_FULLSCREEN`, `_NET_WM_BYPASS_COMPOSITOR`, окно без рамки на весь монитор); приложения из встроенного списка (браузеры, видеоплееры и т. п.) не учитываются. Оба встроенных списка показаны на странице настроек. GNOME Wayland пока поддерживает только службу GameMode, известные игры по процессам, процессы и ручное управление. Если нужного инструмента нет, страница настроек называет его.
+Игровой режим переключается Auto/On/Off в верхней панели, в подменю трея, командой `left-hand-control game auto|on|off|toggle` и действиями `app:gameModeToggle|gameModeAuto|gameModeOn|gameModeOff`. Последний выбор Auto/On/Off сохраняется между перезапусками (`gameMode.control`), а в игровом режиме горячие клавиши попапов не срабатывают. Неопределимое состояние считается выключенным, а Auto держит режим включённым ещё 3 секунды после последнего срабатывания. Источники Auto: служба GameMode (D-Bus `com.feralinteractive.GameMode`, без опроса через `gamemoded -s`; установленность проверяется через `ListActivatableNames`), известные игры, список процессов текущего пользователя (включая имя `.exe` игр Wine/Proton из командной строки) и полноэкранное активное окно. Известные игры распознаются несколькими источниками, каждый включается отдельно (`gameMode.useSteam`, `useLutris`, `useHeroic`, `useUmu`, `useGamescope`, `useAppCategory`, `useGameBar`; страница настроек показывает только источники текущей ОС). В Linux: Steam — процесс `reaper SteamLaunch AppId=<id>` и окно `steam_app_<id>` (имя `steam_app_<id>` можно использовать в правилах и исключениях); Lutris — `lutris-wrapper`; Heroic — процессы с переменной окружения `HEROIC_APP_NAME`; umu — процесс `umu-run` (им пользуются Heroic, Lutris, Faugus и другие лаунчеры для Proton); gamescope — вложенное окно `gamescope`; категория — активное окно приложения с категорией `Game` в `.desktop`-файле, лаунчеры из встроенного списка при этом не считаются. Кэш процессов проверяет PID, время запуска и исполняемый файл, поэтому замечает `exec`; изменяемые argv и окружение перечитываются не реже раза в 5 секунд. После смены D-Bus owner KWin старое окно и цель возврата ввода сбрасываются, скрипт загружается заново; неудачный запуск повторяется с интервалом 3 секунды. Полноэкранность берётся из детектора активного окна: KDE Wayland (KWin-скрипт, также окна без рамки на весь экран), Hyprland (`hyprctl`), Sway (`swaymsg`), другие wlroots-композиторы (`wlr-foreign-toplevel`), X11 (`_NET_WM_STATE_FULLSCREEN`, `_NET_WM_BYPASS_COMPOSITOR`, окно без рамки на весь монитор); приложения из встроенного списка (браузеры, видеоплееры и т. п.) не учитываются. Оба встроенных списка показаны на странице настроек. GNOME Wayland пока поддерживает только службу GameMode, известные игры по процессам, процессы и ручное управление. Если нужного инструмента нет, страница настроек называет его.
 
 Имена процессов сопоставляются целиком без учёта регистра; расширение `.exe` можно опустить. ID приложения также сопоставляется целиком. Для шаблонов используйте `*` и `?`, например `steam*`. Существующие правила, рассчитывавшие на совпадение подстроки, нужно заменить явным шаблоном. Заголовки окон не используются для определения игры. В Linux фоновые правила проверяют процессы текущего пользователя.
 
@@ -225,7 +237,7 @@ LHC_MENUS_NAV=1 cargo run --locked -p slint-shell --example menus
 ```sh
 LHC_DEV_DIR=/tmp/lhc-dev SLINT_SHELL_SOCKET=lhc-dev.sock SLINT_SHELL_HOTKEYS=off \
   cargo run -p slint-shell
-SLINT_SHELL_SOCKET=lhc-dev.sock target/debug/slint-shell quit
+SLINT_SHELL_SOCKET=lhc-dev.sock target/debug/left-hand-control quit
 ```
 
 Учтите, что трей у второго экземпляра тоже появится, а mapper запустится только в одном из них.
@@ -299,7 +311,7 @@ apps/slint-shell/
 
 ## Частые проблемы
 
-- **`slint-shell is already running`** — уже запущен экземпляр с тем же сокетом. Выполните `target/debug/slint-shell quit` или задайте другой `SLINT_SHELL_SOCKET`. Устаревший сокет после аварии удаляется при следующем запуске.
+- **`left-hand-control is already running`** — уже запущен экземпляр с тем же сокетом. Выполните `target/debug/left-hand-control quit` или задайте другой `SLINT_SHELL_SOCKET`. Устаревший сокет после аварии удаляется при следующем запуске.
 - **Первая сборка очень долгая или падает на Skia** — проверьте clang, cmake, ninja и python.
 - **`No readable Ctrl+Alt+F11/F12 evdev devices`** — нет доступа к `/dev/input`; см. раздел про группу `input`, либо отключите хоткеи `SLINT_SHELL_HOTKEYS=off`.
 - **Emoji монохромные или квадратами** — установите Noto Color Emoji; для окон winit используйте `SLINT_BACKEND=winit-skia`.
@@ -355,8 +367,8 @@ mapper пропускает ввод без переназначений.
 Вызов конкретной страницы работает и с winit, и со Spell:
 
 ```sh
-target/debug/slint-shell show emoji 3
-target/debug/slint-shell show quick 2
+target/debug/left-hand-control show emoji 3
+target/debug/left-hand-control show quick 2
 cargo run --locked -p slint-shell --example library
 cargo run --locked -p slint-shell --example macros
 ```
@@ -419,7 +431,7 @@ cargo run --locked -p slint-shell --example inline-edit
 
 ## Common pitfalls
 
-- **`slint-shell is already running`** — another instance owns the socket: `target/debug/slint-shell quit` or set `SLINT_SHELL_SOCKET`.
+- **`left-hand-control is already running`** — another instance owns the socket: `target/debug/left-hand-control quit` or set `SLINT_SHELL_SOCKET`.
 - **First build is slow or fails in Skia** — Skia is built from source; install clang, cmake, ninja and Python.
 - **`No readable Ctrl+Alt+F11/F12 evdev devices`** — no access to `/dev/input`; fix permissions or run with `SLINT_SHELL_HOTKEYS=off`.
 - **Monochrome or missing emoji** — install Noto Color Emoji; in winit windows only `SLINT_BACKEND=winit-skia` draws colour emoji.

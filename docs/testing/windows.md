@@ -182,19 +182,19 @@ Use debug builds while iterating on Windows-only code:
 
 ```powershell
 Set-Location C:\lhc
-cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
-cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
 ```
 
 Run the release build only for the final validation:
 
 ```powershell
-cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
+cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
 ```
 
 Stop the persistent shell before rebuilding it. Windows does not allow Cargo to replace a
 running executable; compilation can finish and then fail at the final file replacement with
-`Access is denied (os error 5)`. Send `slint-shell.exe quit`, wait for the process to disappear,
+`Access is denied (os error 5)`. Send `left-hand-control.exe quit`, wait for the process to disappear,
 and only then start `cargo build`.
 
 The initial Slint release build took about eleven minutes in the 4-vCPU/6-GiB VM because release LTO and host swapping dominated the link. A quiet linker is not necessarily hung. Check Task Manager or the QEMU process before interrupting it. Do not compare build time or runtime performance from a swapping VM with a physical Linux result.
@@ -202,7 +202,7 @@ The initial Slint release build took about eleven minutes in the 4-vCPU/6-GiB VM
 PowerShell displays output written to stderr in red and may wrap a successful native command as `NativeCommandError`. Cargo writes progress and warnings to stderr, so red `Compiling`, warnings, or Rustup informational lines are not proof of failure. The authoritative signal is `$LASTEXITCODE` and Cargo’s final line:
 
 ```powershell
-cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
 if ($LASTEXITCODE -ne 0) { throw "cargo failed with exit code $LASTEXITCODE" }
 ```
 
@@ -213,7 +213,7 @@ command, inspect `$LASTEXITCODE` immediately, and restore `Stop` for PowerShell 
 
 ```powershell
 $ErrorActionPreference = 'Continue'
-cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin slint-shell `
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control `
   2>&1 | Tee-Object -FilePath $log -Append
 $cargoExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
@@ -221,7 +221,7 @@ if ($cargoExit -ne 0) { throw "cargo test failed with exit code $cargoExit" }
 ```
 
 Apply the same rule to an expected failing probe. For example, an initial best-effort
-`slint-shell.exe quit` returns connection refused when no server exists; suppress or capture
+`left-hand-control.exe quit` returns connection refused when no server exists; suppress or capture
 that native failure under `Continue` before restoring strict PowerShell error handling.
 
 Use PowerShell 7 where possible for UTF-8 logs. In Windows PowerShell 5.1, Cyrillic and emoji can appear as mojibake even when the application sent the correct UTF-16 text. Verify the resulting text in Notepad and save logs explicitly as UTF-8; do not diagnose Unicode behavior from a mojibake console line alone.
@@ -233,7 +233,7 @@ Use Skia for the Windows visual pass:
 ```powershell
 $env:SLINT_BACKEND = 'winit-skia'
 $env:RUST_LOG = 'debug'
-& C:\lhc\target\release\slint-shell.exe
+& C:\lhc\target\release\left-hand-control.exe
 ```
 
 `winit-software` built and rendered the UI, but Windows showed monochrome outline emoji. `winit-skia` rendered the normal color Windows emoji and is the Windows candidate renderer. Some squares on the stress page were caused by the prototype generating contiguous Unicode code-point ranges that include unassigned or non-emoji symbols; they are test-data defects unless the same known-valid emoji also fails.
@@ -247,7 +247,7 @@ sequence. A contiguous code-point range cannot cover the last case.
 The server starts hidden and remains accessible from the tray. A second invocation is an IPC client:
 
 ```powershell
-$exe = 'C:\lhc\target\release\slint-shell.exe'
+$exe = 'C:\lhc\target\release\left-hand-control.exe'
 & $exe ping
 & $exe show settings
 & $exe show emoji

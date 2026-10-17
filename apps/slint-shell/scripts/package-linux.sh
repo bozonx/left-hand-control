@@ -18,10 +18,15 @@ staging=$(mktemp -d "$package_dir/.bundle.XXXXXXXX")
 trap 'rm -rf -- "$staging"' 0
 trap 'exit 1' HUP INT TERM
 cargo build --release --locked -p slint-shell --features spell
-mkdir -- "$staging/$name"
-install -m 755 -- "$target_dir/release/slint-shell" "$staging/$name/slint-shell"
+mkdir -p -- "$staging/$name/icons"
+install -m 755 -- "$target_dir/release/left-hand-control" "$staging/$name/left-hand-control"
 install -m 755 -- apps/slint-shell/scripts/install-linux.sh "$staging/$name/install-linux.sh"
-install -m 644 -- apps/slint-shell/assets/icon.png LICENSE "$staging/$name/"
+packaging=apps/slint-shell/packaging/linux
+install -m 644 -- LICENSE "$packaging/dev.bozonx.left-hand-control.desktop" \
+    "$packaging/dev.bozonx.left-hand-control.metainfo.xml" "$packaging/60-left-hand-control.rules" \
+    "$packaging/modules-load.conf" "$staging/$name/"
+install -m 644 -- "$packaging"/icons/*.png "$staging/$name/icons/"
+install -m 644 -- apps/slint-shell/assets/icon.svg "$staging/$name/icons/scalable.svg"
 install -m 644 -- docs/development/linux.md "$staging/$name/linux.md"
 install -m 644 -- docs/development/linux-release.md "$staging/$name/README.md"
 archive="$package_dir/$name.tar.gz"

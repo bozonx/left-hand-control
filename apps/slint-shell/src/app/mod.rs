@@ -568,7 +568,9 @@ fn select_backend(popup_attributes: Rc<Cell<bool>>) -> Result<(), slint::Platfor
                 attrs
             }
         })
-        .select()
+        .select()?;
+    // Lets the compositor match windows to the installed desktop entry and icon.
+    slint::set_xdg_app_id(lhc_core::storage::APP_ID)
 }
 
 #[cfg(not(target_os = "linux"))]

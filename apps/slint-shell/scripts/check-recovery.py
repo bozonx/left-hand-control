@@ -9,7 +9,7 @@ import tempfile
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--binary", default="target/debug/slint-shell")
+parser.add_argument("--binary", default="target/debug/left-hand-control")
 parser.add_argument("--popups", choices=["winit", "spell"], default="spell")
 parser.add_argument("--live-preview", action="store_true")
 args = parser.parse_args()

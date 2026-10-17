@@ -28,7 +28,7 @@ target dependencies и `cfg`; переносимый слой используе
 
 ```sh
 cargo build --locked -p slint-shell
-SLINT_BACKEND=winit-software SLINT_SHELL_METRICS=/tmp/slint-software.csv target/debug/slint-shell
+SLINT_BACKEND=winit-software SLINT_SHELL_METRICS=/tmp/slint-software.csv target/debug/left-hand-control
 ```
 
 CSV метрик пишется только при заданном `SLINT_SHELL_METRICS`; Spell worker
@@ -58,13 +58,13 @@ ninja, Python). Возможность сборки не означает нал
 ## Управление
 
 ```sh
-target/debug/slint-shell show settings
-target/debug/slint-shell show emoji
-target/debug/slint-shell show quick
-target/debug/slint-shell toggle-mapper
-target/debug/slint-shell game toggle   # auto|on|off|toggle
-target/debug/slint-shell hide
-target/debug/slint-shell quit
+target/debug/left-hand-control show settings
+target/debug/left-hand-control show emoji
+target/debug/left-hand-control show quick
+target/debug/left-hand-control toggle-mapper
+target/debug/left-hand-control game toggle   # auto|on|off|toggle
+target/debug/left-hand-control hide
+target/debug/left-hand-control quit
 ```
 
 - Трей: клик переключает настройки; меню открывает окна, меняет цвет иконки
@@ -146,7 +146,7 @@ CSV перезаписывается при старте; используйте
 
 ```sh
 python3 apps/slint-shell/scripts/check-worker-crash.py \
-  target/debug/slint-shell
+  target/debug/left-hand-control
 ```
 
 Стенд завершает только дочерний процесс, ждёт новый worker, вызывает попап и
@@ -162,7 +162,7 @@ python3 apps/slint-shell/scripts/check-worker-crash.py \
 ```sh
 cargo build --locked -p slint-shell --features probes --examples
 SLINT_BACKEND=winit-software target/debug/examples/bench-evdev \
-  target/debug/slint-shell /tmp/slint-evdev.csv
+  target/debug/left-hand-control /tmp/slint-evdev.csv
 python3 apps/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
 ```
 
@@ -180,10 +180,10 @@ python3 apps/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
 со Slint 1.18 (`i_slint_core::items::MouseCursor` удалён из прежнего места).
 
 ```sh
-cargo build --locked -p slint-shell --features probes --examples --bin slint-shell
+cargo build --locked -p slint-shell --features probes --examples --bin left-hand-control
 SLINT_SHELL_POPUPS=auto SLINT_BACKEND=winit-software \
   SLINT_SHELL_METRICS=/tmp/slint-stage3a.csv \
-  target/debug/slint-shell
+  target/debug/left-hand-control
 ```
 
 `SLINT_SHELL_POPUPS`:
@@ -239,7 +239,7 @@ Evdev-стенд ждёт событие навигации до 500 мс; t5 в
 Из корня репозитория:
 
 ```sh
-cargo build --locked -p slint-shell --features probes --examples --bin slint-shell
+cargo build --locked -p slint-shell --features probes --examples --bin left-hand-control
 cargo test --locked -p slint-shell --features spell
 cargo check --locked -p slint-shell --no-default-features
 cargo clippy --locked -p slint-shell --features probes --all-targets --no-deps -- -D warnings
@@ -253,10 +253,10 @@ python3 apps/slint-shell/scripts/summarize.py /tmp/slint-lifecycle/parent.csv.sp
 # Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
 SLINT_SHELL_POPUPS=spell SLINT_BACKEND=winit-software \
   target/debug/examples/bench-evdev \
-  target/debug/slint-shell /tmp/slint-evdev.csv
+  target/debug/left-hand-control /tmp/slint-evdev.csv
 SLINT_BACKEND=winit-software \
   target/debug/examples/bench-return \
-  target/debug/slint-shell /tmp/slint-return.csv
+  target/debug/left-hand-control /tmp/slint-return.csv
 ```
 
 Виртуальные проверки требуют `kwin_wayland`, `kscreen-doctor`, `dbus-run-session`

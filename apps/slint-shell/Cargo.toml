@@ -6,6 +6,10 @@ license.workspace = true
 rust-version.workspace = true
 publish = false
 
+[[bin]]
+name = "left-hand-control"
+path = "src/main.rs"
+
 [dependencies]
 lhc-core = { path = "../../crates/lhc-core" }
 slint = { version = "=1.17.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-software", "renderer-femtovg", "renderer-skia", "unstable-winit-030"] }

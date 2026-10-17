@@ -7,6 +7,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- The executable is named `left-hand-control` (the Cargo package stays `slint-shell`); on Linux its windows use the app id `dev.bozonx.left-hand-control`.
 - Slint is the only active desktop shell, backed by the UI-independent `lhc-core` crate.
 - The Cargo workspace, CI and developer documentation cover the Rust application.
 - Bundled layouts, layout parser fixtures and the application icon live with their owning crates.
@@ -17,5 +18,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Linux packaging metadata: application icon in all hicolor sizes and SVG, desktop entry, AppStream metainfo, a udev rule giving the active session and the `input` group access to `/dev/uinput`, and `uinput` autoload. `install-linux.sh permissions` / `remove-permissions` install and remove them explicitly.
 - Layer hint (Settings → General, off by default): while a layer is held, its keys appear in a layer-shell overlay above all windows that takes neither the keyboard focus nor the pointer; never shown in game mode.
 - `kde:<component>/<shortcut>` action and a "KDE shortcuts" picker category listing every global shortcut of the running KDE session.

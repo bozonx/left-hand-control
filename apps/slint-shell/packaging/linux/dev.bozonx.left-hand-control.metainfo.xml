@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.bozonx.left-hand-control</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Left Hand Control</name>
+  <summary>Keyboard mapper with layers, macros and commands</summary>
+  <summary xml:lang="ru">Переназначение клавиатуры со слоями, макросами и командами</summary>
+  <developer id="dev.bozonx">
+    <name>bozonx</name>
+  </developer>
+  <description>
+    <p>
+      Left Hand Control intercepts a physical keyboard, applies layers, rules,
+      macros and commands, and emits the result through a virtual input device.
+      It lives in the system tray and opens quick popups for emoji and actions.
+    </p>
+    <p xml:lang="ru">
+      Left Hand Control перехватывает физическую клавиатуру, применяет слои,
+      правила, макросы и команды и выдаёт результат через виртуальное устройство
+      ввода. Приложение работает из системного трея и открывает быстрые попапы
+      с emoji и действиями.
+    </p>
+    <p>
+      The primary environment is KDE Plasma 6 on Wayland. Keyboard interception
+      needs read access to /dev/input and write access to /dev/uinput.
+    </p>
+    <p xml:lang="ru">
+      Основная среда — KDE Plasma 6 на Wayland. Для перехвата клавиатуры нужны
+      чтение /dev/input и запись в /dev/uinput.
+    </p>
+  </description>
+  <launchable type="desktop-id">dev.bozonx.left-hand-control.desktop</launchable>
+  <provides>
+    <binary>left-hand-control</binary>
+  </provides>
+  <supports>
+    <control>keyboard</control>
+  </supports>
+  <url type="homepage">https://github.com/bozonx/left-hand-control</url>
+  <url type="bugtracker">https://github.com/bozonx/left-hand-control/issues</url>
+  <url type="vcs-browser">https://github.com/bozonx/left-hand-control</url>
+  <categories>
+    <category>Utility</category>
+    <category>Accessibility</category>
+  </categories>
+  <keywords>
+    <keyword>keyboard</keyword>
+    <keyword>remap</keyword>
+    <keyword>layer</keyword>
+    <keyword>macro</keyword>
+  </keywords>
+  <content_rating type="oars-1.1"/>
+</component>

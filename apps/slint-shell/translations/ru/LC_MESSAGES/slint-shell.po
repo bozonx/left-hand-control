@@ -1098,14 +1098,14 @@ msgstr "В /dev/input не найдено ни одного устройства
 msgid "The selected keyboard is not connected. Connect it or pick another one below."
 msgstr "Выбранная клавиатура не подключена. Подключите её или выберите другую ниже."
 
-msgid "No permission to read keyboard events. Add your user to the input group and log in again."
-msgstr "Нет прав на чтение событий клавиатуры. Добавьте пользователя в группу input и войдите в систему заново."
+msgid "No permission to read keyboard events. Add your user to the input group (install-linux.sh permissions does this) and log in again."
+msgstr "Нет прав на чтение событий клавиатуры. Добавьте пользователя в группу input (это делает install-linux.sh permissions) и войдите в систему заново."
 
 msgid "/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe uinput."
 msgstr "/dev/uinput не существует. Загрузите модуль ядра uinput: sudo modprobe uinput."
 
-msgid "No permission to write to /dev/uinput. Add a udev rule that gives the input group access to it."
-msgstr "Нет прав на запись в /dev/uinput. Добавьте udev-правило, которое даёт к нему доступ группе input."
+msgid "No permission to write to /dev/uinput. Install the application's udev rule (install-linux.sh permissions) or reinstall the package."
+msgstr "Нет прав на запись в /dev/uinput. Установите udev-правило приложения (install-linux.sh permissions) или переустановите пакет."
 
 msgid "Launch on startup"
 msgstr "Запускать вместе с системой"

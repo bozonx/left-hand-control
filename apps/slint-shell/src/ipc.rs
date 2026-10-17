@@ -139,7 +139,11 @@ impl Server {
         let path = own_socket()?;
         if path.exists() {
             match UnixStream::connect(&path) {
-                Ok(_) => return Err(std::io::Error::other("slint-shell is already running")),
+                Ok(_) => {
+                    return Err(std::io::Error::other(
+                        "left-hand-control is already running",
+                    ));
+                }
                 Err(e) if e.kind() == std::io::ErrorKind::ConnectionRefused => {
                     std::fs::remove_file(&path)?
                 }

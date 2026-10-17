@@ -20,7 +20,7 @@ cargo run -p slint-shell                                          # popups as wi
 SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell # popups as layer-shell (KDE/Sway/Hyprland)
 SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview  # hot reload of .slint
 
-target/debug/slint-shell show settings   # CLI client → running instance (show emoji|quick [page], hide,
+target/debug/left-hand-control show settings   # CLI client → running instance (show emoji|quick [page], hide,
                                          # toggle-mapper, game auto|on|off|toggle,
                                          # preferences dark|light ru|en, ping, quit)
 ```

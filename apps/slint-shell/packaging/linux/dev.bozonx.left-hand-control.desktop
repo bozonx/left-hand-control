@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Left Hand Control
+GenericName=Keyboard Mapper
+GenericName[ru]=Переназначение клавиатуры
+Comment=Layers, macros and commands for your keyboard
+Comment[ru]=Слои, макросы и команды для клавиатуры
+Exec=left-hand-control
+Icon=dev.bozonx.left-hand-control
+Terminal=false
+Categories=Utility;Accessibility;
+Keywords=keyboard;remap;layer;macro;hotkey;
+Keywords[ru]=клавиатура;переназначение;слой;макрос;горячие клавиши;
+StartupNotify=false

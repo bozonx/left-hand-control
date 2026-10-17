@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
-$exe = Join-Path $root 'target\release\slint-shell.exe'
+$exe = Join-Path $root 'target\release\left-hand-control.exe'
 $output = Join-Path $root 'windows-runtime\lifecycle'
 
 if (-not (Test-Path $exe)) {

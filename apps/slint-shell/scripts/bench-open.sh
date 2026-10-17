@@ -2,7 +2,7 @@
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 workspace="$(cd "$root/../.." && pwd)"
-bin="${SLINT_SHELL_BIN:-$workspace/target/debug/slint-shell}"
+bin="${SLINT_SHELL_BIN:-$workspace/target/debug/left-hand-control}"
 popup="${1:-emoji}"
 count="${2:-20}"
 [[ "$popup" == emoji || "$popup" == quick ]] || exit 2
