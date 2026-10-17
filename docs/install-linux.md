@@ -1,33 +1,13 @@
-# Linux: выпуск, установка и удаление
+# Установка на Linux
 
-Для сборки из репозитория нужны Rust ≥ 1.92 и системные зависимости из
-[руководства разработчика](linux.md). Из корня репозитория:
-
-```sh
-apps/slint-shell/scripts/package-linux.sh
-```
-
-Скрипт использует `Cargo.lock`, release-профиль и feature `spell`. Архив и SHA-256
-появляются в `<cargo-target>/packages/`. В архив входят бинарник `left-hand-control`,
-иконки (PNG 16–512 и SVG), `.desktop`-файл, AppStream metainfo, udev-правило для
-`/dev/uinput`, автозагрузка модуля `uinput`, лицензия, инсталлятор, эта инструкция
-и руководство Linux. Исходники этих файлов лежат в `apps/slint-shell/packaging/linux/`
-и `apps/slint-shell/assets/icon.svg`. Сборка предназначена для архитектуры и дистрибутива
-сборочной машины: это не универсальный статический бинарник. Перед выпуском
-проверьте его в целевой KDE Plasma 6 Wayland среде и проверьте `ldd left-hand-control`
-на отсутствующие библиотеки. Одинаковый lockfile не гарантирует побайтовую
-воспроизводимость при разных компиляторах и системных библиотеках.
-
-Для проверки инсталлятора во временном каталоге (нужен `desktop-file-validate`
-из пакета `desktop-file-utils`):
-
-```sh
-python3 apps/slint-shell/scripts/check-linux-install.py
-```
+Left Hand Control рассчитан на KDE Plasma 6 в сессии Wayland. Релизы публикуются
+на странице GitHub Releases: архив `.tar.gz` для установки в домашний каталог,
+пакеты `.deb` и `.rpm` и файл `SHA256SUMS`. Как работают функции приложения,
+описано в `features.md` (в репозитории — [docs/features.md](features.md)).
 
 ## Установка архива
 
-Проверьте SHA-256 командой `sha256sum -c имя-архива.tar.gz.sha256`, распакуйте архив, перейдите
+Проверьте контрольную сумму командой `sha256sum -c --ignore-missing SHA256SUMS`, распакуйте архив, перейдите
 в распакованный каталог и выполните:
 
 ```sh
@@ -65,7 +45,7 @@ LHC_POPUPS=auto ~/.local/bin/left-hand-control
 в группу перезайдите в сессию. Группа `input` даёт процессам пользователя чтение
 всех клавиатур и мышей; выдавайте её осознанно. Отменить правило и автозагрузку
 можно командой `install-linux.sh remove-permissions`; выход из группы:
-`sudo gpasswd -d "$USER" input`. Portal и системные библиотеки описаны в руководстве Linux.
+`sudo gpasswd -d "$USER" input`. Для ввода текста (`text:`) нужен `xdg-desktop-portal` с бэкендом окружения (на KDE — `xdg-desktop-portal-kde`); при первом вводе система один раз спросит разрешение на удалённое управление.
 
 Включайте «Запускать вместе с системой» из установленного приложения, чтобы
 автозапуск ссылался на стабильный путь. Если он раньше был включён из другого
@@ -101,32 +81,3 @@ sudo zypper install ./left-hand-control-<версия>-1.x86_64.rpm   # openSUSE
 добавляет: выполните `sudo usermod -aG input "$USER"` и перезайдите в сессию.
 Удаление — `sudo apt remove left-hand-control` / `sudo dnf remove left-hand-control`;
 конфигурация пользователя остаётся.
-
-## Выпуск релиза
-
-Релиз собирает `.github/workflows/release.yml` по тегу `v<версия>`; ручной запуск
-собирает и проверяет артефакты без создания релиза. Workflow:
-
-1. прогоняет CI (`ci.yml`);
-2. проверяет, что тег совпадает с `workspace.package.version`, в `CHANGELOG.md` есть
-   секция `## [<версия>] - <дата>`, а первый `<release>` в metainfo — эта версия
-   (`apps/slint-shell/scripts/release-metadata.py`);
-3. в контейнере Ubuntu 22.04 (glibc 2.35) выполняет
-   `apps/slint-shell/scripts/release-linux.sh`: tar.gz, deb и rpm (nfpm,
-   `packaging/linux/nfpm.yaml`), архив vendored-зависимостей и `SHA256SUMS`;
-   проверяет deb через lintian, rpm через rpmlint;
-4. ставит и удаляет пакеты в Debian 12/13, Ubuntu 22.04/24.04, Fedora, openSUSE
-   Tumbleweed и Arch (`apps/slint-shell/scripts/smoke-linux-package.sh`);
-5. добавляет attestation сборки и создаёт **черновик** релиза с заметками из
-   `CHANGELOG.md`. Публикует его человек после локального e2e
-   (`apps/slint-shell/scripts/e2e-local.sh`).
-
-Локально те же артефакты собираются `release-linux.sh` (нужен `nfpm` в `PATH`);
-для переносимого бинарника запускайте его в контейнере `ubuntu:22.04`.
-
-Архив `left-hand-control-<версия>-vendor.tar.xz` содержит все crates из
-`Cargo.lock` и `.cargo/config.toml` для офлайн-сборки: распакуйте его поверх
-исходников версии (`tar -xJf … --strip-components=1`) и собирайте с `--offline`.
-При распространении GPL-бинарника предоставляйте соответствующие исходники,
-включая vendor-патчи, и инструкции сборки именно выпущенной версии; архив
-исходников тега и vendor-архив вместе закрывают это требование.

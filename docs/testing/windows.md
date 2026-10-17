@@ -2,6 +2,8 @@
 
 This document describes the reproducible Windows 11 test environment for the Slint shell of Left Hand Control. Use a full VM with an interactive desktop. Docker and Windows containers cannot validate native windows, tray behavior, foreground activation, global hotkeys, `SendInput`, DPI, or keyboard-layout integration.
 
+This document covers installing the VM and working in it interactively. Automated runs from the host (`apps/slint-shell/scripts/vm/run-windows.py`) need a one-time preparation of this VM with `prepare-windows-guest.ps1`; see [the developer guide](../development/guide.md#windows-vm).
+
 KVM/QEMU is the primary local hypervisor on Linux. It gives near-native CPU execution, scriptable disks and snapshots, UEFI Secure Boot, TPM 2.0, and a QEMU monitor that can inject emulated hardware keys. VirtualBox is acceptable only as a fallback when KVM is unavailable; do not mix performance results from the two hypervisors.
 
 ## Host requirements
@@ -392,7 +394,7 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
-The complete Slint checklist is in [Windows Slint validation](slint-windows-validation.md). Product-level mapper, layouts, macros, and `text:` validation are in the [cross-platform validation plan](cross-platform-product-validation-plan.md).
+The remaining manual Windows shell checks are in section 14 of the [manual acceptance checklist](manual-acceptance.md); product-level mapper, layouts, macros, and `text:` checks wait for a Windows mapper.
 
 ## Snapshots and result recording
 

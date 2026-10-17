@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
     bundle = root / "bundle"
     bundle.mkdir()
     shutil.copy2(scripts / "install-linux.sh", bundle / "install-linux.sh")
-    for name in ("LICENSE", "README.md", "linux.md"):
+    for name in ("LICENSE", "README.md", "features.md"):
         (bundle / name).write_text("fixture", encoding="utf-8")
     packaging = scripts.parent / "packaging/linux"
     for name in (

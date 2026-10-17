@@ -83,7 +83,7 @@ done
     cat -- "$summary"
     echo
     echo 'Manual smoke on the installed package (section 3 of'
-    echo 'docs/testing/cross-platform-product-validation-plan.md): not recorded yet.'
+    echo 'docs/testing/manual-acceptance.md): not recorded yet.'
 } > "$result_file"
 echo "Summary: $result_file"
 [ "$failed" -eq 0 ]

@@ -14,7 +14,7 @@ winit 0.30, ksni (D-Bus StatusNotifierItem без GTK), evdev. Редактор 
 перечитываются с защитой от перезаписи непрочитанных изменений.
 
 Повседневный запуск, зависимости, переменные окружения и проверки описаны в
-[руководстве разработчика для Linux](../../docs/development/linux.md). Этот файл
+[руководстве разработчика](../../docs/development/guide.md). Этот файл
 содержит подробности стендов и измерений приложения.
 
 Общий Slint UI также компилируется для Windows и macOS. Linux-native код ограничен
@@ -305,5 +305,7 @@ SLINT_BACKEND=winit-software \
 | `check-windows-automated.ps1`, `check-windows-lifecycle.ps1`, `windows-receiver.ps1` | Windows-приёмка и окно получения ввода |
 | `bench-open.sh`, `bench-virtual.sh`, `bench-geometry.py`, `bench-lifecycle.py` | Измерительные прогоны |
 | `mem.sh`, `summarize.py` | Сбор памяти и сводка результатов |
+| `e2e-local.sh` | Локальный прогон L3 со сводкой в `docs/testing/results/linux/` |
+| `vm/run-linux.py`, `vm/run-windows.py` и гостевые скрипты `vm/` | E2E в одноразовых KVM/QEMU VM (L4), см. [руководство разработчика](../../docs/development/guide.md#l4-e2e-в-виртуальных-машинах) |
 
 Общие экспериментальные XKB-инструменты описаны в [scripts/README.md](../../scripts/README.md).

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guide for AI coding agents working in this repository. Read it before making changes. Day-to-day developer details (system packages, env vars, run modes, troubleshooting) live in [`docs/development/linux.md`](docs/development/linux.md); this file is the short, prescriptive version.
+Guide for AI coding agents working in this repository. Read it before making changes. Day-to-day developer details (system packages, env vars, run modes, checks, e2e, releases) live in [`docs/development/guide.md`](docs/development/guide.md); this file is the short, prescriptive version.
 
 ## Project at a glance
 
@@ -49,15 +49,17 @@ cargo run --locked -p slint-shell --example interactions        # settings, save
 
 Page-specific examples: `action-picker`, `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-scroll`, `notifications`. Benchmarks and diagnostic stands (`bench-*`, `probes` feature, `apps/slint-shell/scripts/`) are described in `apps/slint-shell/README.md`.
 
-Mapper and release checks:
+Mapper, e2e and release checks (desktop e2e run only locally, never in GitHub Actions):
 
 ```sh
 cargo test --locked -p lhc-core --test mapper_e2e -- --ignored  # real evdev → engine → uinput path; needs /dev/uinput and /dev/input
 apps/slint-shell/scripts/e2e-local.sh                           # all UI scenarios + mapper e2e; writes docs/testing/results/linux/<date>.txt
 apps/slint-shell/scripts/release-linux.sh                       # tar.gz, deb, rpm, vendor archive, SHA256SUMS (needs nfpm)
+apps/slint-shell/scripts/vm/run-linux.py --vm <dir> --package <file>  # L4: package in a disposable KDE VM (mapper, text:, tray, autostart)
+apps/slint-shell/scripts/vm/run-windows.py --vm <dir>                  # L4: Windows shell acceptance in a disposable VM
 ```
 
-Releases are built by `.github/workflows/release.yml` from a `v<version>` tag; see `docs/development/linux-release.md`.
+Releases are built by `.github/workflows/release.yml` from a `v<version>` tag; see `docs/development/guide.md` (section 5).
 
 ## Repository map
 
@@ -186,7 +188,8 @@ on it, or try to keep it building. Work only in `lhc-core` and `apps/slint-shell
 
 ## Further reading
 
-- [`docs/development/linux.md`](docs/development/linux.md) — setup, run modes, env vars, feature behaviour, troubleshooting.
+- [`docs/development/guide.md`](docs/development/guide.md) — setup, run modes, env vars, checks, e2e levels (host and VMs), release.
+- [`docs/features.md`](docs/features.md) — how the application's features behave.
 - [`apps/slint-shell/README.md`](apps/slint-shell/README.md) — popup invocation paths, benchmarks, diagnostic stands, Windows/macOS notes.
-- [`docs/testing/windows.md`](docs/testing/windows.md) — Windows VM test environment.
+- [`docs/testing/windows.md`](docs/testing/windows.md) — Windows VM installation; [`docs/testing/manual-acceptance.md`](docs/testing/manual-acceptance.md) — manual acceptance checklist.
 - `apps/slint-shell/vendor/*/PATCHES.md` — what the vendored crates change and why.

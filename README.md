@@ -12,7 +12,7 @@ Desktop keyboard mapper на Rust и Slint. Перехватывает физи�
 
 Нужен Rust stable ≥ 1.92. На Linux установите clang, cmake, ninja, Python,
 библиотеки D-Bus, Fontconfig, Wayland и xkbcommon. Подробные команды и настройка
-доступа к `/dev/input` и `/dev/uinput` — в [руководстве Linux](docs/development/linux.md).
+доступа к `/dev/input` и `/dev/uinput` — в [руководстве разработчика](docs/development/guide.md).
 
 Все команды выполняются из корня репозитория:
 
@@ -34,8 +34,9 @@ target/debug/left-hand-control show settings
 
 ## Установка Linux release
 
-Локальная сборка архива, установка без `sudo` и удаление описаны в
-[руководстве выпуска](docs/development/linux-release.md). Бинарник устанавливается
+Установка архива без `sudo`, пакеты deb/rpm, права и удаление описаны в
+[инструкции по установке](docs/install-linux.md); сборка релиза — в
+[руководстве разработчика](docs/development/guide.md#5-выпуск). Бинарник устанавливается
 по стабильному пути; пользовательские настройки сохраняются при обновлении.
 
 ## Конфигурация
@@ -88,10 +89,12 @@ CI проверяет core и оболочку на Linux, Windows и macOS. Р�
 ## Документация
 
 - [Инструкции для агентов](AGENTS.md)
-- [Разработка на Linux](docs/development/linux.md)
+- [Руководство разработчика: запуск, проверки, e2e, выпуск](docs/development/guide.md)
+- [Поведение приложения](docs/features.md)
+- [Установка на Linux](docs/install-linux.md)
 - [Оболочка, сценарии и диагностика](apps/slint-shell/README.md)
 - [Windows-стенд](docs/testing/windows.md)
-- [Кроссплатформенная приёмка](docs/testing/cross-platform-product-validation-plan.md)
+- [Ручная приёмка](docs/testing/manual-acceptance.md)
 - [Политика безопасности](SECURITY.md)
 
 Лицензия: [GPL-3.0-or-later](LICENSE).

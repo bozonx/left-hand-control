@@ -2,12 +2,16 @@
 
 Все команды в руководствах выполняются из корня репозитория, если не указано иное.
 
+## Пользователям
+
+- [Установка на Linux: архив, deb/rpm, права, удаление](install-linux.md)
+- [Поведение приложения](features.md)
+
 ## Разработка
 
-- [Linux: установка, запуск и диагностика](development/linux.md)
-- [Linux: выпуск, установка и удаление](development/linux-release.md)
+- [Руководство разработчика: запуск, проверки, e2e, выпуск](development/guide.md)
 - [Поддержка платформ и добавление backend](development/platforms.md)
-- [Оболочка, UI-сценарии и измерительные стенды](../apps/slint-shell/README.md)
+- [Оболочка: стенды задержек, Spell, диагностика](../apps/slint-shell/README.md)
 - [Правила работы с кодом](../AGENTS.md)
 
 ## Проектирование
@@ -17,11 +21,8 @@
 
 ## Тестирование
 
-- [Игровой режим: регрессии и нативная приёмка](testing/game-mode.md)
-
-- [Windows: настройка стенда](testing/windows.md)
-- [Приёмка Slint-оболочки на Windows](testing/slint-windows-validation.md)
-- [План кроссплатформенной продуктовой приёмки](testing/cross-platform-product-validation-plan.md)
-- [Протокол Windows от 2026-09-24](testing/results/windows/2026-09-24.txt)
+- [Ручная приёмка (L5)](testing/manual-acceptance.md)
+- [Windows VM: установка стенда](testing/windows.md)
+- Протоколы прогонов: [linux](testing/results/linux/), [windows](testing/results/windows/)
 
 Исторический архив `_old/` не является документацией актуального продукта.
