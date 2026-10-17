@@ -4273,3 +4273,102 @@ fn space_audit_long_hold_action_allows_letter_to_overtake_space() {
         vec![KeyCode::KEY_B, KeyCode::KEY_SPACE]
     );
 }
+
+#[test]
+fn unassigned_space_keeps_order_behind_another_tap_hold_key() {
+    for double in ["", "Escape"] {
+        for gap in [1, 10, 40] {
+            assert_eq!(
+                space_audit_presses(
+                    Some(
+                        serde_json::json!({"key":"KeyA", "holdAction":"ControlLeft", "doubleTapAction":double})
+                    ),
+                    &[
+                        (KeyCode::KEY_A, true, 0),
+                        (KeyCode::KEY_SPACE, true, gap),
+                        (KeyCode::KEY_B, true, gap * 2),
+                        (KeyCode::KEY_A, false, gap * 3),
+                        (KeyCode::KEY_SPACE, false, gap * 3 + 1),
+                        (KeyCode::KEY_B, false, gap * 3 + 2),
+                    ],
+                ),
+                vec![KeyCode::KEY_A, KeyCode::KEY_SPACE, KeyCode::KEY_B],
+            );
+        }
+    }
+}
+
+#[test]
+fn unassigned_space_can_be_overtaken_by_a_chord_while_another_key_decides() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        {"key":"KeyA", "holdAction":"ControlLeft"},
+        {"key":"KeyB+KeyC", "tapAction":null, "holdAction":"KeyX"}
+    ]}))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    for (key, down, ms) in [
+        (KeyCode::KEY_A, true, 0),
+        (KeyCode::KEY_SPACE, true, 10),
+        (KeyCode::KEY_B, true, 20),
+        (KeyCode::KEY_C, true, 30),
+        (KeyCode::KEY_A, false, 40),
+        (KeyCode::KEY_SPACE, false, 50),
+        (KeyCode::KEY_B, false, 60),
+        (KeyCode::KEY_C, false, 70),
+    ] {
+        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.tick(now + Duration::from_millis(ms), &mut out);
+    }
+    let presses: Vec<_> = out
+        .iter()
+        .filter_map(|event| match event {
+            Out::KeyRaw { key, down: true } => Some(*key),
+            Out::Stroke { ks, .. } | Out::ChordPress { ks, .. } => Some(ks.key),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        presses,
+        vec![KeyCode::KEY_X, KeyCode::KEY_A, KeyCode::KEY_SPACE]
+    );
+    assert!(engine.emitted.is_empty());
+    assert!(engine.pending.is_empty());
+}
+
+#[test]
+fn unassigned_space_before_a_chord_can_use_the_chords_later_layer() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        {"key":"KeyA", "holdAction":"ControlLeft"},
+        {"key":"KeyB+KeyC", "tapAction":null, "layerId":"nav"}
+    ], "layerKeymaps":{"nav":{"keys":{"Space":"Backspace"}}}}))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    for (key, down, ms) in [
+        (KeyCode::KEY_A, true, 0),
+        (KeyCode::KEY_SPACE, true, 10),
+        (KeyCode::KEY_B, true, 20),
+        (KeyCode::KEY_C, true, 30),
+        (KeyCode::KEY_A, false, 40),
+        (KeyCode::KEY_SPACE, false, 50),
+        (KeyCode::KEY_B, false, 60),
+        (KeyCode::KEY_C, false, 70),
+    ] {
+        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.tick(now + Duration::from_millis(ms), &mut out);
+    }
+    let presses: Vec<_> = out
+        .iter()
+        .filter_map(|event| match event {
+            Out::KeyRaw { key, down: true } => Some(*key),
+            Out::Stroke { ks, .. } | Out::ChordPress { ks, .. } => Some(ks.key),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(presses, vec![KeyCode::KEY_A, KeyCode::KEY_BACKSPACE]);
+    assert!(engine.emitted.is_empty());
+    assert!(engine.pending.is_empty());
+}
