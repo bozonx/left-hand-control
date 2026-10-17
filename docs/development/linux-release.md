@@ -43,7 +43,7 @@ python3 apps/slint-shell/scripts/check-linux-install.py
 Запуск с поддержкой layer-shell и переходом на winit при его отсутствии:
 
 ```sh
-SLINT_SHELL_POPUPS=auto ~/.local/bin/left-hand-control
+LHC_POPUPS=auto ~/.local/bin/left-hand-control
 ```
 
 При запуске из меню используется стандартный режим winit. Для цветных emoji
@@ -84,6 +84,49 @@ SLINT_SHELL_POPUPS=auto ~/.local/bin/left-hand-control
 Инсталлятор удаляет установленные файлы приложения; config и раскладки остаются.
 Права на устройства не трогаются: если они больше не нужны, выполните
 `install-linux.sh remove-permissions` до удаления.
-Публикация архива выполняется отдельно от локальной сборки. При распространении
-GPL-бинарника предоставляйте соответствующие исходники, включая vendor-патчи,
-и инструкции сборки именно выпущенной версии.
+
+## Пакеты deb и rpm
+
+Ставятся штатным менеджером пакетов, `sudo` нужен только ему:
+
+```sh
+sudo apt install ./left-hand-control_<версия>_amd64.deb          # Debian 12+, Ubuntu 22.04+
+sudo dnf install ./left-hand-control-<версия>-1.x86_64.rpm      # Fedora
+sudo zypper install ./left-hand-control-<версия>-1.x86_64.rpm   # openSUSE
+```
+
+Пакет ставит бинарник в `/usr/bin`, запись меню, metainfo, иконки, udev-правило
+в `/usr/lib/udev/rules.d/` и автозагрузку `uinput` в `/usr/lib/modules-load.d/`,
+затем перезагружает правила udev. В группу `input` пакет пользователя **не**
+добавляет: выполните `sudo usermod -aG input "$USER"` и перезайдите в сессию.
+Удаление — `sudo apt remove left-hand-control` / `sudo dnf remove left-hand-control`;
+конфигурация пользователя остаётся.
+
+## Выпуск релиза
+
+Релиз собирает `.github/workflows/release.yml` по тегу `v<версия>`; ручной запуск
+собирает и проверяет артефакты без создания релиза. Workflow:
+
+1. прогоняет CI (`ci.yml`);
+2. проверяет, что тег совпадает с `workspace.package.version`, в `CHANGELOG.md` есть
+   секция `## [<версия>] - <дата>`, а первый `<release>` в metainfo — эта версия
+   (`apps/slint-shell/scripts/release-metadata.py`);
+3. в контейнере Ubuntu 22.04 (glibc 2.35) выполняет
+   `apps/slint-shell/scripts/release-linux.sh`: tar.gz, deb и rpm (nfpm,
+   `packaging/linux/nfpm.yaml`), архив vendored-зависимостей и `SHA256SUMS`;
+   проверяет deb через lintian, rpm через rpmlint;
+4. ставит и удаляет пакеты в Debian 12/13, Ubuntu 22.04/24.04, Fedora, openSUSE
+   Tumbleweed и Arch (`apps/slint-shell/scripts/smoke-linux-package.sh`);
+5. добавляет attestation сборки и создаёт **черновик** релиза с заметками из
+   `CHANGELOG.md`. Публикует его человек после локального e2e
+   (`apps/slint-shell/scripts/e2e-local.sh`).
+
+Локально те же артефакты собираются `release-linux.sh` (нужен `nfpm` в `PATH`);
+для переносимого бинарника запускайте его в контейнере `ubuntu:22.04`.
+
+Архив `left-hand-control-<версия>-vendor.tar.xz` содержит все crates из
+`Cargo.lock` и `.cargo/config.toml` для офлайн-сборки: распакуйте его поверх
+исходников версии (`tar -xJf … --strip-components=1`) и собирайте с `--offline`.
+При распространении GPL-бинарника предоставляйте соответствующие исходники,
+включая vendor-патчи, и инструкции сборки именно выпущенной версии; архив
+исходников тега и vendor-архив вместе закрывают это требование.

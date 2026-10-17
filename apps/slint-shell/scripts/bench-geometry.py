@@ -19,9 +19,9 @@ if len(names) < 2:
     raise RuntimeError('two virtual outputs required')
 rows = []
 fixtures = []
-env = dict(os.environ, SLINT_SHELL_POPUPS='spell', SLINT_BACKEND='winit-software',
-           SLINT_SHELL_OUTPUT=names[-1], SLINT_SHELL_HOTKEYS='off', SLINT_SHELL_SOCKET=f'lhc-geometry-{os.getpid()}.sock',
-           SLINT_SHELL_METRICS=str(output / 'parent.csv'))
+env = dict(os.environ, LHC_POPUPS='spell', SLINT_BACKEND='winit-software',
+           LHC_OUTPUT=names[-1], LHC_HOTKEYS='off', LHC_SOCKET=f'lhc-geometry-{os.getpid()}.sock',
+           LHC_METRICS=str(output / 'parent.csv'))
 with (output / 'server.log').open('w') as log:
     server = subprocess.Popen([binary], env=env, stdout=log, stderr=log)
     def command(*args):

@@ -49,8 +49,8 @@ function Test-Quit {
 
     $stdout = Join-Path $output "$Scenario-stdout.log"
     $stderr = Join-Path $output "$Scenario-stderr.log"
-    $env:SLINT_SHELL_HOTKEYS = 'off'
-    $env:SLINT_SHELL_POPUPS = 'winit'
+    $env:LHC_HOTKEYS = 'off'
+    $env:LHC_POPUPS = 'winit'
     $process = Start-Process -FilePath $exe -WorkingDirectory $root `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
     Wait-ForServer $process
@@ -84,9 +84,9 @@ function Test-Stress {
     $stderr = Join-Path $output "$scenario-stderr.log"
     $metrics = Join-Path $output "$scenario-metrics.csv"
     Remove-Item $metrics -ErrorAction SilentlyContinue
-    $env:SLINT_SHELL_HOTKEYS = 'off'
-    $env:SLINT_SHELL_POPUPS = 'winit'
-    $env:SLINT_SHELL_METRICS = $metrics
+    $env:LHC_HOTKEYS = 'off'
+    $env:LHC_POPUPS = 'winit'
+    $env:LHC_METRICS = $metrics
     $process = Start-Process -FilePath $exe -WorkingDirectory $root `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
     Wait-ForServer $process
@@ -122,7 +122,7 @@ function Test-Stress {
 
     $rows = Import-Csv $metrics
     if (@($rows | Where-Object source -eq 'hotkey').Count -ne 0) {
-        throw 'SLINT_SHELL_HOTKEYS=off still produced a hotkey popup trigger'
+        throw 'LHC_HOTKEYS=off still produced a hotkey popup trigger'
     }
     $triggers = @($rows | Where-Object event -eq 't0_trigger')
     $hidden = @($rows | Where-Object event -eq 'hidden')
@@ -147,7 +147,7 @@ function Test-Stress {
 
     Invoke-Client 'quit'
     Assert-Stopped $process $scenario
-    Remove-Item Env:SLINT_SHELL_METRICS -ErrorAction SilentlyContinue
+    Remove-Item Env:LHC_METRICS -ErrorAction SilentlyContinue
 }
 
 $ErrorActionPreference = 'Continue'
@@ -160,11 +160,11 @@ Test-Stress
 
 $spellStdout = Join-Path $output 'spell-stdout.log'
 $spellStderr = Join-Path $output 'spell-stderr.log'
-$env:SLINT_SHELL_POPUPS = 'spell'
+$env:LHC_POPUPS = 'spell'
 $spell = Start-Process -FilePath $exe -WorkingDirectory $root `
     -RedirectStandardOutput $spellStdout -RedirectStandardError $spellStderr -PassThru -Wait
 if ($spell.ExitCode -eq 0) {
-    throw 'SLINT_SHELL_POPUPS=spell unexpectedly succeeded'
+    throw 'LHC_POPUPS=spell unexpectedly succeeded'
 }
 $spellMessage = Get-Content $spellStderr -Raw
 if ($spellMessage -notmatch 'Spell popups are available only on Linux Wayland') {

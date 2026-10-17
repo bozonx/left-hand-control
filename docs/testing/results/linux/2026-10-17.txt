@@ -1,0 +1,25 @@
+Date: 2026-10-17 13:52:32 -0300
+Commit: 5f2198e (with uncommitted changes)
+Version: left-hand-control 0.3.0
+Session: wayland, KDE; plasmashell 6.7.4
+Kernel: Linux 7.2.3-2-MANJARO
+
+- example-editor: passed
+- example-interactions: passed
+- example-library: passed
+- example-action-picker: passed
+- example-macros: passed
+- example-menus: passed
+- example-undo-redo: passed
+- example-inline-edit: passed
+- example-drag-scroll: passed
+- example-notifications: passed
+- check-recovery: passed
+- check-preferences: passed
+- check-worker-crash: passed
+- check-linux-install: passed
+- mapper-e2e: passed
+Passed: 15, failed: 0
+
+Manual smoke on the installed package (section 3 of
+docs/testing/cross-platform-product-validation-plan.md): not recorded yet.

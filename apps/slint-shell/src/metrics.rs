@@ -1,6 +1,6 @@
 //! Latency trace for the benchmark scripts (see README "Метрики").
 //!
-//! Disabled unless `SLINT_SHELL_METRICS` names the CSV file; when disabled
+//! Disabled unless `LHC_METRICS` names the CSV file; when disabled
 //! every call is a cheap no-op, so production code can mark events freely.
 
 use std::{fs::File, io::Write, time::Instant};
@@ -21,7 +21,7 @@ struct Trial {
 
 impl Metrics {
     pub fn from_env(start: Instant) -> std::io::Result<Self> {
-        let file = match std::env::var_os("SLINT_SHELL_METRICS") {
+        let file = match std::env::var_os("LHC_METRICS") {
             Some(path) => {
                 let mut file = File::create(path)?;
                 writeln!(file, "trial,window,source,event,elapsed_ms,process_ms")?;

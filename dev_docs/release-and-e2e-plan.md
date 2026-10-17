@@ -1,6 +1,7 @@
 # План подготовки к релизу и e2e-тестированию
 
 Статус: рабочий план, октябрь 2026. Обновляйте его по мере выполнения этапов.
+Символ ✅ отмечает сделанное (на 2026-10-17).
 
 ## 1. Рамки первого релиза
 
@@ -12,26 +13,31 @@
 | Целевая среда    | KDE Plasma 6 на Wayland; остальные среды работают в объёме, описанном в `docs/development/platforms.md` |
 | Desktop-сценарии | Только локально на машине разработчика и в локальных VM, не в CI                                        |
 
-## 2. Уже сделано
+## 2. Уже сделано ✅
 
-- Бинарник называется `left-hand-control` (`[[bin]]` в `apps/slint-shell/Cargo.toml`).
+- ✅ Бинарник называется `left-hand-control` (`[[bin]]` в `apps/slint-shell/Cargo.toml`).
   Cargo-пакет остаётся `slint-shell`, поэтому команды `cargo … -p slint-shell` не меняются.
-- На Linux окно получает Wayland/X11 app id `dev.bozonx.left-hand-control`
+- ✅ На Linux окно получает Wayland/X11 app id `dev.bozonx.left-hand-control`
   (`slint::set_xdg_app_id`), поэтому KDE сопоставляет окно с `.desktop`-файлом и иконкой.
-- Иконка: исходник `apps/slint-shell/assets/icon.svg`; PNG 16–512 в
+- ✅ Иконка: исходник `apps/slint-shell/assets/icon.svg`; PNG 16–512 в
   `apps/slint-shell/packaging/linux/icons/` и иконка трея `assets/icon.png` (64 px)
   генерируются скриптом `apps/slint-shell/scripts/render-icons.sh`.
-- В `apps/slint-shell/packaging/linux/` лежат общие для всех форматов файлы:
+- ✅ В `apps/slint-shell/packaging/linux/` лежат общие для всех форматов файлы:
   - `dev.bozonx.left-hand-control.desktop` — запись меню (EN/RU);
   - `dev.bozonx.left-hand-control.metainfo.xml` — AppStream, проходит
     `appstreamcli validate --pedantic`; секцию `<releases>` заполняем при выпуске;
   - `60-left-hand-control.rules` — запись в `/dev/uinput` для активной локальной
     сессии (`uaccess`) и для группы `input`;
-  - `modules-load.conf` — автозагрузка `uinput`.
-- Архив `package-linux.sh` содержит все эти файлы. `install-linux.sh` ставит иконки,
+  - `modules-load.conf` — автозагрузка `uinput`;
+  - ✅ `nfpm.yaml`, `scripts/postinstall.sh`, `scripts/postremove.sh`, `debian-copyright`,
+    `lintian-overrides` — сборка deb и rpm.
+- ✅ Архив `package-linux.sh` содержит все эти файлы. `install-linux.sh` ставит иконки,
   metainfo и `.desktop`. Новые команды `permissions` и `remove-permissions` явно
   (через `sudo`) ставят и снимают udev-правило, автозагрузку модуля и группу `input`.
   Подсказки в UI об отсутствии прав ссылаются на эту команду.
+- ✅ CI на `main` снова собирается: `libpam0g-dev` (линковка тестов Spell через
+  `nonstick`; release-бинарник libpam не требует), Linux-only тест `builtin_macros`
+  закрыт `cfg`, job аудита получил права `checks: write`.
 
 ## 3. Куда публиковать
 
@@ -41,7 +47,7 @@ Flathub такое не примет; strict-Snap так же закрыт, а c
 
 | Канал | Что даёт | Стоимость поддержки | Когда |
 | --- | --- | --- | --- |
-| **GitHub Releases** | `.tar.gz`, `.deb`, `.rpm`, `SHA256SUMS`, attestation | Низкая: всё собирается одним workflow | Первый релиз |
+| ✅ **GitHub Releases** (workflow готов, первый тег ещё не ставили) | `.tar.gz`, `.deb`, `.rpm`, `SHA256SUMS`, attestation | Низкая: всё собирается одним workflow | Первый релиз |
 | **Fedora COPR** | `dnf copr enable …` для Fedora (KDE Spin — основная Plasma 6 аудитория на RPM) | Низкая: SRPM с vendored crates, в Fedora свежий Rust | Сразу после первого релиза |
 | **Свой APT/RPM-репозиторий** на GitHub Pages (или Cloudsmith, бесплатный тариф для OSS) | Обновления через `apt`/`dnf`/`zypper` из тех же `.deb`/`.rpm`, без пересборки | Средняя: ключ подписи репозитория, `reprepro`/`createrepo_c` в workflow | Когда появятся пользователи Debian/Ubuntu/openSUSE |
 | **openSUSE Build Service (OBS)** | Одна точка сборки для openSUSE, Fedora, Debian, Ubuntu, Arch | Средняя/высокая: офлайн-сборка, нужен Rust ≥ 1.92 в целевом дистрибутиве, а в старых Debian/Ubuntu его нет | Альтернатива своему репозиторию, если нужны нативные сборки |
@@ -52,11 +58,11 @@ Flathub такое не примет; strict-Snap так же закрыт, а c
 Рекомендованный порядок: GitHub Releases → COPR → свой подписанный APT/RPM-репозиторий
 (или OBS) → AUR → nixpkgs.
 
-Для любых сборок в дистрибутивах без сети выкладываем в релиз архив
+✅ Для любых сборок в дистрибутивах без сети выкладываем в релиз архив
 `left-hand-control-<ver>-vendor.tar.xz` (`cargo vendor --locked`). Он же закрывает
 требование GPL о предоставлении исходников вместе с vendor-патчами.
 
-## 4. Артефакты GitHub-релиза (Linux x86_64)
+## 4. Артефакты GitHub-релиза (Linux x86_64) ✅
 
 ```
 left-hand-control-<ver>-linux-x86_64.tar.gz      # универсальный, ставится в ~/.local
@@ -69,15 +75,18 @@ SHA256SUMS
 ### 4.1. Базовая система сборки
 
 Бинарник зависит от glibc, libstdc++, libxkbcommon, freetype и fontconfig.
-Wayland загружается через dlopen. Собираем в контейнере **Ubuntu 22.04 (glibc 2.35)**:
+Wayland загружается через dlopen. ✅ Собираем в контейнере **Ubuntu 22.04 (glibc 2.35)**:
 так один бинарник подходит всем актуальным дистрибутивам с Plasma 6 (Debian 13,
 Fedora 41+, openSUSE Tumbleweed, Kubuntu 25.04+, Arch). Rust ставится через
-`rustup` до версии из `rust-version`; системный rustc образа не используем.
+`rustup` (stable, как в `ci.yml`); системный rustc образа не используем.
+Кроме зависимостей из `docs/development/linux.md` для линковки нужен `libpam0g-dev`.
 
-### 4.2. deb и rpm
+### 4.2. deb и rpm ✅
 
-Собираем **nfpm** (внешний инструмент сборки, не зависимость Cargo) из одного
-`apps/slint-shell/packaging/linux/nfpm.yaml` и того же бинарника, что в tar.gz.
+Собираем **nfpm** 2.47.0 (внешний инструмент сборки, не зависимость Cargo; в workflow
+закреплён по SHA-256) из одного `apps/slint-shell/packaging/linux/nfpm.yaml` и того же
+бинарника, что в tar.gz. Скрипт `apps/slint-shell/scripts/release-linux.sh` собирает
+все артефакты и подставляет в конфиг путь к бинарнику и changelog пакета.
 
 | Файл в пакете | Источник |
 | --- | --- |
@@ -97,7 +106,12 @@ Fedora 41+, openSUSE Tumbleweed, Kubuntu 25.04+, Arch). Rust ставится ч
   пакет только печатает подсказку.
 - `postrm`: перезагрузка udev-правил. Конфигурацию пользователя не трогаем.
 - Проверки в CI: `lintian` для deb, `rpmlint` для rpm, `desktop-file-validate`,
-  `appstreamcli validate`.
+  `appstreamcli validate`. ✅ Локально: lintian (Ubuntu 22.04 и Debian 13) и rpmlint
+  (Fedora) — 0 ошибок; остались предупреждения `no-manual-page`,
+  `initial-upload-closes-no-bugs`, `no-documentation`.
+- ✅ Changelog пакета (`changelog.Debian.gz`, `%changelog`) генерируется из версии и
+  ссылается на `CHANGELOG.md`; `embedded-library libyaml` (статически слинкованный
+  Rust-crate) подавлен через lintian override.
 
 ### 4.3. AppImage — позже
 
@@ -107,36 +121,42 @@ Fedora 41+, openSUSE Tumbleweed, Kubuntu 25.04+, Arch). Rust ставится ч
 - AppImage не может установить udev-правило: пользователю нужна отдельная
   инструкция или встроенная команда `permissions`.
 
-## 5. Workflow релиза
+## 5. Workflow релиза ✅
 
-Новый файл `.github/workflows/release.yml`, запуск по тегу `v*` и вручную.
+✅ Файл `.github/workflows/release.yml`, запуск по тегу `v*` и вручную (ручной запуск
+собирает и проверяет артефакты без создания релиза). Проходит `actionlint`; на GitHub
+ещё не запускался.
 
-1. **verify**: те же проверки, что в `ci.yml` (fmt, clippy `-D warnings`, тесты,
+1. ✅ **verify**: вызывает `ci.yml` (`workflow_call`) — те же проверки, что в `ci.yml` (fmt, clippy `-D warnings`, тесты,
    сборка без Spell).
-2. **metadata**: тег совпадает с `workspace.package.version`; в `CHANGELOG.md`
+2. ✅ **metadata** (`apps/slint-shell/scripts/release-metadata.py`): тег совпадает с `workspace.package.version`; в `CHANGELOG.md`
    есть секция версии; в metainfo есть `<release version="…" date="…">`.
-3. **build-linux** (контейнер `ubuntu:22.04`): `package-linux.sh` → tar.gz;
+3. ✅ **build-linux** (контейнер `ubuntu:22.04`): `package-linux.sh` → tar.gz;
    nfpm → deb и rpm; `cargo vendor` → vendor-архив; проверка `ldd` на `not found`;
    lintian/rpmlint; `SHA256SUMS`.
-4. **smoke-packages** (матрица контейнеров): `debian:12`, `debian:13`,
+4. ✅ **smoke-packages** (`apps/slint-shell/scripts/smoke-linux-package.sh`) (матрица контейнеров): `debian:12`, `debian:13`,
    `ubuntu:22.04`, `ubuntu:24.04`, `fedora:latest`, `opensuse/tumbleweed`,
    `archlinux` (последний — tar.gz). Установить пакет, проверить, что все
    библиотеки находятся, файлы на месте, `.desktop` и metainfo валидны, бинарник
-   запускается в неграфическом режиме (нужен `--version`, см. раздел 8), удаление
-   чистое.
-5. **attest**: `actions/attest-build-provenance` для всех артефактов.
-6. **draft-release**: черновик релиза с артефактами и заметками из `CHANGELOG.md`.
+   запускается в неграфическом режиме (`--version`, `--help`), удаление
+   чистое. rpmlint — отдельный job в `fedora:latest`. Локально все 7 контейнеров
+   проходят на артефактах, собранных в `ubuntu:22.04`; на Ubuntu 22.04 замечания
+   старого валидатора AppStream 0.15 (`<developer>`, `vcs-browser`) игнорируются.
+5. ✅ **attest** (в job публикации): `actions/attest-build-provenance` для всех артефактов.
+6. ✅ **draft-release**: черновик релиза с артефактами и заметками из `CHANGELOG.md`.
    **Публикует человек** после локального e2e (раздел 7).
 
-Права workflow: `contents: write` только у job публикации, `id-token: write` и
-`attestations: write` только у attest. Секреты для COPR и своего репозитория
+✅ Права workflow: по умолчанию `contents: read`; `contents: write`, `id-token: write`
+и `attestations: write` только у job публикации (attestation выполняется в нём же). Секреты для COPR и своего репозитория
 добавятся на соответствующих этапах.
 
 ## 6. Чек-лист выпуска
 
-1. Обновить `CHANGELOG.md` (перенести `Unreleased` в версию с датой).
-2. Поднять `workspace.package.version` в `Cargo.toml`, `cargo update -w`.
-3. Добавить `<release>` в metainfo.
+1. ✅ Обновить `CHANGELOG.md` (перенести `Unreleased` в версию с датой) — для 0.3.0
+   секция `## [0.3.0] - 2026-10-17`; при выпуске другим днём поправьте дату здесь и в metainfo.
+2. ✅ Поднять `workspace.package.version` в `Cargo.toml`, `cargo update -w` — первый
+   релиз выходит текущей версией 0.3.0.
+3. ✅ Добавить `<release>` в metainfo.
 4. Прогнать локальный e2e (раздел 7.3) на текущем `main`; при изменениях упаковки
    или прав — ещё VM-матрицу (раздел 7.4). Результат записать в
    `docs/testing/results/linux/<дата>.txt`.
@@ -152,9 +172,9 @@ Fedora 41+, openSUSE Tumbleweed, Kubuntu 25.04+, Arch). Rust ставится ч
 | Уровень | Что проверяет | Где | Когда |
 | --- | --- | --- | --- |
 | L0. Unit/integration | Ядро, конфиг, движок, IPC, i18n | GitHub CI | Каждый push/PR |
-| L1. Headless e2e маппера | Реальный путь evdev → engine → uinput без рабочего стола | GitHub CI (если доступен `uinput`) и локально | Каждый PR |
-| L2. Smoke пакетов | Зависимости, файлы, установка и удаление | GitHub CI, контейнеры | Тег релиза |
-| L3. Desktop-сценарии | UI, попапы, трей, восстановление worker, настройки | Машина разработчика (KDE Wayland) | Перед релизом и после изменений UI |
+| ✅ L1. Headless e2e маппера | Реальный путь evdev → engine → uinput без рабочего стола | GitHub CI (если доступен `uinput`) и локально | Каждый PR |
+| ✅ L2. Smoke пакетов | Зависимости, файлы, установка и удаление | GitHub CI, контейнеры | Тег релиза |
+| ✅ L3. Desktop-сценарии (скрипт) | UI, попапы, трей, восстановление worker, настройки | Машина разработчика (KDE Wayland) | Перед релизом и после изменений UI |
 | L4. VM-матрица | Установка пакета с нуля, права, сессия, автозапуск, обновление | Локальные KVM/QEMU VM | Перед релизом, при изменениях упаковки и прав |
 | L5. Ручная приёмка | Полный список из `docs/testing/cross-platform-product-validation-plan.md` | Реальное железо | Мажорные релизы |
 
@@ -165,27 +185,31 @@ Fedora 41+, openSUSE Tumbleweed, Kubuntu 25.04+, Arch). Rust ставится ч
   код на машине разработчика. Существующий `e2e-desktop.yml` остаётся только
   с ручным запуском.
 
-### 7.2. L1: headless e2e маппера
+### 7.2. L1: headless e2e маппера ✅
 
 Это самый ценный автоматический тест: проверяет продукт, а не оболочку.
 
-- Тест в `lhc-core` (рядом с уже существующим `#[ignore]` тестом в
-  `crates/lhc-core/src/mapper/linux/io.rs`): создаёт виртуальную «физическую»
+- ✅ Тест `crates/lhc-core/tests/mapper_e2e.rs` (отдельный процесс, `#[ignore]`): создаёт виртуальную «физическую»
   клавиатуру через uinput, запускает маппер с тестовым профилем на этом
   устройстве, читает выход виртуального устройства маппера через evdev и сравнивает
   последовательность событий.
-- Сценарии: passthrough, remap `KeyA → KeyB`, chord, tap/hold, слой, double tap,
+- ✅ Сценарии: passthrough, remap `KeyA → KeyB`, chord, tap/hold, слой, double tap,
   макрос с паузой, остановка без залипших клавиш, отключение устройства во время работы.
-- Включение: `cargo test -p lhc-core -- --ignored mapper_e2e` или переменная окружения;
+  Оба виртуальных устройства захватываются (grab), поэтому нажатия не попадают в сессию;
+  берётся только тот выходной узел, что появился после старта (у запущенного
+  экземпляра приложения есть устройство с тем же именем), а межпроцессный лок маппера
+  переносится во временный `XDG_RUNTIME_DIR`. Локально (Manjaro, KDE Wayland):
+  9/9, стабильно в повторных прогонах.
+- ✅ Включение: `cargo test --locked -p lhc-core --test mapper_e2e -- --ignored`;
   в обычном `cargo test` тест пропускается.
-- В CI: `sudo modprobe uinput && sudo chmod 0666 /dev/uinput` перед тестом.
-  Сначала проверить, что на `ubuntu-latest` модуль доступен. Если нет — L1 остаётся
-  локальным уровнем.
+- ✅ В CI: job `mapper-e2e` в `ci.yml` делает `sudo modprobe uinput && sudo chmod 0666 /dev/uinput`
+  и запускает тест через `sg input`. Если модуля на `ubuntu-latest` нет, шаг
+  пропускается с предупреждением и L1 остаётся локальным уровнем. На GitHub ещё не проверено.
 - `text:` через portal здесь не проверяется — это L3/L4.
 
-### 7.3. L3: локальный прогон на машине разработчика
+### 7.3. L3: локальный прогон на машине разработчика ✅
 
-Один скрипт `apps/slint-shell/scripts/e2e-local.sh`, который в графической сессии
+✅ Один скрипт `apps/slint-shell/scripts/e2e-local.sh` (`--no-mapper` пропускает L1), который в графической сессии
 по очереди запускает уже существующие сценарии с временным конфигом и печатает сводку:
 
 ```sh
@@ -197,8 +221,11 @@ python3 apps/slint-shell/scripts/check-recovery.py --popups spell
 python3 apps/slint-shell/scripts/check-preferences.py
 python3 apps/slint-shell/scripts/check-worker-crash.py
 python3 apps/slint-shell/scripts/check-linux-install.py
-cargo test -p lhc-core -- --ignored mapper_e2e          # L1
+cargo test --locked -p lhc-core --test mapper_e2e -- --ignored   # L1
 ```
+
+✅ Первый прогон 2026-10-17 (Plasma 6.7.4, Wayland): 15/15, результат в
+`docs/testing/results/linux/2026-10-17.txt` (на незакоммиченном дереве).
 
 Затем — короткий ручной smoke из раздела 3 плана кроссплатформенной проверки на
 установленном архиве (не на `cargo run`). Результат: файл в `docs/testing/results/linux/`
@@ -235,7 +262,7 @@ Wayland, ssh-ключ, `qemu-guest-agent`, без установленного �
    перелогиниться (перезапуск SDDM-сессии), запустить приложение.
 6. Подать клавиши через QMP `input-send-event`, проверить вывод маппера
    (через evdev-лог виртуального устройства и окно-приёмник для `text:`).
-7. Проверить трей, попапы (`SLINT_SHELL_POPUPS=auto`), автозапуск после перезагрузки,
+7. Проверить трей, попапы (`LHC_POPUPS=auto`), автозапуск после перезагрузки,
    обновление поверх запущенной версии с сохранением конфига, удаление.
 8. Собрать логи, `screendump` через QMP и сводку в каталог результатов.
 
@@ -244,30 +271,31 @@ aarch64-VM на x86-хосте работают только в эмуляции
 
 ## 8. Открытые вопросы (нужно решение до релиза)
 
-Эти пункты меняют CLI, IPC или поведение, поэтому по AGENTS.md требуют согласования:
+Эти пункты меняют CLI, IPC или поведение, поэтому по AGENTS.md требуют согласования.
+Решения по пунктам 1–3 и 5 приняты 2026-10-17.
 
-1. **`--version` / `--help`**: нужны для smoke пакетов и для пользователей. Сейчас
-   любой аргумент считается IPC-командой.
-2. **Повторный запуск из меню**, когда приложение уже в трее: сейчас процесс
-   завершается с ошибкой `left-hand-control is already running`. Для пользователя
-   ожидаемо, что откроются настройки (`show settings` через IPC).
-3. **Переменные окружения** `SLINT_SHELL_*` (`SOCKET`, `POPUPS`, `METRICS` …)
-   видны пользователям релиза. Переименовать в `LHC_*` до первого релиза или оставить.
-4. **Выдача прав из приложения**: кнопка в подсказке о правах, запускающая
+1. ✅ **`--version` / `--help`** (и `-V` / `-h`): работают без запущенного экземпляра,
+   остальные аргументы по-прежнему IPC-команды.
+2. ✅ **Повторный запуск из меню**, когда приложение уже в трее: второй процесс без
+   аргументов отправляет работающему `show settings` через IPC и завершается с кодом 0.
+3. ✅ **Переменные окружения** переименованы из `SLINT_SHELL_*` в `LHC_*` (`LHC_SOCKET`,
+   `LHC_POPUPS`, `LHC_METRICS` …) в коде, скриптах, примерах и документации; старые
+   имена не поддерживаются.
+4. ⏳ Отложено. **Выдача прав из приложения**: кнопка в подсказке о правах, запускающая
    `pkexec` с polkit-политикой. Для пользователей пакетов это удобнее, чем
    `install-linux.sh permissions`, которого в deb/rpm нет.
-5. **Идентификатор трея** `lhc-slint-shell` — внутренний; KDE запоминает по нему
-   настройки видимости. Можно оставить.
+5. ✅ **Идентификатор трея** `lhc-slint-shell` — внутренний; KDE запоминает по нему
+   настройки видимости. Оставляем.
 
 ## 9. Этапы
 
 | # | Этап | Критерий готовности |
 | --- | --- | --- |
-| 1 | Решения по разделу 8 и их реализация | Пункты 1–3 реализованы или явно отклонены |
-| 2 | `nfpm.yaml` и локальная сборка deb/rpm | Пакеты ставятся и удаляются в контейнерах Debian и Fedora, lintian/rpmlint без ошибок |
-| 3 | `release.yml` (раздел 5) | Тег в форке создаёт черновик релиза со всеми артефактами |
-| 4 | L1 headless e2e маппера | Тест проходит локально; в CI, если доступен `uinput` |
-| 5 | `e2e-local.sh` (L3) | Один запуск даёт сводку и файл результатов |
+| 1 ✅ | Решения по разделу 8 и их реализация | Пункты 1–3 реализованы или явно отклонены |
+| 2 ✅ | `nfpm.yaml` и локальная сборка deb/rpm | Пакеты ставятся и удаляются в контейнерах Debian и Fedora, lintian/rpmlint без ошибок |
+| 3 | `release.yml` (раздел 5) — ✅ написан и проверен actionlint, его шаги прогнаны локально в контейнерах; осталось проверить тегом в форке | Тег в форке создаёт черновик релиза со всеми артефактами |
+| 4 ✅ | L1 headless e2e маппера (локально; в CI — после первого запуска) | Тест проходит локально; в CI, если доступен `uinput` |
+| 5 ✅ | `e2e-local.sh` (L3) | Один запуск даёт сводку и файл результатов |
 | 6 | VM-стенд (L4) для Fedora KDE и Debian 13 KDE, затем остальные | `run-e2e.py` проходит сценарий раздела 7.4 без ручных шагов |
 | 7 | Первый релиз `v0.x` на GitHub | Чек-лист раздела 6 выполнен |
 | 8 | COPR, затем свой APT/RPM-репозиторий или OBS | Установка через `dnf`/`apt` в VM |

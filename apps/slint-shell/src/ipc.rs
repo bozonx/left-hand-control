@@ -3,7 +3,7 @@
 //! Unix: sockets in a private directory (`0700`, owned by the user) under
 //! `XDG_RUNTIME_DIR`, or under the temp dir when that is unset, so other
 //! users can neither connect nor squat the name. Windows: a loopback TCP
-//! port (`SLINT_SHELL_PORT`, default 43176); every request carries a random
+//! port (`LHC_PORT`, default 43176); every request carries a random
 //! token the server writes to the user's local app data, which other users
 //! cannot read. Each request is one JSON line; the reply is `queued` or
 //! `error: …`. `queued` means the command reached the UI queue, not that a
@@ -81,12 +81,12 @@ pub fn socket_path(name: &str) -> std::io::Result<PathBuf> {
 
 #[cfg(unix)]
 fn own_socket() -> std::io::Result<PathBuf> {
-    socket_path(&std::env::var("SLINT_SHELL_SOCKET").unwrap_or_else(|_| DEFAULT_SOCKET.into()))
+    socket_path(&std::env::var("LHC_SOCKET").unwrap_or_else(|_| DEFAULT_SOCKET.into()))
 }
 
 #[cfg(windows)]
 fn tcp_address() -> SocketAddrV4 {
-    let port = std::env::var("SLINT_SHELL_PORT")
+    let port = std::env::var("LHC_PORT")
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(43176);
@@ -140,7 +140,8 @@ impl Server {
         if path.exists() {
             match UnixStream::connect(&path) {
                 Ok(_) => {
-                    return Err(std::io::Error::other(
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::AddrInUse,
                         "left-hand-control is already running",
                     ));
                 }

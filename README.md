@@ -19,7 +19,7 @@ Desktop keyboard mapper на Rust и Slint. Перехватывает физи�
 ```sh
 cargo run --locked -p slint-shell
 # Layer-shell попапы с автоматическим переходом на winit:
-SLINT_SHELL_POPUPS=auto cargo run --locked -p slint-shell --features spell
+LHC_POPUPS=auto cargo run --locked -p slint-shell --features spell
 ```
 
 Приложение запускается со скрытыми окнами и остаётся в трее. Открыть настройки:
@@ -28,8 +28,9 @@ SLINT_SHELL_POPUPS=auto cargo run --locked -p slint-shell --features spell
 target/debug/left-hand-control show settings
 ```
 
-В одном runtime-каталоге работает один экземпляр. Команды `show emoji`,
-`show quick`, `hide`, `toggle-mapper`, `ping` и `quit` отправляются ему по IPC.
+В одном runtime-каталоге работает один экземпляр; повторный запуск без аргументов
+открывает его настройки. Команды `show emoji`, `show quick`, `hide`, `toggle-mapper`,
+`ping` и `quit` отправляются ему по IPC; `--version` и `--help` работают без него.
 
 ## Установка Linux release
 

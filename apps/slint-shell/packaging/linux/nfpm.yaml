@@ -1,0 +1,120 @@
+# deb and rpm packages built by nfpm from the release binary; built by
+# scripts/release-linux.sh, which substitutes @BINARY@ and @CHANGELOG@
+# (nfpm does not expand variables in paths) and passes VERSION in the environment.
+name: left-hand-control
+arch: amd64
+platform: linux
+version: ${VERSION}
+release: 1
+section: utils
+priority: optional
+maintainer: bozonx <ipkozyrin@gmail.com>
+vendor: bozonx
+homepage: https://github.com/bozonx/left-hand-control
+license: GPL-3.0-or-later
+# Package changelog required by Debian and Fedora policy; the user-facing
+# history stays in CHANGELOG.md.
+changelog: "@CHANGELOG@"
+description: |-
+  Keyboard mapper with layers, macros and commands
+  Left Hand Control intercepts a physical keyboard, applies layers, rules,
+  macros and commands, and emits the result through a virtual input device.
+  It lives in the system tray and opens quick popups for emoji and actions.
+  The primary environment is KDE Plasma 6 on Wayland.
+
+contents:
+  - src: "@BINARY@"
+    dst: /usr/bin/left-hand-control
+    file_info: { mode: 0755 }
+  - src: apps/slint-shell/packaging/linux/dev.bozonx.left-hand-control.desktop
+    dst: /usr/share/applications/dev.bozonx.left-hand-control.desktop
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/dev.bozonx.left-hand-control.metainfo.xml
+    dst: /usr/share/metainfo/dev.bozonx.left-hand-control.metainfo.xml
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/60-left-hand-control.rules
+    dst: /usr/lib/udev/rules.d/60-left-hand-control.rules
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/modules-load.conf
+    dst: /usr/lib/modules-load.d/left-hand-control.conf
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/assets/icon.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/dev.bozonx.left-hand-control.svg
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/16.png
+    dst: /usr/share/icons/hicolor/16x16/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/22.png
+    dst: /usr/share/icons/hicolor/22x22/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/24.png
+    dst: /usr/share/icons/hicolor/24x24/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/32.png
+    dst: /usr/share/icons/hicolor/32x32/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/48.png
+    dst: /usr/share/icons/hicolor/48x48/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/64.png
+    dst: /usr/share/icons/hicolor/64x64/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/128.png
+    dst: /usr/share/icons/hicolor/128x128/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/256.png
+    dst: /usr/share/icons/hicolor/256x256/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/icons/512.png
+    dst: /usr/share/icons/hicolor/512x512/apps/dev.bozonx.left-hand-control.png
+    file_info: { mode: 0644 }
+  - src: apps/slint-shell/packaging/linux/debian-copyright
+    dst: /usr/share/doc/left-hand-control/copyright
+    file_info: { mode: 0644 }
+    packager: deb
+  - src: apps/slint-shell/packaging/linux/lintian-overrides
+    dst: /usr/share/lintian/overrides/left-hand-control
+    file_info: { mode: 0644 }
+    packager: deb
+  - src: LICENSE
+    dst: /usr/share/licenses/left-hand-control/LICENSE
+    type: license
+    file_info: { mode: 0644 }
+    packager: rpm
+
+scripts:
+  postinstall: apps/slint-shell/packaging/linux/scripts/postinstall.sh
+  postremove: apps/slint-shell/packaging/linux/scripts/postremove.sh
+
+overrides:
+  deb:
+    depends:
+      - libc6 (>= 2.35)
+      - libstdc++6
+      - libgcc-s1
+      - libxkbcommon0
+      - libfontconfig1
+      - libfreetype6
+      - libwayland-client0
+    recommends:
+      - xdg-desktop-portal
+      - wl-clipboard
+      - fonts-noto-color-emoji
+  rpm:
+    depends:
+      - libstdc++.so.6()(64bit)
+      - libxkbcommon.so.0()(64bit)
+      - libfontconfig.so.1()(64bit)
+      - libfreetype.so.6()(64bit)
+      - libwayland-client.so.0()(64bit)
+    recommends:
+      - xdg-desktop-portal
+      - wl-clipboard
+
+rpm:
+  group: Applications/System
+  summary: Keyboard mapper with layers, macros and commands
+  compression: zstd
+
+deb:
+  compression: xz

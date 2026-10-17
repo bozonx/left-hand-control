@@ -72,12 +72,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weak = ui.as_weak();
     timer.start(slint::TimerMode::SingleShot, Duration::from_millis(700), move || {
         let ui = weak.upgrade().unwrap();
-        if std::env::var_os("SLINT_SHELL_MACROS_SCROLL").is_some() {
+        if std::env::var_os("LHC_MACROS_SCROLL").is_some() {
             ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled {
                 position: slint::LogicalPosition::new(500.0, 400.0), delta_x: 0.0, delta_y: -600.0,
             });
         }
-        if let Ok(path) = std::env::var("SLINT_SHELL_MACROS_SNAPSHOT") {
+        if let Ok(path) = std::env::var("LHC_MACROS_SNAPSHOT") {
             let pixels = ui.window().take_snapshot().unwrap();
             let mut data = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
             for p in pixels.as_slice() { data.extend([p.r, p.g, p.b]); }

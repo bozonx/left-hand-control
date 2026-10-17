@@ -42,7 +42,7 @@ pub fn set_game_active(active: bool) {
 }
 
 pub fn start(dispatch: Dispatch) {
-    if std::env::var("SLINT_SHELL_HOTKEYS").as_deref() == Ok("off") {
+    if std::env::var("LHC_HOTKEYS").as_deref() == Ok("off") {
         return;
     }
     let modifiers = Modifiers::CONTROL | Modifiers::ALT;

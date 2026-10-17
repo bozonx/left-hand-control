@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,7 +40,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build libdbus-1-dev libfontconfig1-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y clang cmake ninja-build libdbus-1-dev libpam0g-dev libfontconfig1-dev libwayland-dev libxkbcommon-dev
 
       - name: Check formatting
         run: cargo fmt -p lhc-core -p slint-shell --check
@@ -68,9 +69,49 @@ jobs:
         if: matrix.os != 'ubuntu-latest'
         run: cargo check --release --locked -p slint-shell
 
+  mapper-e2e:
+    name: Mapper e2e (uinput)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: mapper-e2e
+
+      - name: Install Linux system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev libwayland-dev
+
+      - name: Enable uinput
+        id: uinput
+        run: |
+          if sudo modprobe uinput && [ -c /dev/uinput ]; then
+            sudo chmod 0666 /dev/uinput
+            sudo usermod -aG input "$USER"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::uinput is unavailable on this runner; mapper e2e is local-only"
+          fi
+
+      - name: Mapper e2e
+        if: steps.uinput.outputs.available == 'true'
+        # sg picks up the input group without a new login, for reading /dev/input.
+        run: sg input -c "cargo test --locked -p lhc-core --test mapper_e2e -- --ignored"
+
   audit:
     name: Rust dependency audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4

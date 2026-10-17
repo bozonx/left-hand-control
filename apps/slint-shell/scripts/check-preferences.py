@@ -6,19 +6,19 @@ import tempfile
 import time
 
 root = Path(__file__).resolve().parents[1]
-binary = Path(os.environ.get('SLINT_SHELL_BIN', root.parents[1] / 'target/debug/left-hand-control')).resolve()
+binary = Path(os.environ.get('LHC_BIN', root.parents[1] / 'target/debug/left-hand-control')).resolve()
 output = Path(sys.argv[1] if len(sys.argv) > 1 else tempfile.mkdtemp(prefix='lhc-3b-ipc-'))
 output.mkdir(parents=True, exist_ok=True)
 env = dict(
     os.environ,
-    SLINT_SHELL_SOCKET=f'lhc-3b-{os.getpid()}.sock',
-    SLINT_SHELL_METRICS=str(output / 'parent.csv'),
-    SLINT_SHELL_POPUPS='spell',
-    SLINT_SHELL_HOTKEYS='off',
+    LHC_SOCKET=f'lhc-3b-{os.getpid()}.sock',
+    LHC_METRICS=str(output / 'parent.csv'),
+    LHC_POPUPS='spell',
+    LHC_HOTKEYS='off',
     SLINT_BACKEND='winit-software',
     RUST_LOG='info',
 )
-socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['SLINT_SHELL_SOCKET']
+socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['LHC_SOCKET']
 
 
 def send(command):

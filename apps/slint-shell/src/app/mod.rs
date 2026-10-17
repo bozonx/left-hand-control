@@ -419,7 +419,16 @@ impl Drop for CoreGuard {
 }
 
 pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
-    let server = ipc::Server::bind()?;
+    let server = match ipc::Server::bind() {
+        Ok(server) => server,
+        // A second launch (e.g. from the application menu) brings the running
+        // instance forward instead of failing.
+        Err(error) if error.kind() == std::io::ErrorKind::AddrInUse => {
+            log::info!("{error}; showing its settings window");
+            return ipc::client(&Command::Show(Window::Settings));
+        }
+        Err(error) => return Err(error.into()),
+    };
     let use_spell = backend::spell_requested()?;
     let layer_shell = use_spell || backend::layer_shell_supported();
     let popup_attributes = Rc::new(Cell::new(false));

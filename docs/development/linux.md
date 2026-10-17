@@ -9,7 +9,7 @@
 ```sh
 # один раз: системные пакеты (см. ниже), затем из корня репозитория
 cargo run -p slint-shell                                   # обычные окна winit
-SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell   # попапы как layer-shell
+LHC_POPUPS=auto cargo run -p slint-shell --features spell   # попапы как layer-shell
 ```
 
 Окна при старте скрыты — приложение живёт в трее. Настройки открываются кликом по иконке трея или командой:
@@ -28,7 +28,7 @@ Rust stable не ниже `1.92` (edition 2024; см. `rust-version` в корн
 
 ```sh
 sudo pacman -S --needed base-devel clang cmake ninja python pkgconf \
-  fontconfig freetype2 libxkbcommon wayland dbus noto-fonts-emoji \
+  fontconfig freetype2 libxkbcommon wayland dbus pam noto-fonts-emoji \
   wl-clipboard
 ```
 
@@ -37,7 +37,7 @@ sudo pacman -S --needed base-devel clang cmake ninja python pkgconf \
 ```sh
 sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
   libfontconfig1-dev libfreetype-dev libxkbcommon-dev libwayland-dev \
-  libdbus-1-dev fonts-noto-color-emoji wl-clipboard
+  libdbus-1-dev libpam0g-dev fonts-noto-color-emoji wl-clipboard
 ```
 
 Для отдельных функций дополнительно:
@@ -46,7 +46,7 @@ sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
 | --- | --- |
 | Mapper (перехват клавиатуры) | Чтение `/dev/input/event*` (группа `input`) и запись в `/dev/uinput` (udev-правило `0660`, группа `input`) |
 | Глобальные хоткеи Ctrl+Alt+F11 / F12 | Чтение `/dev/input/event*`; устройство не захватывается |
-| Диагностический стенд возврата ввода (`--features probes`, `SLINT_SHELL_INSERT=1`) | KDE Wayland (KWin), data-control, запись в `/dev/uinput` |
+| Диагностический стенд возврата ввода (`--features probes`, `LHC_INSERT=1`) | KDE Wayland (KWin), data-control, запись в `/dev/uinput` |
 | Условия по активному окну | KDE Wayland — ничего (KWin-скрипт через D-Bus, `kdotool` только запасной путь); Hyprland — `hyprctl`; Sway — `swaymsg`; niri, Wayfire, labwc, river и другие wlroots-композиторы — ничего (протокол `wlr-foreign-toplevel`); X11 — `xprop`, для условий по заголовку и окон без рамки ещё `xdotool` (+ `xrandr` для нескольких мониторов) |
 | Ввод литерального текста mapper'ом | `xdg-desktop-portal` и бэкенд окружения (`xdg-desktop-portal-kde` и т. п.) |
 
@@ -81,7 +81,7 @@ cargo build -p slint-shell --features spell   # с поддержкой layer-sh
 cargo build -p slint-shell --release --features spell
 ```
 
-Режим попапов выбирается при запуске переменной `SLINT_SHELL_POPUPS`:
+Режим попапов выбирается при запуске переменной `LHC_POPUPS`:
 
 | Значение | Поведение |
 | --- | --- |
@@ -93,7 +93,7 @@ cargo build -p slint-shell --release --features spell
 
 Рендерер окна настроек задаётся стандартной переменной Slint `SLINT_BACKEND`: `winit-software`, `winit-femtovg` или `winit-skia`. На Spell-попапы она не влияет, у них всегда Skia software. Цветные emoji в окнах winit рисует только `winit-skia`.
 
-Одновременно работает один экземпляр на `XDG_RUNTIME_DIR`. Второй запуск без аргументов завершится с ошибкой `left-hand-control is already running`.
+Одновременно работает один экземпляр на `XDG_RUNTIME_DIR`. Второй запуск без аргументов (например, из меню приложений) открывает окно настроек уже работающего экземпляра и завершается. `left-hand-control --version` печатает версию, `--help` — список команд.
 
 ## Hot reload интерфейса (Live Preview)
 
@@ -222,22 +222,22 @@ LHC_MENUS_NAV=1 cargo run --locked -p slint-shell --example menus
 | `RUST_LOG` | Фильтр логов `env_logger`; по умолчанию `info,zbus=warn,tracing=warn` |
 | `LHC_DEV_DIR` | Каталог конфигурации для debug-сборок |
 | `SLINT_BACKEND` | Рендерер окна настроек |
-| `SLINT_SHELL_POPUPS` | `winit` / `auto` / `spell` |
-| `SLINT_SHELL_HOTKEYS=off` | Не слушать evdev-хоткеи Ctrl+Alt+F11 / F12 |
-| `SLINT_SHELL_INPUT=/dev/input/eventN` | Слушать хоткеи только с одного устройства |
-| `SLINT_SHELL_INSERT=1` | Только сборка с `--features probes`: диагностический Spell worker на KDE (возврат фокуса и вставка); в обычной сборке меню выполняют назначения через mapper |
-| `SLINT_SHELL_OUTPUT=<имя>` | Монитор для Spell-попапов |
-| `SLINT_SHELL_METRICS=/путь.csv` | Писать CSV задержек для скриптов измерений; без переменной метрики выключены |
-| `SLINT_SHELL_SOCKET` | Имя IPC-сокета в `XDG_RUNTIME_DIR`; удобно для параллельного тестового экземпляра |
+| `LHC_POPUPS` | `winit` / `auto` / `spell` |
+| `LHC_HOTKEYS=off` | Не слушать evdev-хоткеи Ctrl+Alt+F11 / F12 |
+| `LHC_INPUT=/dev/input/eventN` | Слушать хоткеи только с одного устройства |
+| `LHC_INSERT=1` | Только сборка с `--features probes`: диагностический Spell worker на KDE (возврат фокуса и вставка); в обычной сборке меню выполняют назначения через mapper |
+| `LHC_OUTPUT=<имя>` | Монитор для Spell-попапов |
+| `LHC_METRICS=/путь.csv` | Писать CSV задержек для скриптов измерений; без переменной метрики выключены |
+| `LHC_SOCKET` | Имя IPC-сокета в `XDG_RUNTIME_DIR`; удобно для параллельного тестового экземпляра |
 
-Диагностические переменные стендов (`SLINT_SHELL_TEST_INJECT`, `SLINT_SHELL_ISOLATED_INPUT`, `SLINT_SHELL_SPELL_LIFECYCLE`, `SLINT_SHELL_SPELL_INITIAL`) описаны в `apps/slint-shell/README.md`.
+Диагностические переменные стендов (`LHC_TEST_INJECT`, `LHC_ISOLATED_INPUT`, `LHC_SPELL_LIFECYCLE`, `LHC_SPELL_INITIAL`) описаны в `apps/slint-shell/README.md`.
 
 Второй экземпляр рядом с основным, например для экспериментов:
 
 ```sh
-LHC_DEV_DIR=/tmp/lhc-dev SLINT_SHELL_SOCKET=lhc-dev.sock SLINT_SHELL_HOTKEYS=off \
+LHC_DEV_DIR=/tmp/lhc-dev LHC_SOCKET=lhc-dev.sock LHC_HOTKEYS=off \
   cargo run -p slint-shell
-SLINT_SHELL_SOCKET=lhc-dev.sock target/debug/left-hand-control quit
+LHC_SOCKET=lhc-dev.sock target/debug/left-hand-control quit
 ```
 
 Учтите, что трей у второго экземпляра тоже появится, а mapper запустится только в одном из них.
@@ -305,17 +305,17 @@ apps/slint-shell/
 | Окружение | Состояние |
 | --- | --- |
 | KDE Plasma 6, Wayland | Основная среда: Spell-попапы, фокус, вставка, раскладка, системные действия |
-| Hyprland, Sway | Layer-shell есть, Spell должен работать; не принято, вставка (`SLINT_SHELL_INSERT`) использует KWin и там недоступна |
+| Hyprland, Sway | Layer-shell есть, Spell должен работать; не принято, вставка (`LHC_INSERT`) использует KWin и там недоступна |
 | GNOME Wayland | Нет layer-shell: `auto` уходит в winit-fallback; трею нужно расширение AppIndicator |
 | X11 | Окна winit; тип окна Utility, поведение зависит от WM |
 
 ## Частые проблемы
 
-- **`left-hand-control is already running`** — уже запущен экземпляр с тем же сокетом. Выполните `target/debug/left-hand-control quit` или задайте другой `SLINT_SHELL_SOCKET`. Устаревший сокет после аварии удаляется при следующем запуске.
+- **Вместо нового экземпляра открываются настройки работающего** — уже запущен экземпляр с тем же сокетом. Выполните `target/debug/left-hand-control quit` или задайте другой `LHC_SOCKET`. Устаревший сокет после аварии удаляется при следующем запуске.
 - **Первая сборка очень долгая или падает на Skia** — проверьте clang, cmake, ninja и python.
-- **`No readable Ctrl+Alt+F11/F12 evdev devices`** — нет доступа к `/dev/input`; см. раздел про группу `input`, либо отключите хоткеи `SLINT_SHELL_HOTKEYS=off`.
+- **`No readable Ctrl+Alt+F11/F12 evdev devices`** — нет доступа к `/dev/input`; см. раздел про группу `input`, либо отключите хоткеи `LHC_HOTKEYS=off`.
 - **Emoji монохромные или квадратами** — установите Noto Color Emoji; для окон winit используйте `SLINT_BACKEND=winit-skia`.
-- **`compositor does not advertise zwlr_layer_shell_v1`** — композитор без layer-shell (GNOME); используйте `SLINT_SHELL_POPUPS=auto` или `winit`.
+- **`compositor does not advertise zwlr_layer_shell_v1`** — композитор без layer-shell (GNOME); используйте `LHC_POPUPS=auto` или `winit`.
 - **Сохранение отклонено: «конфигурация изменена другим приложением»** — файл изменили параллельно. Документ уже перечитан, повторите изменение.
 
 ## Основное окно приложения
@@ -431,11 +431,11 @@ cargo run --locked -p slint-shell --example inline-edit
 
 ## Common pitfalls
 
-- **`left-hand-control is already running`** — another instance owns the socket: `target/debug/left-hand-control quit` or set `SLINT_SHELL_SOCKET`.
+- **A second launch only opens settings** — another instance owns the socket and receives `show settings`: `target/debug/left-hand-control quit` or set `LHC_SOCKET`.
 - **First build is slow or fails in Skia** — Skia is built from source; install clang, cmake, ninja and Python.
-- **`No readable Ctrl+Alt+F11/F12 evdev devices`** — no access to `/dev/input`; fix permissions or run with `SLINT_SHELL_HOTKEYS=off`.
+- **`No readable Ctrl+Alt+F11/F12 evdev devices`** — no access to `/dev/input`; fix permissions or run with `LHC_HOTKEYS=off`.
 - **Monochrome or missing emoji** — install Noto Color Emoji; in winit windows only `SLINT_BACKEND=winit-skia` draws colour emoji.
-- **`compositor does not advertise zwlr_layer_shell_v1`** — GNOME has no layer-shell; use `SLINT_SHELL_POPUPS=auto` or `winit`.
+- **`compositor does not advertise zwlr_layer_shell_v1`** — GNOME has no layer-shell; use `LHC_POPUPS=auto` or `winit`.
 - **Save rejected: "configuration changed by another application"** — the file changed externally; the document is already reloaded, repeat the edit.
 - **`RefCell` already borrowed panic in a page** — a `Document::read()` borrow is alive while a callback edits; drop it before calling into the UI.
 - **CLI replies `queued`** — the command is queued on the UI thread; the window is not necessarily ready for input yet.

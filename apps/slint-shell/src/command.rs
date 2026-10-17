@@ -174,7 +174,7 @@ pub enum Command {
     Execute(String),
 }
 
-pub const USAGE: &str = "usage: slint-shell [show emoji|quick [1-5] | show settings | hide | toggle-mapper | \
+pub const USAGE: &str = "usage: left-hand-control [--version | --help | show emoji|quick [1-5] | show settings | hide | toggle-mapper | \
 game auto|on|off|toggle | preferences system|light|dark en|ru | execute <action> | ping | quit]";
 
 impl Command {

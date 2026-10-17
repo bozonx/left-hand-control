@@ -54,7 +54,7 @@ fn press_hotkey(device: &mut test_keyboard::Keyboard, key: KeyCode) -> std::io::
         let args: Vec<_> = std::env::args().collect();
         let status = Command::new(&args[1])
             .env(
-                "SLINT_SHELL_SOCKET",
+                "LHC_SOCKET",
                 format!("lhc-return-bench-{}.sock", std::process::id()),
             )
             .args([
@@ -116,8 +116,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             let socket = format!("lhc-return-bench-{}.sock", std::process::id());
             let mut command = Command::new(&binary);
-            if let Some(input) = input { command.env("SLINT_SHELL_INPUT", input); } else { command.env("SLINT_SHELL_HOTKEYS", "off"); }
-            let mut server = Server(command.env("SLINT_SHELL_SOCKET", &socket).env("SLINT_SHELL_METRICS", &csv).env("SLINT_SHELL_TEST_INJECT", "1").env("SLINT_SHELL_POPUPS", "spell").env_remove("XDG_ACTIVATION_TOKEN").spawn()?);
+            if let Some(input) = input { command.env("LHC_INPUT", input); } else { command.env("LHC_HOTKEYS", "off"); }
+            let mut server = Server(command.env("LHC_SOCKET", &socket).env("LHC_METRICS", &csv).env("LHC_TEST_INJECT", "1").env("LHC_POPUPS", "spell").env_remove("XDG_ACTIVATION_TOKEN").spawn()?);
             let worker_csv = PathBuf::from(format!("{}.spell.csv", csv.display()));
             sleep(Duration::from_secs(2));
             if server.0.try_wait()?.is_some() { return Err("server startup failed".into()); }
@@ -220,7 +220,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             activate_receiver()?;
             wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",hidden,")), "focus loss hides popup")?;
             println!("emoji: page keys and arrows navigate, focus loss hides popup");
-            let status = Command::new(&binary).env("SLINT_SHELL_SOCKET", socket).arg("quit").status()?;
+            let status = Command::new(&binary).env("LHC_SOCKET", socket).arg("quit").status()?;
             if !status.success() { return Err("quit failed".into()); }
             server.0.wait()?;
             Ok(())

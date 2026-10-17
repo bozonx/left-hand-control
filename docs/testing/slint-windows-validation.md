@@ -89,7 +89,7 @@ show/hide, контроль working set/handles, shutdown и отключённ�
 - [x] 100 чередующихся `show emoji` / `show quick` / `hide`, затем `quit`.
 - [x] Выход с открытым и скрытым окном не оставляет process или listener.
 - [ ] После такого выхода tray icon не остаётся визуально в системном трее.
-- [x] Неверный `SLINT_SHELL_POPUPS=spell` завершается с понятной ошибкой.
+- [x] Неверный `LHC_POPUPS=spell` завершается с понятной ошибкой.
 
 ### Slint UI и окна
 
@@ -108,7 +108,7 @@ show/hide, контроль working set/handles, shutdown и отключённ�
 - [x] `Ctrl+Alt+F11` открывает Emoji, `Ctrl+Alt+F12` — Quick.
 - [x] Повтор hotkey скрывает уже открытый соответствующий popup без дубликата.
 - [x] Конфликт регистрации даёт диагностическую ошибку.
-- [x] `SLINT_SHELL_HOTKEYS=off` отключает регистрацию, а сочетания не открывают popup.
+- [x] `LHC_HOTKEYS=off` отключает регистрацию, а сочетания не открывают popup.
 - [x] После hotkey-вызова из Notepad выбор возвращает подтверждённый foreground и
   вставляет Latin, Cyrillic и composed emoji точно один раз.
 - [x] Если foreground изменился или его нельзя подтвердить, ввод отменяется и не

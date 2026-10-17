@@ -1,5 +1,5 @@
 //! Built-in popup hotkeys read from evdev: Ctrl+Alt+F11 (emoji) and
-//! Ctrl+Alt+F12 (quick actions). `SLINT_SHELL_HOTKEYS=off` disables them.
+//! Ctrl+Alt+F12 (quick actions). `LHC_HOTKEYS=off` disables them.
 //!
 //! Devices are rescanned periodically, so keyboards plugged in later and
 //! the mapper's virtual keyboard (which carries the input while the mapper
@@ -107,11 +107,11 @@ fn listen(
 pub fn set_game_active(_active: bool) {}
 
 pub fn start(dispatch: Dispatch) {
-    if std::env::var("SLINT_SHELL_HOTKEYS").as_deref() == Ok("off") {
+    if std::env::var("LHC_HOTKEYS").as_deref() == Ok("off") {
         return;
     }
     let watched: Arc<Mutex<HashSet<PathBuf>>> = Arc::default();
-    if let Some(path) = std::env::var_os("SLINT_SHELL_INPUT") {
+    if let Some(path) = std::env::var_os("LHC_INPUT") {
         let path = PathBuf::from(path);
         match Device::open(&path) {
             Ok(device) => listen(path, device, dispatch, watched),
@@ -163,7 +163,7 @@ pub fn start(dispatch: Dispatch) {
             }
             if !found && !warned {
                 log::warn!(
-                    "No readable Ctrl+Alt+F11/F12 evdev devices; check input permissions or SLINT_SHELL_INPUT"
+                    "No readable Ctrl+Alt+F11/F12 evdev devices; check input permissions or LHC_INPUT"
                 );
                 warned = true;
             }

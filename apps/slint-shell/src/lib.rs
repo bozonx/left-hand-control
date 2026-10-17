@@ -74,9 +74,27 @@ pub use pages::bind_document;
 
 use std::time::Instant;
 
+const HELP: &str = concat!(
+    "Left Hand Control ",
+    env!("CARGO_PKG_VERSION"),
+    "\n\nWithout arguments starts the application, or shows the settings window of the\n\
+     instance that is already running. With a command, sends it to the running instance.\n\n"
+);
+
 /// Entry point shared by all roles; `args` excludes the program name.
 pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
+    match args.as_slice() {
+        [flag] if flag == "--version" || flag == "-V" => {
+            println!("left-hand-control {}", env!("CARGO_PKG_VERSION"));
+            return Ok(());
+        }
+        [flag] if flag == "--help" || flag == "-h" => {
+            println!("{HELP}{}", command::USAGE);
+            return Ok(());
+        }
+        _ => {}
+    }
     env_logger::Builder::from_env(
         env_logger::Env::default().default_filter_or("info,zbus=warn,tracing=warn"),
     )

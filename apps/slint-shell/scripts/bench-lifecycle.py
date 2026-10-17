@@ -8,18 +8,18 @@ import sys
 import time
 
 root = Path(__file__).resolve().parents[1]
-binary = Path(os.environ.get('SLINT_SHELL_BIN', root.parents[1] / 'target/debug/left-hand-control')).resolve()
+binary = Path(os.environ.get('LHC_BIN', root.parents[1] / 'target/debug/left-hand-control')).resolve()
 output = Path(sys.argv[1]).resolve()
 count = int(sys.argv[2]) if len(sys.argv) > 2 else 500
 if count < 1:
     raise SystemExit('count must be positive')
 output.mkdir(parents=True, exist_ok=True)
-env = dict(os.environ, SLINT_SHELL_SOCKET=f'lhc-lifecycle-{os.getpid()}.sock',
-           SLINT_SHELL_METRICS=str(output / 'parent.csv'))
-env.setdefault('SLINT_SHELL_POPUPS', 'spell')
+env = dict(os.environ, LHC_SOCKET=f'lhc-lifecycle-{os.getpid()}.sock',
+           LHC_METRICS=str(output / 'parent.csv'))
+env.setdefault('LHC_POPUPS', 'spell')
 env.setdefault('SLINT_BACKEND', 'winit-software')
 env.pop('XDG_ACTIVATION_TOKEN', None)
-socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['SLINT_SHELL_SOCKET']
+socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['LHC_SOCKET']
 samples = []
 
 def command(*args):

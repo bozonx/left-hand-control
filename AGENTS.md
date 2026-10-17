@@ -17,15 +17,16 @@ Run everything from the repo root. Build artefacts go to the shared `target/`.
 
 ```sh
 cargo run -p slint-shell                                          # popups as winit windows
-SLINT_SHELL_POPUPS=auto cargo run -p slint-shell --features spell # popups as layer-shell (KDE/Sway/Hyprland)
+LHC_POPUPS=auto cargo run -p slint-shell --features spell        # popups as layer-shell (KDE/Sway/Hyprland)
 SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview  # hot reload of .slint
 
 target/debug/left-hand-control show settings   # CLI client → running instance (show emoji|quick [page], hide,
                                          # toggle-mapper, game auto|on|off|toggle,
-                                         # preferences dark|light ru|en, ping, quit)
+                                         # preferences dark|light ru|en, ping, quit;
+                                         # --version and --help need no instance)
 ```
 
-Windows start hidden; the app lives in the tray. Only one instance runs per `XDG_RUNTIME_DIR` (override with `SLINT_SHELL_SOCKET`).
+Windows start hidden; the app lives in the tray. Only one instance runs per `XDG_RUNTIME_DIR` (override with `LHC_SOCKET`); a second launch without arguments opens the running instance's settings.
 
 Checks (same as CI plus the workspace-wide ones):
 
@@ -47,6 +48,16 @@ cargo run --locked -p slint-shell --example interactions        # settings, save
 ```
 
 Page-specific examples: `action-picker`, `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-scroll`, `notifications`. Benchmarks and diagnostic stands (`bench-*`, `probes` feature, `apps/slint-shell/scripts/`) are described in `apps/slint-shell/README.md`.
+
+Mapper and release checks:
+
+```sh
+cargo test --locked -p lhc-core --test mapper_e2e -- --ignored  # real evdev → engine → uinput path; needs /dev/uinput and /dev/input
+apps/slint-shell/scripts/e2e-local.sh                           # all UI scenarios + mapper e2e; writes docs/testing/results/linux/<date>.txt
+apps/slint-shell/scripts/release-linux.sh                       # tar.gz, deb, rpm, vendor archive, SHA256SUMS (needs nfpm)
+```
+
+Releases are built by `.github/workflows/release.yml` from a `v<version>` tag; see `docs/development/linux-release.md`.
 
 ## Repository map
 
@@ -94,7 +105,7 @@ docs/                         # development/, design/, testing/; README.md index
 
 **Processes.** One binary, three roles: the settings process, the Spell popup worker (`--spell-worker`) and a CLI client that sends a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-authenticated loopback TCP on Windows). The mapper holds a cross-process lock, so only one process can grab keyboards.
 
-**Popups.** `SLINT_SHELL_POPUPS=winit` (default) shows borderless winit windows in-process; `auto` uses Spell layer-shell when the compositor supports `zwlr_layer_shell_v1` and falls back to winit otherwise; `spell` requires layer-shell. Popup data and key handling live in `popup_model.rs` so both paths behave identically.
+**Popups.** `LHC_POPUPS=winit` (default) shows borderless winit windows in-process; `auto` uses Spell layer-shell when the compositor supports `zwlr_layer_shell_v1` and falls back to winit otherwise; `spell` requires layer-shell. Popup data and key handling live in `popup_model.rs` so both paths behave identically.
 
 **Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `cmd:<id>`, `sys:<id>` (only `switchDesktopN`, `switchLayoutN`, `windowToDesktopN`), `app:<id>`, `kde:<component>/<shortcut>` (any KDE global shortcut via kglobalaccel), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them through the `Action` type in `lhc_core::profile::actions`, not ad-hoc string handling.
 

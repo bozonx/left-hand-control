@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .ok_or("expected binary path and output CSV path")?,
     );
     let csv = PathBuf::from(args.next().ok_or("expected output CSV path")?);
-    let count = std::env::var("SLINT_SHELL_BENCH_COUNT")
+    let count = std::env::var("LHC_BENCH_COUNT")
         .ok()
         .and_then(|value| value.parse::<usize>().ok())
         .filter(|value| *value > 0)
@@ -69,9 +69,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("no virtual input node")??;
     let mut server = Server(
         Command::new(&binary)
-            .env("SLINT_SHELL_INPUT", input)
-            .env("SLINT_SHELL_SOCKET", &socket)
-            .env("SLINT_SHELL_METRICS", &csv)
+            .env("LHC_INPUT", input)
+            .env("LHC_SOCKET", &socket)
+            .env("LHC_METRICS", &csv)
             .env_remove("XDG_ACTIVATION_TOKEN")
             .spawn()?,
     );
@@ -80,8 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("server failed to start".into());
     }
     let spell_csv = PathBuf::from(format!("{}.spell.csv", csv.display()));
-    let csv = if std::env::var("SLINT_SHELL_POPUPS").is_ok_and(|mode| mode != "winit")
-        && spell_csv.exists()
+    let csv = if std::env::var("LHC_POPUPS").is_ok_and(|mode| mode != "winit") && spell_csv.exists()
     {
         spell_csv
     } else {
@@ -165,7 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
             if !Command::new(&binary)
-                .env("SLINT_SHELL_SOCKET", &socket)
+                .env("LHC_SOCKET", &socket)
                 .arg("hide")
                 .status()?
                 .success()
@@ -176,7 +175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     if !Command::new(&binary)
-        .env("SLINT_SHELL_SOCKET", &socket)
+        .env("LHC_SOCKET", &socket)
         .arg("quit")
         .status()?
         .success()

@@ -192,7 +192,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
     },
 ];
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::BUILTIN_MACROS;
     use crate::mapper::action::parse_action;

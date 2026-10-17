@@ -1,0 +1,2 @@
+# Rust crates (unsafe-libyaml) are linked statically by design.
+left-hand-control: embedded-library

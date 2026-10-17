@@ -28,10 +28,10 @@ target dependencies и `cfg`; переносимый слой используе
 
 ```sh
 cargo build --locked -p slint-shell
-SLINT_BACKEND=winit-software SLINT_SHELL_METRICS=/tmp/slint-software.csv target/debug/left-hand-control
+SLINT_BACKEND=winit-software LHC_METRICS=/tmp/slint-software.csv target/debug/left-hand-control
 ```
 
-CSV метрик пишется только при заданном `SLINT_SHELL_METRICS`; Spell worker
+CSV метрик пишется только при заданном `LHC_METRICS`; Spell worker
 пишет рядом файл с суффиксом `.spell.csv`.
 
 По очереди замените backend на `winit-femtovg` и `winit-skia`.
@@ -41,7 +41,7 @@ CSV метрик пишется только при заданном `SLINT_SHEL
 Для release используйте `cargo build --release --locked -p slint-shell`.
 
 На Windows IPC слушает только `127.0.0.1:43176`; порт можно изменить через
-`SLINT_SHELL_PORT`; каждый запрос подписан токеном из `%LOCALAPPDATA%\lhc-slint-shell\ipc-token`,
+`LHC_PORT`; каждый запрос подписан токеном из `%LOCALAPPDATA%\lhc-slint-shell\ipc-token`,
 который недоступен другим пользователям. Linux и macOS используют Unix socket в приватном
 каталоге `0700`: `$XDG_RUNTIME_DIR/lhc-slint-shell/` или, без `XDG_RUNTIME_DIR`,
 `<temp>/lhc-slint-shell-<uid>/`. Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. После выбора на
@@ -78,7 +78,7 @@ target/debug/left-hand-control quit
 - Потеря фокуса скрывает попап.
 - Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. Слушаются доступные
   evdev-устройства, поддерживающие эти клавиши. Можно задать
-  `SLINT_SHELL_INPUT=/dev/input/eventN`. Устройство не захватывается.
+  `LHC_INPUT=/dev/input/eventN`. Устройство не захватывается.
   Права на input должны быть настроены заранее. Новые устройства, в том числе
   виртуальная клавиатура mapper, подхватываются автоматически в течение 2 с.
 
@@ -136,11 +136,11 @@ python3 apps/slint-shell/scripts/summarize.py /tmp/slint-software.csv
 CSV перезаписывается при старте; используйте отдельные пути для разных запусков.
 
 Для диагностической вставки выбранного emoji или текста в KDE Wayland соберите
-с `--features probes` и запустите Spell с `SLINT_SHELL_INSERT=1`. Прототип запоминает исходное окно через KWin, после выбора
+с `--features probes` и запустите Spell с `LHC_INSERT=1`. Прототип запоминает исходное окно через KWin, после выбора
 скрывает слой, ждёт отпускания клавиатуры, возвращает фокус и вставляет значение
 через Wayland data-control + uinput Shift+Insert с сохранением MIME-форматов. Нужны data-control, доступ к `/dev/uinput` и KWin.
 Исходный clipboard восстанавливается после вставки. Без переменной выбор только
-пишется в лог. `SLINT_SHELL_TEST_INJECT=1` сохраняет диагностическую вставку `A`.
+пишется в лог. `LHC_TEST_INJECT=1` сохраняет диагностическую вставку `A`.
 
 Проверка поведения при аварийном завершении Spell worker:
 
@@ -181,12 +181,12 @@ python3 apps/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
 
 ```sh
 cargo build --locked -p slint-shell --features probes --examples --bin left-hand-control
-SLINT_SHELL_POPUPS=auto SLINT_BACKEND=winit-software \
-  SLINT_SHELL_METRICS=/tmp/slint-stage3a.csv \
+LHC_POPUPS=auto SLINT_BACKEND=winit-software \
+  LHC_METRICS=/tmp/slint-stage3a.csv \
   target/debug/left-hand-control
 ```
 
-`SLINT_SHELL_POPUPS`:
+`LHC_POPUPS`:
 
 - `winit` — режим по умолчанию; сборка без feature `spell` сохраняется.
 - `auto` — проверяет registry Wayland: при наличии `zwlr_layer_shell_v1` запускает
@@ -207,7 +207,7 @@ Spell использует **Skia software surface + Wayland SHM**, а не wini
 зафиксированного Spell backend нет. Суммарную память измеряйте вместе с потомками.
 
 Параметры слоёв: Emoji 520×460, Quick 520×500, overlay, anchor bottom, margin bottom
-24, exclusive zone 0. `SLINT_SHELL_OUTPUT=<имя>` передаёт выбранный монитор в Spell.
+24, exclusive zone 0. `LHC_OUTPUT=<имя>` передаёт выбранный монитор в Spell.
 В приватном KWin проверены второй монитор, масштабы 1/1,25/1,5, отключение
 выбранного выхода, панель и fullscreen. Для других композиторов проверка остаётся открытой.
 
@@ -219,7 +219,7 @@ Fallback GNOME использует те же окна без рамки и ра
 
 Используется локальная копия Spell из `vendor/spell-framework`; исходная ревизия,
 лицензия и изменения перечислены в `vendor/spell-framework/PATCHES.md`.
-По умолчанию `SLINT_SHELL_SPELL_LIFECYCLE=unmap`: скрытие немедленно коммитит пустой
+По умолчанию `LHC_SPELL_LIFECYCLE=unmap`: скрытие немедленно коммитит пустой
 буфер, повторный показ запускает кадр независимо от остановленного frame callback.
 Число ожидающих frame callbacks ограничено одним; скрытое окно не делает поздних
 коммитов. Закрытый композитором слой пересоздаётся, например при отключении монитора.
@@ -231,7 +231,7 @@ Fallback GNOME использует те же окна без рамки и ра
 
 ### Метрики и воспроизведение
 
-Родитель пишет CSV по `SLINT_SHELL_METRICS`, worker — тот же путь с `.spell.csv`.
+Родитель пишет CSV по `LHC_METRICS`, worker — тот же путь с `.spell.csv`.
 `t3_first_frame` означает отрисовку и commit буфера, **не presentation композитора**.
 `t4_focused` — доставленный keyboard enter, `t5_first_key` — обработанная клавиша.
 Evdev-стенд ждёт событие навигации до 500 мс; t5 включает опрос и эмуляцию.
@@ -251,7 +251,7 @@ apps/slint-shell/scripts/bench-virtual.sh /tmp/slint-lifecycle lifecycle
 python3 apps/slint-shell/scripts/summarize.py /tmp/slint-lifecycle/parent.csv.spell.csv
 
 # Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
-SLINT_SHELL_POPUPS=spell SLINT_BACKEND=winit-software \
+LHC_POPUPS=spell SLINT_BACKEND=winit-software \
   target/debug/examples/bench-evdev \
   target/debug/left-hand-control /tmp/slint-evdev.csv
 SLINT_BACKEND=winit-software \
@@ -267,7 +267,7 @@ SLINT_BACKEND=winit-software \
 это не заменяет проверку evdev на реальном рабочем столе.
 
 `bench-return` создаёт собственное окно-получатель и включает только для тестового
-процесса `SLINT_SHELL_TEST_INJECT=1`. KDE-проба запоминает исходное окно, после выбора
+процесса `LHC_TEST_INJECT=1`. KDE-проба запоминает исходное окно, после выбора
 ждёт освобождения клавиатуры, восстанавливает и подтверждает фокус, затем отправляет
 одну клавишу A (а не выбранный эмодзи). В реальной сессии ждёт также отпускания
 физических модификаторов. Esc ничего не вводит. Это проверка возврата ввода, а не

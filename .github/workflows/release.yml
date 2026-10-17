@@ -1,0 +1,167 @@
+name: Release
+
+# A `v*` tag builds every Linux artifact, smoke-tests the packages and creates
+# a draft release; a person publishes it after the local e2e run. A manual run
+# builds and checks the artifacts without creating a release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: release-build-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NFPM_VERSION: 2.47.0
+  NFPM_SHA256: 0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      checks: write
+      issues: write
+
+  metadata:
+    name: Release metadata
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check tag, CHANGELOG.md and metainfo
+        run: python3 apps/slint-shell/scripts/release-metadata.py "$GITHUB_REF_NAME"
+
+  build-linux:
+    name: Build Linux x86_64
+    needs: [verify, metadata]
+    # A skipped metadata job (manual run) must not skip the build.
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    # The oldest supported glibc: one binary serves every current Plasma 6 distribution.
+    container: ubuntu:22.04
+    steps:
+      - name: Install build dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential ca-certificates clang cmake \
+            curl git ninja-build pkg-config python3 xz-utils libdbus-1-dev libfontconfig1-dev \
+            libfreetype-dev libpam0g-dev libwayland-dev libxkbcommon-dev lintian
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install nfpm
+        run: |
+          curl -fsSLo nfpm.tar.gz \
+            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"
+          echo "${NFPM_SHA256}  nfpm.tar.gz" | sha256sum -c -
+          tar -xzf nfpm.tar.gz -C /usr/local/bin nfpm
+          rm nfpm.tar.gz
+
+      - name: Build artifacts
+        run: apps/slint-shell/scripts/release-linux.sh
+
+      - name: Lint deb
+        run: lintian --fail-on error target/release-artifacts/*.deb
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: target/release-artifacts/
+          if-no-files-found: error
+
+  rpmlint:
+    name: Lint rpm
+    needs: build-linux
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64
+          path: artifacts
+
+      - name: rpmlint
+        run: |
+          dnf install -y -q rpmlint
+          rpmlint artifacts/*.rpm
+
+  smoke-packages:
+    name: Smoke / ${{ matrix.image }}
+    needs: build-linux
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { image: 'debian:12', package: '*.deb' }
+          - { image: 'debian:13', package: '*.deb' }
+          - { image: 'ubuntu:22.04', package: '*.deb' }
+          - { image: 'ubuntu:24.04', package: '*.deb' }
+          - { image: 'fedora:latest', package: '*.rpm' }
+          - { image: 'opensuse/tumbleweed', package: '*.rpm' }
+          - { image: 'archlinux:latest', package: '*.tar.gz' }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64
+          path: artifacts
+
+      - name: Install, check and remove
+        run: sh apps/slint-shell/scripts/smoke-linux-package.sh artifacts/${{ matrix.package }}
+
+  draft-release:
+    name: Draft release
+    needs: [rpmlint, smoke-packages]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64
+          path: artifacts
+
+      - name: Verify checksums
+        working-directory: artifacts
+        run: sha256sum -c SHA256SUMS
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            artifacts/*.tar.gz
+            artifacts/*.deb
+            artifacts/*.rpm
+            artifacts/*.tar.xz
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 apps/slint-shell/scripts/release-metadata.py "$GITHUB_REF_NAME" --notes > notes.md
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "Left Hand Control ${GITHUB_REF_NAME#v}" --notes-file notes.md artifacts/*

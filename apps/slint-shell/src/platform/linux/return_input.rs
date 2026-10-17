@@ -43,8 +43,8 @@ pub struct ReturnInput {
 
 impl ReturnInput {
     pub fn new() -> Result<Option<Self>, Box<dyn std::error::Error>> {
-        let test_mode = std::env::var("SLINT_SHELL_TEST_INJECT").as_deref() == Ok("1");
-        if !test_mode && std::env::var("SLINT_SHELL_INSERT").as_deref() != Ok("1") {
+        let test_mode = std::env::var("LHC_TEST_INJECT").as_deref() == Ok("1");
+        if !test_mode && std::env::var("LHC_INSERT").as_deref() != Ok("1") {
             return Ok(None);
         }
         let active = Active::default();

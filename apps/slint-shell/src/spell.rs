@@ -2,8 +2,8 @@
 //! surfaces.
 //!
 //! Runs as `slint-shell --spell-worker`, started and supervised by the
-//! settings process. It owns its own IPC socket (`SLINT_SHELL_SOCKET`),
-//! sends chosen actions back to the parent (`SLINT_SHELL_PARENT_SOCKET`)
+//! settings process. It owns its own IPC socket (`LHC_SOCKET`),
+//! sends chosen actions back to the parent (`LHC_PARENT_SOCKET`)
 //! and exits when the parent closes its stdin.
 
 use crate::{
@@ -93,7 +93,7 @@ fn configuration(width: u32, height: u32) -> Result<WindowConf, Box<dyn std::err
         .layer_type(LayerType::Overlay)
         .exclusive_zone(0)
         .board_interactivity(BoardType::None);
-    if let Ok(monitor) = std::env::var("SLINT_SHELL_OUTPUT") {
+    if let Ok(monitor) = std::env::var("LHC_OUTPUT") {
         builder.monitor(monitor);
     }
     builder.build()
@@ -238,8 +238,7 @@ fn env_choice(
 
 /// Run `action` in the settings process, which owns the mapper.
 fn execute(action: String) {
-    let parent =
-        std::env::var("SLINT_SHELL_PARENT_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into());
+    let parent = std::env::var("LHC_PARENT_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into());
     std::thread::spawn(move || {
         if let Err(error) = ipc::send(
             &parent,
@@ -285,12 +284,8 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     if !crate::platform::backend::layer_shell_available()? {
         return Err("layer-shell unavailable".into());
     }
-    let unmap = env_choice(
-        "SLINT_SHELL_SPELL_LIFECYCLE",
-        "unmap",
-        &["unmap", "transparent"],
-    )? == "unmap";
-    let initial = match env_choice("SLINT_SHELL_SPELL_INITIAL", "", &["emoji", "quick"])? {
+    let unmap = env_choice("LHC_SPELL_LIFECYCLE", "unmap", &["unmap", "transparent"])? == "unmap";
+    let initial = match env_choice("LHC_SPELL_INITIAL", "", &["emoji", "quick"])? {
         "emoji" => Some(Popup::Emoji),
         "quick" => Some(Popup::Quick),
         _ => None,
@@ -403,7 +398,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     }
     log::info!(
         "Spell ready: overlay, bottom center, margin=24, exclusive_zone=0, keyboard=exclusive, output={:?}",
-        std::env::var("SLINT_SHELL_OUTPUT")
+        std::env::var("LHC_OUTPUT")
     );
     loop {
         for popup in Popup::ALL {

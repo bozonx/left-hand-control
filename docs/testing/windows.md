@@ -281,7 +281,7 @@ powershell -ExecutionPolicy Bypass -File `
 It verifies shutdown from both hidden and visible states, 100 alternating popup cycles,
 bounded working-set and handle growth after warm-up, disabled global hotkeys, process
 disappearance, release of the loopback listener on `127.0.0.1:43176`, and the non-zero exit
-plus diagnostic for the unsupported Windows setting `SLINT_SHELL_POPUPS=spell`. Logs,
+plus diagnostic for the unsupported Windows setting `LHC_POPUPS=spell`. Logs,
 metrics and resource samples are written below `windows-runtime\lifecycle` in the source
 checkout.
 

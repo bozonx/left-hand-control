@@ -1,5 +1,5 @@
 //! Popup backend on Linux: winit windows, or the Spell worker process with
-//! layer-shell surfaces (`SLINT_SHELL_POPUPS=auto|spell`).
+//! layer-shell surfaces (`LHC_POPUPS=auto|spell`).
 
 use crate::{
     command::{Command, Source},
@@ -98,12 +98,12 @@ impl Drop for Worker {
 /// Whether popups should run in the Spell worker. Quick: only checks the
 /// environment and asks the compositor for layer-shell.
 pub fn spell_requested() -> Result<bool, Box<dyn std::error::Error>> {
-    let mode = std::env::var("SLINT_SHELL_POPUPS").unwrap_or_else(|_| "winit".into());
+    let mode = std::env::var("LHC_POPUPS").unwrap_or_else(|_| "winit".into());
     if mode == "winit" {
         return Ok(false);
     }
     if mode != "auto" && mode != "spell" {
-        return Err("SLINT_SHELL_POPUPS must be winit, auto or spell".into());
+        return Err("LHC_POPUPS must be winit, auto or spell".into());
     }
     let available = std::env::var_os("WAYLAND_DISPLAY").is_some() && layer_shell_available()?;
     if !available {
@@ -141,18 +141,18 @@ pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {
         .arg("--spell-worker")
         .stdin(std::process::Stdio::piped())
         .env(
-            "SLINT_SHELL_PARENT_SOCKET",
-            std::env::var("SLINT_SHELL_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into()),
+            "LHC_PARENT_SOCKET",
+            std::env::var("LHC_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into()),
         )
-        .env("SLINT_SHELL_SOCKET", &socket)
+        .env("LHC_SOCKET", &socket)
         .env_remove("XDG_ACTIVATION_TOKEN");
-    match std::env::var_os("SLINT_SHELL_METRICS") {
+    match std::env::var_os("LHC_METRICS") {
         Some(metrics) => {
             let mut path = metrics;
             path.push(".spell.csv");
-            command.env("SLINT_SHELL_METRICS", path)
+            command.env("LHC_METRICS", path)
         }
-        None => command.env_remove("SLINT_SHELL_METRICS"),
+        None => command.env_remove("LHC_METRICS"),
     };
     let mut worker = Worker {
         child: Some(command.spawn()?),

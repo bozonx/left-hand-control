@@ -28,10 +28,10 @@ with tempfile.TemporaryDirectory() as directory:
     log_path = Path(directory) / "server.log"
     with log_path.open("w+") as log:
         env = os.environ | {
-            "SLINT_SHELL_POPUPS": "spell",
-            "SLINT_SHELL_SOCKET": socket,
+            "LHC_POPUPS": "spell",
+            "LHC_SOCKET": socket,
             "SLINT_BACKEND": "winit-software",
-            "SLINT_SHELL_METRICS": str(Path(directory) / "crash.csv"),
+            "LHC_METRICS": str(Path(directory) / "crash.csv"),
         }
         server = subprocess.Popen([binary], env=env, stdout=log, stderr=log)
         try:
