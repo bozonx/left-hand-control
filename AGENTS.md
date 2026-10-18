@@ -148,7 +148,9 @@ docs/                         # development/, design/, testing/; README.md index
 
 The primary accepted environment is KDE Plasma 6 on Wayland. Windows interception
 (`mapper/windows/`) is implemented but not accepted; macOS interception is not
-implemented. Actions a platform cannot run are skipped with a notice.
+implemented. X11 sessions are not a supported target: the existing X11 code is best effort,
+without acceptance or e2e, and is not extended. Actions a platform cannot run are
+skipped with a notice.
 See [platform support and backend development](docs/development/platforms.md)
 for the capability matrix and backend extension instructions.
 

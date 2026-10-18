@@ -12,6 +12,8 @@
 | Game mode: fullscreen / active window | ✅ KWin script | ❌ no public API | ✅ IPC (Hyprland too); other wlroots compositors via `wlr-foreign-toplevel` | ⚠ `xprop` (+ `xdotool`, `xrandr` for borderless) | ✅ Win32 | ⚠ untested (`NSWorkspace`, `CGWindowList`) |
 | Game mode: known games (each source toggled separately) | ✅ Steam, Lutris, Heroic, umu, gamescope, `.desktop` `Game` category | ✅ | ✅ | ✅ | ✅ Steam `RunningAppID`, Game Bar list (untested) | ⚠ `Info.plist` category (untested) |
 
+**X11 is not a supported target.** Interception (evdev + uinput) does not depend on the display server, so the mapper works in an X11 session, and the existing X11 code (`xprop`/`xdotool` active-window detection, `layout/linux_x11.rs`, winit popups) stays as best effort. It is not accepted, has no e2e or VM scenarios and is not extended: GNOME has dropped the X11 session and KDE drops it in Plasma 6.8, while the remaining X11 desktops (Xfce, Cinnamon, MATE, i3) would need their own DE backends anyway. Reconsider only on concrete demand for a specific desktop, as "support DE X", not "support X11".
+
 🚧 = skeleton module returning `Ok(None)`/`None` with a planned-implementation note; ❌ stub = explicit "not implemented" error. Both compile and are safe to ship.
 
 **Adding a Linux DE backend:** add a variant to `platform::linux::Desktop` and `classify_desktop()`; create `layout/linux_<de>.rs` with `current()` and `start_watcher()` that report through `super::publish(&info)`; wire it into `layout/mod.rs`; add `mod <de>` with `resolve(name) -> Option<SysAction>` in `mapper/system.rs` and wire it into the dispatcher.
