@@ -16,7 +16,7 @@ home=$(getent passwd "$user" | cut -d: -f6)
 
 if command -v apt-get >/dev/null 2>&1; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-        openssh-server sudo python3 kdialog desktop-file-utils
+        openssh-server sudo python3 kdialog desktop-file-utils kbd
     ssh_service=ssh
 elif command -v dnf >/dev/null 2>&1; then
     dnf install -y -q openssh-server sudo python3 kdialog desktop-file-utils

@@ -1,0 +1,52 @@
+Date: 2026-10-18 12:42:25 -0300
+Commit: 9104055
+VM: debian13-kde (/mnt/disk2/vm/lhc-debian13-kde/base.qcow2)
+Package: left-hand-control_0.3.0_amd64.deb
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Host: ivan, 7.2.3-2-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-debian13-kde/runs/20261018-122553/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install: passed
+- installed-files: passed — /usr/bin/left-hand-control: left-hand-control 0.3.0
+- keyboard-probe: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- test-config: passed
+- start-without-input: passed
+- tray-item: passed — org.kde.StatusNotifierItem-1867-1/StatusNotifierItem
+- no-mapper-without-input: passed
+- autostart-entry: passed — Exec="/usr/bin/left-hand-control"
+- relogin-with-input: passed
+- autostart-launch: passed
+- tray-after-login: passed — org.kde.StatusNotifierItem-2534-1/StatusNotifierItem
+- mapper-running: passed
+- portal-deny: FAILED — received '', 0 `user cancelled` failures (expected none and 2); see portal-deny-*.png
+- portal-consent: FAILED — expected 'lhc-ok', received ''; see portal-consent.png
+- mapper-keys-and-text: FAILED — expected 'bXclhc-ok', received ''; see mapper-keys-and-text.png
+- text-unicode: passed — Привет, ёж 😀
+- layer-tap-hold: passed — gkkgjj
+- macro: passed — nmacO
+- command: passed
+- system-actions: passed — desktop 1→2→1, layout us→ru→us
+- russian-layout: passed — исlhc-okПривет, ёж 😀
+- popups: passed
+- emoji-ipc: FAILED — expected '🙂', received ''; see emoji-ipc.png
+- quick-menu-rule: FAILED — expected 'quick-ok', received ''; see quick-rule.png
+- emoji-hotkey: FAILED — `sudo fgconsole` exited with 1:
+sudo: fgconsole: command not found
+- game-mode: FAILED — expected 'j', received ''; see game-off.png
+- screen-lock: FAILED — the password typed through the mapper did not unlock
+- suspend-resume: FAILED — the guest did not complete a suspend cycle
+- cli: passed — left-hand-control 0.3.0
+- second-instance: passed
+- keyboard-replug: FAILED — Command '['ssh', '-i', '/home/ivan/.ssh/lhc-vm', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=ERROR', '-o', 'ConnectTimeout=5', '-p', '2232', 'tester@127.0.0.1', 'python3 ~/lhc-e2e/linux-guest.py start-receiver --name replug-native']' timed out after 600 seconds
+- mapper-stop: passed
+- mapper-start: passed
+- stuck-keys-on-stop: passed — abc
+- stuck-keys-on-kill: passed — abc
+- upgrade-over-running: passed — reinstalled over the running instance
+- quit: passed
+- remove: passed
+
+Passed: 31, failed: 10

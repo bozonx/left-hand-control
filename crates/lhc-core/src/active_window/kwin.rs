@@ -124,7 +124,9 @@ struct Service {
     kwin: Arc<OnceLock<String>>,
 }
 
-#[zbus::interface(name = "dev.bozonx.LeftHandControl.KWin")]
+// Calls must apply in arrival order: a focus change sends `{}` and the new
+// window back to back, and a task per call could leave `{}` as the last state.
+#[zbus::interface(name = "dev.bozonx.LeftHandControl.KWin", spawn = false)]
 impl Service {
     fn active(&self, json: String, #[zbus(header)] header: Header<'_>) {
         if !self.sent_by_kwin(&header) {

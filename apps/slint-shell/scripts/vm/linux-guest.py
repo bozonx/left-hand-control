@@ -507,7 +507,8 @@ def cmd_kill_app(args):
 
 def cmd_suspend_count(args):
     """Completed suspend cycles in this boot's kernel log."""
-    log = subprocess.run(["journalctl", "-k", "-b", "--no-pager", "-o", "cat"],
+    # Debian lets only root and the adm group read the system journal.
+    log = subprocess.run(["sudo", "-n", "journalctl", "-k", "-b", "--no-pager", "-o", "cat"],
                          capture_output=True, text=True).stdout
     print(log.count("PM: suspend exit"))
 

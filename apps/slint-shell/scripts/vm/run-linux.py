@@ -142,8 +142,11 @@ def main():
             vm.qmp.screendump(vm.logs / "portal-deny-dialog.png")
             # A click, not keys: key presses during a pending text job cancel
             # the job instead of recording the declined dialog.
-            vm.qmp.click(*vm.get("portal_deny_click", [0.738, 0.659]))
-            time.sleep(3)
+            points = vm.get("portal_deny_click", [0.738, 0.659])
+            # Plasma 6.3 asks a second time after the first Cancel.
+            for point in points if isinstance(points[0], list) else [points]:
+                vm.qmp.click(*point)
+                time.sleep(3)
             vm.qmp.tap("t")
             time.sleep(3)
             vm.qmp.screendump(vm.logs / "portal-deny-again.png")

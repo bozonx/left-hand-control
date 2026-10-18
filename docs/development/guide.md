@@ -340,7 +340,7 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 | `vga`, `nic`, `cpu`, `disk_bus` | Устройства QEMU; по умолчанию без `vga`, `virtio-net-pci`, `host`, `virtio` |
 | `install`, `reinstall`, `remove` | Команды пакетного менеджера; `{package}` — путь к пакету в госте. Для `.tar.gz` не нужны: используется `install-linux.sh`. Без `reinstall` шаг обновления пропускается |
 | `portal_keys` | Клавиши QEMU (qcode), подтверждающие диалог RemoteDesktop portal |
-| `portal_deny_click` | Точка кнопки Deny в этом диалоге, доли ширины и высоты экрана; по умолчанию `[0.738, 0.659]` (1280×800, Plasma 6.7) |
+| `portal_deny_click` | Точка кнопки Deny в этом диалоге, доли ширины и высоты экрана, или список точек, которые нажимаются по очереди; по умолчанию `[0.738, 0.659]` (1280×800, Plasma 6.7). Plasma 6.3 после первого Cancel показывает второй диалог: `[[0.678, 0.655], [0.610, 0.655]]` |
 | `uefi`, `cache_disk` | Для Windows: `{"code", "vars", "tpm"}` и постоянный диск кэша сборки |
 
 Для Debian/Kubuntu: `"install": "sudo apt-get install -y {package}"`,
@@ -396,6 +396,20 @@ $ssh "sudo sh /tmp/prep.sh tester '$(cat ~/.ssh/lhc-vm.pub)' && sudo systemctl r
 Затем шаги 3–4 ниже. Fedora 44 KDE использует Plasma Login Manager вместо SDDM;
 `prepare-linux-guest.sh` пишет автологин в `/etc/plasmalogin.conf.d/` и отключает
 cloud-init, чтобы одноразовые загрузки не искали источник данных.
+
+**Debian 13 KDE из облачного образа** — так же, около 20 минут (так собран
+`/mnt/disk2/vm/lhc-debian13-kde`, Debian 13.7, Plasma 6.3.6, `ssh_port` 2232). Отличия от
+Fedora: образ `generic` с обычным ядром, а не облачным, как у `genericcloud`; группа `sudo` вместо `wheel`, KDE ставится `task-kde-desktop`:
+
+```sh
+u=https://cloud.debian.org/images/cloud/trixie/latest
+curl -fLO "$u/SHA512SUMS" -fLO "$u/debian-13-generic-amd64.qcow2"
+sha512sum -c --ignore-missing SHA512SUMS
+# далее как для Fedora, с groups: [sudo] в user-data и
+$ssh 'sudo cloud-init status --wait; sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y task-kde-desktop && sudo systemctl set-default graphical.target'
+```
+
+В `vm.json` — команды apt (см. выше) и `portal_deny_click` для Plasma 6.3.
 
 **Другие дистрибутивы с установочного ISO:**
 
