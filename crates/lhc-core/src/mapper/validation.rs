@@ -1,4 +1,3 @@
-#![cfg(target_os = "linux")]
 #![allow(clippy::too_many_arguments)]
 
 use super::action::{explicit_pause, explicit_text, parse_action};
@@ -153,60 +152,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
                 .join("\n")
         ))
     }
-}
-
-/// Portable files may contain actions for another desktop. Refuse to run
-/// reachable unavailable actions rather than silently dropping macro steps.
-pub fn validate_runtime_capabilities(cfg: &AppConfig) -> Result<(), String> {
-    let mut actions = Vec::new();
-    for rule in cfg.rules.iter().filter(|r| r.enabled) {
-        for spec in [&rule.tap_action, &rule.hold_action] {
-            if let ActionSpec::Action(action) = spec {
-                actions.push(action.as_str());
-            }
-        }
-        actions.extend([
-            rule.long_hold_action.as_str(),
-            rule.double_tap_action.as_str(),
-        ]);
-    }
-    for keymap in cfg.layer_keymaps.values() {
-        actions.extend(keymap.keys.values().flatten().map(String::as_str));
-    }
-    validate_runtime_actions(cfg, actions)
-}
-
-pub fn validate_runtime_action(cfg: &AppConfig, action: &str) -> Result<(), String> {
-    validate_runtime_actions(cfg, vec![action])
-}
-
-fn validate_runtime_actions<'a>(
-    cfg: &'a AppConfig,
-    mut actions: Vec<&'a str>,
-) -> Result<(), String> {
-    let mut visited = HashSet::new();
-    while let Some(action) = actions.pop() {
-        let action = action.trim();
-        let available = match Action::parse(Some(action)) {
-            Action::Macro(id) => {
-                if visited.insert(id.clone()) {
-                    if let Some(m) = cfg.macros.iter().find(|m| m.id.trim() == id) {
-                        actions.extend(m.steps.iter().map(|step| step.action.as_str()));
-                    } else if let Some(m) = BUILTIN_MACROS.iter().find(|m| m.id == id) {
-                        actions.extend(m.steps.iter().copied());
-                    }
-                }
-                continue;
-            }
-            Action::System(id) => system::resolve(&id).is_some(),
-            Action::KdeShortcut(id) => system::resolve_kde_shortcut(&id).is_some(),
-            _ => true,
-        };
-        if !available {
-            return Err(format!("Action is unavailable on this desktop: {action}"));
-        }
-    }
-    Ok(())
 }
 
 fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
@@ -563,6 +508,7 @@ mod tests {
         cfg.commands.push(Command {
             id: "music".into(),
             linux: "playerctl play-pause".into(),
+            windows: "playerctl play-pause".into(),
             working_directory: None,
         });
         cfg.macros.push(Macro {
@@ -583,6 +529,7 @@ mod tests {
         cfg.commands.push(Command {
             id: "music".into(),
             linux: "playerctl play-pause".into(),
+            windows: "playerctl play-pause".into(),
             working_directory: None,
         });
         cfg.settings.current_layout_id = Some("custom".into());
@@ -793,11 +740,13 @@ mod tests {
         cfg.commands.push(Command {
             id: "dup".into(),
             linux: "echo 1".into(),
+            windows: "echo 1".into(),
             working_directory: None,
         });
         cfg.commands.push(Command {
             id: "dup".into(),
             linux: "echo 2".into(),
+            windows: "echo 2".into(),
             working_directory: None,
         });
         let err = validate_config(&cfg).expect_err("validation should fail");
@@ -810,6 +759,7 @@ mod tests {
         cfg.commands.push(Command {
             id: "empty".into(),
             linux: "   ".into(),
+            windows: "   ".into(),
             working_directory: None,
         });
         validate_config(&cfg).expect("empty command scripts are ignored drafts");
@@ -865,27 +815,5 @@ mod tests {
         cfg.layer_keymaps.insert("nav".into(), km);
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("unknown action \"BadAction!!!\""));
-    }
-    #[test]
-    fn unavailable_steps_are_checked_only_when_reachable_including_remote_macros() {
-        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"macros": [
-            {"id": "outer", "steps": [{"action": "macro:inner"}]},
-            {"id": "inner", "steps": [{"action": "sys:switchDesktop999"}]}
-        ]}))
-        .unwrap();
-        assert!(validate_runtime_capabilities(&cfg).is_ok());
-        assert!(
-            validate_runtime_action(&cfg, "macro:outer")
-                .unwrap_err()
-                .contains("unavailable")
-        );
-        let mut cfg = cfg;
-        cfg.rules = serde_json::from_value(serde_json::json!([
-            {"key": "KeyA", "tapAction": "macro:outer"}
-        ]))
-        .unwrap();
-        assert!(validate_runtime_capabilities(&cfg).is_err());
-        cfg.rules[0].enabled = false;
-        assert!(validate_runtime_capabilities(&cfg).is_ok());
     }
 }

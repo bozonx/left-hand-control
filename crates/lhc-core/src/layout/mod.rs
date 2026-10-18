@@ -13,7 +13,7 @@
 //                                                                   as fallback
 //                                                                   for unknown
 //                                                                   DEs)
-//   * Windows                — GetKeyboardLayoutName               (stub)
+//   * Windows                — GetKeyboardLayout (foreground)      (implemented)
 //   * macOS                  — TISCopyCurrentKeyboardInputSource   (stub)
 //
 // Shell contract:
@@ -155,6 +155,11 @@ pub(crate) fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
     }
 }
 
+#[cfg(target_os = "windows")]
+pub(crate) fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+    windows::refresh_cache()
+}
+
 pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
     #[cfg(target_os = "linux")]
     {
@@ -164,15 +169,19 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
             _ => Ok(vec![]),
         }
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "windows")]
+    {
+        windows::available_layouts()
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     {
         Ok(vec![])
     }
 }
 
 /// Switch the active OS keyboard layout to the given zero-based index.
-/// Currently implemented for KDE Plasma; other desktops/OSes return an
-/// explicit error so the shell can disable the control.
+/// Currently implemented for KDE Plasma and Windows; other desktops/OSes
+/// return an explicit error so the shell can disable the control.
 pub fn set(index: u32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
@@ -185,7 +194,11 @@ pub fn set(index: u32) -> Result<(), String> {
             )),
         }
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "windows")]
+    {
+        windows::set_layout(index)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     {
         let _ = index;
         Err("Switching layout is not implemented on this OS".to_string())

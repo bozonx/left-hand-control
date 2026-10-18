@@ -1,11 +1,9 @@
 // Parse user-facing action strings (from config.json) into a concrete
 // sequence of key events the mapper should emit.
 
-#![cfg(target_os = "linux")]
-
 use super::keys::code_to_key;
 use super::system::{SysAction, SysCommand};
-use evdev::KeyCode;
+use crate::mapper::key_code::KeyCode;
 use std::time::Duration;
 
 /// A keystroke = optional modifiers + one main key.
@@ -25,6 +23,8 @@ pub enum MacroStepItem {
     Command(SysCommand),
     Literal(String),
     Pause(Duration),
+    /// A step this OS or desktop cannot run; the macro is skipped as a whole.
+    Unavailable(String),
 }
 
 pub fn explicit_text(action: &str) -> Option<String> {

@@ -32,14 +32,14 @@ pub fn current() -> HeldLayerState {
         .unwrap_or_default()
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub(crate) fn next_hold_id() -> u64 {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(1);
     NEXT.fetch_add(1, Ordering::Relaxed)
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub(crate) fn publish(next: HeldLayerState) {
     let previous = {
         let Ok(mut state) = state().lock() else {

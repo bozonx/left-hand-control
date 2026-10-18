@@ -36,6 +36,8 @@ fn input_devices() -> Vec<lhc_core::mapper::devices::InputDevice> {
     .collect()
 }
 
+// Windows offers no manual device path.
+#[cfg(not(target_os = "windows"))]
 #[test]
 fn pickers_suggest_matching_devices_and_keep_other_inputs_available() {
     let devices = input_devices();
@@ -55,6 +57,8 @@ fn pickers_suggest_matching_devices_and_keep_other_inputs_available() {
     }
 }
 
+// Windows offers no manual device path.
+#[cfg(not(target_os = "windows"))]
 #[test]
 fn search_keeps_original_selection_indices_and_matches_names_and_paths() {
     let choices = device_choices(&input_devices(), false);
@@ -72,6 +76,8 @@ fn search_keeps_original_selection_indices_and_matches_names_and_paths() {
     assert_eq!(filtered.row_data(1).unwrap().group, DeviceGroup::Manual);
 }
 
+// Windows offers no manual device path.
+#[cfg(not(target_os = "windows"))]
 #[test]
 fn saved_unavailable_paths_use_manual_input_and_explicit_manual_mode_survives_refresh() {
     let choices = device_choices(&input_devices(), false);
@@ -89,6 +95,25 @@ fn saved_unavailable_paths_use_manual_input_and_explicit_manual_mode_survives_re
     assert_eq!(
         device_selection(&choices, "/dev/input/event2", true),
         (manual, true)
+    );
+}
+
+#[test]
+fn without_manual_entry_unknown_paths_are_unselected() {
+    let mut choices = device_choices(&input_devices(), false);
+    if choices
+        .last()
+        .is_some_and(|choice| choice.group == DeviceGroup::Manual)
+    {
+        choices.pop();
+    }
+    assert_eq!(
+        device_selection(&choices, "/dev/input/event2", false),
+        (1, false)
+    );
+    assert_eq!(
+        device_selection(&choices, "/dev/input/missing", false),
+        (0, false)
     );
 }
 

@@ -148,6 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             id: reference.trim_start_matches("cmd:").into(),
             name: "Плеер".into(),
             linux: "playerctl play-pause".into(),
+            windows: String::new(),
             working_directory: None,
         })
     })?;

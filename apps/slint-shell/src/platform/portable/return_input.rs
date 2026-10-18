@@ -18,7 +18,7 @@ impl ReturnInput {
         let target = capture_target();
         if target
             .as_ref()
-            .is_some_and(|target| target.process_id as u32 == std::process::id())
+            .is_some_and(|target| i64::from(target.process_id) == i64::from(std::process::id()))
         {
             return;
         }
@@ -175,63 +175,7 @@ fn modifiers_released() -> bool {
 
 #[cfg(target_os = "windows")]
 fn type_text(text: &str, valid: impl Fn() -> bool) -> Result<(), Box<dyn std::error::Error>> {
-    use windows::Win32::UI::Input::KeyboardAndMouse::{
-        INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, SendInput,
-        VIRTUAL_KEY, VK_RETURN, VK_TAB,
-    };
-
-    if text.contains('\0') {
-        return Err("NUL cannot be typed into native text fields".into());
-    }
-    let text = text.replace("\r\n", "\n");
-    let keyboard_input = |key, scan, flags| INPUT {
-        r#type: INPUT_KEYBOARD,
-        Anonymous: INPUT_0 {
-            ki: KEYBDINPUT {
-                wVk: key,
-                wScan: scan,
-                dwFlags: flags,
-                ..Default::default()
-            },
-        },
-    };
-    for ch in text.chars() {
-        if !valid() {
-            return Err("native text input cancelled: focus or modifiers changed".into());
-        }
-        let mut units = [0; 2];
-        let inputs: Vec<INPUT> = match ch {
-            '\n' | '\r' | '\t' => {
-                let key = if ch == '\t' { VK_TAB } else { VK_RETURN };
-                vec![
-                    keyboard_input(key, 0, Default::default()),
-                    keyboard_input(key, 0, KEYEVENTF_KEYUP),
-                ]
-            }
-            _ => ch
-                .encode_utf16(&mut units)
-                .iter()
-                .flat_map(|unit| {
-                    [
-                        keyboard_input(VIRTUAL_KEY(0), *unit, KEYEVENTF_UNICODE),
-                        keyboard_input(VIRTUAL_KEY(0), *unit, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP),
-                    ]
-                })
-                .collect(),
-        };
-        let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
-        if sent != inputs.len() as u32 {
-            // Release any accepted key-down before reporting partial injection.
-            let releases: Vec<INPUT> = inputs.into_iter().skip(1).step_by(2).collect();
-            unsafe {
-                SendInput(&releases, std::mem::size_of::<INPUT>() as i32);
-            }
-            return Err(
-                format!("SendInput accepted {sent} events; native text input stopped").into(),
-            );
-        }
-    }
-    Ok(())
+    lhc_core::platform::type_unicode(text, valid).map_err(Into::into)
 }
 
 #[cfg(target_os = "macos")]

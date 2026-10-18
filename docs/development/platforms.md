@@ -2,10 +2,10 @@
 
 | Concern | KDE | GNOME | Sway | X11 generic | Windows | macOS |
 | --- | --- | --- | --- | --- | --- | --- |
-| Key interception (evdev+uinput) | ✅ | ✅ | ✅ | ✅ | ❌ stub | ❌ stub |
-| Literal text (xdg-desktop-portal) | ✅ | ⚠ needs active-window detection | ⚠ backend/protocol dependent | ⚠ portal and focus detection required | ❌ mapper; popup Unicode only | ❌ mapper; popup Unicode only |
-| Layout detection | ✅ DBus `org.kde.keyboard` | 🚧 | 🚧 | 🚧 | 🚧 | 🚧 |
-| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ KWin DBus, kglobalaccel | 🚧 | 🚧 | 🚧 | ❌ | ❌; ids without a macOS API are ignored with a notification |
+| Key interception | ✅ evdev+uinput | ✅ | ✅ | ✅ | ✅ session-wide `WH_KEYBOARD_LL` + `SendInput` (untested on hardware) | ❌ stub |
+| Literal text (xdg-desktop-portal) | ✅ | ⚠ needs active-window detection | ⚠ backend/protocol dependent | ⚠ portal and focus detection required | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
+| Layout detection | ✅ DBus `org.kde.keyboard` | 🚧 | 🚧 | 🚧 | ✅ input language of the foreground window | 🚧 |
+| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ KWin DBus, kglobalaccel | 🚧 | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchDesktopN` / `windowToDesktopN` | ❌; ids without a macOS API are ignored with a notification |
 | KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
 | Layer-shell popups (Spell) | ✅ | ❌ winit fallback | ✅ not accepted | ❌ winit | — | — |
 | Game mode: GameMode daemon | ✅ D-Bus | ✅ | ✅ | ✅ | — | — |
@@ -20,9 +20,11 @@
 
 **Windows mapper preparation:** see [implementation stages and VM acceptance matrix](windows-mapper.md).
 
-Command draft directory checks and POSIX shell quoting are portable; execute-bit hints apply only on Unix. File/folder selection currently uses the Linux XDG portal; Windows/macOS return an explicit unsupported error. Command execution remains part of the Linux mapper.
+A command stores one script per OS: `linux` runs with `sh -lc`, `windows` with PowerShell (`-NoProfile -NonInteractive -ExecutionPolicy Bypass`, no console window). A command without a script for the running OS is skipped with a notice. Draft directory checks are portable; execute-bit hints apply only on Unix. File/folder selection uses the XDG portal on Linux and the common item dialog on Windows; macOS returns an explicit unsupported error.
 
-**Adding Windows/macOS interception:** replace the non-Linux stubs in `mapper/runtime.rs` with `mapper/windows.rs` / `mapper/macos.rs` mirroring `mapper::linux` (`list_keyboards()`, `spawn()`, `Handle`). The engine currently uses `evdev::KeyCode`; introduce a generic key type first. Windows: `SetWindowsHookExW(WH_KEYBOARD_LL)` + `SendInput`. macOS: `CGEventTapCreate` + `CGEventPost` (requires Accessibility permission). Test Windows in a VM as described in [Windows test environment](../testing/windows.md).
+**Windows backend:** `mapper::windows` installs `WH_KEYBOARD_LL` (and `WH_MOUSE_LL` for buttons when a mouse is selected) on its own message-loop thread. The callback only translates the event and queues it; the shared engine runs on the mapper thread, and output goes through `SendInput` with scan codes, so the target window's layout applies. Keys use Linux key codes everywhere (`mapper::key_code`); `mapper::scancode` maps set-1 scan codes, extended keys and virtual-key-only keys (Pause, Num Lock, media). Injected input is never processed, which excludes the mapper's own output and other tools. Windows does not auto-repeat injected keys, so the hook forwards repeats and the engine re-presses the held virtual key. Limitations: there is no per-device interception without a driver, so the mapper takes every keyboard of the session (`windows:keyboard`); input to elevated windows and the secure desktop (UAC, Ctrl+Alt+Del, lock screen) bypasses the hooks, and UIPI blocks injection into elevated windows, which is reported as an action failure. A named mutex keeps one mapper per session.
+
+**Adding macOS interception:** replace the stub in `mapper/runtime.rs` with `mapper/macos.rs` mirroring `mapper::windows` (`list_keyboards()`, `spawn()`, `Handle`, an `EventSink` and a `LoopDriver` for `mapper::output`): `CGEventTapCreate` + `CGEventPost` (requires Accessibility permission). Test Windows in a VM as described in [Windows test environment](../testing/windows.md).
 
 **Linux runtime requirements:** read access to `/dev/input/event*` and rw to `/dev/uinput` (group `input` + udev rule), `xdg-desktop-portal` with the DE backend for literal text, `xprop` (+ `xdotool` for title conditions) on X11, `hyprctl` / `swaymsg` on Hyprland / Sway (other wlroots compositors need `zwlr_foreign_toplevel_manager_v1`, nothing to install); KDE Wayland needs nothing extra (a KWin script reports focus over D-Bus, `kdotool` is only a fallback). Setup commands are in the [developer guide](guide.md#1-окружение).
 
@@ -46,12 +48,15 @@ capture time. Native mouse clicks still cannot be suppressed or reliably delayed
 until a virtual modifier reaches the compositor.
 
 Macro expansion is limited to 1000 entries (including nested references) and ten
-nesting levels, before execution. Portable file validation still accepts known
-system actions for other desktops. Starting or updating the mapper rejects an
-unavailable action reachable from an enabled binding; remote execution checks the
-requested macro too. Unused desktop-specific macros do not prevent startup.
+nesting levels, before execution. Portable file validation accepts known system
+actions of every platform, so a layout made on KDE also starts on GNOME or Windows.
+An action this OS or desktop cannot run (`kde:` outside KDE, `sys:switchDesktopN`
+on Windows, a command without a script for this OS) is skipped when triggered and
+reported with an "unavailable" notice; a macro containing such a step is skipped
+as a whole rather than run halfway.
 System-action failures reach the shell through core events. Popup actions bypass
 the text worker, so a portal permission dialog cannot block popup dispatch.
 
-Windows/macOS show the missing interception capability and disable mapper device
-controls. These changes do not implement their interception backends.
+macOS shows the missing interception capability and disables mapper device
+controls. On Windows the device pickers offer the whole session ("All keyboards",
+"All mice").

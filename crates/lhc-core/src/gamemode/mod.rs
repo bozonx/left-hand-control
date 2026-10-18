@@ -1100,11 +1100,11 @@ mod tests {
         )
         .unwrap();
         // Missing fields take the page's defaults, a bad entry is skipped.
-        assert!(settings.use_gamemoded);
+        assert_eq!(settings.use_gamemoded, cfg!(target_os = "linux"));
         assert!(settings.use_fullscreen);
         assert_eq!(settings.process_matchers.len(), 1);
         assert!(settings.process_matchers[0].only_active_window);
         let settings = parse_game_mode_settings(r#"{"settings":{}}"#).unwrap();
-        assert!(settings.use_gamemoded);
+        assert_eq!(settings.use_gamemoded, cfg!(target_os = "linux"));
     }
 }

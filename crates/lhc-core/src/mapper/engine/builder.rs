@@ -3,9 +3,9 @@ use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
 use crate::mapper::action::{MacroStepItem, explicit_pause, explicit_text, parse_action};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, AppConfig};
+use crate::mapper::key_code::KeyCode;
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
-use evdev::KeyCode;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Duration;
 
@@ -36,27 +36,24 @@ impl Engine {
         // same id override them.
         let mut macros: HashMap<String, MacroDef> = HashMap::new();
         let mut commands: HashMap<String, SysCommand> = HashMap::new();
+        // Commands of the layout without a script for this OS.
+        let mut foreign_commands: HashSet<String> = HashSet::new();
 
         if cfg.settings.commands_enabled {
             for c in &cfg.commands {
                 let id = c.id.trim();
-                let linux = c.linux.trim();
                 if id.is_empty() {
                     log::debug!("[mapper] skipping command with empty id");
                     continue;
                 }
-                if linux.is_empty() {
-                    log::debug!("[mapper] command {} has empty linux string — skipped", id);
+                let Some(command) =
+                    crate::mapper::commands::shell_command(c, c.working_directory.clone())
+                else {
+                    log::debug!("[mapper] command {id} has no script for this OS — skipped");
+                    foreign_commands.insert(id.to_string());
                     continue;
-                }
-                commands.insert(
-                    id.to_string(),
-                    SysCommand {
-                        program: "sh".into(),
-                        args: vec!["-lc".into(), linux.to_string()],
-                        working_directory: c.working_directory.clone(),
-                    },
-                );
+                };
+                commands.insert(id.to_string(), command);
             }
         } else {
             log::debug!("[mapper] shell commands are disabled for this layout");
@@ -76,6 +73,7 @@ impl Engine {
             raw_steps: Vec<&str>,
             raw_user_macros: &HashMap<String, &crate::mapper::config::Macro>,
             commands: &HashMap<String, SysCommand>,
+            foreign_commands: &HashSet<String>,
             depth: usize,
             remaining: &mut usize,
         ) -> Vec<MacroStepItem> {
@@ -96,22 +94,14 @@ impl Engine {
                 if let Some(rest) = raw.strip_prefix("sys:") {
                     match system::resolve(rest.trim()) {
                         Some(cmd) => steps.push(MacroStepItem::System(cmd)),
-                        None => log::debug!(
-                            "[mapper] macro {} step: system fn {:?} not available",
-                            id,
-                            rest.trim()
-                        ),
+                        None => steps.push(MacroStepItem::Unavailable(raw.trim().into())),
                     }
                     continue;
                 }
                 if let Some(rest) = raw.strip_prefix("kde:") {
                     match system::resolve_kde_shortcut(rest) {
                         Some(cmd) => steps.push(MacroStepItem::System(cmd)),
-                        None => log::debug!(
-                            "[mapper] macro {} step: KDE shortcut {:?} not available",
-                            id,
-                            rest.trim()
-                        ),
+                        None => steps.push(MacroStepItem::Unavailable(raw.trim().into())),
                     }
                     continue;
                 }
@@ -136,6 +126,7 @@ impl Engine {
                             sys_steps,
                             raw_user_macros,
                             commands,
+                            foreign_commands,
                             depth + 1,
                             remaining,
                         );
@@ -147,6 +138,7 @@ impl Engine {
                             user_m.steps.iter().map(|s| s.action.as_str()).collect(),
                             raw_user_macros,
                             commands,
+                            foreign_commands,
                             depth + 1,
                             remaining,
                         );
@@ -166,6 +158,9 @@ impl Engine {
                     let cmd_id = rest.trim();
                     match commands.get(cmd_id) {
                         Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
+                        None if foreign_commands.contains(cmd_id) => {
+                            steps.push(MacroStepItem::Unavailable(raw.trim().into()))
+                        }
                         None => log::debug!(
                             "[mapper] macro {} step: unknown command ref {:?}",
                             id,
@@ -196,6 +191,7 @@ impl Engine {
                 sys.steps.to_vec(),
                 &raw_user_macros,
                 &commands,
+                &foreign_commands,
                 0,
                 &mut 1000,
             );
@@ -221,8 +217,15 @@ impl Engine {
                 continue;
             }
             let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.action.as_str()).collect();
-            let steps =
-                resolve_macro_steps(&m.id, raw_steps, &raw_user_macros, &commands, 0, &mut 1000);
+            let steps = resolve_macro_steps(
+                &m.id,
+                raw_steps,
+                &raw_user_macros,
+                &commands,
+                &foreign_commands,
+                0,
+                &mut 1000,
+            );
             if steps.is_empty() {
                 log::debug!("[mapper] macro {} has no usable steps — skipped", m.id);
                 continue;
@@ -263,6 +266,9 @@ impl Engine {
                 if let Some(cmd) = commands.get(id) {
                     return Some(ActionDef::Command(cmd.clone()));
                 }
+                if foreign_commands.contains(id) {
+                    return Some(ActionDef::Unavailable(trimmed.into()));
+                }
                 return Some(ActionDef::Swallow);
             }
             if let Some(rest) = trimmed.strip_prefix("sys:") {
@@ -275,7 +281,7 @@ impl Engine {
                             name,
                             where_
                         );
-                        return None;
+                        return Some(ActionDef::Unavailable(trimmed.into()));
                     }
                 }
             }
@@ -288,7 +294,7 @@ impl Engine {
                             rest.trim(),
                             where_
                         );
-                        return None;
+                        return Some(ActionDef::Unavailable(trimmed.into()));
                     }
                 }
             }

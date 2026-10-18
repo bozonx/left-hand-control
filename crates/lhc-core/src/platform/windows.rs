@@ -73,6 +73,15 @@ pub(crate) fn active_window(titles: bool) -> Option<ActiveWindow> {
     })
 }
 
+/// The foreground window and its process id, when there is one.
+pub(crate) fn foreground_window() -> Option<(isize, u32)> {
+    let window = unsafe { GetForegroundWindow() };
+    if window.is_invalid() {
+        return None;
+    }
+    Some((window.0 as isize, window_pid(window)))
+}
+
 fn window_title(window: HWND) -> String {
     let length = unsafe { GetWindowTextLengthW(window) }.max(0) as usize;
     let mut title = vec![0_u16; (length + 1).min(32768)];
@@ -322,7 +331,7 @@ fn fullscreen_for_window(window: HWND) -> Option<bool> {
     )
 }
 
-fn is_shell_window(window: HWND) -> bool {
+pub(crate) fn is_shell_window(window: HWND) -> bool {
     let mut class = [0_u16; 64];
     let length = unsafe { GetClassNameW(window, &mut class) }.max(0) as usize;
     let class = String::from_utf16_lossy(&class[..length]);

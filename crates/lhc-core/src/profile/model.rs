@@ -182,9 +182,33 @@ pub struct Macro {
 pub struct Command {
     pub id: String,
     pub name: String,
+    /// POSIX `sh` script, run on Linux and macOS.
     pub linux: String,
+    /// PowerShell script, run on Windows.
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub windows: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub working_directory: Option<String>,
+}
+
+impl Command {
+    /// The script this operating system runs.
+    pub fn script(&self) -> &str {
+        if cfg!(target_os = "windows") {
+            &self.windows
+        } else {
+            &self.linux
+        }
+    }
+
+    /// Replace the script this operating system runs.
+    pub fn set_script(&mut self, script: String) {
+        if cfg!(target_os = "windows") {
+            self.windows = script;
+        } else {
+            self.linux = script;
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
@@ -681,6 +705,7 @@ mod tests {
             id: id.into(),
             name: String::new(),
             linux: "ls".into(),
+            windows: "ls".into(),
             working_directory: None,
         };
         let mut rule = LayerRule::new("r1".into(), "KeyA");

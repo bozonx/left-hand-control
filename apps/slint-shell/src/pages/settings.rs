@@ -345,8 +345,8 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
                             .unwrap_or_default()
                             .into(),
                         first,
+                        script: row.command.script().into(),
                         name: row.command.name.into(),
-                        script: row.command.linux.into(),
                         places: ModelRc::new(VecModel::from(
                             row.places
                                 .into_iter()
@@ -420,19 +420,28 @@ fn device_choices(
             });
         }
     }
-    choices.push(DeviceChoice {
-        group: DeviceGroup::Manual,
-        source_index: choices.len() as i32,
-        ..Default::default()
-    });
+    // Windows has no device paths to enter: the mapper takes the session.
+    if !cfg!(target_os = "windows") {
+        choices.push(DeviceChoice {
+            group: DeviceGroup::Manual,
+            source_index: choices.len() as i32,
+            ..Default::default()
+        });
+    }
     choices
 }
 
 fn device_selection(choices: &[DeviceChoice], path: &str, manual: bool) -> (i32, bool) {
     if !manual && let Some(index) = choices.iter().position(|choice| choice.path == path) {
         (index as i32, false)
-    } else {
+    } else if choices
+        .last()
+        .is_some_and(|choice| choice.group == DeviceGroup::Manual)
+    {
         (choices.len() as i32 - 1, true)
+    } else {
+        // Without manual entry an unknown path (e.g. from another OS) is unset.
+        (0, false)
     }
 }
 

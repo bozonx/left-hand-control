@@ -1,18 +1,52 @@
 //! Fire-and-forget shell commands: each one starts in its own process
 //! group and is never waited on by the mapper. Only a failure to start
-//! is reported; exit status and output are not collected. Execution is Linux-only;
-//! command draft validation and POSIX quoting are also available to portable shells.
+//! is reported; exit status and output are not collected. Linux runs the
+//! `linux` script with `sh`, Windows the `windows` script with PowerShell
+//! and no console window. Draft validation and quoting are also available
+//! to portable shells.
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use super::system::SysCommand;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use crate::events::{self, CoreEvent};
-#[cfg(target_os = "linux")]
-use std::os::unix::process::CommandExt;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use std::process::{Command, Stdio};
 
-#[cfg(target_os = "linux")]
+/// The process that runs `command` on this OS, or `None` when it has no
+/// script for it.
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+pub(super) fn shell_command(
+    command: &super::config::Command,
+    working_directory: Option<String>,
+) -> Option<SysCommand> {
+    #[cfg(target_os = "linux")]
+    let (program, flags, script) = ("sh", &["-lc"][..], command.linux.trim());
+    #[cfg(target_os = "windows")]
+    let (program, flags, script) = (
+        "powershell.exe",
+        &[
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+        ][..],
+        command.windows.trim(),
+    );
+    if script.is_empty() {
+        return None;
+    }
+    let mut args: Vec<String> = flags.iter().map(|flag| flag.to_string()).collect();
+    args.push(script.to_owned());
+    Some(SysCommand {
+        program: program.into(),
+        args,
+        working_directory,
+    })
+}
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn report(command: &SysCommand, result: Result<(), String>) {
     events::emit(CoreEvent::CommandFinished {
         script: command
@@ -26,7 +60,7 @@ fn report(command: &SysCommand, result: Result<(), String>) {
 
 /// Starts `command` and returns at once; a reaper thread collects the
 /// exit status so finished commands do not linger as zombies.
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub(super) fn spawn(command: SysCommand) {
     let result = start(&command).map(|mut child| {
         let _ = std::thread::Builder::new()
@@ -38,15 +72,28 @@ pub(super) fn spawn(command: SysCommand) {
     report(&command, result);
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn start(command: &SysCommand) -> Result<std::process::Child, String> {
-    Command::new(&command.program)
+    let mut process = Command::new(&command.program);
+    process
         .args(&command.args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .process_group(0)
-        .current_dir(working_directory(command.working_directory.as_deref())?)
+        .current_dir(working_directory(command.working_directory.as_deref())?);
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::process::CommandExt;
+        process.process_group(0);
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        process.creation_flags(CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW);
+    }
+    process
         .spawn()
         .map_err(|error| format!("Cannot start command: {error}"))
 }
@@ -127,6 +174,16 @@ pub fn draft_issue(script: &str, directory: Option<&str>) -> Option<DraftIssue> 
 /// `path` quoted for `sh`, so spaces and quotes survive.
 pub fn shell_quote(path: &str) -> String {
     format!("'{}'", path.replace('\'', "'\\''"))
+}
+
+/// A command line that runs the program at `path` in this OS's command
+/// shell: a quoted path for `sh`, the call operator for PowerShell.
+pub fn invoke_path(path: &str) -> String {
+    if cfg!(target_os = "windows") {
+        format!("& '{}'", path.replace('\'', "''"))
+    } else {
+        shell_quote(path)
+    }
 }
 
 #[cfg(all(test, target_os = "linux"))]
@@ -232,5 +289,35 @@ mod portable_tests {
             draft_issue("echo hello", missing.to_str()),
             Some(DraftIssue::MissingDirectory)
         );
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    #[test]
+    fn each_os_runs_its_own_script() {
+        let command = |linux: &str, windows: &str| super::super::config::Command {
+            id: "c".into(),
+            linux: linux.into(),
+            windows: windows.into(),
+            working_directory: None,
+        };
+        let both = shell_command(&command(" ls ", " dir "), Some("~".into())).unwrap();
+        assert_eq!(both.working_directory.as_deref(), Some("~"));
+        if cfg!(target_os = "windows") {
+            assert_eq!(both.program, "powershell.exe");
+            assert_eq!(both.args.last().map(String::as_str), Some("dir"));
+            assert!(shell_command(&command("ls", ""), None).is_none());
+        } else {
+            assert_eq!(both.args, ["-lc", "ls"]);
+            assert!(shell_command(&command("", "dir"), None).is_none());
+        }
+    }
+
+    #[test]
+    fn paths_are_invoked_by_the_os_shell() {
+        if cfg!(target_os = "windows") {
+            assert_eq!(invoke_path(r"C:\it's\run.ps1"), r"& 'C:\it''s\run.ps1'");
+        } else {
+            assert_eq!(invoke_path("/it's"), "'/it'\\''s'");
+        }
     }
 }

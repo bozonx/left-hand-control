@@ -79,8 +79,10 @@ def main():
         ps(f"$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path {WORK}\\src, {WORK}\\out | Out-Null")
         vm.copy_to(archive, "D:/lhc-e2e/src.tar.gz")
         # Keep target\ between runs: the cache disk makes rebuilds incremental.
+        # -m stamps files with the extraction time: host mtimes may predate
+        # the cached build on the guest clock, and cargo would skip the rebuild.
         ps(f"$ErrorActionPreference = 'Stop'; Get-ChildItem {WORK}\\src -Force | Where-Object Name -ne 'target' | "
-           f"Remove-Item -Recurse -Force; tar -xzf {WORK}\\src.tar.gz -C {WORK}\\src; "
+           f"Remove-Item -Recurse -Force; tar -xmzf {WORK}\\src.tar.gz -C {WORK}\\src; "
            "if ($LASTEXITCODE) { exit $LASTEXITCODE }")
         return f"{count} files"
 

@@ -374,8 +374,9 @@ mod tests {
 
     #[test]
     fn dev_base_dir_keeps_absolute_override() {
-        let base = super::dev_base_dir(Some("/tmp/lhc-dev".into())).unwrap();
-        assert_eq!(base, std::path::PathBuf::from("/tmp/lhc-dev"));
+        let absolute = std::env::temp_dir().join("lhc-dev");
+        let base = super::dev_base_dir(Some(absolute.clone())).unwrap();
+        assert_eq!(base, absolute);
     }
 
     use super::{StoragePaths, validate_layout_name};

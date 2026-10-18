@@ -1,6 +1,10 @@
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+use super::validation;
+#[cfg(target_os = "windows")]
+use super::windows;
 use super::{InputDevice, KeyboardDevice, config};
 #[cfg(target_os = "linux")]
-use super::{linux, portal, validation};
+use super::{linux, portal};
 use serde::Serialize;
 use std::sync::{
     Arc, Mutex, MutexGuard,
@@ -14,6 +18,9 @@ pub struct MapperStatus {
     pub mouse_device_path: Option<String>,
     pub last_error: Option<String>,
 }
+
+/// Whether this OS has a mapper backend.
+pub const SUPPORTED: bool = cfg!(any(target_os = "linux", target_os = "windows"));
 
 /// Global mapper handle. `None` when stopped.
 static STATE: Mutex<MapperRuntime<OsBackend>> = Mutex::new(MapperRuntime::new(OsBackend::new()));
@@ -278,17 +285,80 @@ impl MapperBackend for LinuxBackend {
     }
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
+impl BackendHandle for windows::Handle {
+    fn stop(self: Box<Self>) {
+        (*self).stop();
+    }
+
+    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String> {
+        self.update_config(cfg)
+    }
+
+    fn execute_action(&self, action: String) -> Result<(), String> {
+        self.execute_action(action)
+    }
+
+    fn popup_focused(&self) -> Result<(), String> {
+        self.popup_focused()
+    }
+
+    fn last_error(&self) -> Option<String> {
+        self.last_error()
+    }
+
+    fn reap_if_finished(&mut self) -> bool {
+        self.reap_if_finished()
+    }
+}
+
+#[cfg(target_os = "windows")]
+struct WindowsBackend;
+
+#[cfg(target_os = "windows")]
+impl WindowsBackend {
+    const fn new() -> Self {
+        Self
+    }
+}
+
+#[cfg(target_os = "windows")]
+impl MapperBackend for WindowsBackend {
+    fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
+        windows::list_input_devices()
+    }
+
+    fn list_keyboards(&self) -> Result<Vec<KeyboardDevice>, String> {
+        windows::list_keyboards()
+    }
+
+    fn list_mice(&self) -> Result<Vec<KeyboardDevice>, String> {
+        windows::list_mice()
+    }
+
+    fn spawn(
+        &self,
+        device_path: String,
+        mouse_path: Option<String>,
+        cfg: config::AppConfig,
+        stop: Arc<AtomicBool>,
+    ) -> Result<Box<dyn BackendHandle>, String> {
+        windows::spawn(device_path, mouse_path, cfg, stop)
+            .map(|handle| Box::new(handle) as Box<dyn BackendHandle>)
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 struct UnsupportedBackend;
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 impl UnsupportedBackend {
     const fn new() -> Self {
         Self
     }
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 impl MapperBackend for UnsupportedBackend {
     fn list_input_devices(&self) -> Result<Vec<InputDevice>, String> {
         Err(unsupported_os_msg("listing input devices"))
@@ -316,7 +386,10 @@ impl MapperBackend for UnsupportedBackend {
 #[cfg(target_os = "linux")]
 type OsBackend = LinuxBackend;
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
+type OsBackend = WindowsBackend;
+
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 type OsBackend = UnsupportedBackend;
 
 fn lock_state() -> MutexGuard<'static, MapperRuntime<OsBackend>> {
@@ -338,21 +411,15 @@ pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
     lock_state().list_mice()
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 fn unsupported_os_msg(op: &str) -> String {
-    #[cfg(target_os = "windows")]
-    {
-        format!(
-            "{op}: Windows backend not implemented yet (planned: LowLevelKeyboardProc + SendInput)"
-        )
-    }
     #[cfg(target_os = "macos")]
     {
         format!(
             "{op}: macOS backend not implemented yet (planned: CGEventTap + CGEventPost, requires Accessibility permission)"
         )
     }
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    #[cfg(not(target_os = "macos"))]
     {
         format!("{op} is not supported on this operating system")
     }
@@ -361,11 +428,8 @@ fn unsupported_os_msg(op: &str) -> String {
 pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
-    #[cfg(target_os = "linux")]
-    {
-        validation::validate_config(&cfg)?;
-        validation::validate_runtime_capabilities(&cfg)?;
-    }
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    validation::validate_config(&cfg)?;
     // Spawn outside the state lock: waiting for the worker to grab the
     // device and report readiness can take seconds and must not block
     // concurrent status()/stop() calls from the shell.
@@ -412,11 +476,8 @@ pub fn stop() -> Result<(), String> {
 pub fn update_config(config_json: &str) -> Result<(), String> {
     let cfg: config::AppConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
-    #[cfg(target_os = "linux")]
-    {
-        validation::validate_config(&cfg)?;
-        validation::validate_runtime_capabilities(&cfg)?;
-    }
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    validation::validate_config(&cfg)?;
     let mut state = lock_state();
     state.update_config(cfg)?;
     state.config_json = Some(config_json.to_owned());
@@ -441,13 +502,7 @@ pub fn config_json() -> Option<String> {
 }
 
 pub fn execute_action(action: String) -> Result<(), String> {
-    let mut state = lock_state();
-    #[cfg(target_os = "linux")]
-    if let Some(json) = &state.config_json {
-        let cfg = serde_json::from_str(json).map_err(|e| format!("parse config: {e}"))?;
-        validation::validate_runtime_action(&cfg, &action)?;
-    }
-    state.execute_action(action)
+    lock_state().execute_action(action)
 }
 
 /// A popup opened by a mapper action took the keyboard focus. The mapper

@@ -7,7 +7,7 @@ Guide for AI coding agents working in this repository. Read it before making cha
 **Left Hand Control** is a desktop keyboard mapper: it intercepts a physical keyboard, applies layers, rules, macros and commands, and emits the result through a virtual device. It also shows two quick popups (Emoji, Quick actions) and lives in the system tray.
 
 - **The product is the Slint shell** in `apps/slint-shell/` on top of the shared Rust crate `crates/lhc-core/`. All new work goes here.
-- Primary target: **Linux, KDE Plasma 6 on Wayland**. The Slint UI also compiles for Windows and macOS with minimal portable adapters; those platforms are not accepted yet.
+- Primary target: **Linux, KDE Plasma 6 on Wayland**. Windows has a mapper backend (session-wide low-level hooks + `SendInput`); macOS has only the shell. Neither is accepted yet.
 
 Stack: Rust stable ≥ 1.92 (edition 2024), Cargo workspace, Slint **1.17.1** (pinned, `=1.17.1`) with winit 0.30, `ksni` tray, `evdev`/`uinput`, `zbus`, vendored `spell-framework` for layer-shell popups.
 
@@ -71,7 +71,7 @@ crates/lhc-core/src/          # UI-independent domain + platform code (no UI fra
 ├── config_document.rs        # editable config.json: validation and saving
 ├── storage.rs                # StoragePaths::resolve(): dev vs release directories
 ├── events.rs                 # CoreEvent bus — the only core → shell channel
-├── mapper/                   # engine/, linux/ (evdev+uinput), portal.rs, system.rs, runtime.rs
+├── mapper/                   # engine/, output.rs (shared loop), linux/ (evdev+uinput), windows/ (hooks+SendInput), system.rs, runtime.rs
 ├── layout/ gamemode/ active_window/   # system watchers feeding rule conditions
 └── platform/                 # OS / DE / session detection
 
@@ -146,8 +146,9 @@ docs/                         # development/, design/, testing/; README.md index
 
 ## Platform support
 
-The primary accepted environment is KDE Plasma 6 on Wayland. Windows/macOS
-interception is not implemented; their shell adapters compile but are not accepted.
+The primary accepted environment is KDE Plasma 6 on Wayland. Windows interception
+(`mapper/windows/`) is implemented but not accepted; macOS interception is not
+implemented. Actions a platform cannot run are skipped with a notice.
 See [platform support and backend development](docs/development/platforms.md)
 for the capability matrix and backend extension instructions.
 

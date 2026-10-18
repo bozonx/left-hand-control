@@ -37,6 +37,11 @@ export global AppState {
     in property <string> game-missing-tool;
     in property <string> keyboard-language;
     in property <bool> is-linux;
+    in property <bool> is-windows;
+    /// This OS has a mapper backend.
+    in property <bool> mapper-supported;
+    /// Launch on startup can be registered on this OS.
+    in property <bool> autostart-supported;
     in property <Message> status;
     in property <Message> backend-error;
     in property <Message> config-status;

@@ -4,7 +4,7 @@ use super::*;
 use crate::mapper::config::{
     ActionSpec, AppConfig, Command, LayerKeymap, Macro, MacroStep, Rule, Settings, TapDecision,
 };
-use evdev::KeyCode;
+use crate::mapper::key_code::KeyCode;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -550,6 +550,7 @@ fn disabled_commands_are_skipped_in_macros_and_preserve_other_keys() {
     cfg.commands.push(Command {
         id: "blocked".into(),
         linux: "printf hello".into(),
+        windows: "printf hello".into(),
         working_directory: None,
     });
     cfg.macros.push(Macro {
@@ -591,6 +592,7 @@ fn command_invocations_use_configured_directory_and_timeout() {
     cfg.commands.push(Command {
         id: "hello".into(),
         linux: "pwd".into(),
+        windows: "pwd".into(),
         working_directory: Some("~/Documents".into()),
     });
     cfg.settings.commands_enabled = true;
@@ -607,6 +609,7 @@ fn remote_execute_command_uses_current_command_table() {
     cfg.commands.push(Command {
         id: "play".into(),
         linux: "playerctl play-pause".into(),
+        windows: "playerctl play-pause".into(),
         working_directory: None,
     });
     cfg.settings.commands_enabled = true;
@@ -615,11 +618,10 @@ fn remote_execute_command_uses_current_command_table() {
 
     engine.execute_remote("cmd:play", &mut out);
 
+    let expected = crate::mapper::commands::shell_command(&cfg.commands[0], None).expect("script");
     assert!(matches!(
         out.as_slice(),
-        [Out::RunCommand(cmd)]
-            if cmd.program == "sh"
-                && cmd.args == vec!["-lc".to_string(), "playerctl play-pause".to_string()]
+        [Out::RunCommand(cmd)] if cmd.program == expected.program && cmd.args == expected.args
     ));
 }
 
@@ -4435,4 +4437,91 @@ fn chord_still_activates_after_earlier_deferred_typing_finishes() {
         assert!(engine.emitted.is_empty());
         assert!(engine.chord_consumed.is_empty());
     }
+}
+
+#[test]
+fn actions_unavailable_here_are_skipped_with_a_notice() {
+    let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let record = seen.clone();
+    crate::events::bus().subscribe(move |event| {
+        if let crate::events::CoreEvent::ActionUnavailable(action) = event
+            && action.contains("foreignOnly")
+        {
+            record.lock().unwrap().push(action.clone());
+        }
+    });
+    let mut cfg =
+        config_with_rule(serde_json::json!({"key": "KeyQ", "tapAction": "cmd:foreignOnly"}));
+    // A script only for the other OS: this one cannot run the command.
+    cfg.commands.push(Command {
+        id: "foreignOnly".into(),
+        linux: if cfg!(target_os = "windows") {
+            "ls"
+        } else {
+            ""
+        }
+        .into(),
+        windows: if cfg!(target_os = "windows") {
+            ""
+        } else {
+            "dir"
+        }
+        .into(),
+        working_directory: None,
+    });
+    cfg.macros.push(Macro {
+        id: "mixed".into(),
+        steps: vec![
+            MacroStep {
+                action: "KeyA".into(),
+            },
+            MacroStep {
+                action: "cmd:foreignOnly".into(),
+            },
+        ],
+        step_pause_ms: None,
+        modifier_delay_ms: None,
+    });
+    cfg.settings.commands_enabled = true;
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    engine.execute_remote("macro:mixed", &mut out);
+    engine.tick(now + Duration::from_millis(1), &mut out);
+    // Neither the trigger key nor a half-run macro reaches the OS.
+    assert!(out.is_empty());
+    assert_eq!(
+        *seen.lock().unwrap(),
+        ["cmd:foreignOnly", "cmd:foreignOnly"]
+    );
+}
+
+#[test]
+fn repeats_reemit_only_keys_that_hold_a_virtual_key() {
+    let cfg = config_with_rule(
+        serde_json::json!({"key": "Space", "layerId": "nav", "tapAction": "Space"}),
+    );
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    out.clear();
+    engine.repeat(KeyCode::KEY_A, &mut out);
+    assert!(matches!(
+        out.as_slice(),
+        [Out::KeyRaw {
+            key: KeyCode::KEY_A,
+            down: true
+        }]
+    ));
+    out.clear();
+    // A released key and an undecided tap/hold key do not repeat.
+    engine.handle(KeyCode::KEY_A, false, now, &mut out);
+    out.clear();
+    engine.repeat(KeyCode::KEY_A, &mut out);
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.repeat(KeyCode::KEY_SPACE, &mut out);
+    assert!(out.is_empty());
 }

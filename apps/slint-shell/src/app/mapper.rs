@@ -76,6 +76,10 @@ pub(super) fn forward_core_events() {
             let error = error.clone();
             post(move |app| app.set_error(Msg::ActionFailed(error)));
         }
+        CoreEvent::ActionUnavailable(action) => {
+            log::info!("[mapper] skipped unavailable action {action:?}");
+            post(|app| crate::notifications::send(&app.settings, Msg::ActionUnavailable));
+        }
         CoreEvent::LayoutChanged(_) | CoreEvent::ActiveWindowChanged(_) => {
             post(|app| app.context_changed())
         }
@@ -350,7 +354,7 @@ impl App {
 
     /// Start the mapper; a failed start is tried again `retries` times.
     fn start_mapper(&self, retries: u32) {
-        if !cfg!(target_os = "linux") {
+        if !lhc_core::mapper::runtime::SUPPORTED {
             self.set_error(Msg::MapperUnsupported);
             return;
         }

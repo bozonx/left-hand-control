@@ -1,7 +1,7 @@
 // System functions: OS-level actions that each desktop environment
 // implements its own way. Function names (`switchDesktop1`, …) stay
-// cross-platform; the concrete action (DBus call or shell command) is
-// picked per OS/DE by dispatching through `crate::platform::linux::detect()`.
+// cross-platform; the concrete action is picked per OS, and on Linux per
+// DE by dispatching through `crate::platform::linux::detect()`.
 //
 // Only actions a key cannot express live here: switch to desktop / layout N,
 // move window to desktop N, and window/shell actions that every supported
@@ -10,22 +10,21 @@
 // standard key, a chord or a `kde:` global shortcut. See
 // `docs/design/removed-system-actions.md`.
 //
-// Two action shapes are supported:
-//   * `SysAction::Dbus` — direct session-bus method call. Preferred when
-//                         the target DE exposes a DBus service: avoids
-//                         `fork+exec` of helper binaries (qdbus, gdbus)
-//                         and gives sub-millisecond latency.
-//   * `SysAction::Spawn` — fire-and-forget child process. Used for DEs
-//                          whose control surface is a CLI tool
-//                          (swaymsg, wmctrl, …).
+// Action shapes:
+//   * `SysAction::Dbus`    — Linux session-bus method call. Preferred when
+//                            the target DE exposes a DBus service: avoids
+//                            `fork+exec` of helper binaries (qdbus, gdbus)
+//                            and gives sub-millisecond latency.
+//   * `SysAction::Spawn`   — fire-and-forget child process, for DEs whose
+//                            control surface is a CLI tool (swaymsg, …).
+//   * `SysAction::Windows` — a Win32 call (`mapper::windows::system`).
+//   * `SysAction::AppEvent` — handled by the shell on every OS.
 //
 // Current product support:
 //   * Linux + KDE   — implemented.
 //   * Linux + GNOME / Sway / X11 generic — intentional skeletons for now.
-//   * Windows / macOS — intentional stubs; the mapper module itself is not
-//                       shipped there yet, so this file stays Linux-only.
-
-#![cfg(target_os = "linux")]
+//   * Windows — every id with a documented Win32 API or fixed system
+//     shortcut; virtual-desktop ids have no public API there.
 
 /// A concrete child-process invocation: `program` + positional args.
 #[derive(Clone, Debug)]
@@ -37,6 +36,7 @@ pub struct SysCommand {
 
 /// Arguments for a DBus method call. Only the shapes we actually need
 /// are listed; extend as new backends come online.
+#[cfg(target_os = "linux")]
 #[derive(Clone, Debug)]
 #[allow(dead_code)] // I32/Bool/Str reserved for future backends (GNOME Shell.Eval, etc.)
 pub enum DbusArg {
@@ -47,6 +47,7 @@ pub enum DbusArg {
 }
 
 /// A direct session-bus method invocation.
+#[cfg(target_os = "linux")]
 #[derive(Clone, Debug)]
 pub struct DbusCall {
     pub destination: String,
@@ -56,12 +57,15 @@ pub struct DbusCall {
     pub args: Vec<DbusArg>,
 }
 
-/// Resolved system-function: either a DBus call or a child-process spawn.
+/// Resolved system-function.
 #[derive(Clone, Debug)]
 #[allow(dead_code)] // Spawn reserved for future Sway / wmctrl backends.
 pub enum SysAction {
+    #[cfg(target_os = "linux")]
     Dbus(DbusCall),
     Spawn(SysCommand),
+    #[cfg(target_os = "windows")]
+    Windows(super::windows::system::WindowsAction),
     AppEvent(String),
 }
 
@@ -76,21 +80,33 @@ impl SysAction {
 
 /// Resolve a system-function id (e.g. "switchDesktop3") into a concrete
 /// action to run on this machine, or `None` if the function is not
-/// available under the current desktop environment.
+/// available under the current OS or desktop environment.
 pub fn resolve(name: &str) -> Option<SysAction> {
-    use crate::platform::linux::detect;
-    resolve_for_desktop(name.trim(), &detect().desktop)
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::detect;
+        resolve_for_desktop(name.trim(), &detect().desktop)
+    }
+    #[cfg(target_os = "windows")]
+    {
+        super::windows::system::resolve(name.trim()).map(SysAction::Windows)
+    }
 }
 
+/// Whether `name` is a system-function id on any platform. Config
+/// validation stays portable: a config created on KDE is not rejected on
+/// another desktop or OS; `resolve()` decides what runs there.
 pub fn is_known(name: &str) -> bool {
     let name = name.trim();
-    use crate::platform::linux::Desktop;
-    // Check against the KDE catalog, which is the most complete backend.
-    // This keeps config validation portable: a config created on KDE
-    // (or using KDE-known ids) is not rejected when the mapper starts
-    // on GNOME / Sway / X11 generic. At runtime `resolve()` will return
-    // None there; runtime capability validation reports that before execution.
-    resolve_for_desktop(name, &Desktop::Kde).is_some()
+    let numbered = |prefix: &str, max: u32| {
+        name.strip_prefix(prefix)
+            .and_then(|rest| rest.parse::<u32>().ok())
+            .is_some_and(|n| (1..=max).contains(&n))
+    };
+    numbered("switchDesktop", 20)
+        || numbered("windowToDesktop", 20)
+        || numbered("switchLayout", 10)
+        || crate::profile::actions::PLAIN_SYSTEM_ACTIONS.contains(&name)
 }
 
 pub fn resolve_app(name: &str) -> Option<SysAction> {
@@ -126,18 +142,28 @@ pub fn is_known_app(name: &str) -> bool {
 /// Resolve a `kde:` id (`component/shortcut`) into a kglobalaccel call,
 /// or `None` outside KDE or when the id is malformed.
 pub fn resolve_kde_shortcut(id: &str) -> Option<SysAction> {
-    use crate::platform::linux::{Desktop, detect};
-    if !matches!(detect().desktop, Desktop::Kde) {
-        return None;
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::linux::{Desktop, detect};
+        if !matches!(detect().desktop, Desktop::Kde) {
+            return None;
+        }
+        kde_shortcut(id)
     }
-    kde_shortcut(id)
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = id;
+        None
+    }
 }
 
+#[cfg(target_os = "linux")]
 fn kde_shortcut(id: &str) -> Option<SysAction> {
     let (component, shortcut) = crate::profile::actions::kde_shortcut_parts(id.trim())?;
     Some(kde::invoke_shortcut(component, shortcut))
 }
 
+#[cfg(target_os = "linux")]
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
     let name = name.trim();
 
@@ -155,6 +181,7 @@ fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) ->
 
 // --- KDE Plasma -------------------------------------------------------------
 
+#[cfg(target_os = "linux")]
 mod kde {
     use super::{DbusArg, DbusCall, SysAction};
 
@@ -217,29 +244,7 @@ mod kde {
 
 #[cfg(test)]
 mod tests {
-    use super::{DbusArg, SysAction, kde_shortcut, resolve_app, resolve_for_desktop};
-    use crate::platform::linux::Desktop;
-
-    #[test]
-    fn resolve_show_quick_menu_page() {
-        let Some(SysAction::AppEvent(event)) = resolve_app("showQuickMenu3") else {
-            panic!("showQuickMenu3 did not resolve to an AppEvent");
-        };
-        assert_eq!(event, "show_quick_menu_3");
-        assert!(resolve_app("showQuickMenu").is_none());
-        assert!(resolve_for_desktop("showQuickMenu3", &Desktop::Kde).is_none());
-    }
-
-    #[test]
-    fn resolve_show_emoji_menu_page() {
-        let Some(SysAction::AppEvent(event)) = resolve_app("showEmojiMenu5") else {
-            panic!("showEmojiMenu5 did not resolve to an AppEvent");
-        };
-        assert_eq!(event, "show_emoji_menu_5");
-        assert!(resolve_app("showEmojiMenu").is_none());
-        assert!(resolve_for_desktop("showEmojiMenu5", &Desktop::Kde).is_none());
-    }
-
+    use super::{SysAction, is_known, resolve_app};
     #[test]
     fn resolve_window_and_layout_actions() {
         for (name, event) in [
@@ -274,6 +279,70 @@ mod tests {
         }
     }
 
+    #[test]
+    fn resolve_show_quick_menu_page() {
+        let Some(SysAction::AppEvent(event)) = resolve_app("showQuickMenu3") else {
+            panic!("showQuickMenu3 did not resolve to an AppEvent");
+        };
+        assert_eq!(event, "show_quick_menu_3");
+        assert!(resolve_app("showQuickMenu").is_none());
+    }
+
+    #[test]
+    fn resolve_show_emoji_menu_page() {
+        let Some(SysAction::AppEvent(event)) = resolve_app("showEmojiMenu5") else {
+            panic!("showEmojiMenu5 did not resolve to an AppEvent");
+        };
+        assert_eq!(event, "show_emoji_menu_5");
+        assert!(resolve_app("showEmojiMenu").is_none());
+    }
+
+    #[test]
+    fn app_ids_are_not_system_ids() {
+        for id in [
+            "showQuickMenu3",
+            "showEmojiMenu5",
+            "taskEntry1",
+            "lockSession",
+            "volumeUp",
+        ] {
+            assert!(!is_known(id), "{id}");
+        }
+        assert!(is_known("switchDesktop20") && is_known("screenOff"));
+        assert!(matches!(
+            resolve_app("showSettings"),
+            Some(SysAction::AppEvent(_))
+        ));
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod linux_tests {
+    use super::{DbusArg, SysAction, is_known, kde_shortcut, resolve_for_desktop};
+    use crate::platform::linux::Desktop;
+
+    #[test]
+    fn known_ids_match_the_kde_catalog() {
+        for prefix in [
+            "switchDesktop",
+            "windowToDesktop",
+            "switchLayout",
+            "windowClose",
+        ] {
+            for n in 0..=25 {
+                let id = if prefix == "windowClose" {
+                    prefix.to_string()
+                } else {
+                    format!("{prefix}{n}")
+                };
+                assert_eq!(
+                    is_known(&id),
+                    resolve_for_desktop(&id, &Desktop::Kde).is_some(),
+                    "{id}"
+                );
+            }
+        }
+    }
     #[test]
     fn switch_layout_uses_zero_based_kde_index() {
         let Some(SysAction::Dbus(call)) = resolve_for_desktop("switchLayout1", &Desktop::Kde)
@@ -338,6 +407,7 @@ mod tests {
 
 // --- GNOME (Mutter / Shell) -------------------------------------------------
 
+#[cfg(target_os = "linux")]
 mod gnome {
     use super::SysAction;
 
@@ -357,6 +427,7 @@ mod gnome {
 
 // --- Sway / wlroots ---------------------------------------------------------
 
+#[cfg(target_os = "linux")]
 mod sway {
     use super::SysAction;
 
@@ -378,6 +449,7 @@ mod sway {
 
 // --- Generic X11 / EWMH -----------------------------------------------------
 
+#[cfg(target_os = "linux")]
 mod x11_generic {
     use super::SysAction;
 

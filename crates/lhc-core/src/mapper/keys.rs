@@ -1,9 +1,7 @@
 // Mapping between configuration key codes (following KeyboardEvent.code)
 // and Linux evdev `KeyCode` values.
 
-#![cfg(target_os = "linux")]
-
-use evdev::KeyCode;
+use crate::mapper::key_code::KeyCode;
 
 // Codes and canonical names newer than the `evdev` crate's constants
 // (linux/input-event-codes.h).

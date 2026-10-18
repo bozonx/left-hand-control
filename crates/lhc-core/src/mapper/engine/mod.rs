@@ -61,8 +61,8 @@ use self::model::{
 use super::action::Keystroke;
 use super::config::GameModeCondition;
 use super::system::SysCommand;
+use crate::mapper::key_code::KeyCode;
 use crate::profile::app_match::any_matches_window;
-use evdev::KeyCode;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::{Duration, Instant};
 
@@ -401,6 +401,10 @@ impl Engine {
                                         break;
                                     }
                                 }
+                                // `run_macro` never starts a run with one.
+                                MacroStepItem::Unavailable(_) => {
+                                    am.current_step = am.steps.len();
+                                }
                                 MacroStepItem::Pause(duration) => {
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
@@ -511,6 +515,14 @@ impl Engine {
         if md.steps.is_empty() {
             return;
         }
+        // A step this system cannot run would leave the macro half done.
+        if let Some(action) = md.steps.iter().find_map(|step| match step {
+            crate::mapper::action::MacroStepItem::Unavailable(action) => Some(action),
+            _ => None,
+        }) {
+            report_unavailable(action);
+            return;
+        }
         if self.active_macro.is_none() {
             self.active_macro = Some(self.begin_macro(md, now));
         } else if self.macro_queue.len() < MACRO_QUEUE_LIMIT {
@@ -568,6 +580,22 @@ impl Engine {
             return;
         }
         self.handle_event(key, down, now, out);
+    }
+
+    /// Auto-repeat of a held physical key, for backends whose OS does not
+    /// repeat injected keys itself (Windows). Only a key that currently
+    /// holds a virtual key down repeats it; undecided taps, layer triggers
+    /// and one-shot actions do not.
+    pub fn repeat(&self, key: KeyCode, out: &mut Vec<Out>) {
+        if self.pending.contains_key(&key) {
+            return;
+        }
+        if let Some(ks) = self.emitted.get(&key) {
+            out.push(Out::KeyRaw {
+                key: ks.key,
+                down: true,
+            });
+        }
     }
 
     fn handle_event(&mut self, key: KeyCode, down: bool, now: Instant, out: &mut Vec<Out>) {
@@ -757,6 +785,10 @@ impl Engine {
                             self.oneshot_consumed.insert(key);
                         }
                         ActionDef::Swallow => {
+                            self.oneshot_consumed.insert(key);
+                        }
+                        ActionDef::Unavailable(action) => {
+                            report_unavailable(&action);
                             self.oneshot_consumed.insert(key);
                         }
                     }
@@ -1033,6 +1065,7 @@ impl Engine {
             Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
             Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
             Some(ActionDef::Swallow) => {}
+            Some(ActionDef::Unavailable(action)) => report_unavailable(action),
             None => {}
         }
     }
@@ -1174,12 +1207,14 @@ impl Engine {
             available = true;
         }
         if !available {
-            crate::events::emit(crate::events::CoreEvent::CommandFinished {
-                script: action.into(),
-                result: Err(format!("Action is unavailable or unknown: {action}")),
-            });
+            report_unavailable(action.trim());
         }
     }
+}
+
+fn report_unavailable(action: &str) {
+    log::debug!("[mapper] {action:?} is unavailable on this system");
+    crate::events::emit(crate::events::CoreEvent::ActionUnavailable(action.into()));
 }
 
 /// Evaluates the apps whitelist / blacklist for a rule.

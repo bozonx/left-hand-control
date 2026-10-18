@@ -1,7 +1,7 @@
 use super::super::action::{Keystroke, MacroStepItem};
 use super::super::config::GameModeCondition;
 use super::super::system::{SysAction, SysCommand};
-use evdev::KeyCode;
+use crate::mapper::key_code::KeyCode;
 use std::time::{Duration, Instant};
 
 /// Resolved action: single chord, macro, system function, or a
@@ -14,6 +14,8 @@ pub(super) enum ActionDef {
     Command(SysCommand),
     Literal(String),
     Swallow,
+    /// Cannot run on this OS or desktop; firing it reports the action.
+    Unavailable(String),
 }
 
 #[derive(Clone)]

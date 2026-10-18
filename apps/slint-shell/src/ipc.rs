@@ -27,6 +27,7 @@ use std::{
 };
 
 /// Socket file name of the settings process.
+#[cfg(unix)]
 pub const DEFAULT_SOCKET: &str = "lhc-slint-shell.sock";
 
 #[derive(Serialize, Deserialize)]
@@ -300,7 +301,7 @@ pub fn client(command: &Command) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Send to the socket named `name` in [`socket_dir`].
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub fn send(
     name: &str,
     command: &Command,

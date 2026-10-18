@@ -145,6 +145,7 @@ fn from_object(doc: &Map<String, Value>) -> LayoutPreset {
                 id: id.into(),
                 name: str_of(item, "name").unwrap_or(id).into(),
                 linux: str_of(item, "linux").unwrap_or("").trim().into(),
+                windows: str_of(item, "windows").unwrap_or("").trim().into(),
                 working_directory: non_empty(item, "workingDirectory")
                     .map(|value| value.trim().to_owned()),
             })
@@ -307,6 +308,9 @@ pub fn serialize(preset: &LayoutPreset) -> String {
                     put(&mut out, "id", command.id.as_str());
                     put(&mut out, "name", command.name.as_str());
                     put(&mut out, "linux", command.linux.as_str());
+                    if !command.windows.is_empty() {
+                        put(&mut out, "windows", command.windows.as_str());
+                    }
                     if let Some(directory) = &command.working_directory {
                         put(&mut out, "workingDirectory", directory.as_str());
                     }

@@ -1252,6 +1252,12 @@ msgstr "E-ink"
 msgid "Enter device path manually"
 msgstr "Ввести путь устройства вручную"
 
+msgid "All keyboards"
+msgstr "Все клавиатуры"
+
+msgid "All mice (buttons only)"
+msgstr "Все мыши (только кнопки)"
+
 msgid "Mode"
 msgstr "Режим"
 
@@ -1628,6 +1634,9 @@ msgstr "Выберите рабочую папку"
 msgid "Commands run with sh -lc in the background and are not awaited."
 msgstr "Команды запускаются через sh -lc в фоне и не ожидаются."
 
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "Команды запускаются через PowerShell в фоне и не ожидаются."
+
 msgid "Commands stay off until you allow execution. Review below what your layouts would run."
 msgstr "Команды не запускаются, пока выполнение не разрешено. Ниже видно, что запускали бы ваши лэйауты."
 
@@ -1949,8 +1958,8 @@ msgstr "Введите текст без префикса text:. Перенос�
 msgid "Commands run with sh -lc in the background. The mapper does not wait for completion or collect output. An empty name uses the command itself as its label. The working directory defaults to your home folder; scripts need execute permission. Command execution must be enabled in settings."
 msgstr "Команды запускаются через sh -lc в фоне. Mapper не ждёт завершения и не собирает вывод. Если название пустое, используется сама команда. По умолчанию рабочая папка — домашняя; скрипту нужны права на выполнение. Выполнение команд должно быть включено в настройках."
 
-msgid "The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on Windows."
-msgstr "Название необязательно: если оно пустое, используется сама команда. Выполнение команд через mapper на Windows пока не реализовано."
+msgid "Commands run with PowerShell in the background, without a console window. The mapper does not wait for completion or collect output. An empty name uses the command itself as its label. The working directory defaults to your home folder. Command execution must be enabled in settings."
+msgstr "Команды запускаются через PowerShell в фоне, без окна консоли. Mapper не ждёт завершения и не собирает вывод. Если название пустое, используется сама команда. По умолчанию рабочая папка — домашняя. Выполнение команд должно быть включено в настройках."
 
 msgid "The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on macOS."
 msgstr "Название необязательно: если оно пустое, используется сама команда. Выполнение команд через mapper на macOS пока не реализовано."

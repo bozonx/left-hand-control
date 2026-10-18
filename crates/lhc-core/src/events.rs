@@ -34,6 +34,9 @@ pub enum CoreEvent {
     TextInputFailed(TextInputFailure),
     /// A mapper system action could not be submitted or executed.
     MapperActionFailed(String),
+    /// A bound action cannot run on this OS or desktop and was skipped;
+    /// the payload is the action string.
+    ActionUnavailable(String),
 }
 
 /// Why a `text:` action was not typed. Details are untranslated.

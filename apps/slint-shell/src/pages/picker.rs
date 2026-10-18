@@ -467,7 +467,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             {
                 picker.set_original(
                     if command.name.is_empty() {
-                        command.linux.clone()
+                        command.script().to_owned()
                     } else {
                         command.name.clone()
                     }
@@ -500,13 +500,26 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .strip_prefix("cmd:")
             .map(str::to_owned)
             .unwrap_or_else(|| lhc_core::profile::ids::generate("cmd_"));
-        state.borrow_mut().command = Some(lhc_core::profile::model::Command {
-            id: id.clone(),
-            name: picker.get_command_name().to_string(),
-            linux: picker.get_command_script().to_string(),
-            working_directory: (!picker.get_command_directory().trim().is_empty())
-                .then(|| picker.get_command_directory().trim().to_owned()),
-        });
+        // Keep the script of the other operating systems.
+        let mut command = doc
+            .read()
+            .layout()
+            .commands
+            .iter()
+            .find(|command| command.id == id)
+            .cloned()
+            .unwrap_or_else(|| lhc_core::profile::model::Command {
+                id: id.clone(),
+                name: String::new(),
+                linux: String::new(),
+                windows: String::new(),
+                working_directory: None,
+            });
+        command.name = picker.get_command_name().to_string();
+        command.set_script(picker.get_command_script().to_string());
+        command.working_directory = (!picker.get_command_directory().trim().is_empty())
+            .then(|| picker.get_command_directory().trim().to_owned());
+        state.borrow_mut().command = Some(command);
         picker.set_value(format!("cmd:{id}").into());
         picker.set_touched(true);
         picker.invoke_refresh();
@@ -539,7 +552,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                             if directory {
                                 picker.set_command_directory(path.as_ref().into());
                             } else {
-                                let quoted = lhc_core::mapper::commands::shell_quote(&path);
+                                let quoted = lhc_core::mapper::commands::invoke_path(&path);
                                 let script = picker.get_command_script();
                                 picker.set_command_script(if script.trim().is_empty() {
                                     quoted.into()
@@ -680,7 +693,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .is_none_or(|draft| draft.id != command.id)
         {
             picker.set_command_name(command.name.clone().into());
-            picker.set_command_script(command.linux.clone().into());
+            picker.set_command_script(command.script().into());
             picker.set_command_directory(
                 command.working_directory.clone().unwrap_or_default().into(),
             );
@@ -748,7 +761,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                             },
                             |command| {
                                 doc.read().settings().commands_enabled
-                                    && !command.linux.trim().is_empty()
+                                    && !command.script().trim().is_empty()
                             },
                         )
                     && (!picker.get_hold_action() || actions::valid_held_key(&value))

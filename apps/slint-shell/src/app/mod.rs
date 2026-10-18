@@ -317,7 +317,7 @@ impl App {
             .global::<AppState>()
             .set_keyboard_selected(document.read().input_device().is_some());
         let launch_on_startup = document.read().settings().launch_on_startup;
-        if cfg!(target_os = "linux") && self.last_autostart.get() != Some(launch_on_startup) {
+        if lhc_core::autostart::SUPPORTED && self.last_autostart.get() != Some(launch_on_startup) {
             match lhc_core::autostart::set_enabled(document.read().paths(), launch_on_startup) {
                 Ok(()) => self.last_autostart.set(Some(launch_on_startup)),
                 Err(error) => self.set_error(Msg::Error(error)),
@@ -447,6 +447,15 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     settings
         .global::<AppState>()
         .set_is_linux(cfg!(target_os = "linux"));
+    settings
+        .global::<AppState>()
+        .set_is_windows(cfg!(target_os = "windows"));
+    settings
+        .global::<AppState>()
+        .set_mapper_supported(lhc_core::mapper::runtime::SUPPORTED);
+    settings
+        .global::<AppState>()
+        .set_autostart_supported(lhc_core::autostart::SUPPORTED);
     let document = load_document(&settings);
     metrics.ready("settings");
     popup_attributes.set(true);
@@ -461,7 +470,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         document: RefCell::new(None),
         metrics: RefCell::new(metrics),
         generations: RefCell::default(),
-        focus: RefCell::new(focus::Activation::default()),
+        focus: RefCell::default(),
         tray: RefCell::new(None),
         #[cfg(not(target_os = "linux"))]
         return_input: RefCell::default(),

@@ -365,6 +365,22 @@ impl TextTarget {
     }
 }
 
+/// A text destination: the foreground window and its process.
+#[cfg(target_os = "windows")]
+#[derive(Clone)]
+pub(crate) struct TextTarget(Option<(isize, u32)>);
+
+#[cfg(target_os = "windows")]
+impl TextTarget {
+    pub(crate) fn capture() -> Self {
+        Self(crate::platform::windows::foreground_window())
+    }
+
+    pub(crate) fn is_current(&self) -> bool {
+        self.0.is_some() && crate::platform::windows::foreground_window() == self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

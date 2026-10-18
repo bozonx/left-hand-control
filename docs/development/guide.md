@@ -16,7 +16,8 @@
 - [apps/slint-shell/README.md](../../apps/slint-shell/README.md) — стенды задержек, Spell lifecycle, диагностика.
 
 Основная среда разработки и приёмки — **KDE Plasma 6 на Wayland**. Windows и
-macOS собираются с минимальными адаптерами оболочки; mapper там не реализован.
+macOS собираются с минимальными адаптерами оболочки. На Windows есть mapper
+(хуки сессии и `SendInput`), ещё не принятый; на macOS mapper не реализован.
 
 ## 1. Окружение
 
@@ -174,7 +175,8 @@ LHC_SOCKET=lhc-dev.sock target/debug/left-hand-control quit
 | Hyprland, Sway | Layer-shell есть, не принято |
 | GNOME Wayland | Нет layer-shell: `auto` уходит в winit; трею нужно расширение AppIndicator |
 | X11 | Окна winit; поведение зависит от WM |
-| Windows, macOS | Оболочка собирается и запускается; mapper — заглушка |
+| Windows | Оболочка и mapper (хуки сессии), приёмка не пройдена |
+| macOS | Оболочка собирается и запускается; mapper — заглушка |
 
 Подробная матрица — в [platforms.md](platforms.md).
 
@@ -479,7 +481,8 @@ KDE запоминает и без токена приложения, поэто
 
 #### Windows VM
 
-Mapper на Windows не реализован, поэтому Windows-стенд проверяет оболочку.
+Сценарии mapper на Windows (матрица в [windows-mapper.md](windows-mapper.md))
+в стенд ещё не добавлены, поэтому Windows-стенд проверяет оболочку.
 По умолчанию запускается `--suite smoke`: нативные тесты `lhc-core --lib`,
 debug-сборка, `editor --smoke`,
 `interactions`, CLI, второй экземпляр, по три цикла каждого попапа с ожиданием

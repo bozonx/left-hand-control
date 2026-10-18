@@ -62,6 +62,8 @@ pub struct Command {
     #[serde(default)]
     pub linux: String,
     #[serde(default)]
+    pub windows: String,
+    #[serde(default)]
     pub working_directory: Option<String>,
 }
 

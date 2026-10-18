@@ -86,7 +86,7 @@ impl ConfigDocument {
             return Err(ConfigError::Invalid("Commands are disabled".into()));
         }
         if command.name.trim().is_empty() {
-            command.name = command.linux.trim().to_owned();
+            command.name = command.script().trim().to_owned();
         }
         let mut commands = self.layout().commands.clone();
         let index = commands
@@ -120,7 +120,7 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
     if commands[..index].iter().any(|c| c.id == command.id) {
         return Some(MenuIssue::DuplicateCommand);
     }
-    if command.linux.trim().is_empty() {
+    if command.script().trim().is_empty() {
         return Some(MenuIssue::EmptyCommand);
     }
     None
@@ -263,6 +263,7 @@ mod tests {
             id: "hello".into(),
             name: String::new(),
             linux: "printf hello".into(),
+            windows: "printf hello".into(),
             working_directory: None,
         };
         assert!(doc.save_command(command.clone()).is_err());

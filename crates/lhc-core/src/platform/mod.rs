@@ -1,9 +1,9 @@
 //! Platform + session detection layer.
 //!
-//! The long-term shape has three OS backends — `linux`, `windows`, `macos`.
-//! In the current product we intentionally support only Linux, with KDE as
-//! the only fully implemented desktop integration. The other OS/DE modules
-//! stay in place as compile-safe stubs so the call sites remain explicit.
+//! Three OS backends — `linux`, `windows`, `macos`. Linux with KDE is the
+//! primary accepted environment; Windows has its own implementations, and
+//! modules a platform lacks stay in place as compile-safe stubs so the call
+//! sites remain explicit.
 //!
 //! Inside the Linux backend we further dispatch to per-desktop
 //! implementations (KDE, GNOME, Sway, generic X11) for APIs that are
@@ -17,13 +17,16 @@
 //! The low-level key-event interception (evdev + uinput) is DE-agnostic,
 //! so it lives directly in `mapper::linux` without further branching.
 //!
-//! Windows / macOS bindings are intentionally stubs for now — the module
-//! structure is in place so the call sites compile and return a clear,
-//! actionable error instead of panicking.
+//! On Windows the mapper uses session-wide low-level hooks (`mapper::windows`).
+//! Missing macOS bindings return a clear, actionable error instead of
+//! panicking.
 
 #[cfg(target_os = "linux")]
 pub mod file_chooser;
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
+#[path = "file_chooser_windows.rs"]
+pub mod file_chooser;
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub mod file_chooser {
     /// Native file selection is not implemented outside the Linux portal backend.
     pub fn pick(_title: &str, _directory: bool) -> Result<Option<std::path::PathBuf>, String> {
@@ -47,6 +50,9 @@ pub mod osd {
 pub(crate) mod macos;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows;
+/// Type text as Unicode characters into the focused window.
+#[cfg(target_os = "windows")]
+pub use crate::mapper::windows::type_unicode;
 
 #[cfg(target_os = "linux")]
 use std::fs::{self, OpenOptions};

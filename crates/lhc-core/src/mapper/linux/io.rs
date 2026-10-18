@@ -1,5 +1,7 @@
-use super::super::action::Keystroke;
 use super::super::engine::{Engine, Out};
+pub(super) use super::super::output::{
+    EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
+};
 use super::super::portal;
 use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
 use evdev::uinput::VirtualDevice;
@@ -10,22 +12,6 @@ use std::sync::OnceLock;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
-
-/// Gap inserted between a synthetic key-down and key-up so the receiving
-/// app sees a non-zero hold duration. A bare down+up pair in a single
-/// `EV_SYN` frame is treated as zero-duration by some apps and dropped.
-const KEY_TAP_GAP: Duration = Duration::from_millis(1);
-
-/// Longest time output stays held after an action opened a popup when the
-/// shell never reports that the popup took the keyboard focus.
-const POPUP_HOLD_MAX: Duration = Duration::from_millis(1000);
-
-/// Longest time output stays held behind text that is still being typed;
-/// a slower backend then lets the keys through rather than lose them.
-const TEXT_HOLD_MAX: Duration = Duration::from_millis(2000);
-
-/// How often the mapper loop checks whether held text has been typed.
-const TEXT_HOLD_POLL: Duration = Duration::from_millis(5);
 
 nix::ioctl_write_ptr!(set_event_clock, b'E', 0xa0, libc::c_int);
 
@@ -44,191 +30,18 @@ fn event_clock_now() -> Result<SystemTime, String> {
     Ok(SystemTime::UNIX_EPOCH + Duration::new(time.tv_sec as u64, time.tv_nsec as u32))
 }
 
-/// Output that follows a popup-opening action, held until the popup has the
-/// keyboard focus. Keys typed right after the hotkey would otherwise reach
-/// the window the popup is about to cover.
-///
-/// Output that follows text is held until the text worker has typed it, so
-/// keys typed meanwhile land after the text instead of before it.
-#[derive(Default)]
-pub(super) struct OutputHold {
-    held: Vec<Out>,
-    until: Option<Instant>,
-    released: bool,
-    after_text: Vec<Out>,
-    text_until: Option<Instant>,
-}
-
-impl OutputHold {
-    /// The popup took the focus: replay held output on the next iteration.
-    pub(super) fn release(&mut self) {
-        self.released = true;
-    }
-
-    /// Stop holding and put held output in front of `buf`.
-    pub(super) fn take(&mut self, buf: &mut Vec<Out>) {
-        self.until = None;
-        if !self.held.is_empty() {
-            let mut held = std::mem::take(&mut self.held);
-            held.append(buf);
-            *buf = held;
-        }
-    }
-
-    /// Shutdown must not replay input or actions waiting for popup focus.
-    pub(super) fn discard(&mut self) {
-        self.held.clear();
-        self.until = None;
-        self.released = false;
-        self.after_text.clear();
-        self.text_until = None;
-    }
-
-    /// Config changes revoke pending side effects, while key transitions
-    /// must remain balanced with presses already emitted before the popup.
-    pub(super) fn cancel_actions(&mut self, buf: &mut Vec<Out>) {
-        let key_transition = |out: &Out| {
-            !matches!(
-                out,
-                Out::Literal(_) | Out::RunCommand(_) | Out::RunSystem(_)
-            )
-        };
-        self.held.retain(key_transition);
-        self.after_text.retain(key_transition);
-        buf.retain(key_transition);
-    }
-
-    fn deadline(&self, now: Instant) -> Option<Instant> {
-        // Text completion does not wake the loop, so poll for it.
-        let text = self.text_until.map(|until| until.min(now + TEXT_HOLD_POLL));
-        match (self.until, text) {
-            (Some(a), Some(b)) => Some(a.min(b)),
-            (a, b) => a.or(b),
-        }
-    }
-
-    /// Leave in `buf` only what may be emitted now. `text_pending` tells
-    /// whether text sent to the text worker is still being typed.
-    pub(super) fn gate(&mut self, buf: &mut Vec<Out>, now: Instant, text_pending: bool) {
-        self.gate_popup(buf, now);
-        self.gate_text(buf, now, text_pending);
-    }
-
-    fn gate_popup(&mut self, buf: &mut Vec<Out>, now: Instant) {
-        if self
-            .until
-            .is_some_and(|until| self.released || now >= until)
-        {
-            self.take(buf);
-        }
-        // A release that arrives while nothing is held belongs to no popup.
-        self.released = false;
-        if self.until.is_some() {
-            self.held.append(buf);
-            return;
-        }
-        if let Some(index) = buf
-            .iter()
-            .position(|out| matches!(out, Out::RunSystem(action) if action.opens_popup()))
-        {
-            self.held = buf.split_off(index + 1);
-            self.until = Some(now + POPUP_HOLD_MAX);
-        }
-    }
-
-    fn gate_text(&mut self, buf: &mut Vec<Out>, now: Instant, text_pending: bool) {
-        if self
-            .text_until
-            .is_some_and(|until| !text_pending || now >= until)
-        {
-            self.text_until = None;
-            let mut held = std::mem::take(&mut self.after_text);
-            held.append(buf);
-            *buf = held;
-        }
-        let rest = if self.text_until.is_some() {
-            std::mem::take(buf)
-        } else if let Some(index) = buf.iter().position(|out| matches!(out, Out::Literal(_))) {
-            self.text_until = Some(now + TEXT_HOLD_MAX);
-            buf.split_off(index + 1)
-        } else {
-            return;
-        };
-        for out in rest {
-            // Releases of keys pressed before the text pass: a modifier
-            // still down in the compositor would make the text fail.
-            if is_release(&out) && !releases_held_press(&self.after_text, &out) {
-                buf.push(out);
-            } else {
-                self.after_text.push(out);
-            }
-        }
-    }
-}
-
-fn is_release(out: &Out) -> bool {
-    matches!(
-        out,
-        Out::KeyRaw { down: false, .. } | Out::ChordRelease { .. } | Out::ReleaseMods(_)
-    )
-}
-
-/// Whether `release` belongs to a press that is itself held in `held`.
-fn releases_held_press(held: &[Out], release: &Out) -> bool {
-    let pressed = |key: KeyCode| {
-        held.iter().any(|out| match out {
-            Out::KeyRaw { key: k, down: true } => *k == key,
-            Out::ChordPress { ks, .. } => ks.key == key || ks.mods.contains(&key),
-            _ => false,
-        })
-    };
-    match release {
-        Out::KeyRaw { key, .. } => pressed(*key),
-        Out::ChordRelease { key, .. } => pressed(*key),
-        Out::ReleaseMods(mods) => mods.iter().any(|key| pressed(*key)),
-        _ => false,
-    }
-}
-
-pub(super) trait EventSink {
-    fn emit(&mut self, events: &[InputEvent]) -> Result<(), String>;
-}
-
-pub(super) trait SideEffects {
-    fn held_layer_changed(&mut self, _state: super::super::layer_state::HeldLayerState) {}
-    fn sleep(&mut self, duration: Duration);
-    fn type_text(&mut self, text: &str);
-    fn text_failed(&mut self) -> bool {
-        false
-    }
-    fn text_pending(&self) -> bool {
-        false
-    }
-    fn run_system(&mut self, action: &SysAction);
-    fn run_command(&mut self, command: &SysCommand);
-}
-
-pub(super) trait LoopDriver {
-    fn now(&mut self) -> Instant;
-    fn wait(&mut self, timeout: Duration) -> Result<bool, String>;
-    fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String>;
-    fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
-        let events = self.fetch_key_events()?;
-        Ok(events
-            .into_iter()
-            .map(|(key, down)| (key, down, self.now()))
-            .collect())
-    }
-}
-
 pub(super) struct VirtualEventSink<'a> {
     virt: &'a mut VirtualDevice,
 }
 
 impl EventSink for VirtualEventSink<'_> {
-    fn emit(&mut self, events: &[InputEvent]) -> Result<(), String> {
+    fn emit(&mut self, events: &[(KeyCode, bool)]) -> Result<(), String> {
+        let events: Vec<InputEvent> = events
+            .iter()
+            .map(|&(key, down)| *KeyEvent::new(key, i32::from(down)))
+            .collect();
         self.virt
-            .emit(events)
+            .emit(&events)
             .map_err(|e| format!("uinput emit: {e}"))
     }
 }
@@ -532,208 +345,10 @@ pub(super) fn process_iteration<D: LoopDriver>(
     process_iteration_with(driver, engine, hold, &mut sink, &mut effects, out_buf)
 }
 
-pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects>(
-    driver: &mut D,
-    engine: &mut Engine,
-    hold: &mut OutputHold,
-    sink: &mut S,
-    effects: &mut E,
-    out_buf: &mut Vec<Out>,
-) -> Result<(), String> {
-    const MAX_WAIT: Duration = Duration::from_millis(100);
-
-    let now = driver.now();
-    let pending = effects.text_pending();
-    if effects.text_failed() {
-        engine.text_input_failed(out_buf);
-    }
-    engine.set_text_pending(pending, now);
-    let mut wait = engine
-        .next_deadline(now)
-        .map(|d| d.min(MAX_WAIT))
-        .unwrap_or(MAX_WAIT);
-    if let Some(until) = hold.deadline(now) {
-        wait = wait.min(until.saturating_duration_since(now));
-    }
-
-    if driver.wait(wait)? {
-        for (key, down, at) in driver.fetch_timed_key_events()? {
-            engine.handle(key, down, at, out_buf);
-            effects.held_layer_changed(engine.held_layer_state());
-        }
-    }
-
-    let now = driver.now();
-    engine.tick(now, out_buf);
-    effects.held_layer_changed(engine.held_layer_state());
-    hold.gate(out_buf, now, effects.text_pending());
-    flush_out_with(sink, effects, out_buf)?;
-    Ok(())
-}
-
-fn emit_stroke_tap<S: EventSink, E: SideEffects>(
-    sink: &mut S,
-    effects: &mut E,
-    ks: &Keystroke,
-    mod_delay: Duration,
-) -> Result<(), String> {
-    if !ks.mods.is_empty() {
-        let mut ev = Vec::with_capacity(ks.mods.len());
-        for m in &ks.mods {
-            ev.push(*KeyEvent::new(*m, 1));
-        }
-        sink.emit(&ev)?;
-        effects.sleep(mod_delay);
-    }
-
-    // Down and up go in separate `EV_SYN` frames (with a tiny gap) so the
-    // tap isn't seen as a zero-duration event and dropped.
-    sink.emit(&[*KeyEvent::new(ks.key, 1)])?;
-    effects.sleep(KEY_TAP_GAP);
-    sink.emit(&[*KeyEvent::new(ks.key, 0)])?;
-
-    if !ks.mods.is_empty() {
-        effects.sleep(mod_delay);
-        let mut ev = Vec::with_capacity(ks.mods.len());
-        for m in ks.mods.iter().rev() {
-            ev.push(*KeyEvent::new(*m, 0));
-        }
-        sink.emit(&ev)?;
-    }
-
-    Ok(())
-}
-
-fn emit_chord_press<S: EventSink, E: SideEffects>(
-    sink: &mut S,
-    effects: &mut E,
-    ks: &Keystroke,
-    mod_delay: Duration,
-) -> Result<(), String> {
-    if !ks.mods.is_empty() {
-        let mut ev = Vec::with_capacity(ks.mods.len());
-        for m in &ks.mods {
-            ev.push(*KeyEvent::new(*m, 1));
-        }
-        sink.emit(&ev)?;
-        effects.sleep(mod_delay);
-    }
-    let down = [*KeyEvent::new(ks.key, 1)];
-    sink.emit(&down)?;
-    Ok(())
-}
-
-fn emit_chord_release<S: EventSink, E: SideEffects>(
-    sink: &mut S,
-    effects: &mut E,
-    key: KeyCode,
-    mods: &[KeyCode],
-    mod_delay: Duration,
-) -> Result<(), String> {
-    let up = [*KeyEvent::new(key, 0)];
-    sink.emit(&up)?;
-
-    if !mods.is_empty() {
-        effects.sleep(mod_delay);
-        let mut ev = Vec::with_capacity(mods.len());
-        for m in mods.iter().rev() {
-            ev.push(*KeyEvent::new(*m, 0));
-        }
-        sink.emit(&ev)?;
-    }
-    Ok(())
-}
-
 pub(super) fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };
     let mut effects = RuntimeSideEffects;
     flush_out_with(&mut sink, &mut effects, buf)
-}
-
-pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
-    sink: &mut S,
-    effects: &mut E,
-    buf: &mut Vec<Out>,
-) -> Result<(), String> {
-    if buf.is_empty() {
-        return Ok(());
-    }
-    // We emit in chunks: most Out variants go into a single atomic batch, while
-    // chords, literals, and side effects need ordered flush boundaries.
-    let mut events: Vec<InputEvent> = Vec::with_capacity(buf.len() * 3);
-
-    fn flush_events<S: EventSink>(
-        sink: &mut S,
-        events: &mut Vec<InputEvent>,
-    ) -> Result<(), String> {
-        if events.is_empty() {
-            return Ok(());
-        }
-        sink.emit(events)?;
-        events.clear();
-        Ok(())
-    }
-
-    for out in buf.drain(..) {
-        match out {
-            Out::KeyRaw { key, down } => {
-                // Mouse buttons are not grabbed, so they already reach the OS.
-                // Re-emitting them would create duplicates.
-                let code = key.code();
-                if (272..=281).contains(&code) {
-                    continue;
-                }
-                // Two transitions of the same key must not share one
-                // `EV_SYN` frame — some apps coalesce them and lose the
-                // first transition (a press+release becomes a no-op).
-                if events.iter().any(|ev| ev.code() == code) {
-                    flush_events(sink, &mut events)?;
-                }
-                events.push(*KeyEvent::new(key, if down { 1 } else { 0 }));
-            }
-            Out::Stroke { ks, mod_delay } => {
-                flush_events(sink, &mut events)?;
-                emit_stroke_tap(sink, effects, &ks, mod_delay)?;
-            }
-            Out::ChordPress { ks, mod_delay } => {
-                flush_events(sink, &mut events)?;
-                emit_chord_press(sink, effects, &ks, mod_delay)?;
-            }
-            Out::ChordRelease {
-                key,
-                mods,
-                mod_delay,
-            } => {
-                flush_events(sink, &mut events)?;
-                emit_chord_release(sink, effects, key, &mods, mod_delay)?;
-            }
-            Out::ReleaseMods(mods) => {
-                for m in mods {
-                    let code = m.code();
-                    // Same rule as KeyRaw: two transitions of one key must
-                    // not share an `EV_SYN` frame or they may coalesce.
-                    if events.iter().any(|ev| ev.code() == code) {
-                        flush_events(sink, &mut events)?;
-                    }
-                    events.push(*KeyEvent::new(m, 0));
-                }
-            }
-            Out::RunSystem(action) => {
-                flush_events(sink, &mut events)?;
-                effects.run_system(&action);
-            }
-            Out::RunCommand(command) => {
-                flush_events(sink, &mut events)?;
-                effects.run_command(&command);
-            }
-            Out::Literal(text) => {
-                flush_events(sink, &mut events)?;
-                effects.type_text(&text);
-            }
-        }
-    }
-    flush_events(sink, &mut events)?;
-    Ok(())
 }
 
 /// Dispatch a resolved system action on the current OS/DE.
@@ -914,56 +529,6 @@ fn dispatch_dbus_call(conn: &zbus::blocking::Connection, call: &DbusCall) -> zbu
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn config_changes_revoke_buffered_actions_without_losing_key_releases() {
-        let command = || {
-            Out::RunCommand(SysCommand {
-                program: "sh".into(),
-                args: vec!["-c".into(), "true".into()],
-                working_directory: None,
-            })
-        };
-        let mut hold = OutputHold::default();
-        let mut out = vec![
-            Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
-            Out::KeyRaw {
-                key: KeyCode::KEY_LEFTCTRL,
-                down: false,
-            },
-            Out::Literal("stale".into()),
-            command(),
-            Out::RunSystem(SysAction::AppEvent("game_mode_toggle".into())),
-        ];
-        let now = Instant::now();
-        hold.gate(&mut out, now, false);
-        out.clear();
-        out.push(command());
-        hold.cancel_actions(&mut out);
-        hold.release();
-        hold.gate(&mut out, now, false);
-        assert!(matches!(
-            out.as_slice(),
-            [Out::KeyRaw {
-                key: KeyCode::KEY_LEFTCTRL,
-                down: false
-            }]
-        ));
-    }
-
-    #[test]
-    fn shutdown_discards_actions_waiting_for_popup_focus() {
-        let mut hold = OutputHold::default();
-        let mut out = vec![
-            Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
-            Out::Literal("must not be typed on shutdown".into()),
-        ];
-        hold.gate(&mut out, Instant::now(), false);
-        out.clear();
-        hold.discard();
-        hold.take(&mut out);
-        assert!(out.is_empty());
-    }
 
     #[test]
     #[ignore = "requires /dev/uinput and access to synthetic /dev/input devices"]

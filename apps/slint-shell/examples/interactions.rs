@@ -143,29 +143,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         loaded.settings().linux_paste_shortcut,
         lhc_core::profile::model::PasteShortcut::CtrlShiftV
     );
-    assert!(settings.get_keyboard_manual());
-    assert!(settings.get_mouse_manual());
-    settings.invoke_select_device(0);
-    settings.invoke_select_mouse(0);
-    assert!(!settings.get_keyboard_manual());
-    assert!(!settings.get_mouse_manual());
-    assert!(document.read().settings().input_device_path.is_none());
-    assert!(document.read().settings().input_mouse_device_path.is_none());
-    settings.invoke_select_device(settings.get_input_devices().row_count() as i32 - 1);
-    settings.invoke_select_mouse(settings.get_mouse_devices().row_count() as i32 - 1);
-    assert!(settings.get_keyboard_manual());
-    assert!(settings.get_mouse_manual());
-    settings.set_keyboard_device_path("/dev/input/test-keyboard".into());
-    settings.set_mouse_device_path("/dev/input/test-mouse".into());
-    settings.invoke_save();
-    settings.invoke_refresh_devices();
-    assert!(settings.get_keyboard_manual());
-    assert!(settings.get_mouse_manual());
-    assert_eq!(
-        settings.get_keyboard_device_path(),
-        "/dev/input/test-keyboard"
-    );
-    assert_eq!(settings.get_mouse_device_path(), "/dev/input/test-mouse");
+    // Windows has no device paths: the mapper takes the whole session.
+    if cfg!(target_os = "windows") {
+        assert!(!settings.get_keyboard_manual());
+        settings.invoke_select_device(1);
+        settings.invoke_select_mouse(1);
+        assert_eq!(settings.get_keyboard_device_path(), "windows:keyboard");
+        assert_eq!(settings.get_mouse_device_path(), "windows:mouse");
+    } else {
+        assert!(settings.get_keyboard_manual());
+        assert!(settings.get_mouse_manual());
+        settings.invoke_select_device(0);
+        settings.invoke_select_mouse(0);
+        assert!(!settings.get_keyboard_manual());
+        assert!(!settings.get_mouse_manual());
+        assert!(document.read().settings().input_device_path.is_none());
+        assert!(document.read().settings().input_mouse_device_path.is_none());
+        settings.invoke_select_device(settings.get_input_devices().row_count() as i32 - 1);
+        settings.invoke_select_mouse(settings.get_mouse_devices().row_count() as i32 - 1);
+        assert!(settings.get_keyboard_manual());
+        assert!(settings.get_mouse_manual());
+        settings.set_keyboard_device_path("/dev/input/test-keyboard".into());
+        settings.set_mouse_device_path("/dev/input/test-mouse".into());
+        settings.invoke_save();
+        settings.invoke_refresh_devices();
+        assert!(settings.get_keyboard_manual());
+        assert!(settings.get_mouse_manual());
+        assert_eq!(
+            settings.get_keyboard_device_path(),
+            "/dev/input/test-keyboard"
+        );
+        assert_eq!(settings.get_mouse_device_path(), "/dev/input/test-mouse");
+    }
 
     // Changes through the document refresh the settings form.
     document.edit(slint_shell::document::View::Shell, |config| {
@@ -297,6 +306,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     id: format!("dragCommand{index}"),
                     name: format!("Command {index}"),
                     linux: "printf test".into(),
+                    windows: "Write-Output test".into(),
                     working_directory: None,
                 })
                 .collect();
