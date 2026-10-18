@@ -21,6 +21,8 @@ cargo build --release --locked -p slint-shell --features spell
 mkdir -p -- "$staging/$name/icons"
 install -m 755 -- "$target_dir/release/left-hand-control" "$staging/$name/left-hand-control"
 install -m 755 -- apps/slint-shell/scripts/install-linux.sh "$staging/$name/install-linux.sh"
+install -m 755 -- apps/slint-shell/scripts/install-gnome-extension.sh "$staging/$name/install-gnome-extension.sh"
+cp -R -- crates/lhc-core/assets/gnome-extension "$staging/$name/gnome-extension"
 packaging=apps/slint-shell/packaging/linux
 install -m 644 -- LICENSE "$packaging/dev.bozonx.left-hand-control.desktop" \
     "$packaging/dev.bozonx.left-hand-control.metainfo.xml" "$packaging/60-left-hand-control.rules" \

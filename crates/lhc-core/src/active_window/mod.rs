@@ -18,6 +18,8 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 #[cfg(target_os = "linux")]
+mod gnome;
+#[cfg(target_os = "linux")]
 mod kwin;
 #[cfg(target_os = "linux")]
 mod linux;
@@ -335,6 +337,7 @@ pub fn open_windows() -> Vec<OpenWindow> {
 #[derive(Clone)]
 pub(crate) enum TextTarget {
     Kwin(String),
+    Gnome(String),
     Cached(ActiveWindow),
     Unknown,
 }
@@ -345,12 +348,23 @@ impl TextTarget {
         if kwin::active() {
             return kwin::text_target().map_or(Self::Unknown, Self::Kwin);
         }
+        if matches!(
+            crate::platform::linux::detect(),
+            crate::platform::linux::Session {
+                desktop: crate::platform::linux::Desktop::Gnome,
+                session_type: crate::platform::linux::SessionType::Wayland,
+                ..
+            }
+        ) {
+            return gnome::text_target().map_or(Self::Unknown, Self::Gnome);
+        }
         cached_active_window().map_or(Self::Unknown, Self::Cached)
     }
 
     pub(crate) fn is_current(&self) -> bool {
         match self {
             Self::Kwin(id) => kwin::target_is_current(id),
+            Self::Gnome(id) => gnome::target_is_current(id),
             Self::Cached(target) => ACTUAL_WINDOW
                 .lock()
                 .ok()

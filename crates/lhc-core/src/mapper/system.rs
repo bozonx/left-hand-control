@@ -22,7 +22,8 @@
 //
 // Current product support:
 //   * Linux + KDE   — implemented.
-//   * Linux + GNOME / Sway / X11 generic — intentional skeletons for now.
+//   * Linux + GNOME — optional Shell extension, fixed action allowlist.
+//   * Linux + Sway / X11 generic — intentional skeletons for now.
 //   * Windows — every id with a documented Win32 API or fixed system
 //     shortcut; virtual-desktop ids have no public API there.
 
@@ -344,6 +345,36 @@ mod linux_tests {
         }
     }
     #[test]
+    fn gnome_actions_use_only_the_fixed_bridge_api() {
+        for name in [
+            "switchLayout1",
+            "switchDesktop2",
+            "windowToDesktop3",
+            "windowClose",
+            "overview",
+        ] {
+            let Some(SysAction::Dbus(call)) = resolve_for_desktop(name, &Desktop::Gnome) else {
+                panic!("{name} did not resolve");
+            };
+            assert_eq!(call.destination, "org.gnome.Shell");
+            assert_eq!(call.path, "/dev/bozonx/LeftHandControl/Gnome");
+            assert_eq!(call.method, "Action");
+            assert!(matches!(call.args.as_slice(), [DbusArg::Str(value)] if value == name));
+        }
+        for name in [
+            "showDesktop",
+            "screenOff",
+            "switchLayout0",
+            "switchLayout11",
+            "switchDesktop21",
+            "Eval",
+            "global.display.focus_window.delete(0)",
+        ] {
+            assert!(resolve_for_desktop(name, &Desktop::Gnome).is_none());
+        }
+    }
+
+    #[test]
     fn switch_layout_uses_zero_based_kde_index() {
         let Some(SysAction::Dbus(call)) = resolve_for_desktop("switchLayout1", &Desktop::Kde)
         else {
@@ -409,19 +440,19 @@ mod linux_tests {
 
 #[cfg(target_os = "linux")]
 mod gnome {
-    use super::SysAction;
+    use super::{DbusArg, DbusCall, SysAction};
 
     pub fn resolve(name: &str) -> Option<SysAction> {
-        // TODO: implement. Two approaches:
-        //   1. Wayland + Shell extensions allowing Eval:
-        //        org.gnome.Shell / /org/gnome/Shell / org.gnome.Shell.Eval
-        //        ("global.workspace_manager \
-        //           .get_workspace_by_index(N-1) \
-        //           .activate(global.get_current_time())")
-        //      On stock GNOME 41+ Eval is restricted in user mode.
-        //   2. X11 sessions: spawn `wmctrl -s (N-1)`.
-        log::debug!("[sys/gnome] {name:?}: not implemented yet");
-        None
+        if !super::is_known(name) || matches!(name, "showDesktop" | "screenOff") {
+            return None;
+        }
+        Some(SysAction::Dbus(DbusCall {
+            destination: crate::platform::gnome::SERVICE.into(),
+            path: crate::platform::gnome::PATH.into(),
+            interface: Some(crate::platform::gnome::INTERFACE.into()),
+            method: "Action".into(),
+            args: vec![DbusArg::Str(name.into())],
+        }))
     }
 }
 

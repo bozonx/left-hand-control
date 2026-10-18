@@ -48,7 +48,15 @@ impl Activation {
             window.focus_window();
             return Ok(());
         };
-        let Some(token) = token else { return Ok(()) };
+        let Some(token) = token else {
+            if matches!(
+                lhc_core::platform::linux::detect().desktop,
+                lhc_core::platform::linux::Desktop::Gnome
+            ) {
+                lhc_core::platform::gnome::request_window_activation(window.title())?;
+            }
+            return Ok(());
+        };
         let RawDisplayHandle::Wayland(display) = window.display_handle()?.as_raw() else {
             return Err("Wayland surface without Wayland display".into());
         };

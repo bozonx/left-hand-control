@@ -1,0 +1,43 @@
+Ubuntu 26.04 GNOME Wayland — preflight STOP
+Commit: ed7343afeceee7ef3b3ecf4b99e139eefab4731a (clean before inspection)
+No guest boot or runtime acceptance performed. No mapper failure reproduced.
+Host: qemu-system-x86_64 available; /dev/kvm accessible; 76 GiB disk free.
+Prepared outside repository: /mnt/disk2/vm/lhc-ubuntu2604-gnome/vm.json,
+cloud-init seed for tester, SSH port 2233. Image download interrupted on blocker;
+base.qcow2 does not exist. VM is not ready for use.
+
+Critical blocker confirmed by static inspection:
+- active_window/linux.rs excludes GNOME from wlr and has no GNOME detect backend.
+- active_window/mod.rs TextTarget::capture yields Unknown without a window;
+  TextTarget::is_current returns false for Unknown.
+- mapper/text_job.rs TextRequest::check rejects it with
+  "text input cancelled: destination window changed or is unknown".
+Therefore text: actions cannot pass destination validation on stock GNOME Wayland.
+Additional missing capabilities: layout/linux_gnome.rs current() => Ok(None),
+watcher unimplemented; mapper/system.rs gnome::resolve() => None.
+
+User requested stopping on critical problems; stopped before VM installation.
+Recommended resolution: implement a GNOME Shell extension with a narrow authenticated
+session D-Bus bridge for stable window identity/focus and input-source events;
+integrate core backend and retain destination checks. Separately implement supported
+GNOME system actions; adapt KDE-only VM harness for GNOME before runtime acceptance.
+Do not enable unrestricted Shell.Eval or bypass unknown-destination validation.
+
+Commands/results:
+command -v virsh qemu-system-x86_64 — both found.
+ls -l /dev/kvm — device present, mode 0666.
+df -h /mnt/disk2 — 76 GiB available.
+python3 /tmp/lhc-ubuntu-prepare.py — PASS, vm.json and cloud-init ISO created
+(using xorriso -as mkisofs).
+curl -fL --retry 3 https://cloud-images.ubuntu.com/releases/26.04/release/SHA256SUMS
+  -o /mnt/disk2/vm/lhc-ubuntu2604-gnome/install/SHA256SUMS — downloaded.
+curl -fL --retry 3 https://cloud-images.ubuntu.com/releases/26.04/release/ubuntu-26.04-server-cloudimg-amd64.img
+  -o /mnt/disk2/vm/lhc-ubuntu2604-gnome/install/ubuntu-26.04-server-cloudimg-amd64.img
+  — interrupted (exit 130); partial image, not checksum-verified.
+sed -n '1,125p' crates/lhc-core/src/active_window/linux.rs — blocker inspected.
+sed -n '315,371p' crates/lhc-core/src/active_window/mod.rs — Unknown fails validation.
+sed -n '55,90p' crates/lhc-core/src/mapper/text_job.rs — rejection inspected.
+cat crates/lhc-core/src/layout/linux_gnome.rs — skeleton confirmed.
+sed -n '405,430p' crates/lhc-core/src/mapper/system.rs — skeleton confirmed.
+git status --short — clean before this report.
+No source changes. Cargo checks, desktop tests, mapper e2e not run: preflight stopped.

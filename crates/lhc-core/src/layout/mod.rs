@@ -6,7 +6,7 @@
 //
 // Backends:
 //   * Linux + KDE Plasma     — DBus `org.kde.keyboard`            (implemented)
-//   * Linux + GNOME          — GSettings `input-sources`           (skeleton)
+//   * Linux + GNOME          — optional Shell extension over D-Bus
 //   * Linux + Sway / wlroots — `swaymsg -t get_inputs`             (skeleton)
 //   * Linux + generic X11    — `setxkbmap -query`                  (skeleton,
 //                                                                   also used
@@ -61,7 +61,10 @@ static LAST_PUBLISHED: Mutex<Option<(String, String)>> = Mutex::new(None);
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
     #[cfg(target_os = "linux")]
-    linux_kde::interrupt_signal_watcher();
+    {
+        linux_kde::interrupt_signal_watcher();
+        linux_gnome::interrupt_signal_watcher();
+    }
     if let Ok(mut watchers) = WATCHERS.lock() {
         for watcher in watchers.drain(..) {
             if let Err(error) = watcher.join() {
@@ -90,7 +93,7 @@ fn watcher_stop_requested() -> bool {
 
 /// Cache the layout for the mapper and emit `LayoutChanged` when the
 /// short code or variant differs from the last published value.
-/// Only the KDE backend produces layouts so far.
+/// Backends publish only observations from the current session.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn publish(info: &LayoutInfo) {
     crate::runtime_state::set_layout(Some(crate::runtime_state::LayoutSelection {
@@ -166,6 +169,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
         use crate::platform::linux::{Desktop, detect};
         match detect().desktop {
             Desktop::Kde => linux_kde::available_layouts(),
+            Desktop::Gnome => linux_gnome::available_layouts(),
             _ => Ok(vec![]),
         }
     }
@@ -180,7 +184,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
 }
 
 /// Switch the active OS keyboard layout to the given zero-based index.
-/// Currently implemented for KDE Plasma and Windows; other desktops/OSes
+/// Currently implemented for KDE Plasma, GNOME (with its extension) and Windows; other desktops/OSes
 /// return an explicit error so the shell can disable the control.
 pub fn set(index: u32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
@@ -188,6 +192,7 @@ pub fn set(index: u32) -> Result<(), String> {
         use crate::platform::linux::{Desktop, detect};
         match detect().desktop {
             Desktop::Kde => linux_kde::set_layout(index),
+            Desktop::Gnome => linux_gnome::set_layout(index),
             d => Err(format!(
                 "Switching layout is not implemented for desktop '{}'",
                 d.label()

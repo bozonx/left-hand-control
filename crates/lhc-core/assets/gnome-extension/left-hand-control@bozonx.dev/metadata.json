@@ -1,0 +1,9 @@
+{
+  "uuid": "left-hand-control@bozonx.dev",
+  "name": "Left Hand Control bridge",
+  "description": "Window identity and keyboard input sources for Left Hand Control",
+  "shell-version": ["50"],
+  "version": 1,
+  "url": "https://github.com/bozonx/left-hand-control",
+  "session-modes": ["user"]
+}

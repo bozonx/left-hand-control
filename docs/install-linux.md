@@ -28,6 +28,23 @@ LHC_POPUPS=auto ~/.local/bin/left-hand-control
 
 При запуске из меню используется стандартный режим winit. Для цветных emoji
 в winit задайте `SLINT_BACKEND=winit-skia`; нужны установленные Noto Color Emoji.
+## GNOME 50 (экспериментально)
+
+Для определения окна назначения текста, условий по приложению и системных раскладок
+нужно комплектное расширение GNOME Shell. В распакованном архиве выполните
+`./install-gnome-extension.sh`; после установки архива скрипт находится в
+`~/.local/lib/dev.bozonx.left-hand-control/`, для deb/rpm — в
+`/usr/share/left-hand-control/`. Перезайдите в GNOME и включите расширение:
+
+```sh
+gnome-extensions enable left-hand-control@bozonx.dev
+```
+
+Для трея нужно AppIndicator-расширение (в Ubuntu — Ubuntu AppIndicators).
+Попапы используют winit. Поддержка GNOME ещё проходит приёмку; наличие расширения
+не гарантирует работу Unicode-вставки через portal. Удаление расширения выполняется
+тем же скриптом с аргументом `uninstall`; обновление требует нового входа в GNOME.
+
 ## Права на устройства ввода
 
 Для mapper нужны права чтения `/dev/input/event*` и записи `/dev/uinput`.

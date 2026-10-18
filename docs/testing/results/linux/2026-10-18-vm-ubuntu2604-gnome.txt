@@ -1,0 +1,32 @@
+Date: 2026-10-18 17:20:10 -0300
+Commit: ed7343a (with uncommitted changes)
+VM: ubuntu2604-gnome
+Package: /mnt/disk2/codeWorkspace/left-hand-control/target/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Logs and screenshots: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261018-171915/logs
+Scope: GNOME smoke only; lock/suspend/replug, other receivers and upgrade not covered.
+
+- boot-session: passed — PRETTY_NAME="Ubuntu 26.04.1 LTS"
+NAME="Ubuntu"
+VERSION_ID="26.04"
+VERSION="26.04.1 LTS (Resolute Raccoon)"
+VERSION_CODENAME=resolute
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=resolute
+LOGO=ubuntu-logo
+GNOME Shell 50.1
+XDG_CURRENT_DESKTOP=ubuntu:GNOME
+XDG_SESSION_TYPE=wayland
+xdg-desktop-portal	1.21.1+ds-1ubuntu3.1
+xdg-desktop-portal-gnome	50.0-0ubuntu1
+- install: passed — /home/tester/.local/bin/left-hand-control:
+- keyboard-and-config: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- no-permissions-start: FAILED — `python3 ~/lhc-e2e/linux-guest.py start-app --popups auto` exited with 1:
+timed out after 30s waiting for an answer to `ping`
+
+Passed: 3, failed: 1

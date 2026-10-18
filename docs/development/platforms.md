@@ -3,18 +3,20 @@
 | Concern | KDE | GNOME | Sway | X11 generic | Windows | macOS |
 | --- | --- | --- | --- | --- | --- | --- |
 | Key interception | ✅ evdev+uinput | ✅ | ✅ | ✅ | ✅ session-wide `WH_KEYBOARD_LL` + `SendInput` (untested on hardware) | ❌ stub |
-| Literal text (xdg-desktop-portal) | ✅ | ⚠ needs active-window detection | ⚠ backend/protocol dependent | ⚠ portal and focus detection required | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
-| Layout detection | ✅ DBus `org.kde.keyboard` | 🚧 | 🚧 | 🚧 | ✅ input language of the foreground window | 🚧 |
-| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ KWin DBus, kglobalaccel | 🚧 | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchDesktopN` / `windowToDesktopN` | ❌; ids without a macOS API are ignored with a notification |
+| Literal text (xdg-desktop-portal) | ✅ | ⚠ requires bundled Shell extension; acceptance pending | ⚠ backend/protocol dependent | ⚠ portal and focus detection required | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
+| Layout detection | ✅ DBus `org.kde.keyboard` | ⚠ Shell extension | 🚧 | 🚧 | ✅ input language of the foreground window | 🚧 |
+| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ KWin DBus, kglobalaccel | ⚠ Shell extension; subset | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchDesktopN` / `windowToDesktopN` | ❌; ids without a macOS API are ignored with a notification |
 | KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
 | Layer-shell popups (Spell) | ✅ | ❌ winit fallback | ✅ not accepted | ❌ winit | — | — |
 | Game mode: GameMode daemon | ✅ D-Bus | ✅ | ✅ | ✅ | — | — |
-| Game mode: fullscreen / active window | ✅ KWin script | ❌ no public API | ✅ IPC (Hyprland too); other wlroots compositors via `wlr-foreign-toplevel` | ⚠ `xprop` (+ `xdotool`, `xrandr` for borderless) | ✅ Win32 | ⚠ untested (`NSWorkspace`, `CGWindowList`) |
+| Game mode: fullscreen / active window | ✅ KWin script | ⚠ Shell extension | ✅ IPC (Hyprland too); other wlroots compositors via `wlr-foreign-toplevel` | ⚠ `xprop` (+ `xdotool`, `xrandr` for borderless) | ✅ Win32 | ⚠ untested (`NSWorkspace`, `CGWindowList`) |
 | Game mode: known games (each source toggled separately) | ✅ Steam, Lutris, Heroic, umu, gamescope, `.desktop` `Game` category | ✅ | ✅ | ✅ | ✅ Steam `RunningAppID`, Game Bar list (untested) | ⚠ `Info.plist` category (untested) |
 
 **X11 is not a supported target.** Interception (evdev + uinput) does not depend on the display server, so the mapper works in an X11 session, and the existing X11 code (`xprop`/`xdotool` active-window detection, `layout/linux_x11.rs`, winit popups) stays as best effort. It is not accepted, has no e2e or VM scenarios and is not extended: GNOME has dropped the X11 session and KDE drops it in Plasma 6.8, while the remaining X11 desktops (Xfce, Cinnamon, MATE, i3) would need their own DE backends anyway. Reconsider only on concrete demand for a specific desktop, as "support DE X", not "support X11".
 
 🚧 = skeleton module returning `Ok(None)`/`None` with a planned-implementation note; ❌ stub = explicit "not implemented" error. Both compile and are safe to ship.
+
+GNOME bridge installation, security model, supported actions and VM smoke: [GNOME testing](../testing/gnome.md).
 
 **Adding a Linux DE backend:** add a variant to `platform::linux::Desktop` and `classify_desktop()`; create `layout/linux_<de>.rs` with `current()` and `start_watcher()` that report through `super::publish(&info)`; wire it into `layout/mod.rs`; add `mod <de>` with `resolve(name) -> Option<SysAction>` in `mapper/system.rs` and wire it into the dispatcher.
 

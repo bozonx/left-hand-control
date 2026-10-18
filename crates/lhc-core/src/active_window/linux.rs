@@ -7,8 +7,8 @@
 //   * other Wayland   -> wlr foreign-toplevel events (`wlr`) where the
 //                        compositor offers them (niri, Wayfire, labwc, …)
 //   * X11 (any DE)    -> xprop (+ xdotool for titles), events from `xprop -spy`
-//   * everything else -> None (condition will not match); GNOME Wayland has
-//                        no public API for the active window
+//   * GNOME Wayland   -> optional Left Hand Control Shell extension
+//   * everything else -> None (condition will not match)
 
 use std::io::{BufRead, BufReader};
 use std::os::unix::process::CommandExt;
@@ -21,7 +21,7 @@ use std::time::Duration;
 use crate::exec::run_cmd_with_timeout;
 use crate::platform::linux::{Desktop, SessionType, command_available};
 
-use super::{ActiveWindow, OpenWindow, kwin, wlr};
+use super::{ActiveWindow, OpenWindow, gnome, kwin, wlr};
 
 static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 const COMMAND_TIMEOUT_MS: u64 = 1000;
@@ -62,6 +62,7 @@ pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
         (Desktop::Kde, SessionType::Wayland) => kwin::active() || command_available("kdotool"),
         (Desktop::Hyprland, SessionType::Wayland) => command_available("hyprctl"),
         (Desktop::Sway, SessionType::Wayland) => command_available("swaymsg"),
+        (Desktop::Gnome, SessionType::Wayland) => crate::platform::gnome::snapshot(false).is_ok(),
         _ => return DetectorAvailability::Unsupported,
     };
     if available && LAST_QUERY.load(Ordering::Relaxed) != 2 {
@@ -90,6 +91,7 @@ pub fn detect(titles: bool) -> Option<ActiveWindow> {
     let session = crate::platform::linux::detect();
 
     let result = match (session.desktop.clone(), session.session_type) {
+        (Desktop::Gnome, SessionType::Wayland) => Ok(gnome::current(titles)),
         (Desktop::Hyprland, SessionType::Wayland) => detect_hyprland(),
         (Desktop::Kde, SessionType::Wayland) => {
             kwin::sync(titles);
@@ -111,6 +113,7 @@ pub fn detect(titles: bool) -> Option<ActiveWindow> {
 /// A running focus-event source.
 enum Events {
     Kwin,
+    Gnome,
     Wlr,
     /// A long-running command printing a line per event.
     Command(Child, Arc<AtomicBool>),
@@ -131,6 +134,7 @@ pub(super) fn start_events() -> bool {
         (Desktop::Kde, SessionType::Wayland) => {
             kwin::start(super::titles_needed()).then_some(Events::Kwin)
         }
+        (Desktop::Gnome, SessionType::Wayland) => Some(Events::Gnome),
         (Desktop::Hyprland, SessionType::Wayland) => hyprland_events(),
         (Desktop::Sway, SessionType::Wayland) => command_events(
             Command::new("swaymsg").args(["-m", "-r", "-t", "subscribe", "[\"window\"]"]),
@@ -159,6 +163,7 @@ pub(super) fn events_active() -> bool {
     match EVENTS.lock().ok().as_deref() {
         Some(Some(Events::Kwin)) => kwin::active(),
         Some(Some(Events::Wlr)) => wlr::active(),
+        Some(Some(Events::Gnome)) => true,
         Some(Some(Events::Command(_, alive) | Events::Socket { alive, .. })) => {
             alive.load(Ordering::SeqCst)
         }
@@ -171,6 +176,7 @@ pub(super) fn stop_events() {
     match events {
         Some(Events::Kwin) => kwin::stop(),
         Some(Events::Wlr) => wlr::stop(),
+        Some(Events::Gnome) => {}
         Some(Events::Command(mut child, _)) => {
             let _ = child.kill();
             let _ = child.wait();
@@ -611,6 +617,11 @@ pub(super) fn open_windows() -> Vec<OpenWindow> {
     let session = crate::platform::linux::detect();
     let windows = match (session.desktop, session.session_type) {
         (Desktop::Kde, SessionType::Wayland) => kwin::open_windows().unwrap_or_default(),
+        (Desktop::Gnome, SessionType::Wayland) => crate::platform::gnome::windows()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|value| window_from_json(value, "title", "appId"))
+            .collect(),
         (Desktop::Hyprland, SessionType::Wayland) => json_command(&["hyprctl", "clients", "-j"])
             .and_then(|value| value.as_array().cloned())
             .unwrap_or_default()

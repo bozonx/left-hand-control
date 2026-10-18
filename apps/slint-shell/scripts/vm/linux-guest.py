@@ -171,7 +171,7 @@ def app(*arguments, timeout=10):
 
 
 def session_pid(group=None):
-    """PID of this user's plasmashell, optionally with `group` in its groups."""
+    """PID of this user's desktop shell, optionally with `group` in its groups."""
     gid = grp.getgrnam(group).gr_gid if group else None
     for status in glob.glob("/proc/[0-9]*/status"):
         try:
@@ -181,7 +181,9 @@ def session_pid(group=None):
         except OSError:
             continue
         fields = dict(line.split(":\t", 1) for line in text.splitlines() if ":\t" in line)
-        if fields.get("Name", "").strip() != "plasmashell":
+        if fields.get("Name", "").strip() not in ("plasmashell", "gnome-shell"):
+            continue
+        if fields.get("Name", "").strip() == "gnome-shell" and "WAYLAND_DISPLAY" not in user_environment():
             continue
         if gid is None or str(gid) in fields.get("Groups", "").split():
             return int(Path(status).parent.name)
@@ -220,7 +222,7 @@ def mapper_running():
 # --- subcommands ---------------------------------------------------------
 
 def cmd_wait_session(args):
-    wait(f"a Plasma session{' with group ' + args.group if args.group else ''}",
+    wait(f"a desktop session{' with group ' + args.group if args.group else ''}",
          args.timeout, lambda: session_pid(args.group), interval=2)
     wait("WAYLAND_DISPLAY in the user manager", 60,
          lambda: "WAYLAND_DISPLAY" in user_environment())
@@ -230,7 +232,10 @@ def cmd_wait_session(args):
 
 def cmd_check_install(args):
     path = binary()
-    version = app("--version").stdout.strip()
+    result = app("--version")
+    if result.returncode:
+        fail(f"installed executable cannot run ({result.returncode}): {result.stderr.strip()}")
+    version = result.stdout.strip()
     prefixes = [Path("/usr/share"), HOME / ".local/share"]
     problems = []
     def present(relative):
@@ -297,7 +302,10 @@ def cmd_probe_keyboard(args):
 
 def cmd_write_config(args):
     (DATA_DIR / "layouts").mkdir(parents=True, exist_ok=True)
-    (DATA_DIR / "layouts/E2E.json").write_text(E2E_LAYOUT, encoding="utf-8")
+    layout = E2E_LAYOUT
+    if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
+        layout = layout.replace("kde:kwin/Switch to Desktop 1", "sys:switchDesktop1")
+    (DATA_DIR / "layouts/E2E.json").write_text(layout, encoding="utf-8")
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     settings = {
         "inputDevicePath": args.device,
@@ -315,6 +323,15 @@ def cmd_write_config(args):
     }
     (CONFIG_DIR / "config.json").write_text(
         json.dumps({"version": 1, "settings": settings}, indent=2), encoding="utf-8")
+    if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
+        env = dict(os.environ, **user_environment())
+        for schema, key, value in (
+            ("org.gnome.desktop.input-sources", "sources", "[('xkb', 'us'), ('xkb', 'ru')]"),
+            ("org.gnome.mutter", "dynamic-workspaces", "false"),
+            ("org.gnome.desktop.wm.preferences", "num-workspaces", "2"),
+        ):
+            subprocess.run(["gsettings", "set", schema, key, value], env=env, check=True)
+        return
     # Read by Plasma at the next login: two keyboard layouts and two desktops
     # for the `sys:` and `kde:` actions.
     config = HOME / ".config"
@@ -399,8 +416,10 @@ def cmd_autostart(args):
 def cmd_start_receiver(args):
     RECEIVER_OUT.unlink(missing_ok=True)
     unit = f"lhc-e2e-receiver-{args.name}"
-    systemd_run(unit, ["kdialog", "--title", "LHC e2e receiver",
-                       "--inputbox", "Mapper output"], RECEIVER_OUT,
+    command = (["zenity", "--entry", "--title=LHC e2e receiver", "--text=Mapper output"]
+               if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper()
+               else ["kdialog", "--title", "LHC e2e receiver", "--inputbox", "Mapper output"])
+    systemd_run(unit, command, RECEIVER_OUT,
                 errors=WORK / "receiver.log")
     # Let KWin map and focus the dialog before the host types.
     time.sleep(args.settle)

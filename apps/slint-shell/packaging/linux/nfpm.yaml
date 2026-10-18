@@ -23,6 +23,11 @@ description: |-
   The primary environment is KDE Plasma 6 on Wayland.
 
 contents:
+  - src: crates/lhc-core/assets/gnome-extension/left-hand-control@bozonx.dev/
+    dst: /usr/share/left-hand-control/gnome-extension/left-hand-control@bozonx.dev/
+  - src: apps/slint-shell/scripts/install-gnome-extension.sh
+    dst: /usr/share/left-hand-control/install-gnome-extension.sh
+    file_info: { mode: 0755 }
   - src: "@BINARY@"
     dst: /usr/bin/left-hand-control
     file_info: { mode: 0755 }

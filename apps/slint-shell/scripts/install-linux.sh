@@ -26,7 +26,9 @@ metainfo="$prefix/share/metainfo/$app_id.metainfo.xml"
 icons="$prefix/share/icons/hicolor"
 icon_sizes='16 22 24 32 48 64 128 256 512'
 bundle_files="$binary LICENSE README.md features.md $app_id.desktop $app_id.metainfo.xml
-60-left-hand-control.rules modules-load.conf icons/scalable.svg"
+60-left-hand-control.rules modules-load.conf icons/scalable.svg install-gnome-extension.sh
+gnome-extension/left-hand-control@bozonx.dev/metadata.json
+gnome-extension/left-hand-control@bozonx.dev/extension.js"
 for size in $icon_sizes; do bundle_files="$bundle_files icons/$size.png"; done
 udev_rule=/etc/udev/rules.d/60-left-hand-control.rules
 modules_load=/etc/modules-load.d/left-hand-control.conf
@@ -54,6 +56,7 @@ case "${1:-install}" in
         for name in $bundle_files install-linux.sh; do
             rm -f -- "$app_dir/$name"
         done
+        rmdir -- "$app_dir/gnome-extension/left-hand-control@bozonx.dev" "$app_dir/gnome-extension"
         if [ -d "$app_dir/icons" ]; then rmdir -- "$app_dir/icons"; fi
         if [ -d "$app_dir" ]; then rmdir -- "$app_dir"; fi
         echo "Removed Left Hand Control from $prefix; configuration was retained."
@@ -100,7 +103,7 @@ for name in $bundle_files; do
         exit 1
     fi
 done
-mkdir -p -- "$app_dir/icons" "$prefix/bin" "$(dirname -- "$desktop")" "$(dirname -- "$metainfo")"
+mkdir -p -- "$app_dir/gnome-extension/left-hand-control@bozonx.dev" "$app_dir/icons" "$prefix/bin" "$(dirname -- "$desktop")" "$(dirname -- "$metainfo")"
 # Keep the installed executable path stable; replace its inode so a running
 # executable does not prevent an update.
 temporary_binary=$(mktemp "$app_dir/.$binary.XXXXXXXX")
@@ -114,6 +117,7 @@ for name in $bundle_files; do
         install -m 644 -- "$bundle_dir/$name" "$app_dir/$name"
     fi
 done
+chmod 755 -- "$app_dir/install-gnome-extension.sh"
 for size in $icon_sizes; do
     install -D -m 644 -- "$bundle_dir/icons/$size.png" "$icons/${size}x$size/apps/$app_id.png"
 done

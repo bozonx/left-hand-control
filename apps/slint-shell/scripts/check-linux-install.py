@@ -13,6 +13,8 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
     bundle = root / "bundle"
     bundle.mkdir()
     shutil.copy2(scripts / "install-linux.sh", bundle / "install-linux.sh")
+    shutil.copy2(scripts / "install-gnome-extension.sh", bundle / "install-gnome-extension.sh")
+    shutil.copytree(scripts.parents[2] / "crates/lhc-core/assets/gnome-extension", bundle / "gnome-extension")
     for name in ("LICENSE", "README.md", "features.md"):
         (bundle / name).write_text("fixture", encoding="utf-8")
     packaging = scripts.parent / "packaging/linux"
@@ -55,6 +57,25 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
         for size in (16, 22, 24, 32, 48, 64, 128, 256, 512)
     ]
     assert all(path.is_file() for path in installed)
+    extension_data = root / "gnome data"
+    extension_env = dict(env, XDG_DATA_HOME=str(extension_data),
+                         DBUS_SESSION_BUS_ADDRESS=f"unix:path={root}/absent-bus")
+    extension_script = app / "install-gnome-extension.sh"
+    extension_dir = extension_data / "gnome-shell/extensions/left-hand-control@bozonx.dev"
+    subprocess.run([str(extension_script)], env=extension_env, check=True,
+                   capture_output=True, timeout=10)
+    assert (extension_dir / "extension.js").read_bytes() == (bundle / "gnome-extension/left-hand-control@bozonx.dev/extension.js").read_bytes()
+    unrelated = extension_dir.parent / "unrelated"
+    unrelated.write_text("keep", encoding="utf-8")
+    subprocess.run([str(extension_script), "uninstall"], env=extension_env,
+                   check=True, capture_output=True, timeout=10)
+    assert not extension_dir.exists() and unrelated.read_text() == "keep"
+    extension_dir.symlink_to(root, target_is_directory=True)
+    refused = subprocess.run([str(extension_script)], env=extension_env,
+                             capture_output=True, timeout=10)
+    assert refused.returncode != 0
+    extension_dir.unlink()
+
     install()
     retained = prefix / "keep-user-data"
     retained.write_text("keep", encoding="utf-8")
@@ -73,4 +94,4 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
     assert refused.returncode != 0
     assert launcher.read_text(encoding="utf-8") == "unrelated"
 
-print("Linux installer passed: escaped paths, icons, metadata, launch, update, uninstall, unrelated files")
+print("Linux installer passed: escaped paths, icons, metadata, launch, update, uninstall, unrelated files, isolated GNOME extension and symlink refusal")

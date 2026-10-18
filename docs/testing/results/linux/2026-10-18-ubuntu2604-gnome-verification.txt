@@ -1,0 +1,110 @@
+Ubuntu 26.04 GNOME verification — STOP on critical tray startup failure
+Date: 2026-10-18
+Source: ed7343a + working-tree GNOME backend/extension, packaging and VM harness
+Environment: Ubuntu 26.04.1 LTS, GNOME Shell 50.1, Wayland, xdg-desktop-portal
+1.21.1+ds-1ubuntu3.1, portal-gnome 50.0-0ubuntu1; disposable KVM/QEMU VM,
+standard VGA (software graphics), 4 CPUs, 4 GiB RAM. Host: Manjaro/glibc 2.44.
+Base: /mnt/disk2/vm/lhc-ubuntu2604-gnome/base.qcow2 (powered off).
+Official Canonical cloud-image checksum verified before provisioning.
+No real host user configuration used by app tests.
+
+Implemented after user authorization:
+- Narrow GNOME Shell 50 D-Bus extension: stable per-instance window identities,
+  authenticated same-user API, caller-PID window activation, sources/events,
+  fixed system-action allowlist; no Shell.Eval or arbitrary code execution.
+- Core GNOME active-window/layout/system backend, cached text-target capture and
+  live identity validation; shell window activation integration.
+- Explicit extension installer, archive/deb/rpm resources, isolated installer
+  verification, disposable GNOME guest preparation and fail-fast VM runner.
+No new dependency, app IPC/CLI or on-disk configuration format changes.
+
+Final portable package:
+  target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+  SHA256 68254d31be21d5a6eff8e0d6b0d53951c0d914fab259a26ca14cd363086083bf
+Built on Ubuntu 22.04/glibc 2.35 with official Rust 1.99.1. Container image
+lhc-ubuntu2204-gnome-build:local; Dockerfile /tmp/lhc-gnome-build/Dockerfile.
+Commands/results:
+  docker run --rm --name lhc-gnome-portable-build -v "$PWD:/src" \
+    -v lhc-cargo-registry:/root/.cargo/registry \
+    lhc-ubuntu2204-gnome-build:local sh -c \
+    'getconf GNU_LIBC_VERSION; rustc --version; apps/slint-shell/scripts/package-linux.sh; result=$?; chown -R 1000:1000 /src/target/ubuntu-22.04; exit "$result"'
+    PASS, release build 8m13s, archive created.
+  docker run --rm -v "$PWD:/src:ro" lhc-ubuntu2204-gnome-build:local \
+    /src/target/ubuntu-22.04/release/left-hand-control --version
+    PASS: left-hand-control 0.3.0 (actual Ubuntu22.04 loader).
+  (cd target/ubuntu-22.04/packages && sha256sum -c left-hand-control-0.3.0-linux-x86_64.tar.gz.sha256)
+    PASS.
+Portable UI binaries built in the same container/cache:
+  cargo rustc --release --locked -p slint-shell --features spell --example editor -- -C opt-level=0
+  cargo rustc --release --locked -p slint-shell --features spell --example interactions -- -C opt-level=0
+  PASS builds (6m32s and 59.88s); final executable optimization disabled only
+  for test examples. Copied with strip --strip-debug to /tmp/lhc-gnome-portable-examples.
+  UI scenario execution NOT reached because acceptance stopped earlier.
+
+Host checks on final Rust source:
+  cargo fmt -p lhc-core -p slint-shell --check — PASS.
+  cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -j 1 -- -D warnings — PASS.
+  cargo test --locked --workspace --features slint-shell/spell -j 1 — PASS:
+    483 passed, 0 failed, 11 ignored (hardware/manual tests not executed).
+  cargo check --locked -p slint-shell --all-targets -j 1 — PASS (without Spell).
+  python3 apps/slint-shell/scripts/check-linux-install.py — PASS.
+  python3 -m py_compile apps/slint-shell/scripts/vm/linux-guest.py apps/slint-shell/scripts/vm/run-gnome.py — PASS.
+  node --check crates/lhc-core/assets/gnome-extension/left-hand-control@bozonx.dev/extension.js — PASS.
+  sh -n apps/slint-shell/scripts/install-gnome-extension.sh apps/slint-shell/scripts/install-linux.sh apps/slint-shell/scripts/package-linux.sh apps/slint-shell/scripts/vm/prepare-gnome-guest.sh — PASS.
+  git diff --check — PASS.
+Host logs: /tmp/lhc-gnome-{clippy-final,no-spell-verified,fmt-final,workspace-final}.log.
+
+Native bridge probes in the guest before base freeze — PASS:
+- Real us→ru→us Shell input source changes; stable window id and opt-in title.
+- Foreign PID activation and arbitrary Action denied; same-process GTK4 target
+  activation confirmed; overview yields no current text destination.
+- Native QMP keyboard c delivered to Zenity; disabled bridge inaccessible.
+Scripts/results: VM install/bridge-probe.py, bridge-probe.log,
+activation-probe.py, activation-probe.log, base-validation.log.
+These probes do NOT establish actual app mapper/text acceptance.
+
+Final acceptance command:
+  python3 -u apps/slint-shell/scripts/vm/run-gnome.py \
+    --vm /mnt/disk2/vm/lhc-ubuntu2604-gnome \
+    --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz \
+    --examples /tmp/lhc-gnome-portable-examples --keep
+Result: 9 steps passed, 1 failed; stopped, VM off, overlay kept.
+Detailed report: 2026-10-18-vm-ubuntu2604-gnome-3.txt.
+Logs/screenshots: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261018-182948/logs.
+Passed: boot/session, install/version, physical keyboard/config, app start
+without input permissions, no grab without permissions, quit, input permissions
++ relogin + live extension, autostart, mapper-start.
+FAILED: tray — item did not register within 20 seconds.
+
+Confirmed cause (journal.txt line 838, 21:30:31Z):
+  tray unavailable: failed to register to the StatusNotifierWatcher:
+  org.freedesktop.DBus.Error.ServiceUnknown: The name
+  org.kde.StatusNotifierWatcher was not provided by any .service files
+Afterward AppIndicators was enabled and its watcher had software-update items,
+but no lhc-slint-shell item. App tray::start uses ksni .spawn() once; on failure
+app logs the error and opens settings, with no retry. Thus early GNOME autostart
+permanently loses the tray for this process. This is an actual lifecycle issue,
+not evidence of failed evdev remapping. Existing fallback settings are preserved.
+
+Proposed next fix (NOT implemented because user requested stopping on failure):
+Use ksni's existing assume_sni_available(true) startup mode to survive absent
+watcher and register on its NameOwnerChanged; report watcher offline/online to
+the shell so a persistently missing tray host still opens settings. Alternatively,
+supervise bounded/backoff tray startup retries while retaining current settings
+fallback. No fixed autostart sleep and no new dependency needed. Validate delayed
+watcher startup, disappearance/reappearance, and permanently absent host, then
+repeat the full GNOME runner.
+
+NOT reached: UI editor/interactions execution, passthrough/remap/chord/layers,
+stop/restart input behavior, mapped system actions, command/game mode, portal
+ASCII/Unicode, quick-popup focus/text delivery, macro and popup IPC acceptance.
+Lock/suspend/replug/upgrade and multiple receiver applications also untested.
+Ubuntu GNOME is NOT accepted yet; no claim that mapper behavior passed.
+
+Earlier preparation attempts (history retained):
+- 2026-10-18-vm-ubuntu2604-gnome.txt used a host-local glibc2.44 binary against
+  guest2.43. Own build-context error, not app acceptance; corrected with the
+  documented Ubuntu22.04 portable build. Helper now rejects failed --version.
+- ...-2.txt SSH was killed during the intended user-session termination.
+  Harness now tolerates transient SSH loss while awaiting the new desktop.
+Neither preparation attempt establishes an app mapper failure.
