@@ -67,6 +67,9 @@ try {
     $server = Start-Process $exe -WorkingDirectory $root -PassThru `
         -RedirectStandardOutput (Join-Path $output 'stdout.log') `
         -RedirectStandardError (Join-Path $output 'stderr.log')
+    # Keep a process handle open: Windows PowerShell 5.1 can otherwise lose
+    # ExitCode when the process exits before WaitForExit acquires the handle.
+    $null = $server.Handle
     Wait-Until 'IPC readiness' {
         $ErrorActionPreference = 'Continue'
         & $exe ping 2>$null | Out-Null
@@ -74,6 +77,7 @@ try {
     }
     # Second launch must delegate to the existing process and terminate.
     $second = Start-Process $exe -WorkingDirectory $root -PassThru
+    $null = $second.Handle
     if (-not $second.WaitForExit(20000)) {
         Stop-Process -Id $second.Id -Force -ErrorAction SilentlyContinue
         throw 'Second instance did not delegate'

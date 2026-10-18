@@ -1,0 +1,36 @@
+Date: 2026-10-18
+Commit: 155682b with the Windows smoke process-handle fix
+
+PASSED: cargo fmt -p lhc-core -p slint-shell --check
+PASSED: CARGO_BUILD_JOBS=1 cargo test --locked --workspace --features slint-shell/spell
+  lhc-core: 393 passed, 2 ignored; game_mode_lifecycle: 1 passed.
+  slint-shell: 83 passed; standalone IPC integration target: 3 passed.
+  mapper_e2e: 9 ignored; remaining workspace and doc targets passed.
+PASSED: CARGO_BUILD_JOBS=1 cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASSED: CARGO_BUILD_JOBS=1 cargo check --locked -p slint-shell --all-targets
+PASSED: python3 -m py_compile apps/slint-shell/scripts/vm/run-windows.py
+PASSED: git diff --check
+
+Windows VM acceptance command:
+PASSED: python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite smoke
+  Windows 11 Enterprise Evaluation build 26200, interactive non-elevated session.
+  cargo/rustc 1.98.1, MSVC; winit-software; isolated debug configuration.
+  Native lhc-core library tests: 311 passed.
+  Native IPC integration tests: 2 passed, including delayed fragmented TCP input.
+  editor --smoke, interactions, help/version, second-instance delegation,
+  three show/hide cycles per popup, preferences and quit: passed.
+  Process handles are retained before exit; exit code must still be zero.
+  QEMU USB keyboard -> native WinForms receiver: abc -> abcX -> ok;
+  Ctrl+Home, Shift+End and key-down/up records including modifiers passed.
+  Host report: 2026-10-18-vm-windows11-4.txt (5 passed, 0 failed).
+  Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261018-154130/logs
+
+Earlier Linux graphical editor/interactions and Windows source-sync fixture
+checks are recorded in 2026-10-18-host-checks.txt. The earlier parallel workspace
+repeat was interrupted (exit 130) to relieve memory pressure; the final serial
+workspace run above completed successfully after the VM stopped.
+
+Scope: shell smoke and native keyboard baseline. Windows mapper interception,
+remapping and its lifecycle matrix are not accepted by this run. The full
+release/resource suite and physical Windows acceptance were not run. This turn
+did not run Linux evdev/uinput e2e or Fedora L4.

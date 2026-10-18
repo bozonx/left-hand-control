@@ -1,0 +1,22 @@
+Date: 2026-10-18 15:55:13 -0300
+Commit: 155682b (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: smoke
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261018-154130/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: smoke
+- smoke: passed
+- hardware-keyboard: passed (native input, Shift, Ctrl+Home, Shift+End, key release)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 768 files; Source sync: 14 updated, 35 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- windows-smoke: passed
+
+Passed: 5, failed: 0

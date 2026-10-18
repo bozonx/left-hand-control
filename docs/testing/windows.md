@@ -299,6 +299,7 @@ stale source files while keeping `target/`. Changed files receive extraction-tim
 timestamps so Cargo rebuilds them even if the host clock is behind the guest.
 Logs, metrics and UI scenario snapshots (`snapshots/*.ppm`) are collected under
 the run's `logs/guest/runtime/smoke` directory.
+Recorded successful run: [Windows 11 smoke, 2026-10-18](results/windows/2026-10-18-vm-windows11-4.txt).
 This is shell smoke coverage; mapper, tray appearance, focus return and Unicode
 insertion remain outside this suite.
 
