@@ -1,0 +1,29 @@
+Date: 2026-10-18
+Commit: 002a002 with uncommitted Windows smoke fixes
+Environment: Linux host, graphical Wayland session, winit-software
+
+PASSED: cargo fmt -p lhc-core -p slint-shell --check
+PASSED: cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASSED: cargo test --locked --workspace --features slint-shell/spell
+  lhc-core: 393 passed, 2 ignored; game_mode_lifecycle: 1 passed;
+  mapper_e2e: 9 ignored (real evdev/uinput tests were not requested here).
+  slint-shell: 82 passed; remaining workspace/doc targets passed.
+PASSED: cargo check --locked -p slint-shell --all-targets
+PASSED: LHC_EDITOR_SNAPSHOTS=/tmp/lhc-interactions-snapshots SLINT_BACKEND=winit-software cargo run --locked -p slint-shell --example interactions
+  Includes finding Long hold by its accessible spinbox label and clicking its actual bounds.
+PASSED: SLINT_BACKEND=winit-software cargo run --locked -p slint-shell --example editor -- --smoke
+PASSED: python3 -m py_compile apps/slint-shell/scripts/vm/run-windows.py
+PASSED: git diff --check
+
+These host checks do not accept the Windows mapper backend. Windows VM results
+are recorded separately; no Fedora L4 or physical Windows acceptance was run here.
+
+Windows source-sync fixture (same running Windows 11 VM, SSH):
+PASSED: python3 /tmp/lhc-test-win-sync.py
+PASSED: python3 /tmp/lhc-test-win-sync-inline.py
+  Executed the upload function's exact PowerShell sync block on an isolated
+  D:\lhc-e2e\sync-probe fixture, both via -File and inline SSH command.
+  Tar entries had old mtimes (1970); extraction restamped changed/new files.
+  Verified unchanged content retains its 2001 timestamp, changed content is
+  replaced, a new nested file is copied, stale source is removed, target/keep.txt
+  survives. Result: 2 updated, 1 removed. Temporary fixture removed afterwards.

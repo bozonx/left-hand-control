@@ -198,8 +198,11 @@ impl Server {
                     }
                 };
                 let timeout = Some(Duration::from_secs(1));
+                // Windows inherits nonblocking mode from the listener. Each
+                // accepted request uses blocking I/O with bounded timeouts.
                 if let Err(error) = stream
-                    .set_read_timeout(timeout)
+                    .set_nonblocking(false)
+                    .and_then(|()| stream.set_read_timeout(timeout))
                     .and_then(|()| stream.set_write_timeout(timeout))
                 {
                     log::warn!("IPC timeout: {error}");
@@ -415,6 +418,51 @@ mod tests {
         receive(&line("hide", None)[..], &dispatch, None).unwrap();
         assert_eq!(*seen.lock().unwrap(), [Command::Ping, Command::Hide]);
         assert!(receive(&b"not json\n"[..], &dispatch, None).is_err());
+    }
+
+    #[test]
+    fn accepted_connections_wait_for_fragmented_requests() {
+        #[cfg(unix)]
+        let dir = tempfile::tempdir().unwrap();
+        #[cfg(unix)]
+        let path = dir.path().join("ipc.sock");
+        #[cfg(unix)]
+        let listener = UnixListener::bind(&path).unwrap();
+        #[cfg(windows)]
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        #[cfg(windows)]
+        let address = listener.local_addr().unwrap();
+        let server = Server {
+            listener,
+            #[cfg(unix)]
+            path: path.clone(),
+            #[cfg(windows)]
+            token: "secret".into(),
+            stopped: Arc::new(AtomicBool::new(false)),
+            thread: Mutex::new(None),
+        };
+        let (dispatch, seen) = dispatch();
+        server.start(dispatch).unwrap();
+        #[cfg(unix)]
+        let mut stream = UnixStream::connect(path).unwrap();
+        #[cfg(windows)]
+        let mut stream = TcpStream::connect(address).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        // Let the server accept before bytes arrive, then split the JSON line
+        // across two writes. Neither accept nor the first fragment is a request.
+        std::thread::sleep(Duration::from_millis(100));
+        let payload = line("hide", Some("secret"));
+        let middle = payload.len() / 2;
+        stream.write_all(&payload[..middle]).unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(seen.lock().unwrap().is_empty());
+        stream.write_all(&payload[middle..]).unwrap();
+        let mut response = String::new();
+        BufReader::new(stream).read_line(&mut response).unwrap();
+        assert_eq!(response, "queued\n");
+        assert_eq!(*seen.lock().unwrap(), [Command::Hide]);
     }
 
     #[cfg(unix)]

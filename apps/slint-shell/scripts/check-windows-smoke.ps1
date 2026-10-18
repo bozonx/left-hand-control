@@ -15,7 +15,7 @@ if (Get-Process -Name 'left-hand-control' -ErrorAction SilentlyContinue) {
     throw 'Close the running application before smoke: Windows IPC shares an authentication token.'
 }
 $server = $null
-$variables = @('LHC_DEV_DIR', 'LHC_PORT', 'LHC_HOTKEYS', 'LHC_POPUPS', 'LHC_METRICS', 'SLINT_BACKEND')
+$variables = @('LHC_DEV_DIR', 'LHC_PORT', 'LHC_HOTKEYS', 'LHC_POPUPS', 'LHC_METRICS', 'SLINT_BACKEND', 'LHC_EDITOR_SNAPSHOTS')
 $saved = @{}
 foreach ($name in $variables) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 
@@ -49,6 +49,8 @@ $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Lo
 $listener.Start()
 $env:LHC_PORT = [string]$listener.LocalEndpoint.Port
 $listener.Stop()
+$env:LHC_EDITOR_SNAPSHOTS = Join-Path $output 'snapshots'
+New-Item -ItemType Directory -Force -Path $env:LHC_EDITOR_SNAPSHOTS | Out-Null
 $env:LHC_METRICS = Join-Path $output 'metrics.csv'
 Remove-Item $env:LHC_METRICS -ErrorAction SilentlyContinue
 Push-Location $root
@@ -56,6 +58,7 @@ try {
     if (-not $SkipBuild) {
         Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '--lib')
         Invoke-Checked 'cargo' @('build', '--locked', '-p', 'slint-shell', '--bin', 'left-hand-control', '--example', 'editor', '--example', 'interactions')
+        Invoke-Checked 'cargo' @('test', '--locked', '-p', 'slint-shell', '--test', 'ipc')
     }
     Invoke-Checked (Join-Path $root 'target\debug\examples\editor.exe') @('--smoke')
     Invoke-Checked (Join-Path $root 'target\debug\examples\interactions.exe') @()

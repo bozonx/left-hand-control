@@ -1,4 +1,4 @@
-# Windows mapper: подготовка и порядок реализации
+# Windows mapper: состояние реализации и приёмка
 
 Состояние: этапы 1–4 реализованы в коде (`mapper/windows/`, общий
 `mapper/output.rs`, `mapper/key_code.rs`, `mapper/scancode.rs`, `layout/windows.rs`)
@@ -25,28 +25,26 @@ SSH здесь служит для управления и чтения резу
 запускаются задачей планировщика в интерактивной сессии. Ввод через QMP проходит
 через эмулируемую USB-клавиатуру; `SendKeys` не заменяет этот входной путь.
 
-## Этапы реализации
+## Реализованные этапы и критерии приёмки
 
 ### 1. Общий движок без зависимости от evdev
 
-Сейчас `mapper/{engine,action,keys,validation,commands,system}` ограничены Linux,
-а движок и действия используют `evdev::KeyCode`. Сначала выделить внутренний
-тип физической клавиши и перехода down/up/repeat в `lhc-core` и адаптер evdev.
-Сохранить текущие строки `KeyboardEvent.code` в конфиге; формат файлов не менять.
-Перенести существующие тесты движка на общий тип, сохранив Linux проверки
-конвертации клавиш. Не подменять физическую клавишу символом текущей раскладки.
+Общий движок использует внутренний `mapper::key_code::KeyCode`; Linux адаптирует
+его к evdev, Windows — к scan codes. Строки `KeyboardEvent.code` и формат
+конфига сохранены. Общие тесты движка доступны на обеих платформах.
+При приёмке физическую клавишу нужно отличать от символа текущей раскладки.
 
 Критерий: общие тесты движка выполняются на Windows и Linux, а Fedora mapper
 проходит прежние remap, chord, layer, tap/hold, macro и stuck-key сценарии.
 
 ### 2. Минимальный Windows backend в ядре
 
-Добавить `mapper/windows/`, подключить через `mapper/runtime.rs`; shell получает
-состояние через существующий `CoreEvent`. Начать с session-wide passthrough,
+`mapper/windows/` подключён через `mapper/runtime.rs`; shell получает
+состояние через `CoreEvent`. Приёмку начать с session-wide passthrough,
 затем одной замены `KeyA -> KeyB` и подавления исходной клавиши. Отдельно
 проверить left/right modifiers, extended scan codes и repeat.
 
-Кандидат первого backend — `WH_KEYBOARD_LL` и `SendInput`. Hook требует message
+Backend использует `WH_KEYBOARD_LL` и `SendInput`. Hook требует message
 loop, может подавить событие и снимается системой при превышении timeout;
 синхронная часть callback должна быть короткой. Команды, текст и прочие медленные
 операции выполнять вне callback. [Контракт Microsoft](https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelkeyboardproc).
@@ -57,25 +55,25 @@ loop, может подавить событие и снимается сист�
 secure desktop. [Контракт SendInput](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput).
 
 Выбор отдельной физической клавиатуры — отдельное решение: текущий Linux API
-работает с устройствами, а hook-кандидат — с потоком сессии. Raw Input умеет
+работает с устройствами, а Windows hook — с потоком сессии. Raw Input умеет
 различать устройства, но сам по себе не заменяет подавляющий hook. Не показывать
 выбор устройства как работающую функцию до проверки нужной семантики.
 [Raw Input](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-raw-input).
 
 ### 3. Lifecycle и общие правила
 
-Подключить hot reload конфига, слои/tap-hold, chords, макросы, остановку и
-восстановление. Сохранять гарантии из [platforms.md](platforms.md#mapper-runtime-guarantees):
+Приёмка должна подтвердить hot reload конфига, слои/tap-hold, chords, макросы,
+остановку и восстановление, а также гарантии из [platforms.md](platforms.md#mapper-runtime-guarantees):
 отпускание удержанных клавиш, отмена макросов, отсутствие stale side effects,
 межпроцессная блокировка. Неподдерживаемые действия отклонять явно.
 
 ### 4. Layout, text и системные действия
 
-Добавлять по отдельным проверяемым возможностям: US/RU, Unicode, смена фокуса,
+Проверять по отдельным возможностям: US/RU, Unicode, смена фокуса,
 отмена text job, доступные `sys:` действия. Код popup-ввода не является готовым
 backend маппера; общую логику размещать в `lhc-core`.
 
-## Будущая Windows mapper e2e матрица
+## Windows mapper e2e матрица для приёмки
 
 | Шаг | Ожидаемый результат в нативном receiver |
 | --- | --- |
@@ -91,6 +89,6 @@ backend маппера; общую логику размещать в `lhc-core`
 | Replug / suspend / session change | явное состояние, восстановление и доступный native input |
 | Elevated target / secure desktop | отдельно зафиксированные ограничения backend |
 
-До реализации backend эти строки являются планом приёмки, а не пропущенными
-тестами с зелёным результатом. VM не заменяет финальную проверку на физическом
-Windows-компьютере с несколькими клавиатурами.
+Эти строки являются планом приёмки реализованного backend; успешные сборка
+и модульные тесты не подтверждают прохождение этой матрицы. VM не заменяет
+финальную проверку на физическом Windows-компьютере с несколькими клавиатурами.

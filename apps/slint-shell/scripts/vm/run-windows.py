@@ -5,7 +5,7 @@ session through the scheduled task LHC-E2E and collect the result.
 
 The default smoke suite covers debug UI scenarios, IPC, popups and shutdown.
 --suite full runs native tests, a release build and lifecycle/resource checks.
-The Windows mapper is not implemented.
+The Windows mapper backend exists; these suites do not accept its interception path.
 
 Usage: run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows [--show] [--keep]
 See docs/development/guide.md, "E2E в виртуальных машинах".
@@ -78,13 +78,42 @@ def main():
         count = source_archive(archive)
         ps(f"$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path {WORK}\\src, {WORK}\\out | Out-Null")
         vm.copy_to(archive, "D:/lhc-e2e/src.tar.gz")
-        # Keep target\ between runs: the cache disk makes rebuilds incremental.
-        # -m stamps files with the extraction time: host mtimes may predate
-        # the cached build on the guest clock, and cargo would skip the rebuild.
-        ps(f"$ErrorActionPreference = 'Stop'; Get-ChildItem {WORK}\\src -Force | Where-Object Name -ne 'target' | "
-           f"Remove-Item -Recurse -Force; tar -xmzf {WORK}\\src.tar.gz -C {WORK}\\src; "
-           "if ($LASTEXITCODE) { exit $LASTEXITCODE }")
-        return f"{count} files"
+        # Preserve timestamps only when content is identical. Restamping the
+        # whole tree rebuilds vendored Slint; keeping host timestamps can make
+        # Cargo miss edits that predate the guest's cached build.
+        synced = ps(f"""
+$ErrorActionPreference = 'Stop'
+$stage = '{WORK}\\incoming'
+$source = '{WORK}\\src'
+Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path $stage | Out-Null
+tar -xmzf {WORK}\\src.tar.gz -C $stage
+if ($LASTEXITCODE) {{ exit $LASTEXITCODE }}
+$updated = 0
+foreach ($file in Get-ChildItem $stage -Recurse -File) {{
+    $relative = $file.FullName.Substring($stage.Length + 1)
+    $destination = Join-Path $source $relative
+    if ((Test-Path -LiteralPath $destination -PathType Leaf) -and
+        (Get-FileHash -LiteralPath $file.FullName).Hash -eq (Get-FileHash -LiteralPath $destination).Hash) {{ continue }}
+    New-Item -ItemType Directory -Force -Path (Split-Path $destination) | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+    $updated++
+}}
+$removed = 0
+foreach ($entry in Get-ChildItem $source -Force | Where-Object Name -ne 'target') {{
+    $oldFiles = if ($entry.PSIsContainer) {{ Get-ChildItem $entry.FullName -Recurse -File -Force }} else {{ @($entry) }}
+    foreach ($file in $oldFiles) {{
+        $relative = $file.FullName.Substring($source.Length + 1)
+        if (-not (Test-Path -LiteralPath (Join-Path $stage $relative) -PathType Leaf)) {{
+            Remove-Item -LiteralPath $file.FullName -Force
+            $removed++
+        }}
+    }}
+}}
+Remove-Item $stage -Recurse -Force
+"Source sync: $updated updated, $removed removed"
+""", timeout=180)
+        return f"{count} files; {synced.strip()}"
 
     def keyboard_baseline():
         """Real QEMU USB input into a native edit control, without a mapper."""
@@ -132,7 +161,7 @@ def main():
         return "QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded"
 
     def run():
-        ps(f"$ErrorActionPreference = 'Stop'; Remove-Item {WORK}\\out\\done.txt -ErrorAction SilentlyContinue; "
+        ps(f"$ErrorActionPreference = 'Stop'; Remove-Item {WORK}\\out\\* -Recurse -Force -ErrorAction SilentlyContinue; "
            f"Set-Content {WORK}\\suite.txt -Value {args.suite}; "
            "Start-ScheduledTask -TaskName LHC-E2E")
         def done():

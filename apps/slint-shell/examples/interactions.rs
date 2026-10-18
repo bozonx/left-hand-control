@@ -21,6 +21,42 @@ fn snapshot(ui: &SettingsWindow, name: &str) {
     }
 }
 
+// Resolve the actual field bounds: font metrics and window decorations differ
+// across desktops, so a fixed click position can miss the input entirely.
+fn numeric_field_position(ui: &SettingsWindow, label: &str) -> slint::LogicalPosition {
+    use i_slint_core::{
+        accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
+        window::WindowInner,
+    };
+    let mut pending = vec![ItemRc::new_root(
+        WindowInner::from_pub(ui.window()).component(),
+    )];
+    let mut matches = Vec::new();
+    while let Some(item) = pending.pop() {
+        if item.is_visible()
+            && item.accessible_role() == AccessibleRole::Spinbox
+            && item
+                .accessible_string_property(AccessibleStringProperty::Label)
+                .as_deref()
+                == Some(label)
+        {
+            let center = item.map_to_window(item.geometry().center());
+            matches.push(slint::LogicalPosition::new(center.x, center.y));
+        }
+        let mut child = item.first_child();
+        while let Some(next) = child {
+            child = next.next_sibling();
+            pending.push(next);
+        }
+    }
+    assert_eq!(
+        matches.len(),
+        1,
+        "expected one visible numeric field: {label}"
+    );
+    matches[0]
+}
+
 fn check_first_layout_activation() -> Result<(), Box<dyn std::error::Error>> {
     for automatic in [false, true] {
         let dir = tempfile::tempdir()?;
@@ -730,7 +766,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             28 => {
                 snapshot(&ui, "settings-behavior");
-                let position = slint::LogicalPosition::new(490.0, 644.0);
+                let position = numeric_field_position(&ui, "Long hold");
                 let wheel = |delta_y| ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
                 let duration = || ui.global::<SettingsEditor>().get_long_hold_timeout().parse::<u64>().unwrap();
                 assert_eq!(duration(), 2500);

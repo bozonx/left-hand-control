@@ -284,7 +284,8 @@ python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows-vm --su
 ```
 
 After the one-time VM preparation, it runs native `lhc-core` library tests, builds
-the current working tree and runs
+the current working tree, runs the IPC regression tests (including a delayed,
+fragmented socket request) and runs
 `editor --smoke`, `interactions`, CLI help/version, single-instance delegation,
 three show/hide cycles for each popup, theme/language commands and shutdown.
 Popup checks wait for `t2_shown` and `hidden` metrics rather than only IPC replies.
@@ -293,7 +294,11 @@ Run with no other application instance: Windows IPC authentication uses a shared
 The VM smoke also opens the native receiver after application checks: QMP sends
 `abc`, Shift+X, Ctrl+Home, Shift+End and `ok`; the host compares text and key-down/up records.
 The receiver selects its installed English (US) input language and must be focused.
-Logs and metrics are collected under the run's `logs/guest/runtime/smoke` directory.
+Source upload compares file hashes, preserves unchanged timestamps and removes
+stale source files while keeping `target/`. Changed files receive extraction-time
+timestamps so Cargo rebuilds them even if the host clock is behind the guest.
+Logs, metrics and UI scenario snapshots (`snapshots/*.ppm`) are collected under
+the run's `logs/guest/runtime/smoke` directory.
 This is shell smoke coverage; mapper, tray appearance, focus return and Unicode
 insertion remain outside this suite.
 
