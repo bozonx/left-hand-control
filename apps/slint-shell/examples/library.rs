@@ -182,7 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     theirs.description = Some("Theirs".into());
     let theirs = layout_file::serialize(&theirs);
     let disk = paths.load_user_layout("Copy")?;
-    paths.save_user_layout("Copy", &format!("# comment\n{disk}"), true)?;
+    paths.save_user_layout("Copy", &format!("\n{disk}\n"), true)?;
     describe("Formatting")?;
     library.invoke_save_current();
     assert_eq!(library.get_dialog(), LibraryDialog::None);

@@ -500,8 +500,10 @@ def cmd_fake_game(args):
         subprocess.run(["systemctl", "--user", "stop", unit], capture_output=True)
         return
     path = WORK / FAKE_GAME
-    shutil.copy2(shutil.which("sleep"), path)
-    systemd_run(unit, [str(path), "600"], WORK / "fake-game.log")
+    # Multicall coreutils dispatch by argv[0] and cannot run renamed as a game.
+    shutil.copy2(sys.executable, path)
+    systemd_run(unit, [str(path), "-c", "import time; time.sleep(600)"],
+                WORK / "fake-game.log")
 
 
 def cmd_command_marker(args):

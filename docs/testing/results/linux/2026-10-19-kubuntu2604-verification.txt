@@ -1,0 +1,189 @@
+Kubuntu 26.04 LTS — итог проверки 2026-10-19
+
+Приёмка НЕ пройдена: остаются два дефекта приложения.
+Среда: Ubuntu 26.04.1 LTS + kubuntu-desktop, Plasma/KWin 6.6.6, Wayland,
+ядро 7.0.0-38-generic, KVM/QEMU. Проверка установщика Kubuntu ISO не выполнялась.
+
+Итоги:
+- fmt, clippy, workspace tests (486), сборка без Spell: PASS.
+- evdev → engine → uinput: все 9 тестов PASS.
+- Все 12 UI-сценариев PASS после исправления сценария library;
+  undo-redo требует реального события ввода для буфера обмена Wayland.
+- Восстановление конфига после перезапуска (Spell/winit), preferences,
+  перезапуск упавшего Spell worker: все 4 проверки PASS.
+- Полный финальный L4 архива: 39 PASS, 2 FAIL.
+- Установка/переустановка/удаление .deb также проверены.
+
+Открытые дефекты:
+1. Ctrl+Alt+F11 переключает Plasma на VT11 вместо штатной работы Emoji.
+2. После переподключения USB-клавиатуры mapper сам не восстанавливается;
+   нативный ввод работает, ручной перезапуск mapper помогает.
+
+Исправлены четыре проблемы самих проверок: переименованный multicall sleep,
+PATH архивного бинарника, невалидный # comment в JSON, ожидание удалённого
+горячего перечитывания конфига. Продуктовый код не менялся.
+
+Финальные отчёты:
+  2026-10-19-vm-kubuntu2604-3.txt — L4, 39/2
+  2026-10-19-vm-kubuntu2604-ui.txt — первоначальные UI-сценарии
+  2026-10-19-vm-kubuntu2604-ui-recheck.txt — перепроверка library/undo-redo
+  2026-10-19-vm-kubuntu2604-shell-2.txt — проверки оболочки, 5/0 с учётом сессии
+
+Ниже — точные команды, результаты, диагностическая история и ограничения.
+
+Kubuntu 26.04 LTS verification
+Date: 2026-10-19
+Source: 3d77afd (clean working tree at start)
+Host: Manjaro Linux, KVM/QEMU. Host configs were not used.
+
+Host commands/results:
+PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASS cargo test --locked --workspace --features slint-shell/spell
+     486 passed, 0 failed, 12 ignored (399+1+83+3 passed).
+     Log: /tmp/lhc-kubuntu-workspace-tests.log
+PASS cargo check --locked -p slint-shell --all-targets
+     Log: /tmp/lhc-kubuntu-no-spell.log
+PASS cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+     All 9 passed; log: /tmp/lhc-kubuntu-mapper-e2e.log
+PASS cargo build --locked -p slint-shell --features spell --examples --bins
+PASS python3 apps/slint-shell/scripts/check-linux-install.py
+Native apps/slint-shell/scripts/package-linux.sh was stopped deliberately:
+it would link against the host glibc 2.44; guest needs the portable build below.
+
+Portable package (Ubuntu 22.04 build image, unchanged source):
+PASS docker run --rm --name lhc-kubuntu-build -v "$PWD:/src" -v lhc-cargo-registry:/root/.cargo/registry lhc-ubuntu2204-gnome-build:local sh -c 'apps/slint-shell/scripts/package-linux.sh; result=$?; chown -R 1000:1000 /src/target/ubuntu-22.04; exit "$result"'
+     Log: /tmp/lhc-kubuntu-portable-build.log
+PASS VERSION=0.3.0 /tmp/lhc-kubuntu-tools/nfpm package -f /tmp/lhc-kubuntu-tools/nfpm.yaml -p deb -t target/kubuntu-verification/left-hand-control_0.3.0_amd64.deb
+     nfpm 2.47.0, repository nfpm.yaml with binary/changelog placeholders filled.
+     SHA256 deb: 0ac4cccc8591afb05f6d3cfbaac5ee60289be40ba2fb22e639cc390b422aec11
+     SHA256 tar.gz: 25cc96b31622cfae1a4d601100c0a440e157ca21b2dc6b128046a08c958aa022
+
+VM preparation:
+/mnt/disk2/vm/lhc-kubuntu2604, SSH port 2234, 4 vCPUs, 6 GiB RAM, standard VGA.
+Independent disk created from the existing verified Ubuntu 26.04 cloud image,
+then installed kubuntu-desktop and linux-generic from the official Ubuntu repos.
+This verifies the Kubuntu package environment, not installation using Kubuntu ISO.
+Guest packages: kubuntu-desktop 1.496, Plasma/KWin/portal-kde 6.6.6.
+Desktop install and setup logs retained inside guest and copied to VM install/.
+Temporary SSH interruption during package unpack/configure recovered automatically.
+
+Corrections to test scenarios only (no product, dependency, config or IPC changes):
+- linux-guest.py: fake game uses a renamed Python interpreter, not renamed sleep.
+  Ubuntu Rust multicall coreutils rejected the old name: "unknown program lhc-fake-game".
+  Full archive run confirmed game Off/On/Auto idle/running/exited after the correction.
+- run-linux.py: use ~/.local/bin/left-hand-control for archive-only SSH commands;
+  the noninteractive SSH PATH in this guest omits ~/.local/bin.
+- examples/library.rs: formatting-only edit uses valid JSON whitespace instead of
+  a YAML-style # comment rejected by the current JSON-only layout parser.
+
+Final host checks after scenario edits:
+PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASS cargo test --locked --workspace --features slint-shell/spell (486 pass, 12 ignored)
+PASS cargo check --locked -p slint-shell --all-targets
+PASS python3 -m py_compile apps/slint-shell/scripts/vm/linux-guest.py apps/slint-shell/scripts/vm/run-linux.py
+PASS git diff --check
+Logs: /tmp/lhc-kubuntu-final-{clippy,tests,no-spell}.log
+
+Portable UI example build:
+PASS docker run --rm --name lhc-kubuntu-examples -v "$PWD:/src" -v lhc-cargo-registry:/root/.cargo/registry lhc-ubuntu2204-gnome-build:local sh -c 'cargo build --release --locked -p slint-shell --features spell --examples -j 2; result=$?; chown -R 1000:1000 /src/target/ubuntu-22.04; exit "$result"'
+PASS docker run --rm --name lhc-kubuntu-library -v "$PWD:/src" -v lhc-cargo-registry:/root/.cargo/registry lhc-ubuntu2204-gnome-build:local sh -c 'cargo build --release --locked -p slint-shell --features spell --example library; result=$?; chown -R 1000:1000 /src/target/ubuntu-22.04; exit "$result"'
+Second command rebuilt the corrected library example.
+
+Initial L4 (.deb):
+python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package target/kubuntu-verification/left-hand-control_0.3.0_amd64.deb --keep
+38 pass, 3 fail. Two application failures: emoji-hotkey and keyboard-replug.
+Third failure was the old fake-game fixture. Source binary is unchanged; corrected
+fake-game behavior is covered by subsequent archive runs.
+Report: 2026-10-19-vm-kubuntu2604.txt
+Artifacts: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-160411/logs
+
+Initial UI run:
+python3 -u /tmp/lhc-kubuntu-ui.py
+A disposable Vm from vmlib.py; copied the portable examples and ran each as:
+systemd-run --user --wait --pipe --collect --unit=lhc-ui-<example> --setenv=SLINT_BACKEND=winit-software --setenv=LHC_EDITOR_SNAPSHOTS=/home/tester/lhc-ui/screenshots --setenv=SNAP=/home/tester/lhc-ui/screenshots/conditions.ppm timeout 180 /home/tester/lhc-ui/bin/<example> [--smoke for editor]
+10 examples pass, 2 fail (library fixture above and undo-redo clipboard assertion).
+Mandatory editor --smoke and interactions PASS. Other passes: action-picker, macros,
+menus, inline-edit, drag-scroll, notifications, conditions, layer-keys.
+Session check also PASS (report total: 11 pass, 2 fail).
+Report: 2026-10-19-vm-kubuntu2604-ui.txt
+Artifacts: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-161207/logs
+Snapshots in screenshots.tar.gz; inspected keyboard-ru and game-mode-on-light.
+The Qt version command in initial preparation used SSH without a display and
+aborted; rerun with QT_QPA_PLATFORM=offscreen in UI environment.txt succeeded.
+This was a diagnostic invocation, not the running Plasma shell.
+
+First archive L4 (before the SSH-path correction):
+python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+38 pass, 3 fail: two application defects plus emoji-ipc using the old PATH lookup.
+Report: 2026-10-19-vm-kubuntu2604-2.txt
+
+UI recheck:
+python3 -u /tmp/lhc-kubuntu-ui-recheck.py
+PASS library with valid formatting-only JSON edit.
+PASS undo-redo with real QMP Shift events during startup (12 taps, delay 0.05s).
+The original fully synthetic run lacked a Wayland input serial for clipboard
+ownership; after real input, all clipboard/undo/redo assertions passed unchanged.
+Total unique UI scenarios passed: 12, including editor --smoke and interactions.
+Report: 2026-10-19-vm-kubuntu2604-ui-recheck.txt (3 pass including session, 0 fail)
+Artifacts: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-162138/logs
+The ad hoc VM drivers are preserved for reproduction in:
+/mnt/disk2/vm/lhc-kubuntu2604/install/verification-drivers/
+
+Shell lifecycle checks:
+python3 -u /tmp/lhc-kubuntu-shell-checks.py
+VM uses SSH port 2235, 2 vCPU, 3 GiB RAM; each test runs in its Plasma Wayland
+user manager with systemd-run --user --wait --pipe. Commands inside the guest:
+  python3 /home/tester/lhc-checks/check-recovery.py --binary /home/tester/lhc-checks/lhc-kubuntu-release-test.sh --popups spell
+  python3 /home/tester/lhc-checks/check-recovery.py --binary /home/tester/lhc-checks/lhc-kubuntu-release-test.sh --popups winit
+  LHC_BIN=/home/tester/lhc-checks/lhc-kubuntu-release-test.sh python3 /home/tester/lhc-checks/check-preferences.py
+  python3 /home/tester/lhc-checks/check-worker-crash.py /home/tester/lhc-checks/lhc-kubuntu-release-test.sh
+The wrapper only maps LHC_DEV_DIR to temporary release XDG config/data paths;
+otherwise it execs the identical portable release binary.
+Initial run: preferences and worker crash PASS; recovery timed out on both backends
+because the old script waited for removed configuration hot-reload behavior.
+Repository persistence rules require restarting after manual config edits. Updated
+check-recovery.py to quit, restart with repaired JSON, require readiness without
+configuration errors, then verify popup delivery and Spell worker restart.
+Also clarified this in docs/development/guide.md.
+Final rerun: all four checks PASS (report 5 pass including session, 0 fail).
+Report: 2026-10-19-vm-kubuntu2604-shell-2.txt
+Initial diagnostic report retained: 2026-10-19-vm-kubuntu2604-shell.txt
+Logs: /tmp/lhc-kubuntu-shell-checks-final.log
+
+Limits:
+- Kubuntu ISO installer was not exercised; this is the full kubuntu-desktop package
+  environment on the official Ubuntu 26.04.1 cloud image, with Plasma Wayland.
+- L5 real-hardware acceptance (physical keyboard, monitors, driver-specific sleep)
+  was not run. QEMU USB replug and S3 were exercised.
+- No previous-version upgrade: no old release package or release tags available.
+  Same-version reinstall over a running app was exercised for deb and archive.
+- Live Preview was not enabled (not part of release acceptance).
+
+Final L4 command (corrected fixtures, identical release binary):
+python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+Log: /tmp/lhc-kubuntu-archive-final-l4.log
+Artifacts: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-162213/logs
+Final shell artifacts: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-162551/logs
+
+Open application defects (reproduced across deb and archive runs):
+1. emoji-hotkey: Ctrl+Alt+F11 switches from Plasma VT1 to VT11. Expected Emoji
+   popup and insertion of 🙂 into the receiver. The harness returns to VT1.
+   IPC show emoji and app: quick-menu insertion both PASS, narrowing this to the
+   global-hotkey path. The evdev hotkey listener observes events without consuming
+   them; investigate coordinated interception in the grabbed mapper input path.
+   See emoji-hotkey.png and journal.txt in the L4 artifacts.
+2. keyboard-replug: after QMP disconnect/reconnect of the same USB keyboard/port,
+   mapper does not resume within 20 seconds. Native input remains available (adc);
+   toggle-mapper restarts mapping. Device closure is logged as ENODEV. Expected
+   automatic recovery without manual restart. See after-replug/replug-native
+   screenshots and journal.txt.
+These defects were recorded, not fixed in the product. This task changed only
+verification scenarios and documentation. Kubuntu acceptance is NOT GREEN.
+
+Cleanup: test VMs shut down; reusable base image and vm.json remain outside the
+repository. No build artifacts, VM disks, caches, dependencies or personal host
+config are included in the source changes. No commit was created.
+
+Final L4 result: 39 passed, 2 failed. Report: 2026-10-19-vm-kubuntu2604-3.txt

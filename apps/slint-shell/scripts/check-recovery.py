@@ -62,7 +62,16 @@ with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
             wait_for(lambda: "ready; backend=" in log_text(), "IPC readiness")
             assert "configuration unavailable" in log_text()
             config.write_text('{"version":1,"settings":{}}', encoding="utf-8")
-            wait_for(lambda: "configuration recovered" in log_text(), "configuration recovery")
+            # Manual config edits are loaded at startup, including repairs.
+            send("quit")
+            process.wait(timeout=10)
+            assert process.returncode == 0, log_text()
+            restart_log_start = len(log_text())
+            process = subprocess.Popen([binary], env=env, stdout=output,
+                                       stderr=subprocess.STDOUT, start_new_session=True)
+            wait_for(lambda: "ready; backend=" in log_text()[restart_log_start:],
+                     "restart with repaired configuration")
+            assert "configuration unavailable" not in log_text()[restart_log_start:]
             send("show", "quick", "1")
             wait_for(lambda: shown("quick"), "quick popup")
             send("hide")
@@ -88,7 +97,7 @@ with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
             process.wait(timeout=10)
             assert process.returncode == 0, log_text()
             assert "panicked" not in log_text(), log_text()
-            print(f"Slint recovery passed ({args.popups}): configuration retry and popup delivery")
+            print(f"Slint recovery passed ({args.popups}): repaired configuration after restart and popup delivery")
             if args.live_preview:
                 print("Live Preview passed: UI reload, IPC callbacks and clean shutdown")
         finally:

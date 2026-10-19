@@ -1,0 +1,82 @@
+Date: 2026-10-19 16:25:05 -0300
+Commit: 3d77afd (with uncommitted changes)
+VM: Kubuntu 26.04.1 / Plasma 6.6.6 Wayland
+Logs: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-162329/logs
+Portable release binary; wrapper maps LHC_DEV_DIR to temporary XDG directories for the debug-oriented recovery script.
+
+- plasma-session: passed — wayland
+- recovery-spell: FAILED — `systemd-run --user --wait --pipe --collect --unit=lhc-check-recovery-spell --setenv=LHC_BIN=/home/tester/lhc-checks/lhc-kubuntu-release-test.sh --setenv=LHC_HOTKEYS=off --setenv=XDG_CONFIG_HOME=/home/tester/lhc-checks/config --setenv=XDG_DATA_HOME=/home/tester/lhc-checks/data python3 /home/tester/lhc-checks/check-recovery.py --binary /home/tester/lhc-checks/lhc-kubuntu-release-test.sh --popups spell` exited with 1:
+  raise AssertionError(f"Timed out waiting for {description}\n{log_text()}")
+AssertionError: Timed out waiting for configuration recovery
+[2026-10-19T19:24:00Z WARN  slint_shell::app] configuration unavailable: parse config: config.json: key must be a string at line 1 column 2
+[2026-10-19T19:24:00Z INFO  slint_shell::metrics] settings ready at 104.898 ms
+[2026-10-19T19:24:00Z INFO  slint_shell::metrics] emoji ready at 105.380 ms
+[2026-10-19T19:24:00Z INFO  slint_shell::metrics] quick ready at 105.488 ms
+[2026-10-19T19:24:00Z WARN  slint_shell::app::popups] settings rendering notifier unavailable: Unsupported
+[2026-10-19T19:24:00Z WARN  slint_shell::app::popups] emoji rendering notifier unavailable: Unsupported
+[2026-10-19T19:24:00Z WARN  slint_shell::app::popups] quick rendering notifier unavailable: Unsupported
+[2026-10-19T19:24:00Z INFO  slint_shell::app] ready; backend=Ok("winit-software")
+[32m INFO[0m Setting keyboard capability
+[2026-10-19T19:24:01Z INFO  slint_shell::metrics] tray ready at 212.143 ms
+[2026-10-19T19:24:01Z INFO  slint_shell::app::popups] show settings, source=button, activation_token=false
+[32m INFO[0m Setting pointer capability
+[32m INFO[0m Evaluated width: 480, evaluated_height: 350
+[32m INFO[0m Win: lhc-slint-emoji layer created successfully.
+[32m INFO[0m Win: input region removed: [x: 0, y: 0, width: 480, height: 350]
+[32m INFO[0m Win: Hiding window
+[2026-10-19T19:24:01Z INFO  slint_shell::metrics] emoji ready at 164.482 ms
+[32m INFO[0m Setting keyboard capability
+[32m INFO[0m Setting pointer capability
+[32m INFO[0m Evaluated width: 780, evaluated_height: 350
+[32m INFO[0m Win: lhc-slint-quick layer created successfully.
+[32m INFO[0m Win: input region removed: [x: 0, y: 0, width: 780, height: 350]
+[32m INFO[0m Win: Hiding window
+[32m INFO[0m Setting keyboard capability
+[32m INFO[0m Setting pointer capability
+[32m INFO[0m Evaluated width: 1290, evaluated_height: 330
+[32m INFO[0m Win: lhc-slint-layer-hint layer created successfully.
+[32m INFO[0m Win: input region removed: [x: 0, y: 0, width: 1290, height: 330]
+[32m INFO[0m Win: Hiding window
+[2026-10-19T19:24:01Z INFO  slint_shell::metrics] quick ready at 228.378 ms
+[2026-10-19T19:24:01Z INFO  slint_shell::spell] Spell ready: overlay, bottom center, margin=24, exclusive_zone=0, keyboard=exclusive, output=Err(NotPresent)
+[2026-10-19T19:24:01Z INFO  slint_shell::platform::linux::backend] popup backend=spell/skia-software; worker pid=2449
+[2026-10-19T19:24:01Z WARN  sctk_adwaita::buttons] Ignoring unknown button type: icon
+[2026-10-19T19:24:01Z WARN  sctk_adwaita::buttons] Ignoring unknown button type: icon
+[2026-10-19T19:24:01Z INFO  slint_shell::spell] preferences applied: dark=true, english=true, visible=None
+
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 25.597s
+             CPU time consumed: 1.103s
+                   Memory peak: 28.2M (swap: 0B)
+- recovery-winit: FAILED — `systemd-run --user --wait --pipe --collect --unit=lhc-check-recovery-winit --setenv=LHC_BIN=/home/tester/lhc-checks/lhc-kubuntu-release-test.sh --setenv=LHC_HOTKEYS=off --setenv=XDG_CONFIG_HOME=/home/tester/lhc-checks/config --setenv=XDG_DATA_HOME=/home/tester/lhc-checks/data python3 /home/tester/lhc-checks/check-recovery.py --binary /home/tester/lhc-checks/lhc-kubuntu-release-test.sh --popups winit` exited with 1:
+Running as unit: lhc-check-recovery-winit.service; invocation ID: 984ffaa6813b45c6bb4ceda363e75e3f
+Traceback (most recent call last):
+  File "/home/tester/lhc-checks/check-recovery.py", line 65, in <module>
+    wait_for(lambda: "configuration recovered" in log_text(), "configuration recovery")
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tester/lhc-checks/check-recovery.py", line 48, in wait_for
+    raise AssertionError(f"Timed out waiting for {description}\n{log_text()}")
+AssertionError: Timed out waiting for configuration recovery
+[2026-10-19T19:24:26Z WARN  slint_shell::app] configuration unavailable: parse config: config.json: key must be a string at line 1 column 2
+[2026-10-19T19:24:26Z INFO  slint_shell::metrics] settings ready at 62.058 ms
+[2026-10-19T19:24:26Z INFO  slint_shell::metrics] emoji ready at 62.153 ms
+[2026-10-19T19:24:26Z INFO  slint_shell::metrics] quick ready at 62.202 ms
+[2026-10-19T19:24:26Z WARN  slint_shell::app::popups] settings rendering notifier unavailable: Unsupported
+[2026-10-19T19:24:26Z WARN  slint_shell::app::popups] emoji rendering notifier unavailable: Unsupported
+[2026-10-19T19:24:26Z WARN  slint_shell::app::popups] quick rendering notifier unavailable: Unsupported
+[2026-10-19T19:24:26Z INFO  slint_shell::app] ready; backend=Ok("winit-software")
+[2026-10-19T19:24:26Z INFO  slint_shell::metrics] tray ready at 84.372 ms
+[2026-10-19T19:24:26Z INFO  slint_shell::app::popups] show settings, source=button, activation_token=false
+[2026-10-19T19:24:26Z WARN  sctk_adwaita::buttons] Ignoring unknown button type: icon
+[2026-10-19T19:24:26Z WARN  sctk_adwaita::buttons] Ignoring unknown button type: icon
+
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 25.324s
+             CPU time consumed: 721ms
+                   Memory peak: 21.5M (swap: 0B)
+- preferences: passed — exit 0
+- worker-crash: passed — exit 0
+
+Passed: 3, failed: 2

@@ -67,6 +67,7 @@ def main():
 
     archive = package.name.endswith(".tar.gz")
     installer = "~/.local/lib/dev.bozonx.left-hand-control/install-linux.sh"
+    binary = "~/.local/bin/left-hand-control" if archive else "left-hand-control"
 
     def install(key="install", path=None):
         if archive:
@@ -241,7 +242,7 @@ def main():
 
     def emoji_ipc():
         def show():
-            vm.ssh("left-hand-control show emoji")
+            vm.ssh(f"{binary} show emoji")
             time.sleep(2.5)
             vm.qmp.tap("q")
             time.sleep(3)
@@ -358,12 +359,12 @@ def main():
         guest("start-app")
         guest("quit-app")
         state["previous_config"] = vm.ssh(f"sha256sum {CONFIG}")
-        return vm.ssh("left-hand-control --version").strip()
+        return vm.ssh(f"{binary} --version").strip()
 
     def upgrade_from_previous():
-        before = vm.ssh("left-hand-control --version").strip()
+        before = vm.ssh(f"{binary} --version").strip()
         vm.ssh(vm.get("install").format(package=guest_package))
-        after = vm.ssh("left-hand-control --version").strip()
+        after = vm.ssh(f"{binary} --version").strip()
         if after == before:
             raise StepFailed(f"the version did not change: {after}")
         if vm.ssh(f"sha256sum {CONFIG}") != state["previous_config"]:

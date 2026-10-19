@@ -1,0 +1,45 @@
+Date: 2026-10-19 16:14:10 -0300
+Commit: 3d77afd (with uncommitted changes)
+VM: Kubuntu 26.04.1 LTS / Plasma 6.6.6 Wayland
+Logs: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-161207/logs
+Portable release examples from current source; temporary configs.
+
+- plasma-session: passed — wayland
+- editor: passed — exit 0
+- interactions: passed — exit 0
+- library: FAILED — `systemd-run --user --wait --pipe --collect --unit=lhc-ui-library --setenv=SLINT_BACKEND=winit-software --setenv=LHC_EDITOR_SNAPSHOTS=/home/tester/lhc-ui/screenshots --setenv=SNAP=/home/tester/lhc-ui/screenshots/conditions.ppm timeout 180 /home/tester/lhc-ui/bin/library` exited with 101:
+Running as unit: lhc-ui-library.service; invocation ID: 30c8f9be24da4ec2b8b12f9cc2ea35c8
+
+thread 'main' (2814) panicked at apps/slint-shell/examples/library.rs:188:5:
+assertion `left == right` failed
+  left: Conflict
+ right: None
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=101/n/a
+               Service runtime: 73ms
+             CPU time consumed: 65ms
+                   Memory peak: 5.8M (swap: 0B)
+- action-picker: passed — exit 0
+- macros: passed — exit 0
+- menus: passed — exit 0
+- undo-redo: FAILED — `systemd-run --user --wait --pipe --collect --unit=lhc-ui-undo-redo --setenv=SLINT_BACKEND=winit-software --setenv=LHC_EDITOR_SNAPSHOTS=/home/tester/lhc-ui/screenshots --setenv=SNAP=/home/tester/lhc-ui/screenshots/conditions.ppm timeout 180 /home/tester/lhc-ui/bin/undo-redo` exited with 101:
+Running as unit: lhc-ui-undo-redo.service; invocation ID: 4513a33275b94cd18004dd0384e08532
+
+thread 'main' (3318) panicked at apps/slint-shell/examples/undo-redo.rs:186:5:
+assertion `left == right` failed
+  left: "abc"
+ right: "вставка🙂"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=101/n/a
+               Service runtime: 439ms
+             CPU time consumed: 241ms
+                   Memory peak: 7.4M (swap: 0B)
+- inline-edit: passed — exit 0
+- drag-scroll: passed — exit 0
+- notifications: passed — exit 0
+- conditions: passed — exit 0
+- layer-keys: passed — exit 0
+
+Passed: 11, failed: 2

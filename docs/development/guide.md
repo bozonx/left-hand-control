@@ -220,7 +220,7 @@ cargo check --locked -p slint-shell --all-targets              # сборка б
 
 | Команда | Что проверяет |
 | --- | --- |
-| `python3 apps/slint-shell/scripts/check-recovery.py --popups spell` | Восстановление конфига и доставку попапа после перезапуска Spell (`--popups winit`; `--live-preview` — перезагрузку `.slint`) |
+| `python3 apps/slint-shell/scripts/check-recovery.py --popups spell` | Восстановление исправленного конфига после перезапуска приложения и доставку попапа после перезапуска Spell (`--popups winit`; `--live-preview` — перезагрузку `.slint`) |
 | `python3 apps/slint-shell/scripts/check-preferences.py` | Смену темы и языка по IPC при открытых попапах, штатный `quit` |
 | `python3 apps/slint-shell/scripts/check-worker-crash.py target/debug/left-hand-control` | Перезапуск упавшего Spell worker |
 | `python3 apps/slint-shell/scripts/check-linux-install.py` | Инсталлятор архива во временном префиксе (нужен `desktop-file-validate`) |

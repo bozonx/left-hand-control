@@ -1,0 +1,51 @@
+Date: 2026-10-19 16:12:06 -0300
+Commit: 3d77afd (with uncommitted changes)
+VM: kubuntu2604 (/mnt/disk2/vm/lhc-kubuntu2604/base.qcow2)
+Package: left-hand-control_0.3.0_amd64.deb
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Host: ivan, 7.2.3-2-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-160411/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install: passed
+- installed-files: passed — /usr/bin/left-hand-control: left-hand-control 0.3.0
+- keyboard-probe: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- test-config: passed
+- start-without-input: passed
+- tray-item: passed — org.kde.StatusNotifierItem-2730-1/StatusNotifierItem
+- no-mapper-without-input: passed
+- autostart-entry: passed — Exec="/usr/bin/left-hand-control"
+- relogin-with-input: passed
+- autostart-launch: passed
+- tray-after-login: passed — org.kde.StatusNotifierItem-3818-1/StatusNotifierItem
+- mapper-running: passed
+- portal-deny: passed — declined; the next text: failed without a new dialog
+- portal-consent: passed — lhc-ok
+- mapper-keys-and-text: passed — bXclhc-ok
+- text-unicode: passed — Привет, ёж 😀
+- layer-tap-hold: passed — gkkgjj
+- macro: passed — nmacO
+- command: passed
+- system-actions: passed — desktop 1→2→1, layout us→ru→us
+- russian-layout: passed — исlhc-okПривет, ёж 😀
+- popups: passed
+- emoji-ipc: passed — 🙂
+- quick-menu-rule: passed — quick-ok
+- emoji-hotkey: FAILED — Ctrl+Alt+F11 switched the console to VT11
+- game-mode: FAILED — expected 'h', received 'j'; see game-auto-process.png
+- screen-lock: passed — c
+- suspend-resume: passed — bXclhc-ok
+- cli: passed — left-hand-control 0.3.0
+- second-instance: passed
+- keyboard-replug: FAILED — the mapper did not resume within 20 s after the keyboard was replugged (native input: 'adc'); restarted by toggle-mapper
+- mapper-stop: passed
+- mapper-start: passed
+- stuck-keys-on-stop: passed — abc
+- stuck-keys-on-kill: passed — abc
+- upgrade-over-running: passed — reinstalled over the running instance
+- quit: passed
+- remove: passed
+
+Passed: 38, failed: 3

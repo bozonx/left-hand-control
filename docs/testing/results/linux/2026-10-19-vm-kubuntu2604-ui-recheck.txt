@@ -1,0 +1,11 @@
+Date: 2026-10-19 16:22:13 -0300
+Commit: 3d77afd (with uncommitted changes)
+VM: Kubuntu 26.04.1 LTS / Plasma 6.6.6 Wayland
+Logs: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261019-162138/logs
+Portable release examples from current source; temporary configs.
+
+- plasma-session: passed — wayland
+- library: passed — exit 0
+- undo-redo: passed — exit 0
+
+Passed: 3, failed: 0
