@@ -59,7 +59,11 @@ def main():
     def ui_example(name):
         vm.copy_to(args.examples / name, "lhc-e2e/")
         arguments = " --smoke" if name == "editor" else ""
+        home = vm.ssh('printf %s "$HOME"').strip()
+        snapshots = f"{home}/lhc-e2e/ui-snapshots/{name}"
+        vm.ssh(f"mkdir -p {shlex.quote(snapshots)}")
         return vm.ssh(f"systemd-run --user --wait --pipe --collect --unit=lhc-e2e-ui-{name} "
+                      f"--setenv=LHC_EDITOR_SNAPSHOTS={shlex.quote(snapshots)} "
                       f"{GUEST}/{name}{arguments}", timeout=180).strip()
 
     def install():
@@ -114,6 +118,47 @@ def main():
                 raise StepFailed("GNOME bridge did not become available after login")
             time.sleep(0.5)
 
+    def tray_recovery():
+        def wait_for(description, predicate):
+            deadline = time.monotonic() + 20
+            while not predicate():
+                if time.monotonic() >= deadline:
+                    raise StepFailed(f"timed out waiting for {description}")
+                time.sleep(0.3)
+
+        def disable_host():
+            vm.ssh("gnome-extensions disable ubuntu-appindicators@ubuntu.com")
+            wait_for("tray host to disappear", lambda: "false" in vm.ssh(
+                "busctl --user call org.freedesktop.DBus /org/freedesktop/DBus "
+                "org.freedesktop.DBus NameHasOwner s org.kde.StatusNotifierWatcher"))
+
+        def settings_focused():
+            output = vm.ssh(f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus {BRIDGE}Snapshot true")
+            window = json.loads(ast.literal_eval(output.strip())[0])["window"]
+            return window and window["appId"] == "dev.bozonx.left-hand-control"
+
+        def restore_host():
+            pid = vm.ssh("pgrep -u $(id -u) -x left-hand-contr").strip()
+            vm.ssh("gnome-extensions enable ubuntu-appindicators@ubuntu.com")
+            guest("tray")
+            if vm.ssh("pgrep -u $(id -u) -x left-hand-contr").strip() != pid:
+                raise StepFailed("tray recovery restarted the application")
+
+        vm.ssh("~/.local/bin/left-hand-control hide")
+        disable_host()
+        wait_for("settings fallback after tray host loss", settings_focused)
+        vm.qmp.screendump(vm.logs / "tray-host-absent.png")
+        restore_host()
+        disable_host()
+        guest("quit-app")
+        guest("start-app --popups auto")
+        # Leave the host unavailable: the settings fallback must work before
+        # restoring it, rather than depending on a successful registration.
+        time.sleep(3)
+        wait_for("settings fallback at startup without a tray host", settings_focused)
+        restore_host()
+        return "host loss/reappearance and startup without host: settings reachable; same-process registration recovered"
+
     def expect(name, expected, keys=(), action=None):
         guest(f"start-receiver --name {name}")
         if action:
@@ -140,7 +185,13 @@ def main():
             vm.qmp.tap("t")
             time.sleep(4)
             vm.qmp.screendump(vm.logs / "portal-consent.png")
-            vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
+            clicks = vm.get("portal_clicks", [])
+            if clicks:
+                for x, y in clicks:
+                    vm.qmp.click(x, y)
+                    time.sleep(0.4)
+            else:
+                vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
             time.sleep(4)
         return expect("text-ascii", "lhc-ok", action=keys)
 
@@ -198,6 +249,7 @@ def main():
         step("autostart", guest, "wait-app --timeout 90")
         step("mapper-start", guest, "mapper")
         step("tray", guest, "tray")
+        step("tray-host-lifecycle", tray_recovery)
         if args.examples:
             step("editor-smoke", ui_example, "editor")
             step("interactions", ui_example, "interactions")
@@ -222,6 +274,8 @@ def main():
             if vm.qemu and vm.qemu.poll() is None:
                 vm.qmp.screendump(vm.logs / "final.png")
                 vm.copy_from("lhc-e2e/app.log", vm.logs)
+                if args.examples:
+                    vm.copy_from("lhc-e2e/ui-snapshots", vm.logs)
                 (vm.logs / "journal.txt").write_text(vm.ssh("journalctl --user -b --no-pager", check=False))
                 (vm.logs / "extensions.txt").write_text(vm.ssh("gnome-extensions list --enabled; journalctl -b --no-pager _COMM=gnome-shell", check=False))
         finally:

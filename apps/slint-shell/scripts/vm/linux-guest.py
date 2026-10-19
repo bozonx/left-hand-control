@@ -391,8 +391,13 @@ def cmd_tray(args):
 
     def ours():
         for item in items():
-            service, path = (item.split("@", 1) if "@" in item
-                             else (item.split("/", 1)[0], "/" + item.split("/", 1)[1]))
+            if "@" in item:
+                service, path = item.split("@", 1)
+            elif "/" in item:
+                service, suffix = item.split("/", 1)
+                path = "/" + suffix
+            else:
+                service, path = item, "/StatusNotifierItem"
             result = subprocess.run(
                 ["busctl", "--user", "--json=short", "get-property", service, path,
                  "org.kde.StatusNotifierItem", "Id"], capture_output=True, text=True)

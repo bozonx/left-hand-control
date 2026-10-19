@@ -19,6 +19,9 @@ gnome-extensions enable left-hand-control@bozonx.dev
 
 Enable Ubuntu AppIndicators (or another StatusNotifier host) for the tray.
 Use `LHC_POPUPS=auto` or `winit`; GNOME has no layer-shell protocol.
+The application keeps its tray service alive if AppIndicators starts late or
+restarts. While the tray host is unavailable it opens settings; recovery
+registers the icon again without restarting the mapper or hiding settings.
 Remove the extension explicitly with the same script's `uninstall` argument.
 Removing/upgrading the application does not silently change GNOME's extension
 preferences. Extension updates require another GNOME login.
@@ -57,7 +60,10 @@ The bridge implements `switchDesktop1..20`, `windowToDesktop1..20`,
 `windowKeepAbove`, `overview`, and `appLauncher`. A numbered workspace/source must
 already exist. `showDesktop` and `screenOff` remain unavailable on GNOME.
 The extension does not provide a clipboard/data-control protocol or remove portal
-permission requirements; Unicode and popup delivery still require VM acceptance.
+permission requirements. The [Ubuntu 26.04 verification](results/linux/2026-10-18-gnome-tray-recovery.txt)
+passed ASCII and Quick popup delivery but stopped on Unicode: the current safe
+clipboard backend requires data-control ownership unavailable in that GNOME
+session. GNOME acceptance remains blocked pending another clipboard backend.
 
 ## Disposable Ubuntu VM
 
@@ -87,11 +93,14 @@ Pass `--examples /path/to/binaries` to also run current `editor --smoke` and
 `interactions` executables in the configured guest after installing the bridge.
 The runner uses a disposable overlay and stops at the first failed step. It
 checks installation, missing input permissions, explicit permissions and relogin,
-bridge availability, autostart, tray, passthrough, remap, chord, tap/hold layer,
+bridge availability, autostart, tray recovery after host disappearance and
+startup without a host (with settings fallback), passthrough, remap, chord, tap/hold layer,
 mapper stop/start, system layout/workspace actions, commands, manual game mode,
 portal ASCII, Quick popup
 focus and delivery, Unicode, a mixed macro and popup IPC. Portal
-consent keys may be configured in `vm.json` as `portal_keys`. Logs and screenshots
+consent keys may be configured in `vm.json` as `portal_keys`, or use
+`portal_clicks: [[x, y], ...]` with screen fractions for the remote-interaction
+switch followed by Share (coordinates depend on the guest resolution). Logs and screenshots
 remain in the VM run directory, with a summary under `docs/testing/results/linux/`.
 This smoke does not replace acceptance of Emoji selection, repeated focus return,
 lock/unlock, suspend, replug, upgrade and multiple receiver applications.

@@ -1,5 +1,5 @@
 use crate::{
-    command::{Command, Dispatch, Source},
+    command::{Command, Dispatch, Source, Window},
     i18n::{self, Language, TrayItem},
 };
 use ksni::{
@@ -79,6 +79,22 @@ impl Tray {
 }
 
 impl ksni::Tray for Tray {
+    fn watcher_offline(&self, reason: ksni::OfflineReason) -> bool {
+        log::warn!("tray watcher unavailable, waiting for recovery: {reason:?}");
+        // Keep settings reachable even when the desktop never supplies a tray host.
+        (self.dispatch)(
+            Command::Show(Window::Settings),
+            Source::Tray,
+            Instant::now(),
+            None,
+        );
+        true
+    }
+
+    fn watcher_online(&self) {
+        log::info!("tray watcher online; registering the tray again");
+    }
+
     fn id(&self) -> String {
         "lhc-slint-shell".into()
     }
@@ -139,6 +155,8 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, ksni::Error> {
         game: (0, false),
         dispatch,
     }
+    // GNOME AppIndicators may appear after the application during autostart.
+    .assume_sni_available(true)
     .spawn()
     .map(Handle)
 }

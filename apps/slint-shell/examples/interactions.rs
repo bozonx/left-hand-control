@@ -23,10 +23,14 @@ fn snapshot(ui: &SettingsWindow, name: &str) {
 
 // Resolve the actual field bounds: font metrics and window decorations differ
 // across desktops, so a fixed click position can miss the input entirely.
-fn numeric_field_position(ui: &SettingsWindow, label: &str) -> slint::LogicalPosition {
+fn accessible_position(
+    ui: &SettingsWindow,
+    role: i_slint_core::items::AccessibleRole,
+    label: &str,
+    prefix: bool,
+) -> slint::LogicalPosition {
     use i_slint_core::{
-        accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
-        window::WindowInner,
+        accessibility::AccessibleStringProperty, item_tree::ItemRc, window::WindowInner,
     };
     let mut pending = vec![ItemRc::new_root(
         WindowInner::from_pub(ui.window()).component(),
@@ -34,11 +38,17 @@ fn numeric_field_position(ui: &SettingsWindow, label: &str) -> slint::LogicalPos
     let mut matches = Vec::new();
     while let Some(item) = pending.pop() {
         if item.is_visible()
-            && item.accessible_role() == AccessibleRole::Spinbox
+            && item.accessible_role() == role
             && item
                 .accessible_string_property(AccessibleStringProperty::Label)
                 .as_deref()
-                == Some(label)
+                .is_some_and(|value| {
+                    if prefix {
+                        value.starts_with(label)
+                    } else {
+                        value == label
+                    }
+                })
         {
             let center = item.map_to_window(item.geometry().center());
             matches.push(slint::LogicalPosition::new(center.x, center.y));
@@ -49,12 +59,17 @@ fn numeric_field_position(ui: &SettingsWindow, label: &str) -> slint::LogicalPos
             pending.push(next);
         }
     }
-    assert_eq!(
-        matches.len(),
-        1,
-        "expected one visible numeric field: {label}"
-    );
+    assert_eq!(matches.len(), 1, "expected one visible {role:?}: {label}");
     matches[0]
+}
+
+fn numeric_field_position(ui: &SettingsWindow, label: &str) -> slint::LogicalPosition {
+    accessible_position(
+        ui,
+        i_slint_core::items::AccessibleRole::Spinbox,
+        label,
+        false,
+    )
 }
 
 fn check_first_layout_activation() -> Result<(), Box<dyn std::error::Error>> {
@@ -704,7 +719,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             12 => { snapshot(&ui, "game-mode-on-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Off); }
             13 => { snapshot(&ui, "game-mode-off-dark"); ui.global::<AppState>().invoke_set_game_control(GameModeControl::Auto); }
             14 => { snapshot(&ui, "game-mode-auto-dark");
-                let position = slint::LogicalPosition::new(530.0, 27.0);
+                let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Button, "Game mode:", true);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
             }
             15 => { snapshot(&ui, "game-mode-menu-dark");

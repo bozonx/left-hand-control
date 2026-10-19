@@ -1,0 +1,60 @@
+Date: 2026-10-18 20:52:58 -0300
+Commit: 6449cfc (with uncommitted changes)
+VM: ubuntu2604-gnome
+Package: /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Logs and screenshots: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261018-205130/logs
+Scope: GNOME smoke only; lock/suspend/replug, other receivers and upgrade not covered.
+
+- boot-session: passed — PRETTY_NAME="Ubuntu 26.04.1 LTS"
+NAME="Ubuntu"
+VERSION_ID="26.04"
+VERSION="26.04.1 LTS (Resolute Raccoon)"
+VERSION_CODENAME=resolute
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=resolute
+LOGO=ubuntu-logo
+GNOME Shell 50.1
+XDG_CURRENT_DESKTOP=ubuntu:GNOME
+XDG_SESSION_TYPE=wayland
+xdg-desktop-portal	1.21.1+ds-1ubuntu3.1
+xdg-desktop-portal-gnome	50.0-0ubuntu1
+- install: passed — /home/tester/.local/bin/left-hand-control: left-hand-control 0.3.0
+- keyboard-and-config: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- no-permissions-start: passed
+- no-permissions-no-grab: passed
+- quit-before-permissions: passed
+- permissions-and-extension: passed — ('{"version":1,"window":null,"externalWindow":null,"layouts":[{"short":"us","variant":"","index":0,"display":"en","long":"English (US)"},{"short":"ru","variant":"","index":1,"display":"ru","long":"Russian"}],"current":0,"workspace":0}',)
+- autostart: passed
+- mapper-start: passed
+- tray: passed — org.kde.StatusNotifierItem-4289-1
+- tray-host-lifecycle: passed — host loss/reappearance and startup without host: settings reachable; same-process registration recovered
+- editor-smoke: passed — Editor smoke: passed (80 keys, picker assignment, cancel, validation, translations)
+- interactions: FAILED — `systemd-run --user --wait --pipe --collect --unit=lhc-e2e-ui-interactions --setenv=LHC_EDITOR_SNAPSHOTS=/home/tester/lhc-e2e/ui-snapshots/interactions ~/lhc-e2e/interactions` exited with 101:
+Running as unit: lhc-e2e-ui-interactions.service
+libEGL warning: failed to get driver name for fd -1
+
+libEGL warning: MESA-LOADER: failed to retrieve device information
+
+libEGL warning: failed to get driver name for fd -1
+
+MESA: error: ZINK: failed to choose pdev
+libEGL warning: egl: failed to create dri2 screen
+
+thread 'main' (6763) panicked at apps/slint-shell/examples/interactions.rs:714:17:
+assertion `left == right` failed
+  left: Auto
+ right: On
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=101/n/a
+               Service runtime: 10.036s
+             CPU time consumed: 4.089s
+                   Memory peak: 286.2M (swap: 0B)
+
+Passed: 12, failed: 1
