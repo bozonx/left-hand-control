@@ -180,6 +180,55 @@ def main():
                             ("j", False), 0.05, ("f", False))
         return expect("layer", "gk", action=keys)
 
+    def clipboard_seed():
+        vm.copy_to(Path(__file__).with_name("clipboard-owner.py"), "lhc-e2e/")
+        vm.ssh(f"rm -f {GUEST}/clipboard-ready; systemd-run --user --collect --unit=lhc-e2e-clipboard-owner python3 {GUEST}/clipboard-owner.py")
+        deadline = time.monotonic() + 30
+        while "ready" not in vm.ssh(f"test ! -f {GUEST}/clipboard-ready || echo ready"):
+            if time.monotonic() >= deadline:
+                raise StepFailed("clipboard fixture did not acquire focus and seed data")
+            time.sleep(0.3)
+        return clipboard_preserved()
+
+    def clipboard_preserved():
+        expected = {"text/plain;charset=utf-8": b"lhc-before-unicode",
+                    "application/x-lhc-e2e": b"binary\x00\xffpayload"}
+        import base64
+        for mime, data in expected.items():
+            output = vm.ssh("bash -o pipefail -c " + shlex.quote(
+                f"wl-paste --no-newline --type {shlex.quote(mime)} | base64 -w0"))
+            if base64.b64decode(output.strip()) != data:
+                raise StepFailed(f"clipboard format {mime} was not preserved")
+        return "original text and binary MIME data preserved"
+
+    def clipboard_interruption(mode):
+        vm.ssh(f"rm -f {GUEST}/clipboard-ready {GUEST}/clipboard-paste-received; "
+               f"systemd-run --user --collect --unit=lhc-e2e-clipboard-{mode} "
+               f"python3 {GUEST}/clipboard-owner.py --paste {mode}")
+        def marker(name):
+            deadline = time.monotonic() + 15
+            while "ready" not in vm.ssh(f"test ! -f {GUEST}/{name} || echo ready"):
+                if time.monotonic() >= deadline:
+                    raise StepFailed(f"clipboard fixture timed out: {name}")
+                time.sleep(0.1)
+        marker("clipboard-ready")
+        time.sleep(3.5)
+        vm.qmp.tap("y")
+        marker("clipboard-paste-received")
+        if mode == "hold":
+            guest("toggle-mapper")
+        expected = "lhc-new-owner"
+        deadline = time.monotonic() + 6
+        while True:
+            actual = vm.ssh("wl-paste --no-newline --type 'text/plain;charset=utf-8'", check=False).strip()
+            if actual == expected:
+                break
+            if time.monotonic() >= deadline:
+                raise StepFailed(f"{mode}: clipboard overwritten: {actual!r}")
+            time.sleep(0.1)
+        vm.qmp.screendump(vm.logs / f"clipboard-{mode}.png")
+        return "new owner retained" if mode == "replace" else "pending paste cancelled on mapper stop; clipboard restored"
+
     def consent():
         def keys():
             vm.qmp.tap("t")
@@ -261,11 +310,15 @@ def main():
         step("system-layout-workspace", system_actions)
         step("command", command)
         step("game-mode-on-off", game_mode)
+        step("clipboard-seed", clipboard_seed)
         step("text-portal-ascii", consent)
         step("quick-popup-focus-delivery", quick_popup)
         step("text-unicode", expect, "text-unicode", "Привет, ёж 😀", ("y",))
+        step("clipboard-restored", clipboard_preserved)
         step("mixed-macro", expect, "mixed-macro", "nmacO", ("m",))
         step("popup-open-hide", guest, "popups")
+        step("clipboard-new-owner", clipboard_interruption, "replace")
+        step("clipboard-cancel-on-stop", clipboard_interruption, "hold")
         step("quit", guest, "quit-app")
     except (StepFailed, subprocess.SubprocessError, OSError):
         print("Stopped on the first failed step; remaining acceptance is NOT passed.")

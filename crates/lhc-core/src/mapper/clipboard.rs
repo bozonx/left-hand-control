@@ -895,6 +895,14 @@ fn read_transfer(
 }
 
 fn write_transfer(fd: OwnedFd, bytes: &[u8]) -> Result<(), String> {
+    write_transfer_checked(fd, bytes, || Ok(()))
+}
+
+pub(super) fn write_transfer_checked(
+    fd: OwnedFd,
+    bytes: &[u8],
+    valid: impl Fn() -> Result<(), String>,
+) -> Result<(), String> {
     use std::os::fd::AsRawFd;
     let raw = fd.as_raw_fd();
     // SAFETY: the descriptor is owned here; nonblocking writes keep readers bounded.
@@ -908,6 +916,7 @@ fn write_transfer(fd: OwnedFd, bytes: &[u8]) -> Result<(), String> {
     let mut remaining = bytes;
     let deadline = Instant::now() + TRANSFER_TIMEOUT;
     while !remaining.is_empty() {
+        valid()?;
         if Instant::now() >= deadline {
             return Err("clipboard reader timed out".into());
         }

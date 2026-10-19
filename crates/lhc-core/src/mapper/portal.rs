@@ -112,8 +112,8 @@ unsafe extern "C" {
 
 // --- Portal DBus identifiers --------------------------------------------
 
-const PORTAL_DEST: &str = "org.freedesktop.portal.Desktop";
-const PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
+pub(super) const PORTAL_DEST: &str = "org.freedesktop.portal.Desktop";
+pub(super) const PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
 const IFACE_REMOTE: &str = "org.freedesktop.portal.RemoteDesktop";
 const IFACE_REQUEST: &str = "org.freedesktop.portal.Request";
 const IFACE_SESSION: &str = "org.freedesktop.portal.Session";
@@ -776,16 +776,18 @@ struct PortalBackend {
     conn: Connection,
     session_handle: OwnedObjectPath,
     portal: Proxy<'static>,
+    clipboard: Option<super::portal_clipboard::Clipboard>,
 }
 
 impl PortalBackend {
     fn new(request: &TextRequest) -> Result<Self, String> {
-        let (conn, session_handle) = init_portal(request)?;
+        let (conn, session_handle, clipboard) = init_portal(request)?;
         match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
             Ok(portal) => Ok(Self {
                 conn,
                 session_handle,
                 portal,
+                clipboard,
             }),
             Err(e) => {
                 close_session(&conn, &session_handle);
@@ -800,9 +802,14 @@ fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
     for cmd in rx {
         let session = &backend.session_handle;
         let result = cmd.request.check().and_then(|()| match cmd.mode {
-            TextMode::Clipboard => {
-                paste_text(&backend.portal, session, &cmd.text, cmd.paste, &cmd.request)
-            }
+            TextMode::Clipboard => paste_text(
+                &backend.portal,
+                session,
+                backend.clipboard.as_ref(),
+                &cmd.text,
+                cmd.paste,
+                &cmd.request,
+            ),
             TextMode::Keycode => {
                 type_text_keycode(&backend.portal, session, &cmd.text, &cmd.request)
             }
@@ -816,7 +823,9 @@ fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
             break;
         }
     }
-    close_session(&backend.conn, &backend.session_handle);
+    if backend.clipboard.is_none() {
+        close_session(&backend.conn, &backend.session_handle);
+    }
 }
 
 fn libei_worker(mut backend: LibeiBackend, rx: Receiver<Cmd>) {
@@ -834,6 +843,7 @@ fn libei_worker(mut backend: LibeiBackend, rx: Receiver<Cmd>) {
 }
 
 struct LibeiBackend {
+    clipboard: Option<super::portal_clipboard::Clipboard>,
     conn: Connection,
     session_handle: OwnedObjectPath,
     context: ei::Context,
@@ -855,7 +865,7 @@ struct LibeiBackend {
 
 impl LibeiBackend {
     fn new(request: &TextRequest) -> Result<Self, String> {
-        let (conn, session_handle) = init_portal(request)?;
+        let (conn, session_handle, clipboard) = init_portal(request)?;
         let portal = match Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, IFACE_REMOTE) {
             Ok(portal) => portal,
             Err(e) => {
@@ -889,6 +899,7 @@ impl LibeiBackend {
         let converter = EiEventConverter::new(&context, handshake);
         let connection = converter.connection().clone();
         let mut backend = Self {
+            clipboard,
             conn,
             session_handle,
             context,
@@ -1013,8 +1024,7 @@ impl LibeiBackend {
         shortcut: PasteShortcut,
         request: &TextRequest,
     ) -> Result<(), TextInputFailure> {
-        let clipboard =
-            super::clipboard::Paste::prepare(text).map_err(TextInputFailure::Clipboard)?;
+        let clipboard = prepare_clipboard(self.clipboard.as_ref(), text, request)?;
         request.check()?;
         modifiers_released()?;
         clipboard.arm().map_err(TextInputFailure::Clipboard)?;
@@ -1201,7 +1211,9 @@ impl LibeiBackend {
     }
 
     fn close(self) {
-        close_session(&self.conn, &self.session_handle);
+        if self.clipboard.is_none() {
+            close_session(&self.conn, &self.session_handle);
+        }
     }
 }
 
@@ -1305,14 +1317,47 @@ fn type_text_keycode(
     Ok(())
 }
 
+enum ClipboardPaste {
+    Wayland(super::clipboard::Paste),
+    Portal(super::portal_clipboard::Paste),
+}
+
+fn prepare_clipboard(
+    portal: Option<&super::portal_clipboard::Clipboard>,
+    text: &str,
+    request: &TextRequest,
+) -> Result<ClipboardPaste, TextInputFailure> {
+    match portal {
+        Some(portal) => portal.prepare(text, request).map(ClipboardPaste::Portal),
+        None => super::clipboard::Paste::prepare(text).map(ClipboardPaste::Wayland),
+    }
+    .map_err(TextInputFailure::Clipboard)
+}
+
+impl ClipboardPaste {
+    fn arm(&self) -> Result<(), String> {
+        match self {
+            Self::Wayland(paste) => paste.arm(),
+            Self::Portal(paste) => paste.arm(),
+        }
+    }
+    fn finish(self, injected: bool) -> Result<(), String> {
+        match self {
+            Self::Wayland(paste) => paste.finish(injected),
+            Self::Portal(paste) => paste.finish(injected),
+        }
+    }
+}
+
 fn paste_text(
     portal: &Proxy,
     session: &OwnedObjectPath,
+    portal_clipboard: Option<&super::portal_clipboard::Clipboard>,
     text: &str,
     shortcut: PasteShortcut,
     request: &TextRequest,
 ) -> Result<(), TextInputFailure> {
-    let clipboard = super::clipboard::Paste::prepare(text).map_err(TextInputFailure::Clipboard)?;
+    let clipboard = prepare_clipboard(portal_clipboard, text, request)?;
     request.check()?;
     modifiers_released()?;
     clipboard.arm().map_err(TextInputFailure::Clipboard)?;
@@ -1374,7 +1419,7 @@ fn inject_keycode_combo(
     result
 }
 
-fn close_session(conn: &Connection, session: &OwnedObjectPath) {
+pub(super) fn close_session(conn: &Connection, session: &OwnedObjectPath) {
     match Proxy::new(conn, PORTAL_DEST, &**session, IFACE_SESSION) {
         Ok(sp) => {
             if let Err(e) = sp.call_method("Close", &()) {
@@ -1387,8 +1432,16 @@ fn close_session(conn: &Connection, session: &OwnedObjectPath) {
 
 // --- Portal handshake ---------------------------------------------------
 
-fn init_portal(text_request: &TextRequest) -> Result<(Connection, OwnedObjectPath), String> {
-    let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
+type PortalSession = (
+    Connection,
+    OwnedObjectPath,
+    Option<super::portal_clipboard::Clipboard>,
+);
+
+fn init_portal(text_request: &TextRequest) -> Result<PortalSession, String> {
+    let conn = zbus::blocking::connection::Builder::session()
+        .and_then(|builder| builder.method_timeout(Duration::from_secs(2)).build())
+        .map_err(|e| format!("connect session bus: {e}"))?;
     let unique_name = conn
         .unique_name()
         .ok_or_else(|| "session bus did not give us a unique name".to_string())?
@@ -1427,7 +1480,25 @@ fn init_portal(text_request: &TextRequest) -> Result<(Connection, OwnedObjectPat
     };
     log::debug!("[portal] session: {}", session_handle.as_str());
 
-    let saved_token = load_restore_token();
+    let wants_clipboard = matches!(
+        TEXT_BACKEND.lock().unwrap_or_else(|e| e.into_inner()).mode,
+        TextMode::Libei | TextMode::Clipboard
+    );
+    let clipboard_requested = wants_clipboard
+        && matches!(
+            crate::platform::linux::detect(),
+            crate::platform::linux::Session {
+                desktop: crate::platform::linux::Desktop::Gnome,
+                session_type: crate::platform::linux::SessionType::Wayland,
+                ..
+            }
+        );
+    let token_scope = if clipboard_requested {
+        TokenScope::Clipboard
+    } else {
+        TokenScope::Keyboard
+    };
+    let saved_token = load_restore_token(token_scope);
     if saved_token.is_some() {
         log::debug!("[portal] handshake: SelectDevices (with saved restore_token)");
     } else {
@@ -1454,6 +1525,15 @@ fn init_portal(text_request: &TextRequest) -> Result<(Connection, OwnedObjectPat
         )?;
     }
 
+    let clipboard = if clipboard_requested {
+        Some(super::portal_clipboard::Clipboard::request(
+            &conn,
+            &session_handle,
+        )?)
+    } else {
+        None
+    };
+
     log::debug!("[portal] handshake: Start (consent dialog if no valid restore_token)");
     let start_results = {
         let handle_token = gen_token("t");
@@ -1472,20 +1552,27 @@ fn init_portal(text_request: &TextRequest) -> Result<(Connection, OwnedObjectPat
         results
     };
 
+    if let Some(clipboard) = &clipboard {
+        let enabled = start_results
+            .get("clipboard_enabled")
+            .and_then(|value| bool::try_from(value).ok())
+            .unwrap_or(false);
+        clipboard.enabled(enabled);
+    }
     if let Some(token) = extract_restore_token(&start_results) {
         if saved_token.as_deref() != Some(token.as_str()) {
-            persist_restore_token(&token);
+            persist_restore_token(token_scope, &token);
         }
     } else if saved_token.is_some() {
         // The portal dropped our token (revoked / invalidated).
         log::debug!("[portal] no restore_token returned; clearing saved token");
-        clear_restore_token();
+        clear_restore_token(token_scope);
     }
 
     log::debug!("[portal] handshake: complete");
     pending.active = false;
     drop(pending);
-    Ok((conn, session_handle))
+    Ok((conn, session_handle, clipboard))
 }
 
 /// Generic portal pattern: subscribe to the Response signal on the derived
@@ -1606,22 +1693,39 @@ fn extract_restore_token(results: &HashMap<String, OwnedValue>) -> Option<String
 
 // --- Restore-token persistence -----------------------------------------
 
-fn restore_token_path() -> Option<PathBuf> {
-    TOKEN_DIR.get().map(|d| d.join(RESTORE_TOKEN_FILE))
+#[derive(Clone, Copy)]
+enum TokenScope {
+    Keyboard,
+    Clipboard,
+}
+
+impl TokenScope {
+    fn filename(self) -> &'static str {
+        match self {
+            Self::Keyboard => RESTORE_TOKEN_FILE,
+            Self::Clipboard => "portal-remote-desktop-clipboard.token",
+        }
+    }
+}
+
+fn restore_token_path(scope: TokenScope) -> Option<PathBuf> {
+    TOKEN_DIR.get().map(|d| d.join(scope.filename()))
 }
 
 /// In-memory cache so we don't hit the filesystem on every handshake
 /// (handshake is rare, but reads are cheap and this also gives us a sane
 /// fallback when the disk path was not registered yet).
-static TOKEN_CACHE: Mutex<Option<String>> = Mutex::new(None);
+// A keyboard-only grant cannot authorize a newly requested clipboard, and a
+// clipboard grant must not leak into pure-keyboard modes on session restore.
+static TOKEN_CACHE: Mutex<[Option<String>; 2]> = Mutex::new([None, None]);
 
-fn load_restore_token() -> Option<String> {
+fn load_restore_token(scope: TokenScope) -> Option<String> {
     if let Ok(guard) = TOKEN_CACHE.lock()
-        && let Some(cached) = guard.clone()
+        && let Some(cached) = guard[scope as usize].clone()
     {
         return Some(cached);
     }
-    let path = restore_token_path()?;
+    let path = restore_token_path(scope)?;
     let raw = std::fs::read_to_string(&path).ok()?;
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -1629,16 +1733,16 @@ fn load_restore_token() -> Option<String> {
     }
     let token = trimmed.to_string();
     if let Ok(mut guard) = TOKEN_CACHE.lock() {
-        *guard = Some(token.clone());
+        guard[scope as usize] = Some(token.clone());
     }
     Some(token)
 }
 
-fn persist_restore_token(token: &str) {
+fn persist_restore_token(scope: TokenScope, token: &str) {
     if let Ok(mut guard) = TOKEN_CACHE.lock() {
-        *guard = Some(token.to_string());
+        guard[scope as usize] = Some(token.to_string());
     }
-    let Some(path) = restore_token_path() else {
+    let Some(path) = restore_token_path(scope) else {
         log::debug!("[portal] cannot persist restore_token (TOKEN_DIR not set)");
         return;
     };
@@ -1649,11 +1753,11 @@ fn persist_restore_token(token: &str) {
     }
 }
 
-fn clear_restore_token() {
+fn clear_restore_token(scope: TokenScope) {
     if let Ok(mut guard) = TOKEN_CACHE.lock() {
-        *guard = None;
+        guard[scope as usize] = None;
     }
-    if let Some(path) = restore_token_path() {
+    if let Some(path) = restore_token_path(scope) {
         let _ = std::fs::remove_file(path);
     }
 }
@@ -1855,18 +1959,40 @@ mod tests {
         std::fs::create_dir_all(&temp).expect("create temp dir");
         set_token_dir(temp.clone());
 
-        clear_restore_token();
-        assert!(load_restore_token().is_none());
+        clear_restore_token(TokenScope::Keyboard);
+        assert!(load_restore_token(TokenScope::Keyboard).is_none());
 
-        persist_restore_token("secret-42");
-        assert_eq!(load_restore_token().as_deref(), Some("secret-42"));
+        persist_restore_token(TokenScope::Keyboard, "secret-42");
+        assert_eq!(
+            load_restore_token(TokenScope::Keyboard).as_deref(),
+            Some("secret-42")
+        );
 
-        persist_restore_token("secret-99");
-        assert_eq!(load_restore_token().as_deref(), Some("secret-99"));
+        assert!(load_restore_token(TokenScope::Clipboard).is_none());
+        persist_restore_token(TokenScope::Clipboard, "clipboard-grant");
+        assert_eq!(
+            load_restore_token(TokenScope::Clipboard).as_deref(),
+            Some("clipboard-grant")
+        );
+        assert_ne!(
+            restore_token_path(TokenScope::Keyboard),
+            restore_token_path(TokenScope::Clipboard)
+        );
 
-        clear_restore_token();
-        assert!(load_restore_token().is_none());
+        persist_restore_token(TokenScope::Keyboard, "secret-99");
+        assert_eq!(
+            load_restore_token(TokenScope::Keyboard).as_deref(),
+            Some("secret-99")
+        );
 
+        clear_restore_token(TokenScope::Keyboard);
+        assert!(load_restore_token(TokenScope::Keyboard).is_none());
+
+        assert_eq!(
+            load_restore_token(TokenScope::Clipboard).as_deref(),
+            Some("clipboard-grant")
+        );
+        clear_restore_token(TokenScope::Clipboard);
         let _ = std::fs::remove_dir_all(&temp);
     }
 
@@ -1877,5 +2003,34 @@ mod tests {
         let contents = std::fs::read_to_string(&temp).expect("read");
         assert_eq!(contents, "hello");
         let _ = std::fs::remove_file(&temp);
+    }
+    #[test]
+    #[ignore = "requires a disposable GNOME Wayland guest, a focused receiver and portal consent"]
+    fn gnome_clipboard_portal_native() {
+        assert_eq!(std::env::var("LHC_GNOME_PORTAL_TEST").as_deref(), Ok("1"));
+        let data = tempfile::tempdir().unwrap();
+        set_token_dir(data.path().to_owned());
+        set_text_backend(TextMode::Libei, PasteShortcut::ShiftInsert, None, None);
+        crate::layout::refresh_cache().unwrap();
+        assert!(crate::active_window::detect_active_window_now().is_some());
+        super::super::text_job::start();
+        let text = "Привет, ёж 😀";
+        let request = TextRequest::enqueue(text).unwrap();
+        println!("Native portal probe ready for consent");
+        let result = type_text(text, request.clone());
+        request.complete(result.is_err());
+        assert_eq!(result, Ok(()));
+        for (mime, expected) in [
+            ("text/plain;charset=utf-8", b"lhc-before-unicode".as_slice()),
+            ("application/x-lhc-e2e", b"binary\0\xffpayload".as_slice()),
+        ] {
+            let output = std::process::Command::new("wl-paste")
+                .args(["--no-newline", "--type", mime])
+                .output()
+                .unwrap();
+            assert!(output.status.success());
+            assert_eq!(output.stdout, expected, "restoring {mime}");
+        }
+        println!("Native portal Unicode and MIME restoration passed");
     }
 }

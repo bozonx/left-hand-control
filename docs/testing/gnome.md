@@ -60,10 +60,25 @@ The bridge implements `switchDesktop1..20`, `windowToDesktop1..20`,
 `windowKeepAbove`, `overview`, and `appLauncher`. A numbered workspace/source must
 already exist. `showDesktop` and `screenOff` remain unavailable on GNOME.
 The extension does not provide a clipboard/data-control protocol or remove portal
-permission requirements. The [Ubuntu 26.04 verification](results/linux/2026-10-18-gnome-tray-recovery.txt)
-passed ASCII and Quick popup delivery but stopped on Unicode: the current safe
-clipboard backend requires data-control ownership unavailable in that GNOME
-session. GNOME acceptance remains blocked pending another clipboard backend.
+permission requirements. In GNOME Wayland, the `libei + clipboard` and clipboard
+modes request `org.freedesktop.portal.Clipboard` access on their RemoteDesktop
+session before Start. Enable Clipboard Access in the consent dialog to allow
+Unicode paste. Pure libei/keycode modes do not request clipboard access.
+Keyboard-only and clipboard-capable sessions keep separate opaque restore tokens,
+so an older keyboard grant cannot silently restore a session without clipboard
+access. Upgrading to clipboard support requests the additional permission once;
+a denied clipboard grant is respected.
+The worker snapshots the offered MIME data (up to 128 formats / 64 MiB), checks
+the live destination during transfer, and restores only while it still owns the
+selection. A newer clipboard owner wins. After an input session retires, restored
+formats remain served until another owner replaces them; this keeps restoration
+from disappearing with the input backend. The earlier
+[Ubuntu 26.04 verification](results/linux/2026-10-18-gnome-tray-recovery.txt)
+stopped on Unicode with the data-control backend; the Clipboard portal addresses
+that capability gap without requiring a data-control protocol. The final
+[Clipboard portal verification](results/linux/2026-10-19-gnome-clipboard-portal.txt)
+passed 29 VM scenarios plus capability-grant upgrade and explicit Clipboard mode;
+its report records commands, artifacts and the remaining acceptance scope.
 
 ## Disposable Ubuntu VM
 
@@ -97,7 +112,8 @@ bridge availability, autostart, tray recovery after host disappearance and
 startup without a host (with settings fallback), passthrough, remap, chord, tap/hold layer,
 mapper stop/start, system layout/workspace actions, commands, manual game mode,
 portal ASCII, Quick popup
-focus and delivery, Unicode, a mixed macro and popup IPC. Portal
+focus and delivery, Unicode with text and binary MIME restoration, a mixed macro,
+popup IPC, replacement by a newer clipboard owner and cancellation on mapper stop. Portal
 consent keys may be configured in `vm.json` as `portal_keys`, or use
 `portal_clicks: [[x, y], ...]` with screen fractions for the remote-interaction
 switch followed by Share (coordinates depend on the guest resolution). Logs and screenshots

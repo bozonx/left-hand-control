@@ -59,5 +59,7 @@ pub mod devices;
 
 #[cfg(target_os = "linux")]
 pub mod clipboard;
+#[cfg(target_os = "linux")]
+mod portal_clipboard;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 mod text_job;

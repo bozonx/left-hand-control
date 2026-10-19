@@ -1,0 +1,130 @@
+Ubuntu 26.04 GNOME — Clipboard portal verification
+Date: 2026-10-19
+Source: bf2da10 + working-tree Clipboard portal changes (no dependency, config/layout
+JSON or application CLI/IPC changes).
+Guest: Ubuntu 26.04.1 LTS, GNOME Shell50.1, Wayland, portal-gnome50.0 and
+xdg-desktop-portal1.21.1+ds-1ubuntu3.1. Disposable KVM VM,4 CPUs,4GiB, standard VGA.
+Host: Manjaro; app tests use guest/temp data, never real host user configuration.
+
+Implementation:
+- GNOME Wayland libei+clipboard and Clipboard modes request Clipboard access on
+  their existing RemoteDesktop session BEFORE Start and check clipboard_enabled.
+- Signals subscribed before requesting access; dedicated synchronous worker keeps
+  blocking destination checks/pipe I/O outside Tokio. Only signal subscription,
+  polling and cleanup enter zbus's runtime.
+- Preserve all offered MIME data (<=128 formats, <=64MiB aggregate); bound reads
+  and writes, validate destination/cancellation before each temporary-data write.
+- Restore only while still owner; a new owner wins. Restored data remains served
+  after the input backend retires, until another owner replaces it.
+- Permission-token caches/files separated by capability: existing keyboard file
+  portal-remote-desktop.token; new portal-remote-desktop-clipboard.token for GNOME
+  Clipboard sessions. No fallback from a keyboard-only grant and no re-prompt loop
+  after an explicitly denied clipboard grant.
+- KDE/other desktops keep their existing data-control backend; pure libei/keycode
+  modes do not request clipboard access. No Shell.Eval or destination-check bypass.
+
+Primary protocol reference:
+https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Clipboard.html
+GNOME restore-data includes the saved clipboard permission; capability separation
+is necessary when upgrading a keyboard-only grant:
+https://github.com/GNOME/xdg-desktop-portal-gnome/blob/main/src/remotedesktop.c
+
+Targeted checks:
+  cargo test --locked -p lhc-core portal_clipboard -j 1
+  PASS3: binary snapshot/size limit, stalled-owner deadline, cancellation between
+  pipe writes. Also covered again by final workspace tests.
+  cargo test --locked -p lhc-core --features zbus/tokio mapper::portal::tests -j 1
+  PASS12,0failed,1ignored (native test), after token-scope change. Includes separate
+  token cache/path persistence. Log /tmp/lhc-clipboard-token-tests.log.
+
+Native integration with the same Tokio feature as the shell:
+  docker run --rm --name lhc-clipboard-native-build -v "$PWD:/src" \
+    -v lhc-cargo-registry:/root/.cargo/registry lhc-ubuntu2204-gnome-build:local \
+    sh -c 'cargo test --release --locked -p lhc-core --features zbus/tokio --lib --no-run -j 1; result=$?; chown -R 1000:1000 /src/target/ubuntu-22.04; exit "$result"'
+  PASS build3m15; /tmp/lhc-clipboard-native-build.log.
+  strip --strip-debug -o /tmp/lhc-native-portal-test target/ubuntu-22.04/release/deps/lhc_core-0da1bd6772af2078
+  python3 -u /tmp/lhc-run-native-clipboard.py /tmp/lhc-native-portal-test
+  Inside the disposable guest this runs:
+    systemd-run --user --wait --pipe --collect --unit=lhc-native-portal-test \
+      --setenv=LHC_GNOME_PORTAL_TEST=1 --setenv=RUST_BACKTRACE=1 \
+      /home/tester/lhc-e2e/native-portal-test --ignored \
+      --exact mapper::portal::tests::gnome_clipboard_portal_native \
+      --nocapture --test-threads=1
+  PASS1,5.70s: receiver exactly 'Привет, ёж 😀'; original text and binary MIME data
+  preserved. Explicit guard and temporary token directory; ignored in ordinary CI.
+  Artifacts: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261019-094933/logs
+  Log: /tmp/lhc-native-clipboard-result.log. This diagnostic validated the runtime
+  boundary fix before the later token-scope change; final app checks cover that change.
+
+Preparation/diagnostic history:
+- Initial package91ea86401a396faa59aa21539f2949d703f5d1553953d6a167b773dbfc12800f
+  passed22 VM steps but Unicode hit a panic in MY new async clipboard worker:
+  'Cannot start a runtime from within a runtime'. A blocking GNOME destination
+  check was called from zbus::block_on. Fixed by synchronous worker and scoped
+  runtime entry for signals; verified by the native Tokio test above.
+  Historical report: 2026-10-19-vm-ubuntu2604-gnome.txt;
+  artifacts: VM runs/20261019-093919/logs. This package is superseded.
+- GTK fixtures tested separately: normal text+binary offer and replacement on
+  Shift+Insert. Early standalone probe timing/chord errors corrected in the test
+  driver; they are not product failures. /tmp/lhc-clipboard-fixture-probe.log and
+  /tmp/lhc-clipboard-replacement-fixture-probe.log contain final fixture results.
+- Superseded compiler runs were deliberately stopped after source corrections.
+  Host check chain was briefly paused/resumed to avoid concurrent compiler memory
+  pressure; no paused compiler remains. Only final commands/results below qualify.
+
+Final required host checks (all PASS, current source):
+  cargo fmt -p lhc-core -p slint-shell --check
+  cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -j 1 -- -D warnings
+  cargo test --locked --workspace --features slint-shell/spell -j 1
+    486 passed, 0 failed, 12 ignored. Compilation 24m06.
+  cargo check --locked -p slint-shell --all-targets -j 1
+    PASS, non-Spell build, 1m50.
+Logs: /tmp/lhc-gnome-clipboard-final-{clippy,tests,check}.log
+
+Final portable package:
+  docker run --rm --name lhc-gnome-clipboard-build -v "$PWD:/src" -v lhc-cargo-registry:/root/.cargo/registry lhc-ubuntu2204-gnome-build:local sh -c 'apps/slint-shell/scripts/package-linux.sh; result=$?; chown -R 1000:1000 /src/target/ubuntu-22.04; exit "$result"'
+  PASS, release build 14m36; /tmp/lhc-gnome-clipboard-final-build.log.
+  (cd target/ubuntu-22.04/packages && sha256sum -c left-hand-control-0.3.0-linux-x86_64.tar.gz.sha256)
+  PASS. SHA256 f51003cd5c5eb217c9136ace630bd25e33ba92736f0c2ce7d18a7a8897300c03
+  docker run --rm -v "$PWD:/src:ro" lhc-ubuntu2204-gnome-build:local /src/target/ubuntu-22.04/release/left-hand-control --version
+  PASS: 0.3.0, Ubuntu22.04/glibc2.35 loader compatibility.
+
+Final app smoke:
+  python3 -u apps/slint-shell/scripts/vm/run-gnome.py --vm /mnt/disk2/vm/lhc-ubuntu2604-gnome --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz --keep
+  PASS: 29 passed, 0 failed; default libei+clipboard and Shift+Insert.
+  Includes mapper passthrough/remap/chord/tap-hold, stop/restart, tray recovery,
+  portal ASCII, Quick popup, exact Unicode 'Привет, ёж 😀', text+binary MIME restore,
+  mixed macro, newer clipboard owner winning and cancellation on mapper stop.
+  No panic; two expected negative-case diagnostics: clipboard replaced during paste,
+  and text input cancelled or expired.
+  Report: 2026-10-19-vm-ubuntu2604-gnome-2.txt
+  Artifacts: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261019-101732/logs
+  Driver log: /tmp/lhc-gnome-clipboard-final-acceptance.log
+
+Additional final-package integration:
+  python3 -u /tmp/lhc-run-clipboard-upgrade.py target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+  PASS: old keyboard-only grant preserved byte-for-byte; new Clipboard grant created
+  after consent; exact Unicode delivered. Test overlay backed by successful old
+  run 20261018-213804. An initial test setup used an overlay without an old grant;
+  corrected before this successful run (no product failure).
+  Artifacts: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261019-102237/logs
+  Log: /tmp/lhc-clipboard-upgrade-result.log
+  python3 -u /tmp/lhc-run-clipboard-mode.py
+  PASS: explicit Clipboard mode via NotifyKeyboardKeycode and Ctrl+V; exact Unicode,
+  both original MIME formats restored; saved Clipboard grant reused without consent.
+  Artifacts: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261019-102429/logs
+  Log: /tmp/lhc-clipboard-mode-result.log
+Both additional drivers are local diagnostic scripts, not repository fixtures.
+All disposable VMs stopped after completion.
+
+Scope / remaining acceptance:
+- Current GUI examples were not rerun: this change is in core/backend and test
+  tooling. Earlier GNOME baseline editor/interactions passed; current workspace
+  checks compile the examples.
+- General lock/unlock, suspend, replug, repeated focus return, Emoji selection,
+  multiple receiver applications, full versioned deb/rpm upgrade and KDE runtime
+  regression acceptance remain untested here. The tested upgrade above concerns
+  the archive build and capability grant, not full L4 release acceptance.
+- No remaining critical failure was found in the executed scenarios. This report
+  does not declare full GNOME L4 acceptance.
+
