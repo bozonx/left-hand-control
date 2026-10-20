@@ -11,10 +11,10 @@ if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $output = Join-Path $root 'windows-runtime\smoke'
 $exe = Join-Path $root 'target\debug\left-hand-control.exe'
-if (Get-Process -Name 'left-hand-control' -ErrorAction SilentlyContinue) {
-    throw 'Close the running application before smoke: Windows IPC shares an authentication token.'
-}
+. (Join-Path $PSScriptRoot 'windows-test-lib.ps1')
 $server = $null
+$second = $null
+$peer = $null
 $variables = @('LHC_DEV_DIR', 'LHC_PORT', 'LHC_HOTKEYS', 'LHC_POPUPS', 'LHC_METRICS', 'SLINT_BACKEND', 'LHC_EDITOR_SNAPSHOTS')
 $saved = @{}
 foreach ($name in $variables) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
@@ -55,8 +55,10 @@ $env:LHC_METRICS = Join-Path $output 'metrics.csv'
 Remove-Item $env:LHC_METRICS -ErrorAction SilentlyContinue
 Push-Location $root
 try {
+    & (Join-Path $PSScriptRoot 'check-windows-syntax.ps1')
     if (-not $SkipBuild) {
         Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '--lib')
+        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'lhc-core', '--example', 'windows-mapper-stand')
         Invoke-Checked 'cargo' @('build', '--locked', '-p', 'slint-shell', '--bin', 'left-hand-control', '--example', 'editor', '--example', 'interactions')
         Invoke-Checked 'cargo' @('test', '--locked', '-p', 'slint-shell', '--test', 'ipc')
     }
@@ -75,6 +77,28 @@ try {
         & $exe ping 2>$null | Out-Null
         return $LASTEXITCODE -eq 0
     }
+    Assert-WindowsTestOwner $server
+    # Independent profiles must not overwrite each other's authentication token.
+    $peerSaved = Initialize-WindowsTest (Join-Path $output 'peer')
+    try {
+        $peer = Start-Process $exe -WorkingDirectory $root -PassThru `
+            -RedirectStandardOutput (Join-Path $output 'peer-stdout.log') `
+            -RedirectStandardError (Join-Path $output 'peer-stderr.log')
+        $null = $peer.Handle
+        Wait-Until 'isolated peer readiness' {
+            if ($peer.HasExited) { throw 'Isolated peer exited during startup' }
+            $ErrorActionPreference = 'Continue'
+            & $exe ping 2>$null | Out-Null
+            return $LASTEXITCODE -eq 0
+        }
+        Assert-WindowsTestOwner $peer
+        Invoke-Checked $exe @('quit')
+        if (-not $peer.WaitForExit(20000) -or $peer.ExitCode -ne 0) { throw 'Isolated peer did not quit cleanly' }
+    } finally {
+        try { Stop-WindowsTestProcess $peer } finally { Restore-WindowsTest $peerSaved }
+    }
+    Invoke-Checked $exe @('ping')
+    Assert-WindowsTestOwner $server
     # Second launch must delegate to the existing process and terminate.
     $second = Start-Process $exe -WorkingDirectory $root -PassThru
     $null = $second.Handle
@@ -116,7 +140,12 @@ try {
     }
     Write-Host 'WINDOWS SMOKE PASSED: editor, interactions, CLI, second instance, popups, preferences, quit'
 } finally {
-    if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force }
-    foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
-    Pop-Location
+    try {
+        Stop-WindowsTestProcess $peer
+        Stop-WindowsTestProcess $second
+        Stop-WindowsTestProcess $server
+    } finally {
+        foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
+        Pop-Location
+    }
 }

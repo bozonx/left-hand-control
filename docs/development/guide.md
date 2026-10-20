@@ -112,7 +112,7 @@ Debug-сборки никогда не трогают реальный конф�
 
 - по умолчанию — `<repo>/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json`,
   данные и библиотека раскладок — в `dev-files/linux/.local/share/dev.bozonx.left-hand-control/`;
-- `LHC_DEV_DIR=/путь` задаёт другой каталог с той же структурой.
+- `LHC_DEV_DIR=/путь` задаёт другой каталог с той же структурой, в том числе в release-сборке для изолированной приёмки.
 
 Release-сборки используют `~/.config/dev.bozonx.left-hand-control/` и
 `~/.local/share/dev.bozonx.left-hand-control/`. Пути разрешает только
@@ -146,7 +146,7 @@ target/debug/left-hand-control --version          # --version и --help не т�
 | Переменная | Назначение |
 | --- | --- |
 | `RUST_LOG` | Фильтр логов; по умолчанию `info,zbus=warn,tracing=warn` |
-| `LHC_DEV_DIR` | Каталог конфигурации debug-сборок |
+| `LHC_DEV_DIR` | Явный каталог конфигурации и данных для debug/release; без него release использует пользовательские пути |
 | `SLINT_BACKEND` | Рендерер окна настроек |
 | `LHC_POPUPS` | `winit` / `auto` / `spell` |
 | `LHC_HOTKEYS=off` | Не слушать хоткеи Ctrl+Alt+F11 / F12 |
@@ -495,16 +495,45 @@ KDE запоминает и без токена приложения, поэто
 
 #### Windows VM
 
-Сценарии mapper на Windows (матрица в [windows-mapper.md](windows-mapper.md))
-в стенд ещё не добавлены, поэтому Windows-стенд проверяет оболочку.
-По умолчанию запускается `--suite smoke`: нативные тесты `lhc-core --lib`,
-debug-сборка, `editor --smoke`,
-`interactions`, CLI, второй экземпляр, по три цикла каждого попапа с ожиданием
-метрик показа/скрытия, команды темы/языка и штатный выход. Конфиг изолирован
-через `LHC_DEV_DIR`. Затем QMP проверяет нативный клавиатурный ввод в
-`windows-receiver.ps1` (текст, Shift, Ctrl+Home, Shift+End, down/up). `--suite full` запускает прежний набор: нативные тесты,
-release-сборку, `interactions`, IPC lifecycle, 100 циклов попапов, отключение
-хоткеев и освобождение ресурсов (`check-windows-automated.ps1`).
+Оба набора запускаются в интерактивной сессии обычного пользователя.
+Для итераций ядра есть `--suite mapper`: собирает только core driver и выполняет
+аппаратный baseline и mapper-сценарии. Это диагностический набор без проверки
+оболочки и release; перед приёмкой нужен `--suite full`.
+`--suite smoke` выполняет нативные тесты `lhc-core --lib`, debug-сборку,
+`editor --smoke`, `interactions`, IPC integration tests, CLI, второй экземпляр,
+по три цикла каждого попапа с ожиданием метрик, смену темы/языка и штатный выход.
+`--suite full` сначала выполняет smoke и hardware mapper-сценарии, затем дополнительные нативные тесты shell,
+проверку storage override в release, release-сборку и lifecycle: hidden/visible
+quit, 100 реально показанных/скрытых попапов, память/handles, отключённые хоткеи
+и диагностику неподдерживаемого Spell. Оба запуска используют уникальный
+`LHC_DEV_DIR`, изолированный IPC-токен и свободный loopback-порт. Lifecycle
+проверяет PID владельца порта и завершает только созданные им процессы.
+
+После оболочки оба набора проверяют QMP → эмулируемую USB-клавиатуру → Windows
+hook → общий движок → `SendInput` → WinForms receiver. `windows_mapper.py`
+управляет `lhc-core --example windows-mapper-stand` через тестовый файловый
+mailbox (это не IPC приложения и не новый формат конфигурации). Проверяются
+passthrough, remap/swallow, отсутствие рекурсии, modifiers/extended keys,
+repeat, tap/hold и слой, макрос с паузой и отменой при live config, Unicode,
+US/RU, отмена text job при смене foreground, stop с удержанным виртуальным Ctrl, restart и replug.
+Точные текст и key-down/up проверяются в receiver; каждый сценарий имеет
+отдельный результат в отчёте. Для RU требуется установленная раскладка `ru-RU`.
+
+Проверка host-части без VM:
+
+```sh
+python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+```
+
+`--memory 12288` переопределяет память VM для одного запуска; полный нативный набор Slint рекомендуется собирать с 12 GiB RAM и одним Cargo job. Пустые ответы/тайм-ауты SSH при загрузке допускают повтор в пределах общего лимита. Логи прошлого запуска восстанавливаются из диска кэша до их очистки; overlay неуспешного запуска сохраняется для диагностики.
+
+Архив переданных исходников сохраняется в каталоге запуска VM; SHA-256
+архива записывается в отчёт, включая прогоны незакоммиченного дерева.
+Зелёный VM-прогон подтверждает только перечисленные сценарии.
+Elevated/secure desktop, lock/unlock, suspend/resume, аварийное завершение
+с удержанными клавишами и физические клавиатуры требуют отдельной приёмки
+по [матрице Windows](windows-mapper.md). Windows пока не считается принятой
+платформой целиком.
 
 Подготовка (один раз) поверх VM из [windows.md](../testing/windows.md) с
 установленными MSVC Build Tools и Rust:

@@ -445,7 +445,7 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
-The remaining manual Windows shell checks are in section 14 of the [manual acceptance checklist](manual-acceptance.md); product-level mapper, layouts, macros, and `text:` checks wait for a Windows mapper.
+The remaining manual Windows shell checks are in section 14 of the [manual acceptance checklist](manual-acceptance.md); automated mapper, layouts, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). A successful VM run does not close physical-hardware, secure-desktop or crash acceptance.
 
 ## Snapshots and result recording
 

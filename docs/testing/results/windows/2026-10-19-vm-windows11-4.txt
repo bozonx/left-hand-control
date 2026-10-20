@@ -1,0 +1,19 @@
+Date: 2026-10-19 21:29:07 -0300
+Commit: c71cd1c (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261019-210021/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 811 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261019-210021/src.tar.gz; SHA256 7f26a53beb0b9f8ed6c0e44902dfe43cf22635275bab4628b2e19c96d4d37e23; Source sync: 6 updated, 39 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: passed
+- mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
+- mapper-modifiers-extended: FAILED — timed out waiting for text 'lrcdef'
+- windows-full: FAILED — timed out waiting for text 'lrcdef'
+
+Passed: 6, failed: 2

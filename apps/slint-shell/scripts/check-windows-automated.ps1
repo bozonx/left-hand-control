@@ -1,33 +1,36 @@
+param([switch]$SkipSmoke)
 $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $manifest = Join-Path $root 'apps\slint-shell\Cargo.toml'
-$interaction = Join-Path $root 'target\release\examples\interactions.exe'
 
 function Invoke-Checked {
     param([string]$Command, [string[]]$Arguments)
 
+    $ErrorActionPreference = 'Continue'
     & $Command @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "$Command $($Arguments -join ' ') failed with exit code $LASTEXITCODE"
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($code -ne 0) {
+        throw "$Command $($Arguments -join ' ') failed with exit code $code"
     }
 }
 
 Push-Location $root
 try {
-    Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--lib', '--bins')
+    & (Join-Path $PSScriptRoot 'check-windows-syntax.ps1')
+    if (-not $SkipSmoke) { & (Join-Path $PSScriptRoot 'check-windows-smoke.ps1') }
+    Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--all-targets')
+    Invoke-Checked 'cargo' @('clippy', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--all-targets', '--no-deps', '--', '-D', 'warnings')
+    Invoke-Checked 'cargo' @('test', '--release', '--locked', '-p', 'lhc-core', '--test', 'storage_override')
     Invoke-Checked 'cargo' @(
         'build', '--release', '--locked', '--manifest-path', $manifest,
-        '--bin', 'left-hand-control', '--example', 'interactions'
+        '--bin', 'left-hand-control'
     )
 
-    $env:SLINT_BACKEND = 'winit-software'
-    Invoke-Checked $interaction @()
-    Remove-Item Env:SLINT_BACKEND -ErrorAction SilentlyContinue
 
     & (Join-Path $PSScriptRoot 'check-windows-lifecycle.ps1')
 } finally {
-    Remove-Item Env:SLINT_BACKEND -ErrorAction SilentlyContinue
     Pop-Location
 }
 

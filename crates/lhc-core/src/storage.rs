@@ -14,15 +14,17 @@ pub struct StoragePaths {
 impl StoragePaths {
     /// Resolve the application storage location.
     ///
-    /// Debug builds use `$LHC_DEV_DIR` (relative paths resolve against the
-    /// current directory) or `<repo>/dev-files`, so development never
+    /// An explicit `$LHC_DEV_DIR` overrides storage in every build (relative
+    /// paths resolve against the current directory). Debug builds otherwise
+    /// use `<repo>/dev-files`, so development never
     /// touches the user's real configuration. Inside it `<os>/` mirrors the
     /// user's home directory, e.g. `dev-files/linux/.config/<APP_ID>/`.
-    /// Release builds use the platform config/data directories under
+    /// Without an override, release builds use the platform config/data directories under
     /// [`APP_ID`].
     pub fn resolve() -> Result<Self, String> {
-        if cfg!(debug_assertions) {
-            let base = dev_base_dir(std::env::var_os("LHC_DEV_DIR").map(PathBuf::from))?;
+        let override_dir = std::env::var_os("LHC_DEV_DIR").map(PathBuf::from);
+        if cfg!(debug_assertions) || override_dir.is_some() {
+            let base = dev_base_dir(override_dir)?;
             return Ok(Self::dev(&base, std::env::consts::OS));
         }
         let config_dir = dirs::config_dir()

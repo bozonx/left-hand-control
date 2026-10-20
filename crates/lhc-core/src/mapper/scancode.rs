@@ -102,6 +102,10 @@ pub fn from_native(vk: u32, scan: u32, extended: bool) -> Option<KeyCode> {
         return Some(*key);
     }
     let scan = u16::try_from(scan & 0xff).ok()?;
+    // Windows can mark USB Right Shift extended despite its plain set-1 code.
+    if vk == 0xa1 && scan == 0x36 {
+        return Some(KeyCode::KEY_RIGHTSHIFT);
+    }
     if extended {
         return EXTENDED
             .iter()
@@ -163,6 +167,16 @@ mod tests {
         assert_eq!(from_native(0x7a, 0x57, false), Some(KeyCode::KEY_F11));
         assert_eq!(from_native(0xe2, 0x56, false), Some(KeyCode::KEY_102ND));
         assert_eq!(from_native(0x7c, 0x64, false), Some(KeyCode::KEY_F13));
+    }
+
+    #[test]
+    fn right_shift_accepts_the_windows_usb_extended_flag() {
+        for extended in [false, true] {
+            assert_eq!(
+                from_native(0xa1, 0x36, extended),
+                Some(KeyCode::KEY_RIGHTSHIFT)
+            );
+        }
     }
 
     #[test]

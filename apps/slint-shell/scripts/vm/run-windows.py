@@ -5,19 +5,21 @@ session through the scheduled task LHC-E2E and collect the result.
 
 The default smoke suite covers debug UI scenarios, IPC, popups and shutdown.
 --suite full runs native tests, a release build and lifecycle/resource checks.
-The Windows mapper backend exists; these suites do not accept its interception path.
+Both suites exercise the mapper through QEMU hardware keys and a native receiver.
 
 Usage: run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows [--show] [--keep]
 See docs/development/guide.md, "E2E в виртуальных машинах".
 """
 
 import argparse
+import hashlib
 import io
 import json
 import subprocess
 import tarfile
 import time
 
+from windows_mapper import WindowsMapper
 from vmlib import REPO, Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
 
 WORK = r"D:\lhc-e2e"
@@ -28,19 +30,50 @@ def source_archive(path):
     names = subprocess.run(
         ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
         cwd=REPO, capture_output=True, check=True,
-    ).stdout.decode().split("\0")
+    ).stdout.decode().strip("\0").split("\0")
     with tarfile.open(path, "w:gz") as archive:
         for name in filter(None, names):
             if (REPO / name).is_file():
                 archive.add(REPO / name, arcname=name, recursive=False)
-    return len(names)
+    return sum(bool(name) and (REPO / name).is_file() for name in names), hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def guest_state(ps):
+    """One poll per SSH connection; a busy native build may starve OpenSSH."""
+    try:
+        raw = ps(
+            "$ErrorActionPreference = 'Stop'; "
+            f"$done = Test-Path {WORK}\\out\\done.txt; "
+            f"$receiver = Test-Path {WORK}\\out\\receiver\\snapshot.json; "
+            "$task = Get-ScheduledTask -TaskName LHC-E2E; "
+            "[pscustomobject]@{done=$done; receiver=$receiver; task=[string]$task.State} | ConvertTo-Json -Compress",
+            timeout=30)
+    except (StepFailed, subprocess.TimeoutExpired):
+        return None
+    if not raw.strip():
+        return None
+    try:
+        state = json.loads(raw.lstrip("\ufeff"))
+        if not isinstance(state, dict) or not all(key in state for key in ("done", "receiver", "task")):
+            raise StepFailed(f"Incomplete guest state: {raw!r}")
+        return state
+    except ValueError as error:
+        raise StepFailed(f"Invalid guest state: {raw!r}") from error
+
+
+def validate_guest_result(status, summary, input_checked):
+    if status != "0" or not summary.strip() or "FAILED" in summary:
+        raise StepFailed(summary or f"Guest exit status: {status}")
+    if not input_checked:
+        raise StepFailed("Guest completed without hardware/mapper acceptance")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--vm", required=True, help="VM directory with vm.json")
-    parser.add_argument("--suite", choices=("smoke", "full"), default="smoke",
-                        help="smoke (default) or full native/release acceptance")
+    parser.add_argument("--suite", choices=("smoke", "full", "mapper"), default="smoke",
+                        help="smoke (default), full native/release acceptance, or mapper-only diagnostics")
+    parser.add_argument("--memory", type=int, help="guest RAM in MiB; overrides vm.json for this run only")
     parser.add_argument("--show", action="store_true", help="show the VM display")
     parser.add_argument("--keep", action="store_true", help="keep the overlay disk")
     parser.add_argument("--timeout", type=float, default=150,
@@ -48,6 +81,10 @@ def main():
     args = parser.parse_args()
     environment_ok()
     vm = Vm(args.vm)
+    if args.memory:
+        if args.memory < 4096:
+            parser.error("Windows acceptance needs at least 4096 MiB")
+        vm.config["memory"] = args.memory
     report = Report()
     summary = io.StringIO()
 
@@ -58,6 +95,9 @@ def main():
     def boot():
         vm.start(show=args.show)
         vm.wait_ssh(timeout=900)
+        # The cache disk survives even when a failed run could not export logs.
+        if vm.copy_from("D:/lhc-e2e/out", vm.logs / "previous-guest"):
+            print("Recovered previous guest logs from the cache disk.", flush=True)
 
     def preflight():
         wait_for("interactive desktop", 180, lambda: "True" in ps(
@@ -75,7 +115,7 @@ def main():
 
     def upload():
         archive = vm.run_dir / "src.tar.gz"
-        count = source_archive(archive)
+        count, digest = source_archive(archive)
         ps(f"$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path {WORK}\\src, {WORK}\\out | Out-Null")
         vm.copy_to(archive, "D:/lhc-e2e/src.tar.gz")
         # Preserve timestamps only when content is identical. Restamping the
@@ -113,7 +153,7 @@ foreach ($entry in Get-ChildItem $source -Force | Where-Object Name -ne 'target'
 Remove-Item $stage -Recurse -Force
 "Source sync: $updated updated, $removed removed"
 """, timeout=180)
-        return f"{count} files; {synced.strip()}"
+        return f"{count} files; source archive {archive}; SHA256 {digest}; {synced.strip()}"
 
     def keyboard_baseline():
         """Real QEMU USB input into a native edit control, without a mapper."""
@@ -164,42 +204,36 @@ Remove-Item $stage -Recurse -Force
         ps(f"$ErrorActionPreference = 'Stop'; Remove-Item {WORK}\\out\\* -Recurse -Force -ErrorAction SilentlyContinue; "
            f"Set-Content {WORK}\\suite.txt -Value {args.suite}; "
            "Start-ScheduledTask -TaskName LHC-E2E")
-        def done():
-            try:
-                return "True" in ps(f"Test-Path {WORK}\\out\\done.txt", timeout=30)
-            except (StepFailed, subprocess.TimeoutExpired):
-                return False
         input_checked = False
-        checked_task = time.monotonic()
+        started = time.monotonic()
 
         def progress():
-            nonlocal input_checked, checked_task
-            if done():
+            nonlocal input_checked
+            if vm.qemu.poll() is not None:
+                raise StepFailed("QEMU exited before guest completion")
+            state = guest_state(ps)
+            if state is None:
+                print("Guest state unavailable; retrying within the overall timeout.", flush=True)
+                return False
+            if state["done"]:
                 return True
-            if args.suite == "smoke" and not input_checked:
-                ready = ps(f"Test-Path {WORK}\\out\\receiver\\snapshot.json", timeout=30)
-                if "True" in ready:
-                    input_checked = True
-                    passed = False
-                    try:
-                        report.step("hardware-keyboard", keyboard_baseline, fatal=True)
-                        passed = True
-                    finally:
-                        ps(f"Set-Content {WORK}\\out\\input-result.txt -Value {0 if passed else 1}")
-            if time.monotonic() - checked_task > 30:
-                checked_task = time.monotonic()
-                task = ps("$task = Get-ScheduledTask -TaskName LHC-E2E; "
-                          "$info = Get-ScheduledTaskInfo -TaskName LHC-E2E; "
-                          '\"$($task.State):$($info.LastTaskResult)\"').strip()
-                if task.startswith(("Ready:", "Disabled:")) and not done():
-                    raise StepFailed(f"LHC-E2E stopped without a completion marker ({task})")
+            if state["receiver"] and not input_checked:
+                input_checked = True
+                passed = False
+                try:
+                    report.step("hardware-keyboard", keyboard_baseline, fatal=True)
+                    WindowsMapper(vm, ps, report).run()
+                    passed = True
+                finally:
+                    ps(f"Set-Content {WORK}\\out\\input-result.txt -Value {0 if passed else 1}")
+            if time.monotonic() - started > 30 and state["task"] in ("Ready", "Disabled"):
+                raise StepFailed(f"LHC-E2E stopped without a completion marker ({state['task']})")
             return False
 
-        wait_for("the guest run", args.timeout * 60, progress, interval=5)
+        wait_for("the guest run", args.timeout * 60, progress, interval=10)
         summary.write(ps(f"Get-Content -Raw -Encoding utf8 {WORK}\\out\\summary.txt"))
         status = ps(f"Get-Content -Raw {WORK}\\out\\done.txt").strip()
-        if status != "0" or not summary.getvalue().strip() or "FAILED" in summary.getvalue():
-            raise StepFailed(summary.getvalue())
+        validate_guest_result(status, summary.getvalue(), input_checked)
 
     try:
         report.step("boot", boot, fatal=True)
@@ -211,17 +245,19 @@ Remove-Item $stage -Recurse -Force
     finally:
         try:
             if vm.qemu and vm.qemu.poll() is None:
-                vm.copy_from("D:/lhc-e2e/out", vm.logs / "guest")
+                if not vm.copy_from("D:/lhc-e2e/out", vm.logs / "guest"):
+                    report.skip("collect-guest-logs", "SSH export failed; logs remain on the persistent cache disk")
                 vm.qmp.screendump(vm.logs / "final.png")
         except (StepFailed, OSError):
             pass
-        vm.stop(keep=args.keep)
+        vm.stop(keep=args.keep or bool(report.failed))
 
     header = [
         f"Date: {time.strftime('%F %T %z')}",
         f"Commit: {commit()}",
         f"VM: {vm.name} ({vm.base})",
         f"Suite: {args.suite}",
+        f"Memory: {vm.get('memory', 6144)} MiB",
         f"Logs: {vm.logs}",
         "",
         summary.getvalue().strip(),

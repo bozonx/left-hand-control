@@ -30,5 +30,9 @@ lto = true
 opt-level = "s"
 strip = true
 
+[profile.test.package.slint-shell]
+# Full debug info for generated Slint code exhausts memory in Windows VM tests.
+debug = 0
+
 [patch.crates-io]
 i-slint-core = { path = "apps/slint-shell/vendor/i-slint-core" }

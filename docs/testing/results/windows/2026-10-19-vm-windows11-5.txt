@@ -1,0 +1,20 @@
+Date: 2026-10-19 21:57:06 -0300
+Commit: c71cd1c (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261019-212940/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 812 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261019-212940/src.tar.gz; SHA256 a34efe0154e8921efe4105fe0b79342a014cc68660292d4434825e5e503ed439; Source sync: 5 updated, 39 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: passed
+- mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
+- mapper-modifiers-extended: passed — left/right Shift, Ctrl and Alt distinguished; Shift+X, Ctrl+Home, Shift+End
+- mapper-repeat: FAILED — timed out waiting for repeated mapped key
+- windows-full: FAILED — timed out waiting for repeated mapped key
+
+Passed: 7, failed: 2

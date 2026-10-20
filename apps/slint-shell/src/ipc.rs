@@ -96,9 +96,15 @@ fn tcp_address() -> SocketAddrV4 {
 
 #[cfg(windows)]
 fn token_path() -> std::io::Result<PathBuf> {
-    let dir = dirs::data_local_dir()
-        .ok_or_else(|| std::io::Error::other("local app data directory unknown"))?
-        .join("lhc-slint-shell");
+    let dir = if std::env::var_os("LHC_DEV_DIR").is_some() {
+        lhc_core::storage::StoragePaths::resolve()
+            .map_err(std::io::Error::other)?
+            .settings_dir()
+    } else {
+        dirs::data_local_dir()
+            .ok_or_else(|| std::io::Error::other("local app data directory unknown"))?
+            .join("lhc-slint-shell")
+    };
     std::fs::create_dir_all(&dir)?;
     Ok(dir.join("ipc-token"))
 }

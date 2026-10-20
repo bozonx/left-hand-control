@@ -9,7 +9,10 @@ if (-not (Test-Path $exe)) {
 }
 
 New-Item -ItemType Directory -Force -Path $output | Out-Null
+. (Join-Path $PSScriptRoot 'windows-test-lib.ps1')
+$saved = Initialize-WindowsTest $output
 $env:SLINT_BACKEND = 'winit-skia'
+$script:processes = [System.Collections.Generic.List[System.Diagnostics.Process]]::new()
 
 function Wait-ForServer {
     param([System.Diagnostics.Process]$Process)
@@ -21,6 +24,7 @@ function Wait-ForServer {
         $pingExit = $LASTEXITCODE
         $ErrorActionPreference = 'Stop'
         if ($pingExit -eq 0) {
+            Assert-WindowsTestOwner $Process
             return
         }
         if ($Process.HasExited) {
@@ -36,11 +40,12 @@ function Assert-Stopped {
     if (-not $Process.WaitForExit(5000)) {
         throw "$Scenario server did not exit within 5 seconds"
     }
+    if ($Process.ExitCode -ne 0) { throw "$Scenario exited with $($Process.ExitCode)" }
     if (Get-Process -Id $Process.Id -ErrorAction SilentlyContinue) {
         throw "$Scenario process $($Process.Id) is still present"
     }
-    if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 43176 -State Listen -ErrorAction SilentlyContinue) {
-        throw "$Scenario listener 127.0.0.1:43176 is still present"
+    if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:LHC_PORT) -State Listen -ErrorAction SilentlyContinue) {
+        throw "$Scenario test IPC listener is still present"
     }
 }
 
@@ -51,15 +56,26 @@ function Test-Quit {
     $stderr = Join-Path $output "$Scenario-stderr.log"
     $env:LHC_HOTKEYS = 'off'
     $env:LHC_POPUPS = 'winit'
+    $env:LHC_METRICS = Join-Path $output "$Scenario-metrics.csv"
+    Remove-Item $env:LHC_METRICS -ErrorAction SilentlyContinue
     $process = Start-Process -FilePath $exe -WorkingDirectory $root `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+    $null = $process.Handle
+    $script:processes.Add($process)
     Wait-ForServer $process
+    Invoke-Client 'preferences dark ru'
+    $isolatedConfig = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control\config.json'
+    $deadline = (Get-Date).AddSeconds(10)
+    while (-not (Test-Path $isolatedConfig)) {
+        if ((Get-Date) -gt $deadline) { throw 'Release did not save to isolated storage' }
+        Start-Sleep -Milliseconds 100
+    }
     if ($Visible) {
         & $exe show emoji | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "$Scenario show failed with exit code $LASTEXITCODE"
         }
-        Start-Sleep -Milliseconds 300
+        Wait-Metric 't2_shown' 1
     }
     & $exe quit | Out-Null
     if ($LASTEXITCODE -ne 0) {
@@ -89,12 +105,16 @@ function Test-Stress {
     $env:LHC_METRICS = $metrics
     $process = Start-Process -FilePath $exe -WorkingDirectory $root `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+    $null = $process.Handle
+    $script:processes.Add($process)
     Wait-ForServer $process
 
     $samples = @()
     for ($cycle = 1; $cycle -le 100; $cycle++) {
         Invoke-Client $(if ($cycle % 2) { 'show emoji' } else { 'show quick' })
+        Wait-Metric 't2_shown' $cycle
         Invoke-Client 'hide'
+        Wait-Metric 'hidden' $cycle
         if ($cycle % 10 -eq 0) {
             Start-Sleep -Milliseconds 100
             $process.Refresh()
@@ -150,34 +170,46 @@ function Test-Stress {
     Remove-Item Env:LHC_METRICS -ErrorAction SilentlyContinue
 }
 
-$ErrorActionPreference = 'Continue'
-& $exe quit 2>$null | Out-Null
-$ErrorActionPreference = 'Stop'
-Start-Sleep -Milliseconds 300
-Test-Quit 'hidden'
-Test-Quit 'visible' -Visible
-Test-Stress
-
-$spellStdout = Join-Path $output 'spell-stdout.log'
-$spellStderr = Join-Path $output 'spell-stderr.log'
-$env:LHC_POPUPS = 'spell'
-$spell = Start-Process -FilePath $exe -WorkingDirectory $root `
-    -RedirectStandardOutput $spellStdout -RedirectStandardError $spellStderr -PassThru -Wait
-if ($spell.ExitCode -eq 0) {
-    throw 'LHC_POPUPS=spell unexpectedly succeeded'
-}
-$spellMessage = Get-Content $spellStderr -Raw
-if ($spellMessage -notmatch 'Spell popups are available only on Linux Wayland') {
-    throw "Unexpected spell diagnostic: $spellMessage"
-}
-if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 43176 -State Listen -ErrorAction SilentlyContinue) {
-    throw 'spell failure left listener 127.0.0.1:43176 present'
+function Wait-Metric([string]$Event, [int]$Count) {
+    $deadline = (Get-Date).AddSeconds(10)
+    do {
+        if (Test-Path $env:LHC_METRICS) {
+            $actual = @(Import-Csv $env:LHC_METRICS | Where-Object event -eq $Event).Count
+            if ($actual -eq $Count) { return }
+            if ($actual -gt $Count) { throw "Duplicate $Event metrics: $actual > $Count" }
+        }
+        Start-Sleep -Milliseconds 50
+    } while ((Get-Date) -lt $deadline)
+    throw "Timed out waiting for $Count $Event rows"
 }
 
-Write-Host 'WINDOWS LIFECYCLE CHECK PASSED' -ForegroundColor Green
-Write-Host 'Hidden quit: process and listener released'
-Write-Host 'Visible quit: process and listener released'
-Write-Host '100 show/hide cycles: metrics, working set and handles checked'
-Write-Host 'Disabled hotkeys: Ctrl+Alt+F11/F12 produced no popup trigger'
-Write-Host 'Unsupported spell backend: diagnostic and non-zero exit confirmed'
-Write-Host "Logs: $output"
+try {
+    Test-Quit 'hidden'
+    Test-Quit 'visible' -Visible
+    Test-Stress
+
+    $spellStdout = Join-Path $output 'spell-stdout.log'
+    $spellStderr = Join-Path $output 'spell-stderr.log'
+    $env:LHC_POPUPS = 'spell'
+    $spell = Start-Process -FilePath $exe -WorkingDirectory $root `
+        -RedirectStandardOutput $spellStdout -RedirectStandardError $spellStderr -PassThru
+    $null = $spell.Handle
+    $script:processes.Add($spell)
+    if (-not $spell.WaitForExit(20000)) { throw 'Unsupported Spell startup hung' }
+    if ($spell.ExitCode -eq 0) { throw 'LHC_POPUPS=spell unexpectedly succeeded' }
+    $spellMessage = Get-Content $spellStderr -Raw
+    if ($spellMessage -notmatch 'Spell popups are available only on Linux Wayland') {
+        throw "Unexpected spell diagnostic: $spellMessage"
+    }
+    if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:LHC_PORT) -State Listen -ErrorAction SilentlyContinue) {
+        throw 'Spell failure left the test IPC listener present'
+    }
+
+    Write-Host 'WINDOWS LIFECYCLE CHECK PASSED' -ForegroundColor Green
+    Write-Host 'Hidden/visible quit, 100 rendered popup cycles, resource bounds, disabled hotkeys, unsupported Spell'
+    Write-Host "Logs: $output"
+} finally {
+    try {
+        foreach ($process in $script:processes) { Stop-WindowsTestProcess $process }
+    } finally { Restore-WindowsTest $saved }
+}

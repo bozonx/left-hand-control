@@ -1,0 +1,25 @@
+Date: 2026-10-19 22:08:23 -0300
+Commit: c71cd1c (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261019-215936/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 813 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261019-215936/src.tar.gz; SHA256 30cce62270cbcf590fcebbcbce01cc6c072cb2d7e004eaaa4539929d39d38ce2; Source sync: 6 updated, 39 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: passed
+- mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
+- mapper-modifiers-extended: passed — left/right Shift, Ctrl and Alt distinguished; Shift+X, Ctrl+Home, Shift+End
+- mapper-repeat: passed
+- mapper-tap-hold-layer: passed
+- mapper-chord-double-tap: passed
+- mapper-live-config-held: passed
+- mapper-macro-live-config-cancel: passed — ordered steps and >=500ms pause; live config cancels remaining macro
+- mapper-unicode-us-ru: FAILED — receiver locale: {'ok': False, 'error': 'Input language is not installed: ru-RU', 'id': 41}
+- windows-mapper: FAILED — receiver locale: {'ok': False, 'error': 'Input language is not installed: ru-RU', 'id': 41}
+
+Passed: 12, failed: 2

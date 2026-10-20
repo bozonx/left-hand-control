@@ -6,6 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -Path (Join-Path $PSScriptRoot 'windows-key-trace.cs') -ReferencedAssemblies 'System.dll', 'System.Core.dll', 'System.Windows.Forms.dll'
 if ($InputLocale) {
     $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
         Where-Object { $_.Culture.Name -eq $InputLocale } | Select-Object -First 1
@@ -44,6 +45,8 @@ $form.Controls.Add($editor)
 $form.Controls.Add($status)
 $script:formActive = $false
 $script:editorFocused = $false
+$script:lastCommand = $null
+$script:hideOnInput = $false
 
 function Write-ReceiverState {
     param([string]$Event, $KeyEvent = $null)
@@ -112,7 +115,49 @@ $editor.Add_Leave({
 })
 $editor.Add_KeyDown({ param($sender, $eventArgs) Write-ReceiverState 'key-down' $eventArgs })
 $editor.Add_KeyUp({ param($sender, $eventArgs) Write-ReceiverState 'key-up' $eventArgs })
-$editor.Add_TextChanged({ Write-ReceiverState 'text-changed' })
+$editor.Add_TextChanged({
+    Write-ReceiverState 'text-changed'
+    if ($script:hideOnInput -and $editor.Text.Length -gt 0) {
+        $script:hideOnInput = $false
+        $form.Hide()
+    }
+})
 $form.Add_FormClosed({ Write-ReceiverState 'closed' })
 
-[System.Windows.Forms.Application]::Run($form)
+# Host control changes the receiver itself; keyboard scenarios still use QMP.
+$timer = New-Object System.Windows.Forms.Timer
+$timer.Interval = 50
+$timer.Add_Tick({
+    $raw = [LhcKeyTrace]::Drain()
+    if ($raw.Count) {
+        [IO.File]::AppendAllText((Join-Path $Output 'raw-keys.jsonl'), (($raw -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
+    }
+    $path = Join-Path $Output 'command.json'
+    if (-not (Test-Path $path)) { return }
+    try { $command = Get-Content $path -Raw -Encoding utf8 | ConvertFrom-Json } catch { return }
+    if ($command.id -eq $script:lastCommand) { return }
+    $script:lastCommand = $command.id
+    try {
+        switch ($command.op) {
+            'trace' { [LhcKeyTrace]::Start() }
+            'reset' { $script:hideOnInput = $false; $editor.Clear() }
+            'hide-on-input' { $script:hideOnInput = $true }
+            'focus' { $form.Activate(); $editor.Focus() | Out-Null }
+            'blur' { $status.Focus() | Out-Null; $form.Hide() }
+            'locale' {
+                $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
+                    Where-Object { $_.Culture.Name -eq $command.locale } | Select-Object -First 1
+                if (-not $language) { throw "Input language is not installed: $($command.locale)" }
+                [System.Windows.Forms.InputLanguage]::CurrentInputLanguage = $language
+            }
+            'show' { $form.Show(); $form.Activate(); $editor.Focus() | Out-Null }
+            default { throw "Unknown receiver operation: $($command.op)" }
+        }
+        Write-ReceiverState 'command'
+        $response = @{ id = $command.id; ok = $true }
+    } catch { $response = @{ id = $command.id; ok = $false; error = "$_" } }
+    $json = $response | ConvertTo-Json -Compress
+    [IO.File]::WriteAllText((Join-Path $Output 'response.json'), $json, [Text.UTF8Encoding]::new($false))
+})
+$timer.Start()
+try { [System.Windows.Forms.Application]::Run($form) } finally { $timer.Stop(); [LhcKeyTrace]::Stop(); $timer.Dispose() }

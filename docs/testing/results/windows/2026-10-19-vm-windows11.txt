@@ -1,0 +1,14 @@
+Date: 2026-10-19 17:29:44 -0300
+Commit: c71cd1c (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261019-170317/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 806 files; source archive SHA256 897ffbee89447286b6832f9c1a6d40c9e2d2363075786db3847d71c99773e36b; Source sync: 71 updated, 35 removed
+- windows-full: FAILED — Command '['ssh', '-i', '/home/ivan/.ssh/lhc-vm', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=ERROR', '-o', 'ConnectTimeout=5', '-p', '2241', 'user@127.0.0.1', '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); Test-Path D:\\lhc-e2e\\out\\receiver\\snapshot.json']' timed out after 30 seconds
+
+Passed: 3, failed: 1

@@ -45,6 +45,14 @@ jobs:
       - name: Check formatting
         run: cargo fmt -p lhc-core -p slint-shell --check
 
+      - name: Check Windows script syntax (no desktop)
+        if: matrix.os == 'windows-latest'
+        run: powershell -NoProfile -File apps/slint-shell/scripts/check-windows-syntax.ps1
+
+      - name: Test Windows VM controller (no desktop)
+        if: matrix.os == 'ubuntu-latest'
+        run: python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+
       - name: Test Linux shell (Spell)
         if: matrix.os == 'ubuntu-latest'
         run: cargo test --locked --workspace --features slint-shell/spell --all-targets

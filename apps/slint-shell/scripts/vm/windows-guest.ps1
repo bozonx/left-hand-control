@@ -12,6 +12,7 @@ $summary = Join-Path $out 'summary.txt'
 $log = Join-Path $out 'automated.log'
 $code = 1
 $receiver = $null
+$mapper = $null
 
 function Add-Line([string]$Text) {
     Add-Content -Path $summary -Value $Text -Encoding utf8
@@ -23,7 +24,7 @@ try {
     $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
     $env:CARGO_HOME = 'D:\lhc-e2e\cargo'
     # Keep native Slint builds within the VM memory budget.
-    $env:CARGO_BUILD_JOBS = '2'
+    $env:CARGO_BUILD_JOBS = '1'
     New-Item -ItemType Directory -Force -Path $env:CARGO_HOME | Out-Null
     $os = Get-CimInstance Win32_OperatingSystem
     Add-Line "Windows: $($os.Caption) build $($os.BuildNumber)"
@@ -34,31 +35,43 @@ try {
     Add-Line ''
 
     $suite = (Get-Content 'D:\lhc-e2e\suite.txt' -Raw).Trim()
-    if ($suite -notin @('smoke', 'full')) { throw "Unknown suite: $suite" }
-    $script = if ($suite -eq 'smoke') { 'check-windows-smoke.ps1' } else { 'check-windows-automated.ps1' }
+    if ($suite -notin @('smoke', 'full', 'mapper')) { throw "Unknown suite: $suite" }
+    $script = 'check-windows-smoke.ps1'
     Add-Line "Suite: $suite"
 
     # Native commands write progress to stderr; the exit code is the verdict.
     $ErrorActionPreference = 'Continue'
-    & powershell -NoProfile -ExecutionPolicy Bypass -File `
-        (Join-Path $root "apps\slint-shell\scripts\$script") *>&1 |
-        Out-File -FilePath $log -Encoding utf8
+    if ($suite -eq 'mapper') {
+        $step = 'core-driver-build'
+        & cargo build --locked --manifest-path (Join-Path $root 'crates\lhc-core\Cargo.toml') `
+            --example windows-mapper-stand *>&1 | Out-File -FilePath $log -Encoding utf8
+    } else {
+        $step = 'shell-smoke'
+        & powershell -NoProfile -ExecutionPolicy Bypass -File `
+            (Join-Path $root "apps\slint-shell\scripts\$script") *>&1 |
+            Out-File -FilePath $log -Encoding utf8
+    }
     $code = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
     if ($code -eq 0) {
-        Add-Line "- ${suite}: passed"
+        Add-Line "- ${step}: passed"
     } else {
-        Add-Line "- ${suite}: FAILED (exit $code, see automated.log)"
+        Add-Line "- ${step}: FAILED (exit $code, see automated.log)"
     }
 
-    if ($code -eq 0 -and $suite -eq 'smoke') {
+    if ($code -eq 0) {
         $receiverScript = Join-Path $root 'apps\slint-shell\scripts\windows-receiver.ps1'
         $receiver = Start-Process powershell -PassThru -ArgumentList @(
             '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $receiverScript,
             '-Output', "$out\receiver", '-InputLocale', 'en-US'
         ) -RedirectStandardOutput "$out\receiver-stdout.log" -RedirectStandardError "$out\receiver-stderr.log"
-        $deadline = (Get-Date).AddMinutes(3)
+        $stand = Join-Path $root 'target\debug\examples\windows-mapper-stand.exe'
+        $mapper = Start-Process $stand -PassThru -WindowStyle Hidden -ArgumentList "$out\mapper" `
+            -RedirectStandardOutput "$out\mapper-stdout.log" -RedirectStandardError "$out\mapper-stderr.log"
+        $null = $mapper.Handle
+        $deadline = (Get-Date).AddMinutes(15)
         while (-not (Test-Path "$out\input-result.txt")) {
+            if ($mapper.HasExited) { throw 'Mapper stand exited before host checks' }
             if ($receiver.HasExited) { throw 'Input receiver exited before host checks' }
             if ((Get-Date) -gt $deadline) { throw 'Host keyboard checks timed out' }
             Start-Sleep -Milliseconds 200
@@ -66,7 +79,24 @@ try {
         if ((Get-Content "$out\input-result.txt" -Raw).Trim() -ne '0') {
             throw 'Host keyboard checks failed; see host report and receiver events'
         }
-        Add-Line '- hardware-keyboard: passed (native input, Shift, Ctrl+Home, Shift+End, key release)'
+        Add-Line '- hardware-keyboard and mapper scenarios: passed (see named host steps)'
+        [IO.File]::WriteAllText("$out\mapper\request.json", '{"id":"guest-shutdown","op":"shutdown"}', [Text.UTF8Encoding]::new($false))
+        if (-not $mapper.WaitForExit(10000) -or $mapper.ExitCode -ne 0) { throw 'Mapper stand did not shut down cleanly' }
+        $receiver.CloseMainWindow() | Out-Null
+        if (-not $receiver.WaitForExit(5000)) { Stop-Process -Id $receiver.Id -Force }
+
+    }
+
+    if ($code -eq 0 -and $suite -eq 'full') {
+        # Functional input checks run first; the heavier compile matrix follows.
+        $ErrorActionPreference = 'Continue'
+        & powershell -NoProfile -ExecutionPolicy Bypass -File `
+            (Join-Path $root 'apps\slint-shell\scripts\check-windows-automated.ps1') -SkipSmoke *>&1 |
+            Out-File -FilePath (Join-Path $out 'full.log') -Encoding utf8
+        $code = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        if ($code -ne 0) { throw "Full native/release checks failed (exit $code, see full.log)" }
+        Add-Line '- full-native-release: passed'
     }
 
     $lifecycle = Join-Path $root 'windows-runtime'
@@ -77,6 +107,7 @@ try {
     $code = 1
     Add-Line "- harness: FAILED ($_)"
 } finally {
+    if ($mapper -and -not $mapper.HasExited) { Stop-Process -Id $mapper.Id -Force }
     if ($receiver -and -not $receiver.HasExited) {
         $receiver.CloseMainWindow() | Out-Null
         if (-not $receiver.WaitForExit(5000)) { Stop-Process -Id $receiver.Id -Force }

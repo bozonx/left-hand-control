@@ -4525,3 +4525,89 @@ fn repeats_reemit_only_keys_that_hold_a_virtual_key() {
     engine.repeat(KeyCode::KEY_SPACE, &mut out);
     assert!(out.is_empty());
 }
+
+#[test]
+fn confirmed_hold_repeats_the_mapped_key_until_release() {
+    let cfg =
+        config_with_rule(serde_json::json!({"key":"KeyA","tapAction":"KeyB","holdAction":"KeyB"}));
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.repeat(KeyCode::KEY_A, &mut out);
+    assert!(out.is_empty());
+    engine.tick(now + Duration::from_secs(1), &mut out);
+    out.clear();
+    engine.repeat(KeyCode::KEY_A, &mut out);
+    engine.repeat(KeyCode::KEY_A, &mut out);
+    assert!(matches!(
+        out.as_slice(),
+        [
+            Out::KeyRaw {
+                key: KeyCode::KEY_B,
+                down: true
+            },
+            Out::KeyRaw {
+                key: KeyCode::KEY_B,
+                down: true
+            }
+        ]
+    ));
+    engine.handle(
+        KeyCode::KEY_A,
+        false,
+        now + Duration::from_secs(2),
+        &mut out,
+    );
+    out.clear();
+    engine.repeat(KeyCode::KEY_A, &mut out);
+    assert!(out.is_empty());
+}
+
+#[test]
+fn left_and_right_modifier_taps_remain_distinct() {
+    let names = [
+        "ShiftLeft",
+        "ShiftRight",
+        "ControlLeft",
+        "ControlRight",
+        "AltLeft",
+        "AltRight",
+    ];
+    let inputs = [
+        KeyCode::KEY_LEFTSHIFT,
+        KeyCode::KEY_RIGHTSHIFT,
+        KeyCode::KEY_LEFTCTRL,
+        KeyCode::KEY_RIGHTCTRL,
+        KeyCode::KEY_LEFTALT,
+        KeyCode::KEY_RIGHTALT,
+    ];
+    let actions = ["KeyL", "KeyR", "KeyC", "KeyD", "KeyE", "KeyF"];
+    let outputs = [
+        KeyCode::KEY_L,
+        KeyCode::KEY_R,
+        KeyCode::KEY_C,
+        KeyCode::KEY_D,
+        KeyCode::KEY_E,
+        KeyCode::KEY_F,
+    ];
+    let rules: Vec<_> = names
+        .iter()
+        .zip(actions)
+        .map(|(key, action)| serde_json::json!({"key":key,"tapAction":action}))
+        .collect();
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules":rules})).unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    for (index, (input, expected)) in inputs.into_iter().zip(outputs).enumerate() {
+        let at = now + Duration::from_millis(index as u64 * 150);
+        let mut out = Vec::new();
+        engine.handle(input, true, at, &mut out);
+        engine.handle(input, false, at + Duration::from_millis(20), &mut out);
+        assert!(
+            matches!(out.as_slice(), [Out::Stroke {ks, ..}] if ks.key == expected),
+            "{}",
+            names[index]
+        );
+    }
+}

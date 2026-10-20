@@ -587,7 +587,11 @@ impl Engine {
     /// holds a virtual key down repeats it; undecided taps, layer triggers
     /// and one-shot actions do not.
     pub fn repeat(&self, key: KeyCode, out: &mut Vec<Out>) {
-        if self.pending.contains_key(&key) {
+        if self
+            .pending
+            .get(&key)
+            .is_some_and(|pending| !matches!(pending.phase, Phase::HoldActive))
+        {
             return;
         }
         if let Some(ks) = self.emitted.get(&key) {
