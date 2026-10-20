@@ -7,11 +7,27 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -Path (Join-Path $PSScriptRoot 'windows-key-trace.cs') -ReferencedAssemblies 'System.dll', 'System.Core.dll', 'System.Windows.Forms.dll'
-if ($InputLocale) {
+function Set-ReceiverLanguage([string]$Locale) {
     $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
-        Where-Object { $_.Culture.Name -eq $InputLocale } | Select-Object -First 1
-    if (-not $language) { throw "Input language is not installed: $InputLocale" }
+        Where-Object { $_.Culture.Name -eq $Locale } | Select-Object -First 1
+    if (-not $language) {
+        # Load the built-in test layout while the receiver owns keyboard focus.
+        $identifier = switch ($Locale) {
+            'en-US' { '00000409' }
+            'ru-RU' { '00000419' }
+            default { throw "Unsupported test input language: $Locale" }
+        }
+        $layout = [LhcKeyTrace]::LoadKeyboardLayoutW($identifier, 1)
+        if ($layout -eq [IntPtr]::Zero) { throw "Could not load input language: $Locale" }
+        $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
+            Where-Object { $_.Handle -eq $layout } | Select-Object -First 1
+        if (-not $language) { throw "Loaded input language is unavailable: $Locale" }
+    }
+    if ($language.Culture.Name -ne $Locale) { throw "Unexpected input language: $($language.Culture.Name), expected $Locale" }
     [System.Windows.Forms.InputLanguage]::CurrentInputLanguage = $language
+}
+if ($InputLocale) {
+    Set-ReceiverLanguage $InputLocale
 }
 
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
@@ -134,21 +150,23 @@ $timer.Add_Tick({
     }
     $path = Join-Path $Output 'command.json'
     if (-not (Test-Path $path)) { return }
-    try { $command = Get-Content $path -Raw -Encoding utf8 | ConvertFrom-Json } catch { return }
+    try {
+        $stream = [IO.File]::Open($path, 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+        $reader = [IO.StreamReader]::new($stream, [Text.Encoding]::UTF8)
+        try { $rawCommand = $reader.ReadToEnd() } finally { $reader.Dispose() }
+        $command = $rawCommand | ConvertFrom-Json
+    } catch { return }
     if ($command.id -eq $script:lastCommand) { return }
     $script:lastCommand = $command.id
     try {
         switch ($command.op) {
-            'trace' { [LhcKeyTrace]::Start() }
+            'trace' { [LhcKeyTrace]::Stop(); [LhcKeyTrace]::Start() }
             'reset' { $script:hideOnInput = $false; $editor.Clear() }
             'hide-on-input' { $script:hideOnInput = $true }
             'focus' { $form.Activate(); $editor.Focus() | Out-Null }
             'blur' { $status.Focus() | Out-Null; $form.Hide() }
             'locale' {
-                $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
-                    Where-Object { $_.Culture.Name -eq $command.locale } | Select-Object -First 1
-                if (-not $language) { throw "Input language is not installed: $($command.locale)" }
-                [System.Windows.Forms.InputLanguage]::CurrentInputLanguage = $language
+                Set-ReceiverLanguage $command.locale
             }
             'show' { $form.Show(); $form.Activate(); $editor.Focus() | Out-Null }
             default { throw "Unknown receiver operation: $($command.op)" }

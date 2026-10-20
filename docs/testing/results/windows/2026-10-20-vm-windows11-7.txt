@@ -1,0 +1,35 @@
+Date: 2026-10-20 10:12:18 -0300
+Commit: d39e9e7 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Mapper from: beginning
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-092655/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 822 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-092655/src.tar.gz; SHA256 2085c3af84adcaeec867672fa64409fa5eb77ce4382fe66e9ed058cc26a61a23; Source sync: 8 updated, 39 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: passed
+- mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
+- mapper-modifiers-extended: passed — left/right Shift, Ctrl and Alt distinguished; Shift+X, Ctrl+Home, Shift+End
+- mapper-repeat: passed
+- mapper-tap-hold-layer: passed
+- mapper-chord-double-tap: passed
+- mapper-live-config-held: passed
+- mapper-macro-live-config-cancel: passed — ordered steps and >=500ms pause; live config cancels remaining macro
+- mapper-unicode-us-ru: passed
+- mapper-focus-cancel: passed — receiver changes foreground mid-text; worker reports cancellation and does not resume
+- mapper-stop-held-restart: passed — stop releases virtual Ctrl before physical release; native input and restart work
+- mapper-replug: passed
+- mapper-lock-unavailable: passed — second process rejected by session mutex; unsupported system action reports notice
+- mapper-crash-held: skipped — not accepted: forced process termination cannot run virtual-key cleanup
+- mapper-secure-session: skipped — elevated target, secure desktop and lock/unlock require separate acceptance
+- mapper-suspend: skipped — guest suspend/resume requires separate acceptance
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- controller: FAILED — interrupted; full acceptance was not completed
+- collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
+
+Passed: 17, failed: 1

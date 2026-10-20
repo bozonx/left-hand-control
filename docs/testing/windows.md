@@ -290,18 +290,27 @@ fragmented socket request) and runs
 three show/hide cycles for each popup, theme/language commands and shutdown.
 Popup checks wait for `t2_shown` and `hidden` metrics rather than only IPC replies.
 Debug configuration lives in a fresh `LHC_DEV_DIR`; the IPC port is selected per run.
-Run with no other application instance: Windows IPC authentication uses a shared token.
+The IPC token is also isolated by `LHC_DEV_DIR`; the smoke suite checks two independent
+profiles and verifies which process owns each test port.
 The VM smoke also opens the native receiver after application checks: QMP sends
 `abc`, Shift+X, Ctrl+Home, Shift+End and `ok`; the host compares text and key-down/up records.
-The receiver selects its installed English (US) input language and must be focused.
+The receiver selects English (US) and must be focused. Both VM suites then exercise
+the actual mapper: remap/swallow, modifiers, repeat, layers, chords, macros,
+live config, Unicode and RU/EN, focus cancellation, stop/restart, USB replug and
+the session mutex. See the [scenario matrix](../development/windows-mapper.md).
 Source upload compares file hashes, preserves unchanged timestamps and removes
 stale source files while keeping `target/`. Changed files receive extraction-time
 timestamps so Cargo rebuilds them even if the host clock is behind the guest.
 Logs, metrics and UI scenario snapshots (`snapshots/*.ppm`) are collected under
 the run's `logs/guest/runtime/smoke` directory.
 Recorded successful run: [Windows 11 smoke, 2026-10-18](results/windows/2026-10-18-vm-windows11-4.txt).
-This is shell smoke coverage; mapper, tray appearance, focus return and Unicode
-insertion remain outside this suite.
+That historical report covers shell smoke only. Current reports list mapper scenarios
+individually; tray appearance, popup selection/focus return, forced process termination,
+secure sessions, suspend/resume and physical hardware still need separate acceptance.
+The [full Windows 11 run, 2026-10-20](results/windows/2026-10-20-vm-windows11-8.txt)
+passed all 13 release mapper scenarios, native tests/clippy, release storage isolation
+and lifecycle checks including 100 rendered popup cycles (18 host steps, 0 failures).
+The remaining acceptance areas above are unchanged.
 
 For a local run in an interactive Windows desktop:
 
@@ -310,7 +319,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\slint-shell\scripts\c
 ```
 
 Use `-SkipBuild` only with already built debug binaries. Use `--suite full` on the
-VM runner for native tests, release build and the existing 100-cycle acceptance suite.
+VM runner for native tests/clippy, release storage isolation, release build and the
+100-cycle lifecycle suite. For the full native Slint build use `--memory 12288`;
+the guest runs Cargo with one job.
 
 
 The portable `interactions` example exercises clipboard, keyboard input, modal behavior, DnD, cancellation, edge scrolling, theme, locale, and hidden popups:
@@ -321,7 +332,11 @@ cargo run --locked --manifest-path apps/slint-shell/Cargo.toml --example interac
 if ($LASTEXITCODE -ne 0) { throw 'interaction scenario failed' }
 ```
 
-For IPC lifecycle testing, start one server with `Start-Process`, poll `ping` until ready, alternate `show emoji`/`show quick` and `hide` 100 times, then send `quit`. Validate each client’s `$LASTEXITCODE`, confirm that the server exits within a timeout, and inspect redirected stdout/stderr. Do not depend solely on `$server.ExitCode`: PowerShell returned an empty value for the asynchronously launched process in the first harness even though all 100 cycles and shutdown completed successfully.
+For IPC lifecycle testing, start an isolated server with `Start-Process`, retain its
+handle (`$null = $server.Handle`), poll `ping` and verify the port owner. Alternate
+`show emoji`/`show quick` and `hide` 100 times, waiting for rendering metrics, then
+send `quit`. Validate each client’s `$LASTEXITCODE`, wait for server exit and check
+its exit code. Retaining the handle avoids PowerShell 5.1 losing `$server.ExitCode`.
 
 The committed lifecycle harness covers the acceptance cases that are easy to miss in an
 interactive pass:
@@ -333,7 +348,7 @@ powershell -ExecutionPolicy Bypass -File `
 
 It verifies shutdown from both hidden and visible states, 100 alternating popup cycles,
 bounded working-set and handle growth after warm-up, disabled global hotkeys, process
-disappearance, release of the loopback listener on `127.0.0.1:43176`, and the non-zero exit
+disappearance, release of the isolated loopback listener on the selected test port, and the non-zero exit
 plus diagnostic for the unsupported Windows setting `LHC_POPUPS=spell`. Logs,
 metrics and resource samples are written below `windows-runtime\lifecycle` in the source
 checkout.
@@ -345,8 +360,10 @@ powershell -ExecutionPolicy Bypass -File `
   .\apps\slint-shell\scripts\check-windows-automated.ps1
 ```
 
-It runs native tests, makes the release build, executes the portable interaction scenario,
-and then runs the lifecycle harness.
+It runs shell smoke, native tests/clippy, the release storage override tests, the
+release build and lifecycle. Hardware-driven mapper scenarios require the host VM
+runner (`--suite full`); this standalone PowerShell entry point does not generate
+QEMU keyboard input.
 
 ## Headless host control and recovery
 

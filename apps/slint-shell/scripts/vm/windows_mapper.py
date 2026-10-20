@@ -5,17 +5,32 @@ what a normal target application actually receives. Neither uses SendKeys.
 
 import base64
 import json
+import subprocess
 import time
 from datetime import datetime
 
-from vmlib import StepFailed, wait_for
+from vmlib import KEYBOARD_PORT, StepFailed, wait_for
 
 WORK = r"D:\lhc-e2e\out"
 
 
+def retry_guest_io(operation):
+    """Retry idempotent mailbox I/O, never keyboard input or process launches."""
+    for attempt in range(3):
+        try:
+            return operation()
+        except (StepFailed, subprocess.TimeoutExpired) as error:
+            if isinstance(error, StepFailed) and "exited with 255" not in str(error):
+                raise
+            if attempt == 2:
+                raise
+            time.sleep(0.5)
+
+
 class WindowsMapper:
     def __init__(self, vm, ps, report):
-        self.vm, self.ps, self.report = vm, ps, report
+        self.vm, self.report = vm, report
+        self.ps = lambda command, **kwargs: retry_guest_io(lambda: ps(command, **kwargs))
         self.serial = 0
         self.held = set()
 
@@ -34,7 +49,8 @@ class WindowsMapper:
         name = "request" if target == "mapper" else "command"
         path = f"{WORK}\\{target}\\{name}.json"
         self.ps(f"[IO.File]::WriteAllBytes('{path}.tmp', [Convert]::FromBase64String('{encoded}')); "
-                f"Move-Item -Force '{path}.tmp' '{path}'", timeout=30)
+                f"if (Test-Path '{path}') {{ [IO.File]::Replace('{path}.tmp', '{path}', [NullString]::Value) }} "
+                f"else {{ [IO.File]::Move('{path}.tmp', '{path}') }}", timeout=30)
 
         def response():
             try:
@@ -271,9 +287,13 @@ class WindowsMapper:
         self.mapper("stop")
         wait_for("shutdown releases Ctrl", 10, lambda: (17, False) in self.transitions(since))
         self.release("f")
+        # Once hooks stop, the still-held physical F legitimately repeats natively.
+        # Clear that text after releasing it; reset does not change keyboard state.
+        self.reset()
         self.vm.qmp.tap("a", "b")
         self.text("ab")
         self.mapper("start", config={})
+        self.receiver("trace")
         self.reset()
         self.vm.qmp.tap("a")
         self.text("a")
@@ -290,18 +310,31 @@ class WindowsMapper:
 
     def replug(self):
         self.config({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})
+
+        def keyboards():
+            raw = self.ps("ConvertTo-Json -Compress -InputObject @(Get-PnpDevice -Class Keyboard -PresentOnly | "
+                          "Where-Object Status -eq 'OK' | Select-Object -ExpandProperty InstanceId)", timeout=30)
+            return set(json.loads(raw.lstrip("\ufeff")))
+
+        before = keyboards()
+        if not before:
+            raise StepFailed("No ready keyboard before USB replug")
+        self.vm.qmp.execute("device_del", id="kbd0")
+        wait_for("Windows removes the USB keyboard", 30, lambda: before - keyboards())
+        self.vm.qmp.execute("device_add", driver="usb-kbd", id="kbd0", port=KEYBOARD_PORT)
+        wait_for("Windows USB keyboard driver ready", 30, lambda: before <= keyboards())
         self.reset()
-        self.vm.qmp.replug_keyboard()
         self.vm.qmp.tap("a")
         self.text("b")
         self.mapper("status")
 
-    def run(self):
+    def run(self, start_at=None):
         wait_for("mapper stand", 30, lambda: "True" in self.ps(f"Test-Path {WORK}\\mapper\\ready", timeout=30))
-        self.mapper("start", config={})
+        completed = False
         try:
+            self.mapper("start", config={})
             self.receiver("trace")
-            for name, scenario in (
+            scenarios = (
                 ("mapper-passthrough", self.passthrough),
                 ("mapper-remap-swallow-recursion", self.remap),
                 ("mapper-modifiers-extended", self.modifiers),
@@ -315,18 +348,31 @@ class WindowsMapper:
                 ("mapper-stop-held-restart", self.stop_held),
                 ("mapper-replug", self.replug),
                 ("mapper-lock-unavailable", self.lock_and_unavailable),
-            ):
+            )
+            if start_at and start_at not in dict(scenarios):
+                raise StepFailed(f"Unknown mapper scenario: {start_at}")
+            for name, scenario in scenarios:
+                if start_at and name != start_at:
+                    self.report.skip(name, f"diagnostic run starts at {start_at}")
+                    continue
+                start_at = None
                 self.report.step(name, scenario, fatal=True)
                 self.vm.qmp.screendump(self.vm.logs / f"{name}.png")
             self.report.skip("mapper-crash-held", "not accepted: forced process termination cannot run virtual-key cleanup")
             self.report.skip("mapper-secure-session", "elevated target, secure desktop and lock/unlock require separate acceptance")
             self.report.skip("mapper-suspend", "guest suspend/resume requires separate acceptance")
             self.report.skip("mapper-physical-hardware", "VM input does not accept physical Windows hardware")
+            completed = True
         finally:
             try:
-                result = self.command("mapper", "stop")
-                if not result["ok"] and result["status"]["running"]:
-                    raise StepFailed(f"Mapper cleanup failed: {result}")
+                try:
+                    result = self.command("mapper", "stop")
+                    if not result["ok"] and result["status"]["running"]:
+                        raise StepFailed(f"Mapper cleanup failed: {result}")
+                except (StepFailed, subprocess.TimeoutExpired):
+                    if completed:
+                        raise
+                    self.report.skip("mapper-cleanup", "cleanup failed; original scenario failure preserved")
             finally:
                 for key in list(self.held):
                     self.release(key)

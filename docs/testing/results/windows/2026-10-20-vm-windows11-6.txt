@@ -1,0 +1,41 @@
+Date: 2026-10-20 08:14:54 -0300
+Commit: d39e9e7 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper from: mapper-lock-unavailable
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-081142/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: mapper
+- core-driver-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 820 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-081142/src.tar.gz; SHA256 abeaa9bd404c27a3c177afdd0ce1dc56d96774bf0b01919c3c65e26e9c4a90bd; Source sync: 3 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-repeat: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-stop-held-restart: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-replug: skipped — diagnostic run starts at mapper-lock-unavailable
+- mapper-lock-unavailable: passed — second process rejected by session mutex; unsupported system action reports notice
+- mapper-crash-held: skipped — not accepted: forced process termination cannot run virtual-key cleanup
+- mapper-secure-session: skipped — elevated target, secure desktop and lock/unlock require separate acceptance
+- mapper-suspend: skipped — guest suspend/resume requires separate acceptance
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-mapper: passed
+
+Passed: 6, failed: 0

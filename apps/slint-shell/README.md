@@ -41,8 +41,9 @@ CSV метрик пишется только при заданном `LHC_METRIC
 Для release используйте `cargo build --release --locked -p slint-shell`.
 
 На Windows IPC слушает только `127.0.0.1:43176`; порт можно изменить через
-`LHC_PORT`; каждый запрос подписан токеном из `%LOCALAPPDATA%\lhc-slint-shell\ipc-token`,
-который недоступен другим пользователям. Linux и macOS используют Unix socket в приватном
+`LHC_PORT`; каждый запрос подписан токеном. Без `LHC_DEV_DIR` он хранится в
+`%LOCALAPPDATA%\lhc-slint-shell\ipc-token`; при override — в каталоге настроек
+этого профиля. Linux и macOS используют Unix socket в приватном
 каталоге `0700`: `$XDG_RUNTIME_DIR/lhc-slint-shell/` или, без `XDG_RUNTIME_DIR`,
 `<temp>/lhc-slint-shell-<uid>/`. Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. После выбора на
 Windows/macOS окно скрывается, ранее активное окно восстанавливается через Win32

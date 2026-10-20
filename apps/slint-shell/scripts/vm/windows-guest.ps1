@@ -60,16 +60,31 @@ try {
     }
 
     if ($code -eq 0) {
+        if ($suite -eq 'full') {
+            $ErrorActionPreference = 'Continue'
+            & cargo build --release --locked --manifest-path (Join-Path $root 'crates\lhc-core\Cargo.toml') `
+                --example windows-mapper-stand *>&1 |
+                Out-File -FilePath (Join-Path $out 'mapper-build.log') -Encoding utf8
+            $driverCode = $LASTEXITCODE
+            $ErrorActionPreference = 'Stop'
+            if ($driverCode -ne 0) { throw "Release mapper driver build failed (exit $driverCode)" }
+            Add-Line '- release-mapper-driver-build: passed'
+        }
         $receiverScript = Join-Path $root 'apps\slint-shell\scripts\windows-receiver.ps1'
         $receiver = Start-Process powershell -PassThru -ArgumentList @(
             '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $receiverScript,
             '-Output', "$out\receiver", '-InputLocale', 'en-US'
         ) -RedirectStandardOutput "$out\receiver-stdout.log" -RedirectStandardError "$out\receiver-stderr.log"
-        $stand = Join-Path $root 'target\debug\examples\windows-mapper-stand.exe'
-        $mapper = Start-Process $stand -PassThru -WindowStyle Hidden -ArgumentList "$out\mapper" `
-            -RedirectStandardOutput "$out\mapper-stdout.log" -RedirectStandardError "$out\mapper-stderr.log"
+        $driverProfile = if ($suite -eq 'full') { 'release' } else { 'debug' }
+        $stand = Join-Path $root "target\$driverProfile\examples\windows-mapper-stand.exe"
+        $previousDevDir = [Environment]::GetEnvironmentVariable('LHC_DEV_DIR', 'Process')
+        try {
+            $env:LHC_DEV_DIR = Join-Path $out 'mapper-profile'
+            $mapper = Start-Process $stand -PassThru -WindowStyle Hidden -ArgumentList "$out\mapper" `
+                -RedirectStandardOutput "$out\mapper-stdout.log" -RedirectStandardError "$out\mapper-stderr.log"
+        } finally { [Environment]::SetEnvironmentVariable('LHC_DEV_DIR', $previousDevDir, 'Process') }
         $null = $mapper.Handle
-        $deadline = (Get-Date).AddMinutes(15)
+        $deadline = (Get-Date).AddMinutes(25)
         while (-not (Test-Path "$out\input-result.txt")) {
             if ($mapper.HasExited) { throw 'Mapper stand exited before host checks' }
             if ($receiver.HasExited) { throw 'Input receiver exited before host checks' }

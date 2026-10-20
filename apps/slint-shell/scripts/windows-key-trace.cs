@@ -38,6 +38,9 @@ public static class LhcKeyTrace
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr LoadKeyboardLayoutW(string identifier, uint flags);
+
     private static IntPtr Observe(int code, IntPtr message, IntPtr pointer)
     {
         if (code == 0)
@@ -81,8 +84,13 @@ public static class LhcKeyTrace
 
     public static void Stop()
     {
-        if (worker == null || !worker.IsAlive) return;
-        PostThreadMessageW(threadId, 0x12, IntPtr.Zero, IntPtr.Zero);
-        worker.Join(5000);
+        if (worker == null) return;
+        if (worker.IsAlive)
+        {
+            PostThreadMessageW(threadId, 0x12, IntPtr.Zero, IntPtr.Zero);
+            if (!worker.Join(5000)) throw new Exception("Keyboard trace did not stop");
+        }
+        worker = null;
+        hook = IntPtr.Zero;
     }
 }

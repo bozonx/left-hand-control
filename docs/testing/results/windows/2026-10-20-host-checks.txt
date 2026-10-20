@@ -1,0 +1,29 @@
+Date: 2026-10-20
+Environment: Linux x86_64 host; Rust 1.98.1; Windows VM acceptance recorded separately.
+Source: d39e9e7 plus the Windows test-stand fixes in the working tree.
+
+PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS CARGO_BUILD_JOBS=1 cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASS CARGO_BUILD_JOBS=1 cargo test --locked --workspace --features slint-shell/spell
+  lhc-core: 402 passed, 3 ignored; game-mode lifecycle: 1 passed;
+  storage_override: 2 passed; slint-shell: 83 passed; shell IPC: 3 passed;
+  mapper_e2e: 9 ignored; remaining workspace/doc tests: no failures.
+PASS CARGO_BUILD_JOBS=1 cargo check --locked -p slint-shell --all-targets
+PASS CARGO_BUILD_JOBS=1 cargo test --locked -p lhc-core confirmed_hold_repeats_the_mapped_key_until_release
+PASS python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+  8 tests passed.
+PASS python3 -m py_compile apps/slint-shell/scripts/vm/run-windows.py apps/slint-shell/scripts/vm/windows_mapper.py apps/slint-shell/scripts/vm/vmlib.py
+PASS git diff --check
+
+Linux graphical scenarios and physical evdev/uinput mapper acceptance were not rerun in this Windows-focused pass. No Slint UI files changed. Windows editor/interactions and hardware input results belong to the named VM reports, not this host report.
+Forced-termination held-key recovery, elevated/secure desktop and lock/unlock, suspend/resume, and physical Windows hardware remain outside completed acceptance.
+
+PASS python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite full --memory 12288
+  Windows 11 Enterprise Evaluation build 26200; Rust/Cargo 1.98.1; 12288 MiB guest RAM.
+  18 host steps passed, 0 failed; 13 release mapper scenarios passed.
+  Shell editor/interactions smoke, native all-target tests/clippy, release storage tests,
+  release application build and lifecycle (100 rendered popup cycles) passed.
+  Report: 2026-10-20-vm-windows11-8.txt; includes tested source archive and SHA256.
+  Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-101225/logs/guest
+  The guest and SSH control connection were shut down after log collection.
+  Tray appearance/DPI and popup selection/focus return still require manual acceptance.

@@ -64,12 +64,14 @@ function Test-Quit {
     $script:processes.Add($process)
     Wait-ForServer $process
     Invoke-Client 'preferences dark ru'
+    Invoke-Client 'game on'
     $isolatedConfig = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control\config.json'
     $deadline = (Get-Date).AddSeconds(10)
     while (-not (Test-Path $isolatedConfig)) {
         if ((Get-Date) -gt $deadline) { throw 'Release did not save to isolated storage' }
         Start-Sleep -Milliseconds 100
     }
+    Invoke-Client 'game auto'
     if ($Visible) {
         & $exe show emoji | Out-Null
         if ($LASTEXITCODE -ne 0) {

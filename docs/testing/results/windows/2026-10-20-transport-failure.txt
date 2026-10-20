@@ -1,0 +1,13 @@
+Status: INTERRUPTED / NOT ACCEPTED
+Command: python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite full --memory 12288
+Source archive: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-081513/src.tar.gz
+SHA256: c2c5efdd26accaafedfda8bb64a05f07c680d0db44885944f8d91b62348d44da
+Evidence: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-081513/logs/
+
+Completed: shell smoke (editor, interactions, IPC, profiles, popups, preferences, quit), hardware baseline and all 13 mapper scenarios.
+Completed inside guest: cargo test --locked -p lhc-core -p slint-shell --all-targets; cargo clippy --locked -p lhc-core -p slint-shell --all-targets --no-deps -- -D warnings; cargo test --release --locked -p lhc-core --test storage_override (2 passed).
+Not completed: application release build and release lifecycle.
+
+SSH stopped responding during native checks and did not recover after a two-minute pause in controller polling. Read-only inspection of the test cache disk confirmed native checks continued; selected logs were exported to logs/offline-guest/ with a live-snapshot notice. No writes were made to the mounted guest filesystem.
+The old controller was interrupted with SIGINT for a transport-fix rerun; its finally block exported available diagnostics, saved a screenshot and shut down the disposable VM. Its version did not yet record KeyboardInterrupt in the automatic report, so this explicitly labelled reconstruction preserves the observed results without calling the full run successful.
+The next controller uses a private OpenSSH ControlMaster connection, keepalives and explicit connection cleanup. Cancellation now records a failed report and preserves diagnostics; the host regression suite covers that behavior.

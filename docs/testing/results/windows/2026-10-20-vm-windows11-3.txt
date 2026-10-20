@@ -1,0 +1,28 @@
+Date: 2026-10-20 08:03:05 -0300
+Commit: d39e9e7 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper from: mapper-unicode-us-ru
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-075828/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 816 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-075828/src.tar.gz; SHA256 06b40a2cfe84825b56070c5ddbdd3251c162caf7651a0b3d80789f7746c629ec; Source sync: 5 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-repeat: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-unicode-us-ru
+- mapper-unicode-us-ru: passed
+- mapper-focus-cancel: passed — receiver changes foreground mid-text; worker reports cancellation and does not resume
+- mapper-stop-held-restart: FAILED — timed out waiting for text 'ab'
+- windows-mapper: FAILED — timed out waiting for text 'ab'
+
+Passed: 6, failed: 2

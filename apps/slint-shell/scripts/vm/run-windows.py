@@ -19,7 +19,7 @@ import subprocess
 import tarfile
 import time
 
-from windows_mapper import WindowsMapper
+from windows_mapper import WindowsMapper, retry_guest_io
 from vmlib import REPO, Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
 
 WORK = r"D:\lhc-e2e"
@@ -68,19 +68,34 @@ def validate_guest_result(status, summary, input_checked):
         raise StepFailed("Guest completed without hardware/mapper acceptance")
 
 
+def signal_input_result(ps, report, passed):
+    try:
+        retry_guest_io(lambda: ps(f"Set-Content {WORK}\\out\\input-result.txt -Value {0 if passed else 1}", timeout=30))
+    except (StepFailed, subprocess.TimeoutExpired):
+        if passed:
+            raise
+        # Keep the original scenario error when the failure marker cannot cross SSH.
+        report.skip("signal-guest-input-failure", "SSH unavailable; original input failure preserved")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--vm", required=True, help="VM directory with vm.json")
     parser.add_argument("--suite", choices=("smoke", "full", "mapper"), default="smoke",
                         help="smoke (default), full native/release acceptance, or mapper-only diagnostics")
     parser.add_argument("--memory", type=int, help="guest RAM in MiB; overrides vm.json for this run only")
+    parser.add_argument("--mapper-from", help="mapper-only diagnostics: begin at this named scenario")
     parser.add_argument("--show", action="store_true", help="show the VM display")
     parser.add_argument("--keep", action="store_true", help="keep the overlay disk")
     parser.add_argument("--timeout", type=float, default=150,
                         help="minutes to wait for the guest run (the first build is slow)")
     args = parser.parse_args()
+    if args.mapper_from and args.suite != "mapper":
+        parser.error("--mapper-from requires --suite mapper")
     environment_ok()
     vm = Vm(args.vm)
+    # Reuse one authenticated connection instead of repeatedly logging in to Windows.
+    vm.ssh_multiplex = True
     if args.memory:
         if args.memory < 4096:
             parser.error("Windows acceptance needs at least 4096 MiB")
@@ -222,10 +237,10 @@ Remove-Item $stage -Recurse -Force
                 passed = False
                 try:
                     report.step("hardware-keyboard", keyboard_baseline, fatal=True)
-                    WindowsMapper(vm, ps, report).run()
+                    WindowsMapper(vm, ps, report).run(start_at=args.mapper_from)
                     passed = True
                 finally:
-                    ps(f"Set-Content {WORK}\\out\\input-result.txt -Value {0 if passed else 1}")
+                    signal_input_result(ps, report, passed)
             if time.monotonic() - started > 30 and state["task"] in ("Ready", "Disabled"):
                 raise StepFailed(f"LHC-E2E stopped without a completion marker ({state['task']})")
             return False
@@ -242,6 +257,9 @@ Remove-Item $stage -Recurse -Force
         report.step(f"windows-{args.suite}", run)
     except StepFailed:
         print("A required step failed; later steps were not run.")
+    except KeyboardInterrupt:
+        report.steps.append(("controller", "FAILED", "interrupted; full acceptance was not completed"))
+        print("Interrupted; collecting available diagnostics and stopping the VM.")
     finally:
         try:
             if vm.qemu and vm.qemu.poll() is None:
@@ -257,6 +275,8 @@ Remove-Item $stage -Recurse -Force
         f"Commit: {commit()}",
         f"VM: {vm.name} ({vm.base})",
         f"Suite: {args.suite}",
+        f"Mapper build: {'release' if args.suite == 'full' else 'debug'}",
+        f"Mapper from: {args.mapper_from or 'beginning'}",
         f"Memory: {vm.get('memory', 6144)} MiB",
         f"Logs: {vm.logs}",
         "",

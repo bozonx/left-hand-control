@@ -1,0 +1,29 @@
+Date: 2026-10-20 08:07:18 -0300
+Commit: d39e9e7 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper from: mapper-stop-held-restart
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-080324/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 818 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-080324/src.tar.gz; SHA256 bc3612459cdc14c192159ee407a63e960f6453dcfe8fd8264af35c3a9b8c7a61; Source sync: 4 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-repeat: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-stop-held-restart
+- mapper-stop-held-restart: passed — stop releases virtual Ctrl before physical release; native input and restart work
+- mapper-replug: FAILED — timed out waiting for text 'b'
+- windows-mapper: FAILED — timed out waiting for text 'b'
+
+Passed: 5, failed: 2

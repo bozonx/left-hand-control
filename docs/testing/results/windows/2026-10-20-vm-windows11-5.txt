@@ -1,0 +1,46 @@
+Date: 2026-10-20 08:11:13 -0300
+Commit: d39e9e7 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper from: mapper-replug
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-080800/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 819 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-080800/src.tar.gz; SHA256 84ecef25643372a4cd801beff4332b5710180a1cffb8a9d64b808043ad67c45b; Source sync: 3 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-replug
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-replug
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-replug
+- mapper-repeat: skipped — diagnostic run starts at mapper-replug
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-replug
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-replug
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-replug
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-replug
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-replug
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-replug
+- mapper-stop-held-restart: skipped — diagnostic run starts at mapper-replug
+- mapper-replug: passed
+- mapper-lock-unavailable: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); [IO.File]::WriteAllBytes('D:\lhc-e2e\out\receiver\command.json.tmp', [Convert]::FromBase64String('eyJpZCI6IDgsICJvcCI6ICJyZXNldCJ9')); Move-Item -Force 'D:\lhc-e2e\out\receiver\command.json.tmp' 'D:\lhc-e2e\out\receiver\command.json'` exited with 1:
+Move-Item : Cannot create a file when that file already exists.
+At line:1 char:205
++ ... XNldCJ9')); Move-Item -Force 'D:\lhc-e2e\out\receiver\command.json.tm ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : WriteError: (D:\lhc-e2e\out\receiver\command.json:FileInfo) [Move-I 
+   tem], IOException
+    + FullyQualifiedErrorId : MoveFileInfoItemIOError,Microsoft.PowerShell.Commands.MoveItemComma 
+   nd
+- windows-mapper: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); [IO.File]::WriteAllBytes('D:\lhc-e2e\out\receiver\command.json.tmp', [Convert]::FromBase64String('eyJpZCI6IDgsICJvcCI6ICJyZXNldCJ9')); Move-Item -Force 'D:\lhc-e2e\out\receiver\command.json.tmp' 'D:\lhc-e2e\out\receiver\command.json'` exited with 1:
+Move-Item : Cannot create a file when that file already exists.
+At line:1 char:205
++ ... XNldCJ9')); Move-Item -Force 'D:\lhc-e2e\out\receiver\command.json.tm ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : WriteError: (D:\lhc-e2e\out\receiver\command.json:FileInfo) [Move-I 
+   tem], IOException
+    + FullyQualifiedErrorId : MoveFileInfoItemIOError,Microsoft.PowerShell.Commands.MoveItemComma 
+   nd
+
+Passed: 5, failed: 2

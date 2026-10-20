@@ -1,0 +1,25 @@
+Date: 2026-10-20 07:57:51 -0300
+Commit: d39e9e7 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-075031/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 815 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-075031/src.tar.gz; SHA256 4470688a1cee1038ee5b8ef5bb33d01a4d7143eb6323834a0e6aa021da10d3b1; Source sync: 4 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: passed
+- mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
+- mapper-modifiers-extended: passed — left/right Shift, Ctrl and Alt distinguished; Shift+X, Ctrl+Home, Shift+End
+- mapper-repeat: passed
+- mapper-tap-hold-layer: passed
+- mapper-chord-double-tap: passed
+- mapper-live-config-held: passed
+- mapper-macro-live-config-cancel: passed — ordered steps and >=500ms pause; live config cancels remaining macro
+- mapper-unicode-us-ru: FAILED — receiver locale: {'ok': False, 'error': "Method invocation failed because [System.Windows.Forms.InputLanguage] does not contain a method named 'FromHandle'.", 'id': 41}
+- windows-mapper: FAILED — receiver locale: {'ok': False, 'error': "Method invocation failed because [System.Windows.Forms.InputLanguage] does not contain a method named 'FromHandle'.", 'id': 41}
+
+Passed: 12, failed: 2

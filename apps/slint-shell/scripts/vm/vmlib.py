@@ -41,6 +41,7 @@ class Vm:
         self.logs = self.run_dir / "logs"
         self.qemu = None
         self.swtpm = None
+        self.ssh_multiplex = False
         # UNIX socket paths are limited to 108 bytes: keep them short.
         self.sockets = Path(tempfile.mkdtemp(
             prefix="lhc-vm-", dir=os.environ.get("XDG_RUNTIME_DIR") or "/tmp"))
@@ -129,6 +130,12 @@ class Vm:
         return arguments
 
     def stop(self, keep=False):
+        if self.ssh_multiplex and (self.sockets / "ssh").exists():
+            try:
+                subprocess.run(["ssh", *self._ssh_options(), "-O", "exit", "-p", str(self.port),
+                                f"{self.user}@127.0.0.1"], capture_output=True, timeout=5)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
         if self.qemu and self.qemu.poll() is None:
             try:
                 self.qmp.execute("system_powerdown")
@@ -151,9 +158,14 @@ class Vm:
     # --- ssh ------------------------------------------------------------
 
     def _ssh_options(self):
-        return ["-i", str(self.key), "-o", "BatchMode=yes",
-                "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
-                "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=5"]
+        options = ["-i", str(self.key), "-o", "BatchMode=yes",
+                   "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+                   "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=5"]
+        if self.ssh_multiplex:
+            options += ["-o", "ControlMaster=auto", "-o", "ControlPersist=60",
+                        "-o", f"ControlPath={self.sockets / 'ssh'}",
+                        "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=3"]
+        return options
 
     def ssh(self, command, check=True, timeout=600, background=False):
         """Run `command` in the guest's login shell; returns its stdout."""

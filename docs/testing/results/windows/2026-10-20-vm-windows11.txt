@@ -1,0 +1,17 @@
+Date: 2026-10-20 07:49:23 -0300
+Commit: d39e9e7 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-074530/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 814 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-074530/src.tar.gz; SHA256 ad35cc16daff5d2e13ca224b232cb14f83393c95163eb12cb817c0ebba001d9f; Source sync: 3 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- windows-mapper: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); Set-Content D:\lhc-e2e\out\input-result.txt -Value 1` exited with 255:
+Connection timed out during banner exchange
+
+Passed: 4, failed: 1
