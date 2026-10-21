@@ -513,6 +513,14 @@ quit, 100 реально показанных/скрытых попапов, п�
 В full аппаратные сценарии выполняются release-сборкой core driver; smoke и
 диагностический mapper используют debug. Для driver также задаётся отдельный `LHC_DEV_DIR`.
 
+Перед mapper smoke/full проверяют пять сценариев выбора попапов через
+Ctrl+Alt+F11/F12 и физическую клавишу ячейки: BMP, surrogate pair, ZWJ,
+смешанный русский текст и повторное открытие. Отдельный debug shell с
+`winit-skia` использует тестовую активную раскладку. WinForms receiver проверяет
+точный Unicode без дубликатов, возврат фокуса и обычный ввод после вставки.
+Сценарии находятся в `scripts/vm/windows_popups.py`, launcher —
+`scripts/windows-popup-stand.ps1` (пути относительно `apps/slint-shell/`).
+
 После оболочки оба набора проверяют QMP → эмулируемую USB-клавиатуру → Windows
 hook → общий движок → `SendInput` → WinForms receiver. `windows_mapper.py`
 управляет `lhc-core --example windows-mapper-stand` через тестовый файловый

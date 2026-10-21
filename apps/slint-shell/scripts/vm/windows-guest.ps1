@@ -13,6 +13,7 @@ $log = Join-Path $out 'automated.log'
 $code = 1
 $receiver = $null
 $mapper = $null
+$popupStand = $null
 
 function Add-Line([string]$Text) {
     Add-Content -Path $summary -Value $Text -Encoding utf8
@@ -75,6 +76,13 @@ try {
             '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $receiverScript,
             '-Output', "$out\receiver", '-InputLocale', 'en-US'
         ) -RedirectStandardOutput "$out\receiver-stdout.log" -RedirectStandardError "$out\receiver-stderr.log"
+        if ($suite -ne 'mapper') {
+            $popupScript = Join-Path $root 'apps\slint-shell\scripts\windows-popup-stand.ps1'
+            $popupStand = Start-Process powershell -PassThru -ArgumentList @(
+                '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $popupScript, '-Output', "$out\popups"
+            ) -RedirectStandardOutput "$out\popups-stdout.log" -RedirectStandardError "$out\popups-stderr.log"
+            $null = $popupStand.Handle
+        }
         $driverProfile = if ($suite -eq 'full') { 'release' } else { 'debug' }
         $stand = Join-Path $root "target\$driverProfile\examples\windows-mapper-stand.exe"
         $previousDevDir = [Environment]::GetEnvironmentVariable('LHC_DEV_DIR', 'Process')
@@ -86,6 +94,9 @@ try {
         $null = $mapper.Handle
         $deadline = (Get-Date).AddMinutes(25)
         while (-not (Test-Path "$out\input-result.txt")) {
+            if ($popupStand -and $popupStand.HasExited -and $popupStand.ExitCode -ne 0) {
+                throw "Popup acceptance stand failed (exit $($popupStand.ExitCode), see popups-stderr.log)"
+            }
             if ($mapper.HasExited) { throw 'Mapper stand exited before host checks' }
             if ($receiver.HasExited) { throw 'Input receiver exited before host checks' }
             if ((Get-Date) -gt $deadline) { throw 'Host keyboard checks timed out' }
@@ -95,6 +106,9 @@ try {
             throw 'Host keyboard checks failed; see host report and receiver events'
         }
         Add-Line '- hardware-keyboard and mapper scenarios: passed (see named host steps)'
+        if ($popupStand -and (-not $popupStand.WaitForExit(10000) -or $popupStand.ExitCode -ne 0)) {
+            throw 'Popup acceptance stand did not exit cleanly'
+        }
         [IO.File]::WriteAllText("$out\mapper\request.json", '{"id":"guest-shutdown","op":"shutdown"}', [Text.UTF8Encoding]::new($false))
         if (-not $mapper.WaitForExit(10000) -or $mapper.ExitCode -ne 0) { throw 'Mapper stand did not shut down cleanly' }
         $receiver.CloseMainWindow() | Out-Null

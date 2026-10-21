@@ -305,12 +305,18 @@ Logs, metrics and UI scenario snapshots (`snapshots/*.ppm`) are collected under
 the run's `logs/guest/runtime/smoke` directory.
 Recorded successful run: [Windows 11 smoke, 2026-10-18](results/windows/2026-10-18-vm-windows11-4.txt).
 That historical report covers shell smoke only. Current reports list mapper scenarios
-individually; tray appearance, popup selection/focus return, forced process termination,
+individually; tray appearance/DPI, other target applications, forced process termination,
 secure sessions, suspend/resume and physical hardware still need separate acceptance.
 The [full Windows 11 run, 2026-10-20](results/windows/2026-10-20-vm-windows11-8.txt)
 passed all 13 release mapper scenarios, native tests/clippy, release storage isolation
 and lifecycle checks including 100 rendered popup cycles (18 host steps, 0 failures).
 The remaining acceptance areas above are unchanged.
+The [popup and mapper smoke run, 2026-10-20](results/windows/2026-10-20-vm-windows11-12.txt)
+passed 23 steps, including five native hotkey/selection scenarios with the debug
+shell and `winit-skia`: BMP, surrogate-pair and ZWJ emoji, mixed Russian text,
+and reopening. Each checks exact Unicode once, editor focus restoration and normal
+typing afterward. The target is the native WinForms receiver; this does not accept
+all Windows applications, display scales or tray behavior.
 
 For a local run in an interactive Windows desktop:
 

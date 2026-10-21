@@ -20,6 +20,7 @@ import tarfile
 import time
 
 from windows_mapper import WindowsMapper, retry_guest_io
+from windows_popups import check_popups
 from vmlib import REPO, Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
 
 WORK = r"D:\lhc-e2e"
@@ -237,6 +238,8 @@ Remove-Item $stage -Recurse -Force
                 passed = False
                 try:
                     report.step("hardware-keyboard", keyboard_baseline, fatal=True)
+                    if args.suite != "mapper":
+                        check_popups(vm, ps, report)
                     WindowsMapper(vm, ps, report).run(start_at=args.mapper_from)
                     passed = True
                 finally:

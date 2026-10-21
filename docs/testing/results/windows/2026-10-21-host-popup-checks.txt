@@ -1,0 +1,33 @@
+Date: 2026-10-21 UTC
+Source: b64d43e plus the popup acceptance changes in the working tree.
+
+PASS python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite smoke --memory 12288
+  VM run completed 2026-10-20; Windows 11 Enterprise Evaluation build 26200.
+  23 passed, 0 failed; report: 2026-10-20-vm-windows11-12.txt.
+  Five popup hotkey/selection/Unicode/focus scenarios and 13 mapper scenarios passed.
+  Debug shell and mapper; popup renderer winit-skia; target native WinForms TextBox.
+  Native parser: WINDOWS SCRIPT SYNTAX PASSED: 9 files.
+  Source archive SHA256: 88664d9567c5a0502b24fd5162285d8271104ddd638be72f26df53dfca70d481.
+  Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-110724/logs/guest
+  VM and controller are no longer running.
+
+PASS python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+  10 tests passed on 2026-10-21, including diagnostic/cleanup fault handling added after the VM run.
+PASS python3 -m py_compile apps/slint-shell/scripts/vm/run-windows.py apps/slint-shell/scripts/vm/windows_popups.py
+PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS git diff --check
+
+No Rust product or Slint UI source changed in this pass. Native full tests/clippy,
+release build and lifecycle remain recorded separately in 2026-10-20-vm-windows11-8.txt;
+this popup smoke run does not replace them or claim release popup selection coverage.
+
+Guest diagnostic executed via SSH: powercfg /a
+  Available: Hibernate, Fast Startup.
+  S1/S2: unavailable (firmware and Graphics).
+  S3: unavailable (Graphics).
+  S0 Low Power Idle: unavailable (firmware).
+  Hybrid Sleep: unavailable because S3 is unavailable.
+  Suspend/resume was not attempted or accepted on this VM.
+
+Forced termination with held virtual keys, elevated/secure desktop and lock/unlock,
+physical keyboards, other target applications and tray/DPI behavior remain unaccepted.

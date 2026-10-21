@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 import importlib.util
 from vmlib import Report, StepFailed
 from windows_mapper import WindowsMapper, retry_guest_io
+import windows_popups
 
 spec = importlib.util.spec_from_file_location("run_windows", Path(__file__).with_name("run-windows.py"))
 run_windows = importlib.util.module_from_spec(spec)
@@ -20,6 +21,32 @@ spec.loader.exec_module(run_windows)
 
 
 class WindowsStandTests(unittest.TestCase):
+    def test_popup_diagnostic_failures_preserve_the_original_error(self):
+        vm = Mock()
+        vm.logs = Path('test-logs')
+        vm.qmp.screendump.side_effect = OSError('QMP unavailable')
+        probe = Mock()
+        probe.ps.return_value = 'True'
+        probe.reset.side_effect = StepFailed('original popup mismatch')
+        probe.read.side_effect = StepFailed('SSH unavailable during cleanup')
+        with patch.object(windows_popups, 'WindowsMapper', return_value=probe), \
+             contextlib.redirect_stdout(io.StringIO()), \
+             self.assertRaisesRegex(StepFailed, 'original popup mismatch'):
+            windows_popups.check_popups(vm, Mock(), Report())
+
+    def test_successful_popups_still_fail_when_cleanup_fails(self):
+        vm = Mock()
+        vm.logs = Path('test-logs')
+        probe = Mock()
+        probe.ps.return_value = 'True'
+        probe.read.side_effect = StepFailed('quit transport failed')
+        report = Mock()
+        # Successful scenario execution is covered by the VM; isolate final cleanup.
+        with patch.object(windows_popups, 'WindowsMapper', return_value=probe), \
+             self.assertRaisesRegex(StepFailed, 'quit transport failed'):
+            windows_popups.check_popups(vm, Mock(), report)
+        self.assertEqual(report.step.call_count, 5)
+
     def test_interrupted_run_preserves_diagnostics_and_records_failure(self):
         with tempfile.TemporaryDirectory() as temporary:
             report_path = Path(temporary) / 'report.txt'

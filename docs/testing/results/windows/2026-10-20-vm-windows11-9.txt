@@ -1,0 +1,18 @@
+Date: 2026-10-20 10:53:18 -0300
+Commit: b64d43e (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: smoke
+Mapper build: debug
+Mapper from: beginning
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-104723/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 826 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-104723/src.tar.gz; SHA256 1d935356eacc82440f86d570b26a4b3d180b6f02db2f946e11c96a673461b8b1; Source sync: 8 updated, 53 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- windows-smoke: FAILED — timed out waiting for popup shell
+
+Passed: 4, failed: 1
