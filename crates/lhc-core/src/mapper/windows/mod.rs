@@ -6,11 +6,15 @@
 //! single device [`KEYBOARD_PATH`]. Input to elevated windows and the
 //! secure desktop (UAC, Ctrl+Alt+Del, lock screen) bypasses the hooks, and
 //! injection into elevated windows is blocked by UIPI.
+//! Executables call [`dispatch_input_guard`] at entry to enable a separate
+//! process that releases journaled native keys if their mapper owner dies.
 
+mod guard;
 mod hook;
 mod input;
 pub mod system;
 
+pub use guard::dispatch as dispatch_input_guard;
 pub use input::type_unicode;
 
 use super::config::AppConfig;
@@ -223,6 +227,16 @@ pub fn spawn(
 struct MapperLock(HANDLE);
 
 impl MapperLock {
+    fn join_existing() -> Result<Self, String> {
+        let handle = unsafe { CreateMutexW(None, false, w!("Local\\LeftHandControlMapper")) }
+            .map_err(|error| format!("open mapper lock for input guard: {error}"))?;
+        if unsafe { GetLastError() } != ERROR_ALREADY_EXISTS {
+            let _ = unsafe { CloseHandle(handle) };
+            return Err("input guard owner has no mapper lock".into());
+        }
+        Ok(Self(handle))
+    }
+
     fn acquire() -> Result<Self, String> {
         let handle = unsafe { CreateMutexW(None, false, w!("Local\\LeftHandControlMapper")) }
             .map_err(|error| format!("create mapper lock: {error}"))?;
@@ -253,6 +267,7 @@ fn run(
         return Err("mapper start cancelled".into());
     }
     let _lock = MapperLock::acquire()?;
+    let _guard = guard::Session::start()?;
     // Declared after the lock so the hooks are removed first on return.
     let hooks = Hooks::install(events_tx, mouse)?;
     let _ = ready_tx.send(Ok(()));
@@ -275,6 +290,9 @@ fn run_loop(
     let mut effects = RuntimeSideEffects;
     let result = (|| {
         while !stop.load(Ordering::SeqCst) {
+            if guard::failed() {
+                return Err("input guard is unavailable; mapper stopped".into());
+            }
             while let Ok(control) = control_rx.try_recv() {
                 match control {
                     MapperControl::Config(next) => {

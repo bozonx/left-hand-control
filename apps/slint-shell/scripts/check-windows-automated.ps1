@@ -22,10 +22,11 @@ try {
     if (-not $SkipSmoke) { & (Join-Path $PSScriptRoot 'check-windows-smoke.ps1') }
     Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--all-targets')
     Invoke-Checked 'cargo' @('clippy', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--all-targets', '--no-deps', '--', '-D', 'warnings')
-    Invoke-Checked 'cargo' @('test', '--release', '--locked', '-p', 'lhc-core', '--test', 'storage_override')
+    Invoke-Checked 'cargo' @('test', '--release', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--test', 'storage_override')
     Invoke-Checked 'cargo' @(
         'build', '--release', '--locked', '--manifest-path', $manifest,
-        '--bin', 'left-hand-control'
+        '-p', 'lhc-core', '-p', 'slint-shell',
+        '--bin', 'left-hand-control', '--example', 'windows-mapper-stand'
     )
 
 

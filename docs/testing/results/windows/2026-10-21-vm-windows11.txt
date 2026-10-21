@@ -1,0 +1,19 @@
+Date: 2026-10-21 01:47:38 -0300
+Commit: 5d021a6 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Mapper build: release
+Popup shell build: release
+Mapper from: beginning
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-231601/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 838 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-231601/src.tar.gz; SHA256 2332dd978361e39c0e69e3b22f43f1b22ac289c1a4c4e81852b6fb59438e4d86; Source sync: 6 updated, 39 removed
+- windows-full: FAILED — timed out waiting for the guest run
+- collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
+
+Passed: 3, failed: 1

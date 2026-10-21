@@ -57,10 +57,10 @@ Push-Location $root
 try {
     & (Join-Path $PSScriptRoot 'check-windows-syntax.ps1')
     if (-not $SkipBuild) {
-        Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '--lib')
-        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'lhc-core', '--example', 'windows-mapper-stand')
-        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'slint-shell', '--bin', 'left-hand-control', '--example', 'editor', '--example', 'interactions')
-        Invoke-Checked 'cargo' @('test', '--locked', '-p', 'slint-shell', '--test', 'ipc')
+        # Resolve the Windows feature union once: separate core/shell builds
+        # otherwise invalidate each other's core dependency and Slint output.
+        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'left-hand-control', '--example', 'windows-mapper-stand', '--example', 'editor', '--example', 'interactions')
+        Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--lib', '--test', 'ipc')
     }
     Invoke-Checked (Join-Path $root 'target\debug\examples\editor.exe') @('--smoke')
     Invoke-Checked (Join-Path $root 'target\debug\examples\interactions.exe') @()

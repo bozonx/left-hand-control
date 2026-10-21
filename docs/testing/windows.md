@@ -305,7 +305,7 @@ Logs, metrics and UI scenario snapshots (`snapshots/*.ppm`) are collected under
 the run's `logs/guest/runtime/smoke` directory.
 Recorded successful run: [Windows 11 smoke, 2026-10-18](results/windows/2026-10-18-vm-windows11-4.txt).
 That historical report covers shell smoke only. Current reports list mapper scenarios
-individually; tray appearance/DPI, other target applications, forced process termination,
+individually; tray appearance/DPI, other target applications, termination of the entire process tree,
 secure sessions, suspend/resume and physical hardware still need separate acceptance.
 The [full Windows 11 run, 2026-10-20](results/windows/2026-10-20-vm-windows11-8.txt)
 passed all 13 release mapper scenarios, native tests/clippy, release storage isolation
@@ -317,6 +317,16 @@ shell and `winit-skia`: BMP, surrogate-pair and ZWJ emoji, mixed Russian text,
 and reopening. Each checks exact Unicode once, editor focus restoration and normal
 typing afterward. The target is the native WinForms receiver; this does not accept
 all Windows applications, display scales or tray behavior.
+
+The [full Windows 11 run, 2026-10-21](results/windows/2026-10-21-vm-windows11-7.txt)
+passed 26 steps with no failures: 15 release mapper scenarios, five release popup
+scenarios, forced termination of the actual release shell, native tests/clippy,
+release storage isolation and 100 lifecycle cycles. Owner death releases held
+Ctrl/Shift/Alt/Win before physical release; guard death stops the mapper and
+releases Ctrl through the fallback. This does not accept whole-process-tree
+termination, secure/elevated sessions, suspend or physical Windows hardware.
+Exact commands and Linux regression results are in the
+[verification log](results/windows/2026-10-21-guard-checks.txt).
 
 For a local run in an interactive Windows desktop:
 
@@ -468,7 +478,7 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
-The remaining manual Windows shell checks are in section 14 of the [manual acceptance checklist](manual-acceptance.md); automated mapper, layouts, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). A successful VM run does not close physical-hardware, secure-desktop or crash acceptance.
+The remaining manual Windows shell checks are in section 14 of the [manual acceptance checklist](manual-acceptance.md); automated mapper, layouts, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). Owner crash and guard failure have separate named scenarios; a successful VM run does not close physical-hardware, secure-desktop or whole-process-tree termination acceptance.
 
 ## Snapshots and result recording
 

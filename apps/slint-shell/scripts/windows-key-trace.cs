@@ -10,6 +10,9 @@ using System.Windows.Forms;
 
 public static class LhcKeyTrace
 {
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+
     [StructLayout(LayoutKind.Sequential)]
     private struct KeyData
     {
@@ -40,6 +43,11 @@ public static class LhcKeyTrace
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern IntPtr LoadKeyboardLayoutW(string identifier, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int key);
+
+    public static bool IsKeyDown(int key) { return GetAsyncKeyState(key) < 0; }
 
     private static IntPtr Observe(int code, IntPtr message, IntPtr pointer)
     {

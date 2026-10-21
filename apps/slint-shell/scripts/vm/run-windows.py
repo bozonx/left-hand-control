@@ -15,8 +15,11 @@ import argparse
 import hashlib
 import io
 import json
+import http.server
+import secrets
 import subprocess
 import tarfile
+import threading
 import time
 
 from windows_mapper import WindowsMapper, retry_guest_io
@@ -24,6 +27,51 @@ from windows_popups import check_popups
 from vmlib import REPO, Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
 
 WORK = r"D:\lhc-e2e"
+
+
+class GuestCompletion:
+    """Test-only callback over QEMU user networking when guest SSH is exhausted."""
+
+    def __init__(self):
+        self.result = None
+        token = secrets.token_urlsafe(32)
+        owner = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                if self.path != '/' + token:
+                    self.send_error(403)
+                    return
+                try:
+                    size = int(self.headers.get('Content-Length', '0'))
+                    if not 0 < size <= 8 * 1024 * 1024:
+                        raise ValueError('invalid result size')
+                    result = json.loads(self.rfile.read(size))
+                    if (not isinstance(result, dict) or result.get('status') not in ('0', '1')
+                            or not isinstance(result.get('summary'), str) or not result['summary'].strip()
+                            or not isinstance(result.get('full_log', ''), str)):
+                        raise ValueError('invalid guest result')
+                except (ValueError, TypeError):
+                    self.send_error(400)
+                    return
+                if owner.result is None:
+                    owner.result = result
+                self.send_response(204)
+                self.end_headers()
+
+            def log_message(self, *_args):
+                pass
+
+        self.server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self.server.daemon_threads = True
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self.url = f'http://10.0.2.2:{self.server.server_port}/{token}'
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=5)
 
 
 def source_archive(path):
@@ -39,18 +87,7 @@ def source_archive(path):
     return sum(bool(name) and (REPO / name).is_file() for name in names), hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def guest_state(ps):
-    """One poll per SSH connection; a busy native build may starve OpenSSH."""
-    try:
-        raw = ps(
-            "$ErrorActionPreference = 'Stop'; "
-            f"$done = Test-Path {WORK}\\out\\done.txt; "
-            f"$receiver = Test-Path {WORK}\\out\\receiver\\snapshot.json; "
-            "$task = Get-ScheduledTask -TaskName LHC-E2E; "
-            "[pscustomobject]@{done=$done; receiver=$receiver; task=[string]$task.State} | ConvertTo-Json -Compress",
-            timeout=30)
-    except (StepFailed, subprocess.TimeoutExpired):
-        return None
+def parse_guest_state(raw):
     if not raw.strip():
         return None
     try:
@@ -60,6 +97,62 @@ def guest_state(ps):
         return state
     except ValueError as error:
         raise StepFailed(f"Invalid guest state: {raw!r}") from error
+
+
+class GuestWatch:
+    """Bounded remote polling, with recovery from a stalled SSH process."""
+
+    def __init__(self, vm):
+        self.vm = vm
+        self.process = None
+        self.started = 0
+
+    def poll(self, input_checked):
+        if self.process is None:
+            after_input = "$true" if input_checked else "$false"
+            command = (
+                "$ErrorActionPreference = 'Stop'; "
+                f"$afterInput = {after_input}; $began = Get-Date; "
+                "while ($true) { "
+                f"$done = Test-Path {WORK}\\out\\done.txt; "
+                f"$receiver = Test-Path {WORK}\\out\\receiver\\snapshot.json; "
+                "$task = [string](Get-ScheduledTask -TaskName LHC-E2E).State; "
+                "if ($done -or (-not $afterInput -and $receiver) -or ((Get-Date) - $began).TotalSeconds -ge 30 -or "
+                "($task -in @('Ready', 'Disabled') -and ((Get-Date) - $began).TotalSeconds -gt 30)) { "
+                "[pscustomobject]@{done=$done; receiver=$receiver; task=$task} | ConvertTo-Json -Compress; break }; "
+                "Start-Sleep -Seconds 2 }"
+            )
+            self.process = self.vm.ssh(command, background=True)
+            self.started = time.monotonic()
+        if self.process.poll() is None:
+            if time.monotonic() - self.started > 90:
+                print("Guest monitor stalled; reconnecting", flush=True)
+                self.stop()
+            return None
+        process, self.process = self.process, None
+        output, error = process.communicate()
+        if process.returncode:
+            print(f"Guest monitor disconnected; retrying: {error[-500:].strip()}", flush=True)
+            return None
+        return parse_guest_state(output)
+
+    def stop(self):
+        if self.process is not None:
+            process, self.process = self.process, None
+            try:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+            except (OSError, subprocess.TimeoutExpired) as error:
+                print(f"Guest monitor cleanup failed: {error}", flush=True)
+            finally:
+                if process.stdout:
+                    process.stdout.close()
+                if process.stderr:
+                    process.stderr.close()
 
 
 def validate_guest_result(status, summary, input_checked):
@@ -95,14 +188,16 @@ def main():
         parser.error("--mapper-from requires --suite mapper")
     environment_ok()
     vm = Vm(args.vm)
-    # Reuse one authenticated connection instead of repeatedly logging in to Windows.
-    vm.ssh_multiplex = True
+    # A stalled Windows OpenSSH multiplexed connection also blocks log collection.
+    vm.ssh_multiplex = False
+    watch = GuestWatch(vm)
     if args.memory:
         if args.memory < 4096:
             parser.error("Windows acceptance needs at least 4096 MiB")
         vm.config["memory"] = args.memory
     report = Report()
     summary = io.StringIO()
+    completion = None
 
     def ps(command, **kwargs):
         encoding = "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); "
@@ -173,6 +268,11 @@ Remove-Item $stage -Recurse -Force
 
     def keyboard_baseline():
         """Real QEMU USB input into a native edit control, without a mapper."""
+        probe = WindowsMapper(vm, ps, report)
+        if args.suite != "mapper":
+            wait_for("popup shell startup", 45, lambda: "True" in probe.ps(
+                f"Test-Path {WORK}\\out\\popups\\ready.json", timeout=30))
+        probe.reset()
         snapshot = f"{WORK}\\out\\receiver\\snapshot.json"
 
         def state():
@@ -217,6 +317,9 @@ Remove-Item $stage -Recurse -Force
         return "QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded"
 
     def run():
+        nonlocal completion
+        completion = GuestCompletion()
+        ps(f"Set-Content {WORK}\\completion-url.txt -Value '{completion.url}'")
         ps(f"$ErrorActionPreference = 'Stop'; Remove-Item {WORK}\\out\\* -Recurse -Force -ErrorAction SilentlyContinue; "
            f"Set-Content {WORK}\\suite.txt -Value {args.suite}; "
            "Start-ScheduledTask -TaskName LHC-E2E")
@@ -227,9 +330,10 @@ Remove-Item $stage -Recurse -Force
             nonlocal input_checked
             if vm.qemu.poll() is not None:
                 raise StepFailed("QEMU exited before guest completion")
-            state = guest_state(ps)
+            if completion.result is not None:
+                return True
+            state = watch.poll(input_checked)
             if state is None:
-                print("Guest state unavailable; retrying within the overall timeout.", flush=True)
                 return False
             if state["done"]:
                 return True
@@ -249,8 +353,15 @@ Remove-Item $stage -Recurse -Force
             return False
 
         wait_for("the guest run", args.timeout * 60, progress, interval=10)
-        summary.write(ps(f"Get-Content -Raw -Encoding utf8 {WORK}\\out\\summary.txt"))
-        status = ps(f"Get-Content -Raw {WORK}\\out\\done.txt").strip()
+        if completion.result is not None:
+            result = completion.result
+            summary.write(result['summary'])
+            status = result['status']
+            (vm.logs / 'guest-completion.json').write_text(json.dumps(result), encoding='utf-8')
+            (vm.logs / 'full-callback.log').write_text(result.get('full_log', ''), encoding='utf-8')
+        else:
+            summary.write(ps(f"Get-Content -Raw -Encoding utf8 {WORK}\\out\\summary.txt"))
+            status = ps(f"Get-Content -Raw {WORK}\\out\\done.txt").strip()
         validate_guest_result(status, summary.getvalue(), input_checked)
 
     try:
@@ -264,6 +375,9 @@ Remove-Item $stage -Recurse -Force
         report.steps.append(("controller", "FAILED", "interrupted; full acceptance was not completed"))
         print("Interrupted; collecting available diagnostics and stopping the VM.")
     finally:
+        watch.stop()
+        if completion is not None:
+            completion.close()
         try:
             if vm.qemu and vm.qemu.poll() is None:
                 if not vm.copy_from("D:/lhc-e2e/out", vm.logs / "guest"):
@@ -279,6 +393,7 @@ Remove-Item $stage -Recurse -Force
         f"VM: {vm.name} ({vm.base})",
         f"Suite: {args.suite}",
         f"Mapper build: {'release' if args.suite == 'full' else 'debug'}",
+        f"Popup shell build: {'none' if args.suite == 'mapper' else 'release' if args.suite == 'full' else 'debug'}",
         f"Mapper from: {args.mapper_from or 'beginning'}",
         f"Memory: {vm.get('memory', 6144)} MiB",
         f"Logs: {vm.logs}",

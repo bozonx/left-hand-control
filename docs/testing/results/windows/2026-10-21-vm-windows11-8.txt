@@ -1,0 +1,44 @@
+Date: 2026-10-21 11:02:27 -0300
+Commit: 5d021a6 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper build: debug
+Popup shell build: none
+Mapper from: mapper-guard-failure
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261021-105810/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: mapper
+- core-driver-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 845 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261021-105810/src.tar.gz; SHA256 e90d194c6abc352c2f238fdd90dd340a6849a07c3358833dc9863523ffbed269; Source sync: 2 updated, 53 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-repeat: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-stop-held-restart: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-replug: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-lock-unavailable: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-crash-held: skipped — diagnostic run starts at mapper-guard-failure
+- mapper-guard-failure: passed — guard death stops mapper, fallback releases Ctrl, native input and restart work
+- mapper-secure-session: skipped — elevated target, secure desktop and lock/unlock require separate acceptance
+- mapper-suspend: skipped — guest suspend/resume requires separate acceptance
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-mapper: passed
+
+Passed: 6, failed: 0

@@ -1,8 +1,9 @@
 //! Slint shell of Left Hand Control.
 //!
-//! One binary runs in three roles: the settings process (`app`), the Spell
+//! One binary runs the settings process (`app`), the Spell
 //! popup worker (`--spell-worker`, Linux + feature `spell`) and a CLI client
 //! that forwards a command to a running instance over IPC.
+//! On Windows it also hosts the private input guard, before UI or config startup.
 
 pub mod ui {
     slint::include_modules!();
@@ -83,6 +84,10 @@ const HELP: &str = concat!(
 
 /// Entry point shared by all roles; `args` excludes the program name.
 pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "windows")]
+    if lhc_core::mapper::windows::dispatch_input_guard()? {
+        return Ok(());
+    }
     let start = Instant::now();
     match args.as_slice() {
         [flag] if flag == "--version" || flag == "-V" => {

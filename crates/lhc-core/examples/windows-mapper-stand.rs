@@ -9,6 +9,9 @@ fn main() {
 
 #[cfg(target_os = "windows")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if lhc_core::mapper::windows::dispatch_input_guard()? {
+        return Ok(());
+    }
     use lhc_core::mapper::{runtime, windows::KEYBOARD_PATH};
     use serde_json::{Value, json};
     use std::{
@@ -49,6 +52,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     fs::write(directory.join("ready"), std::process::id().to_string())?;
     let mut last_id = Value::Null;
+    struct CrashProbe(Option<std::process::Child>);
+    impl Drop for CrashProbe {
+        fn drop(&mut self) {
+            if let Some(child) = self.0.as_mut() {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+        }
+    }
+    let mut crash_probe = CrashProbe(None);
     let mut last_request = Instant::now();
     while last_request.elapsed() < Duration::from_secs(600) {
         let request = fs::read(directory.join("request.json"))
@@ -69,6 +82,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "start" => runtime::start(KEYBOARD_PATH, None, &request["config"].to_string()),
             "config" => runtime::update_config(&request["config"].to_string()),
             "stop" => runtime::stop(),
+            "crash-start" => {
+                use std::os::windows::process::CommandExt;
+                if crash_probe.0.is_some() {
+                    Err("Crash probe already exists".into())
+                } else {
+                    let probe_directory = directory.join("crash");
+                    if probe_directory.exists() {
+                        fs::remove_dir_all(&probe_directory)?;
+                    }
+                    crash_probe.0 = Some(
+                        std::process::Command::new(std::env::current_exe()?)
+                            .arg(probe_directory)
+                            .creation_flags(0x0800_0000)
+                            .stdin(std::process::Stdio::null())
+                            .stdout(std::process::Stdio::null())
+                            .stderr(std::process::Stdio::null())
+                            .spawn()?,
+                    );
+                    Ok(())
+                }
+            }
+            "crash-kill" => match crash_probe.0.take() {
+                Some(mut child) => {
+                    child.kill()?;
+                    child.wait()?;
+                    Ok(())
+                }
+                None => Err("No crash probe".into()),
+            },
             "execute" => {
                 runtime::execute_action(request["action"].as_str().unwrap_or_default().into())
             }

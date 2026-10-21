@@ -1,0 +1,32 @@
+Date: 2026-10-20 21:31:18 -0300
+Commit: 5d021a6 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper build: debug
+Mapper from: mapper-crash-held
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-212806/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 833 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-212806/src.tar.gz; SHA256 5e1f8fff0661caa7a6ed76047e635ff2ae4064585b7ab28f3e7bcf85e943c30d; Source sync: 17 updated, 39 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-crash-held
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-crash-held
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-crash-held
+- mapper-repeat: skipped — diagnostic run starts at mapper-crash-held
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-crash-held
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-crash-held
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-crash-held
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-crash-held
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-crash-held
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-crash-held
+- mapper-stop-held-restart: skipped — diagnostic run starts at mapper-crash-held
+- mapper-replug: skipped — diagnostic run starts at mapper-crash-held
+- mapper-lock-unavailable: skipped — diagnostic run starts at mapper-crash-held
+- mapper-crash-held: FAILED — timed out waiting for mapper\crash start
+- windows-mapper: FAILED — timed out waiting for mapper\crash start
+
+Passed: 4, failed: 2

@@ -172,7 +172,7 @@ class Vm:
         argv = ["ssh", *self._ssh_options(), "-p", str(self.port),
                 f"{self.user}@127.0.0.1", command]
         if background:
-            return subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            return subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     text=True)
         result = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
         if check and result.returncode:

@@ -63,14 +63,16 @@ try {
     if ($code -eq 0) {
         if ($suite -eq 'full') {
             $ErrorActionPreference = 'Continue'
-            & cargo build --release --locked --manifest-path (Join-Path $root 'crates\lhc-core\Cargo.toml') `
-                --example windows-mapper-stand *>&1 |
+            & cargo build --release --locked --manifest-path (Join-Path $root 'Cargo.toml') `
+                -p lhc-core -p slint-shell --bin left-hand-control --example windows-mapper-stand *>&1 |
                 Out-File -FilePath (Join-Path $out 'mapper-build.log') -Encoding utf8
             $driverCode = $LASTEXITCODE
             $ErrorActionPreference = 'Stop'
             if ($driverCode -ne 0) { throw "Release mapper driver build failed (exit $driverCode)" }
             Add-Line '- release-mapper-driver-build: passed'
+            Add-Line '- release-shell-build: passed'
         }
+        $driverProfile = if ($suite -eq 'full') { 'release' } else { 'debug' }
         $receiverScript = Join-Path $root 'apps\slint-shell\scripts\windows-receiver.ps1'
         $receiver = Start-Process powershell -PassThru -ArgumentList @(
             '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $receiverScript,
@@ -79,11 +81,11 @@ try {
         if ($suite -ne 'mapper') {
             $popupScript = Join-Path $root 'apps\slint-shell\scripts\windows-popup-stand.ps1'
             $popupStand = Start-Process powershell -PassThru -ArgumentList @(
-                '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $popupScript, '-Output', "$out\popups"
+                '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $popupScript, '-Output', "$out\popups",
+                '-BuildProfile', $driverProfile
             ) -RedirectStandardOutput "$out\popups-stdout.log" -RedirectStandardError "$out\popups-stderr.log"
             $null = $popupStand.Handle
         }
-        $driverProfile = if ($suite -eq 'full') { 'release' } else { 'debug' }
         $stand = Join-Path $root "target\$driverProfile\examples\windows-mapper-stand.exe"
         $previousDevDir = [Environment]::GetEnvironmentVariable('LHC_DEV_DIR', 'Process')
         try {
@@ -142,4 +144,17 @@ try {
         if (-not $receiver.WaitForExit(5000)) { Stop-Process -Id $receiver.Id -Force }
     }
     Set-Content -Path (Join-Path $out 'done.txt') -Value $code
+    $callback = 'D:\lhc-e2e\completion-url.txt'
+    if (Test-Path $callback) {
+        try {
+            $fullLog = if (Test-Path "$out\full.log") { Get-Content "$out\full.log" -Raw -Encoding utf8 } else { '' }
+            $result = @{ status = [string]$code; summary = [string](Get-Content $summary -Raw -Encoding utf8); full_log = [string]$fullLog }
+            $body = [Text.Encoding]::UTF8.GetBytes(($result | ConvertTo-Json -Compress))
+            Invoke-RestMethod -Method Post -Uri ((Get-Content $callback -Raw).Trim()) `
+                -ContentType 'application/json' -Body $body -TimeoutSec 15 | Out-Null
+        } catch {
+            # done.txt remains authoritative for runners using SSH.
+            Add-Content "$out\completion-error.log" -Value "$_" -Encoding utf8
+        }
+    }
 }

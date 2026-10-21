@@ -4,6 +4,8 @@ pub mod builtin_macros;
 pub mod commands;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 pub mod engine;
+#[cfg(any(target_os = "windows", test))]
+mod input_guard;
 pub mod key_code;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 pub mod keys;

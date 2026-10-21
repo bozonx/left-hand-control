@@ -30,6 +30,7 @@ def retry_guest_io(operation):
 class WindowsMapper:
     def __init__(self, vm, ps, report):
         self.vm, self.report = vm, report
+        self.run_guest = ps
         self.ps = lambda command, **kwargs: retry_guest_io(lambda: ps(command, **kwargs))
         self.serial = 0
         self.held = set()
@@ -46,7 +47,7 @@ class WindowsMapper:
         self.serial += 1
         request = {"id": self.serial, "op": op, **data}
         encoded = base64.b64encode(json.dumps(request).encode()).decode()
-        name = "request" if target == "mapper" else "command"
+        name = "request" if target == "mapper" or target.startswith("mapper\\") else "command"
         path = f"{WORK}\\{target}\\{name}.json"
         self.ps(f"[IO.File]::WriteAllBytes('{path}.tmp', [Convert]::FromBase64String('{encoded}')); "
                 f"if (Test-Path '{path}') {{ [IO.File]::Replace('{path}.tmp', '{path}', [NullString]::Value) }} "
@@ -91,7 +92,17 @@ class WindowsMapper:
     def reset(self):
         self.receiver("reset")
         self.receiver("show")
-        wait_for("receiver focus", 10, lambda: self.state()["form_active"] and self.state()["editor_focused"])
+        self.vm.qmp.click(0.5, 0.5)
+        self.receiver("focus")
+        self.receiver("unpin")
+        try:
+            wait_for("receiver focus", 10, lambda: self.state()["form_active"] and self.state()["editor_focused"])
+        except StepFailed:
+            try:
+                self.vm.qmp.screendump(self.vm.logs / "receiver-focus-failure.png")
+            except (OSError, StepFailed):
+                pass
+            raise
         return len(self.events())
 
     def text(self, expected):
@@ -308,6 +319,69 @@ class WindowsMapper:
         self.text("")
         return "second process rejected by session mutex; unsupported system action reports notice"
 
+    def crash_held(self):
+        self.mapper("stop")
+        result = self.command("mapper", "crash-start")
+        if not result["ok"]:
+            raise StepFailed(f"Could not start crash probe: {result}")
+        wait_for("crash probe ready", 15, lambda: "True" in self.ps(f"Test-Path {WORK}\\mapper\\crash\\ready", timeout=30))
+        config = {"rules": [{"key": key, "tapAction": modifier, "holdAction": modifier}
+                            for key, modifier in (("KeyF", "ControlLeft"), ("KeyG", "ShiftRight"),
+                                                  ("KeyH", "AltLeft"), ("KeyJ", "MetaRight"))]}
+        result = self.command(r"mapper\crash", "start", config=config)
+        if not result["ok"] or not result["status"]["running"]:
+            raise StepFailed(f"Crash mapper did not start: {result}")
+        self.receiver("trace")
+        since = self.reset()
+        for key in ("f", "g", "h", "j"):
+            self.press(key)
+            time.sleep(0.4)
+        self.receiver("focus")
+        if set(self.state()["modifiers_down"]) != {162, 161, 164, 92}:
+            raise StepFailed(f"Expected held Ctrl/Shift/Alt/Win before crash: {self.state()}")
+        result = self.command("mapper", "crash-kill")
+        if not result["ok"]:
+            raise StepFailed(f"Crash termination failed: {result}")
+        wait_for("guard releases Ctrl/Shift/Alt/Win before physical release", 10,
+                 lambda: {(16, False), (17, False), (18, False), (92, False)} <= set(self.transitions(since)))
+        for key in ("f", "g", "h", "j"):
+            self.release(key)
+        self.receiver("focus")
+        if self.state()["modifiers_down"]:
+            raise StepFailed(f"Modifiers remain down after crash: {self.state()}")
+        self.reset()
+        self.vm.qmp.tap("a")
+        self.text("a")
+        self.mapper("start", config={"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})
+        self.receiver("trace")
+        self.reset()
+        self.vm.qmp.tap("a")
+        self.text("b")
+        return "forced owner termination releases Ctrl/Shift/Alt/Win before physical release; native input and mapper restart work"
+
+    def guard_failure(self):
+        self.config({"rules": [{"key": "KeyF", "tapAction": "ControlLeft", "holdAction": "ControlLeft"}]})
+        since = self.reset()
+        self.press("f")
+        time.sleep(0.4)
+        wait_for("virtual Ctrl held", 10, lambda: (17, True) in self.transitions(since))
+        self.run_guest(f"$owner = [int](Get-Content {WORK}\\mapper\\ready -Raw); "
+                "$guards = @(Get-CimInstance Win32_Process | Where-Object { "
+                "$_.ParentProcessId -eq $owner -and $_.Name -eq 'windows-mapper-stand.exe' }); "
+                "if ($guards.Count -ne 1) { throw 'Expected exactly one owned input guard' }; "
+                "Stop-Process -Id $guards[0].ProcessId -Force", timeout=30)
+        wait_for("mapper stops after guard death", 10,
+                 lambda: not self.command("mapper", "status")["status"]["running"])
+        wait_for("fallback releases Ctrl before physical release", 10,
+                 lambda: (17, False) in self.transitions(since))
+        self.release("f")
+        self.reset()
+        self.vm.qmp.tap("a")
+        self.text("a")
+        self.mapper("start", config={})
+        self.receiver("trace")
+        return "guard death stops mapper, fallback releases Ctrl, native input and restart work"
+
     def replug(self):
         self.config({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})
 
@@ -348,6 +422,8 @@ class WindowsMapper:
                 ("mapper-stop-held-restart", self.stop_held),
                 ("mapper-replug", self.replug),
                 ("mapper-lock-unavailable", self.lock_and_unavailable),
+                ("mapper-crash-held", self.crash_held),
+                ("mapper-guard-failure", self.guard_failure),
             )
             if start_at and start_at not in dict(scenarios):
                 raise StepFailed(f"Unknown mapper scenario: {start_at}")
@@ -358,7 +434,6 @@ class WindowsMapper:
                 start_at = None
                 self.report.step(name, scenario, fatal=True)
                 self.vm.qmp.screendump(self.vm.logs / f"{name}.png")
-            self.report.skip("mapper-crash-held", "not accepted: forced process termination cannot run virtual-key cleanup")
             self.report.skip("mapper-secure-session", "elevated target, secure desktop and lock/unlock require separate acceptance")
             self.report.skip("mapper-suspend", "guest suspend/resume requires separate acceptance")
             self.report.skip("mapper-physical-hardware", "VM input does not accept physical Windows hardware")

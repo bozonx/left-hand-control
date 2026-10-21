@@ -29,7 +29,7 @@ const MODIFIERS: [(KeyCode, i32); 8] = [
     (KeyCode::KEY_RIGHTMETA, 0x5c),
 ];
 
-fn keyboard(vk: u16, scan: u16, flags: KEYBD_EVENT_FLAGS) -> INPUT {
+pub(super) fn keyboard(vk: u16, scan: u16, flags: KEYBD_EVENT_FLAGS) -> INPUT {
     INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {
@@ -76,15 +76,17 @@ pub(super) fn send(inputs: &[INPUT]) -> Result<(), String> {
     if inputs.is_empty() {
         return Ok(());
     }
-    let sent = unsafe { SendInput(inputs, std::mem::size_of::<INPUT>() as i32) };
-    if sent as usize != inputs.len() {
-        return Err(format!(
-            "SendInput accepted {sent} of {} events: {}",
-            inputs.len(),
-            std::io::Error::last_os_error()
-        ));
-    }
-    Ok(())
+    super::guard::send(inputs, || {
+        let sent = unsafe { SendInput(inputs, std::mem::size_of::<INPUT>() as i32) };
+        if sent as usize != inputs.len() {
+            return Err(format!(
+                "SendInput accepted {sent} of {} events: {}",
+                inputs.len(),
+                std::io::Error::last_os_error()
+            ));
+        }
+        Ok(())
+    })
 }
 
 fn is_down(vk: i32) -> bool {

@@ -1,0 +1,108 @@
+Date: 2026-10-21 UTC
+Source: 5d021a6 plus the Windows input guard changes in the working tree.
+Environment: Linux x86_64 host; Windows 11 Enterprise Evaluation build 26200 VM.
+
+PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS CARGO_BUILD_JOBS=1 cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+  Log: /tmp/lhc-windows-guard-clippy.log
+PASS CARGO_BUILD_JOBS=1 cargo test --locked --workspace --features slint-shell/spell
+  lhc-core: 405 passed, 3 ignored; game-mode lifecycle: 1 passed;
+  storage_override: 2 passed; slint-shell: 83 passed; shell IPC: 3 passed;
+  physical mapper_e2e: 9 ignored; remaining workspace/doc tests: no failures.
+  Three new journal regressions cover interrupted snapshots, interrupted release,
+  and a shortcut that temporarily releases and restores a held modifier.
+  Log: /tmp/lhc-windows-guard-workspace.log
+PASS CARGO_BUILD_JOBS=1 cargo check --locked -p slint-shell --all-targets
+  Log: /tmp/lhc-windows-guard-nospell.log
+PASS python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+  12 tests passed, including a persistent build monitor, transport reconnect and cancellation cleanup.
+PASS python3 -m py_compile apps/slint-shell/scripts/vm/run-windows.py apps/slint-shell/scripts/vm/windows_mapper.py apps/slint-shell/scripts/vm/windows_popups.py
+PASS git diff --check
+
+PASS python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite mapper --mapper-from mapper-crash-held --memory 12288
+  Diagnostic report: 2026-10-20-vm-windows11-14.txt (7 passed, 0 failed).
+  Forced owner termination releases Ctrl/Shift/Alt/Win before physical release;
+  native input and mapper restart work. Killing only the guard stops the mapper,
+  triggers fallback Ctrl release and permits native input/restart.
+  Prefix mapper scenarios were explicitly skipped, not counted as passed.
+  This diagnostic preceded the final fail-closed refinements and shell crash scenario;
+  full acceptance of the final tree is recorded separately.
+
+Linux graphical scenarios and physical evdev/uinput acceptance were not rerun.
+Secure/elevated desktop, lock/unlock, suspend/resume, whole-process-tree termination
+and physical Windows keyboards remain outside completed acceptance.
+
+The first full run of the final guard tree did not complete:
+  python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite full --memory 12288
+  Report: 2026-10-21-vm-windows11.txt (3 passed, 1 failed).
+  Smoke and both release builds passed; the host SSH monitor stalled and the
+  mapper stand eventually reported "host command timeout". Hardware acceptance
+  and the later full native matrix did not run. Offline cache logs were exported
+  to runs/20261020-231601/logs/offline-guest after VM shutdown.
+  Controller now bounds remote polling to 30 seconds, recycles a stalled monitor
+  after 90 seconds, and avoids a shared Windows SSH multiplexed connection.
+  Host regressions: 13 passed after this correction.
+
+Final controller regressions:
+PASS python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+  14 passed; includes stalled-monitor recycling and detached background SSH stdin.
+PASS python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite mapper --mapper-from mapper-crash-held --memory 12288
+  Report: 2026-10-21-vm-windows11-5.txt (7 passed, 0 failed).
+  Final guard refinements verified in the diagnostic run.
+  Receiver now checks the actual foreground HWND and uses a hardware mouse click
+  before accepting focus. The crash case observes all modifier KeyUp events before
+  releasing physical keys, then queries receiver state without native autorepeat
+  flooding its UI. Both owner-death and guard-death paths pass end to end.
+
+Full release verification before the completion-channel correction:
+  Report: 2026-10-21-vm-windows11-6.txt (25 host steps passed; controller interrupted
+  after guest success because Windows OpenSSH stopped accepting connections).
+  Source archive SHA256: 049d869d6351786538746ababfdb90a96b846e1c11c3082f86efa0b46ac0bb18.
+  All 15 mapper cases, five Unicode/focus popups and the actual release shell
+  crash case passed. Guest summary records full-native-release: passed;
+  full.log records WINDOWS AUTOMATED ACCEPTANCE PASSED and 100 popup cycles.
+  Cached done.txt is 0. Saved guest logs:
+  runs/20261021-092432/logs/offline-guest (on the local VM storage).
+  This is guest-native success with interrupted host collection, not a green
+  end-to-end controller report. A final runner replay follows separately.
+
+PASS final full Windows 11 VM acceptance:
+  python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite full --memory 12288
+  Report: 2026-10-21-vm-windows11-7.txt (26 passed, 0 failed).
+  Source archive SHA256: 2bca1856f0264524720e75558a61321927101a5d35e3540fd5c83d10445f4371.
+  Windows 11 Enterprise Evaluation build 26200, interactive non-elevated session,
+  QEMU USB keyboard, release mapper and release winit-skia shell, WinForms target.
+  All 15 mapper cases, five popup Unicode/focus cases and actual shell crash pass.
+  Native matrix executed by check-windows-automated.ps1 -SkipSmoke:
+    cargo test --locked -p lhc-core -p slint-shell --all-targets
+      core: 317 passed; lifecycle: 1; storage: 2; shell: 77; IPC: 2; no failures.
+    cargo clippy --locked -p lhc-core -p slint-shell --all-targets --no-deps -- -D warnings
+    cargo test --release --locked -p lhc-core -p slint-shell --test storage_override
+      2 passed.
+    cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml -p lhc-core -p slint-shell --bin left-hand-control --example windows-mapper-stand
+      passed in 11.55 seconds; no redundant Slint rebuild.
+    check-windows-lifecycle.ps1
+      passed: hidden/visible quit, 100 rendered popup cycles, resource bounds,
+      disabled hotkeys and unsupported Spell.
+  Full guest logs exported normally to runs/20261021-102114/logs/guest.
+  The optional HTTP completion callback returned 400 because PowerShell serialized
+  summary metadata; the full verdict above was obtained via SSH. An explicit
+  string cast corrects that callback only; its VM replay is recorded below.
+
+PASS final callback replay after the PowerShell string-cast correction:
+  python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite mapper --mapper-from mapper-guard-failure --memory 12288
+  Report: 2026-10-21-vm-windows11-8.txt (6 passed, 0 failed; prefix cases skipped).
+  Source archive SHA256: e90d194c6abc352c2f238fdd90dd340a6849a07c3358833dc9863523ffbed269.
+  The host received the authenticated HTTP result with status 0 and string summary:
+  runs/20261021-105810/logs/guest-completion.json. No completion-error.log was produced.
+  This replay changes only the test result serialization after the green full run;
+  production Rust sources are identical to that full run.
+
+Final local verification:
+PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+  15 passed, including callback token/schema validation over a real local HTTP socket.
+PASS python3 -m py_compile apps/slint-shell/scripts/vm/run-windows.py apps/slint-shell/scripts/vm/windows_mapper.py apps/slint-shell/scripts/vm/windows_popups.py apps/slint-shell/scripts/vm/vmlib.py
+PASS git diff --check
+VM processes stopped after both successful runs. No physical Windows hardware,
+secure/elevated desktop, lock/unlock, sleep/wake or whole-tree kill acceptance added.

@@ -1,0 +1,19 @@
+Date: 2026-10-21 09:07:06 -0300
+Commit: 5d021a6 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Mapper build: release
+Popup shell build: release
+Mapper from: beginning
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261021-082505/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 839 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261021-082505/src.tar.gz; SHA256 114e83efd39429b76621725c629d06efe8a0a14537246ab1c5487164969a3c5c; Source sync: 4 updated, 39 removed
+- hardware-keyboard: FAILED — timed out waiting for native
+- windows-full: FAILED — timed out waiting for native
+
+Passed: 3, failed: 2

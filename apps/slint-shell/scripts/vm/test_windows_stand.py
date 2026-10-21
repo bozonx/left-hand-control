@@ -8,10 +8,13 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
+import urllib.error
+import urllib.request
+import json
 from unittest.mock import Mock, patch
 
 import importlib.util
-from vmlib import Report, StepFailed
+from vmlib import Report, StepFailed, Vm
 from windows_mapper import WindowsMapper, retry_guest_io
 import windows_popups
 
@@ -21,6 +24,83 @@ spec.loader.exec_module(run_windows)
 
 
 class WindowsStandTests(unittest.TestCase):
+    def test_completion_callback_requires_token_and_valid_result(self):
+        callback = run_windows.GuestCompletion()
+        url = callback.url.replace('10.0.2.2', '127.0.0.1')
+        try:
+            for target, body, expected in ((url + '-wrong', b'{}', 403),
+                                           (url, b'{"status":"0"}', 400)):
+                with self.assertRaises(urllib.error.HTTPError) as raised:
+                    urllib.request.urlopen(urllib.request.Request(target, data=body), timeout=5)
+                self.assertEqual(raised.exception.code, expected)
+                raised.exception.close()
+                self.assertIsNone(callback.result)
+            result = {'status': '0', 'summary': 'Windows: passed', 'full_log': 'tests passed'}
+            with urllib.request.urlopen(urllib.request.Request(url, data=json.dumps(result).encode()), timeout=5) as response:
+                self.assertEqual(response.status, 204)
+            self.assertEqual(callback.result, result)
+        finally:
+            callback.close()
+
+    def test_background_ssh_does_not_inherit_controller_stdin(self):
+        vm = object.__new__(Vm)
+        vm.port = 2241
+        vm.user = 'test'
+        with patch.object(Vm, '_ssh_options', return_value=[]), \
+             patch('vmlib.subprocess.Popen') as popen:
+            vm.ssh('echo ready', background=True)
+        self.assertEqual(popen.call_args.kwargs['stdin'], subprocess.DEVNULL)
+
+    def test_watch_recycles_a_stalled_remote_process(self):
+        vm = Mock()
+        process = vm.ssh.return_value
+        process.poll.return_value = None
+        watch = run_windows.GuestWatch(vm)
+        with patch.object(run_windows.time, 'monotonic', side_effect=[0, 0, 91]), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.assertIsNone(watch.poll(False))
+            self.assertIsNone(watch.poll(False))
+        process.terminate.assert_called_once()
+        self.assertIsNone(watch.process)
+
+    def test_build_watch_reuses_one_remote_process_until_the_phase_is_ready(self):
+        vm = Mock()
+        process = vm.ssh.return_value
+        process.poll.side_effect = [None, None, 0]
+        process.returncode = 0
+        process.communicate.return_value = ('{"done":false,"receiver":true,"task":"Running"}', '')
+        watch = run_windows.GuestWatch(vm)
+        self.assertIsNone(watch.poll(False))
+        self.assertIsNone(watch.poll(False))
+        self.assertTrue(watch.poll(False)['receiver'])
+        vm.ssh.assert_called_once()
+        self.assertIn('$afterInput = $false', vm.ssh.call_args.args[0])
+        self.assertTrue(vm.ssh.call_args.kwargs['background'])
+        self.assertIsNone(watch.process)
+
+    def test_watch_reconnects_after_transport_loss_and_closes_an_unfinished_phase(self):
+        vm = Mock()
+        failed = Mock()
+        failed.poll.return_value = 255
+        failed.returncode = 255
+        failed.communicate.return_value = ('', 'connection reset')
+        pending = Mock()
+        pending.poll.return_value = None
+        pending.wait.side_effect = [subprocess.TimeoutExpired('ssh', 5), 0]
+        vm.ssh.side_effect = [failed, pending]
+        watch = run_windows.GuestWatch(vm)
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertIsNone(watch.poll(True))
+        self.assertIsNone(watch.poll(True))
+        self.assertIn('$afterInput = $true', vm.ssh.call_args.args[0])
+        watch.stop()
+        pending.terminate.assert_called_once()
+        pending.kill.assert_called_once()
+        self.assertEqual(pending.wait.call_count, 2)
+        pending.stdout.close.assert_called_once()
+        pending.stderr.close.assert_called_once()
+        self.assertIsNone(watch.process)
+
     def test_popup_diagnostic_failures_preserve_the_original_error(self):
         vm = Mock()
         vm.logs = Path('test-logs')
@@ -45,7 +125,7 @@ class WindowsStandTests(unittest.TestCase):
         with patch.object(windows_popups, 'WindowsMapper', return_value=probe), \
              self.assertRaisesRegex(StepFailed, 'quit transport failed'):
             windows_popups.check_popups(vm, Mock(), report)
-        self.assertEqual(report.step.call_count, 5)
+        self.assertEqual(report.step.call_count, 6)
 
     def test_interrupted_run_preserves_diagnostics_and_records_failure(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -112,16 +192,13 @@ class WindowsStandTests(unittest.TestCase):
                 self.assertEqual(source.extractfile("tracked").read(), b"after")
                 self.assertEqual(source.extractfile("new").read(), b"untracked")
 
-    def test_busy_ssh_poll_is_retried_without_losing_guest_result(self):
-        ps = Mock(side_effect=[subprocess.TimeoutExpired("ssh", 30),
-                               StepFailed("connection reset"), "", "  ",
-                               '{"done":false,"receiver":true,"task":"Running"}'])
-        self.assertIsNone(run_windows.guest_state(ps))
-        self.assertIsNone(run_windows.guest_state(ps))
-        self.assertIsNone(run_windows.guest_state(ps))
-        self.assertIsNone(run_windows.guest_state(ps))
-        self.assertTrue(run_windows.guest_state(ps)["receiver"])
-        self.assertEqual(ps.call_count, 5)
+    def test_guest_state_rejects_incomplete_or_invalid_results(self):
+        for raw in ('', '  '):
+            self.assertIsNone(run_windows.parse_guest_state(raw))
+        for raw in ('broken JSON', '{}', '[]'):
+            with self.assertRaises(StepFailed):
+                run_windows.parse_guest_state(raw)
+        self.assertTrue(run_windows.parse_guest_state('\ufeff{"done":false,"receiver":true,"task":"Running"}')["receiver"])
 
     def test_guest_failure_is_reported_before_missing_hardware_step(self):
         with self.assertRaisesRegex(StepFailed, "native tests FAILED"):

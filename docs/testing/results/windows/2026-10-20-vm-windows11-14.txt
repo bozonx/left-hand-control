@@ -1,0 +1,43 @@
+Date: 2026-10-20 21:36:18 -0300
+Commit: 5d021a6 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper build: debug
+Mapper from: mapper-crash-held
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-213146/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: mapper
+- core-driver-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 834 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-213146/src.tar.gz; SHA256 c0225ad955c9492d9afb2ebb1a16d4f19c9b8915c3d468bc0b4f580cb612ce6c; Source sync: 4 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-crash-held
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-crash-held
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-crash-held
+- mapper-repeat: skipped — diagnostic run starts at mapper-crash-held
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-crash-held
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-crash-held
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-crash-held
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-crash-held
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-crash-held
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-crash-held
+- mapper-stop-held-restart: skipped — diagnostic run starts at mapper-crash-held
+- mapper-replug: skipped — diagnostic run starts at mapper-crash-held
+- mapper-lock-unavailable: skipped — diagnostic run starts at mapper-crash-held
+- mapper-crash-held: passed — forced owner termination releases Ctrl/Shift/Alt/Win before physical release; native input and mapper restart work
+- mapper-guard-failure: passed — guard death stops mapper, fallback releases Ctrl, native input and restart work
+- mapper-secure-session: skipped — elevated target, secure desktop and lock/unlock require separate acceptance
+- mapper-suspend: skipped — guest suspend/resume requires separate acceptance
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-mapper: passed
+
+Passed: 7, failed: 0

@@ -86,8 +86,9 @@ function Write-ReceiverState {
         timestamp = [DateTimeOffset]::Now.ToString('o')
         event = $Event
         input_locale = [System.Windows.Forms.InputLanguage]::CurrentInputLanguage.Culture.Name
-        form_active = $script:formActive
+        form_active = ([LhcKeyTrace]::GetForegroundWindow() -eq $form.Handle)
         editor_focused = $script:editorFocused
+        modifiers_down = @(160, 161, 162, 163, 164, 165, 91, 92 | Where-Object { [LhcKeyTrace]::IsKeyDown($_) })
         key_code = if ($KeyEvent) { [int]$KeyEvent.KeyCode } else { $null }
         modifiers = if ($KeyEvent) { [int]$KeyEvent.Modifiers } else { $null }
         text = $text
@@ -168,7 +169,13 @@ $timer.Add_Tick({
             'locale' {
                 Set-ReceiverLanguage $command.locale
             }
-            'show' { $form.Show(); $form.Activate(); $editor.Focus() | Out-Null }
+            'show' {
+                $form.Show()
+                $form.TopMost = $true
+                $form.Activate()
+                $editor.Focus() | Out-Null
+            }
+            'unpin' { $form.TopMost = $false }
             default { throw "Unknown receiver operation: $($command.op)" }
         }
         Write-ReceiverState 'command'
