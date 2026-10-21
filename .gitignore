@@ -9,6 +9,7 @@
 /target/
 /slint-shell*.csv
 /windows-runtime/
+/test-results/
 *.log
 .DS_Store
 __pycache__/

@@ -21,8 +21,13 @@
 
 ## Тестирование
 
+- [Матрица проверок и порядок запуска](testing/README.md)
+- [Общие тесты и CI](testing/common.md)
+- [Linux KDE Wayland: Fedora, Debian, Kubuntu](testing/linux-kde.md)
+- [GNOME Wayland: Ubuntu](testing/gnome.md)
+- [Windows: проверки, запуск и подготовка VM](testing/windows.md)
+- [macOS: CI и непроверенные области](testing/macos.md)
 - [Ручная приёмка (L5)](testing/manual-acceptance.md)
-- [Windows VM: установка стенда](testing/windows.md)
-- Протоколы прогонов: [linux](testing/results/linux/), [windows](testing/results/windows/)
+- [Хранение результатов и артефактов](testing/results/README.md)
 
 Исторический архив `_old/` не является документацией актуального продукта.

@@ -6,6 +6,92 @@ This document covers installing the VM and working in it interactively. Automate
 
 KVM/QEMU is the primary local hypervisor on Linux. It gives near-native CPU execution, scriptable disks and snapshots, UEFI Secure Boot, TPM 2.0, and a QEMU monitor that can inject emulated hardware keys. VirtualBox is acceptable only as a fallback when KVM is unavailable; do not mix performance results from the two hypervisors.
 
+## Объём проверки и быстрый запуск
+
+Текущий стенд — Windows 11 x64, интерактивная сессия обычного пользователя,
+QEMU USB keyboard и WinForms-приёмник. Полный
+[прогон 2026-10-21](results/windows/2026-10-21-vm-windows11-7.txt): 26 этапов без ошибок.
+[Точечный повтор](results/windows/2026-10-21-vm-windows11-8.txt) отдельно подтвердил
+исправленную передачу результата из VM; он не заменяет полный набор.
+[Журнал команд](results/windows/2026-10-21-guard-checks.txt) содержит Linux-регрессии
+и точные ограничения этих запусков. Статус относится к указанным исходникам.
+
+### Предварительные условия
+
+На Linux-хосте нужны KVM/QEMU, OVMF Secure Boot, swtpm, SSH/SCP и доступ к `/dev/kvm`.
+На госте — MSVC Build Tools, Rust, OpenSSH, автологин тестового пользователя,
+отдельный D:-диск кэша и задача `LHC-E2E` из `prepare-windows-guest.ps1`.
+Полная пошаговая установка описана ниже и в
+[руководстве автоматического стенда](../development/guide.md#windows-vm).
+Нативные desktop-скрипты выполнять без elevation в интерактивной сессии,
+с изолированными профилями, которые создаёт стенд.
+
+### Запуск из Linux-хоста
+
+```sh
+python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows11 --suite smoke --memory 12288
+python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows11 --suite full --memory 12288
+python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows11 --suite mapper --memory 12288
+```
+
+| Набор | Что выполняется | Что он не заменяет |
+| --- | --- | --- |
+| `smoke` (по умолчанию) | Debug UI/CLI/IPC, пять popup-сценариев, crash реальной оболочки и mapper-сценарии | Release и полный native/lifecycle набор |
+| `full` | Smoke-подготовка, release shell/mapper, все функциональные сценарии, native tests/clippy, release storage и lifecycle | Ручную приёмку и физическую Windows-машину |
+| `mapper` | Только core driver и mapper-сценарии с аппаратными клавишами QEMU | UI/popup приложения и release-проверку |
+
+`--mapper-from mapper-crash-held` допустим только с `--suite mapper` и пропускает
+предыдущие сценарии. Это диагностический запуск. `--show` показывает экран,
+`--keep` сохраняет overlay. Две VM с одним портом или диском кэша одновременно
+не запускать. Холодная Slint-сборка требует времени и памяти; 12 GiB — память VM,
+на хосте дополнительно нужен запас для его ОС и приложений.
+
+### Нативный запуск внутри подготовленной Windows
+
+Сначала [общие portable-проверки](common.md), для desktop-набора:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/check-windows-smoke.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/check-windows-automated.ps1
+```
+
+Это нативные оболочечные проверки. Полный путь физических событий QEMU к mapper
+и тестовому редактору дополнительно оркестрирует host runner.
+
+### Что проверяет автоматика
+
+- UI editor/interactions, CLI, токенизированный IPC, второй экземпляр, настройки и выход.
+- Unicode popup: BMP, surrogate pair, ZWJ, смешанный русский текст, повторное
+  открытие; выбор физическими клавишами, точная вставка один раз и возврат фокуса.
+- 15 mapper-сценариев: passthrough, remap/swallow/recursion, модификаторы,
+  repeat, tap/hold/слои, chord/double tap, live config, отмена макроса, US/RU Unicode,
+  focus cancellation, stop/restart, USB-replug, lock второго mapper,
+  гибель владельца и гибель input guard.
+- Реальная оболочка: принудительное завершение владельца с удерживаемым Ctrl.
+- В `full`: core/shell tests, clippy, изоляция release storage, скрытый/видимый выход,
+  100 popup-циклов, границы ресурсов, отключённые хоткеи и неподдерживаемый Spell.
+
+### Что не тестируется или не принято
+
+Secure/elevated desktop, UAC/lock/unlock, suspend/resume, физические клавиатуры,
+Bluetooth/media/mouse keys и особенности драйверов требуют отдельной проверки.
+Гибель владельца и отдельная гибель guard проверены; одновременное уничтожение
+всего дерева процессов этим не покрыто. WinForms не заменяет браузеры, IDE и
+терминалы. Не приняты все масштабы DPI, экраны, вид/меню трея и версии Windows;
+Windows 10 и Windows ARM не входят в эту VM-матрицу.
+
+### Результаты и диагностика
+
+Сводка создаётся в `docs/testing/results/windows/`, полные артефакты —
+`<vm>/runs/<timestamp>/logs`; рядом сохраняются архив исходников и его SHA256.
+Диск D: хранит кэш и журналы между overlay. Контроллер ограничивает SSH-ожидания;
+завершение может получить отдельным HTTP callback с одноразовым токеном через
+QEMU user networking. Наличие гостевого `done.txt=0` при падении host controller
+нужно описывать отдельно от полностью успешного e2e.
+Правила отбора результатов для Git — [results/README.md](results/README.md).
+
+## Подготовка и подробная диагностика стенда
+
 ## Host requirements
 
 Install QEMU, KVM, OVMF, `swtpm`, and `socat`. Package names vary by distribution. The host user must be allowed to use `/dev/kvm`.

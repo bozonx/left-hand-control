@@ -4,6 +4,67 @@ The GNOME backend requires the bundled `left-hand-control@bozonx.dev` Shell
 extension. Its metadata targets GNOME Shell 50 (Ubuntu 26.04); other Shell
 versions are not claimed. KDE remains the primary accepted environment.
 
+## Объём проверки и запуск
+
+Проверяемая desktop-среда — **Ubuntu 26.04, GNOME Shell 50, Wayland**,
+с расширением `left-hand-control@bozonx.dev`, AppIndicators и portal.
+Это отдельная smoke-матрица, а не полная KDE L4-приёмка.
+[Прогон 2026-10-19](results/linux/2026-10-19-vm-ubuntu2604-gnome-2.txt)
+прошёл 29 шагов без ошибок; [проверка clipboard/portal](results/linux/2026-10-19-gnome-clipboard-portal.txt)
+уточняет покрытие clipboard grants и оставшиеся ограничения.
+Свидетельства относятся к указанным исходникам, не автоматически к текущему HEAD.
+
+### Предварительные условия
+
+Linux-хост с KVM/QEMU, Python, SSH/SCP; отдельная Ubuntu VM с GNOME Wayland,
+автологином и тестовым пользователем. Расширение нужно включить после установки
+и нового входа в GNOME; для трея нужен AppIndicators. Подготовка VM и установка
+расширения описаны ниже в [Installation](#installation) и
+[Disposable Ubuntu VM](#disposable-ubuntu-vm).
+GNOME не поддерживает layer-shell: использовать `LHC_POPUPS=auto` либо `winit`.
+Пакет собирать по инструкции совместимой Linux-сборки в руководстве разработчика.
+
+### Как запустить
+
+Сначала [общие Linux-проверки](common.md), затем:
+
+```sh
+python3 apps/slint-shell/scripts/vm/run-gnome.py --vm /path/to/ubuntu2604-gnome --package /path/to/left-hand-control-VERSION-linux-x86_64.tar.gz
+```
+
+Для текущих UI-примеров добавить `--examples /path/to/current-binaries` с бинарниками
+`editor` и `interactions`, собранными из проверяемых исходников. Без этого параметра
+UI-примеры не выполняются. `--keep` сохраняет overlay. Параметр `--show` этот runner
+не предоставляет. Не заменять GNOME-команду на `run-linux.py`, рассчитанный на Plasma.
+
+### Что проверяется
+
+Установка, отсутствие grab без прав, выдача прав и перелогин, GNOME bridge,
+автозапуск, трей и восстановление после исчезновения/появления tray host;
+passthrough/remap/chord/tap-hold layer, stop/restart, системные раскладки/рабочие
+столы, команда и ручной game mode; portal ASCII и Unicode, Quick popup с возвратом
+фокуса, смешанный макрос, popup open/hide, восстановление text/binary MIME,
+новый владелец clipboard и отмена на mapper stop.
+Runner останавливается на первой ошибке: оставшиеся шаги не пройдены.
+Полный перечень — [run-gnome.py](../../apps/slint-shell/scripts/vm/run-gnome.py).
+
+### Что не проверяется полностью
+
+Emoji selection, многократный возврат фокуса, другие приложения-приёмники,
+lock/unlock, suspend, replug, физическое железо и полное обновление deb/rpm между
+версиями не закрыты этим smoke. Точечная проверка обновления архива не заменяет
+полный package upgrade. Не заявлена матрица других версий GNOME/дистрибутивов.
+`showDesktop` и `screenOff` на GNOME недоступны; это граница backend, а не PASS теста.
+
+### Результаты
+
+Сводки создаются в `docs/testing/results/linux/`, логи, journal и снимки —
+`<vm>/runs/<timestamp>/logs`. Версию расширения, portal consent, clipboard grants,
+popup backend и `--examples` записывать явно. Правила хранения —
+[results/README.md](results/README.md).
+
+## Подготовка и контракт GNOME bridge
+
 ## Installation
 
 Install the application and grant input permissions as described in
