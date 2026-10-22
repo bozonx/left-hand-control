@@ -1,3 +1,8 @@
+Historical q35 failure, preserved unchanged below.
+Superseded for the accepted Debian stand by machine=pc-i440fx-11.1, five baseline
+S3/replug cycles and a full 42/0 DEB replay. The q35 configuration remains failed.
+See 2026-10-21-debian-suspend-fix.txt and 2026-10-21-vm-debian13-kde.txt.
+
 Date: 2026-10-21 -0300
 Status: FAILED BASELINE; Debian VM S3 is NOT ACCEPTED.
 Host: Linux 7.2.3-2-MANJARO, QEMU 11.1.1, KVM, AMD host CPU.

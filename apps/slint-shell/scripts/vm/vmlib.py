@@ -8,6 +8,7 @@ describes it (see docs/development/guide.md, "E2E в виртуальных ма
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import subprocess
@@ -31,6 +32,13 @@ class Vm:
         if not config_path.is_file():
             raise SystemExit(f"{config_path} not found; see docs/development/guide.md")
         self.config = json.loads(config_path.read_text(encoding="utf-8"))
+        self.machine = self.config.get("machine", "q35")
+        if not isinstance(self.machine, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", self.machine):
+            raise SystemExit("machine must be a QEMU machine type without options")
+        if self.config.get("uefi") and not (
+            self.machine == "q35" or self.machine.startswith("pc-q35-")
+        ):
+            raise SystemExit("the UEFI stand requires a q35 machine")
         self.name = self.config.get("name", self.dir.name)
         self.base = self.dir / self.config.get("base", "base.qcow2")
         self.user = self.config["user"]
@@ -80,7 +88,7 @@ class Vm:
         if self.get("uefi"):
             command += self._uefi_arguments()
         else:
-            command += ["-machine", "q35,accel=kvm"]
+            command += ["-machine", f"{self.machine},accel=kvm"]
         if bus == "ahci":
             command += [
                 "-device", "ich9-ahci,id=ahci",
@@ -98,13 +106,16 @@ class Vm:
         with (self.logs / "qemu.log").open("w") as log:
             self.qemu = subprocess.Popen(command, stdout=log, stderr=log)
         self.qmp = Qmp(self.sockets / "qmp.sock", self.qemu)
+        # Confirm this process started before SSH can reach an older VM that
+        # still owns the forwarded port while it is shutting down.
+        self.qmp.status()
 
     def _uefi_arguments(self):
         uefi = self.get("uefi")
         vars_copy = self.run_dir / "OVMF_VARS.fd"
         shutil.copy2(self.dir / uefi["vars"], vars_copy)
         arguments = [
-            "-machine", "q35,accel=kvm,smm=on",
+            "-machine", f"{self.machine},accel=kvm,smm=on",
             "-global", "driver=cfi.pflash01,property=secure,value=on",
             "-drive", f"if=pflash,format=raw,readonly=on,file={uefi['code']}",
             "-drive", f"if=pflash,format=raw,file={vars_copy}",

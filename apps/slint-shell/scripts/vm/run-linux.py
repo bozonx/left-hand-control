@@ -109,15 +109,20 @@ def main():
         guest("start-app")
 
     def relogin_with_input():
+        uid = int(vm.ssh("id -u").strip())
         guest("quit-app")
         if archive:
             # The archive's explicit command: udev rule, uinput and the group.
             vm.ssh(f"{installer} permissions")
         else:
             vm.ssh(f"sudo usermod -aG input {vm.user}")
-        # A system unit outlives the ssh session that the logout terminates.
+        # Stop SDDM first and wait for the user units to stop before autologin:
+        # terminate-user alone can return while it still tears down the session.
+        # The system unit outlives the SSH session that logout terminates.
         vm.ssh(f"sudo systemd-run --quiet --on-active=2 --unit=lhc-e2e-relogin "
-               f"sh -c 'loginctl terminate-user {vm.user}; systemctl restart display-manager'")
+               f"sh -c 'systemctl stop display-manager; loginctl terminate-user {vm.user}; "
+               f"systemctl stop user@{uid}.service user-{uid}.slice; "
+               "systemctl start display-manager'")
         time.sleep(8)
         vm.wait_ssh()
         guest("wait-session --group input")
@@ -338,6 +343,7 @@ def main():
         return expect("screen-lock", "c", action=unlock)
 
     def suspend():
+        boot_id = vm.ssh("cat /proc/sys/kernel/random/boot_id").strip()
         before = int(guest("suspend-count"))
         vm.ssh("sudo systemd-run --quiet --on-active=1 --unit=lhc-e2e-suspend systemctl suspend")
         # The guest may wake on its own right away; otherwise QMP wakes it.
@@ -349,6 +355,8 @@ def main():
                 break
             time.sleep(0.5)
         vm.wait_ssh(timeout=120)
+        if vm.ssh("cat /proc/sys/kernel/random/boot_id").strip() != boot_id:
+            raise StepFailed("the guest rebooted instead of resuming")
         if int(guest("suspend-count")) <= before:
             raise StepFailed("the guest did not complete a suspend cycle")
         time.sleep(3)
@@ -522,6 +530,7 @@ def main():
         f"VM: {vm.name} ({vm.base})",
         f"Memory: {vm.get('memory', 6144)} MiB",
         f"CPU: {vm.get('cpu', 'host')}",
+        f"Machine: {vm.machine}",
         f"Suspend exclusion: {suspend_exclusion or 'none'}",
         f"Package: {package.name}" + (f" (upgraded from {previous.name})" if previous else ""),
         f"Package SHA256: {package_sha256}",

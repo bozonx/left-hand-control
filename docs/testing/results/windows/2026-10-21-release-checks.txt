@@ -1,6 +1,7 @@
 Date: 2026-10-21 -0300
 Status: AUTOMATED SCOPES FINISHED WITH EXCLUSIONS. Full stable-release acceptance
-remains open: Debian S3 baseline and physical/manual acceptance are not closed.
+remains open: physical/manual acceptance is not closed. Debian VM S3 is now
+accepted on the repaired i440fx stand (see the supplement below).
 No tag, commit, public release or live GitHub workflow run was created.
 
 Final result:
@@ -8,9 +9,11 @@ Final result:
   linux/2026-10-21-vm-fedora44-kde-7.txt
 - Kubuntu 26.04 KDE Wayland, final tar.gz: 42 PASS, 0 FAIL.
   linux/2026-10-21-vm-kubuntu2604-2.txt
-- Debian 13 KDE Wayland, final DEB, explicit S3 exclusion: 41 PASS, 0 FAIL, 1 SKIP.
-  linux/2026-10-21-vm-debian13-kde-4.txt
-  S3 is NOT ACCEPTED. Full attempts before exclusion remain failed.
+- Debian 13 KDE Wayland, final DEB, i440fx stand: 42 PASS, 0 FAIL, no SKIP.
+  linux/2026-10-21-vm-debian13-kde.txt
+  Five baseline S3/replug cycles also pass. Original q35 attempts remain failed.
+  Diagnosis, stand changes and exact commands:
+  linux/2026-10-21-debian-suspend-fix.txt
 - Windows 11 Enterprise Evaluation build 26200, x64 MSVC, interactive session:
   full VM suite 26 PASS, 0 FAIL. Secure desktop, suspend and physical hardware
   excluded. windows/2026-10-21-vm-windows11-11.txt
@@ -30,7 +33,7 @@ Source and environment:
   Later changes are test harness, packaging checks and documentation only.
 - The only Rust file changed after the accepted Windows build is Linux-only
   crates/lhc-core/src/active_window/kwin.rs, excluded from Windows compilation.
-- Current complete testing sources are supplied as
+- Earlier testing sources (before the Debian stand repair) are supplied as
   final-packages/left-hand-control-0.3.0-testing-sources.tar.gz; SHA256SUMS beside it.
 
 Changes accepted:
@@ -169,7 +172,8 @@ Failures retained:
 - Debian linux/2026-10-21-vm-debian13-kde-2.txt: 40/2; transport failure before
   mapper start caused the following toggle-state cascade.
 - Debian linux/2026-10-21-vm-debian13-kde-3.txt: 34/8, unexpected guest reboot.
-  S3 baseline NOT CLOSED; reproduced without application across CPU profiles.
+  Reproduced without application across CPU profiles. Accepted stand now uses
+  i440fx; the original q35 configuration remains failed.
   See linux/2026-10-21-debian-suspend-baseline.txt for boot IDs and control steps.
 - Windows windows/2026-10-21-vm-windows11-9.txt: release LLVM OOM at 8192 MiB.
 - Windows windows/2026-10-21-vm-windows11-10.txt: release compiled; SSH failed
@@ -182,7 +186,8 @@ Failures retained:
   /mnt/disk2/vm/lhc-release-20261021/debian-diagnostics/.
 
 Limits / not run:
-- Debian S3: explicit SKIP for this baseline; no precise kernel/hypervisor fix.
+- Debian q35 is not repaired upstream; accepted Debian S3 uses pc-i440fx-11.1.
+  See the supplement for 42/0 replay; the older 41/0 + SKIP is historical.
 - Physical Windows/Linux keyboards, Bluetooth/media/mouse devices, changes of
   USB port/event path, real hardware latency and power management not accepted.
 - Windows elevated/secure desktop, lock/unlock, suspend/resume, whole process-tree
@@ -198,3 +203,12 @@ Limits / not run:
 
 All /tmp/lhc-release-*.log files referenced above are also preserved under
 /mnt/disk2/vm/lhc-release-20261021/logs/; VM screenshots/traces remain in run logs.
+
+Debian suspend supplement (same application binary):
+PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/vm/lhc-release-20261021/final-packages/left-hand-control_0.3.0_amd64.deb
+  42 PASS, 0 FAIL, no SKIP; machine pc-i440fx-11.1, CPU host, 4 vCPUs, 6144 MiB.
+  Run 20261021-222434; source 8e68ea4 plus VM harness/documentation changes.
+  Rust/UI/manifests unchanged (304 files match src-kwin.tar.gz).
+  Earlier sources archive remains unchanged; stand changes are in the repository
+  and /mnt/disk2/vm/lhc-release-20261021/debian-diagnostics/suspend-fix/.
+  Detailed diagnosis and all checks: linux/2026-10-21-debian-suspend-fix.txt.

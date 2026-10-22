@@ -385,6 +385,11 @@ def cmd_set_mapper(args):
     if mapper_running() != enabled and app("toggle-mapper").returncode:
         fail("toggle-mapper failed")
     wait(f"the mapper to be {args.state}", 15, lambda: mapper_running() == enabled)
+    # uinput disappears on the worker before the shell processes its completion
+    # and clears mapper_busy. A back-to-back toggle can otherwise be ignored.
+    time.sleep(1)
+    if mapper_running() != enabled:
+        fail(f"the mapper did not remain {args.state}")
 
 
 def cmd_tray(args):

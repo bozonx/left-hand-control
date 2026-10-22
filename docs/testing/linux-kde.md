@@ -9,14 +9,13 @@ X11 в приёмку не входит.
 | Система | Пакет проверенного прогона | Последний завершённый отчёт (PASS/FAIL) |
 | --- | --- | --- |
 | [Fedora 44 KDE](fedora-kde.md) | rpm | [2026-10-21: 42/0](results/linux/2026-10-21-vm-fedora44-kde-7.txt) |
-| [Debian 13 KDE](debian-kde.md) | deb | [2026-10-21: 41 PASS, 1 SKIP](results/linux/2026-10-21-vm-debian13-kde-4.txt) |
+| [Debian 13 KDE](debian-kde.md) | deb | [2026-10-21: 42/0](results/linux/2026-10-21-vm-debian13-kde.txt) |
 | [Kubuntu 26.04](kubuntu-kde.md) | tar.gz | [2026-10-21: 42/0](results/linux/2026-10-21-vm-kubuntu2604-2.txt) |
 
-Fedora и Kubuntu прошли все 42 шага новых пакетов, включая Unicode после
-второго экземпляра и USB-replug. Debian-прогон прерван перезагрузкой гостя
-после S3/USB; контрольный стенд воспроизвёл перезагрузку без приложения.
-Отдельный прогон остальных шагов дал 41 PASS и явный SKIP для S3.
-Приёмка Debian suspend остаётся открытой; исторические FAIL сохранены.
+Fedora, Kubuntu и Debian прошли все 42 шага новых пакетов, включая suspend,
+Unicode после второго экземпляра и USB-replug. Debian использует i440fx вместо
+q35: [ремонт стенда и контрольные S3](results/linux/2026-10-21-debian-suspend-fix.txt).
+Исторические FAIL и прогон с исключением S3 сохранены.
 
 Это свидетельства для записанных коммитов/пакетов. Тип пакета нельзя подменять:
 прогон tar.gz не подтверждает установку deb на том же дистрибутиве.

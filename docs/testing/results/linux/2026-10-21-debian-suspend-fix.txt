@@ -1,0 +1,78 @@
+Date: 2026-10-21 -0300
+Status: ACCEPTED ON i440fx; q35 remains failed.
+Scope: Debian 13 KDE VM suspend/replug stand repair.
+Source: 8e68ea4 plus the VM harness/documentation changes in this working tree.
+Application Rust/UI/manifests unchanged: 304 files match src-kwin.tar.gz.
+
+Diagnosis:
+The q35 control reproduces the failure without Left Hand Control installed or
+running. QMP recorded WATCHDOG action=reset, followed by SHUTDOWN guest=true,
+reason=guest-reset. This identifies the reset mechanism as the emulated chipset
+watchdog; it does not identify an upstream kernel/firmware bug or patch.
+The second suspend returns immediately without a second QMP SUSPEND transition.
+EHCI instead of xHCI, one vCPU and SMM disabled did not repair it. Disabling
+ICH9-LPC.enable_tco avoids the reset but still fails the second S3; rejected as
+an incomplete workaround. Original failed reports remain historical failures.
+
+Repair:
+vm.json now selects machine=pc-i440fx-11.1 and removes suspend_skip_reason.
+The base image is unchanged. CPU remains host, 4 vCPUs, qemu-xhci, usb-tablet,
+usb-kbd on port 2; no guest kernel update or application change.
+QEMU 11.1.1/KVM, guest Linux 6.12.113+deb13-amd64, KDE Wayland.
+vmlib defaults to q35 for other stands; UEFI retains its q35 requirement.
+run-linux.py records the machine and rejects a changed boot_id after suspend.
+Start now requires QMP readiness before SSH, preventing a failed new QEMU
+process from accidentally directing tests at an old VM on the same SSH port.
+The guest helper lets the shell finish mapper transitions before the next
+toggle. Relogin stops SDDM, waits for user units to stop, then starts SDDM;
+terminate-user alone returned before session teardown finished.
+
+Baseline verification:
+PASS python3 -u /tmp/lhc-debian-i440fx-probe.py
+  Three genuine QMP SUSPEND/wakeup/replug cycles, same boot_id throughout:
+  3406b7a4-bfa5-4ece-91a1-a978c6af519c.
+PASS python3 -u /tmp/lhc-debian-fixed-baseline.py
+  Five genuine S3 cycles, each held for 3 seconds, each followed by USB replug
+  and a 10-second wait. No application running; 4096 MiB, 4 vCPUs.
+  Same boot_id on all five resumes and replugs:
+  65b231c8-1afc-4131-ba8a-4f3eafbe19f5.
+  Run: /mnt/disk2/vm/lhc-debian13-kde/runs/20261021-221000.
+  The control overlay was terminated after its PASS, during cleanup, before
+  starting the full acceptance VM.
+
+PASS python3 -m unittest discover -s apps/slint-shell/scripts/vm -p 'test_*.py'
+  16 tests, including failed-QEMU/old-SSH regression.
+PASS python3 -m py_compile apps/slint-shell/scripts/vm/vmlib.py apps/slint-shell/scripts/vm/run-linux.py apps/slint-shell/scripts/vm/linux-guest.py
+PASS git diff --check
+PASS sha256sum /mnt/disk2/vm/lhc-release-20261021/final-packages/left-hand-control_0.3.0_amd64.deb
+  4a8131fa4c8f0ddfb081afdc157fd0be8feb10c1f760eef14a295d450b21371a
+
+One premature full-run attempt reached the still-shutting-down control guest
+on SSH, then failed keyboard-probe because the new QEMU had exited (port in use).
+It is NOT acceptance; preserved as port-conflict.txt under the diagnostics.
+The QMP readiness regression above covers this failure, and the fresh run uses
+a separate overlay after the old process has stopped.
+The first isolated full run passed suspend and replug, then failed mapper-start
+and the dependent held-key test (40 PASS, 2 FAIL). The immediately following
+toggle raced the shell's mapper_busy completion. Preserved as
+2026-10-21-vm-debian13-kde-5.txt; not counted as a complete acceptance run.
+Another attempt stalled at SDDM after relogin (sddm-helper exit 63). Its journal
+is preserved as suspend-fix/relogin-race-journal.txt. The attempt was terminated
+after diagnosis, not accepted, and the ordering fix above was applied.
+
+Diagnostic logs, scripts and original/current VM configurations:
+/mnt/disk2/vm/lhc-release-20261021/debian-diagnostics/.
+New detailed diagnostics: suspend-fix/ under that directory.
+Physical sleep/wake acceptance remains separate. This repair accepts the i440fx
+stand configuration only; q35 is not declared repaired for this Debian kernel.
+
+Full package verification:
+PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/vm/lhc-release-20261021/final-packages/left-hand-control_0.3.0_amd64.deb
+  42 PASS, 0 FAIL, no SKIP. Suspend/resume, screen lock, Unicode after second
+  instance and replug, stop/start, held-key release on stop/kill, reinstall,
+  quit and removal all passed. No previous-version upgrade supplied.
+  6144 MiB, 4 vCPUs, CPU host, machine pc-i440fx-11.1, no S3 exclusion.
+  Run: /mnt/disk2/vm/lhc-debian13-kde/runs/20261021-222434.
+  Summary: 2026-10-21-vm-debian13-kde.txt.
+Rust checks were not rerun: application source is unchanged; this change only
+modifies VM harness code and documentation.

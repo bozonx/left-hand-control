@@ -24,29 +24,27 @@ python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/debian13-kde --pa
 
 ## Зафиксированный результат
 
-[Прогон DEB с явным исключением S3](results/linux/2026-10-21-vm-debian13-kde-4.txt):
-**41 PASS, 0 FAIL, 1 SKIP**. Пройдены hotkey без VT, Unicode после второго
-экземпляра и replug, stop/start, освобождение клавиш при stop/kill, переустановка
-и удаление. Suspend пропущен по сохранённой причине и **не принят**.
+[Полный прогон DEB на исправленном стенде](results/linux/2026-10-21-vm-debian13-kde.txt):
+**42 PASS, 0 FAIL, без SKIP**. Пройдены suspend/resume, блокировка, hotkey без VT,
+Unicode после второго экземпляра и USB-replug, stop/start, освобождение клавиш
+при stop/kill, переустановка и удаление.
 
-[Полный прогон нового DEB](results/linux/2026-10-21-vm-debian13-kde-3.txt):
-**34 PASS, 8 FAIL**. После S3/USB-replug перезагрузился весь гость, SSH перестал
-отвечать, последующие шаги не подтвердились. Unicode после второго экземпляра
-прошёл. В [предыдущем повторе](results/linux/2026-10-21-vm-debian13-kde-2.txt)
-также прошёл Unicode после replug; затем оборвалась команда SSH.
+В `vm.json` закреплён `"machine": "pc-i440fx-11.1"`, поле
+`suspend_skip_reason` удалено. Базовый образ, ядро Debian 6.12.113, CPU `host`,
+четыре vCPU и xHCI сохранены. Пять контрольных S3/resume/replug без приложения
+прошли с неизменным boot ID. [Диагностика и точные команды](results/linux/2026-10-21-debian-suspend-fix.txt).
 
-[Контроль без приложения](results/linux/2026-10-21-debian-suspend-baseline.txt)
-воспроизвёл смену boot ID на CPU `host`, `host,-svm` и `EPYC-Rome-v4,-svm`.
-Точная причина сброса ядра/VM не установлена. Debian S3 остаётся непринятым.
-Прогон остальных сценариев использует явный `suspend_skip_reason`;
-SKIP не закрывает ошибку и не подтверждает физические sleep/wake.
-
-[Исторический отчёт 39/2](results/linux/2026-10-18-vm-debian13-kde-4.txt)
-сохранён; его сбои hotkey/replug нельзя считать результатом текущего пакета.
+Исторические неудачи сохранены: [34/8 на q35](results/linux/2026-10-21-vm-debian13-kde-3.txt),
+[контроль без приложения](results/linux/2026-10-21-debian-suspend-baseline.txt),
+[41 PASS с исключением S3](results/linux/2026-10-21-vm-debian13-kde-4.txt) и
+[40/2 до исправления синхронизации stop/start](results/linux/2026-10-21-vm-debian13-kde-5.txt).
+На q35 повторный S3 не проходит, затем виртуальный watchdog сбрасывает гостя.
+Отключение только watchdog не исправляет S3. Принята конфигурация i440fx;
+исходный q35-стенд исправленным не считается.
 
 ## Что не принято
 
-Suspend в этом Debian-стенде не принят. VM также не принимает
+VM не принимает
 физические устройства, Bluetooth, media keys, реальные sleep/wake и hotplug,
 все экраны/DPI, сторонние приложения и полный [ручной чек-лист](manual-acceptance.md).
 Конкретный отчёт определяет режим popup, portal, права, пропуски и пакет;

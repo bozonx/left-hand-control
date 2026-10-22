@@ -10,7 +10,7 @@
 | Система | Что проверяем сейчас | Инструкция |
 | --- | --- | --- |
 | Fedora 44 KDE, Wayland | Полный прогон RPM в VM 2026-10-21: 42 PASS, 0 FAIL | [Fedora KDE](fedora-kde.md) |
-| Debian 13 KDE, Wayland | DEB: 41 PASS, 1 SKIP; S3 не принят, VM перезагружается без приложения | [Debian KDE](debian-kde.md) |
+| Debian 13 KDE, Wayland | DEB: 42 PASS без SKIP, включая S3; стенд i440fx | [Debian KDE](debian-kde.md) |
 | Kubuntu 26.04, Wayland | Полный прогон архива в VM 2026-10-21: 42 PASS, 0 FAIL | [Kubuntu](kubuntu-kde.md) |
 | Ubuntu 26.04, GNOME Shell 50, Wayland | Отдельный VM smoke с расширением GNOME и portal; объём меньше KDE | [GNOME Wayland](gnome.md) |
 | Windows 11 | Нативные тесты, debug smoke, release mapper и popup-сценарии в VM | [Windows](windows.md) |
