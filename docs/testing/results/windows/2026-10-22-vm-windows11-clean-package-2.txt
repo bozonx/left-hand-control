@@ -1,0 +1,12 @@
+Date: 2026-10-22 08:46:47 -0300
+Commit: 03674ce (with uncommitted changes)
+VM: windows11-clean-package (/mnt/disk2/vm/left-hand-control-windows/windows11-clean-before-tools.qcow2); no cache disk
+Package: left-hand-control-0.3.0-windows-x86_64.zip; SHA256 b451005dbacf1c1f4f696d00e7c57facb5391df500da101d58ed96a91e97afdd
+VC runtime installer SHA256: 843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c
+Cycles >= 500; duration >= 180s
+Logs: /mnt/disk2/vm/lhc-windows-clean-package/runs/20261022-083856/logs
+
+- boot-clean-windows: passed
+- clean-zip-lifecycle-stress: passed — clean baseline without toolchain; packaged CLI/lifecycle/stress passed; see guest.log
+
+Passed: 2, failed: 0

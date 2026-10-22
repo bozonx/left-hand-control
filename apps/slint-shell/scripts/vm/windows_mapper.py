@@ -10,6 +10,7 @@ import time
 from datetime import datetime
 
 from vmlib import KEYBOARD_PORT, StepFailed, wait_for
+from text_corpus import TEXT_CORPUS
 
 WORK = r"D:\lhc-e2e\out"
 
@@ -43,7 +44,7 @@ class WindowsMapper:
             "try { $r.ReadToEnd() } finally { $r.Dispose() }", timeout=30)
         return raw.lstrip("\ufeff")
 
-    def command(self, target, op, **data):
+    def command(self, target, op, wait_response=True, **data):
         self.serial += 1
         request = {"id": self.serial, "op": op, **data}
         encoded = base64.b64encode(json.dumps(request).encode()).decode()
@@ -53,13 +54,19 @@ class WindowsMapper:
                 f"if (Test-Path '{path}') {{ [IO.File]::Replace('{path}.tmp', '{path}', [NullString]::Value) }} "
                 f"else {{ [IO.File]::Move('{path}.tmp', '{path}') }}", timeout=30)
 
+        if not wait_response:
+            return request["id"]
+
         def response():
             try:
                 value = json.loads(self.read(f"{WORK}\\{target}\\response.json"))
                 return value if value.get("id") == request["id"] else None
             except (StepFailed, ValueError):
                 return None
-        return wait_for(f"{target} {op}", 15, response, interval=0.1)
+        result = wait_for(f"{target} {op}", 15, response, interval=0.1)
+        with (self.vm.logs / "mapper-mailbox.jsonl").open("a") as log:
+            log.write(json.dumps({"target": target, "op": op, "response": result}, ensure_ascii=False) + "\n")
+        return result
 
     def mapper(self, op, **data):
         result = self.command("mapper", op, **data)
@@ -402,7 +409,200 @@ class WindowsMapper:
         self.text("b")
         self.mapper("status")
 
-    def run(self, start_at=None):
+    def unlock(self):
+        def locked():
+            return "True" in self.ps("[bool](Get-Process LogonUI -ErrorAction SilentlyContinue)", timeout=15)
+        if not locked():
+            return
+        password = self.ps(r"(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon').DefaultPassword", timeout=30).rstrip("\r\n")
+        self.vm.qmp.tap("spc")
+        time.sleep(1)
+        if not locked():
+            return
+        if password:
+            self.vm.qmp.tap("ctrl-a", "backspace")
+            self.vm.qmp.type_ascii(password)
+        self.vm.qmp.tap("ret")
+        wait_for("unlocked Windows desktop", 45, lambda: not locked())
+
+    def lock_unlock(self):
+        self.config({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})
+        self.reset()
+        self.receiver("lock")
+        wait_for("Windows lock screen", 30, lambda: "True" in self.ps(
+            "[bool](Get-Process LogonUI -ErrorAction SilentlyContinue)", timeout=15))
+        self.vm.qmp.tap("a")
+        self.unlock()
+        if self.state()["text"]:
+            raise StepFailed("Lock-screen input leaked into the background receiver")
+        self.reset()
+        self.vm.qmp.tap("a")
+        self.text("b")
+        return "real LockWorkStation, QMP credential input, mapper still remaps after unlock"
+
+    def suspend_resume(self):
+        self.config({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})
+        before = self.ps("(Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToFileTimeUtc()", timeout=30).strip()
+        capabilities = self.ps("powercfg /a", timeout=30)
+        (self.vm.logs / "power-capabilities.txt").write_text(capabilities, encoding="utf-8")
+        available = capabilities.split("The following sleep states are not available", 1)[0]
+        if "Standby (S3)" not in available:
+            raise StepFailed("Prepared Windows VM does not expose S3; see power-capabilities.txt")
+        self.command("receiver", "suspend", wait_response=False)
+        wait_for("Windows S3", 60, lambda: self.vm.qmp.status() == "suspended")
+        time.sleep(3)
+        self.vm.qmp.execute("system_wakeup")
+        self.vm.wait_ssh(timeout=120)
+        after = self.ps("(Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToFileTimeUtc()", timeout=30).strip()
+        if before != after:
+            raise StepFailed("Windows rebooted instead of resuming")
+        if "True" in self.ps("[bool](Get-Process LogonUI -ErrorAction SilentlyContinue)", timeout=30):
+            self.unlock()
+        if self.state()["text"]:
+            raise StepFailed("Lock-screen input leaked into the background receiver")
+        self.reset()
+        self.vm.qmp.tap("a")
+        self.text("b")
+        return "QMP confirmed S3 and wakeup; unchanged boot time; remap works after resume"
+
+    def stress(self, seconds):
+        deadline = time.monotonic() + seconds
+        cycles, samples = 0, []
+        while time.monotonic() < deadline or cycles < 3:
+            self.config({"rules": [{"key": "KeyA", "tapAction": "KeyB"},
+                                   {"key": "KeyY", "tapAction": "text:Привет 👩‍💻 é"}]})
+            self.reset()
+            self.vm.qmp.tap("a", "y")
+            self.text("bПривет 👩‍💻 é")
+            self.mapper("stop")
+            self.mapper("start", config={})
+            cycles += 1
+            raw = self.ps(f"Get-Process -Id (Get-Content {WORK}\\mapper\\ready -Raw) | "
+                          "Select-Object Id,PrivateMemorySize64,HandleCount | ConvertTo-Json -Compress", timeout=30)
+            samples.append(json.loads(raw.lstrip("\ufeff")))
+        warm = samples[1:]
+        if len(warm) > 1:
+            if warm[-1]["PrivateMemorySize64"] - warm[0]["PrivateMemorySize64"] > 64 * 1024 * 1024:
+                raise StepFailed(f"Mapper memory growth exceeds 64 MiB: {samples}")
+            if warm[-1]["HandleCount"] - warm[0]["HandleCount"] > 32:
+                raise StepFailed(f"Mapper handle growth exceeds 32: {samples}")
+        (self.vm.logs / "mapper-stress-resources.json").write_text(json.dumps(samples, indent=2))
+        return f"{cycles} exact Unicode/remap/stop/start cycles over at least {seconds}s; memory/handles bounded"
+
+    def process_tree_crash(self):
+        self.mapper("stop")
+        self.command("mapper", "crash-start")
+        wait_for("crash probe ready", 15, lambda: "True" in self.ps(f"Test-Path {WORK}\\mapper\\crash\\ready", timeout=30))
+        result = self.command(r"mapper\crash", "start", config={"rules": [
+            {"key": "KeyF", "tapAction": "ControlLeft", "holdAction": "ControlLeft"}]})
+        if not result["ok"]:
+            raise StepFailed(f"Crash probe failed: {result}")
+        since = self.reset()
+        try:
+            self.press("f")
+            wait_for("crash probe holds Ctrl", 10, lambda: (17, True) in self.transitions(since))
+            self.receiver("freeze-crash-tree")
+            self.run_guest(f"$owner = [int](Get-Content {WORK}\\mapper\\crash\\ready -Raw); "
+                           "& taskkill /PID $owner /T /F; if ($LASTEXITCODE) { throw 'taskkill failed' }", timeout=30)
+            wait_for("whole tree releases Ctrl", 10, lambda: (17, False) in self.transitions(since))
+            if self.state()["modifiers_down"]:
+                raise StepFailed("Whole process-tree termination left a modifier held")
+        finally:
+            self.release("f")
+            # Recovery follows the assertion; never count corrective key input as a pass.
+            self.vm.qmp.tap("ctrl")
+            self.mapper("start", config={})
+        return "owner and child guard suspended then terminated with taskkill /T; Ctrl released before corrective input"
+
+    def unicode_corpus(self):
+        try:
+            for locale in ("en-US", "ru-RU"):
+                self.receiver("locale", locale=locale)
+                for sample in (TEXT_CORPUS, "строка 1\nстрока 2"):
+                    self.config({"rules": [{"key": "KeyY", "tapAction": "text:" + sample}]})
+                    self.reset()
+                    self.vm.qmp.tap("y")
+                    expected = sample.replace("\n", "\r\n")
+                    self.text(expected)
+                    if self.state()["code_points"] != list(map(ord, expected)):
+                        raise StepFailed("Unicode corpus code points differ")
+        finally:
+            self.receiver("locale", locale="en-US")
+        return "US/RU: punctuation, accents, skin tone, ZWJ, NFC/NFD and multiline (WinForms CRLF)"
+
+    def notepad_receiver(self):
+        corpus = "Привет, ёж 😀 👩‍💻 é"
+        self.config({"rules": [{"key": "KeyY", "tapAction": "text:" + corpus}]})
+        self.receiver("unpin")
+        self.command("receiver", "notepad", wait_response=False)
+        def state():
+            try:
+                return json.loads(self.read(f"{WORK}\\receiver\\notepad.json"))
+            except (StepFailed, ValueError):
+                return {}
+        try:
+            wait_for("owned interactive Notepad", 45, lambda: state().get("pid"))
+            self.vm.qmp.click(0.5, 0.5)
+            wait_for("Notepad foreground", 10, lambda: state().get("active"))
+            self.vm.qmp.tap("ctrl-a")
+            # Allow the real editor to finish selection before the mapped input.
+            time.sleep(1)
+            self.vm.qmp.tap("y")
+            wait_for("exact Unicode in real Notepad", 30,
+                     lambda: state().get("text", "").rstrip("\r\n") == corpus)
+        except StepFailed:
+            (self.vm.logs / "notepad-failure.json").write_text(json.dumps(
+                {"expected": corpus, "actual": state(), "mapper": self.mapper("status")},
+                ensure_ascii=False, indent=2))
+            self.vm.qmp.screendump(self.vm.logs / "notepad-failure.png")
+            raise
+        finally:
+            self.receiver("notepad-close")
+            self.reset()
+        return "QMP mapped input into real Notepad; interactive UI Automation reads exact Cyrillic/emoji/ZWJ/combining text"
+
+    def elevated_uipi(self):
+        marker = "LHC-UIPI-MUST-NOT-ARRIVE"
+        self.config({"rules": [{"key": "KeyA", "tapAction": "text:" + marker}]})
+        self.reset()
+        self.command("receiver", "elevate", wait_response=False)
+        time.sleep(3)
+        self.vm.qmp.screendump(self.vm.logs / "uac-prompt.png")
+        self.vm.qmp.tap("alt-y")
+        try:
+            wait_for("elevated receiver", 45, lambda: "True" in self.ps(f"Test-Path '{WORK}\\elevated\\snapshot.json'", timeout=30))
+            self.command("elevated", "show")
+            self.vm.qmp.click(0.5, 0.5)
+            self.command("elevated", "focus")
+            self.command("elevated", "unpin")
+            wait_for("elevated receiver owns foreground", 10,
+                     lambda: json.loads(self.read(f"{WORK}\\elevated\\snapshot.json"))["form_active"])
+            elevated = json.loads(self.read(f"{WORK}\\elevated\\snapshot.json"))
+            if not elevated.get("elevated"):
+                raise StepFailed("Receiver is not elevated; UIPI was not tested")
+            self.vm.qmp.tap("a")
+            time.sleep(1)
+            actual = json.loads(self.read(f"{WORK}\\elevated\\snapshot.json"))["text"]
+            if marker in actual or marker in self.state()["text"]:
+                raise StepFailed("UIPI boundary bypassed or text reached the wrong receiver")
+            events = self.mapper("status")["events"]
+            if not actual and not any("TextInputFailed" in event or "ActionUnavailable" in event for event in events):
+                raise StepFailed("Elevated input was swallowed without a failure notice")
+            self.command("elevated", "blur")
+            self.config({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})
+            self.reset()
+            self.vm.qmp.tap("a")
+            self.text("b")
+        finally:
+            # The elevated fixture owns its UI; mailbox control hides it without
+            # granting the controller a privileged process-termination API.
+            try:
+                self.command("elevated", "close")
+            except (StepFailed, subprocess.TimeoutExpired):
+                pass
+        return "real UAC/elevated target; synthetic marker blocked; ordinary mapper input recovers"
+
+    def run(self, start_at=None, extended=False, stress_seconds=180):
         wait_for("mapper stand", 30, lambda: "True" in self.ps(f"Test-Path {WORK}\\mapper\\ready", timeout=30))
         completed = False
         try:
@@ -425,7 +625,16 @@ class WindowsMapper:
                 ("mapper-crash-held", self.crash_held),
                 ("mapper-guard-failure", self.guard_failure),
             )
-            if start_at and start_at not in dict(scenarios):
+            extended_scenarios = (
+                ("mapper-lock-unlock", self.lock_unlock),
+                ("mapper-suspend-resume", self.suspend_resume),
+                ("mapper-stress", lambda: self.stress(stress_seconds)),
+                ("mapper-unicode-corpus", self.unicode_corpus),
+                ("mapper-notepad-unicode", self.notepad_receiver),
+                ("mapper-elevated-uipi", self.elevated_uipi),
+                ("mapper-process-tree-crash", self.process_tree_crash),
+            )
+            if start_at and start_at not in dict(scenarios + (extended_scenarios if extended else ())):
                 raise StepFailed(f"Unknown mapper scenario: {start_at}")
             for name, scenario in scenarios:
                 if start_at and name != start_at:
@@ -434,8 +643,17 @@ class WindowsMapper:
                 start_at = None
                 self.report.step(name, scenario, fatal=True)
                 self.vm.qmp.screendump(self.vm.logs / f"{name}.png")
-            self.report.skip("mapper-secure-session", "elevated target, secure desktop and lock/unlock require separate acceptance")
-            self.report.skip("mapper-suspend", "guest suspend/resume requires separate acceptance")
+            if extended:
+                for name, scenario in extended_scenarios:
+                    if start_at and name != start_at:
+                        self.report.skip(name, f"diagnostic run starts at {start_at}")
+                        continue
+                    start_at = None
+                    self.report.step(name, scenario)
+                    self.vm.qmp.screendump(self.vm.logs / f"{name}.png")
+            else:
+                for name, _ in extended_scenarios:
+                    self.report.skip(name, "run with --extended")
             self.report.skip("mapper-physical-hardware", "VM input does not accept physical Windows hardware")
             completed = True
         finally:

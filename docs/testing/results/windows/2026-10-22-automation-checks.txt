@@ -1,0 +1,100 @@
+Дата: 2026-10-22, America/Argentina/Buenos_Aires
+Исходники: 03674ce + незакоммиченные изменения автоматизации/документации.
+Продуктовый Rust/Slint код и форматы конфигурации не менялись.
+
+Объём:
+- Детерминированные требования вынесены из manual-acceptance.md в
+  automation-acceptance.md и functional-requirements.md; отсутствие fixture
+  не закрывается ручным кликом и не означает PASS.
+- Добавлены Linux clipboard/corpus/load, Windows lock/S3/load/corpus/Notepad/UIPI/
+  whole-tree-crash, чистый Windows ZIP, проверка разных версий portable,
+  проверка полного комплекта артефактов и обязательный release CI gate.
+
+Пакеты 0.3.0, /mnt/disk2/vm/lhc-release-20261021/final-packages:
+DEB SHA256 4a8131fa4c8f0ddfb081afdc157fd0be8feb10c1f760eef14a295d450b21371a
+ZIP SHA256 b451005dbacf1c1f4f696d00e7c57facb5391df500da101d58ed96a91e97afdd
+Vendor SHA256 8260c198f7fa3fe6dd353b59107e8985b670d5f565b94fbc574ae7f82b8d2941
+
+Команды host (из корня репозитория):
+python3 -m unittest discover -s apps/slint-shell/scripts/vm -p 'test_*.py'
+  PASS: 24 tests; включая отказ ложного PASS, callback auth, S3 без hibernation,
+  защиту credentials при уже разблокированном desktop и повреждённые артефакты.
+python3 -W error::SyntaxWarning -m py_compile apps/slint-shell/scripts/vm/*.py apps/slint-shell/scripts/check-release-artifacts.py
+  PASS.
+docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/repo -w /repo rhysd/actionlint:1.7.7 .github/workflows/ci.yml .github/workflows/release.yml
+  PASS; hosted workflow не запускался, draft/tag/publish не выполнялись.
+python3 apps/slint-shell/scripts/check-release-artifacts.py --directory /mnt/disk2/vm/lhc-release-20261021/final-packages --version 0.3.0 --require-vendor --compare-linux
+  PASS: суммы, LICENSE/README/installer, PE/ELF x64, DEB/RPM,
+  одинаковый Linux executable в tar/DEB/RPM, все registry packages Cargo.lock.
+cargo vendor --locked --offline --versioned-dirs target/automation-vendor/left-hand-control-0.3.0-vendor/vendor
+  PASS: создан настоящий offline vendor archive, добавлен в SHA256SUMS.
+CARGO_HOME=/tmp/lhc-empty-cargo-home cargo tree --locked --offline --target all
+  PASS из target/automation-offline-check: исходники принятого source archive,
+  relative vendor config, пустой Cargo cache. Это проверка offline resolution,
+  не новая полная сборка всех платформ.
+git diff --check
+  PASS.
+Rust fmt/clippy/workspace tests повторно не запускались: продуктовый код не менялся;
+предыдущие результаты указаны в 2026-10-21-release-checks.txt.
+
+Linux Debian 13 KDE Wayland, i440fx, packaged release DEB, clipboard + popup auto:
+python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-automation --package /mnt/disk2/vm/lhc-release-20261021/final-packages/left-hand-control_0.3.0_amd64.deb --text-backend clipboard --popup-mode auto --stress-seconds 180
+  PASS: 45/0, без SKIP; 2026-10-22-vm-debian13-clipboard-stress.txt (../linux/).
+  Portal deny/consent, точный Unicode/corpus, сохранение clipboard, lock, S3,
+  replug, авария/stop/start, autostart после cold reboot и package removal.
+  Нагрузка 9 циклов >=180 s, main + popup worker вместе: RSS 179048→179344 KiB,
+  FD 82→82, threads 36→36 (максимум 37), portal regrant 1.
+  upgrade-over-running = та же версия, не previous-release upgrade.
+
+Чистая Windows 11 Enterprise Evaluation build 26200, без cache-диска/toolchain:
+python3 -u apps/slint-shell/scripts/vm/run-windows-package.py --vm /mnt/disk2/vm/lhc-windows-clean-package --package /mnt/disk2/vm/lhc-release-20261021/final-packages/left-hand-control-0.3.0-windows-x86_64.zip --runtime-installer /mnt/disk2/vm/left-hand-control-windows/vc_redist.x64.exe
+  20261022-083856: 2 PASS / 0 FAIL, см. 2026-10-22-vm-windows11-clean-package-2.txt.
+  До теста нет Rust/Cargo/MSVC/VS и MSVCP140.dll. Установлен runtime с валидной
+  Microsoft Authenticode подписью через настоящий UAC в disposable overlay.
+  Native PowerShell syntax PASS: 13 scripts, включая новый upgrade fixture.
+  ZIP CLI/lifecycle PASS: 500 циклов >=180 s, WorkingSet 68866048→66990080 bytes,
+  handles 316→305, exit скрытого/видимого окна, disabled hotkeys, Spell unavailable.
+  После удаления распаковки изолированный config сохранён.
+  Полный transcript/CSV в logs/guest.log; это packaged release executable,
+  не debug binary и не наличие toolchain DLL в developer base.
+
+Windows extended diagnostics (debug core stand):
+python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite mapper --extended --mapper-from mapper-lock-unlock --stress-seconds 180 --memory 4096
+  20261022-080929, 9 PASS / 3 FAIL, см. 2026-10-22-vm-windows11-3.txt.
+  PASS: настоящий lock/unlock без утечки ввода, 6 точных Unicode/stop/start
+  циклов за >=180 s с bounds памяти/handles, US/RU corpus + CRLF, реальный UAC/UIPI.
+  Mapper PrivateMemorySize64: 1560576→1626112 bytes, handles 134→134.
+  FAIL S3: powercfg /a — graphics driver отключает S3, доступны Hibernate/Fast Startup.
+  Не подменяли suspend гибернацией. Нужен S3-совместимый Windows VM/driver.
+python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite mapper --extended --mapper-from mapper-notepad-unicode --stress-seconds 180 --memory 4096
+  20261022-082548, 6 PASS / 2 FAIL, см. 2026-10-22-vm-windows11-4.txt.
+  UIPI PASS повторно. Notepad: expected «Привет, ёж 😀 👩‍💻 é», actual «Привет,́».
+  Whole-tree crash: owner и guard заморожены, taskkill /T /F;
+  нет Ctrl-up до корректирующего физического ввода. Автоматический safety FAIL.
+  Повтор 20261022-084114: 6 PASS / 2 FAIL, см. 2026-10-22-vm-windows11.txt.
+  С паузой 1 s после Ctrl+A Notepad FAIL повторился;
+  expected тот же корпус, actual «Привет,» + U+0301 ×15 (22 code points).
+  UIA и screenshot согласуются; mapper running, last_error=null, события не
+  содержат TextInputFailed. Записаны notepad-failure.json/png и mapper-mailbox.jsonl.
+  После прогона дополнен только список SKIP для запуска без --extended;
+  повторные 24 unit tests и py_compile PASS.
+  Source archive SHA256 f551882be1793d00aae152d2809166e97ba3b9389e70fbe304be38982df5f35c.
+  Эти частичные debug diagnostics не заменяют release/full acceptance.
+
+Не закрыто автоматикой:
+- Whole-process-tree crash и точный Unicode в реальном Notepad — FAIL, не ручные пункты.
+- Windows S3 — ограничение graphics driver стенда, автоматический барьер открыт.
+- Previous-release upgrade — NOT RUN: нет выпущенной предыдущей версии; для
+  первого публичного релиза N/A, для обещания обновления нужны реальные OLD/NEW.
+- Browser/terminal/IDE/IME fixtures, дополнительные backend и полный каталог
+  system actions: непокрытые требования остаются в матрице автоматизации.
+- Многосуточный soak и hosted release workflow — NOT RUN.
+
+Артефакты и диагностические попытки:
+/mnt/disk2/vm/lhc-release-20261021/automation-20261022/
+Полные VM screenshots/traces/resources и source SHA — в logs путях отдельных отчётов.
+Архив automation-scripts.tar.gz (scripts + CI):
+SHA256 7b134634ab94df1548a97dcdff338959ee110eaec8c44c9cf5de46ae224b89fd
+Личные профили не использовались; все проверки в disposable overlay/test profile.
+Вывод: список ручной приёмки сокращён до оборудования/визуальной оценки.
+Утверждение «осталась только ручная приёмка, обе платформы готовы» не подтверждено.

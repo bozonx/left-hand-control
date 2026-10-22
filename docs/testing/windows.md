@@ -77,17 +77,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/che
 `package-windows.ps1`, проверяет его SHA256 и состав и запускает lifecycle из
 распакованной копии через `check-windows-package.ps1 -Desktop`. Дочернее приложение
 работает из каталога распакованного пакета, а не исходников. Финальный ZIP отдельно
-прошёл этот lifecycle в свежем overlay без подключённого диска с исходниками\nи Cargo-кэшем (см. журнал команд). В `full` VM архив
+прошёл этот lifecycle в свежем overlay без подключённого диска с исходниками
+и Cargo-кэшем (см. журнал команд). В `full` VM архив
 копируется в `logs/guest/packages` вместе с результатом; его SHA256 выводится в
 `full.log`. Исторические прогоны до этого изменения не подтверждают этот новый шаг.
 Проверка CLI ZIP без GUI выполняется release workflow на Windows runner.
 
 ### Что не тестируется или не принято
 
-Secure/elevated desktop, UAC/lock/unlock, suspend/resume, физические клавиатуры,
-Bluetooth/media/mouse keys и особенности драйверов требуют отдельной проверки.
+Lock/unlock, suspend/resume, elevated/UIPI, whole-tree crash и нагрузка входят
+в `run-windows.py --suite mapper --extended`; наличие сценария ещё не означает
+его PASS. Чистая ОС проверяется `run-windows-package.py` через ISO без toolchain.
+Физические клавиатуры, Bluetooth/media/mouse keys и особенности драйверов
+остаются отдельной ручной проверкой.
 Гибель владельца и отдельная гибель guard проверены; одновременное уничтожение
-всего дерева процессов этим не покрыто. WinForms не заменяет браузеры, IDE и
+всего дерева теперь имеет отдельный автоматический сценарий с воспроизводимым
+FAIL (Ctrl не отпускается). Точный Unicode в Notepad также пока FAIL.
+S3 заблокирован графическим драйвером текущего Windows-стенда.
+Подробности — в [отчёте автоматизации](results/windows/2026-10-22-automation-checks.txt). WinForms не заменяет браузеры, IDE и
 терминалы. Не приняты все масштабы DPI, экраны, вид/меню трея и версии Windows;
 Windows 10 и Windows ARM не входят в эту VM-матрицу.
 
@@ -575,7 +582,7 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
-The remaining manual Windows shell checks are in section 14 of the [manual acceptance checklist](manual-acceptance.md); automated mapper, layouts, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). Owner crash and guard failure have separate named scenarios; a successful VM run does not close physical-hardware, secure-desktop or whole-process-tree termination acceptance.
+Human visual/physical checks are in the [manual acceptance checklist](manual-acceptance.md); automated mapper, layouts, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). Owner crash and guard failure have separate named scenarios; physical hardware remains manual; secure desktop and whole-process-tree termination are explicit automatic scenarios, accepted only by their own PASS reports.
 
 ## Snapshots and result recording
 
@@ -616,3 +623,12 @@ VM results establish functional compatibility. Final claims about physical media
 
 The next development stages and future mapper acceptance cases are tracked in
 [Windows mapper preparation](../development/windows-mapper.md).
+
+## Дополнительные автоматические барьеры
+
+Точные команды, upgrade с настоящей предыдущей версией, длительность нагрузки,
+чистая Windows и незакрытые функциональные fixtures перечислены в
+[automation-acceptance.md](automation-acceptance.md). Их не переносить в ручной
+чек-лист. Для portable upgrade предусмотрен `check-windows-upgrade.ps1`;
+одинаковые версии отклоняются. Новые результаты имеют отдельные отчёты и не
+расширяют задним числом объём исторического прогона 2026-10-21.

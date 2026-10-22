@@ -179,6 +179,8 @@ def main():
                         help="smoke (default), full native/release acceptance, or mapper-only diagnostics")
     parser.add_argument("--memory", type=int, help="guest RAM in MiB; overrides vm.json for this run only")
     parser.add_argument("--mapper-from", help="mapper-only diagnostics: begin at this named scenario")
+    parser.add_argument("--extended", action="store_true", help="also check lock/unlock, S3, sustained mapper load and whole-tree termination")
+    parser.add_argument("--stress-seconds", type=int, default=180, help="extended mapper load duration")
     parser.add_argument("--show", action="store_true", help="show the VM display")
     parser.add_argument("--keep", action="store_true", help="keep the overlay disk")
     parser.add_argument("--timeout", type=float, default=150,
@@ -186,6 +188,8 @@ def main():
     args = parser.parse_args()
     if args.mapper_from and args.suite != "mapper":
         parser.error("--mapper-from requires --suite mapper")
+    if args.stress_seconds < 1:
+        parser.error("--stress-seconds must be positive")
     environment_ok()
     vm = Vm(args.vm)
     # A stalled Windows OpenSSH multiplexed connection also blocks log collection.
@@ -211,8 +215,8 @@ def main():
             print("Recovered previous guest logs from the cache disk.", flush=True)
 
     def preflight():
-        wait_for("interactive desktop", 180, lambda: "True" in ps(
-            "[bool](Get-Process explorer -ErrorAction SilentlyContinue)", timeout=30))
+        wait_for("interactive desktop", 180, lambda: "True" in retry_guest_io(lambda: ps(
+            "[bool](Get-Process explorer -ErrorAction SilentlyContinue)", timeout=90)))
         return ps(
             "$ErrorActionPreference = 'Stop'; "
             "$volume = Get-Volume -DriveLetter D; "
@@ -322,6 +326,7 @@ Remove-Item $stage -Recurse -Force
         ps(f"Set-Content {WORK}\\completion-url.txt -Value '{completion.url}'")
         ps(f"$ErrorActionPreference = 'Stop'; Remove-Item {WORK}\\out\\* -Recurse -Force -ErrorAction SilentlyContinue; "
            f"Set-Content {WORK}\\suite.txt -Value {args.suite}; "
+           f"Set-Content {WORK}\\stress-seconds.txt -Value {args.stress_seconds}; "
            "Start-ScheduledTask -TaskName LHC-E2E")
         input_checked = False
         started = time.monotonic()
@@ -344,7 +349,7 @@ Remove-Item $stage -Recurse -Force
                     report.step("hardware-keyboard", keyboard_baseline, fatal=True)
                     if args.suite != "mapper":
                         check_popups(vm, ps, report)
-                    WindowsMapper(vm, ps, report).run(start_at=args.mapper_from)
+                    WindowsMapper(vm, ps, report).run(start_at=args.mapper_from, extended=args.extended, stress_seconds=args.stress_seconds)
                     passed = True
                 finally:
                     signal_input_result(ps, report, passed)
@@ -369,7 +374,7 @@ Remove-Item $stage -Recurse -Force
         report.step("preflight", preflight, fatal=True)
         report.step("upload-source", upload, fatal=True)
         report.step(f"windows-{args.suite}", run)
-    except StepFailed:
+    except (StepFailed, subprocess.SubprocessError, OSError):
         print("A required step failed; later steps were not run.")
     except KeyboardInterrupt:
         report.steps.append(("controller", "FAILED", "interrupted; full acceptance was not completed"))
@@ -395,6 +400,7 @@ Remove-Item $stage -Recurse -Force
         f"Mapper build: {'release' if args.suite == 'full' else 'debug'}",
         f"Popup shell build: {'none' if args.suite == 'mapper' else 'release' if args.suite == 'full' else 'debug'}",
         f"Mapper from: {args.mapper_from or 'beginning'}",
+        f"Extended: {args.extended}; stress seconds: {args.stress_seconds}",
         f"Memory: {vm.get('memory', 6144)} MiB",
         f"Logs: {vm.logs}",
         "",

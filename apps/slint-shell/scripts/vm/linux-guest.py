@@ -17,6 +17,8 @@ import subprocess
 import sys
 import time
 
+from text_corpus import TEXT_CORPUS, TEXT_UNICODE
+
 APP_ID = "dev.bozonx.left-hand-control"
 MAPPER_DEVICE = "LeftHandControl Virtual Keyboard"
 TRAY_ID = "lhc-slint-shell"
@@ -28,7 +30,6 @@ CONFIG_DIR = HOME / ".config" / APP_ID
 DATA_DIR = HOME / ".local/share" / APP_ID
 
 FAKE_GAME = "lhc-fake-game"
-TEXT_UNICODE = "Привет, ёж 😀"
 
 # Every rule maps a physical key to a result the host can read back from the
 # receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
@@ -224,7 +225,7 @@ def mapper_running():
 def cmd_wait_session(args):
     wait(f"a desktop session{' with group ' + args.group if args.group else ''}",
          args.timeout, lambda: session_pid(args.group), interval=2)
-    wait("WAYLAND_DISPLAY in the user manager", 60,
+    wait("WAYLAND_DISPLAY in the user manager", args.timeout,
          lambda: "WAYLAND_DISPLAY" in user_environment())
     WORK.mkdir(exist_ok=True)
     print(user_environment().get("XDG_SESSION_TYPE", "wayland"))
@@ -305,9 +306,15 @@ def cmd_write_config(args):
     layout = E2E_LAYOUT
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         layout = layout.replace("kde:kwin/Switch to Desktop 1", "sys:switchDesktop1")
-    (DATA_DIR / "layouts/E2E.json").write_text(layout, encoding="utf-8")
+    parsed = json.loads(layout)
+    parsed["rules"].append({"key": "KeyU", "tap": "text:" + TEXT_CORPUS})
+    (DATA_DIR / "layouts/E2E.json").write_text(json.dumps(parsed, ensure_ascii=False), encoding="utf-8")
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    environment = HOME / '.config/environment.d'
+    environment.mkdir(parents=True, exist_ok=True)
+    (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nRUST_LOG=info\n')
     settings = {
+        "linuxWaylandTextMode": args.text_backend,
         "inputDevicePath": args.device,
         "layoutMode": "manual",
         "currentLayoutId": "user:E2E",
@@ -532,6 +539,26 @@ for (var i = 0; i < list.length; i++) {
     print(json.dumps(point))
 
 
+def cmd_portal_visible(args):
+    marker = f"LHC_E2E_PORTAL_{time.time_ns()}="
+    body = """
+var list = workspace.windowList ? workspace.windowList() : workspace.clientList();
+var count = 0;
+for (var i = 0; i < list.length; i++) {
+    if (String(list[i].resourceClass).indexOf('portal') >= 0 &&
+        String(list[i].caption).toLowerCase().indexOf('remote control') >= 0) count++;
+}
+console.warn(MARKER + count);
+""".replace('MARKER', json.dumps(marker))
+    run_kwin_test_script('lhc-e2e-portal-visible', body)
+    log = subprocess.run(['journalctl', '--user', '-b', '--no-pager', '-o', 'cat', '-n', '300'],
+                         capture_output=True, text=True, check=True).stdout
+    values = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
+    if len(values) != 1:
+        fail('portal visibility probe did not return one result')
+    print('yes' if int(values[0]) else 'no')
+
+
 def cmd_portal_deny_point(args):
     if not (0 < args.x < 1 and 0 < args.y < 1):
         fail("portal button coordinates must be fractions inside the window")
@@ -602,6 +629,36 @@ def cmd_kill_app(args):
     wait("the killed process to exit", 10,
          lambda: subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "left-hand-contr"],
                                 capture_output=True).returncode != 0)
+
+
+def cmd_resources(args):
+    owners = processes()
+    roots = [pid for pid in owners if b'--spell-worker' not in (Path('/proc') / pid / 'cmdline').read_bytes()]
+    if len(roots) != 1:
+        fail(f"expected one settings owner, found {len(roots)}")
+    values = []
+    for pid in owners:
+        process = Path('/proc') / pid
+        status = dict(line.split(':', 1) for line in (process / 'status').read_text().splitlines())
+        values.append({"rss_kib": int(status['VmRSS'].split()[0]),
+                       "fds": len(list((process / 'fd').iterdir())),
+                       "threads": int(status['Threads'])})
+    environment = dict(item.split('=', 1) for item in (Path('/proc') / roots[0] / 'environ').read_text().split('\0') if '=' in item)
+    print(json.dumps({"pid": int(roots[0]), "pids": [int(pid) for pid in owners],
+                      "popup_mode": environment.get('LHC_POPUPS', 'winit'),
+                      **{field: sum(value[field] for value in values) for field in ('rss_kib', 'fds', 'threads')}}))
+
+
+def cmd_clipboard(args):
+    environment = {**os.environ, **user_environment()}
+    if args.value is not None:
+        subprocess.run(["wl-copy", "--type", "text/plain;charset=utf-8"],
+                       input=args.value.encode('utf-8'), stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, env=environment, check=True)
+    else:
+        result = subprocess.run(["wl-paste", "--no-newline"], env=environment,
+                                check=True, capture_output=True, text=True)
+        print(result.stdout)
 
 
 def cmd_suspend_count(args):
@@ -684,12 +741,17 @@ def main():
     p.add_argument("--timeout", type=float, default=20)
     p = sub.add_parser("write-config")
     p.add_argument("--device", required=True)
+    p.add_argument("--text-backend", choices=("libei", "clipboard"), default="libei")
+    p.add_argument("--popup-mode", choices=("winit", "auto", "spell"), default="winit")
     p = sub.add_parser("start-app")
     p.add_argument("--popups", default="auto")
     p.add_argument("--timeout", type=float, default=30)
     p = sub.add_parser("wait-app")
     p.add_argument("--timeout", type=float, default=60)
     sub.add_parser("quit-app")
+    sub.add_parser("resources")
+    p = sub.add_parser("clipboard")
+    p.add_argument("--value")
     p = sub.add_parser("mapper")
     p.add_argument("--absent", action="store_true")
     p.add_argument("--timeout", type=float, default=20)
@@ -709,6 +771,7 @@ def main():
     sub.add_parser("popups")
     sub.add_parser("kde-state")
     sub.add_parser("focus-receiver")
+    sub.add_parser("portal-visible")
     p = sub.add_parser("portal-deny-point")
     p.add_argument("--x", type=float, required=True)
     p.add_argument("--y", type=float, required=True)

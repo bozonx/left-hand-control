@@ -1,4 +1,8 @@
-param([Parameter(Mandatory = $true)][string]$Archive, [switch]$Desktop)
+param(
+    [Parameter(Mandatory = $true)][string]$Archive, [switch]$Desktop,
+    [ValidateRange(100, 10000)][int]$StressCycles = 100,
+    [ValidateRange(0, 86400)][int]$StressSeconds = 0
+)
 $ErrorActionPreference = 'Stop'
 $archivePath = (Resolve-Path $Archive).Path
 $checksumPath = Join-Path (Split-Path $archivePath) 'WINDOWS-SHA256SUMS'
@@ -19,7 +23,7 @@ try {
     & $exe --help
     if ($LASTEXITCODE -ne 0) { throw 'Packaged --help failed' }
     if ($Desktop) {
-        & (Join-Path $PSScriptRoot 'check-windows-lifecycle.ps1') -Executable $exe
+        & (Join-Path $PSScriptRoot 'check-windows-lifecycle.ps1') -Executable $exe -StressCycles $StressCycles -StressSeconds $StressSeconds
     }
     Write-Host "WINDOWS PACKAGE PASSED: $(Split-Path $archivePath -Leaf) SHA256=$actual desktop=$Desktop"
 } finally {

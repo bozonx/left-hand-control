@@ -49,9 +49,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: powershell -NoProfile -File apps/slint-shell/scripts/check-windows-syntax.ps1
 
-      - name: Test Windows VM controller (no desktop)
+      - name: Test VM controllers and release gates (no desktop)
         if: matrix.os == 'ubuntu-latest'
-        run: python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+        run: python3 -m unittest discover -s apps/slint-shell/scripts/vm -p 'test_*.py'
 
       - name: Test Linux shell (Spell)
         if: matrix.os == 'ubuntu-latest'

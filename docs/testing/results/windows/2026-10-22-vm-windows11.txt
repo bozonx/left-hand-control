@@ -1,0 +1,50 @@
+Date: 2026-10-22 08:51:13 -0300
+Commit: 03674ce (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper build: debug
+Popup shell build: none
+Mapper from: mapper-notepad-unicode
+Extended: True; stress seconds: 180
+Memory: 4096 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261022-084114/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: mapper
+- core-driver-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 885 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261022-084114/src.tar.gz; SHA256 f551882be1793d00aae152d2809166e97ba3b9389e70fbe304be38982df5f35c; Source sync: 10 updated, 4 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-repeat: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-stop-held-restart: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-replug: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-lock-unavailable: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-crash-held: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-guard-failure: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-lock-unlock: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-suspend-resume: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-stress: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-unicode-corpus: skipped — diagnostic run starts at mapper-notepad-unicode
+- mapper-notepad-unicode: FAILED — timed out waiting for exact Unicode in real Notepad
+- mapper-elevated-uipi: passed — real UAC/elevated target; synthetic marker blocked; ordinary mapper input recovers
+- mapper-process-tree-crash: FAILED — timed out waiting for whole tree releases Ctrl
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-mapper: passed
+
+Passed: 6, failed: 2

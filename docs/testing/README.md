@@ -10,7 +10,7 @@
 | Система | Что проверяем сейчас | Инструкция |
 | --- | --- | --- |
 | Fedora 44 KDE, Wayland | Полный прогон RPM в VM 2026-10-21: 42 PASS, 0 FAIL | [Fedora KDE](fedora-kde.md) |
-| Debian 13 KDE, Wayland | DEB: 42 PASS без SKIP, включая S3; стенд i440fx | [Debian KDE](debian-kde.md) |
+| Debian 13 KDE, Wayland | DEB: 42 PASS; расширенный clipboard/auto: 45 PASS, 0 FAIL, включая S3; i440fx | [Debian KDE](debian-kde.md) |
 | Kubuntu 26.04, Wayland | Полный прогон архива в VM 2026-10-21: 42 PASS, 0 FAIL | [Kubuntu](kubuntu-kde.md) |
 | Ubuntu 26.04, GNOME Shell 50, Wayland | Отдельный VM smoke с расширением GNOME и portal; объём меньше KDE | [GNOME Wayland](gnome.md) |
 | Windows 11 | Нативные тесты, debug smoke, release mapper и popup-сценарии в VM | [Windows](windows.md) |
@@ -25,7 +25,8 @@ Sway, Hyprland, другие версии GNOME и X11 не включены в 
 
 1. Выполнить [общие проверки](common.md) для изменённого кода.
 2. По документу нужной среды запустить UI/mapper/VM-сценарии, которых касается изменение.
-3. Для выпуска дополнить автоматические проверки [ручной приёмкой](manual-acceptance.md).
+3. Для выпуска пройти [матрицу автоматизации](automation-acceptance.md), затем
+   дополнить её [физической и визуальной ручной приёмкой](manual-acceptance.md).
 4. Записать команду, исходники, окружение, результаты и пропуски по
    [правилам хранения результатов](results/README.md).
 
@@ -40,3 +41,6 @@ Sway, Hyprland, другие версии GNOME и X11 не включены в 
 диагностические попытки храним локально либо в артефактах CI.
 История в [results/](results/README.md) относится к указанным в отчётах исходникам,
 а не автоматически к текущему HEAD.
+
+[Автоматизация 2026-10-22](results/windows/2026-10-22-automation-checks.txt):
+расширенные проверки, чистая Windows, ресурсы и оставшиеся автоматические барьеры.

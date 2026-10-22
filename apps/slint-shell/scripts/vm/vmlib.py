@@ -97,6 +97,8 @@ class Vm:
             ]
         else:
             command += ["-drive", f"file={overlay},if=virtio,format=qcow2,discard=unmap"]
+        if self.get("cdrom"):
+            command += ["-cdrom", str(Path(self.get("cdrom")).resolve())]
         cache = self.get("cache_disk")
         if cache:
             # Persistent between runs: keeps Cargo's target directory warm.
@@ -105,7 +107,7 @@ class Vm:
                         else "virtio-blk-pci,drive=cache"]
         with (self.logs / "qemu.log").open("w") as log:
             self.qemu = subprocess.Popen(command, stdout=log, stderr=log)
-        self.qmp = Qmp(self.sockets / "qmp.sock", self.qemu)
+        self.qmp = Qmp(self.sockets / "qmp.sock", self.qemu, self.logs / "qmp-events.jsonl")
         # Confirm this process started before SSH can reach an older VM that
         # still owns the forwarded port while it is shutting down.
         self.qmp.status()
@@ -218,7 +220,8 @@ class Vm:
 class Qmp:
     """Minimal QMP client: commands, key taps and screenshots."""
 
-    def __init__(self, path, process):
+    def __init__(self, path, process, event_log=None):
+        self.event_log = event_log
         self.path = path
         self.process = process
         self.sock = None
@@ -259,6 +262,9 @@ class Qmp:
         self.sock.sendall(json.dumps(message).encode() + b"\n")
         while True:
             reply = self._read()
+            if "event" in reply and self.event_log is not None:
+                with self.event_log.open("a", encoding="utf-8") as log:
+                    log.write(json.dumps(reply) + "\n")
             if "return" in reply:
                 return reply["return"]
             if "error" in reply:
@@ -317,6 +323,27 @@ class Qmp:
                 self._keys([key], False)
                 time.sleep(0.02)
             time.sleep(delay)
+
+    def type_ascii(self, text):
+        """Type US-layout text through the emulated keyboard, without logging it."""
+        plain = dict(zip(" `-=[]\\;',./", (
+            "spc", "grave_accent", "minus", "equal", "bracket_left", "bracket_right",
+            "backslash", "semicolon", "apostrophe", "comma", "dot", "slash")))
+        shifted = dict(zip('~!@#$%^&*()_+{}|:"<>?', (
+            "grave_accent", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+            "minus", "equal", "bracket_left", "bracket_right", "backslash",
+            "semicolon", "apostrophe", "comma", "dot", "slash")))
+        keys = []
+        for character in text:
+            if character.isascii() and character.isalnum():
+                keys.append(("shift-" if character.isupper() else "") + character.lower())
+            elif character in plain:
+                keys.append(plain[character])
+            elif character in shifted:
+                keys.append("shift-" + shifted[character])
+            else:
+                raise StepFailed("QMP text requires printable US-layout ASCII")
+        self.tap(*keys, delay=0.01)
 
     def screendump(self, path):
         try:

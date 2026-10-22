@@ -150,9 +150,29 @@ jobs:
       - name: Install, check and remove
         run: sh apps/slint-shell/scripts/smoke-linux-package.sh artifacts/${{ matrix.package }}
 
+  verify-artifacts:
+    name: Verify assembled distribution
+    needs: [build-linux, build-windows]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64
+          path: artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x86_64
+          path: artifacts
+      - name: Check manifests, formats, architecture and bundled sources
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')
+          python3 apps/slint-shell/scripts/check-release-artifacts.py --directory artifacts --version "$version" --require-vendor
+
   draft-release:
     name: Draft release
-    needs: [rpmlint, smoke-packages, build-windows]
+    needs: [rpmlint, smoke-packages, build-windows, verify-artifacts]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:

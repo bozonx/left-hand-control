@@ -1,4 +1,8 @@
-param([string]$Executable)
+param(
+    [string]$Executable,
+    [ValidateRange(100, 10000)][int]$StressCycles = 100,
+    [ValidateRange(0, 86400)][int]$StressSeconds = 0
+)
 $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
@@ -114,7 +118,8 @@ function Test-Stress {
     Wait-ForServer $process
 
     $samples = @()
-    for ($cycle = 1; $cycle -le 100; $cycle++) {
+    $stressDeadline = (Get-Date).AddSeconds($StressSeconds)
+    for ($cycle = 1; $cycle -le $StressCycles -or (Get-Date) -lt $stressDeadline; $cycle++) {
         Invoke-Client $(if ($cycle % 2) { 'show emoji' } else { 'show quick' })
         Wait-Metric 't2_shown' $cycle
         Invoke-Client 'hide'
@@ -130,13 +135,14 @@ function Test-Stress {
         }
     }
 
+    $cycleCount = $cycle - 1
     for ($attempt = 0; $attempt -lt 50; $attempt++) {
         $completed = @(Import-Csv $metrics | Where-Object event -eq 'hidden').Count
-        if ($completed -eq 100) { break }
+        if ($completed -eq $cycleCount) { break }
         Start-Sleep -Milliseconds 100
     }
-    if ($completed -ne 100) {
-        throw "Only $completed of 100 popup cycles completed"
+    if ($completed -ne $cycleCount) {
+        throw "Only $completed of $cycleCount popup cycles completed"
     }
 
     $shell = New-Object -ComObject WScript.Shell
@@ -150,12 +156,12 @@ function Test-Stress {
     }
     $triggers = @($rows | Where-Object event -eq 't0_trigger')
     $hidden = @($rows | Where-Object event -eq 'hidden')
-    if ($triggers.Count -ne 100 -or $hidden.Count -ne 100) {
-        throw "Expected 100 trigger/hidden rows, got $($triggers.Count)/$($hidden.Count)"
+    if ($triggers.Count -ne $cycleCount -or $hidden.Count -ne $cycleCount) {
+        throw "Expected $cycleCount trigger/hidden rows, got $($triggers.Count)/$($hidden.Count)"
     }
-    if (@($triggers | Where-Object window -eq 'emoji').Count -ne 50 -or
-        @($triggers | Where-Object window -eq 'quick').Count -ne 50) {
-        throw 'Expected 50 Emoji and 50 Quick trials'
+    if (@($triggers | Where-Object window -eq 'emoji').Count -ne [math]::Ceiling($cycleCount / 2) -or
+        @($triggers | Where-Object window -eq 'quick').Count -ne [math]::Floor($cycleCount / 2)) {
+        throw 'Unexpected Emoji/Quick cycle balance'
     }
 
     $warm = $samples | Select-Object -Skip 1
@@ -168,6 +174,8 @@ function Test-Stress {
         throw "Handle count grew by $handleGrowth after warm-up"
     }
     $samples | Export-Csv (Join-Path $output 'stress-resources.csv') -NoTypeInformation
+    Write-Host "Actual popup cycles: $cycleCount; working set growth: $workingSetGrowth; handle growth: $handleGrowth"
+    $samples | ConvertTo-Csv -NoTypeInformation | Out-Host
 
     Invoke-Client 'quit'
     Assert-Stopped $process $scenario
@@ -210,7 +218,7 @@ try {
     }
 
     Write-Host 'WINDOWS LIFECYCLE CHECK PASSED' -ForegroundColor Green
-    Write-Host 'Hidden/visible quit, 100 rendered popup cycles, resource bounds, disabled hotkeys, unsupported Spell'
+    Write-Host "Hidden/visible quit, at least $StressCycles rendered popup cycles over at least ${StressSeconds}s, resource bounds, disabled hotkeys, unsupported Spell"
     Write-Host "Logs: $output"
 } finally {
     try {

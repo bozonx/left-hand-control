@@ -236,7 +236,8 @@ cargo test --locked -p slint-shell --lib game_mode
 ```
 
 Проверки KWin запускают собственный `dbus-daemon`; рабочий KWin не трогается.
-Ручная приёмка игрового режима — раздел 13 [чек-листа](../testing/manual-acceptance.md).
+Контролируемые правила game mode входят в [автоматическую матрицу](../testing/automation-acceptance.md);
+поведение в реальной игре — раздел 2 [ручного чек-листа](../testing/manual-acceptance.md).
 
 Стенды задержек и lifecycle (`bench-*`, feature `probes`, `scripts/bench-virtual.sh`)
 описаны в `apps/slint-shell/README.md`.
@@ -634,15 +635,17 @@ apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-
 в `D:\lhc-e2e\src` (каталог `target\` и Cargo cache на D: сохраняются), запускает задачу `LHC-E2E` в
 сессии пользователя и ждёт `D:\lhc-e2e\out\done.txt` с кодом завершения (0 — успех). Первая сборка в VM занимает
 десятки минут (`--timeout` в минутах, по умолчанию 150). Логи гостя копируются в
-`runs/<время>/logs/guest/`. Трей, DPI, цветные emoji и вставка после хоткея
-проверяются вручную (раздел 14 чек-листа).
+`runs/<время>/logs/guest/`. Вставка после хоткея проверяется автоматически; визуальная оценка трея, DPI
+и цветных emoji остаётся в ручной приёмке. Расширенные проверки lock/S3,
+нагрузки, аварии дерева и elevated target запускаются с `--extended`.
 
 ### L5: ручная приёмка
 
-[manual-acceptance.md](../testing/manual-acceptance.md): smoke-набор для каждой
-среды, полная матрица mapper, `text:`, раскладок, действий, команд, жизненного
-цикла, игрового режима и оболочки Windows. После L3 на установленном архиве
-пройдите хотя бы smoke-набор (раздел 3 чек-листа) и допишите результат в файл L3.
+[manual-acceptance.md](../testing/manual-acceptance.md): только физические устройства,
+реальное питание, естественная печать и человеческая визуальная оценка.
+Детерминированные требования и незакрытые автоматические барьеры перечислены в
+[automation-acceptance.md](../testing/automation-acceptance.md); они не становятся
+ручной работой из-за отсутствия готового fixture.
 
 ## 5. Выпуск
 

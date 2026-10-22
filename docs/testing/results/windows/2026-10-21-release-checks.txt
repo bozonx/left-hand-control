@@ -1,3 +1,8 @@
+Classification note (2026-10-22): the historical unaccepted scopes below are not
+all manual tasks. See docs/testing/automation-acceptance.md and the new automation
+report; manual-acceptance.md now covers only physical/human visual evaluation.
+Historical PASS/FAIL results below are unchanged by this classification.
+
 Date: 2026-10-21 -0300
 Status: AUTOMATED SCOPES FINISHED WITH EXCLUSIONS. Full stable-release acceptance
 remains open: physical/manual acceptance is not closed. Debian VM S3 is now

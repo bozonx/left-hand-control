@@ -16,15 +16,17 @@ import json
 import platform
 from pathlib import Path
 import shlex
+import subprocess
 import time
 
-from vmlib import Report, StepFailed, Vm, commit, environment_ok, result_path
+from text_corpus import TEXT_CORPUS, TEXT_UNICODE
+
+from vmlib import Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
 
 # scp paths are relative to the guest home; shell commands use ~.
 GUEST = "~/lhc-e2e"
 GUEST_PY = f"python3 {GUEST}/linux-guest.py"
 CONFIG = "~/.config/dev.bozonx.left-hand-control/config.json"
-TEXT_UNICODE = "Привет, ёж 😀"  # linux-guest.py TEXT_UNICODE, typed by KeyY
 
 
 def main():
@@ -34,9 +36,14 @@ def main():
                         help=".deb, .rpm or .tar.gz built by release-linux.sh")
     parser.add_argument("--previous", type=Path,
                         help="install this older release first and upgrade from it")
+    parser.add_argument("--popup-mode", choices=("winit", "auto", "spell"), default="winit")
+    parser.add_argument("--text-backend", choices=("libei", "clipboard"), default="libei")
+    parser.add_argument("--stress-seconds", type=int, default=0, help="optional sustained input/lifecycle/resource check")
     parser.add_argument("--show", action="store_true", help="show the VM display")
     parser.add_argument("--keep", action="store_true", help="keep the overlay disk")
     args = parser.parse_args()
+    if args.stress_seconds < 0:
+        parser.error("--stress-seconds must be nonnegative")
     environment_ok()
     package = args.package.resolve()
     previous = args.previous.resolve() if args.previous else None
@@ -70,6 +77,7 @@ def main():
     def upload():
         vm.ssh(f"mkdir -p {GUEST}")
         vm.copy_to(Path(__file__).with_name("linux-guest.py"), "lhc-e2e/")
+        vm.copy_to(Path(__file__).with_name("text_corpus.py"), "lhc-e2e/")
         vm.copy_to(package, "lhc-e2e/")
         if previous:
             vm.copy_to(previous, "lhc-e2e/")
@@ -103,28 +111,29 @@ def main():
         return state["device"]
 
     def write_config():
-        guest(f"write-config --device {shlex.quote(state['device'])}")
+        guest(f"write-config --device {shlex.quote(state['device'])} --text-backend {args.text_backend} --popup-mode {args.popup_mode}")
 
     def start_without_permissions():
-        guest("start-app")
+        guest(f"start-app --popups {args.popup_mode}")
 
-    def relogin_with_input():
-        uid = int(vm.ssh("id -u").strip())
+    def reboot_with_input():
         guest("quit-app")
         if archive:
             # The archive's explicit command: udev rule, uinput and the group.
             vm.ssh(f"{installer} permissions")
         else:
             vm.ssh(f"sudo usermod -aG input {vm.user}")
-        # Stop SDDM first and wait for the user units to stop before autologin:
-        # terminate-user alone can return while it still tears down the session.
-        # The system unit outlives the SSH session that logout terminates.
-        vm.ssh(f"sudo systemd-run --quiet --on-active=2 --unit=lhc-e2e-relogin "
-               f"sh -c 'systemctl stop display-manager; loginctl terminate-user {vm.user}; "
-               f"systemctl stop user@{uid}.service user-{uid}.slice; "
-               "systemctl start display-manager'")
-        time.sleep(8)
-        vm.wait_ssh()
+        # A cold session avoids SSH/PAM restarting user@ while logout is
+        # still tearing it down. It also checks autostart after a real reboot.
+        before = vm.ssh("cat /proc/sys/kernel/random/boot_id").strip()
+        vm.ssh("sudo systemd-run --quiet --on-active=2 --timer-property=AccuracySec=100ms --unit=lhc-e2e-permissions-reboot systemctl reboot")
+        time.sleep(10)
+        def rebooted():
+            try:
+                return vm.ssh("cat /proc/sys/kernel/random/boot_id", timeout=10).strip() != before
+            except (StepFailed, subprocess.SubprocessError, OSError):
+                return False
+        wait_for("new boot after input-group change", 180, rebooted, interval=2)
         guest("wait-session --group input")
         # Logout terminates SSH sessions: create the persistent connection only
         # after the new desktop is ready, then avoid repeated handshakes.
@@ -216,8 +225,9 @@ def main():
             vm.qmp.tap("t")
             time.sleep(4)
             vm.qmp.screendump(vm.logs / "portal-consent.png")
-            vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
-            time.sleep(3)
+            if guest("portal-visible") == "yes":
+                vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
+                time.sleep(3)
         return expect("portal-consent", "lhc-ok", action=approve)
 
     def layer():
@@ -345,7 +355,7 @@ def main():
     def suspend():
         boot_id = vm.ssh("cat /proc/sys/kernel/random/boot_id").strip()
         before = int(guest("suspend-count"))
-        vm.ssh("sudo systemd-run --quiet --on-active=1 --unit=lhc-e2e-suspend systemctl suspend")
+        vm.ssh("sudo systemd-run --quiet --on-active=1 --timer-property=AccuracySec=100ms --unit=lhc-e2e-suspend systemctl suspend")
         # The guest may wake on its own right away; otherwise QMP wakes it.
         deadline = time.monotonic() + 60
         while time.monotonic() < deadline:
@@ -413,11 +423,11 @@ def main():
         try:
             return expect("stuck-kill", "abc", action=kill_held)
         finally:
-            guest("start-app")
+            guest(f"start-app --popups {args.popup_mode}")
             guest("mapper --timeout 30")
 
     def previous_release():
-        guest("start-app")
+        guest(f"start-app --popups {args.popup_mode}")
         guest("quit-app")
         state["previous_config"] = vm.ssh(f"sha256sum {CONFIG}")
         return vm.ssh(f"{binary} --version").strip()
@@ -430,7 +440,7 @@ def main():
             raise StepFailed(f"the version did not change: {after}")
         if vm.ssh(f"sha256sum {CONFIG}") != state["previous_config"]:
             raise StepFailed("the upgrade changed the user configuration")
-        guest("start-app")
+        guest(f"start-app --popups {args.popup_mode}")
         guest("quit-app")
         return f"{before} → {after}, configuration kept"
 
@@ -449,6 +459,42 @@ def main():
         else:
             vm.ssh(vm.get("remove"))
         guest("check-removed")
+
+    def clipboard_preservation():
+        seed = "lhc-clipboard-before-Привет"
+        guest(f"clipboard --value {shlex.quote(seed)}")
+        expect("clipboard-unicode", TEXT_UNICODE, ["y"], None, 5)
+        if guest("clipboard") != seed:
+            raise StepFailed("text injection did not restore the previous clipboard text")
+        return "exact Unicode; previous clipboard text restored after paste"
+
+    def stress():
+        deadline = time.monotonic() + args.stress_seconds
+        samples, cycles, grants = [], 0, 0
+        while time.monotonic() < deadline or cycles < 3:
+            def input_cycle():
+                nonlocal grants
+                vm.qmp.tap("a", "d", "c", "t")
+                time.sleep(3)
+                if guest("portal-visible") == "yes":
+                    grants += 1
+                    vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
+                    time.sleep(3)
+            expect(f"stress-{cycles}", "bXclhc-ok", action=input_cycle)
+            set_mapper(False)
+            set_mapper(True)
+            if cycles and cycles % 5 == 0:
+                keyboard_replug()
+            guest("popups")
+            samples.append(json.loads(guest("resources")))
+            cycles += 1
+        (vm.logs / "stress-resources.json").write_text(json.dumps(samples, indent=2))
+        warm = samples[1:]
+        if len(warm) > 1:
+            for field, limit in (("rss_kib", 65536), ("fds", 16), ("threads", 8)):
+                if warm[-1][field] - warm[0][field] > limit:
+                    raise StepFailed(f"unbounded {field} growth: {samples}")
+        return f"{cycles} exact input/popup/stop/start cycles over at least {args.stress_seconds}s; resources bounded; portal grants={grants}"
 
     def collect():
         vm.copy_from("lhc-e2e/app.log", vm.logs / "app.log")
@@ -475,14 +521,18 @@ def main():
         report.step("tray-item", guest, "tray")
         report.step("no-mapper-without-input", guest, "mapper --absent --timeout 8")
         report.step("autostart-entry", guest, "autostart")
-        report.step("relogin-with-input", relogin_with_input, fatal=True)
+        report.step("reboot-with-input", reboot_with_input, fatal=True)
         report.step("autostart-launch", guest, "wait-app --timeout 90")
         report.step("tray-after-login", guest, "tray")
         report.step("mapper-running", guest, "mapper --timeout 30", fatal=True)
+        # Clipboard mode still needs RemoteDesktop consent for its paste shortcut.
         report.step("portal-deny", portal_deny)
         report.step("portal-consent", portal_approve)
+        if args.text_backend == "clipboard":
+            report.step("clipboard-preservation", clipboard_preservation)
         report.step("mapper-keys-and-text", mapper_text)
         report.step("text-unicode", expect, "text-unicode", TEXT_UNICODE, ["y"], None, 5)
+        report.step("text-unicode-corpus", expect, "text-corpus", TEXT_CORPUS, ["u"], None, 5)
         report.step("layer-tap-hold", layer)
         report.step("macro", expect, "macro", "nmacO", ["m"])
         report.step("command", command)
@@ -507,6 +557,8 @@ def main():
         report.step("mapper-start", set_mapper, True)
         report.step("stuck-keys-on-stop", stuck_on_stop)
         report.step("stuck-keys-on-kill", stuck_on_kill)
+        if args.stress_seconds:
+            report.step("sustained-input-lifecycle", stress)
         if archive or vm.get("reinstall"):
             report.step("upgrade-over-running", upgrade)
         else:
@@ -531,10 +583,11 @@ def main():
         f"Memory: {vm.get('memory', 6144)} MiB",
         f"CPU: {vm.get('cpu', 'host')}",
         f"Machine: {vm.machine}",
+        f"Text backend: {args.text_backend}; stress seconds: {args.stress_seconds}",
         f"Suspend exclusion: {suspend_exclusion or 'none'}",
         f"Package: {package.name}" + (f" (upgraded from {previous.name})" if previous else ""),
         f"Package SHA256: {package_sha256}",
-        "Popup mode: auto (actual backend recorded in app.log)",
+        f"Popup mode: {args.popup_mode} (startup environment and worker processes recorded in resources)",
         f"Portal deny clicks: {vm.get('portal_deny_click', [0.738, 0.659])}; relative: {vm.get('portal_deny_relative')}",
         f"Previous-version upgrade: {previous.name if previous else 'NOT RUN (no --previous)'}",
         f"Keyboard: {state.get('device', 'not detected')}",

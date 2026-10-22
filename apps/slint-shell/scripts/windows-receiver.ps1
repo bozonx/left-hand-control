@@ -6,6 +6,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+$script:receiverScript = $PSCommandPath
 Add-Type -Path (Join-Path $PSScriptRoot 'windows-key-trace.cs') -ReferencedAssemblies 'System.dll', 'System.Core.dll', 'System.Windows.Forms.dll'
 function Set-ReceiverLanguage([string]$Locale) {
     $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
@@ -62,6 +64,7 @@ $form.Controls.Add($status)
 $script:formActive = $false
 $script:editorFocused = $false
 $script:lastCommand = $null
+$script:receiverElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 $script:hideOnInput = $false
 
 function Write-ReceiverState {
@@ -85,6 +88,7 @@ function Write-ReceiverState {
     $state = [ordered]@{
         timestamp = [DateTimeOffset]::Now.ToString('o')
         event = $Event
+        elevated = $script:receiverElevated
         input_locale = [System.Windows.Forms.InputLanguage]::CurrentInputLanguage.Culture.Name
         form_active = ([LhcKeyTrace]::GetForegroundWindow() -eq $form.Handle)
         editor_focused = $script:editorFocused
@@ -141,10 +145,36 @@ $editor.Add_TextChanged({
 })
 $form.Add_FormClosed({ Write-ReceiverState 'closed' })
 
+function Write-NotepadState {
+    if (-not $script:notepad -or $script:notepad.HasExited) { return }
+    try {
+        $script:notepad.Refresh()
+        $handle = $script:notepad.MainWindowHandle
+        $element = [Windows.Automation.AutomationElement]::FromHandle($handle)
+        $condition = [Windows.Automation.OrCondition]::new(
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Document),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Edit))
+        $control = $element.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+        if (-not $control) { throw 'No Notepad text control' }
+        $pattern = $control.GetCurrentPattern([Windows.Automation.TextPattern]::Pattern)
+        $value = @{ pid=$script:notepad.Id; text=$pattern.DocumentRange.GetText(-1); active=([LhcKeyTrace]::GetForegroundWindow() -eq $handle) }
+    } catch { $value = @{ error="$_"; active=$false } }
+    $path = Join-Path $Output 'notepad.json'
+    [IO.File]::WriteAllText("$path.tmp", ($value | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
+    if (Test-Path $path) { [IO.File]::Replace("$path.tmp", $path, [NullString]::Value) } else { [IO.File]::Move("$path.tmp", $path) }
+}
+
 # Host control changes the receiver itself; keyboard scenarios still use QMP.
 $timer = New-Object System.Windows.Forms.Timer
 $timer.Interval = 50
 $timer.Add_Tick({
+    Write-NotepadState
+    if ($script:suspendPending -and (Get-Date) -ge $script:suspendAt) {
+        $script:suspendPending = $false
+        if (-not [Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false)) {
+            [IO.File]::WriteAllText((Join-Path $Output 'suspend-error.txt'), 'SetSuspendState failed')
+        }
+    }
     $raw = [LhcKeyTrace]::Drain()
     if ($raw.Count) {
         [IO.File]::AppendAllText((Join-Path $Output 'raw-keys.jsonl'), (($raw -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
@@ -161,6 +191,38 @@ $timer.Add_Tick({
     $script:lastCommand = $command.id
     try {
         switch ($command.op) {
+            'freeze-crash-tree' {
+                $directory = Split-Path $Output
+                $owner = [int](Get-Content (Join-Path $directory 'mapper\crash\ready') -Raw)
+                $guards = @(Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $owner -and $_.Name -eq 'windows-mapper-stand.exe' })
+                if ($guards.Count -ne 1) { throw 'Expected one child guard' }
+                if ([LhcKeyTrace]::SuspendProcess($owner) -ne 0) { throw 'Cannot suspend crash owner' }
+                if ([LhcKeyTrace]::SuspendProcess([int]$guards[0].ProcessId) -ne 0) { throw 'Cannot suspend child guard' }
+            }
+            'notepad' {
+                $before = @(Get-Process notepad -ErrorAction SilentlyContinue | ForEach-Object Id)
+                Start-Process notepad
+                $deadline = (Get-Date).AddSeconds(30)
+                do {
+                    $script:notepad = Get-Process notepad -ErrorAction SilentlyContinue | Where-Object {
+                        $_.Id -notin $before -and $_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId -and $_.MainWindowHandle -ne 0
+                    } | Select-Object -First 1
+                    if ((Get-Date) -gt $deadline) { throw 'No owned interactive Notepad' }
+                    Start-Sleep -Milliseconds 100
+                } until ($script:notepad)
+            }
+            'notepad-close' {
+                if ($script:notepad -and -not $script:notepad.HasExited) { $script:notepad.Kill(); $script:notepad.WaitForExit() }
+            }
+            'elevate' {
+                $elevatedOutput = Join-Path (Split-Path $Output) 'elevated'
+                Start-Process powershell -Verb RunAs -ArgumentList @('-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $script:receiverScript, '-Output', $elevatedOutput)
+            }
+            'close' { $script:closePending = $true }
+            'lock' {
+                if (-not [LhcKeyTrace]::LockWorkStation()) { throw 'LockWorkStation failed' }
+            }
+            'suspend' { $script:suspendAt = (Get-Date).AddSeconds(2); $script:suspendPending = $true }
             'trace' { [LhcKeyTrace]::Stop(); [LhcKeyTrace]::Start() }
             'reset' { $script:hideOnInput = $false; $editor.Clear() }
             'hide-on-input' { $script:hideOnInput = $true }
@@ -183,6 +245,8 @@ $timer.Add_Tick({
     } catch { $response = @{ id = $command.id; ok = $false; error = "$_" } }
     $json = $response | ConvertTo-Json -Compress
     [IO.File]::WriteAllText((Join-Path $Output 'response.json'), $json, [Text.UTF8Encoding]::new($false))
+    if ($script:closePending) { $form.Close() }
+
 })
 $timer.Start()
 try { [System.Windows.Forms.Application]::Run($form) } finally { $timer.Stop(); [LhcKeyTrace]::Stop(); $timer.Dispose() }

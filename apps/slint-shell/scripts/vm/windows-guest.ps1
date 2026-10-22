@@ -94,7 +94,9 @@ try {
                 -RedirectStandardOutput "$out\mapper-stdout.log" -RedirectStandardError "$out\mapper-stderr.log"
         } finally { [Environment]::SetEnvironmentVariable('LHC_DEV_DIR', $previousDevDir, 'Process') }
         $null = $mapper.Handle
-        $deadline = (Get-Date).AddMinutes(25)
+        $stressSeconds = if (Test-Path 'D:\lhc-e2e\stress-seconds.txt') { [int](Get-Content 'D:\lhc-e2e\stress-seconds.txt' -Raw) } else { 180 }
+        if ($stressSeconds -lt 1 -or $stressSeconds -gt 604800) { throw 'Invalid stress duration' }
+        $deadline = (Get-Date).AddSeconds(3600 + $stressSeconds)
         while (-not (Test-Path "$out\input-result.txt")) {
             if ($popupStand -and $popupStand.HasExited -and $popupStand.ExitCode -ne 0) {
                 throw "Popup acceptance stand failed (exit $($popupStand.ExitCode), see popups-stderr.log)"

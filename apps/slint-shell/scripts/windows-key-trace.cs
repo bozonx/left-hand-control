@@ -13,6 +13,18 @@ public static class LhcKeyTrace
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
 
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool LockWorkStation();
+
+    [DllImport("ntdll.dll")]
+    private static extern int NtSuspendProcess(IntPtr process);
+
+    public static int SuspendProcess(int pid)
+    {
+        using (var process = System.Diagnostics.Process.GetProcessById(pid))
+            return NtSuspendProcess(process.Handle);
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct KeyData
     {
