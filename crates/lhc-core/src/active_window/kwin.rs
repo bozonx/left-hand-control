@@ -407,7 +407,10 @@ fn load_script(
     let scripting = scripting(connection)?;
     let path = file.to_string_lossy();
     let id: i32 = scripting
-        .call("loadScript", &(path.as_ref(), name))
+        .call(
+            "loadScript",
+            &(path.as_ref(), script_name(connection, name)?),
+        )
         .map_err(|error| error.to_string())?;
     if id < 0 {
         return Err(format!("KWin refused script {name}"));
@@ -422,9 +425,17 @@ fn load_script(
 }
 
 fn unload_script(connection: &Connection, name: &str) {
-    if let Ok(scripting) = scripting(connection) {
+    if let Ok(name) = script_name(connection, name)
+        && let Ok(scripting) = scripting(connection)
+    {
         let _: Result<bool, _> = scripting.call("unloadScript", &name);
     }
+}
+
+fn script_name(connection: &Connection, name: &str) -> Result<String, String> {
+    let service = connection.unique_name().ok_or("no unique bus name")?;
+    // A second instance must not replace or unload the first one's watcher.
+    Ok(format!("{name}-{service}"))
 }
 
 fn scripting(connection: &Connection) -> Result<Proxy<'static>, String> {
@@ -451,17 +462,21 @@ mod tests {
         }
     }
 
-    struct Scripting(Arc<AtomicUsize>);
+    struct Scripting {
+        loads: Arc<AtomicUsize>,
+        names: Arc<Mutex<std::collections::HashSet<String>>>,
+    }
     #[zbus::interface(name = "org.kde.kwin.Scripting")]
     impl Scripting {
         #[zbus(name = "loadScript")]
-        fn load_script(&self, _file: &str, _name: &str) -> i32 {
-            self.0.fetch_add(1, Ordering::SeqCst);
+        fn load_script(&self, _file: &str, name: &str) -> i32 {
+            self.loads.fetch_add(1, Ordering::SeqCst);
+            assert!(self.names.lock().unwrap().insert(name.into()));
             0
         }
         #[zbus(name = "unloadScript")]
-        fn unload_script(&self, _name: &str) -> bool {
-            true
+        fn unload_script(&self, name: &str) -> bool {
+            self.names.lock().unwrap().remove(name)
         }
         #[zbus(name = "start")]
         fn start(&self) {}
@@ -481,12 +496,19 @@ mod tests {
             .unwrap();
         let address = address.trim();
         let loads = Arc::new(AtomicUsize::new(0));
+        let names = Arc::new(Mutex::new(std::collections::HashSet::new()));
         let server = || {
             zbus::blocking::connection::Builder::address(address)
                 .unwrap()
                 .name(KWIN)
                 .unwrap()
-                .serve_at("/Scripting", Scripting(loads.clone()))
+                .serve_at(
+                    "/Scripting",
+                    Scripting {
+                        loads: loads.clone(),
+                        names: names.clone(),
+                    },
+                )
                 .unwrap()
                 .build()
                 .unwrap()
@@ -530,6 +552,48 @@ mod tests {
         assert!(current().is_none());
         assert!(!target_is_current("old-window"));
         assert_eq!(loads.load(Ordering::SeqCst), 2);
+        // Two application connections coexist; closing the second cannot
+        // remove the first connection's watcher or its one-shot list script.
+        let primary = slot.as_ref().unwrap().connection.clone();
+        let primary_name = script_name(&primary, ACTIVE_SCRIPT).unwrap();
+        let other = open_connection(
+            connect_builder(zbus::blocking::connection::Builder::address(address).unwrap())
+                .unwrap(),
+            directory.path().join("second.js"),
+            false,
+        )
+        .unwrap();
+        let other_name = script_name(&other.connection, ACTIVE_SCRIPT).unwrap();
+        assert_ne!(primary_name, other_name);
+        assert!(names.lock().unwrap().contains(&primary_name));
+        assert!(names.lock().unwrap().contains(&other_name));
+        load_script(
+            &primary,
+            &directory.path().join("list.js"),
+            LIST_SCRIPT,
+            LIST_SCRIPT_BODY,
+            true,
+        )
+        .unwrap();
+        load_script(
+            &other.connection,
+            &directory.path().join("second-list.js"),
+            LIST_SCRIPT,
+            LIST_SCRIPT_BODY,
+            true,
+        )
+        .unwrap();
+        unload_script(&other.connection, LIST_SCRIPT);
+        assert!(
+            names
+                .lock()
+                .unwrap()
+                .contains(&script_name(&primary, LIST_SCRIPT).unwrap())
+        );
+        close(Some(other));
+        assert!(names.lock().unwrap().contains(&primary_name));
+        assert!(!names.lock().unwrap().contains(&other_name));
+        unload_script(&primary, LIST_SCRIPT);
         // Fresh owner callbacks work, while other senders are still rejected.
         let connection = slot.as_ref().unwrap().connection.clone();
         let proxy = Proxy::new(

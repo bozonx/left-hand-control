@@ -202,6 +202,11 @@ pub(super) trait LoopDriver {
             .map(|(key, down)| (key, down, self.now()))
             .collect())
     }
+    /// Intercept a platform hotkey before it reaches the engine and OS.
+    /// `Some(None)` consumes a release; `Some(Some(action))` runs an app action.
+    fn app_hotkey(&mut self, _key: KeyCode, _down: bool) -> Option<Option<&'static str>> {
+        None
+    }
     /// Auto-repeats of held keys since the last fetch, for an OS that does
     /// not repeat injected keys itself.
     fn take_repeats(&mut self) -> Vec<KeyCode> {
@@ -235,7 +240,11 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
 
     if driver.wait(wait)? {
         for (key, down, at) in driver.fetch_timed_key_events()? {
-            engine.handle(key, down, at, out_buf);
+            match driver.app_hotkey(key, down) {
+                Some(Some(action)) => engine.execute_remote(action, out_buf),
+                Some(None) => {}
+                None => engine.handle(key, down, at, out_buf),
+            }
             effects.held_layer_changed(engine.held_layer_state());
         }
         for key in driver.take_repeats() {

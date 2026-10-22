@@ -1,0 +1,37 @@
+Date: 2026-10-21 16:05:45 -0300
+Commit: 99b6fe9 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Mapper build: release
+Popup shell build: release
+Mapper from: beginning
+Memory: 12288 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261021-151246/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- release-mapper-driver-build: passed
+- release-shell-build: passed
+- harness: FAILED (Mapper stand exited before host checks)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 863 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261021-151246/src.tar.gz; SHA256 0d9c3e38145b3c4944bb9f60a90976810346d9e0bac75d09c29e7955cd757953; Source sync: 19 updated, 39 removed
+- windows-full: FAILED — Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- release-mapper-driver-build: passed
+- release-shell-build: passed
+- harness: FAILED (Mapper stand exited before host checks)
+- collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
+
+Passed: 3, failed: 1

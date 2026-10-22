@@ -10,11 +10,11 @@ KVM/QEMU is the primary local hypervisor on Linux. It gives near-native CPU exec
 
 Текущий стенд — Windows 11 x64, интерактивная сессия обычного пользователя,
 QEMU USB keyboard и WinForms-приёмник. Полный
-[прогон 2026-10-21](results/windows/2026-10-21-vm-windows11-7.txt): 26 этапов без ошибок.
-[Точечный повтор](results/windows/2026-10-21-vm-windows11-8.txt) отдельно подтвердил
-исправленную передачу результата из VM; он не заменяет полный набор.
-[Журнал команд](results/windows/2026-10-21-guard-checks.txt) содержит Linux-регрессии
-и точные ограничения этих запусков. Статус относится к указанным исходникам.
+[прогон 2026-10-21](results/windows/2026-10-21-vm-windows11-11.txt): **26 этапов без ошибок**,
+включая native tests/clippy и lifecycle из распакованного portable ZIP.
+[Журнал команд](results/windows/2026-10-21-release-checks.txt) фиксирует исходники,
+пакеты, контрольные суммы и ограничения. Завершение принято по гостевому callback;
+SSH-выгрузка логов в этом прогоне не сработала. Статус относится к указанным исходникам.
 
 ### Предварительные условия
 
@@ -70,6 +70,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/che
 - Реальная оболочка: принудительное завершение владельца с удерживаемым Ctrl.
 - В `full`: core/shell tests, clippy, изоляция release storage, скрытый/видимый выход,
   100 popup-циклов, границы ресурсов, отключённые хоткеи и неподдерживаемый Spell.
+
+### Проверка распространяемого ZIP
+
+`check-windows-automated.ps1` теперь собирает portable ZIP через
+`package-windows.ps1`, проверяет его SHA256 и состав и запускает lifecycle из
+распакованной копии через `check-windows-package.ps1 -Desktop`. Дочернее приложение
+работает из каталога распакованного пакета, а не исходников. Финальный ZIP отдельно
+прошёл этот lifecycle в свежем overlay без подключённого диска с исходниками\nи Cargo-кэшем (см. журнал команд). В `full` VM архив
+копируется в `logs/guest/packages` вместе с результатом; его SHA256 выводится в
+`full.log`. Исторические прогоны до этого изменения не подтверждают этот новый шаг.
+Проверка CLI ZIP без GUI выполняется release workflow на Windows runner.
 
 ### Что не тестируется или не принято
 

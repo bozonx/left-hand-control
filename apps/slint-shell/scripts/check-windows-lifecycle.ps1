@@ -1,7 +1,9 @@
+param([string]$Executable)
 $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
-$exe = Join-Path $root 'target\release\left-hand-control.exe'
+$exe = if ($Executable) { (Resolve-Path $Executable).Path } else { Join-Path $root 'target\release\left-hand-control.exe' }
+$workingDirectory = if ($Executable) { Split-Path $exe } else { $root }
 $output = Join-Path $root 'windows-runtime\lifecycle'
 
 if (-not (Test-Path $exe)) {
@@ -58,7 +60,7 @@ function Test-Quit {
     $env:LHC_POPUPS = 'winit'
     $env:LHC_METRICS = Join-Path $output "$Scenario-metrics.csv"
     Remove-Item $env:LHC_METRICS -ErrorAction SilentlyContinue
-    $process = Start-Process -FilePath $exe -WorkingDirectory $root `
+    $process = Start-Process -FilePath $exe -WorkingDirectory $workingDirectory `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
     $null = $process.Handle
     $script:processes.Add($process)
@@ -105,7 +107,7 @@ function Test-Stress {
     $env:LHC_HOTKEYS = 'off'
     $env:LHC_POPUPS = 'winit'
     $env:LHC_METRICS = $metrics
-    $process = Start-Process -FilePath $exe -WorkingDirectory $root `
+    $process = Start-Process -FilePath $exe -WorkingDirectory $workingDirectory `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
     $null = $process.Handle
     $script:processes.Add($process)
@@ -193,7 +195,7 @@ try {
     $spellStdout = Join-Path $output 'spell-stdout.log'
     $spellStderr = Join-Path $output 'spell-stderr.log'
     $env:LHC_POPUPS = 'spell'
-    $spell = Start-Process -FilePath $exe -WorkingDirectory $root `
+    $spell = Start-Process -FilePath $exe -WorkingDirectory $workingDirectory `
         -RedirectStandardOutput $spellStdout -RedirectStandardError $spellStderr -PassThru
     $null = $spell.Handle
     $script:processes.Add($spell)

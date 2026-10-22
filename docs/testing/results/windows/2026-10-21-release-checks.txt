@@ -1,0 +1,200 @@
+Date: 2026-10-21 -0300
+Status: AUTOMATED SCOPES FINISHED WITH EXCLUSIONS. Full stable-release acceptance
+remains open: Debian S3 baseline and physical/manual acceptance are not closed.
+No tag, commit, public release or live GitHub workflow run was created.
+
+Final result:
+- Fedora 44 KDE Wayland, final RPM: 42 PASS, 0 FAIL.
+  linux/2026-10-21-vm-fedora44-kde-7.txt
+- Kubuntu 26.04 KDE Wayland, final tar.gz: 42 PASS, 0 FAIL.
+  linux/2026-10-21-vm-kubuntu2604-2.txt
+- Debian 13 KDE Wayland, final DEB, explicit S3 exclusion: 41 PASS, 0 FAIL, 1 SKIP.
+  linux/2026-10-21-vm-debian13-kde-4.txt
+  S3 is NOT ACCEPTED. Full attempts before exclusion remain failed.
+- Windows 11 Enterprise Evaluation build 26200, x64 MSVC, interactive session:
+  full VM suite 26 PASS, 0 FAIL. Secure desktop, suspend and physical hardware
+  excluded. windows/2026-10-21-vm-windows11-11.txt
+  Final ZIP separately passed fresh-overlay lifecycle from its own directory,
+  including 100 rendered popup cycles, resource bounds, hidden/visible quit,
+  disabled hotkeys and unsupported Spell. No source-directory assets required.
+
+Source and environment:
+- Repository 99b6fe9 plus the working-tree changes, version 0.3.0 (testing build).
+- Host Linux 7.2.3-2-MANJARO, KVM/QEMU 11.1.1.
+- Host rustc 1.98.1 (48a229cea 2026-09-01), cargo 1.98.1 (797e8a9bc 2026-08-05).
+- Windows rustc/cargo 1.98.1. Full suite 12288 MiB; final ZIP replay 4096 MiB.
+- Linux acceptance VMs 6144 MiB, CPU host. Overlays and test profiles isolated.
+- No real host keyboard was grabbed or used as the source of synthetic e2e keys.
+- Final Rust/UI/manifests match /mnt/disk2/vm/lhc-release-20261021/src-kwin.tar.gz
+  SHA256 f1bb5d0451675044e69f8e96a99467dda2a801ef09c0b1eae05b00bdffb81363.
+  Later changes are test harness, packaging checks and documentation only.
+- The only Rust file changed after the accepted Windows build is Linux-only
+  crates/lhc-core/src/active_window/kwin.rs, excluded from Windows compilation.
+- Current complete testing sources are supplied as
+  final-packages/left-hand-control-0.3.0-testing-sources.tar.gz; SHA256SUMS beside it.
+
+Changes accepted:
+- Grabbed-keyboard popup hotkeys consume F11/F12 before uinput, avoiding VT switch.
+- Linux selected-keyboard ENODEV recovery preserves config, releases held output,
+  cancels old text/macros and rejects a different device reusing the selected path.
+- KWin active/list script names are scoped to each unique D-Bus connection.
+  A second process cannot replace/unload the first process's focus watcher.
+- Windows portable ZIP, checksum/content/CLI checks and extracted lifecycle.
+  Release workflow builds Windows artifacts and includes them in a draft.
+- Linux stand reads actual KWin window geometry, uses real QEMU pointer clicks,
+  explicitly checks Unicode after second-instance exit and after replug.
+- Test-only mapper state commands are idempotent; one retry after SSH exit 255
+  reasserts the desired state, avoiding a second inverted toggle. App failures
+  remain failures. Held test keys are released in finally.
+
+Exact final source checks (all PASS):
+cargo fmt -p lhc-core -p slint-shell --check
+CARGO_BUILD_JOBS=1 cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+  lhc-release-clippy-kwin.log
+CARGO_BUILD_JOBS=1 cargo test --locked --workspace --features slint-shell/spell
+  407 core / 83 shell / 1 lifecycle / 2 storage / 3 IPC passed; no failures.
+  Default-ignored 11 uinput scenarios executed separately below; 3 other core
+  tests remain ignored. lhc-release-workspace-kwin.log
+CARGO_BUILD_JOBS=1 cargo check --locked -p slint-shell --all-targets
+  Non-Spell build passed. lhc-release-nospell-kwin.log
+cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+  11 passed: isolated real evdev -> engine -> uinput, hotkey suppression, held-key
+  release, identity rejection, recovery/config retention, stop while disconnected.
+  lhc-release-mapper-kwin.log
+CARGO_BUILD_JOBS=1 cargo test --locked -p lhc-core active_window::kwin::tests::compositor_owner_restart_recovers_and_discards_old_reports
+  Private-bus regression: independent active/list scripts, independent close,
+  compositor restart, stale-target rejection and caller authentication passed.
+  lhc-release-kwin-regression.log
+python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
+  15 passed. lhc-release-stand-final.log
+python3 -m py_compile apps/slint-shell/scripts/vm/linux-guest.py apps/slint-shell/scripts/vm/run-linux.py apps/slint-shell/scripts/vm/run-windows.py
+docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/repo -w /repo rhysd/actionlint:1.7.7 .github/workflows/release.yml
+  lhc-release-actionlint-final.log
+git diff --check
+
+Exact package commands (PASS):
+docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src lhc-ubuntu2204-gnome-build:local sh -c 'apps/slint-shell/scripts/package-linux.sh'
+  Compatible Ubuntu 22.04 build, spell enabled; final rebuild 12m29s.
+  lhc-release-package-kwin.log
+VERSION=0.3.0 /tmp/lhc-release-tools/nfpm package -f /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/nfpm.yaml -p deb -t /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/left-hand-control_0.3.0_amd64.deb
+VERSION=0.3.0 /tmp/lhc-release-tools/nfpm package -f /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/nfpm.yaml -p rpm -t /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/left-hand-control-0.3.0-1.x86_64.rpm
+  nfpm 2.47.0 binary checksum verified against the pinned release workflow.
+  Generated nfpm.yaml/changelog paths use the repository templates.
+ldd target/ubuntu-22.04/release/left-hand-control
+  No missing libraries.
+target/ubuntu-22.04/release/left-hand-control --version
+  left-hand-control 0.3.0
+
+Exact VM commands:
+PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package target/release-candidate/left-hand-control-0.3.0-1.x86_64.rpm
+  42/0; lhc-release-fedora-final-package.log
+PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+  42/0; lhc-release-kubuntu-final-package.log
+PASS WITH EXCLUSION python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package target/release-candidate/left-hand-control_0.3.0_amd64.deb
+  41/0 + 1 SKIP; lhc-release-debian-s3-excluded.log
+  Explicit suspend_skip_reason in vm.json; original config preserved.
+PASS python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite full --memory 12288
+  26/0; lhc-release-windows-verified.log; run 20261021-160744.
+  Native core 317 / lifecycle 1 / storage 2 / shell 77 / IPC 2 passed.
+  Native clippy passed; release storage_override 2 passed; script syntax 11 passed.
+  Completion accepted via guest callback; SSH log export skipped, then recovered
+  from persistent D: in a fresh disposable overlay. Full native/package evidence:
+  runs/20261021-160744/logs/full-callback.log and logs/recovered-guest/.
+
+Windows source/packaging trace:
+- Full run source archive SHA256:
+  2f7f530a49124be9d54f99025b6fdb4ca0f35ebc948bf989b980671e8283878b
+- Before the native/package phase, packaging/check scripts patched for PS5.1:
+  packaging-ps51-patch.tar.gz SHA256
+  e94a5681b52c7390fcf8d4989a43b40514635666d7c299b9cd639140b067041c
+  package-windows.ps1 SHA256
+  704c09f1e79ad55a12d1069285feed6a477aadb9863eee4d9642b75d949af9e0
+  check-windows-automated.ps1 SHA256
+  68b36bd89d2f6fec081a127ab8eb265417109f55b1f49f91f637ad9c782d477a
+- Original accepted ZIP SHA256:
+  0ada9a9c433719b9db7857b1adb320a7e61c8c80c55259f04c64fbb6e9bf722f
+- Final ZIP repacked only to update README with the existing VC++ runtime
+  prerequisite and normalize ZIP path separators. Executable byte-identical.
+- Final native PowerShell command, fresh interactive non-elevated task:
+  powershell -NoProfile -ExecutionPolicy Bypass -File D:\lhc-e2e\src\apps\slint-shell\scripts\check-windows-package.ps1 -Archive D:\lhc-final-package-cwd\left-hand-control-0.3.0-windows-x86_64.zip -Desktop
+  PASS exit 0, final SHA256 b451005dbacf1c1f4f696d00e7c57facb5391df500da101d58ed96a91e97afdd.
+  Child EXE working directory is the extracted package directory.
+  Updated check-windows-lifecycle.ps1 SHA256:
+  0c3b8cb864823ecf2b3f7ef15ce71a5203b3fe9e5fa4719af00adcbac4a83b26
+  Native syntax check: 11 passed.
+  Host driver: python3 -u /tmp/lhc-verify-final-windows-cwd.py
+  Logs/driver copied to /mnt/disk2/vm/lhc-release-20261021/logs/.
+  Detailed lifecycle logs/metrics:
+  /mnt/disk2/vm/lhc-release-20261021/final-windows-package-check-cwd/
+- Actual PE imports MSVCP140.dll/VCRUNTIME140.dll; install-windows.md documents
+  the official Microsoft Visual C++ v14 x64 runtime prerequisite.
+  Clean Windows without developer tools remains a manual acceptance gate.
+
+Additional Windows ZIP acceptance without the source/cache disk:
+PASS python3 -u /tmp/lhc-verify-windows-without-source.py
+  Fresh Windows overlay, 4096 MiB, cache_disk omitted entirely.
+  Original D:\lhc-e2e\src confirmed absent. Only ZIP/checksum and three test
+  PowerShell scripts copied into a separate harness; child cwd is extracted ZIP.
+  Native command:
+  powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\user\lhc-package-harness\apps\slint-shell\scripts\check-windows-package.ps1 -Archive C:\Users\user\lhc-package-final\left-hand-control-0.3.0-windows-x86_64.zip -Desktop
+  Exit 0: checksum/content/CLI, hidden/visible quit, 100 rendered popup cycles,
+  resource bounds, disabled hotkeys and unsupported Spell passed.
+  Stderr reviewed: no missing-resource/load errors; only the expected diagnostic
+  for explicitly requested unsupported Spell. This is not a clean no-toolchain OS.
+  Full logs/metrics: /mnt/disk2/vm/lhc-release-20261021/windows-without-source/
+  Driver and lhc-verify-windows-without-source.log preserved under logs/.
+
+Final artifacts under /mnt/disk2/vm/lhc-release-20261021/final-packages/:
+left-hand-control-0.3.0-linux-x86_64.tar.gz
+  64f6c5d715cdc7afb65ca0e5953c273ded41165714c31eac44bd70fe0ed933cc
+left-hand-control_0.3.0_amd64.deb
+  4a8131fa4c8f0ddfb081afdc157fd0be8feb10c1f760eef14a295d450b21371a
+left-hand-control-0.3.0-1.x86_64.rpm
+  c53177cdd7750910d1aa01763393a5ddf3ad69264a4a9e6904794d425f21ff3e
+left-hand-control-0.3.0-windows-x86_64.zip
+  b451005dbacf1c1f4f696d00e7c57facb5391df500da101d58ed96a91e97afdd
+SHA256SUMS and WINDOWS-SHA256SUMS supplied beside the archives.
+tarfile/bsdtar extraction verified all three Linux packages contain exactly the
+same executable, SHA256:
+  9cdc63a58942f974d90b84748aa8c7ae30bdda05b6ed6130c0b103039b3788d5
+zipfile verified final Windows executable matches the full native acceptance
+executable, SHA256:
+  b7017b3166ca8749aeaf52a8565a073f2d562a2310b790a4e323c61bbc7f22bc
+Final bundled Windows README matches docs/install-windows.md.
+
+Failures retained:
+- Fedora linux/2026-10-21-vm-fedora44-kde-5.txt: 39/2 on earlier package,
+  portal click missed and stale focus cancelled Unicode after second/replug.
+  Closed for final RPM by new geometry helper, KWin isolation and 42/0 replay.
+- Debian linux/2026-10-21-vm-debian13-kde-2.txt: 40/2; transport failure before
+  mapper start caused the following toggle-state cascade.
+- Debian linux/2026-10-21-vm-debian13-kde-3.txt: 34/8, unexpected guest reboot.
+  S3 baseline NOT CLOSED; reproduced without application across CPU profiles.
+  See linux/2026-10-21-debian-suspend-baseline.txt for boot IDs and control steps.
+- Windows windows/2026-10-21-vm-windows11-9.txt: release LLVM OOM at 8192 MiB.
+- Windows windows/2026-10-21-vm-windows11-10.txt: release compiled; SSH failed
+  before hardware commands. Neither failed attempt counts as acceptance.
+- Intermediate diagnostics preserved under
+  /mnt/disk2/vm/lhc-release-20261021/diagnostic-summaries/ and
+  test-results/release-readiness-20261021/diagnostic-summaries/.
+  No failed result was relabelled as passed.
+- Debian baseline driver, recovered journals, control logs and VM configs:
+  /mnt/disk2/vm/lhc-release-20261021/debian-diagnostics/.
+
+Limits / not run:
+- Debian S3: explicit SKIP for this baseline; no precise kernel/hypervisor fix.
+- Physical Windows/Linux keyboards, Bluetooth/media/mouse devices, changes of
+  USB port/event path, real hardware latency and power management not accepted.
+- Windows elevated/secure desktop, lock/unlock, suspend/resume, whole process-tree
+  termination, real displays/DPI, other receivers and clean-machine portable
+  update/uninstall require manual acceptance. ZIP is unsigned.
+- Linux hotkeys on ungrabbed keyboards are observational and do not suppress VT.
+  Reconnect requires the selected stable path and matching physical identity.
+- All popup backends, other desktops/receivers and the complete manual checklist
+  are not covered by these VM runs. No new GNOME or macOS desktop acceptance.
+- Different released-version upgrade NOT RUN: no --previous. Reinstall-over-running
+  is a separate passed scenario.
+- No claim of complete stable-release readiness follows from these automatic tests.
+
+All /tmp/lhc-release-*.log files referenced above are also preserved under
+/mnt/disk2/vm/lhc-release-20261021/logs/; VM screenshots/traces remain in run logs.

@@ -380,6 +380,13 @@ def cmd_toggle_mapper(args):
          lambda: mapper_running() != before)
 
 
+def cmd_set_mapper(args):
+    enabled = args.state == "on"
+    if mapper_running() != enabled and app("toggle-mapper").returncode:
+        fail("toggle-mapper failed")
+    wait(f"the mapper to be {args.state}", 15, lambda: mapper_running() == enabled)
+
+
 def cmd_tray(args):
     def items():
         result = subprocess.run(
@@ -467,6 +474,67 @@ def busctl(*arguments):
     if result.returncode:
         fail(f"busctl {' '.join(arguments)}: {result.stderr.strip()}")
     return result.stdout.split()
+
+
+def run_kwin_test_script(name, body):
+    script = WORK / f"{name}.js"
+    script.write_text(body, encoding="utf-8")
+    try:
+        result = busctl("call", "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting",
+                        "loadScript", "ss", str(script), name)
+        if int(result[1]) < 0:
+            fail(f"KWin refused {name}")
+        busctl("call", "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", "start")
+        time.sleep(1)
+    finally:
+        busctl("call", "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting",
+               "unloadScript", "s", name)
+
+
+def test_window_point(class_hint, title, x, y, activate=False):
+    # Read the real frame instead of moving a Wayland client under the pointer.
+    # KWin debug/print output can be disabled; warnings reach the user journal.
+    marker = f"LHC_E2E_POINT_{time.time_ns()}="
+    body = """
+var list = workspace.windowList ? workspace.windowList() : workspace.clientList();
+for (var i = 0; i < list.length; i++) {
+    var w = list[i];
+    if (String(w.resourceClass).indexOf(CLASS_HINT) < 0 ||
+        String(w.caption).indexOf(TITLE) < 0 || !w.output) continue;
+    var g = w.frameGeometry, o = w.output.geometry;
+    ACTIVATE
+    console.warn(MARKER + JSON.stringify({
+        x: (g.x + g.width * BUTTON_X - o.x) / o.width,
+        y: (g.y + g.height * BUTTON_Y - o.y) / o.height
+    }));
+}
+"""
+    for key, value in {
+        "CLASS_HINT": json.dumps(class_hint), "TITLE": json.dumps(title),
+        "BUTTON_X": str(x), "BUTTON_Y": str(y), "MARKER": json.dumps(marker),
+        "ACTIVATE": "workspace.activeWindow = w;" if activate else "",
+    }.items():
+        body = body.replace(key, value)
+    run_kwin_test_script("lhc-e2e-window-point", body)
+    log = subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat",
+                          "-n", "300"], capture_output=True, text=True, check=True).stdout
+    matches = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
+    if len(matches) != 1:
+        fail(f"expected one {title} window geometry, received {len(matches)}")
+    point = json.loads(matches[0])
+    if not all(0 < point[axis] < 1 for axis in ("x", "y")):
+        fail(f"test window point is outside the output: {point}")
+    print(json.dumps(point))
+
+
+def cmd_portal_deny_point(args):
+    if not (0 < args.x < 1 and 0 < args.y < 1):
+        fail("portal button coordinates must be fractions inside the window")
+    test_window_point("portal", "Remote Control", args.x, args.y)
+
+
+def cmd_focus_receiver(args):
+    test_window_point("kdialog", "LHC e2e receiver", 0.5, 0.535, activate=True)
 
 
 def cmd_kde_state(args):
@@ -621,6 +689,8 @@ def main():
     p.add_argument("--absent", action="store_true")
     p.add_argument("--timeout", type=float, default=20)
     sub.add_parser("toggle-mapper")
+    p = sub.add_parser("set-mapper")
+    p.add_argument("state", choices=["on", "off"])
     p = sub.add_parser("tray")
     p.add_argument("--timeout", type=float, default=20)
     sub.add_parser("autostart")
@@ -633,6 +703,10 @@ def main():
     p.add_argument("--timeout", type=float, default=10)
     sub.add_parser("popups")
     sub.add_parser("kde-state")
+    sub.add_parser("focus-receiver")
+    p = sub.add_parser("portal-deny-point")
+    p.add_argument("--x", type=float, required=True)
+    p.add_argument("--y", type=float, required=True)
     sub.add_parser("screen-locked")
     sub.add_parser("lock-screen")
     p = sub.add_parser("game")

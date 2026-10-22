@@ -1,0 +1,32 @@
+Date: 2026-10-21 12:23:12 -0300
+Commit: 99b6fe9 (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full
+Mapper build: release
+Popup shell build: release
+Mapper from: beginning
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261021-114255/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- harness: FAILED (Release mapper driver build failed (exit 101))
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 857 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261021-114255/src.tar.gz; SHA256 7785fc25c7fbeb8c4b76731b75290bfde94ee1333e28ec08c2bd6ca559fcc36f; Source sync: 29 updated, 0 removed
+- windows-full: FAILED — Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- harness: FAILED (Release mapper driver build failed (exit 101))
+
+Passed: 3, failed: 1

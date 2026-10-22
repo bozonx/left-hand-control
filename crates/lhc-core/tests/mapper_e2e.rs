@@ -72,13 +72,17 @@ struct Keyboard {
 
 impl Keyboard {
     fn new() -> Self {
+        Self::named("LHC e2e physical keyboard")
+    }
+
+    fn named(name: &str) -> Self {
         let mut keys = AttributeSet::<KeyCode>::new();
         for code in 1..=127 {
             keys.insert(KeyCode::new(code));
         }
         let mut device = VirtualDevice::builder()
             .expect("open /dev/uinput")
-            .name("LHC e2e physical keyboard")
+            .name(name)
             .with_keys(&keys)
             .unwrap()
             .build()
@@ -388,13 +392,106 @@ fn mapper_e2e_stop_releases_held_keys() {
 
 #[test]
 #[ignore = "requires /dev/uinput and readable /dev/input"]
-fn mapper_e2e_unplugged_keyboard_stops_the_mapper() {
+fn mapper_e2e_unplugged_keyboard_waits_until_explicit_stop() {
     let _serial = serial();
     let keyboard = Keyboard::new();
     let _mapper = Mapper::start(&keyboard, json!({}));
     assert!(runtime::status().running);
     drop(keyboard);
-    wait_until("mapper to stop", Duration::from_secs(3), || {
-        (!runtime::status().running).then_some(())
+    thread::sleep(Duration::from_millis(300));
+    assert!(runtime::status().running);
+    runtime::stop().unwrap();
+    assert!(!runtime::status().running);
+}
+
+#[test]
+#[ignore = "requires /dev/uinput and readable /dev/input"]
+fn mapper_e2e_replug_recovers_latest_config_and_releases_held_keys() {
+    let _serial = serial();
+    let existing: Vec<_> = mapper_devices().map(|(path, _)| path).collect();
+    let temp = tempfile::tempdir().unwrap();
+    let link = temp.path().join("keyboard");
+    let mut keyboard = Keyboard::new();
+    std::os::unix::fs::symlink(&keyboard.path, &link).unwrap();
+    keyboard.path = link.to_string_lossy().into_owned();
+    let mut mapper = Mapper::start(&keyboard, json!({}));
+    runtime::update_config(&json!({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]}).to_string())
+        .unwrap();
+    keyboard.send(KeyCode::KEY_LEFTCTRL, true);
+    assert_eq!(mapper.keys(), [down(KeyCode::KEY_LEFTCTRL)]);
+    // Read releases before the disconnected virtual device is destroyed.
+    let mut output = mapper.output.take().unwrap();
+    output.set_nonblocking(false).unwrap();
+    let reader = thread::spawn(move || {
+        let mut released = Vec::new();
+        while let Ok(events) = output.fetch_events() {
+            released.extend(
+                events
+                    .filter(is_key_change)
+                    .map(|event| (KeyCode::new(event.code()), event.value() == 1)),
+            );
+        }
+        released
     });
+    thread::sleep(Duration::from_millis(50));
+    drop(keyboard);
+    assert_eq!(reader.join().unwrap(), [up(KeyCode::KEY_LEFTCTRL)]);
+    assert!(
+        runtime::status().running,
+        "reconnect keeps the mapper enabled"
+    );
+    std::fs::remove_file(&link).unwrap();
+    let other = Keyboard::named("LHC e2e unrelated keyboard");
+    std::os::unix::fs::symlink(&other.path, &link).unwrap();
+    thread::sleep(Duration::from_millis(300));
+    assert!(
+        mapper_devices().all(|(path, _)| existing.contains(&path)),
+        "unrelated device must not be grabbed"
+    );
+    drop(other);
+    std::fs::remove_file(&link).unwrap();
+    let mut replacement = Keyboard::new();
+    std::os::unix::fs::symlink(&replacement.path, &link).unwrap();
+    let mut output = wait_until("reconnected mapper output", Duration::from_secs(5), || {
+        mapper_devices()
+            .find(|(path, _)| !existing.contains(path))
+            .map(|(_, device)| device)
+    });
+    output.grab().unwrap();
+    output.set_nonblocking(true).unwrap();
+    mapper.output = Some(output);
+    replacement.tap(KeyCode::KEY_A);
+    assert_eq!(mapper.keys(), [down(KeyCode::KEY_B), up(KeyCode::KEY_B)]);
+    drop(replacement);
+    thread::sleep(Duration::from_millis(200));
+    let before = Instant::now();
+    runtime::stop().unwrap();
+    assert!(
+        before.elapsed() < Duration::from_secs(2),
+        "stop interrupts reconnect"
+    );
+}
+
+#[test]
+#[ignore = "requires /dev/uinput and readable /dev/input"]
+fn mapper_e2e_popup_hotkey_is_consumed_before_compositor() {
+    let _serial = serial();
+    let mut keyboard = Keyboard::new();
+    let mut mapper = Mapper::start(&keyboard, json!({}));
+    keyboard.send(KeyCode::KEY_LEFTCTRL, true);
+    keyboard.send(KeyCode::KEY_LEFTALT, true);
+    keyboard.tap(KeyCode::KEY_F11);
+    keyboard.send(KeyCode::KEY_LEFTALT, false);
+    keyboard.send(KeyCode::KEY_LEFTCTRL, false);
+    // No shell acknowledges popup focus in this test, so wait for the hold gate.
+    thread::sleep(Duration::from_millis(1100));
+    assert_eq!(
+        mapper.keys(),
+        [
+            down(KeyCode::KEY_LEFTCTRL),
+            down(KeyCode::KEY_LEFTALT),
+            up(KeyCode::KEY_LEFTALT),
+            up(KeyCode::KEY_LEFTCTRL),
+        ]
+    );
 }

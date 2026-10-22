@@ -1,0 +1,57 @@
+Date: 2026-10-21 20:55:24 -0300
+Commit: 99b6fe9 (with uncommitted changes)
+VM: kubuntu2604 (/mnt/disk2/vm/lhc-kubuntu2604/base.qcow2)
+Memory: 6144 MiB
+Package: left-hand-control-0.3.0-linux-x86_64.tar.gz
+Package SHA256: 64f6c5d715cdc7afb65ca0e5953c273ded41165714c31eac44bd70fe0ed933cc
+Popup mode: auto (actual backend recorded in app.log)
+Portal deny clicks: [0.738, 0.659]; relative: None
+Previous-version upgrade: NOT RUN (no --previous)
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Host: ivan, 7.2.3-2-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261021-204808/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install: passed
+- installed-files: passed — /home/tester/.local/bin/left-hand-control: left-hand-control 0.3.0
+- keyboard-probe: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- test-config: passed
+- start-without-input: passed
+- tray-item: passed — org.kde.StatusNotifierItem-2682-1/StatusNotifierItem
+- no-mapper-without-input: passed
+- autostart-entry: passed — Exec="/home/tester/.local/lib/dev.bozonx.left-hand-control/left-hand-control"
+- relogin-with-input: passed
+- autostart-launch: passed
+- tray-after-login: passed — org.kde.StatusNotifierItem-3773-1/StatusNotifierItem
+- mapper-running: passed
+- portal-deny: passed — declined; the next text: failed without a new dialog
+- portal-consent: passed — lhc-ok
+- mapper-keys-and-text: passed — bXclhc-ok
+- text-unicode: passed — Привет, ёж 😀
+- layer-tap-hold: passed — gkkgjj
+- macro: passed — nmacO
+- command: passed
+- system-actions: passed — desktop 1→2→1, layout us→ru→us
+- russian-layout: passed — исlhc-okПривет, ёж 😀
+- popups: passed
+- emoji-ipc: passed — 🙂
+- quick-menu-rule: passed — quick-ok
+- emoji-hotkey: passed — 🙂
+- game-mode: passed — off, on, auto without and with a game process
+- screen-lock: passed — c
+- suspend-resume: passed — bXclhc-ok
+- cli: passed — left-hand-control 0.3.0
+- second-instance: passed
+- text-after-second-instance: passed — Привет, ёж 😀
+- keyboard-replug: passed — bXcПривет, ёж 😀
+- mapper-stop: passed — off
+- mapper-start: passed — on
+- stuck-keys-on-stop: passed — abc
+- stuck-keys-on-kill: passed — abc
+- upgrade-over-running: passed — reinstalled over the running instance
+- quit: passed
+- remove: passed
+
+Passed: 42, failed: 0

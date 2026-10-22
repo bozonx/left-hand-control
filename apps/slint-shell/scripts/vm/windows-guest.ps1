@@ -128,6 +128,8 @@ try {
         $ErrorActionPreference = 'Stop'
         if ($code -ne 0) { throw "Full native/release checks failed (exit $code, see full.log)" }
         Add-Line '- full-native-release: passed'
+        $packages = Join-Path $root 'target\release-artifacts-windows'
+        if (Test-Path $packages) { Copy-Item $packages (Join-Path $out 'packages') -Recurse -Force }
     }
 
     $lifecycle = Join-Path $root 'windows-runtime'

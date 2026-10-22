@@ -17,6 +17,7 @@ use std::thread;
 use std::time::Duration;
 
 const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
+const DEVICE_DISCONNECTED: &str = "mapper input device disconnected";
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Device number of the keyboard the mapper holds grabbed. Its physical key
@@ -314,10 +315,84 @@ fn run(
         return Err("mapper start cancelled".into());
     }
     let _mapper_lock = acquire_mapper_lock()?;
-    let mut device = Device::open(&device_path).map_err(|e| format!("open {device_path}: {e}"))?;
+    let mut cfg = cfg;
+    let mut identity = None;
+    let mut reconnecting = false;
+    loop {
+        if stop.load(Ordering::SeqCst) {
+            return Ok(());
+        }
+        let device = match Device::open(&device_path) {
+            Ok(device) => device,
+            Err(_) if reconnecting => {
+                thread::sleep(Duration::from_millis(100));
+                continue;
+            }
+            Err(error) => return Err(format!("open {device_path}: {error}")),
+        };
+        let current = DeviceIdentity::of(&device);
+        if let Some(expected) = &identity {
+            if expected != &current {
+                // Event numbers can be reused by an unrelated keyboard.
+                thread::sleep(Duration::from_millis(100));
+                continue;
+            }
+        } else {
+            identity = Some(current);
+        }
+        let result = run_device(
+            device,
+            &device_path,
+            mouse_path.as_deref(),
+            &mut cfg,
+            stop.clone(),
+            &ready_tx,
+            &control_rx,
+            wake_rx
+                .try_clone()
+                .map_err(|e| format!("clone wake pipe: {e}"))?,
+        );
+        if !matches!(&result, Err(error) if error == DEVICE_DISCONNECTED) {
+            return result;
+        }
+        log::info!("[mapper] input disconnected; waiting for {device_path}");
+        reconnecting = true;
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct DeviceIdentity {
+    id: InputId,
+    name: Option<String>,
+    physical: Option<String>,
+    unique: Option<String>,
+}
+
+impl DeviceIdentity {
+    fn of(device: &Device) -> Self {
+        Self {
+            id: device.input_id(),
+            name: device.name().map(str::to_owned),
+            physical: device.physical_path().map(str::to_owned),
+            unique: device.unique_name().map(str::to_owned),
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_device(
+    mut device: Device,
+    device_path: &str,
+    mouse_path: Option<&str>,
+    cfg: &mut AppConfig,
+    stop: Arc<AtomicBool>,
+    ready_tx: &mpsc::Sender<Result<(), String>>,
+    control_rx: &mpsc::Receiver<MapperControl>,
+    wake_rx: OwnedFd,
+) -> Result<(), String> {
     validate_keyboard_capabilities(device.supported_events(), device.supported_keys())?;
-    let keyboard = std::fs::metadata(&device_path).map_err(|e| format!("stat keyboard: {e}"))?;
-    if let Some(mouse_path) = &mouse_path {
+    let keyboard = std::fs::metadata(device_path).map_err(|e| format!("stat keyboard: {e}"))?;
+    if let Some(mouse_path) = mouse_path {
         let mouse = std::fs::metadata(mouse_path).map_err(|e| format!("stat mouse: {e}"))?;
         if keyboard.rdev() == mouse.rdev() && keyboard.ino() == mouse.ino() {
             return Err("Keyboard and mouse must use different input devices".into());
@@ -330,7 +405,7 @@ fn run(
     let _grabbed = GrabbedKeyboard::register(keyboard.rdev());
 
     let mut devices = vec![device];
-    if let Some(ref mp) = mouse_path {
+    if let Some(mp) = mouse_path {
         let mouse = Device::open(mp).map_err(|e| format!("open mouse {mp}: {e}"))?;
         // Mouse is opened without grab: only KEY events are read to interact
         // with modifier tap-hold decisions. REL/ABS (movement) stays
@@ -372,6 +447,7 @@ fn run(
         .map_err(|e| format!("uinput build: {e}"))?;
 
     let driver = MultiDeviceLoopDriver::new(devices, Some(wake_rx))?;
+    super::text_job::start();
     let _ = ready_tx.send(Ok(()));
     run_loop(driver, virt, cfg, stop, control_rx)
 }
@@ -392,12 +468,11 @@ fn validate_keyboard_capabilities(
 fn run_loop<D: LoopDriver>(
     mut driver: D,
     mut virt: VirtualDevice,
-    cfg: AppConfig,
+    cfg: &mut AppConfig,
     stop: Arc<AtomicBool>,
-    control_rx: mpsc::Receiver<MapperControl>,
+    control_rx: &mpsc::Receiver<MapperControl>,
 ) -> Result<(), String> {
-    let mut cfg = cfg;
-    let mut engine = Engine::new(&cfg);
+    let mut engine = Engine::new(cfg);
     let mut out_buf: Vec<Out> = Vec::with_capacity(16);
     let mut hold = OutputHold::default();
     let result = (|| {
@@ -406,7 +481,7 @@ fn run_loop<D: LoopDriver>(
                 match ctrl {
                     MapperControl::Config(next_cfg) => {
                         let next_cfg = *next_cfg;
-                        if next_cfg == cfg {
+                        if next_cfg == *cfg {
                             continue;
                         }
                         hold.cancel_actions(&mut out_buf);
@@ -425,7 +500,7 @@ fn run_loop<D: LoopDriver>(
                         engine.reconfigure(&next_cfg, &mut out_buf);
                         super::layer_state::publish(engine.held_layer_state());
                         super::text_job::start();
-                        cfg = next_cfg;
+                        *cfg = next_cfg;
                     }
                     MapperControl::Execute(action) => {
                         log::debug!("[mapper] remote execute requested");

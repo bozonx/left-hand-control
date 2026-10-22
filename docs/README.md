@@ -5,6 +5,7 @@
 ## Пользователям
 
 - [Установка на Linux: архив, deb/rpm, права, удаление](install-linux.md)
+- [Windows 11 x64: portable ZIP, обновление и удаление](install-windows.md)
 - [Поведение приложения](features.md)
 
 ## Разработка

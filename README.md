@@ -40,6 +40,8 @@ target/debug/left-hand-control show settings
 [руководстве разработчика](docs/development/guide.md#5-выпуск). Бинарник устанавливается
 по стабильному пути; пользовательские настройки сохраняются при обновлении.
 
+Для Windows 11 x64 подготовлена portable ZIP-поставка: [запуск, обновление и удаление](docs/install-windows.md).
+
 ## Конфигурация
 
 Debug-сборки используют `dev-files/<os>/` внутри репозитория. `LHC_DEV_DIR`
@@ -73,9 +75,9 @@ cargo run --locked -p slint-shell --example interactions
 cargo run --locked -p slint-shell --example library
 ```
 
-CI проверяет core и оболочку на Linux, Windows и macOS. Ручной workflow Desktop E2E
-запускает Slint-сценарии на стендах KDE Wayland и Windows; это не означает приёмку
-перехвата клавиатуры на Windows.
+CI проверяет core и оболочку на Linux, Windows и macOS. Desktop e2e выполняются
+локально в KDE Wayland и Windows VM; [отчёты и границы приёмки](docs/testing/README.md)
+относятся к указанным исходникам и пакетам. Зелёный CI не заменяет desktop-приёмку.
 
 ## Структура
 
@@ -93,6 +95,7 @@ CI проверяет core и оболочку на Linux, Windows и macOS. Р�
 - [Руководство разработчика: запуск, проверки, e2e, выпуск](docs/development/guide.md)
 - [Поведение приложения](docs/features.md)
 - [Установка на Linux](docs/install-linux.md)
+- [Portable Windows ZIP](docs/install-windows.md)
 - [Оболочка, сценарии и диагностика](apps/slint-shell/README.md)
 - [Windows-стенд](docs/testing/windows.md)
 - [Ручная приёмка](docs/testing/manual-acceptance.md)

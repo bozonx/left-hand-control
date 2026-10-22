@@ -1,0 +1,59 @@
+Date: 2026-10-21 21:08:13 -0300
+Commit: 99b6fe9 (with uncommitted changes)
+VM: debian13-kde (/mnt/disk2/vm/lhc-debian13-kde/base.qcow2)
+Memory: 6144 MiB
+CPU: host
+Suspend exclusion: NOT ACCEPTED: Debian 6.12.113/QEMU guest reboots after S3/USB; reproduced without application. See 2026-10-21-debian-suspend-baseline.txt.
+Package: left-hand-control_0.3.0_amd64.deb
+Package SHA256: 4a8131fa4c8f0ddfb081afdc157fd0be8feb10c1f760eef14a295d450b21371a
+Popup mode: auto (actual backend recorded in app.log)
+Portal deny clicks: [[0.678, 0.655], [0.61, 0.655]]; relative: None
+Previous-version upgrade: NOT RUN (no --previous)
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Host: ivan, 7.2.3-2-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-debian13-kde/runs/20261021-210059/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install: passed
+- installed-files: passed — /usr/bin/left-hand-control: left-hand-control 0.3.0
+- keyboard-probe: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- test-config: passed
+- start-without-input: passed
+- tray-item: passed — org.kde.StatusNotifierItem-1957-1/StatusNotifierItem
+- no-mapper-without-input: passed
+- autostart-entry: passed — Exec="/usr/bin/left-hand-control"
+- relogin-with-input: passed
+- autostart-launch: passed
+- tray-after-login: passed — org.kde.StatusNotifierItem-2627-1/StatusNotifierItem
+- mapper-running: passed
+- portal-deny: passed — declined; the next text: failed without a new dialog
+- portal-consent: passed — lhc-ok
+- mapper-keys-and-text: passed — bXclhc-ok
+- text-unicode: passed — Привет, ёж 😀
+- layer-tap-hold: passed — gkkgjj
+- macro: passed — nmacO
+- command: passed
+- system-actions: passed — desktop 1→2→1, layout us→ru→us
+- russian-layout: passed — исlhc-okПривет, ёж 😀
+- popups: passed
+- emoji-ipc: passed — 🙂
+- quick-menu-rule: passed — quick-ok
+- emoji-hotkey: passed — 🙂
+- game-mode: passed — off, on, auto without and with a game process
+- screen-lock: passed — c
+- suspend-resume: skipped — NOT ACCEPTED: Debian 6.12.113/QEMU guest reboots after S3/USB; reproduced without application. See 2026-10-21-debian-suspend-baseline.txt.
+- cli: passed — left-hand-control 0.3.0
+- second-instance: passed
+- text-after-second-instance: passed — Привет, ёж 😀
+- keyboard-replug: passed — bXcПривет, ёж 😀
+- mapper-stop: passed — off
+- mapper-start: passed — on
+- stuck-keys-on-stop: passed — abc
+- stuck-keys-on-kill: passed — abc
+- upgrade-over-running: passed — reinstalled over the running instance
+- quit: passed
+- remove: passed
+
+Passed: 41, failed: 0

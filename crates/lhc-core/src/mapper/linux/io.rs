@@ -138,6 +138,7 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
 
 pub(super) struct MultiDeviceLoopDriver {
     devices: Vec<Device>,
+    hotkeys: PopupHotkeys,
     keys: DeviceKeys,
     last_event: Instant,
     /// Read end of the control wake pipe. The `Handle` writes a byte after
@@ -173,6 +174,7 @@ impl MultiDeviceLoopDriver {
         }
         Ok(Self {
             devices,
+            hotkeys: PopupHotkeys::default(),
             wake_rx,
             keys: DeviceKeys::default(),
             last_event: Instant::now(),
@@ -200,6 +202,15 @@ impl MultiDeviceLoopDriver {
 }
 
 impl LoopDriver for MultiDeviceLoopDriver {
+    fn app_hotkey(&mut self, key: KeyCode, down: bool) -> Option<Option<&'static str>> {
+        self.hotkeys.event(
+            key,
+            down,
+            std::env::var("LHC_HOTKEYS").as_deref() != Ok("off")
+                && !crate::runtime_state::game_mode_active(),
+        )
+    }
+
     fn now(&mut self) -> Instant {
         Instant::now()
     }
@@ -274,6 +285,9 @@ impl LoopDriver for MultiDeviceLoopDriver {
                     }
                 }
                 Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
+                Err(e) if e.raw_os_error() == Some(libc::ENODEV) => {
+                    return Err(super::DEVICE_DISCONNECTED.into());
+                }
                 Err(e) => return Err(format!("fetch_events: {e}")),
             }
         }
@@ -283,6 +297,41 @@ impl LoopDriver for MultiDeviceLoopDriver {
             Instant::now(),
             &mut self.last_event,
         ))
+    }
+}
+
+/// Consume both edges of a popup function key, including when game mode changes
+/// while it is held. Modifiers still pass through with balanced releases.
+#[derive(Default)]
+struct PopupHotkeys {
+    held: HashSet<KeyCode>,
+    consumed: HashSet<KeyCode>,
+}
+
+impl PopupHotkeys {
+    fn event(&mut self, key: KeyCode, down: bool, enabled: bool) -> Option<Option<&'static str>> {
+        if !down {
+            self.held.remove(&key);
+            return self.consumed.remove(&key).then_some(None);
+        }
+        let fresh = self.held.insert(key);
+        if self.consumed.contains(&key) {
+            return Some(None);
+        }
+        let ctrl = self.held.contains(&KeyCode::KEY_LEFTCTRL)
+            || self.held.contains(&KeyCode::KEY_RIGHTCTRL);
+        let alt =
+            self.held.contains(&KeyCode::KEY_LEFTALT) || self.held.contains(&KeyCode::KEY_RIGHTALT);
+        if !enabled || !fresh || !ctrl || !alt {
+            return None;
+        }
+        let action = match key {
+            KeyCode::KEY_F11 => "app:showEmojiMenuLast",
+            KeyCode::KEY_F12 => "app:showQuickMenuLast",
+            _ => return None,
+        };
+        self.consumed.insert(key);
+        Some(Some(action))
     }
 }
 
@@ -637,5 +686,38 @@ mod tests {
         });
         RuntimeSideEffects.run_system(&SysAction::AppEvent("audit-popup-test".into()));
         assert!(received.load(std::sync::atomic::Ordering::SeqCst));
+    }
+}
+
+#[cfg(test)]
+mod popup_hotkey_tests {
+    use super::*;
+
+    #[test]
+    fn popup_chord_never_emits_function_key_even_if_disabled_before_release() {
+        for (key, action) in [
+            (KeyCode::KEY_F11, "app:showEmojiMenuLast"),
+            (KeyCode::KEY_F12, "app:showQuickMenuLast"),
+        ] {
+            let mut hotkeys = PopupHotkeys::default();
+            assert_eq!(hotkeys.event(KeyCode::KEY_LEFTCTRL, true, true), None);
+            assert_eq!(hotkeys.event(KeyCode::KEY_RIGHTALT, true, true), None);
+            assert_eq!(hotkeys.event(key, true, true), Some(Some(action)));
+            assert_eq!(hotkeys.event(key, true, true), Some(None));
+            assert_eq!(hotkeys.event(KeyCode::KEY_LEFTCTRL, false, false), None);
+            assert_eq!(hotkeys.event(key, false, false), Some(None));
+            assert_eq!(hotkeys.event(key, true, true), None);
+        }
+    }
+
+    #[test]
+    fn disabled_hotkeys_and_plain_function_keys_pass_through() {
+        let mut hotkeys = PopupHotkeys::default();
+        assert_eq!(hotkeys.event(KeyCode::KEY_F11, true, true), None);
+        hotkeys.event(KeyCode::KEY_F11, false, true);
+        hotkeys.event(KeyCode::KEY_RIGHTCTRL, true, true);
+        hotkeys.event(KeyCode::KEY_LEFTALT, true, true);
+        assert_eq!(hotkeys.event(KeyCode::KEY_F11, true, false), None);
+        assert_eq!(hotkeys.event(KeyCode::KEY_F11, false, true), None);
     }
 }

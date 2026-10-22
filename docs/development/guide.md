@@ -347,6 +347,8 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 | `install`, `reinstall`, `remove` | Команды пакетного менеджера; `{package}` — путь к пакету в госте. Для `.tar.gz` не нужны: используется `install-linux.sh`. Без `reinstall` шаг обновления пропускается |
 | `portal_keys` | Клавиши QEMU (qcode), подтверждающие диалог RemoteDesktop portal |
 | `portal_deny_click` | Точка кнопки Deny в этом диалоге, доли ширины и высоты экрана, или список точек, которые нажимаются по очереди; по умолчанию `[0.738, 0.659]` (1280×800, Plasma 6.7). Plasma 6.3 после первого Cancel показывает второй диалог: `[[0.678, 0.655], [0.610, 0.655]]` |
+| `portal_deny_relative` | Необязательная точка Deny внутри рамки окна (либо список точек для нескольких диалогов). KWin helper читает фактическую геометрию диалога и вычисляет экранную точку, QEMU нажимает мышью. Fedora: `[0.87, 0.86]`; требуется английский заголовок Remote Control. Устраняет зависимость от положения диалога, но не заменяет проверку событий отказа. |
+| `suspend_skip_reason` | Необязательная непустая причина исключения S3 для известного ограничения стенда. Шаг записывается как SKIP, suspend не считается принятым. Обычный прогон без этого поля всегда выполняет S3. |
 | `uefi`, `cache_disk` | Для Windows: `{"code", "vars", "tpm"}` и постоянный диск кэша сборки |
 
 Для Debian/Kubuntu: `"install": "sudo apt-get install -y {package}"`,
@@ -470,7 +472,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `lhc-slint-shell`), а mapper не создаёт виртуальную клавиатуру |
 | `autostart-entry` | XDG Autostart указывает на установленный бинарник |
 | `relogin-with-input`, `autostart-launch`, `tray-after-login`, `mapper-running` | После добавления в `input` и перелогина приложение запускается автозапуском, трей на месте, mapper работает |
-| `portal-deny` | Первый `text:` открывает диалог RemoteDesktop; стенд нажимает Deny мышью (`portal_deny_click`). Текст не вводится, следующий `text:` сразу завершается ошибкой «user cancelled» без нового диалога, приложение отвечает |
+| `portal-deny` | Первый `text:` открывает диалог RemoteDesktop; стенд нажимает Deny мышью (`portal_deny_relative` или `portal_deny_click`). Текст не вводится, следующий `text:` сразу завершается ошибкой «user cancelled» без нового диалога, приложение отвечает |
 | `portal-consent` | После перезапуска mapper диалог появляется снова; подтверждение (`portal_keys`) — и текст вводится |
 | `mapper-keys-and-text` | `a d c t` → `bXclhc-ok`: remap, chord, passthrough, `text:` |
 | `text-unicode` | `text:Привет, ёж 😀` в раскладке us (символов нет в keymap) |
@@ -484,6 +486,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `screen-lock` | Пароль `qbXc` набирается только через mapper (`q a d c`) и разблокирует экран; набранное на экране блокировки не попадает в окно за ним |
 | `suspend-resume` | S3 и пробуждение через QMP, после этого mapper и `text:` работают |
 | `cli`, `second-instance` | Повторный запуск передаёт управление работающему экземпляру; `hide`, `ping`, `--version`, `--help`; второй экземпляр со своим `LHC_SOCKET` не захватывает клавиатуру (блокировка mapper) |
+| `text-after-second-instance` | После закрытия второго процесса Unicode по `text:` по-прежнему вставляется в приёмник; KWin watcher первого экземпляра не потерян |
 | `keyboard-replug` | USB-клавиатура отключается и подключается в тот же порт; mapper должен продолжить работу. Если нет — проверяется нативный ввод, mapper перезапускается |
 | `mapper-stop`, `mapper-start` | `toggle-mapper` останавливает и запускает mapper |
 | `stuck-keys-on-stop`, `stuck-keys-on-kill` | Остановка mapper и `kill -9` при зажатых Shift и клавише слоя: после этого `abc` вводится без модификатора |
@@ -492,7 +495,7 @@ USB-клавиатура) и сравнивает полученный текс�
 
 Если шаги с диалогом portal падают, сначала откройте `portal-deny-*.png` и
 `portal-consent.png`: у разных версий xdg-desktop-portal-kde размер диалога и кнопка
-по умолчанию могут отличаться — подберите `portal_deny_click`/`portal_keys`. Отказ
+по умолчанию могут отличаться — подберите `portal_deny_relative`, `portal_deny_click`/`portal_keys`. Отказ
 нажимается мышью: нажатия клавиш во время ожидания `text:` отменяют само задание, и
 отказ с клавиатуры не запоминается — следующий `text:` спрашивает снова. Разрешение
 KDE запоминает и без токена приложения, поэтому `portal-deny` проверяется только на
@@ -653,7 +656,8 @@ classic требует ручного одобрения).
 | AppImage | Отложен: автозапуск должен брать `$APPIMAGE` вместо `current_exe()`, а права на устройства нужно выдавать отдельно |
 | Ubuntu PPA | Не планируется (сборка без сети, старый rustc) |
 
-ARM (aarch64) и Windows — следующими этапами, на нативных раннерах.
+ARM (aarch64) — следующий этап. Windows x64 выпускается portable ZIP на нативном
+Windows runner; desktop-приёмка выполняется отдельно в интерактивной VM.
 
 ### Артефакты (Linux x86_64)
 
@@ -675,6 +679,27 @@ SHA256SUMS
 Пакеты ставят udev-правило и автозагрузку `uinput`, перезагружают правила udev,
 но **не** добавляют пользователя в группу `input`; удаление не трогает конфиг
 пользователя. Архив ставит то же явной командой `install-linux.sh permissions`.
+
+### Windows x64 portable ZIP
+
+На Windows x64 MSVC:
+
+```powershell
+powershell -NoProfile -File apps/slint-shell/scripts/package-windows.ps1
+powershell -NoProfile -File apps/slint-shell/scripts/check-windows-package.ps1 -Archive target/release-artifacts-windows/left-hand-control-<версия>-windows-x86_64.zip -Desktop
+```
+
+Артефакты: `left-hand-control-<версия>-windows-x86_64.zip` и
+`WINDOWS-SHA256SUMS`. ZIP содержит release executable, лицензию и инструкции;
+профили и тестовые данные не входят. Это portable-поставка без установщика,
+автоматической установки автозапуска и Authenticode-подписи. Установка, обновление
+и удаление описаны в [инструкции Windows](../install-windows.md).
+
+CI проверяет SHA256, состав распакованного ZIP, `--version` и `--help`, без GUI.
+Полный Windows VM-набор дополнительно собирает ZIP и выполняет lifecycle именно
+распакованного executable: hidden/visible quit, 100 popup-циклов и проверки ресурсов.
+ZIP и контрольная сумма сохраняются с VM-журналами. Это не заменяет установку на
+чистой Windows без developer toolchain и ручную проверку физического ввода.
 
 ### Локальная сборка
 
@@ -712,7 +737,8 @@ docker run --rm -v "$PWD":/src -w /src fedora:latest \
    в `CHANGELOG.md` есть секция `## [<версия>] - <дата>`, первый `<release>` в metainfo — эта версия.
 3. **build-linux** (`ubuntu:22.04`) — `release-linux.sh`, проверка `ldd`, lintian, `SHA256SUMS`.
 4. **rpmlint** (`fedora:latest`) и **smoke-packages** — установка и удаление в 7 контейнерах.
-5. **draft-release** — attestation сборки и **черновик** релиза с заметками из `CHANGELOG.md`.
+5. **build-windows** — portable ZIP, SHA256 и CLI smoke распакованного executable.
+6. **draft-release** — проверка обеих контрольных сумм, attestation сборки и **черновик** релиза с заметками из `CHANGELOG.md`.
    Публикует человек после локальных e2e.
 
 Права: по умолчанию `contents: read`; `contents: write`, `id-token: write` и

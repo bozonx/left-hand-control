@@ -1,5 +1,6 @@
 param([switch]$SkipSmoke)
 $ErrorActionPreference = 'Stop'
+if (-not $env:CARGO_LOG) { $env:CARGO_LOG = 'cargo::core::compiler::fingerprint=info' }
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $manifest = Join-Path $root 'apps\slint-shell\Cargo.toml'
@@ -30,7 +31,13 @@ try {
     )
 
 
-    & (Join-Path $PSScriptRoot 'check-windows-lifecycle.ps1')
+    & (Join-Path $PSScriptRoot 'package-windows.ps1')
+    $metadataJson = & cargo metadata --locked --format-version 1 --no-deps
+    if ($LASTEXITCODE -ne 0) { throw 'cargo metadata failed' }
+    $metadata = $metadataJson | ConvertFrom-Json
+    $version = ($metadata.packages | Where-Object name -eq 'slint-shell').version
+    $archive = Join-Path $metadata.target_directory "release-artifacts-windows\left-hand-control-$version-windows-x86_64.zip"
+    & (Join-Path $PSScriptRoot 'check-windows-package.ps1') -Archive $archive -Desktop
 } finally {
     Pop-Location
 }

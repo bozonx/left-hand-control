@@ -11,6 +11,8 @@ See docs/development/guide.md, "E2E в виртуальных машинах".
 """
 
 import argparse
+import hashlib
+import json
 import platform
 from pathlib import Path
 import shlex
@@ -41,7 +43,14 @@ def main():
     for path in filter(None, (package, previous)):
         if not path.is_file():
             raise SystemExit(f"{path} not found")
+    with package.open("rb") as package_file:
+        package_sha256 = hashlib.sha256(package_file.read()).hexdigest()
     vm = Vm(args.vm)
+    suspend_exclusion = vm.get("suspend_skip_reason")
+    if suspend_exclusion is not None and (
+        not isinstance(suspend_exclusion, str) or not suspend_exclusion.strip()
+    ):
+        raise SystemExit("suspend_skip_reason must be a nonempty explanation or omitted")
     if previous and (package.name.endswith(".tar.gz") or not vm.get("install")):
         raise SystemExit("--previous needs a .deb or .rpm and `install` in vm.json")
     report = Report()
@@ -112,10 +121,25 @@ def main():
         time.sleep(8)
         vm.wait_ssh()
         guest("wait-session --group input")
+        # Logout terminates SSH sessions: create the persistent connection only
+        # after the new desktop is ready, then avoid repeated handshakes.
+        vm.ssh_multiplex = True
+
+    def click_point(x, y):
+        # A new/moved window can appear under the stationary tablet pointer.
+        # Force motion so Wayland updates pointer focus before the click.
+        vm.qmp.execute("input-send-event", events=[
+            {"type": "abs", "data": {"axis": "x", "value": 0}},
+            {"type": "abs", "data": {"axis": "y", "value": 0}}])
+        time.sleep(0.2)
+        vm.qmp.click(x, y)
 
     def typed(name, keys=(), action=None, settle=3):
         """Text that `keys` (or `action`) produce in a fresh receiver window."""
         guest(f"start-receiver --name {name}")
+        point = json.loads(guest("focus-receiver"))
+        click_point(point["x"], point["y"])
+        time.sleep(0.3)
         if action:
             action()
         vm.qmp.tap(*keys)
@@ -133,6 +157,20 @@ def main():
     def failures(reason):
         return int(guest(f"text-failures --reason {shlex.quote(reason)}"))
 
+    def set_mapper(enabled):
+        state = "on" if enabled else "off"
+        try:
+            guest(f"set-mapper {state}")
+        except StepFailed as error:
+            if "exited with 255:" not in str(error):
+                raise
+            # SSH may lose the acknowledgement after executing the command.
+            # Reassert a desired state rather than toggling it a second time.
+            print("SSH disconnected; rechecking the desired mapper state", flush=True)
+            guest(f"set-mapper {state}")
+            return f"{state}; verified after SSH reconnect"
+        return state
+
     def portal_deny():
         # The first `text:` asks for RemoteDesktop consent. A declined dialog
         # must not hang the mapper or ask again until the mapper restarts.
@@ -143,10 +181,16 @@ def main():
             vm.qmp.screendump(vm.logs / "portal-deny-dialog.png")
             # A click, not keys: key presses during a pending text job cancel
             # the job instead of recording the declined dialog.
-            points = vm.get("portal_deny_click", [0.738, 0.659])
+            relative = vm.get("portal_deny_relative")
+            points = relative or vm.get("portal_deny_click", [0.738, 0.659])
             # Plasma 6.3 asks a second time after the first Cancel.
-            for point in points if isinstance(points[0], list) else [points]:
-                vm.qmp.click(*point)
+            for index, point in enumerate(points if isinstance(points[0], list) else [points]):
+                if relative:
+                    position = json.loads(guest(f"portal-deny-point --x {float(point[0])} --y {float(point[1])}"))
+                    vm.qmp.screendump(vm.logs / f"portal-deny-positioned-{index}.png")
+                    click_point(position["x"], position["y"])
+                else:
+                    vm.qmp.click(*point)
                 time.sleep(3)
             vm.qmp.tap("t")
             time.sleep(3)
@@ -161,8 +205,8 @@ def main():
 
     def portal_approve():
         # Starting the mapper again gives the declined backend another chance.
-        guest("toggle-mapper")
-        guest("toggle-mapper")
+        set_mapper(False)
+        set_mapper(True)
         def approve():
             vm.qmp.tap("t")
             time.sleep(4)
@@ -221,6 +265,7 @@ def main():
         return vm.ssh("sudo fgconsole").strip()
 
     def emoji_hotkey():
+        original_vt = foreground_vt()
         def hotkey():
             vm.qmp.tap("ctrl-alt-f11")
             time.sleep(2.5)
@@ -231,10 +276,10 @@ def main():
         try:
             text = typed("emoji-hotkey", action=hotkey)
         finally:
-            if state.get("vt", "1") != "1":
-                vm.ssh("sudo chvt 1")
+            if state.get("vt", original_vt) != original_vt:
+                vm.ssh(f"sudo chvt {shlex.quote(original_vt)}")
                 time.sleep(3)
-        if state["vt"] != "1":
+        if state["vt"] != original_vt:
             raise StepFailed(f"Ctrl+Alt+F11 switched the console to VT{state['vt']}")
         if text != "🙂":
             raise StepFailed(f"expected '🙂', received {text!r}; see emoji-hotkey.png")
@@ -315,30 +360,38 @@ def main():
         time.sleep(2)
         try:
             guest("mapper --timeout 20")
-            return expect("after-replug", "bXc", ["a", "d", "c"])
+            return expect("after-replug", "bXc" + TEXT_UNICODE, ["a", "d", "c", "y"], settle=5)
+        except StepFailed as error:
+            failure = str(error)
+        observed = typed("replug-followup", ["a", "d", "c"])
+        # A failed text assertion does not mean the mapper stopped. Do not
+        # invert its state and invalidate every subsequent lifecycle scenario.
+        recovery = "mapper still running"
+        try:
+            guest("mapper --timeout 1")
         except StepFailed:
-            pass
-        # Without the mapper the keyboard must still work natively.
-        native = typed("replug-native", ["a", "d", "c"])
-        guest("toggle-mapper")
-        raise StepFailed(f"the mapper did not resume within 20 s after the keyboard was "
-                         f"replugged (native input: {native!r}); restarted by toggle-mapper")
+            set_mapper(True)
+            guest("mapper --timeout 20")
+            recovery = "mapper restarted"
+        raise StepFailed(f"after replug: {failure}; follow-up input: {observed!r}; {recovery}")
 
     def stuck_on_stop():
         def stop_held():
             vm.qmp.press("shift")
             vm.qmp.press("f")
             time.sleep(0.5)
-            guest("toggle-mapper")
-            time.sleep(1)
-            vm.qmp.release("f")
-            vm.qmp.release("shift")
+            try:
+                set_mapper(False)
+                time.sleep(1)
+            finally:
+                vm.qmp.release("f")
+                vm.qmp.release("shift")
             time.sleep(0.5)
             vm.qmp.tap("a", "b", "c")
         try:
             return expect("stuck-stop", "abc", action=stop_held)
         finally:
-            guest("toggle-mapper")
+            set_mapper(True)
 
     def stuck_on_kill():
         def kill_held():
@@ -393,7 +446,7 @@ def main():
         vm.copy_from("lhc-e2e/app.log", vm.logs / "app.log")
         vm.copy_from("lhc-e2e/receiver.log", vm.logs / "receiver.log")
         (vm.logs / "journal.txt").write_text(
-            vm.ssh("journalctl --user -b --no-pager -n 2000", check=False), encoding="utf-8")
+            vm.ssh("journalctl --user -b --no-pager -n 2000", check=False, timeout=30), encoding="utf-8")
 
     try:
         report.step("boot", boot, fatal=True)
@@ -433,12 +486,17 @@ def main():
         report.step("emoji-hotkey", emoji_hotkey)
         report.step("game-mode", game_mode)
         report.step("screen-lock", screen_lock)
-        report.step("suspend-resume", suspend)
+        if suspend_exclusion:
+            report.skip("suspend-resume", suspend_exclusion)
+        else:
+            report.step("suspend-resume", suspend)
         report.step("cli", guest, "cli")
         report.step("second-instance", guest, "second-instance")
+        report.step("text-after-second-instance", expect, "after-second-instance",
+                    TEXT_UNICODE, ["y"], None, 5)
         report.step("keyboard-replug", keyboard_replug)
-        report.step("mapper-stop", guest, "toggle-mapper")
-        report.step("mapper-start", guest, "toggle-mapper")
+        report.step("mapper-stop", set_mapper, False)
+        report.step("mapper-start", set_mapper, True)
         report.step("stuck-keys-on-stop", stuck_on_stop)
         report.step("stuck-keys-on-kill", stuck_on_kill)
         if archive or vm.get("reinstall"):
@@ -462,7 +520,14 @@ def main():
         f"Date: {time.strftime('%F %T %z')}",
         f"Commit: {commit()}",
         f"VM: {vm.name} ({vm.base})",
+        f"Memory: {vm.get('memory', 6144)} MiB",
+        f"CPU: {vm.get('cpu', 'host')}",
+        f"Suspend exclusion: {suspend_exclusion or 'none'}",
         f"Package: {package.name}" + (f" (upgraded from {previous.name})" if previous else ""),
+        f"Package SHA256: {package_sha256}",
+        "Popup mode: auto (actual backend recorded in app.log)",
+        f"Portal deny clicks: {vm.get('portal_deny_click', [0.738, 0.659])}; relative: {vm.get('portal_deny_relative')}",
+        f"Previous-version upgrade: {previous.name if previous else 'NOT RUN (no --previous)'}",
         f"Keyboard: {state.get('device', 'not detected')}",
         f"Host: {platform.node()}, {platform.release()}",
         f"Logs and screenshots: {vm.logs}",

@@ -9,9 +9,9 @@
 
 | Система | Что проверяем сейчас | Инструкция |
 | --- | --- | --- |
-| Fedora 44 KDE, Wayland | Общие тесты и RPM в VM; в последнем полном отчёте 2 FAIL | [Fedora KDE](fedora-kde.md) |
-| Debian 13 KDE, Wayland | Общие тесты и DEB в VM; в последнем полном отчёте 2 FAIL | [Debian KDE](debian-kde.md) |
-| Kubuntu 26.04, Wayland | Общие тесты, локальные desktop-сценарии и архив в VM; в последнем полном отчёте 2 FAIL | [Kubuntu](kubuntu-kde.md) |
+| Fedora 44 KDE, Wayland | Полный прогон RPM в VM 2026-10-21: 42 PASS, 0 FAIL | [Fedora KDE](fedora-kde.md) |
+| Debian 13 KDE, Wayland | DEB: 41 PASS, 1 SKIP; S3 не принят, VM перезагружается без приложения | [Debian KDE](debian-kde.md) |
+| Kubuntu 26.04, Wayland | Полный прогон архива в VM 2026-10-21: 42 PASS, 0 FAIL | [Kubuntu](kubuntu-kde.md) |
 | Ubuntu 26.04, GNOME Shell 50, Wayland | Отдельный VM smoke с расширением GNOME и portal; объём меньше KDE | [GNOME Wayland](gnome.md) |
 | Windows 11 | Нативные тесты, debug smoke, release mapper и popup-сценарии в VM | [Windows](windows.md) |
 | macOS | CI: компиляция, unit/integration, clippy, release check; desktop-приёмки нет | [macOS](macos.md) |

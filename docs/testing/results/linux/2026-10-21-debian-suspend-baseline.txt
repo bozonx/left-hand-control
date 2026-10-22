@@ -1,0 +1,55 @@
+Date: 2026-10-21 -0300
+Status: FAILED BASELINE; Debian VM S3 is NOT ACCEPTED.
+Host: Linux 7.2.3-2-MANJARO, QEMU 11.1.1, KVM, AMD host CPU.
+Guest: Debian 13 KDE Wayland, Linux 6.12.113+deb13-amd64.
+Base: /mnt/disk2/vm/lhc-debian13-kde/base.qcow2
+Each control uses a fresh disposable overlay, 4 vCPUs, 4096 MiB, q35,
+qemu-xhci + usb-tablet + usb-kbd on fixed port 2, virtio disk/network.
+No Left Hand Control package is installed by the control. pkill is issued before
+cycles; command -v left-hand-control and pgrep -a -x left-hand-contr produce no
+output. No mapper, popup or virtual uinput device from this product is running.
+
+The full DEB run 2026-10-21-vm-debian13-kde-3.txt completed initial S3 and Unicode
+after second instance, then the guest rebooted around USB-replug. SSH reset caused
+later steps to fail. Final screenshots show a new kernel boot, not a mapper error.
+Preserved disk: /mnt/disk2/vm/lhc-debian13-kde/diagnostic-failed-203943.qcow2
+Recovered journals show original boot d58ae08e5c224a6fa433ad3c0d3beaf8 ending
+at 23:45:24 UTC; unexpected boot 47a49960be82475e9bec393630f44bea starts 23:45:37.
+The original boot logs xHC error in resume (USBSTS 0x401, Reinit), then successful
+USB re-enumeration and a new mapper device; it ends without an orderly shutdown.
+This does not establish the precise kernel/hypervisor root cause.
+
+Control commands from repository root:
+python3 -u /tmp/lhc-debian-suspend-replug-probe.py
+python3 -u /tmp/lhc-debian-suspend-replug-probe.py 'host,-svm'
+python3 -u /tmp/lhc-debian-suspend-replug-probe.py 'EPYC-Rome-v4,-svm'
+The driver imports the repository vmlib.Vm and for up to three cycles:
+1. SSH reads /proc/sys/kernel/random/boot_id.
+2. sudo systemd-run --quiet --on-active=1 --timer-property=AccuracySec=100ms --unit=lhc-probe-suspend-N systemctl suspend
+3. Wait for QMP query-status=suspended, then QMP system_wakeup; wait for SSH.
+4. QMP device_del kbd0; wait 3s; device_add usb-kbd,id=kbd0,port=2.
+5. Read boot_id, require unchanged; repeat.
+No physical host keyboard is used, and no keys are typed in these controls.
+
+CPU host:
+  First resume/replug returned original boot 1b7d0eb4-ccf1-48ed-89dd-ca400e0ad850.
+  Next S3 wait timed out; direct SSH showed new boot eda30ec7-f560-4025-81cf-07622d35056e.
+CPU host,-svm:
+  First resume/replug returned original boot 0fc8f56f-7cf6-40f2-bbdc-863852a2dca5.
+  Next S3 wait timed out; direct SSH showed new boot 10239f94-ee42-4ba3-a851-e96907b3735e.
+CPU EPYC-Rome-v4,-svm:
+  First resume/replug returned original boot 3bc059ee-f168-44b1-bfbe-d59695bea8aa.
+  Next S3 wait timed out; direct SSH showed new boot 3705ebee-a818-4af7-a80e-3a5eca04e7cf.
+Disabling nested SVM did not resolve the baseline failure. No CPU workaround is
+accepted; the canonical VM configuration keeps CPU host.
+
+Logs, driver, recovered journals and original/updated VM configuration are kept in
+/mnt/disk2/vm/lhc-release-20261021/debian-diagnostics/.
+Control overlays/logs: runs/20261021-205031, 20261021-205412, 20261021-205739.
+
+Acceptance consequence:
+The package must not be blamed for a reset reproduced without the application,
+but Debian S3 must not be declared accepted. A separate full DEB replay uses an
+explicit suspend_skip_reason, records S3 as SKIP and verifies remaining scenarios.
+It cannot close the failing S3 baseline or physical-machine sleep/wake acceptance.
+Fedora/Kubuntu S3 results apply to their own tested environments only.
