@@ -83,8 +83,6 @@ pub struct LayerRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub long_hold_timeout_ms: Option<u64>,
     pub hold_action: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub isolate: Option<String>,
     pub double_tap_action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hold_timeout_ms: Option<u64>,
@@ -122,7 +120,6 @@ impl LayerRule {
             long_hold_action: String::new(),
             long_hold_timeout_ms: None,
             hold_action: Some(String::new()),
-            isolate: None,
             double_tap_action: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,

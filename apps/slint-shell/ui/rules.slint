@@ -7,10 +7,10 @@ import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
 import { ResettableField, IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { RuleDialog, RuleField, GameCondition, PickerCategory, HoldRelease, HoldDetection } from "types.slint";
+import { RuleDialog, RuleField, GameCondition, PickerCategory, HoldDetection } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, CheckBox, ComboBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, isolate: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
+export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -40,20 +40,15 @@ export global RulesEditor {
     in-out property <string> apps-exclude;
     /// When the held key is pressed, and the layer keys this applies to
     /// (comma-separated, and as items for the chips).
-    in-out property <HoldRelease> release-mode;
-    in property <string> release-keys;
-    in property <[string]> release-key-items;
     in-out property <HoldDetection> hold-detection;
     in-out property <HoldDetection> original-hold-detection;
     in-out property <string> hold-timeout;
     in-out property <string> double-timeout;
     in property <string> original-hold;
     in property <bool> original-swallow-hold;
-    in property <HoldRelease> original-release-mode;
-    in property <string> original-release-keys;
     in-out property <string> original-hold-timeout;
     in-out property <string> original-double-timeout;
-    out property <bool> advanced-dirty: hold-detection != original-hold-detection || long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || release-mode != original-release-mode || release-keys != original-release-keys || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
+    out property <bool> advanced-dirty: hold-detection != original-hold-detection || long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
     in-out property <bool> enabled: true;
     in-out property <bool> swallow-tap;
     in-out property <bool> swallow-hold;
@@ -80,7 +75,6 @@ export global RulesEditor {
     callback filter-layers(string);
     callback apply-conditions();
     callback apply-advanced();
-    callback remove-release-key(int);
     callback create-layer(string);
     /// Why `name` cannot be used for a new layer.
     pure callback layer-name-error(name: string) -> Message;
@@ -293,7 +287,7 @@ component HoldField inherits VerticalBox {
 export component RulesPage inherits VerticalBox {
     /// Advanced options of `rule` that differ from the defaults, as one line.
     pure function summary(rule: RuleRow) -> string {
-        return join(join(join(join(join(held-text(rule), release-text(rule)),
+        return join(join(join(join(held-text(rule),
             rule.hold-detection == HoldDetection.release ? @tr("Hold on other key release")
                 : rule.hold-detection == HoldDetection.press ? @tr("Hold on other key press") : ""),
             rule.hold-timeout != "" ? @tr("Hold after {} ms", rule.hold-timeout) : ""),
@@ -304,9 +298,6 @@ export component RulesPage inherits VerticalBox {
         return rule.hold-mode == 2 ? ""
             : rule.hold != "" ? @tr("Holds {}", rule.hold)
             : rule.hold-mode == 0 && rule.swallow-hold ? @tr("Holds nothing") : "";
-    }
-    pure function release-text(rule: RuleRow) -> string {
-        return rule.isolate != "" ? @tr("Released for {}", rule.isolate) : "";
     }
     pure function join(first: string, second: string) -> string {
         return first == "" ? second : second == "" ? first : first + " · " + second;
@@ -364,21 +355,6 @@ export component RulesPage inherits VerticalBox {
                 }
                 DropMarker { width: parent.width; group: 1; index: index; row-y: parent.y; row-height: parent.height; }
             }
-        }
-    }
-}
-
-/// A key of a list, removed with its cross.
-component KeyChip inherits Rectangle {
-    in property <bool> enabled: true;
-    in property <string> text;
-    callback removed();
-    height: 32px; border-radius: 16px;
-    background: Theme.selected; border-width: Theme.eink ? 1px : 0px; border-color: Theme.divider;
-    HorizontalLayout { padding-left: 12px; padding-right: 4px; spacing: 2px;
-        Text { text: root.text; color: Theme.text; vertical-alignment: center; }
-        VerticalLayout { alignment: center;
-            IconButton { enabled: root.enabled; size: 24px; icon: @image-url("icons/x.svg"); tooltip: @tr("Remove"); clicked => { root.removed(); } }
         }
     }
 }
@@ -443,24 +419,6 @@ export component RuleDialogOverlay inherits FocusScope {
                                         RulesEditor.swallow-hold = RulesEditor.hold-mode == 0 && index == 1;
                                     }
                                 }
-                            }
-                        }
-                        // Shown only for “Other key or combination”; the hold mode only toggles whether it applies.
-                        if RulesEditor.hold != "": release-form := ResettableField {
-                            label: @tr("When to hold the selected combination");
-                            info: @tr("Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nTo press a modifier only together with a layer key, such as Alt for Alt+Tab, assign the combination to that layer key and keep its modifiers held until the layer is released.");
-                            active: RulesEditor.hold-mode == 1 && RulesEditor.hold != "" && !RulesEditor.swallow-hold;
-                            inactive-reason: @tr("Used when holding activates a layer together with a selected key or combination.");
-                            resettable: false;
-                            ButtonGroup {
-                                enabled: release-form.active;
-                                labels: [@tr("Right away"), @tr("Except…")];
-                                selected-index: RulesEditor.release-mode == HoldRelease.except ? 1 : 0;
-                                selected(index) => { RulesEditor.release-mode = index == 1 ? HoldRelease.except : HoldRelease.always; }
-                            }
-                            if RulesEditor.release-mode != HoldRelease.always: HorizontalLayout { spacing: 6px; alignment: start;
-                                for key[index] in RulesEditor.release-key-items: KeyChip { enabled: release-form.active; text: key; removed => { RulesEditor.remove-release-key(index); } }
-                                Button { enabled: release-form.active; text: @tr("+ Add key"); clicked => { RulesEditor.open-dialog(RulesEditor.selected, RuleDialog.release-key); } }
                             }
                         }
                         detection-form := ResettableField {

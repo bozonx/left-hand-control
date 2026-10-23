@@ -89,19 +89,6 @@ fn swallow_toggles_keep_the_action() {
     assert_eq!(rule.tap_action.as_deref(), Some("KeyB"));
     set_field(&mut rule, RuleField::Enabled, "false", "");
     assert!(!rule.is_enabled());
-    set_field(&mut rule, RuleField::Isolate, "  ", "");
-    assert_eq!(rule.isolate, None);
-}
-
-#[test]
-fn hold_release_prefers_the_only_with_list() {
-    let mut rule = LayerRule::new("r".into(), "AltLeft");
-    assert_eq!(hold_release(&rule), (HoldRelease::Always, String::new()));
-    rule.isolate = Some("KeyW, KeyE".into());
-    assert_eq!(
-        hold_release(&rule),
-        (HoldRelease::Except, "KeyW, KeyE".into())
-    );
 }
 
 #[test]

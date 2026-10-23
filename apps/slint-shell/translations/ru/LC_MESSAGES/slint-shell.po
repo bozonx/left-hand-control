@@ -1580,9 +1580,6 @@ msgstr "До любого элемента можно дойти клавише�
 msgid "Always"
 msgstr "Всегда"
 
-msgid "+ Add key"
-msgstr "+ Добавить клавишу"
-
 msgid "Hold duration"
 msgstr "Время удержания"
 
@@ -1891,9 +1888,6 @@ msgstr "В правиле «{}» некорректное действие пр�
 
 msgid "Rule \"{}\" has an invalid double-tap action."
 msgstr "В правиле «{}» некорректное действие при двойном нажатии."
-
-msgid "Rule \"{}\" lists an unknown key."
-msgstr "В правиле «{}» указана неизвестная клавиша."
 
 msgid "Automatic switching rule deleted"
 msgstr "Правило автопереключения удалено"
@@ -2368,32 +2362,14 @@ msgstr "Другая клавиша…"
 msgid "When to press"
 msgstr "Когда нажимать"
 
-msgid "Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nTo press a modifier only together with a layer key, such as Alt for Alt+Tab, assign the combination to that layer key and keep its modifiers held until the layer is released."
-msgstr "Сразу: клавиша нажимается в начале удержания.\nКроме: клавиша отпускается, пока нажаты указанные клавиши слоя. Например, Alt зажат, но W и E срабатывают без Alt.\nЧтобы модификатор нажимался только вместе с клавишей слоя, например Alt для Alt+Tab, назначьте этой клавише слоя сочетание и включите удержание его модификаторов до отпускания слоя."
-
-msgid "Right away"
-msgstr "Сразу"
-
-msgid "Except…"
-msgstr "Кроме…"
-
-msgid "Release the key while these layer keys are pressed:"
-msgstr "Отпускать клавишу, пока нажаты эти клавиши слоя:"
-
 msgid "Holds {}"
 msgstr "Зажимает {}"
 
 msgid "Holds nothing"
 msgstr "Ничего не зажимает"
 
-msgid "Released for {}"
-msgstr "Отпускается для {}"
-
 msgid "Hold after {} ms"
 msgstr "Удержание через {} мс"
-
-msgid "Choose a layer key"
-msgstr "Выберите клавишу слоя"
 
 msgid "Stop mapper (restore native keyboard behavior)"
 msgstr "Остановить маппер (вернуть стандартное поведение клавиатуры)"
@@ -2666,12 +2642,6 @@ msgstr "Не используется, если назначено действ�
 
 msgid "Other key or combination…"
 msgstr "Другая клавиша или сочетание…"
-
-msgid "When to hold the selected combination"
-msgstr "Когда удерживать выбранное сочетание"
-
-msgid "Used when holding activates a layer together with a selected key or combination."
-msgstr "Используется, когда удержание активирует слой вместе с выбранной клавишей или сочетанием."
 
 msgid "Hold detection when another key is pressed"
 msgstr "Распознавание удержания при нажатии другой клавиши"

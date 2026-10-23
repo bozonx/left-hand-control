@@ -331,14 +331,6 @@ pub fn modifier_key(token: &str) -> Option<&'static str> {
     })
 }
 
-/// Entries of a comma-separated key list (`isolate`) that are
-/// not catalog key codes.
-pub fn unknown_keys(list: &str) -> impl Iterator<Item = &str> {
-    list.split(',')
-        .map(str::trim)
-        .filter(|code| !code.is_empty() && !valid_key(code))
-}
-
 pub fn valid_trigger(value: &str) -> bool {
     trigger_keys(value).is_some()
 }
@@ -385,7 +377,7 @@ mod tests {
     }
 
     #[test]
-    fn modifiers_and_key_lists() {
+    fn modifier_names() {
         assert_eq!(modifier_key("Ctrl"), Some("ControlLeft"));
         assert_eq!(modifier_key("MetaRight"), Some("MetaRight"));
         for token in [
@@ -393,8 +385,6 @@ mod tests {
         ] {
             assert_eq!(modifier_key(token), None);
         }
-        assert_eq!(unknown_keys("KeyA, Tab,, NumpadParenLeft").count(), 0);
-        assert_eq!(unknown_keys("KeyA, KeyTab").collect::<Vec<_>>(), ["KeyTab"]);
     }
 
     #[test]

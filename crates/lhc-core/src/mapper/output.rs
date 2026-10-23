@@ -893,7 +893,6 @@ mod tests {
             long_hold_action: String::new(),
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("ControlLeft".into()),
-            isolate: String::new(),
             hold_timeout_ms: Some(10),
             tap_decision: None,
             double_tap_action: String::new(),

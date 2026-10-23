@@ -173,7 +173,7 @@
       ],
       "keys": {
         "Tab": "Alt+Tab",
-        "CapsLock": "Alt+Shift+Tab",
+        "CapsLock": "Meta+Tab",
         "Backspace": "sys:screenOff",
         "ShiftLeft": "sys:switchLayout4",
         "Digit1": "Meta+Digit1",

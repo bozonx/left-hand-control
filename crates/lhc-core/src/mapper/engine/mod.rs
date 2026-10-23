@@ -121,9 +121,6 @@ pub struct Engine {
 
     /// layer_id -> rules that activated it, oldest to newest
     layer_triggers: HashMap<String, Vec<LayerTrigger>>,
-    /// Physical keys whose hold is currently suppressed, per isolate key
-    /// (so the last isolate-key release can restore the hold).
-    isolated_holds: HashMap<KeyCode, Vec<KeyCode>>,
 
     /// Currently executing macro (if any)
     active_macro: Option<self::model::ActiveMacro>,
@@ -724,72 +721,43 @@ impl Engine {
         {
             let mapped = self.lookup_mapping(key);
             match mapped {
-                Some((layer_id, def)) => {
-                    if let Some(trigger) = self.layer_triggers.get(&layer_id).and_then(|v| v.last())
-                        && trigger.isolate_keys.contains(&key)
-                        && let Some(ks) = self.emitted.get(&trigger.key).cloned()
+                Some((layer_id, def)) => match def {
+                    ActionDef::Stroke(ks)
+                        if !ks.mods.is_empty()
+                            && self
+                                .layer_hold_mods
+                                .get(&layer_id)
+                                .is_some_and(|keys| keys.contains(&key)) =>
                     {
-                        let mut suppressed = Vec::new();
-                        for target_key in ks.mods.iter().chain(std::iter::once(&ks.key)) {
-                            // Another isolate key may already have
-                            // suppressed this target — record the
-                            // entry (so release bookkeeping stays
-                            // balanced) but don't emit a second up.
-                            // Refcounts are left untouched: they keep
-                            // tracking chord ownership while the key
-                            // is physically up, so unrelated chords
-                            // release correctly afterwards.
-                            if !self.is_suppressed(*target_key) {
-                                out.push(Out::KeyRaw {
-                                    key: *target_key,
-                                    down: false,
-                                });
-                            }
-                            suppressed.push(*target_key);
-                        }
-                        if !suppressed.is_empty() {
-                            self.isolated_holds.insert(key, suppressed);
-                        }
+                        self.press_holding_mods(&layer_id, key, ks, out);
                     }
-
-                    match def {
-                        ActionDef::Stroke(ks)
-                            if !ks.mods.is_empty()
-                                && self
-                                    .layer_hold_mods
-                                    .get(&layer_id)
-                                    .is_some_and(|keys| keys.contains(&key)) =>
-                        {
-                            self.press_holding_mods(&layer_id, key, ks, out);
-                        }
-                        ActionDef::Stroke(ks) => {
-                            self.emit_stroke_press(key, ks, out);
-                        }
-                        ActionDef::Literal(text) => {
-                            out.push(Out::Literal(text));
-                            self.oneshot_consumed.insert(key);
-                        }
-                        ActionDef::Macro(md) => {
-                            self.run_macro(md, now);
-                            self.oneshot_consumed.insert(key);
-                        }
-                        ActionDef::System(action) => {
-                            out.push(Out::RunSystem(action));
-                            self.oneshot_consumed.insert(key);
-                        }
-                        ActionDef::Command(command) => {
-                            out.push(Out::RunCommand(command));
-                            self.oneshot_consumed.insert(key);
-                        }
-                        ActionDef::Swallow => {
-                            self.oneshot_consumed.insert(key);
-                        }
-                        ActionDef::Unavailable(action) => {
-                            report_unavailable(&action);
-                            self.oneshot_consumed.insert(key);
-                        }
+                    ActionDef::Stroke(ks) => {
+                        self.emit_stroke_press(key, ks, out);
                     }
-                }
+                    ActionDef::Literal(text) => {
+                        out.push(Out::Literal(text));
+                        self.oneshot_consumed.insert(key);
+                    }
+                    ActionDef::Macro(md) => {
+                        self.run_macro(md, now);
+                        self.oneshot_consumed.insert(key);
+                    }
+                    ActionDef::System(action) => {
+                        out.push(Out::RunSystem(action));
+                        self.oneshot_consumed.insert(key);
+                    }
+                    ActionDef::Command(command) => {
+                        out.push(Out::RunCommand(command));
+                        self.oneshot_consumed.insert(key);
+                    }
+                    ActionDef::Swallow => {
+                        self.oneshot_consumed.insert(key);
+                    }
+                    ActionDef::Unavailable(action) => {
+                        report_unavailable(&action);
+                        self.oneshot_consumed.insert(key);
+                    }
+                },
                 None => {
                     out.push(Out::KeyRaw { key, down: true });
                     self.emitted.insert(key, Keystroke { mods: vec![], key });
@@ -817,26 +785,6 @@ impl Engine {
             self.drain_decision_buffer(out);
         }
         self.long_holds.remove(&key);
-        if let Some(suppressed) = self.isolated_holds.remove(&key) {
-            for target_key in suppressed {
-                // Don't restore while another isolate key still suppresses
-                // the same target — its own release will handle it.
-                if self.is_suppressed(target_key) {
-                    continue;
-                }
-                let still_held = self
-                    .emitted
-                    .values()
-                    .any(|ks| ks.key == target_key || ks.mods.contains(&target_key));
-                if still_held {
-                    out.push(Out::KeyRaw {
-                        key: target_key,
-                        down: true,
-                    });
-                }
-            }
-        }
-
         if let Some(pending) = self.pending.get(&key).cloned() {
             match pending.phase {
                 Phase::HoldActive => {
@@ -950,7 +898,7 @@ impl Engine {
             return;
         };
         let mods = self.take_releasable_mods(&ks.mods);
-        if self.is_virtually_held(ks.key) || self.is_suppressed(ks.key) {
+        if self.is_virtually_held(ks.key) {
             if !mods.is_empty() {
                 out.push(Out::ReleaseMods(mods));
             }
@@ -981,22 +929,14 @@ impl Engine {
         }
         // A modifier stays down while another chord still references it
         // (refcount) or while some mapping holds it as its *main* key
-        // (e.g. a rule with `hold: ControlLeft`). A suppressed modifier
-        // (isolate) is already physically up — emitting another release
-        // would be spurious; the isolate-key release decides its fate.
+        // (e.g. a rule with `hold: ControlLeft`).
         mods.iter()
             .copied()
             .filter(|m| {
                 self.mod_refs.get(m).copied().unwrap_or(0) == 0
                     && !self.emitted.values().any(|ks| ks.key == *m)
-                    && !self.is_suppressed(*m)
             })
             .collect()
-    }
-
-    /// True while any isolate key keeps this key physically released.
-    fn is_suppressed(&self, key: KeyCode) -> bool {
-        self.isolated_holds.values().any(|v| v.contains(&key))
     }
 
     /// True when the key is currently held down on the virtual device —
@@ -1196,7 +1136,6 @@ impl Engine {
         self.combo_buffer.clear();
         self.oneshot_consumed.clear();
         self.layer_triggers.clear();
-        self.isolated_holds.clear();
         self.long_holds.clear();
         self.active_chords.clear();
         self.chord_suppressed.clear();

@@ -449,7 +449,6 @@ impl Msg {
                     RuleIssueCode::InvalidTapAction => "rule-invalid-tap",
                     RuleIssueCode::InvalidHoldAction => "rule-invalid-hold",
                     RuleIssueCode::InvalidDoubleTapAction => "rule-invalid-double-tap",
-                    RuleIssueCode::UnknownListedKey => "rule-unknown-listed-key",
                 },
                 issue.trigger.clone().unwrap_or_default(),
                 0,

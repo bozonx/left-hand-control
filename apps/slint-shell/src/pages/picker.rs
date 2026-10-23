@@ -358,7 +358,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 crate::ui::RuleDialog::Tap => 2,
                 crate::ui::RuleDialog::Hold => 3,
                 crate::ui::RuleDialog::LongHold => 5,
-                crate::ui::RuleDialog::ReleaseKey => 6,
                 _ => 0,
             }
         } else {

@@ -5,8 +5,8 @@ use crate::{
     document::{Document, Saved, View},
     i18n::Msg,
     ui::{
-        ActionPicker, HoldDetection, HoldRelease, PickerTarget, RuleDialog, RuleField,
-        RuleLayerChoice, RuleRow, RulesEditor, SettingsWindow,
+        ActionPicker, HoldDetection, PickerTarget, RuleDialog, RuleField, RuleLayerChoice, RuleRow,
+        RulesEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::{
@@ -43,11 +43,6 @@ const CHIP_ITEMS: usize = 3;
 fn optional_list(value: &str) -> Option<Vec<String>> {
     let items = parse_list(value);
     (!items.is_empty()).then_some(items)
-}
-
-fn optional(value: &str) -> Option<String> {
-    let value = value.trim();
-    (!value.is_empty()).then(|| value.to_owned())
 }
 
 fn timeout_text(value: Option<u64>) -> String {
@@ -100,24 +95,6 @@ fn hold_detection(rule: &LayerRule) -> HoldDetection {
         Some(TapDecision::PermissiveHold) => HoldDetection::Release,
         Some(TapDecision::HoldOnOtherKeyPress) => HoldDetection::Press,
     }
-}
-
-/// When the held key is pressed and the layer keys it applies to.
-fn hold_release(rule: &LayerRule) -> (HoldRelease, String) {
-    match &rule.isolate {
-        Some(keys) => (HoldRelease::Except, keys.clone()),
-        None => (HoldRelease::Always, String::new()),
-    }
-}
-
-/// Show `keys` (a comma-separated list) in the advanced dialog.
-fn set_release_keys(editor: &RulesEditor, keys: &[String]) {
-    editor.set_release_keys(keys.join(", ").into());
-    editor.set_release_key_items(ModelRc::new(VecModel::from(
-        keys.iter()
-            .map(Into::into)
-            .collect::<Vec<slint::SharedString>>(),
-    )));
 }
 
 fn layer_name(layout: &LayoutPreset, id: &str) -> String {
@@ -199,11 +176,10 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
                 rule.double_tap_timeout_ms
             })
             .into(),
-            isolate: rule.isolate.clone().unwrap_or_default().into(),
             enabled: rule.is_enabled(),
             swallow_tap: rule.tap_action.is_none(),
             swallow_hold: rule.hold_action.is_none(),
-            advanced: rule.isolate.is_some() || rule.tap_decision.is_some(),
+            advanced: rule.tap_decision.is_some(),
             key_category: super::picker::category_for_value(&rule.key),
             tap_category: super::picker::category_for_value(
                 rule.tap_action.as_deref().unwrap_or_default(),
@@ -250,12 +226,6 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_layouts(join(&rule.condition_layouts).into());
     editor.set_apps_include(join(&rule.condition_apps_whitelist).into());
     editor.set_apps_exclude(join(&rule.condition_apps_blacklist).into());
-    let (release, keys) = hold_release(rule);
-    let keys = parse_list(&keys);
-    editor.set_release_mode(release);
-    set_release_keys(&editor, &keys);
-    editor.set_original_release_mode(release);
-    editor.set_original_release_keys(keys.join(", ").into());
     editor.set_original_hold(rule.hold_action.clone().unwrap_or_default().into());
     editor.set_original_swallow_hold(rule.hold_action.is_none());
     let decision = hold_detection(rule);
@@ -341,11 +311,7 @@ fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Resu
         RuleDialog::DoubleTap => rule.double_tap_action = value.into(),
         RuleDialog::HoldTimeout => rule.hold_timeout_ms = parse_timeout(value)?,
         RuleDialog::DoubleTimeout => rule.double_tap_timeout_ms = parse_timeout(value)?,
-        RuleDialog::None
-        | RuleDialog::Conditions
-        | RuleDialog::Advanced
-        | RuleDialog::Remove
-        | RuleDialog::ReleaseKey => {}
+        RuleDialog::None | RuleDialog::Conditions | RuleDialog::Advanced | RuleDialog::Remove => {}
     }
     Ok(())
 }
@@ -361,11 +327,9 @@ fn set_hold_behavior(rule: &mut LayerRule, behavior: HoldBehavior) {
     }
     if behavior == HoldBehavior::None {
         rule.hold_action = Some(String::new());
-        rule.isolate = None;
     }
     if behavior == HoldBehavior::Action {
         rule.hold_action = Some(String::new());
-        rule.isolate = None;
     }
 }
 
@@ -385,7 +349,6 @@ fn set_field(rule: &mut LayerRule, field: RuleField, value: &str, current: &str)
         RuleField::Enabled => rule.enabled = (!on).then_some(false),
         RuleField::SwallowTap => rule.tap_action = (!on).then(|| current.to_owned()),
         RuleField::SwallowHold => rule.hold_action = (!on).then(|| current.to_owned()),
-        RuleField::Isolate => rule.isolate = optional(value),
     }
 }
 
@@ -419,26 +382,13 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
     {
         return Err(Msg::ActionRequired);
     }
-    // The advanced dialog keeps its keys as a draft until "Apply".
-    if editor.get_dialog() == RuleDialog::Advanced
-        && matches!(property, RuleDialog::Hold | RuleDialog::ReleaseKey)
-    {
-        if property == RuleDialog::Hold {
-            if value.is_empty() {
-                return Err(Msg::ActionRequired);
-            }
-            editor.set_hold(value.into());
-            editor.set_swallow_hold(false);
-        } else {
-            if !lhc_core::profile::key_catalog::valid_key(value) {
-                return Err(Msg::KeyCodeRequired);
-            }
-            let mut keys = parse_list(&editor.get_release_keys());
-            if !keys.iter().any(|key| key == value) {
-                keys.push(value.to_owned());
-            }
-            set_release_keys(&editor, &keys);
+    // The advanced dialog keeps its held key as a draft until "Apply".
+    if editor.get_dialog() == RuleDialog::Advanced && property == RuleDialog::Hold {
+        if value.is_empty() {
+            return Err(Msg::ActionRequired);
         }
+        editor.set_hold(value.into());
+        editor.set_swallow_hold(false);
         editor.set_field(RuleDialog::None);
         return Ok(());
     }
@@ -607,9 +557,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     editor.on_open_dialog(move |index, dialog| {
         let Some(ui) = weak.upgrade() else { return };
         let editor = ui.global::<RulesEditor>();
-        // Keys picked for the advanced dialog must not reload its draft.
-        let draft = editor.get_dialog() == RuleDialog::Advanced
-            && matches!(dialog, RuleDialog::Hold | RuleDialog::ReleaseKey);
+        // A key picked for the advanced dialog must not reload its draft.
+        let draft = editor.get_dialog() == RuleDialog::Advanced && dialog == RuleDialog::Hold;
         editor.set_selected(index);
         if dialog != RuleDialog::Layer && !draft {
             refresh(&ui, &doc, true);
@@ -636,13 +585,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 | RuleDialog::Hold
                 | RuleDialog::LongHold
                 | RuleDialog::DoubleTap
-                | RuleDialog::ReleaseKey
         ) {
             ui.global::<ActionPicker>().invoke_open(
                 PickerTarget::Rule,
                 index,
                 value,
-                matches!(dialog, RuleDialog::Key | RuleDialog::ReleaseKey),
+                dialog == RuleDialog::Key,
             );
             return;
         }
@@ -739,14 +687,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }
         };
         let held = (!editor.get_swallow_hold()).then(|| editor.get_hold().to_string());
-        // Release lists only apply to a key held together with a layer.
-        let keys = optional(&editor.get_release_keys()).filter(|_| {
-            editor.get_hold_mode() == 1 && held.as_deref().is_some_and(|key| !key.is_empty())
-        });
-        let isolate = match editor.get_release_mode() {
-            HoldRelease::Always => None,
-            HoldRelease::Except => keys,
-        };
         if change_rule(&ui, &doc, index, true, |rule| {
             rule.long_hold_timeout_ms = long_hold_timeout;
             rule.hold_timeout_ms = hold;
@@ -759,24 +699,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             if rule.hold_behavior() != HoldBehavior::Action {
                 rule.hold_action = held;
             }
-            rule.isolate = isolate;
         })
         .is_ok()
         {
             editor.set_dialog(RuleDialog::None);
-        }
-    });
-
-    let weak = ui.as_weak();
-    editor.on_remove_release_key(move |index| {
-        let Some(ui) = weak.upgrade() else { return };
-        let editor = ui.global::<RulesEditor>();
-        let mut keys = parse_list(&editor.get_release_keys());
-        if let Ok(index) = usize::try_from(index)
-            && index < keys.len()
-        {
-            keys.remove(index);
-            set_release_keys(&editor, &keys);
         }
     });
 

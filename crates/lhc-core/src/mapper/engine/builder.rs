@@ -9,20 +9,6 @@ use crate::mapper::system::{self, SysCommand};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Duration;
 
-fn parse_key_list(raw: &str) -> Vec<KeyCode> {
-    raw.split(',')
-        .map(str::trim)
-        .filter(|code| !code.is_empty())
-        .filter_map(|code| {
-            let key = code_to_key(code);
-            if key.is_none() {
-                log::debug!("[mapper] unknown key code in list: {code}");
-            }
-            key
-        })
-        .collect()
-}
-
 impl Engine {
     pub fn new(cfg: &AppConfig) -> Self {
         let default_hold = Duration::from_millis(cfg.settings.default_hold_timeout_ms.max(1));
@@ -440,7 +426,6 @@ impl Engine {
                 .double_tap_timeout_ms
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_double_tap);
-            let isolate_keys = parse_key_list(&r.isolate);
 
             let entry = RuleEntry {
                 tap_decision: r.tap_decision.unwrap_or(cfg.settings.tap_decision),
@@ -450,7 +435,6 @@ impl Engine {
                 tap,
                 layer_id,
                 hold,
-                isolate_keys,
                 double_tap,
                 hold_timeout: if behavior == HoldBehavior::Action {
                     long_hold_timeout
@@ -523,7 +507,6 @@ impl Engine {
             oneshot_consumed: HashSet::new(),
             mod_refs: HashMap::new(),
             layer_triggers: HashMap::new(),
-            isolated_holds: HashMap::new(),
             active_macro: None,
             macro_queue: VecDeque::new(),
             // Hand-edited configs may hold 0 or a value that overflows `Instant`.

@@ -193,19 +193,13 @@ struct HoldDoc {
         skip_serializing_if = "Option::is_none"
     )]
     keys: Option<Option<String>>,
-    /// Release `keys` while one of these keys is pressed in the layer.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    keys_except_for: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     timeout_ms: Option<u64>,
 }
 
 impl HoldDoc {
     fn is_empty(&self) -> bool {
-        self.layer.is_none()
-            && self.keys.is_none()
-            && self.keys_except_for.is_empty()
-            && self.timeout_ms.is_none()
+        self.layer.is_none() && self.keys.is_none() && self.timeout_ms.is_none()
     }
 }
 
@@ -424,8 +418,6 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         if let Some(layer) = &hold.layer {
             non_empty(layer, &what("hold layer"))?;
         }
-        non_empty_items(&hold.keys_except_for, "key")?;
-        let key_list = |keys: Vec<String>| (!keys.is_empty()).then(|| keys.join(", "));
         rules.push(LayerRule {
             id: rule
                 .id
@@ -444,7 +436,6 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             long_hold_action,
             long_hold_timeout_ms,
             hold_action: three_state(hold.keys, &what("hold keys"))?,
-            isolate: key_list(hold.keys_except_for),
             double_tap_action,
             hold_timeout_ms: hold.timeout_ms,
             tap_decision: rule.tap_decision,
@@ -560,14 +551,6 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
             .cloned()
             .collect()
     };
-    let key_list = |keys: &Option<String>| -> Vec<String> {
-        keys.iter()
-            .flat_map(|keys| keys.split(','))
-            .map(str::trim)
-            .filter(|key| !key.is_empty())
-            .map(str::to_owned)
-            .collect()
-    };
     // `Some("")` is the native default and is omitted.
     let three_state = |action: &Option<String>| match action.as_deref() {
         Some(action) if action.trim().is_empty() => None,
@@ -639,7 +622,6 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                         .then(|| text(&rule.layer_id))
                         .flatten(),
                     keys: three_state(&rule.hold_action),
-                    keys_except_for: key_list(&rule.isolate),
                     timeout_ms: rule.hold_timeout_ms,
                 }
             };
@@ -902,6 +884,7 @@ mod tests {
             json!({"rules": [{"key": "KeyA", "hold": {"layer": "x"}, "longHold": {"action": "KeyB"}}]}),
             json!({"layers": [{"id": "nav", "keys": {"KeyA": ""}}]}),
             json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "keys": "AltLeft", "keysOnlyFor": ["Tab"]}}]}),
+            json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "keys": "AltLeft", "keysExceptFor": ["Tab"]}}]}),
             json!({"layers": [{"id": "nav", "holdModifiers": ["Tab"]}]}),
             json!({"layers": [{"id": "nav", "keys": {"Tab": null}, "holdModifiers": ["Tab"]}]}),
             json!({"layers": [{"id": "nav", "keys": {"Tab": "Alt+Tab"}, "holdModifiers": ["Tab", "Tab"]}]}),
@@ -920,7 +903,7 @@ mod tests {
     fn rule_fields_map_to_the_model() {
         let preset = parsed(json!({"rules": [
             {"id": "r1", "key": "CapsLock", "tap": "Escape",
-             "hold": {"layer": "nav", "keys": "AltLeft", "keysExceptFor": ["KeyA", "KeyB"], "timeoutMs": 180},
+             "hold": {"layer": "nav", "keys": "AltLeft", "timeoutMs": 180},
              "doubleTap": {"action": "Enter", "timeoutMs": 150},
              "tapDecision": "holdOnOtherKeyPress"},
             {"id": "r2", "key": "Space", "enabled": false, "tap": null, "hold": {"keys": null},
@@ -932,7 +915,6 @@ mod tests {
         assert_eq!(caps.layer_id, "nav");
         assert_eq!(caps.tap_action.as_deref(), Some("Escape"));
         assert_eq!(caps.hold_action.as_deref(), Some("AltLeft"));
-        assert_eq!(caps.isolate.as_deref(), Some("KeyA, KeyB"));
         assert_eq!(caps.hold_timeout_ms, Some(180));
         assert_eq!(caps.double_tap_action, "Enter");
         assert_eq!(caps.double_tap_timeout_ms, Some(150));

@@ -14,7 +14,6 @@ pub enum RuleIssueCode {
     InvalidTapAction,
     InvalidHoldAction,
     InvalidDoubleTapAction,
-    UnknownListedKey,
     InvalidLayerKey,
     InvalidLayerAction,
     InvalidMacro,
@@ -94,9 +93,6 @@ impl std::fmt::Display for RuleIssue {
             RuleIssueCode::InvalidDoubleTapAction => {
                 write!(f, "Rule \"{trigger}\" has an invalid double-tap action.")
             }
-            RuleIssueCode::UnknownListedKey => {
-                write!(f, "Rule \"{trigger}\" lists an unknown key.")
-            }
         }
     }
 }
@@ -148,13 +144,6 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
                 rule,
                 Some(trigger),
             ));
-        }
-        if rule
-            .isolate
-            .as_deref()
-            .is_some_and(|list| super::key_catalog::unknown_keys(list).next().is_some())
-        {
-            issues.push(issue(RuleIssueCode::UnknownListedKey, rule, Some(trigger)));
         }
     }
     for (trigger, rules) in by_trigger.into_iter().filter(|(_, rules)| rules.len() > 1) {
@@ -233,13 +222,6 @@ pub fn analyze(config: &AppConfig) -> Vec<RuleIssue> {
             add(
                 RuleIssueCode::InvalidCondition,
                 format!("rules[{index}].when"),
-            );
-        }
-        if rule.isolate.as_deref().is_some_and(|keys| !keys.is_empty()) && rule.layer_id.is_empty()
-        {
-            add(
-                RuleIssueCode::InvalidRuleConfiguration,
-                format!("rules[{index}].hold"),
             );
         }
         if rule.key.contains('+') && !rule.double_tap_action.is_empty() {
@@ -420,7 +402,6 @@ mod tests {
     #[test]
     fn incomplete_rule_drafts_do_not_block_runtime() {
         let mut draft = rule("draft", "");
-        draft.isolate = Some("Tab".into());
         draft.condition_apps_whitelist = Some(vec!["title:".into()]);
         let issues = analyze(&config(vec![draft]));
         assert_eq!(issues.len(), 1);
@@ -433,7 +414,6 @@ mod tests {
         let layout = super::super::layout_file::parse(
             r#"{"schemaVersion":1,"rules":[
             {"id":"bad-condition","key":"KeyA","when":{"windows":["title:"]}},
-            {"id":"bad-filter","key":"KeyB","hold":{"keysExceptFor":["Tab"]}},
             {"id":"bad-double","key":"KeyC+KeyD","doubleTap":{"action":"KeyE"}}
         ]}"#,
         )
@@ -452,7 +432,7 @@ mod tests {
                 .iter()
                 .filter(|issue| issue.code == RuleIssueCode::InvalidRuleConfiguration)
                 .count(),
-            2
+            1
         );
     }
 

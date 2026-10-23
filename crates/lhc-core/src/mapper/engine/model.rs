@@ -47,7 +47,6 @@ pub(super) struct RuleEntry {
     pub(super) tap: TapMode,
     pub(super) layer_id: Option<String>,
     pub(super) hold: HoldMode,
-    pub(super) isolate_keys: Vec<KeyCode>,
     pub(super) long_hold: Option<ActionDef>,
     pub(super) long_hold_timeout: Duration,
     pub(super) double_tap: Option<ActionDef>,
@@ -62,7 +61,6 @@ pub(super) struct RuleEntry {
 #[derive(Clone)]
 pub(super) struct LayerTrigger {
     pub(super) key: KeyCode,
-    pub(super) isolate_keys: Vec<KeyCode>,
     /// Modifiers a hold-modifiers layer key left pressed; released together
     /// with this trigger (e.g. Alt of Alt+Tab while the switcher is open).
     pub(super) held_mods: Vec<KeyCode>,

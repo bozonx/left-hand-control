@@ -144,7 +144,6 @@ impl Engine {
                 .or_default()
                 .push(LayerTrigger {
                     key,
-                    isolate_keys: rule.isolate_keys.clone(),
                     held_mods: Vec::new(),
                 });
         }
