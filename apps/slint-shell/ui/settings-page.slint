@@ -175,8 +175,9 @@ component TimingField inherits VerticalLayout {
     in-out property <string> value;
     callback edited();
     callback reset();
-    width: 176px;
-    horizontal-stretch: 0;
+    min-width: 0px;
+    preferred-width: 260px;
+    horizontal-stretch: 1;
     vertical-stretch: 0;
     ResettableField {
         inline-reset: true;
@@ -607,16 +608,28 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {
                     title: @tr("Key behavior");
                     BehaviorCard {
-                        TimingField {
-                            label: @tr("Simultaneous presses");
-                            info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
-                                + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
-                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
-                            minimum: 10; maximum: 500;
-                            value <=> SettingsEditor.combo-timeout;
-                            standard: SettingsEditor.default-combo-timeout;
-                            edited => { SettingsEditor.schedule-save(); }
-                            reset => { SettingsEditor.save(); }
+                        HorizontalLayout { vertical-stretch: 0; spacing: 16px; alignment: start;
+                            TimingField {
+                                label: @tr("Simultaneous presses");
+                                info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
+                                    + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
+                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
+                                minimum: 10; maximum: 500;
+                                value <=> SettingsEditor.combo-timeout;
+                                standard: SettingsEditor.default-combo-timeout;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
+                            }
+                            TimingField {
+                                label: @tr("Macro time limit");
+                                info: @tr("A macro still running after this time is stopped and counts as finished. A macro started while another one runs waits for it; up to 3 runs can wait, further presses are ignored.")
+                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-timeout);
+                                minimum: 1000; maximum: 600000; step: 1000;
+                                value <=> SettingsEditor.macro-timeout;
+                                standard: SettingsEditor.default-macro-timeout;
+                                edited => { SettingsEditor.schedule-save(); }
+                                reset => { SettingsEditor.save(); }
+                            }
                         }
                     }
                     BehaviorCard {
@@ -688,16 +701,6 @@ export component SettingsPage inherits VerticalBox {
                                 maximum: 2000; step: 1;
                                 value <=> SettingsEditor.modifier-delay;
                                 standard: SettingsEditor.default-modifier-delay;
-                                edited => { SettingsEditor.schedule-save(); }
-                                reset => { SettingsEditor.save(); }
-                            }
-                            TimingField {
-                                label: @tr("Macro time limit");
-                                info: @tr("A macro still running after this time is stopped and counts as finished. A macro started while another one runs waits for it; up to 3 runs can wait, further presses are ignored.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-timeout);
-                                minimum: 1000; maximum: 600000; step: 1000;
-                                value <=> SettingsEditor.macro-timeout;
-                                standard: SettingsEditor.default-macro-timeout;
                                 edited => { SettingsEditor.schedule-save(); }
                                 reset => { SettingsEditor.save(); }
                             }
